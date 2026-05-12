@@ -15,6 +15,9 @@
  * 当前预览部署只跑 H5，足够。
  */
 import { ref } from 'vue'
+// 改成静态 import，避免 app-plus 端 rollup 不支持 code-splitting
+// （bundle 会变大约 50KB，但能让 app 端也支持聊天）
+import { io as ioCtor } from 'socket.io-client'
 
 type ChatMessageHandler = (msg: any) => void
 type TypingHandler = (data: { sessionId: string; fromRole: string; on: boolean }) => void
@@ -41,9 +44,6 @@ export function useChatSocket(token: string, role: 'user' | 'merchant' = 'user')
 
   async function connect() {
     if (io) return
-    // 动态加载 socket.io-client，避免污染主 bundle
-    const mod: any = await import('socket.io-client')
-    const ioCtor = mod.io || mod.default
     const origin =
       (typeof window !== 'undefined' && window.location ? window.location.origin : '') ||
       ((import.meta as any).env?.VITE_API_BASE_URL ?? '')

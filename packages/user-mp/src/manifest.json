@@ -20,6 +20,60 @@
       }
     }
   },
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {
+      "Payment": {},
+      "OAuth": {},
+      "Share": {},
+      "Push": {},
+      "Maps": {},
+      "Geolocation": {}
+    },
+    "distribute": {
+      "android": {
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
+          "<uses-permission android:name=\"android.permission.CAMERA\"/>",
+          "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
+          "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
+        ]
+      },
+      "ios": {},
+      "sdkConfigs": {
+        "payment": {},
+        "oauth": {
+          "weixin": {
+            "appid": "wxe8ed8b7d9d154165",
+            "UniversalLinks": ""
+          }
+        },
+        "share": {
+          "weixin": {
+            "appid": "wxe8ed8b7d9d154165",
+            "UniversalLinks": ""
+          }
+        },
+        "push": {},
+        "geolocation": {
+          "system": {
+            "__platform__": ["ios", "android"]
+          }
+        }
+      }
+    }
+  },
   "h5": {
     "title": "经纬科技",
     "router": { "mode": "hash", "base": "/user/" },

@@ -10,10 +10,13 @@
     "build:h5": "uni build",
     "typecheck": "vue-tsc --noEmit",
     "lint": "echo 'lint: user-mp'",
-    "test": "echo 'test: user-mp'"
+    "test": "echo 'test: user-mp'",
+    "dev:app": "uni -p app",
+    "build:app": "uni build -p app"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-alpha-5000820260508001",
+    "@dcloudio/uni-app-plus": "3.0.0-alpha-5000820260508001",
     "@dcloudio/uni-components": "3.0.0-alpha-5000820260508001",
     "@dcloudio/uni-h5": "3.0.0-alpha-5000820260508001",
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5000820260508001",
