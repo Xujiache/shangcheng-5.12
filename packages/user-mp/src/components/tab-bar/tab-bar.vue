@@ -10,6 +10,7 @@
  */
 import { computed } from 'vue'
 import { useCartStore } from '../../store/cart'
+import { lineIcon, fillIcon } from '../../utils/svgDataUri'
 
 const props = defineProps<{ current: 'home' | 'category' | 'cart' | 'me' }>()
 
@@ -23,20 +24,9 @@ interface TabItem {
   path_svg_filled: string  // 选中：纯填充实心图标
 }
 
-// mp-weixin 不支持 inline <svg>，把 path 编进 data URI，<image> 渲染
-function svgLineUri(d: string, color: string, stroke: number): string {
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' ` +
-    `stroke='${color}' stroke-width='${stroke}' stroke-linecap='round' stroke-linejoin='round'>` +
-    `<path d='${d}'/></svg>`
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`
-}
-function svgFillUri(d: string, color: string): string {
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='${color}' stroke='none'>` +
-    `<path d='${d}'/></svg>`
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`
-}
+// mp-weixin 不支持 inline <svg>，base64 data URI + <image> 渲染（见 utils/svgDataUri.ts）
+const svgLineUri = (d: string, color: string, stroke: number) => lineIcon(d, color, stroke)
+const svgFillUri = (d: string, color: string) => fillIcon(d, color)
 
 const TABS: TabItem[] = [
   {

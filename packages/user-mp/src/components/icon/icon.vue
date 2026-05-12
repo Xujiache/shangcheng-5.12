@@ -6,12 +6,13 @@
  * line 风格 24×24 viewBox。
  *
  * 实现：mp-weixin 不支持 inline <svg>/<path>（不在原生组件白名单），
- * 把 SVG 拼成 URL-encoded data URI，用 <image> 组件渲染。
- * H5 端这样写也完全正常（image 接受 svg data URI）。
+ * 把 SVG 编成 base64 data URI（URL-encoded 形式在部分客户端不稳，base64 全版本认），
+ * 用 <image> 组件渲染。H5 端也完全正常。
  *
  * 注意：color 默认值改成具体颜色（不能用 currentColor，data URI 隔离没法继承）。
  */
 import { computed } from 'vue'
+import { lineIcon, fillIcon } from '../../utils/svgDataUri'
 
 const props = withDefaults(
   defineProps<{
@@ -111,13 +112,7 @@ const sizePx = computed(() => (typeof props.size === 'number' ? `${props.size}rp
 
 const dataUri = computed(() => {
   const d = PATH[props.name] ?? ''
-  const fillAttr = props.fill ? props.color : 'none'
-  // 单引号包 SVG 属性，避免双引号转义；URL-encode 兼容 mp-weixin（无 btoa）
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' ` +
-    `fill='${fillAttr}' stroke='${props.color}' stroke-width='${props.stroke}' ` +
-    `stroke-linecap='round' stroke-linejoin='round'><path d='${d}'/></svg>`
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+  return props.fill ? fillIcon(d, props.color) : lineIcon(d, props.color, props.stroke)
 })
 </script>
 
