@@ -167,7 +167,7 @@ async function submit() {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
   .hero-icon {
     width: 96rpx;
     height: 96rpx;
@@ -245,7 +245,7 @@ async function submit() {
     font-size: 24rpx;
     color: var(--text-primary);
     &.active {
-      background: var(--brand-gradient);
+      background: $brand-gradient;
       border-color: transparent;
       color: #fff;
       box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
@@ -272,7 +272,7 @@ async function submit() {
     height: 96rpx;
     line-height: 96rpx;
     text-align: center;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     border-radius: 999rpx;
     font-size: 32rpx;

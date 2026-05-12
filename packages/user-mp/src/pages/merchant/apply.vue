@@ -228,7 +228,7 @@ async function submit() {
   gap: 8rpx;
   transition: all .2s;
   &.active {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     border-color: transparent;
     color: #fff;
     box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
@@ -334,7 +334,7 @@ async function submit() {
     color: var(--text-primary);
     background: var(--bg-card);
     &.active {
-      background: var(--brand-gradient);
+      background: $brand-gradient;
       border-color: transparent;
       color: #fff;
     }
@@ -351,7 +351,7 @@ async function submit() {
     height: 96rpx;
     line-height: 96rpx;
     text-align: center;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     border-radius: 999rpx;
     font-size: 32rpx;

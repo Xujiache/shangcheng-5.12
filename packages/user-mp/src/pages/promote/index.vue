@@ -139,7 +139,7 @@ onMounted(load)
   position: relative;
   margin: 16rpx 24rpx;
   padding: 36rpx 32rpx;
-  background: var(--brand-gradient);
+  background: $brand-gradient;
   color: #fff;
   border-radius: 24rpx;
   overflow: hidden;
@@ -161,7 +161,7 @@ onMounted(load)
     font-size: 72rpx;
     font-weight: 800;
     line-height: 1;
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
   .hero-row {
     display: flex;
@@ -177,7 +177,7 @@ onMounted(load)
       .meta-value {
         font-size: 26rpx;
         font-weight: 700;
-        font-family: var(--font-family-base);
+        font-family: $font-family-base;
       }
     }
     .hero-divider { width: 1rpx; height: 48rpx; background: rgba(255,255,255,0.3); }
@@ -205,13 +205,13 @@ onMounted(load)
   flex-direction: column;
   align-items: center;
   gap: 4rpx;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
   .grid-label { font-size: 22rpx; color: var(--text-tertiary); }
   .grid-value {
     font-size: 36rpx;
     font-weight: 800;
     color: var(--text-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .poster-btn {
@@ -232,7 +232,7 @@ onMounted(load)
   background: var(--bg-card);
   border-radius: 16rpx;
   padding: 24rpx;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
 }
 .list-head {
   display: flex;
@@ -260,7 +260,7 @@ onMounted(load)
     font-size: 28rpx;
     font-weight: 800;
     color: var(--brand-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .list-empty {

@@ -310,7 +310,7 @@ onMounted(() => {
   border: 1rpx solid var(--border-default);
   border-radius: 999rpx;
   &.active {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     border-color: transparent;
     color: #fff;
     box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
@@ -349,7 +349,7 @@ onMounted(() => {
   background: var(--bg-card);
   border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
 }
 .wf-img-wrap {
   position: relative;
@@ -402,7 +402,7 @@ onMounted(() => {
   font-size: 28rpx;
   font-weight: 800;
   color: var(--brand-primary);
-  font-family: var(--font-family-base);
+  font-family: $font-family-base;
 }
 .wf-locked {
   display: inline-flex;

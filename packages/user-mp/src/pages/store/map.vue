@@ -244,7 +244,7 @@ onMounted(load)
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 20rpx;
-  background: var(--brand-gradient);
+  background: $brand-gradient;
   color: #fff;
   border-radius: 999rpx;
   font-size: 24rpx;
@@ -282,7 +282,7 @@ onMounted(load)
     border-radius: 999rpx;
     font-size: 20rpx;
     font-weight: 600;
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .card-actions {
@@ -304,7 +304,7 @@ onMounted(load)
     color: var(--text-primary);
   }
   &.primary {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
   }
@@ -360,7 +360,7 @@ onMounted(load)
     font-size: 22rpx;
     color: var(--brand-primary);
     font-weight: 700;
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 </style>

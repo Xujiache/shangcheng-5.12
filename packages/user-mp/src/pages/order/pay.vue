@@ -190,7 +190,7 @@ function goAgreement() {
     display: flex;
     align-items: baseline;
     color: var(--brand-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
     .cur { font-size: 36rpx; font-weight: 800; }
     .num {
       font-size: 80rpx;
@@ -208,7 +208,7 @@ function goAgreement() {
   .hero-order {
     font-size: 20rpx;
     color: var(--text-tertiary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .methods {
@@ -256,7 +256,7 @@ function goAgreement() {
   height: 96rpx;
   line-height: 96rpx;
   text-align: center;
-  background: var(--brand-gradient);
+  background: $brand-gradient;
   color: #fff;
   border-radius: 999rpx;
   font-size: 32rpx;

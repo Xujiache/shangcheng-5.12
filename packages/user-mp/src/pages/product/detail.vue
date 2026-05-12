@@ -673,7 +673,7 @@ function changeQty(delta: number) {
     border: 2rpx solid var(--border-default);
   }
   .btn-primary {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.35);
   }
@@ -725,7 +725,7 @@ function changeQty(delta: number) {
       font-size: 48rpx;
       font-weight: 800;
       color: var(--brand-primary);
-      font-family: var(--font-family-base);
+      font-family: $font-family-base;
     }
     .price-locked {
       display: inline-flex;
@@ -805,7 +805,7 @@ function changeQty(delta: number) {
         width: 48rpx;
         height: 48rpx;
         border-radius: 50%;
-        background: var(--brand-gradient);
+        background: $brand-gradient;
         color: #fff;
         display: flex;
         align-items: center;
@@ -905,7 +905,7 @@ function changeQty(delta: number) {
     border-radius: 80rpx 0 0 80rpx;
   }
   .buy-btn {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     border-radius: 0 80rpx 80rpx 0;
     margin-left: -8rpx;
   }
@@ -948,7 +948,7 @@ function changeQty(delta: number) {
       font-size: 40rpx;
       font-weight: 800;
       color: var(--brand-primary);
-      font-family: var(--font-family-base);
+      font-family: $font-family-base;
     }
     .sku-name {
       font-size: 24rpx;
@@ -1024,7 +1024,7 @@ function changeQty(delta: number) {
     align-items: center;
     gap: 6rpx;
     padding: 6rpx 16rpx;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     border-radius: 999rpx;
     font-size: 22rpx;
@@ -1033,7 +1033,7 @@ function changeQty(delta: number) {
   .size-hint {
     font-size: 20rpx;
     color: var(--text-tertiary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .size-inputs {
@@ -1060,7 +1060,7 @@ function changeQty(delta: number) {
       font-size: 32rpx;
       font-weight: 700;
       color: var(--text-primary);
-      font-family: var(--font-family-base);
+      font-family: $font-family-base;
       text-align: center;
       box-sizing: border-box;
       &:focus { border-color: var(--brand-primary); }
@@ -1088,7 +1088,7 @@ function changeQty(delta: number) {
   .calc-val {
     font-size: 24rpx;
     color: var(--text-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
     font-weight: 600;
   }
   .calc-x {
@@ -1113,14 +1113,14 @@ function changeQty(delta: number) {
     font-size: 28rpx;
     font-weight: 800;
     color: var(--brand-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
   .st-num {
     font-size: 48rpx;
     font-weight: 800;
     color: var(--brand-primary);
     line-height: 1;
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
   &.invalid {
     border-color: rgba(255,59,48,0.4);
@@ -1152,7 +1152,7 @@ function changeQty(delta: number) {
     border-left: 1rpx solid var(--border-default);
     border-right: 1rpx solid var(--border-default);
     font-size: 26rpx;
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
     line-height: 56rpx;
   }
 }
@@ -1163,7 +1163,7 @@ function changeQty(delta: number) {
     height: 88rpx;
     line-height: 88rpx;
     text-align: center;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     border-radius: 999rpx;
     font-size: 30rpx;

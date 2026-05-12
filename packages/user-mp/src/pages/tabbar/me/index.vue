@@ -158,9 +158,9 @@ function goAllOrders() {
   min-height: 100vh;
   background: var(--bg-page);
 }
-.status { background: var(--brand-gradient); }
+.status { background: $brand-gradient; }
 .hero {
-  background: var(--brand-gradient);
+  background: $brand-gradient;
   padding: 24rpx 32rpx 48rpx;
   display: flex;
   align-items: center;
@@ -213,7 +213,7 @@ function goAllOrders() {
   background: var(--bg-card);
   border-radius: 24rpx;
   padding: 24rpx;
-  box-shadow: var(--shadow-md);
+  box-shadow: $shadow-md;
 }
 .card-head {
   display: flex;

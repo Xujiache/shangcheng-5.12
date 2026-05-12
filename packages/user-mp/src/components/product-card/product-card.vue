@@ -66,7 +66,7 @@ const heightPx = computed(() => `${props.imgHeight}rpx`)
   background: var(--bg-card);
   border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
   break-inside: avoid;
   margin-bottom: 16rpx;
 }
@@ -83,7 +83,7 @@ const heightPx = computed(() => `${props.imgHeight}rpx`)
     top: 12rpx;
     left: 12rpx;
     padding: 4rpx 12rpx;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     font-size: 18rpx;
     border-radius: 999rpx;
@@ -114,7 +114,7 @@ const heightPx = computed(() => `${props.imgHeight}rpx`)
     font-size: 30rpx;
     font-weight: 800;
     color: var(--brand-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
   .price-locked {
     display: inline-flex;
@@ -132,7 +132,7 @@ const heightPx = computed(() => `${props.imgHeight}rpx`)
     width: 44rpx;
     height: 44rpx;
     border-radius: 50%;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     display: flex;
     align-items: center;
     justify-content: center;

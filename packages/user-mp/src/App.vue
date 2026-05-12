@@ -18,7 +18,7 @@ onLaunch(() => {
 page {
   background: var(--bg-page);
   color: var(--text-primary);
-  font-family: var(--font-family-base);
+  font-family: $font-family-base;
 }
 
 /* 全局滚动条隐藏 */

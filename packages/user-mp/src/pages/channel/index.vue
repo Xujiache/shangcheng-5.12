@@ -490,7 +490,7 @@ function imgHeightOf(i: number): number {
       font-size: 56rpx;
       font-weight: 800;
       line-height: 1;
-      font-family: var(--font-family-base);
+      font-family: $font-family-base;
     }
   }
   .coupon-info {
@@ -613,7 +613,7 @@ function imgHeightOf(i: number): number {
     color: #fff;
     font-size: 24rpx;
     font-weight: 800;
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
     z-index: 2;
     &.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); }
     &.rank-2 { background: linear-gradient(135deg, #C0C0C0, #888); }
@@ -652,7 +652,7 @@ function imgHeightOf(i: number): number {
       font-size: 32rpx;
       font-weight: 800;
       color: var(--brand-primary);
-      font-family: var(--font-family-base);
+      font-family: $font-family-base;
     }
     .top-locked {
       display: inline-flex;
@@ -668,7 +668,7 @@ function imgHeightOf(i: number): number {
       width: 48rpx;
       height: 48rpx;
       border-radius: 50%;
-      background: var(--brand-gradient);
+      background: $brand-gradient;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -685,7 +685,7 @@ function imgHeightOf(i: number): number {
   padding: 20rpx;
   display: flex;
   align-items: center;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
 }
 .newest-item {
   flex: 1;
@@ -696,7 +696,7 @@ function imgHeightOf(i: number): number {
     font-weight: 800;
     color: var(--brand-primary);
     line-height: 1;
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
   .newest-label {
     display: block;
@@ -740,7 +740,7 @@ function imgHeightOf(i: number): number {
   background: var(--bg-card);
   border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
 }
 .wf-img {
   width: 100%;
@@ -781,7 +781,7 @@ function imgHeightOf(i: number): number {
   font-size: 28rpx;
   font-weight: 800;
   color: var(--brand-primary);
-  font-family: var(--font-family-base);
+  font-family: $font-family-base;
 }
 .wf-locked {
   display: inline-flex;
@@ -804,7 +804,7 @@ function imgHeightOf(i: number): number {
   width: 44rpx;
   height: 44rpx;
   border-radius: 50%;
-  background: var(--brand-gradient);
+  background: $brand-gradient;
   display: flex;
   align-items: center;
   justify-content: center;

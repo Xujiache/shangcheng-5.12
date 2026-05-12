@@ -324,7 +324,7 @@ onShow(() => {
   }
   .fav-login-btn {
     padding: 8rpx 20rpx;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     border-radius: 999rpx;
     font-size: 22rpx;
@@ -360,7 +360,7 @@ onShow(() => {
   border: 1rpx solid var(--border-light);
   border-radius: 12rpx;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
 }
 .fav-img-wrap {
   position: relative;
@@ -398,7 +398,7 @@ onShow(() => {
     font-size: 24rpx;
     font-weight: 800;
     color: var(--brand-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .fav-actions {
@@ -415,7 +415,7 @@ onShow(() => {
       border-right: 1rpx solid var(--border-light);
     }
     &.add {
-      background: var(--brand-gradient);
+      background: $brand-gradient;
       color: #fff;
       font-weight: 600;
     }
@@ -475,7 +475,7 @@ onShow(() => {
       font-size: 30rpx;
       font-weight: 800;
       color: var(--brand-primary);
-      font-family: var(--font-family-base);
+      font-family: $font-family-base;
     }
   }
 }
@@ -499,7 +499,7 @@ onShow(() => {
     font-size: 24rpx;
     border-left: 1rpx solid var(--border-default);
     border-right: 1rpx solid var(--border-default);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .empty-wrap {
@@ -521,7 +521,7 @@ onShow(() => {
   .empty-btn {
     margin-top: 16rpx;
     padding: 16rpx 48rpx;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     border-radius: 999rpx;
     font-size: 26rpx;
@@ -564,7 +564,7 @@ onShow(() => {
     font-size: 36rpx;
     font-weight: 800;
     color: var(--brand-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
 }
 .ft-btn {
@@ -577,7 +577,7 @@ onShow(() => {
   font-weight: 700;
   color: #fff;
   &.primary {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
   }
   &.danger {

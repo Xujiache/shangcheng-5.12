@@ -279,7 +279,7 @@ function totalQty(o: Order): number {
     transform: translateX(-50%);
     width: 36rpx;
     height: 6rpx;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     border-radius: 6rpx 6rpx 0 0;
   }
 }
@@ -298,7 +298,7 @@ function totalQty(o: Order): number {
   border-radius: 20rpx;
   padding: 0;
   margin-bottom: 20rpx;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
   overflow: hidden;
   width: 100%;
   box-sizing: border-box;
@@ -333,7 +333,7 @@ function totalQty(o: Order): number {
   min-width: 0;
   font-size: 22rpx;
   color: var(--text-secondary);
-  font-family: var(--font-family-base);
+  font-family: $font-family-base;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -407,7 +407,7 @@ function totalQty(o: Order): number {
   font-size: 26rpx;
   font-weight: 700;
   color: var(--text-primary);
-  font-family: var(--font-family-base);
+  font-family: $font-family-base;
 }
 .line-qty {
   font-size: 22rpx;
@@ -454,14 +454,14 @@ function totalQty(o: Order): number {
   font-size: 24rpx;
   font-weight: 800;
   color: var(--brand-primary);
-  font-family: var(--font-family-base);
+  font-family: $font-family-base;
 }
 .sum-num {
   font-size: 36rpx;
   font-weight: 800;
   color: var(--brand-primary);
   line-height: 1;
-  font-family: var(--font-family-base);
+  font-family: $font-family-base;
 }
 
 /* 按钮 */
@@ -486,7 +486,7 @@ function totalQty(o: Order): number {
     color: var(--text-primary);
   }
   &.primary {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
   }

@@ -307,7 +307,7 @@ onShow(() => {
     width: 56rpx;
     height: 56rpx;
     border-radius: 50%;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -333,7 +333,7 @@ onShow(() => {
   height: 72rpx;
   background: var(--bg-card);
   border-radius: 999rpx;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
   .placeholder {
     font-size: 26rpx;
     color: var(--text-tertiary);
@@ -388,7 +388,7 @@ onShow(() => {
   padding: 24rpx 16rpx;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
   .entry {
     display: flex;
     flex-direction: column;
@@ -438,7 +438,7 @@ onShow(() => {
   background: var(--bg-card);
   border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: $shadow-sm;
 }
 .wf-img-wrap {
   position: relative;
@@ -494,7 +494,7 @@ onShow(() => {
     font-size: 28rpx;
     font-weight: 800;
     color: var(--brand-primary);
-    font-family: var(--font-family-base);
+    font-family: $font-family-base;
   }
   .wf-locked {
     display: inline-flex;
@@ -510,7 +510,7 @@ onShow(() => {
     width: 44rpx;
     height: 44rpx;
     border-radius: 50%;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     display: flex;
     align-items: center;
     justify-content: center;

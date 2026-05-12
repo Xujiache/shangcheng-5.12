@@ -39,7 +39,7 @@ withDefaults(
     color: var(--brand-primary);
   }
   &.tone-accent {
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     border-color: transparent;
     color: #fff;
   }

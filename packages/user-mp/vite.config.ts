@@ -20,13 +20,9 @@ export default defineConfig({
         : {}),
     },
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@use '@shared/tokens/tokens.scss' as *;`,
-      },
-    },
-  },
+  // SCSS tokens 由 src/uni.scss 全局注入（uni-app 自动加载），不要在这里再注一遍，
+  // 否则 SCSS 模块系统会把同一文件当成两个模块，触发 "available from multiple global modules"
+  css: {},
   server: {
     port: 8081,
     host: '0.0.0.0',

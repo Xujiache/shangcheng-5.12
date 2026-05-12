@@ -359,7 +359,7 @@ async function submit() {
         font-size: 28rpx;
         font-weight: 800;
         color: var(--brand-primary);
-        font-family: var(--font-family-base);
+        font-family: $font-family-base;
       }
       .qty { font-size: 24rpx; color: var(--text-tertiary); }
     }
@@ -408,7 +408,7 @@ async function submit() {
     justify-content: space-between;
     font-size: 24rpx;
     .k { color: var(--text-tertiary); }
-    .v { color: var(--text-primary); font-family: var(--font-family-base); }
+    .v { color: var(--text-primary); font-family: $font-family-base; }
     .v.accent { color: var(--brand-primary); font-weight: 700; }
   }
 }
@@ -436,7 +436,7 @@ async function submit() {
       font-size: 40rpx;
       font-weight: 800;
       color: var(--brand-primary);
-      font-family: var(--font-family-base);
+      font-family: $font-family-base;
     }
   }
   .submit {
@@ -444,7 +444,7 @@ async function submit() {
     height: 80rpx;
     line-height: 80rpx;
     border-radius: 999rpx;
-    background: var(--brand-gradient);
+    background: $brand-gradient;
     color: #fff;
     font-size: 30rpx;
     font-weight: 700;
