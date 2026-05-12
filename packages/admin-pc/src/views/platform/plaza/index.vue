@@ -1,0 +1,438 @@
+<!-- 平台 PC · 选品广场推送（S5-T8）-->
+<template>
+  <div class="pf-plaza">
+    <div class="pf-page-header">
+      <div>
+        <h2 class="m-0 text-xl font-semibold">选品广场</h2>
+        <p class="mt-1 text-sm text-g-500">平台统一推送 · 厂家商品 → 门店代理</p>
+      </div>
+      <div class="flex gap-2">
+        <ElInput
+          v-model="keyword"
+          placeholder="搜索商品 / 厂家"
+          clearable
+          style="width: 220px"
+          :prefix-icon="Search"
+        />
+        <ElButton plain @click="batchMode = !batchMode">
+          {{ batchMode ? '退出批量' : '批量推送' }}
+        </ElButton>
+        <ElButton type="primary" :icon="Plus" :disabled="batchMode && selectedIds.size === 0" @click="openPush">
+          {{ batchMode ? `推送 (${selectedIds.size})` : '快速推送' }}
+        </ElButton>
+      </div>
+    </div>
+
+    <!-- 3 KPI -->
+    <div class="pf-kpi-row">
+      <ElCard v-for="k in kpiCards" :key="k.key" shadow="hover" class="pf-kpi">
+        <div class="pf-kpi__icon" :style="{ background: k.color + '18', color: k.color }">
+          <ArtSvgIcon :icon="k.icon" />
+        </div>
+        <div>
+          <div class="pf-kpi__num">{{ k.value }}</div>
+          <div class="pf-kpi__label">{{ k.label }}</div>
+        </div>
+      </ElCard>
+    </div>
+
+    <ElCard shadow="never" class="pf-toolbar">
+      <ElTabs v-model="tab">
+        <ElTabPane label="推送商品" name="products" />
+        <ElTabPane label="推送厂家" name="factories" />
+        <ElTabPane label="推送记录" name="records" />
+      </ElTabs>
+    </ElCard>
+
+    <!-- 商品 / 厂家 网格 -->
+    <ElCard v-if="tab !== 'records'" shadow="never">
+      <div class="pf-grid">
+        <div
+          v-for="item in filteredItems"
+          :key="item.id"
+          class="pf-item"
+          :class="{ selected: selectedIds.has(item.id) }"
+        >
+          <ElCheckbox
+            v-if="batchMode"
+            :model-value="selectedIds.has(item.id)"
+            @change="toggle(item.id)"
+            class="pf-item__check"
+          />
+          <ElImage :src="item.image" fit="cover" class="pf-item__img" />
+          <div class="pf-item__body">
+            <div class="font-medium line-2">{{ item.name }}</div>
+            <div class="text-xs text-g-500 mt-1">{{ item.factory }}</div>
+            <div class="flex justify-between items-center mt-2">
+              <span class="text-primary font-semibold">¥{{ item.price }}</span>
+              <ElTag v-if="item.tag" size="small" effect="plain">{{ item.tag }}</ElTag>
+            </div>
+            <div class="flex justify-between items-center mt-2 text-xs text-g-500">
+              <span>代理 {{ item.agencyCount }} 家</span>
+              <ElTag size="small" :type="statusTypeOf(item.status)">{{ statusLabelOf(item.status) }}</ElTag>
+            </div>
+          </div>
+          <div class="pf-item__actions">
+            <ElButton v-if="item.status !== 'offline'" link type="primary" @click="pushOne(item)">推送</ElButton>
+            <ElButton v-else link type="success" @click="onlineOne(item)">上线</ElButton>
+            <ElButton link type="danger" @click="offlineOne(item)">下架</ElButton>
+          </div>
+        </div>
+
+        <ElEmpty v-if="filteredItems.length === 0" description="暂无相应商品" />
+      </div>
+    </ElCard>
+
+    <!-- 推送记录 -->
+    <ElCard v-else shadow="never">
+      <ElTable :data="records" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+        <ElTableColumn label="推送 ID" prop="id" width="200" />
+        <ElTableColumn label="投放对象" width="140">
+          <template #default="{ row }">
+            <ElTag size="small" effect="plain">{{ targetLabelOf(row.target) }}</ElTag>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="备注" prop="note" min-width="220" />
+        <ElTableColumn label="推送时间" width="180">
+          <template #default="{ row }">{{ formatDateTime(row.pushedAt || row.createdAt) }}</template>
+        </ElTableColumn>
+        <ElTableColumn label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <ElTag size="small" type="success">已推送</ElTag>
+          </template>
+        </ElTableColumn>
+      </ElTable>
+    </ElCard>
+
+    <!-- 推送 Drawer -->
+    <ElDrawer v-model="pushOpen" :size="480" :with-header="false">
+      <div class="pf-push">
+        <div class="pf-push__head">
+          <h3 class="m-0">推送商品</h3>
+        </div>
+        <ElAlert
+          type="info"
+          :title="`即将推送 ${pushForm.productIds.length} 件商品`"
+          :closable="false"
+          show-icon
+        />
+        <ElForm :model="pushForm" label-position="top">
+          <ElFormItem label="投放对象">
+            <ElRadioGroup v-model="pushForm.target">
+              <ElRadioButton value="all">全部商户</ElRadioButton>
+              <ElRadioButton value="factory">仅厂家</ElRadioButton>
+              <ElRadioButton value="store">仅门店</ElRadioButton>
+            </ElRadioGroup>
+          </ElFormItem>
+          <ElFormItem label="推送时段">
+            <ElDatePicker
+              v-model="pushDateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始"
+              end-placeholder="结束"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </ElFormItem>
+          <ElFormItem label="权重">
+            <ElInputNumber
+              v-model="pushForm.weight"
+              :min="0"
+              :max="100"
+              :step="5"
+              controls-position="right"
+              style="width: 100%"
+            />
+          </ElFormItem>
+          <ElFormItem label="备注">
+            <ElInput v-model="pushForm.remark" type="textarea" rows="3" placeholder="可选" />
+          </ElFormItem>
+        </ElForm>
+        <div class="pf-push__footer">
+          <ElButton @click="pushOpen = false">取消</ElButton>
+          <ElButton type="primary" @click="submitPush" :loading="submitting">提交推送</ElButton>
+        </div>
+      </div>
+    </ElDrawer>
+  </div>
+</template>
+
+<script setup lang="ts">
+  import {
+    fetchPlatformPlaza,
+    pushPlaza,
+    type PlazaItem,
+    type PushPayload
+  } from '@/api/platform-business'
+  import type { PlazaPush } from '@jiujiu/shared/types'
+  import { formatDateTime } from '@jiujiu/shared/utils'
+  import { ElMessage } from 'element-plus'
+  import { Refresh, Search, Plus } from '@element-plus/icons-vue'
+
+  defineOptions({ name: 'PlatformPlaza' })
+
+  const tab = ref<'products' | 'factories' | 'records'>('products')
+  const keyword = ref('')
+  const items = ref<PlazaItem[]>([])
+  const records = ref<PlazaPush[]>([])
+  const batchMode = ref(false)
+  const selectedIds = ref(new Set<string>())
+  const pushOpen = ref(false)
+  const submitting = ref(false)
+
+  const pushForm = reactive<PushPayload>({
+    productIds: [],
+    target: 'all',
+    startAt: '',
+    endAt: '',
+    weight: 50,
+    remark: ''
+  })
+  const pushDateRange = ref<[string, string]>(['', ''])
+
+  const filteredItems = computed(() => {
+    if (!keyword.value) return items.value
+    const kw = keyword.value.toLowerCase()
+    return items.value.filter(
+      (x) => x.name.toLowerCase().includes(kw) || (x.factory || '').toLowerCase().includes(kw)
+    )
+  })
+
+  const kpiCards = computed(() => {
+    const factories = new Set(items.value.map((x) => x.factory)).size
+    const totalAgency = items.value.reduce((s, x) => s + x.agencyCount, 0)
+    const pushing = items.value.filter((x) => x.status === 'pushing').length
+    return [
+      { key: 'pushing', icon: 'ri:rocket-line', label: '在推商品', value: pushing, color: '#FF4D2D' },
+      { key: 'factories', icon: 'ri:building-line', label: '入驻厂家', value: factories, color: '#FF7A45' },
+      { key: 'agency', icon: 'ri:share-line', label: '总代理数', value: totalAgency, color: '#10B981' }
+    ]
+  })
+
+  function statusTypeOf(s: PlazaItem['status']) {
+    return ({ pushing: 'success', pending: 'warning', offline: 'info' } as const)[s]
+  }
+  function statusLabelOf(s: PlazaItem['status']) {
+    return ({ pushing: '在推', pending: '待上线', offline: '已下架' } as const)[s]
+  }
+  function targetLabelOf(t: string) {
+    return ({ all: '全部商户', factory: '仅厂家', store: '仅门店', customer: '客户' } as Record<string, string>)[t] || t
+  }
+
+  function toggle(id: string) {
+    if (selectedIds.value.has(id)) selectedIds.value.delete(id)
+    else selectedIds.value.add(id)
+    selectedIds.value = new Set(selectedIds.value)
+  }
+
+  function pushOne(item: PlazaItem) {
+    pushForm.productIds = [item.id]
+    openPush()
+  }
+
+  function openPush() {
+    if (batchMode.value) {
+      if (selectedIds.value.size === 0) {
+        ElMessage.warning('请先勾选商品')
+        return
+      }
+      pushForm.productIds = Array.from(selectedIds.value)
+    } else if (pushForm.productIds.length === 0) {
+      pushForm.productIds = items.value.slice(0, 5).map((x) => x.id)
+    }
+    const today = new Date().toISOString().slice(0, 10)
+    const next7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+    pushDateRange.value = [today, next7]
+    pushOpen.value = true
+  }
+
+  async function submitPush() {
+    submitting.value = true
+    try {
+      pushForm.startAt = pushDateRange.value[0]
+      pushForm.endAt = pushDateRange.value[1]
+      const res = await pushPlaza({ ...pushForm })
+      ElMessage.success(`已推送 ${res.pushedCount} 件商品`)
+      pushOpen.value = false
+      selectedIds.value = new Set()
+      batchMode.value = false
+      await load()
+    } finally {
+      submitting.value = false
+    }
+  }
+
+  async function offlineOne(item: PlazaItem) {
+    item.status = 'offline'
+    ElMessage.success('已下架')
+  }
+  async function onlineOne(item: PlazaItem) {
+    item.status = 'pushing'
+    ElMessage.success('已上线')
+  }
+
+  async function load() {
+    items.value = (await fetchPlatformPlaza('products')) as PlazaItem[]
+    records.value = (await fetchPlatformPlaza('records')) as PlazaPush[]
+  }
+
+  onMounted(load)
+</script>
+
+<style scoped lang="scss">
+  .pf-plaza {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .pf-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .text-primary {
+    color: var(--el-color-primary, #ff4d2d);
+  }
+  .text-g-500 {
+    color: #6b7280;
+  }
+
+  .line-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+  }
+
+  .pf-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pf-kpi {
+    border-radius: 12px;
+
+    :deep(.el-card__body) {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+  }
+
+  .pf-kpi__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .pf-kpi__num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--art-gray-800, #1f2937);
+    line-height: 1;
+  }
+
+  .pf-kpi__label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  .pf-toolbar {
+    border-radius: 12px;
+
+    :deep(.el-card__body) {
+      padding: 8px 16px;
+    }
+  }
+
+  .pf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .pf-item {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--art-border-color, #e5e7eb);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.18s;
+
+    &:hover {
+      border-color: var(--el-color-primary, #ff4d2d);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -10px rgba(255, 77, 45, 0.25);
+    }
+
+    &.selected {
+      border-color: var(--el-color-primary, #ff4d2d);
+      background: rgba(255, 77, 45, 0.04);
+    }
+  }
+
+  .pf-item__check {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    background: #fff;
+    padding: 4px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  }
+
+  .pf-item__img {
+    width: 100%;
+    aspect-ratio: 1;
+    display: block;
+  }
+
+  .pf-item__body {
+    padding: 12px;
+  }
+
+  .pf-item__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 6px 12px 12px;
+    border-top: 1px dashed var(--art-border-color, #e5e7eb);
+    margin-top: 6px;
+  }
+
+  .pf-push {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%;
+  }
+
+  .pf-push__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: auto;
+  }
+</style>

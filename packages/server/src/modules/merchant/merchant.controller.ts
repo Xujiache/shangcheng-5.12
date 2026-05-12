@@ -1,0 +1,292 @@
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
+import { MerchantService } from './merchant.service'
+import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
+import { Roles } from '../../common/decorators/roles.decorator'
+import { RolesGuard } from '../../common/guards/roles.guard'
+
+@ApiTags('商家端')
+@UseGuards(RolesGuard)
+@Roles('merchant', 'factory', 'store', 'super-admin')
+@Controller('m')
+export class MerchantController {
+  constructor(private readonly svc: MerchantService) {}
+
+  // ============ Dashboard ============
+  @Get('dashboard') async dashboard(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.dashboard(mid)
+  }
+  @Get('stats') async stats(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.stats(mid, q)
+  }
+
+  // ============ 商品 ============
+  @Get('products') async listProducts(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listProducts(mid, q)
+  }
+  @Get('products/:id') async productDetail(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.productDetail(mid, id)
+  }
+  @Post('products') async createProduct(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.createProduct(mid, dto)
+  }
+  @Put('products/:id') async updateProduct(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.updateProduct(mid, id, dto)
+  }
+  @Post('products/batch-online') async batchOnline(@CurrentUser() u: AuthUser, @Body('ids') ids: string[]) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.batchStatus(mid, ids, 'active')
+  }
+  @Post('products/batch-offline') async batchOffline(@CurrentUser() u: AuthUser, @Body('ids') ids: string[]) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.batchStatus(mid, ids, 'offline')
+  }
+  @Post('products/batch-delete') async batchDelete(@CurrentUser() u: AuthUser, @Body('ids') ids: string[]) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.batchDelete(mid, ids)
+  }
+  @Post('products/batch-status') async batchStatus(@CurrentUser() u: AuthUser, @Body() dto: { ids: string[]; status: string }) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.batchStatus(mid, dto.ids, dto.status)
+  }
+  @Delete('products') async deleteByIds(@CurrentUser() u: AuthUser, @Body('ids') ids: string[]) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.batchDelete(mid, ids)
+  }
+
+  // ============ 分类 ============
+  @Get('categories') async categories(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listCategories(mid, 'merchant')
+  }
+  @Post('categories') async createCategory(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.createCategory(mid, dto)
+  }
+  @Put('categories') async batchSaveCategories(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u)
+    const list = dto.list || dto.categories || []
+    for (const c of list) {
+      if (c.id) await this.svc.updateCategory(mid, c.id, c)
+      else await this.svc.createCategory(mid, c)
+    }
+    return { ok: true }
+  }
+  @Put('categories/:id') async updateCategory(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.updateCategory(mid, id, dto)
+  }
+  @Delete('categories/:id') async deleteCategory(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.deleteCategory(mid, id)
+  }
+  @Post('categories/sort') async sortCategories(@CurrentUser() u: AuthUser, @Body('ids') ids: string[]) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.sortCategories(mid, ids)
+  }
+
+  // ============ 订单 ============
+  @Get('orders') async listOrders(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listOrders(mid, q)
+  }
+  @Get('orders/:id') async orderDetail(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.orderDetail(mid, id)
+  }
+  @Post('orders/:id/ship') async ship(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: { company: string; trackingNumber: string }) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.ship(mid, id, dto.company, dto.trackingNumber)
+  }
+  @Post('orders/batch-ship') async batchShip(@CurrentUser() u: AuthUser, @Body('items') items: any[]) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.batchShip(mid, items)
+  }
+  @Post('orders/parse-address') parseAddress(@Body('text') text: string) {
+    return this.svc.parseAddress(text)
+  }
+
+  // ============ 售后 ============
+  @Get('refunds') async refunds(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listRefunds(mid, q)
+  }
+  @Post('refunds/:id/agree') async agree(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body('refundAmount') refundAmount?: number) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.agreeRefund(mid, id, refundAmount)
+  }
+  @Post('refunds/:id/reject') async reject(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body('reason') reason: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.rejectRefund(mid, id, reason)
+  }
+  // 别名 aftersales
+  @Get('aftersales') async aftersales(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listRefunds(mid, q)
+  }
+  @Post('aftersales/:id/review') async reviewAftersale(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: { action: string; reason?: string; refundAmount?: number }) {
+    const mid = await this.svc.ensureMerchantId(u)
+    if (dto.action === 'agree') return this.svc.agreeRefund(mid, id, dto.refundAmount)
+    return this.svc.rejectRefund(mid, id, dto.reason || '')
+  }
+
+  // ============ 客户 ============
+  @Get('customers') async customers(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listCustomers(mid, q)
+  }
+  @Post('customers/:id/price-tier') async setTier(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body('priceTier') priceTier: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.setCustomerPriceTier(mid, id, priceTier)
+  }
+  @Post('customers/:id/authorize') async authorize(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body('on') on: boolean) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.authorizeCustomer(mid, id, on)
+  }
+
+  // ============ 佣金 ============
+  @Get('commission/rules') async commissionRules(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.commissionRules(mid)
+  }
+  @Post('commission/rules') async saveCommissionRules(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.saveCommissionRules(mid, dto)
+  }
+  // admin-pc 别名
+  @Get('commission-rule') async commissionRuleAlias(@CurrentUser() u: AuthUser) { return this.commissionRules(u) }
+  @Put('commission-rule') async saveCommissionRuleAlias(@CurrentUser() u: AuthUser, @Body() dto: any) { return this.saveCommissionRules(u, dto) }
+  @Get('commissions') async myCommissions(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.commissionRules(mid)
+  }
+  @Get('promote-summary') async promoteSummary(@CurrentUser() u: AuthUser) {
+    return { totalCommission: 0, monthCommission: 0, promotedOrders: 0, promotedUsers: 0 }
+  }
+  @Get('marketing') async marketingAlias(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.marketingOverview(mid)
+  }
+  @Get('staff') async staffAlias(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listStaffs(mid, q)
+  }
+
+  // ============ 提现 ============
+  @Get('withdraws') async withdraws(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listWithdraws(mid, q)
+  }
+  @Post('withdraws') async createWithdraw(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.createWithdraw(u.sub, mid, dto)
+  }
+  @Post('withdraws/:id/review') async reviewWithdraw(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.reviewWithdraw(mid, id, dto.actualAmount, dto.remark, dto.remarkTags)
+  }
+  @Post('withdraws/:id/reject') async rejectWithdraw(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body('reason') reason: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.rejectWithdraw(mid, id, reason)
+  }
+  @Get('balance') async balance(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.balance(mid)
+  }
+
+  // ============ 门店 ============
+  @Get('stores') async stores(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listStores(mid, q)
+  }
+  @Post('stores') async createStore(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.createStore(mid, dto)
+  }
+  @Delete('stores/:id') async removeStore(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.removeStore(mid, id)
+  }
+  @Get('stores/:id/auth') async getAuth(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.getStoreAuth(mid, id)
+  }
+  @Post('stores/:id/auth') async saveAuth(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.saveStoreAuth(mid, id, dto)
+  }
+
+  // ============ 员工 ============
+  @Get('staffs') async staffs(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.listStaffs(mid, q)
+  }
+  @Post('staffs') async createStaff(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.createStaff(mid, dto)
+  }
+  @Put('staffs/:id') async updateStaff(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.updateStaff(mid, id, dto)
+  }
+  @Delete('staffs/:id') async removeStaff(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.removeStaff(mid, id)
+  }
+
+  // ============ 装修 ============
+  @Get('shop/decorate') async getDecorate(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.getDecorate(mid)
+  }
+  @Post('shop/decorate') async saveDecorate(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.saveDecorate(mid, dto)
+  }
+  @Put('shop/decorate') async putDecorate(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.saveDecorate(mid, dto)
+  }
+
+  // ============ 营销 ============
+  @Get('marketing/overview') async marketingOverview(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.marketingOverview(mid)
+  }
+  @Get('marketing/coupons') async marketingCoupons(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.marketingCoupons(mid, q)
+  }
+
+  // ============ 客服聊天 ============
+  @Get('chat/sessions') async chatSessions(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.chatSessions(mid)
+  }
+  @Get('chat/sessions/:id/messages') async chatMessages(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.chatMessages(mid, id)
+  }
+  @Post('chat/sessions/:id/messages') async chatSend(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: { type: string; content: string }) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.chatSend(mid, id, dto.type || 'text', dto.content)
+  }
+  @Get('chat/quick-replies') async chatQuickReplies(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.quickReplies(mid)
+  }
+  // PC 别名
+  @Get('chat/messages') async chatMessagesAlias(@CurrentUser() u: AuthUser, @Query('sessionId') sessionId: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.chatMessages(mid, sessionId)
+  }
+  @Post('chat/messages') async chatSendAlias(@CurrentUser() u: AuthUser, @Body() dto: { sessionId: string; type: string; content: string }) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.chatSend(mid, dto.sessionId, dto.type || 'text', dto.content)
+  }
+
+  // ============ 选品广场 ============
+  @Get('plaza/products') async plazaProducts(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u).catch(() => ''); return this.svc.plazaProducts(mid, q)
+  }
+  @Get('plaza/cards') async plazaCards(@CurrentUser() u: AuthUser, @Query() q: any) {
+    return this.plazaProducts(u, q)
+  }
+  @Get('plaza/factories') async plazaFactories(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u).catch(() => ''); return this.svc.plazaFactories(mid)
+  }
+  @Get('plaza/factories/:id') async plazaFactory(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u).catch(() => ''); return this.svc.plazaFactory(mid, id)
+  }
+  @Get('plaza/factory/:id') async plazaFactoryAlias(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.plazaFactory(u, id) }
+  @Post('plaza/factories/:id/follow') async followFactory(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body('on') on: boolean) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.followFactory(mid, id, on)
+  }
+  @Post('plaza/agency') async applyAgency(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.applyAgency(mid, dto)
+  }
+
+  // ============ 功能开关 ============
+  @Get('feature-flags') async featureFlags(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.resolveFeatureFlags(mid)
+  }
+
+  // ============ 会员 ============
+  @Get('membership/plans') memberPlans() { return this.svc.memberPlans() }
+  @Get('membership') async myMembership(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.myMembership(mid)
+  }
+  @Get('membership/quota') async quota(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.quota(mid)
+  }
+  @Get('membership/payments') async payments(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.myPayments(mid)
+  }
+  @Get('membership/notices') async notices(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.membershipNotices(mid)
+  }
+  @Post('membership/subscribe') async subscribe(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.subscribe(mid, dto)
+  }
+  @Post('membership/cancel') async cancelSub(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.cancelSub(mid)
+  }
+  @Post('membership/auto-renew') async setAutoRenew(@CurrentUser() u: AuthUser, @Body('autoRenew') autoRenew: boolean) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.setAutoRenew(mid, autoRenew)
+  }
+  @Post('membership/quota/use') async useQuota(@CurrentUser() u: AuthUser, @Body() dto: { key: string; count?: number }) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.useQuota(mid, dto.key, dto.count || 1)
+  }
+  @Post('membership/quota/release') async releaseQuota(@CurrentUser() u: AuthUser, @Body() dto: { key: string; count?: number }) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.releaseQuota(mid, dto.key, dto.count || 1)
+  }
+}

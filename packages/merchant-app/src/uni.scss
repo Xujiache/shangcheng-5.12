@@ -1,0 +1,28 @@
+/**
+ * uni-app 全局 SCSS 变量
+ * 引入 @jiujiu/shared 的 tokens
+ */
+@use '@jiujiu/shared/tokens.scss' as *;
+
+/* uni-app 默认变量（兼容 uni-ui） */
+$uni-color-primary: $brand-primary;
+$uni-color-success: $status-success;
+$uni-color-warning: $status-warning;
+$uni-color-error: $status-error;
+
+$uni-text-color: $text-primary;
+$uni-text-color-inverse: $text-inverse;
+$uni-text-color-grey: $text-tertiary;
+$uni-text-color-placeholder: $text-disabled;
+$uni-text-color-disable: $text-disabled;
+
+$uni-bg-color: $bg-card;
+$uni-bg-color-grey: $bg-page;
+$uni-bg-color-hover: $bg-hover;
+$uni-bg-color-mask: $bg-mask;
+
+$uni-border-color: $border-default;
+
+$uni-font-size-sm: $font-size-sm;
+$uni-font-size-base: $font-size-base;
+$uni-font-size-lg: $font-size-lg;

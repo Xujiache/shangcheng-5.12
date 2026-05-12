@@ -1,0 +1,877 @@
+// 经纬科技 · Prisma Schema（完整版）
+// 覆盖 40+ 业务实体：用户/商户/商品/订单/支付/售后/佣金/会员/广告/广场/聊天/装修/审核/系统
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 用户 / 鉴权
+// ============================================================
+model User {
+  id          String   @id @default(cuid())
+  // 三端通用账号
+  openid      String?  @unique
+  unionid     String?
+  phone       String?  @unique
+  email       String?  @unique
+  username    String?  @unique // 后台账号
+  passwordHash String?         // argon2 hash（仅后台/手机注册）
+
+  nickname    String
+  avatar      String?
+  gender      Int      @default(0)
+  // 角色：customer / promoter / factory / store / admin / platform / super-admin
+  role        String   @default("customer")
+  // 推广关系
+  inviterId   String?
+  // 商家关联（factory/store/merchant 时）
+  merchantId  String?
+  // admin/platform 角色关联
+  adminRoleId String?
+  // 状态
+  status      String   @default("active") // active / disabled
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses  Address[]
+  orders     Order[]
+  favorites  Favorite[]
+  cartItems  CartItem[]
+  refunds    Refund[]
+  withdraws  Withdraw[]
+  bookings   Booking[]
+  commissions Commission[]
+  chatSessions ChatSession[]
+  adminRole  AdminRole? @relation(fields: [adminRoleId], references: [id])
+
+  @@index([phone])
+  @@index([email])
+  @@index([role])
+  @@index([merchantId])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  phone     String
+  region    String
+  detail    String
+  longitude Float?
+  latitude  Float?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model SmsCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  scene     String   @default("login") // login / register / reset
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, scene])
+}
+
+// ============================================================
+// 商户 / 门店 / 员工
+// ============================================================
+model Merchant {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  type            String // factory / store
+  name            String
+  legalName       String
+  creditCode      String
+  legalRep        String
+  contact         String
+  contactPhone    String
+  region          String
+  address         String
+  businessLicense String?
+  qualifications  String[] @default([])
+  categories      String[] @default([])
+  status          String   @default("pending") // pending / active / rejected / disabled
+  level           String?  // A / B / C
+  credit          String?  // A / B / C / D
+  rejectRate      Float?   @default(0)
+  totalGmv        Decimal? @db.Decimal(14, 2)
+  trialEndAt      DateTime?
+  rejectReason    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  products        Product[]
+  orders          Order[]
+  refunds         Refund[]
+  withdraws       Withdraw[]
+  stores          Store[]
+  staffs          Staff[]
+  shopDecorate    ShopDecorate?
+  commissionRules CommissionRule[]
+  coupons         Coupon[]
+  flashSales      FlashSale[]
+  groupBuys       GroupBuy[]
+  chatSessions    ChatSession[]
+  quickReplies    QuickReply[]
+  memberships     MerchantMembership[]
+  usageQuotas     UsageQuota[]
+  paymentRecords  PaymentRecord[]
+  featureOverrides MerchantFeatureOverride[]
+  agencyApplications AgencyApplication[]
+
+  @@index([type, status])
+  @@index([userId])
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+  name        String
+  contact     String
+  phone       String
+  region      String
+  address     String
+  longitude   Float?
+  latitude    Float?
+  level       String   @default("C") // A / B / C
+  status      String   @default("pending") // active / pending / cancelled
+  authValidFrom DateTime?
+  authValidTo   DateTime?
+  // 授权 5 字段（priceVisible/categories/markupRatio/expiresAt 等存 JSON）
+  authConfig  Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+model Staff {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+  name        String
+  phone       String
+  role        String   @default("sales") // sales / cs / manager
+  status      String   @default("active") // active / left
+  permissions String[] @default([])
+  monthlyPerformance Decimal? @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+model ShopDecorate {
+  id            String   @id @default(cuid())
+  merchantId    String   @unique
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  themeColor    String   @default("#FF4D2D")
+  fontStyle     String   @default("modern") // modern / elegant / playful / minimal
+  productLayout String   @default("twoColumn") // waterfall / twoColumn / singleLarge
+  cornerStyle   String   @default("soft") // sharp / soft / round
+  // banners + modules 存 JSON
+  banners       Json     @default("[]")
+  modules       Json     @default("[]")
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================================
+// 商品 / SKU
+// ============================================================
+model Category {
+  id         String   @id @default(cuid())
+  parentId   String?
+  parent     Category? @relation("CategoryTree", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryTree")
+  name       String
+  icon       String?
+  sort       Int      @default(0)
+  type       String   @default("platform") // platform / merchant
+  merchantId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  products   Product[]
+
+  @@index([parentId])
+  @@index([merchantId])
+}
+
+model Product {
+  id                  String   @id @default(cuid())
+  merchantId          String
+  merchant            Merchant @relation(fields: [merchantId], references: [id])
+  categoryId          String
+  category            Category @relation(fields: [categoryId], references: [id])
+  merchantCategoryId  String?
+  name                String
+  description         String?
+  images              String[] @default([])
+  detailHtml          String?
+  tags                String[] @default([])
+  // 价格聚合
+  priceRetailMin      Decimal  @db.Decimal(10, 2)
+  priceRetailMax      Decimal  @db.Decimal(10, 2)
+  priceWholesaleMin   Decimal? @db.Decimal(10, 2)
+  priceWholesaleMax   Decimal? @db.Decimal(10, 2)
+  priceMemberMin      Decimal? @db.Decimal(10, 2)
+  priceMemberMax      Decimal? @db.Decimal(10, 2)
+  // 按尺寸定价（窗帘/家具类）
+  pricingMode         String?  @default("standard") // standard / by-size
+  pricePerSqm         Decimal? @db.Decimal(10, 2)
+  minLength           Float?
+  minWidth            Float?
+  maxLength           Float?
+  maxWidth            Float?
+  baseFee             Decimal? @db.Decimal(10, 2)
+  sizeUnit            String?  // cm / m
+  // 状态
+  status              String   @default("draft") // draft / auditing / active / offline / rejected
+  totalStock          Int      @default(0)
+  sales               Int      @default(0)
+  commentCount        Int      @default(0)
+  shipping            String[] @default([]) // factory / local / pickup
+  // 价格显示规则（4 客户层级 × 4 价格策略）
+  priceDisplayRules   Json     @default("{}")
+  rejectReason        String?
+  autoApproved        Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  skus                Sku[]
+  favorites           Favorite[]
+  cartItems           CartItem[]
+  orderItems          OrderItem[]
+  commissionRules     CommissionRule[]
+
+  @@index([merchantId, status])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model Sku {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  specs          Json     // { size: '1.4m', color: '橡木' }
+  specsLabel     String
+  priceWholesale Decimal  @db.Decimal(10, 2)
+  priceRetail    Decimal  @db.Decimal(10, 2)
+  priceMember    Decimal  @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+
+  @@index([productId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  skuId     String
+  sku       Sku      @relation(fields: [skuId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, skuId])
+}
+
+// ============================================================
+// 订单 / 支付 / 售后
+// ============================================================
+model Order {
+  id              String   @id @default(cuid())
+  no              String   @unique
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  status          String   @default("pending_payment")
+  totalAmount     Decimal  @db.Decimal(10, 2)
+  discountAmount  Decimal  @db.Decimal(10, 2) @default(0)
+  shippingFee     Decimal  @db.Decimal(10, 2) @default(0)
+  payAmount       Decimal  @db.Decimal(10, 2)
+  paymentMethod   String?
+  shippingMethod  String   @default("factory")
+  address         Json     // 收货地址快照
+  remark          String?
+  couponId        String?
+  couponDiscount  Decimal? @db.Decimal(10, 2)
+  trackingNumber  String?
+  trackingCompany String?
+  paidAt          DateTime?
+  shippedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           OrderItem[]
+  payments        Payment[]
+  refunds         Refund[]
+  commissions     Commission[]
+
+  @@index([userId, status])
+  @@index([merchantId, status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id])
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  skuId         String
+  sku           Sku      @relation(fields: [skuId], references: [id])
+  productName   String
+  productImage  String
+  specsLabel    String
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  quantity      Int
+  createdAt     DateTime @default(now())
+
+  refunds       Refund[]
+
+  @@index([orderId])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id])
+  method          String   // wechat / alipay / balance
+  amount          Decimal  @db.Decimal(10, 2)
+  status          String   @default("pending") // pending / success / failed
+  wxTransactionId String?
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  refundAmount    Decimal? @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([orderId])
+}
+
+model Refund {
+  id            String   @id @default(cuid())
+  no            String   @unique
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id])
+  orderItemId   String
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id])
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  merchantId    String
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  type          String   // refund_only / refund_with_return
+  reason        String
+  description   String?
+  evidence      String[] @default([])
+  applyAmount   Decimal  @db.Decimal(10, 2)
+  refundAmount  Decimal? @db.Decimal(10, 2)
+  status        String   @default("pending") // pending / agreed / rejected / in_progress / completed
+  merchantReply String?
+  returnAddress Json?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([merchantId, status])
+  @@index([userId])
+}
+
+// ============================================================
+// 佣金 / 提现 / 预约
+// ============================================================
+model CommissionRule {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id])
+  level1Percent   Float    @default(0)
+  level2Percent   Float    @default(0)
+  visibleToPromoter Boolean @default(true)
+  allowOffline    Boolean  @default(false)
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([merchantId, productId])
+  @@index([merchantId])
+}
+
+model Commission {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  level     Int      @default(1) // 1 / 2
+  amount    Decimal  @db.Decimal(10, 2)
+  status    String   @default("pending") // pending / settled / cancelled
+  settledAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([orderId])
+}
+
+model Withdraw {
+  id            String   @id @default(cuid())
+  no            String   @unique
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  merchantId    String?
+  merchant      Merchant? @relation(fields: [merchantId], references: [id])
+  applyAmount   Decimal  @db.Decimal(10, 2)
+  actualAmount  Decimal  @db.Decimal(10, 2) @default(0)
+  remark        String?
+  remarkTags    String[] @default([])
+  method        String   @default("wechat") // wechat / bank / alipay
+  account       String?
+  status        String   @default("pending") // pending / approved / rejected / paid / failed
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([merchantId, status])
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  contactName     String
+  contactPhone    String
+  address         String
+  scheduledAt     DateTime
+  spaceTypes      String[] @default([])
+  remark          String?
+  status          String   @default("pending") // pending / confirmed / completed / cancelled
+  merchantId      String?
+  assignedStaffId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([merchantId])
+}
+
+// ============================================================
+// 营销（优惠券 / 限时 / 团购）
+// ============================================================
+model Coupon {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  name            String
+  type            String   // fullReduce / discount / fixed
+  amount          Decimal? @db.Decimal(10, 2)
+  discountPercent Float?
+  threshold       Decimal? @db.Decimal(10, 2)
+  stock           Int      @default(0)
+  received        Int      @default(0)
+  used            Int      @default(0)
+  validFrom       DateTime
+  validTo         DateTime
+  perUserLimit    Int      @default(1)
+  scope           String   @default("all") // all / category / product
+  scopeIds        String[] @default([])
+  status          String   @default("pending") // pending / active / paused / ended
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([merchantId, status])
+}
+
+model FlashSale {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+  productId   String
+  skuId       String?
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int
+  sold        Int      @default(0)
+  startAt     DateTime
+  endAt       DateTime
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+model GroupBuy {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+  productId   String
+  skuId       String?
+  groupSize   Int
+  price       Decimal  @db.Decimal(10, 2)
+  validHours  Int
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+// ============================================================
+// 客服 / 聊天
+// ============================================================
+model ChatSession {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  merchantId    String
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  lastMessageAt DateTime @default(now())
+  unreadCount   Int      @default(0)
+  status        String   @default("open") // open / closed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  messages      ChatMessage[]
+
+  @@unique([userId, merchantId])
+  @@index([merchantId])
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  sessionId  String
+  session    ChatSession @relation(fields: [sessionId], references: [id])
+  sender     String   // user / merchant / system
+  type       String   // text / image / quick / product / order / system
+  content    String
+  meta       Json?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId, createdAt])
+}
+
+model QuickReply {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  label      String
+  content    String
+  sort       Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+// ============================================================
+// 选品广场 / 代理申请
+// ============================================================
+model PlazaPush {
+  id              String   @id @default(cuid())
+  productIds      String[] @default([])
+  factoryIds      String[] @default([])
+  targetType      String   // product / factory
+  positions       String[] @default([])
+  tags            String[] @default([])
+  audience        String   @default("all")
+  scheduledStart  DateTime
+  scheduledEnd    DateTime
+  weight          Int      @default(0)
+  suggestMarkupMin Float?
+  suggestMarkupMax Float?
+  suggestCommission Float?
+  pushText        String?
+  status          String   @default("draft") // draft / pending / active / offline / ended
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+}
+
+model AgencyApplication {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  factoryMerchantId String
+  productIds      String[] @default([])
+  markupPercent   Float    @default(30)
+  autoSyncPrice   Boolean  @default(true)
+  message         String?
+  status          String   @default("pending") // pending / approved / rejected / offline
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([merchantId, status])
+  @@index([factoryMerchantId])
+}
+
+// ============================================================
+// 广告
+// ============================================================
+model AdSlot {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  scene       String?
+  target      String   @default("all") // customer / factory / store / all
+  position    String?
+  size        String?
+  sort        Int      @default(0)
+  unitPrice   Decimal? @db.Decimal(10, 2)
+  enabled     Boolean  @default(true)
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creatives   AdCreative[]
+}
+
+model AdCreative {
+  id          String   @id @default(cuid())
+  slotId      String
+  slot        AdSlot   @relation(fields: [slotId], references: [id])
+  merchantId  String?
+  title       String
+  image       String?
+  video       String?
+  link        String?
+  startAt     DateTime
+  endAt       DateTime
+  budget      Decimal? @db.Decimal(10, 2)
+  spent       Decimal? @db.Decimal(10, 2) @default(0)
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  status      String   @default("pending") // pending / active / paused / ended / rejected
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slotId])
+}
+
+// ============================================================
+// 会员套餐 / 订阅 / 配额 / 缴费
+// ============================================================
+model MemberPlan {
+  id            String   @id @default(cuid())
+  type          String   // basic / ad / addon
+  code          String   @unique
+  name          String
+  price         Decimal  @db.Decimal(10, 2)
+  originalPrice Decimal? @db.Decimal(10, 2)
+  period        String   @default("monthly") // monthly / yearly / weekly / daily / oneoff
+  periodCount   Int      @default(1)
+  hot           Boolean  @default(false)
+  rights        Json     @default("[]") // 权益数组
+  constraints   Json?    // 配额约束 { pushSlots, bannerLimit, impressionLimit, adSlotPriority, ... }
+  trialDays     Int?
+  status        String   @default("active") // active / disabled
+  sort          Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions MerchantMembership[]
+  paymentRecords PaymentRecord[]
+}
+
+model MerchantMembership {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+  planId      String
+  plan        MemberPlan @relation(fields: [planId], references: [id])
+  planCode    String
+  startAt     DateTime
+  endAt       DateTime
+  status      String   @default("active") // trial / active / expired
+  autoRenew   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([merchantId, status])
+}
+
+model UsageQuota {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  planId          String?
+  periodStart     DateTime
+  periodEnd       DateTime
+  // 各项配额（used/limit 存 JSON 灵活）
+  data            Json     @default("{}")
+  // 兼容直接字段
+  pushSlotsUsed   Int      @default(0)
+  pushSlotsLimit  Int      @default(0)
+  bannerUsed      Int      @default(0)
+  bannerLimit     Int      @default(0)
+  impressionUsed  Int      @default(0)
+  impressionLimit Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([merchantId, periodStart])
+  @@index([merchantId])
+}
+
+model PaymentRecord {
+  id            String   @id @default(cuid())
+  no            String   @unique
+  merchantId    String
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  planId        String?
+  plan          MemberPlan? @relation(fields: [planId], references: [id])
+  planName      String
+  planType      String?
+  amount        Decimal  @db.Decimal(10, 2)
+  paymentMethod String   @default("wechat") // wechat / alipay / bank / balance
+  status        String   @default("pending") // pending / paid / refunding / refunded / failed
+  paidAt        DateTime?
+  refundReason  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([merchantId, status])
+}
+
+// ============================================================
+// 功能开关 / 灰度
+// ============================================================
+model FeatureFlag {
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  label              String
+  icon               String?
+  group              String   // home_entry / role_button / side_menu
+  defaultEnabled     Boolean  @default(true)
+  audience           String   @default("all") // all / factory / store / specific
+  specificMerchantIds String[] @default([])
+  grayPercent        Int      @default(100)
+  grayWhitelist      String[] @default([])
+  scheduledAt        DateTime?
+  badge              String?
+  description        String?
+  sort               Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  overrides          MerchantFeatureOverride[]
+
+  @@index([group])
+}
+
+model MerchantFeatureOverride {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  flagKey    String
+  flag       FeatureFlag @relation(fields: [flagKey], references: [key])
+  enabled    Boolean
+  reason     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([merchantId, flagKey])
+}
+
+// ============================================================
+// 审核记录
+// ============================================================
+model AuditRecord {
+  id            String   @id @default(cuid())
+  type          String   // merchant / product
+  targetId      String
+  status        String   // pending / approved / rejected / auto_approved / sample_check
+  auditorId     String?
+  reason        String?
+  autoApproved  Boolean  @default(false)
+  sampleChecked Boolean  @default(false)
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([type, status])
+  @@index([targetId])
+}
+
+// ============================================================
+// 后台角色 / 系统配置 / 文件
+// ============================================================
+model AdminRole {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  permissions String[] @default([])
+  isSystem    Boolean  @default(false)
+  memberCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+}
+
+model SystemConfig {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model UploadedFile {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  url       String
+  size      Int
+  mimeType  String
+  bizType   String
+  ownerId   String?
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([bizType])
+}

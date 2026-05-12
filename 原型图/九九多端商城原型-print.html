@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>经纬科技 · 全量原型线框图 (打印版)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="wireframes.css" />
+<style>
+  /* On-screen tweaks: still readable when previewing the print page */
+  body { background: var(--paper); }
+  .toc-nav { position: static; box-shadow: none; }
+
+  /* Force background colors / shadows to render in print */
+  html, body, * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page { size: A3 landscape; margin: 10mm; }
+
+  @media print {
+    body {
+      background: #fff;
+      background-image: none;
+      font-size: 12px;
+    }
+
+    /* Headers & nav: keep on first page, then never repeat */
+    .doc-header { padding: 16px 20px 12px; break-after: avoid; }
+    .doc-header h1 { font-size: 26px; }
+    .doc-header .sub { font-size: 16px; }
+    .doc-header .meta { font-size: 13px; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+    .toc-nav { display: none; }
+    .doc-foot { break-before: page; padding: 30px; text-align: center; }
+
+    /* Each role (端) starts on a new page */
+    .role-section {
+      break-before: page;
+      padding: 18px 18px 24px;
+      border-bottom: none;
+    }
+    .role-section:first-of-type { break-before: avoid; }
+
+    .role-num { font-size: 60px; }
+    .role-title h2 { font-size: 22px; }
+    .role-title .en { font-size: 14px; }
+    .role-desc { font-size: 12px; margin: 4px 0 10px; }
+
+    /* Sub-sections should try not to split across pages */
+    .sub-section { margin: 10px 0 4px; break-after: avoid; }
+    .sub-section h3 { font-size: 15px; }
+
+    /* Phone rows: allow wrapping; try to keep a row of phones together */
+    .phone-row {
+      gap: 14px 18px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .phone {
+      width: 230px;
+      flex: 0 0 230px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .phone .frame {
+      width: 230px;
+      height: 466px;
+    }
+
+    /* PC windows: each one tries to stay together */
+    .pc-stack { gap: 16px; }
+    .pc {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      box-shadow: none !important;
+    }
+
+    /* Remove any scroll overflow clipping that would hide content in print */
+    .scroll, .pbody, .pc-main, .pc-side {
+      overflow: visible !important;
+    }
+
+    /* Avoid orphaned section headings at the end of a page */
+    h1, h2, h3, h4 { break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <h1>经纬科技 · 多端商城原型线框图</h1>
+  <div class="sub">multi-role e-commerce · low-fi wireframes · v1</div>
+  <div class="meta">
+    <span><b>三端：</b>用户端(小程序) · 商家(APP+PC) · 平台(APP+PC)</span>
+    <span><b>角色：</b>平台管理员 · 厂家 · 门店 · 普通客户 · 分佣客户</span>
+    <span><b>会员：</b>试用 30 天 · 月费 / 年费</span>
+  </div>
+</header>
+
+<nav class="toc-nav">
+  <span class="label">章节 ↓</span>
+  <a href="#user-mini">01 用户端 · 小程序</a>
+  <a href="#merchant-app">02 商家 · APP</a>
+  <a href="#merchant-pc">03 商家 · PC</a>
+  <a href="#platform-app">04 平台 · APP</a>
+  <a href="#platform-pc">05 平台 · PC</a>
+</nav>
+
+<div id="app"></div>
+
+<footer class="doc-foot">
+  <div class="stamp">DRAFT · v1</div>
+  <div style="margin-top:14px">— 一份手稿式的低保真原型，用于结构对齐与流程评审 —</div>
+</footer>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="user-mini.jsx"></script>
+<script type="text/babel" src="merchant-app.jsx"></script>
+<script type="text/babel" src="merchant-pc.jsx"></script>
+<script type="text/babel" src="platform-app.jsx"></script>
+<script type="text/babel" src="platform-pc.jsx"></script>
+
+<script type="text/babel">
+  function App() {
+    return (
+      <React.Fragment>
+        <UMScreens />
+        <MAScreens />
+        <MAPCScreens />
+        <PAScreens />
+        <PAPCScreens />
+      </React.Fragment>
+    );
+  }
+  const root = ReactDOM.createRoot(document.getElementById("app"));
+  root.render(<App />);
+
+  // auto-print after fonts + JSX + React render settle
+  (async () => {
+    try { if (document.fonts && document.fonts.ready) { await document.fonts.ready; } } catch(e) {}
+    await new Promise(r => setTimeout(r, 1200));
+    window.print();
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,114 @@
+# 经纬科技 · 本地全栈 Docker Compose
+# 用法：
+#   docker compose -f deploy/docker-compose.yml up -d           # 启动全部（含 server）
+#   docker compose -f deploy/docker-compose.dev.yml up -d       # 仅依赖（dev 时本地跑 server）
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jiujiu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jiujiu
+      POSTGRES_PASSWORD: jiujiu_dev_pwd
+      POSTGRES_DB: jiujiu_mall
+      TZ: Asia/Shanghai
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U jiujiu']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: jiujiu-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: jiujiu-minio
+    restart: unless-stopped
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin_dev
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: jiujiu-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      until /usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin_dev; do sleep 2; done;
+      /usr/bin/mc mb -p local/jiujiu-mall || true;
+      /usr/bin/mc anonymous set public local/jiujiu-mall || true;
+      echo 'MinIO bucket ready';
+      exit 0;
+      "
+
+  server:
+    build:
+      context: ..
+      dockerfile: packages/server/Dockerfile
+    container_name: jiujiu-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      SERVER_PORT: 3000
+      DATABASE_URL: postgresql://jiujiu:jiujiu_dev_pwd@postgres:5432/jiujiu_mall?schema=public
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: jiujiu-mall
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin_dev
+      JWT_SECRET: ${JWT_SECRET:-please-change-me-in-production}
+    ports:
+      - '3000:3000'
+
+  nginx:
+    image: nginx:alpine
+    container_name: jiujiu-nginx
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

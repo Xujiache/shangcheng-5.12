@@ -1,0 +1,42 @@
+{
+  "pages": [
+    { "path": "pages/auth/login", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
+    { "path": "pages/tabbar/home/index", "style": { "navigationBarTitleText": "平台管理 · 经纬科技" } },
+    { "path": "pages/tabbar/merchant/index", "style": { "navigationBarTitleText": "商户" } },
+    { "path": "pages/tabbar/order/index", "style": { "navigationBarTitleText": "订单" } },
+    { "path": "pages/tabbar/stats/index", "style": { "navigationBarTitleText": "数据" } },
+    { "path": "pages/tabbar/me/index", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/audit/merchant", "style": { "navigationBarTitleText": "商户入驻审核" } },
+    { "path": "pages/audit/product", "style": { "navigationBarTitleText": "商品审核" } },
+    { "path": "pages/merchant/list", "style": { "navigationBarTitleText": "商户列表" } },
+    { "path": "pages/ad/index", "style": { "navigationBarTitleText": "广告管理" } },
+    { "path": "pages/plaza/index", "style": { "navigationBarTitleText": "选品广场推送" } },
+    { "path": "pages/plaza/push", "style": { "navigationBarTitleText": "新建推送" } },
+    { "path": "pages/member/index", "style": { "navigationBarTitleText": "会员&推广套餐" } },
+    { "path": "pages/member/pay-orders", "style": { "navigationBarTitleText": "缴费订单" } },
+    { "path": "pages/feature-flag/index", "style": { "navigationBarTitleText": "商家端功能开关" } },
+    { "path": "pages/permission/index", "style": { "navigationBarTitleText": "权限管理" } },
+    { "path": "pages/system/index", "style": { "navigationBarTitleText": "系统设置" } }
+  ],
+  "globalStyle": {
+    "navigationStyle": "custom",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "平台管理",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F7F8FA"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#86909C",
+    "selectedColor": "#FF4D2D",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/tabbar/home/index", "text": "首页" },
+      { "pagePath": "pages/tabbar/merchant/index", "text": "商户" },
+      { "pagePath": "pages/tabbar/order/index", "text": "订单" },
+      { "pagePath": "pages/tabbar/stats/index", "text": "数据" },
+      { "pagePath": "pages/tabbar/me/index", "text": "我的" }
+    ]
+  }
+}

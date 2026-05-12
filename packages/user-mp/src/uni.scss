@@ -1,0 +1,11 @@
+@use '@jiujiu/shared/tokens.scss' as *;
+
+$uni-color-primary: $brand-primary;
+$uni-color-success: $status-success;
+$uni-color-warning: $status-warning;
+$uni-color-error: $status-error;
+
+$uni-text-color: $text-primary;
+$uni-bg-color: $bg-card;
+$uni-bg-color-grey: $bg-page;
+$uni-border-color: $border-default;

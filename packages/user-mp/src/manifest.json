@@ -1,0 +1,29 @@
+{
+  "name": "经纬科技",
+  "appid": "__UNI__JINGWEI_UM",
+  "description": "经纬科技 · 用户端微信小程序",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "wx0000000000000000",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true,
+      "postcss": true
+    },
+    "usingComponents": true,
+    "permission": {
+      "scope.userLocation": {
+        "desc": "获取您的位置以便推荐附近门店"
+      }
+    }
+  },
+  "h5": {
+    "title": "经纬科技",
+    "router": { "mode": "hash" },
+    "devServer": { "port": 8081 }
+  },
+  "vueVersion": "3"
+}

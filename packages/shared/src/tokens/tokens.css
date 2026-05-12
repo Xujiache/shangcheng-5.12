@@ -1,0 +1,113 @@
+/* ============================================
+ * 经纬科技 · Design Tokens · CSS 版
+ * 用作 :root CSS 变量，所有端通用
+ * ============================================ */
+
+:root {
+  /* ============ 品牌色 ============ */
+  --brand-primary: #ff4d2d;
+  --brand-primary-hover: #ff6e4d;
+  --brand-primary-active: #e63d1f;
+  --brand-primary-light: #ffe9e2;
+  --brand-primary-ghost: #fff5f2;
+  --brand-secondary: #ffb84d;
+  --brand-secondary-hover: #ffc971;
+  --brand-gradient: linear-gradient(135deg, #ff6e4d 0%, #ff4d2d 100%);
+
+  /* ============ 文字 ============ */
+  --text-primary: #1a1a2e;
+  --text-secondary: #4e5969;
+  --text-tertiary: #86909c;
+  --text-disabled: #c9cdd4;
+  --text-inverse: #ffffff;
+  --text-link: #165dff;
+  --text-danger: #f53f3f;
+
+  /* ============ 背景 ============ */
+  --bg-page: #f7f8fa;
+  --bg-card: #ffffff;
+  --bg-hover: #f2f3f5;
+  --bg-active: #e5e6eb;
+  --bg-mask: rgba(0, 0, 0, 0.55);
+  --bg-spotlight: rgba(255, 77, 45, 0.05);
+
+  /* ============ 边框 ============ */
+  --border-default: #e5e6eb;
+  --border-light: #f2f3f5;
+  --border-dark: #c9cdd4;
+  --border-focus: #ff4d2d;
+
+  /* ============ 状态 ============ */
+  --status-success: #00b42a;
+  --status-success-bg: #e8ffea;
+  --status-warning: #ff7d00;
+  --status-warning-bg: #fff7e8;
+  --status-error: #f53f3f;
+  --status-error-bg: #ffece8;
+  --status-info: #165dff;
+  --status-info-bg: #e8f3ff;
+  --status-highlight: #ffd43b;
+  --status-highlight-bg: #fffbe6;
+
+  /* ============ 业务色 ============ */
+  --price-retail: #ff4d2d;
+  --price-wholesale: #1677ff;
+  --price-member: #722ed1;
+  --price-original: #86909c;
+  --color-commission: #00b42a;
+  --color-vip: #d4a038;
+
+  /* ============ 间距 ============ */
+  --spacing-1: 2px;
+  --spacing-2: 4px;
+  --spacing-3: 6px;
+  --spacing-4: 8px;
+  --spacing-6: 12px;
+  --spacing-8: 16px;
+  --spacing-12: 24px;
+  --spacing-16: 32px;
+  --spacing-20: 40px;
+  --spacing-24: 48px;
+
+  /* ============ 字号 ============ */
+  --font-family-base:
+    'HarmonyOS Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ============ 圆角 ============ */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-base: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* ============ 阴影 ============ */
+  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  --shadow-base: 0 4px 8px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 24px 0 rgba(0, 0, 0, 0.12);
+  --shadow-brand: 0 6px 16px 0 rgba(255, 77, 45, 0.25);
+
+  /* ============ z-index ============ */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal: 1000;
+  --z-popover: 1100;
+  --z-tooltip: 1200;
+  --z-toast: 1300;
+}
