@@ -9,7 +9,50 @@
  *   mp-weixin 在多数客户端版本没有全局 btoa；
  *   uni.arrayBufferToBase64 全端都有但需要 ArrayBuffer；
  *   SVG 全是 ASCII，可直接按字符码 → 字节 → base64。
+ *
+ * 为什么要 resolveColor：
+ *   SVG 在 data URI 沙箱里渲染，外层 CSS 变量进不去。
+ *   调用方传 color="var(--brand-primary)" 时，SVG 拿到的是字面量字符串，
+ *   渲染失败。这里维护一份 token 镜像，把 var(--xxx) 解析成真实 hex。
+ *   tokens 源在 packages/shared/src/tokens/tokens.css。
  */
+
+const TOKEN_COLORS: Record<string, string> = {
+  'brand-primary': '#ff4d2d',
+  'brand-primary-hover': '#ff6e4d',
+  'brand-primary-active': '#e63d1f',
+  'brand-secondary': '#ffb84d',
+  'text-primary': '#1a1a2e',
+  'text-secondary': '#4e5969',
+  'text-tertiary': '#86909c',
+  'text-disabled': '#c9cdd4',
+  'text-inverse': '#ffffff',
+  'text-link': '#165dff',
+  'text-danger': '#f53f3f',
+  'border-default': '#e5e6eb',
+  'border-light': '#f2f3f5',
+  'border-dark': '#c9cdd4',
+  'status-success': '#00b42a',
+  'status-warning': '#ff7d00',
+  'status-error': '#f53f3f',
+  'status-info': '#165dff',
+  'status-highlight': '#ffd43b',
+  'price-retail': '#ff4d2d',
+  'price-wholesale': '#1677ff',
+  'price-member': '#722ed1',
+  'color-commission': '#00b42a',
+  'color-vip': '#d4a038',
+}
+
+/** 把 "var(--brand-primary)" 解析成 "#ff4d2d"；非 var 形态原样返回 */
+export function resolveColor(color: string): string {
+  if (!color) return '#1F2329'
+  const m = color.match(/^var\(\s*--([\w-]+)\s*(?:,\s*([^)]+))?\)$/)
+  if (!m) return color
+  const tokenName = m[1]
+  const fallback = m[2]?.trim()
+  return TOKEN_COLORS[tokenName] || fallback || '#1F2329'
+}
 
 const B64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
@@ -41,17 +84,19 @@ export function svgToDataUri(svg: string): string {
 
 /** 24x24 线条图标：fill=none，描边色由调用方指定 */
 export function lineIcon(d: string, color: string, strokeWidth = 1.6): string {
+  const c = resolveColor(color)
   const svg =
     `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' ` +
-    `stroke='${color}' stroke-width='${strokeWidth}' stroke-linecap='round' ` +
+    `stroke='${c}' stroke-width='${strokeWidth}' stroke-linecap='round' ` +
     `stroke-linejoin='round'><path d='${d}'/></svg>`
   return svgToDataUri(svg)
 }
 
 /** 24x24 填充图标：fill=color，stroke=none */
 export function fillIcon(d: string, color: string): string {
+  const c = resolveColor(color)
   const svg =
     `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' ` +
-    `fill='${color}' stroke='none'><path d='${d}'/></svg>`
+    `fill='${c}' stroke='none'><path d='${d}'/></svg>`
   return svgToDataUri(svg)
 }
