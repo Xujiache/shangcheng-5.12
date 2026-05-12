@@ -15,7 +15,8 @@ import Icon from '../../components/icon/icon.vue'
 const orderId = ref('')
 const orderNo = ref('')
 const amount = ref(0)
-const method = ref<'wechat' | 'balance' | 'alipay'>('wechat')
+// 仅保留微信内的微信原生支付
+const method = ref<'wechat'>('wechat')
 const seconds = ref(15 * 60)
 const paying = ref(false)
 let timer: any
@@ -52,23 +53,58 @@ const timeStr = computed(() => {
 })
 
 const METHODS = [
-  { key: 'wechat', icon: 'wechat', label: '微信支付', desc: '推荐', tint: '#3CB244' },
-  { key: 'alipay', icon: 'apple-pay', label: '支付宝', desc: '', tint: '#1296DB' },
-  { key: 'balance', icon: 'wallet', label: '余额支付', desc: '余额 ¥0.00', tint: '#FF7A45' },
+  { key: 'wechat', icon: 'wechat', label: '微信支付', desc: '微信小程序内原生支付', tint: '#3CB244' },
 ]
 
+/**
+ * 用户端只走微信小程序内原生支付：
+ *   1. 后端 POST /api/v1/u/orders/:id/pay 返回 miniPay
+ *   2. uni.requestPayment(miniPay) 调起微信支付
+ *   3. 微信回调 /api/v1/payments/wechat/notify 真正标订单已付
+ *
+ * mock 模式（商户号未配齐）：后端直接把订单标已付 + 回 mockPaid:true，前端跳过 requestPayment
+ */
 async function pay() {
   paying.value = true
   uni.showLoading({ title: '支付中…', mask: true })
   try {
-    await orderService.pay(orderId.value, method.value)
+    const resp: any = await orderService.pay(orderId.value, method.value)
     uni.hideLoading()
-    uni.showToast({ title: '支付成功', icon: 'success' })
-    setTimeout(() => {
-      uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' })
-    }, 1200)
-  } catch {
+
+    if (resp?.mockPaid) {
+      uni.showToast({ title: '支付成功', icon: 'success' })
+      setTimeout(() => uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' }), 1200)
+      return
+    }
+
+    if (resp?.miniPay) {
+      const mp = resp.miniPay
+      // @ts-ignore — uni 平台 API
+      uni.requestPayment({
+        provider: 'wxpay',
+        timeStamp: mp.timeStamp,
+        nonceStr: mp.nonceStr,
+        package: mp.package,
+        signType: mp.signType || 'RSA',
+        paySign: mp.paySign,
+        success: () => {
+          uni.showToast({ title: '支付成功', icon: 'success' })
+          setTimeout(
+            () => uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' }),
+            1200,
+          )
+        },
+        fail: (err: any) => {
+          const msg = err?.errMsg?.includes('cancel') ? '已取消支付' : '支付失败'
+          uni.showToast({ title: msg, icon: 'none' })
+        },
+      })
+    } else {
+      uni.showToast({ title: '支付参数缺失', icon: 'none' })
+    }
+  } catch (e: any) {
     uni.hideLoading()
+    uni.showToast({ title: e?.message || '支付失败', icon: 'none' })
   } finally {
     paying.value = false
   }

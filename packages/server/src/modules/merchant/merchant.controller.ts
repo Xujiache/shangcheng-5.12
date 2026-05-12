@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { MerchantService } from './merchant.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
@@ -253,6 +253,35 @@ export class MerchantController {
   }
   @Post('plaza/agency') async applyAgency(@CurrentUser() u: AuthUser, @Body() dto: any) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.applyAgency(mid, dto)
+  }
+  @Get('plaza/applications') async myAgencyApplications(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.myAgencyApplications(mid, q)
+  }
+  @Patch('plaza/applications/:id') async updateAgencyApp(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: { myRetailPrice?: number; markupRatio?: number; status?: string },
+  ) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.updateAgencyApplication(mid, id, dto)
+  }
+  @Delete('plaza/applications/:id') async cancelAgencyApp(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.cancelAgencyApplication(mid, id)
+  }
+
+  // ============ 商户资料（merchant-app 个人信息编辑） ============
+  @Get('profile') async myProfile(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.getProfile(mid)
+  }
+  @Patch('profile') async updateProfile(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.updateProfile(mid, dto)
+  }
+
+  // ============ 店铺级价格显示规则（持久化到 SystemConfig，key: shop:<merchantId>:priceRule） ============
+  @Get('shop/price-rule') async getPriceRule(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.getShopPriceRule(mid)
+  }
+  @Put('shop/price-rule') async putPriceRule(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.setShopPriceRule(mid, dto)
   }
 
   // ============ 功能开关 ============

@@ -4,10 +4,14 @@ import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
 import { orderNo } from '../../common/utils/id.util'
+import { WxPayService } from '../payment/wxpay.service'
 
 @Injectable()
 export class UserMpService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly wxpay: WxPayService,
+  ) {}
 
   // ========== 商品 ==========
   async listProducts(q: any) {
@@ -125,19 +129,46 @@ export class UserMpService {
     return { orderId: order.id, orderNo: order.no, payAmount: Number(order.payAmount) }
   }
 
-  async payOrder(userId: string, id: string, method: string) {
+  /**
+   * 用户发起支付：
+   *   - method='wechat'（默认/唯一）：调微信支付 JSAPI 拿 prepay 参数，前端用 uni.requestPayment 调起
+   *   - 商户号未配齐时，返回 mock prepay + 立即把订单标记为已付（保持预览体验）
+   *
+   * 真正"付款成功"的标记由微信回调 /api/v1/payments/wechat/notify 触发；
+   * 这个接口只负责"准备付款参数"。
+   */
+  async payOrder(userId: string, id: string, _method: string) {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
-    if (o.status !== 'pending_payment') throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单状态不允许支付')
-    // mock 支付
-    await this.prisma.payment.create({
-      data: { orderId: o.id, method, amount: o.payAmount, status: 'success', paidAt: new Date() },
+    if (o.status !== 'pending_payment') {
+      throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单状态不允许支付')
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    const openid = user?.openid || ''
+
+    // 调 WxPay 生成小程序调起支付参数
+    const pay = await this.wxpay.createMiniPay({
+      outTradeNo: o.no,
+      description: `订单 ${o.no}`,
+      totalFen: Math.round(Number(o.payAmount) * 100),
+      openid,
+      attach: o.id,
     })
-    await this.prisma.order.update({
-      where: { id: o.id },
-      data: { status: 'pending_shipment', paymentMethod: method, paidAt: new Date() },
-    })
-    return { ok: true }
+
+    // 商户号未配齐 → mock 模式：直接把订单设为已付，保留预览体验
+    if (!this.wxpay.isReady()) {
+      await this.prisma.payment.create({
+        data: { orderId: o.id, method: 'wechat', amount: o.payAmount, status: 'success', paidAt: new Date() },
+      })
+      await this.prisma.order.update({
+        where: { id: o.id },
+        data: { status: 'pending_shipment', paymentMethod: 'wechat', paidAt: new Date() },
+      })
+      return { ok: true, mockPaid: true, miniPay: pay }
+    }
+
+    return { ok: true, mockPaid: false, miniPay: pay }
   }
 
   async confirmOrder(userId: string, id: string) {
@@ -372,5 +403,96 @@ export class UserMpService {
       },
     })
     return { ok: true, applyId: m.id }
+  }
+
+  // ========== 店铺价格规则 (user-mp 端读取) ==========
+  async shopPriceRule(merchantId: string) {
+    const cfg = await this.prisma.systemConfig.findUnique({
+      where: { key: `shop:${merchantId}:priceRule` },
+    })
+    const DEFAULT = {
+      guestAllow: false,
+      customerPrice: 'retail',
+      agencyPrice: 'wholesale',
+      memberPrice: 'member',
+    }
+    return { ...DEFAULT, ...((cfg?.value as any) || {}) }
+  }
+
+  // ========== 在线客服（用户端） ==========
+
+  async chatSessions(userId: string) {
+    const sessions = await this.prisma.chatSession.findMany({
+      where: { userId },
+      orderBy: { lastMessageAt: 'desc' },
+      include: { merchant: { select: { id: true, name: true } } },
+    })
+    const out: any[] = []
+    for (const s of sessions) {
+      const last = await this.prisma.chatMessage.findFirst({
+        where: { sessionId: s.id },
+        orderBy: { createdAt: 'desc' },
+      })
+      out.push({
+        id: s.id,
+        merchantId: s.merchantId,
+        merchantName: s.merchant?.name || '商户',
+        lastContent: last?.content || '',
+        lastSender: last?.sender || '',
+        lastAt: last?.createdAt || s.lastMessageAt,
+        unreadCount: s.unreadCount,
+        status: s.status,
+      })
+    }
+    return out
+  }
+
+  async ensureChatSession(userId: string, merchantId: string) {
+    if (!merchantId) {
+      const m = await this.prisma.merchant.findFirst({ where: { status: 'active' } })
+      if (!m) throw new BizException(BizCode.NOT_FOUND, '当前无可用商户')
+      merchantId = m.id
+    }
+    const existing = await this.prisma.chatSession.findUnique({
+      where: { userId_merchantId: { userId, merchantId } },
+    })
+    if (existing) return { id: existing.id, merchantId: existing.merchantId }
+    const created = await this.prisma.chatSession.create({
+      data: { userId, merchantId, status: 'open' },
+    })
+    return { id: created.id, merchantId: created.merchantId }
+  }
+
+  async chatMessages(userId: string, sessionId: string) {
+    const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, userId } })
+    if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    return this.prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    })
+  }
+
+  async chatSend(userId: string, sessionId: string, type: string, content: string) {
+    const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, userId } })
+    if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    const m = await this.prisma.chatMessage.create({
+      data: { sessionId, sender: 'user', type, content, read: false },
+    })
+    await this.prisma.chatSession.update({
+      where: { id: sessionId },
+      data: { lastMessageAt: new Date(), unreadCount: { increment: 1 } },
+    })
+    return m
+  }
+
+  async chatMarkRead(userId: string, sessionId: string) {
+    const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, userId } })
+    if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    await this.prisma.chatMessage.updateMany({
+      where: { sessionId, sender: 'merchant', read: false },
+      data: { read: true },
+    })
+    return { ok: true }
   }
 }

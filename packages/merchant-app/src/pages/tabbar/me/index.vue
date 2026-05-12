@@ -6,7 +6,8 @@
  * 会员卡：月费 ¥99 / 年费 ¥899 · 试用 30 天 + 续费 CTA
  * 设置列表：分享 / 个人信息 / 系统设置 / 检查更新 / 联系我们
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '../../../store'
 import StatusTag from '../../../components/status-tag/status-tag.vue'
 import Icon from '../../../components/icon/icon.vue'
@@ -20,6 +21,23 @@ const merchant = ref({
   vip: '年费',
   daysLeft: 287,
 })
+
+/** 从 profile 编辑页持久化的字段中同步显示（店名 / 商户号） */
+function syncFromProfile() {
+  try {
+    const raw = uni.getStorageSync('merchant_profile')
+    if (!raw) return
+    const data = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (data?.shopName) merchant.value.shopName = data.shopName
+    if (data?.merchantNo) merchant.value.merchantNo = data.merchantNo
+  } catch {
+    // ignore
+  }
+}
+
+onMounted(syncFromProfile)
+// 每次回到本页都重新读一次（profile 页改完返回时刷新展示）
+onShow(syncFromProfile)
 
 const SETTINGS = [
   { icon: 'share', label: '分享小程序', action: 'share' },
@@ -44,12 +62,7 @@ function handle(action: string) {
             icon: 'success',
           }),
       }),
-    profile: () =>
-      uni.showModal({
-        title: '个人信息',
-        content: `店名：${merchant.value.shopName}\n商户号：${merchant.value.merchantNo}\n联系手机：138****1234\n经营品类：家具 / 灯具`,
-        showCancel: false,
-      }),
+    profile: () => uni.navigateTo({ url: '/pages/me/profile' }),
     settings: () =>
       uni.showActionSheet({
         itemList: ['清除缓存', '推送通知', '夜间模式', '语言切换'],

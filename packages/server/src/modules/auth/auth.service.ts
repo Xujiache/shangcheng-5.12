@@ -4,6 +4,7 @@ import * as argon2 from 'argon2'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { AdminLoginDto, PhoneLoginDto, RefreshDto, SmsCodeDto, WechatLoginDto } from './dto/login.dto'
+import { SmsService } from '../sms/sms.service'
 
 export interface TokenPair {
   accessToken: string
@@ -16,6 +17,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly sms: SmsService,
   ) {}
 
   private async signTokens(payload: { sub: string; role: string; merchantId?: string }): Promise<TokenPair> {
@@ -40,13 +42,55 @@ export class AuthService {
   }
 
   /** 微信小程序登录（mock：根据 code 创建/查找用户） */
+  /**
+   * 微信小程序登录
+   * dto.code = wx.login() 返回的临时 code
+   *
+   * 流程：
+   *   1. 拿 code + appid + secret 调 https://api.weixin.qq.com/sns/jscode2session
+   *      → 拿到 openid / unionid / session_key
+   *   2. 通过 openid 查/建 User
+   *   3. 签发 JWT
+   *
+   * 配置：环境变量 WX_MINIAPP_APPID / WX_MINIAPP_SECRET
+   * 占位/降级：如果 env 未配或 code 调用失败，仍走 mock openid 流程，避免开发期阻塞
+   */
   async wechatLogin(dto: WechatLoginDto) {
-    const openid = dto.code ? `wx_${dto.code.slice(0, 16)}` : `wx_anon_${Date.now()}`
+    const appid = process.env.WX_MINIAPP_APPID
+    const secret = process.env.WX_MINIAPP_SECRET
+    let openid: string | null = null
+    let unionid: string | null = null
+
+    if (appid && secret && dto.code) {
+      try {
+        const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appid}&secret=${secret}&js_code=${encodeURIComponent(dto.code)}&grant_type=authorization_code`
+        const r = await fetch(url, { method: 'GET' })
+        const data: any = await r.json()
+        if (data?.errcode && data.errcode !== 0) {
+          // 40029 = invalid code, 45011 = frequency limit, etc.
+          throw new BizException(BizCode.INVALID_PARAMS, `微信登录失败：${data.errmsg || data.errcode}`)
+        }
+        if (data?.openid) {
+          openid = data.openid
+          unionid = data.unionid || null
+        }
+      } catch (e: any) {
+        if (e instanceof BizException) throw e
+        // 网络故障：fall through 到 mock 兜底，避免本地开发阻塞
+      }
+    }
+
+    // 兜底 mock：未配置 appid/secret 或 fetch 失败
+    if (!openid) {
+      openid = dto.code ? `wx_${dto.code.slice(0, 16)}` : `wx_anon_${Date.now()}`
+    }
+
     let user = await this.prisma.user.findUnique({ where: { openid } })
     if (!user) {
       user = await this.prisma.user.create({
         data: {
           openid,
+          unionid: unionid || undefined,
           nickname: '微信用户',
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${openid}`,
           role: 'customer',
@@ -88,9 +132,18 @@ export class AuthService {
     return { user: this.toUser(user), ...tokens, expiresAt: Date.now() + tokens.expiresIn * 1000 }
   }
 
-  /** 发送短信验证码（dev 直接返回 0000） */
+  /**
+   * 发送短信验证码
+   * - 非生产 / SMS_PROVIDER=none 时，code 固定为 '0000'，DB 落库后 phone-login 永远接受 '0000'
+   * - 生产 + SMS_PROVIDER 配置完整时：生成 6 位随机码，调真实短信通道
+   */
   async sendSmsCode(dto: SmsCodeDto) {
-    const code = process.env.NODE_ENV === 'production' ? String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6) : '0000'
+    const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
+    const useRealSms = provider !== 'none' && process.env.NODE_ENV === 'production'
+    const code = useRealSms
+      ? String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)
+      : '0000'
+
     await this.prisma.smsCode.create({
       data: {
         phone: dto.phone,
@@ -99,7 +152,11 @@ export class AuthService {
         expiresAt: new Date(Date.now() + 5 * 60_000),
       },
     })
-    // 生产应调用阿里云/腾讯云 SMS
+
+    // 真实发送（失败不阻塞用户，因为 0000 兜底 + DB 表里仍能查码）
+    if (useRealSms) {
+      await this.sms.sendVerifyCode(dto.phone, code, (dto.scene || 'login') as any)
+    }
     return { ok: true }
   }
 

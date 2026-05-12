@@ -6,8 +6,14 @@ import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { addressService } from '../../services'
 import type { Address } from '../../services'
+import { useTencentMap } from '../../composables/useTencentMap'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
+
+const tmap = useTencentMap()
+const showMapPick = ref(false)
+const mapPickKeyword = ref('')
+const mapPickResults = ref<{ lat: number; lng: number; name?: string; address?: string }[]>([])
 
 const editingId = ref('')
 const submitting = ref(false)
@@ -66,6 +72,42 @@ async function submit() {
   }
 }
 
+/**
+ * 在地图上选位置
+ * - mp-weixin: uni.chooseLocation 原生选点
+ * - H5: 自定义抽屉 + 腾讯位置 POI 搜索
+ */
+function pickOnMap() {
+  // #ifdef MP-WEIXIN
+  uni.chooseLocation({
+    success: (res: any) => {
+      form.region = res.address || form.region
+      // 把名称 + 详细拼上去
+      const detail = [res.name, res.address].filter(Boolean).join(' · ')
+      if (detail) form.detail = detail
+    },
+  })
+  return
+  // #endif
+
+  showMapPick.value = true
+  mapPickKeyword.value = form.detail || form.region || ''
+  doSearch()
+}
+
+async function doSearch() {
+  const kw = mapPickKeyword.value.trim()
+  if (!kw) return
+  mapPickResults.value = await tmap.searchPlaces(kw)
+}
+
+function pickResult(item: { lat: number; lng: number; name?: string; address?: string }) {
+  if (item.address) form.region = item.address
+  const detail = [item.name, item.address].filter(Boolean).join(' · ')
+  if (detail) form.detail = detail
+  showMapPick.value = false
+}
+
 function chooseRegion() {
   const items = ['上海市浦东新区', '上海市黄浦区', '北京市朝阳区', '广东省深圳市福田区', '浙江省杭州市西湖区', '其它（手动输入）']
   uni.showActionSheet({
@@ -108,6 +150,12 @@ function chooseRegion() {
         <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
       </view>
       <view class="divider" />
+      <view class="field row" @click="pickOnMap">
+        <text class="label">地图选址</text>
+        <text class="value placeholder">在地图上搜索 / 选择位置</text>
+        <Icon name="location-pin" :size="28" color="var(--brand-primary)" />
+      </view>
+      <view class="divider" />
       <view class="field">
         <text class="label">详细地址</text>
         <textarea
@@ -118,6 +166,45 @@ function chooseRegion() {
         />
       </view>
     </view>
+
+    <!-- H5 端：地图选址弹层（mp-weixin 走原生 chooseLocation，不进这里） -->
+    <!-- #ifndef MP-WEIXIN -->
+    <view v-if="showMapPick" class="mpick-mask" @click="showMapPick = false">
+      <view class="mpick-sheet" @click.stop>
+        <view class="mpick-head">
+          <text class="mpick-title">地图选址</text>
+          <text class="mpick-close" @click="showMapPick = false">关闭</text>
+        </view>
+        <view class="mpick-search">
+          <input
+            v-model="mapPickKeyword"
+            class="mpick-input"
+            placeholder="输入小区 / 楼宇 / 地址关键词"
+            confirm-type="search"
+            @confirm="doSearch"
+          />
+          <view class="mpick-btn" @click="doSearch">搜索</view>
+        </view>
+        <scroll-view scroll-y class="mpick-list">
+          <view v-if="!mapPickResults.length" class="mpick-empty">
+            <text>输入关键词后点搜索</text>
+          </view>
+          <view
+            v-for="(r, i) in mapPickResults"
+            :key="`${r.lat}-${r.lng}-${i}`"
+            class="mpick-item"
+            @click="pickResult(r)"
+          >
+            <Icon name="location-pin" :size="32" color="var(--brand-primary)" />
+            <view class="mpick-item-info">
+              <text class="mpick-item-name">{{ r.name || '未命名' }}</text>
+              <text class="mpick-item-addr">{{ r.address || '' }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+    <!-- #endif -->
 
     <view class="card">
       <view class="field row toggle" @click="form.isDefault = !form.isDefault">
@@ -233,4 +320,77 @@ function chooseRegion() {
   }
   &::after { border: none; }
 }
+
+/* ============ 地图选址弹层 ============ */
+.mpick-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+}
+.mpick-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  max-height: 76vh;
+  display: flex;
+  flex-direction: column;
+}
+.mpick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid #f0f2f5;
+}
+.mpick-title { font-size: 30rpx; font-weight: 700; color: #303133; }
+.mpick-close { font-size: 26rpx; color: #ff4d2d; font-weight: 600; }
+.mpick-search {
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx 24rpx;
+  border-bottom: 1rpx solid #f5f6f8;
+}
+.mpick-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 20rpx;
+  background: #f5f6f8;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+}
+.mpick-btn {
+  padding: 0 28rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  background: linear-gradient(135deg, #ff4d2d, #ff7a45);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+.mpick-list {
+  flex: 1;
+  height: 0;
+  padding: 12rpx 0;
+}
+.mpick-empty {
+  padding: 80rpx 0;
+  text-align: center;
+  color: #909399;
+  font-size: 24rpx;
+}
+.mpick-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid #f5f6f8;
+  &:active { background: #fafbfc; }
+}
+.mpick-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.mpick-item-name { font-size: 28rpx; font-weight: 600; color: #303133; }
+.mpick-item-addr { font-size: 22rpx; color: #909399; }
 </style>

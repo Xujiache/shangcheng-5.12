@@ -1,73 +1,84 @@
-<!-- 平台 PC · 数据驾驶舱（S5-T1）-->
+<!-- 平台 PC · 工作台首页（待办 + 快捷入口；详细数据见 数据中心） -->
 <template>
   <div class="pf-dashboard">
-    <div class="pf-page-header">
-      <div>
-        <h2 class="m-0 text-xl font-semibold">数据驾驶舱</h2>
-        <p class="mt-1 text-sm text-g-500">平台总览 · 实时数据 · 待办处理</p>
-      </div>
-      <ElButton :icon="Refresh" @click="load" plain>刷新</ElButton>
-    </div>
-
-    <!-- KPI 4 卡 -->
-    <div class="pf-kpi-row">
-      <ArtStatsCard
-        v-for="k in kpis"
-        :key="k.title"
-        :title="k.title"
-        :count="k.count"
-        :description="k.desc"
-        :icon="k.icon"
-        :iconStyle="k.iconStyle"
-        separator=","
-      />
-    </div>
-
-    <!-- 注册趋势 -->
-    <ElCard shadow="hover" class="pf-card">
-      <template #header>
-        <div class="pf-card__title">
-          <span>近 14 日新用户注册</span>
-          <span class="text-xs text-g-500">合计 {{ totalReg }} 人</span>
+    <!-- 顶部欢迎条 -->
+    <div class="pf-hero">
+      <div class="pf-hero__bg" />
+      <div class="pf-hero__content">
+        <div>
+          <h2 class="pf-hero__title">{{ greeting }}，欢迎回来 👋</h2>
+          <p class="pf-hero__sub">
+            待办 <b class="pf-hero__num">{{ totalTodos }}</b> 项 · 详细数据请前往
+            <a class="pf-hero__link" @click="go('/platform/data-center')">数据中心</a>
+          </p>
         </div>
-      </template>
-      <ArtLineChart
-        v-if="trendData.length"
-        height="280px"
-        :data="trendData"
-        :x-axis-data="trendXAxis"
-        show-area-color
-      />
-    </ElCard>
+        <div class="pf-hero__date">
+          <div class="pf-hero__weekday">{{ today.weekday }}</div>
+          <div class="pf-hero__day">{{ today.day }}</div>
+          <div class="pf-hero__month">{{ today.month }}月 · {{ today.year }}</div>
+        </div>
+      </div>
+    </div>
 
     <div class="pf-grid-2">
       <!-- 待办 -->
-      <ElCard shadow="hover" class="pf-card pf-todo">
+      <ElCard shadow="never" class="pf-card pf-todo-card" v-loading="loading">
         <template #header>
           <div class="pf-card__title">
-            <span><ArtSvgIcon icon="ri:flashlight-line" class="text-primary" /> 待办</span>
-            <ElTag size="small" type="danger">{{ totalTodos }}</ElTag>
+            <span class="pf-card__title-text">
+              <ArtSvgIcon icon="ri:flashlight-fill" class="pf-card__title-icon" />
+              待办处理
+            </span>
+            <ElTag v-if="totalTodos > 0" size="small" type="danger" round>
+              {{ totalTodos }} 项待处理
+            </ElTag>
+            <ElTag v-else size="small" type="success" round>全部处理完毕</ElTag>
           </div>
         </template>
         <div class="pf-todo__list">
-          <div v-for="t in todoList" :key="t.key" class="pf-todo__row" @click="onTodo(t)">
+          <div
+            v-for="t in todoList"
+            :key="t.key"
+            class="pf-todo__row"
+            :class="{ 'pf-todo__row--empty': t.count === 0 }"
+            @click="onTodo(t)"
+          >
             <div class="pf-todo__icon" :style="{ background: t.tint + '18', color: t.tint }">
               <ArtSvgIcon :icon="t.icon" />
             </div>
-            <span class="flex-1">{{ t.label }}</span>
-            <ElBadge v-if="t.count > 0" :value="t.count" :max="99" type="primary" />
-            <span v-else class="text-xs text-g-500">已清空</span>
-            <ArtSvgIcon icon="ri:arrow-right-s-line" class="text-g-400" />
+            <div class="pf-todo__body">
+              <div class="pf-todo__label">{{ t.label }}</div>
+              <div class="pf-todo__desc">{{ t.desc }}</div>
+            </div>
+            <div class="pf-todo__count">
+              <ElBadge v-if="t.count > 0" :value="t.count" :max="99" type="primary" />
+              <span v-else class="pf-todo__empty">— 已清空</span>
+            </div>
+            <ArtSvgIcon icon="ri:arrow-right-s-line" class="pf-todo__arrow" />
           </div>
         </div>
       </ElCard>
 
       <!-- 快捷入口 -->
-      <ElCard shadow="hover" class="pf-card">
-        <template #header><div class="pf-card__title"><span>快捷入口</span></div></template>
+      <ElCard shadow="never" class="pf-card pf-entries-card">
+        <template #header>
+          <div class="pf-card__title">
+            <span class="pf-card__title-text">
+              <ArtSvgIcon icon="ri:apps-2-fill" class="pf-card__title-icon" />
+              快捷入口
+            </span>
+            <span class="text-xs text-g-500">{{ entries.length }} 个常用功能</span>
+          </div>
+        </template>
         <div class="pf-entries">
-          <div v-for="e in entries" :key="e.key" class="pf-entry" @click="go(e.to)">
-            <div class="pf-entry__icon" :style="{ background: e.tint + '18', color: e.tint }">
+          <div
+            v-for="e in entries"
+            :key="e.key"
+            class="pf-entry"
+            :style="{ '--entry-tint': e.tint }"
+            @click="go(e.to)"
+          >
+            <div class="pf-entry__icon" :style="{ background: `linear-gradient(135deg, ${e.tint}, ${e.tint}cc)` }">
               <ArtSvgIcon :icon="e.icon" />
             </div>
             <span class="pf-entry__label">{{ e.label }}</span>
@@ -81,7 +92,6 @@
 <script setup lang="ts">
   import { fetchPlatformDashboard } from '@/api/platform-business'
   import type { PlatformDashboard } from '@jiujiu/shared/types'
-  import { Refresh } from '@element-plus/icons-vue'
   import { ElMessage } from 'element-plus'
   import { useRouter } from 'vue-router'
 
@@ -89,43 +99,92 @@
 
   const router = useRouter()
   const data = ref<PlatformDashboard>()
+  const loading = ref(false)
 
-  const kpis = computed(() => {
-    const o = data.value?.overview
-    return [
-      { title: '商户总数', count: o?.merchants ?? 0, desc: `今日 +${o?.merchantsDelta ?? 0}`, icon: 'ri:store-2-line', iconStyle: { color: '#FF4D2D', backgroundColor: '#FF4D2D18' } },
-      { title: '订单总数', count: o?.orders ?? 0, desc: `今日 +${o?.ordersDelta ?? 0}`, icon: 'ri:bill-line', iconStyle: { color: '#FF7A45', backgroundColor: '#FF7A4518' } },
-      { title: '平台 GMV', count: o?.gmv ?? 0, desc: `+${o?.gmvDelta ?? 0}%`, icon: 'ri:money-cny-circle-line', iconStyle: { color: '#10B981', backgroundColor: '#10B98118' } },
-      { title: '用户总数', count: o?.users ?? 0, desc: `今日 +${o?.usersDelta ?? 0}`, icon: 'ri:user-3-line', iconStyle: { color: '#A855F7', backgroundColor: '#A855F718' } }
-    ]
+  /* ====== 顶部 hero ====== */
+  const now = new Date()
+  const greeting = computed(() => {
+    const h = now.getHours()
+    if (h < 6) return '深夜好'
+    if (h < 12) return '早上好'
+    if (h < 14) return '中午好'
+    if (h < 18) return '下午好'
+    return '晚上好'
   })
+  const today = {
+    weekday: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()],
+    day: String(now.getDate()).padStart(2, '0'),
+    month: String(now.getMonth() + 1).padStart(2, '0'),
+    year: now.getFullYear()
+  }
 
-  const trend14 = computed(() => data.value?.registrationTrend?.slice(-14) || [])
-  const trendData = computed(() => trend14.value.map((d) => d.value))
-  const trendXAxis = computed(() => trend14.value.map((d) => d.date.slice(5)))
-  const totalReg = computed(() => trend14.value.reduce((s, x) => s + x.value, 0))
-
+  /* ====== 待办 ====== */
   const todoList = computed(() => {
     const t = data.value?.todos
     return [
-      { key: 'merchant', icon: 'ri:store-2-line', label: '待审核商户', count: t?.pendingMerchants ?? 0, tint: '#FF4D2D', to: '/platform/audit/merchant' },
-      { key: 'product', icon: 'ri:price-tag-2-line', label: '待审核商品', count: t?.pendingProducts ?? 0, tint: '#FF7A45', to: '/platform/audit/product' },
-      { key: 'ad', icon: 'ri:advertisement-line', label: '广告创意待审', count: t?.pendingAds ?? 0, tint: '#FAAD14', to: '/platform/ad' },
-      { key: 'complaint', icon: 'ri:customer-service-2-line', label: '售后投诉', count: t?.complaints ?? 0, tint: '#F56C6C', to: '/platform/order/list' },
-      { key: 'withdraw', icon: 'ri:wallet-line', label: '待审核提现', count: t?.pendingWithdraws ?? 0, tint: '#A855F7', to: '/platform/member/orders' }
+      {
+        key: 'merchant',
+        icon: 'ri:store-2-line',
+        label: '待审核商户',
+        desc: '新入驻的厂家 / 门店',
+        count: t?.pendingMerchants ?? 0,
+        tint: '#FF4D2D',
+        to: '/platform/audit/merchant'
+      },
+      {
+        key: 'product',
+        icon: 'ri:price-tag-2-line',
+        label: '待审核商品',
+        desc: '上架前需平台审核的商品',
+        count: t?.pendingProducts ?? 0,
+        tint: '#FF7A45',
+        to: '/platform/audit/product'
+      },
+      {
+        key: 'ad',
+        icon: 'ri:advertisement-line',
+        label: '广告创意待审',
+        desc: '商家投放的广告物料',
+        count: t?.pendingAds ?? 0,
+        tint: '#FAAD14',
+        to: '/platform/ad'
+      },
+      {
+        key: 'complaint',
+        icon: 'ri:customer-service-2-line',
+        label: '售后投诉',
+        desc: '需要平台介入的售后单',
+        count: t?.complaints ?? 0,
+        tint: '#F56C6C',
+        to: '/platform/order/list'
+      },
+      {
+        key: 'withdraw',
+        icon: 'ri:wallet-line',
+        label: '待审核提现',
+        desc: '商家 / 推广员的提现申请',
+        count: t?.pendingWithdraws ?? 0,
+        tint: '#A855F7',
+        to: '/platform/member/orders'
+      }
     ]
   })
   const totalTodos = computed(() => todoList.value.reduce((s, x) => s + x.count, 0))
 
+  /* ====== 快捷入口 ====== */
   const entries = [
-    { key: 'merchant', icon: 'ri:store-2-line', label: '商户', tint: '#FF4D2D', to: '/platform/merchant/list' },
+    { key: 'merchant', icon: 'ri:store-2-line', label: '商户管理', tint: '#FF4D2D', to: '/platform/merchant/list' },
+    { key: 'audit-merchant', icon: 'ri:checkbox-multiple-line', label: '商户审核', tint: '#F5365C', to: '/platform/audit/merchant' },
     { key: 'audit-product', icon: 'ri:price-tag-2-line', label: '商品审核', tint: '#FF7A45', to: '/platform/audit/product' },
-    { key: 'ad', icon: 'ri:advertisement-line', label: '广告', tint: '#FAAD14', to: '/platform/ad' },
+    { key: 'order', icon: 'ri:file-list-3-line', label: '订单管理', tint: '#3B82F6', to: '/platform/order/list' },
+    { key: 'ad', icon: 'ri:advertisement-line', label: '广告管理', tint: '#FAAD14', to: '/platform/ad' },
     { key: 'plaza', icon: 'ri:store-3-line', label: '选品广场', tint: '#10B981', to: '/platform/plaza' },
-    { key: 'member', icon: 'ri:vip-crown-2-line', label: '会员', tint: '#A855F7', to: '/platform/member/plan' },
-    { key: 'flag', icon: 'ri:toggle-line', label: '功能开关', tint: '#3B82F6', to: '/platform/feature-flag' },
-    { key: 'perm', icon: 'ri:shield-user-line', label: '权限', tint: '#86909C', to: '/platform/permission' },
-    { key: 'system', icon: 'ri:settings-3-line', label: '系统', tint: '#0EA5E9', to: '/platform/system' }
+    { key: 'member', icon: 'ri:vip-crown-2-line', label: '会员套餐', tint: '#A855F7', to: '/platform/member/plan' },
+    { key: 'pay-orders', icon: 'ri:secure-payment-line', label: '会员支付', tint: '#06B6D4', to: '/platform/member/orders' },
+    { key: 'flag', icon: 'ri:toggle-line', label: '功能开关', tint: '#8B5CF6', to: '/platform/feature-flag' },
+    { key: 'perm', icon: 'ri:shield-user-line', label: '权限管理', tint: '#86909C', to: '/platform/permission' },
+    { key: 'system', icon: 'ri:settings-3-line', label: '系统设置', tint: '#0EA5E9', to: '/platform/system' },
+    { key: 'data', icon: 'ri:bar-chart-2-line', label: '数据中心', tint: '#22C55E', to: '/platform/data-center' }
   ]
 
   function onTodo(t: (typeof todoList.value)[number]) {
@@ -141,7 +200,12 @@
   }
 
   async function load() {
-    data.value = await fetchPlatformDashboard()
+    loading.value = true
+    try {
+      data.value = await fetchPlatformDashboard()
+    } finally {
+      loading.value = false
+    }
   }
 
   onMounted(load)
@@ -152,131 +216,273 @@
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
   }
 
-  .pf-page-header {
+  /* ============ 顶部 hero 条 ============ */
+  .pf-hero {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    color: #fff;
+    background: linear-gradient(135deg, #ff4d2d 0%, #ff7a45 60%, #faad14 100%);
+    min-height: 120px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-  }
 
-  .pf-kpi-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    &__bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 88% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 32%),
+        radial-gradient(circle at 12% 75%, rgba(255, 255, 255, 0.12) 0%, transparent 28%);
+    }
 
-    @media (max-width: 1100px) {
-      grid-template-columns: repeat(2, 1fr);
+    &__content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 32px;
+    }
+
+    &__title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    &__sub {
+      margin: 8px 0 0;
+      font-size: 13px;
+      opacity: 0.92;
+    }
+
+    &__num {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 4px;
+    }
+
+    &__link {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      margin-left: 4px;
+
+      &:hover {
+        opacity: 0.85;
+      }
+    }
+
+    &__date {
+      text-align: right;
+      line-height: 1.1;
+    }
+
+    &__weekday {
+      font-size: 13px;
+      opacity: 0.85;
+    }
+
+    &__day {
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin: 2px 0;
+    }
+
+    &__month {
+      font-size: 12px;
+      opacity: 0.85;
     }
   }
 
+  /* ============ Card 通用 ============ */
   .pf-card {
-    border-radius: 12px;
+    border-radius: 14px;
+    border: 1px solid #f0f1f3;
+
+    :deep(.el-card__header) {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid #f5f6f8;
+    }
+
+    :deep(.el-card__body) {
+      padding: 12px 8px;
+    }
   }
 
   .pf-card__title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-weight: 600;
-
-    .text-primary {
-      color: var(--el-color-primary, #ff4d2d);
-    }
   }
 
+  .pf-card__title-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .pf-card__title-icon {
+    color: var(--el-color-primary, #ff4d2d);
+    font-size: 18px;
+  }
+
+  /* ============ 双栏 ============ */
   .pf-grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 16px;
 
     @media (max-width: 1100px) {
       grid-template-columns: 1fr;
     }
   }
 
-  /* 待办 */
+  /* ============ 待办 ============ */
   .pf-todo__list {
     display: flex;
     flex-direction: column;
+    padding: 0 4px;
   }
 
   .pf-todo__row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 4px;
+    gap: 14px;
+    padding: 14px 12px;
+    border-radius: 10px;
     cursor: pointer;
-    border-bottom: 1px dashed var(--art-border-color, #e5e7eb);
-    transition: background 0.18s;
+    transition: all 0.2s;
+    border-bottom: 1px dashed #f0f0f0;
 
     &:last-child {
       border-bottom: none;
     }
 
     &:hover {
-      background: var(--art-bg-hover, #fafbfc);
+      background: linear-gradient(90deg, rgba(255, 77, 45, 0.06), transparent);
+      transform: translateX(2px);
+    }
+
+    &--empty {
+      opacity: 0.55;
+
+      &:hover {
+        transform: none;
+        background: rgba(0, 0, 0, 0.02);
+      }
     }
   }
 
   .pf-todo__icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .pf-todo__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pf-todo__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #303133;
+  }
+
+  .pf-todo__desc {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 2px;
+  }
+
+  .pf-todo__count {
+    min-width: 64px;
+    text-align: right;
+    padding-right: 8px;
+  }
+
+  .pf-todo__empty {
+    font-size: 12px;
+    color: #c0c4cc;
+  }
+
+  .pf-todo__arrow {
+    color: #c0c4cc;
     font-size: 18px;
     flex-shrink: 0;
   }
 
-  /* 快捷入口 */
+  /* ============ 快捷入口 ============ */
   .pf-entries {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    gap: 8px;
+    padding: 8px 4px 4px;
 
     @media (max-width: 700px) {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 
   .pf-entry {
+    --entry-tint: #ff4d2d;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 14px 6px;
+    gap: 10px;
+    padding: 18px 6px;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.18s;
+    transition: all 0.22s ease;
 
     &:hover {
-      background: rgba(255, 77, 45, 0.04);
-      transform: translateY(-2px);
+      background: color-mix(in srgb, var(--entry-tint) 6%, transparent);
+      transform: translateY(-3px);
+
+      .pf-entry__icon {
+        transform: scale(1.08) rotate(-3deg);
+        box-shadow: 0 8px 18px color-mix(in srgb, var(--entry-tint) 35%, transparent);
+      }
     }
   }
 
   .pf-entry__icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 26px;
+    color: #fff;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
   }
 
   .pf-entry__label {
     font-size: 13px;
-    color: var(--art-gray-700, #374151);
+    color: #303133;
+    font-weight: 500;
   }
 
-  .text-g-400 {
-    color: #9ca3af;
-  }
   .text-g-500 {
-    color: #6b7280;
+    color: #909399;
   }
 </style>

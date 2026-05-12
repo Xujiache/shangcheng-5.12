@@ -53,6 +53,27 @@ export class UserMpController {
   // 门店地图
   @Public() @Get('stores/nearby') nearbyStores() { return this.svc.nearbyStores() }
 
+  // 店铺价格显示规则（user-mp 商品页用）
+  @Public() @Get('shops/:merchantId/price-rule') shopPriceRule(@Param('merchantId') merchantId: string) {
+    return this.svc.shopPriceRule(merchantId)
+  }
+
   // 入驻
   @Post('merchant-apply') merchantApply(@CurrentUser() u: AuthUser, @Body() dto: any) { return this.svc.merchantApply(u?.sub || null, dto) }
+
+  // ============ 在线客服（用户端） ============
+  /** 获取/创建当前用户与指定商户的会话 */
+  @Get('chat/sessions') chatSessions(@CurrentUser() u: AuthUser) { return this.svc.chatSessions(u.sub) }
+  @Post('chat/sessions') ensureChatSession(@CurrentUser() u: AuthUser, @Body('merchantId') merchantId: string) {
+    return this.svc.ensureChatSession(u.sub, merchantId)
+  }
+  @Get('chat/sessions/:id/messages') chatMessages(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return this.svc.chatMessages(u.sub, id)
+  }
+  @Post('chat/sessions/:id/messages') chatSend(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: { type?: string; content: string }) {
+    return this.svc.chatSend(u.sub, id, dto.type || 'text', dto.content)
+  }
+  @Post('chat/sessions/:id/read') chatRead(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return this.svc.chatMarkRead(u.sub, id)
+  }
 }

@@ -23,7 +23,9 @@
     { "path": "pages/chat/index", "style": { "navigationBarTitleText": "在线客服" } },
     { "path": "pages/plaza/index", "style": { "navigationBarTitleText": "选品广场" } },
     { "path": "pages/plaza/factory", "style": { "navigationBarTitleText": "厂家详情" } },
-    { "path": "pages/member/index", "style": { "navigationBarTitleText": "会员开通" } }
+    { "path": "pages/member/index", "style": { "navigationBarTitleText": "会员开通" } },
+    { "path": "pages/me/profile", "style": { "navigationBarTitleText": "个人信息" } },
+    { "path": "pages/shop/price-rule", "style": { "navigationBarTitleText": "价格显示规则" } }
   ],
   "globalStyle": {
     "navigationStyle": "custom",

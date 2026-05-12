@@ -40,8 +40,9 @@
     "title": "经纬科技 · 商家版",
     "router": {
       "mode": "hash",
-      "base": "./"
+      "base": "/merchant/"
     },
+    "publicPath": "/merchant/",
     "devServer": {
       "https": false,
       "port": 8080

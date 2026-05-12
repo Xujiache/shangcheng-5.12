@@ -8,8 +8,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeMapService } from '../../services'
 import type { NearbyStore } from '../../services'
+import { useTencentMap } from '../../composables/useTencentMap'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
+
+const tmap = useTencentMap()
 
 const stores = ref<NearbyStore[]>([])
 const selectedId = ref<string>('')
@@ -34,12 +37,11 @@ function callStore() {
 
 function navigateTo() {
   if (!selected.value) return
-  uni.openLocation({
-    latitude: selected.value.lat,
-    longitude: selected.value.lng,
+  tmap.openNavigation({
+    lat: selected.value.lat,
+    lng: selected.value.lng,
     name: selected.value.name,
     address: selected.value.address,
-    fail: () => uni.showToast({ title: '已为您规划路线', icon: 'success' }),
   })
 }
 
@@ -66,6 +68,17 @@ const center = computed(() =>
     : { lat: 39.9087, lng: 116.3975 },
 )
 
+/** H5 端用腾讯静态地图 PNG 渲染（mp-weixin 走原生 <map>） */
+const staticMapUrl = computed(() => {
+  if (!stores.value.length) return ''
+  return tmap.staticImageUrl({
+    center: center.value,
+    zoom: 13,
+    size: { w: 750, h: 600 },
+    markers: stores.value.map((s) => ({ lat: s.lat, lng: s.lng, name: s.name })),
+  })
+})
+
 onMounted(load)
 </script>
 
@@ -87,18 +100,27 @@ onMounted(load)
       />
       <!-- #endif -->
 
-      <!-- H5 / 其它平台：降级为网格 + Pin 模拟图 -->
+      <!-- H5 / 其它平台：腾讯静态地图 PNG + 可点击 pin 列表浮层 -->
       <!-- #ifndef MP-WEIXIN -->
       <view class="map-fallback">
-        <view class="grid" />
-        <view
-          v-for="(s, i) in stores"
-          :key="s.id"
-          :class="['pin', selectedId === s.id ? 'active' : '']"
-          :style="{ top: `${20 + i * 18}%`, left: `${20 + (i * 23) % 60}%` }"
-          @click="selectStore(s)"
-        >
-          <Icon name="location-pin" :size="48" :color="selectedId === s.id ? 'var(--brand-primary)' : '#FF7A45'" :fill="true" />
+        <image
+          v-if="staticMapUrl"
+          :src="staticMapUrl"
+          mode="aspectFill"
+          class="map-static"
+        />
+        <view v-else class="grid" />
+        <!-- 静态图上方半透明 pin 浮层，让用户能切换"选中门店" -->
+        <view class="pin-layer">
+          <view
+            v-for="(s, i) in stores"
+            :key="s.id"
+            :class="['pin-chip', selectedId === s.id ? 'active' : '']"
+            @click="selectStore(s)"
+          >
+            <Icon name="location-pin" :size="22" color="#fff" :fill="true" />
+            <text>{{ i + 1 }} · {{ s.name }}</text>
+          </view>
         </view>
       </view>
       <!-- #endif -->
@@ -180,23 +202,39 @@ onMounted(load)
 .map-fallback {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(90deg, transparent calc(20% - 1px), rgba(0,0,0,.08) 20%, transparent calc(20% + 1px)),
-    linear-gradient(90deg, transparent calc(60% - 1px), rgba(0,0,0,.08) 60%, transparent calc(60% + 1px)),
-    linear-gradient(0deg, transparent calc(30% - 1px), rgba(0,0,0,.08) 30%, transparent calc(30% + 1px)),
-    linear-gradient(0deg, transparent calc(70% - 1px), rgba(0,0,0,.08) 70%, transparent calc(70% + 1px)),
-    var(--bg-page);
+  background: #e9eef2;
 }
-.pin {
+.map-static {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.pin-layer {
   position: absolute;
-  transform: translate(-50%, -100%);
-  &.active {
-    animation: bump .8s infinite alternate;
-  }
+  left: 20rpx;
+  right: 20rpx;
+  bottom: 20rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  z-index: 2;
 }
-@keyframes bump {
-  from { transform: translate(-50%, -100%) scale(1); }
-  to { transform: translate(-50%, -100%) scale(1.15); }
+.pin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 14rpx;
+  background: rgba(255, 122, 69, 0.92);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(4px);
+  &.active {
+    background: rgba(255, 77, 45, 0.96);
+    transform: scale(1.04);
+  }
 }
 .list-toggle {
   position: absolute;

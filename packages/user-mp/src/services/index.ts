@@ -33,7 +33,18 @@ export const orderService = {
     return http.post<{ orderId: string; orderNo: string; payAmount: number }>('/api/v1/u/orders', dto)
   },
   pay(id: string, method: string) {
-    return http.post<{ ok: boolean }>(`/api/v1/u/orders/${id}/pay`, { method })
+    return http.post<{
+      ok: boolean
+      mockPaid?: boolean
+      miniPay?: {
+        appId: string
+        timeStamp: string
+        nonceStr: string
+        package: string
+        signType: 'RSA' | 'MD5'
+        paySign: string
+      }
+    }>(`/api/v1/u/orders/${id}/pay`, { method })
   },
   confirm(id: string) {
     return http.post<{ ok: boolean }>(`/api/v1/u/orders/${id}/confirm`)

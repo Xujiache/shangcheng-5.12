@@ -4,10 +4,16 @@
  * 还原 原型图/user-mini.jsx::UM_Detail
  */
 import { ref, computed, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { productService, favoriteService } from '../../services'
 import { useUserStore } from '../../store/user'
 import { useCartStore } from '../../store/cart'
+import {
+  useShopPriceRule,
+  pickPriceByKind,
+  labelOfPriceKind,
+  fetchShopPriceRuleByMerchant,
+} from '../../composables/useShopPriceRule'
 import type { Product, SKU } from '@jiujiu/shared/types'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
@@ -15,6 +21,9 @@ import TagChip from '../../components/tag-chip/tag-chip.vue'
 
 const userStore = useUserStore()
 const cartStore = useCartStore()
+
+/** 店铺级价格显示规则 + 当前查看者身份合成的显示策略 */
+const { displayPolicy, viewerTier, reload: reloadShopRule } = useShopPriceRule()
 
 const productId = ref('')
 const product = ref<(Product & { skus: SKU[] }) | null>(null)
@@ -95,6 +104,12 @@ onLoad((options) => {
 
 onMounted(() => {
   if (productId.value) load()
+  reloadShopRule()
+})
+
+// 商家可能在另一个 tab 改了店铺规则，回到本页重新读一次
+onShow(() => {
+  reloadShopRule()
 })
 
 async function load() {
@@ -102,6 +117,10 @@ async function load() {
   try {
     const data = await productService.detail(productId.value, { silent: true })
     product.value = data
+    // 拉商品所属店铺的价格显示规则
+    if ((data as any)?.merchantId) {
+      fetchShopPriceRuleByMerchant((data as any).merchantId).catch(() => {})
+    }
     if (data.skus?.[0]) {
       Object.entries(data.skus[0].specs).forEach(([k, v]) => {
         specSelections.value[k] = String(v)
@@ -139,17 +158,38 @@ function goBack() {
   }
 }
 
-const priceVisible = computed(() => {
-  if (!product.value) return false
-  if (userStore.isLogin) return true
-  return !!product.value.priceDisplayRules?.guestVisible
-})
+/** 是否显示价格 —— 综合店铺规则 + 查看者身份 */
+const priceVisible = computed(() => displayPolicy.value.showPrice)
 
+/** 当前应该展示的价格 */
 const currentPrice = computed(() => {
   if (!product.value) return 0
   if (isBySize.value) return customTotal.value
-  return product.value.priceRetailMin
+  return pickPriceByKind(product.value, displayPolicy.value.priceKind)
 })
+
+/** 价格名（零售价 / 批发价 / 会员价 / 询价） */
+const priceLabel = computed(() => labelOfPriceKind(displayPolicy.value.priceKind))
+
+/** 是否被店铺规则禁止入店（未登录访客 + guestAllow=false） */
+const blockedByShopRule = computed(() => !displayPolicy.value.allowEnter)
+
+/** 锁定提示文案 */
+const lockReason = computed(() => displayPolicy.value.lockReason)
+
+/** 是否允许加购/购买 */
+const buyAllowedByPolicy = computed(() => displayPolicy.value.allowBuy)
+
+/** 身份徽标文案：让用户清楚当前在以什么身份看价格 */
+const viewerBadge = computed(
+  () =>
+    ({
+      guest: '访客',
+      customer: '普通客户',
+      agency: '授权门店',
+      member: '会员客户',
+    })[viewerTier.value]
+)
 
 const specGroups = computed(() => {
   if (!product.value?.skus?.length) {
@@ -177,6 +217,17 @@ function goHome() {
 function openSku(mode: 'cart' | 'buy') {
   if (!userStore.isLogin) {
     uni.navigateTo({ url: '/pages/auth/login' })
+    return
+  }
+  // 店铺规则禁止购买（如商家把"普通客户"设为"不显示价格"）
+  if (!buyAllowedByPolicy.value) {
+    uni.showModal({
+      title: '暂不可购买',
+      content:
+        lockReason.value ||
+        '商家已隐藏价格，无法直接下单。请联系客服询价，或申请成为授权门店 / 会员后查看。',
+      showCancel: false,
+    })
     return
   }
   skuMode.value = mode
@@ -215,7 +266,13 @@ async function toggleFav() {
 }
 
 function goChat() {
-  uni.showToast({ title: '联系客服', icon: 'none' })
+  if (!userStore.isLogin) {
+    uni.navigateTo({ url: '/pages/auth/login' })
+    return
+  }
+  const mid = (product.value as any)?.merchantId || ''
+  const q = mid ? `?merchantId=${encodeURIComponent(mid)}` : ''
+  uni.navigateTo({ url: `/pages/chat/index${q}` })
 }
 
 function specLabel() {
@@ -333,9 +390,10 @@ function changeQty(delta: number) {
           <text v-if="priceVisible" class="price">¥ {{ currentPrice }}</text>
           <view v-else class="price-locked">
             <Icon name="lock" :size="22" color="var(--text-tertiary)" />
-            <text>登录后查看价格</text>
+            <text>{{ lockReason || '价格不可见' }}</text>
           </view>
-          <TagChip tone="pop" text="门店价 · 申请可见" size="sm" />
+          <TagChip :tone="priceVisible ? 'pop' : 'soft'" :text="priceLabel" size="sm" />
+          <TagChip tone="soft" :text="viewerBadge" size="sm" />
         </view>
         <text class="name">{{ product.name }}</text>
         <view class="meta">
@@ -418,8 +476,20 @@ function changeQty(delta: number) {
         <Icon name="message" :size="40" color="var(--text-secondary)" />
         <text>客服</text>
       </view>
-      <view class="cart-btn" @click="openSku('cart')">加入购物车</view>
-      <view class="buy-btn" @click="openSku('buy')">立即购买</view>
+      <view
+        class="cart-btn"
+        :class="{ 'btn-disabled': !buyAllowedByPolicy }"
+        @click="openSku('cart')"
+      >
+        {{ buyAllowedByPolicy ? '加入购物车' : '联系询价' }}
+      </view>
+      <view
+        class="buy-btn"
+        :class="{ 'btn-disabled': !buyAllowedByPolicy }"
+        @click="openSku('buy')"
+      >
+        {{ buyAllowedByPolicy ? '立即购买' : '申请门店' }}
+      </view>
     </view>
 
     <view v-if="showSku" class="sku-mask" @click="showSku = false">
@@ -824,6 +894,11 @@ function changeQty(delta: number) {
     font-size: 28rpx;
     font-weight: 700;
     color: #fff;
+  }
+  .btn-disabled {
+    background: linear-gradient(135deg, #d1d5db, #9ca3af) !important;
+    box-shadow: none !important;
+    opacity: 0.95;
   }
   .cart-btn {
     background: #FFB300;

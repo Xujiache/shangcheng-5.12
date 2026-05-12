@@ -1,19 +1,13 @@
 /**
- * 会员套餐 · 真生效服务（Mock + localStorage 持久化）
+ * 会员套餐 · 接口适配层
  *
- * 数据流：
- *   平台端编辑套餐 ──→ localStorage(jj_member_state) ──→ 商家端读取
- *                                ↑
- *               商家端订阅/配额消耗 ──── 同一 key 持久化
+ * 平台端：CRUD 走 /api/v1/p/member-plans · /api/v1/p/member-pay-orders
+ * 商户端：订阅/配额/缴费 走 /api/v1/m/membership/*
  *
- * 当前商家：从 admin-pc 的 userStore 派生（demo 账号 merchant@demo → demo-merchant-001）
- *
- * 接真后端时：把 load/save 换成 GET/POST `/api/v1/member/*`，逻辑不变
+ * 仍保留少量 localStorage 工具（DEMO 商家映射、通知聚合）作为前端纯计算的 fallback。
  */
 import type { MemberPlan } from '@jiujiu/shared/types'
-import { genMemberPlans } from '@jiujiu/shared/mock'
-
-const STORAGE_KEY = 'jj_member_state_v1'
+import request from '@/utils/http'
 
 /* ============ 类型 ============ */
 
@@ -67,14 +61,7 @@ export interface PaymentRecord {
   createdAt: string
 }
 
-interface MemberState {
-  plans: MemberPlan[]
-  subscriptions: Record<string, Subscription>
-  quotas: Record<string, UsageQuota>
-  payments: PaymentRecord[]
-}
-
-/* ============ 持久化 ============ */
+/* ============ DEMO 商家映射（前端展示用 fallback） ============ */
 
 const DEMO_MERCHANTS = [
   { id: 'demo-merchant-001', name: '经纬科技（北京·三里屯）' },
@@ -85,179 +72,10 @@ const DEMO_MERCHANTS = [
   { id: 'demo-merchant-006', name: '岩板工厂直营' }
 ]
 
-function defaultState(): MemberState {
-  const plans = genMemberPlans()
-  const now = Date.now()
-  const planBasic = plans.find((p) => p.code === 'yearly')!
-  const planAdPro = plans.find((p) => p.code === 'ad_pro')!
-  const planAdBasic = plans.find((p) => p.code === 'ad_basic')!
-
-  // 给当前 demo 商家预订阅一个套餐
-  const subs: Record<string, Subscription> = {}
-  const quotas: Record<string, UsageQuota> = {}
-  const payments: PaymentRecord[] = []
-
-  // demo-merchant-001 订阅 年费会员 + 进阶推广包
-  const sub1: Subscription = {
-    merchantId: 'demo-merchant-001',
-    merchantName: DEMO_MERCHANTS[0].name,
-    planId: planBasic.id,
-    planCode: planBasic.code,
-    planName: planBasic.name,
-    planType: 'basic',
-    price: planBasic.price,
-    startAt: new Date(now - 85 * 86400000).toISOString(),
-    endAt: new Date(now + 280 * 86400000).toISOString(),
-    totalDays: 365,
-    autoRenew: true,
-    status: 'active',
-    subscribedAt: new Date(now - 85 * 86400000).toISOString()
-  }
-  subs['demo-merchant-001'] = sub1
-  quotas['demo-merchant-001'] = {
-    merchantId: 'demo-merchant-001',
-    limits: {
-      pushSlots: planAdPro.constraints?.pushSlots ?? 20,
-      bannerLimit: planAdPro.constraints?.bannerLimit ?? 2,
-      impressionLimit: planAdPro.constraints?.impressionLimit ?? 300000,
-      weightLimit: planAdPro.constraints?.weightLimit ?? 85
-    },
-    used: { pushSlots: 7, bannerLimit: 1, impressionLimit: 168400 },
-    monthStart: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-  }
-
-  // 其余商家分别订阅不同套餐 + 缴费历史
-  const subPatterns: { idx: number; plan: MemberPlan; offsetDays: number }[] = [
-    { idx: 1, plan: planAdBasic, offsetDays: -40 },
-    { idx: 2, plan: planBasic, offsetDays: -120 },
-    { idx: 3, plan: planAdPro, offsetDays: -15 },
-    { idx: 4, plan: plans.find((p) => p.code === 'monthly')!, offsetDays: -20 }
-  ]
-  subPatterns.forEach(({ idx, plan, offsetDays }) => {
-    const m = DEMO_MERCHANTS[idx]
-    const totalDays =
-      plan.period === 'yearly' ? 365 : plan.period === 'monthly' ? 30 : plan.period === 'weekly' ? 7 : 1
-    subs[m.id] = {
-      merchantId: m.id,
-      merchantName: m.name,
-      planId: plan.id,
-      planCode: plan.code,
-      planName: plan.name,
-      planType: plan.type,
-      price: plan.price,
-      startAt: new Date(now + offsetDays * 86400000).toISOString(),
-      endAt: new Date(now + (offsetDays + totalDays) * 86400000).toISOString(),
-      totalDays,
-      autoRenew: idx % 2 === 0,
-      status: 'active',
-      subscribedAt: new Date(now + offsetDays * 86400000).toISOString()
-    }
-    if (plan.constraints) {
-      quotas[m.id] = {
-        merchantId: m.id,
-        limits: {
-          pushSlots: plan.constraints.pushSlots ?? 0,
-          bannerLimit: plan.constraints.bannerLimit ?? 0,
-          impressionLimit: plan.constraints.impressionLimit ?? 0,
-          weightLimit: plan.constraints.weightLimit ?? 0
-        },
-        used: {
-          pushSlots: Math.floor((plan.constraints.pushSlots ?? 0) * 0.4),
-          bannerLimit: Math.floor((plan.constraints.bannerLimit ?? 0) * 0.3),
-          impressionLimit: Math.floor((plan.constraints.impressionLimit ?? 0) * 0.5)
-        },
-        monthStart: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-      }
-    }
-  })
-
-  // 缴费记录
-  const merchants = Object.values(subs)
-  merchants.forEach((s, i) => {
-    payments.push({
-      id: 'pay-' + (i + 1),
-      no: 'P' + Date.now().toString().slice(-9) + i.toString().padStart(2, '0'),
-      merchantId: s.merchantId,
-      merchantName: s.merchantName,
-      planId: s.planId,
-      planName: s.planName,
-      planType: s.planType,
-      amount: s.price,
-      status: 'paid',
-      payMethod: (['wechat', 'alipay', 'balance'] as const)[i % 3],
-      paidAt: s.subscribedAt,
-      createdAt: s.subscribedAt
-    })
-  })
-  // 加几个不同状态的样本
-  payments.push({
-    id: 'pay-pending-1',
-    no: 'P' + Date.now().toString().slice(-9) + '90',
-    merchantId: DEMO_MERCHANTS[5].id,
-    merchantName: DEMO_MERCHANTS[5].name,
-    planId: planAdBasic.id,
-    planName: planAdBasic.name,
-    planType: 'ad',
-    amount: planAdBasic.price,
-    status: 'pending',
-    payMethod: 'wechat',
-    paidAt: null,
-    createdAt: new Date(now - 86400000).toISOString()
-  })
-  payments.push({
-    id: 'pay-refund-1',
-    no: 'P' + Date.now().toString().slice(-9) + '91',
-    merchantId: DEMO_MERCHANTS[3].id,
-    merchantName: DEMO_MERCHANTS[3].name,
-    planId: planAdPro.id,
-    planName: planAdPro.name,
-    planType: 'ad',
-    amount: planAdPro.price,
-    status: 'refunding',
-    payMethod: 'alipay',
-    paidAt: new Date(now - 5 * 86400000).toISOString(),
-    createdAt: new Date(now - 5 * 86400000).toISOString()
-  })
-
-  return { plans, subscriptions: subs, quotas, payments }
-}
-
-let memCache: MemberState | null = null
-
-function load(): MemberState {
-  if (memCache) return memCache
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      memCache = JSON.parse(raw)
-      return memCache!
-    }
-  } catch {
-    /* ignore */
-  }
-  memCache = defaultState()
-  save(memCache)
-  return memCache
-}
-
-function save(state: MemberState): void {
-  memCache = state
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    /* quota exceeded - 忽略，内存缓存仍可用 */
-  }
-}
-
-const delay = <T>(data: T, ms = 120): Promise<T> =>
-  new Promise((resolve) => setTimeout(() => resolve(JSON.parse(JSON.stringify(data))), ms))
-
 /* ============ 当前商家身份 ============ */
 
 /**
- * 当前商家 ID：从 localStorage 中的 admin_pc_mock_active_user 派生
- * - merchant@demo / super@demo → demo-merchant-001
- * - 其他 → demo-merchant-001（fallback）
+ * 当前商家 ID：后端通过 JWT 自动识别，前端无需传；该方法仅用于无 JWT 场景下的展示。
  */
 export function getCurrentMerchantId(): string {
   return 'demo-merchant-001'
@@ -273,76 +91,48 @@ export function listDemoMerchants() {
 /* ============ 套餐 CRUD ============ */
 
 export function getAllPlans(): Promise<MemberPlan[]> {
-  return delay(load().plans)
+  return request.get<MemberPlan[]>({ url: '/api/v1/p/member-plans' })
 }
 
-export function savePlan(plan: Partial<MemberPlan> & { id?: string }): Promise<{ ok: true; plan: MemberPlan }> {
-  const state = load()
-  if (plan.id) {
-    const idx = state.plans.findIndex((p) => p.id === plan.id)
-    if (idx >= 0) {
-      state.plans[idx] = {
-        ...state.plans[idx],
-        ...plan,
-        updatedAt: new Date().toISOString()
-      } as MemberPlan
-      // 联动：所有已订阅该套餐的商家，刷新限额（用最新 constraints）
-      const updated = state.plans[idx]
-      Object.values(state.subscriptions).forEach((sub) => {
-        if (sub.planId === updated.id && updated.constraints) {
-          const q = state.quotas[sub.merchantId]
-          if (q) {
-            q.limits = {
-              pushSlots: updated.constraints.pushSlots ?? q.limits.pushSlots,
-              bannerLimit: updated.constraints.bannerLimit ?? q.limits.bannerLimit,
-              impressionLimit: updated.constraints.impressionLimit ?? q.limits.impressionLimit,
-              weightLimit: updated.constraints.weightLimit ?? q.limits.weightLimit
-            }
-          }
-          sub.price = updated.price
-          sub.planName = updated.name
-        }
-      })
-      save(state)
-      return delay({ ok: true as const, plan: state.plans[idx] })
-    }
-  }
-  const now = new Date().toISOString()
-  const created: MemberPlan = {
-    id: 'p-' + Date.now(),
-    sort: state.plans.length + 1,
-    createdAt: now,
-    updatedAt: now,
-    status: 'active',
-    rights: [],
-    ...plan
-  } as MemberPlan
-  state.plans.push(created)
-  save(state)
-  return delay({ ok: true as const, plan: created })
+export function savePlan(
+  plan: Partial<MemberPlan> & { id?: string }
+): Promise<{ ok: true; plan: MemberPlan }> {
+  // shape-adapted: 后端 POST /p/member-plans 同时处理新增/更新（按是否带 id 分支）
+  return request
+    .post<{ plan: MemberPlan } | MemberPlan>({
+      url: '/api/v1/p/member-plans',
+      data: plan
+    })
+    .then((res) => {
+      const p = (res as any)?.plan ?? (res as MemberPlan)
+      return { ok: true as const, plan: p as MemberPlan }
+    })
 }
 
 export function removePlan(id: string): Promise<{ ok: true }> {
-  const state = load()
-  state.plans = state.plans.filter((p) => p.id !== id)
-  save(state)
-  return delay({ ok: true as const })
+  return request
+    .del<{ ok?: boolean }>({ url: `/api/v1/p/member-plans/${id}` })
+    .then(() => ({ ok: true as const }))
 }
 
 /* ============ 订阅 ============ */
 
-export function getCurrentSubscription(merchantId?: string): Promise<Subscription | null> {
-  const state = load()
-  const mid = merchantId || getCurrentMerchantId()
-  return delay(state.subscriptions[mid] || null)
+export function getCurrentSubscription(_merchantId?: string): Promise<Subscription | null> {
+  // 商户端：当前登录商户的订阅（merchantId 由后端从 JWT 提取）
+  return request
+    .get<Subscription | null>({ url: '/api/v1/m/membership' })
+    .catch(() => null)
 }
 
 export function getAllSubscriptions(): Promise<Subscription[]> {
-  return delay(Object.values(load().subscriptions))
+  // TODO: no backend equivalent — 后端只暴露按 planId 查询；这里返回空数组占位
+  return Promise.resolve([])
 }
 
 export function getSubscriptionsByPlan(planId: string): Promise<Subscription[]> {
-  return delay(Object.values(load().subscriptions).filter((s) => s.planId === planId))
+  return request.get<Subscription[]>({
+    url: `/api/v1/p/member-plans/${planId}/subscriptions`
+  })
 }
 
 export interface SubscribeInput {
@@ -351,149 +141,70 @@ export interface SubscribeInput {
   payMethod?: 'wechat' | 'alipay' | 'balance'
 }
 
-export function subscribePlan(input: SubscribeInput): Promise<{ ok: true; subscription: Subscription }> {
-  const state = load()
-  const plan = state.plans.find((p) => p.id === input.planId)
-  if (!plan) return Promise.reject(new Error('套餐不存在'))
-  const mid = input.merchantId || getCurrentMerchantId()
-  const merchantName = mid === 'demo-merchant-001' ? getCurrentMerchantName() : DEMO_MERCHANTS.find((m) => m.id === mid)?.name || '未知商家'
-  const now = new Date()
-  const totalDays =
-    plan.period === 'yearly' ? 365 : plan.period === 'monthly' ? 30 : plan.period === 'weekly' ? 7 : 1
-  const endAt = new Date(now.getTime() + totalDays * 86400000)
-
-  const sub: Subscription = {
-    merchantId: mid,
-    merchantName,
-    planId: plan.id,
-    planCode: plan.code,
-    planName: plan.name,
-    planType: plan.type,
-    price: plan.price,
-    startAt: now.toISOString(),
-    endAt: endAt.toISOString(),
-    totalDays,
-    autoRenew: false,
-    status: 'active',
-    subscribedAt: now.toISOString()
-  }
-  state.subscriptions[mid] = sub
-
-  // 拷贝限额到配额
-  if (plan.constraints) {
-    state.quotas[mid] = {
-      merchantId: mid,
-      limits: {
-        pushSlots: plan.constraints.pushSlots ?? 0,
-        bannerLimit: plan.constraints.bannerLimit ?? 0,
-        impressionLimit: plan.constraints.impressionLimit ?? 0,
-        weightLimit: plan.constraints.weightLimit ?? 0
-      },
-      used: { pushSlots: 0, bannerLimit: 0, impressionLimit: 0 },
-      monthStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    }
-  }
-
-  // 记一条缴费
-  state.payments.unshift({
-    id: 'pay-' + Date.now(),
-    no: 'P' + Date.now().toString().slice(-12),
-    merchantId: mid,
-    merchantName,
-    planId: plan.id,
-    planName: plan.name,
-    planType: plan.type,
-    amount: plan.price,
-    status: 'paid',
-    payMethod: input.payMethod || 'wechat',
-    paidAt: now.toISOString(),
-    createdAt: now.toISOString()
-  })
-
-  save(state)
-  return delay({ ok: true as const, subscription: sub })
+export function subscribePlan(
+  input: SubscribeInput
+): Promise<{ ok: true; subscription: Subscription }> {
+  return request
+    .post<{ subscription: Subscription } | Subscription>({
+      url: '/api/v1/m/membership/subscribe',
+      data: { planId: input.planId, payMethod: input.payMethod }
+    })
+    .then((res) => {
+      const s = (res as any)?.subscription ?? (res as Subscription)
+      return { ok: true as const, subscription: s as Subscription }
+    })
 }
 
-export function cancelSubscription(merchantId?: string): Promise<{ ok: true }> {
-  const state = load()
-  const mid = merchantId || getCurrentMerchantId()
-  const sub = state.subscriptions[mid]
-  if (sub) {
-    sub.status = 'cancelled'
-    sub.autoRenew = false
-  }
-  save(state)
-  return delay({ ok: true as const })
+export function cancelSubscription(_merchantId?: string): Promise<{ ok: true }> {
+  return request
+    .post<{ ok?: boolean }>({ url: '/api/v1/m/membership/cancel' })
+    .then(() => ({ ok: true as const }))
 }
 
-export function setAutoRenew(merchantId: string, autoRenew: boolean): Promise<{ ok: true }> {
-  const state = load()
-  const sub = state.subscriptions[merchantId]
-  if (sub) sub.autoRenew = autoRenew
-  save(state)
-  return delay({ ok: true as const })
+export function setAutoRenew(_merchantId: string, autoRenew: boolean): Promise<{ ok: true }> {
+  return request
+    .post<{ ok?: boolean }>({
+      url: '/api/v1/m/membership/auto-renew',
+      data: { autoRenew }
+    })
+    .then(() => ({ ok: true as const }))
 }
 
 /* ============ 配额 ============ */
 
-export function getQuota(merchantId?: string): Promise<UsageQuota | null> {
-  const state = load()
-  const mid = merchantId || getCurrentMerchantId()
-  // 月度自动重置（曝光）
-  const q = state.quotas[mid]
-  if (q) {
-    const now = new Date()
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    if (q.monthStart !== thisMonthStart) {
-      q.used.impressionLimit = 0
-      q.monthStart = thisMonthStart
-      save(state)
-    }
-  }
-  return delay(q || null)
+export function getQuota(_merchantId?: string): Promise<UsageQuota | null> {
+  return request
+    .get<UsageQuota | null>({ url: '/api/v1/m/membership/quota' })
+    .catch(() => null)
 }
 
 export type QuotaKey = 'pushSlots' | 'bannerLimit' | 'impressionLimit'
 
-/**
- * 消耗配额：返回 ok=true 表示成功扣减；返回 ok=false 表示超限
- * 如果该商家未配置限额（无 ad 套餐），则不限制，返回 ok=true，used 不变
- */
 export function useQuota(
   key: QuotaKey,
   count = 1,
-  merchantId?: string
+  _merchantId?: string
 ): Promise<{ ok: boolean; reason?: string; quota?: UsageQuota }> {
-  const state = load()
-  const mid = merchantId || getCurrentMerchantId()
-  const q = state.quotas[mid]
-  if (!q) {
-    // 未购买推广套餐，不限制
-    return delay({ ok: true as const })
-  }
-  const limit = q.limits[key]
-  if (limit && q.used[key] + count > limit) {
-    return delay({
-      ok: false,
-      reason: `${quotaLabelOf(key)} 已达上限 (${q.used[key]}/${limit})，请升级套餐`,
-      quota: q
+  return request
+    .post<{ ok: boolean; reason?: string; quota?: UsageQuota }>({
+      url: '/api/v1/m/membership/quota/use',
+      data: { key, count }
     })
-  }
-  q.used[key] += count
-  save(state)
-  return delay({ ok: true as const, quota: q })
+    .catch(() => ({ ok: false, reason: '配额接口不可用' }))
 }
 
-export function releaseQuota(key: QuotaKey, count = 1, merchantId?: string): Promise<{ ok: true; quota?: UsageQuota }> {
-  const state = load()
-  const mid = merchantId || getCurrentMerchantId()
-  const q = state.quotas[mid]
-  if (q) {
-    q.used[key] = Math.max(0, q.used[key] - count)
-    save(state)
-    return delay({ ok: true as const, quota: q })
-  }
-  return delay({ ok: true as const })
+export function releaseQuota(
+  key: QuotaKey,
+  count = 1,
+  _merchantId?: string
+): Promise<{ ok: true; quota?: UsageQuota }> {
+  return request
+    .post<{ quota?: UsageQuota }>({
+      url: '/api/v1/m/membership/quota/release',
+      data: { key, count }
+    })
+    .then((res) => ({ ok: true as const, quota: res?.quota }))
+    .catch(() => ({ ok: true as const }))
 }
 
 export function quotaLabelOf(k: QuotaKey): string {
@@ -502,20 +213,28 @@ export function quotaLabelOf(k: QuotaKey): string {
 
 /* ============ 缴费记录 ============ */
 
-export function getPayments(filter?: { merchantId?: string; status?: PaymentRecord['status'] }): Promise<PaymentRecord[]> {
-  let list = load().payments.slice()
-  if (filter?.merchantId) list = list.filter((p) => p.merchantId === filter.merchantId)
-  if (filter?.status) list = list.filter((p) => p.status === filter.status)
-  list.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1))
-  return delay(list)
+export function getPayments(filter?: {
+  merchantId?: string
+  status?: PaymentRecord['status']
+}): Promise<PaymentRecord[]> {
+  // 平台端列表（带过滤参数）；后端忽略未识别参数即可
+  return request.get<PaymentRecord[]>({
+    url: '/api/v1/p/member-pay-orders',
+    params: filter || {}
+  })
 }
 
-export function updatePaymentStatus(id: string, status: PaymentRecord['status']): Promise<{ ok: true }> {
-  const state = load()
-  const p = state.payments.find((x) => x.id === id)
-  if (p) p.status = status
-  save(state)
-  return delay({ ok: true as const })
+export function updatePaymentStatus(
+  id: string,
+  status: PaymentRecord['status']
+): Promise<{ ok: true }> {
+  return request
+    .request<{ ok?: boolean }>({
+      url: `/api/v1/p/member-pay-orders/${id}/status`,
+      method: 'PATCH',
+      data: { status }
+    })
+    .then(() => ({ ok: true as const }))
 }
 
 /* ============ 反馈到商家 (Notice) ============ */
@@ -528,9 +247,18 @@ export interface MembershipNotice {
 }
 
 /**
- * 商家 dashboard 顶部用：根据订阅 + 配额自动生成提醒
+ * 商家 dashboard 顶部用：优先取后端聚合结果；失败则前端依据订阅+配额本地拼装。
  */
 export async function getMembershipNotices(merchantId?: string): Promise<MembershipNotice[]> {
+  try {
+    const list = await request.get<MembershipNotice[]>({
+      url: '/api/v1/m/membership/notices'
+    })
+    if (Array.isArray(list)) return list
+  } catch {
+    /* 回退本地计算 */
+  }
+
   const sub = await getCurrentSubscription(merchantId)
   const q = await getQuota(merchantId)
   const notices: MembershipNotice[] = []
@@ -603,6 +331,10 @@ export async function getMembershipNotices(merchantId?: string): Promise<Members
 /* ============ 调试/重置 ============ */
 
 export function resetMemberState(): void {
-  memCache = null
-  localStorage.removeItem(STORAGE_KEY)
+  // TODO: no backend equivalent — 后端不需要本地状态清理
+  try {
+    localStorage.removeItem('jj_member_state_v1')
+  } catch {
+    /* ignore */
+  }
 }

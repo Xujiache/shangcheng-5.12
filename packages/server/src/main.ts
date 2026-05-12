@@ -2,6 +2,7 @@ import { NestFactory, Reflector } from '@nestjs/core'
 import { ValidationPipe, RequestMethod } from '@nestjs/common'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { JwtService } from '@nestjs/jwt'
+import { IoAdapter } from '@nestjs/platform-socket.io'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
@@ -9,6 +10,8 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true })
+  // 为 WebSocket Gateway 启用 socket.io IoAdapter，namespace 走 /ws/chat
+  app.useWebSocketAdapter(new IoAdapter(app))
 
   // 全局前缀（exclude 旧 admin-pc 兼容路径）
   app.setGlobalPrefix('api/v1', {

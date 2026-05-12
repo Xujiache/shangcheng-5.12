@@ -128,6 +128,9 @@ function goCategory() {
 function goAgencyList() {
   uni.navigateTo({ url: '/pages/product/agency-list' })
 }
+function goPriceRule() {
+  uni.navigateTo({ url: '/pages/shop/price-rule' })
+}
 function goDetail(p: Product) {
   if (batchMode.value) {
     toggle(p.id)
@@ -231,6 +234,10 @@ onShow(() => {
           <view class="link" @click="goAgencyList">
             <Icon name="biz-plaza" :size="24" color="var(--brand-primary)" />
             <text>代理商品</text>
+          </view>
+          <view class="link" @click="goPriceRule">
+            <Icon name="tag" :size="24" color="var(--brand-primary)" />
+            <text>价格规则</text>
           </view>
         </view>
         <text class="link link-text" @click="toggleBatch">{{ batchMode ? '取消批量' : '批量操作' }}</text>

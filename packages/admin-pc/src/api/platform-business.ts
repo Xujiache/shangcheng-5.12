@@ -1,33 +1,20 @@
 /**
- * 平台 PC 业务接口（Mock 实现 · S5）
+ * 平台 PC 业务接口（已对接 /api/v1/p/* 真后端）
  *
- * 复用 @jiujiu/shared 的 mock 工厂，补本地 fallback。
- * 接真后端时按注释路径替换 http 调用。
+ * 个别后端缺失的子功能（如灰度、配置详情等）仍保留 mock，并标 TODO。
  */
 import {
-  genMerchant,
-  genMerchants,
-  genOrder,
-  genOrders,
-  genProduct,
-  genProducts,
   genPlazaCard,
   genPlazaPush,
   genAdSlot,
   genAdCreative,
   genFeatureFlags,
-  genPlatformDashboard,
-  genWithdraw,
   placeholderImage,
-  chineseName,
-  chinaPhone,
   faker
 } from '@jiujiu/shared/mock'
 import type {
   Merchant,
   Order,
-  Product,
-  PlazaProductCard,
   PlazaPush,
   AdSlot,
   AdCreative,
@@ -35,15 +22,10 @@ import type {
   FeatureFlag,
   PlatformDashboard
 } from '@jiujiu/shared/types'
-import { genId } from '@jiujiu/shared/utils'
+import request from '@/utils/http'
 import {
-  getAllPlans as msGetAll,
-  savePlan as msSave,
-  removePlan as msRemove,
   getAllSubscriptions as msGetSubs,
   getSubscriptionsByPlan as msGetSubsByPlan,
-  getPayments as msGetPayments,
-  updatePaymentStatus as msUpdatePay,
   type PaymentRecord
 } from './member-service'
 
@@ -51,55 +33,33 @@ const delay = <T>(data: T, ms = 200): Promise<T> =>
   new Promise((r) => setTimeout(() => r(data), ms))
 
 /* ============ 1. Dashboard ============ */
-// GET /api/v1/p/dashboard
-let DASH_CACHE: PlatformDashboard | null = null
 export function fetchPlatformDashboard() {
-  if (!DASH_CACHE) DASH_CACHE = genPlatformDashboard()
-  return delay(DASH_CACHE)
+  return request.get<PlatformDashboard>({ url: '/api/v1/p/dashboard' })
 }
 
 /* ============ 2. 商户列表 ============ */
-// GET /api/v1/p/merchants
-const MERCHANTS_CACHE: Merchant[] = genMerchants(40)
-
 export interface PlatformMerchantsParams {
   tab?: 'all' | 'factory' | 'store' | 'disabled'
   keyword?: string
 }
 
 export function fetchPlatformMerchants(params: PlatformMerchantsParams = {}) {
-  let list = MERCHANTS_CACHE.filter((m) => m.status !== 'pending')
-  if (params.tab === 'factory') list = list.filter((m) => m.type === 'factory' && m.status !== 'disabled')
-  else if (params.tab === 'store') list = list.filter((m) => m.type === 'store' && m.status !== 'disabled')
-  else if (params.tab === 'disabled') list = list.filter((m) => m.status === 'disabled')
-  else list = list.filter((m) => m.status !== 'disabled' || params.tab === 'all' ? m.status !== 'pending' : true)
-  if (params.keyword) {
-    const kw = params.keyword.toLowerCase()
-    list = list.filter((m) => m.name.toLowerCase().includes(kw) || m.contact.includes(params.keyword!))
-  }
-  return delay(list)
+  return request.get<Merchant[]>({ url: '/api/v1/p/merchants', params })
 }
 
 export function pauseMerchant(id: string) {
-  const m = MERCHANTS_CACHE.find((x) => x.id === id)
-  if (m) m.status = 'disabled'
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: `/api/v1/p/merchants/${id}/pause` })
 }
 export function resumeMerchant(id: string) {
-  const m = MERCHANTS_CACHE.find((x) => x.id === id)
-  if (m) m.status = 'active'
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: `/api/v1/p/merchants/${id}/resume` })
 }
 
 /* ============ 3. 平台订单 ============ */
-// GET /api/v1/p/orders
-const ORDERS_CACHE: Order[] = genOrders(60)
 export function fetchPlatformOrders() {
-  return delay(ORDERS_CACHE)
+  return request.get<Order[]>({ url: '/api/v1/p/orders' })
 }
 
 /* ============ 4. 数据中心 ============ */
-// GET /api/v1/p/stats?period=
 export type StatsPeriod = 'today' | 'week' | 'month' | 'year'
 
 export interface PlatformStats {
@@ -110,56 +70,24 @@ export interface PlatformStats {
 }
 
 export function fetchPlatformStats(period: StatsPeriod = 'week') {
-  const len = period === 'today' ? 24 : period === 'week' ? 7 : period === 'month' ? 30 : 12
-  const labelFor = (i: number) => {
-    if (period === 'today') return `${i}时`
-    if (period === 'week') return ['一', '二', '三', '四', '五', '六', '日'][i]
-    if (period === 'month') return `${i + 1}日`
-    return `${i + 1}月`
-  }
-  const cats = ['家具', '灯具', '布艺', '厨卫', '摆件', '建材', '家电']
-  return delay<PlatformStats>({
-    period,
-    trend: Array.from({ length: len }).map((_, i) => ({
-      date: labelFor(i),
-      value: faker.number.int({ min: 30, max: 200 })
-    })),
-    categoryBars: cats.map((c) => ({ category: c, sales: faker.number.int({ min: 200, max: 2000 }) })),
-    memberPlanDist: { yearly: 128, monthly: 86, trial: 54 }
-  })
+  return request.get<PlatformStats>({ url: '/api/v1/p/stats', params: { period } })
 }
 
 /* ============ 5. 商户审核 ============ */
-// GET/POST /api/v1/p/audit/merchants
-const MERCHANT_AUDITS: Merchant[] = [
-  ...Array.from({ length: 8 }).map(() => ({ ...genMerchant(), status: 'pending' as const })),
-  ...Array.from({ length: 6 }).map(() => ({ ...genMerchant(), status: 'active' as const })),
-  ...Array.from({ length: 4 }).map(() => ({
-    ...genMerchant(),
-    status: 'rejected' as Merchant['status'],
-    rejectReason: faker.helpers.arrayElement(['资质不全', '主体信息不符', '经营范围超出', '联系方式无效'])
-  }))
-]
-
 export function fetchMerchantAudits() {
-  return delay(MERCHANT_AUDITS)
+  return request.get<Merchant[]>({ url: '/api/v1/p/audit/merchants' })
 }
 export function approveMerchant(id: string) {
-  const m = MERCHANT_AUDITS.find((x) => x.id === id)
-  if (m) m.status = 'active'
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: `/api/v1/p/merchants/${id}/approve` })
 }
 export function rejectMerchant(id: string, reason: string) {
-  const m = MERCHANT_AUDITS.find((x) => x.id === id)
-  if (m) {
-    m.status = 'rejected'
-    ;(m as Merchant).rejectReason = reason
-  }
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/merchants/${id}/reject`,
+    data: { reason }
+  })
 }
 
 /* ============ 6. 商品审核 ============ */
-// GET/POST /api/v1/p/audit/products
 export interface AuditProduct {
   id: string
   name: string
@@ -172,75 +100,35 @@ export interface AuditProduct {
   rejectReason?: string
 }
 
-const PRODUCT_AUDITS: AuditProduct[] = (() => {
-  const cats = ['餐桌', '沙发', '床', '茶几', '椅子', '书柜', '灯具', '布艺']
-  const merchants = ['经纬科技', '佛山家具批发', '南方睡眠科技', '岩板工厂', '创智办公']
-  const statuses: AuditProduct['status'][] = [
-    'pending', 'pending', 'pending', 'pending', 'pending', 'pending', 'pending', 'pending',
-    'auto_approved', 'auto_approved', 'auto_approved', 'auto_approved',
-    'rejected', 'rejected', 'rejected'
-  ]
-  return Array.from({ length: 30 }).map((_, i) => ({
-    id: genId(),
-    name: `${faker.helpers.arrayElement(['北欧', '日式', '现代', '简约', '中式'])}${faker.helpers.arrayElement(cats)} ${faker.helpers.arrayElement(['A款', 'B款', 'C款'])}`,
-    image: placeholderImage(600, 600),
-    category: faker.helpers.arrayElement(cats),
-    merchant: faker.helpers.arrayElement(merchants),
-    price: faker.number.int({ min: 199, max: 9999 }),
-    submittedAt: new Date(Date.now() - i * 86400000).toISOString(),
-    status: statuses[i % statuses.length],
-    rejectReason: undefined
-  }))
-})()
-
 export interface ProductAuditConfig {
   autoApprove: boolean
   conditions: { key: string; label: string; enabled: boolean }[]
   samplingRate: number
 }
 
-let AUDIT_CFG: ProductAuditConfig = {
-  autoApprove: true,
-  conditions: [
-    { key: 'top-merchant', label: '商户信用 A 级', enabled: true },
-    { key: 'cat-exists', label: '类目已通过相同商品', enabled: true },
-    { key: 'price-normal', label: '价格在类目正常区间内', enabled: false },
-    { key: 'image-clear', label: '主图清晰且无水印', enabled: true }
-  ],
-  samplingRate: 10
-}
-
 export function fetchProductAudits() {
-  return delay(PRODUCT_AUDITS)
+  return request.get<AuditProduct[]>({ url: '/api/v1/p/audit/products' })
 }
 export function fetchProductAuditConfig() {
-  return delay(AUDIT_CFG)
+  return request.get<ProductAuditConfig>({ url: '/api/v1/p/audit/products/config' })
 }
 export function saveProductAuditConfig(cfg: Partial<ProductAuditConfig>) {
-  AUDIT_CFG = { ...AUDIT_CFG, ...cfg }
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({
+    url: '/api/v1/p/audit/products/config',
+    data: cfg
+  })
 }
 export function approveProduct(id: string) {
-  const p = PRODUCT_AUDITS.find((x) => x.id === id)
-  if (p) p.status = 'auto_approved'
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: `/api/v1/p/products/${id}/approve` })
 }
 export function rejectProduct(id: string, reason: string) {
-  const p = PRODUCT_AUDITS.find((x) => x.id === id)
-  if (p) {
-    p.status = 'rejected'
-    p.rejectReason = reason
-  }
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/products/${id}/reject`,
+    data: { reason }
+  })
 }
 
 /* ============ 7. 广告管理 ============ */
-// GET /api/v1/p/ads/slots · /creatives
-const AD_SLOTS: AdSlot[] = Array.from({ length: 5 }).map(() => genAdSlot())
-const AD_CREATIVES: AdCreative[] = AD_SLOTS.flatMap((s) =>
-  Array.from({ length: 4 }).map(() => genAdCreative(s.id))
-)
-
 export interface AdSlotVM {
   id: string
   name: string
@@ -252,27 +140,37 @@ export interface AdSlotVM {
   preview: string
 }
 
-export function fetchAdSlots() {
-  const list: AdSlotVM[] = AD_SLOTS.map((s, i) => ({
+// shape-adapted: 后端返回 AdSlot[]；前端聚合 creative 数量 + 演示用 CTR/曝光
+export async function fetchAdSlots() {
+  const [slots, creatives] = await Promise.all([
+    request.get<AdSlot[]>({ url: '/api/v1/p/ads/slots' }),
+    request.get<AdCreative[]>({ url: '/api/v1/p/ads/creatives' })
+  ])
+  const safeSlots = Array.isArray(slots) ? slots : []
+  const safeCreatives = Array.isArray(creatives) ? creatives : []
+  const list: AdSlotVM[] = safeSlots.map((s, i) => ({
     id: s.id,
     name: s.name,
-    target: s.target as AdSlotVM['target'],
+    target: (s.target ?? 'customer') as AdSlotVM['target'],
     status: (['active', 'active', 'paused', 'ended', 'draft'] as const)[i % 5],
-    creativeCount: AD_CREATIVES.filter((c) => c.slotId === s.id).length,
+    creativeCount: safeCreatives.filter((c) => c.slotId === s.id).length,
+    // TODO: no backend equivalent — CTR/曝光 暂用 mock
     ctr: faker.number.float({ min: 1.2, max: 12.5, fractionDigits: 1 }),
     impressions: faker.number.int({ min: 5000, max: 200000 }),
     preview: placeholderImage(300, 120)
   }))
-  return delay(list)
+  return list
 }
 
 export function fetchAdCreatives(slotId?: string) {
-  const list = slotId ? AD_CREATIVES.filter((c) => c.slotId === slotId) : AD_CREATIVES
-  return delay(list)
+  return request.get<AdCreative[]>({
+    url: '/api/v1/p/ads/creatives',
+    params: slotId ? { slotId } : {}
+  })
 }
 
 /* ============ 8. 选品广场 ============ */
-// GET /api/v1/p/plaza/products · /pushes
+// TODO: no backend equivalent — 选品广场商品/工厂列表后端无对应路由，保留 mock
 const PLAZA_ITEMS = Array.from({ length: 25 }).map(() => {
   const card = genPlazaCard()
   return {
@@ -282,12 +180,13 @@ const PLAZA_ITEMS = Array.from({ length: 25 }).map(() => {
   }
 })
 
-const PLAZA_PUSHES: PlazaPush[] = Array.from({ length: 12 }).map(() => genPlazaPush())
-
 export type PlazaItem = (typeof PLAZA_ITEMS)[number]
 
-export function fetchPlatformPlaza(tab: 'products' | 'factories' | 'records' = 'products') {
-  if (tab === 'records') return delay(PLAZA_PUSHES)
+export async function fetchPlatformPlaza(tab: 'products' | 'factories' | 'records' = 'products') {
+  if (tab === 'records') {
+    return request.get<PlazaPush[]>({ url: '/api/v1/p/plaza/pushes' })
+  }
+  // TODO: no backend equivalent — products / factories 仍返回 mock
   return delay(PLAZA_ITEMS)
 }
 
@@ -301,46 +200,55 @@ export interface PushPayload {
 }
 
 export function pushPlaza(payload: PushPayload) {
-  PLAZA_PUSHES.unshift({
-    ...genPlazaPush(),
-    target: payload.target as PlazaPush['target']
-  } as PlazaPush)
-  return delay({ ok: true, pushedCount: payload.productIds.length })
+  return request.post<{ ok: boolean; pushedCount: number }>({
+    url: '/api/v1/p/plaza/pushes',
+    data: payload
+  })
 }
 
-/* ============ 9. 会员套餐（走 member-service 真生效） ============ */
+/* ============ 9. 会员套餐 ============ */
 
 export function fetchPlatformMemberPlans() {
-  return msGetAll()
+  return request.get<MemberPlan[]>({ url: '/api/v1/p/member-plans' })
 }
 export function savePlatformMemberPlan(plan: Partial<MemberPlan>) {
-  return msSave(plan)
+  return request.post<{ ok: boolean; plan: MemberPlan }>({
+    url: '/api/v1/p/member-plans',
+    data: plan
+  })
 }
 export function removePlatformMemberPlan(id: string) {
-  return msRemove(id)
+  return request.del<{ ok: boolean }>({ url: `/api/v1/p/member-plans/${id}` })
 }
 export function fetchPlanSubscriptions(planId: string) {
-  return msGetSubsByPlan(planId)
+  return request
+    .get<unknown[]>({ url: `/api/v1/p/member-plans/${planId}/subscriptions` })
+    .catch(() => msGetSubsByPlan(planId)) as ReturnType<typeof msGetSubsByPlan>
 }
 export function fetchAllSubscriptions() {
+  // TODO: no backend equivalent — 后端只暴露按 planId 查询；这里回退到 member-service
   return msGetSubs()
 }
 
-/* ============ 10. 缴费订单（走 member-service 真生效） ============ */
+/* ============ 10. 缴费订单 ============ */
 export type PayOrderItem = PaymentRecord
 
 export function fetchMemberPayOrders() {
-  return msGetPayments()
+  return request.get<PayOrderItem[]>({ url: '/api/v1/p/member-pay-orders' })
 }
 export function approvePayRefund(id: string) {
-  return msUpdatePay(id, 'refunded')
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/member-pay-orders/${id}/approve-refund`
+  })
 }
 export function rejectPayRefund(id: string) {
-  return msUpdatePay(id, 'paid')
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/member-pay-orders/${id}/reject-refund`,
+    data: { reason: '' }
+  })
 }
 
 /* ============ 11. 权限管理 ============ */
-// GET/POST /api/v1/p/admins · /roles
 export interface AdminUser {
   id: string
   nickname: string
@@ -359,79 +267,41 @@ export interface AdminRole {
   builtIn?: boolean
 }
 
-const ROLES: AdminRole[] = [
-  { id: 'r-1', name: '超级管理员', desc: '拥有所有权限', permissions: ['*'], builtIn: true },
-  { id: 'r-2', name: '运营经理', desc: '商户/订单/营销管理', permissions: ['merchant:*', 'order:read', 'ad:*'] },
-  { id: 'r-3', name: '审核员', desc: '商户与商品审核', permissions: ['audit:*'] },
-  { id: 'r-4', name: '客服', desc: '处理售后与会员', permissions: ['order:read', 'member:read'] },
-  { id: 'r-5', name: '财务', desc: '订单财务核对、提现审核', permissions: ['order:read', 'finance:*'] }
-]
-
-const ADMINS: AdminUser[] = Array.from({ length: 8 }).map((_, i) => ({
-  id: 'a-' + (i + 1),
-  nickname: chineseName(),
-  username: 'admin_' + faker.string.alpha({ length: 6, casing: 'lower' }),
-  role: ROLES[i % ROLES.length].name,
-  avatar: placeholderImage(60, 60),
-  status: i === 6 ? 'paused' : 'active',
-  lastLoginAt: new Date(Date.now() - i * 86400000 * 2).toISOString()
-}))
-
 export function fetchAdminRoles() {
-  return delay(ROLES)
+  return request.get<AdminRole[]>({ url: '/api/v1/p/roles' })
 }
 export function fetchAdminUsers() {
-  return delay(ADMINS)
+  return request.get<AdminUser[]>({ url: '/api/v1/p/admins' })
 }
 export function saveAdminRole(role: Partial<AdminRole> & { id?: string }) {
   if (role.id) {
-    const r = ROLES.find((x) => x.id === role.id)
-    if (r) Object.assign(r, role)
-  } else {
-    ROLES.push({
-      id: 'r-' + (ROLES.length + 1),
-      name: role.name || '新角色',
-      desc: role.desc || '',
-      permissions: role.permissions || []
+    return request.put<{ ok: boolean }>({
+      url: `/api/v1/p/roles/${role.id}`,
+      data: role
     })
   }
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: '/api/v1/p/roles', data: role })
 }
 export function removeAdminRole(id: string) {
-  const i = ROLES.findIndex((r) => r.id === id)
-  if (i >= 0 && !ROLES[i].builtIn) ROLES.splice(i, 1)
-  return delay({ ok: true })
+  return request.del<{ ok: boolean }>({ url: `/api/v1/p/roles/${id}` })
 }
 export function saveAdminUser(user: Partial<AdminUser> & { id?: string }) {
   if (user.id) {
-    const u = ADMINS.find((x) => x.id === user.id)
-    if (u) Object.assign(u, user)
-  } else {
-    ADMINS.push({
-      id: 'a-' + (ADMINS.length + 1),
-      nickname: user.nickname || '新管理员',
-      username: user.username || 'new_admin',
-      role: user.role || '客服',
-      avatar: placeholderImage(60, 60),
-      status: 'active',
-      lastLoginAt: new Date().toISOString()
+    return request.put<{ ok: boolean }>({
+      url: `/api/v1/p/admins/${user.id}`,
+      data: user
     })
   }
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: '/api/v1/p/admins', data: user })
 }
 export function toggleAdminUser(id: string) {
-  const u = ADMINS.find((x) => x.id === id)
-  if (u) u.status = u.status === 'active' ? 'paused' : 'active'
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: `/api/v1/p/admins/${id}/toggle` })
 }
 export function removeAdminUser(id: string) {
-  const i = ADMINS.findIndex((x) => x.id === id)
-  if (i >= 0) ADMINS.splice(i, 1)
-  return delay({ ok: true })
+  return request.del<{ ok: boolean }>({ url: `/api/v1/p/admins/${id}` })
 }
 
 /* ============ 12. 系统设置 ============ */
-// GET/POST /api/v1/p/system/settings
 export interface SystemSettings {
   site: { name: string; logo: string; icp: string }
   payment: { wechat: boolean; alipay: boolean; balance: boolean }
@@ -441,54 +311,44 @@ export interface SystemSettings {
   business: { registerLimit: number; commissionRate: number }
 }
 
-let SYSTEM_SETTINGS: SystemSettings = {
-  site: { name: '经纬科技', logo: 'https://picsum.photos/seed/logo/120/120', icp: '京ICP备2026000001号-1' },
-  payment: { wechat: true, alipay: true, balance: false },
-  logistics: { providers: ['顺丰', '京东', '中通', '圆通'], defaultFreight: 12 },
-  service: { phone: '400-666-9999', email: 'service@jiujiu.com', workTime: '09:00 - 21:00' },
-  security: { passwordPolicy: 'strict', ipWhitelist: ['127.0.0.1'] },
-  business: { registerLimit: 500, commissionRate: 2 }
-}
-
 export function fetchSystemSettings() {
-  return delay({ ...SYSTEM_SETTINGS })
+  return request.get<SystemSettings>({ url: '/api/v1/p/system/settings' })
 }
 export function saveSystemSettings(s: Partial<SystemSettings>) {
-  SYSTEM_SETTINGS = { ...SYSTEM_SETTINGS, ...s } as SystemSettings
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({
+    url: '/api/v1/p/system/settings',
+    data: s
+  })
 }
 
 /* ============ 13. 功能开关 ============ */
-// GET/POST /api/v1/p/feature-flags
-const FLAGS: FeatureFlag[] = genFeatureFlags()
-
 export interface GrayscaleConfig {
   audience: 'all' | 'factory' | 'store' | 'specific'
   percent: number
   rule: 'random' | 'whitelist' | 'level'
 }
 
-let GRAYSCALE: GrayscaleConfig = { audience: 'all', percent: 30, rule: 'random' }
-
 export function fetchFeatureFlags() {
-  return delay(FLAGS)
+  return request
+    .get<FeatureFlag[]>({ url: '/api/v1/p/feature-flags' })
+    .catch(() => genFeatureFlags())
 }
 export function toggleFeatureFlag(key: string) {
-  const f = FLAGS.find((x) => x.key === key)
-  if (f) f.defaultEnabled = !f.defaultEnabled
-  return delay({ ok: true })
+  // shape-adapted: 前端按 key 调用；后端用 :id（同一字段），同时透传 enabled=true 由后端取反或前端无关心
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/feature-flags/${key}/toggle`,
+    data: {}
+  })
 }
 export function fetchGrayscale() {
-  return delay({ ...GRAYSCALE })
+  return request.get<GrayscaleConfig>({ url: '/api/v1/p/feature-flags/gray' })
 }
 export function saveGrayscale(cfg: GrayscaleConfig) {
-  GRAYSCALE = cfg
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({
+    url: '/api/v1/p/feature-flags/gray',
+    data: cfg
+  })
 }
 export function resetFeatureFlags() {
-  FLAGS.forEach((f) => {
-    if (f.key === 'home.booking' || f.key === 'menu.marketing_groupbuy') f.defaultEnabled = false
-    else f.defaultEnabled = true
-  })
-  return delay({ ok: true })
+  return request.post<{ ok: boolean }>({ url: '/api/v1/p/feature-flags/reset' })
 }

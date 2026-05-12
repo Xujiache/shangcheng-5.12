@@ -15,7 +15,8 @@
   },
   "h5": {
     "title": "平台管理 · 经纬科技",
-    "router": { "mode": "hash", "base": "./" },
+    "router": { "mode": "hash", "base": "/platform/" },
+    "publicPath": "/platform/",
     "devServer": { "port": 8082 }
   },
   "vueVersion": "3"

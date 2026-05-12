@@ -650,6 +650,188 @@ export class MerchantService {
     return { ok: true, status: app.status, id: app.id }
   }
 
+  /** 我的代理申请列表（按 status 过滤可选） */
+  async myAgencyApplications(merchantId: string, q: { status?: string } = {}) {
+    const where: any = { merchantId }
+    if (q.status && q.status !== 'all') where.status = q.status
+    const apps = await this.prisma.agencyApplication.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    })
+    // 展开成「每个商品一条」结构，方便前端按商品维度展示
+    const result: any[] = []
+    for (const a of apps) {
+      const factory = await this.prisma.merchant.findUnique({ where: { id: a.factoryMerchantId } })
+      const products = a.productIds.length
+        ? await this.prisma.product.findMany({
+            where: { id: { in: a.productIds } },
+            select: {
+              id: true, name: true, images: true,
+              priceWholesaleMin: true, priceRetailMin: true,
+            },
+          })
+        : []
+      for (const p of products) {
+        const factoryPrice = Number(p.priceWholesaleMin ?? p.priceRetailMin ?? 0)
+        const myRetailPrice = Math.round(factoryPrice * (1 + a.markupPercent / 100))
+        result.push({
+          id: `${a.id}:${p.id}`,
+          applicationId: a.id,
+          productId: p.id,
+          productName: p.name,
+          productImage: p.images?.[0] ?? '',
+          factoryId: a.factoryMerchantId,
+          factoryName: factory?.name ?? '',
+          factoryPrice,
+          myRetailPrice,
+          markupRatio: a.markupPercent,
+          syncStatus: a.autoSyncPrice ? 'synced' : 'pending',
+          status: a.status,
+          appliedAt: a.createdAt.toISOString(),
+        })
+      }
+      // 兼容空 productIds：仍然返回一条占位
+      if (!products.length) {
+        result.push({
+          id: a.id,
+          applicationId: a.id,
+          productId: '',
+          productName: '(代理申请整体)',
+          productImage: '',
+          factoryId: a.factoryMerchantId,
+          factoryName: factory?.name ?? '',
+          factoryPrice: 0,
+          myRetailPrice: 0,
+          markupRatio: a.markupPercent,
+          syncStatus: a.autoSyncPrice ? 'synced' : 'pending',
+          status: a.status,
+          appliedAt: a.createdAt.toISOString(),
+        })
+      }
+    }
+    return result
+  }
+
+  async updateAgencyApplication(
+    merchantId: string,
+    id: string,
+    dto: { myRetailPrice?: number; markupRatio?: number; status?: string },
+  ) {
+    // 支持复合 id "applicationId:productId"
+    const appId = id.includes(':') ? id.split(':')[0] : id
+    const app = await this.prisma.agencyApplication.findFirst({ where: { id: appId, merchantId } })
+    if (!app) throw new BizException(BizCode.NOT_FOUND, '代理申请不存在')
+    const data: any = {}
+    if (typeof dto.markupRatio === 'number') data.markupPercent = dto.markupRatio
+    if (dto.status && ['pending', 'approved', 'rejected', 'offline'].includes(dto.status)) {
+      data.status = dto.status
+    }
+    if (Object.keys(data).length) {
+      await this.prisma.agencyApplication.update({ where: { id: appId }, data })
+    }
+    return { ok: true }
+  }
+
+  async cancelAgencyApplication(merchantId: string, id: string) {
+    const appId = id.includes(':') ? id.split(':')[0] : id
+    const app = await this.prisma.agencyApplication.findFirst({ where: { id: appId, merchantId } })
+    if (!app) throw new BizException(BizCode.NOT_FOUND, '代理申请不存在')
+    await this.prisma.agencyApplication.delete({ where: { id: appId } })
+    return { ok: true }
+  }
+
+  // ========== 商户资料 ==========
+  async getProfile(merchantId: string) {
+    const m = await this.prisma.merchant.findUnique({ where: { id: merchantId } })
+    if (!m) throw new BizException(BizCode.NOT_FOUND, '商户不存在')
+    return {
+      shopName: m.name,
+      merchantNo: m.id.slice(-6).toUpperCase(),
+      contactName: m.contact,
+      contactPhone: m.contactPhone,
+      address: m.address,
+      categories: m.categories,
+      legalName: m.legalName,
+      creditCode: m.creditCode,
+      region: m.region,
+      level: m.level,
+      credit: m.credit,
+      status: m.status,
+      type: m.type,
+      // email / description 来自 SystemConfig 扩展（schema 中无字段）
+      email: ((await this.getProfileExtras(merchantId)).email) || '',
+      description: ((await this.getProfileExtras(merchantId)).description) || '',
+    }
+  }
+
+  private async getProfileExtras(merchantId: string): Promise<{ email?: string; description?: string }> {
+    const cfg = await this.prisma.systemConfig.findUnique({
+      where: { key: `shop:${merchantId}:profile-extras` },
+    })
+    return (cfg?.value as any) || {}
+  }
+
+  async updateProfile(merchantId: string, dto: any) {
+    const data: any = {}
+    if (typeof dto.shopName === 'string') data.name = dto.shopName
+    if (typeof dto.contactName === 'string') data.contact = dto.contactName
+    if (typeof dto.contactPhone === 'string') data.contactPhone = dto.contactPhone
+    if (typeof dto.address === 'string') data.address = dto.address
+    if (Array.isArray(dto.categories)) data.categories = dto.categories
+    if (Object.keys(data).length) {
+      await this.prisma.merchant.update({ where: { id: merchantId }, data })
+    }
+    // email / description 没字段，存 SystemConfig
+    const extras: any = {}
+    if (typeof dto.email === 'string') extras.email = dto.email
+    if (typeof dto.description === 'string') extras.description = dto.description
+    if (Object.keys(extras).length) {
+      const key = `shop:${merchantId}:profile-extras`
+      const prior = await this.prisma.systemConfig.findUnique({ where: { key } })
+      const merged = { ...(prior?.value as any || {}), ...extras }
+      await this.prisma.systemConfig.upsert({
+        where: { key },
+        update: { value: merged },
+        create: { key, value: merged },
+      })
+    }
+    return this.getProfile(merchantId)
+  }
+
+  // ========== 店铺级价格显示规则 ==========
+  async getShopPriceRule(merchantId: string) {
+    const cfg = await this.prisma.systemConfig.findUnique({
+      where: { key: `shop:${merchantId}:priceRule` },
+    })
+    const DEFAULT = {
+      guestAllow: false,
+      customerPrice: 'retail',
+      agencyPrice: 'wholesale',
+      memberPrice: 'member',
+    }
+    return { ...DEFAULT, ...((cfg?.value as any) || {}) }
+  }
+
+  async setShopPriceRule(
+    merchantId: string,
+    dto: {
+      guestAllow?: boolean
+      customerPrice?: 'retail' | 'hidden'
+      agencyPrice?: 'wholesale' | 'retail'
+      memberPrice?: 'member' | 'retail'
+    },
+  ) {
+    const key = `shop:${merchantId}:priceRule`
+    const prior = await this.prisma.systemConfig.findUnique({ where: { key } })
+    const merged = { ...((prior?.value as any) || {}), ...dto }
+    await this.prisma.systemConfig.upsert({
+      where: { key },
+      update: { value: merged },
+      create: { key, value: merged },
+    })
+    return merged
+  }
+
   // ========== 功能开关 ==========
   async resolveFeatureFlags(merchantId: string) {
     const flags = await this.prisma.featureFlag.findMany()

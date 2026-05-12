@@ -9,6 +9,9 @@ import { FilesModule } from './modules/files/files.module'
 import { UserMpModule } from './modules/user-mp/user-mp.module'
 import { MerchantModule } from './modules/merchant/merchant.module'
 import { PlatformModule } from './modules/platform/platform.module'
+import { ChatModule } from './modules/chat/chat.module'
+import { SmsModule } from './modules/sms/sms.module'
+import { PaymentModule } from './modules/payment/payment.module'
 
 @Module({
   imports: [
@@ -21,6 +24,9 @@ import { PlatformModule } from './modules/platform/platform.module'
     UserMpModule,
     MerchantModule,
     PlatformModule,
+    ChatModule,
+    SmsModule,
+    PaymentModule,
   ],
   controllers: [HealthController],
 })

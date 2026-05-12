@@ -16,6 +16,110 @@
       </div>
     </div>
 
+    <!-- 价格显示规则（店铺级 · 改一次全店生效） -->
+    <ElCard shadow="never" class="mp-price-rule" :body-style="{ padding: '20px 24px' }">
+      <div class="mp-price-rule__head">
+        <div>
+          <div class="mp-price-rule__title">
+            <ArtSvgIcon icon="ri:price-tag-2-fill" class="mp-price-rule__title-icon" />
+            价格显示规则
+            <ElTag size="small" type="danger" effect="dark" round class="ml-2">核心</ElTag>
+          </div>
+          <div class="mp-price-rule__sub">
+            按对方身份显示对应价格。决定客户能否看到价格、能看到什么价。
+            <b class="text-primary">改一次，全店所有商品立即生效。</b>
+          </div>
+        </div>
+        <ElButton text type="primary" size="small" @click="resetPriceRule">恢复默认</ElButton>
+      </div>
+
+      <div class="mp-price-rule__list">
+        <!-- 未登录访客 -->
+        <div class="mp-rule-row">
+          <div class="mp-rule-row__main">
+            <ArtSvgIcon icon="ri:user-line" class="mp-rule-row__icon" :style="{ color: '#9CA3AF' }" />
+            <div>
+              <div class="mp-rule-row__label">未登录访客</div>
+              <div class="mp-rule-row__hint">未授权小程序的访客</div>
+            </div>
+          </div>
+          <div class="mp-rule-row__action">
+            <ElSwitch
+              v-model="priceRule.guestAllow"
+              size="large"
+              inline-prompt
+              active-text="允许浏览"
+              inactive-text="禁止进入"
+              @change="onRuleChange('未登录访客')"
+            />
+          </div>
+        </div>
+
+        <!-- 普通客户 -->
+        <div class="mp-rule-row">
+          <div class="mp-rule-row__main">
+            <ArtSvgIcon icon="ri:user-3-line" class="mp-rule-row__icon" :style="{ color: '#3B82F6' }" />
+            <div>
+              <div class="mp-rule-row__label">普通客户</div>
+              <div class="mp-rule-row__hint">已登录但未授权门店</div>
+            </div>
+          </div>
+          <div class="mp-rule-row__action">
+            <ElRadioGroup
+              v-model="priceRule.customerPrice"
+              size="default"
+              @change="onRuleChange('普通客户')"
+            >
+              <ElRadioButton value="retail">显示零售价</ElRadioButton>
+              <ElRadioButton value="hidden">不显示价格</ElRadioButton>
+            </ElRadioGroup>
+          </div>
+        </div>
+
+        <!-- 授权门店 -->
+        <div class="mp-rule-row">
+          <div class="mp-rule-row__main">
+            <ArtSvgIcon icon="ri:store-3-line" class="mp-rule-row__icon" :style="{ color: '#FF4D2D' }" />
+            <div>
+              <div class="mp-rule-row__label">授权门店</div>
+              <div class="mp-rule-row__hint">已申请代理 / 加盟门店</div>
+            </div>
+          </div>
+          <div class="mp-rule-row__action">
+            <ElRadioGroup
+              v-model="priceRule.agencyPrice"
+              size="default"
+              @change="onRuleChange('授权门店')"
+            >
+              <ElRadioButton value="wholesale">批发价</ElRadioButton>
+              <ElRadioButton value="retail">零售价</ElRadioButton>
+            </ElRadioGroup>
+          </div>
+        </div>
+
+        <!-- 会员客户 -->
+        <div class="mp-rule-row">
+          <div class="mp-rule-row__main">
+            <ArtSvgIcon icon="ri:vip-crown-2-line" class="mp-rule-row__icon" :style="{ color: '#A855F7' }" />
+            <div>
+              <div class="mp-rule-row__label">会员客户</div>
+              <div class="mp-rule-row__hint">付费 / 邀请制会员</div>
+            </div>
+          </div>
+          <div class="mp-rule-row__action">
+            <ElRadioGroup
+              v-model="priceRule.memberPrice"
+              size="default"
+              @change="onRuleChange('会员客户')"
+            >
+              <ElRadioButton value="member">会员价</ElRadioButton>
+              <ElRadioButton value="retail">零售价</ElRadioButton>
+            </ElRadioGroup>
+          </div>
+        </div>
+      </div>
+    </ElCard>
+
     <!-- Tab + 搜索 -->
     <ElCard shadow="never" class="mp-toolbar">
       <ElTabs v-model="status" @tab-change="loadData" class="mp-status-tabs">
@@ -179,6 +283,7 @@
     updateProductStatus,
     removeProducts
   } from '@/api/merchant-business'
+  import { useShopPriceVisibility } from '@/composables/useShopPriceVisibility'
   import type { Product } from '@jiujiu/shared/types'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import {
@@ -188,6 +293,16 @@
     Refresh,
     Search
   } from '@element-plus/icons-vue'
+
+  /** 店铺级价格显示规则（localStorage 持久化） */
+  const { state: priceRule, reset: resetPriceRuleStore } = useShopPriceVisibility()
+  function onRuleChange(tierName: string) {
+    ElMessage.success(`${tierName} 的价格规则已保存 · 全店生效`)
+  }
+  function resetPriceRule() {
+    resetPriceRuleStore()
+    ElMessage.success('已恢复默认规则')
+  }
 
   defineOptions({ name: 'MerchantProductList' })
 
@@ -356,6 +471,100 @@
     :deep(.el-card__body) {
       padding: 8px 16px 12px;
     }
+  }
+
+  /* ============ 店铺价格显示规则 ============ */
+  .mp-price-rule {
+    border-radius: 14px;
+    border: 1px solid #fde6df;
+    background: linear-gradient(135deg, #fff8f5 0%, #fffbf3 100%);
+  }
+
+  .mp-price-rule__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 14px;
+    border-bottom: 1px dashed #f5d8cd;
+    margin-bottom: 4px;
+    gap: 16px;
+  }
+
+  .mp-price-rule__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #303133;
+  }
+
+  .mp-price-rule__title-icon {
+    color: var(--el-color-primary, #ff4d2d);
+    font-size: 20px;
+  }
+
+  .mp-price-rule__sub {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  .mp-price-rule__list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 24px;
+
+    @media (max-width: 1100px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .mp-rule-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 8px;
+    border-bottom: 1px dashed #f5d8cd;
+
+    &:nth-last-child(-n + 2) {
+      border-bottom: none;
+    }
+  }
+
+  .mp-rule-row__main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mp-rule-row__icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .mp-rule-row__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+  }
+
+  .mp-rule-row__hint {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 2px;
+  }
+
+  .mp-rule-row__action {
+    flex-shrink: 0;
+  }
+
+  .text-primary {
+    color: var(--el-color-primary, #ff4d2d);
   }
 
   .mp-status-tabs {

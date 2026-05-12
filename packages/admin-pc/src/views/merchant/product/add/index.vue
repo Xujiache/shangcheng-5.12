@@ -240,55 +240,45 @@
         </ElFormItem>
       </ElCard>
 
-      <!-- §4 价格显示规则 -->
-      <ElCard shadow="never" class="mp-section">
+      <!-- §4 价格显示规则提示（已上移至「商品管理」店铺级配置） -->
+      <ElCard shadow="never" class="mp-section mp-section--notice">
         <template #header>
           <span class="mp-section__title">④ 价格显示规则</span>
-          <span class="text-xs text-g-500 ml-2">控制不同客户群体看到的价格</span>
+          <ElTag size="small" type="success" effect="plain" class="ml-2">店铺级配置</ElTag>
         </template>
 
-        <ElTable :data="form.priceVisibility" stripe size="default">
-          <ElTableColumn label="客户群体" min-width="180">
-            <template #default="{ row }">
-              <div class="flex items-center gap-2">
-                <ArtSvgIcon :icon="row.icon" :style="{ color: row.color }" class="text-lg" />
-                <div>
-                  <div class="font-medium">{{ row.label }}</div>
-                  <div class="text-xs text-g-500">{{ row.hint }}</div>
-                </div>
+        <div class="mp-rule-notice">
+          <div class="mp-rule-notice__main">
+            <ArtSvgIcon icon="ri:price-tag-2-fill" class="mp-rule-notice__icon" />
+            <div>
+              <div class="mp-rule-notice__title">价格显示规则已移至「商品管理」店铺级配置</div>
+              <div class="mp-rule-notice__sub">
+                改一次全店所有商品立即生效；当前商品也会自动跟随店铺规则展示价格。
+                <b>当前店铺规则：</b>
+                <span class="mp-rule-notice__pill">
+                  访客 {{ shopRule.guestAllow ? '允许浏览' : '禁止进入' }}
+                </span>
+                <span class="mp-rule-notice__pill">
+                  普通客户：{{ shopRule.customerPrice === 'retail' ? '零售价' : '不显示' }}
+                </span>
+                <span class="mp-rule-notice__pill">
+                  授权门店：{{ shopRule.agencyPrice === 'wholesale' ? '批发价' : '零售价' }}
+                </span>
+                <span class="mp-rule-notice__pill">
+                  会员客户：{{ shopRule.memberPrice === 'member' ? '会员价' : '零售价' }}
+                </span>
               </div>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="可见价格" min-width="180" align="center">
-            <template #default="{ row }">
-              <ElSelect v-model="row.price" size="small" style="width: 140px" :disabled="row.locked">
-                <ElOption value="hidden" label="隐藏（询价）" />
-                <ElOption value="wholesale" label="批发价" />
-                <ElOption value="retail" label="零售价" />
-                <ElOption value="member" label="会员价" />
-              </ElSelect>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="可购买" width="120" align="center">
-            <template #default="{ row }">
-              <ElSwitch v-model="row.canBuy" :disabled="row.locked" />
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="说明" min-width="220">
-            <template #default="{ row }">
-              <span class="text-xs text-g-500">{{ ruleDescOf(row) }}</span>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-
-        <ElAlert
-          class="mt-3"
-          type="info"
-          :closable="false"
-          show-icon
-          title="价格显示规则"
-          description="客户层级在「客户管理」中设置；该规则会影响 user 端商品详情页与列表的价格显示，未授权用户只能看到询价提示。"
-        />
+            </div>
+          </div>
+          <ElButton
+            type="primary"
+            plain
+            size="small"
+            @click="router.push('/merchant/product/list')"
+          >
+            去店铺规则页修改
+          </ElButton>
+        </div>
       </ElCard>
     </ElForm>
 
@@ -311,11 +301,16 @@
     Top
   } from '@element-plus/icons-vue'
 
+  import { useShopPriceVisibility } from '@/composables/useShopPriceVisibility'
+
   defineOptions({ name: 'MerchantProductAdd' })
 
   const router = useRouter()
   const route = useRoute()
   const editingId = computed(() => (route.query.id as string) || '')
+
+  /** 店铺级价格显示规则（只读展示；改在商品管理顶部） */
+  const { state: shopRule } = useShopPriceVisibility()
 
   const TAG_OPTIONS = ['新品', '包邮', '厂家直发', '热销', '限时', '推荐', '环保', 'A级品']
   const SPEC_NAME_OPTIONS = ['尺寸', '颜色', '材质', '风格', '套餐', '版本']
@@ -605,6 +600,57 @@
   .mp-section__title {
     font-size: 15px;
     font-weight: 600;
+  }
+
+  .mp-section--notice {
+    border: 1px dashed #fde6df;
+    background: linear-gradient(135deg, #fff8f5 0%, #fffbf3 100%);
+  }
+
+  .mp-rule-notice {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .mp-rule-notice__main {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mp-rule-notice__icon {
+    color: var(--el-color-primary, #ff4d2d);
+    font-size: 26px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .mp-rule-notice__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+  }
+
+  .mp-rule-notice__sub {
+    font-size: 12px;
+    color: #606266;
+    margin-top: 6px;
+    line-height: 1.7;
+  }
+
+  .mp-rule-notice__pill {
+    display: inline-block;
+    padding: 2px 10px;
+    margin: 0 4px 4px 0;
+    background: rgba(255, 77, 45, 0.08);
+    color: #ff4d2d;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
   }
 
   .mp-row-2 {

@@ -6,7 +6,7 @@
   "versionCode": "100",
   "transformPx": false,
   "mp-weixin": {
-    "appid": "wx0000000000000000",
+    "appid": "wxe8ed8b7d9d154165",
     "setting": {
       "urlCheck": false,
       "es6": true,
@@ -22,7 +22,8 @@
   },
   "h5": {
     "title": "经纬科技",
-    "router": { "mode": "hash" },
+    "router": { "mode": "hash", "base": "/user/" },
+    "publicPath": "/user/",
     "devServer": { "port": 8081 }
   },
   "vueVersion": "3"

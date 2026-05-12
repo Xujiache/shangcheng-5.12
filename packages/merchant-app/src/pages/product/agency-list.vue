@@ -139,35 +139,68 @@ function gotoDetail(a: AgencyApp) {
   uni.navigateTo({ url: `/pages/plaza/factory?id=${a.factoryId}` })
 }
 
+/* ====== 加价弹窗：% 加价率 / ¥ 固定金额 两种模式 ====== */
+const markupDialog = ref<{
+  open: boolean
+  target: AgencyApp | null
+  mode: 'ratio' | 'amount'
+  valueStr: string
+}>({ open: false, target: null, mode: 'ratio', valueStr: '30' })
+
+const markupParsedValue = computed(() => {
+  const n = Number(markupDialog.value.valueStr)
+  return Number.isFinite(n) && n >= 0 ? n : 0
+})
+
+const markupPreview = computed(() => {
+  const t = markupDialog.value.target
+  if (!t) return null
+  const v = markupParsedValue.value
+  if (markupDialog.value.mode === 'ratio') {
+    return {
+      newRetail: Math.round(t.startPrice * (1 + v / 100)),
+      derivedRatio: v,
+    }
+  }
+  return {
+    newRetail: t.startPrice + v,
+    derivedRatio: t.startPrice > 0 ? Math.round((v / t.startPrice) * 100) : 0,
+  }
+})
+
 function adjustMarkup(a: AgencyApp) {
-  uni.showActionSheet({
-    itemList: ['10% 加价', '15% 加价', '20% 加价', '25% 加价', '30% 加价', '自定义'],
-    success: (r) => {
-      if (r.tapIndex === 5) {
-        uni.showModal({
-          title: '自定义加价率',
-          editable: true,
-          placeholderText: '请输入百分比，如 28',
-          success: (m) => {
-            if (m.confirm && m.content) {
-              const v = Number(m.content)
-              if (!isNaN(v) && v > 0) {
-                a.markupPercent = v
-                a.retailPrice = Math.round(a.startPrice * (1 + v / 100))
-                persist()
-                uni.showToast({ title: '已更新', icon: 'success' })
-              }
-            }
-          },
-        })
-      } else {
-        const v = [10, 15, 20, 25, 30][r.tapIndex]
-        a.markupPercent = v
-        a.retailPrice = Math.round(a.startPrice * (1 + v / 100))
-        persist()
-        uni.showToast({ title: '已更新', icon: 'success' })
-      }
-    },
+  markupDialog.value = {
+    open: true,
+    target: a,
+    mode: 'ratio',
+    valueStr: String(a.markupPercent || 30),
+  }
+}
+
+function closeMarkupDialog() {
+  markupDialog.value.open = false
+  markupDialog.value.target = null
+}
+
+function confirmMarkup() {
+  const t = markupDialog.value.target
+  if (!t) return closeMarkupDialog()
+  const v = markupParsedValue.value
+  if (markupDialog.value.mode === 'ratio') {
+    t.markupPercent = v
+    t.retailPrice = Math.round(t.startPrice * (1 + v / 100))
+  } else {
+    t.retailPrice = t.startPrice + v
+    t.markupPercent = t.startPrice > 0 ? Math.round((v / t.startPrice) * 100) : 0
+  }
+  persist()
+  closeMarkupDialog()
+  uni.showToast({
+    title:
+      markupDialog.value.mode === 'ratio'
+        ? `加价率 +${v}% · ¥${t.retailPrice}`
+        : `加价 ¥${v} · ¥${t.retailPrice}`,
+    icon: 'success',
   })
 }
 
@@ -346,6 +379,80 @@ function goEditProduct(a: AgencyApp) {
       </EmptyState>
       <view style="height: 40rpx;" />
     </scroll-view>
+
+    <!-- 加价弹窗（% 加价率 / ¥ 固定金额） -->
+    <view v-if="markupDialog.open" class="mk-mask" @click="closeMarkupDialog">
+      <view class="mk-sheet" @click.stop>
+        <view class="mk-head">
+          <text class="mk-title">调整加价</text>
+          <view class="mk-close" @click="closeMarkupDialog">
+            <Icon name="close" :size="32" color="#909399" />
+          </view>
+        </view>
+        <view class="mk-body">
+          <view class="mk-target" v-if="markupDialog.target">
+            <image :src="markupDialog.target.productImage" mode="aspectFill" class="mk-target-img" />
+            <view class="mk-target-info">
+              <text class="mk-target-name">{{ markupDialog.target.productName }}</text>
+              <text class="mk-target-price">出厂价 ¥{{ markupDialog.target.startPrice }}</text>
+            </view>
+          </view>
+
+          <view class="mk-label">加价（输入任意正数）</view>
+          <view class="mk-input-row">
+            <input
+              v-model="markupDialog.valueStr"
+              type="digit"
+              class="mk-input"
+              placeholder="输入加价数值"
+            />
+            <view class="mk-units">
+              <view
+                class="mk-unit"
+                :class="{ active: markupDialog.mode === 'ratio' }"
+                @click="markupDialog.mode = 'ratio'"
+              >
+                % 加价率
+              </view>
+              <view
+                class="mk-unit"
+                :class="{ active: markupDialog.mode === 'amount' }"
+                @click="markupDialog.mode = 'amount'"
+              >
+                ¥ 固定金额
+              </view>
+            </view>
+          </view>
+          <text class="mk-hint">
+            {{
+              markupDialog.mode === 'ratio'
+                ? '示例：输入 30 → 零售价 = 出厂价 × 1.30'
+                : '示例：输入 100 → 零售价 = 出厂价 + ¥100，方便心算'
+            }}
+          </text>
+
+          <view v-if="markupPreview" class="mk-preview">
+            <view class="mk-preview-row">
+              <text class="mk-preview-label">出厂价</text>
+              <text class="mk-preview-value">¥{{ markupDialog.target?.startPrice }}</text>
+            </view>
+            <view class="mk-preview-arrow">↓</view>
+            <view class="mk-preview-row mk-preview-row--accent">
+              <text class="mk-preview-label">新零售价</text>
+              <text class="mk-preview-value mk-preview-value--big">¥{{ markupPreview.newRetail }}</text>
+            </view>
+            <view class="mk-preview-row mk-preview-row--small">
+              <text class="mk-preview-label">实际加价率</text>
+              <text class="mk-preview-value">+{{ markupPreview.derivedRatio }}%</text>
+            </view>
+          </view>
+        </view>
+        <view class="mk-footer">
+          <view class="mk-btn mk-btn--ghost" @click="closeMarkupDialog">取消</view>
+          <view class="mk-btn mk-btn--primary" @click="confirmMarkup">确定</view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -627,5 +734,246 @@ function goEditProduct(a: AgencyApp) {
   font-weight: 700;
   display: inline-block;
   box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
+}
+
+/* ============ 加价弹窗 ============ */
+.mk-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  animation: mk-fade-in 0.18s ease-out;
+}
+
+@keyframes mk-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mk-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: mk-slide-up 0.24s ease-out;
+}
+
+@keyframes mk-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.mk-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 32rpx 16rpx;
+  border-bottom: 1rpx solid #f0f2f5;
+}
+
+.mk-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #303133;
+}
+
+.mk-close {
+  padding: 8rpx;
+}
+
+.mk-body {
+  padding: 24rpx 32rpx 16rpx;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mk-target {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx;
+  background: #fafbfc;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.mk-target-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 12rpx;
+  flex-shrink: 0;
+}
+
+.mk-target-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.mk-target-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mk-target-price {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.mk-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12rpx;
+}
+
+.mk-input-row {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  border: 2rpx solid #e5e7eb;
+  border-radius: 14rpx;
+  overflow: hidden;
+  background: #fff;
+}
+
+.mk-input {
+  flex: 1;
+  padding: 22rpx 20rpx;
+  font-size: 32rpx;
+  color: #303133;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.mk-units {
+  display: flex;
+  flex-shrink: 0;
+  background: #f5f6f8;
+  border-left: 2rpx solid #e5e7eb;
+}
+
+.mk-unit {
+  padding: 0 18rpx;
+  display: flex;
+  align-items: center;
+  font-size: 22rpx;
+  color: #606266;
+  border-left: 1rpx solid #ebeef5;
+
+  &:first-child {
+    border-left: none;
+  }
+
+  &.active {
+    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
+    color: #fff;
+    font-weight: 600;
+  }
+}
+
+.mk-hint {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #909399;
+  line-height: 1.5;
+}
+
+.mk-preview {
+  margin-top: 24rpx;
+  padding: 20rpx;
+  background: #fafbfc;
+  border: 1rpx dashed #ebeef5;
+  border-radius: 14rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.mk-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &--accent {
+    padding: 8rpx 0;
+    border-top: 1rpx dashed #e5e7eb;
+    border-bottom: 1rpx dashed #e5e7eb;
+  }
+
+  &--small {
+    .mk-preview-label,
+    .mk-preview-value {
+      font-size: 22rpx;
+    }
+  }
+}
+
+.mk-preview-label {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.mk-preview-value {
+  font-size: 28rpx;
+  color: #303133;
+  font-weight: 500;
+
+  &--big {
+    font-size: 38rpx;
+    color: #ff4d2d;
+    font-weight: 700;
+  }
+}
+
+.mk-preview-arrow {
+  text-align: center;
+  color: #c0c4cc;
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.mk-footer {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx 32rpx 32rpx;
+  border-top: 1rpx solid #f0f2f5;
+}
+
+.mk-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+
+  &--ghost {
+    background: #f5f6f8;
+    color: #606266;
+  }
+
+  &--primary {
+    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
+    color: #fff;
+    box-shadow: 0 8rpx 24rpx rgba(255, 77, 45, 0.35);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
 }
 </style>

@@ -1,23 +1,26 @@
-<!-- 商家 PC · 数据概览（S3-T1） -->
+<!-- 商家 PC · 工作台首页（待办 + 快捷入口；详细数据见 数据中心） -->
 <template>
   <div class="mp-dashboard">
-    <!-- 顶部欢迎条 + 周期切换 -->
-    <div class="mp-dashboard__top">
-      <div>
-        <h2 class="m-0 text-xl font-semibold">{{ greetingText }}，王老板 👋</h2>
-        <p class="mt-1 text-sm text-g-500">
-          今天 · 销售 ¥{{ stats?.today.sales.toLocaleString() }}，订单 {{ stats?.today.orders }} 单
-        </p>
+    <!-- 顶部欢迎条 -->
+    <div class="mp-hero">
+      <div class="mp-hero__bg" />
+      <div class="mp-hero__content">
+        <div>
+          <h2 class="mp-hero__title">{{ greetingText }}，{{ nickName }} 👋</h2>
+          <p class="mp-hero__sub">
+            待办 <b class="mp-hero__num">{{ totalTodos }}</b> 项 · 详细经营数据请前往
+            <a class="mp-hero__link" @click="router.push('/merchant/stats')">数据中心</a>
+          </p>
+        </div>
+        <div class="mp-hero__date">
+          <div class="mp-hero__weekday">{{ today.weekday }}</div>
+          <div class="mp-hero__day">{{ today.day }}</div>
+          <div class="mp-hero__month">{{ today.month }}月 · {{ today.year }}</div>
+        </div>
       </div>
-      <ElRadioGroup v-model="period" size="default" @change="loadData">
-        <ElRadioButton value="today">今日</ElRadioButton>
-        <ElRadioButton value="week">本周</ElRadioButton>
-        <ElRadioButton value="month">本月</ElRadioButton>
-        <ElRadioButton value="year">本年</ElRadioButton>
-      </ElRadioGroup>
     </div>
 
-    <!-- 会员状态反馈条 -->
+    <!-- 会员状态反馈条（保留：套餐到期提醒等） -->
     <div v-if="notices.length" class="mp-notices">
       <ElAlert
         v-for="(n, i) in notices"
@@ -25,8 +28,6 @@
         :type="n.level === 'danger' ? 'error' : n.level"
         :closable="false"
         show-icon
-        :title="n.title"
-        :description="n.desc"
       >
         <template #default>
           <div class="flex items-center justify-between gap-3">
@@ -34,7 +35,13 @@
               <div class="font-medium">{{ n.title }}</div>
               <div class="text-xs">{{ n.desc }}</div>
             </div>
-            <ElButton v-if="n.cta" size="small" :type="n.level === 'danger' ? 'danger' : 'primary'" plain @click="$router.push(n.cta.to)">
+            <ElButton
+              v-if="n.cta"
+              size="small"
+              :type="n.level === 'danger' ? 'danger' : 'primary'"
+              plain
+              @click="router.push(n.cta.to)"
+            >
               {{ n.cta.label }}
             </ElButton>
           </div>
@@ -42,121 +49,75 @@
       </ElAlert>
     </div>
 
-    <!-- KPI 4 卡 -->
-    <div class="mp-kpi-row">
-      <ArtStatsCard
-        v-for="(item, i) in kpiList"
-        :key="i"
-        :title="item.title"
-        :count="item.count"
-        :description="item.desc"
-        :icon="item.icon"
-        :iconStyle="item.iconStyle"
-        :separator="item.separator || ','"
-        :decimals="item.decimals"
-      />
-    </div>
-
-    <!-- 主图表区 -->
     <div class="mp-grid-2">
-      <ElCard shadow="hover" class="mp-card">
+      <!-- 待办 -->
+      <ElCard shadow="never" class="mp-card mp-todo-card" v-loading="loading">
         <template #header>
           <div class="mp-card__title">
-            <span>销售趋势</span>
-            <span class="text-xs text-g-500">最近 {{ trendLabel }}</span>
+            <span class="mp-card__title-text">
+              <ArtSvgIcon icon="ri:flashlight-fill" class="mp-card__title-icon" />
+              待办事项
+            </span>
+            <ElTag v-if="totalTodos > 0" size="small" type="danger" round>
+              {{ totalTodos }} 项待处理
+            </ElTag>
+            <ElTag v-else size="small" type="success" round>全部处理完毕</ElTag>
           </div>
         </template>
-        <ArtLineChart
-          v-if="trend"
-          height="280px"
-          :data="trendChartData"
-          :x-axis-data="trendXAxis"
-          show-area-color
-        />
-      </ElCard>
-
-      <ElCard shadow="hover" class="mp-card">
-        <template #header>
-          <div class="mp-card__title">
-            <span>类目销售占比</span>
-            <span class="text-xs text-g-500">{{ trendLabel }}</span>
-          </div>
-        </template>
-        <ArtRingChart
-          v-if="categoryRingData.length"
-          height="280px"
-          :data="categoryRingData"
-        />
-      </ElCard>
-    </div>
-
-    <!-- 第二行：商品 Top + 待办 -->
-    <div class="mp-grid-2">
-      <ElCard shadow="hover" class="mp-card">
-        <template #header>
-          <div class="mp-card__title">
-            <span>热销商品 Top 10</span>
-            <ElLink type="primary" :underline="false" @click="goToList">查看全部</ElLink>
-          </div>
-        </template>
-        <ArtHBarChart
-          v-if="topProductData.length"
-          height="320px"
-          :data="topProductData.map((p) => p.value)"
-          :y-axis-data="topProductData.map((p) => p.name)"
-        />
-      </ElCard>
-
-      <ElCard shadow="hover" class="mp-card">
-        <template #header>
-          <div class="mp-card__title">
-            <span>待办事项</span>
-            <ElBadge :value="totalTodos" class="todo-badge" :hidden="totalTodos === 0" />
-          </div>
-        </template>
-        <div class="mp-todos">
+        <div class="mp-todo__list">
           <div
-            v-for="todo in todoList"
-            :key="todo.key"
-            class="mp-todo-item"
-            @click="goTodo(todo.key)"
+            v-for="t in todoList"
+            :key="t.key"
+            class="mp-todo__row"
+            :class="{ 'mp-todo__row--empty': t.count === 0 }"
+            @click="goTodo(t.key)"
           >
-            <div class="mp-todo-icon" :style="{ background: todo.color }">
-              <ArtSvgIcon :icon="todo.icon" />
+            <div class="mp-todo__icon" :style="{ background: t.tint + '18', color: t.tint }">
+              <ArtSvgIcon :icon="t.icon" />
             </div>
-            <div class="flex-1 min-w-0">
-              <div class="mp-todo-label">{{ todo.label }}</div>
-              <div class="text-xs text-g-500 mt-1">{{ todo.subLabel }}</div>
+            <div class="mp-todo__body">
+              <div class="mp-todo__label">{{ t.label }}</div>
+              <div class="mp-todo__desc">{{ t.subLabel }}</div>
             </div>
-            <div class="mp-todo-count" :class="{ zero: todo.count === 0 }">
-              {{ todo.count }}
+            <div class="mp-todo__count">
+              <ElBadge v-if="t.count > 0" :value="t.count" :max="99" type="primary" />
+              <span v-else class="mp-todo__empty">— 已清空</span>
             </div>
+            <ArtSvgIcon icon="ri:arrow-right-s-line" class="mp-todo__arrow" />
+          </div>
+        </div>
+      </ElCard>
+
+      <!-- 快捷入口 -->
+      <ElCard shadow="never" class="mp-card mp-entries-card">
+        <template #header>
+          <div class="mp-card__title">
+            <span class="mp-card__title-text">
+              <ArtSvgIcon icon="ri:apps-2-fill" class="mp-card__title-icon" />
+              常用入口
+            </span>
+            <span class="text-xs text-g-500">{{ quickEntries.length }} 个常用功能</span>
+          </div>
+        </template>
+        <div class="mp-entries">
+          <div
+            v-for="e in quickEntries"
+            :key="e.path"
+            class="mp-entry"
+            :style="{ '--entry-tint': e.color }"
+            @click="router.push(e.path)"
+          >
+            <div
+              class="mp-entry__icon"
+              :style="{ background: `linear-gradient(135deg, ${e.color}, ${e.color}cc)` }"
+            >
+              <ArtSvgIcon :icon="e.icon" />
+            </div>
+            <span class="mp-entry__label">{{ e.label }}</span>
           </div>
         </div>
       </ElCard>
     </div>
-
-    <!-- 快捷入口 -->
-    <ElCard shadow="hover" class="mp-card">
-      <template #header>
-        <div class="mp-card__title">
-          <span>常用入口</span>
-        </div>
-      </template>
-      <div class="mp-quick-row">
-        <div
-          v-for="q in quickEntries"
-          :key="q.path"
-          class="mp-quick"
-          @click="router.push(q.path)"
-        >
-          <div class="mp-quick__icon" :style="{ color: q.color }">
-            <ArtSvgIcon :icon="q.icon" />
-          </div>
-          <span class="mp-quick__text">{{ q.label }}</span>
-        </div>
-      </div>
-    </ElCard>
   </div>
 </template>
 
@@ -167,174 +128,118 @@
     type DashboardData,
     type MembershipNotice
   } from '@/api/merchant-business'
-  import type { MerchantStats } from '@jiujiu/shared/types'
+  import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'MerchantDashboard' })
 
   const router = useRouter()
+  const userStore = useUserStore()
 
-  const period = ref<MerchantStats['period']>('week')
   const stats = ref<DashboardData['stats']>()
-  const trend = ref<DashboardData['trend']>()
   const notices = ref<MembershipNotice[]>([])
+  const loading = ref(false)
 
+  /* ====== 顶部 hero ====== */
+  const now = new Date()
   const greetingText = computed(() => {
-    const h = new Date().getHours()
+    const h = now.getHours()
     if (h < 6) return '凌晨好'
     if (h < 12) return '上午好'
     if (h < 14) return '中午好'
     if (h < 18) return '下午好'
     return '晚上好'
   })
+  const today = {
+    weekday: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()],
+    day: String(now.getDate()).padStart(2, '0'),
+    month: String(now.getMonth() + 1).padStart(2, '0'),
+    year: now.getFullYear()
+  }
+  const nickName = computed(() => userStore.info?.nickname || userStore.info?.userName || '老板')
 
-  const trendLabel = computed(() =>
-    period.value === 'today'
-      ? '24 小时'
-      : period.value === 'week'
-        ? '7 天'
-        : period.value === 'month'
-          ? '30 天'
-          : '12 月'
-  )
-
-  const kpiList = computed(() => {
-    const t = stats.value?.today
-    if (!t) return []
-    const fmtDelta = (n: number) =>
-      `${n >= 0 ? '↑' : '↓'} ${Math.abs(n)}% 较昨日`
-    return [
-      {
-        title: '今日销售额',
-        count: t.sales,
-        decimals: 0,
-        separator: ',',
-        desc: fmtDelta(t.salesDelta),
-        icon: 'ri:money-cny-circle-line',
-        iconStyle: 'bg-[#FF4D2D]'
-      },
-      {
-        title: '今日订单',
-        count: t.orders,
-        desc: fmtDelta(t.ordersDelta),
-        icon: 'ri:shopping-bag-3-line',
-        iconStyle: 'bg-[#3B82F6]'
-      },
-      {
-        title: '新增客户',
-        count: t.newCustomers,
-        desc: fmtDelta(t.newCustomersDelta),
-        icon: 'ri:user-add-line',
-        iconStyle: 'bg-[#10B981]'
-      },
-      {
-        title: '在售商品',
-        count: 38,
-        desc: '待审核 2 · 已下架 5',
-        icon: 'ri:price-tag-3-line',
-        iconStyle: 'bg-[#A855F7]'
-      }
-    ]
-  })
-
-  const trendChartData = computed(() => {
-    if (!trend.value) return []
-    return [
-      {
-        name: '销售额',
-        data: trend.value.salesTrend.map((p) => p.value)
-      }
-    ]
-  })
-
-  const trendXAxis = computed(() => trend.value?.salesTrend.map((p) => p.date) || [])
-
-  const categoryRingData = computed(() => {
-    if (!trend.value) return []
-    return trend.value.categoryBars.map((c) => ({ name: c.category, value: c.sales }))
-  })
-
-  const topProductData = computed(() => {
-    if (!trend.value) return []
-    return trend.value.topProducts.slice(0, 10).map((p) => ({
-      name: p.name.length > 12 ? p.name.slice(0, 12) + '...' : p.name,
-      value: p.sales
-    }))
-  })
-
+  /* ====== 待办 ====== */
   const todoList = computed(() => {
     const t = stats.value?.todos
-    if (!t) return []
     return [
       {
         key: 'shipment',
         label: '待发货订单',
         subLabel: '今天 12:00 前发货',
         icon: 'ri:truck-line',
-        color: 'linear-gradient(135deg,#FF7A45,#FF4D2D)',
-        count: t.pendingShipment
+        tint: '#FF4D2D',
+        count: t?.pendingShipment ?? 0
       },
       {
         key: 'refund',
         label: '待处理售后',
         subLabel: '7 天内必须处理',
         icon: 'ri:customer-service-2-line',
-        color: 'linear-gradient(135deg,#F97316,#EA580C)',
-        count: t.pendingRefund
+        tint: '#F97316',
+        count: t?.pendingRefund ?? 0
       },
       {
         key: 'store',
         label: '门店授权待批',
         subLabel: '员工绑定中',
         icon: 'ri:store-2-line',
-        color: 'linear-gradient(135deg,#6366F1,#4F46E5)',
-        count: t.pendingStoreAuth
+        tint: '#6366F1',
+        count: t?.pendingStoreAuth ?? 0
       },
       {
         key: 'plaza',
         label: '广场新推送',
         subLabel: '可代理商品',
         icon: 'ri:advertisement-line',
-        color: 'linear-gradient(135deg,#10B981,#059669)',
-        count: stats.value?.plazaHighlights?.length || 0
+        tint: '#10B981',
+        count: stats.value?.plazaHighlights?.length ?? 0
       },
       {
         key: 'review',
         label: '新评价',
         subLabel: '本周',
         icon: 'ri:chat-1-line',
-        color: 'linear-gradient(135deg,#0EA5E9,#0284C7)',
+        tint: '#0EA5E9',
         count: 12
       }
     ]
   })
+  const totalTodos = computed(() => todoList.value.reduce((s, t) => s + (t.count || 0), 0))
 
-  const totalTodos = computed(() => todoList.value.reduce((acc, t) => acc + (t.count || 0), 0))
-
+  /* ====== 快捷入口 ====== */
   const quickEntries = [
     { label: '添加商品', icon: 'ri:add-box-line', color: '#FF4D2D', path: '/merchant/product/add' },
+    { label: '在售商品', icon: 'ri:price-tag-3-line', color: '#FF7A45', path: '/merchant/product/list' },
+    { label: '分类管理', icon: 'ri:folder-3-line', color: '#06B6D4', path: '/merchant/product/category' },
+    { label: '代理厂家', icon: 'ri:store-2-line', color: '#F59E0B', path: '/merchant/product/agency' },
+    { label: '选品广场', icon: 'ri:store-3-line', color: '#10B981', path: '/merchant/plaza' },
     { label: '订单管理', icon: 'ri:file-list-3-line', color: '#3B82F6', path: '/merchant/order/list' },
-    { label: '客户管理', icon: 'ri:user-heart-line', color: '#10B981', path: '/merchant/customer' },
+    { label: '售后处理', icon: 'ri:customer-service-2-line', color: '#F56C6C', path: '/merchant/order/aftersale' },
+    { label: '客户管理', icon: 'ri:user-heart-line', color: '#22C55E', path: '/merchant/customer' },
     { label: '营销中心', icon: 'ri:speaker-3-line', color: '#A855F7', path: '/merchant/marketing' },
-    { label: '代理商品', icon: 'ri:link-m', color: '#F59E0B', path: '/merchant/product/agency' },
-    { label: '分类管理', icon: 'ri:folder-3-line', color: '#06B6D4', path: '/merchant/product/category' }
+    { label: '门店管理', icon: 'ri:community-line', color: '#8B5CF6', path: '/merchant/store' },
+    { label: '员工管理', icon: 'ri:team-line', color: '#7C3AED', path: '/merchant/staff' },
+    { label: '佣金结算', icon: 'ri:wallet-3-line', color: '#0EA5E9', path: '/merchant/commission' },
+    { label: '我的会员', icon: 'ri:vip-crown-2-line', color: '#A855F7', path: '/merchant/member' },
+    { label: '数据中心', icon: 'ri:bar-chart-2-line', color: '#67C23A', path: '/merchant/stats' }
   ]
 
   function goTodo(key: string) {
     if (key === 'shipment' || key === 'review') router.push('/merchant/order/list')
     else if (key === 'refund') router.push('/merchant/order/aftersale')
     else if (key === 'plaza') router.push('/merchant/product/agency')
+    else if (key === 'store') router.push('/merchant/store')
     else router.push('/merchant/product/list')
   }
 
-  function goToList() {
-    router.push('/merchant/product/list')
-  }
-
   async function loadData() {
-    const data = await fetchMerchantDashboard(period.value)
-    stats.value = data.stats
-    trend.value = data.trend
-    notices.value = await fetchMembershipNotices()
+    loading.value = true
+    try {
+      const data = await fetchMerchantDashboard('today')
+      stats.value = data.stats
+      notices.value = await fetchMembershipNotices()
+    } finally {
+      loading.value = false
+    }
   }
 
   onMounted(loadData)
@@ -348,11 +253,88 @@
     gap: 16px;
   }
 
-  .mp-dashboard__top {
+  /* ============ 顶部 hero 条 ============ */
+  .mp-hero {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    color: #fff;
+    background: linear-gradient(135deg, #ff4d2d 0%, #ff7a45 60%, #faad14 100%);
+    min-height: 120px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 6px 4px;
+
+    &__bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 88% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 32%),
+        radial-gradient(circle at 12% 75%, rgba(255, 255, 255, 0.12) 0%, transparent 28%);
+    }
+
+    &__content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 32px;
+    }
+
+    &__title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    &__sub {
+      margin: 8px 0 0;
+      font-size: 13px;
+      opacity: 0.92;
+    }
+
+    &__num {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 4px;
+    }
+
+    &__link {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      margin-left: 4px;
+
+      &:hover {
+        opacity: 0.85;
+      }
+    }
+
+    &__date {
+      text-align: right;
+      line-height: 1.1;
+    }
+
+    &__weekday {
+      font-size: 13px;
+      opacity: 0.85;
+    }
+
+    &__day {
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin: 2px 0;
+    }
+
+    &__month {
+      font-size: 12px;
+      opacity: 0.85;
+    }
   }
 
   .mp-notices {
@@ -365,128 +347,186 @@
     }
   }
 
-  .mp-kpi-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-
-    @media (max-width: 1100px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .mp-grid-2 {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    gap: 14px;
-
-    @media (max-width: 1100px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
+  /* ============ Card 通用 ============ */
   .mp-card {
-    border-radius: 12px;
+    border-radius: 14px;
+    border: 1px solid #f0f1f3;
+
+    :deep(.el-card__header) {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid #f5f6f8;
+    }
+
+    :deep(.el-card__body) {
+      padding: 12px 8px;
+    }
   }
 
   .mp-card__title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    font-size: 15px;
-    font-weight: 600;
   }
 
-  .todo-badge :deep(.el-badge__content) {
-    background: var(--el-color-primary, #ff4d2d);
-  }
-
-  .mp-todos {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .mp-todo-item {
-    display: flex;
+  .mp-card__title-text {
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--art-bg-color, #fafbfc);
-    cursor: pointer;
-    transition: all 0.18s ease;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+  }
 
-    &:hover {
-      background: rgba(255, 77, 45, 0.06);
-      transform: translateX(2px);
+  .mp-card__title-icon {
+    color: var(--el-color-primary, #ff4d2d);
+    font-size: 18px;
+  }
+
+  /* ============ 双栏 ============ */
+  .mp-grid-2 {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 16px;
+
+    @media (max-width: 1100px) {
+      grid-template-columns: 1fr;
     }
   }
 
-  .mp-todo-icon {
-    width: 38px;
-    height: 38px;
+  /* ============ 待办 ============ */
+  .mp-todo__list {
+    display: flex;
+    flex-direction: column;
+    padding: 0 4px;
+  }
+
+  .mp-todo__row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 12px;
     border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 1px dashed #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: linear-gradient(90deg, rgba(255, 77, 45, 0.06), transparent);
+      transform: translateX(2px);
+    }
+
+    &--empty {
+      opacity: 0.55;
+
+      &:hover {
+        transform: none;
+        background: rgba(0, 0, 0, 0.02);
+      }
+    }
+  }
+
+  .mp-todo__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .mp-todo__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mp-todo__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #303133;
+  }
+
+  .mp-todo__desc {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 2px;
+  }
+
+  .mp-todo__count {
+    min-width: 64px;
+    text-align: right;
+    padding-right: 8px;
+  }
+
+  .mp-todo__empty {
+    font-size: 12px;
+    color: #c0c4cc;
+  }
+
+  .mp-todo__arrow {
+    color: #c0c4cc;
     font-size: 18px;
     flex-shrink: 0;
   }
 
-  .mp-todo-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--art-gray-800, #1f2937);
-  }
-
-  .mp-todo-count {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--el-color-primary, #ff4d2d);
-
-    &.zero {
-      color: var(--art-gray-400, #9ca3af);
-    }
-  }
-
-  .mp-quick-row {
+  /* ============ 快捷入口 ============ */
+  .mp-entries {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 8px 4px 4px;
 
-    @media (max-width: 1100px) {
+    @media (max-width: 700px) {
       grid-template-columns: repeat(3, 1fr);
     }
   }
 
-  .mp-quick {
+  .mp-entry {
+    --entry-tint: #ff4d2d;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 18px 0;
+    gap: 10px;
+    padding: 18px 6px;
     border-radius: 12px;
-    background: var(--art-bg-color, #fafbfc);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.22s ease;
 
     &:hover {
-      background: rgba(255, 77, 45, 0.06);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px -10px rgba(255, 77, 45, 0.3);
+      background: color-mix(in srgb, var(--entry-tint) 6%, transparent);
+      transform: translateY(-3px);
+
+      .mp-entry__icon {
+        transform: scale(1.08) rotate(-3deg);
+        box-shadow: 0 8px 18px color-mix(in srgb, var(--entry-tint) 35%, transparent);
+      }
     }
   }
 
-  .mp-quick__icon {
+  .mp-entry__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 26px;
+    color: #fff;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
   }
 
-  .mp-quick__text {
+  .mp-entry__label {
     font-size: 13px;
-    color: var(--art-gray-700, #374151);
+    color: #303133;
+    font-weight: 500;
+  }
+
+  .text-g-500 {
+    color: #909399;
   }
 </style>

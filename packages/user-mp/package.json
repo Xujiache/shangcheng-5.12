@@ -18,9 +18,15 @@
     "@dcloudio/uni-h5": "3.0.0-alpha-5000820260508001",
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5000820260508001",
     "@jiujiu/shared": "workspace:*",
+    "@socket.io/component-emitter": "^3.1.2",
     "dayjs": "^1.11.13",
+    "engine.io-client": "^6.6.4",
+    "engine.io-parser": "^5.2.3",
     "pinia": "^2.2.4",
-    "vue": "^3.5.21"
+    "socket.io-client": "^4.8.3",
+    "socket.io-parser": "^4.2.6",
+    "vue": "^3.5.21",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@dcloudio/types": "^3.4.15",

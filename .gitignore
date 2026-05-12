@@ -41,7 +41,19 @@ desktop.ini
 .env
 .env.local
 .env.*.local
+.env.production
 !.env.example
+!.env.production.example
+
+# 🔒 生产密钥 / 证书 / 备份（绝不上传）
+secrets/
+backups/
+ecosystem.config.cjs
+*.p12
+apiclient_cert.pem
+apiclient_key.pem
+wxpay_public_key.pem
+*_cert.zip
 
 # Cache
 .cache/

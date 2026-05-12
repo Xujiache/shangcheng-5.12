@@ -15,7 +15,8 @@
     { "path": "pages/promote/index", "style": { "navigationBarTitleText": "推广分佣" } },
     { "path": "pages/store/map", "style": { "navigationBarTitleText": "门店地址" } },
     { "path": "pages/merchant/apply", "style": { "navigationBarTitleText": "商家入驻" } },
-    { "path": "pages/channel/index", "style": { "navigationBarTitleText": "频道" } }
+    { "path": "pages/channel/index", "style": { "navigationBarTitleText": "频道" } },
+    { "path": "pages/chat/index", "style": { "navigationBarTitleText": "在线客服" } }
   ],
   "globalStyle": {
     "navigationStyle": "custom",
