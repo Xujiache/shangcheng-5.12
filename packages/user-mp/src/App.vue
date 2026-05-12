@@ -8,8 +8,6 @@ onLaunch(() => {
   const cartStore = useCartStore()
   userStore.hydrate()
   cartStore.hydrate()
-  // 隐藏 uni 默认 tabBar，由自定义 TabBar 组件接管
-  try { uni.hideTabBar({ animation: false }) } catch { /* ignore */ }
   console.log('经纬科技 用户端 启动')
 })
 </script>

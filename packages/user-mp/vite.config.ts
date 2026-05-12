@@ -8,6 +8,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@shared': path.resolve(__dirname, '../shared/src'),
+      debug: path.resolve(__dirname, 'src/utils/debugShim.ts'),
+      nanoid: path.resolve(__dirname, 'src/utils/nanoidShim.ts'),
     },
   },
   css: {

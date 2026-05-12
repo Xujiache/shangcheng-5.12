@@ -87,7 +87,7 @@ function pickOnMap() {
       if (detail) form.detail = detail
     },
   })
-  return
+  return undefined
   // #endif
 
   showMapPick.value = true

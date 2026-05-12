@@ -26,12 +26,14 @@ export interface RequestOptions {
 
 function buildUrl(url: string, params?: Record<string, unknown>): string {
   if (!params || Object.keys(params).length === 0) return url
-  const usp = new URLSearchParams()
+  // 小程序没有 URLSearchParams，手写一份兼容 H5/mp 双端
+  const parts: string[] = []
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) usp.append(k, String(v))
+    if (v === undefined || v === null) return
+    parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
   })
-  const q = usp.toString()
-  return q ? `${url}${url.includes('?') ? '&' : '?'}${q}` : url
+  if (parts.length === 0) return url
+  return `${url}${url.includes('?') ? '&' : '?'}${parts.join('&')}`
 }
 
 /**

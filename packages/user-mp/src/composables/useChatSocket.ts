@@ -1,5 +1,5 @@
 /**
- * Chat WebSocket 客户端（H5 端）
+ * Chat WebSocket 客户端（H5 + 微信小程序）
  *
  * 用法：
  *   const sock = useChatSocket(token, 'user')
@@ -11,8 +11,9 @@
  *
  * 协议见 packages/server/src/modules/chat/chat.gateway.ts
  *
- * 注意：H5 端用 socket.io-client；小程序端用原生 uni.connectSocket 时需要换实现，
- * 当前预览部署只跑 H5，足够。
+ * 平台差异：
+ *   - H5: 直接用 socket.io-client，允许 websocket + polling
+ *   - mp-weixin: main.ts 注入 globalThis.WebSocket polyfill 后，socket.io-client 走 websocket-only
  */
 import { ref } from 'vue'
 // 改成静态 import，避免 app-plus 端 rollup 不支持 code-splitting
@@ -44,11 +45,25 @@ export function useChatSocket(token: string, role: 'user' | 'merchant' = 'user')
 
   async function connect() {
     if (io) return
-    const origin =
-      (typeof window !== 'undefined' && window.location ? window.location.origin : '') ||
-      ((import.meta as any).env?.VITE_API_BASE_URL ?? '')
-    io = ioCtor(`${origin}/ws/chat`, {
-      transports: ['websocket', 'polling'],
+
+    // 小程序没有 window；H5 优先用 window.location.origin，兼顾同源/反向代理
+    let origin = ''
+    // #ifdef H5
+    if (typeof window !== 'undefined' && window.location) origin = window.location.origin
+    // #endif
+    if (!origin) origin = ((import.meta as any).env?.VITE_API_BASE_URL ?? '') as string
+
+    // 小程序 polling 走 XHR，没有 XMLHttpRequest，强制 websocket-only
+    let transports: string[] = ['websocket', 'polling']
+    // #ifdef MP-WEIXIN
+    transports = ['websocket']
+    // #endif
+
+    // 服务端 @WebSocketGateway({ path: '/ws/chat' })：path 通过 options 传，
+    // 而不是拼到 URL（拼进去会被当成 namespace）
+    io = ioCtor(origin, {
+      path: '/ws/chat',
+      transports,
       reconnection: true,
       reconnectionAttempts: 8,
       reconnectionDelay: 1500,

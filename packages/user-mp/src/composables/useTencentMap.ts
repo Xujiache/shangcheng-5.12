@@ -32,19 +32,23 @@ export function useTencentMap() {
   function staticImageUrl(opts: StaticMapOpts): string {
     const { center, zoom = 14, size = { w: 600, h: 400 }, markers = [] } = opts
     const base = 'https://apis.map.qq.com/ws/staticmap/v2/'
-    const params = new URLSearchParams()
-    params.set('key', KEY)
-    params.set('size', `${size.w}*${size.h}`)
-    params.set('center', `${center.lat},${center.lng}`)
-    params.set('zoom', String(zoom))
-    params.set('scale', '2')
+    // 小程序没有 URLSearchParams，手写一份
+    const parts: string[] = []
+    const enc = encodeURIComponent
+    parts.push(`key=${enc(KEY)}`)
+    parts.push(`size=${enc(`${size.w}*${size.h}`)}`)
+    parts.push(`center=${enc(`${center.lat},${center.lng}`)}`)
+    parts.push(`zoom=${enc(String(zoom))}`)
+    parts.push(`scale=2`)
     if (markers.length) {
-      // 腾讯静态图 markers 语法： size:large|color:0xFF4D2D|label:1|lat,lng|lat,lng...
-      const m = ['size:large', 'color:0xFF4D2D'].join('|') +
-        '|' + markers.map((p) => `${p.lat},${p.lng}`).join('|')
-      params.set('markers', m)
+      // 腾讯静态图 markers 语法： size:large|color:0xFF4D2D|lat,lng|lat,lng...
+      const m =
+        ['size:large', 'color:0xFF4D2D'].join('|') +
+        '|' +
+        markers.map((p) => `${p.lat},${p.lng}`).join('|')
+      parts.push(`markers=${enc(m)}`)
     }
-    return `${base}?${params.toString()}`
+    return `${base}?${parts.join('&')}`
   }
 
   /** 调起导航 */
@@ -112,19 +116,26 @@ export function useTencentMap() {
       `&keyword=${encodeURIComponent(keyword)}` +
       `&boundary=region(${encodeURIComponent(region)},0)` +
       `&page_size=10`
-    try {
-      const r = await fetch(url)
-      const data: any = await r.json()
-      if (data?.status !== 0) return []
-      return (data.data || []).map((d: any) => ({
-        lat: d.location?.lat,
-        lng: d.location?.lng,
-        name: d.title,
-        address: d.address,
-      }))
-    } catch {
-      return []
-    }
+    // uni.request 在 H5/mp-weixin 都可用，避免 fetch 在小程序不存在
+    return new Promise((resolve) => {
+      uni.request({
+        url,
+        method: 'GET',
+        success: (res) => {
+          const data: any = res.data
+          if (data?.status !== 0) return resolve([])
+          resolve(
+            (data.data || []).map((d: any) => ({
+              lat: d.location?.lat,
+              lng: d.location?.lng,
+              name: d.title,
+              address: d.address,
+            })),
+          )
+        },
+        fail: () => resolve([]),
+      })
+    })
   }
 
   return { staticImageUrl, openNavigation, openMarker, searchPlaces, KEY, APP }
