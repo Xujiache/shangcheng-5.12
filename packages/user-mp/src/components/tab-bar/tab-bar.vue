@@ -23,6 +23,21 @@ interface TabItem {
   path_svg_filled: string  // 选中：纯填充实心图标
 }
 
+// mp-weixin 不支持 inline <svg>，把 path 编进 data URI，<image> 渲染
+function svgLineUri(d: string, color: string, stroke: number): string {
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' ` +
+    `stroke='${color}' stroke-width='${stroke}' stroke-linecap='round' stroke-linejoin='round'>` +
+    `<path d='${d}'/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+function svgFillUri(d: string, color: string): string {
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='${color}' stroke='none'>` +
+    `<path d='${d}'/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
 const TABS: TabItem[] = [
   {
     key: 'home',
@@ -85,27 +100,20 @@ function switchTo(item: TabItem) {
         <view class="tab-inner">
           <view class="icon-cap" />
           <view class="tab-icon">
-            <!-- 未选中：仅描边 -->
-            <svg
+            <!-- 未选中：描边 -->
+            <image
               v-if="current !== t.key"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#94A3B8"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path :d="t.path_svg" />
-            </svg>
-            <!-- 选中：纯填充实心图标（无描边，避免发胖发糊） -->
-            <svg
+              class="tab-icon-img"
+              :src="svgLineUri(t.path_svg, '#94A3B8', 1.8)"
+              mode="aspectFit"
+            />
+            <!-- 选中：纯填充实心图标 -->
+            <image
               v-else
-              viewBox="0 0 24 24"
-              fill="#FF4D2D"
-              stroke="none"
-            >
-              <path :d="t.path_svg_filled" />
-            </svg>
+              class="tab-icon-img active"
+              :src="svgFillUri(t.path_svg_filled, '#FF4D2D')"
+              mode="aspectFit"
+            />
           </view>
           <view v-if="t.key === 'cart' && cartCount > 0" class="badge">
             {{ cartCount > 99 ? '99+' : cartCount }}
@@ -187,14 +195,14 @@ function switchTo(item: TabItem) {
   display: flex;
   align-items: center;
   justify-content: center;
-  svg {
-    width: 44rpx;
-    height: 44rpx;
-    transition: all 0.25s ease;
-    filter: drop-shadow(0 1rpx 2rpx rgba(15, 23, 42, 0.06));
-  }
 }
-.tab.active .tab-icon svg {
+.tab-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+  transition: all 0.25s ease;
+  filter: drop-shadow(0 1rpx 2rpx rgba(15, 23, 42, 0.06));
+}
+.tab.active .tab-icon-img {
   width: 46rpx;
   height: 46rpx;
   filter: drop-shadow(0 2rpx 6rpx rgba(255, 77, 45, 0.40));

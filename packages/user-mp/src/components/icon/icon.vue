@@ -3,7 +3,13 @@
  * 统一 SVG 图标组件（用户端）
  * <Icon name="search" :size="36" color="#FF4D2D" />
  *
- * line 风格 24×24 viewBox，stroke="currentColor"，fill="none"
+ * line 风格 24×24 viewBox。
+ *
+ * 实现：mp-weixin 不支持 inline <svg>/<path>（不在原生组件白名单），
+ * 把 SVG 拼成 URL-encoded data URI，用 <image> 组件渲染。
+ * H5 端这样写也完全正常（image 接受 svg data URI）。
+ *
+ * 注意：color 默认值改成具体颜色（不能用 currentColor，data URI 隔离没法继承）。
  */
 import { computed } from 'vue'
 
@@ -17,7 +23,7 @@ const props = withDefaults(
   }>(),
   {
     size: 24,
-    color: 'currentColor',
+    color: '#1F2329',
     stroke: 1.6,
     fill: false,
   },
@@ -101,32 +107,33 @@ const PATH: Record<string, string> = {
   'badge-vip': 'M5 6l3 9 4-7 4 7 3-9 M3 19h18',
 }
 
-const dValue = computed(() => PATH[props.name] ?? '')
-
 const sizePx = computed(() => (typeof props.size === 'number' ? `${props.size}rpx` : props.size))
+
+const dataUri = computed(() => {
+  const d = PATH[props.name] ?? ''
+  const fillAttr = props.fill ? props.color : 'none'
+  // 单引号包 SVG 属性，避免双引号转义；URL-encode 兼容 mp-weixin（无 btoa）
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' ` +
+    `fill='${fillAttr}' stroke='${props.color}' stroke-width='${props.stroke}' ` +
+    `stroke-linecap='round' stroke-linejoin='round'><path d='${d}'/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+})
 </script>
 
 <template>
-  <view
+  <image
     class="svg-icon"
-    :style="{ width: sizePx, height: sizePx, color }"
-  >
-    <svg viewBox="0 0 24 24" :fill="fill ? color : 'none'" :stroke="color" :stroke-width="stroke" stroke-linecap="round" stroke-linejoin="round">
-      <path :d="dValue" />
-    </svg>
-  </view>
+    :src="dataUri"
+    :style="{ width: sizePx, height: sizePx }"
+    mode="aspectFit"
+  />
 </template>
 
 <style lang="scss" scoped>
 .svg-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   flex-shrink: 0;
-  svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
+  vertical-align: middle;
 }
 </style>
