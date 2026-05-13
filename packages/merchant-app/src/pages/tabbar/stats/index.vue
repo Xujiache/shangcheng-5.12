@@ -16,6 +16,9 @@ import BarChart from '../../../components/bar-chart/bar-chart.vue'
 import DonutChart from '../../../components/donut-chart/donut-chart.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
+import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+
+useHideNativeTabBar()
 
 type Period = 'today' | 'week' | 'month' | 'year'
 

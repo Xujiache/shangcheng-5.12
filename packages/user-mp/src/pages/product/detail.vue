@@ -478,17 +478,17 @@ function changeQty(delta: number) {
       </view>
       <view
         class="cart-btn"
-        :class="{ 'btn-disabled': !buyAllowedByPolicy }"
-        @click="openSku('cart')"
+        :class="{ 'btn-disabled': !userStore.isLogin || !buyAllowedByPolicy }"
+        @click="userStore.isLogin && openSku('cart')"
       >
-        {{ buyAllowedByPolicy ? '加入购物车' : '联系询价' }}
+        {{ !userStore.isLogin || buyAllowedByPolicy ? '加入购物车' : '联系询价' }}
       </view>
       <view
         class="buy-btn"
-        :class="{ 'btn-disabled': !buyAllowedByPolicy }"
-        @click="openSku('buy')"
+        :class="{ 'btn-disabled': !userStore.isLogin || !buyAllowedByPolicy }"
+        @click="userStore.isLogin && openSku('buy')"
       >
-        {{ buyAllowedByPolicy ? '立即购买' : '申请门店' }}
+        {{ !userStore.isLogin || buyAllowedByPolicy ? '立即购买' : '申请门店' }}
       </view>
     </view>
 

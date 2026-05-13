@@ -38,7 +38,14 @@ page {
 
 /* H5：隐藏 uni 默认 tabBar（自定义 TabBar 接管） */
 .uni-tabbar,
-.uni-tabbar-bottom {
+.uni-tabbar-bottom,
+.uni-tabbar-top,
+.uni-tabbar-border,
+uni-tabbar {
   display: none !important;
+}
+/* 框架默认会给 body 加 .uni-app--showtabbar 留 50px 空位，自定义 TabBar 接管后清掉 */
+.uni-app--showtabbar uni-page-wrapper {
+  bottom: 0 !important;
 }
 </style>

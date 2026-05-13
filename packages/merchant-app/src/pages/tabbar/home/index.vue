@@ -18,6 +18,9 @@ import BarChart from '../../../components/bar-chart/bar-chart.vue'
 import StatusTag from '../../../components/status-tag/status-tag.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
+import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+
+useHideNativeTabBar()
 
 const dashboard = ref<MerchantDashboard | null>(null)
 const profile = ref<MerchantProfile | null>(null)

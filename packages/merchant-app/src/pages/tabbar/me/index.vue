@@ -16,6 +16,9 @@ import { profileService, type MerchantProfile } from '../../../services/profile'
 import StatusTag from '../../../components/status-tag/status-tag.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
+import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+
+useHideNativeTabBar()
 
 const userStore = useUserStore()
 

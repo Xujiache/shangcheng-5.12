@@ -13,6 +13,9 @@ import OrderCard from '../../../components/order-card/order-card.vue'
 import EmptyState from '../../../components/empty-state/empty-state.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
+import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+
+useHideNativeTabBar()
 
 type Tab = 'all' | OrderStatus
 
