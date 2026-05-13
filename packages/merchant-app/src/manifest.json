@@ -1,5 +1,5 @@
 {
-    "name" : "经纬科技",
+    "name" : "经纬科技-商家端",
     "appid" : "__UNI__3EDC2B0",
     "description" : "经纬科技 · 商家后台 APP",
     "versionName" : "1.0.0",
@@ -28,7 +28,8 @@
                     "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
                     "<uses-permission android:name=\"android.permission.CAMERA\"/>",
                     "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
-                    "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
+                    "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>",
+                    "<uses-permission android:name=\"android.permission.CALL_PHONE\"/>"
                 ]
             },
             "ios" : {

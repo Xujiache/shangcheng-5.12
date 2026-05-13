@@ -15,7 +15,10 @@
 import { ref, reactive, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services/auth'
+import { useStatusBar } from '../../composables/useStatusBar'
 import Icon from '../../components/icon/icon.vue'
+
+const { heroPaddingTop } = useStatusBar(40)
 
 const userStore = useUserStore()
 
@@ -124,7 +127,7 @@ const STEPS = [
 <template>
   <view class="page">
     <!-- Hero -->
-    <view class="hero">
+    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
       <view class="blob blob-1" />
       <view class="blob blob-2" />
       <view class="hero-top">
@@ -374,7 +377,8 @@ const STEPS = [
 /* ===== Hero ===== */
 .hero {
   position: relative;
-  padding: 100rpx 32rpx 88rpx;
+  /* padding-top 由内联样式 heroPaddingTop 注入（状态栏 + 40rpx） */
+  padding: 0 32rpx 88rpx;
   background:
     radial-gradient(120% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
     linear-gradient(160deg, #FF6B45 0%, #FF4D2D 50%, #E63A1F 100%);

@@ -13,8 +13,11 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services/auth'
+import { useStatusBar } from '../../composables/useStatusBar'
 import Icon from '../../components/icon/icon.vue'
 import AgreementSheet from '../../components/agreement-sheet/agreement-sheet.vue'
+
+const { heroPaddingTop } = useStatusBar(40)
 
 type LegalKind = 'user' | 'privacy' | 'collect'
 const agreementOpen = ref(false)
@@ -116,7 +119,7 @@ function goApply() {
 <template>
   <view class="page">
     <!-- Hero · 暖色渐变 + 双层光晕 -->
-    <view class="hero">
+    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
       <view class="blob blob-1" />
       <view class="blob blob-2" />
       <view class="blob blob-3" />
@@ -286,7 +289,8 @@ function goApply() {
 /* ===== Hero ===== */
 .hero {
   position: relative;
-  padding: 110rpx 40rpx 120rpx;
+  /* padding-top 由内联样式 heroPaddingTop 注入（状态栏 + 40rpx） */
+  padding: 0 40rpx 120rpx;
   background:
     radial-gradient(140% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
     radial-gradient(120% 80% at 0% 100%, #FF3B1F 0%, transparent 50%),

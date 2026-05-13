@@ -19,8 +19,10 @@ import StatusTag from '../../../components/status-tag/status-tag.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+import { useStatusBar } from '../../../composables/useStatusBar'
 
 useHideNativeTabBar()
+const { heroPaddingTop } = useStatusBar(16)
 
 const dashboard = ref<MerchantDashboard | null>(null)
 const profile = ref<MerchantProfile | null>(null)
@@ -71,6 +73,17 @@ async function loadData() {
   }
 }
 
+/** 后端 dashboard.weekSales 是「今天往前 7 天滚动」的数组，
+ *  所以标签必须按"今天的星期几"逆向计算，不能写死 一二三四五六日 */
+const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
+const weekLabels = computed(() => {
+  const now = new Date()
+  return Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(now.getTime() - (6 - i) * 86400_000)
+    return WEEKDAY[d.getDay()]
+  })
+})
+
 function goPlaza() {
   uni.navigateTo({ url: '/pages/plaza/index' })
 }
@@ -103,7 +116,7 @@ onShow(() => {
 <template>
   <view class="page">
     <!-- 顶部导航 -->
-    <view class="header">
+    <view class="header" :style="{ paddingTop: heroPaddingTop }">
       <view class="header-inner">
         <view class="brand">
           <view class="avatar">
@@ -197,7 +210,7 @@ onShow(() => {
       <Section title="本周销售" action="查看详情" @action="goEntry('/pages/tabbar/stats/index')">
         <BarChart
           :data="dashboard.weekSales"
-          :labels="['一', '二', '三', '四', '五', '六', '日']"
+          :labels="weekLabels"
           :height="200"
           :highlight-index="dashboard.weekSales.indexOf(Math.max(...dashboard.weekSales))"
         />
@@ -243,8 +256,8 @@ onShow(() => {
 
 .header {
   background: var(--brand-gradient);
-  /* v2: 减少顶部高度 */
-  padding: 16rpx 32rpx 32rpx;
+  /* padding-top 由内联 heroPaddingTop 注入（状态栏 + 16rpx） */
+  padding: 0 32rpx 32rpx;
   .header-inner {
     display: flex;
     justify-content: space-between;

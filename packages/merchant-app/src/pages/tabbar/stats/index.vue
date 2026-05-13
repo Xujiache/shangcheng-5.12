@@ -17,8 +17,10 @@ import DonutChart from '../../../components/donut-chart/donut-chart.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+import { useStatusBar } from '../../../composables/useStatusBar'
 
 useHideNativeTabBar()
+const { heroPaddingTop } = useStatusBar(24)
 
 type Period = 'today' | 'week' | 'month' | 'year'
 
@@ -107,7 +109,7 @@ const periodText = computed(() =>
 <template>
   <view class="page">
     <!-- 顶栏 -->
-    <view class="topbar">
+    <view class="topbar" :style="{ paddingTop: heroPaddingTop }">
       <view class="title-row">
         <text class="page-title">数据统计</text>
         <picker mode="date" :value="customDate" @change="pickDate">
@@ -247,7 +249,8 @@ const periodText = computed(() =>
 }
 .topbar {
   background: var(--brand-gradient);
-  padding: 56rpx 24rpx 80rpx;
+  /* padding-top 由内联 heroPaddingTop 注入（状态栏 + 24rpx） */
+  padding: 0 24rpx 80rpx;
   position: relative;
   &::after {
     content: '';

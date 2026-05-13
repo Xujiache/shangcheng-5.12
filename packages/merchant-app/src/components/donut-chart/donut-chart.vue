@@ -1,26 +1,20 @@
 <script setup lang="ts">
 /**
- * 环形图（SVG）
- * - props.segments: [{label, value, color}]
- * - 中心展示主指标
- * - props.hideLegend: 隐藏内置图例（外部自行渲染时设 true）
+ * 环形图（canvas 实现）
+ *
+ * 之前用 SVG <circle stroke-dasharray>，在 App-plus 不渲染。
+ * 改成 canvas 绘弧（ctx.arc），三端表现一致。
  */
-import { computed } from 'vue'
+import { computed, onMounted, watch, getCurrentInstance, nextTick } from 'vue'
 
-interface Segment {
-  label: string
-  value: number
-  color: string
-}
+interface Segment { label: string; value: number; color: string }
 
 const props = withDefaults(
   defineProps<{
     segments: Segment[]
     size?: number
-    /** 中央主指标 */
     centerLabel?: string
     centerValue?: string
-    /** 是否隐藏内置 legend（默认 false 显示） */
     hideLegend?: boolean
   }>(),
   {
@@ -31,57 +25,79 @@ const props = withDefaults(
   },
 )
 
-const R = 45
-const C = 2 * Math.PI * R
+const canvasId = 'dc-' + Math.random().toString(36).slice(2, 9)
+const inst = getCurrentInstance()
 
 const total = computed(() => props.segments.reduce((s, x) => s + x.value, 0) || 1)
+const sizePx = computed(() => Math.round(props.size / 2)) // rpx → px 粗略换算（750-design width 通常 1rpx≈0.5px）
 
 const arcs = computed(() => {
-  let offset = 0
+  let acc = 0
   return props.segments.map((seg) => {
     const ratio = seg.value / total.value
-    const len = ratio * C
-    const arc = {
+    const out = {
       ...seg,
-      dasharray: `${len} ${C - len}`,
-      dashoffset: -offset,
+      start: acc,
+      end: acc + ratio,
       percent: Math.round(ratio * 100),
     }
-    offset += len
-    return arc
+    acc += ratio
+    return out
   })
 })
 
-/** 圆环 SVG 区块尺寸（与容器同宽，避免 svg 默认按属性 px 折半） */
-const svgStyle = computed(() => ({
-  width: props.size + 'rpx',
-  height: props.size + 'rpx',
-  transform: 'rotate(-90deg)',
-}))
-const containerStyle = computed(() => ({
-  width: props.size + 'rpx',
-}))
+function draw() {
+  const ctx = uni.createCanvasContext(canvasId, inst as any)
+  const px = sizePx.value
+  const cx = px / 2
+  const cy = px / 2
+  const r = px / 2 - 12
+  const lineW = Math.max(10, Math.round(px * 0.12))
+
+  ctx.clearRect(0, 0, px, px)
+  // 底环
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.setStrokeStyle('#F0F1F5')
+  ctx.setLineWidth(lineW)
+  ctx.stroke()
+
+  // 各段
+  for (const a of arcs.value) {
+    if (a.end - a.start <= 0) continue
+    ctx.beginPath()
+    ctx.arc(
+      cx,
+      cy,
+      r,
+      -Math.PI / 2 + a.start * Math.PI * 2,
+      -Math.PI / 2 + a.end * Math.PI * 2,
+    )
+    ctx.setStrokeStyle(a.color)
+    ctx.setLineWidth(lineW)
+    ctx.setLineCap('butt')
+    ctx.stroke()
+  }
+  ctx.draw()
+}
+
+async function refresh() {
+  await nextTick()
+  draw()
+}
+
+onMounted(refresh)
+watch(() => props.segments, refresh, { deep: true })
 </script>
 
 <template>
-  <view class="donut" :style="containerStyle">
+  <view class="donut" :style="{ width: size + 'rpx' }">
     <view class="ring-wrap" :style="{ width: size + 'rpx', height: size + 'rpx' }">
-      <svg viewBox="0 0 120 120" :style="svgStyle">
-        <circle cx="60" cy="60" :r="R" fill="none" stroke="#F0F1F5" stroke-width="14" />
-        <circle
-          v-for="(a, i) in arcs"
-          :key="i"
-          cx="60"
-          cy="60"
-          :r="R"
-          fill="none"
-          :stroke="a.color"
-          stroke-width="14"
-          :stroke-dasharray="a.dasharray"
-          :stroke-dashoffset="a.dashoffset"
-          stroke-linecap="butt"
-        />
-      </svg>
+      <canvas
+        :canvas-id="canvasId"
+        :id="canvasId"
+        :style="{ width: sizePx + 'px', height: sizePx + 'px' }"
+      />
       <view v-if="centerLabel || centerValue" class="center">
         <text v-if="centerLabel" class="center-label">{{ centerLabel }}</text>
         <text v-if="centerValue" class="center-value">{{ centerValue }}</text>
@@ -110,9 +126,6 @@ const containerStyle = computed(() => ({
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  svg {
-    display: block;
-  }
 }
 .center {
   position: absolute;

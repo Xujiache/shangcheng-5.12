@@ -14,8 +14,10 @@ import EmptyState from '../../../components/empty-state/empty-state.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+import { useStatusBar } from '../../../composables/useStatusBar'
 
 useHideNativeTabBar()
+const { heroPaddingTop } = useStatusBar(16)
 
 type Tab = 'all' | OrderStatus
 
@@ -112,7 +114,7 @@ onPullDownRefresh(() => load(true))
 
 <template>
   <view class="page">
-    <view class="header">
+    <view class="header" :style="{ paddingTop: heroPaddingTop }">
       <view class="title-row">
         <text class="page-title">订单管理</text>
         <text class="page-sub">共 {{ total }} 笔</text>
@@ -177,7 +179,8 @@ onPullDownRefresh(() => load(true))
   top: 0;
   z-index: 10;
   background: var(--bg-card);
-  padding: 16rpx 24rpx 0;
+  /* padding-top 由内联 heroPaddingTop 注入（状态栏 + 16rpx） */
+  padding: 0 24rpx 0;
   box-shadow: var(--shadow-sm);
 }
 .title-row {

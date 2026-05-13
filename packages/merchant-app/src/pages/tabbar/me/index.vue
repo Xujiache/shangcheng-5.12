@@ -17,8 +17,10 @@ import StatusTag from '../../../components/status-tag/status-tag.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+import { useStatusBar } from '../../../composables/useStatusBar'
 
 useHideNativeTabBar()
+const { heroPaddingTop } = useStatusBar(24)
 
 const userStore = useUserStore()
 
@@ -110,7 +112,7 @@ function logout() {
 <template>
   <view class="page">
     <!-- 顶部：紧凑版（去掉了多余的 gear 按钮）-->
-    <view class="hero">
+    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
       <view class="hero-inner" @click="handle('profile')">
         <view class="avatar-wrap">
           <image v-if="avatar" :src="avatar" class="avatar-img" mode="aspectFill" />
@@ -184,8 +186,8 @@ function logout() {
 }
 .hero {
   background: var(--brand-gradient);
-  /* v2: 头部高度收紧（旧版 48 80rpx → 现在 24 48rpx）*/
-  padding: 24rpx 24rpx 56rpx;
+  /* padding-top 由内联 heroPaddingTop 注入（状态栏 + 24rpx） */
+  padding: 0 24rpx 56rpx;
 }
 .hero-inner {
   display: flex;

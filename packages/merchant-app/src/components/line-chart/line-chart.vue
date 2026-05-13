@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * 折线图（SVG，无外部依赖）
- * - 支持渐变填充
- * - 自动 X 轴 label / Y 轴最大值
+ * 折线图（canvas 实现）
+ *
+ * 历史背景：早期版本用内联 <svg>，在 H5 可渲染但 App-plus 的 webview 解析后
+ * 不会调用 createElementNS，导致 svg/path/circle 一律变成空元素 → 图表空白。
+ * 改成 <canvas> + uni.createCanvasContext 后三端（H5 / App / MP）一致。
  */
-import { computed } from 'vue'
+import { computed, onMounted, watch, getCurrentInstance, ref, nextTick } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -13,7 +15,6 @@ const props = withDefaults(
     height?: number
     color?: string
     fillColor?: string
-    /** 仅显示首末/最大点的标签，避免 X 轴拥挤 */
     sparseLabels?: boolean
   }>(),
   {
@@ -25,81 +26,115 @@ const props = withDefaults(
   },
 )
 
-const W = 600
-const H = 200
-const PAD_X = 24
-const PAD_Y = 24
+const canvasId = 'lc-' + Math.random().toString(36).slice(2, 9)
+const inst = getCurrentInstance()
+const canvasWidthPx = ref(300)
+const canvasHeightPx = computed(() => props.height / 2)
 
 const max = computed(() => Math.max(...props.data, 1))
 const min = computed(() => Math.min(...props.data, 0))
-
-const points = computed(() => {
-  if (props.data.length === 0) return [] as Array<{ x: number; y: number; v: number }>
-  const range = Math.max(max.value - min.value, 1)
-  const stepX = (W - PAD_X * 2) / Math.max(props.data.length - 1, 1)
-  return props.data.map((v, i) => ({
-    x: PAD_X + i * stepX,
-    y: H - PAD_Y - ((v - min.value) / range) * (H - PAD_Y * 2),
-    v,
-  }))
-})
-
-const linePath = computed(() => points.value.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '))
-const fillPath = computed(() => {
-  if (points.value.length === 0) return ''
-  const first = points.value[0]
-  const last = points.value[points.value.length - 1]
-  return `${linePath.value} L${last.x},${H - PAD_Y} L${first.x},${H - PAD_Y} Z`
-})
-
 const maxIdx = computed(() => props.data.indexOf(max.value))
 
 const displayLabels = computed(() => {
   if (!props.sparseLabels) return props.labels
   const n = props.labels.length
   if (n <= 7) return props.labels
-  // 仅展示首 / 中 / 末 + 最大点
   return props.labels.map((l, i) => {
     if (i === 0 || i === n - 1 || i === Math.floor(n / 2) || i === maxIdx.value) return l
     return ''
   })
 })
+
+function measure(): Promise<number> {
+  return new Promise((resolve) => {
+    try {
+      const q = uni.createSelectorQuery().in(inst as any)
+      q.select('#wrap-' + canvasId).boundingClientRect((r: any) => {
+        if (r && r.width) resolve(r.width)
+        else resolve(canvasWidthPx.value)
+      }).exec()
+    } catch {
+      resolve(canvasWidthPx.value)
+    }
+  })
+}
+
+function draw() {
+  if (!props.data.length) return
+  const ctx = uni.createCanvasContext(canvasId, inst as any)
+  const W = canvasWidthPx.value
+  const H = canvasHeightPx.value
+  const PAD_X = 12
+  const PAD_Y = 16
+
+  ctx.clearRect(0, 0, W, H)
+  const range = Math.max(max.value - min.value, 1)
+  const stepX = (W - PAD_X * 2) / Math.max(props.data.length - 1, 1)
+  const points = props.data.map((v, i) => ({
+    x: PAD_X + i * stepX,
+    y: H - PAD_Y - ((v - min.value) / range) * (H - PAD_Y * 2),
+    v,
+  }))
+
+  // 填充渐变
+  const grad = ctx.createLinearGradient(0, 0, 0, H)
+  grad.addColorStop(0, props.fillColor)
+  grad.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.beginPath()
+  points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
+  ctx.lineTo(points[points.length - 1].x, H - PAD_Y)
+  ctx.lineTo(points[0].x, H - PAD_Y)
+  ctx.closePath()
+  ctx.setFillStyle(grad as any)
+  ctx.fill()
+
+  // 折线
+  ctx.beginPath()
+  points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
+  ctx.setStrokeStyle(props.color)
+  ctx.setLineWidth(2)
+  ctx.setLineJoin('round')
+  ctx.setLineCap('round')
+  ctx.stroke()
+
+  // 最高点圆 + 数值
+  if (maxIdx.value >= 0) {
+    const p = points[maxIdx.value]
+    ctx.beginPath()
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2)
+    ctx.setFillStyle(props.color)
+    ctx.fill()
+    ctx.setStrokeStyle('#fff')
+    ctx.setLineWidth(2)
+    ctx.stroke()
+    ctx.setFillStyle(props.color)
+    ctx.setFontSize(11)
+    ctx.setTextAlign('center')
+    ctx.fillText(String(props.data[maxIdx.value]), p.x, p.y - 8)
+  }
+
+  ctx.draw()
+}
+
+async function refresh() {
+  await nextTick()
+  const w = await measure()
+  if (w > 0) canvasWidthPx.value = Math.floor(w)
+  draw()
+}
+
+onMounted(refresh)
+watch(() => props.data, refresh, { deep: true })
 </script>
 
 <template>
   <view class="line-chart" :style="{ height: height + 'rpx' }">
-    <view class="svg-wrap">
-      <svg :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" width="100%" :height="height / 2">
-        <defs>
-          <linearGradient :id="`lc-grad-${color}`" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" :stop-color="fillColor" />
-            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
-          </linearGradient>
-        </defs>
-        <path :d="fillPath" :fill="`url(#lc-grad-${color})`" stroke="none" />
-        <path :d="linePath" :stroke="color" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round" />
-        <circle
-          v-for="(p, i) in points"
-          :key="i"
-          :cx="p.x"
-          :cy="p.y"
-          :r="i === maxIdx ? 5 : 0"
-          :fill="color"
-          stroke="#fff"
-          stroke-width="2"
-        />
-        <text
-          v-if="points.length"
-          :x="points[maxIdx].x"
-          :y="points[maxIdx].y - 10"
-          font-size="14"
-          text-anchor="middle"
-          :fill="color"
-          font-weight="700"
-        >
-          {{ data[maxIdx] }}
-        </text>
-      </svg>
+    <view :id="'wrap-' + canvasId" class="canvas-wrap" :style="{ height: canvasHeightPx + 'px' }">
+      <canvas
+        :canvas-id="canvasId"
+        :id="canvasId"
+        :style="{ width: canvasWidthPx + 'px', height: canvasHeightPx + 'px' }"
+      />
     </view>
     <view v-if="displayLabels.length" class="labels">
       <text v-for="(l, i) in displayLabels" :key="i" class="label">{{ l }}</text>
@@ -111,23 +146,21 @@ const displayLabels = computed(() => {
 .line-chart {
   display: flex;
   flex-direction: column;
-  .svg-wrap {
+}
+.canvas-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.labels {
+  display: flex;
+  margin-top: 8rpx;
+  padding: 0 12rpx;
+  .label {
     flex: 1;
-    width: 100%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-  }
-  .labels {
-    display: flex;
-    margin-top: 8rpx;
-    padding: 0 12rpx;
-    .label {
-      flex: 1;
-      text-align: center;
-      font-size: 20rpx;
-      color: var(--text-tertiary);
-    }
+    text-align: center;
+    font-size: 20rpx;
+    color: var(--text-tertiary);
   }
 }
 </style>
