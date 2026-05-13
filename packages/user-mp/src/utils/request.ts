@@ -10,8 +10,14 @@
 import type { ApiResult } from '@jiujiu/shared/types'
 import { mockMatch } from '@jiujiu/shared/mock'
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:3001'
-const MOCK_FLAG = import.meta.env.VITE_USE_MOCK as string | undefined
+// uni-app mp-weixin build 不会把 .env.production 的 VITE_* 注入到产物里
+// （H5 会，mp-weixin 不会——uni-app quirk），所以 prod 时写死 https://ewsn.top 兜底。
+const BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string) ||
+  (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
+// 默认关 mock；显式 'true' 才开
+const MOCK_FLAG = (import.meta.env.VITE_USE_MOCK as string | undefined) || 'false'
+// mp-weixin 不能访问 localhost：如果开发者把 BASE_URL 指到本地，自动走 mock 避免 404
 const IS_LOCAL_API = /^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::|\/|$)/.test(BASE_URL)
 let forceMockForLocalMp = false
 // #ifdef MP-WEIXIN
