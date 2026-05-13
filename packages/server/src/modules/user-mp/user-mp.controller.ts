@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { UserMpService } from './user-mp.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
@@ -56,6 +56,12 @@ export class UserMpController {
   // 店铺价格显示规则（user-mp 商品页用）
   @Public() @Get('shops/:merchantId/price-rule') shopPriceRule(@Param('merchantId') merchantId: string) {
     return this.svc.shopPriceRule(merchantId)
+  }
+
+  // 用户资料读写
+  @Get('profile') profile(@CurrentUser() u: AuthUser) { return this.svc.profile(u.sub) }
+  @Patch('profile') updateProfile(@CurrentUser() u: AuthUser, @Body() dto: any) {
+    return this.svc.updateProfile(u.sub, dto)
   }
 
   // 入驻

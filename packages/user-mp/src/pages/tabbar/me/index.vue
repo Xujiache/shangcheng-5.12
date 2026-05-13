@@ -7,11 +7,28 @@
  * - 6 个功能入口（预约量尺/推广分佣/门店地址/分享/商家入驻/设置）
  */
 import { computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '../../../store/user'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 
 const userStore = useUserStore()
+
+// 进入"我的" tab 时主动拉一次最新资料 + 建 WS 订阅（多端同步）
+onShow(() => {
+  if (userStore.isLogin) {
+    userStore.refreshFromServer()
+    userStore.connectProfileSync()
+  }
+})
+
+function goEditProfile() {
+  if (!userStore.isLogin) {
+    uni.navigateTo({ url: '/pages/auth/login' })
+    return
+  }
+  uni.navigateTo({ url: '/pages/me/edit' })
+}
 
 const ORDER_ENTRIES = [
   { key: 'pending_payment', icon: 'wallet', label: '待付款', tint: '#FF4D2D' },
@@ -91,7 +108,7 @@ function goAllOrders() {
   <view class="page">
     <view class="status" :style="{ height: statusBarHeight }" />
 
-    <view class="hero">
+    <view class="hero" @click="goEditProfile">
       <view class="avatar-wrap">
         <image v-if="userStore.isLogin && userStore.avatar" :src="userStore.avatar" class="avatar-img" />
         <view v-else class="avatar-placeholder">
@@ -100,15 +117,16 @@ function goAllOrders() {
       </view>
       <view class="hero-info">
         <text class="nick">{{ userStore.isLogin ? userStore.nickname : '未登录' }}</text>
-        <text class="sub">{{ userStore.isLogin ? '欢迎回来，享受 9 折零售价' : '微信一键登录可查看零售价' }}</text>
-        <view v-if="!userStore.isLogin" class="login-btn" @click="goLogin">
+        <text class="sub">{{ userStore.isLogin ? '点击编辑个人信息' : '微信一键登录可查看零售价' }}</text>
+        <view v-if="!userStore.isLogin" class="login-btn" @click.stop="goLogin">
           <Icon name="wechat" :size="28" color="#fff" />
           <text>微信登录</text>
         </view>
-        <view v-else class="logout-btn" @click="logout">
+        <view v-else class="logout-btn" @click.stop="logout">
           <text>退出登录</text>
         </view>
       </view>
+      <Icon v-if="userStore.isLogin" name="chevron-right" :size="32" color="rgba(255,255,255,0.7)" />
     </view>
 
     <view class="card">

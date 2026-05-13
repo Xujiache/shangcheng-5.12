@@ -5,13 +5,60 @@ import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
 import { orderNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
+import { ChatGateway } from '../chat/chat.gateway'
 
 @Injectable()
 export class UserMpService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly wxpay: WxPayService,
+    private readonly chat: ChatGateway,
   ) {}
+
+  // ========== 用户资料（读写 + WS 实时多端同步） ==========
+  async profile(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!u) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+    return this.serializeUser(u)
+  }
+
+  async updateProfile(userId: string, dto: any) {
+    const data: any = {}
+    if (typeof dto.nickname === 'string' && dto.nickname.trim()) data.nickname = dto.nickname.trim().slice(0, 32)
+    if (typeof dto.avatar === 'string') data.avatar = dto.avatar
+    if (typeof dto.gender === 'number' && [0, 1, 2].includes(dto.gender)) data.gender = dto.gender
+    if (typeof dto.email === 'string' && dto.email.trim()) {
+      const email = dto.email.trim().toLowerCase()
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new BizException(BizCode.INVALID_PARAMS, '邮箱格式不正确')
+      }
+      data.email = email
+    }
+    if (Object.keys(data).length === 0) {
+      return this.profile(userId)
+    }
+    const updated = await this.prisma.user.update({ where: { id: userId }, data })
+    const payload = this.serializeUser(updated)
+    // 广播到该用户的所有在线设备（@WebSocketGateway 同 socket.io 房间）
+    this.chat.broadcastUserUpdate(userId, payload)
+    return payload
+  }
+
+  private serializeUser(u: any) {
+    return {
+      id: u.id,
+      openid: u.openid,
+      phone: u.phone,
+      email: u.email,
+      nickname: u.nickname,
+      avatar: u.avatar,
+      gender: u.gender,
+      role: u.role,
+      status: u.status,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    }
+  }
 
   // ========== 商品 ==========
   async listProducts(q: any) {

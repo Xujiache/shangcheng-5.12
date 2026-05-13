@@ -88,8 +88,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (!m) { client.emit('error', { message: '当前账号未关联商户' }); return }
         client.data.merchantId = m.id
         client.data.userId = user.id
+        // 商家也进自己的 user 房间，资料更新同样同步
+        client.join(`user:${user.id}`)
+        // 商家额外进 merchant 房间（如以后要给商家广播订单等）
+        client.join(`merchant:${m.id}`)
       } else {
         client.data.userId = user.id
+        // 用户进自己 user 房间，资料更新会推到所有 socket
+        client.join(`user:${user.id}`)
       }
       client.emit('authed', {
         role: client.data.role,
@@ -207,5 +213,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       where.userId = client.data.userId
     }
     return this.prisma.chatSession.findFirst({ where })
+  }
+
+  /**
+   * 给某用户的所有在线设备推送资料更新（PATCH /u/profile 后调用）
+   * 客户端事件名：'user:update' → payload 是完整序列化后的 User 对象
+   */
+  broadcastUserUpdate(userId: string, user: any) {
+    if (!this.server) return
+    this.server.to(`user:${userId}`).emit('user:update', { user })
   }
 }

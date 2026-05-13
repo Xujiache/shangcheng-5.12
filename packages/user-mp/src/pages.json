@@ -16,7 +16,8 @@
     { "path": "pages/store/map", "style": { "navigationBarTitleText": "门店地址" } },
     { "path": "pages/merchant/apply", "style": { "navigationBarTitleText": "商家入驻" } },
     { "path": "pages/channel/index", "style": { "navigationBarTitleText": "频道" } },
-    { "path": "pages/chat/index", "style": { "navigationBarTitleText": "在线客服" } }
+    { "path": "pages/chat/index", "style": { "navigationBarTitleText": "在线客服" } },
+    { "path": "pages/me/edit", "style": { "navigationBarTitleText": "个人信息" } }
   ],
   "globalStyle": {
     "navigationStyle": "custom",
