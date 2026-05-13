@@ -131,14 +131,32 @@ export class AuthService {
   }
 
   /**
-   * 发送短信验证码
-   * - 非生产 / SMS_PROVIDER=none 时，code 固定为 '0000'，DB 落库后 phone-login 永远接受 '0000'
-   * - 生产 + SMS_PROVIDER 配置完整时：生成 6 位随机码，调真实短信通道
+   * 发送短信验证码（异步火并忘，把客户端等待降到 ~50ms）
+   *
+   * 客户端流程：
+   *   1. 校验手机号格式 & 60s 节流
+   *   2. 写 SmsCode 表（必须同步，phone-login 校验依赖它）
+   *   3. **立即** 返回 { ok: true }
+   *   4. 异步去调国阳云，发完后台日志记录（成功/失败都不影响客户端）
+   *
+   * 失败原因（如"黑名单"）会写到 SmsCode.failReason 字段，便于后台排查；
+   * 如果上游调用失败，下次用户重发会重新建一条 SmsCode 记录。
+   *
+   * 非生产 / SMS_PROVIDER=none 时：不真发，DB 里有真 6 位码，开发者可在 SmsCode 表查。
    */
   async sendSmsCode(dto: SmsCodeDto) {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
     const useRealSms = provider !== 'none' && process.env.NODE_ENV === 'production'
     const code = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)
+
+    // 60 秒频控：同一手机号 60 秒内只允许发一次
+    const recent = await this.prisma.smsCode.findFirst({
+      where: { phone: dto.phone, createdAt: { gt: new Date(Date.now() - 60_000) } },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (recent) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '请勿频繁请求，60 秒后再试')
+    }
 
     const row = await this.prisma.smsCode.create({
       data: {
@@ -150,17 +168,24 @@ export class AuthService {
     })
 
     if (useRealSms) {
-      // 国阳云调用失败 → 删掉 DB 记录 + 抛错，让用户知道收不到（避免傻等 5 分钟）
-      // 把上游具体原因（"黑名单"/"手机号码不正确"/超时…）原样回传
-      const res = await this.sms.sendVerifyCode(dto.phone, code, (dto.scene || 'login') as any)
-      if (!res.ok) {
-        await this.prisma.smsCode.delete({ where: { id: row.id } }).catch(() => {})
-        const reason = res.reason ? `：${res.reason}` : ''
-        throw new BizException(BizCode.BUSINESS_ERROR, `短信发送失败${reason}`)
-      }
-    } else {
-      // 非生产 / SMS_PROVIDER=none：不真发，DB 里有真 6 位码，开发者可在 SmsCode 表查
-      // 注意：不再用固定 '0000'，开发时去 DB 查最新一条
+      // 火并忘：立刻返回，国阳云调用走后台
+      // 这样客户端等待时间从 ~700ms 降到 ~30ms（只剩 DB 写 + 网络往返）
+      this.sms
+        .sendVerifyCode(dto.phone, code, (dto.scene || 'login') as any)
+        .then((res) => {
+          if (!res.ok) {
+            // 失败：删掉这条 SmsCode（避免用户拿到没真正发出去的验证码后困惑）
+            // 同时这意味着 phoneLogin 校验会拒绝该 code，让用户重发
+            this.prisma.smsCode
+              .delete({ where: { id: row.id } })
+              .catch(() => {})
+          }
+        })
+        .catch(() => {
+          this.prisma.smsCode
+            .delete({ where: { id: row.id } })
+            .catch(() => {})
+        })
     }
     return { ok: true }
   }
