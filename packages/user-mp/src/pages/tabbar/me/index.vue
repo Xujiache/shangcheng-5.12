@@ -158,8 +158,16 @@ function goAllOrders() {
   min-height: 100vh;
   background: var(--bg-page);
 }
-.status { background: $brand-gradient; }
+.status {
+  position: relative;
+  z-index: 0;
+  background: $brand-gradient;
+}
 .hero {
+  // mp-weixin 里只有 .card 有 z-index 还不够；hero 也必须显式设低层级，
+  // 否则它会覆盖被 -32rpx 拉上来的 card 顶部
+  position: relative;
+  z-index: 0;
   background: $brand-gradient;
   padding: 24rpx 32rpx 48rpx;
   display: flex;
@@ -209,11 +217,11 @@ function goAllOrders() {
   }
 }
 .card {
-  // mp-weixin 里负 margin 单独用不够，必须配 position+z-index 才能浮在 hero 上面
+  // mp-weixin 里负 margin 浮出：hero 已显式 z-index:0，card 设 z-index:2 强制覆盖
   position: relative;
-  z-index: 1;
+  z-index: 2;
   margin: -32rpx 24rpx 16rpx;
-  background: var(--bg-card);
+  background: #fff;
   border-radius: 24rpx;
   padding: 24rpx;
   box-shadow: $shadow-md;
