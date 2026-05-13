@@ -36,11 +36,15 @@ function buildUrl(url: string, params?: Record<string, unknown>): string {
 }
 
 /**
- * 平台端只允许调：/p/* 私有 + /auth/* + /files/*
+ * 平台端只允许调：/p/* 私有 + /auth/* + /files/* + 个别公开接口（如协议）
  */
+const PLATFORM_PUBLIC_ALLOW = new Set([
+  '/api/v1/u/agreements',
+])
 function guardNamespace(url: string): void {
   if (import.meta.env.PROD) return
   if (!url.startsWith('/api/v1/')) return
+  for (const w of PLATFORM_PUBLIC_ALLOW) if (url.startsWith(w)) return
   const path = url.replace(/^\/api\/v1\//, '')
   if (path.startsWith('m/') || path.startsWith('u/')) {
     const msg = `[platform-app 命名空间错误] 平台端不能调用 ${url}，会触发 403。请改为 /api/v1/p/* 接口。`

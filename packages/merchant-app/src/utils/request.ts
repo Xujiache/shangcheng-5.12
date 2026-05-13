@@ -39,6 +39,7 @@ const MERCHANT_PUBLIC_ALLOW = new Set([
   '/api/v1/u/banners',
   '/api/v1/u/merchant-apply',
   '/api/v1/u/stores/nearby',
+  '/api/v1/u/agreements',
 ])
 function guardNamespace(url: string): void {
   if (import.meta.env.PROD) return

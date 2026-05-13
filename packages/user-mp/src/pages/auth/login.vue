@@ -15,6 +15,7 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services'
 import Icon from '../../components/icon/icon.vue'
+import AgreementSheet from '../../components/agreement-sheet/agreement-sheet.vue'
 
 const userStore = useUserStore()
 
@@ -112,8 +113,12 @@ async function sendCode() {
   }
 }
 
-function goAgreement(type: 'user' | 'privacy') {
-  uni.showToast({ title: type === 'user' ? '《用户协议》' : '《隐私政策》', icon: 'none' })
+type LegalKind = 'user' | 'privacy' | 'collect'
+const agreementOpen = ref(false)
+const agreementKind = ref<LegalKind>('user')
+function openAgreement(type: LegalKind) {
+  agreementKind.value = type
+  agreementOpen.value = true
 }
 
 function asGuest() {
@@ -253,12 +258,16 @@ function asGuest() {
         </view>
         <text class="agree-text">
           已阅读并同意
-          <text class="hl" @click="goAgreement('user')">《用户协议》</text>
-          和
-          <text class="hl" @click="goAgreement('privacy')">《隐私政策》</text>
+          <text class="hl" @click="openAgreement('user')">《用户协议》</text>
+          、
+          <text class="hl" @click="openAgreement('privacy')">《隐私政策》</text>
+          及
+          <text class="hl" @click="openAgreement('collect')">《信息收集清单》</text>
         </text>
       </view>
     </view>
+
+    <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
   </view>
 </template>
 

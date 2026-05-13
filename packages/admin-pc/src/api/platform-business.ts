@@ -321,6 +321,28 @@ export function saveSystemSettings(s: Partial<SystemSettings>) {
   })
 }
 
+/* ============ 12.1 法律协议（用户协议 / 隐私政策 / 信息收集清单） ============ */
+export interface LegalAgreementItem {
+  title: string
+  updatedAt: string
+  body: string
+}
+export interface LegalAgreements {
+  user: LegalAgreementItem
+  privacy: LegalAgreementItem
+  collect: LegalAgreementItem
+}
+
+export function fetchLegalAgreements() {
+  return request.get<LegalAgreements>({ url: '/api/v1/p/legal/agreements' })
+}
+export function saveLegalAgreements(data: Partial<LegalAgreements>) {
+  return request.put<{ ok: boolean }>({
+    url: '/api/v1/p/legal/agreements',
+    data
+  })
+}
+
 /* ============ 13. 功能开关 ============ */
 export interface GrayscaleConfig {
   audience: 'all' | 'factory' | 'store' | 'specific'

@@ -12,6 +12,7 @@ import { PlatformModule } from './modules/platform/platform.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { SmsModule } from './modules/sms/sms.module'
 import { PaymentModule } from './modules/payment/payment.module'
+import { LegalModule } from './modules/legal/legal.module'
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PaymentModule } from './modules/payment/payment.module'
     ChatModule,
     SmsModule,
     PaymentModule,
+    LegalModule,
   ],
   controllers: [HealthController],
 })

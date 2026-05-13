@@ -9,6 +9,15 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services/auth'
 import Icon from '../../components/icon/icon.vue'
+import AgreementSheet from '../../components/agreement-sheet/agreement-sheet.vue'
+
+type LegalKind = 'user' | 'privacy' | 'collect'
+const agreementOpen = ref(false)
+const agreementKind = ref<LegalKind>('user')
+function openAgreement(type: LegalKind) {
+  agreementKind.value = type
+  agreementOpen.value = true
+}
 
 const userStore = useUserStore()
 
@@ -172,9 +181,11 @@ function goApply() {
         </view>
         <text class="agree-text">
           已阅读并同意
-          <text class="hl">《商家入驻协议》</text>
-          与
-          <text class="hl">《隐私政策》</text>
+          <text class="hl" @click.stop="openAgreement('user')">《商家入驻协议》</text>
+          、
+          <text class="hl" @click.stop="openAgreement('privacy')">《隐私政策》</text>
+          及
+          <text class="hl" @click.stop="openAgreement('collect')">《信息收集清单》</text>
         </text>
       </view>
 
@@ -204,6 +215,8 @@ function goApply() {
         <text class="meta">商家版 v0.1.0</text>
       </view>
     </view>
+
+    <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
   </view>
 </template>
 

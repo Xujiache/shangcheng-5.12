@@ -223,6 +223,17 @@ export const platformRoutes: AppRouteRecord = {
           }
         },
         {
+          path: '/platform/legal',
+          name: 'PlatformLegal',
+          component: '/platform/legal',
+          meta: {
+            title: '协议管理',
+            icon: 'ri:file-text-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
+        },
+        {
           path: '/platform/feature-flag',
           name: 'PlatformFeatureFlag',
           component: '/platform/feature-flag',

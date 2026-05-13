@@ -7,8 +7,17 @@
 import { ref, computed } from 'vue'
 import { useAdminStore } from '../../store/admin'
 import { platformAuthService } from '../../services/auth'
+import AgreementSheet from '../../components/agreement-sheet/agreement-sheet.vue'
 
 const adminStore = useAdminStore()
+
+type LegalKind = 'user' | 'privacy' | 'collect'
+const agreementOpen = ref(false)
+const agreementKind = ref<LegalKind>('user')
+function openAgreement(type: LegalKind) {
+  agreementKind.value = type
+  agreementOpen.value = true
+}
 
 const username = ref('')
 const password = ref('')
@@ -95,8 +104,13 @@ async function onLogin() {
 
       <view class="agree-row">
         <view :class="['check', agreed && 'on']" @click="agreed = !agreed" />
-        <text class="agree-text" @click="agreed = !agreed">
-          我已阅读并同意 <text class="hl">《管理员守则》</text>
+        <text class="agree-text">
+          我已阅读并同意
+          <text class="hl" @click.stop="openAgreement('user')">《管理员守则》</text>
+          、
+          <text class="hl" @click.stop="openAgreement('privacy')">《隐私政策》</text>
+          及
+          <text class="hl" @click.stop="openAgreement('collect')">《信息收集清单》</text>
         </text>
       </view>
 
@@ -110,6 +124,8 @@ async function onLogin() {
     <view class="footer">
       <text class="copyright">© 2026 经纬科技 · 平台管理</text>
     </view>
+
+    <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
   </view>
 </template>
 
