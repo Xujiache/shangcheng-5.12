@@ -100,6 +100,8 @@ export class SmsService {
     // 没星号的兜底自动补全，避免一次配置错误整个登录链路报废
     const rawVar = process.env.GYY_SMS_TEMPLATE_VAR || '**code**'
     const tplVar = rawVar.startsWith('**') && rawVar.endsWith('**') ? rawVar : `**${rawVar}**`
+    // 如果模板里还有 **minute** 占位（"5 分钟内有效"），也一并填上
+    const minuteValue = process.env.GYY_SMS_TEMPLATE_MINUTE || '5'
 
     if (!appkey || !appsecret || !smsSignId || !templateId) {
       this.logger.warn(
@@ -109,7 +111,8 @@ export class SmsService {
     }
 
     // content 是 JSON 数组字符串，每个对象至少 {mobile, 模板变量名}
-    const content = JSON.stringify([{ mobile: phone, [tplVar]: code }])
+    // 同时填 **minute** 兼容包含"分钟内有效"占位的模板（如国阳云官方测试模板 908e94cc...）
+    const content = JSON.stringify([{ mobile: phone, [tplVar]: code, '**minute**': minuteValue }])
 
     const form = new URLSearchParams()
     form.set('appkey', appkey)
