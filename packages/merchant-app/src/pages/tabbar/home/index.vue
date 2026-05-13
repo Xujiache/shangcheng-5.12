@@ -40,22 +40,30 @@ async function loadProfile() {
   }
 }
 
-const QUICK_ENTRIES = [
-  { key: 'product', icon: 'biz-product', label: '商品', to: '/pages/tabbar/product/index' },
-  { key: 'category', icon: 'menu', label: '分类管理', to: '/pages/product/category' },
-  { key: 'agency', icon: 'tag', label: '代理商品', to: '/pages/product/agency-list' },
-  { key: 'price-rule', icon: 'wallet', label: '价格规则', to: '/pages/shop/price-rule' },
-  { key: 'order', icon: 'biz-order', label: '订单', to: '/pages/tabbar/order/index' },
-  { key: 'customer', icon: 'biz-customer', label: '客户', to: '/pages/customer/index' },
-  { key: 'chat', icon: 'biz-chat', label: '客服', to: '/pages/chat/index' },
-  { key: 'store', icon: 'biz-store', label: '门店', to: '/pages/store/index' },
-  { key: 'staff', icon: 'biz-staff', label: '员工', to: '/pages/staff/index' },
-  { key: 'marketing', icon: 'biz-marketing', label: '营销', to: '/pages/marketing/index' },
-  { key: 'stats', icon: 'biz-stats', label: '数据', to: '/pages/tabbar/stats/index' },
+/** 主入口（最多 7 个 + 一个"更多"，刚好两行 4×2） */
+const CORE_ENTRIES = [
+  { key: 'product', icon: 'biz-product', label: '商品', to: '/pages/tabbar/product/index', tint: 'orange' },
+  { key: 'order', icon: 'biz-order', label: '订单', to: '/pages/tabbar/order/index', tint: 'blue' },
+  { key: 'customer', icon: 'biz-customer', label: '客户', to: '/pages/customer/index', tint: 'green' },
+  { key: 'stats', icon: 'biz-stats', label: '数据', to: '/pages/tabbar/stats/index', tint: 'purple' },
+  { key: 'chat', icon: 'biz-chat', label: '客服', to: '/pages/chat/index', tint: 'pink' },
+  { key: 'marketing', icon: 'biz-marketing', label: '营销', to: '/pages/marketing/index', tint: 'yellow' },
+  { key: 'store', icon: 'biz-store', label: '门店', to: '/pages/store/index', tint: 'cyan' },
 ]
 
-const visibleEntries = computed(() =>
-  QUICK_ENTRIES.filter((e) => flagStore.isHomeEntryEnabled(e.key)),
+/** 进入"更多"弹层的扩展入口 */
+const EXTRA_ENTRIES = [
+  { key: 'category', icon: 'biz-product', label: '分类管理', to: '/pages/product/category' },
+  { key: 'agency', icon: 'tag', label: '代理商品', to: '/pages/product/agency-list' },
+  { key: 'price-rule', icon: 'wallet', label: '价格规则', to: '/pages/shop/price-rule' },
+  { key: 'staff', icon: 'biz-staff', label: '员工', to: '/pages/staff/index' },
+]
+
+const visibleCore = computed(() =>
+  CORE_ENTRIES.filter((e) => flagStore.isHomeEntryEnabled(e.key)),
+)
+const visibleExtras = computed(() =>
+  EXTRA_ENTRIES.filter((e) => flagStore.isHomeEntryEnabled(e.key)),
 )
 
 const totalTodos = computed(() => {
@@ -98,6 +106,21 @@ function goEntry(to: string) {
   } else {
     uni.navigateTo({ url: to })
   }
+}
+
+function openMore() {
+  const list = visibleExtras.value
+  if (list.length === 0) {
+    uni.showToast({ title: '暂无更多入口', icon: 'none' })
+    return
+  }
+  uni.showActionSheet({
+    itemList: list.map((e) => e.label),
+    success: (r) => {
+      const target = list[r.tapIndex]
+      if (target) goEntry(target.to)
+    },
+  })
 }
 
 onMounted(() => {
@@ -159,19 +182,25 @@ onShow(() => {
         />
       </view>
 
-      <!-- 快捷入口 -->
+      <!-- 快捷入口（4×2 网格，最后一格固定为"更多"） -->
       <Section title="快捷入口">
         <view class="entry-grid">
           <view
-            v-for="entry in visibleEntries"
+            v-for="entry in visibleCore"
             :key="entry.key"
             class="entry-item"
             @click="goEntry(entry.to)"
           >
-            <view class="entry-icon">
-              <Icon :name="entry.icon" :size="44" color="var(--brand-primary)" />
+            <view class="entry-icon" :class="`tint-${entry.tint}`">
+              <Icon :name="entry.icon" :size="40" color="#fff" :fill="true" />
             </view>
             <text class="entry-label">{{ entry.label }}</text>
+          </view>
+          <view v-if="visibleExtras.length > 0" class="entry-item" @click="openMore">
+            <view class="entry-icon tint-gray">
+              <Icon name="more-h" :size="40" color="#fff" />
+            </view>
+            <text class="entry-label">更多</text>
           </view>
         </view>
       </Section>
@@ -340,29 +369,40 @@ onShow(() => {
 .entry-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24rpx 16rpx;
-  padding-top: 8rpx;
+  gap: 28rpx 16rpx;
+  padding: 12rpx 0 4rpx;
 }
 .entry-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  .entry-icon {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: 24rpx;
-    background: var(--brand-primary-ghost);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    .emoji { font-size: 40rpx; }
-  }
-  .entry-label {
-    font-size: 22rpx;
-    color: var(--text-secondary);
-  }
+  gap: 10rpx;
+  transition: transform 0.15s;
+  &:active { transform: scale(0.94); }
 }
+.entry-icon {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.08);
+}
+.entry-label {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+/* tint 配色：每格独立渐变 + 同色阴影 */
+.tint-orange  { background: linear-gradient(135deg, #FF8A65, #FF5722); box-shadow: 0 8rpx 16rpx rgba(255, 87, 34, 0.28); }
+.tint-blue    { background: linear-gradient(135deg, #4FC3F7, #1E88E5); box-shadow: 0 8rpx 16rpx rgba(30, 136, 229, 0.28); }
+.tint-green   { background: linear-gradient(135deg, #81C784, #43A047); box-shadow: 0 8rpx 16rpx rgba(67, 160, 71, 0.28); }
+.tint-purple  { background: linear-gradient(135deg, #BA68C8, #8E24AA); box-shadow: 0 8rpx 16rpx rgba(142, 36, 170, 0.28); }
+.tint-pink    { background: linear-gradient(135deg, #F06292, #E91E63); box-shadow: 0 8rpx 16rpx rgba(233, 30, 99, 0.28); }
+.tint-yellow  { background: linear-gradient(135deg, #FFD54F, #FFA000); box-shadow: 0 8rpx 16rpx rgba(255, 160, 0, 0.28); }
+.tint-cyan    { background: linear-gradient(135deg, #4DD0E1, #00838F); box-shadow: 0 8rpx 16rpx rgba(0, 131, 143, 0.28); }
+.tint-gray    { background: linear-gradient(135deg, #B0BEC5, #607D8B); box-shadow: 0 8rpx 16rpx rgba(96, 125, 139, 0.24); }
 
 .plaza-card {
   background: var(--bg-card);

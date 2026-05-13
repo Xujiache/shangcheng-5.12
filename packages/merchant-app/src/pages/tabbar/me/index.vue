@@ -50,7 +50,7 @@ const ratingCount = computed(() => profile.value?.ratingCount ?? 0)
 
 const SETTINGS = [
   { icon: 'biz-me', label: '个人信息', action: 'profile' },
-  { icon: 'share', label: '分享小程序', action: 'share' },
+  { icon: 'share', label: '分享 APP', action: 'share' },
   { icon: 'gear', label: '系统设置', action: 'settings' },
   { icon: 'refresh', label: '检查更新', action: 'update' },
   { icon: 'biz-chat', label: '联系我们', action: 'contact' },
@@ -62,15 +62,7 @@ function goMember() {
 
 function handle(action: string) {
   const map: Record<string, () => void> = {
-    share: () =>
-      uni.showActionSheet({
-        itemList: ['复制小程序链接', '生成海报', '分享给好友'],
-        success: (r) =>
-          uni.showToast({
-            title: ['已复制链接', '海报已生成', '已唤起分享'][r.tapIndex],
-            icon: 'success',
-          }),
-      }),
+    share: () => uni.navigateTo({ url: '/pages/me/share' }),
     profile: () => uni.navigateTo({ url: '/pages/me/profile' }),
     settings: () => uni.navigateTo({ url: '/pages/me/settings' }),
     update: () => {

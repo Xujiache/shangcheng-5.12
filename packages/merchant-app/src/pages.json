@@ -26,6 +26,7 @@
     { "path": "pages/member/index", "style": { "navigationBarTitleText": "会员开通" } },
     { "path": "pages/me/profile", "style": { "navigationBarTitleText": "个人信息" } },
     { "path": "pages/me/settings", "style": { "navigationBarTitleText": "系统设置" } },
+    { "path": "pages/me/share", "style": { "navigationBarTitleText": "分享 APP" } },
     { "path": "pages/shop/price-rule", "style": { "navigationBarTitleText": "价格显示规则" } }
   ],
   "globalStyle": {

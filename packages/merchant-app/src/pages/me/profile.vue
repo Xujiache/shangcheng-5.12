@@ -16,8 +16,10 @@ import Icon from '../../components/icon/icon.vue'
 import { profileService, type MerchantProfile } from '../../services/profile'
 import { useUserStore } from '../../store'
 import { useTencentMap } from '../../composables/useTencentMap'
+import { useStatusBar } from '../../composables/useStatusBar'
 
 const userStore = useUserStore()
+const { heroPaddingTop } = useStatusBar(24)
 const tmap = useTencentMap()
 const showMapPick = ref(false)
 const mapPickKeyword = ref('')
@@ -189,90 +191,131 @@ onMounted(loadProfile)
 
 <template>
   <view class="page">
-    <view class="hero">
-      <view class="avatar-wrap" @click="chooseAvatar">
-        <image v-if="form.avatar" :src="form.avatar" class="avatar-img" mode="aspectFill" />
-        <view v-else class="avatar avatar-placeholder">
-          <text>{{ form.shopName.slice(0, 1) || '?' }}</text>
+    <!-- Hero · 渐变 + 头像 + 头部信息 -->
+    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+      <view class="hero-top">
+        <view class="back-btn" @click="() => uni.navigateBack({ delta: 1, fail: () => uni.switchTab({ url: '/pages/tabbar/me/index' }) })">
+          <Icon name="back" :size="32" color="#fff" />
         </view>
-        <view class="avatar-edit-badge">
-          <Icon name="camera" :size="24" color="#fff" />
-        </view>
+        <text class="hero-title">个人信息</text>
+        <view class="back-btn placeholder" />
       </view>
-      <view class="hero-info">
+      <view class="avatar-block" @click="chooseAvatar">
+        <view class="avatar-ring">
+          <image v-if="form.avatar" :src="form.avatar" class="avatar-img" mode="aspectFill" />
+          <view v-else class="avatar avatar-placeholder">
+            <text>{{ form.shopName.slice(0, 1) || '?' }}</text>
+          </view>
+          <view class="avatar-edit-badge">
+            <Icon name="camera" :size="22" color="#fff" />
+          </view>
+        </view>
         <text class="hero-name">{{ form.shopName || '未命名店铺' }}</text>
-        <text class="hero-no">商户号 {{ form.merchantNo }}</text>
+        <text class="hero-no">商户号 {{ form.merchantNo || '--' }}</text>
       </view>
     </view>
 
     <!-- 基础信息 -->
     <view class="card">
-      <view class="card-title">基础信息</view>
-
-      <view class="row">
-        <text class="row-label">店名</text>
-        <input v-model="form.shopName" class="row-input" placeholder="请输入店名" maxlength="40" />
+      <view class="section-head">
+        <view class="section-bar" />
+        <text class="section-title">基础信息</text>
       </view>
 
-      <view class="row row--readonly">
-        <text class="row-label">商户号</text>
-        <text class="row-readonly">{{ form.merchantNo }}</text>
-        <text class="row-hint">系统生成 · 不可修改</text>
+      <view class="field-block">
+        <text class="label">店名</text>
+        <view class="field">
+          <view class="prefix"><Icon name="biz-shop-decorate" :size="32" color="#86909c" /></view>
+          <input v-model="form.shopName" class="input" placeholder="请输入店名" placeholder-class="ph" maxlength="40" />
+        </view>
       </view>
 
-      <view class="row">
-        <text class="row-label">联系人</text>
-        <input v-model="form.contactName" class="row-input" placeholder="请输入联系人" maxlength="20" />
+      <view class="field-block">
+        <text class="label">商户号</text>
+        <view class="field field-readonly">
+          <view class="prefix"><Icon name="biz-receipt" :size="32" color="#c9cdd4" /></view>
+          <text class="readonly-text">{{ form.merchantNo || '--' }}</text>
+          <text class="readonly-hint">系统生成</text>
+        </view>
       </view>
 
-      <view class="row">
-        <text class="row-label">联系手机</text>
-        <input v-model="form.contactPhone" class="row-input" placeholder="例：13912345678" maxlength="20" />
+      <view class="field-block">
+        <text class="label">联系人</text>
+        <view class="field">
+          <view class="prefix"><Icon name="biz-me" :size="32" color="#86909c" /></view>
+          <input v-model="form.contactName" class="input" placeholder="请输入联系人" placeholder-class="ph" maxlength="20" />
+        </view>
       </view>
 
-      <view class="row">
-        <text class="row-label">邮箱</text>
-        <input v-model="form.email" class="row-input" placeholder="例：contact@example.com" maxlength="60" />
+      <view class="field-block">
+        <text class="label">联系手机</text>
+        <view class="field">
+          <view class="prefix"><Icon name="phone" :size="32" color="#86909c" /></view>
+          <input v-model="form.contactPhone" class="input" placeholder="例：13912345678" placeholder-class="ph" maxlength="20" type="number" />
+        </view>
+      </view>
+
+      <view class="field-block">
+        <text class="label">邮箱</text>
+        <view class="field">
+          <view class="prefix"><Icon name="mail" :size="32" color="#86909c" /></view>
+          <input v-model="form.email" class="input" placeholder="例：contact@example.com" placeholder-class="ph" maxlength="60" />
+        </view>
       </view>
     </view>
 
     <!-- 经营信息 -->
     <view class="card">
-      <view class="card-title">经营信息</view>
+      <view class="section-head">
+        <view class="section-bar" />
+        <text class="section-title">经营信息</text>
+      </view>
 
-      <view class="row" @click="showCategoryPicker = true">
-        <text class="row-label">经营品类</text>
-        <view class="row-tags">
-          <view v-for="c in form.categories" :key="c" class="tag">{{ c }}</view>
-          <text v-if="!form.categories.length" class="row-placeholder">请选择</text>
+      <view class="field-block">
+        <text class="label">
+          经营品类
+          <text class="label-hint">（多选）</text>
+        </text>
+        <view class="cat-selector" @click="showCategoryPicker = true">
+          <view v-if="form.categories.length" class="cat-tags">
+            <view v-for="c in form.categories" :key="c" class="cat-chip">{{ c }}</view>
+          </view>
+          <text v-else class="cat-placeholder">点击选择经营品类</text>
+          <Icon name="forward" :size="24" color="#c9cdd4" />
         </view>
-        <Icon name="forward" :size="22" color="#C0C4CC" />
       </view>
 
-      <view class="row">
-        <text class="row-label">联系地址</text>
-        <input v-model="form.address" class="row-input" placeholder="详细地址" maxlength="100" />
-      </view>
-      <view class="row row--map" @click="pickAddressOnMap">
-        <text class="row-label">地图选址</text>
-        <text class="row-readonly">在地图上选位置 / 搜索 POI</text>
-        <Icon name="location-pin" :size="28" color="#FF4D2D" />
+      <view class="field-block">
+        <text class="label">联系地址</text>
+        <view class="field">
+          <view class="prefix"><Icon name="location" :size="32" color="#86909c" /></view>
+          <input v-model="form.address" class="input" placeholder="详细地址" placeholder-class="ph" maxlength="100" />
+        </view>
+        <view class="map-btn" @click="pickAddressOnMap">
+          <Icon name="location" :size="28" color="#FF4D2D" />
+          <text>在地图上选位置 / 搜索 POI</text>
+          <Icon name="forward" :size="22" color="#FF4D2D" />
+        </view>
       </view>
 
-      <view class="row row--textarea">
-        <text class="row-label">店铺简介</text>
-        <textarea
-          v-model="form.description"
-          class="row-textarea"
-          placeholder="一句话介绍你的店铺，让客户更了解你"
-          :maxlength="160"
-          auto-height
-        />
-        <text class="row-hint row-hint--right">{{ form.description.length }} / 160</text>
+      <view class="field-block">
+        <text class="label">店铺简介</text>
+        <view class="textarea-wrap">
+          <textarea
+            v-model="form.description"
+            class="textarea"
+            placeholder="一句话介绍你的店铺，让客户更了解你"
+            placeholder-class="ph"
+            :maxlength="160"
+            auto-height
+          />
+          <text class="count">{{ form.description.length }} / 160</text>
+        </view>
       </view>
     </view>
 
-    <view class="footer">
+    <!-- 浮动保存按钮 -->
+    <view class="save-dock">
       <button
         class="btn-save"
         :class="{ 'btn-save--active': hasChange }"
@@ -353,169 +396,318 @@ onMounted(loadProfile)
   padding-bottom: 240rpx;
 }
 
+/* ===== Hero ===== */
 .hero {
-  background: var(--brand-gradient, linear-gradient(135deg, #ff4d2d, #ff7a45));
-  padding: 32rpx 32rpx;
+  background:
+    radial-gradient(120% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
+    linear-gradient(160deg, #FF6B45 0%, #FF4D2D 50%, #E63A1F 100%);
+  padding: 0 32rpx 64rpx;
+  border-bottom-left-radius: 36rpx;
+  border-bottom-right-radius: 36rpx;
+  position: relative;
+  overflow: hidden;
+}
+.hero-top {
   display: flex;
   align-items: center;
-  gap: 24rpx;
+  justify-content: space-between;
 }
-.avatar-wrap {
+.back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  background: rgba(255,255,255,0.18);
+  border: 2rpx solid rgba(255,255,255,0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.back-btn.placeholder {
+  background: transparent;
+  border-color: transparent;
+}
+.hero-title {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 2rpx;
+}
+
+.avatar-block {
+  margin-top: 36rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+.avatar-ring {
   position: relative;
-  width: 128rpx;
-  height: 128rpx;
-  flex-shrink: 0;
+  width: 168rpx;
+  height: 168rpx;
+  padding: 6rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.15));
+  border: 3rpx solid rgba(255,255,255,0.4);
+  box-shadow: 0 12rpx 32rpx rgba(0,0,0,0.18);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
   &:active { transform: scale(0.96); }
 }
 .avatar-img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 4rpx solid rgba(255, 255, 255, 0.4);
-  background: rgba(255,255,255,0.2);
 }
 .avatar {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  border: 4rpx solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, #fff, #FFE6DC);
   display: flex;
   align-items: center;
   justify-content: center;
-  text {
-    color: #fff;
-    font-size: 52rpx;
-    font-weight: 700;
-  }
+}
+.avatar text {
+  font-size: 64rpx;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF6B45, #E63A1F);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .avatar-edit-badge {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 44rpx;
-  height: 44rpx;
+  bottom: 4rpx;
+  right: 4rpx;
+  width: 50rpx;
+  height: 50rpx;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  border: 3rpx solid rgba(255, 255, 255, 0.85);
+  background: #FF4D2D;
+  border: 3rpx solid #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.2);
 }
-.hero-info {
-  flex: 1;
-  min-width: 0;
+.hero-name {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1rpx;
+  margin-top: 8rpx;
+}
+.hero-no {
+  font-size: 22rpx;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 1rpx;
+}
+
+/* ===== 卡片 + Section ===== */
+.card {
+  margin: 24rpx 28rpx 0;
+  background: #fff;
+  border-radius: 28rpx;
+  padding: 28rpx 28rpx 8rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.06);
+}
+.card:first-of-type {
+  margin-top: -32rpx;
+  position: relative;
+  z-index: 2;
+}
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 20rpx;
+}
+.section-bar {
+  width: 8rpx;
+  height: 28rpx;
+  border-radius: 4rpx;
+  background: linear-gradient(180deg, #FF6B45, #FF4D2D);
+}
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1d2129;
+  letter-spacing: 1rpx;
+}
+
+/* ===== 字段 ===== */
+.field-block {
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
-}
-.hero-name { font-size: 36rpx; font-weight: 700; color: #fff; }
-.hero-no { font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
-
-.card {
-  margin: 24rpx;
-  background: #fff;
-  border-radius: 20rpx;
-  box-shadow: var(--shadow-sm, 0 2rpx 8rpx rgba(0, 0, 0, 0.04));
-  overflow: hidden;
-}
-.card-title {
-  padding: 24rpx 28rpx 12rpx;
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #303133;
-}
-.row {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 24rpx 28rpx;
-  border-top: 1rpx solid #f0f2f5;
-  flex-wrap: wrap;
-  &:first-of-type { border-top: none; }
-  &--readonly { background: #fafbfc; }
-  &--textarea { flex-direction: column; align-items: stretch; gap: 12rpx; }
-}
-.row-label {
-  flex-shrink: 0;
-  width: 160rpx;
-  font-size: 28rpx;
-  color: #606266;
-}
-.row-input {
-  flex: 1;
-  min-width: 0;
-  font-size: 28rpx;
-  color: #303133;
-  text-align: right;
-  background: transparent;
-  border: none;
-  outline: none;
-}
-.row-readonly { flex: 1; font-size: 28rpx; color: #909399; text-align: right; }
-.row-hint {
-  width: 100%;
-  font-size: 22rpx;
-  color: #c0c4cc;
-  margin-left: 160rpx;
-  &--right { text-align: right; margin-left: 0; }
-}
-.row-tags {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
   gap: 12rpx;
-  justify-content: flex-end;
-  min-height: 44rpx;
-  align-items: center;
+  padding-bottom: 20rpx;
 }
-.tag {
-  padding: 6rpx 16rpx;
+.label {
+  font-size: 26rpx;
+  color: #4e5969;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+}
+.label-hint {
+  font-weight: 400;
+  color: #86909c;
+  margin-left: 4rpx;
   font-size: 22rpx;
-  background: rgba(255, 77, 45, 0.08);
-  color: #ff4d2d;
-  border-radius: 999rpx;
 }
-.row-placeholder { font-size: 28rpx; color: #c0c4cc; }
-.row-textarea {
-  width: 100%;
-  min-height: 120rpx;
+
+.field {
+  display: flex;
+  align-items: center;
+  height: 92rpx;
+  padding: 0 24rpx;
+  background: #F7F8FA;
+  border: 2rpx solid #F0F1F4;
+  border-radius: 20rpx;
+  transition: border-color 0.2s, background 0.2s;
+}
+.field:focus-within {
+  border-color: #FFB199;
+  background: #fff;
+}
+.field-readonly {
+  background: #FAFAFB;
+  border-style: dashed;
+}
+.prefix {
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 14rpx;
+}
+.input {
+  flex: 1;
+  height: 100%;
   font-size: 28rpx;
-  color: #303133;
-  background: #f7f8fa;
-  border-radius: 12rpx;
-  padding: 16rpx 20rpx;
-  box-sizing: border-box;
-  line-height: 1.5;
+  color: #1d2129;
 }
-.footer {
+.ph {
+  color: #c9cdd4;
+  font-size: 26rpx;
+}
+.readonly-text {
+  flex: 1;
+  font-size: 28rpx;
+  color: #86909c;
+  font-family: 'SF Mono', Consolas, monospace;
+}
+.readonly-hint {
+  font-size: 20rpx;
+  color: #c9cdd4;
+}
+
+/* 经营品类选择器 */
+.cat-selector {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-height: 92rpx;
+  padding: 16rpx 24rpx;
+  background: #F7F8FA;
+  border: 2rpx solid #F0F1F4;
+  border-radius: 20rpx;
+  transition: background 0.2s;
+}
+.cat-selector:active { background: #fff; }
+.cat-tags {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+.cat-chip {
+  padding: 8rpx 18rpx;
+  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
+  color: #FF4D2D;
+  border: 2rpx solid #FFD3BD;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+.cat-placeholder {
+  flex: 1;
+  font-size: 26rpx;
+  color: #c9cdd4;
+}
+
+/* 地图入口（在地址行下方） */
+.map-btn {
+  margin-top: 12rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 18rpx 22rpx;
+  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
+  border: 2rpx solid #FFE0CD;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  color: #FF4D2D;
+  font-weight: 500;
+}
+.map-btn text { flex: 1; }
+
+/* textarea */
+.textarea-wrap {
+  position: relative;
+  background: #F7F8FA;
+  border: 2rpx solid #F0F1F4;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx 36rpx;
+}
+.textarea {
+  width: 100%;
+  min-height: 140rpx;
+  font-size: 28rpx;
+  color: #1d2129;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.count {
+  position: absolute;
+  bottom: 10rpx;
+  right: 20rpx;
+  font-size: 20rpx;
+  color: #c9cdd4;
+}
+
+/* 浮动保存按钮 */
+.save-dock {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 24rpx 32rpx 32rpx;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.04);
+  padding: 24rpx 28rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(247,248,250,0) 0%, #F7F8FA 30%);
   z-index: 10;
 }
 .btn-save {
   width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-radius: 999rpx;
+  height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 24rpx;
   background: #dcdfe6;
   color: #fff;
   font-size: 30rpx;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 8rpx;
   border: none;
   transition: all 0.2s ease;
-  &--active {
-    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
-    box-shadow: 0 8rpx 24rpx rgba(255, 77, 45, 0.35);
-  }
-  &:active { transform: scale(0.98); }
 }
-.safe-bottom { height: 60rpx; }
+.btn-save::after { border: none; }
+.btn-save--active {
+  background: linear-gradient(135deg, #FF6B45 0%, #FF4D2D 100%);
+  box-shadow: 0 12rpx 28rpx rgba(255, 77, 45, 0.35);
+}
+.btn-save:active { transform: scale(0.98); }
+.safe-bottom { height: 240rpx; }
 
 .picker-mask {
   position: fixed;
