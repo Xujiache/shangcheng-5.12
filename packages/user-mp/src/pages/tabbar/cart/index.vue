@@ -114,8 +114,11 @@ onMounted(() => {
   cartStore.hydrate()
   load()
 })
+// 每次切到购物车 tab 都重新拉收藏，
+// 否则在首页 / 详情页加的收藏不会立刻出现在 onShow 时
 onShow(() => {
   cartStore.hydrate()
+  load()
 })
 </script>
 
