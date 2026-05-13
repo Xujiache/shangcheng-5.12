@@ -46,35 +46,43 @@ export class SmsService {
     connect: { timeout: 5_000 },
   })
 
+  /**
+   * 发送验证码。
+   *
+   * 返回结构化结果而不是 boolean，便于上层把上游具体原因
+   * （如"黑名单"/"手机号码不正确"/"模板已停用"）原样回传给用户，
+   * 避免出现千篇一律的"短信发送失败"。
+   */
   async sendVerifyCode(
     phone: string,
     code: string,
     scene: 'login' | 'register' | 'reset' = 'login',
-  ): Promise<boolean> {
+  ): Promise<{ ok: boolean; reason?: string }> {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
     const t0 = Date.now()
     try {
       if (provider === 'guoyangyun') {
-        const ok = await this.adapterGuoyangyun(phone, code, scene)
-        this.logger.log(`[SMS][${provider}] phone=${phone} ok=${ok} elapsed=${Date.now() - t0}ms`)
-        return ok
+        await this.adapterGuoyangyun(phone, code, scene)
+        this.logger.log(`[SMS][${provider}] phone=${phone} ok=true elapsed=${Date.now() - t0}ms`)
+        return { ok: true }
       }
       this.logger.log(`[SMS][${provider}] phone=${phone} code=${code} (no provider, dev mode)`)
-      return true
+      return { ok: true }
     } catch (e: any) {
+      const reason = String(e?.message || e).replace(/^guoyangyun:\s*/, '').slice(0, 120)
       this.logger.error(
-        `[SMS] phone=${phone} elapsed=${Date.now() - t0}ms failed: ${e?.message || e}`,
+        `[SMS] phone=${phone} elapsed=${Date.now() - t0}ms failed: ${reason}`,
       )
-      return false
+      return { ok: false, reason }
     }
   }
 
-  /** 国阳云 · 变量发送接口（ID版） */
+  /** 国阳云 · 变量发送接口（ID版）。成功 resolve void；失败 throw 带具体原因。 */
   private async adapterGuoyangyun(
     phone: string,
     code: string,
     _scene: 'login' | 'register' | 'reset',
-  ): Promise<boolean> {
+  ): Promise<void> {
     const url =
       process.env.GYY_SMS_API_URL || 'https://api.guoyangyun.com/api/sms/smsmtm.htm'
     const appkey = process.env.GYY_SMS_APPKEY || process.env.GYY_SMS_USERNAME || ''
@@ -87,7 +95,7 @@ export class SmsService {
       this.logger.warn(
         '[SMS][guoyangyun] env 缺失：GYY_SMS_APPKEY / GYY_SMS_APPSECRET / GYY_SMS_SIGN / GYY_SMS_TEMPLATE_LOGIN',
       )
-      return false
+      throw new Error('guoyangyun: 服务端短信通道未配置')
     }
 
     // content 是 JSON 数组字符串，每个对象至少 {mobile, 模板变量名}
@@ -147,7 +155,7 @@ export class SmsService {
       // 真的成功：可能含 successList，记录一下
       const sl = Array.isArray(parsed?.successList) ? parsed.successList : []
       if (sl.length) this.logger.log(`[SMS][guoyangyun] success sid=${sl[0]?.sid || ''}`)
-      return true
+      return
     }
 
     // 失败：抽取最详细的错误消息抛出

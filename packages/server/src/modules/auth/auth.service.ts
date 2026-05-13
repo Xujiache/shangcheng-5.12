@@ -151,10 +151,12 @@ export class AuthService {
 
     if (useRealSms) {
       // 国阳云调用失败 → 删掉 DB 记录 + 抛错，让用户知道收不到（避免傻等 5 分钟）
-      const ok = await this.sms.sendVerifyCode(dto.phone, code, (dto.scene || 'login') as any)
-      if (!ok) {
+      // 把上游具体原因（"黑名单"/"手机号码不正确"/超时…）原样回传
+      const res = await this.sms.sendVerifyCode(dto.phone, code, (dto.scene || 'login') as any)
+      if (!res.ok) {
         await this.prisma.smsCode.delete({ where: { id: row.id } }).catch(() => {})
-        throw new BizException(BizCode.BUSINESS_ERROR, '短信发送失败，请稍后重试')
+        const reason = res.reason ? `：${res.reason}` : ''
+        throw new BizException(BizCode.BUSINESS_ERROR, `短信发送失败${reason}`)
       }
     } else {
       // 非生产 / SMS_PROVIDER=none：不真发，DB 里有真 6 位码，开发者可在 SmsCode 表查
