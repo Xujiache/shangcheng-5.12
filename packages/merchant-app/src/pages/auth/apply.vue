@@ -29,7 +29,7 @@ async function sendCode() {
   sending.value = true
   try {
     await authService.sendSmsCode(phone.value)
-    uni.showToast({ title: '验证码已发送（dev: 0000）', icon: 'success' })
+    uni.showToast({ title: '验证码已发送，请注意查收', icon: 'success' })
     countdown.value = 60
     const t = setInterval(() => {
       countdown.value--

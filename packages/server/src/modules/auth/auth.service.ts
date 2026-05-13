@@ -106,15 +106,13 @@ export class AuthService {
     const code = dto.smsCode || dto.code
     if (!code) throw new BizException(BizCode.INVALID_PARAMS, '验证码不能为空')
 
-    // 校验验证码（dev 模式接受 0000）
-    if (code !== '0000') {
-      const rec = await this.prisma.smsCode.findFirst({
-        where: { phone: dto.phone, code, used: false, expiresAt: { gt: new Date() } },
-        orderBy: { createdAt: 'desc' },
-      })
-      if (!rec) throw new BizException(BizCode.INVALID_PARAMS, '验证码错误或已过期')
-      await this.prisma.smsCode.update({ where: { id: rec.id }, data: { used: true } })
-    }
+    // 校验验证码：只接受 SmsCode 表里真实下发的码
+    const rec = await this.prisma.smsCode.findFirst({
+      where: { phone: dto.phone, code, used: false, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (!rec) throw new BizException(BizCode.INVALID_PARAMS, '验证码错误或已过期')
+    await this.prisma.smsCode.update({ where: { id: rec.id }, data: { used: true } })
 
     let user = await this.prisma.user.findUnique({ where: { phone: dto.phone } })
     if (!user) {
@@ -140,11 +138,9 @@ export class AuthService {
   async sendSmsCode(dto: SmsCodeDto) {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
     const useRealSms = provider !== 'none' && process.env.NODE_ENV === 'production'
-    const code = useRealSms
-      ? String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)
-      : '0000'
+    const code = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)
 
-    await this.prisma.smsCode.create({
+    const row = await this.prisma.smsCode.create({
       data: {
         phone: dto.phone,
         code,
@@ -153,9 +149,16 @@ export class AuthService {
       },
     })
 
-    // 真实发送（失败不阻塞用户，因为 0000 兜底 + DB 表里仍能查码）
     if (useRealSms) {
-      await this.sms.sendVerifyCode(dto.phone, code, (dto.scene || 'login') as any)
+      // 国阳云调用失败 → 删掉 DB 记录 + 抛错，让用户知道收不到（避免傻等 5 分钟）
+      const ok = await this.sms.sendVerifyCode(dto.phone, code, (dto.scene || 'login') as any)
+      if (!ok) {
+        await this.prisma.smsCode.delete({ where: { id: row.id } }).catch(() => {})
+        throw new BizException(BizCode.BUSINESS_ERROR, '短信发送失败，请稍后重试')
+      }
+    } else {
+      // 非生产 / SMS_PROVIDER=none：不真发，DB 里有真 6 位码，开发者可在 SmsCode 表查
+      // 注意：不再用固定 '0000'，开发时去 DB 查最新一条
     }
     return { ok: true }
   }

@@ -56,37 +56,6 @@
             </div>
           </ElForm>
 
-          <!-- 测试账号面板（mock 阶段） -->
-          <div class="demo-panel">
-            <ElCollapse v-model="demoOpen">
-              <ElCollapseItem name="demo">
-                <template #title>
-                  <span class="demo-title">
-                    <ElIcon class="mr-1"><InfoFilled /></ElIcon>
-                    测试账号 · 点击卡片一键填充
-                  </span>
-                </template>
-                <div class="demo-cards">
-                  <div
-                    v-for="acc in demoAccounts"
-                    :key="acc.userName"
-                    class="demo-card"
-                    :class="acc.roleKey"
-                    @click="fillDemo(acc)"
-                  >
-                    <div class="demo-card__row">
-                      <span class="demo-card__role">{{ acc.label }}</span>
-                      <span class="demo-card__name">{{ acc.nickName }}</span>
-                    </div>
-                    <div class="demo-card__row demo-card__sub">
-                      <span>{{ acc.userName }}</span>
-                      <span class="demo-card__pwd">密码 123456</span>
-                    </div>
-                  </div>
-                </div>
-              </ElCollapseItem>
-            </ElCollapse>
-          </div>
         </div>
       </div>
     </div>
@@ -100,9 +69,8 @@
   import { HttpError } from '@/utils/http/error'
   import { fetchLogin } from '@/api/auth'
   import { resetRouteInitState } from '@/router/guards/beforeEach'
-  import { MOCK_ACCOUNTS, type MockAccount } from '@/api/mock-accounts'
+  import { MOCK_ACCOUNTS } from '@/api/mock-accounts'
   import { ElNotification, type FormInstance, type FormRules } from 'element-plus'
-  import { InfoFilled } from '@element-plus/icons-vue'
 
   defineOptions({ name: 'Login' })
 
@@ -131,23 +99,6 @@
   }))
 
   const loading = ref(false)
-
-  // demo 账号面板
-  const demoOpen = ref<string[]>(['demo'])
-  const demoAccounts = MOCK_ACCOUNTS.map((acc) => ({
-    ...acc,
-    label:
-      acc.roleKey === 'merchant'
-        ? '商家'
-        : acc.roleKey === 'platform'
-          ? '平台'
-          : '超管'
-  }))
-
-  function fillDemo(acc: MockAccount) {
-    formData.username = acc.userName
-    formData.password = acc.password
-  }
 
   // 登录
   async function handleSubmit() {

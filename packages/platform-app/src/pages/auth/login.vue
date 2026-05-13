@@ -87,7 +87,7 @@ function fillDemo(name: string) {
           <text class="forgot">忘记密码</text>
         </view>
         <view class="input-wrap">
-          <text class="prefix-icon">🔒</text>
+          <text class="prefix-icon">密</text>
           <input
             v-model="password"
             class="input"
@@ -110,25 +110,10 @@ function fillDemo(name: string) {
         :disabled="!canSubmit || loading"
         @click="onLogin"
       >{{ loading ? '登录中…' : '登 录' }}</button>
-
-      <view class="demo-section">
-        <text class="demo-title">演示账号（点击填充）</text>
-        <view class="demo-grid">
-          <view class="demo-chip" @click="fillDemo('admin@demo')">
-            <text class="chip-title">admin@demo</text>
-            <text class="chip-sub">平台运营</text>
-          </view>
-          <view class="demo-chip" @click="fillDemo('super@demo')">
-            <text class="chip-title super">super@demo</text>
-            <text class="chip-sub">超级管理员</text>
-          </view>
-        </view>
-      </view>
     </view>
 
     <view class="footer">
       <text class="copyright">© 2026 经纬科技 · 平台管理</text>
-      <text class="version">v1.0.0 · 后端 :3001</text>
     </view>
   </view>
 </template>

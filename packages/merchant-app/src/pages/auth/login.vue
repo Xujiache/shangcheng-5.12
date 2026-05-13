@@ -80,7 +80,7 @@ async function onSendCode() {
   sending.value = true
   try {
     await authService.sendSmsCode(phone.value)
-    uni.showToast({ title: '验证码已发送（dev: 0000）', icon: 'none' })
+    uni.showToast({ title: '验证码已发送，请注意查收', icon: 'none' })
     countdown.value = 60
     const t = setInterval(() => {
       countdown.value--
@@ -140,28 +140,25 @@ function goApply() {
           <input v-model="username" class="input" placeholder="邮箱 / 用户名" />
         </view>
         <view class="field">
-          <text class="prefix">🔒</text>
+          <text class="prefix">密</text>
           <input
             v-model="password"
             class="input"
             :password="!showPwd"
             placeholder="6 位以上密码"
           />
-          <text class="suffix" @click="showPwd = !showPwd">{{ showPwd ? '🙈' : '👁️' }}</text>
-        </view>
-        <view class="demo-tip" @click="fillDemo">
-          演示账号：<text class="hl">merchant@demo / 123456</text> · 点击填充
+          <text class="suffix" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
         </view>
       </view>
 
       <!-- 手机短信 -->
       <view v-else class="form">
         <view class="field">
-          <text class="prefix">📱</text>
+          <text class="prefix">+86</text>
           <input v-model="phone" class="input" type="number" maxlength="11" placeholder="手机号" />
         </view>
         <view class="field">
-          <text class="prefix">🔑</text>
+          <text class="prefix">码</text>
           <input v-model="smsCode" class="input" type="number" maxlength="6" placeholder="短信验证码" />
           <text
             :class="['code-btn', (countdown > 0 || sending) && 'disabled']"
@@ -169,9 +166,6 @@ function goApply() {
           >
             {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
           </text>
-        </view>
-        <view class="demo-tip">
-          dev 模式接受验证码 <text class="hl">0000</text>，新手机号自动注册
         </view>
       </view>
 

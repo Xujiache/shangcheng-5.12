@@ -10,6 +10,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services'
+import Icon from '../../components/icon/icon.vue'
 
 const userStore = useUserStore()
 
@@ -79,7 +80,7 @@ async function sendCode() {
   sending.value = true
   try {
     await authService.sendSmsCode(phone.value)
-    uni.showToast({ title: '验证码已发送（dev: 0000）', icon: 'none' })
+    uni.showToast({ title: '验证码已发送，请注意查收', icon: 'none' })
     countdown.value = 60
     const t = setInterval(() => {
       countdown.value--
@@ -130,9 +131,7 @@ function asGuest() {
         </view>
 
         <button class="btn-wechat" :class="{ loading }" @click="wechatLogin">
-          <view class="wechat-icon">
-            <text>💬</text>
-          </view>
+          <Icon name="wechat" :size="40" color="#fff" />
           <text class="btn-text">{{ loading ? '登录中…' : '微信一键登录' }}</text>
         </button>
 
@@ -143,7 +142,7 @@ function asGuest() {
         </view>
 
         <button class="btn-phone" @click="mode = 'phone'">
-          <text class="phone-icon">📱</text>
+          <Icon name="phone" :size="32" color="var(--text-primary)" />
           <text>手机号登录</text>
         </button>
 
@@ -176,8 +175,6 @@ function asGuest() {
             {{ countdown > 0 ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
           </text>
         </view>
-
-        <view class="dev-tip">dev 模式接受 <text class="hl">0000</text> 作为验证码</view>
 
         <button
           :class="['submit', !canSubmitPhone && 'disabled']"
