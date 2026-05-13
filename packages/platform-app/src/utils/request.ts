@@ -60,6 +60,54 @@ function getToken(): string | null {
     return null
   }
 }
+function getRefreshToken(): string | null {
+  try {
+    return uni.getStorageSync(REFRESH_KEY) || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 用 refresh token 静默续签 access token。并发请求共享同一个 in-flight Promise。
+ * 失败返回 false 让上层走 handleUnauthorized。
+ */
+let refreshPromise: Promise<boolean> | null = null
+function tryRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise
+  refreshPromise = (async () => {
+    const rt = getRefreshToken()
+    if (!rt) return false
+    return await new Promise<boolean>((resolve) => {
+      uni.request({
+        url: BASE_URL + '/api/v1/auth/refresh',
+        method: 'POST',
+        data: { refreshToken: rt },
+        header: { 'Content-Type': 'application/json' },
+        success: (res) => {
+          try {
+            const data = res.data as ApiResult<{ accessToken: string; refreshToken: string }>
+            if (data?.code === 0 && data.data?.accessToken && data.data?.refreshToken) {
+              uni.setStorageSync(TOKEN_KEY, data.data.accessToken)
+              uni.setStorageSync(REFRESH_KEY, data.data.refreshToken)
+              resolve(true)
+              return
+            }
+          } catch {
+            /* ignore */
+          }
+          resolve(false)
+        },
+        fail: () => resolve(false),
+      })
+    })
+  })()
+  try {
+    return refreshPromise
+  } finally {
+    refreshPromise.finally(() => { refreshPromise = null })
+  }
+}
 
 async function realRequest<T>(url: string, options: RequestOptions): Promise<ApiResult<T>> {
   guardNamespace(url)
@@ -123,12 +171,24 @@ function handleUnauthorized(message: string) {
   }, 600)
 }
 
+function isAuthExpired(code: number) {
+  return code === 401 || code === 2001 || code === 2002
+}
+
 export async function request<T = unknown>(url: string, options: RequestOptions = {}): Promise<T> {
   const fullUrl = buildUrl(url, options.params)
-  const result = await realRequest<T>(fullUrl, options)
+  let result = await realRequest<T>(fullUrl, options)
+
+  // 401 → 尝试 refresh 后重试一次，避免 access token 过期就直接踢登录
+  if (result.code !== 0 && isAuthExpired(result.code) && !url.includes('/auth/refresh')) {
+    const ok = await tryRefresh()
+    if (ok) {
+      result = await realRequest<T>(fullUrl, options)
+    }
+  }
 
   if (result.code !== 0) {
-    if (result.code === 2001 || result.code === 2002 || result.code === 401) {
+    if (isAuthExpired(result.code)) {
       handleUnauthorized(result.message)
       throw new Error(result.message || '登录已过期')
     }

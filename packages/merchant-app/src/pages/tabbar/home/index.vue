@@ -26,6 +26,8 @@ const { heroPaddingTop } = useStatusBar(16)
 
 const dashboard = ref<MerchantDashboard | null>(null)
 const profile = ref<MerchantProfile | null>(null)
+// 三宫格当前高亮项（0=订单 / 1=新客户 / 2=销售额）默认高亮销售额
+const activeStat = ref<0 | 1 | 2>(2)
 const loading = ref(true)
 const flagStore = useFeatureFlagStore()
 
@@ -159,27 +161,35 @@ onShow(() => {
     </view>
 
     <view v-if="dashboard" class="body">
-      <!-- 今日数据三宫格 -->
+      <!-- 今日数据三宫格 · 点哪个高亮哪个 -->
       <view class="stat-row">
-        <StatCard
-          label="今日订单"
-          :value="dashboard.today.orders"
-          :delta="`${dashboard.today.ordersDelta >= 0 ? '+' : ''}${dashboard.today.ordersDelta}%`"
-          :trend="dashboard.today.ordersDelta >= 0 ? 'up' : 'down'"
-        />
-        <StatCard
-          label="新客户"
-          :value="dashboard.today.newCustomers"
-          :delta="`${dashboard.today.newCustomersDelta >= 0 ? '+' : ''}${dashboard.today.newCustomersDelta}`"
-          :trend="dashboard.today.newCustomersDelta >= 0 ? 'up' : 'down'"
-        />
-        <StatCard
-          label="销售额"
-          :value="formatWan(dashboard.today.sales)"
-          :delta="`${dashboard.today.salesDelta >= 0 ? '+' : ''}${dashboard.today.salesDelta}%`"
-          :trend="dashboard.today.salesDelta >= 0 ? 'up' : 'down'"
-          accent
-        />
+        <view class="stat-cell" @click="activeStat = 0">
+          <StatCard
+            label="今日订单"
+            :value="dashboard.today.orders"
+            :delta="`${dashboard.today.ordersDelta >= 0 ? '+' : ''}${dashboard.today.ordersDelta}%`"
+            :trend="dashboard.today.ordersDelta >= 0 ? 'up' : 'down'"
+            :accent="activeStat === 0"
+          />
+        </view>
+        <view class="stat-cell" @click="activeStat = 1">
+          <StatCard
+            label="新客户"
+            :value="dashboard.today.newCustomers"
+            :delta="`${dashboard.today.newCustomersDelta >= 0 ? '+' : ''}${dashboard.today.newCustomersDelta}`"
+            :trend="dashboard.today.newCustomersDelta >= 0 ? 'up' : 'down'"
+            :accent="activeStat === 1"
+          />
+        </view>
+        <view class="stat-cell" @click="activeStat = 2">
+          <StatCard
+            label="销售额"
+            :value="formatWan(dashboard.today.sales)"
+            :delta="`${dashboard.today.salesDelta >= 0 ? '+' : ''}${dashboard.today.salesDelta}%`"
+            :trend="dashboard.today.salesDelta >= 0 ? 'up' : 'down'"
+            :accent="activeStat === 2"
+          />
+        </view>
       </view>
 
       <!-- 快捷入口（4×2 网格，最后一格固定为"更多"） -->
@@ -364,6 +374,12 @@ onShow(() => {
 .stat-row {
   display: flex;
   gap: 16rpx;
+}
+.stat-cell {
+  flex: 1;
+  min-width: 0;
+  transition: transform 0.15s;
+  &:active { transform: scale(0.97); }
 }
 
 .entry-grid {

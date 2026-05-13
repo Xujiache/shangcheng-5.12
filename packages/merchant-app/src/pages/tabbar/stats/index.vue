@@ -83,6 +83,11 @@ function pickDate(e: { detail: { value: string } }) {
   uni.showToast({ title: `已切换至 ${customDate.value}`, icon: 'none' })
 }
 
+function goAllProducts() {
+  // 商品列表本身按 sales desc 排（后端默认），跳过去能看到完整销量排名
+  uni.switchTab({ url: '/pages/tabbar/product/index' })
+}
+
 function trendDirection(idx: number) {
   if (!stats.value) return 'flat'
   const arr = stats.value.salesTrend.map((s) => s.value)
@@ -169,7 +174,7 @@ const periodText = computed(() =>
       </Section>
 
       <!-- 热销 TOP 10 -->
-      <Section title="热销商品 TOP 10" action="查看全部">
+      <Section title="热销商品 TOP 10" action="查看全部" @action="goAllProducts">
         <view class="top-list">
           <view v-for="(p, i) in topProducts" :key="p.productId" class="top-row">
             <view :class="['rank', i < 3 ? `rank-${i + 1}` : 'rank-rest']">

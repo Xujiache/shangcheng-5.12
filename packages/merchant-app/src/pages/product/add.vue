@@ -10,7 +10,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { categoryService, productService } from '../../services/product'
 import { formatPrice } from '@jiujiu/shared/utils'
-import type { Category, PriceDisplayRule } from '@jiujiu/shared/types'
+import type { Category } from '@jiujiu/shared/types'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 import StatusTag from '../../components/status-tag/status-tag.vue'
@@ -60,18 +60,12 @@ const form = reactive({
   baseFee: 0,
 })
 
-const priceDisplay = reactive<PriceDisplayRule>({
-  guestVisible: false,
-  customerTier: 'retail',
-  storeTier: 'wholesale',
-  memberTier: 'member',
-})
-
-/** 自定义规格组 */
-const specGroups = ref<SpecGroup[]>([
-  { name: '尺寸', values: ['1.4m', '1.6m', '1.8m'] },
-  { name: '颜色', values: ['橡木', '胡桃木'] },
-])
+/**
+ * 自定义规格组：默认空（单 SKU 商品最常见）。
+ * 用户点"添加规格"才进入多规格模式，体验更轻；
+ * 历史默认 2 组 × 5 SKU 删起来很麻烦，那个反馈是删掉的根因。
+ */
+const specGroups = ref<SpecGroup[]>([])
 
 /** SKU 矩阵 */
 const skus = ref<SkuRow[]>([])
@@ -193,6 +187,11 @@ function showImageMenu(i: number) {
   })
 }
 
+/** 跳全局价格规则页（价格显示规则已迁出单品配置） */
+function goPriceRule() {
+  uni.navigateTo({ url: '/pages/shop/price-rule' })
+}
+
 /* ============ Spec Editor (FX-6) ============ */
 
 function addSpecGroup() {
@@ -298,8 +297,22 @@ function editSpecValue(gi: number, vi: number) {
 /** 笛卡尔积重新生成 SKU 矩阵 */
 function regenerateSkus() {
   const groups = specGroups.value.filter((g) => g.values.length > 0)
+  // 没有规格 → 用单 SKU（默认规格），既能下单也能填价格
   if (groups.length === 0) {
-    skus.value = []
+    if (skus.value.length === 1 && skus.value[0].specs.length === 0) return
+    const old = skus.value[0]
+    skus.value = [
+      old && old.specs.length === 0
+        ? old
+        : {
+            specs: [],
+            priceWholesale: 0,
+            priceRetail: 0,
+            priceMember: 0,
+            stock: 0,
+            active: true,
+          },
+    ]
     return
   }
   const combos: string[][] = [[]]
@@ -456,7 +469,7 @@ async function submit(status: 'draft' | 'submit') {
       detailHtml: form.detailHtml,
       tags: form.tags,
       shipping: form.shipping,
-      priceDisplayRules: { ...priceDisplay },
+      // 价格显示规则已迁到「店铺设置 - 价格规则」全局，单品不再单独配置
       skus: skus.value.map((s) => {
         const specsObj: Record<string, string> = {}
         specGroups.value.forEach((g, i) => {
@@ -784,53 +797,21 @@ onMounted(async () => {
         </view>
       </view>
 
-      <!-- 价格显示规则 -->
+      <!-- 价格显示规则说明（迁移到店铺设置 · 全局生效，不再单品配置） -->
       <view class="section">
         <view class="section-head">
           <text class="title">价格显示规则</text>
-          <StatusTag text="核心" tone="primary" fill />
+          <StatusTag text="全局" tone="default" />
         </view>
-        <text class="rule-tip">按对方身份显示对应价格。决定客户能否看到价格、能看到什么价。</text>
-
-        <view class="rule-row">
-          <view class="rule-info">
-            <text class="rule-name">未登录访客</text>
-            <text class="rule-desc">未授权小程序的访客</text>
+        <view class="rule-migrated" @click="goPriceRule">
+          <view class="rule-mig-icon">
+            <Icon name="wallet" :size="32" color="#FF4D2D" />
           </view>
-          <switch :checked="priceDisplay.guestVisible" @change="(e) => priceDisplay.guestVisible = e.detail.value" />
-        </view>
-
-        <view class="rule-row align-start">
-          <view class="rule-info">
-            <text class="rule-name">普通客户</text>
-            <text class="rule-desc">已登录但未授权门店</text>
+          <view class="rule-mig-info">
+            <text class="rule-mig-title">价格显示规则已全局化</text>
+            <text class="rule-mig-sub">所有商品共用一套规则，到「店铺 → 价格规则」修改</text>
           </view>
-          <view class="rule-options">
-            <view :class="['opt', { active: priceDisplay.customerTier === 'retail' }]" @click="priceDisplay.customerTier = 'retail'">显示零售价</view>
-            <view :class="['opt', { active: priceDisplay.customerTier === 'hidden' }]" @click="priceDisplay.customerTier = 'hidden'">不显示价格</view>
-          </view>
-        </view>
-
-        <view class="rule-row align-start">
-          <view class="rule-info">
-            <text class="rule-name">授权门店</text>
-            <text class="rule-desc">已申请代理 / 加盟门店</text>
-          </view>
-          <view class="rule-options">
-            <view :class="['opt', { active: priceDisplay.storeTier === 'wholesale' }]" @click="priceDisplay.storeTier = 'wholesale'">批发价</view>
-            <view :class="['opt', { active: priceDisplay.storeTier === 'retail' }]" @click="priceDisplay.storeTier = 'retail'">零售价</view>
-          </view>
-        </view>
-
-        <view class="rule-row align-start">
-          <view class="rule-info">
-            <text class="rule-name">会员客户</text>
-            <text class="rule-desc">付费 / 邀请制会员</text>
-          </view>
-          <view class="rule-options">
-            <view :class="['opt', { active: priceDisplay.memberTier === 'member' }]" @click="priceDisplay.memberTier = 'member'">会员价</view>
-            <view :class="['opt', { active: priceDisplay.memberTier === 'retail' }]" @click="priceDisplay.memberTier = 'retail'">零售价</view>
-          </view>
+          <Icon name="forward" :size="22" color="#FF4D2D" />
         </view>
       </view>
 
@@ -1360,50 +1341,44 @@ onMounted(async () => {
   .sum-value { color: var(--brand-primary); font-weight: 700; }
 }
 
-/* 价格显示规则 */
-.rule-tip {
-  display: block;
-  font-size: 22rpx;
-  color: var(--text-tertiary);
-  margin: 8rpx 0 16rpx;
-  padding: 12rpx;
-  background: rgba(255,77,45,0.08);
-  border-radius: 8rpx;
-}
-.rule-row {
+/* 价格显示规则 — 全局化提示卡 */
+.rule-migrated {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16rpx 0;
-  border-bottom: 1rpx solid var(--border-light);
   gap: 16rpx;
-  &.align-start { align-items: flex-start; flex-wrap: wrap; }
-  &:last-child { border-bottom: none; }
-  .rule-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2rpx;
-    .rule-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); }
-    .rule-desc { font-size: 20rpx; color: var(--text-tertiary); }
-  }
-  .rule-options {
-    display: flex;
-    gap: 8rpx;
-  }
-  .opt {
-    padding: 8rpx 16rpx;
-    background: var(--bg-hover);
-    color: var(--text-secondary);
-    font-size: 22rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid transparent;
-    &.active {
-      background: rgba(255,77,45,0.08);
-      color: var(--brand-primary);
-      border-color: var(--brand-primary);
-    }
-  }
+  padding: 20rpx 24rpx;
+  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
+  border: 2rpx solid #FFE0CD;
+  border-radius: 16rpx;
+  margin-top: 12rpx;
+  &:active { opacity: 0.85; }
+}
+.rule-mig-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 10rpx rgba(255, 77, 45, 0.15);
+}
+.rule-mig-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.rule-mig-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.rule-mig-sub {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 /* 底部 */

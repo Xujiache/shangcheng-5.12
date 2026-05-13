@@ -49,13 +49,51 @@ const avatar = computed(() => profile.value?.avatar || '')
 const rating = computed(() => profile.value?.rating ?? 5)
 const ratingCount = computed(() => profile.value?.ratingCount ?? 0)
 
-const SETTINGS = [
-  { icon: 'biz-me', label: '个人信息', action: 'profile' },
-  { icon: 'share', label: '分享 APP', action: 'share' },
-  { icon: 'gear', label: '系统设置', action: 'settings' },
-  { icon: 'refresh', label: '检查更新', action: 'update' },
-  { icon: 'biz-chat', label: '联系我们', action: 'contact' },
-] as const
+/** 运行时版本号 —— 来自 manifest.json 里 versionName，HBuilderX 打包时注入 */
+const appVersion = computed(() => {
+  try {
+    const sys = uni.getSystemInfoSync() as any
+    return sys.appVersion || sys.appVersionName || '0.1.0'
+  } catch {
+    return '0.1.0'
+  }
+})
+
+interface SettingItem {
+  icon: string
+  label: string
+  action: string
+  tint: 'orange' | 'blue' | 'green' | 'purple' | 'pink' | 'gray'
+  sub?: () => string
+}
+
+/** 分组设置：账户 / 应用 / 关于（每个图标自带配色） */
+const SETTING_GROUPS: { title: string; items: SettingItem[] }[] = [
+  {
+    title: '账户',
+    items: [
+      { icon: 'biz-me', label: '个人信息', action: 'profile', tint: 'orange' },
+      { icon: 'share', label: '分享 APP', action: 'share', tint: 'green' },
+    ],
+  },
+  {
+    title: '应用',
+    items: [
+      { icon: 'gear', label: '系统设置', action: 'settings', tint: 'blue' },
+      {
+        icon: 'refresh',
+        label: '检查更新',
+        action: 'update',
+        tint: 'purple',
+        sub: () => `当前版本 v${appVersion.value}`,
+      },
+    ],
+  },
+  {
+    title: '支持',
+    items: [{ icon: 'biz-chat', label: '联系我们', action: 'contact', tint: 'pink' }],
+  },
+]
 
 function goMember() {
   uni.navigateTo({ url: '/pages/member/index' })
@@ -140,26 +178,36 @@ function logout() {
       </view>
     </view>
 
-    <!-- 设置列表 -->
-    <view class="settings">
-      <view
-        v-for="it in SETTINGS"
-        :key="it.label"
-        class="setting-row"
-        @click="handle(it.action)"
-      >
-        <view class="row-left">
-          <view class="row-icon-wrap">
-            <Icon :name="it.icon" :size="36" color="var(--brand-primary)" />
+    <!-- 设置（分组卡片） -->
+    <view
+      v-for="group in SETTING_GROUPS"
+      :key="group.title"
+      class="settings-group"
+    >
+      <text class="group-title">{{ group.title }}</text>
+      <view class="settings-card">
+        <view
+          v-for="it in group.items"
+          :key="it.label"
+          class="setting-row"
+          @click="handle(it.action)"
+        >
+          <view class="row-left">
+            <view class="row-icon-wrap" :class="`tint-${it.tint}`">
+              <Icon :name="it.icon" :size="32" color="#fff" :fill="true" />
+            </view>
+            <view class="row-text">
+              <text class="row-label">{{ it.label }}</text>
+              <text v-if="it.sub" class="row-sub">{{ it.sub() }}</text>
+            </view>
           </view>
-          <text class="row-label">{{ it.label }}</text>
+          <Icon name="forward" :size="22" color="var(--text-tertiary)" />
         </view>
-        <Icon name="forward" :size="22" color="var(--text-tertiary)" />
       </view>
     </view>
 
     <view class="logout" @click="logout"><text>退出登录</text></view>
-    <view class="version">v0.1.0 · 经纬科技 · 商家版</view>
+    <view class="version">经纬科技 · 商家版 v{{ appVersion }}</view>
     <view class="safe-bottom" />
 
     <TabBar current="me" />
@@ -264,10 +312,20 @@ function logout() {
   font-size: 22rpx;
 }
 
-.settings {
-  margin: 24rpx;
+.settings-group {
+  margin: 24rpx 24rpx 0;
+}
+.group-title {
+  display: block;
+  padding: 0 8rpx 12rpx;
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+  letter-spacing: 1rpx;
+  font-weight: 500;
+}
+.settings-card {
   background: var(--bg-card);
-  border-radius: 16rpx;
+  border-radius: 20rpx;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
@@ -275,28 +333,42 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 24rpx;
+  padding: 20rpx 24rpx;
   border-bottom: 1rpx solid var(--border-light);
   &:last-child { border-bottom: none; }
   &:active { background: var(--bg-hover); }
 }
-.row-left { display: flex; align-items: center; gap: 16rpx; }
+.row-left { display: flex; align-items: center; gap: 18rpx; flex: 1; min-width: 0; }
 .row-icon-wrap {
-  width: 56rpx;
-  height: 56rpx;
-  border-radius: 14rpx;
-  background: var(--brand-primary-ghost);
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
-.row-label { font-size: 28rpx; color: var(--text-primary); }
+.tint-orange { background: linear-gradient(135deg, #FF8A65, #FF5722); box-shadow: 0 4rpx 10rpx rgba(255, 87, 34, 0.25); }
+.tint-blue   { background: linear-gradient(135deg, #4FC3F7, #1E88E5); box-shadow: 0 4rpx 10rpx rgba(30, 136, 229, 0.25); }
+.tint-green  { background: linear-gradient(135deg, #81C784, #43A047); box-shadow: 0 4rpx 10rpx rgba(67, 160, 71, 0.25); }
+.tint-purple { background: linear-gradient(135deg, #BA68C8, #8E24AA); box-shadow: 0 4rpx 10rpx rgba(142, 36, 170, 0.25); }
+.tint-pink   { background: linear-gradient(135deg, #F06292, #E91E63); box-shadow: 0 4rpx 10rpx rgba(233, 30, 99, 0.25); }
+.tint-gray   { background: linear-gradient(135deg, #B0BEC5, #607D8B); box-shadow: 0 4rpx 10rpx rgba(96, 125, 139, 0.22); }
+.row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+.row-label { font-size: 28rpx; color: var(--text-primary); font-weight: 500; }
+.row-sub { font-size: 20rpx; color: var(--text-tertiary); }
 
 .logout {
-  margin: 16rpx 24rpx 0;
+  margin: 32rpx 24rpx 0;
   padding: 24rpx;
   background: var(--bg-card);
-  border-radius: 16rpx;
+  border-radius: 20rpx;
   text-align: center;
   font-size: 28rpx;
   color: var(--status-error);
@@ -305,10 +377,11 @@ function logout() {
   &:active { background: rgba(255,77,45,0.04); }
 }
 .version {
-  margin-top: 24rpx;
+  margin-top: 28rpx;
   text-align: center;
   font-size: 20rpx;
   color: var(--text-tertiary);
+  letter-spacing: 1rpx;
 }
-.safe-bottom { height: 60rpx; }
+.safe-bottom { height: 80rpx; }
 </style>

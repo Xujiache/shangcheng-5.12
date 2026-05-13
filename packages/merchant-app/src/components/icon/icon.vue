@@ -71,6 +71,9 @@ const PATH: Record<string, string> = {
   'wallet': 'M3 7h16a2 2 0 012 2v8a2 2 0 01-2 2H3z M3 7V5a2 2 0 012-2h12 M17 13h2',
   'gift': 'M3 9h18v4H3z M5 13h14v8H5z M12 9V21 M12 9a3 3 0 10-3-3c0 2 1 3 3 3z M12 9a3 3 0 113-3c0 2-1 3-3 3z',
   'doc': 'M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 16h6 M9 10h3',
+  'package': 'M3 7l9-4 9 4v10l-9 4-9-4z M3 7l9 4 9-4 M12 11v10',
+  'ruler': 'M4 12l8-8 8 8-8 8z M9 7l2 2 M7 9l2 2 M5 11l2 2 M11 5l2 2 M13 7l2 2',
+  'menu': 'M4 6h16 M4 12h16 M4 18h16',
   'tag': 'M3 13L13 3l7 0 0 7L10 20z M16 7h.01',
   // 业务图标
   'biz-home': 'M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z',
