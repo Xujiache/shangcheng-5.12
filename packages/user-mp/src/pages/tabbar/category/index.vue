@@ -90,7 +90,7 @@ async function loadCats() {
 async function loadProducts() {
   loading.value = true
   try {
-    // 按一级分类查（演示数据中商品都挂在一级 categoryId 下）；二级 chip 仅作 UI 筛选
+    // 按一级分类查；二级 chip 仅作 UI 筛选
     const result = await productService.list({ categoryId: level1Id.value, pageSize: 30 })
     products.value = result.list
   } finally {

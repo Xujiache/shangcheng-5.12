@@ -571,7 +571,12 @@ export class MerchantService {
     const { skip, take, page, pageSize } = parsePage(q)
     const where: any = { status: 'active' }
     // 选品广场看其他厂家的商品
-    if (merchantId) where.merchantId = { not: merchantId }
+    if (q.factoryId) {
+      // 厂家详情页只看指定厂家的商品
+      where.merchantId = q.factoryId
+    } else if (merchantId) {
+      where.merchantId = { not: merchantId }
+    }
     if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
     const [list, total] = await Promise.all([
       this.prisma.product.findMany({ where, skip, take, include: { merchant: true }, orderBy: { sales: 'desc' } }),

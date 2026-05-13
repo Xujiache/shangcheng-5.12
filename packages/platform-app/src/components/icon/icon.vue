@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * 统一 SVG 图标组件（用户端）
+ * 统一图标组件（平台端）
  * <Icon name="search" :size="36" color="#FF4D2D" />
  *
- * line 风格 24×24 viewBox，stroke="currentColor"，fill="none"
+ * SVG path → base64 data URI → <image>，App-vue / nvue / H5 全端稳定显示
  */
 import { computed } from 'vue'
+import { lineIcon, fillIcon } from '../../utils/svgDataUri'
 
 const props = withDefaults(
   defineProps<{
@@ -17,7 +18,7 @@ const props = withDefaults(
   }>(),
   {
     size: 24,
-    color: 'currentColor',
+    color: '#1F2329',
     stroke: 1.6,
     fill: false,
   },
@@ -101,32 +102,26 @@ const PATH: Record<string, string> = {
   'badge-vip': 'M5 6l3 9 4-7 4 7 3-9 M3 19h18',
 }
 
-const dValue = computed(() => PATH[props.name] ?? '')
-
 const sizePx = computed(() => (typeof props.size === 'number' ? `${props.size}rpx` : props.size))
+
+const dataUri = computed(() => {
+  const d = PATH[props.name] ?? ''
+  return props.fill ? fillIcon(d, props.color) : lineIcon(d, props.color, props.stroke)
+})
 </script>
 
 <template>
-  <view
+  <image
     class="svg-icon"
-    :style="{ width: sizePx, height: sizePx, color }"
-  >
-    <svg viewBox="0 0 24 24" :fill="fill ? color : 'none'" :stroke="color" :stroke-width="stroke" stroke-linecap="round" stroke-linejoin="round">
-      <path :d="dValue" />
-    </svg>
-  </view>
+    :src="dataUri"
+    :style="{ width: sizePx, height: sizePx }"
+    mode="aspectFit"
+  />
 </template>
 
 <style lang="scss" scoped>
 .svg-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   flex-shrink: 0;
-  svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
 }
 </style>

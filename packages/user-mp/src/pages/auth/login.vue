@@ -1,16 +1,15 @@
 <script setup lang="ts">
 /**
- * 用户端 · 登录注册页（重构 v3）
+ * 用户端 · 登录注册页（v4 · 重构美化）
  *
  * 结构：
- *   品牌头 · 权益栏 · 登录卡（微信主入口 + 手机号次入口） · 协议
+ *   全屏暖色径向背景 → 顶部品牌区 → 权益胶囊 → 底部白色 sheet（登录卡）
  *
- * 设计点：
- *   - 暖色径向渐变背景（mp-weixin 不支持 filter:blur，所以用 radial-gradient 替代毛玻璃球）
- *   - 微信登录走 uni.login() → 后端换 openid + token（不再传空 code）
- *   - 手机号登录：+86 前缀 + 短信验证码 60s 倒计时
- *   - 主操作按钮：禁用态 / 加载态 / 高亮态三类视觉
- *   - 没有 <button> 原生组件，避免 mp-weixin 默认样式干扰
+ * 设计要点：
+ *   - 不使用任何 emoji，全部图标走 <Icon /> 组件（data-URI SVG，全端稳定）
+ *   - 登录方式：微信一键登录（主） + 手机号验证码（次）
+ *   - 协议勾选 + 默认未勾选，强制提示用户阅读
+ *   - 双层背景光晕 + sheet 圆角弧线，遵循 iOS 18 / Material 3 视觉风格
  */
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../store/user'
@@ -54,7 +53,6 @@ async function wechatLogin() {
   if (!ensureAgreed()) return
   loading.value = true
   try {
-    // 拿微信下发的临时 code（5 分钟内有效），交给后端换 openid
     const wxCode = await new Promise<string>((resolve, reject) => {
       uni.login({
         provider: 'weixin',
@@ -125,24 +123,30 @@ function asGuest() {
 
 <template>
   <view class="page">
-    <!-- 背景：径向渐变 + 暖色叠加（替代不兼容的 blur blob）-->
+    <!-- 背景渐变 + 双层光晕 -->
     <view class="bg-base" />
     <view class="bg-glow bg-glow-1" />
     <view class="bg-glow bg-glow-2" />
+    <view class="bg-grid" />
 
-    <!-- 顶部关闭 -->
+    <!-- 顶部 close + 跳过 -->
     <view class="top-bar">
       <view class="top-close" @click="asGuest">
         <Icon name="close" :size="36" color="#fff" />
+      </view>
+      <view class="top-skip" @click="asGuest">
+        <text>跳过</text>
+        <Icon name="chevron-right" :size="24" color="rgba(255,255,255,0.85)" />
       </view>
     </view>
 
     <!-- 品牌头 -->
     <view class="brand">
-      <view class="logo">
+      <view class="logo-shell">
         <view class="logo-inner">
           <text class="logo-mark">经纬</text>
         </view>
+        <view class="logo-glow" />
       </view>
       <text class="brand-name">经纬科技</text>
       <text class="brand-slogan">家居 · 建材 · 定制 一站式选品</text>
@@ -160,16 +164,18 @@ function asGuest() {
 
     <!-- 底部白卡 -->
     <view class="sheet">
+      <view class="sheet-handle" />
+
       <!-- Entry 模式 -->
       <view v-if="mode === 'entry'" class="entry">
         <view class="welcome">
-          <text class="welcome-title">登录解锁更多权益</text>
-          <text class="welcome-sub">微信一键授权，安全免输入</text>
+          <text class="welcome-title">登录解锁专属权益</text>
+          <text class="welcome-sub">微信一键授权 · 安全免输入</text>
         </view>
 
         <view :class="['btn-primary', 'btn-wechat', loading && 'is-loading']" @click="wechatLogin">
           <view class="btn-icon">
-            <Icon name="wechat" :size="40" color="#fff" />
+            <Icon name="wechat" :size="42" color="#fff" />
           </view>
           <text class="btn-text">{{ loading ? '登录中…' : '微信一键登录' }}</text>
         </view>
@@ -184,16 +190,12 @@ function asGuest() {
           <Icon name="phone" :size="32" color="#1d2129" />
           <text>手机号登录 / 注册</text>
         </view>
-
-        <view class="guest" @click="asGuest">
-          <text>暂不登录，先逛逛 ›</text>
-        </view>
       </view>
 
       <!-- Phone 模式 -->
       <view v-else class="phone-mode">
         <view class="back-row" @click="mode = 'entry'">
-          <text class="back-icon">‹</text>
+          <Icon name="chevron-left" :size="32" color="#86909c" />
           <text>其他登录方式</text>
         </view>
 
@@ -271,41 +273,56 @@ function asGuest() {
   flex-direction: column;
 }
 
-/* ===== 背景层（替代 filter:blur blob）===== */
+/* ===== 背景层 ===== */
 .bg-base {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: linear-gradient(180deg, #ff8e6c 0%, #ff6e4d 45%, #ff4d2d 100%);
+  background:
+    radial-gradient(120% 80% at 50% 0%, #ffb98c 0%, #ff7a4e 35%, #ff4d2d 70%, #d43014 100%);
 }
 .bg-glow {
   position: absolute;
   z-index: 0;
   border-radius: 50%;
-  opacity: 0.6;
+  opacity: 0.7;
+  pointer-events: none;
 }
 .bg-glow-1 {
-  width: 600rpx;
-  height: 600rpx;
-  top: -200rpx;
-  right: -200rpx;
+  width: 700rpx;
+  height: 700rpx;
+  top: -240rpx;
+  right: -260rpx;
   background: radial-gradient(circle, rgba(255, 220, 180, 0.7) 0%, rgba(255, 220, 180, 0) 70%);
 }
 .bg-glow-2 {
-  width: 500rpx;
-  height: 500rpx;
-  bottom: 480rpx;
-  left: -150rpx;
+  width: 560rpx;
+  height: 560rpx;
+  bottom: 520rpx;
+  left: -180rpx;
   background: radial-gradient(circle, rgba(255, 200, 150, 0.45) 0%, rgba(255, 200, 150, 0) 70%);
 }
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1rpx, transparent 1rpx),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1rpx, transparent 1rpx);
+  background-size: 64rpx 64rpx;
+  mask-image: radial-gradient(circle at 50% 30%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 30%, transparent 75%);
+}
 
-/* ===== 顶部关闭 ===== */
+/* ===== 顶部 ===== */
 .top-bar {
   position: relative;
   z-index: 2;
   padding-top: 80rpx;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
 }
 .top-close {
   width: 64rpx;
@@ -319,55 +336,84 @@ function asGuest() {
     background: rgba(255, 255, 255, 0.28);
   }
 }
+.top-skip {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 12rpx 20rpx;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  letter-spacing: 1rpx;
+  &:active {
+    background: rgba(255, 255, 255, 0.28);
+  }
+}
 
 /* ===== 品牌 ===== */
 .brand {
   position: relative;
   z-index: 2;
   text-align: center;
-  margin-top: 32rpx;
+  margin-top: 56rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.logo {
-  width: 168rpx;
-  height: 168rpx;
-  border-radius: 56rpx;
-  background: rgba(255, 255, 255, 0.18);
-  border: 2rpx solid rgba(255, 255, 255, 0.35);
+.logo-shell {
+  position: relative;
+  width: 180rpx;
+  height: 180rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 16rpx 48rpx rgba(180, 50, 20, 0.35);
 }
 .logo-inner {
-  width: 132rpx;
-  height: 132rpx;
-  border-radius: 40rpx;
+  position: relative;
+  z-index: 2;
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 44rpx;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow:
+    0 16rpx 48rpx rgba(180, 50, 20, 0.45),
+    inset 0 -8rpx 24rpx rgba(255, 122, 78, 0.15);
 }
 .logo-mark {
-  font-size: 44rpx;
+  font-size: 46rpx;
   font-weight: 900;
   letter-spacing: 4rpx;
   color: #ff4d2d;
+  background: linear-gradient(135deg, #ff7a4e 0%, #ff4d2d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.logo-glow {
+  position: absolute;
+  inset: -8rpx;
+  z-index: 1;
+  border-radius: 56rpx;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.4);
 }
 .brand-name {
-  margin-top: 24rpx;
-  font-size: 44rpx;
-  font-weight: 800;
+  margin-top: 28rpx;
+  font-size: 48rpx;
+  font-weight: 900;
   color: #fff;
-  letter-spacing: 2rpx;
+  letter-spacing: 4rpx;
+  text-shadow: 0 4rpx 16rpx rgba(160, 40, 20, 0.4);
 }
 .brand-slogan {
-  margin-top: 8rpx;
+  margin-top: 12rpx;
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.85);
-  letter-spacing: 1rpx;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 2rpx;
 }
 
 /* ===== 权益栏 ===== */
@@ -376,30 +422,32 @@ function asGuest() {
   z-index: 2;
   display: flex;
   justify-content: space-around;
-  margin-top: 48rpx;
+  margin-top: 56rpx;
   padding: 0 16rpx;
 }
 .benefit {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10rpx;
+  gap: 12rpx;
   flex: 1;
 }
 .benefit-icon {
-  width: 80rpx;
-  height: 80rpx;
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2rpx solid rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.22);
+  border: 2rpx solid rgba(255, 255, 255, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 6rpx 16rpx rgba(160, 40, 20, 0.18);
 }
 .benefit-label {
   font-size: 22rpx;
   color: #fff;
-  opacity: 0.9;
+  opacity: 0.92;
+  font-weight: 500;
 }
 
 /* ===== 底部白卡 ===== */
@@ -410,42 +458,50 @@ function asGuest() {
   margin-left: -32rpx;
   margin-right: -32rpx;
   background: #fff;
-  border-radius: 48rpx 48rpx 0 0;
-  padding: 48rpx 48rpx 32rpx;
+  border-radius: 56rpx 56rpx 0 0;
+  padding: 24rpx 48rpx 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
-  box-shadow: 0 -16rpx 48rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -20rpx 60rpx rgba(0, 0, 0, 0.08);
+}
+.sheet-handle {
+  margin: 0 auto 24rpx;
+  width: 80rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: #ececec;
 }
 
 /* ===== Entry 模式 ===== */
 .entry {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 28rpx;
 }
 .welcome {
   text-align: center;
-  margin-bottom: 8rpx;
+  margin-bottom: 4rpx;
   .welcome-title {
     display: block;
-    font-size: 36rpx;
+    font-size: 38rpx;
     font-weight: 800;
     color: #1d2129;
-    letter-spacing: 1rpx;
+    letter-spacing: 2rpx;
   }
   .welcome-sub {
     display: block;
-    margin-top: 8rpx;
-    font-size: 22rpx;
+    margin-top: 10rpx;
+    font-size: 24rpx;
     color: #86909c;
+    letter-spacing: 1rpx;
   }
 }
 .btn-primary {
-  height: 96rpx;
-  border-radius: 24rpx;
+  height: 100rpx;
+  border-radius: 28rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
+  gap: 14rpx;
   font-size: 32rpx;
   font-weight: 700;
   letter-spacing: 4rpx;
@@ -456,15 +512,17 @@ function asGuest() {
   transition: transform 0.15s ease;
 }
 .btn-wechat {
-  background: linear-gradient(135deg, #07c160 0%, #06ae56 100%);
-  box-shadow: 0 10rpx 24rpx rgba(7, 193, 96, 0.32);
+  background: linear-gradient(135deg, #09d365 0%, #06ad55 100%);
+  box-shadow:
+    0 14rpx 32rpx rgba(7, 193, 96, 0.36),
+    inset 0 -4rpx 12rpx rgba(0, 0, 0, 0.12);
   &.is-loading {
     opacity: 0.7;
   }
 }
 .btn-icon {
-  width: 48rpx;
-  height: 48rpx;
+  width: 52rpx;
+  height: 52rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -475,21 +533,22 @@ function asGuest() {
 .divider {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  margin: 4rpx 0;
+  gap: 20rpx;
+  margin: 8rpx 0;
   .line {
     flex: 1;
     height: 1rpx;
-    background: #ececec;
+    background: linear-gradient(to right, transparent, #e5e6eb, transparent);
   }
   .or {
     font-size: 22rpx;
     color: #c9cdd4;
+    font-weight: 500;
   }
 }
 .btn-secondary {
-  height: 96rpx;
-  border-radius: 24rpx;
+  height: 100rpx;
+  border-radius: 28rpx;
   background: #f7f8fa;
   color: #1d2129;
   font-size: 30rpx;
@@ -497,20 +556,14 @@ function asGuest() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
+  gap: 14rpx;
   border: 2rpx solid #efefef;
+  letter-spacing: 2rpx;
   &:active {
     background: #efeff2;
     transform: scale(0.98);
   }
   transition: transform 0.15s ease;
-}
-.guest {
-  margin-top: 4rpx;
-  text-align: center;
-  font-size: 24rpx;
-  color: #86909c;
-  padding: 12rpx;
 }
 
 /* ===== Phone 模式 ===== */
@@ -525,32 +578,36 @@ function asGuest() {
   gap: 4rpx;
   font-size: 24rpx;
   color: #86909c;
-  margin-bottom: 4rpx;
-  .back-icon {
-    font-size: 32rpx;
-    line-height: 1;
+  margin-bottom: 8rpx;
+  padding: 8rpx 0;
+  &:active {
+    color: #4e5969;
   }
 }
 .phone-title {
-  font-size: 40rpx;
+  font-size: 44rpx;
   font-weight: 800;
   color: #1d2129;
+  letter-spacing: 2rpx;
 }
 .phone-sub {
   font-size: 24rpx;
   color: #86909c;
+  letter-spacing: 1rpx;
 }
 .field {
   display: flex;
   align-items: center;
-  height: 96rpx;
-  padding: 0 24rpx;
+  height: 100rpx;
+  padding: 0 28rpx;
   background: #f7f8fa;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   border: 2rpx solid transparent;
+  transition: all 0.2s ease;
   &:focus-within {
-    border-color: rgba(255, 77, 45, 0.35);
+    border-color: rgba(255, 77, 45, 0.45);
     background: #fff;
+    box-shadow: 0 0 0 6rpx rgba(255, 77, 45, 0.08);
   }
   .prefix {
     font-size: 30rpx;
@@ -561,7 +618,7 @@ function asGuest() {
     width: 2rpx;
     height: 36rpx;
     background: #e5e5e5;
-    margin: 0 16rpx;
+    margin: 0 20rpx;
   }
   .input {
     flex: 1;
@@ -589,11 +646,16 @@ function asGuest() {
     background: #f0f0f0;
     color: #86909c;
   }
+  &:active {
+    transform: scale(0.96);
+  }
 }
 .btn-submit {
-  margin-top: 12rpx;
-  background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
-  box-shadow: 0 12rpx 28rpx rgba(255, 77, 45, 0.32);
+  margin-top: 16rpx;
+  background: linear-gradient(135deg, #ff7a4e 0%, #ff4d2d 60%, #e6411f 100%);
+  box-shadow:
+    0 14rpx 32rpx rgba(255, 77, 45, 0.38),
+    inset 0 -4rpx 12rpx rgba(0, 0, 0, 0.1);
   &.disabled {
     opacity: 0.45;
     box-shadow: none;
@@ -607,8 +669,8 @@ function asGuest() {
 .agree-row {
   display: flex;
   align-items: flex-start;
-  gap: 12rpx;
-  margin-top: 28rpx;
+  gap: 14rpx;
+  margin-top: 36rpx;
 }
 .check {
   width: 32rpx;
@@ -623,15 +685,18 @@ function asGuest() {
   &.on {
     background: #ff4d2d;
     border-color: #ff4d2d;
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.35);
   }
+  transition: all 0.18s ease;
 }
 .agree-text {
   flex: 1;
   font-size: 22rpx;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #86909c;
   .hl {
     color: #ff4d2d;
+    font-weight: 600;
   }
 }
 </style>

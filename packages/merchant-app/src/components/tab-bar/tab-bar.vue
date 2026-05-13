@@ -8,6 +8,7 @@
  * - 重新设计 path_svg_filled（heroicons 风格的实心图标）
  */
 import { computed } from 'vue'
+import { lineIcon, fillIcon } from '../../utils/svgDataUri'
 
 const props = defineProps<{
   current: 'home' | 'product' | 'order' | 'stats' | 'me'
@@ -88,25 +89,18 @@ function switchTo(item: TabItem) {
         <view class="tab-inner">
           <view class="icon-cap" />
           <view class="tab-icon">
-            <svg
+            <image
               v-if="current !== t.key"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#94A3B8"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path :d="t.path_svg" />
-            </svg>
-            <svg
+              :src="lineIcon(t.path_svg, '#94A3B8', 1.8)"
+              class="tab-icon-img"
+              mode="aspectFit"
+            />
+            <image
               v-else
-              viewBox="0 0 24 24"
-              fill="#FF4D2D"
-              stroke="none"
-            >
-              <path :d="t.path_svg_filled" />
-            </svg>
+              :src="fillIcon(t.path_svg_filled, '#FF4D2D')"
+              class="tab-icon-img tab-icon-img--active"
+              mode="aspectFit"
+            />
           </view>
           <view v-if="getBadge(t.key) > 0" class="badge">
             {{ getBadge(t.key) > 99 ? '99+' : getBadge(t.key) }}
@@ -188,17 +182,15 @@ function switchTo(item: TabItem) {
   display: flex;
   align-items: center;
   justify-content: center;
-  svg {
+  .tab-icon-img {
     width: 44rpx;
     height: 44rpx;
     transition: all 0.25s ease;
-    filter: drop-shadow(0 1rpx 2rpx rgba(15, 23, 42, 0.06));
   }
 }
-.tab.active .tab-icon svg {
+.tab.active .tab-icon .tab-icon-img--active {
   width: 46rpx;
   height: 46rpx;
-  filter: drop-shadow(0 2rpx 6rpx rgba(255, 77, 45, 0.40));
 }
 .tab-label {
   font-size: 20rpx;

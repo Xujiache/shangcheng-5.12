@@ -1,25 +1,28 @@
 <script setup lang="ts">
 /**
- * 统一 SVG 图标组件
+ * 统一图标组件
  * <Icon name="back" :size="24" color="#FF4D2D" />
  *
- * 命名规范：line 风格 24×24 viewBox，stroke="currentColor"，fill="none"
- * 业务图标（home/product/...）也采用同尺寸
+ * 实现：SVG path → base64 data URI → <image>
+ * 这样在 H5 / App-vue WebView / nvue 全端稳定显示，
+ * 不受 WebView SVG 渲染差异影响（之前 App 打包出现 SVG 不显示的根因）。
  */
 import { computed } from 'vue'
+import { lineIcon, fillIcon } from '../../utils/svgDataUri'
 
 const props = withDefaults(
   defineProps<{
     name: string
     size?: number | string
     color?: string
-    /** 描边宽度 */
     stroke?: number
+    fill?: boolean
   }>(),
   {
     size: 24,
-    color: 'currentColor',
+    color: '#1F2329',
     stroke: 1.6,
+    fill: false,
   },
 )
 
@@ -89,34 +92,26 @@ const PATH: Record<string, string> = {
   'biz-receipt': 'M6 2v20l3-2 3 2 3-2 3 2V2 M9 7h6 M9 11h6 M9 15h4',
 }
 
-const viewBoxOf = computed(() => '0 0 24 24')
-
-const dValue = computed(() => PATH[props.name] ?? '')
-
 const sizePx = computed(() => (typeof props.size === 'number' ? `${props.size}rpx` : props.size))
+
+const dataUri = computed(() => {
+  const d = PATH[props.name] ?? ''
+  return props.fill ? fillIcon(d, props.color) : lineIcon(d, props.color, props.stroke)
+})
 </script>
 
 <template>
-  <view
+  <image
     class="svg-icon"
-    :style="{ width: sizePx, height: sizePx, color }"
-  >
-    <svg :viewBox="viewBoxOf" fill="none" :stroke="color" :stroke-width="stroke" stroke-linecap="round" stroke-linejoin="round">
-      <path :d="dValue" />
-    </svg>
-  </view>
+    :src="dataUri"
+    :style="{ width: sizePx, height: sizePx }"
+    mode="aspectFit"
+  />
 </template>
 
 <style lang="scss" scoped>
 .svg-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   flex-shrink: 0;
-  svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
 }
 </style>

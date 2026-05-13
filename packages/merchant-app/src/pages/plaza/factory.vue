@@ -7,7 +7,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { plazaService } from '../../services/store'
-import type { PlazaFactoryDetail } from '../../services/store'
+import type { PlazaFactoryDetail, PlazaPlazaProduct } from '../../services/store'
 import { formatPrice, formatWan } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Section from '../../components/section/section.vue'
@@ -16,6 +16,7 @@ import Icon from '../../components/icon/icon.vue'
 
 const factoryId = ref('')
 const detail = ref<PlazaFactoryDetail | null>(null)
+const products = ref<PlazaPlazaProduct[]>([])
 const showAgency = ref(false)
 const agencyForm = ref({
   markupPercent: 15,
@@ -23,19 +24,20 @@ const agencyForm = ref({
   message: '',
 })
 
-// 演示用商品（实际应来自厂家商品接口）
-const PRODUCTS = Array.from({ length: 9 }).map((_, i) => ({
-  productId: `p-${i}`,
-  productName: ['实木餐桌', '布艺沙发', '岩板茶几', '北欧吊灯', '羊毛地毯', '智能升降桌', '北欧鞋柜', '实木餐边柜', '新中式电视柜'][i],
-  productImage: `https://picsum.photos/seed/factory-p${i}/300/300`,
-  startPrice: 1280 + i * 300,
-  agencyCount: 30 + i * 7,
-  isPlatformPushed: i < 3,
-}))
+async function loadProducts() {
+  if (!factoryId.value) return
+  try {
+    const res = await plazaService.products({ factoryId: factoryId.value, pageSize: 20 })
+    products.value = (res as any)?.list ?? []
+  } catch {
+    products.value = []
+  }
+}
 
 async function load() {
   if (!factoryId.value) return
   detail.value = await plazaService.factory(factoryId.value)
+  await loadProducts()
 }
 
 async function toggleFollow() {
@@ -60,39 +62,27 @@ function openAgency() {
 }
 
 async function submitAgency() {
-  const productIds = PRODUCTS.slice(0, 5).map((p) => p.productId)
-  await plazaService.applyAgency({
-    factoryId: factoryId.value,
-    productIds,
-    markupPercent: agencyForm.value.markupPercent,
-    autoSyncPrice: agencyForm.value.autoSyncPrice,
-    message: agencyForm.value.message,
-  })
-  // 把申请快照存入本地，跳转到代理商品列表
+  if (products.value.length === 0) {
+    uni.showToast({ title: '该厂家暂无可代理商品', icon: 'none' })
+    return
+  }
+  const productIds = products.value.slice(0, 5).map((p) => p.productId)
   try {
-    const raw = uni.getStorageSync('jiujiu_agency_applications')
-    const list = raw ? JSON.parse(raw) : []
-    const apps = PRODUCTS.slice(0, 5).map((p) => ({
-      id: 'ag-' + Date.now() + '-' + p.productId,
-      productId: p.productId,
-      productName: p.productName,
-      productImage: p.productImage,
+    await plazaService.applyAgency({
       factoryId: factoryId.value,
-      factoryName: detail.value?.name ?? '厂家',
-      startPrice: p.startPrice,
-      retailPrice: Math.round(p.startPrice * (1 + agencyForm.value.markupPercent / 100)),
+      productIds,
       markupPercent: agencyForm.value.markupPercent,
       autoSyncPrice: agencyForm.value.autoSyncPrice,
-      status: 'pending' as const,
-      appliedAt: new Date().toISOString(),
-    }))
-    uni.setStorageSync('jiujiu_agency_applications', JSON.stringify([...apps, ...list]))
-  } catch {}
-  showAgency.value = false
-  uni.showToast({ title: '申请已提交', icon: 'success', duration: 1200 })
-  setTimeout(() => {
-    uni.redirectTo({ url: '/pages/product/agency-list?from=apply' })
-  }, 1200)
+      message: agencyForm.value.message,
+    })
+    showAgency.value = false
+    uni.showToast({ title: '申请已提交', icon: 'success', duration: 1200 })
+    setTimeout(() => {
+      uni.redirectTo({ url: '/pages/product/agency-list?from=apply' })
+    }, 1200)
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+  }
 }
 
 function previewQualification(images: string[], idx: number) {
@@ -178,8 +168,9 @@ onMounted(() => {
 
       <!-- 商品 grid -->
       <Section title="主推商品" action="查看全部">
-        <view class="product-grid">
-          <view v-for="p in PRODUCTS" :key="p.productId" class="prod">
+        <view v-if="products.length === 0" class="empty">该厂家暂无在售商品</view>
+        <view v-else class="product-grid">
+          <view v-for="p in products" :key="p.productId" class="prod">
             <view class="prod-img-wrap">
               <image :src="p.productImage" class="prod-img" mode="aspectFill" />
               <view v-if="p.isPlatformPushed" class="prod-push">推送</view>
@@ -219,7 +210,9 @@ onMounted(() => {
       <view class="sheet" @click.stop>
         <view class="sheet-head">
           <text class="sheet-title">申请代理</text>
-          <text class="sheet-close" @click="showAgency = false">✕</text>
+          <view class="sheet-close" @click="showAgency = false">
+            <Icon name="close" :size="32" color="#909399" />
+          </view>
         </view>
         <text class="sheet-sub">提交后由厂家审核，通过后即可代理其全部主推商品</text>
 

@@ -1,7 +1,7 @@
 /**
  * 商家端认证服务
  *
- * - adminLogin：用户名/密码登录（已注册商家：seed merchant@demo / 123456）
+ * - adminLogin：用户名/密码登录
  * - phoneLogin：手机号验证码登录（自动注册）
  * - sendSmsCode：发送短信验证码
  * - merchantApply：商家入驻申请（需先登录）

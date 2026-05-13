@@ -1,16 +1,17 @@
 /**
  * 网络请求 · 平台端
  *
+ * 仅连接真实后端，不再保留 mock 拦截层。
+ *
  * 401 / 2001 / 2002 → 节流 toast + 清 admin storage + 跳 /pages/auth/login
  *
  * 注意：平台端 token key 是 jiujiu_admin_token（区别于 user-mp/merchant-app 的 jiujiu_token）
  */
-import { mockMatch } from '@jiujiu/shared/mock'
 import type { ApiResult } from '@jiujiu/shared/types'
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:3001'
-const MOCK_FLAG = import.meta.env.VITE_USE_MOCK as string | undefined
-const USE_MOCK = MOCK_FLAG === 'true' || (import.meta.env.DEV && MOCK_FLAG !== 'false')
+const BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string) ||
+  (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
 const LOGIN_PATH = '/pages/auth/login'
 const TOKEN_KEY = 'jiujiu_admin_token'
 const REFRESH_KEY = 'jiujiu_admin_refresh_token'
@@ -21,7 +22,6 @@ export interface RequestOptions {
   data?: Record<string, unknown>
   params?: Record<string, unknown>
   headers?: Record<string, string>
-  skipMock?: boolean
   silent?: boolean
 }
 
@@ -37,10 +37,8 @@ function buildUrl(url: string, params?: Record<string, unknown>): string {
 
 /**
  * 平台端只允许调：/p/* 私有 + /auth/* + /files/*
- * 调到 /m/* 或 /u/* 会触发 403。dev 模式提前拦截。
  */
 function guardNamespace(url: string): void {
-  // Vite-native env 标志：避免 uni-app 浏览器侧 process 未定义
   if (import.meta.env.PROD) return
   if (!url.startsWith('/api/v1/')) return
   const path = url.replace(/^\/api\/v1\//, '')
@@ -123,17 +121,7 @@ function handleUnauthorized(message: string) {
 
 export async function request<T = unknown>(url: string, options: RequestOptions = {}): Promise<T> {
   const fullUrl = buildUrl(url, options.params)
-  let result: ApiResult<T>
-
-  if (USE_MOCK && !options.skipMock) {
-    result = await mockMatch<T>({
-      method: options.method ?? 'GET',
-      url: fullUrl,
-      data: options.data,
-    })
-  } else {
-    result = await realRequest<T>(fullUrl, options)
-  }
+  const result = await realRequest<T>(fullUrl, options)
 
   if (result.code !== 0) {
     if (result.code === 2001 || result.code === 2002 || result.code === 401) {

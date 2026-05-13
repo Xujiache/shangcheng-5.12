@@ -1,21 +1,24 @@
 <script setup lang="ts">
 /**
  * FX-1 · 代理商品列表
+ *
  * 商家从选品广场申请代理后跳转到此页面，统一管理已申请的商品
- * - Tab：待审核 / 已通过 / 已驳回 / 已下架
- * - 卡片：商品图 + 名 + 厂家 + 出厂价 + 我的零售价 + 加价率 + 状态
+ * 数据全部来自后端 /api/v1/m/plaza/applications，状态变更走 PATCH/DELETE
  */
 import { ref, computed, onMounted } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
+import { plazaService } from '../../services/store'
+import type { AgencyApplicationRow } from '../../services/store'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
 
-type Status = 'all' | 'pending' | 'active' | 'rejected' | 'offline'
+type Status = 'all' | 'pending' | 'approved' | 'rejected' | 'offline'
 
 interface AgencyApp {
   id: string
+  applicationId: string
   productId: string
   productName: string
   productImage: string
@@ -25,26 +28,27 @@ interface AgencyApp {
   retailPrice: number
   markupPercent: number
   autoSyncPrice: boolean
-  status: 'pending' | 'active' | 'rejected' | 'offline'
+  status: 'pending' | 'approved' | 'rejected' | 'offline'
   appliedAt: string
 }
 
 const tab = ref<Status>('all')
 const list = ref<AgencyApp[]>([])
+const loading = ref(false)
 const fromApply = ref(false)
 const showSuccessHint = ref(false)
 
 const TABS: { key: Status; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'pending', label: '待审核' },
-  { key: 'active', label: '已通过' },
+  { key: 'approved', label: '已通过' },
   { key: 'rejected', label: '已驳回' },
   { key: 'offline', label: '已下架' },
 ]
 
 const STATUS_META: Record<string, { label: string; tint: string }> = {
   pending: { label: '待审核', tint: '#FAAD14' },
-  active: { label: '已通过', tint: '#52C41A' },
+  approved: { label: '已通过', tint: '#52C41A' },
   rejected: { label: '已驳回', tint: '#FF3B30' },
   offline: { label: '已下架', tint: '#86909C' },
 }
@@ -57,69 +61,38 @@ const filtered = computed(() => {
 const stats = computed(() => ({
   total: list.value.length,
   pending: list.value.filter((x) => x.status === 'pending').length,
-  active: list.value.filter((x) => x.status === 'active').length,
+  approved: list.value.filter((x) => x.status === 'approved').length,
   byFactory: new Set(list.value.map((x) => x.factoryId)).size,
 }))
 
-const PRESET_DATA: AgencyApp[] = [
-  {
-    id: 'ag-demo-1',
-    productId: 'p-demo-1',
-    productName: '岩板餐桌 1.6m · A 款',
-    productImage: 'https://picsum.photos/seed/agency-d1/400/400',
-    factoryId: 'f-1',
-    factoryName: '佛山经纬科技',
-    startPrice: 1288,
-    retailPrice: 1599,
-    markupPercent: 24,
-    autoSyncPrice: true,
-    status: 'active',
-    appliedAt: '2026-05-08',
-  },
-  {
-    id: 'ag-demo-2',
-    productId: 'p-demo-2',
-    productName: '北欧三人布艺沙发',
-    productImage: 'https://picsum.photos/seed/agency-d2/400/400',
-    factoryId: 'f-2',
-    factoryName: '南方睡眠科技',
-    startPrice: 3680,
-    retailPrice: 4488,
-    markupPercent: 22,
-    autoSyncPrice: false,
-    status: 'pending',
-    appliedAt: '2026-05-10',
-  },
-  {
-    id: 'ag-demo-3',
-    productId: 'p-demo-3',
-    productName: '智能升降书桌 1.4m',
-    productImage: 'https://picsum.photos/seed/agency-d3/400/400',
-    factoryId: 'f-3',
-    factoryName: '创智办公',
-    startPrice: 2380,
-    retailPrice: 2980,
-    markupPercent: 25,
-    autoSyncPrice: true,
-    status: 'rejected',
-    appliedAt: '2026-05-05',
-  },
-]
+function normalize(row: AgencyApplicationRow): AgencyApp {
+  return {
+    id: row.id,
+    applicationId: row.applicationId,
+    productId: row.productId,
+    productName: row.productName,
+    productImage: row.productImage,
+    factoryId: row.factoryId,
+    factoryName: row.factoryName,
+    startPrice: row.factoryPrice,
+    retailPrice: row.myRetailPrice,
+    markupPercent: row.markupRatio,
+    autoSyncPrice: row.syncStatus === 'synced',
+    status: row.status,
+    appliedAt: row.appliedAt,
+  }
+}
 
-function loadAgencyApps() {
+async function loadAgencyApps() {
+  if (loading.value) return
+  loading.value = true
   try {
-    const raw = uni.getStorageSync('jiujiu_agency_applications')
-    const stored = raw ? JSON.parse(raw) : []
-    // 合并预置数据 + 本地新申请，并去重
-    const merged = [...stored, ...PRESET_DATA]
-    const seen = new Set<string>()
-    list.value = merged.filter((x) => {
-      if (seen.has(x.id)) return false
-      seen.add(x.id)
-      return true
-    })
-  } catch {
-    list.value = [...PRESET_DATA]
+    const rows = await plazaService.agencyApplications()
+    list.value = (rows || []).map(normalize)
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+  } finally {
+    loading.value = false
   }
 }
 
@@ -182,69 +155,80 @@ function closeMarkupDialog() {
   markupDialog.value.target = null
 }
 
-function confirmMarkup() {
+async function confirmMarkup() {
   const t = markupDialog.value.target
   if (!t) return closeMarkupDialog()
   const v = markupParsedValue.value
+  let newRatio = v
+  let newRetail = t.retailPrice
   if (markupDialog.value.mode === 'ratio') {
-    t.markupPercent = v
-    t.retailPrice = Math.round(t.startPrice * (1 + v / 100))
+    newRetail = Math.round(t.startPrice * (1 + v / 100))
   } else {
-    t.retailPrice = t.startPrice + v
-    t.markupPercent = t.startPrice > 0 ? Math.round((v / t.startPrice) * 100) : 0
+    newRetail = t.startPrice + v
+    newRatio = t.startPrice > 0 ? Math.round((v / t.startPrice) * 100) : 0
   }
-  persist()
-  closeMarkupDialog()
-  uni.showToast({
-    title:
-      markupDialog.value.mode === 'ratio'
-        ? `加价率 +${v}% · ¥${t.retailPrice}`
-        : `加价 ¥${v} · ¥${t.retailPrice}`,
-    icon: 'success',
-  })
+  try {
+    await plazaService.updateAgencyApplication(t.applicationId, {
+      markupRatio: newRatio,
+      myRetailPrice: newRetail,
+    })
+    t.markupPercent = newRatio
+    t.retailPrice = newRetail
+    closeMarkupDialog()
+    uni.showToast({
+      title:
+        markupDialog.value.mode === 'ratio'
+          ? `加价率 +${newRatio}% · ¥${newRetail}`
+          : `加价 ¥${v} · ¥${newRetail}`,
+      icon: 'success',
+    })
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+  }
 }
 
 function takeOffline(a: AgencyApp) {
   uni.showModal({
     title: '下架代理',
     content: `下架「${a.productName}」？该商品将从店铺中下架。`,
-    success: (r) => {
-      if (r.confirm) {
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await plazaService.updateAgencyApplication(a.applicationId, { status: 'offline' })
         a.status = 'offline'
-        persist()
         uni.showToast({ title: '已下架', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
 }
 
-function relaunch(a: AgencyApp) {
-  a.status = 'active'
-  persist()
-  uni.showToast({ title: '已重新上架', icon: 'success' })
+async function relaunch(a: AgencyApp) {
+  try {
+    await plazaService.updateAgencyApplication(a.applicationId, { status: 'approved' })
+    a.status = 'approved'
+    uni.showToast({ title: '已重新上架', icon: 'success' })
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+  }
 }
 
 function cancelApply(a: AgencyApp) {
   uni.showModal({
     title: '取消申请',
     content: `取消对「${a.productName}」的代理申请？`,
-    success: (r) => {
-      if (r.confirm) {
-        list.value = list.value.filter((x) => x.id !== a.id)
-        persist()
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await plazaService.cancelAgencyApplication(a.applicationId)
+        list.value = list.value.filter((x) => x.applicationId !== a.applicationId)
         uni.showToast({ title: '已取消', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
-}
-
-function persist() {
-  try {
-    // 只持久化非预置项
-    const presetIds = new Set(PRESET_DATA.map((p) => p.id))
-    const toStore = list.value.filter((x) => !presetIds.has(x.id))
-    uni.setStorageSync('jiujiu_agency_applications', JSON.stringify(toStore))
-  } catch {}
 }
 
 function goEditProduct(a: AgencyApp) {
@@ -283,7 +267,7 @@ function goEditProduct(a: AgencyApp) {
       </view>
       <view class="divider" />
       <view class="stat">
-        <text class="num success">{{ stats.active }}</text>
+        <text class="num success">{{ stats.approved }}</text>
         <text class="label">已通过</text>
       </view>
       <view class="divider" />
@@ -352,7 +336,7 @@ function goEditProduct(a: AgencyApp) {
             <view class="btn ghost" @click="cancelApply(a)">取消申请</view>
             <view class="btn primary" @click="adjustMarkup(a)">调整加价</view>
           </template>
-          <template v-else-if="a.status === 'active'">
+          <template v-else-if="a.status === 'approved'">
             <view class="btn ghost" @click="takeOffline(a)">下架</view>
             <view class="btn ghost" @click="adjustMarkup(a)">调整加价</view>
             <view class="btn primary" @click="goEditProduct(a)">编辑商品</view>
@@ -369,7 +353,7 @@ function goEditProduct(a: AgencyApp) {
       </view>
 
       <EmptyState
-        v-if="filtered.length === 0"
+        v-if="filtered.length === 0 && !loading"
         :title="tab === 'all' ? '还没有代理商品' : '当前分类暂无商品'"
         desc="去选品广场申请代理厂家商品"
       >

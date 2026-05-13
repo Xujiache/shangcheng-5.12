@@ -153,9 +153,37 @@ export interface PlazaFactoryDetail extends PlazaFactoryItem {
   followed: boolean
 }
 
+export interface PlazaPlazaProduct {
+  productId: string
+  productName: string
+  productImage: string
+  factoryName: string
+  factoryId: string
+  startPrice: number
+  agencyCount: number
+  tags?: string[]
+  isPlatformPushed?: boolean
+}
+
+export interface AgencyApplicationRow {
+  id: string
+  applicationId: string
+  productId: string
+  productName: string
+  productImage: string
+  factoryId: string
+  factoryName: string
+  factoryPrice: number
+  myRetailPrice: number
+  markupRatio: number
+  syncStatus: 'synced' | 'pending'
+  status: 'pending' | 'approved' | 'rejected' | 'offline'
+  appliedAt: string
+}
+
 export const plazaService = {
-  products(params: { keyword?: string; tab?: string; tags?: string; page?: number; pageSize?: number } = {}) {
-    return http.get<Pagination<unknown>>('/api/v1/m/plaza/products', params)
+  products(params: { keyword?: string; tab?: string; tags?: string; factoryId?: string; page?: number; pageSize?: number } = {}) {
+    return http.get<Pagination<PlazaPlazaProduct>>('/api/v1/m/plaza/products', params)
   },
   factories() {
     return http.get<PlazaFactoryItem[]>('/api/v1/m/plaza/factories')
@@ -167,6 +195,15 @@ export const plazaService = {
     return http.post<{ ok: boolean; followed: boolean }>(`/api/v1/m/plaza/factories/${id}/follow`, { on })
   },
   applyAgency(data: { factoryId: string; productIds: string[]; markupPercent: number; autoSyncPrice: boolean; message?: string }) {
-    return http.post<{ ok: boolean; status: string }>('/api/v1/m/plaza/agency', data)
+    return http.post<{ ok: boolean; status: string; id: string }>('/api/v1/m/plaza/agency', data)
+  },
+  agencyApplications(params: { status?: string } = {}) {
+    return http.get<AgencyApplicationRow[]>('/api/v1/m/plaza/applications', params)
+  },
+  updateAgencyApplication(id: string, data: { myRetailPrice?: number; markupRatio?: number; status?: string }) {
+    return http.patch<{ ok: boolean }>(`/api/v1/m/plaza/applications/${id}`, data as Record<string, unknown>)
+  },
+  cancelAgencyApplication(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/m/plaza/applications/${id}`)
   },
 }

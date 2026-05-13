@@ -7,8 +7,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { shopService } from '../../services/store'
 import type { ShopDecorate } from '../../services/store'
+import { productService } from '../../services/product'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Section from '../../components/section/section.vue'
+
+interface PreviewProduct { name: string; price: number; image: string }
+const previewProducts = ref<PreviewProduct[]>([])
 
 const config = reactive<ShopDecorate>({
   merchantId: 'm-self',
@@ -49,6 +53,17 @@ async function load() {
   } catch {
     // ignore
   }
+  try {
+    const res = (await productService.list({ status: 'active', pageSize: 4 })) as any
+    const list = res?.list ?? res ?? []
+    previewProducts.value = list.slice(0, 4).map((p: any) => ({
+      name: p.name,
+      price: Number(p.priceRetailMin ?? p.priceWholesaleMin ?? 0),
+      image: p.images?.[0] ?? '',
+    }))
+  } catch {
+    previewProducts.value = []
+  }
 }
 
 function pickColor(c: string) {
@@ -77,18 +92,7 @@ function removeBanner(i: number) {
   config.banners = config.banners.filter((_, idx) => idx !== i)
 }
 
-const previewBanners = computed(() =>
-  config.banners.length > 0 ? config.banners : [
-    { image: 'https://picsum.photos/seed/banner-demo/600/300' },
-  ],
-)
-
-const previewProducts = [
-  { name: '实木北欧餐桌 A 款', price: 1888, image: 'https://picsum.photos/seed/p1/300/300' },
-  { name: '布艺真皮沙发 B 款', price: 4280, image: 'https://picsum.photos/seed/p2/300/300' },
-  { name: '岩板茶几 A 款', price: 1280, image: 'https://picsum.photos/seed/p3/300/300' },
-  { name: '北欧吊灯 C 款', price: 680, image: 'https://picsum.photos/seed/p4/300/300' },
-]
+const previewBanners = computed(() => config.banners)
 
 const fontFamily = computed(() => ({
   modern: '"PingFang SC", "Helvetica Neue", sans-serif',
@@ -117,17 +121,28 @@ onMounted(load)
       <view class="preview-phone" :style="{ '--theme': config.themeColor, fontFamily }">
         <view class="phone-status">
           <text>9:41</text>
-          <text>📶 5G 🔋</text>
+          <text>5G</text>
         </view>
         <view class="phone-header" :style="{ background: `linear-gradient(135deg, ${config.themeColor}, ${config.themeColor}AA)` }">
           <view class="ph-name">经纬科技 · 旗舰店</view>
-          <view class="ph-search">🔍 搜索商品</view>
+          <view class="ph-search">搜索商品</view>
         </view>
-        <swiper class="phone-banner" :autoplay="true" :indicator-dots="true" :indicator-color="'rgba(255,255,255,0.4)'" :indicator-active-color="config.themeColor" :interval="2500" :duration="500" :circular="true">
+        <swiper
+          v-if="previewBanners.length > 0"
+          class="phone-banner"
+          :autoplay="true"
+          :indicator-dots="true"
+          :indicator-color="'rgba(255,255,255,0.4)'"
+          :indicator-active-color="config.themeColor"
+          :interval="2500"
+          :duration="500"
+          :circular="true"
+        >
           <swiper-item v-for="(b, i) in previewBanners" :key="i">
             <image :src="b.image" mode="aspectFill" class="banner-img" />
           </swiper-item>
         </swiper>
+        <view v-else class="phone-banner phone-banner-empty">尚未添加 Banner</view>
         <view class="phone-tabs">
           <view class="ph-tab active" :style="{ color: config.themeColor }">推荐</view>
           <view class="ph-tab">新品</view>
@@ -145,6 +160,9 @@ onMounted(load)
               <text class="ph-prod-name">{{ p.name }}</text>
               <text class="ph-prod-price" :style="{ color: config.themeColor }">¥{{ p.price }}</text>
             </view>
+          </view>
+          <view v-if="previewProducts.length === 0" class="phone-grid-empty">
+            发布商品后预览将自动加载
           </view>
         </view>
       </view>
@@ -270,6 +288,21 @@ onMounted(load)
   width: 100%;
   height: 160rpx;
   .banner-img { width: 100%; height: 100%; }
+}
+.phone-banner-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18rpx;
+  color: #c9cdd4;
+  background: #f5f7fa;
+}
+.phone-grid-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24rpx 8rpx;
+  font-size: 18rpx;
+  color: #c9cdd4;
 }
 .phone-tabs {
   display: flex;

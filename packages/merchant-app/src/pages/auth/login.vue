@@ -1,20 +1,21 @@
 <script setup lang="ts">
 /**
- * 商家端 · 登录页（重构版）
+ * 商家端 · 登录页
  *
  * 双 Tab：账号密码（B 端首选）/ 手机短信（自动注册）
- * 设计：暖色渐变顶图 + 白色卡片 + 一键填充演示账号
+ * 设计：暖色渐变顶图 + 白色卡片
  */
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services/auth'
+import Icon from '../../components/icon/icon.vue'
 
 const userStore = useUserStore()
 
 const mode = ref<'account' | 'phone'>('account')
 
 // 账号密码
-const username = ref('merchant@demo')
+const username = ref('')
 const password = ref('')
 const showPwd = ref(false)
 
@@ -93,11 +94,6 @@ async function onSendCode() {
   }
 }
 
-function fillDemo() {
-  username.value = 'merchant@demo'
-  password.value = '123456'
-}
-
 function goApply() {
   uni.navigateTo({ url: '/pages/auth/apply' })
 }
@@ -172,7 +168,7 @@ function goApply() {
       <!-- 协议 -->
       <view class="agree-row" @click="agreed = !agreed">
         <view :class="['check', agreed && 'on']">
-          <text v-if="agreed" class="check-mark">✓</text>
+          <Icon v-if="agreed" name="check" :size="20" color="#fff" />
         </view>
         <text class="agree-text">
           已阅读并同意
@@ -385,20 +381,6 @@ function goApply() {
   }
 }
 
-.demo-tip {
-  font-size: 22rpx;
-  color: #86909c;
-  margin: 8rpx 0;
-  padding: 12rpx 16rpx;
-  background: rgba(255,77,45,0.04);
-  border-radius: 12rpx;
-  border-left: 4rpx solid #FF4D2D;
-  .hl {
-    color: #FF4D2D;
-    font-weight: 600;
-  }
-}
-
 /* 协议 */
 .agree-row {
   display: flex;
@@ -419,12 +401,6 @@ function goApply() {
   &.on {
     background: #FF4D2D;
     border-color: #FF4D2D;
-    .check-mark {
-      color: #fff;
-      font-size: 20rpx;
-      line-height: 1;
-      font-weight: 900;
-    }
   }
 }
 .agree-text {

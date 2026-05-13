@@ -3,7 +3,6 @@
  * 平台管理 · 登录页
  *
  * 仅账号密码登录（B 端高权限）
- * seed 账号：admin@demo / super@demo / 123456
  */
 import { ref, computed } from 'vue'
 import { useAdminStore } from '../../store/admin'
@@ -11,7 +10,7 @@ import { platformAuthService } from '../../services/auth'
 
 const adminStore = useAdminStore()
 
-const username = ref('admin@demo')
+const username = ref('')
 const password = ref('')
 const loading = ref(false)
 const showPwd = ref(false)
@@ -49,10 +48,6 @@ async function onLogin() {
   }
 }
 
-function fillDemo(name: string) {
-  username.value = name
-  password.value = '123456'
-}
 </script>
 
 <template>
@@ -283,43 +278,6 @@ function fillDemo(name: string) {
     box-shadow: none;
   }
   &::after { border: none; }
-}
-.demo-section {
-  margin-top: 40rpx;
-  padding-top: 32rpx;
-  border-top: 1rpx dashed #eee;
-}
-.demo-title {
-  display: block;
-  font-size: 22rpx;
-  color: #86909c;
-  margin-bottom: 16rpx;
-  text-align: center;
-}
-.demo-grid {
-  display: flex;
-  gap: 16rpx;
-}
-.demo-chip {
-  flex: 1;
-  padding: 16rpx 20rpx;
-  background: #fff1ed;
-  border-radius: 16rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-  border: 1rpx solid #ffd5c9;
-  .chip-title {
-    font-size: 24rpx;
-    color: #FF4D2D;
-    font-weight: 700;
-    font-family: var(--font-family-base);
-    &.super { color: #722ED1; }
-  }
-  .chip-sub {
-    font-size: 20rpx;
-    color: #86909c;
-  }
 }
 .footer {
   position: relative;
