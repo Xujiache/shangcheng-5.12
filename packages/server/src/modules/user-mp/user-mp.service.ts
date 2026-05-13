@@ -98,8 +98,13 @@ export class UserMpService {
       }
     })
 
-    const shippingFee = shippingMethod === 'pickup' ? 0 : 10
-    // dto.coupon 旧字段（数字 = 优惠金额）；dto.couponDiscount 新字段
+    // 运费策略：
+    //  1. dto.shippingFee 显式传值 → 用之（商家/管理后台可后续接入）
+    //  2. 否则默认免运费（与前端 confirm.vue 永远显示"免运费"保持一致）
+    //  3. shippingMethod 仍记下来供商家筛选 / 业务参考，但不再用于计费
+    const shippingFee = Number.isFinite(Number(dto.shippingFee))
+      ? Math.max(0, Number(dto.shippingFee))
+      : 0
     const couponDiscount = Number(dto.couponDiscount ?? dto.coupon ?? 0)
     const payAmount = Math.max(0, totalAmount + shippingFee - couponDiscount)
 
