@@ -18,6 +18,9 @@ export interface MerchantProfile {
   categories: string[]
   address: string
   description: string
+  avatar?: string
+  rating?: number
+  ratingCount?: number
   legalName?: string
   creditCode?: string
   region?: string
@@ -25,6 +28,10 @@ export interface MerchantProfile {
   credit?: string
   status?: string
   type?: string
+}
+
+export interface PlazaVisibility {
+  scope: 'stores' | 'public'
 }
 
 export interface ShopPriceRule {
@@ -46,5 +53,11 @@ export const profileService = {
   },
   setPriceRule(patch: Partial<ShopPriceRule>): Promise<ShopPriceRule> {
     return http.put<ShopPriceRule>('/api/v1/m/shop/price-rule', patch)
+  },
+  getPlazaVisibility(): Promise<PlazaVisibility> {
+    return http.get<PlazaVisibility>('/api/v1/m/plaza/visibility')
+  },
+  setPlazaVisibility(scope: 'stores' | 'public'): Promise<PlazaVisibility> {
+    return http.put<PlazaVisibility>('/api/v1/m/plaza/visibility', { scope })
   },
 }

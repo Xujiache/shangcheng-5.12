@@ -8,6 +8,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { dashboardService } from '../../../services/dashboard'
+import { profileService, type MerchantProfile } from '../../../services/profile'
 import { useFeatureFlagStore } from '../../../store'
 import { formatPrice, formatWan } from '@jiujiu/shared/utils'
 import type { MerchantDashboard } from '@jiujiu/shared/types'
@@ -19,11 +20,26 @@ import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 
 const dashboard = ref<MerchantDashboard | null>(null)
+const profile = ref<MerchantProfile | null>(null)
 const loading = ref(true)
 const flagStore = useFeatureFlagStore()
 
+const brandName = computed(() => profile.value?.shopName || '经纬科技 · 商家版')
+const brandAvatar = computed(() => profile.value?.avatar || '')
+
+async function loadProfile() {
+  try {
+    profile.value = await profileService.get()
+  } catch {
+    // 失败时降级到默认文案
+  }
+}
+
 const QUICK_ENTRIES = [
   { key: 'product', icon: 'biz-product', label: '商品', to: '/pages/tabbar/product/index' },
+  { key: 'category', icon: 'menu', label: '分类管理', to: '/pages/product/category' },
+  { key: 'agency', icon: 'tag', label: '代理商品', to: '/pages/product/agency-list' },
+  { key: 'price-rule', icon: 'wallet', label: '价格规则', to: '/pages/shop/price-rule' },
   { key: 'order', icon: 'biz-order', label: '订单', to: '/pages/tabbar/order/index' },
   { key: 'customer', icon: 'biz-customer', label: '客户', to: '/pages/customer/index' },
   { key: 'chat', icon: 'biz-chat', label: '客服', to: '/pages/chat/index' },
@@ -71,10 +87,13 @@ function goEntry(to: string) {
 onMounted(() => {
   flagStore.fetchFlags()
   loadData()
+  loadProfile()
 })
 
 onShow(() => {
   loadData()
+  // 每次回到首页都拉一次资料（保证 profile 编辑后立即更新头部）
+  loadProfile()
 })
 </script>
 
@@ -84,9 +103,12 @@ onShow(() => {
     <view class="header">
       <view class="header-inner">
         <view class="brand">
-          <view class="avatar">九</view>
+          <view class="avatar">
+            <image v-if="brandAvatar" :src="brandAvatar" class="avatar-img" mode="aspectFill" />
+            <text v-else>{{ brandName.slice(0, 1) }}</text>
+          </view>
           <view class="brand-info">
-            <text class="brand-name">经纬科技 · 商家版</text>
+            <text class="brand-name">{{ brandName }}</text>
             <text class="brand-sub">VIP · 年费 · 剩余 287 天</text>
           </view>
         </view>
@@ -218,7 +240,8 @@ onShow(() => {
 
 .header {
   background: var(--brand-gradient);
-  padding: 24rpx 32rpx 48rpx;
+  /* v2: 减少顶部高度 */
+  padding: 16rpx 32rpx 32rpx;
   .header-inner {
     display: flex;
     justify-content: space-between;
@@ -240,6 +263,8 @@ onShow(() => {
       color: #fff;
       font-size: 36rpx;
       font-weight: 700;
+      overflow: hidden;
+      .avatar-img { width: 100%; height: 100%; }
     }
     .brand-info { display: flex; flex-direction: column; }
     .brand-name {

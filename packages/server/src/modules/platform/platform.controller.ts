@@ -64,6 +64,8 @@ export class PlatformController {
 
   // Feature Flags
   @Get('feature-flags') featureFlags() { return this.svc.featureFlags() }
+  @Post('feature-flags') createFeatureFlag(@Body() dto: any) { return this.svc.createFeatureFlag(dto) }
+  @Delete('feature-flags/:id') deleteFeatureFlag(@Param('id') id: string) { return this.svc.deleteFeatureFlag(id) }
   @Post('feature-flags/:id/toggle') toggleFeatureFlag(@Param('id') id: string, @Body('enabled') enabled: boolean) { return this.svc.toggleFeatureFlag(id, enabled) }
   @Get('feature-flags/gray') featureFlagGray() { return this.svc.featureFlagGray() }
   @Post('feature-flags/gray') setFeatureFlagGray(@Body() dto: any) { return this.svc.setFeatureFlagGray(dto) }

@@ -1,122 +1,156 @@
 <script setup lang="ts">
 /**
- * PA-12 · 商家端功能开关
- * 还原 原型图/platform-app.jsx::PA_FeatureToggle
- * - 作用对象（全部/厂家/门店/指定）
- * - 首页快捷入口（9 项 + 标签）
- * - 商户角色入口按钮（5 项）
- * - 侧边/二级菜单（8 项）
- * - 灰度发布（比例 + 命中规则）
+ * PA-12 · 商家端功能开关（v2 · 真后端驱动 · 增减默认规则）
+ *
+ * - 列表来自 GET /api/v1/p/feature-flags（首次访问会自动 ensure 几条平台默认规则）
+ * - 切换：POST /api/v1/p/feature-flags/:id/toggle
+ * - 新增："+ 新增规则" 按钮 → 弹层填 key / label / 分组 / 受众 / 默认值 → POST /feature-flags
+ * - 删除：右上角长按 / 列表项左滑 / 弹层"删除"按钮 → DELETE /feature-flags/:id
+ * - 重置：POST /feature-flags/reset
+ *
+ * 商家端实时生效：merchant-app 的 store/feature-flag 在 onShow / onMounted 调
+ * GET /api/v1/m/feature-flags，按这里配置的 audience + defaultEnabled 解析。
  */
 import { ref, computed, onMounted } from 'vue'
+import { http } from '../../utils/request'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
-type AudienceKey = 'all' | 'factory' | 'store' | 'specific'
-
-const audience = ref<AudienceKey>('all')
-const grayscale = ref(30)
-const grayscaleRule = ref<'random' | 'whitelist' | 'level'>('random')
-
-const AUDIENCE_OPTS: { key: AudienceKey; label: string }[] = [
-  { key: 'all', label: '全部商家' },
-  { key: 'factory', label: '仅厂家' },
-  { key: 'store', label: '仅门店' },
-  { key: 'specific', label: '指定商户' },
-]
-
-/** 首页快捷入口 */
-const homeEntries = ref([
-  { key: 'product', icon: 'package', label: '商品', enabled: true, tag: '常开', tagTone: 'success' },
-  { key: 'order', icon: 'biz-order', label: '订单', enabled: true, tag: '常开', tagTone: 'success' },
-  { key: 'customer', icon: 'biz-customer', label: '客户', enabled: true, tag: '常开', tagTone: 'success' },
-  { key: 'chat', icon: 'biz-chat', label: '客服', enabled: true, tag: '', tagTone: '' },
-  { key: 'store', icon: 'biz-store', label: '门店', enabled: true, tag: '仅厂家可见', tagTone: 'info' },
-  { key: 'staff', icon: 'biz-staff', label: '员工', enabled: true, tag: '', tagTone: '' },
-  { key: 'marketing', icon: 'biz-marketing', label: '营销', enabled: true, tag: '', tagTone: '' },
-  { key: 'stats', icon: 'biz-stats', label: '数据', enabled: true, tag: '', tagTone: '' },
-  { key: 'plaza', icon: 'biz-plaza', label: '选品广场', enabled: true, tag: 'HOT', tagTone: 'hot' },
-  { key: 'booking', icon: 'ruler', label: '量尺预约', enabled: false, tag: '', tagTone: '' },
-])
-
-/** 商户角色入口按钮 */
-const roleButtons = ref([
-  { key: 'reg-store', label: '申请注册为门店（平台授权按钮）', enabled: true, tag: '图标常开', tagTone: 'success' },
-  { key: 'reg-factory', label: '申请注册为厂家（平台授权按钮）', enabled: true, tag: '图标常开', tagTone: 'success' },
-  { key: 'store-apply-agency', label: '门店向厂家申请代理', enabled: true, tag: '', tagTone: '' },
-  { key: 'factory-invite-store', label: '厂家邀请门店', enabled: true, tag: '', tagTone: '' },
-  { key: 'staff-invite', label: '员工邀请', enabled: true, tag: '', tagTone: '' },
-])
-
-/** 侧边 / 二级菜单 */
-const sideMenus = ref([
-  { key: 'product-ext', label: '产品扩展（申请代理）', enabled: true },
-  { key: 'commission', label: '分佣客户管理', enabled: true },
-  { key: 'withdraw', label: '提现处理', enabled: true },
-  { key: 'decorate', label: '店铺装修', enabled: true },
-  { key: 'group-buy', label: '营销中心 · 团购', enabled: false },
-  { key: 'flash-sale', label: '营销中心 · 限时购', enabled: true },
-  { key: 'chat-free', label: '在线客服（免费版）', enabled: true },
-  { key: 'export', label: '数据导出（年费）', enabled: true },
-])
-
-const totalCount = computed(() => homeEntries.value.length + roleButtons.value.length + sideMenus.value.length)
-const enabledCount = computed(() =>
-  homeEntries.value.filter((x) => x.enabled).length +
-  roleButtons.value.filter((x) => x.enabled).length +
-  sideMenus.value.filter((x) => x.enabled).length,
-)
-
-function toggleEntry(list: { enabled: boolean }[], idx: number) {
-  list[idx].enabled = !list[idx].enabled
-  uni.showToast({
-    title: list[idx].enabled ? '已开启' : '已关闭',
-    icon: 'none',
-    duration: 800,
-  })
+interface FeatureFlag {
+  id: string
+  key: string
+  label: string
+  group: string // home_entry / role_button / side_menu
+  defaultEnabled: boolean
+  audience: 'all' | 'factory' | 'store' | 'specific'
+  sort: number
+  grayPercent: number
 }
 
-function reset() {
+const GROUP_LABEL: Record<string, string> = {
+  home_entry: '首页入口',
+  role_button: '角色按钮',
+  side_menu: '侧边菜单',
+}
+
+const AUDIENCE_LABEL: Record<string, string> = {
+  all: '全部商家',
+  factory: '仅厂家',
+  store: '仅门店',
+  specific: '指定商户',
+}
+
+const flags = ref<FeatureFlag[]>([])
+const loading = ref(false)
+
+async function load() {
+  loading.value = true
+  try {
+    flags.value = await http.get<FeatureFlag[]>('/api/v1/p/feature-flags')
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
+
+const grouped = computed(() => {
+  const m: Record<string, FeatureFlag[]> = { home_entry: [], role_button: [], side_menu: [] }
+  for (const f of flags.value) {
+    if (!m[f.group]) m[f.group] = []
+    m[f.group].push(f)
+  }
+  return m
+})
+
+const enabledCount = computed(() => flags.value.filter((f) => f.defaultEnabled).length)
+const totalCount = computed(() => flags.value.length)
+
+async function toggle(f: FeatureFlag) {
+  const next = !f.defaultEnabled
+  // 乐观更新
+  f.defaultEnabled = next
+  try {
+    await http.post(`/api/v1/p/feature-flags/${f.id}/toggle`, { enabled: next })
+  } catch (e: any) {
+    f.defaultEnabled = !next
+    uni.showToast({ title: e?.message || '切换失败', icon: 'none' })
+  }
+}
+
+/* ===== 新增规则弹层 ===== */
+const showAdd = ref(false)
+const addForm = ref<{
+  key: string
+  label: string
+  group: 'home_entry' | 'role_button' | 'side_menu'
+  audience: 'all' | 'factory' | 'store' | 'specific'
+  defaultEnabled: boolean
+}>({
+  key: '',
+  label: '',
+  group: 'home_entry',
+  audience: 'all',
+  defaultEnabled: true,
+})
+
+function openAdd() {
+  addForm.value = { key: '', label: '', group: 'home_entry', audience: 'all', defaultEnabled: true }
+  showAdd.value = true
+}
+
+async function submitAdd() {
+  const f = addForm.value
+  if (!f.key || !f.label) {
+    uni.showToast({ title: '请填写 key 和 label', icon: 'none' })
+    return
+  }
+  try {
+    await http.post('/api/v1/p/feature-flags', f as any)
+    uni.showToast({ title: '已新增', icon: 'success' })
+    showAdd.value = false
+    await load()
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '新增失败', icon: 'none' })
+  }
+}
+
+function remove(f: FeatureFlag) {
   uni.showModal({
-    title: '重置开关',
-    content: '将所有开关恢复默认值？',
-    success: (r) => {
-      if (r.confirm) {
-        homeEntries.value.forEach((x) => (x.enabled = x.key !== 'booking'))
-        roleButtons.value.forEach((x) => (x.enabled = true))
-        sideMenus.value.forEach((x) => (x.enabled = x.key !== 'group-buy'))
-        uni.showToast({ title: '已重置', icon: 'success' })
+    title: '删除规则',
+    content: `删除「${f.label}」？商家端将立即恢复默认显示。`,
+    confirmColor: '#FF3B30',
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await http.del(`/api/v1/p/feature-flags/${f.id}`)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        await load()
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
       }
     },
   })
 }
 
-function changeGrayscale() {
-  uni.showActionSheet({
-    itemList: ['10% (谨慎)', '30% (推荐)', '50% (一半)', '100% (全量)'],
-    success: (r) => {
-      grayscale.value = [10, 30, 50, 100][r.tapIndex]
-      uni.showToast({ title: `灰度比例 ${grayscale.value}%`, icon: 'success' })
+async function reset() {
+  uni.showModal({
+    title: '重置灰度配置',
+    content: '将所有开关的灰度恢复为 100%、清空白名单、移除所有商户级别的 override；不会影响 enable/disable 本身。',
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await http.post('/api/v1/p/feature-flags/reset')
+        uni.showToast({ title: '已重置', icon: 'success' })
+        await load()
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '重置失败', icon: 'none' })
+      }
     },
   })
 }
 
-function changeGrayscaleRule() {
-  uni.showActionSheet({
-    itemList: ['随机抽样', '白名单', '按等级灰度'],
-    success: (r) => {
-      grayscaleRule.value = (['random', 'whitelist', 'level'] as const)[r.tapIndex]
-    },
-  })
-}
-
-const GRAYSCALE_LABEL: Record<string, string> = {
-  random: '随机抽样',
-  whitelist: '白名单',
-  level: '按等级',
-}
-
-onMounted(() => {})
+onMounted(load)
 </script>
 
 <template>
@@ -139,425 +173,278 @@ onMounted(() => {})
         <view class="hero-info">
           <text class="label">已开启开关</text>
           <view class="progress">
-            <view class="bar" :style="{ width: (enabledCount / totalCount * 100).toFixed(0) + '%' }" />
+            <view class="bar" :style="{ width: (totalCount ? (enabledCount / totalCount * 100).toFixed(0) : 0) + '%' }" />
           </view>
         </view>
       </view>
 
-      <!-- 作用对象 -->
-      <view class="card">
-        <text class="card-label">作用对象</text>
-        <view class="chip-row">
-          <view
-            v-for="a in AUDIENCE_OPTS"
-            :key="a.key"
-            :class="['chip', audience === a.key ? 'active' : '']"
-            @click="audience = a.key"
-          >{{ a.label }}</view>
+      <!-- 各 group 列表 -->
+      <view v-for="(list, g) in grouped" :key="g" class="card">
+        <view class="card-head">
+          <text class="card-title">{{ GROUP_LABEL[g] || g }}</text>
+          <text class="card-count">{{ list.length }} 项</text>
         </view>
-        <text class="card-hint">当前修改将应用到 {{ AUDIENCE_OPTS.find(a => a.key === audience)?.label }}</text>
-      </view>
-
-      <!-- 首页快捷入口 -->
-      <view class="section-title">
-        <Icon name="biz-home" :size="28" color="var(--brand-primary)" />
-        <text>商家首页 · 快捷入口</text>
-        <text class="section-meta">{{ homeEntries.filter(x => x.enabled).length }} / {{ homeEntries.length }}</text>
-      </view>
-      <view class="card switch-card">
-        <view
-          v-for="(e, i) in homeEntries"
-          :key="e.key"
-          class="switch-row"
-          :class="{ 'with-divider': i < homeEntries.length - 1 }"
-        >
-          <view class="row-icon">
-            <Icon :name="e.icon" :size="28" :color="e.enabled ? 'var(--brand-primary)' : 'var(--text-tertiary)'" />
-          </view>
+        <view v-for="f in list" :key="f.id" class="row" @longpress="remove(f)">
           <view class="row-info">
-            <text class="row-label">{{ e.label }}</text>
-            <view v-if="e.tag" :class="['row-tag', `tone-${e.tagTone}`]">{{ e.tag }}</view>
+            <view class="row-title-row">
+              <text class="row-title">{{ f.label }}</text>
+              <view :class="['aud-chip', f.audience]">{{ AUDIENCE_LABEL[f.audience] }}</view>
+            </view>
+            <text class="row-key">{{ f.key }}</text>
           </view>
-          <view :class="['switch', e.enabled ? 'on' : '']" @click="toggleEntry(homeEntries, i)">
-            <view class="thumb" />
-          </view>
+          <switch :checked="f.defaultEnabled" color="#FF4D2D" @click.stop="toggle(f)" />
         </view>
+        <view v-if="list.length === 0" class="row-empty">暂无规则，点右下角"+"新增</view>
       </view>
 
-      <!-- 商户角色入口 -->
-      <view class="section-title">
-        <Icon name="user-add" :size="28" color="#A855F7" />
-        <text>商户角色 · 入口按钮</text>
-        <text class="section-meta">{{ roleButtons.filter(x => x.enabled).length }} / {{ roleButtons.length }}</text>
-      </view>
-      <view class="card switch-card">
-        <view
-          v-for="(b, i) in roleButtons"
-          :key="b.key"
-          class="switch-row"
-          :class="{ 'with-divider': i < roleButtons.length - 1 }"
-        >
-          <view class="row-info no-icon">
-            <text class="row-label">{{ b.label }}</text>
-            <view v-if="b.tag" :class="['row-tag', `tone-${b.tagTone}`]">{{ b.tag }}</view>
-          </view>
-          <view :class="['switch', b.enabled ? 'on' : '']" @click="toggleEntry(roleButtons, i)">
-            <view class="thumb" />
-          </view>
-        </view>
-      </view>
-
-      <!-- 侧边菜单 -->
-      <view class="section-title">
-        <Icon name="menu" :size="28" color="#52C41A" />
-        <text>侧边 / 二级菜单</text>
-        <text class="section-meta">{{ sideMenus.filter(x => x.enabled).length }} / {{ sideMenus.length }}</text>
-      </view>
-      <view class="card switch-card">
-        <view
-          v-for="(m, i) in sideMenus"
-          :key="m.key"
-          class="switch-row simple"
-          :class="{ 'with-divider': i < sideMenus.length - 1 }"
-        >
-          <view class="dot" :class="{ active: m.enabled }" />
-          <text class="row-label">{{ m.label }}</text>
-          <view :class="['switch', m.enabled ? 'on' : '']" @click="toggleEntry(sideMenus, i)">
-            <view class="thumb" />
-          </view>
-        </view>
-      </view>
-
-      <!-- 灰度发布 -->
-      <view class="card grayscale-card">
-        <view class="g-title">
-          <Icon name="filter" :size="28" color="#FAAD14" />
-          <text>灰度发布</text>
-        </view>
-        <text class="g-desc">开关变更先对部分商户生效，验证无误后全量推送</text>
-
-        <view class="g-progress">
-          <view class="g-progress-bar">
-            <view class="g-progress-fill" :style="{ width: grayscale + '%' }" />
-          </view>
-          <view class="g-progress-labels">
-            <text>0%</text>
-            <text class="active">{{ grayscale }}% 当前</text>
-            <text>100%</text>
-          </view>
-        </view>
-
-        <view class="g-row" @click="changeGrayscale">
-          <text class="g-label">灰度比例</text>
-          <view class="g-value">
-            <text class="g-num">{{ grayscale }}%</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
-          </view>
-        </view>
-        <view class="g-row" @click="changeGrayscaleRule">
-          <text class="g-label">命中规则</text>
-          <view class="g-value">
-            <text>{{ GRAYSCALE_LABEL[grayscaleRule] }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
-          </view>
-        </view>
-      </view>
-
-      <view style="height: 60rpx;" />
+      <view class="footer-tip">长按规则可删除 · 改动立即生效</view>
+      <view style="height: 160rpx" />
     </scroll-view>
+
+    <!-- 浮动新增按钮 -->
+    <view class="add-fab" @click="openAdd">
+      <Icon name="plus" :size="40" color="#fff" />
+      <text>新增规则</text>
+    </view>
+
+    <!-- 新增弹层 -->
+    <view v-if="showAdd" class="mask" @click="showAdd = false">
+      <view class="sheet" @click.stop>
+        <view class="sheet-head">
+          <text class="sheet-title">新增功能开关</text>
+          <text class="sheet-close" @click="showAdd = false">取消</text>
+        </view>
+
+        <view class="form-row">
+          <text class="form-label">规则名称</text>
+          <input v-model="addForm.label" class="form-input" placeholder="例：上传到选品广场" maxlength="40" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">key</text>
+          <input v-model="addForm.key" class="form-input" placeholder="例：role.button.uploadToPlaza" maxlength="80" />
+          <text class="form-hint">规范：group.subkey.name；最后一段为商家端读取的短键</text>
+        </view>
+        <view class="form-row">
+          <text class="form-label">分组</text>
+          <view class="form-chips">
+            <view
+              v-for="g in ['home_entry', 'role_button', 'side_menu']"
+              :key="g"
+              :class="['form-chip', addForm.group === g && 'on']"
+              @click="addForm.group = g as any"
+            >{{ GROUP_LABEL[g] }}</view>
+          </view>
+        </view>
+        <view class="form-row">
+          <text class="form-label">受众</text>
+          <view class="form-chips">
+            <view
+              v-for="a in ['all', 'factory', 'store', 'specific']"
+              :key="a"
+              :class="['form-chip', addForm.audience === a && 'on']"
+              @click="addForm.audience = a as any"
+            >{{ AUDIENCE_LABEL[a] }}</view>
+          </view>
+        </view>
+        <view class="form-row">
+          <text class="form-label">默认开启</text>
+          <switch :checked="addForm.defaultEnabled" color="#FF4D2D" @click.stop="addForm.defaultEnabled = !addForm.defaultEnabled" />
+        </view>
+
+        <view class="submit" @click="submitAdd">确定新增</view>
+      </view>
+    </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  background: var(--bg-page);
+  background: var(--bg-page, #f7f8fa);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
-.scroll {
-  flex: 1;
-  height: 0;
-  box-sizing: border-box;
-}
+.scroll { flex: 1; height: 0; }
 
 .tip-strip {
   margin: 16rpx 24rpx 0;
-  padding: 14rpx 20rpx;
-  background: rgba(255,77,45,0.06);
-  border-radius: 12rpx;
+  padding: 14rpx 18rpx;
   display: flex;
   align-items: center;
   gap: 8rpx;
+  background: rgba(255, 77, 45, 0.06);
+  border-radius: 12rpx;
   font-size: 22rpx;
-  color: var(--text-secondary);
-  line-height: 1.4;
+  color: var(--text-secondary, #4e5969);
 }
-
 .hero {
-  margin: 12rpx 24rpx 0;
+  margin: 16rpx 24rpx;
   padding: 24rpx;
-  background: linear-gradient(135deg, #FF4D2D, #FAAD14);
+  background: var(--brand-gradient, linear-gradient(135deg, #ff4d2d, #ff7a45));
   color: #fff;
   border-radius: 20rpx;
   display: flex;
   align-items: center;
   gap: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.25);
 }
 .hero-stat {
   display: flex;
   align-items: baseline;
-  flex-shrink: 0;
-  font-family: var(--font-family-base);
-  .num {
-    font-size: 72rpx;
-    font-weight: 800;
-    line-height: 1;
-  }
-  .total {
-    font-size: 28rpx;
-    opacity: 0.9;
-    margin-left: 4rpx;
-  }
+  gap: 4rpx;
+  .num { font-size: 56rpx; font-weight: 800; }
+  .total { font-size: 24rpx; opacity: 0.8; }
 }
-.hero-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-  .label {
-    font-size: 24rpx;
-    opacity: 0.95;
-  }
-  .progress {
-    width: 100%;
-    height: 8rpx;
-    background: rgba(255,255,255,0.25);
-    border-radius: 4rpx;
-    overflow: hidden;
-    .bar {
-      height: 100%;
-      background: #fff;
-      border-radius: 4rpx;
-      transition: width .3s;
-    }
-  }
+.hero-info { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }
+.hero-info .label { font-size: 22rpx; opacity: 0.85; }
+.progress {
+  height: 8rpx;
+  background: rgba(255,255,255,0.25);
+  border-radius: 999rpx;
+  overflow: hidden;
+  .bar { height: 100%; background: #fff; border-radius: 999rpx; }
 }
 
 .card {
-  margin: 16rpx 24rpx 0;
-  padding: 20rpx 24rpx;
-  background: var(--bg-card);
+  margin: 24rpx;
+  background: #fff;
   border-radius: 20rpx;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  overflow: hidden;
 }
-.card-label {
-  display: block;
-  font-size: 24rpx;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 12rpx;
-}
-.chip-row {
+.card-head {
+  padding: 20rpx 24rpx 8rpx;
   display: flex;
-  gap: 12rpx;
-  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  .card-title { font-size: 28rpx; font-weight: 700; color: #1d2129; }
+  .card-count { font-size: 22rpx; color: #86909c; }
 }
-.chip {
-  padding: 10rpx 20rpx;
-  background: var(--bg-page);
-  border: 1rpx solid var(--border-default);
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  color: var(--text-primary);
-  &.active {
-    background: var(--brand-gradient);
-    border-color: transparent;
-    color: #fff;
-    font-weight: 600;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
-  }
-}
-.card-hint {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 20rpx;
-  color: var(--text-tertiary);
-}
-
-.section-title {
-  margin: 24rpx 24rpx 0;
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  font-size: 26rpx;
-  font-weight: 700;
-  color: var(--text-primary);
-  .section-meta {
-    margin-left: auto;
-    font-size: 22rpx;
-    color: var(--text-tertiary);
-    font-family: var(--font-family-base);
-    font-weight: 400;
-  }
-}
-
-.switch-card {
-  padding: 0 24rpx;
-  margin-top: 12rpx;
-}
-.switch-row {
+.row {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding: 20rpx 0;
-  &.with-divider {
-    border-bottom: 1rpx dashed var(--border-light);
-  }
-  &.simple {
-    gap: 10rpx;
-  }
-  .row-icon {
-    width: 56rpx;
-    height: 56rpx;
-    border-radius: 16rpx;
-    background: var(--bg-page);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .row-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4rpx;
-    &.no-icon { padding-left: 0; }
-  }
-  .row-label {
-    font-size: 26rpx;
-    color: var(--text-primary);
-    line-height: 1.3;
-  }
-  .row-tag {
-    align-self: flex-start;
-    padding: 2rpx 12rpx;
-    border-radius: 999rpx;
-    font-size: 18rpx;
-    font-weight: 700;
-    &.tone-success { background: rgba(82,196,26,0.1); color: #52C41A; }
-    &.tone-info { background: rgba(18,150,219,0.1); color: #1296DB; }
-    &.tone-hot { background: var(--brand-gradient); color: #fff; }
-  }
-  .dot {
-    width: 16rpx;
-    height: 16rpx;
-    border-radius: 50%;
-    background: var(--text-tertiary);
-    flex-shrink: 0;
-    &.active { background: var(--brand-primary); }
-  }
+  padding: 20rpx 24rpx;
+  border-top: 1rpx solid #f0f2f5;
+  &:active { background: #fafbfc; }
 }
-.switch {
-  flex-shrink: 0;
-  width: 72rpx;
-  height: 40rpx;
-  border-radius: 999rpx;
-  background: var(--bg-page);
-  border: 1rpx solid var(--border-default);
-  position: relative;
-  transition: all .2s;
-  .thumb {
-    position: absolute;
-    top: 2rpx;
-    left: 2rpx;
-    width: 32rpx;
-    height: 32rpx;
-    border-radius: 50%;
-    background: var(--text-tertiary);
-    transition: all .2s;
-    box-shadow: 0 1rpx 3rpx rgba(0,0,0,0.15);
-  }
-  &.on {
-    background: var(--brand-primary);
-    border-color: var(--brand-primary);
-    .thumb {
-      left: 34rpx;
-      background: #fff;
-    }
-  }
+.row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
+.row-title-row { display: flex; align-items: center; gap: 8rpx; }
+.row-title { font-size: 28rpx; color: #1d2129; font-weight: 500; }
+.row-key { font-size: 20rpx; color: #909399; font-family: var(--font-family-base, monospace); }
+.row-empty {
+  padding: 32rpx 24rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #c0c4cc;
 }
 
-/* 灰度发布 */
-.grayscale-card {
-  margin-top: 24rpx;
-  background: linear-gradient(180deg, rgba(250,173,20,0.06), var(--bg-card));
-  border: 1rpx dashed rgba(250,173,20,0.3);
+.aud-chip {
+  flex-shrink: 0;
+  padding: 2rpx 10rpx;
+  border-radius: 999rpx;
+  font-size: 18rpx;
+  font-weight: 600;
+  background: #f5f6f8;
+  color: #4e5969;
+  &.factory { background: rgba(255, 77, 45, 0.1); color: #ff4d2d; }
+  &.store { background: rgba(82, 196, 26, 0.1); color: #52c41a; }
+  &.specific { background: rgba(114, 46, 209, 0.1); color: #722ED1; }
 }
-.g-title {
+
+.footer-tip {
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 22rpx;
+  color: #c0c4cc;
+}
+
+.add-fab {
+  position: fixed;
+  right: 32rpx;
+  bottom: 56rpx;
   display: flex;
   align-items: center;
   gap: 8rpx;
-  font-size: 28rpx;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin-bottom: 8rpx;
+  padding: 18rpx 26rpx;
+  background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+  border-radius: 999rpx;
+  box-shadow: 0 10rpx 28rpx rgba(255, 77, 45, 0.4);
+  z-index: 80;
+  &:active { transform: scale(0.97); }
 }
-.g-desc {
-  display: block;
-  font-size: 20rpx;
-  color: var(--text-tertiary);
-  margin-bottom: 16rpx;
+
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
 }
-.g-progress {
-  margin-bottom: 16rpx;
-}
-.g-progress-bar {
+.sheet {
   width: 100%;
-  height: 16rpx;
-  background: var(--bg-page);
-  border-radius: 999rpx;
-  overflow: hidden;
+  background: #fff;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 24rpx 28rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  max-height: 88vh;
+  overflow-y: auto;
 }
-.g-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #FF4D2D, #FAAD14);
-  border-radius: 999rpx;
-  transition: width .3s;
-}
-.g-progress-labels {
+.sheet-head {
   display: flex;
   justify-content: space-between;
-  margin-top: 8rpx;
-  font-size: 18rpx;
-  color: var(--text-tertiary);
-  font-family: var(--font-family-base);
-  .active {
-    color: #FAAD14;
-    font-weight: 700;
-  }
-}
-.g-row {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16rpx 0;
-  border-top: 1rpx dashed rgba(250,173,20,0.2);
-  .g-label { font-size: 24rpx; color: var(--text-tertiary); }
-  .g-value {
-    display: flex;
-    align-items: center;
-    gap: 4rpx;
-    font-size: 26rpx;
-    font-weight: 700;
-    color: var(--text-primary);
-    .g-num {
-      color: #FAAD14;
-      font-family: var(--font-family-base);
+  .sheet-title { font-size: 32rpx; font-weight: 800; color: #1d2129; }
+  .sheet-close { font-size: 26rpx; color: #86909c; }
+}
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.form-label { font-size: 24rpx; color: #4e5969; font-weight: 600; }
+.form-hint { font-size: 20rpx; color: #c0c4cc; }
+.form-input {
+  height: 88rpx;
+  padding: 0 20rpx;
+  background: #f7f8fa;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #1d2129;
+}
+.form-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  .form-chip {
+    padding: 12rpx 24rpx;
+    background: #f7f8fa;
+    border-radius: 999rpx;
+    font-size: 24rpx;
+    color: #4e5969;
+    &.on {
+      background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+      color: #fff;
+      font-weight: 600;
     }
   }
+}
+.submit {
+  margin-top: 8rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  text-align: center;
+  background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  border-radius: 999rpx;
+  box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.35);
+  &:active { transform: scale(0.98); }
 }
 </style>

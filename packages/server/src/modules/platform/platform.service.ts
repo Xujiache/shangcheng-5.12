@@ -297,9 +297,78 @@ export class PlatformService {
   }
 
   // ========== 功能开关 ==========
-  async featureFlags() { return this.prisma.featureFlag.findMany({ orderBy: { group: 'asc' } }) }
+  async featureFlags() {
+    // 首次访问时确保几条"默认规则"存在，避免管理员每次都要手动配置
+    await this.ensureDefaultFlags()
+    return this.prisma.featureFlag.findMany({ orderBy: [{ group: 'asc' }, { sort: 'asc' }] })
+  }
+
+  /** 平台首次启动 / 首次进入 feature-flag 页时，写入用户期望的默认规则 */
+  private async ensureDefaultFlags() {
+    const DEFAULTS: Array<{
+      key: string
+      label: string
+      group: string
+      defaultEnabled: boolean
+      audience?: 'all' | 'factory' | 'store' | 'specific'
+      sort?: number
+    }> = [
+      // 用户明确要求：门店端默认不显示「门店」入口
+      { key: 'home.entry.store', label: '门店入口（仅厂家）', group: 'home_entry', defaultEnabled: false, audience: 'store', sort: 10 },
+      // 用户明确要求：门店端默认不显示「上传到选品广场」按钮
+      { key: 'role.button.uploadToPlaza', label: '上传到选品广场', group: 'role_button', defaultEnabled: false, audience: 'store', sort: 10 },
+    ]
+    for (const d of DEFAULTS) {
+      await this.prisma.featureFlag.upsert({
+        where: { key: d.key },
+        update: {}, // 已存在则不覆盖（保留管理员之前的调整）
+        create: {
+          key: d.key,
+          label: d.label,
+          group: d.group,
+          defaultEnabled: d.defaultEnabled,
+          audience: d.audience ?? 'all',
+          sort: d.sort ?? 100,
+          specificMerchantIds: [],
+          grayPercent: 100,
+          grayWhitelist: [],
+        },
+      })
+    }
+  }
+
   async toggleFeatureFlag(id: string, enabled: boolean) {
     await this.prisma.featureFlag.update({ where: { id }, data: { defaultEnabled: enabled } })
+    return { ok: true }
+  }
+
+  /** 新增功能开关（平台增减默认规则） */
+  async createFeatureFlag(dto: {
+    key: string
+    label: string
+    group?: string
+    defaultEnabled?: boolean
+    audience?: 'all' | 'factory' | 'store' | 'specific'
+  }) {
+    if (!dto?.key || !dto?.label) {
+      throw new BizException(BizCode.INVALID_PARAMS, 'key 与 label 不能为空')
+    }
+    return this.prisma.featureFlag.create({
+      data: {
+        key: dto.key,
+        label: dto.label,
+        group: dto.group || 'home_entry',
+        defaultEnabled: dto.defaultEnabled ?? true,
+        audience: dto.audience || 'all',
+        specificMerchantIds: [],
+        grayPercent: 100,
+        grayWhitelist: [],
+      },
+    })
+  }
+
+  async deleteFeatureFlag(id: string) {
+    await this.prisma.featureFlag.delete({ where: { id } })
     return { ok: true }
   }
   async featureFlagGray() {

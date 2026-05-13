@@ -241,8 +241,14 @@ export class MerchantController {
   @Get('plaza/cards') async plazaCards(@CurrentUser() u: AuthUser, @Query() q: any) {
     return this.plazaProducts(u, q)
   }
-  @Get('plaza/factories') async plazaFactories(@CurrentUser() u: AuthUser) {
-    const mid = await this.svc.ensureMerchantId(u).catch(() => ''); return this.svc.plazaFactories(mid)
+  @Get('plaza/factories') async plazaFactories(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u).catch(() => '')
+    return this.svc.plazaFactories(mid, {
+      region: q?.region,
+      category: q?.category,
+      minRating: q?.minRating ? Number(q.minRating) : undefined,
+      keyword: q?.keyword,
+    })
   }
   @Get('plaza/factories/:id') async plazaFactory(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     const mid = await this.svc.ensureMerchantId(u).catch(() => ''); return this.svc.plazaFactory(mid, id)
@@ -250,6 +256,19 @@ export class MerchantController {
   @Get('plaza/factory/:id') async plazaFactoryAlias(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.plazaFactory(u, id) }
   @Post('plaza/factories/:id/follow') async followFactory(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body('on') on: boolean) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.followFactory(mid, id, on)
+  }
+  @Post('plaza/factories/:id/rate') async rateFactory(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+    @Body('score') score: number,
+  ) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.rateMerchant(id, mid, Number(score))
+  }
+  @Get('plaza/visibility') async getPlazaVisibility(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.getPlazaVisibility(mid)
+  }
+  @Put('plaza/visibility') async setPlazaVisibility(@CurrentUser() u: AuthUser, @Body('scope') scope: 'stores' | 'public') {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.setPlazaVisibility(mid, scope)
   }
   @Post('plaza/agency') async applyAgency(@CurrentUser() u: AuthUser, @Body() dto: any) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.applyAgency(mid, dto)

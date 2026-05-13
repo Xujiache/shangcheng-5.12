@@ -135,11 +135,15 @@ export interface PlazaFactoryItem {
   name: string
   logo: string
   region: string
-  years: number
-  productCount: number
-  agencyCount: number
+  categories: string[]
+  gmv: number
+  rating: number
+  ratingCount: number
+  years?: number
+  productCount?: number
+  agencyCount?: number
   tags: string[]
-  platformPushed: boolean
+  platformPushed?: boolean
 }
 
 export interface PlazaFactoryDetail extends PlazaFactoryItem {
@@ -185,8 +189,11 @@ export const plazaService = {
   products(params: { keyword?: string; tab?: string; tags?: string; factoryId?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<PlazaPlazaProduct>>('/api/v1/m/plaza/products', params)
   },
-  factories() {
-    return http.get<PlazaFactoryItem[]>('/api/v1/m/plaza/factories')
+  factories(params: { region?: string; category?: string; minRating?: number; keyword?: string } = {}) {
+    return http.get<PlazaFactoryItem[]>('/api/v1/m/plaza/factories', params)
+  },
+  rateFactory(id: string, score: number) {
+    return http.post<{ ok: boolean; rating: number; ratingCount: number }>(`/api/v1/m/plaza/factories/${id}/rate`, { score })
   },
   factory(id: string) {
     return http.get<PlazaFactoryDetail>(`/api/v1/m/plaza/factories/${id}`)

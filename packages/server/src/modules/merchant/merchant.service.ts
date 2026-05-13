@@ -597,45 +597,121 @@ export class MerchantService {
       suggestCommission: 5,
     })), total, page, pageSize)
   }
-  async plazaFactories(merchantId: string) {
-    const factories = await this.prisma.merchant.findMany({
-      where: { type: 'factory', status: 'active', id: { not: merchantId } },
-      take: 50,
-    })
-    return factories.map((f) => ({
-      id: f.id,
-      name: f.name,
-      logo: '',
-      region: f.region,
-      categories: f.categories,
-      gmv: Number(f.totalGmv || 0),
-      tags: [],
-    }))
+  /**
+   * 选品广场 · 厂家列表（支持地区 / 品类 / 最低评分筛选）
+   *
+   * region 例：'辽宁' / '辽宁省' → 模糊匹配 region 字段
+   * category 例：'家具' → 命中 categories 数组任意元素
+   * minRating: 0~5
+   */
+  async plazaFactories(merchantId: string, q: { region?: string; category?: string; minRating?: number; keyword?: string } = {}) {
+    const where: any = { type: 'factory', status: 'active', id: { not: merchantId } }
+    if (q.region) where.region = { contains: q.region, mode: 'insensitive' }
+    if (q.category) where.categories = { has: q.category }
+    if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
+    const factories = await this.prisma.merchant.findMany({ where, take: 100 })
+
+    // 评分 / 头像 从 profile-extras 批量读
+    const extrasMap = new Map<string, { avatar?: string; rating?: number; ratingCount?: number; description?: string }>()
+    if (factories.length) {
+      const keys = factories.map((f) => `shop:${f.id}:profile-extras`)
+      const cfgs = await this.prisma.systemConfig.findMany({ where: { key: { in: keys } } })
+      for (const c of cfgs) {
+        const mid = c.key.replace(/^shop:|:profile-extras$/g, '')
+        extrasMap.set(mid, (c.value as any) || {})
+      }
+    }
+
+    const minRating = typeof q.minRating === 'number' ? q.minRating : 0
+    const result = factories
+      .map((f) => {
+        const ex = extrasMap.get(f.id) || {}
+        return {
+          id: f.id,
+          name: f.name,
+          logo: ex.avatar || '',
+          region: f.region,
+          categories: f.categories,
+          gmv: Number(f.totalGmv || 0),
+          rating: typeof ex.rating === 'number' ? ex.rating : 5,
+          ratingCount: typeof ex.ratingCount === 'number' ? ex.ratingCount : 0,
+          tags: [],
+        }
+      })
+      .filter((x) => x.rating >= minRating)
+    return result
   }
+
   async plazaFactory(merchantId: string, id: string) {
     const f = await this.prisma.merchant.findUnique({ where: { id } })
     if (!f) throw new BizException(BizCode.NOT_FOUND, '工厂不存在')
+    const ex = await this.getProfileExtras(id)
     return {
       id: f.id,
       name: f.name,
-      logo: '',
-      banner: '',
+      logo: ex.avatar || '',
+      banner: ex.avatar || '',
       region: f.region,
       address: f.address,
       contact: {
         contactName: f.contact,
         phone: f.contactPhone,
         wechat: '',
-        email: '',
+        email: ex.email || '',
         address: f.address,
         workTime: '9:00-18:00',
       },
-      desc: '',
+      desc: ex.description || '',
       categories: f.categories,
       qualifications: f.qualifications.map((q, i) => ({ id: String(i), name: '资质', image: q })),
       tags: [],
       gmv: Number(f.totalGmv || 0),
+      rating: typeof ex.rating === 'number' ? ex.rating : 5,
+      ratingCount: typeof ex.ratingCount === 'number' ? ex.ratingCount : 0,
     }
+  }
+
+  /** 厂家产品在选品广场的可见性：'stores' 仅门店可看 / 'public' 所有人可看 */
+  async getPlazaVisibility(merchantId: string): Promise<{ scope: 'stores' | 'public' }> {
+    const ex = await this.getProfileExtras(merchantId)
+    const scope = (ex as any).plazaVisibility === 'public' ? 'public' : 'stores'
+    return { scope }
+  }
+
+  async setPlazaVisibility(merchantId: string, scope: 'stores' | 'public') {
+    if (scope !== 'stores' && scope !== 'public') {
+      throw new BizException(BizCode.INVALID_PARAMS, 'scope 只接受 stores | public')
+    }
+    const key = `shop:${merchantId}:profile-extras`
+    const prior = await this.prisma.systemConfig.findUnique({ where: { key } })
+    const merged = { ...((prior?.value as any) || {}), plazaVisibility: scope }
+    await this.prisma.systemConfig.upsert({
+      where: { key },
+      update: { value: merged },
+      create: { key, value: merged },
+    })
+    return { ok: true, scope }
+  }
+
+  /** 用户评价厂家（1-5 分）。简化版：取累积平均，不存逐条评分明细。 */
+  async rateMerchant(targetMerchantId: string, _raterMerchantId: string, score: number) {
+    if (!Number.isFinite(score) || score < 1 || score > 5) {
+      throw new BizException(BizCode.INVALID_PARAMS, '评分必须在 1-5 之间')
+    }
+    const key = `shop:${targetMerchantId}:profile-extras`
+    const prior = await this.prisma.systemConfig.findUnique({ where: { key } })
+    const cur = (prior?.value as any) || {}
+    const curRating = typeof cur.rating === 'number' ? cur.rating : 5
+    const curCount = typeof cur.ratingCount === 'number' ? cur.ratingCount : 0
+    const nextCount = curCount + 1
+    const nextRating = (curRating * curCount + score) / nextCount
+    const merged = { ...cur, rating: Math.round(nextRating * 10) / 10, ratingCount: nextCount }
+    await this.prisma.systemConfig.upsert({
+      where: { key },
+      update: { value: merged },
+      create: { key, value: merged },
+    })
+    return { ok: true, rating: merged.rating, ratingCount: merged.ratingCount }
   }
   async followFactory(merchantId: string, id: string, on: boolean) {
     return { ok: true, followed: on }
@@ -749,6 +825,7 @@ export class MerchantService {
   async getProfile(merchantId: string) {
     const m = await this.prisma.merchant.findUnique({ where: { id: merchantId } })
     if (!m) throw new BizException(BizCode.NOT_FOUND, '商户不存在')
+    const extras = await this.getProfileExtras(merchantId)
     return {
       shopName: m.name,
       merchantNo: m.id.slice(-6).toUpperCase(),
@@ -763,13 +840,22 @@ export class MerchantService {
       credit: m.credit,
       status: m.status,
       type: m.type,
-      // email / description 来自 SystemConfig 扩展（schema 中无字段）
-      email: ((await this.getProfileExtras(merchantId)).email) || '',
-      description: ((await this.getProfileExtras(merchantId)).description) || '',
+      // 来自 SystemConfig 扩展（schema 中无字段）
+      email: extras.email || '',
+      description: extras.description || '',
+      avatar: extras.avatar || '',
+      rating: typeof extras.rating === 'number' ? extras.rating : 5,
+      ratingCount: typeof extras.ratingCount === 'number' ? extras.ratingCount : 0,
     }
   }
 
-  private async getProfileExtras(merchantId: string): Promise<{ email?: string; description?: string }> {
+  private async getProfileExtras(merchantId: string): Promise<{
+    email?: string
+    description?: string
+    avatar?: string
+    rating?: number
+    ratingCount?: number
+  }> {
     const cfg = await this.prisma.systemConfig.findUnique({
       where: { key: `shop:${merchantId}:profile-extras` },
     })
@@ -786,10 +872,11 @@ export class MerchantService {
     if (Object.keys(data).length) {
       await this.prisma.merchant.update({ where: { id: merchantId }, data })
     }
-    // email / description 没字段，存 SystemConfig
+    // SystemConfig 扩展字段
     const extras: any = {}
     if (typeof dto.email === 'string') extras.email = dto.email
     if (typeof dto.description === 'string') extras.description = dto.description
+    if (typeof dto.avatar === 'string') extras.avatar = dto.avatar
     if (Object.keys(extras).length) {
       const key = `shop:${merchantId}:profile-extras`
       const prior = await this.prisma.systemConfig.findUnique({ where: { key } })
