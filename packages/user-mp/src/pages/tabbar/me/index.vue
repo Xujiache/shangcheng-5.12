@@ -38,6 +38,7 @@ const ORDER_ENTRIES = [
 ]
 
 const TOOL_ENTRIES = [
+  { key: 'address', icon: 'location', label: '收货地址', to: '/pages/address/list', auth: true },
   { key: 'book', icon: 'ruler', label: '预约量尺', to: '/pages/booking/index' },
   { key: 'promote', icon: 'discount', label: '推广分佣', to: '/pages/promote/index' },
   { key: 'map', icon: 'location-pin', label: '门店地址', to: '/pages/store/map' },
@@ -56,6 +57,9 @@ function goOrder(status: string) {
 }
 
 function goEntry(item: typeof TOOL_ENTRIES[number]) {
+  if ((item as any).auth && !userStore.isLogin) {
+    return goLogin()
+  }
   if (item.key === 'share') {
     uni.showActionSheet({
       itemList: ['转发好友', '分享朋友圈', '生成海报'],

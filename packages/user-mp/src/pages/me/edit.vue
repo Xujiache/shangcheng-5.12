@@ -4,11 +4,17 @@
  *
  * 从「我的」tab 顶部信息卡片点击进入。
  * 支持改：头像 / 昵称 / 性别 / 邮箱
+ * 账号绑定：
+ *   - 手机号登录账号 → 可绑定微信（点击直接调 uni.login）
+ *   - 微信登录账号 → 可绑定手机号（弹层 + 验证码）
+ *   - 一个手机号 / 一个微信只能绑定一个账号；被占用时给出明确提示
+ *   - 绑定后两种方式均可登录
  * 保存后立即调 PATCH /u/profile，后端通过 WS 广播给同账号所有在线设备。
  */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '../../store/user'
+import { authService } from '../../services'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
@@ -69,6 +75,12 @@ const dirty = computed(() => {
 
 const GENDER_TEXT = ['保密', '男', '女'] as const
 
+const boundPhone = computed(() => (userStore.user as any)?.phone || '')
+const boundOpenid = computed(() => (userStore.user as any)?.openid || '')
+function maskedPhone(p: string) {
+  return p ? p.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : ''
+}
+
 function chooseAvatar() {
   uni.chooseImage({
     count: 1,
@@ -78,7 +90,6 @@ function chooseAvatar() {
       if (!tempPath) return
       uni.showLoading({ title: '上传中…', mask: true })
       try {
-        // 上传到后端 /api/v1/files/upload，复用已有公共上传通道
         const uploadRes = await new Promise<{ url: string }>((resolve, reject) => {
           uni.uploadFile({
             url: 'https://ewsn.top/api/v1/files/upload',
@@ -148,6 +159,99 @@ async function save() {
     saving.value = false
   }
 }
+
+/* ====== 绑定手机号弹层 ====== */
+const phoneDialog = reactive({
+  open: false,
+  phone: '',
+  code: '',
+  sending: false,
+  countdown: 0,
+  submitting: false,
+})
+
+function openPhoneBind() {
+  if (boundPhone.value) {
+    uni.showToast({ title: '已绑定手机号，如需更换请联系客服', icon: 'none', duration: 2000 })
+    return
+  }
+  phoneDialog.open = true
+  phoneDialog.phone = ''
+  phoneDialog.code = ''
+}
+
+function closePhoneBind() {
+  phoneDialog.open = false
+}
+
+async function sendPhoneCode() {
+  if (phoneDialog.sending || phoneDialog.countdown > 0) return
+  if (!/^1[3-9]\d{9}$/.test(phoneDialog.phone)) {
+    uni.showToast({ title: '请输入正确手机号', icon: 'none' })
+    return
+  }
+  phoneDialog.sending = true
+  try {
+    await authService.sendSmsCode(phoneDialog.phone)
+    uni.showToast({ title: '验证码已发送', icon: 'none' })
+    phoneDialog.countdown = 60
+    const t = setInterval(() => {
+      phoneDialog.countdown--
+      if (phoneDialog.countdown <= 0) clearInterval(t)
+    }, 1000)
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '发送失败', icon: 'none' })
+  } finally {
+    phoneDialog.sending = false
+  }
+}
+
+async function submitPhoneBind() {
+  if (!/^1[3-9]\d{9}$/.test(phoneDialog.phone) || !/^\d{4,6}$/.test(phoneDialog.code)) {
+    uni.showToast({ title: '请填写完整手机号和验证码', icon: 'none' })
+    return
+  }
+  phoneDialog.submitting = true
+  uni.showLoading({ title: '绑定中…', mask: true })
+  try {
+    await userStore.bindPhone({ phone: phoneDialog.phone, code: phoneDialog.code })
+    uni.hideLoading()
+    uni.showToast({ title: '绑定成功', icon: 'success' })
+    phoneDialog.open = false
+  } catch (e: any) {
+    uni.hideLoading()
+    // 后端会返回明确占用提示
+    uni.showToast({ title: e?.message || '绑定失败', icon: 'none', duration: 2200 })
+  } finally {
+    phoneDialog.submitting = false
+  }
+}
+
+/* ====== 绑定微信 ====== */
+const wechatBinding = ref(false)
+
+async function bindWechat() {
+  if (boundOpenid.value) {
+    uni.showToast({ title: '已绑定微信，如需更换请联系客服', icon: 'none', duration: 2000 })
+    return
+  }
+  wechatBinding.value = true
+  try {
+    const wxCode = await new Promise<string>((resolve, reject) => {
+      uni.login({
+        provider: 'weixin',
+        success: (r) => (r.code ? resolve(r.code) : reject(new Error('未获取到微信 code'))),
+        fail: (err) => reject(new Error(err?.errMsg || '微信授权失败')),
+      })
+    })
+    await userStore.bindWechat({ code: wxCode })
+    uni.showToast({ title: '微信绑定成功', icon: 'success' })
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '绑定失败', icon: 'none', duration: 2200 })
+  } finally {
+    wechatBinding.value = false
+  }
+}
 </script>
 
 <template>
@@ -190,6 +294,41 @@ async function save() {
       </view>
     </view>
 
+    <!-- 账号绑定卡片 -->
+    <view class="card">
+      <view class="card-head">
+        <text class="card-title">账号绑定</text>
+        <text class="card-sub">绑定后两种方式均可登录</text>
+      </view>
+      <view class="bind-row" @click="openPhoneBind">
+        <view class="bind-icon bind-icon-phone">
+          <Icon name="phone" :size="32" color="#fff" />
+        </view>
+        <view class="bind-info">
+          <text class="bind-name">手机号</text>
+          <text v-if="boundPhone" class="bind-sub">{{ maskedPhone(boundPhone) }}</text>
+          <text v-else class="bind-sub bind-sub-empty">未绑定</text>
+        </view>
+        <view v-if="boundPhone" class="bind-tag bound">已绑定</view>
+        <view v-else class="bind-tag">去绑定</view>
+        <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+      </view>
+      <view class="divider" />
+      <view class="bind-row" @click="bindWechat">
+        <view class="bind-icon bind-icon-wechat">
+          <Icon name="wechat" :size="32" color="#fff" />
+        </view>
+        <view class="bind-info">
+          <text class="bind-name">微信</text>
+          <text v-if="boundOpenid" class="bind-sub">已绑定微信账号</text>
+          <text v-else class="bind-sub bind-sub-empty">未绑定</text>
+        </view>
+        <view v-if="boundOpenid" class="bind-tag bound">已绑定</view>
+        <view v-else class="bind-tag">{{ wechatBinding ? '绑定中…' : '去绑定' }}</view>
+        <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+      </view>
+    </view>
+
     <view class="hint">
       <Icon name="info" :size="24" color="var(--text-tertiary)" />
       <text>修改后在同账号的其他手机 / 微信小程序上会自动同步</text>
@@ -205,6 +344,56 @@ async function save() {
         {{ saving ? '保存中…' : dirty ? '保 存' : '未做修改' }}
       </button>
     </view>
+
+    <!-- 绑定手机号弹层 -->
+    <view v-if="phoneDialog.open" class="mask" @click="closePhoneBind">
+      <view class="dialog" @click.stop>
+        <view class="dialog-head">
+          <text class="dialog-title">绑定手机号</text>
+          <view class="dialog-close" @click="closePhoneBind">
+            <Icon name="close" :size="32" color="#909399" />
+          </view>
+        </view>
+        <text class="dialog-sub">绑定后即可用手机号登录此账号。</text>
+        <view class="field">
+          <text class="prefix">+86</text>
+          <view class="divider-v" />
+          <input
+            v-model="phoneDialog.phone"
+            class="input"
+            type="number"
+            maxlength="11"
+            placeholder="手机号"
+            placeholder-class="ph"
+          />
+        </view>
+        <view class="field code-field">
+          <input
+            v-model="phoneDialog.code"
+            class="input"
+            type="number"
+            maxlength="6"
+            placeholder="短信验证码"
+            placeholder-class="ph"
+          />
+          <view
+            :class="['code-btn', (phoneDialog.countdown > 0 || phoneDialog.sending) && 'disabled']"
+            @click="sendPhoneCode"
+          >
+            {{ phoneDialog.countdown > 0
+              ? `${phoneDialog.countdown}s 后重发`
+              : phoneDialog.sending ? '发送中…' : '获取验证码' }}
+          </view>
+        </view>
+        <view
+          class="dialog-submit"
+          :class="{ disabled: phoneDialog.submitting }"
+          @click="submitPhoneBind"
+        >
+          {{ phoneDialog.submitting ? '绑定中…' : '确认绑定' }}
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -218,6 +407,22 @@ async function save() {
   background: #fff;
   border-radius: 20rpx;
   padding: 0 24rpx;
+}
+.card-head {
+  padding: 24rpx 0 8rpx;
+  border-bottom: 1rpx solid #f5f6f8;
+  margin-bottom: 8rpx;
+  .card-title {
+    font-size: 28rpx;
+    font-weight: 800;
+    color: #1d2129;
+  }
+  .card-sub {
+    display: block;
+    margin-top: 6rpx;
+    font-size: 22rpx;
+    color: #86909c;
+  }
 }
 .row {
   display: flex;
@@ -272,6 +477,63 @@ async function save() {
   background: #f0f2f5;
   margin-left: 140rpx;
 }
+
+/* 绑定卡片 */
+.bind-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx 0;
+  min-height: 96rpx;
+}
+.bind-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bind-icon-phone {
+  background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+}
+.bind-icon-wechat {
+  background: linear-gradient(135deg, #09d365, #06ad55);
+}
+.bind-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.bind-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1d2129;
+}
+.bind-sub {
+  font-size: 22rpx;
+  color: #86909c;
+}
+.bind-sub-empty {
+  color: #c9cdd4;
+}
+.bind-tag {
+  flex-shrink: 0;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  background: rgba(255, 77, 45, 0.1);
+  color: #ff4d2d;
+  &.bound {
+    background: rgba(82, 196, 26, 0.1);
+    color: #52c41a;
+  }
+}
+
 .hint {
   margin: 24rpx 24rpx 0;
   display: flex;
@@ -304,5 +566,88 @@ async function save() {
   &::after {
     border: none;
   }
+}
+
+/* 绑定手机号弹层 */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 48rpx;
+}
+.dialog {
+  width: 100%;
+  background: #fff;
+  border-radius: 28rpx;
+  padding: 32rpx 32rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  .dialog-title {
+    font-size: 32rpx;
+    font-weight: 800;
+    color: #1d2129;
+  }
+  .dialog-close { padding: 4rpx; }
+}
+.dialog-sub {
+  font-size: 22rpx;
+  color: #86909c;
+  margin-bottom: 4rpx;
+}
+.field {
+  display: flex;
+  align-items: center;
+  height: 96rpx;
+  padding: 0 24rpx;
+  background: #f7f8fa;
+  border-radius: 20rpx;
+  border: 2rpx solid transparent;
+  &:focus-within {
+    border-color: rgba(255, 77, 45, 0.4);
+    background: #fff;
+  }
+  .prefix { font-size: 28rpx; color: #1d2129; font-weight: 600; }
+  .divider-v { width: 2rpx; height: 36rpx; background: #e5e5e5; margin: 0 16rpx; }
+  .input { flex: 1; height: 100%; font-size: 28rpx; color: #1d2129; }
+  .ph { color: #c9cdd4; }
+}
+.code-field {
+  position: relative;
+}
+.code-btn {
+  margin-left: 12rpx;
+  padding: 12rpx 20rpx;
+  background: #fff1ed;
+  color: #ff4d2d;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  &.disabled { background: #f0f0f0; color: #86909c; }
+}
+.dialog-submit {
+  margin-top: 8rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  border-radius: 999rpx;
+  letter-spacing: 4rpx;
+  box-shadow: 0 8rpx 20rpx rgba(255, 77, 45, 0.32);
+  &.disabled { opacity: 0.6; }
+  &:active { transform: scale(0.98); }
 }
 </style>

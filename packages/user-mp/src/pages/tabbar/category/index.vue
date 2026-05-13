@@ -65,22 +65,24 @@ const statusBarHeight = computed(() => {
 })
 
 const level1List = computed(() => allCats.value.filter((c) => c.parentId === null))
+// 二级前面插一个"全部"伪 chip，id='' 时显示该 L1 下所有商品
 const level2List = computed(() => {
   if (!level1Id.value) return []
-  return allCats.value.filter((c) => c.parentId === level1Id.value)
+  const subs = allCats.value.filter((c) => c.parentId === level1Id.value)
+  return [{ id: '', name: '全部', parentId: level1Id.value } as any, ...subs]
 })
 
 const breadcrumb = computed(() => {
   const l1 = level1List.value.find((c) => c.id === level1Id.value)?.name ?? ''
   const l2 = level2List.value.find((c) => c.id === level2Id.value)?.name ?? '全部'
-  return `${l1} / ${l2}`
+  return l2 === '全部' ? l1 : `${l1} / ${l2}`
 })
 
 async function loadCats() {
   try {
     allCats.value = await categoryService.list()
     level1Id.value = level1List.value[0]?.id ?? ''
-    level2Id.value = level2List.value[0]?.id ?? ''
+    level2Id.value = ''
     await loadProducts()
   } catch (e) {
     console.error(e)
@@ -90,8 +92,9 @@ async function loadCats() {
 async function loadProducts() {
   loading.value = true
   try {
-    // 按一级分类查；二级 chip 仅作 UI 筛选
-    const result = await productService.list({ categoryId: level1Id.value, pageSize: 30 })
+    // 有二级则按二级查；否则按一级查（后端会展开 L1 的所有 L2 子分类）
+    const categoryId = level2Id.value || level1Id.value
+    const result = await productService.list({ categoryId, pageSize: 30 })
     products.value = result.list
   } finally {
     loading.value = false
@@ -99,13 +102,16 @@ async function loadProducts() {
 }
 
 watch(() => level1Id.value, () => {
-  level2Id.value = level2List.value[0]?.id ?? ''
+  level2Id.value = ''
   loadProducts()
 })
-// 二级切换暂不重新拉（避免空列表），仅高亮当前 chip
+// 切二级也重新拉
+watch(() => level2Id.value, () => {
+  loadProducts()
+})
 
 function goSearch() {
-  uni.showToast({ title: '搜索 · 待实现', icon: 'none' })
+  uni.navigateTo({ url: '/pages/search/index' })
 }
 function goDetail(p: Product) {
   uni.navigateTo({ url: `/pages/product/detail?id=${p.id}` })
@@ -153,18 +159,17 @@ onMounted(() => {
         </view>
       </scroll-view>
 
-      <!-- 二级分类横滚 -->
+      <!-- 二级分类横滚（第一个固定为"全部"伪 chip） -->
       <scroll-view scroll-x class="l2-scroll" :show-scrollbar="false">
         <view class="l2-list">
           <view
             v-for="c in level2List"
-            :key="c.id"
+            :key="c.id || 'all'"
             :class="['l2-chip', level2Id === c.id ? 'active' : '']"
             @click="level2Id = c.id"
           >
             {{ c.name }}
           </view>
-          <view v-if="level2List.length === 0" class="l2-empty">暂无子分类</view>
         </view>
       </scroll-view>
     </view>

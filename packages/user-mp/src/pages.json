@@ -17,7 +17,9 @@
     { "path": "pages/merchant/apply", "style": { "navigationBarTitleText": "商家入驻" } },
     { "path": "pages/channel/index", "style": { "navigationBarTitleText": "频道" } },
     { "path": "pages/chat/index", "style": { "navigationBarTitleText": "在线客服" } },
-    { "path": "pages/me/edit", "style": { "navigationBarTitleText": "个人信息" } }
+    { "path": "pages/me/edit", "style": { "navigationBarTitleText": "个人信息" } },
+    { "path": "pages/search/index", "style": { "navigationBarTitleText": "搜索", "navigationStyle": "custom" } },
+    { "path": "pages/search/result", "style": { "navigationBarTitleText": "搜索结果", "navigationStyle": "custom" } }
   ],
   "globalStyle": {
     "navigationStyle": "custom",

@@ -21,6 +21,21 @@ export const categoryService = {
   },
 }
 
+// ============ 店铺搜索 ============
+export interface SearchShop {
+  id: string
+  name: string
+  type: 'factory' | 'store'
+  region: string
+  categories: string[]
+  gmv: number
+}
+export const shopService = {
+  search(params: { keyword?: string; type?: 'factory' | 'store'; page?: number; pageSize?: number } = {}) {
+    return http.get<Pagination<SearchShop>>('/api/v1/u/shops', params)
+  },
+}
+
 // ============ 订单 ============
 export const orderService = {
   list(params: { status?: string; page?: number; pageSize?: number } = {}) {

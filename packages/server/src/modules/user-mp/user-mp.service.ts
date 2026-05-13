@@ -60,17 +60,187 @@ export class UserMpService {
     }
   }
 
+  // ========== 账号绑定（手机号 / 微信） ==========
+
+  /**
+   * 把手机号绑到当前登录用户上。
+   *
+   * 流程：
+   *   1. 验证 SMS 验证码
+   *   2. 检查该手机号是否被其他账号占用 → 占用则拒绝（前端可提示用户用手机号登录）
+   *   3. 若当前账号已有手机号且不同 → 不允许覆盖（先解绑）
+   *   4. 写入 phone，广播 WS user:update
+   *
+   * 主要场景：微信登录用户首次添加手机号
+   */
+  async bindPhone(userId: string, dto: { phone: string; code: string }) {
+    const phone = String(dto.phone || '').trim()
+    const code = String(dto.code || '').trim()
+    if (!/^1[3-9]\d{9}$/.test(phone)) throw new BizException(BizCode.INVALID_PARAMS, '手机号格式不正确')
+    if (!/^\d{4,6}$/.test(code)) throw new BizException(BizCode.INVALID_PARAMS, '验证码格式不正确')
+
+    // 验证码核验（与 phoneLogin 一致）
+    const rec = await this.prisma.smsCode.findFirst({
+      where: { phone, code, used: false, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (!rec) throw new BizException(BizCode.INVALID_PARAMS, '验证码错误或已过期')
+
+    // 占用检查
+    const occupied = await this.prisma.user.findUnique({ where: { phone } })
+    if (occupied && occupied.id !== userId) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '该手机号已被其他账号绑定，请直接使用手机号登录')
+    }
+
+    const me = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!me) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+    if (me.phone && me.phone !== phone) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '当前账号已绑定其他手机号，请先解绑')
+    }
+
+    await this.prisma.smsCode.update({ where: { id: rec.id }, data: { used: true } })
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { phone },
+    })
+    const payload = this.serializeUser(updated)
+    this.chat.broadcastUserUpdate(userId, payload)
+    return payload
+  }
+
+  /**
+   * 把微信 OpenID 绑到当前登录用户上。
+   *
+   * 流程：
+   *   1. 用 wxCode 调微信 jscode2session 换 openid（与 wechatLogin 一致）
+   *   2. 检查该 openid 是否被其他账号占用 → 占用则拒绝
+   *   3. 若当前账号已有 openid 且不同 → 不允许覆盖
+   *   4. 写入 openid + unionid，广播 WS
+   *
+   * 主要场景：手机号登录用户首次绑定微信
+   */
+  async bindWechat(userId: string, dto: { code: string }) {
+    if (!dto?.code) throw new BizException(BizCode.INVALID_PARAMS, '微信 code 不能为空')
+
+    // 复用环境变量与降级策略
+    const appid = process.env.WX_MINIAPP_APPID
+    const secret = process.env.WX_MINIAPP_SECRET
+    let openid: string | null = null
+    let unionid: string | null = null
+    if (appid && secret) {
+      try {
+        const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appid}&secret=${secret}&js_code=${encodeURIComponent(dto.code)}&grant_type=authorization_code`
+        const r = await fetch(url, { method: 'GET' })
+        const data: any = await r.json()
+        if (data?.errcode && data.errcode !== 0) {
+          throw new BizException(BizCode.INVALID_PARAMS, `微信授权失败：${data.errmsg || data.errcode}`)
+        }
+        if (data?.openid) {
+          openid = data.openid
+          unionid = data.unionid || null
+        }
+      } catch (e: any) {
+        if (e instanceof BizException) throw e
+        // fall through
+      }
+    }
+    if (!openid) {
+      // 与 wechatLogin 一致的开发期兜底
+      openid = `wx_${String(dto.code).slice(0, 16)}`
+    }
+
+    const occupied = await this.prisma.user.findUnique({ where: { openid } })
+    if (occupied && occupied.id !== userId) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '该微信号已被其他账号绑定，请直接使用微信登录')
+    }
+
+    const me = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!me) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+    if (me.openid && me.openid !== openid) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '当前账号已绑定其他微信，请先解绑')
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { openid, unionid: unionid || undefined },
+    })
+    const payload = this.serializeUser(updated)
+    this.chat.broadcastUserUpdate(userId, payload)
+    return payload
+  }
+
   // ========== 商品 ==========
+  /**
+   * 商品列表查询。
+   *
+   * categoryId：
+   *   - 传 L1 分类 ID：返回该 L1 下的所有商品（包含挂在 L1 的 + 挂在该 L1 任意 L2 子分类的）
+   *   - 传 L2 分类 ID：只返回该 L2 下的商品
+   *   - 不传：返回所有
+   *
+   * 实现：每次查询先把分类树展开一层，把当前节点 + 其直接子节点 ID 一起作为 `IN` 列表传 prisma。
+   */
   async listProducts(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const where: any = { status: 'active' }
-    if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
-    if (q.categoryId) where.categoryId = q.categoryId
+    if (q.keyword) {
+      const kw = String(q.keyword).trim()
+      if (kw) where.name = { contains: kw, mode: 'insensitive' }
+    }
+    if (q.categoryId) {
+      const children = await this.prisma.category.findMany({
+        where: { parentId: q.categoryId },
+        select: { id: true },
+      })
+      const ids = [q.categoryId, ...children.map((c) => c.id)]
+      where.categoryId = { in: ids }
+    }
+    if (q.merchantId) where.merchantId = q.merchantId
     const [list, total] = await Promise.all([
       this.prisma.product.findMany({ where, skip, take, orderBy: { sales: 'desc' } }),
       this.prisma.product.count({ where }),
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
+  }
+
+  /** 店铺搜索（按关键词模糊匹配店名） */
+  async searchShops(q: any) {
+    const { skip, take, page, pageSize } = parsePage(q)
+    const where: any = { status: 'active' }
+    const kw = String(q.keyword || '').trim()
+    if (kw) where.name = { contains: kw, mode: 'insensitive' }
+    if (q.type === 'factory' || q.type === 'store') where.type = q.type
+    const [list, total] = await Promise.all([
+      this.prisma.merchant.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { totalGmv: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          region: true,
+          categories: true,
+          totalGmv: true,
+          status: true,
+        },
+      }),
+      this.prisma.merchant.count({ where }),
+    ])
+    return buildPage(
+      list.map((m) => ({
+        id: m.id,
+        name: m.name,
+        type: m.type,
+        region: m.region,
+        categories: m.categories,
+        gmv: Number(m.totalGmv || 0),
+      })),
+      total,
+      page,
+      pageSize,
+    )
   }
 
   async productDetail(id: string) {

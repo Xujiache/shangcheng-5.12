@@ -92,6 +92,20 @@ export const useUserStore = defineStore('user', () => {
     return fresh
   }
 
+  /** 绑定手机号（需先调 sms-code 发验证码） */
+  async function bindPhone(payload: { phone: string; code: string }) {
+    const fresh = await http.post<Partial<User>>('/api/v1/u/bind-phone', payload as Record<string, unknown>)
+    if (fresh) setUserInfo(fresh)
+    return fresh
+  }
+
+  /** 绑定微信（传 uni.login 拿到的 code） */
+  async function bindWechat(payload: { code: string }) {
+    const fresh = await http.post<Partial<User>>('/api/v1/u/bind-wechat', payload as Record<string, unknown>)
+    if (fresh) setUserInfo(fresh)
+    return fresh
+  }
+
   /** 建立 WS 连接订阅 user:update 事件（多端实时同步） */
   async function connectProfileSync() {
     if (chatSock || !accessToken.value) return
@@ -137,6 +151,8 @@ export const useUserStore = defineStore('user', () => {
     logout,
     refreshFromServer,
     updateProfile,
+    bindPhone,
+    bindWechat,
     connectProfileSync,
     disconnectProfileSync,
   }

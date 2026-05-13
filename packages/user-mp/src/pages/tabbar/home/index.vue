@@ -137,7 +137,7 @@ async function loadMore() {
 }
 
 function goSearch() {
-  uni.showToast({ title: '搜索 · 待实现', icon: 'none' })
+  uni.navigateTo({ url: '/pages/search/index' })
 }
 function goDetail(p: Product) {
   uni.navigateTo({ url: `/pages/product/detail?id=${p.id}` })

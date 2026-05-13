@@ -16,6 +16,9 @@ export class UserMpController {
   // 分类
   @Public() @Get('categories') categories() { return this.svc.listCategories() }
 
+  // 店铺搜索（首页/分类/搜索页用）
+  @Public() @Get('shops') searchShops(@Query() q: any) { return this.svc.searchShops(q) }
+
   // 订单
   @Get('orders') listOrders(@CurrentUser() u: AuthUser, @Query() q: any) { return this.svc.listOrders(u.sub, q) }
   @Get('orders/:id') orderDetail(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.svc.orderDetail(u.sub, id) }
@@ -62,6 +65,14 @@ export class UserMpController {
   @Get('profile') profile(@CurrentUser() u: AuthUser) { return this.svc.profile(u.sub) }
   @Patch('profile') updateProfile(@CurrentUser() u: AuthUser, @Body() dto: any) {
     return this.svc.updateProfile(u.sub, dto)
+  }
+
+  // 账号绑定
+  @Post('bind-phone') bindPhone(@CurrentUser() u: AuthUser, @Body() dto: { phone: string; code: string }) {
+    return this.svc.bindPhone(u.sub, dto)
+  }
+  @Post('bind-wechat') bindWechat(@CurrentUser() u: AuthUser, @Body() dto: { code: string }) {
+    return this.svc.bindWechat(u.sub, dto)
   }
 
   // 入驻
