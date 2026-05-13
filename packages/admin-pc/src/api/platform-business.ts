@@ -343,6 +343,80 @@ export function saveLegalAgreements(data: Partial<LegalAgreements>) {
   })
 }
 
+/* ============ 12b. APP 发布管理（#7 软件自更新）============ */
+export type AppPlatformKind = 'merchant' | 'platform'
+export interface AppReleaseRow {
+  id: string
+  platform: AppPlatformKind
+  version: string
+  versionCode: number
+  url: string
+  size: number
+  changelog: string
+  force: boolean
+  publishedAt: string
+  createdById?: string | null
+}
+
+export function fetchAppReleases(platform?: AppPlatformKind) {
+  return request.get<AppReleaseRow[]>({
+    url: '/api/v1/p/app-releases',
+    params: platform ? { platform } : {}
+  })
+}
+
+export function deleteAppRelease(id: string) {
+  return request.del<{ ok: boolean }>({ url: `/api/v1/p/app-releases/${id}` })
+}
+
+/**
+ * 上传 APK + 创建发布记录。
+ * 走 multipart/form-data，使用底层 fetch（绕开 request 工具对 JSON 的强假设）。
+ */
+export async function uploadAppRelease(
+  file: File,
+  meta: {
+    platform: AppPlatformKind
+    version: string
+    versionCode: number
+    changelog?: string
+    force?: boolean
+  },
+  onProgress?: (pct: number) => void
+): Promise<AppReleaseRow> {
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('platform', meta.platform)
+  fd.append('version', meta.version)
+  fd.append('versionCode', String(meta.versionCode))
+  if (meta.changelog) fd.append('changelog', meta.changelog)
+  if (meta.force) fd.append('force', 'true')
+
+  const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || ''
+  const token = localStorage.getItem('accessToken') || ''
+  return await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', baseUrl + '/api/v1/p/app-releases')
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+    xhr.onload = () => {
+      try {
+        const r = JSON.parse(xhr.responseText)
+        if (r?.code === 0) resolve(r.data)
+        else reject(new Error(r?.message || `HTTP ${xhr.status}`))
+      } catch (e: any) {
+        reject(new Error(e?.message || 'upload failed'))
+      }
+    }
+    xhr.onerror = () => reject(new Error('网络错误'))
+    xhr.send(fd)
+  })
+}
+
 /* ============ 13. 功能开关 ============ */
 export interface GrayscaleConfig {
   audience: 'all' | 'factory' | 'store' | 'specific'

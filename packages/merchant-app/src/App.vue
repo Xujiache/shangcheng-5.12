@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { useUserStore } from './store/user'
+import { checkAppUpdate } from './composables/useAppUpdate'
 
 onLaunch(() => {
   const userStore = useUserStore()
@@ -9,6 +10,8 @@ onLaunch(() => {
   if (!userStore.isLogin) {
     setTimeout(() => uni.reLaunch({ url: '/pages/auth/login' }), 0)
   }
+  // 启动 2.5s 后静默检查更新（让首页先稳定渲染）
+  setTimeout(() => { checkAppUpdate('merchant', { silent: true }) }, 2500)
 })
 
 onShow(() => {

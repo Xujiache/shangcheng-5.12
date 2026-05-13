@@ -18,6 +18,7 @@ import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
 import { useStatusBar } from '../../../composables/useStatusBar'
+import { checkAppUpdate } from '../../../composables/useAppUpdate'
 
 useHideNativeTabBar()
 const { heroPaddingTop } = useStatusBar(24)
@@ -65,13 +66,7 @@ function handle(action: string) {
     share: () => uni.navigateTo({ url: '/pages/me/share' }),
     profile: () => uni.navigateTo({ url: '/pages/me/profile' }),
     settings: () => uni.navigateTo({ url: '/pages/me/settings' }),
-    update: () => {
-      uni.showLoading({ title: '检查中…' })
-      setTimeout(() => {
-        uni.hideLoading()
-        uni.showToast({ title: '已是最新版本 v0.1.0', icon: 'success' })
-      }, 800)
-    },
+    update: () => checkAppUpdate('merchant', { silent: false }),
     contact: () =>
       uni.showModal({
         title: '联系我们',

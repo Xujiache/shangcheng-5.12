@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { useAdminStore } from './store/admin'
+import { checkAppUpdate } from './composables/useAppUpdate'
 
 function hideNativeTabBar(): void {
   try {
@@ -17,6 +18,8 @@ onLaunch(() => {
   if (!adminStore.isLogin) {
     setTimeout(() => uni.reLaunch({ url: '/pages/auth/login' }), 0)
   }
+  // 启动 2.5s 后静默检查更新（不阻塞首屏）
+  setTimeout(() => { checkAppUpdate('platform', { silent: true }) }, 2500)
 })
 
 onShow(() => {

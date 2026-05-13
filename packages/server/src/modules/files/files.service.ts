@@ -88,6 +88,44 @@ export class FilesService implements OnModuleInit {
     return out
   }
 
+  /**
+   * 上传 APK（独立通道，绕开常规图片/视频的 mime + size 校验）。
+   * 仅给 AppReleaseService 用 —— controller 层不直接暴露。
+   *
+   * 限制：
+   *   - mime 必须是 application/vnd.android.package-archive 或 application/octet-stream
+   *   - 后缀必须是 .apk
+   *   - 大小 ≤ 300MB
+   */
+  async uploadApk(file: MulterFile, ownerId?: string) {
+    if (!file) throw new BizException(BizCode.INVALID_PARAMS, '未上传文件')
+    const ext = (file.originalname.split('.').pop() || '').toLowerCase()
+    if (ext !== 'apk') {
+      throw new BizException(BizCode.INVALID_PARAMS, '仅支持 .apk 文件')
+    }
+    const okMime = file.mimetype === 'application/vnd.android.package-archive'
+      || file.mimetype === 'application/octet-stream'
+    if (!okMime) {
+      throw new BizException(BizCode.INVALID_PARAMS, `不支持的 APK mime：${file.mimetype}`)
+    }
+    if (file.size > 300 * 1024 * 1024) {
+      throw new BizException(BizCode.INVALID_PARAMS, 'APK 不能超过 300MB')
+    }
+    if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
+
+    const d = new Date()
+    const key = `apk/${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${nano()}.apk`
+    await this.client.putObject(this.bucket, key, file.buffer, file.size, {
+      'Content-Type': 'application/vnd.android.package-archive',
+    })
+    const url = `${this.publicUrl}/${key}`
+
+    await this.prisma.uploadedFile.create({
+      data: { key, url, size: file.size, mimeType: 'application/vnd.android.package-archive', bizType: 'apk', ownerId: ownerId || null },
+    })
+    return { url, key, size: file.size }
+  }
+
   async remove(key: string) {
     if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
     await this.client.removeObject(this.bucket, key).catch(() => null)

@@ -243,6 +243,17 @@ export const platformRoutes: AppRouteRecord = {
             keepAlive: true,
             ...ROLE_PLATFORM
           }
+        },
+        {
+          path: '/platform/app-release',
+          name: 'PlatformAppRelease',
+          component: '/platform/app-release',
+          meta: {
+            title: 'APP 发布',
+            icon: 'ri:smartphone-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
         }
       ]
     }

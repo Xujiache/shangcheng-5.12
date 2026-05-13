@@ -875,3 +875,23 @@ model UploadedFile {
   @@index([ownerId])
   @@index([bizType])
 }
+
+// APP 安装包发布记录（#7 软件自更新）
+//
+// 一条 = 一次发版，按 platform + versionCode 排序，最新一条作为 latest 推给端上。
+// APK 文件本身存 MinIO（url 字段）；force=true 时端上无法跳过此版本。
+model AppRelease {
+  id          String   @id @default(cuid())
+  platform    String   // 'merchant' | 'platform'
+  version     String   // 例：1.2.0
+  versionCode Int      // 例：120（严格自增，端上用它比较）
+  url         String   // APK 下载 URL（MinIO 公开链接）
+  size        Int      // 文件大小（字节）
+  changelog   String   @default("")
+  force       Boolean  @default(false)
+  publishedAt DateTime @default(now())
+  createdById String?
+
+  @@unique([platform, versionCode])
+  @@index([platform])
+}

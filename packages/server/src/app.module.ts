@@ -13,6 +13,7 @@ import { ChatModule } from './modules/chat/chat.module'
 import { SmsModule } from './modules/sms/sms.module'
 import { PaymentModule } from './modules/payment/payment.module'
 import { LegalModule } from './modules/legal/legal.module'
+import { AppReleaseModule } from './modules/app-release/app-release.module'
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { LegalModule } from './modules/legal/legal.module'
     SmsModule,
     PaymentModule,
     LegalModule,
+    AppReleaseModule,
   ],
   controllers: [HealthController],
 })
