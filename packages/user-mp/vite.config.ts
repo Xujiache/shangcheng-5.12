@@ -23,6 +23,11 @@ export default defineConfig({
   // SCSS tokens 由 src/uni.scss 全局注入（uni-app 自动加载），不要在这里再注一遍，
   // 否则 SCSS 模块系统会把同一文件当成两个模块，触发 "available from multiple global modules"
   css: {},
+  // mp-weixin 开发者工具的内置转译器对 ?. / ?? / 私有字段等 ES2020+ 语法支持不稳定，
+  // 在 Vite 这一步就降到 es2015，所有现代语法都转译掉，dev tools 收到纯 ES5/2015。
+  build: {
+    target: 'es2015',
+  },
   server: {
     port: 8081,
     host: '0.0.0.0',
