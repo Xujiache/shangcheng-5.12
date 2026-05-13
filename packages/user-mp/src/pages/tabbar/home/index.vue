@@ -103,15 +103,36 @@ const statusBarHeight = computed(() => {
 
 async function load() {
   loading.value = true
+  page.value = 1
+  hasMore.value = true
   try {
     const [bannerList, productList] = await Promise.all([
       bannerService.list(),
-      productService.list({ pageSize: 20 }),
+      productService.list({ page: 1, pageSize: PAGE_SIZE }),
     ])
     banners.value = bannerList
     products.value = productList.list
+    hasMore.value = productList.hasMore ?? productList.list.length >= PAGE_SIZE
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMore() {
+  if (loading.value || loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const next = page.value + 1
+    const res = await productService.list({ page: next, pageSize: PAGE_SIZE })
+    if (res.list.length > 0) {
+      products.value = [...products.value, ...res.list]
+      page.value = next
+    }
+    hasMore.value = res.hasMore ?? res.list.length >= PAGE_SIZE
+  } catch {
+    /* 拉失败保持当前页，下次触底可重试 */
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -192,7 +213,13 @@ onShow(() => {
       </view>
     </view>
 
-    <scroll-view scroll-y class="scroll" :show-scrollbar="false">
+    <scroll-view
+      scroll-y
+      class="scroll"
+      :show-scrollbar="false"
+      :lower-threshold="200"
+      @scrolltolower="loadMore"
+    >
       <!-- 搜索条 -->
       <view class="search-bar" @click="goSearch">
         <Icon name="search" :size="36" color="var(--text-tertiary)" />
@@ -248,7 +275,7 @@ onShow(() => {
             @click="goDetail(p)"
           >
             <view class="wf-img-wrap">
-              <image :src="p.images?.[0]" mode="aspectFill" class="wf-img" :style="{ height: imgHeightOf(i * 2) + 'rpx' }" />
+              <image :src="p.images?.[0]" mode="aspectFill" lazy-load class="wf-img" :style="{ height: imgHeightOf(i * 2) + 'rpx' }" />
               <view class="wf-fav" :class="{ active: isFavorited(p) }" @click.stop="toggleFavorite(p, $event)">
                 <Icon :name="isFavorited(p) ? 'heart' : 'heart'" :size="28" :color="isFavorited(p) ? '#FF3B30' : '#fff'" :fill="isFavorited(p)" :stroke="2" />
               </view>
@@ -280,7 +307,7 @@ onShow(() => {
             @click="goDetail(p)"
           >
             <view class="wf-img-wrap">
-              <image :src="p.images?.[0]" mode="aspectFill" class="wf-img" :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }" />
+              <image :src="p.images?.[0]" mode="aspectFill" lazy-load class="wf-img" :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }" />
               <view class="wf-fav" :class="{ active: isFavorited(p) }" @click.stop="toggleFavorite(p, $event)">
                 <Icon name="heart" :size="28" :color="isFavorited(p) ? '#FF3B30' : '#fff'" :fill="isFavorited(p)" :stroke="2" />
               </view>
@@ -306,7 +333,11 @@ onShow(() => {
         </view>
       </view>
 
-      <view class="bottom-tip">— 已经到底了 —</view>
+      <view class="bottom-tip">
+        <text v-if="loadingMore">加载中…</text>
+        <text v-else-if="!hasMore && products.length > 0">— 已经到底了 —</text>
+        <text v-else-if="hasMore && products.length > 0">上拉加载更多</text>
+      </view>
       <view style="height: 160rpx;" />
     </scroll-view>
 

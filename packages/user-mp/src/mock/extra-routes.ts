@@ -68,6 +68,17 @@ export const userMpExtraRoutes: MockRoute[] = [
     path: '/api/v1/u/stores/nearby',
     handler: () => NEARBY_STORES,
   },
+  // 店铺价格显示规则（mock 默认规则，与 server 端 shopPriceRule 默认值保持一致）
+  {
+    method: 'GET',
+    path: '/api/v1/u/shops/:merchantId/price-rule',
+    handler: () => ({
+      guestAllow: false,
+      customerPrice: 'retail',
+      agencyPrice: 'wholesale',
+      memberPrice: 'member',
+    }),
+  },
   // 入驻申请
   {
     method: 'POST',

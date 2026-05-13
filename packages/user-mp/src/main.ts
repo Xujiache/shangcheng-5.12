@@ -20,8 +20,6 @@ let forceMockForLocalMp = false
 forceMockForLocalMp = IS_LOCAL_API
 // #endif
 
-// 动态 import，生产模式（!USE_MOCK）下完全 tree-shake 掉 @jiujiu/shared/mock
-// （内含 @faker-js/faker ~1MB，否则会撑爆微信小程序 2MB 主包限制）
 if (MOCK_FLAG === 'true' || (import.meta.env.DEV && MOCK_FLAG !== 'false') || forceMockForLocalMp) {
   registerMockRoutes([...mockRoutes, ...userMpExtraRoutes])
 }

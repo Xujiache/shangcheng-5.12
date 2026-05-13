@@ -1,43 +1,22 @@
 <claude-mem-context>
 # Memory Context
 
-# [商城5.0] recent context, 2026-05-13 2:57am GMT+8
+# [商城5.0] recent context, 2026-05-13 3:19am GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 28 obs (8,071t read) | 234,257t work | 97% savings
+Stats: 50 obs (13,829t read) | 123,651t work | 89% savings
 
-### May 12, 2026
-7 11:58a 🔴 Fixed MenuProcessor path validation for menu-grouped leaf routes
-S20 Fix timeout error on platform-app stats page (http://localhost:8087/#/pages/tabbar/stats/index) displaying "连接服务器超时" (connection server timeout) (May 12, 12:12 PM)
-S21 Fix two runtime errors in platform management backend APP data page: missing `nowBeijing` export from Vite dependencies and unhandled `hideTabBar` promise rejection (May 12, 12:22 PM)
-S74 Pull latest git changes and report the git commit timestamp for the current repository (May 12, 3:02 PM)
 ### May 13, 2026
-S76 Review latest repository state and prepare for next phase of work on shangcheng-5.0 e-commerce platform (May 13, 1:43 AM)
-415 1:47a 🟣 Production-ready feature set merged: Chat WebSocket, WeChat Pay, Tencent Maps, price management
 S77 User asked how to publish the WeChat mini program (小程序). Session examined the user-mp project configuration (uni-app + Vue 3 based) to understand build and deployment requirements for the production release. (May 13, 1:48 AM)
 S78 Prepare WeChat mini program (user-mp) for publication: resolve blocking platform incompatibilities, implement cross-platform support, and validate the build output (May 13, 1:58 AM)
 S79 Fix compilation failures in user-mp uni-app(x) project: resolve JavaScript syntax error and missing debug module dependency (May 13, 2:10 AM)
-427 2:14a 🔵 Compilation error in address edit component: missing return value
-428 " 🔵 Missing module resolution for debug package in socket.io-parser
-429 2:19a 🔵 Syntax error in address/edit.vue: automatic semicolon insertion prevents return
-430 " 🔵 Missing module resolution for "debug" from socket.io-parser
-431 " 🔵 Dart Sass legacy JS API deprecation warnings throughout build
-432 2:20a 🔴 Fixed ASI syntax error in address/edit.vue pickOnMap function
-433 " 🔴 Resolved socket.io-parser debug module resolution by adding explicit dependency
-434 2:21a ✅ Implemented debug module aliasing with lightweight shim instead of direct dependency
-435 2:27a 🔵 Compilation errors in user-mp project: syntax error and module resolution failures
 S80 Fixed "crypto is not defined" error in WeChat mini program (user-mp) build by replacing nanoid dependency with environment-compatible ID generation (May 13, 2:27 AM)
-436 2:34a 🔵 Sass Deprecation Warning - Legacy JS API Usage
-437 " 🔵 Syntax Error in Vue Component - Missing Return Value
-438 " 🔵 Module Resolution Error - Missing "debug" Module
 S81 Fix "ReferenceError: crypto is not defined" in WeChat mini-program caused by nanoid dependency attempting to access unavailable crypto API (May 13, 2:35 AM)
-439 2:48a 🔵 URLSearchParams not available in browser/bundled environment
-440 " 🔵 buildUrl in request.ts uses URLSearchParams without import/polyfill in mini-program
-441 " 🔴 Fixed URLSearchParams ReferenceError by replacing with manual query string builder
-442 " 🔵 Systematic scan reveals additional Web API usage in mini-program codebase
+S82 Fix URLSearchParams ReferenceError in mini-program and ensure cross-platform browser API compatibility across the codebase (May 13, 2:47 AM)
+442 2:48a 🔵 Systematic scan reveals additional Web API usage in mini-program codebase
 443 " 🔵 useTencentMap.ts contains same URLSearchParams issue plus unguarded fetch() call
 444 2:49a 🔵 Shared package validate.ts uses URL constructor without environment guard
 445 " 🔵 isUrl validation function in shared package uses URL constructor in try-catch pattern
@@ -48,29 +27,72 @@ S81 Fix "ReferenceError: crypto is not defined" in WeChat mini-program caused by
 450 " 🔵 useShopPriceRule.ts already implements proper H5/mini-program storage compatibility
 451 2:51a 🔵 Mini-program build completes successfully after URLSearchParams and fetch() fixes
 452 " ✅ Task to fix mini-program browser API compatibility marked as completed
-S82 Fix URLSearchParams ReferenceError in mini-program and ensure cross-platform browser API compatibility across the codebase (May 13, 2:51 AM)
-**Investigated**: - Analyzed ReferenceError: URLSearchParams is not defined occurring in request.ts line 29 during mini-program bundle execution
-    - Conducted systematic grep scan across user-mp and shared packages to identify all browser Web API usage (URLSearchParams, fetch, URL, XMLHttpRequest, localStorage, sessionStorage, etc.)
-    - Examined request.ts, useTencentMap.ts, validate.ts, and useShopPriceRule.ts to understand scope of mini-program compatibility issues
-    - Reviewed useShopPriceRule.ts as reference for proper cross-platform pattern implementation with typeof guards and fallbacks
+S83 Fix hideTabBar:fail error in user-mp mini program with custom TabBar enabled (May 13, 2:51 AM)
+453 2:57a 🔵 Dart Sass Legacy JS API Deprecation Warnings in uni-app Build
+454 " 🔵 AST Compilation Warning in Address Edit Page
+455 " 🔵 Module Resolution Failure for Debug Package in socket.io-parser
+S84 WeChat mini-program "经纬科技商城" (EWSN Tech Shopping Mall) configuration and launch preparation - identified blocking issues and provided detailed task breakdown (May 13, 2:58 AM)
+S85 WeChat mini-program "经纬科技商城" (Jingwei Tech Mall) complete launch preparation: polyfills, optimization, health checks, and submission materials (May 13, 2:58 AM)
+456 3:00a ✅ WeChat mini-program polyfills and critical fixes staged for commit
+457 " 🟣 Custom nanoid replacement for WeChat mini-program crypto compatibility
+458 " ✅ manifest.json reformatted and permissions declared for location access
+459 " 🔴 Removed problematic uni.hideTabBar() call from app lifecycle
+460 3:01a 🟣 WebSocket polyfill injection for WeChat mini-program real-time chat
+461 " 🟣 Platform-aware socket.io configuration for mini-program transport constraints
+462 " 🟣 URLSearchParams and fetch API replacements for Tencent map integration
+463 " 🟣 globalThis.crypto polyfill with getRandomValues fallback
+464 " 🔵 Four polyfill and shim modules totaling 175 lines deployed for mini-program compatibility
+465 " ✅ Committed mp-weixin runtime polyfills for production publish
+466 3:02a 🔵 Git push rejected: local main branch behind remote (non-fast-forward)
+467 " 🔵 Git branch divergence: parallel commits on local and remote main
+468 " 🔵 Merge conflicts during rebase: useChatSocket.ts and manifest.json overlap
+469 3:03a 🔵 Merge conflict analysis: static vs dynamic socket.io import strategies
+470 " ✅ Resolved merge conflict in useChatSocket.ts by merging both approaches
+471 " 🔵 manifest.json merge conflict: app-plus native config vs clean polyfill structure
+472 " ✅ Resolved manifest.json merge conflict: unified multi-platform configuration
+473 3:04a ✅ Rebase completed: mp-weixin polyfills rebased onto app-plus feature
+474 " ✅ Pushed mp-weixin polyfills to remote: production code now deployed to GitHub
+475 " 🟣 Created preflight-mp.ts health check script for mini-program pre-submission validation
+476 3:05a ✅ Started clean rebuild of mp-weixin distribution package with polyfill fixes
+477 " 🟣 Created comprehensive mini-program submission guide (SUBMISSION.md)
+478 3:07a ✅ mp-weixin build completed successfully with all runtime polyfills
+480 " 🔵 Built package app.json validated: 17 pages, custom tabbar, permissions declared
+483 " 🔵 Confirmed: WebSocket polyfill bundled in dist, loaded at app initialization
+485 3:08a 🔵 Production dist package structure complete: 10 directories, all components present
+489 3:09a 🔵 Identified vendor.js optimization: faker.js static import inflating bundle size
+490 " 🔵 Root cause identified: main.ts static import of mock module forces faker.js bundling
+491 " ✅ Fixed vendor.js bloat: converted mock imports to dynamic, enables tree-shaking of faker.js
+492 3:10a 🔵 Found second static import of mock module: request.ts line 10
+495 " ✅ Completed vendor.js optimization: all static mock imports converted to dynamic
+499 3:12a 🔵 Package size unchanged: 3.3M total, 2.9M vendor.js (faker.js not tree-shaken)
+500 " 🔵 Confirmed: faker.js still bundled in vendor.js (567 references)
+501 " 🟣 Created mockStub.ts: production stub for @jiujiu/shared/mock to eliminate faker.js bundling
+503 3:13a ✅ Updated vite.config.ts: conditional alias for mockStub in mp-weixin production builds
+505 " ✅ SUCCESSFUL: Mock stub alias eliminated faker.js, 86% package size reduction
+S86 WeChat mini-program launch preparation - Confirming mchid and creating memory documentation for WeChat credentials and credentials setup (May 13, 3:18 AM)
+**Investigated**: - WeChat credentials: AppID (wxe8ed8b7d9d154165), mchid (1745510292, clarified from initial ambiguity with 1450532317)
+    - Backend environment variable naming: WX_PAY_MCH_ID (not WXPAY_MCH_ID)
+    - Public key ID: PUB_KEY_ID_0117455102922026051200211756004802
+    - Icon component implementation: 70+ SVG path icons already in place (icon.vue component complete)
+    - Memory documentation structure for project knowledge retention
 
-**Learned**: - Mini-program environment (uni-app) does not provide browser Global APIs like URLSearchParams, fetch, URL constructor, localStorage, window, etc.
-    - useShopPriceRule.ts demonstrates correct pattern: guard Web APIs with typeof checks (e.g., typeof localStorage !== 'undefined') before use, and provide uni-app API fallbacks
-    - URLSearchParams can be replaced with manual encodeURIComponent-based query string construction
-    - fetch() API can be replaced with uni.request() which is compatible with both H5 and mini-program platforms
-    - The grep found 19 instances of Web API usage across composables, with some already properly guarded and others missing compatibility handling
+**Learned**: - mchid value 1745510292 is definitively correct (verified against verify-wxpay.ts and wxpay.service.ts)
+    - The first mentioned mchid (1450532317) was user error in initial request, now cleared
+    - Icon system uses computed path lookup with SVG viewBox 24×24 and configurable stroke/fill
+    - Credentials are project-critical for payment binding and must be documented centrally
 
-**Completed**: - Fixed request.ts buildUrl function: Replaced new URLSearchParams() with manual parts array and encodeURIComponent for query string construction
-    - Fixed useTencentMap.ts staticImageUrl function: Applied same URLSearchParams replacement pattern
-    - Fixed useTencentMap.ts searchPlaces function: Replaced fetch() API with uni.request() wrapped in Promise for H5/mini-program compatibility
-    - Validated fixes: Mini-program build (pnpm build:mp-weixin) completed successfully with "DONE Build complete" message
-    - Task 5 "修复小程序运行时缺浏览器全局" marked as completed
+**Completed**: - All 11 technical tasks from prior session completion: polyfills (WebSocket, crypto, URLSearchParams), bundle optimization (3.3MB → 541KB), code pushed to origin/main
+    - Package size verification: vendor.js reduced from 2.9MB to 125KB by eliminating faker.js via Vite alias
+    - Memory documentation: created wx_credentials.md with AppID, mchid, env variable names, and rationale
+    - Updated MEMORY.md index to link WX credentials reference
 
-**Next Steps**: - User to rebuild in WeChat developer tools (click compile button or Ctrl+B) to reload updated bundle and verify URLSearchParams error is resolved
-    - Monitor for any additional "XXX is not defined" runtime errors in mini-program that may surface other Web API issues
-    - Apply same fix pattern if additional Web API compatibility issues are discovered
-    - Optional: Address validate.ts URL constructor issue (currently wrapped in try-catch but causes URL validation to fail in mini-programs)
+**Next Steps**: 1. Run preflight health check on server: `pnpm tsx scripts/preflight-mp.ts` (verifies HTTPS cert, 5 API endpoints, WebSocket /ws/chat, Tencent map)
+    2. Import project to WeChat dev tools (directory: packages/user-mp/dist/build/mp-weixin, AppID auto-fills)
+    3. Real device testing per docs/小程序发布/SUBMISSION.md section 8 self-test checklist (10 items)
+    4. Configure WeChat backend (mp.weixin.qq.com): domains, privacy directives, payment binding with mchid 1745510292, subscription templates
+    5. Upload version 1.0.0 to WeChat with provided version notes (section 7)
+    6. Submit for audit review
 
 
-Access 234k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 124k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

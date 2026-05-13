@@ -69,7 +69,7 @@ export function reloadShopPriceRule() {
 export async function fetchShopPriceRuleByMerchant(merchantId: string): Promise<ShopPriceRule | null> {
   if (!merchantId) return null
   try {
-    const data = await http.get<ShopPriceRule>(`/api/v1/u/shops/${merchantId}/price-rule`)
+    const data = await http.get<ShopPriceRule>(`/api/v1/u/shops/${merchantId}/price-rule`, undefined, { silent: true })
     if (data) {
       rule.value = { ...DEFAULT, ...data }
       try {
