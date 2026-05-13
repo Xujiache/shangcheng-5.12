@@ -932,6 +932,9 @@ function changeQty(delta: number) {
   gap: 16rpx;
   border-bottom: 1rpx solid var(--border-light);
   .sku-img {
+    // mp-weixin 负 margin 必须配 position+z-index 才能浮出
+    position: relative;
+    z-index: 1;
     width: 160rpx;
     height: 160rpx;
     border-radius: 12rpx;

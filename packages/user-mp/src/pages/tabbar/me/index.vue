@@ -209,6 +209,9 @@ function goAllOrders() {
   }
 }
 .card {
+  // mp-weixin 里负 margin 单独用不够，必须配 position+z-index 才能浮在 hero 上面
+  position: relative;
+  z-index: 1;
   margin: -32rpx 24rpx 16rpx;
   background: var(--bg-card);
   border-radius: 24rpx;
