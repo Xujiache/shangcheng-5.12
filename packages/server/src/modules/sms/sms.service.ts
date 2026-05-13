@@ -19,15 +19,32 @@
  *   GYY_SMS_TEMPLATE_LOGIN   登录验证码模板 ID（控制台 → 模板管理）
  *   GYY_SMS_TEMPLATE_VAR     模板变量名（默认 'code'；按模板"您的验证码：**code**"约定）
  *
+ * 性能：
+ *   国阳云 HTTPS endpoint 单次 TLS 握手 ~3.8s，首次 5s+；通过 keep-alive Agent
+ *   复用 socket，后续请求降到 <1s。
+ *
  * 兼容旧 env 名（GYY_SMS_USERNAME / GYY_SMS_PASSWORD）：会自动当成 appkey/appsecret。
  *
  * 失败不阻塞用户：DB 里仍有验证码记录，dev 模式 0000 仍接受。
  */
 import { Injectable, Logger } from '@nestjs/common'
+import { Agent } from 'undici'
 
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name)
+
+  /**
+   * 全局复用的 HTTPS 连接池（undici Agent，被原生 fetch dispatcher 直接消费）。
+   * keepAliveTimeout=30s → 闲置 30s 后才关闭，覆盖单用户多次重发场景。
+   * 实测国阳云首次握手 3.8s + 等响应 1.4s = 5.2s；复用 socket 后单次降到 ~1s。
+   */
+  private readonly dispatcher = new Agent({
+    keepAliveTimeout: 30_000,
+    keepAliveMaxTimeout: 60_000,
+    connections: 16,
+    connect: { timeout: 5_000 },
+  })
 
   async sendVerifyCode(
     phone: string,
@@ -35,12 +52,19 @@ export class SmsService {
     scene: 'login' | 'register' | 'reset' = 'login',
   ): Promise<boolean> {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
+    const t0 = Date.now()
     try {
-      if (provider === 'guoyangyun') return await this.adapterGuoyangyun(phone, code, scene)
+      if (provider === 'guoyangyun') {
+        const ok = await this.adapterGuoyangyun(phone, code, scene)
+        this.logger.log(`[SMS][${provider}] phone=${phone} ok=${ok} elapsed=${Date.now() - t0}ms`)
+        return ok
+      }
       this.logger.log(`[SMS][${provider}] phone=${phone} code=${code} (no provider, dev mode)`)
       return true
     } catch (e: any) {
-      this.logger.error(`[SMS] send failed: ${e?.message || e}`)
+      this.logger.error(
+        `[SMS] phone=${phone} elapsed=${Date.now() - t0}ms failed: ${e?.message || e}`,
+      )
       return false
     }
   }
@@ -53,7 +77,6 @@ export class SmsService {
   ): Promise<boolean> {
     const url =
       process.env.GYY_SMS_API_URL || 'https://api.guoyangyun.com/api/sms/smsmtm.htm'
-    // appkey/appsecret 优先；旧 env username/password 兜底（万一你之前误填）
     const appkey = process.env.GYY_SMS_APPKEY || process.env.GYY_SMS_USERNAME || ''
     const appsecret = process.env.GYY_SMS_APPSECRET || process.env.GYY_SMS_PASSWORD || ''
     const smsSignId = process.env.GYY_SMS_SIGN || ''
@@ -68,7 +91,6 @@ export class SmsService {
     }
 
     // content 是 JSON 数组字符串，每个对象至少 {mobile, 模板变量名}
-    // 例：[{"mobile":"13800000000","code":"123456"}]
     const content = JSON.stringify([{ mobile: phone, [tplVar]: code }])
 
     const form = new URLSearchParams()
@@ -78,18 +100,60 @@ export class SmsService {
     form.set('templateId', templateId)
     form.set('content', content)
 
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: form.toString(),
-    })
-    const text = await r.text()
+    // 8s 超时兜底：上游 99% 在 1-5s 内回复；超过 8s 视为不可达
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 8000)
+
+    let text = ''
+    let httpStatus = 0
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: form.toString(),
+        signal: controller.signal,
+        // Node 原生 fetch 走 undici dispatcher 复用 socket，跳过 3.8s 的 TLS 握手
+        dispatcher: this.dispatcher,
+      } as any)
+      httpStatus = r.status
+      text = await r.text()
+    } catch (e: any) {
+      if (e?.name === 'AbortError') throw new Error('guoyangyun: 上游响应超时 (>8s)')
+      throw e
+    } finally {
+      clearTimeout(timer)
+    }
+
+    if (httpStatus !== 200) {
+      throw new Error(`guoyangyun: HTTP ${httpStatus} resp=${text.slice(0, 200)}`)
+    }
+
     this.logger.log(`[SMS][guoyangyun] resp: ${text.slice(0, 300)}`)
+
     let parsed: any = null
-    try { parsed = JSON.parse(text) } catch { /* not json */ }
-    if (parsed?.code === '0' || parsed?.code === 0) return true
-    throw new Error(
-      `guoyangyun: ${parsed?.msg || parsed?.code || text.slice(0, 200)}`,
-    )
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      throw new Error(`guoyangyun: 非 JSON 响应 ${text.slice(0, 200)}`)
+    }
+
+    // 国阳云返回：code='0' 全部受理；code='1507' 全部失败；其他 code 也可能附 failList。
+    // 即便顶层 code='0'，如果当前手机号在 failList 中，也认定失败。
+    const codeStr = String(parsed?.code ?? '')
+    const failList: any[] = Array.isArray(parsed?.failList) ? parsed.failList : []
+    const phoneFailed = failList.find((it) => String(it?.mobile || '') === phone)
+
+    if (codeStr === '0' && !phoneFailed) {
+      // 真的成功：可能含 successList，记录一下
+      const sl = Array.isArray(parsed?.successList) ? parsed.successList : []
+      if (sl.length) this.logger.log(`[SMS][guoyangyun] success sid=${sl[0]?.sid || ''}`)
+      return true
+    }
+
+    // 失败：抽取最详细的错误消息抛出
+    const detail = phoneFailed
+      ? `${phoneFailed?.msg || phoneFailed?.code} (${phone})`
+      : parsed?.msg || codeStr
+    throw new Error(`guoyangyun: ${detail || text.slice(0, 200)}`)
   }
 }
