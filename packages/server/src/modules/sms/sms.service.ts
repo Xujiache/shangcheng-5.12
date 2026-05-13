@@ -17,7 +17,14 @@
  *   GYY_SMS_APPSECRET        appsecret
  *   GYY_SMS_SIGN             签名 ID（控制台 → 签名管理）
  *   GYY_SMS_TEMPLATE_LOGIN   登录验证码模板 ID（控制台 → 模板管理）
- *   GYY_SMS_TEMPLATE_VAR     模板变量名（默认 'code'；按模板"您的验证码：**code**"约定）
+ *   GYY_SMS_TEMPLATE_VAR     模板变量名 —— 必须和模板正文里 **xxx** 写法完全一致，
+ *                            含 `**` 包围符。例如模板正文 `您的验证码是 **验证码**`
+ *                            对应 GYY_SMS_TEMPLATE_VAR=**验证码**。
+ *                            如果填了不带星号的（如"验证码"或"code"），代码会自动
+ *                            补全成 `**xxx**`，但仍建议直接写带星号的形式。
+ *
+ * ⚠️ 国阳云的 API 收到任何 content 都会先返回 code:0「成功」，**变量名错了不会立刻报错**，
+ *    要去他们后台「发送记录」才能看到「失败：变量不匹配 / 模板内容不符」之类的最终状态。
  *
  * 性能：
  *   国阳云 HTTPS endpoint 单次 TLS 握手 ~3.8s，首次 5s+；通过 keep-alive Agent
@@ -89,7 +96,10 @@ export class SmsService {
     const appsecret = process.env.GYY_SMS_APPSECRET || process.env.GYY_SMS_PASSWORD || ''
     const smsSignId = process.env.GYY_SMS_SIGN || ''
     const templateId = process.env.GYY_SMS_TEMPLATE_LOGIN || ''
-    const tplVar = process.env.GYY_SMS_TEMPLATE_VAR || 'code'
+    // 国阳云模板变量按 **xxx** 格式占位，content 里 JSON key 必须完全一致带星号
+    // 没星号的兜底自动补全，避免一次配置错误整个登录链路报废
+    const rawVar = process.env.GYY_SMS_TEMPLATE_VAR || '**code**'
+    const tplVar = rawVar.startsWith('**') && rawVar.endsWith('**') ? rawVar : `**${rawVar}**`
 
     if (!appkey || !appsecret || !smsSignId || !templateId) {
       this.logger.warn(
