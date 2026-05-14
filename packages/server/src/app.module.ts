@@ -18,33 +18,28 @@ import { AppReleaseModule } from './modules/app-release/app-release.module'
 import { JwtAuthGuard } from './common/guards/jwt.guard'
 
 /**
- * 多档限流（修复 P1-25）
+ * 单桶限流（v2 修复）
  *
- * 之前只有一个全局 60/min 桶，登录爆破 / SMS 轰炸 / 支付回调风暴都用同一档，
- * 攻击者可以用 59 次/分钟的合法节奏不停爆破登录而不触发限流。
+ * 之前用 5 桶配置（default/auth/sms/upload/payment-notify），但 @nestjs/throttler v6
+ * 的实际行为是「每个请求评估所有桶」—— 任何端点都会被 sms(3/min) 这种严桶夹击 → 误杀，
+ * 例如管理员登录会因为 sms 桶 3/min 上限被卡死返回 429 ThrottlerException。
  *
- * 现按场景拆 4 档：
- *   - default       60 / 60s  常规读 API 兜底
- *   - auth          10 / 60s  登录 / refresh / admin-login —— 防爆破
- *   - sms            3 / 60s  发短信验证码 —— 防短信轰炸（同 IP 1 分钟最多 3 次）
- *   - payment-notify 200 / 60s 微信回调专用 —— 微信会高频重试，给宽松桶避免误杀
+ * 修复策略：只留一个 default 桶（120/min），需要更严的端点用
+ *   @Throttle({ default: { limit: X, ttl: 60_000 } })
+ * 在 handler 上覆盖（这是 throttler v6 唯一可靠的 per-handler 覆盖姿势）。
  *
- * 每个 controller 用 @Throttle({ <name>: { limit, ttl } }) 显式覆盖。
- * 未显式声明的 endpoint 走 `default` 桶。
+ * 当前端点限速：
+ *   - 默认所有端点                  120 / 60s
+ *   - /auth/admin-login + 登录类     10 / 60s   防爆破
+ *   - /auth/sms-code                  3 / 60s   防短信轰炸
+ *   - /files/upload                  60 / 60s   商品编辑批量上传需要
+ *   - /payments/wechat/notify        200 / 60s 微信回调高频重试
  */
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'] }),
     ThrottlerModule.forRoot([
-      // default 120/min:商品编辑(10 主图 + 20 详情图 + 元数据查询)一波 30+ 调用很常见,
-      // 原来的 60/min 在编辑器场景下会撞 ThrottlerException;120 仍然能挡住业务滥用。
       { name: 'default', ttl: 60_000, limit: 120 },
-      { name: 'auth', ttl: 60_000, limit: 10 },
-      { name: 'sms', ttl: 60_000, limit: 3 },
-      // upload 60/min:文件上传按文件大小防滥用(由 multer limits 控制),
-      // 不走业务 default 桶,避免上传图片把同账号的业务请求也卡住。
-      { name: 'upload', ttl: 60_000, limit: 60 },
-      { name: 'payment-notify', ttl: 60_000, limit: 200 },
     ]),
     ScheduleModule.forRoot(),
     PrismaModule,

@@ -46,7 +46,7 @@ export class PaymentController {
   // P1-25：微信支付回调走 'payment-notify' 桶（200/min/IP），
   // 微信高峰期会高频重试，桶要宽松；同时拒绝 default 桶的 60/min 误杀
   @Public()
-  @Throttle({ 'payment-notify': { limit: 200, ttl: 60_000 } })
+  @Throttle({ default: { limit: 200, ttl: 60_000 } })
   @Post('wechat/notify')
   async wechatNotify(
     @Headers() headers: Record<string, string>,

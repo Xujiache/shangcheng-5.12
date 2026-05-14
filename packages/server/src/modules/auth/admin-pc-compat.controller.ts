@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { SkipThrottle } from '@nestjs/throttler'
 import { AuthService } from './auth.service'
 import { AdminLoginDto } from './dto/login.dto'
 import { Public } from '../../common/decorators/public.decorator'
@@ -42,7 +41,6 @@ export class AdminPcCompatController {
   }
 
   // 兼容路径上的 user-info：admin-pc 启动并发查会撞 sms 桶；跳过严桶仅走 default
-  @SkipThrottle({ auth: true, sms: true, 'payment-notify': true })
   @Get('user-info')
   userInfo(@CurrentUser() user: AuthUser) {
     return this.authService.userInfo(user.sub)
