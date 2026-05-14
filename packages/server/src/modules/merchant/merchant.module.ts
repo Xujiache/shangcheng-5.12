@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { MerchantController } from './merchant.controller'
 import { MerchantService } from './merchant.service'
+import { OrderShareService } from './order-share.service'
 import { ChatModule } from '../chat/chat.module'
 
 /**
@@ -14,7 +15,8 @@ import { ChatModule } from '../chat/chat.module'
 @Module({
   imports: [ChatModule],
   controllers: [MerchantController],
-  providers: [MerchantService],
-  exports: [MerchantService],
+  providers: [MerchantService, OrderShareService],
+  // OrderShareService 也 export 给 UserMpModule 的 @Public 公开访问路由使用
+  exports: [MerchantService, OrderShareService],
 })
 export class MerchantModule {}

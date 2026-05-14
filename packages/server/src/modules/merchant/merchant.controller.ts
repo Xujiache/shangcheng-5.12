@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { MerchantService } from './merchant.service'
+import { OrderShareService, ShareField } from './order-share.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
@@ -21,7 +22,10 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 @Roles('merchant', 'factory', 'store', 'super-admin')
 @Controller('m')
 export class MerchantController {
-  constructor(private readonly svc: MerchantService) {}
+  constructor(
+    private readonly svc: MerchantService,
+    private readonly orderShare: OrderShareService,
+  ) {}
 
   // ============ Dashboard ============
   @Get('dashboard') async dashboard(@CurrentUser() u: AuthUser) {
@@ -156,6 +160,46 @@ export class MerchantController {
   }
   @Post('orders/parse-address') parseAddress(@Body('text') text: string) {
     return this.svc.parseAddress(text)
+  }
+
+  // ============ 订单分享(商家→客户) ============
+  /**
+   * 创建/重建订单分享链接
+   * Body: { visibleFields:['basics','customer','pricing','items','extra'], expiresInDays:30, intro?:string }
+   * 返回: { shareCode, shareUrl, expiresAt, visibleFields, intro }
+   */
+  @Post('orders/:id/share') async createOrderShare(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: { visibleFields: ShareField[]; expiresInDays?: number; intro?: string },
+  ) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.orderShare.createShare({
+      orderId: id,
+      merchantId: mid,
+      callerSub: u.sub,
+      visibleFields: dto.visibleFields || [],
+      expiresInDays: dto.expiresInDays,
+      intro: dto.intro,
+    })
+  }
+
+  /** 商家查询该订单当前生效的分享(回显编辑表单用) */
+  @Get('orders/:id/share/current') async currentOrderShare(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+  ) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.orderShare.getCurrentByOrder(id, mid)
+  }
+
+  /** 商家提前撤销分享(链接立即失效) */
+  @Post('orders/:id/share/revoke') async revokeOrderShare(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+  ) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.orderShare.revokeByOrder(id, mid)
   }
 
   // ============ 售后 ============

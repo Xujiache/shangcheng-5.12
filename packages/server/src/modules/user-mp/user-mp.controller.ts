@@ -2,13 +2,28 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@
 import { ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import { UserMpService } from './user-mp.service'
+import { OrderShareService } from '../merchant/order-share.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { Public } from '../../common/decorators/public.decorator'
 
 @ApiTags('用户端 user-mp')
 @Controller('u')
 export class UserMpController {
-  constructor(private readonly svc: UserMpService) {}
+  constructor(
+    private readonly svc: UserMpService,
+    private readonly orderShare: OrderShareService,
+  ) {}
+
+  // ============ 订单分享公开访问(无需登录) ============
+  /**
+   * 客户/任何持链接者按 shareCode 查看商家分享出来的订单详情
+   * 严格按商家选择的 visibleFields 过滤返回字段;隐藏字段不在 JSON 中,
+   * 防止前端 devtools 反向取到敏感信息(电话 / 价格 / 备注)。
+   * 过期或撤销返回业务错误。
+   */
+  @Public() @Get('share/orders/:code') getSharedOrder(@Param('code') code: string) {
+    return this.orderShare.getPublicByCode(code)
+  }
 
   // 商品
   @Public() @Get('products') listProducts(@Query() q: any) {
