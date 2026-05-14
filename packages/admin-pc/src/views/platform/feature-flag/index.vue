@@ -12,13 +12,33 @@
       </div>
     </div>
 
-    <!-- 受众 + 灰度 -->
+    <!-- 受众 + 灰度（单条编辑：select 选 key → 加载该 key 的灰度 → 编辑保存） -->
     <ElCard shadow="never" class="pf-card">
       <template #header><div class="pf-card__title">作用对象与灰度</div></template>
       <ElForm label-position="top">
         <div class="grid grid-cols-2 gap-4">
+          <ElFormItem label="选择要编辑的开关">
+            <ElSelect
+              v-model="currentGrayKey"
+              placeholder="选择 FeatureFlag key"
+              filterable
+              style="width: 100%"
+              @change="onSelectKey"
+            >
+              <ElOption
+                v-for="g in grayList"
+                :key="g.key"
+                :label="`${g.label || g.key}  ·  ${g.grayPercent}%`"
+                :value="g.key"
+              />
+            </ElSelect>
+          </ElFormItem>
+          <ElFormItem label="状态总览">
+            <ElTag type="primary" size="large">已启用 {{ enabledCount }} / {{ totalCount }}</ElTag>
+            <ElTag class="ml-2" type="info" size="large">灰度记录 {{ grayList.length }} 条</ElTag>
+          </ElFormItem>
           <ElFormItem label="作用对象">
-            <ElRadioGroup v-model="gray.audience">
+            <ElRadioGroup v-model="currentGray.audience" :disabled="!currentGrayKey">
               <ElRadioButton value="all">全部商家</ElRadioButton>
               <ElRadioButton value="factory">仅厂家</ElRadioButton>
               <ElRadioButton value="store">仅门店</ElRadioButton>
@@ -26,18 +46,32 @@
             </ElRadioGroup>
           </ElFormItem>
           <ElFormItem label="灰度比例">
-            <ElInputNumber v-model="gray.percent" :min="0" :max="100" :step="10" style="width: 160px" />
+            <ElInputNumber
+              v-model="currentGray.grayPercent"
+              :min="0"
+              :max="100"
+              :step="10"
+              :disabled="!currentGrayKey"
+              style="width: 160px"
+            />
             <span class="text-xs text-g-500 ml-2">% 命中</span>
           </ElFormItem>
-          <ElFormItem label="命中规则">
-            <ElRadioGroup v-model="gray.rule">
-              <ElRadioButton value="random">随机</ElRadioButton>
-              <ElRadioButton value="whitelist">白名单</ElRadioButton>
-              <ElRadioButton value="level">按等级</ElRadioButton>
-            </ElRadioGroup>
+          <ElFormItem label="白名单 merchantId">
+            <ElInput
+              :model-value="currentGray.grayWhitelist.join('\n')"
+              type="textarea"
+              :rows="3"
+              :disabled="!currentGrayKey"
+              placeholder="每行一个 merchantId，留空表示无白名单"
+              @update:model-value="onWhitelistInput"
+            />
           </ElFormItem>
-          <ElFormItem label="状态总览">
-            <ElTag type="primary" size="large">已启用 {{ enabledCount }} / {{ totalCount }}</ElTag>
+          <ElFormItem label="定时生效（可选）">
+            <ElInput
+              v-model="scheduledAtInput"
+              :disabled="!currentGrayKey"
+              placeholder="ISO 时间字符串，如 2026-06-01T00:00:00Z"
+            />
           </ElFormItem>
         </div>
       </ElForm>
@@ -126,7 +160,20 @@
   defineOptions({ name: 'PlatformFeatureFlag' })
 
   const flags = ref<FeatureFlag[]>([])
-  const gray = ref<GrayscaleConfig>({ audience: 'all', percent: 30, rule: 'random' })
+  // 灰度列表：后端 GET /p/feature-flags/gray 返回数组，每条对应一个 key 的灰度
+  const grayList = ref<GrayscaleConfig[]>([])
+  const currentGrayKey = ref<string>('')
+  // 编辑中的灰度对象（绑定到表单）。currentGrayKey 为空时为占位空对象，
+  // 表单 :disabled 防止误操作。
+  const EMPTY_GRAY: GrayscaleConfig = {
+    key: '',
+    audience: 'all',
+    grayPercent: 100,
+    grayWhitelist: [],
+    scheduledAt: null
+  }
+  const currentGray = reactive<GrayscaleConfig>({ ...EMPTY_GRAY })
+  const scheduledAtInput = ref<string>('')
   const togglingKeys = reactive(new Set<string>())
 
   function groupOf(g: FeatureFlag['group']) {
@@ -162,9 +209,50 @@
     }
   }
 
+  function onSelectKey(key: string) {
+    const found = grayList.value.find((g) => g.key === key)
+    if (!found) {
+      Object.assign(currentGray, EMPTY_GRAY)
+      scheduledAtInput.value = ''
+      return
+    }
+    Object.assign(currentGray, {
+      key: found.key,
+      label: found.label,
+      audience: found.audience || 'all',
+      grayPercent: typeof found.grayPercent === 'number' ? found.grayPercent : 100,
+      grayWhitelist: Array.isArray(found.grayWhitelist) ? [...found.grayWhitelist] : [],
+      scheduledAt: found.scheduledAt ?? null
+    })
+    scheduledAtInput.value = found.scheduledAt
+      ? new Date(found.scheduledAt).toISOString()
+      : ''
+  }
+
+  function onWhitelistInput(v: string | number) {
+    currentGray.grayWhitelist = String(v)
+      .split('\n')
+      .map((x) => x.trim())
+      .filter(Boolean)
+  }
+
   async function onSave() {
-    await saveGrayscale(gray.value)
-    ElMessage.success(`配置已保存：启用 ${enabledCount.value} 项 · 灰度 ${gray.value.percent}%`)
+    if (!currentGrayKey.value || !currentGray.key) {
+      ElMessage.warning('请先选择要编辑的开关 key')
+      return
+    }
+    const cfg: GrayscaleConfig = {
+      key: currentGray.key,
+      audience: currentGray.audience,
+      grayPercent: currentGray.grayPercent,
+      grayWhitelist: currentGray.grayWhitelist,
+      scheduledAt: scheduledAtInput.value ? scheduledAtInput.value : null
+    }
+    await saveGrayscale(cfg)
+    // 保存后同步本地列表，避免再次切换时数据回滚
+    const idx = grayList.value.findIndex((g) => g.key === cfg.key)
+    if (idx >= 0) grayList.value[idx] = { ...grayList.value[idx], ...cfg }
+    ElMessage.success(`已保存：${cfg.key} · 灰度 ${cfg.grayPercent}%`)
   }
 
   async function onReset() {
@@ -175,7 +263,12 @@
 
   async function load() {
     flags.value = await fetchFeatureFlags()
-    gray.value = await fetchGrayscale()
+    grayList.value = await fetchGrayscale()
+    // 默认选中第一条灰度记录便于即时编辑
+    if (grayList.value.length && !currentGrayKey.value) {
+      currentGrayKey.value = grayList.value[0].key
+      onSelectKey(currentGrayKey.value)
+    }
   }
 
   onMounted(load)

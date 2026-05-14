@@ -63,7 +63,8 @@ export interface PlatformMerchantsParams {
  * 后端返回 buildPage 分页对象时统一 unwrap 成数组。
  */
 export async function fetchPlatformMerchants(params: PlatformMerchantsParams = {}): Promise<Merchant[]> {
-  const query: Record<string, unknown> = { pageSize: 200 }
+  // 后端 parsePage 将 pageSize 上限钳制在 100；这里同步使用 100，避免"以为拿到 200 条实际只有 100"的误解
+  const query: Record<string, unknown> = { pageSize: 100 }
   if (params.keyword) query.keyword = params.keyword
   switch (params.tab) {
     case 'factory':
@@ -100,7 +101,7 @@ export async function fetchPlatformOrders(): Promise<Order[]> {
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/orders',
-      params: { pageSize: 200 }
+      params: { pageSize: 100 }
     })
     return unwrapPage<Order>(resp)
   } catch {
@@ -127,7 +128,7 @@ export async function fetchMerchantAudits(): Promise<Merchant[]> {
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/audit/merchants',
-      params: { pageSize: 200 }
+      params: { pageSize: 100 }
     })
     return unwrapPage<Merchant>(resp)
   } catch {
@@ -167,7 +168,7 @@ export async function fetchProductAudits(): Promise<AuditProduct[]> {
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/audit/products',
-      params: { pageSize: 200 }
+      params: { pageSize: 100 }
     })
     return unwrapPage<AuditProduct>(resp)
   } catch {
@@ -213,9 +214,11 @@ export interface AdSlotVM {
  */
 export async function fetchAdSlots(): Promise<AdSlotVM[]> {
   try {
+    // 后端 parsePage 钳制 pageSize 上限 100；旧的 200/500 会被静默截断，
+    // 导致 creativeCount 漏算。这里同步使用 100，需更多素材时调用方应改用分页 / 多次请求。
     const [slotsResp, creativesResp] = await Promise.all([
-      request.get<any>({ url: '/api/v1/p/ads/slots', params: { pageSize: 200 } }),
-      request.get<any>({ url: '/api/v1/p/ads/creatives', params: { pageSize: 500 } })
+      request.get<any>({ url: '/api/v1/p/ads/slots', params: { pageSize: 100 } }),
+      request.get<any>({ url: '/api/v1/p/ads/creatives', params: { pageSize: 100 } })
     ])
     const safeSlots = unwrapPage<AdSlot>(slotsResp)
     const safeCreatives = unwrapPage<AdCreative>(creativesResp)
@@ -241,7 +244,7 @@ export async function fetchAdCreatives(slotId?: string): Promise<AdCreative[]> {
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/ads/creatives',
-      params: { pageSize: 500, ...(slotId ? { slotId } : {}) }
+      params: { pageSize: 100, ...(slotId ? { slotId } : {}) }
     })
     return unwrapPage<AdCreative>(resp)
   } catch {
@@ -277,7 +280,13 @@ export async function fetchPlatformPlaza(
 ): Promise<PlazaItem[] | PlazaPush[]> {
   if (tab === 'records') {
     try {
-      return await request.get<PlazaPush[]>({ url: '/api/v1/p/plaza/pushes' })
+      // 后端 `plazaPushes` 走 buildPage 返回 `{list, total, page, pageSize}`，
+      // 旧实现按裸数组消费会拿到 undefined。统一通过 unwrapPage 兼容两种形态。
+      const resp = await request.get<any>({
+        url: '/api/v1/p/plaza/pushes',
+        params: { pageSize: 100 }
+      })
+      return unwrapPage<PlazaPush>(resp)
     } catch {
       return []
     }
@@ -323,7 +332,7 @@ export function pushPlaza(payload: PushPayload) {
 
 export async function fetchPlatformMemberPlans(): Promise<MemberPlan[]> {
   try {
-    const resp = await request.get<any>({ url: '/api/v1/p/member-plans', params: { pageSize: 200 } })
+    const resp = await request.get<any>({ url: '/api/v1/p/member-plans', params: { pageSize: 100 } })
     return unwrapPage<MemberPlan>(resp)
   } catch {
     return []
@@ -369,7 +378,7 @@ export async function fetchMemberPayOrders(): Promise<PayOrderItem[]> {
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/member-pay-orders',
-      params: { pageSize: 200 },
+      params: { pageSize: 100 },
     })
     return unwrapPage<PayOrderItem>(resp)
   } catch {
@@ -416,7 +425,7 @@ export interface AdminRole {
 
 export async function fetchAdminRoles(): Promise<AdminRole[]> {
   try {
-    const resp = await request.get<any>({ url: '/api/v1/p/roles', params: { pageSize: 200 } })
+    const resp = await request.get<any>({ url: '/api/v1/p/roles', params: { pageSize: 100 } })
     return unwrapPage<AdminRole>(resp)
   } catch {
     return []
@@ -424,7 +433,7 @@ export async function fetchAdminRoles(): Promise<AdminRole[]> {
 }
 export async function fetchAdminUsers(): Promise<AdminUser[]> {
   try {
-    const resp = await request.get<any>({ url: '/api/v1/p/admins', params: { pageSize: 200 } })
+    const resp = await request.get<any>({ url: '/api/v1/p/admins', params: { pageSize: 100 } })
     return unwrapPage<AdminUser>(resp)
   } catch {
     return []
@@ -459,12 +468,32 @@ export function removeAdminUser(id: string) {
 }
 
 /* ============ 12. 系统设置 ============ */
+/**
+ * 系统设置类型
+ *
+ * 对齐后端 `platform.service.ts#systemSettings` 默认形态：
+ *   - payment.* 由 `{ enabled: boolean }` 对象承载（旧版误标为 boolean，会导致
+ *     `v-model="form.payment.wechat"` 写入裸 boolean 后台无法持久化 enabled 状态）。
+ *   - security.passwordPolicy 为 `{ minLength, requireUppercase }` 对象，
+ *     旧版枚举 'strict'|'normal'|'loose' 已无法表达后端形态，前端改为两个独立字段。
+ */
+export interface PaymentChannelConfig {
+  enabled: boolean
+}
+export interface PasswordPolicyConfig {
+  minLength: number
+  requireUppercase: boolean
+}
 export interface SystemSettings {
   site: { name: string; logo: string; icp: string }
-  payment: { wechat: boolean; alipay: boolean; balance: boolean }
+  payment: {
+    wechat: PaymentChannelConfig
+    alipay: PaymentChannelConfig
+    balance: PaymentChannelConfig
+  }
   logistics: { providers: string[]; defaultFreight: number }
   service: { phone: string; email: string; workTime: string }
-  security: { passwordPolicy: 'strict' | 'normal' | 'loose'; ipWhitelist: string[] }
+  security: { passwordPolicy: PasswordPolicyConfig; ipWhitelist: string[] }
   business: { registerLimit: number; commissionRate: number }
 }
 
@@ -519,7 +548,7 @@ export async function fetchAppReleases(platform?: AppPlatformKind): Promise<AppR
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/app-releases',
-      params: { pageSize: 200, ...(platform ? { platform } : {}) }
+      params: { pageSize: 100, ...(platform ? { platform } : {}) }
     })
     return unwrapPage<AppReleaseRow>(resp)
   } catch {
@@ -554,12 +583,16 @@ export async function uploadAppRelease(
   if (meta.changelog) fd.append('changelog', meta.changelog)
   if (meta.force) fd.append('force', 'true')
 
-  const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || ''
+  const env = (import.meta as any).env || {}
+  const baseUrl = env.VITE_API_BASE_URL || env.VITE_API_URL || ''
   const token = localStorage.getItem('accessToken') || ''
   return await new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', baseUrl + '/api/v1/p/app-releases')
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    if (token) {
+      const tokenHeader = /^Bearer\s+/i.test(token) ? token : `Bearer ${token}`
+      xhr.setRequestHeader('Authorization', tokenHeader)
+    }
     if (onProgress) {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
@@ -568,8 +601,9 @@ export async function uploadAppRelease(
     xhr.onload = () => {
       try {
         const r = JSON.parse(xhr.responseText)
-        if (r?.code === 0) resolve(r.data)
-        else reject(new Error(r?.message || `HTTP ${xhr.status}`))
+        // 兼容 NestJS 标准 code===0 与旧 code===200；msg / message 任一字段都视为错误提示
+        if (r?.code === 0 || r?.code === 200) resolve(r.data)
+        else reject(new Error(r?.msg || r?.message || `HTTP ${xhr.status}`))
       } catch (e: any) {
         reject(new Error(e?.message || 'upload failed'))
       }
@@ -580,10 +614,23 @@ export async function uploadAppRelease(
 }
 
 /* ============ 13. 功能开关 ============ */
+/**
+ * 灰度配置（与后端 `platform.service.ts#featureFlagGray` 形态对齐）
+ *
+ * 后端 GET /p/feature-flags/gray 返回数组，每条对应一个 FeatureFlag.key 的灰度
+ * 状态；POST 时通过 `key` 字段定位要更新哪个开关。
+ *
+ * 旧字段 `percent` / `rule` 仅是前端 UI 概念，后端实际只关心 `grayPercent` +
+ * `grayWhitelist` + `audience` + 可选 `scheduledAt`；这里把字段名对齐到后端，
+ * 避免保存时"前端发了 percent 后端读不到"的死循环。
+ */
 export interface GrayscaleConfig {
+  key: string
+  label?: string
   audience: 'all' | 'factory' | 'store' | 'specific'
-  percent: number
-  rule: 'random' | 'whitelist' | 'level'
+  grayPercent: number
+  grayWhitelist: string[]
+  scheduledAt?: string | null
 }
 
 export async function fetchFeatureFlags(): Promise<FeatureFlag[]> {
@@ -608,9 +655,29 @@ export function toggleFeatureFlag(key: string, enabled: boolean) {
     data: { enabled }
   })
 }
-export function fetchGrayscale() {
-  return request.get<GrayscaleConfig>({ url: '/api/v1/p/feature-flags/gray' })
+/**
+ * 拉取所有 FeatureFlag 的灰度状态（数组）
+ *
+ * 后端返回每个 key 的灰度记录；前端按 key 查找单条编辑。接口失败时返回空数组，
+ * 让页面进入空态而非崩溃。
+ */
+export async function fetchGrayscale(): Promise<GrayscaleConfig[]> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/feature-flags/gray' })
+    if (Array.isArray(resp)) return resp as GrayscaleConfig[]
+    if (resp && typeof resp === 'object' && resp.key) return [resp as GrayscaleConfig]
+    return []
+  } catch {
+    return []
+  }
 }
+/**
+ * 保存单条灰度配置
+ *
+ * 后端 `setFeatureFlagGray` 通过 `dto.key` 定位 FeatureFlag，再写入 grayPercent /
+ * grayWhitelist / audience / scheduledAt。调用方必须传完整 cfg（包含 key），否则
+ * update 会找不到目标行而 500。
+ */
 export function saveGrayscale(cfg: GrayscaleConfig) {
   return request.post<{ ok: boolean }>({
     url: '/api/v1/p/feature-flags/gray',

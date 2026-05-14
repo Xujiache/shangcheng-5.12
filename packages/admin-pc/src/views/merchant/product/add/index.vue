@@ -304,7 +304,9 @@
   import { useShopPriceVisibility } from '@/composables/useShopPriceVisibility'
   import {
     fetchMerchantCategories,
-    fetchPlatformCategoriesForMerchant
+    fetchPlatformCategoriesForMerchant,
+    createMerchantProduct,
+    updateMerchantProduct
   } from '@/api/merchant-business'
   import type { Category } from '@jiujiu/shared/types'
 
@@ -578,6 +580,79 @@
 
   /* ===== 提交 ===== */
 
+  /**
+   * 把当前表单整理成后端 `ProductCreateDto` 形态：
+   *
+   * - categoryId 取级联器选中链路的叶子（最末一项）
+   * - priceDisplayRules 来源于店铺级 `useShopPriceVisibility`（前端店铺统一规则）
+   * - skus 把 SkuRow.specs 数组配合 form.specs[].name 还原成 {规格名:规格值} record
+   * - pricingMode / 按尺寸定价相关字段作为附加业务字段透传（后端 Prisma 模型
+   *   支持任意 JSON 列时直接落地，否则被忽略不报错）
+   */
+  function buildProductPayload(extra: Record<string, unknown> = {}) {
+    const leafCategoryId =
+      Array.isArray(form.categoryId) && form.categoryId.length
+        ? form.categoryId[form.categoryId.length - 1]
+        : ''
+    const specNames = form.specs.map((g) => g.name)
+    const skus = skuMatrix.value.map((row) => {
+      const specRecord: Record<string, string> = {}
+      specNames.forEach((name, i) => {
+        if (name) specRecord[name] = row.specs[i] ?? ''
+      })
+      return {
+        specs: specRecord,
+        specsLabel: row.specs.join(' / '),
+        priceWholesale: row.priceWholesale,
+        priceRetail: row.priceRetail,
+        priceMember: row.priceMember,
+        stock: row.stock,
+        active: row.active
+      }
+    })
+    const retailPrices = skus.map((s) => s.priceRetail).filter((n) => typeof n === 'number')
+    const wholesalePrices = skus.map((s) => s.priceWholesale).filter((n) => typeof n === 'number' && n > 0)
+    const memberPrices = skus.map((s) => s.priceMember).filter((n) => typeof n === 'number' && n > 0)
+    return {
+      name: form.name,
+      categoryId: leafCategoryId,
+      description: form.description,
+      images: [...form.images],
+      tags: [...form.tags],
+      shipping: ['factory'] as ('factory' | 'local' | 'pickup')[],
+      priceDisplayRules: {
+        guestVisible: shopRule.value.guestAllow,
+        customerTier: shopRule.value.customerPrice === 'retail' ? 'retail' : 'hidden',
+        storeTier: shopRule.value.agencyPrice === 'wholesale' ? 'wholesale' : 'retail',
+        memberTier: shopRule.value.memberPrice === 'member' ? 'member' : 'retail'
+      },
+      skus,
+      // 价格区间（取 SKU 聚合后的 min/max 写入主表，方便列表页显示）
+      priceRetailMin: retailPrices.length ? Math.min(...retailPrices) : 0,
+      priceRetailMax: retailPrices.length ? Math.max(...retailPrices) : 0,
+      priceWholesaleMin: wholesalePrices.length ? Math.min(...wholesalePrices) : 0,
+      priceWholesaleMax: wholesalePrices.length ? Math.max(...wholesalePrices) : 0,
+      priceMemberMin: memberPrices.length ? Math.min(...memberPrices) : 0,
+      priceMemberMax: memberPrices.length ? Math.max(...memberPrices) : 0,
+      totalStock: skus.reduce((acc, s) => acc + (s.stock || 0), 0),
+      // 按尺寸定价等业务扩展字段（后端忽略未声明字段，不会 500）
+      pricingMode: form.pricingMode,
+      freeShipping: form.freeShipping,
+      ...(form.pricingMode === 'by-size'
+        ? {
+            pricePerSqm: form.pricePerSqm,
+            baseFee: form.baseFee,
+            sizeUnit: form.sizeUnit,
+            minLength: form.minLength,
+            minWidth: form.minWidth,
+            maxLength: form.maxLength,
+            maxWidth: form.maxWidth
+          }
+        : {}),
+      ...extra
+    }
+  }
+
   async function submit() {
     if (!formRef.value) return
     const valid = await formRef.value.validate().catch(() => false)
@@ -586,15 +661,38 @@
       return
     }
     submitting.value = true
-    setTimeout(() => {
-      submitting.value = false
-      ElMessage.success('已提交审核')
+    try {
+      const payload = buildProductPayload({ status: 'auditing' })
+      if (editingId.value) {
+        await updateMerchantProduct(editingId.value, payload)
+        ElMessage.success('已更新并提交审核')
+      } else {
+        await createMerchantProduct(payload)
+        ElMessage.success('已提交审核')
+      }
       router.push('/merchant/product/list')
-    }, 600)
+    } catch (e: any) {
+      ElMessage.error(e?.message || '提交失败，请稍后重试')
+    } finally {
+      submitting.value = false
+    }
   }
 
-  function saveDraft() {
-    ElMessage.success('草稿已保存')
+  async function saveDraft() {
+    submitting.value = true
+    try {
+      const payload = buildProductPayload({ status: 'draft' })
+      if (editingId.value) {
+        await updateMerchantProduct(editingId.value, payload)
+      } else {
+        await createMerchantProduct(payload)
+      }
+      ElMessage.success('草稿已保存')
+    } catch (e: any) {
+      ElMessage.error(e?.message || '草稿保存失败')
+    } finally {
+      submitting.value = false
+    }
   }
 
   onMounted(() => {

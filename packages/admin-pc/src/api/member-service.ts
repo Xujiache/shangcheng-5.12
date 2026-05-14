@@ -253,15 +253,26 @@ export function quotaLabelOf(k: QuotaKey): string {
 
 /* ============ 缴费记录 ============ */
 
-export function getPayments(filter?: {
+export async function getPayments(filter?: {
   merchantId?: string
   status?: PaymentRecord['status']
 }): Promise<PaymentRecord[]> {
-  // 平台端列表（带过滤参数）；后端忽略未识别参数即可
-  return request.get<PaymentRecord[]>({
-    url: '/api/v1/p/member-pay-orders',
-    params: filter || {}
-  })
+  // 平台端列表（带过滤参数）；后端 buildPage 返回 `{list,total,page,pageSize}`，
+  // 这里统一 unwrap 成数组，兼容个别旧实现直接返回数组的情况。
+  try {
+    const res = await request.get<any>({
+      url: '/api/v1/p/member-pay-orders',
+      params: filter || {}
+    })
+    if (!res) return []
+    if (Array.isArray(res)) return res as PaymentRecord[]
+    if (Array.isArray(res.list)) return res.list as PaymentRecord[]
+    if (Array.isArray(res.items)) return res.items as PaymentRecord[]
+    if (Array.isArray(res.records)) return res.records as PaymentRecord[]
+    return []
+  } catch {
+    return []
+  }
 }
 
 export function updatePaymentStatus(

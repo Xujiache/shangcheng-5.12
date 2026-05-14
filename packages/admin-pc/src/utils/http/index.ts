@@ -38,12 +38,21 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   showSuccessMessage?: boolean
 }
 
-const { VITE_API_URL, VITE_WITH_CREDENTIALS } = import.meta.env
+const { VITE_API_URL, VITE_API_BASE_URL, VITE_WITH_CREDENTIALS } = import.meta.env as Record<string, string | undefined>
+
+/**
+ * baseURL 解析
+ *
+ * 优先取 `VITE_API_BASE_URL`（与 user-mp / merchant-app / platform-app 全局对齐
+ * 的统一命名），回退到旧变量 `VITE_API_URL`，最后退化为相对路径 ""。
+ * 此举允许在不破坏老 .env 的前提下逐步切换到统一命名。
+ */
+const baseURL = VITE_API_BASE_URL || VITE_API_URL || ''
 
 /** Axios实例 */
 const axiosInstance = axios.create({
   timeout: REQUEST_TIMEOUT,
-  baseURL: VITE_API_URL,
+  baseURL,
   withCredentials: VITE_WITH_CREDENTIALS === 'true',
   validateStatus: (status) => status >= 200 && status < 300,
   transformResponse: [
@@ -65,7 +74,15 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (request: InternalAxiosRequestConfig) => {
     const { accessToken } = useUserStore()
-    if (accessToken) request.headers.set('Authorization', accessToken)
+    if (accessToken) {
+      // 统一加 Bearer 前缀（后端 jwt.guard 同时兼容裸 token 和 Bearer 形式；
+      // 这里规范化以便日志可读、与其他端 user-mp/merchant-app 一致）。
+      // 防御性检查：localStorage 中可能存的是已带前缀的旧值，避免重复拼接。
+      const tokenHeader = /^Bearer\s+/i.test(accessToken)
+        ? accessToken
+        : `Bearer ${accessToken}`
+      request.headers.set('Authorization', tokenHeader)
+    }
 
     if (request.data && !(request.data instanceof FormData) && !request.headers['Content-Type']) {
       request.headers.set('Content-Type', 'application/json')
@@ -80,7 +97,13 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-/** 响应拦截器 - 兼容 code=0 (uni-app/NestJS) 与 code=200 (旧约定) */
+/**
+ * 响应拦截器 - 兼容 code=0 (uni-app/NestJS) 与 code=200 (旧约定)
+ *
+ * TODO(长期): 全栈应统一收敛到 code===0 一种成功语义（NestJS BaseResponse 标准），
+ * 待所有遗留的 admin-pc 旧 mock / 第三方接口都迁移完成后，移除 200 兼容分支。
+ * 当前阶段保持双兼容以避免在迁移中误判接口失败。
+ */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse<BaseResponse>) => {
     const { code, msg, message } = response.data as BaseResponse & { message?: string }

@@ -44,7 +44,7 @@
             <div class="font-medium">微信支付</div>
             <div class="text-xs text-g-500">移动端 · 公众号 · 小程序</div>
           </div>
-          <ElSwitch v-model="s.payment.wechat" />
+          <ElSwitch v-model="s.payment.wechat.enabled" />
         </div>
         <div class="pf-toggle">
           <div class="pf-toggle__icon" style="background: #1296DB18; color: #1296DB"><ArtSvgIcon icon="ri:alipay-line" /></div>
@@ -52,7 +52,7 @@
             <div class="font-medium">支付宝</div>
             <div class="text-xs text-g-500">移动端 · 网页 · 小程序</div>
           </div>
-          <ElSwitch v-model="s.payment.alipay" />
+          <ElSwitch v-model="s.payment.alipay.enabled" />
         </div>
         <div class="pf-toggle">
           <div class="pf-toggle__icon" style="background: #FF7A4518; color: #FF7A45"><ArtSvgIcon icon="ri:wallet-line" /></div>
@@ -60,7 +60,7 @@
             <div class="font-medium">余额支付</div>
             <div class="text-xs text-g-500">商户预存款</div>
           </div>
-          <ElSwitch v-model="s.payment.balance" />
+          <ElSwitch v-model="s.payment.balance.enabled" />
         </div>
       </div>
     </ElCard>
@@ -107,12 +107,18 @@
         <div class="pf-card__title"><span><ArtSvgIcon icon="ri:shield-keyhole-line" /> 安全策略</span></div>
       </template>
       <ElForm :model="s.security" label-width="120px">
-        <ElFormItem label="密码策略">
-          <ElSelect v-model="s.security.passwordPolicy" style="width: 240px">
-            <ElOption value="strict" label="严格（8 位 + 大小写 + 数字 + 特殊符号）" />
-            <ElOption value="normal" label="标准（8 位 + 大小写 + 数字）" />
-            <ElOption value="loose" label="宽松（6 位以上）" />
-          </ElSelect>
+        <ElFormItem label="密码最小长度">
+          <ElInputNumber
+            v-model="s.security.passwordPolicy.minLength"
+            :min="6"
+            :max="32"
+            :step="1"
+            style="width: 160px"
+          />
+          <span class="text-xs text-g-500 ml-2">位</span>
+        </ElFormItem>
+        <ElFormItem label="必须包含大写字母">
+          <ElSwitch v-model="s.security.passwordPolicy.requireUppercase" />
         </ElFormItem>
         <ElFormItem label="IP 白名单">
           <ElInput
@@ -137,6 +143,48 @@
   const s = ref<SystemSettings>()
   const saving = ref(false)
 
+  /**
+   * 兜底补全所有嵌套字段，避免后端缺字段时 v-model="s.payment.wechat.enabled"
+   * 访问 undefined 报 TypeError。所有 payment.* 必须是 {enabled} 对象，
+   * security.passwordPolicy 必须是 {minLength, requireUppercase} 对象。
+   */
+  function fillDefaults(raw: any): SystemSettings {
+    return {
+      site: {
+        name: raw?.site?.name ?? '',
+        logo: raw?.site?.logo ?? '',
+        icp: raw?.site?.icp ?? ''
+      },
+      payment: {
+        wechat: { enabled: !!raw?.payment?.wechat?.enabled },
+        alipay: { enabled: !!raw?.payment?.alipay?.enabled },
+        balance: { enabled: !!raw?.payment?.balance?.enabled }
+      },
+      logistics: {
+        providers: Array.isArray(raw?.logistics?.providers) ? raw.logistics.providers : [],
+        defaultFreight: typeof raw?.logistics?.defaultFreight === 'number' ? raw.logistics.defaultFreight : 10
+      },
+      service: {
+        phone: raw?.service?.phone ?? '',
+        email: raw?.service?.email ?? '',
+        workTime: raw?.service?.workTime ?? ''
+      },
+      security: {
+        passwordPolicy: {
+          minLength: typeof raw?.security?.passwordPolicy?.minLength === 'number'
+            ? raw.security.passwordPolicy.minLength
+            : 8,
+          requireUppercase: raw?.security?.passwordPolicy?.requireUppercase !== false
+        },
+        ipWhitelist: Array.isArray(raw?.security?.ipWhitelist) ? raw.security.ipWhitelist : []
+      },
+      business: {
+        registerLimit: typeof raw?.business?.registerLimit === 'number' ? raw.business.registerLimit : 0,
+        commissionRate: typeof raw?.business?.commissionRate === 'number' ? raw.business.commissionRate : 0
+      }
+    }
+  }
+
   async function onSave() {
     if (!s.value) return
     saving.value = true
@@ -149,7 +197,8 @@
   }
 
   async function load() {
-    s.value = await fetchSystemSettings()
+    const raw = await fetchSystemSettings()
+    s.value = fillDefaults(raw)
   }
 
   onMounted(load)

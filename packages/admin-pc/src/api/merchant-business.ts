@@ -44,10 +44,18 @@ export type { Subscription, UsageQuota, PaymentRecord, MembershipNotice, QuotaKe
 
 /** 后端分页响应解包 */
 interface PageResp<T> { list: T[]; total: number; page: number; pageSize: number; hasMore?: boolean }
-function unwrapList<T>(resp: PageResp<T> | T[] | undefined | null): T[] {
+/**
+ * 与 `platform-business.ts#unwrapPage` 行为对齐：
+ * 兼容 `{list}` / `{items}` / `{records}` / 裸数组 / 空值五种形态，
+ * 避免不同后端控制器返回字段名差异时静默返回空数组的"以为没数据"错觉。
+ */
+function unwrapList<T>(resp: any): T[] {
   if (!resp) return []
-  if (Array.isArray(resp)) return resp
-  return resp.list || []
+  if (Array.isArray(resp)) return resp as T[]
+  if (Array.isArray(resp.list)) return resp.list as T[]
+  if (Array.isArray(resp.items)) return resp.items as T[]
+  if (Array.isArray(resp.records)) return resp.records as T[]
+  return []
 }
 
 /* ========== Dashboard ========== */
@@ -78,7 +86,7 @@ export async function fetchMerchantProducts(params: ProductQuery = {}) {
     url: '/api/v1/m/products',
     params: { ...params, pageSize: 100 }
   })
-  return unwrapList(resp)
+  return unwrapList<Product>(resp)
 }
 
 export function updateProductStatus(ids: string[], status: Product['status']) {
@@ -97,6 +105,34 @@ export function removeProducts(ids: string[]) {
     .then((r) => ({ ok: r.ok, removed: r.affected ?? ids.length }))
 }
 
+/**
+ * 新建商品
+ *
+ * 后端 `POST /m/products` 入参对应 `ProductCreateDto` + 可选 `status`：
+ * - 默认 status='auditing'（提交审核），saveDraft 场景调用方应显式传 'draft'
+ * - skus 由前端组装为 `{specs, specsLabel, priceWholesale, priceRetail, priceMember, stock, active}` 数组
+ */
+export function createMerchantProduct(payload: any) {
+  return request.post<Product>({
+    url: '/api/v1/m/products',
+    data: payload
+  })
+}
+
+/**
+ * 更新商品
+ *
+ * 后端 `PUT /m/products/:id` 不会同步更新 SKU（merchant.service.updateProduct 显式
+ * 剔除 skus 字段），因此 SKU 编辑需要走独立接口（暂未实现，后端工程师跟进）。
+ * 目前 PUT 仅用来更新商品主体字段。
+ */
+export function updateMerchantProduct(id: string, payload: any) {
+  return request.put<Product>({
+    url: `/api/v1/m/products/${encodeURIComponent(id)}`,
+    data: payload
+  })
+}
+
 /* ========== 分类 ========== */
 
 /**
@@ -110,7 +146,7 @@ export async function fetchMerchantCategories(): Promise<Category[]> {
     const resp = await request.get<PageResp<Category> | Category[]>({
       url: '/api/v1/m/categories'
     })
-    return unwrapList(resp)
+    return unwrapList<Category>(resp)
   } catch {
     return []
   }
@@ -128,7 +164,7 @@ export async function fetchPlatformCategoriesForMerchant(): Promise<Category[]> 
       url: '/api/v1/m/categories',
       params: { type: 'platform' }
     })
-    return unwrapList(resp)
+    return unwrapList<Category>(resp)
   } catch {
     return []
   }
@@ -216,7 +252,7 @@ export async function fetchMerchantOrders(params: OrderQuery = {}) {
     url: '/api/v1/m/orders',
     params: { ...params, pageSize: 100 }
   })
-  return unwrapList(resp)
+  return unwrapList<Order>(resp)
 }
 
 export async function shipOrders(ids: string[]) {
@@ -235,7 +271,7 @@ export async function fetchAftersaleList() {
     url: '/api/v1/m/aftersales',
     params: { pageSize: 100 }
   })
-  return unwrapList(resp)
+  return unwrapList<Refund>(resp)
 }
 
 export function reviewRefund(refundId: string, action: 'agreed' | 'rejected', remark?: string) {
@@ -253,22 +289,31 @@ export interface CustomerTier {
   label: string
 }
 
-function isVip(u: User): boolean {
-  // VIP 标识由后端 status 字段承载（保留前端兜底判断）
-  return u.status === 'active' && (u as any).kind === 'member'
+/**
+ * VIP 判定
+ *
+ * 后端 `merchant.service.listCustomers` 把每个客户的"价格档位"通过 `priceTier`
+ * 字段返回（来自 SystemConfig 的商家级配置）。member / agency 都视为 VIP，
+ * 旧实现 `kind === 'member'` 永远为 false（映射时已丢弃 kind 字段，且后端
+ * 也没有 `kind=member` 这个值），属于死路径。
+ */
+function isVip(u: User & { priceTier?: string }): boolean {
+  const tier = u.priceTier
+  return tier === 'member' || tier === 'agency'
 }
 
 export async function fetchCustomers(tier: CustomerTier['key'] = 'all') {
   // 后端 customers 字段为 {id, avatar, nickname, phone, kind, priceTier, priceAuthorized}
   // 缺少 User 必填的 role/status/createdAt 字段，因此映射时补齐默认值
+  // 并保留 priceTier / kind / priceAuthorized 用于 VIP 判定与后续 UI 展示
   try {
     const resp = await request.get<PageResp<any>>({
       url: '/api/v1/m/customers',
       params: { pageSize: 100 }
     })
-    const raw = unwrapList(resp)
-    let list: User[] = raw.map(
-      (u: any): User => ({
+    const raw = unwrapList<any>(resp)
+    let list: (User & { priceTier?: string; kind?: string; priceAuthorized?: boolean })[] = raw.map(
+      (u: any) => ({
         id: u.id,
         nickname: u.nickname ?? '',
         avatar: u.avatar ?? '',
@@ -276,13 +321,16 @@ export async function fetchCustomers(tier: CustomerTier['key'] = 'all') {
         role: u.kind === 'promoter' ? 'promoter' : 'customer',
         status: 'active',
         createdAt: u.createdAt ?? new Date().toISOString(),
-        updatedAt: u.updatedAt ?? new Date().toISOString()
+        updatedAt: u.updatedAt ?? new Date().toISOString(),
+        priceTier: u.priceTier,
+        kind: u.kind,
+        priceAuthorized: u.priceAuthorized
       })
     )
     if (tier === 'vip') list = list.filter(isVip)
     else if (tier === 'normal') list = list.filter((u) => !isVip(u))
     else if (tier === 'blacklist') list = list.filter((u) => u.status === 'disabled')
-    return list
+    return list as User[]
   } catch {
     return []
   }
@@ -315,7 +363,7 @@ export async function fetchMarketingActivities(): Promise<MarketingActivity[]> {
       url: '/api/v1/m/marketing/activities',
       params: { pageSize: 100 }
     })
-    return unwrapList(resp)
+    return unwrapList<MarketingActivity>(resp)
   } catch {
     return []
   }
@@ -330,7 +378,7 @@ export async function fetchPlazaCards() {
       url: '/api/v1/m/plaza/products',
       params: { pageSize: 60 }
     })
-    return unwrapList(resp)
+    return unwrapList<PlazaProductCard>(resp)
   } catch {
     return []
   }
@@ -429,7 +477,7 @@ export async function fetchStores() {
     url: '/api/v1/m/stores',
     params: { pageSize: 100 }
   })
-  return unwrapList(resp)
+  return unwrapList<StoreItem>(resp)
 }
 
 export async function saveStore(s: StoreItem) {
@@ -469,7 +517,7 @@ export async function fetchStaff() {
     url: '/api/v1/m/staffs',
     params: { pageSize: 100 }
   })
-  return unwrapList(resp)
+  return unwrapList<StaffItem>(resp)
 }
 
 export async function saveStaff(s: StaffItem) {
@@ -669,7 +717,7 @@ export async function fetchCommissionHistory(): Promise<Commission[]> {
       url: '/api/v1/m/commission/history',
       params: { pageSize: 100 }
     })
-    return unwrapList(resp)
+    return unwrapList<Commission>(resp)
   } catch {
     return []
   }
@@ -717,7 +765,7 @@ export async function fetchWithdraws() {
     url: '/api/v1/m/withdraws',
     params: { pageSize: 100 }
   })
-  return unwrapList(resp)
+  return unwrapList<Withdraw>(resp)
 }
 
 export interface WithdrawApply {

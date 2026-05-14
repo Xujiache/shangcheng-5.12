@@ -14,9 +14,23 @@ import tailwindcss from '@tailwindcss/vite'
 export default ({ mode }: { mode: string }) => {
   const root = process.cwd()
   const env = loadEnv(mode, root)
-  const { VITE_VERSION, VITE_PORT, VITE_BASE_URL, VITE_API_URL, VITE_API_PROXY_URL } = env
+  const {
+    VITE_VERSION,
+    VITE_PORT,
+    VITE_BASE_URL,
+    VITE_API_URL,
+    VITE_API_BASE_URL,
+    VITE_API_PROXY_URL,
+    VITE_API_PROXY_TARGET
+  } = env
 
-  console.log(`🚀 API_URL = ${VITE_API_URL}`)
+  // 兼容两套环境变量命名（VITE_API_BASE_URL/VITE_API_PROXY_TARGET 为统一约定，
+  // VITE_API_URL/VITE_API_PROXY_URL 为本包历史命名）。新值优先，老值回退。
+  const resolvedApiUrl = VITE_API_BASE_URL || VITE_API_URL || '/'
+  const proxyTarget = VITE_API_PROXY_TARGET || VITE_API_PROXY_URL || 'http://localhost:3001'
+
+  console.log(`🚀 API_URL = ${resolvedApiUrl}`)
+  console.log(`🚀 PROXY_TARGET = ${proxyTarget}`)
   console.log(`🚀 VERSION = ${VITE_VERSION}`)
 
   return defineConfig({
@@ -28,7 +42,7 @@ export default ({ mode }: { mode: string }) => {
       port: Number(VITE_PORT),
       proxy: {
         '/api': {
-          target: VITE_API_PROXY_URL,
+          target: proxyTarget,
           changeOrigin: true
         }
       },
