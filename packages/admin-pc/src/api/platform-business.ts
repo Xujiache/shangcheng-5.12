@@ -243,6 +243,20 @@ export function pushPlaza(payload: PushPayload) {
 export function fetchPlatformMemberPlans() {
   return request.get<MemberPlan[]>({ url: '/api/v1/p/member-plans' })
 }
+export async function fetchMemberTrialDays(): Promise<number> {
+  try {
+    const r = await request.get<{ days: number }>({ url: '/api/v1/p/member-plans/trial-days' })
+    return typeof r?.days === 'number' ? r.days : 30
+  } catch {
+    return 30
+  }
+}
+export function saveMemberTrialDays(days: number) {
+  return request.put<{ ok: boolean; days: number }>({
+    url: '/api/v1/p/member-plans/trial-days',
+    data: { days },
+  })
+}
 export function savePlatformMemberPlan(plan: Partial<MemberPlan>) {
   return request.post<{ ok: boolean; plan: MemberPlan }>({
     url: '/api/v1/p/member-plans',
@@ -265,8 +279,20 @@ export function fetchAllSubscriptions() {
 /* ============ 10. 缴费订单 ============ */
 export type PayOrderItem = PaymentRecord
 
-export function fetchMemberPayOrders() {
-  return request.get<PayOrderItem[]>({ url: '/api/v1/p/member-pay-orders' })
+interface PayOrdersPage { list: PayOrderItem[]; total: number; page: number; pageSize: number }
+
+export async function fetchMemberPayOrders(): Promise<PayOrderItem[]> {
+  // 后端返回分页结构,这里 unwrap 成数组让消费方继续按数组用
+  try {
+    const resp = await request.get<PayOrdersPage | PayOrderItem[]>({
+      url: '/api/v1/p/member-pay-orders',
+      params: { pageSize: 200 },
+    })
+    if (Array.isArray(resp)) return resp
+    return resp?.list || []
+  } catch {
+    return []
+  }
 }
 export function approvePayRefund(id: string) {
   return request.post<{ ok: boolean }>({

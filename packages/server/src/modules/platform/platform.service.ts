@@ -356,6 +356,25 @@ export class PlatformService {
   }
 
   // ========== 会员套餐 ==========
+  /**
+   * 新商家通用试用天数(0=关闭试用),持久化到 SystemConfig key=member:trialDays。
+   * 平台后台 + platform-app 都通过这两个接口读写,所以"试用期"是真实的全局配置。
+   */
+  async getMemberTrialDays(): Promise<{ days: number }> {
+    const v = await this.prisma.systemConfig.findUnique({ where: { key: 'member:trialDays' } })
+    const raw = v?.value as any
+    const days = typeof raw === 'number' ? raw : Number(raw?.days ?? 30)
+    return { days: Number.isFinite(days) ? days : 30 }
+  }
+  async setMemberTrialDays(days: number): Promise<{ ok: true; days: number }> {
+    const clean = Math.max(0, Math.min(365, Math.floor(Number(days) || 0)))
+    await this.prisma.systemConfig.upsert({
+      where: { key: 'member:trialDays' },
+      update: { value: clean },
+      create: { key: 'member:trialDays', value: clean },
+    })
+    return { ok: true, days: clean }
+  }
   async memberPlans() {
     return decimalToNumber(await this.prisma.memberPlan.findMany({ orderBy: { sort: 'asc' } }))
   }
@@ -370,11 +389,38 @@ export class PlatformService {
     await this.prisma.memberPlan.delete({ where: { id } })
     return { ok: true }
   }
+  /**
+   * 套餐订阅商家列表;扁平化 merchant.name/plan.* 并计算 totalDays/subscribedAt,
+   * 给 admin-pc 平台后台「订阅商家」表格直接消费。
+   */
   async planSubscriptions(planId: string) {
-    return decimalToNumber(await this.prisma.merchantMembership.findMany({ where: { planId }, include: { merchant: true } }))
+    const list = await this.prisma.merchantMembership.findMany({
+      where: { planId },
+      include: { merchant: true, plan: true },
+      orderBy: { createdAt: 'desc' },
+    })
+    return list.map((m) => {
+      const totalDays = Math.max(
+        1,
+        Math.ceil((m.endAt.getTime() - m.startAt.getTime()) / 86400000),
+      )
+      return decimalToNumber({
+        ...m,
+        merchantName: m.merchant?.name ?? '',
+        planName: m.plan?.name ?? '',
+        planType: m.plan?.type ?? '',
+        price: m.plan ? Number(m.plan.price) : 0,
+        totalDays,
+        subscribedAt: m.createdAt,
+      })
+    })
   }
 
   // ========== 会员缴费订单 ==========
+  /**
+   * 缴费订单分页列表;flatten merchant.name 并加 payMethod 别名,
+   * 让 admin-pc 视图直接 row.merchantName / row.payMethod 可用。
+   */
   async memberPayOrders(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const where: any = {}
@@ -383,7 +429,14 @@ export class PlatformService {
       this.prisma.paymentRecord.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, include: { merchant: true } }),
       this.prisma.paymentRecord.count({ where }),
     ])
-    return buildPage(list.map(decimalToNumber), total, page, pageSize)
+    const mapped = list.map((r) =>
+      decimalToNumber({
+        ...r,
+        merchantName: r.merchant?.name ?? '',
+        payMethod: r.paymentMethod,
+      }),
+    )
+    return buildPage(mapped, total, page, pageSize)
   }
   async updatePayStatus(id: string, status: string) {
     await this.prisma.paymentRecord.update({ where: { id }, data: { status } })

@@ -54,7 +54,12 @@ const planCount = computed(() => ({
 async function load() {
   loading.value = true
   try {
-    plans.value = await memberService.plans()
+    const [planList, td] = await Promise.all([
+      memberService.plans(),
+      memberService.trialDays(),
+    ])
+    plans.value = planList
+    trialDays.value = td
     // 切到 status tab 时再 lazy 拉取 overview（避免每次进页面都遍历）
     if (tab.value === 'status') {
       statusOverview.value = await memberService.statusOverview()
@@ -207,15 +212,18 @@ function promptInput(title: string, placeholder: string, initial = ''): Promise<
 function changeTrial() {
   uni.showActionSheet({
     itemList: ['7 天', '15 天', '30 天', '60 天', '关闭试用'],
-    success: (r) => {
+    success: async (r) => {
       const days = [7, 15, 30, 60, 0][r.tapIndex]
-      trialDays.value = days
-      uni.showToast({
-        title: days > 0 ? `已设为 ${days} 天` : '试用已关闭',
-        icon: 'success',
-      })
-      // 持久化暂用系统设置接口（之后可单独建独立 trialDays 接口）
-      // 仅前端展示生效，后端落库需 systemService.saveSettings 走另一个 PR
+      try {
+        const res = await memberService.saveTrialDays(days)
+        trialDays.value = res.days
+        uni.showToast({
+          title: res.days > 0 ? `已设为 ${res.days} 天` : '试用已关闭',
+          icon: 'success',
+        })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+      }
     },
   })
 }

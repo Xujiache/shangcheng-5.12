@@ -51,6 +51,9 @@ export class PlatformController {
   @Get('plaza/records') plazaRecords(@Query() q: any) { return this.svc.plazaRecords(q) }
 
   // Member Plans
+  // 注意: 路由顺序 — `trial-days` 必须放在 `:id` 系列之前,避免被当成 planId 匹配
+  @Get('member-plans/trial-days') memberTrialDays() { return this.svc.getMemberTrialDays() }
+  @Put('member-plans/trial-days') saveMemberTrialDays(@Body('days') days: number) { return this.svc.setMemberTrialDays(days) }
   @Get('member-plans') memberPlans() { return this.svc.memberPlans() }
   @Post('member-plans') saveMemberPlan(@Body() dto: any) { return this.svc.saveMemberPlan(dto) }
   @Delete('member-plans/:id') deleteMemberPlan(@Param('id') id: string) { return this.svc.deleteMemberPlan(id) }

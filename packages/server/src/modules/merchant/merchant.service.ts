@@ -1060,14 +1060,36 @@ export class MerchantService {
   async memberPlans() {
     return decimalToNumber(await this.prisma.memberPlan.findMany({ where: { status: 'active' }, orderBy: { sort: 'asc' } }))
   }
+  /**
+   * 当前订阅;同时给出嵌套和扁平字段,兼容多端:
+   *   - merchant-app 用 m.plan.* (嵌套)
+   *   - admin-pc/PC 视图用 planName/planType/price/merchantName/totalDays/subscribedAt (扁平)
+   */
   async myMembership(merchantId: string) {
     const m = await this.prisma.merchantMembership.findFirst({
       where: { merchantId, status: { in: ['trial', 'active'] } },
       orderBy: { createdAt: 'desc' },
-      include: { plan: true },
+      include: { plan: true, merchant: true },
     })
-    return m ? decimalToNumber(m) : null
+    if (!m) return null
+    const totalDays = Math.max(
+      1,
+      Math.ceil((m.endAt.getTime() - m.startAt.getTime()) / 86400000),
+    )
+    return decimalToNumber({
+      ...m,
+      planName: m.plan?.name ?? '',
+      planType: m.plan?.type ?? '',
+      price: m.plan ? Number(m.plan.price) : 0,
+      merchantName: m.merchant?.name ?? '',
+      totalDays,
+      subscribedAt: m.createdAt,
+    })
   }
+  /**
+   * 月度配额:同时返回扁平 (pushSlotsLimit/Used 等) 和嵌套 (limits/used) 两种 shape,
+   * 让 merchant-app 和 admin-pc 都能直接用,无须额外适配。
+   */
   async quota(merchantId: string) {
     const now = new Date()
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -1091,10 +1113,36 @@ export class MerchantService {
         },
       })
     }
-    return q
+    const dataObj = (q.data as Record<string, number>) || {}
+    return {
+      ...q,
+      monthStart: q.periodStart,
+      limits: {
+        pushSlots: q.pushSlotsLimit,
+        bannerLimit: q.bannerLimit,
+        impressionLimit: q.impressionLimit,
+        weightLimit: Number(dataObj.weightLimit ?? 0),
+      },
+      used: {
+        pushSlots: q.pushSlotsUsed,
+        bannerLimit: q.bannerUsed,
+        impressionLimit: q.impressionUsed,
+      },
+    }
   }
+  /** 缴费记录;加 payMethod 别名兼容 admin-pc 视图 */
   async myPayments(merchantId: string) {
-    return decimalToNumber(await this.prisma.paymentRecord.findMany({ where: { merchantId }, orderBy: { createdAt: 'desc' }, take: 100 }))
+    const list = await this.prisma.paymentRecord.findMany({
+      where: { merchantId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+    return list.map((r) =>
+      decimalToNumber({
+        ...r,
+        payMethod: r.paymentMethod,
+      }),
+    )
   }
   async membershipNotices(merchantId: string) {
     const q = await this.quota(merchantId)

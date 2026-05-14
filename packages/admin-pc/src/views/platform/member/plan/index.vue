@@ -22,7 +22,7 @@
             <div class="text-xs text-g-500 mt-1">新注册商家可免费体验所有功能</div>
           </div>
         </div>
-        <ElSelect v-model="trialDays" style="width: 160px">
+        <ElSelect v-model="trialDays" style="width: 160px" :loading="trialSaving" @change="onTrialChange">
           <ElOption :value="7" label="7 天" />
           <ElOption :value="15" label="15 天" />
           <ElOption :value="30" label="30 天" />
@@ -247,7 +247,9 @@
   import {
     fetchPlatformMemberPlans,
     savePlatformMemberPlan,
-    fetchAllSubscriptions
+    fetchAllSubscriptions,
+    fetchMemberTrialDays,
+    saveMemberTrialDays
   } from '@/api/platform-business'
   import type { Subscription } from '@/api/member-service'
   import type { MemberPlan } from '@jiujiu/shared/types'
@@ -261,6 +263,20 @@
   const subscriptions = ref<Subscription[]>([])
   const subsKeyword = ref('')
   const trialDays = ref(30)
+  const trialSaving = ref(false)
+
+  async function onTrialChange(v: number) {
+    trialSaving.value = true
+    try {
+      const r = await saveMemberTrialDays(v)
+      trialDays.value = r.days
+      ElMessage.success(v > 0 ? `已设为 ${v} 天试用` : '已关闭试用')
+    } catch (e: any) {
+      ElMessage.error(e?.message || '保存失败')
+    } finally {
+      trialSaving.value = false
+    }
+  }
 
   const filteredPlans = computed(() => plans.value.filter((p) => p.type === tab.value))
 
@@ -445,8 +461,14 @@
   }
 
   async function load() {
-    plans.value = await fetchPlatformMemberPlans()
-    subscriptions.value = await fetchAllSubscriptions()
+    const [planList, subs, trial] = await Promise.all([
+      fetchPlatformMemberPlans(),
+      fetchAllSubscriptions(),
+      fetchMemberTrialDays(),
+    ])
+    plans.value = planList
+    subscriptions.value = subs
+    trialDays.value = trial
   }
 
   onMounted(load)

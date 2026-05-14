@@ -111,6 +111,18 @@ export const memberService = {
   deletePlan(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/member-plans/${id}`)
   },
+  /** 新商家通用试用天数(0=关闭),走 SystemConfig 全局配置 */
+  async trialDays(): Promise<number> {
+    try {
+      const r = await http.get<{ days: number }>('/api/v1/p/member-plans/trial-days')
+      return typeof r?.days === 'number' ? r.days : 30
+    } catch {
+      return 30
+    }
+  },
+  saveTrialDays(days: number) {
+    return http.put<{ ok: boolean; days: number }>('/api/v1/p/member-plans/trial-days', { days })
+  },
   payOrders(params: { status?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<unknown>>('/api/v1/p/member-pay-orders', params)
   },
