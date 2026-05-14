@@ -3,7 +3,7 @@
  * PA-02 · 商户入驻审核
  * 还原 原型图/platform-app.jsx::PA_Audit
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { merchantService } from '../../services'
 import type { Merchant, MerchantType } from '@jiujiu/shared/types'
 import { formatDate } from '@jiujiu/shared/utils'
@@ -16,6 +16,7 @@ type TabKey = 'pending' | 'active' | 'rejected'
 const tab = ref<TabKey>('pending')
 const list = ref<Merchant[]>([])
 const loading = ref(false)
+const counts = ref<Record<TabKey, number>>({ pending: 0, active: 0, rejected: 0 })
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'pending', label: '待审核' },
@@ -28,23 +29,31 @@ const TYPE_META: Record<MerchantType, { label: string; tint: string }> = {
   store: { label: '门店', tint: '#FAAD14' },
 }
 
-const counts = computed(() => ({
-  pending: list.value.filter((m) => m.status === 'pending').length,
-  active: list.value.filter((m) => m.status === 'active').length,
-  rejected: list.value.filter((m) => m.status === 'rejected').length,
-}))
+const filtered = computed(() => list.value)
 
-const filtered = computed(() => list.value.filter((m) => m.status === tab.value))
-
+/**
+ * 待审核 tab 走专用 audit 队列接口 /p/audit/merchants（只返 status=pending，
+ * 受后端 service.auditMerchants 强制约束）；已通过 / 已驳回则走通用 /p/merchants
+ * 并加 status 过滤。tab 切换时重新拉数据，counts 用各 tab 返回的 pagination.total。
+ */
 async function load() {
   loading.value = true
   try {
-    const res = await merchantService.list({ pageSize: 50 })
-    list.value = res.list
+    const params = { status: tab.value, page: 1, pageSize: 20 }
+    const res =
+      tab.value === 'pending'
+        ? await merchantService.auditList(params)
+        : await merchantService.list(params)
+    list.value = (res?.list ?? []) as Merchant[]
+    counts.value[tab.value] = typeof res?.total === 'number' ? res.total : list.value.length
   } finally {
     loading.value = false
   }
 }
+
+watch(tab, () => {
+  load()
+})
 
 function viewDetail(m: Merchant) {
   uni.showModal({
@@ -61,8 +70,8 @@ function approve(m: Merchant) {
     success: async (r) => {
       if (r.confirm) {
         await merchantService.approve(m.id)
-        m.status = 'active'
         uni.showToast({ title: '已通过', icon: 'success' })
+        await load()
       }
     },
   })
@@ -76,9 +85,8 @@ function reject(m: Merchant) {
     success: async (r) => {
       if (r.confirm && r.content) {
         await merchantService.reject(m.id, r.content)
-        m.status = 'rejected'
-        m.rejectReason = r.content
         uni.showToast({ title: '已驳回', icon: 'success' })
+        await load()
       }
     },
   })

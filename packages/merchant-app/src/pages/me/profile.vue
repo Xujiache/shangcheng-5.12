@@ -51,6 +51,37 @@ const CATEGORY_OPTIONS = [
   '户外',
 ] as const
 
+/**
+ * 历史脏数据兼容:早期入驻 / admin-pc 导入可能把英文 enum 直接落到 categories,
+ * 导致前端展示成 "furniture" 这种生肉。这里做一次 EN → 中文映射,显示侧统一中文。
+ * 提交保存时仍按 form.categories 走(中文),与新数据自然一致。
+ */
+const CATEGORY_EN_TO_CN: Record<string, string> = {
+  furniture: '家具',
+  lights: '灯具',
+  lighting: '灯具',
+  fabric: '布艺',
+  textile: '布艺',
+  home: '家居',
+  household: '家居',
+  building: '建材',
+  buildingMaterial: '建材',
+  kitchen: '厨卫',
+  bathroom: '厨卫',
+  appliance: '家电',
+  appliances: '家电',
+  decor: '装饰',
+  decoration: '装饰',
+  office: '办公',
+  outdoor: '户外',
+}
+function displayCategory(c: string): string {
+  if (!c) return ''
+  // 已经是中文(任意一字符非 ASCII)就直接显示;否则查表回落原值
+  if (/[^\x00-\x7F]/.test(c)) return c
+  return CATEGORY_EN_TO_CN[c] || CATEGORY_EN_TO_CN[c.toLowerCase()] || c
+}
+
 const form = reactive<MerchantProfile>({ ...DEFAULT_PROFILE })
 const original = ref<MerchantProfile>({ ...DEFAULT_PROFILE })
 const showCategoryPicker = ref(false)
@@ -60,7 +91,10 @@ async function loadProfile() {
   try {
     const data = await profileService.get()
     Object.assign(form, { ...DEFAULT_PROFILE, ...data })
-    original.value = { ...form }
+    // 加载后立即把任何英文 enum 规范化成中文,保证 picker 多选 / chip 显示 / 保存
+    // 三条链路对得上;避免出现 picker 里"家具"已勾上但 chip 仍显示 "furniture"。
+    form.categories = (form.categories || []).map(displayCategory)
+    original.value = { ...form, categories: [...form.categories] }
   } catch (e: any) {
     uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
   }
@@ -280,7 +314,7 @@ onMounted(loadProfile)
         </text>
         <view class="cat-selector" @click="showCategoryPicker = true">
           <view v-if="form.categories.length" class="cat-tags">
-            <view v-for="c in form.categories" :key="c" class="cat-chip">{{ c }}</view>
+            <view v-for="c in form.categories" :key="c" class="cat-chip">{{ displayCategory(c) }}</view>
           </view>
           <text v-else class="cat-placeholder">点击选择经营品类</text>
           <Icon name="forward" :size="24" color="#c9cdd4" />

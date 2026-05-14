@@ -9,12 +9,32 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import Icon from '../../components/icon/icon.vue'
+import { http } from '../../utils/request'
 
 const STORAGE_KEY = 'jiujiu_search_history'
-const HOT_WORDS = ['岩板餐桌', '北欧沙发', '智能升降桌', '实木家具', '羊毛地毯', '吸顶灯', '岩板茶几']
+
+/**
+ * 热搜词默认兜底列表
+ * TODO: 后端 GET /api/v1/u/hot-keywords 接口上线后由 loadHotWords() 覆盖
+ *       接口约定：返回 string[]，按搜索热度倒序，最多 10 条
+ */
+const HOT_WORDS_FALLBACK = ['岩板餐桌', '北欧沙发', '智能升降桌', '实木家具', '羊毛地毯', '吸顶灯', '岩板茶几']
+const hotWords = ref<string[]>([...HOT_WORDS_FALLBACK])
 
 const keyword = ref('')
 const history = ref<string[]>([])
+
+/** 拉后端热搜词；接口未上线 / 失败时保持 fallback，不阻塞页面 */
+async function loadHotWords() {
+  try {
+    const list = await http.get<string[]>('/api/v1/u/hot-keywords', undefined, { silent: true })
+    if (Array.isArray(list) && list.length > 0) {
+      hotWords.value = list.slice(0, 10)
+    }
+  } catch {
+    /* 接口 404 / 网络失败：用 fallback */
+  }
+}
 
 function loadHistory() {
   try {
@@ -78,7 +98,10 @@ const statusBarHeight = computed(() => {
   }
 })
 
-onMounted(loadHistory)
+onMounted(() => {
+  loadHistory()
+  loadHotWords()
+})
 </script>
 
 <template>
@@ -135,7 +158,7 @@ onMounted(loadHistory)
       </view>
       <view class="chips">
         <view
-          v-for="w in HOT_WORDS"
+          v-for="w in hotWords"
           :key="w"
           class="chip chip-hot"
           @click="doSearch(w)"

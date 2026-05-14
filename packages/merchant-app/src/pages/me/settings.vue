@@ -7,6 +7,7 @@
  */
 import { ref, onMounted } from 'vue'
 import Icon from '../../components/icon/icon.vue'
+import NavBar from '../../components/nav-bar/nav-bar.vue'
 
 const KEY = 'merchant_settings_prefs'
 
@@ -121,6 +122,7 @@ onMounted(load)
 
 <template>
   <view class="page">
+    <NavBar title="系统设置" />
     <view class="card">
       <view class="card-title">通知</view>
       <view class="row" @click="toggleNotify('notify')">

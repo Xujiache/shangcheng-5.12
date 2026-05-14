@@ -12,20 +12,10 @@
  * GET /api/v1/m/feature-flags，按这里配置的 audience + defaultEnabled 解析。
  */
 import { ref, computed, onMounted } from 'vue'
-import { http } from '../../utils/request'
+import { featureFlagService } from '../../services'
+import type { FeatureFlag, FeatureFlagGroup, FeatureFlagAudience } from '@jiujiu/shared/types'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
-
-interface FeatureFlag {
-  id: string
-  key: string
-  label: string
-  group: string // home_entry / role_button / side_menu
-  defaultEnabled: boolean
-  audience: 'all' | 'factory' | 'store' | 'specific'
-  sort: number
-  grayPercent: number
-}
 
 const GROUP_LABEL: Record<string, string> = {
   home_entry: '首页入口',
@@ -46,7 +36,7 @@ const loading = ref(false)
 async function load() {
   loading.value = true
   try {
-    flags.value = await http.get<FeatureFlag[]>('/api/v1/p/feature-flags')
+    flags.value = await featureFlagService.list()
   } catch (e: any) {
     uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
@@ -71,7 +61,7 @@ async function toggle(f: FeatureFlag) {
   // 乐观更新
   f.defaultEnabled = next
   try {
-    await http.post(`/api/v1/p/feature-flags/${f.id}/toggle`, { enabled: next })
+    await featureFlagService.toggle(f.id, next)
   } catch (e: any) {
     f.defaultEnabled = !next
     uni.showToast({ title: e?.message || '切换失败', icon: 'none' })
@@ -83,8 +73,8 @@ const showAdd = ref(false)
 const addForm = ref<{
   key: string
   label: string
-  group: 'home_entry' | 'role_button' | 'side_menu'
-  audience: 'all' | 'factory' | 'store' | 'specific'
+  group: FeatureFlagGroup
+  audience: FeatureFlagAudience
   defaultEnabled: boolean
 }>({
   key: '',
@@ -106,7 +96,13 @@ async function submitAdd() {
     return
   }
   try {
-    await http.post('/api/v1/p/feature-flags', f as any)
+    await featureFlagService.create({
+      key: f.key,
+      label: f.label,
+      group: f.group,
+      audience: f.audience,
+      defaultEnabled: f.defaultEnabled,
+    })
     uni.showToast({ title: '已新增', icon: 'success' })
     showAdd.value = false
     await load()
@@ -123,7 +119,7 @@ function remove(f: FeatureFlag) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await http.del(`/api/v1/p/feature-flags/${f.id}`)
+        await featureFlagService.remove(f.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         await load()
       } catch (e: any) {
@@ -140,7 +136,7 @@ async function reset() {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await http.post('/api/v1/p/feature-flags/reset')
+        await featureFlagService.reset()
         uni.showToast({ title: '已重置', icon: 'success' })
         await load()
       } catch (e: any) {

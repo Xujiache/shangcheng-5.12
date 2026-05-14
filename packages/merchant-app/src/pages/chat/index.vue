@@ -7,17 +7,29 @@
  * 底部：＋ 工具栏 + 输入框 + 表情/发送
  *
  * 左侧"会话列表"通过顶栏 ··· 弹底切换
+ *
+ * 实时通信：
+ *  - 接入 ChatGateway WebSocket（与用户端协议一致，见 useChatSocket）
+ *  - 进页 → connect + onMessage + 默认 join 当前会话
+ *  - 切会话 → leave 旧、join 新
+ *  - 发消息 → 优先 socket.emit；socket 未连时回退到 HTTP（chatService.send）
+ *  - 离页 → 取消监听 + leave 当前会话（不 disconnect，单例 socket 与订单通知流共享）
  */
 import { ref, computed, nextTick, onMounted } from 'vue'
+import { onUnload } from '@dcloudio/uni-app'
 import { chatService } from '../../services/store'
 import type { ChatSessionItem, ChatMessageItem, QuickReplyItem } from '../../services/store'
 import { formatRelative } from '@jiujiu/shared/utils'
 import { BASE_URL } from '../../utils/request'
 import { useUserStore } from '../../store'
+import { useChatSocket } from '../../composables/useChatSocket'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
 const userStore = useUserStore()
+
+// 单例 socket：与 useMerchantNotifyStream 共享同一连接
+const sock = useChatSocket(userStore.accessToken || '', 'merchant')
 
 const sessions = ref<ChatSessionItem[]>([])
 const messages = ref<ChatMessageItem[]>([])
@@ -47,9 +59,15 @@ async function loadQuick() {
 }
 
 async function pickSession(s: ChatSessionItem) {
+  // 切会话前先离开旧 room（避免继续收旧会话推送）
+  if (currentSessionId.value && currentSessionId.value !== s.id) {
+    try { sock.leave(currentSessionId.value) } catch { /* ignore */ }
+  }
   currentSessionId.value = s.id
   s.unreadCount = 0
   showSwitcher.value = false
+  try { sock.join(s.id) } catch { /* ignore */ }
+  try { sock.markRead(s.id) } catch { /* ignore */ }
   const data = await chatService.messages(s.id)
   messages.value = data
   await nextTick()
@@ -87,8 +105,9 @@ async function send() {
   inputText.value = ''
   showQuick.value = false
   showActions.value = false
+  const tmpId = 'tmp-' + Date.now()
   const newMsg: ChatMessageItem = {
-    id: 'tmp-' + Date.now(),
+    id: tmpId,
     sessionId: currentSessionId.value,
     sender: 'merchant',
     type: 'text',
@@ -101,9 +120,15 @@ async function send() {
   await nextTick()
   scrollToBottom()
   try {
-    await chatService.send(currentSessionId.value, { type: 'text', content: text })
+    if (sock.connected.value) {
+      // WS 已连通 → emit；服务端持久化后会以 message 事件回推（带真实 id）
+      sock.send(currentSessionId.value, text, 'text')
+    } else {
+      // 退化：socket 暂时不可用，回退 HTTP
+      await chatService.send(currentSessionId.value, { type: 'text', content: text })
+    }
   } catch {
-    // ignore
+    // 失败已在 request 层 toast；保留乐观消息让用户重发
   }
 }
 
@@ -193,9 +218,66 @@ function previewImg(url: string) {
   uni.previewImage({ urls: [url], current: url })
 }
 
-onMounted(() => {
+/**
+ * 监听 WS message 推送：
+ *  - 网关协议为 `{ sessionId, message: ChatMessage }`（见 chat.gateway.ts:159-162）
+ *  - 当前会话的对方消息 → 追加到消息流 + 滚到底
+ *  - 其它会话的消息 → 更新会话列表的 lastMessage / unreadCount
+ *  - 自己 echo 回来的消息 → 用 server id 替换 tmp 占位（按 sessionId+content 粗匹配）
+ */
+function handleIncomingMessage(payload: any) {
+  if (!payload) return
+  const sessionId: string | undefined = payload.sessionId ?? payload.message?.sessionId
+  const msg: any = payload.message ?? payload
+  if (!sessionId || !msg) return
+
+  const target = sessions.value.find((s) => s.id === sessionId)
+  if (target) {
+    target.lastMessage = msg.content || target.lastMessage
+    target.lastMessageAt = msg.createdAt || target.lastMessageAt
+    if (sessionId !== currentSessionId.value) {
+      target.unreadCount = (target.unreadCount || 0) + 1
+    }
+  }
+
+  if (sessionId !== currentSessionId.value) return
+
+  if (msg.sender === 'merchant') {
+    const idx = [...messages.value].reverse().findIndex(
+      (m) => m.id?.toString().startsWith('tmp-') && m.content === msg.content,
+    )
+    if (idx >= 0) {
+      const realIdx = messages.value.length - 1 - idx
+      messages.value.splice(realIdx, 1, { ...messages.value[realIdx], ...msg })
+      return
+    }
+  }
+
+  if (messages.value.some((m) => m.id === msg.id)) return
+
+  messages.value = [...messages.value, msg]
+  nextTick().then(() => scrollToBottom())
+}
+
+onMounted(async () => {
   loadSessions()
   loadQuick()
+  if (userStore.accessToken) {
+    try {
+      await sock.connect()
+      sock.onMessage(handleIncomingMessage)
+    } catch (e) {
+      console.warn('[chat] socket connect failed, falling back to HTTP:', e)
+    }
+  }
+})
+
+onUnload(() => {
+  // 离页：取消监听 + 离开当前 room；不 disconnect（保留单例供订单推送复用）
+  try { sock.offMessage(handleIncomingMessage) } catch { /* ignore */ }
+  if (currentSessionId.value) {
+    try { sock.leave(currentSessionId.value) } catch { /* ignore */ }
+  }
 })
 </script>
 

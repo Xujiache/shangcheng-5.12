@@ -3,9 +3,17 @@
  * MA-08 · 订单列表
  *
  * 搜索 + 5 状态 Tab + 订单卡 + 状态化操作 + 下拉刷新
+ *
+ * 实时新订单推送（P1-13）：
+ *  - 接入 useMerchantNotifyStream → 监听 order:new
+ *  - 收到推送后：尊重 me/settings.vue 中的「推送通知」+「新订单提醒」开关
+ *    - 开启：震动 + 声音（uni.createInnerAudioContext）+ toast + 自动刷新列表
+ *    - 关闭：静默插入新订单到列表（不打扰）
+ *  - 后端联调：需 Backend Agent 在订单创建处 emit('order:new', orderVo)
+ *    并把 merchant socket join 到 'merchant:<merchantId>' 房间
  */
 import { ref, computed, onMounted } from 'vue'
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import { orderService } from '../../../services/order'
 import type { Order, OrderStatus } from '@jiujiu/shared/types'
 import Tabs from '../../../components/tabs/tabs.vue'
@@ -15,9 +23,16 @@ import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
 import { useStatusBar } from '../../../composables/useStatusBar'
+import { useUserStore } from '../../../store/user'
+import {
+  useMerchantNotifyStream,
+  type MerchantNewOrderPayload,
+} from '../../../composables/useMerchantNotifyStream'
 
 useHideNativeTabBar()
 const { heroPaddingTop } = useStatusBar(16)
+const userStore = useUserStore()
+const notify = useMerchantNotifyStream(userStore.accessToken || '')
 
 type Tab = 'all' | OrderStatus
 
@@ -187,11 +202,83 @@ function goDetail(order: Order) {
   uni.navigateTo({ url: `/pages/order/detail?id=${order.id}` })
 }
 
-onMounted(() => load(true))
+/**
+ * 读取设置页（pages/me/settings.vue）保存的通知偏好
+ * key 与 settings.vue::KEY 必须保持一致
+ */
+const NOTIFY_PREFS_KEY = 'merchant_settings_prefs'
+function getNotifyPrefs(): { notify: boolean; notifyOrder: boolean } {
+  try {
+    const raw = uni.getStorageSync(NOTIFY_PREFS_KEY)
+    if (raw) {
+      const p = JSON.parse(raw)
+      return { notify: p.notify ?? true, notifyOrder: p.notifyOrder ?? true }
+    }
+  } catch { /* ignore */ }
+  return { notify: true, notifyOrder: true }
+}
+
+let audioCtx: ReturnType<typeof uni.createInnerAudioContext> | null = null
+function playNewOrderSound() {
+  // /static/audio/new-order.mp3 是约定资源路径；若文件不存在 play() 会静默失败，不影响主流程
+  try {
+    if (!audioCtx) {
+      audioCtx = uni.createInnerAudioContext()
+      audioCtx.src = '/static/audio/new-order.mp3'
+      audioCtx.autoplay = false
+    }
+    audioCtx.stop()
+    audioCtx.play()
+  } catch { /* 资源缺失或平台不支持，忽略 */ }
+}
+
+function handleNewOrder(payload: MerchantNewOrderPayload) {
+  if (!payload || !payload.id) return
+  const prefs = getNotifyPrefs()
+
+  // 通知开关：尊重 settings 页
+  if (prefs.notify && prefs.notifyOrder) {
+    try { uni.vibrateShort({}) } catch { /* ignore */ }
+    playNewOrderSound()
+    uni.showToast({
+      title: `新订单：${payload.no || payload.id}`,
+      icon: 'none',
+      duration: 1500,
+    })
+  }
+
+  // 不直接 splice payload 进列表（WS 轻量 payload 缺 address / items / payAmount 等字段，
+  // 强插会触发 OrderCard 渲染空指针）。改为触发当前 tab 的 load(true) 重拉。
+  // 抓不到当前 tab 时（如停在「已完成」），由于新订单状态多半是 pending_shipment，
+  // 只更新 total 即可，避免无意义的拉取。
+  const newStatus = (payload.status as OrderStatus) || 'pending_shipment'
+  if (tab.value === 'all' || tab.value === newStatus) {
+    load(true)
+  } else {
+    total.value = total.value + 1
+  }
+}
+
+onMounted(async () => {
+  load(true)
+  if (userStore.accessToken) {
+    try {
+      await notify.ensureConnected()
+      notify.onNewOrder(handleNewOrder)
+    } catch (e) {
+      console.warn('[order] notify stream connect failed:', e)
+    }
+  }
+})
 onShow(() => {
   if (list.value.length > 0) load(true)
 })
 onPullDownRefresh(() => load(true))
+onUnload(() => {
+  notify.offNewOrder(handleNewOrder)
+  try { audioCtx?.destroy?.() } catch { /* ignore */ }
+  audioCtx = null
+})
 </script>
 
 <template>

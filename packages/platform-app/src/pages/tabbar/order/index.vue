@@ -56,7 +56,10 @@ const stats = computed(() => {
   const total = orders.value.length
   const gmv = orders.value.filter((o) => o.status === 'completed').reduce((s, o) => s + o.payAmount, 0)
   const today = orders.value.length
-  return { total, gmv, today, complaint: 1 }
+  // 售后投诉 = 当前 50 条订单中状态为 after_sale 的数量
+  // TODO: 接入独立 /p/complaints?status=open 后改为后端聚合，避免被订单截断窗口影响
+  const complaint = orders.value.filter((o) => o.status === 'after_sale').length
+  return { total, gmv, today, complaint }
 })
 
 async function load() {

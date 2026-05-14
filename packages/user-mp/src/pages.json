@@ -5,23 +5,85 @@
     { "path": "pages/tabbar/cart/index", "style": { "navigationBarTitleText": "购物车" } },
     { "path": "pages/tabbar/me/index", "style": { "navigationBarTitleText": "我的" } },
     { "path": "pages/product/detail", "style": { "navigationBarTitleText": "商品详情" } },
-    { "path": "pages/order/confirm", "style": { "navigationBarTitleText": "确认订单" } },
-    { "path": "pages/order/pay", "style": { "navigationBarTitleText": "支付" } },
-    { "path": "pages/order/list", "style": { "navigationBarTitleText": "我的订单" } },
-    { "path": "pages/order/detail", "style": { "navigationBarTitleText": "订单详情" } },
-    { "path": "pages/auth/login", "style": { "navigationBarTitleText": "登录" } },
-    { "path": "pages/address/list", "style": { "navigationBarTitleText": "收货地址" } },
-    { "path": "pages/address/edit", "style": { "navigationBarTitleText": "编辑地址" } },
-    { "path": "pages/booking/index", "style": { "navigationBarTitleText": "预约量尺" } },
-    { "path": "pages/promote/index", "style": { "navigationBarTitleText": "推广分佣" } },
-    { "path": "pages/store/map", "style": { "navigationBarTitleText": "门店地址" } },
-    { "path": "pages/merchant/apply", "style": { "navigationBarTitleText": "商家入驻" } },
-    { "path": "pages/channel/index", "style": { "navigationBarTitleText": "频道" } },
-    { "path": "pages/chat/index", "style": { "navigationBarTitleText": "在线客服" } },
-    { "path": "pages/me/edit", "style": { "navigationBarTitleText": "个人信息" } },
-    { "path": "pages/search/index", "style": { "navigationBarTitleText": "搜索", "navigationStyle": "custom" } },
-    { "path": "pages/search/result", "style": { "navigationBarTitleText": "搜索结果", "navigationStyle": "custom" } }
+    { "path": "pages/auth/login", "style": { "navigationBarTitleText": "登录" } }
   ],
+  "subPackages": [
+    {
+      "root": "pages/order",
+      "pages": [
+        { "path": "confirm", "style": { "navigationBarTitleText": "确认订单" } },
+        { "path": "pay", "style": { "navigationBarTitleText": "支付" } },
+        { "path": "list", "style": { "navigationBarTitleText": "我的订单" } },
+        { "path": "detail", "style": { "navigationBarTitleText": "订单详情" } }
+      ]
+    },
+    {
+      "root": "pages/address",
+      "pages": [
+        { "path": "list", "style": { "navigationBarTitleText": "收货地址" } },
+        { "path": "edit", "style": { "navigationBarTitleText": "编辑地址" } }
+      ]
+    },
+    {
+      "root": "pages/me",
+      "pages": [
+        { "path": "edit", "style": { "navigationBarTitleText": "个人信息" } }
+      ]
+    },
+    {
+      "root": "pages/search",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "搜索", "navigationStyle": "custom" } },
+        { "path": "result", "style": { "navigationBarTitleText": "搜索结果", "navigationStyle": "custom" } }
+      ]
+    },
+    {
+      "root": "pages/store",
+      "pages": [
+        { "path": "map", "style": { "navigationBarTitleText": "门店地址" } }
+      ]
+    },
+    {
+      "root": "pages/merchant",
+      "pages": [
+        { "path": "apply", "style": { "navigationBarTitleText": "商家入驻" } }
+      ]
+    },
+    {
+      "root": "pages/channel",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "频道" } }
+      ]
+    },
+    {
+      "root": "pages/chat",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "在线客服" } }
+      ]
+    },
+    {
+      "root": "pages/booking",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "预约量尺" } }
+      ]
+    },
+    {
+      "root": "pages/promote",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "推广分佣" } }
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/tabbar/me/index": {
+      "network": "all",
+      "packages": ["pages/order", "pages/me", "pages/address"]
+    },
+    "pages/product/detail": {
+      "network": "all",
+      "packages": ["pages/order", "pages/chat"]
+    }
+  },
   "globalStyle": {
     "navigationStyle": "custom",
     "navigationBarTextStyle": "black",

@@ -4,7 +4,7 @@
  * 还原 原型图/user-mini.jsx::UM_Detail
  */
 import { ref, computed, onMounted } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { productService, favoriteService } from '../../services'
 import { useUserStore } from '../../store/user'
 import { useCartStore } from '../../store/cart'
@@ -337,6 +337,19 @@ function changeQty(delta: number) {
   if (next < 1) return
   qty.value = next
 }
+
+// 微信分享：分享给好友 / 朋友圈
+// 顶部 NavBar 已有 share 图标；mp-weixin 端用户可通过右上角 ... 触发，这两个 hook 提供分享内容
+onShareAppMessage(() => ({
+  title: product.value?.name || '经纬科技商品',
+  path: `/pages/product/detail?id=${productId.value}`,
+  imageUrl: product.value?.images?.[0] || '',
+}))
+onShareTimeline(() => ({
+  title: product.value?.name || '经纬科技商品',
+  query: `id=${productId.value}`,
+  imageUrl: product.value?.images?.[0] || '',
+}))
 </script>
 
 <template>

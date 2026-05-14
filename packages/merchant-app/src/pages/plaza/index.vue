@@ -16,6 +16,9 @@ import Tabs from '../../components/tabs/tabs.vue'
 import StatusTag from '../../components/status-tag/status-tag.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
 import Icon from '../../components/icon/icon.vue'
+import { useStatusBar } from '../../composables/useStatusBar'
+
+const { heroPaddingTop } = useStatusBar(16)
 
 type Tab = 'products' | 'factories' | 'agency'
 
@@ -171,7 +174,7 @@ onMounted(() => {
 
 <template>
   <view class="page">
-    <view class="header" :style="{ background: 'var(--brand-gradient)' }">
+    <view class="header" :style="{ background: 'var(--brand-gradient)', paddingTop: heroPaddingTop }">
       <view class="head-row">
         <text class="head-title">选品广场</text>
         <text class="head-sub">平台精选 · 厂家直供</text>
@@ -262,7 +265,11 @@ onMounted(() => {
         </view>
       </view>
 
-      <EmptyState v-if="filteredProducts.length === 0" title="暂无商品" desc="尝试调整搜索词或标签" />
+      <EmptyState
+        v-if="filteredProducts.length === 0"
+        title="暂无可代理的商品"
+        desc="选品广场只显示其他厂家上架的商品。当前没有匹配项,试试调整筛选或稍后再来"
+      />
     </view>
 
     <!-- 厂家 Tab -->

@@ -16,6 +16,8 @@ import EmptyState from '../../components/empty-state/empty-state.vue'
 
 type TabKey = 'products' | 'factories' | 'records'
 
+type PlazaItemStatus = 'pushing' | 'pending' | 'offline' | 'active' | 'rejected'
+
 interface PlazaItem {
   id: string
   name: string
@@ -24,7 +26,7 @@ interface PlazaItem {
   image: string
   tag: string
   tagTone: 'accent' | 'pop' | 'soft'
-  status: 'pushing' | 'pending' | 'offline'
+  status: PlazaItemStatus
   agencyCount: number
 }
 
@@ -45,6 +47,12 @@ const STATUS_META: Record<string, { label: string; tint: string }> = {
   pushing: { label: '在推', tint: '#52C41A' },
   pending: { label: '待上线', tint: '#FAAD14' },
   offline: { label: '已下架', tint: '#86909C' },
+  active: { label: '已上线', tint: '#52C41A' },
+  rejected: { label: '已驳回', tint: '#F5222D' },
+}
+
+function statusMeta(s: string) {
+  return STATUS_META[s] || STATUS_META.pending
 }
 
 const filtered = computed(() => {
@@ -77,6 +85,13 @@ async function load() {
       const list = Array.isArray(res) ? res : Array.isArray(res?.list) ? res!.list! : []
       items.value = list.map((x: any, i: number): PlazaItem => {
         const firstTag = x.tag || (Array.isArray(x.tags) ? x.tags[0] : '') || ''
+        const rawStatus = String(x.status ?? '')
+        const normStatus: PlazaItemStatus =
+          rawStatus === 'active'
+            ? 'pushing'
+            : rawStatus === 'pushing' || rawStatus === 'pending' || rawStatus === 'offline' || rawStatus === 'rejected'
+              ? (rawStatus as PlazaItemStatus)
+              : 'pending'
         return {
           id: String(x.id ?? x.productId ?? `pl-${i}`),
           name: x.name || x.productName || '',
@@ -90,7 +105,7 @@ async function load() {
           image: x.image || x.productImage || (x.images?.[0] ?? ''),
           tag: firstTag,
           tagTone: i % 3 === 0 ? 'pop' : 'accent',
-          status: (x.status as PlazaItem['status']) || 'pending',
+          status: normStatus,
           agencyCount: typeof x.agencyCount === 'number' ? x.agencyCount : 0,
         }
       })
@@ -270,9 +285,9 @@ onMounted(load)
                 <text class="name">{{ x.name }}</text>
                 <view
                   class="status-tag"
-                  :style="{ color: STATUS_META[x.status].tint, background: STATUS_META[x.status].tint + '14' }"
+                  :style="{ color: statusMeta(x.status).tint, background: statusMeta(x.status).tint + '14' }"
                 >
-                  {{ STATUS_META[x.status].label }}
+                  {{ statusMeta(x.status).label }}
                 </view>
               </view>
               <text class="factory">{{ x.factory }}</text>

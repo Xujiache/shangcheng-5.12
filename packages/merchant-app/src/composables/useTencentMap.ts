@@ -104,7 +104,14 @@ export function useTencentMap() {
     }
   }
 
-  /** POI 搜索（关键词搜地点）— 用 HTTP 接口（webservice api） */
+  /**
+   * POI 搜索（关键词搜地点）— 用腾讯 webservice api
+   *
+   * 用 uni.request 而非 fetch：
+   *  - 小程序 / app 端原生没有 fetch，必须走 uni.request
+   *  - H5 端 uni.request 也是 fetch / xhr 的封装，行为等价
+   *  - 域名 apis.map.qq.com 需在 mp-weixin 后台 "request 合法域名" 配置
+   */
   async function searchPlaces(keyword: string, region = '全国'): Promise<MapPoint[]> {
     if (!KEY || !keyword.trim()) return []
     const url =
@@ -113,8 +120,15 @@ export function useTencentMap() {
       `&boundary=region(${encodeURIComponent(region)},0)` +
       `&page_size=10`
     try {
-      const r = await fetch(url)
-      const data: any = await r.json()
+      const data: any = await new Promise((resolve, reject) => {
+        uni.request({
+          url,
+          method: 'GET',
+          dataType: 'json',
+          success: (res) => resolve(res.data),
+          fail: (err) => reject(err),
+        })
+      })
       if (data?.status !== 0) return []
       return (data.data || []).map((d: any) => ({
         lat: d.location?.lat,

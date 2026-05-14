@@ -12,11 +12,14 @@
     { "path": "pages/ad/index", "style": { "navigationBarTitleText": "广告管理" } },
     { "path": "pages/plaza/index", "style": { "navigationBarTitleText": "选品广场推送" } },
     { "path": "pages/plaza/push", "style": { "navigationBarTitleText": "新建推送" } },
+    { "path": "pages/plaza/pushes", "style": { "navigationBarTitleText": "广场推送记录" } },
     { "path": "pages/member/index", "style": { "navigationBarTitleText": "会员&推广套餐" } },
     { "path": "pages/member/pay-orders", "style": { "navigationBarTitleText": "缴费订单" } },
     { "path": "pages/feature-flag/index", "style": { "navigationBarTitleText": "商家端功能开关" } },
     { "path": "pages/permission/index", "style": { "navigationBarTitleText": "权限管理" } },
-    { "path": "pages/system/index", "style": { "navigationBarTitleText": "系统设置" } }
+    { "path": "pages/system/index", "style": { "navigationBarTitleText": "系统设置" } },
+    { "path": "pages/legal/index", "style": { "navigationBarTitleText": "法律协议管理" } },
+    { "path": "pages/app-release/index", "style": { "navigationBarTitleText": "APP 发布管理" } }
   ],
   "globalStyle": {
     "navigationStyle": "custom",

@@ -7,7 +7,7 @@
  * - 6 个功能入口（预约量尺/推广分佣/门店地址/分享/商家入驻/设置）
  */
 import { computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { useUserStore } from '../../../store/user'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
@@ -21,6 +21,18 @@ onShow(() => {
     userStore.connectProfileSync()
   }
 })
+
+// 微信分享：分享给好友 / 朋友圈
+// 入口：右下角「分享小程序」TOOL_ENTRY 已改为 button[open-type="share"]
+onShareAppMessage(() => ({
+  title: '经纬科技商城 · 优质家居一站购齐',
+  path: '/pages/tabbar/home/index',
+  imageUrl: '',
+}))
+onShareTimeline(() => ({
+  title: '经纬科技商城 · 优质家居一站购齐',
+  query: '',
+}))
 
 function goEditProfile() {
   if (!userStore.isLogin) {
@@ -61,12 +73,17 @@ function goEntry(item: typeof TOOL_ENTRIES[number]) {
     return goLogin()
   }
   if (item.key === 'share') {
+    // 分享走 button[open-type="share"] → 触发 onShareAppMessage；这里只在 H5 / App 端兜底
+    // #ifndef MP-WEIXIN
     uni.showActionSheet({
-      itemList: ['转发好友', '分享朋友圈', '生成海报'],
+      itemList: ['复制小程序链接', '取消'],
       success: (r) => {
-        uni.showToast({ title: ['转发好友', '分享朋友圈', '生成海报'][r.tapIndex], icon: 'none' })
+        if (r.tapIndex === 0) {
+          uni.setClipboardData({ data: 'https://ewsn.top', success: () => uni.showToast({ title: '链接已复制', icon: 'success' }) })
+        }
       },
     })
+    // #endif
     return
   }
   if (item.key === 'settings') {
@@ -154,19 +171,34 @@ function goAllOrders() {
     </view>
 
     <view class="card tool-card">
-      <view
-        v-for="(t, i) in TOOL_ENTRIES"
-        :key="t.key"
-        class="tool-row"
-        :class="{ 'with-divider': i < TOOL_ENTRIES.length - 1 }"
-        @click="goEntry(t)"
-      >
-        <view class="tool-icon">
-          <Icon :name="t.icon" :size="36" color="var(--brand-primary)" />
+      <template v-for="(t, i) in TOOL_ENTRIES" :key="t.key">
+        <!-- 分享条目：用 button[open-type="share"] 才能触发微信原生分享面板 -->
+        <button
+          v-if="t.key === 'share'"
+          class="tool-row tool-row-btn"
+          :class="{ 'with-divider': i < TOOL_ENTRIES.length - 1 }"
+          open-type="share"
+          @click="goEntry(t)"
+        >
+          <view class="tool-icon">
+            <Icon :name="t.icon" :size="36" color="var(--brand-primary)" />
+          </view>
+          <text class="tool-label">{{ t.label }}</text>
+          <Icon name="chevron-right" :size="32" color="var(--text-tertiary)" />
+        </button>
+        <view
+          v-else
+          class="tool-row"
+          :class="{ 'with-divider': i < TOOL_ENTRIES.length - 1 }"
+          @click="goEntry(t)"
+        >
+          <view class="tool-icon">
+            <Icon :name="t.icon" :size="36" color="var(--brand-primary)" />
+          </view>
+          <text class="tool-label">{{ t.label }}</text>
+          <Icon name="chevron-right" :size="32" color="var(--text-tertiary)" />
         </view>
-        <text class="tool-label">{{ t.label }}</text>
-        <Icon name="chevron-right" :size="32" color="var(--text-tertiary)" />
-      </view>
+      </template>
     </view>
 
     <view style="height: 160rpx;" />
@@ -304,6 +336,24 @@ function goAllOrders() {
     flex: 1;
     font-size: 28rpx;
     color: var(--text-primary);
+  }
+}
+/* button[open-type=share] 默认有圆角、灰底、1rpx 边框、padding，要清除让它跟 view 同视觉 */
+.tool-row-btn {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none !important;
+  background: transparent !important;
+  text-align: left;
+  line-height: inherit;
+  font-size: inherit;
+  color: inherit;
+  &::after {
+    border: none !important;
+  }
+  &:active {
+    background: rgba(0,0,0,0.04) !important;
   }
 }
 </style>

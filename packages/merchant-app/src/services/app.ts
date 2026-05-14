@@ -1,9 +1,11 @@
 /**
  * APP 安装包 / 自更新服务
  *
- * 目前后端 GET /api/v1/m/app/latest 尚未上线（属于 #7 软件更新 特性）；
- * 这里先用本地占位 URL，让分享 / 检查更新页面能跑通。
- * 等后端就绪后只需改 fallback 即可，调用方不动。
+ * 已接 AppReleaseController.merchantLatest (GET /api/v1/m/app/latest)，
+ * 见 packages/server/src/modules/app-release/app-release.controller.ts。
+ *
+ * PLACEHOLDER 仅作为接口故障 / 离线时的兜底（保证页面不崩），
+ * 正常情况下 getLatest() 会拿到后端真实发布数据。
  */
 import { http } from '../utils/request'
 

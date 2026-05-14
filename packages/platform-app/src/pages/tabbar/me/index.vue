@@ -27,12 +27,13 @@ const statusBarHeight = computed(() => {
  * `/p/audit/products` 默认 status=pending → 内部 status=auditing。
  * 这里只统计 "当前待审" 总量,因为后端没有 "本月已审" 聚合接口。
  *
- * 处理工单数：后端没有工单模块,先 0,TODO 等 ticket 模块上线后接 GET /p/tickets/handled-count?month=YYYY-MM
+ * 处理工单数：工单（ticket）模块尚未上线，UI 显示「— 暂未接入」并禁用入口。
+ * 后端补 GET /p/tickets/handled-count?month=YYYY-MM 后，把 placeholder 替换成
+ * 实际请求即可，不需要再改 UI 结构。
  *
  * 在线时长：从 adminStore.loginAt 算起到现在,setSession 时已记录登录时刻。
  */
 const auditCount = ref<number>(0)
-const ticketCount = ref<number>(0)
 const tickNow = ref<number>(Date.now())
 let tickTimer: ReturnType<typeof setInterval> | null = null
 
@@ -63,7 +64,7 @@ const onlineDuration = computed(() => {
 
 const STAT_CARDS = computed(() => [
   { label: '待审任务', value: String(auditCount.value), icon: 'check-circle', tint: '#52C41A' },
-  { label: '处理工单', value: String(ticketCount.value), icon: 'message', tint: '#1296DB' },
+  { label: '工单(暂未接入)', value: '—', icon: 'message', tint: '#1296DB' },
   { label: '在线时长', value: onlineDuration.value, icon: 'clock', tint: '#FAAD14' },
 ])
 
@@ -90,6 +91,8 @@ const SYSTEM_ENTRIES = [
   { key: 'member', icon: 'crown', label: '会员&套餐', to: '/pages/member/index' },
   { key: 'feature', icon: 'gear', label: '功能开关', to: '/pages/feature-flag/index' },
   { key: 'perm', icon: 'lock', label: '权限管理', to: '/pages/permission/index' },
+  { key: 'legal', icon: 'tag', label: '法律协议', to: '/pages/legal/index' },
+  { key: 'app-release', icon: 'package', label: 'APP 发布', to: '/pages/app-release/index' },
   { key: 'system', icon: 'gear', label: '系统设置', to: '/pages/system/index' },
 ]
 

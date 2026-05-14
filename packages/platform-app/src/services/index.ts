@@ -2,14 +2,9 @@
  * 平台端服务聚合
  */
 import { http } from '../utils/request'
-import type { Merchant, Product, Pagination, UserSession, MemberPlan, FeatureFlag, PlatformDashboard } from '@jiujiu/shared/types'
+import type { Merchant, Product, Pagination, MemberPlan, FeatureFlag, PlatformDashboard } from '@jiujiu/shared/types'
 
-// ============ 认证 ============
-export const authService = {
-  adminLogin(payload: { username?: string; password?: string }) {
-    return http.post<UserSession>('/api/v1/auth/admin-login', payload)
-  },
-}
+// 认证逻辑统一走 packages/platform-app/src/services/auth.ts 的 platformAuthService
 
 // ============ 平台仪表盘 ============
 export const dashboardService = {
@@ -40,7 +35,7 @@ export const merchantService = {
   list(params: { type?: string; status?: string; keyword?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<Merchant>>('/api/v1/p/merchants', params)
   },
-  auditList(params: { page?: number; pageSize?: number } = {}) {
+  auditList(params: { status?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<Merchant>>('/api/v1/p/audit/merchants', params)
   },
   approve(id: string) {
@@ -111,9 +106,31 @@ export const adService = {
 }
 
 // ============ 选品广场 ============
+export interface PlazaPushRow {
+  id: string
+  productIds: string[]
+  factoryIds: string[]
+  targetType: 'product' | 'factory'
+  positions: string[]
+  tags: string[]
+  audience: string
+  scheduledStart: string
+  scheduledEnd: string
+  weight: number
+  suggestMarkupMin?: number | null
+  suggestMarkupMax?: number | null
+  suggestCommission?: number | null
+  pushText?: string | null
+  status: 'draft' | 'pending' | 'active' | 'offline' | 'ended'
+  impressions: number
+  clicks: number
+  createdBy?: string | null
+  createdAt: string
+  updatedAt: string
+}
 export const plazaService = {
   pushes(params: { status?: string; page?: number; pageSize?: number } = {}) {
-    return http.get<Pagination<unknown>>('/api/v1/p/plaza/pushes', params)
+    return http.get<Pagination<PlazaPushRow>>('/api/v1/p/plaza/pushes', params)
   },
   createPush(dto: Record<string, unknown>) {
     return http.post<{ ok: boolean }>('/api/v1/p/plaza/pushes', dto)
@@ -223,12 +240,31 @@ export const memberService = {
 }
 
 // ============ 功能开关 ============
+export interface FeatureFlagCreateDto {
+  key: string
+  label: string
+  group: 'home_entry' | 'role_button' | 'side_menu'
+  audience: 'all' | 'factory' | 'store' | 'specific'
+  defaultEnabled: boolean
+}
 export const featureFlagService = {
   list() {
     return http.get<FeatureFlag[]>('/api/v1/p/feature-flags')
   },
   toggle(id: string, enabled: boolean) {
     return http.post<{ ok: boolean }>(`/api/v1/p/feature-flags/${id}/toggle`, { enabled })
+  },
+  create(dto: FeatureFlagCreateDto) {
+    return http.post<{ ok: boolean; id?: string }>(
+      '/api/v1/p/feature-flags',
+      dto as unknown as Record<string, unknown>,
+    )
+  },
+  remove(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/p/feature-flags/${id}`)
+  },
+  reset() {
+    return http.post<{ ok: boolean }>('/api/v1/p/feature-flags/reset')
   },
 }
 
@@ -267,6 +303,68 @@ export const permissionService = {
   /** 切换管理员启用/停用状态（POST 无参，后端自动取反） */
   toggleAdmin(id: string) {
     return http.post<{ ok: boolean }>(`/api/v1/p/admins/${id}/toggle`)
+  },
+}
+
+// ============ 法律协议（用户协议 / 隐私 / 个人信息收集清单） ============
+/**
+ * 与后端 LegalAdminController 对齐：
+ *   GET  /api/v1/p/legal/agreements
+ *   PUT  /api/v1/p/legal/agreements   body: LegalAgreements
+ * 公开读取（端上弹窗）走 /api/v1/u/agreements（同一 service.list()）。
+ */
+export interface LegalAgreementSection {
+  title: string
+  updatedAt: string
+  body: string
+}
+export interface LegalAgreements {
+  user: LegalAgreementSection
+  privacy: LegalAgreementSection
+  collect: LegalAgreementSection
+}
+export const legalService = {
+  get() {
+    return http.get<LegalAgreements>('/api/v1/p/legal/agreements')
+  },
+  save(payload: LegalAgreements) {
+    return http.put<{ ok: boolean }>(
+      '/api/v1/p/legal/agreements',
+      payload as unknown as Record<string, unknown>,
+    )
+  },
+}
+
+// ============ APP 发布管理（自更新） ============
+/**
+ * 后端 AppReleaseController：
+ *   GET    /api/v1/p/app-releases?platform=merchant|platform
+ *   DELETE /api/v1/p/app-releases/:id
+ *   POST   /api/v1/p/app-releases   (multipart, PC 端上传)
+ * 移动端这里仅做"列出 + 删除"，上传走 admin-pc。
+ */
+export type AppReleasePlatform = 'merchant' | 'platform'
+export interface AppRelease {
+  id: string
+  platform: AppReleasePlatform
+  version: string
+  versionCode: number
+  url: string
+  size: number
+  changelog: string
+  force: boolean
+  publishedAt: string
+  createdById?: string | null
+}
+export const appReleaseService = {
+  list(platform?: AppReleasePlatform) {
+    return http.get<AppRelease[]>(
+      '/api/v1/p/app-releases',
+      platform ? { platform } : undefined,
+    )
+  },
+  remove(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/p/app-releases/${id}`)
   },
 }
 

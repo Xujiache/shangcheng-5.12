@@ -4,7 +4,8 @@
  * 仅连接真实后端，不再保留 mock 拦截层。
  *
  * 401 / 2001 / 2002（未登录 / Token 过期 / 鉴权失败）处理：
- *  - 清 token + user store
+ *  - 优先用 refresh token 静默续签 access token，成功则透明重试原请求
+ *  - refresh 失败再清 token + user store
  *  - 节流 toast（5s 内只弹一次，避免连环弹）
  *  - reLaunch 跳登录页
  *  - throw 后让调用方 catch 即可，不再继续业务
@@ -17,6 +18,9 @@ const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string) ||
   (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
 const LOGIN_PATH = '/pages/auth/login'
+
+const TOKEN_KEY = 'jiujiu_token'
+const REFRESH_KEY = 'jiujiu_refresh_token'
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -59,7 +63,15 @@ function guardNamespace(url: string): void {
 
 function getToken(): string | null {
   try {
-    return uni.getStorageSync('jiujiu_token') || null
+    return uni.getStorageSync(TOKEN_KEY) || null
+  } catch {
+    return null
+  }
+}
+
+function getRefreshToken(): string | null {
+  try {
+    return uni.getStorageSync(REFRESH_KEY) || null
   } catch {
     return null
   }
@@ -97,6 +109,53 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
   })
 }
 
+/**
+ * 用 refresh token 静默续签 access token。
+ *
+ * 并发请求只触发一次 refresh —— refreshPromise 复用同一个 in-flight Promise，
+ * 避免 N 个并发请求同时打 N 次 /auth/refresh。
+ *
+ * 成功后把新的 token 写回 storage（下次 getToken() 就能拿到）。
+ * 失败一律返回 false，让上层走 handleUnauthorized 流程清登录态。
+ */
+let refreshPromise: Promise<boolean> | null = null
+function tryRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise
+  refreshPromise = (async () => {
+    const rt = getRefreshToken()
+    if (!rt) return false
+    return await new Promise<boolean>((resolve) => {
+      uni.request({
+        url: BASE_URL + '/api/v1/auth/refresh',
+        method: 'POST',
+        data: { refreshToken: rt },
+        header: { 'Content-Type': 'application/json' },
+        success: (res) => {
+          try {
+            const data = res.data as ApiResult<{ accessToken: string; refreshToken: string }>
+            if (data?.code === 0 && data.data?.accessToken && data.data?.refreshToken) {
+              uni.setStorageSync(TOKEN_KEY, data.data.accessToken)
+              uni.setStorageSync(REFRESH_KEY, data.data.refreshToken)
+              resolve(true)
+              return
+            }
+          } catch {
+            /* ignore */
+          }
+          resolve(false)
+        },
+        fail: () => resolve(false),
+      })
+    })
+  })()
+  try {
+    return refreshPromise
+  } finally {
+    // 清掉 in-flight 占位（无论结果都释放，等下次再调时才会重新发起）
+    refreshPromise.finally(() => { refreshPromise = null })
+  }
+}
+
 let lastUnauthAt = 0
 function handleUnauthorized(message: string) {
   const now = Date.now()
@@ -104,8 +163,8 @@ function handleUnauthorized(message: string) {
   lastUnauthAt = now
 
   try {
-    uni.removeStorageSync('jiujiu_token')
-    uni.removeStorageSync('jiujiu_refresh_token')
+    uni.removeStorageSync(TOKEN_KEY)
+    uni.removeStorageSync(REFRESH_KEY)
     uni.removeStorageSync('jiujiu_user')
   } catch {
     /* ignore */
@@ -128,12 +187,26 @@ function handleUnauthorized(message: string) {
   }, 600)
 }
 
+/** 是否是「登录已过期」类的错误码 */
+function isAuthExpired(code: number) {
+  return code === 401 || code === 2001 || code === 2002
+}
+
 export async function request<T = unknown>(url: string, options: RequestOptions = {}): Promise<T> {
   const fullUrl = buildUrl(url, options.params)
-  const result = await realRequest<T>(fullUrl, options)
+  let result = await realRequest<T>(fullUrl, options)
+
+  // 鉴权失败 → 尝试用 refresh token 静默续签后重试一次
+  // /auth/refresh 自身失败不再递归（否则会死循环）
+  if (result.code !== 0 && isAuthExpired(result.code) && !url.includes('/auth/refresh')) {
+    const ok = await tryRefresh()
+    if (ok) {
+      result = await realRequest<T>(fullUrl, options)
+    }
+  }
 
   if (result.code !== 0) {
-    if (result.code === 2001 || result.code === 2002 || result.code === 401) {
+    if (isAuthExpired(result.code)) {
       handleUnauthorized(result.message)
       throw new Error(result.message || '登录已过期')
     }

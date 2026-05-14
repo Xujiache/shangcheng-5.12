@@ -144,6 +144,10 @@ async function saveDraft() {
   setTimeout(() => uni.navigateBack(), 600)
 }
 
+function goPushList() {
+  uni.navigateTo({ url: '/pages/plaza/pushes' })
+}
+
 async function submit() {
   if (products.value.length === 0) {
     uni.showToast({ title: '请先选择商品', icon: 'none' })
@@ -178,7 +182,7 @@ async function submit() {
 
 <template>
   <view class="page">
-    <NavBar title="新建推送" right-icon="check" @right="submit" />
+    <NavBar title="新建推送" right-text="查看记录" @right="goPushList" />
 
     <scroll-view scroll-y class="scroll">
       <!-- 推送对象 -->
