@@ -437,7 +437,18 @@ export class MerchantService {
     })
   }
   async createCategory(merchantId: string, dto: any) {
-    return this.prisma.category.create({ data: { ...dto, type: 'merchant', merchantId } })
+    // 只取 schema 允许的字段（避免前端 spread 进 createdAt / children 等导致 Prisma 报错）
+    const { name, icon, sort, parentId } = dto || {}
+    return this.prisma.category.create({
+      data: {
+        name,
+        icon: icon || null,
+        sort: typeof sort === 'number' ? sort : 0,
+        parentId: parentId || null,
+        type: 'merchant',
+        merchantId,
+      },
+    })
   }
   async updateCategory(merchantId: string, id: string, dto: any) {
     // 越权防护：必须先校验该分类属于当前 merchantId，否则 A 商家可改 B 商家分类
@@ -446,8 +457,19 @@ export class MerchantService {
       select: { id: true },
     })
     if (!exist) throw new BizException(BizCode.NOT_FOUND, '分类不存在或无权限')
-    // 显式剔除 merchantId / type / id，防止 dto 携带这些字段改归属
-    const { id: _ignoreId, merchantId: _ignoreMid, type: _ignoreType, ...data } = dto || {}
+
+    // 显式只取允许的字段；parentId 在 update 模式下必须用 parent.connect/disconnect，
+    // 直接传 parentId 会被 Prisma 拒绝（Unknown argument）
+    const data: any = {}
+    if (typeof dto?.name === 'string') data.name = dto.name
+    if (typeof dto?.icon === 'string') data.icon = dto.icon
+    if (typeof dto?.sort === 'number') data.sort = dto.sort
+    if (dto && 'parentId' in dto) {
+      data.parent =
+        dto.parentId === null || dto.parentId === undefined || dto.parentId === ''
+          ? { disconnect: true }
+          : { connect: { id: dto.parentId } }
+    }
     return this.prisma.category.update({ where: { id }, data })
   }
   async deleteCategory(merchantId: string, id: string) {
