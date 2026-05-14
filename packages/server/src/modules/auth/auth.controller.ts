@@ -30,14 +30,14 @@ export class AuthController {
 
   // P1-25：登录类接口走 'auth' 桶（10/min/IP），防爆破
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post('wechat-login')
   wechatLogin(@Body() dto: WechatLoginDto) {
     return this.authService.wechatLogin(dto)
   }
 
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post('phone-login')
   phoneLogin(@Body() dto: PhoneLoginDto) {
     return this.authService.phoneLogin(dto)
@@ -53,7 +53,7 @@ export class AuthController {
 
   // P1-25：后台登录走 'auth' 桶（10/min/IP），防字典攻击
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post('admin-login')
   adminLogin(@Body() dto: AdminLoginDto) {
     return this.authService.adminLogin(dto)
@@ -61,7 +61,7 @@ export class AuthController {
 
   // P1-25：refresh 走 'auth' 桶（同登录），防 token 频繁刷
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post('refresh')
   refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto)
