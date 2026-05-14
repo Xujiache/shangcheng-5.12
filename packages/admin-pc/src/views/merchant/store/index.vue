@@ -162,8 +162,15 @@
             </ElFormItem>
           </div>
           <ElFormItem label="分类权限">
-            <ElSelect v-model="authForm.categories" multiple placeholder="留空 = 全部分类" style="width: 100%">
-              <ElOption v-for="c in AVAILABLE_CATEGORIES" :key="c" :value="c" :label="c" />
+            <ElSelect
+              v-model="authForm.categories"
+              multiple
+              filterable
+              placeholder="留空 = 全部分类"
+              style="width: 100%"
+              :loading="availableCategoriesLoading"
+            >
+              <ElOption v-for="c in availableCategories" :key="c" :value="c" :label="c" />
             </ElSelect>
             <div class="text-xs text-g-500 mt-1">仅选中的分类该门店可销售；留空 = 所有分类</div>
           </ElFormItem>
@@ -236,6 +243,8 @@
     saveStore,
     removeStore,
     fetchStaff,
+    fetchMerchantCategories,
+    fetchPlatformCategoriesForMerchant,
     type StoreItem,
     type StaffItem
   } from '@/api/merchant-business'
@@ -263,7 +272,31 @@
     enabled: boolean
   }
 
-  const AVAILABLE_CATEGORIES = ['沙发', '茶几', '电视柜', '餐桌', '餐椅', '床', '衣柜', '灯具', '床垫', '地毯']
+  /**
+   * 门店授权可选分类列表
+   *
+   * 首次加载时由 loadAvailableCategories() 从后端拉取（商家自定义优先；
+   * 若商家未创建任何分类则回退到平台分类）。
+   * 默认值仅在后端尚未返回 / 调用失败时作为兜底，避免 ElSelect 选项为空。
+   */
+  const DEFAULT_CATEGORIES = ['沙发', '茶几', '电视柜', '餐桌', '餐椅', '床', '衣柜', '灯具', '床垫', '地毯']
+  const availableCategories = ref<string[]>([...DEFAULT_CATEGORIES])
+  const availableCategoriesLoading = ref(false)
+
+  async function loadAvailableCategories() {
+    availableCategoriesLoading.value = true
+    try {
+      const own = await fetchMerchantCategories()
+      const flat = own.length ? own : await fetchPlatformCategoriesForMerchant()
+      const names = Array.from(new Set(flat.map((c) => c.name).filter(Boolean)))
+      if (names.length) availableCategories.value = names
+    } catch {
+      // 保持默认 fallback，确保下拉始终可用
+    } finally {
+      availableCategoriesLoading.value = false
+    }
+  }
+
   const AUTH_KEY = 'jj_store_auth_v1'
   const authConfigs = ref<AuthConfig[]>([])
   const authDrawerOpen = ref(false)
@@ -473,7 +506,10 @@
     }
   }
 
-  onMounted(load)
+  onMounted(() => {
+    load()
+    loadAvailableCategories()
+  })
 </script>
 
 <style scoped lang="scss">

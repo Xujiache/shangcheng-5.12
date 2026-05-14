@@ -3,6 +3,9 @@
  *
  * 不再保留任何 mock / faker / 假数据 fallback。
  * 后端无对应接口或调用失败时，统一返回空数组 / 默认空对象，让页面进入空态展示。
+ *
+ * 后端分页接口统一返回 `{ list, total, page, pageSize }`，
+ * 此处统一在函数内 unwrap 成数组，保持消费方 `View.vue` 现有签名不变。
  */
 import type {
   Merchant,
@@ -21,6 +24,21 @@ import {
   type PaymentRecord
 } from './member-service'
 
+/**
+ * 后端分页响应解包工具
+ *
+ * NestJS buildPage 返回 `{ list, total, page, pageSize, hasMore? }`，
+ * 个别接口（如旧实现）可能直接返回数组；这里统一兼容两种形态。
+ */
+function unwrapPage<T>(resp: any): T[] {
+  if (!resp) return []
+  if (Array.isArray(resp)) return resp as T[]
+  if (Array.isArray(resp.list)) return resp.list as T[]
+  if (Array.isArray(resp.items)) return resp.items as T[]
+  if (Array.isArray(resp.records)) return resp.records as T[]
+  return []
+}
+
 /* ============ 1. Dashboard ============ */
 export function fetchPlatformDashboard() {
   return request.get<PlatformDashboard>({ url: '/api/v1/p/dashboard' })
@@ -32,8 +50,42 @@ export interface PlatformMerchantsParams {
   keyword?: string
 }
 
-export function fetchPlatformMerchants(params: PlatformMerchantsParams = {}) {
-  return request.get<Merchant[]>({ url: '/api/v1/p/merchants', params })
+/**
+ * 平台商户列表
+ *
+ * 后端字段：`type` (factory/store) + `status` (active/disabled/pending) + `keyword`。
+ * 前端 tab 映射规则：
+ *   - all      → 不传 type/status
+ *   - factory  → type=factory
+ *   - store    → type=store
+ *   - disabled → status=disabled
+ *
+ * 后端返回 buildPage 分页对象时统一 unwrap 成数组。
+ */
+export async function fetchPlatformMerchants(params: PlatformMerchantsParams = {}): Promise<Merchant[]> {
+  const query: Record<string, unknown> = { pageSize: 200 }
+  if (params.keyword) query.keyword = params.keyword
+  switch (params.tab) {
+    case 'factory':
+      query.type = 'factory'
+      break
+    case 'store':
+      query.type = 'store'
+      break
+    case 'disabled':
+      query.status = 'disabled'
+      break
+    case 'all':
+    case undefined:
+    default:
+      break
+  }
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/merchants', params: query })
+    return unwrapPage<Merchant>(resp)
+  } catch {
+    return []
+  }
 }
 
 export function pauseMerchant(id: string) {
@@ -44,8 +96,16 @@ export function resumeMerchant(id: string) {
 }
 
 /* ============ 3. 平台订单 ============ */
-export function fetchPlatformOrders() {
-  return request.get<Order[]>({ url: '/api/v1/p/orders' })
+export async function fetchPlatformOrders(): Promise<Order[]> {
+  try {
+    const resp = await request.get<any>({
+      url: '/api/v1/p/orders',
+      params: { pageSize: 200 }
+    })
+    return unwrapPage<Order>(resp)
+  } catch {
+    return []
+  }
 }
 
 /* ============ 4. 数据中心 ============ */
@@ -63,8 +123,16 @@ export function fetchPlatformStats(period: StatsPeriod = 'week') {
 }
 
 /* ============ 5. 商户审核 ============ */
-export function fetchMerchantAudits() {
-  return request.get<Merchant[]>({ url: '/api/v1/p/audit/merchants' })
+export async function fetchMerchantAudits(): Promise<Merchant[]> {
+  try {
+    const resp = await request.get<any>({
+      url: '/api/v1/p/audit/merchants',
+      params: { pageSize: 200 }
+    })
+    return unwrapPage<Merchant>(resp)
+  } catch {
+    return []
+  }
 }
 export function approveMerchant(id: string) {
   return request.post<{ ok: boolean }>({ url: `/api/v1/p/merchants/${id}/approve` })
@@ -95,8 +163,16 @@ export interface ProductAuditConfig {
   samplingRate: number
 }
 
-export function fetchProductAudits() {
-  return request.get<AuditProduct[]>({ url: '/api/v1/p/audit/products' })
+export async function fetchProductAudits(): Promise<AuditProduct[]> {
+  try {
+    const resp = await request.get<any>({
+      url: '/api/v1/p/audit/products',
+      params: { pageSize: 200 }
+    })
+    return unwrapPage<AuditProduct>(resp)
+  } catch {
+    return []
+  }
 }
 export function fetchProductAuditConfig() {
   return request.get<ProductAuditConfig>({ url: '/api/v1/p/audit/products/config' })
@@ -137,12 +213,12 @@ export interface AdSlotVM {
  */
 export async function fetchAdSlots(): Promise<AdSlotVM[]> {
   try {
-    const [slots, creatives] = await Promise.all([
-      request.get<AdSlot[]>({ url: '/api/v1/p/ads/slots' }),
-      request.get<AdCreative[]>({ url: '/api/v1/p/ads/creatives' })
+    const [slotsResp, creativesResp] = await Promise.all([
+      request.get<any>({ url: '/api/v1/p/ads/slots', params: { pageSize: 200 } }),
+      request.get<any>({ url: '/api/v1/p/ads/creatives', params: { pageSize: 500 } })
     ])
-    const safeSlots = Array.isArray(slots) ? slots : []
-    const safeCreatives = Array.isArray(creatives) ? creatives : []
+    const safeSlots = unwrapPage<AdSlot>(slotsResp)
+    const safeCreatives = unwrapPage<AdCreative>(creativesResp)
     return safeSlots.map((s) => {
       const anyS = s as any
       return {
@@ -161,11 +237,16 @@ export async function fetchAdSlots(): Promise<AdSlotVM[]> {
   }
 }
 
-export function fetchAdCreatives(slotId?: string) {
-  return request.get<AdCreative[]>({
-    url: '/api/v1/p/ads/creatives',
-    params: slotId ? { slotId } : {}
-  })
+export async function fetchAdCreatives(slotId?: string): Promise<AdCreative[]> {
+  try {
+    const resp = await request.get<any>({
+      url: '/api/v1/p/ads/creatives',
+      params: { pageSize: 500, ...(slotId ? { slotId } : {}) }
+    })
+    return unwrapPage<AdCreative>(resp)
+  } catch {
+    return []
+  }
 }
 
 /* ============ 8. 选品广场 ============ */
@@ -240,8 +321,13 @@ export function pushPlaza(payload: PushPayload) {
 
 /* ============ 9. 会员套餐 ============ */
 
-export function fetchPlatformMemberPlans() {
-  return request.get<MemberPlan[]>({ url: '/api/v1/p/member-plans' })
+export async function fetchPlatformMemberPlans(): Promise<MemberPlan[]> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/member-plans', params: { pageSize: 200 } })
+    return unwrapPage<MemberPlan>(resp)
+  } catch {
+    return []
+  }
 }
 export async function fetchMemberTrialDays(): Promise<number> {
   try {
@@ -279,17 +365,13 @@ export function fetchAllSubscriptions() {
 /* ============ 10. 缴费订单 ============ */
 export type PayOrderItem = PaymentRecord
 
-interface PayOrdersPage { list: PayOrderItem[]; total: number; page: number; pageSize: number }
-
 export async function fetchMemberPayOrders(): Promise<PayOrderItem[]> {
-  // 后端返回分页结构,这里 unwrap 成数组让消费方继续按数组用
   try {
-    const resp = await request.get<PayOrdersPage | PayOrderItem[]>({
+    const resp = await request.get<any>({
       url: '/api/v1/p/member-pay-orders',
       params: { pageSize: 200 },
     })
-    if (Array.isArray(resp)) return resp
-    return resp?.list || []
+    return unwrapPage<PayOrderItem>(resp)
   } catch {
     return []
   }
@@ -299,10 +381,17 @@ export function approvePayRefund(id: string) {
     url: `/api/v1/p/member-pay-orders/${id}/approve-refund`
   })
 }
-export function rejectPayRefund(id: string) {
+
+/**
+ * 驳回退款申请
+ *
+ * @param id     退款订单 ID
+ * @param reason 驳回理由（必填，由调用方在 UI 中弹框收集后传入）
+ */
+export function rejectPayRefund(id: string, reason: string) {
   return request.post<{ ok: boolean }>({
     url: `/api/v1/p/member-pay-orders/${id}/reject-refund`,
-    data: { reason: '' }
+    data: { reason: reason || '' }
   })
 }
 
@@ -325,11 +414,21 @@ export interface AdminRole {
   builtIn?: boolean
 }
 
-export function fetchAdminRoles() {
-  return request.get<AdminRole[]>({ url: '/api/v1/p/roles' })
+export async function fetchAdminRoles(): Promise<AdminRole[]> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/roles', params: { pageSize: 200 } })
+    return unwrapPage<AdminRole>(resp)
+  } catch {
+    return []
+  }
 }
-export function fetchAdminUsers() {
-  return request.get<AdminUser[]>({ url: '/api/v1/p/admins' })
+export async function fetchAdminUsers(): Promise<AdminUser[]> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/admins', params: { pageSize: 200 } })
+    return unwrapPage<AdminUser>(resp)
+  } catch {
+    return []
+  }
 }
 export function saveAdminRole(role: Partial<AdminRole> & { id?: string }) {
   if (role.id) {
@@ -416,11 +515,16 @@ export interface AppReleaseRow {
   createdById?: string | null
 }
 
-export function fetchAppReleases(platform?: AppPlatformKind) {
-  return request.get<AppReleaseRow[]>({
-    url: '/api/v1/p/app-releases',
-    params: platform ? { platform } : {}
-  })
+export async function fetchAppReleases(platform?: AppPlatformKind): Promise<AppReleaseRow[]> {
+  try {
+    const resp = await request.get<any>({
+      url: '/api/v1/p/app-releases',
+      params: { pageSize: 200, ...(platform ? { platform } : {}) }
+    })
+    return unwrapPage<AppReleaseRow>(resp)
+  } catch {
+    return []
+  }
 }
 
 export function deleteAppRelease(id: string) {
@@ -490,11 +594,18 @@ export async function fetchFeatureFlags(): Promise<FeatureFlag[]> {
     return []
   }
 }
-export function toggleFeatureFlag(key: string) {
-  // 前端按 key 调用；后端按 :id（同一字段）。同时透传 enabled=true 由后端取反或前端无关心
+/**
+ * 切换功能开关
+ *
+ * @param key     功能 key（与后端 FeatureFlag.id 同字段）
+ * @param enabled 切换后的目标启用状态（true=启用 / false=停用）
+ *                后端 toggle 接口同时接受 body.enabled 显式指定状态，
+ *                避免前端"猜测当前值再取反"造成的并发竞态。
+ */
+export function toggleFeatureFlag(key: string, enabled: boolean) {
   return request.post<{ ok: boolean }>({
     url: `/api/v1/p/feature-flags/${key}/toggle`,
-    data: {}
+    data: { enabled }
   })
 }
 export function fetchGrayscale() {

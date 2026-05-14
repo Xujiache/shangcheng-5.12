@@ -98,7 +98,7 @@
     type PayOrderItem
   } from '@/api/platform-business'
   import { formatDateTime } from '@jiujiu/shared/utils'
-  import { ElMessage } from 'element-plus'
+  import { ElMessage, ElMessageBox } from 'element-plus'
   import { Refresh, Download } from '@element-plus/icons-vue'
 
   defineOptions({ name: 'PlatformPayOrders' })
@@ -164,7 +164,20 @@
     await load()
   }
   async function rejectRefund(o: PayOrderItem) {
-    await rejectPayRefund(o.id)
+    let reason = ''
+    try {
+      const r = await ElMessageBox.prompt('请输入驳回理由（必填，将告知商家）', '驳回退款', {
+        confirmButtonText: '确认驳回',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputPlaceholder: '如：超过 7 天申诉期 / 已发货且签收 / 资料不全 ...',
+        inputValidator: (v) => (v && v.trim().length >= 2 ? true : '请填写至少 2 个字符的理由')
+      })
+      reason = (r.value || '').trim()
+    } catch {
+      return
+    }
+    await rejectPayRefund(o.id, reason)
     o.status = 'paid'
     ElMessage.success('已驳回退款申请')
     detailOpen.value = false

@@ -139,10 +139,21 @@
           style="width: 260px"
           @input="onSearchInput"
         />
-        <ElSelect v-model="categoryId" placeholder="全部分类" clearable style="width: 160px">
-          <ElOption label="餐厅家具" value="cat-1" />
-          <ElOption label="客厅家具" value="cat-2" />
-          <ElOption label="卧室家具" value="cat-3" />
+        <ElSelect
+          v-model="categoryId"
+          placeholder="全部分类"
+          clearable
+          filterable
+          style="width: 200px"
+          :loading="categoriesLoading"
+          @change="loadData"
+        >
+          <ElOption
+            v-for="c in categoryOptions"
+            :key="c.id"
+            :label="c.name"
+            :value="c.id"
+          />
         </ElSelect>
         <div class="flex-1"></div>
         <transition name="el-fade-in-linear">
@@ -280,11 +291,13 @@
 <script setup lang="ts">
   import {
     fetchMerchantProducts,
+    fetchMerchantCategories,
+    fetchPlatformCategoriesForMerchant,
     updateProductStatus,
     removeProducts
   } from '@/api/merchant-business'
   import { useShopPriceVisibility } from '@/composables/useShopPriceVisibility'
-  import type { Product } from '@jiujiu/shared/types'
+  import type { Category, Product } from '@jiujiu/shared/types'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import {
     ArrowDown,
@@ -326,6 +339,26 @@
 
   const allProducts = ref<Product[]>([])
   const selectedIds = ref<string[]>([])
+
+  // 分类下拉：从后端拉真实分类（优先商家自定义；为空则回退到平台分类）。
+  const categoryOptions = ref<Category[]>([])
+  const categoriesLoading = ref(false)
+
+  async function loadCategories() {
+    categoriesLoading.value = true
+    try {
+      const own = await fetchMerchantCategories()
+      if (own.length) {
+        categoryOptions.value = own
+        return
+      }
+      categoryOptions.value = await fetchPlatformCategoriesForMerchant()
+    } catch {
+      categoryOptions.value = []
+    } finally {
+      categoriesLoading.value = false
+    }
+  }
 
   const filteredProducts = computed(() => {
     let list = allProducts.value
@@ -441,13 +474,18 @@
   async function loadData() {
     loading.value = true
     try {
-      allProducts.value = await fetchMerchantProducts()
+      const query: { categoryId?: string } = {}
+      if (categoryId.value) query.categoryId = categoryId.value
+      allProducts.value = await fetchMerchantProducts(query)
     } finally {
       loading.value = false
     }
   }
 
-  onMounted(loadData)
+  onMounted(() => {
+    loadCategories()
+    loadData()
+  })
 </script>
 
 <style scoped lang="scss">

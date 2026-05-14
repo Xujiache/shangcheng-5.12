@@ -302,6 +302,11 @@
   } from '@element-plus/icons-vue'
 
   import { useShopPriceVisibility } from '@/composables/useShopPriceVisibility'
+  import {
+    fetchMerchantCategories,
+    fetchPlatformCategoriesForMerchant
+  } from '@/api/merchant-business'
+  import type { Category } from '@jiujiu/shared/types'
 
   defineOptions({ name: 'MerchantProductAdd' })
 
@@ -315,33 +320,56 @@
   const TAG_OPTIONS = ['新品', '包邮', '厂家直发', '热销', '限时', '推荐', '环保', 'A级品']
   const SPEC_NAME_OPTIONS = ['尺寸', '颜色', '材质', '风格', '套餐', '版本']
 
-  const categoryOptions = [
-    {
-      value: 'cat-1',
-      label: '客厅家具',
-      children: [
-        { value: 'cat-1-1', label: '沙发' },
-        { value: 'cat-1-2', label: '茶几' },
-        { value: 'cat-1-3', label: '电视柜' }
-      ]
-    },
-    {
-      value: 'cat-2',
-      label: '餐厅家具',
-      children: [
-        { value: 'cat-2-1', label: '餐桌' },
-        { value: 'cat-2-2', label: '餐椅' }
-      ]
-    },
-    {
-      value: 'cat-3',
-      label: '卧室家具',
-      children: [
-        { value: 'cat-3-1', label: '床' },
-        { value: 'cat-3-2', label: '衣柜' }
-      ]
+  // 分类级联：从后端真实分类构建（优先商家自定义，回退平台分类）。
+  interface CascaderNode {
+    value: string
+    label: string
+    children?: CascaderNode[]
+  }
+
+  const categoryOptions = ref<CascaderNode[]>([])
+
+  function buildCascaderTree(flat: Category[]): CascaderNode[] {
+    const byId = new Map<string, CascaderNode & { _parentId: string | null; _sort: number }>()
+    for (const c of flat) {
+      byId.set(c.id, {
+        value: c.id,
+        label: c.name,
+        children: [],
+        _parentId: c.parentId ?? null,
+        _sort: c.sort ?? 0
+      })
     }
-  ]
+    const roots: CascaderNode[] = []
+    for (const node of byId.values()) {
+      if (node._parentId && byId.has(node._parentId)) {
+        const parent = byId.get(node._parentId)!
+        parent.children = parent.children || []
+        parent.children.push(node)
+      } else {
+        roots.push(node)
+      }
+    }
+    const sortRec = (list: CascaderNode[]) => {
+      list.sort((a, b) => ((a as any)._sort ?? 0) - ((b as any)._sort ?? 0))
+      list.forEach((n) => {
+        if (n.children?.length) sortRec(n.children)
+        else delete n.children
+      })
+    }
+    sortRec(roots)
+    return roots
+  }
+
+  async function loadCategories() {
+    try {
+      const own = await fetchMerchantCategories()
+      const flat = own.length ? own : await fetchPlatformCategoriesForMerchant()
+      categoryOptions.value = buildCascaderTree(flat)
+    } catch {
+      categoryOptions.value = []
+    }
+  }
 
   interface SpecGroup {
     name: string
@@ -569,7 +597,10 @@
     ElMessage.success('草稿已保存')
   }
 
-  onMounted(rebuildSku)
+  onMounted(() => {
+    loadCategories()
+    rebuildSku()
+  })
 </script>
 
 <style scoped lang="scss">

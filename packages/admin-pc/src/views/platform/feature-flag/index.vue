@@ -57,7 +57,11 @@
             <span class="font-medium">{{ f.label }}</span>
             <ElTag v-if="f.badge" size="small" :type="badgeTypeOf(f.badge)">{{ f.badge }}</ElTag>
           </div>
-          <ElSwitch v-model="f.defaultEnabled" />
+          <ElSwitch
+            v-model="f.defaultEnabled"
+            :loading="togglingKeys.has(f.id)"
+            @change="(v) => onToggle(f, v as boolean)"
+          />
         </div>
       </div>
     </ElCard>
@@ -76,7 +80,11 @@
             <div class="font-medium">{{ f.label }}</div>
             <div v-if="f.badge" class="text-xs text-g-500 mt-1">{{ f.badge }}</div>
           </div>
-          <ElSwitch v-model="f.defaultEnabled" />
+          <ElSwitch
+            v-model="f.defaultEnabled"
+            :loading="togglingKeys.has(f.id)"
+            @change="(v) => onToggle(f, v as boolean)"
+          />
         </div>
       </div>
     </ElCard>
@@ -92,7 +100,11 @@
       <div class="pf-flag-rows">
         <div v-for="f in groupOf('side_menu')" :key="f.key" class="pf-flag-row">
           <span class="font-medium">{{ f.label }}</span>
-          <ElSwitch v-model="f.defaultEnabled" />
+          <ElSwitch
+            v-model="f.defaultEnabled"
+            :loading="togglingKeys.has(f.id)"
+            @change="(v) => onToggle(f, v as boolean)"
+          />
         </div>
       </div>
     </ElCard>
@@ -105,6 +117,7 @@
     fetchGrayscale,
     saveGrayscale,
     resetFeatureFlags,
+    toggleFeatureFlag,
     type GrayscaleConfig
   } from '@/api/platform-business'
   import type { FeatureFlag } from '@jiujiu/shared/types'
@@ -114,6 +127,7 @@
 
   const flags = ref<FeatureFlag[]>([])
   const gray = ref<GrayscaleConfig>({ audience: 'all', percent: 30, rule: 'random' })
+  const togglingKeys = reactive(new Set<string>())
 
   function groupOf(g: FeatureFlag['group']) {
     return flags.value.filter((f) => f.group === g)
@@ -131,6 +145,21 @@
     if (b === 'HOT') return 'danger'
     if (b.includes('厂家')) return 'warning'
     return 'info'
+  }
+
+  // ElSwitch v-model 已经把 flag.defaultEnabled 改成 next 值，
+  // 这里把 next 透传给后端；失败时回滚本地状态并给用户提示。
+  async function onToggle(flag: FeatureFlag, next: boolean) {
+    togglingKeys.add(flag.id)
+    try {
+      await toggleFeatureFlag(flag.id, next)
+      ElMessage.success(`${flag.label} 已${next ? '启用' : '停用'}`)
+    } catch (e: any) {
+      flag.defaultEnabled = !next
+      ElMessage.error(`切换失败：${e?.message || '请重试'}`)
+    } finally {
+      togglingKeys.delete(flag.id)
+    }
   }
 
   async function onSave() {

@@ -99,15 +99,39 @@ export function removeProducts(ids: string[]) {
 
 /* ========== 分类 ========== */
 
-export function fetchMerchantCategories() {
-  return request.get<Category[]>({ url: '/api/v1/m/categories' })
+/**
+ * 商家自定义分类列表
+ *
+ * 后端 `/m/categories` 默认返回当前商家的自定义分类树（type=merchant）。
+ * 兼容直接返回数组或 buildPage 分页对象两种形态；接口未实现 / 失败时返回空数组。
+ */
+export async function fetchMerchantCategories(): Promise<Category[]> {
+  try {
+    const resp = await request.get<PageResp<Category> | Category[]>({
+      url: '/api/v1/m/categories'
+    })
+    return unwrapList(resp)
+  } catch {
+    return []
+  }
 }
 
-/** 平台分类（merchant 视角只读引用）：后端按 type=platform 返回 */
-export function fetchPlatformCategoriesForMerchant() {
-  return request
-    .get<Category[]>({ url: '/api/v1/m/categories', params: { type: 'platform' } })
-    .catch(() => [] as Category[])
+/**
+ * 平台分类（merchant 视角只读引用）
+ *
+ * 后端 `merchant.controller.ts#categories` 接受 `type=platform` query；
+ * 兼容直接返回数组或 buildPage 分页对象；接口未实现 / 失败时返回空数组（本地兜底）。
+ */
+export async function fetchPlatformCategoriesForMerchant(): Promise<Category[]> {
+  try {
+    const resp = await request.get<PageResp<Category> | Category[]>({
+      url: '/api/v1/m/categories',
+      params: { type: 'platform' }
+    })
+    return unwrapList(resp)
+  } catch {
+    return []
+  }
 }
 
 export function saveMerchantCategories(list: Category[]) {
@@ -281,8 +305,9 @@ export interface MarketingActivity {
 /**
  * 营销活动列表
  *
- * 后端暂未提供活动卡片聚合接口；当前直接走 `/api/v1/m/marketing/activities`，
- * 后端未实现时返回空数组让页面进入空态。
+ * 主接口：`/api/v1/m/marketing/activities`（后端工程师正在实现）。
+ * 接口未实现 / 失败时本地兜底返回空数组，页面进入空态；
+ * 如需展示真实业务概要可后续替换为 `marketing/overview` + `marketing/coupons` 聚合。
  */
 export async function fetchMarketingActivities(): Promise<MarketingActivity[]> {
   try {
@@ -633,8 +658,10 @@ export async function saveCommissionConfig(cfg: CommissionConfig) {
 /**
  * 佣金历史明细列表
  *
- * 后端暂未提供历史明细分页接口（仅有规则汇总）；
- * 这里走 `/api/v1/m/commission/history`，失败/未实现时返回空数组。
+ * 主接口：`/api/v1/m/commission/history`（后端工程师正在实现）。
+ * 接口未实现 / 失败时本地兜底返回空数组，页面进入空态；
+ * 退路：可在调用方使用 `fetchCommissionConfig`（`/m/commission/rules`）
+ * 仅展示分佣规则、跳过明细列表。
  */
 export async function fetchCommissionHistory(): Promise<Commission[]> {
   try {
