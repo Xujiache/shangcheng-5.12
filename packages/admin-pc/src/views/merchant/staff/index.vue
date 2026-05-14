@@ -146,7 +146,7 @@
 
   const form = reactive<StaffItem>({
     id: '',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=new',
+    avatar: '',
     name: '',
     phone: '',
     role: 'sales',
@@ -189,7 +189,7 @@
   function openCreate() {
     Object.assign(form, {
       id: '',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + Date.now(),
+      avatar: '',
       name: '',
       phone: '',
       role: 'sales',

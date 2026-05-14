@@ -29,6 +29,18 @@ export class FilesService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
+    const isProd = process.env.NODE_ENV === 'production'
+    const accessKey = process.env.S3_ACCESS_KEY || ''
+    const secretKey = process.env.S3_SECRET_KEY || ''
+
+    // 生产环境必须显式配置 S3 凭据，绝不能使用 minioadmin 默认值，
+    // 否则有"管理员密码裸奔"的严重风险。
+    if (isProd && (!accessKey || !secretKey)) {
+      this.logger.error('[files] 生产环境缺少 S3_ACCESS_KEY / S3_SECRET_KEY，上传服务将不可用')
+      this.client = null
+      return
+    }
+
     try {
       const endpoint = (process.env.S3_ENDPOINT || 'http://localhost:9000').replace(/^https?:\/\//, '')
       const useSSL = (process.env.S3_ENDPOINT || '').startsWith('https')
@@ -37,8 +49,9 @@ export class FilesService implements OnModuleInit {
         endPoint: host,
         port: port ? Number(port) : useSSL ? 443 : 80,
         useSSL,
-        accessKey: process.env.S3_ACCESS_KEY || 'minioadmin',
-        secretKey: process.env.S3_SECRET_KEY || 'minioadmin',
+        // 非生产兜底 minioadmin（与 docker-compose 默认一致），生产则使用真实凭据
+        accessKey: accessKey || (isProd ? '' : 'minioadmin'),
+        secretKey: secretKey || (isProd ? '' : 'minioadmin'),
       })
       const exists = await this.client.bucketExists(this.bucket).catch(() => false)
       if (!exists) {

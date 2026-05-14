@@ -47,6 +47,13 @@ export const orderService = {
   create(dto: Record<string, unknown>) {
     return http.post<{ orderId: string; orderNo: string; payAmount: number }>('/api/v1/u/orders', dto)
   },
+  /**
+   * 发起支付。
+   *
+   * - 生产：后端永远返回 `miniPay`，由 `uni.requestPayment` 调起微信支付
+   * - 联调态（后端商户号未配齐）：后端可能返回 `mockPaid:true` 直接把订单标为已付
+   *   仅作开发兼容字段，生产环境永远 false / 不存在；前端对此分支做防御性处理。
+   */
   pay(id: string, method: string) {
     return http.post<{
       ok: boolean
@@ -187,9 +194,20 @@ export interface NearbyStore {
   lat: number
   lng: number
 }
+export interface NearbyParams {
+  lat?: number
+  lng?: number
+  /** km，可选 */
+  radius?: number
+}
 export const storeMapService = {
-  nearby() {
-    return http.get<NearbyStore[]>('/api/v1/u/stores/nearby')
+  /**
+   * 附近门店列表。
+   * 调用方应通过 `uni.getLocation` 取得 lat/lng 一起传给后端；
+   * 缺少坐标时后端会按"不带定位"的默认逻辑返回（如全局推荐 / 距离字段置 0）。
+   */
+  nearby(params: NearbyParams = {}) {
+    return http.get<NearbyStore[]>('/api/v1/u/stores/nearby', params as Record<string, unknown>)
   },
 }
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as argon2 from 'argon2'
+import { randomInt } from 'node:crypto'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { AdminLoginDto, PhoneLoginDto, RefreshDto, SmsCodeDto, WechatLoginDto } from './dto/login.dto'
@@ -41,7 +42,6 @@ export class AuthService {
     }
   }
 
-  /** 微信小程序登录（mock：根据 code 创建/查找用户） */
   /**
    * 微信小程序登录
    * dto.code = wx.login() 返回的临时 code
@@ -53,11 +53,17 @@ export class AuthService {
    *   3. 签发 JWT
    *
    * 配置：环境变量 WX_MINIAPP_APPID / WX_MINIAPP_SECRET
-   * 占位/降级：如果 env 未配或 code 调用失败，仍走 mock openid 流程，避免开发期阻塞
+   *
+   * 安全规则：
+   *   - 生产环境（NODE_ENV=production）：必须真实换到 openid，否则拒绝登录，
+   *     杜绝伪造 code 直接获取账号的风险。
+   *   - 非生产环境：env 缺失或调用失败时使用与 code 强相关的派生 openid，
+   *     便于本地联调；但该 openid 是确定性的，绝不可与任何真实 openid 冲突。
    */
   async wechatLogin(dto: WechatLoginDto) {
     const appid = process.env.WX_MINIAPP_APPID
     const secret = process.env.WX_MINIAPP_SECRET
+    const isProd = process.env.NODE_ENV === 'production'
     let openid: string | null = null
     let unionid: string | null = null
 
@@ -76,13 +82,26 @@ export class AuthService {
         }
       } catch (e: any) {
         if (e instanceof BizException) throw e
-        // 网络故障：fall through 到 mock 兜底，避免本地开发阻塞
+        if (isProd) {
+          // 生产环境：网络故障也要明确告知前端，避免静默走假数据
+          throw new BizException(BizCode.BUSINESS_ERROR, '微信登录服务暂不可用，请稍后重试')
+        }
+        // 非生产：fall through 到开发期兜底
       }
+    } else if (isProd) {
+      // 生产环境必须配齐 WeChat 凭证
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '服务端未配置微信小程序凭证，无法完成登录',
+      )
     }
 
-    // 兜底 mock：未配置 appid/secret 或 fetch 失败
     if (!openid) {
-      openid = dto.code ? `wx_${dto.code.slice(0, 16)}` : `wx_anon_${Date.now()}`
+      if (isProd) {
+        throw new BizException(BizCode.INVALID_PARAMS, '微信授权失败，未获取到 openid')
+      }
+      // 仅本地/测试：根据 code 派生确定性 openid，便于联调（带前缀避免与真实 openid 冲突）
+      openid = dto.code ? `dev_wx_${dto.code.slice(0, 16)}` : `dev_wx_anon_${Date.now()}`
     }
 
     let user = await this.prisma.user.findUnique({ where: { openid } })
@@ -147,7 +166,8 @@ export class AuthService {
   async sendSmsCode(dto: SmsCodeDto) {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
     const useRealSms = provider !== 'none' && process.env.NODE_ENV === 'production'
-    const code = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)
+    // 用 crypto.randomInt 替代 Math.random，避免可预测的伪随机序列被穷举
+    const code = String(randomInt(100000, 1000000))
 
     // 60 秒频控：同一手机号 60 秒内只允许发一次
     const recent = await this.prisma.smsCode.findFirst({
@@ -219,9 +239,8 @@ export class AuthService {
   /** 刷新 Token */
   async refresh(dto: RefreshDto) {
     try {
-      const payload: any = await this.jwt.verifyAsync(dto.refreshToken, {
-        secret: process.env.JWT_SECRET || 'please-change-me-in-production',
-      })
+      // 走 JwtService 注册时的密钥（resolveJwtSecret 已强制生产必须配置真实 JWT_SECRET）
+      const payload: any = await this.jwt.verifyAsync(dto.refreshToken)
       if (!payload._r) throw new Error('not refresh token')
       const tokens = await this.signTokens({ sub: payload.sub, role: payload.role, merchantId: payload.merchantId })
       return tokens

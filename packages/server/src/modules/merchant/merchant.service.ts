@@ -3,25 +3,34 @@ import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
-import { withdrawNo, refundNo } from '../../common/utils/id.util'
+import { withdrawNo, refundNo, membershipNo } from '../../common/utils/id.util'
+import { WxPayService } from '../payment/wxpay.service'
 
 const QUOTA_KEYS = ['pushSlots', 'banner', 'impression'] as const
 type QuotaKey = (typeof QUOTA_KEYS)[number]
 
 @Injectable()
 export class MerchantService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly wxpay: WxPayService,
+  ) {}
 
-  /** 获取商家 merchantId（user 必须为 factory/store/super-admin） */
+  /**
+   * 获取商家 merchantId（user 必须为 factory/store/super-admin）
+   *
+   * super-admin 跨工作台访问：
+   *   - 非生产环境：可以回退到 seed 的 merchant@demo 演示商户，便于本地联调
+   *   - 生产环境：禁止任何"演示商户"兜底；super-admin 想操作商户功能必须显式绑定，
+   *     否则一律抛 FORBIDDEN，避免误把平台管理员的操作写到第一个真实商户上。
+   */
   async ensureMerchantId(user: { sub: string; role: string; merchantId?: string }): Promise<string> {
     if (user.merchantId) return user.merchantId
     const m = await this.prisma.merchant.findUnique({ where: { userId: user.sub } })
     if (m) return m.id
-    // super-admin 跨工作台支持：用 seed merchant@demo 的商家作为演示绑定
-    if (user.role === 'super-admin') {
+    if (user.role === 'super-admin' && process.env.NODE_ENV !== 'production') {
       const demo = await this.prisma.user.findUnique({
         where: { username: 'merchant@demo' },
-        include: { /* nothing */ },
       })
       if (demo) {
         const mer = await this.prisma.merchant.findUnique({ where: { userId: demo.id } })
@@ -382,6 +391,42 @@ export class MerchantService {
     return { ok: true }
   }
 
+  /**
+   * 商家维度推广概览（merchant-app 首页 / 推广中心 用）
+   *
+   * Commission 表无 merchantId 字段，按所属订单的 merchantId 关联过滤。
+   *
+   * - totalCommission：商家所有商品被推广产生的累积佣金（已结算 + 待结算，排除已取消）
+   * - monthCommission：本月已结算 / 待结算佣金
+   * - promotedOrders：去重订单数（佣金维度）
+   * - promotedUsers：去重推广人（user）数量
+   *
+   * 全部走 Commission 表实时聚合，零 mock。
+   */
+  async promoteSummary(merchantId: string) {
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const all = await this.prisma.commission.findMany({
+      where: {
+        status: { not: 'cancelled' },
+        order: { merchantId },
+      },
+      select: { amount: true, orderId: true, userId: true, createdAt: true },
+    })
+    const totalCommission = all.reduce((s, c) => s + Number(c.amount || 0), 0)
+    const monthCommission = all
+      .filter((c) => c.createdAt >= monthStart)
+      .reduce((s, c) => s + Number(c.amount || 0), 0)
+    const promotedOrders = new Set(all.map((c) => c.orderId)).size
+    const promotedUsers = new Set(all.map((c) => c.userId)).size
+    return {
+      totalCommission: Math.round(totalCommission * 100) / 100,
+      monthCommission: Math.round(monthCommission * 100) / 100,
+      promotedOrders,
+      promotedUsers,
+    }
+  }
+
   // ========== 提现 ==========
   async listWithdraws(merchantId: string, q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
@@ -713,8 +758,62 @@ export class MerchantService {
     })
     return { ok: true, rating: merged.rating, ratingCount: merged.ratingCount }
   }
+  /**
+   * 商家关注/取消关注厂家
+   *
+   * 真实持久化到 SystemConfig（key=shop:<merchantId>:follow），存放厂家 ID 数组。
+   * 与现有 profile-extras / priceRule 等 shop:<id>:* 模式保持一致，避免单独建表。
+   *
+   * - on=true：加入 followed 列表（去重）
+   * - on=false：从 followed 列表移除
+   * - 自动忽略对自身的关注请求，防止 GMV 自循环
+   */
   async followFactory(merchantId: string, id: string, on: boolean) {
-    return { ok: true, followed: on }
+    if (!merchantId) throw new BizException(BizCode.FORBIDDEN, '当前账号未关联商家')
+    if (!id) throw new BizException(BizCode.INVALID_PARAMS, '缺少厂家 ID')
+    if (id === merchantId) {
+      throw new BizException(BizCode.INVALID_PARAMS, '不能关注自己')
+    }
+
+    const key = `shop:${merchantId}:follow`
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { key } })
+    const cur = (cfg?.value as any) || {}
+    const list: string[] = Array.isArray(cur.followed) ? cur.followed.filter((x: any) => typeof x === 'string') : []
+    const set = new Set(list)
+    if (on) set.add(id)
+    else set.delete(id)
+
+    const merged = { ...cur, followed: Array.from(set) }
+    await this.prisma.systemConfig.upsert({
+      where: { key },
+      update: { value: merged },
+      create: { key, value: merged },
+    })
+    return { ok: true, followed: on, total: merged.followed.length }
+  }
+
+  /** 当前商家关注的厂家 ID 列表（merchant-app 关注页用） */
+  async listFollowedFactories(merchantId: string) {
+    if (!merchantId) return { list: [], total: 0 }
+    const key = `shop:${merchantId}:follow`
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { key } })
+    const followed: string[] = Array.isArray((cfg?.value as any)?.followed)
+      ? ((cfg?.value as any).followed as any[]).filter((x) => typeof x === 'string')
+      : []
+    if (followed.length === 0) return { list: [], total: 0 }
+    const factories = await this.prisma.merchant.findMany({
+      where: { id: { in: followed }, status: 'active' },
+    })
+    return {
+      list: factories.map((f) => ({
+        id: f.id,
+        name: f.name,
+        region: f.region,
+        categories: f.categories,
+        gmv: Number(f.totalGmv || 0),
+      })),
+      total: factories.length,
+    }
   }
   async applyAgency(merchantId: string, dto: any) {
     const app = await this.prisma.agencyApplication.create({
@@ -1008,34 +1107,203 @@ export class MerchantService {
     }
     return notices
   }
-  async subscribe(merchantId: string, dto: { planId: string; payMethod?: string }) {
+  /**
+   * 商户开通 / 续费 / 升级会员套餐 —— 真实下单接入微信支付。
+   *
+   * 流程：
+   *   1. 校验套餐存在 + 商户合法
+   *   2. 创建 PaymentRecord status=pending（**绝不直接 active**）
+   *   3. 生产环境 / 已配 wxpay：调 wxpay JSAPI 拿 miniPay 参数返回给前端调起支付
+   *      → 用户在微信里真实付款 → 微信回调 /payments/wechat/notify
+   *      → 回调里调用 `activateMembership(recordId)` 真正激活
+   *   4. 非生产 + wxpay 未配齐：保留预览模式，直接 activate 让本地联调可走通
+   *
+   * 返回字段：
+   *   { ok, mockPaid, paymentNo, recordId, miniPay? }
+   *   - mockPaid=true 表示已激活；前端直接刷新订阅页
+   *   - mockPaid=false + miniPay 表示需要前端 uni.requestPayment 调起支付，
+   *     并在支付成功后调 /membership/payments/:no/status 轮询激活
+   */
+  async subscribe(
+    merchantId: string,
+    userId: string,
+    dto: { planId: string; payMethod?: string },
+  ) {
     const plan = await this.prisma.memberPlan.findUnique({ where: { id: dto.planId } })
     if (!plan) throw new BizException(BizCode.NOT_FOUND, '套餐不存在')
-    const startAt = new Date()
-    const endAt = new Date(startAt)
-    if (plan.period === 'monthly') endAt.setMonth(endAt.getMonth() + plan.periodCount)
-    else if (plan.period === 'yearly') endAt.setFullYear(endAt.getFullYear() + plan.periodCount)
-    else if (plan.period === 'weekly') endAt.setDate(endAt.getDate() + 7 * plan.periodCount)
-    else if (plan.period === 'daily') endAt.setDate(endAt.getDate() + plan.periodCount)
-    else endAt.setFullYear(endAt.getFullYear() + 100)
+    if (plan.status !== 'active') {
+      throw new BizException(BizCode.BUSINESS_ERROR, '套餐已下架')
+    }
 
-    const sub = await this.prisma.merchantMembership.create({
-      data: { merchantId, planId: plan.id, planCode: plan.code, startAt, endAt, status: 'active' },
-    })
-    await this.prisma.paymentRecord.create({
+    const merchant = await this.prisma.merchant.findUnique({ where: { id: merchantId } })
+    if (!merchant) throw new BizException(BizCode.NOT_FOUND, '商户不存在')
+    if (merchant.status !== 'active') {
+      throw new BizException(BizCode.FORBIDDEN, '当前商户状态不允许开通会员')
+    }
+
+    const paymentNo = membershipNo()
+    const record = await this.prisma.paymentRecord.create({
       data: {
-        no: `MP-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        no: paymentNo,
         merchantId,
         planId: plan.id,
         planName: plan.name,
         planType: plan.type,
         amount: plan.price,
         paymentMethod: dto.payMethod || 'wechat',
-        status: 'paid',
-        paidAt: new Date(),
+        status: 'pending',
       },
     })
+
+    const isProd = process.env.NODE_ENV === 'production'
+
+    // 非生产 + wxpay 未配齐 → 立即激活，便于本地预览
+    if (!isProd && !this.wxpay.isReady()) {
+      await this.activateMembership(record.id)
+      return {
+        ok: true,
+        mockPaid: true,
+        paymentNo,
+        recordId: record.id,
+      }
+    }
+
+    // 真实下单需要 openid 调微信小程序原生支付
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    const openid = user?.openid || ''
+    if (!openid) {
+      // 清理待支付记录，避免堆积无效订单
+      await this.prisma.paymentRecord.delete({ where: { id: record.id } })
+      throw new BizException(
+        BizCode.INVALID_PARAMS,
+        '当前账号未绑定微信，请先在「我的-账号绑定」中绑定微信后再开通会员',
+      )
+    }
+
+    const miniPay = await this.wxpay.createMiniPay({
+      outTradeNo: paymentNo,
+      description: `开通${plan.name}`,
+      totalFen: Math.round(Number(plan.price) * 100),
+      openid,
+      attach: `membership:${record.id}`,
+    })
+
+    return {
+      ok: true,
+      mockPaid: false,
+      paymentNo,
+      recordId: record.id,
+      miniPay,
+    }
+  }
+
+  /**
+   * 真正"激活会员"的入口；只能被以下两个地方调用：
+   *   - 微信支付回调（payment.controller.ts wechatNotify）成功后
+   *   - 非生产兜底（subscribe 内部）
+   *
+   * 幂等：重复调用同一 recordId 不会重复扣账或重复创建订阅。
+   *
+   * 续费规则：如果当前已有同套餐 active 订阅 → 在 endAt 基础上叠加；
+   *           不同套餐 → 把旧的标 expired，新建一条 active。
+   */
+  async activateMembership(recordId: string) {
+    const record = await this.prisma.paymentRecord.findUnique({
+      where: { id: recordId },
+      include: { plan: true },
+    })
+    if (!record) throw new BizException(BizCode.NOT_FOUND, '支付记录不存在')
+    if (record.status === 'paid') {
+      // 幂等：已经激活过了，直接返回最新 membership
+      const latest = await this.prisma.merchantMembership.findFirst({
+        where: { merchantId: record.merchantId, planId: record.planId || undefined },
+        orderBy: { createdAt: 'desc' },
+      })
+      return { ok: true, subscription: latest ? decimalToNumber(latest) : null, alreadyPaid: true }
+    }
+    if (!record.plan) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '套餐已被删除，无法激活')
+    }
+
+    const plan = record.plan
+    const merchantId = record.merchantId
+
+    const sub = await this.prisma.$transaction(async (tx) => {
+      // 1. 标支付记录为已付
+      await tx.paymentRecord.update({
+        where: { id: recordId },
+        data: { status: 'paid', paidAt: new Date() },
+      })
+
+      // 2. 查同套餐已存在的 active 订阅 → 续费叠加
+      const existing = await tx.merchantMembership.findFirst({
+        where: {
+          merchantId,
+          planId: plan.id,
+          status: { in: ['trial', 'active'] },
+        },
+        orderBy: { endAt: 'desc' },
+      })
+
+      const startAt = existing && existing.endAt > new Date() ? existing.endAt : new Date()
+      const endAt = new Date(startAt)
+      if (plan.period === 'monthly') endAt.setMonth(endAt.getMonth() + plan.periodCount)
+      else if (plan.period === 'yearly') endAt.setFullYear(endAt.getFullYear() + plan.periodCount)
+      else if (plan.period === 'weekly') endAt.setDate(endAt.getDate() + 7 * plan.periodCount)
+      else if (plan.period === 'daily') endAt.setDate(endAt.getDate() + plan.periodCount)
+      else endAt.setFullYear(endAt.getFullYear() + 100)
+
+      if (existing) {
+        return tx.merchantMembership.update({
+          where: { id: existing.id },
+          data: { endAt, status: 'active' },
+        })
+      }
+
+      // 3. 不同套餐 / 没有订阅 → 先把其他 active 订阅置 expired，再新建
+      await tx.merchantMembership.updateMany({
+        where: {
+          merchantId,
+          status: { in: ['trial', 'active'] },
+          NOT: { planId: plan.id },
+        },
+        data: { status: 'expired' },
+      })
+
+      return tx.merchantMembership.create({
+        data: {
+          merchantId,
+          planId: plan.id,
+          planCode: plan.code,
+          startAt,
+          endAt,
+          status: 'active',
+        },
+      })
+    })
+
     return { ok: true, subscription: decimalToNumber(sub) }
+  }
+
+  /**
+   * 前端轮询支付状态：merchant-app 拉起 wxpay 成功后，调这个接口确认
+   * PaymentRecord 是否已被回调激活。
+   */
+  async getMembershipPaymentStatus(merchantId: string, no: string) {
+    const record = await this.prisma.paymentRecord.findFirst({
+      where: { no, merchantId },
+      select: {
+        id: true,
+        no: true,
+        planName: true,
+        amount: true,
+        status: true,
+        paidAt: true,
+        createdAt: true,
+      },
+    })
+    if (!record) throw new BizException(BizCode.NOT_FOUND, '支付记录不存在')
+    return decimalToNumber(record)
   }
   async cancelSub(merchantId: string) {
     await this.prisma.merchantMembership.updateMany({

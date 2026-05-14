@@ -20,6 +20,7 @@
 <script setup lang="ts">
   import '@wangeditor/editor/dist/css/style.css'
   import { onBeforeUnmount, onMounted, shallowRef, computed } from 'vue'
+  // @ts-ignore — 第三方包未提供类型声明文件
   import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
   import { useUserStore } from '@/store/modules/user'
   import EmojiText from '@/utils/ui/emojo'

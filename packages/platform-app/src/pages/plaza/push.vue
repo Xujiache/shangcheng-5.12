@@ -18,14 +18,9 @@ import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
 const subjectType = ref<'product' | 'factory'>('product')
-const products = ref<{ id: string; name: string }[]>([
-  { id: '001', name: '实木餐桌 #001' },
-  { id: '002', name: '真皮三人沙发' },
-  { id: '003', name: '北欧岩板茶几' },
-  { id: '004', name: '软包大床 1.8m' },
-  { id: '005', name: '智能升降桌' },
-  { id: '006', name: '现代衣柜' },
-])
+// 商品由上一步页面通过 query string 传入（productId / count），
+// 这里不再硬编码示例商品，避免出现"假数据已选 6 件"误导用户
+const products = ref<{ id: string; name: string }[]>([])
 const positions = ref<string[]>(['商家APP · 广场入口'])
 const tags = ref<string[]>(['🔥本周热推'])
 const audience = ref<'all' | 'region' | 'level'>('all')

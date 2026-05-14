@@ -150,7 +150,7 @@
             已选 <b>{{ selectedIds.length }}</b> 项 ·
             <ElButton text type="primary" size="small" @click="batchUpdate('active')">批量上架</ElButton>
             <ElDivider direction="vertical" />
-            <ElButton text type="primary" size="small" @click="batchUpdate('sold-out')">批量下架</ElButton>
+            <ElButton text type="primary" size="small" @click="batchUpdate('offline')">批量下架</ElButton>
             <ElDivider direction="vertical" />
             <ElButton text type="danger" size="small" @click="batchRemove">批量删除</ElButton>
           </div>
@@ -242,7 +242,7 @@
               type="warning"
               size="small"
               v-else
-              @click="toggleStatus(row, 'sold-out')"
+              @click="toggleStatus(row, 'offline')"
             >
               下架
             </ElButton>

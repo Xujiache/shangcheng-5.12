@@ -118,9 +118,9 @@
           <ElInput
             :model-value="s.security.ipWhitelist.join('\n')"
             type="textarea"
-            rows="4"
+            :rows="4"
             placeholder="每行一个 IP，留空表示不限制"
-            @update:model-value="(v) => (s!.security.ipWhitelist = String(v).split('\n').map((x) => x.trim()).filter(Boolean))"
+            @update:model-value="(v) => (s!.security.ipWhitelist = String(v).split('\n').map((x: string) => x.trim()).filter(Boolean))"
           />
         </ElFormItem>
       </ElForm>

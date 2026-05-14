@@ -20,8 +20,34 @@ const showList = ref(false)
 
 const selected = computed(() => stores.value.find((s) => s.id === selectedId.value) ?? stores.value[0])
 
+/** 通过 uni.getLocation 拿到经纬度（失败时返回 null，由后端走"不带定位"逻辑） */
+function resolveUserLocation(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    try {
+      uni.getLocation({
+        type: 'gcj02',
+        success: (res) => {
+          if (typeof res.latitude === 'number' && typeof res.longitude === 'number') {
+            resolve({ lat: res.latitude, lng: res.longitude })
+          } else {
+            resolve(null)
+          }
+        },
+        fail: () => resolve(null),
+      })
+    } catch {
+      resolve(null)
+    }
+  })
+}
+
 async function load() {
-  stores.value = await storeMapService.nearby()
+  const loc = await resolveUserLocation()
+  try {
+    stores.value = await storeMapService.nearby(loc ?? undefined)
+  } catch {
+    stores.value = []
+  }
   if (stores.value.length > 0) selectedId.value = stores.value[0].id
 }
 
@@ -50,13 +76,14 @@ function toggleList() {
 }
 
 /** map markers */
+// iconPath 留空时，微信小程序原生 map 会使用系统默认 pin
+// （之前从 dicebear 拉外链图标，既走网络又不在 mp 域名白名单内）
 const markers = computed(() =>
   stores.value.map((s) => ({
     id: Number(s.id.replace(/\D/g, '')) || 1,
     latitude: s.lat,
     longitude: s.lng,
     title: s.name,
-    iconPath: 'https://api.dicebear.com/9.x/icons/svg?seed=pin',
     width: 32,
     height: 32,
   })),

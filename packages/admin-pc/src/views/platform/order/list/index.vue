@@ -58,7 +58,7 @@
         </ElTableColumn>
         <ElTableColumn label="状态" width="120" align="center">
           <template #default="{ row }">
-            <ElTag :type="statusTypeOf(row.status)" size="small">{{ statusLabelOf(row.status) }}</ElTag>
+            <ElTag :type="statusTypeOf(row.status) as any" size="small">{{ statusLabelOf(row.status) }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="支付时间" width="170">
@@ -83,7 +83,7 @@
             <h3 class="m-0">订单详情</h3>
             <div class="text-xs text-g-500 mt-1">{{ current.no }}</div>
           </div>
-          <ElTag :type="statusTypeOf(current.status)">{{ statusLabelOf(current.status) }}</ElTag>
+          <ElTag :type="statusTypeOf(current.status) as any">{{ statusLabelOf(current.status) }}</ElTag>
         </div>
         <ElDescriptions :column="1" border>
           <ElDescriptionsItem label="收货人">{{ current.address?.name }} · {{ current.address?.phone }}</ElDescriptionsItem>
@@ -159,28 +159,28 @@
   }
 
   function statusTypeOf(s: OrderStatus) {
-    return (
-      {
-        pending_payment: 'warning',
-        pending_shipment: 'primary',
-        shipped: 'primary',
-        completed: 'success',
-        cancelled: 'info',
-        after_sale: 'danger'
-      } as const
-    )[s] || 'info'
+    const map: Record<string, string> = {
+      pending_payment: 'warning',
+      pending_shipment: 'primary',
+      shipped: 'primary',
+      completed: 'success',
+      cancelled: 'info',
+      after_sale: 'danger',
+      refunded: 'info'
+    }
+    return map[s] || 'info'
   }
   function statusLabelOf(s: OrderStatus) {
-    return (
-      {
-        pending_payment: '待付款',
-        pending_shipment: '待发货',
-        shipped: '待收货',
-        completed: '已完成',
-        cancelled: '已取消',
-        after_sale: '售后中'
-      } as const
-    )[s] || s
+    const map: Record<string, string> = {
+      pending_payment: '待付款',
+      pending_shipment: '待发货',
+      shipped: '待收货',
+      completed: '已完成',
+      cancelled: '已取消',
+      after_sale: '售后中',
+      refunded: '已退款'
+    }
+    return map[s] || s
   }
 
   function openDetail(o: Order) {

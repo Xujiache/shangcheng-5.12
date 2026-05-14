@@ -22,9 +22,14 @@ const paying = ref(false)
 let timer: any
 
 onLoad((options) => {
-  orderId.value = options?.orderId ?? 'o-mock'
+  orderId.value = options?.orderId ?? ''
   orderNo.value = options?.orderNo ?? ''
-  amount.value = Number(options?.amount ?? 1238)
+  amount.value = Number(options?.amount ?? 0)
+  if (!orderId.value) {
+    // 没拿到 orderId，禁止用户点支付（旧版会兜底 'o-mock' 进入支付）
+    uni.showToast({ title: '订单信息缺失', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 1200)
+  }
 })
 
 onMounted(() => {
@@ -62,9 +67,14 @@ const METHODS = [
  *   2. uni.requestPayment(miniPay) 调起微信支付
  *   3. 微信回调 /api/v1/payments/wechat/notify 真正标订单已付
  *
- * mock 模式（商户号未配齐）：后端直接把订单标已付 + 回 mockPaid:true，前端跳过 requestPayment
+ * 注：生产环境 mockPaid 永远不会出现；该字段仅在后端商户号未配齐的开发联调阶段会返回。
+ * 客户端仍然兼容性识别，避免开发态卡死。
  */
 async function pay() {
+  if (!orderId.value) {
+    uni.showToast({ title: '订单信息缺失', icon: 'none' })
+    return
+  }
   paying.value = true
   uni.showLoading({ title: '支付中…', mask: true })
   try {

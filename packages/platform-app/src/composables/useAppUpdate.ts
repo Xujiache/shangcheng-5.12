@@ -25,9 +25,9 @@ function readRuntimeVersion(): RuntimeVersion {
     const version = sys.appVersion || sys.appVersionName || '0.0.0'
     let versionCode = Number(sys.appVersionCode) || 0
     try {
-      // @ts-expect-error plus only on App-plus
+      // @ts-ignore plus only on App-plus
       if (typeof plus !== 'undefined' && plus?.runtime?.versionCode) {
-        // @ts-expect-error
+        // @ts-ignore
         versionCode = Number(plus.runtime.versionCode) || versionCode
       }
     } catch {}
@@ -47,19 +47,19 @@ function setIgnored(code: number) {
 function downloadAndInstall(url: string, onProgress?: (pct: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      // @ts-expect-error App-plus only
+      // @ts-ignore App-plus only
       if (typeof plus === 'undefined' || !plus.downloader) {
         reject(new Error('plus.downloader 不可用'))
         return
       }
-      // @ts-expect-error
+      // @ts-ignore
       const dtask = plus.downloader.createDownload(
         url,
         { method: 'GET' },
         (d: any, status: number) => {
           if (status === 200) {
             try {
-              // @ts-expect-error
+              // @ts-ignore
               plus.runtime.install(
                 d.filename,
                 { force: false },
@@ -120,7 +120,7 @@ function showUpdatePrompt(
             success: (rr) => {
               if (rr.confirm) {
                 try {
-                  // @ts-expect-error App-plus only
+                  // @ts-ignore App-plus only
                   plus.runtime.openURL(url)
                 } catch {}
               }

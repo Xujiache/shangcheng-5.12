@@ -67,9 +67,8 @@
   import { useUserStore } from '@/store/modules/user'
   import { useI18n } from 'vue-i18n'
   import { HttpError } from '@/utils/http/error'
-  import { fetchLogin } from '@/api/auth'
+  import { fetchLogin, fetchGetUserInfo } from '@/api/auth'
   import { resetRouteInitState } from '@/router/guards/beforeEach'
-  import { MOCK_ACCOUNTS } from '@/api/mock-accounts'
   import { ElNotification, type FormInstance, type FormRules } from 'element-plus'
 
   defineOptions({ name: 'Login' })
@@ -100,6 +99,21 @@
 
   const loading = ref(false)
 
+  // 角色 → 工作台映射（与 user store 的 effectiveRole 计算口径保持一致）
+  function pickWorkspace(roles: string[] = []): 'merchant' | 'platform' | null {
+    if (roles.includes('super-admin')) {
+      // 超管：保留上次工作台选择，首次默认 platform
+      return userStore.currentWorkspace || 'platform'
+    }
+    if (roles.some((r) => r === 'merchant' || r === 'factory' || r === 'store')) {
+      return 'merchant'
+    }
+    if (roles.some((r) => r === 'platform' || r === 'admin')) {
+      return 'platform'
+    }
+    return null
+  }
+
   // 登录
   async function handleSubmit() {
     if (!formRef.value) return
@@ -115,24 +129,25 @@
       })
       if (!token) throw new Error('Login failed - no token received')
 
-      // 超管首次登录默认进平台工作台（CONSENSUS · Q5）
-      const acc = MOCK_ACCOUNTS.find((a) => a.userName === username)
-      if (acc?.roleKey === 'super-admin') {
-        // 保留上次工作台选择，首次默认 platform
-        if (!userStore.currentWorkspace) {
-          userStore.setCurrentWorkspace('platform')
-        }
-      } else if (acc?.roleKey === 'merchant') {
-        userStore.setCurrentWorkspace('merchant')
-      } else if (acc?.roleKey === 'platform') {
-        userStore.setCurrentWorkspace('platform')
-      }
-
       userStore.setToken(token, refreshToken)
       userStore.setLoginStatus(true)
+
+      // 拿到 token 后立即拉一次用户信息，依据真实后端返回的 roles 决定工作台
+      let nickName: string | undefined
+      try {
+        const userInfo = await fetchGetUserInfo()
+        userStore.setUserInfo(userInfo)
+        nickName = (userInfo as any)?.nickName || (userInfo as any)?.userName
+        const ws = pickWorkspace(userInfo.roles)
+        if (ws) userStore.setCurrentWorkspace(ws)
+      } catch (e) {
+        // 拉用户信息失败不影响登录跳转；路由守卫会再尝试一次
+        console.warn('[Login] fetchGetUserInfo 失败，留给路由守卫处理：', e)
+      }
+
       // 重置上次失败留下的标记，确保新会话能跑动态路由初始化
       resetRouteInitState()
-      showLoginSuccessNotice(acc?.nickName)
+      showLoginSuccessNotice(nickName)
 
       const redirect = route.query.redirect as string
       router.push(redirect || '/')
@@ -168,96 +183,4 @@
 
 <style scoped>
   @import './style.css';
-
-  .demo-panel {
-    margin-top: 22px;
-    padding-top: 18px;
-    border-top: 1px dashed var(--art-border-color, #e5e7eb);
-  }
-
-  :deep(.el-collapse) {
-    --el-collapse-border-color: transparent;
-    border: none;
-  }
-
-  :deep(.el-collapse-item__header),
-  :deep(.el-collapse-item__wrap) {
-    background: transparent;
-    border: none;
-  }
-
-  :deep(.el-collapse-item__content) {
-    padding-bottom: 0;
-  }
-
-  .demo-title {
-    display: inline-flex;
-    align-items: center;
-    font-size: 13px;
-    color: var(--art-gray-600, #6b7280);
-  }
-
-  .demo-cards {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    margin-top: 4px;
-  }
-
-  .demo-card {
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--art-border-color, #e5e7eb);
-    background: var(--art-bg-color, #fff);
-    cursor: pointer;
-    transition: all 0.18s ease;
-  }
-
-  .demo-card:hover {
-    border-color: var(--el-color-primary, #ff4d2d);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px -8px rgba(255, 77, 45, 0.35);
-  }
-
-  .demo-card__row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-  }
-
-  .demo-card__sub {
-    margin-top: 4px;
-    font-size: 12px;
-    color: var(--art-gray-500, #9ca3af);
-  }
-
-  .demo-card__role {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    background: rgba(255, 77, 45, 0.1);
-    color: var(--el-color-primary, #ff4d2d);
-  }
-
-  .demo-card.platform .demo-card__role {
-    background: rgba(64, 158, 255, 0.1);
-    color: #409eff;
-  }
-
-  .demo-card.super-admin .demo-card__role {
-    background: rgba(146, 84, 222, 0.1);
-    color: #9254de;
-  }
-
-  .demo-card__name {
-    font-weight: 600;
-    color: var(--art-gray-800, #1f2937);
-  }
-
-  .demo-card__pwd {
-    color: var(--art-gray-500, #9ca3af);
-  }
 </style>

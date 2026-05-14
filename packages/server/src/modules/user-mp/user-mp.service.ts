@@ -7,6 +7,19 @@ import { orderNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
 import { ChatGateway } from '../chat/chat.gateway'
 
+/** Haversine 公式：两点经纬度直线距离（km，保留两位小数） */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return Math.round(R * c * 100) / 100
+}
+
 @Injectable()
 export class UserMpService {
   constructor(
@@ -122,9 +135,12 @@ export class UserMpService {
   async bindWechat(userId: string, dto: { code: string }) {
     if (!dto?.code) throw new BizException(BizCode.INVALID_PARAMS, '微信 code 不能为空')
 
-    // 复用环境变量与降级策略
+    // 安全规则与 wechatLogin 一致：
+    //   - 生产环境必须真实换 openid；env 缺失或网络失败一律拒绝
+    //   - 非生产环境保留开发期兜底，但使用 dev_ 前缀确定性派生
     const appid = process.env.WX_MINIAPP_APPID
     const secret = process.env.WX_MINIAPP_SECRET
+    const isProd = process.env.NODE_ENV === 'production'
     let openid: string | null = null
     let unionid: string | null = null
     if (appid && secret) {
@@ -141,12 +157,22 @@ export class UserMpService {
         }
       } catch (e: any) {
         if (e instanceof BizException) throw e
-        // fall through
+        if (isProd) {
+          throw new BizException(BizCode.BUSINESS_ERROR, '微信授权服务暂不可用，请稍后重试')
+        }
+        // 非生产：继续走兜底
       }
+    } else if (isProd) {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '服务端未配置微信小程序凭证，无法绑定微信',
+      )
     }
     if (!openid) {
-      // 与 wechatLogin 一致的开发期兜底
-      openid = `wx_${String(dto.code).slice(0, 16)}`
+      if (isProd) {
+        throw new BizException(BizCode.INVALID_PARAMS, '微信授权失败，未获取到 openid')
+      }
+      openid = `dev_wx_${String(dto.code).slice(0, 16)}`
     }
 
     const occupied = await this.prisma.user.findUnique({ where: { openid } })
@@ -354,10 +380,13 @@ export class UserMpService {
   /**
    * 用户发起支付：
    *   - method='wechat'（默认/唯一）：调微信支付 JSAPI 拿 prepay 参数，前端用 uni.requestPayment 调起
-   *   - 商户号未配齐时，返回 mock prepay + 立即把订单标记为已付（保持预览体验）
+   *   - 非生产 + 商户号未配齐时：返回 mock prepay + 立即标订单已付（仅供本地预览）
    *
    * 真正"付款成功"的标记由微信回调 /api/v1/payments/wechat/notify 触发；
    * 这个接口只负责"准备付款参数"。
+   *
+   * 生产环境（NODE_ENV=production）严禁 mockPaid，必须等真实回调；否则商户号未配齐
+   * 时直接抛错给前端，绝不静默把订单标已付。
    */
   async payOrder(userId: string, id: string, _method: string) {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
@@ -368,8 +397,25 @@ export class UserMpService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     const openid = user?.openid || ''
+    const isProd = process.env.NODE_ENV === 'production'
 
-    // 调 WxPay 生成小程序调起支付参数
+    // 生产环境且商户号未配齐：立刻拒绝，不进 mock 通路
+    if (isProd && !this.wxpay.isReady()) {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '微信支付未配置，暂时无法下单，请联系商家',
+      )
+    }
+
+    // 生产环境必须有真实 openid，否则无法走微信小程序原生支付
+    if (isProd && !openid) {
+      throw new BizException(
+        BizCode.INVALID_PARAMS,
+        '当前账号未绑定微信，请先绑定微信后再支付',
+      )
+    }
+
+    // createMiniPay 内部也会在生产环境二次拦截，避免任何旁路
     const pay = await this.wxpay.createMiniPay({
       outTradeNo: o.no,
       description: `订单 ${o.no}`,
@@ -378,8 +424,8 @@ export class UserMpService {
       attach: o.id,
     })
 
-    // 商户号未配齐 → mock 模式：直接把订单设为已付，保留预览体验
-    if (!this.wxpay.isReady()) {
+    // 非生产 + 商户号未配齐 → mock 模式：保留预览体验，立即标已付
+    if (!isProd && !this.wxpay.isReady()) {
       await this.prisma.payment.create({
         data: { orderId: o.id, method: 'wechat', amount: o.payAmount, status: 'success', paidAt: new Date() },
       })
@@ -411,10 +457,44 @@ export class UserMpService {
     return { ok: true }
   }
 
+  /**
+   * 催发货
+   *
+   * 真实实现：
+   *   1. 校验订单存在且状态在【待发货】，避免无意义催单
+   *   2. 同一订单 30 分钟内只允许催 1 次（写在 SystemConfig 简单去重）
+   *   3. 通过商家会话给商家发一条文本提醒（直接落 ChatMessage，前端商家端可见）
+   *
+   * 全部走真实持久化，无 mock。
+   */
   async urgeOrder(userId: string, id: string) {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
-    return { ok: true }
+    if (o.status !== 'pending_shipment') {
+      throw new BizException(
+        BizCode.ORDER_STATUS_INVALID,
+        '订单当前状态无需催发货',
+      )
+    }
+
+    // 30 分钟去重
+    const dedupKey = `urge:order:${id}`
+    const prior = await this.prisma.systemConfig.findUnique({ where: { key: dedupKey } })
+    const lastAt = (prior?.value as any)?.lastAt ? new Date((prior?.value as any).lastAt) : null
+    if (lastAt && Date.now() - lastAt.getTime() < 30 * 60_000) {
+      return { ok: true, urged: true, dedup: true }
+    }
+    await this.prisma.systemConfig.upsert({
+      where: { key: dedupKey },
+      update: { value: { lastAt: new Date().toISOString(), userId } as any },
+      create: { key: dedupKey, value: { lastAt: new Date().toISOString(), userId } as any },
+    })
+
+    // 给商家发一条催发货消息（若没有会话则建一个）
+    const session = await this.ensureChatSession(userId, o.merchantId)
+    await this.chatSend(userId, session.id, 'text', `用户催发货：订单 ${o.no}`)
+
+    return { ok: true, urged: true, dedup: false }
   }
 
   // ========== Banner ==========
@@ -588,17 +668,51 @@ export class UserMpService {
   }
 
   // ========== 附近门店 ==========
-  async nearbyStores() {
-    const stores = await this.prisma.store.findMany({ where: { status: 'active' }, take: 20 })
-    return stores.map((s) => ({
-      id: s.id,
-      name: s.name,
-      address: s.address,
-      distance: Math.random() * 5,
-      phone: s.phone,
-      lat: s.latitude || 31.23,
-      lng: s.longitude || 121.47,
-    }))
+  /**
+   * 附近门店列表
+   *
+   * - 仅返回 status='active' + 含真实经纬度（latitude/longitude 非 null）的门店
+   * - 若客户端传 lat/lng（小程序 uni.getLocation 的真实坐标），按 Haversine 公式
+   *   计算真实直线距离（km），并按距离升序排序、截取前 20 条
+   * - 若客户端未传坐标，distance 字段返回 null，由前端自行展示「未授权定位」
+   *   绝不再用 Math.random() / 任何写死坐标兜底
+   */
+  async nearbyStores(q: { lat?: number | string; lng?: number | string } = {}) {
+    const userLat = q.lat !== undefined && q.lat !== '' ? Number(q.lat) : NaN
+    const userLng = q.lng !== undefined && q.lng !== '' ? Number(q.lng) : NaN
+    const hasUserLoc = Number.isFinite(userLat) && Number.isFinite(userLng)
+
+    const stores = await this.prisma.store.findMany({
+      where: {
+        status: 'active',
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      take: 200,
+    })
+
+    const list = stores.map((s) => {
+      const lat = s.latitude as number
+      const lng = s.longitude as number
+      let distance: number | null = null
+      if (hasUserLoc) {
+        distance = haversineKm(userLat, userLng, lat, lng)
+      }
+      return {
+        id: s.id,
+        name: s.name,
+        address: s.address,
+        distance,
+        phone: s.phone,
+        lat,
+        lng,
+      }
+    })
+
+    if (hasUserLoc) {
+      list.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
+    }
+    return list.slice(0, 20)
   }
 
   // ========== 入驻申请 ==========

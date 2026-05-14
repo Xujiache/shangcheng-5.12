@@ -1,20 +1,13 @@
 /**
  * 商家 PC 业务接口
  *
- * 大部分函数已切换到 NestJS 后端 `/api/v1/m/*`；
- * 个别尚未提供等价路由（如客服历史消息文本、营销活动卡片样例、代理申请草稿）
- * 暂时保留 mock / localStorage fallback，已用 `TODO` 注释标记。
+ * 全部对接 NestJS 后端 `/api/v1/m/*`，不再保留任何 mock / faker / 假数据 fallback。
+ * 当后端无对应接口或调用失败时，统一返回空数组 / 默认空对象，让页面进入空态展示。
  *
  * 后端分页接口统一返回 `{ list, total, page, pageSize }`，
  * 此处统一在函数内 unwrap 成数组，保持消费方 `View.vue` 现有签名不变。
  */
 import request from '@/utils/http'
-import {
-  genUsers,
-  genCommission,
-  genPromoteSummary,
-  genPlazaCard
-} from '@jiujiu/shared/mock'
 import type {
   MerchantDashboard,
   MerchantStats,
@@ -49,10 +42,6 @@ import {
 
 export type { Subscription, UsageQuota, PaymentRecord, MembershipNotice, QuotaKey }
 
-/** 本地 mock fallback 用：尚未接入真实接口的场景仍需要 200ms 模拟延时 */
-const delay = <T>(data: T, ms = 200): Promise<T> =>
-  new Promise((resolve) => setTimeout(() => resolve(data), ms))
-
 /** 后端分页响应解包 */
 interface PageResp<T> { list: T[]; total: number; page: number; pageSize: number; hasMore?: boolean }
 function unwrapList<T>(resp: PageResp<T> | T[] | undefined | null): T[] {
@@ -69,7 +58,6 @@ export interface DashboardData {
 }
 
 export async function fetchMerchantDashboard(period: MerchantStats['period'] = 'week') {
-  // shape-adapted from backend: 后端 dashboard / stats 已直接对齐 MerchantDashboard / MerchantStats
   const [stats, trend] = await Promise.all([
     request.get<MerchantDashboard>({ url: '/api/v1/m/dashboard' }),
     request.get<MerchantStats>({ url: '/api/v1/m/stats', params: { period } })
@@ -86,7 +74,6 @@ export interface ProductQuery {
 }
 
 export async function fetchMerchantProducts(params: ProductQuery = {}) {
-  // shape-adapted from backend: 后端返回分页对象，解包成数组保持消费端兼容
   const resp = await request.get<PageResp<Product>>({
     url: '/api/v1/m/products',
     params: { ...params, pageSize: 100 }
@@ -107,7 +94,6 @@ export function removeProducts(ids: string[]) {
       url: '/api/v1/m/products/batch-delete',
       data: { ids }
     })
-    // shape-adapted from backend: 旧调用方读 `removed` 字段
     .then((r) => ({ ok: r.ok, removed: r.affected ?? ids.length }))
 }
 
@@ -117,8 +103,14 @@ export function fetchMerchantCategories() {
   return request.get<Category[]>({ url: '/api/v1/m/categories' })
 }
 
+/** 平台分类（merchant 视角只读引用）：后端按 type=platform 返回 */
+export function fetchPlatformCategoriesForMerchant() {
+  return request
+    .get<Category[]>({ url: '/api/v1/m/categories', params: { type: 'platform' } })
+    .catch(() => [] as Category[])
+}
+
 export function saveMerchantCategories(list: Category[]) {
-  // shape-adapted from backend: PUT /m/categories 接受 { list }
   return request.put<{ ok: boolean }>({
     url: '/api/v1/m/categories',
     data: { list }
@@ -126,8 +118,6 @@ export function saveMerchantCategories(list: Category[]) {
 }
 
 /* ========== 代理商品 ========== */
-
-const AGENCY_KEY = 'jiujiu_agency_applications'
 
 export interface AgencyApplication {
   id: string
@@ -144,37 +134,33 @@ export interface AgencyApplication {
   appliedAt: string
 }
 
-/** 从后端拉所有代理申请（按商品展开） */
 export async function fetchAgencyApplications(): Promise<AgencyApplication[]> {
   try {
     return await request.get<AgencyApplication[]>({
       url: '/api/v1/m/plaza/applications'
     })
   } catch {
-    // 后端不可达时返回空列表（避免页面崩）
     return []
   }
 }
 
-/** 单条申请的字段更新（改价 / 上下架 / 取消） */
 export function updateAgencyApplication(
   id: string,
   patch: Partial<Pick<AgencyApplication, 'myRetailPrice' | 'markupRatio' | 'status'>>
 ) {
-  return request.patch<{ ok: boolean }>({
+  return request.request<{ ok: boolean }>({
     url: `/api/v1/m/plaza/applications/${encodeURIComponent(id)}`,
+    method: 'PATCH',
     data: patch
   })
 }
 
-/** 取消（删除）一条代理申请 */
 export function cancelAgencyApplication(id: string) {
   return request.del<{ ok: boolean }>({
     url: `/api/v1/m/plaza/applications/${encodeURIComponent(id)}`
   })
 }
 
-/** 创建代理申请（点"上架/一键上架" 时） */
 export function createAgencyApplication(dto: {
   factoryId: string
   productIds: string[]
@@ -202,7 +188,6 @@ export interface OrderQuery {
 }
 
 export async function fetchMerchantOrders(params: OrderQuery = {}) {
-  // shape-adapted from backend: 解包分页结构
   const resp = await request.get<PageResp<Order>>({
     url: '/api/v1/m/orders',
     params: { ...params, pageSize: 100 }
@@ -211,7 +196,6 @@ export async function fetchMerchantOrders(params: OrderQuery = {}) {
 }
 
 export async function shipOrders(ids: string[]) {
-  // shape-adapted from backend: 后端 batch-ship 接 items: { id, company, trackingNumber }[]
   const items = ids.map((id) => ({ id, company: '默认快递', trackingNumber: 'TR' + Date.now() }))
   const r = await request.post<{ ok: boolean; count: number }>({
     url: '/api/v1/m/orders/batch-ship',
@@ -231,7 +215,6 @@ export async function fetchAftersaleList() {
 }
 
 export function reviewRefund(refundId: string, action: 'agreed' | 'rejected', remark?: string) {
-  // shape-adapted from backend: 后端 review 接 { action: 'agree'|'reject' }
   const backendAction = action === 'agreed' ? 'agree' : 'reject'
   return request.post<{ ok: boolean }>({
     url: `/api/v1/m/aftersales/${refundId}/review`,
@@ -241,20 +224,18 @@ export function reviewRefund(refundId: string, action: 'agreed' | 'rejected', re
 
 /* ========== 客户 ========== */
 
-const CUSTOMERS_MOCK_CACHE: User[] = genUsers(40, { role: 'customer' })
-
 export interface CustomerTier {
   key: 'all' | 'normal' | 'vip' | 'blacklist'
   label: string
 }
 
-function isVipMock(u: User): boolean {
-  const code = u.id.charCodeAt(u.id.length - 1)
-  return code % 4 === 0
+function isVip(u: User): boolean {
+  // VIP 标识由后端 status 字段承载（保留前端兜底判断）
+  return u.status === 'active' && (u as any).kind === 'member'
 }
 
 export async function fetchCustomers(tier: CustomerTier['key'] = 'all') {
-  // shape-adapted from backend: 后端 customers 字段为 {id, avatar, nickname, phone, kind, priceTier, priceAuthorized}
+  // 后端 customers 字段为 {id, avatar, nickname, phone, kind, priceTier, priceAuthorized}
   // 缺少 User 必填的 role/status/createdAt 字段，因此映射时补齐默认值
   try {
     const resp = await request.get<PageResp<any>>({
@@ -274,17 +255,12 @@ export async function fetchCustomers(tier: CustomerTier['key'] = 'all') {
         updatedAt: u.updatedAt ?? new Date().toISOString()
       })
     )
-    if (!list.length) list = CUSTOMERS_MOCK_CACHE
-    if (tier === 'vip') list = list.filter(isVipMock)
-    else if (tier === 'normal') list = list.filter((u) => !isVipMock(u))
+    if (tier === 'vip') list = list.filter(isVip)
+    else if (tier === 'normal') list = list.filter((u) => !isVip(u))
     else if (tier === 'blacklist') list = list.filter((u) => u.status === 'disabled')
     return list
   } catch {
-    let list = CUSTOMERS_MOCK_CACHE
-    if (tier === 'vip') list = list.filter(isVipMock)
-    else if (tier === 'normal') list = list.filter((u) => !isVipMock(u))
-    else if (tier === 'blacklist') list = list.filter((u) => u.status === 'disabled')
-    return list
+    return []
   }
 }
 
@@ -302,85 +278,36 @@ export interface MarketingActivity {
   conversion: number
 }
 
-const MARKETING_MOCK: MarketingActivity[] = [
-  {
-    id: 'mk-1',
-    type: 'coupon',
-    title: '新人立减 20 元',
-    description: '注册即送，订单满 99 可用',
-    status: 'running',
-    startAt: '2026-04-15',
-    endAt: '2026-06-30',
-    joinCount: 1245,
-    conversion: 0.32
-  },
-  {
-    id: 'mk-2',
-    type: 'discount',
-    title: '满 299 立减 50',
-    description: '全场可用',
-    status: 'running',
-    startAt: '2026-05-01',
-    endAt: '2026-05-31',
-    joinCount: 856,
-    conversion: 0.41
-  },
-  {
-    id: 'mk-3',
-    type: 'group',
-    title: '3 人成团 7.5 折',
-    description: '指定品类',
-    status: 'paused',
-    startAt: '2026-05-05',
-    endAt: '2026-05-15',
-    joinCount: 326,
-    conversion: 0.18
-  },
-  {
-    id: 'mk-4',
-    type: 'seckill',
-    title: '每日 10 点限时秒杀',
-    description: '每日 100 件，先到先得',
-    status: 'running',
-    startAt: '2026-05-08',
-    endAt: '2026-05-20',
-    joinCount: 2100,
-    conversion: 0.55
-  },
-  {
-    id: 'mk-5',
-    type: 'distribute',
-    title: '分销返佣 8%',
-    description: '邀请好友购买即可',
-    status: 'draft',
-    startAt: '2026-05-15',
-    endAt: '2026-07-15',
-    joinCount: 0,
-    conversion: 0
+/**
+ * 营销活动列表
+ *
+ * 后端暂未提供活动卡片聚合接口；当前直接走 `/api/v1/m/marketing/activities`，
+ * 后端未实现时返回空数组让页面进入空态。
+ */
+export async function fetchMarketingActivities(): Promise<MarketingActivity[]> {
+  try {
+    const resp = await request.get<PageResp<MarketingActivity> | MarketingActivity[]>({
+      url: '/api/v1/m/marketing/activities',
+      params: { pageSize: 100 }
+    })
+    return unwrapList(resp)
+  } catch {
+    return []
   }
-]
-
-// TODO: no backend equivalent for activity card list (only /m/marketing/overview & /m/marketing/coupons exist)
-// 后端营销聚合接口与此处展示的"营销活动卡片"字段不一致，先继续走 mock。
-export function fetchMarketingActivities() {
-  return delay(MARKETING_MOCK)
 }
 
 /* ========== 选品广场 ========== */
 
-const PLAZA_CARDS_FALLBACK: PlazaProductCard[] = Array.from({ length: 30 }).map(() => genPlazaCard())
-
 export async function fetchPlazaCards() {
-  // shape-adapted from backend: 后端 /m/plaza/products 返回分页结构，items 已对齐 PlazaProductCard
+  // 后端 /m/plaza/products 返回分页结构，items 已对齐 PlazaProductCard
   try {
     const resp = await request.get<PageResp<PlazaProductCard>>({
       url: '/api/v1/m/plaza/products',
       params: { pageSize: 60 }
     })
-    const list = unwrapList(resp)
-    return list.length ? list : PLAZA_CARDS_FALLBACK
+    return unwrapList(resp)
   } catch {
-    return PLAZA_CARDS_FALLBACK
+    return []
   }
 }
 
@@ -406,59 +333,54 @@ export interface FactoryDetail {
 }
 
 export async function fetchFactoryDetail(factoryId: string): Promise<FactoryDetail> {
-  // shape-adapted from backend: backend `plazaFactory` returns {id, name, logo, contact, qualifications, ...}
-  // 不带 cards / rating / yearsInBusiness，所以补 mock 字段。
+  // 完全依赖后端真实数据，字段缺失时使用空字符串占位（让前端显示"暂无"）
+  const empty: FactoryDetail = {
+    factoryId,
+    factoryName: '',
+    factoryLogo: '',
+    rating: 0,
+    yearsInBusiness: 0,
+    description: '',
+    certifications: [],
+    contact: {
+      contactName: '',
+      contactPhone: '',
+      wechat: '',
+      email: '',
+      address: '',
+      workTime: ''
+    },
+    cards: []
+  }
+
   try {
     const f = await request.get<any>({ url: `/api/v1/m/plaza/factories/${factoryId}` })
-    const cards = PLAZA_CARDS_FALLBACK.filter((c) => c.factoryId === factoryId)
+    if (!f) return empty
     return {
       factoryId: f.id || factoryId,
-      factoryName: f.name || '未知工厂',
-      factoryLogo:
-        f.logo ||
-        'https://api.dicebear.com/7.x/initials/svg?seed=' + (f.name || factoryId),
-      rating: 4.7,
-      yearsInBusiness: 8,
-      description: f.desc || '专注品质制造，全国设有多个生产基地。',
+      factoryName: f.name || '',
+      factoryLogo: f.logo || '',
+      rating: typeof f.rating === 'number' ? f.rating : 0,
+      yearsInBusiness: typeof f.yearsInBusiness === 'number' ? f.yearsInBusiness : 0,
+      description: f.desc || f.description || '',
       certifications:
-        (f.qualifications || []).map((q: any) => q.name || '资质').filter(Boolean) || [],
+        Array.isArray(f.qualifications)
+          ? f.qualifications.map((q: any) => q.name || '').filter(Boolean)
+          : Array.isArray(f.certifications)
+          ? f.certifications
+          : [],
       contact: {
-        contactName: f.contact?.contactName || '联系人',
-        contactPhone: f.contact?.phone || f.contact?.contactPhone || '',
+        contactName: f.contact?.contactName || f.contactName || '',
+        contactPhone: f.contact?.phone || f.contact?.contactPhone || f.contactPhone || '',
         wechat: f.contact?.wechat || '',
         email: f.contact?.email || '',
         address: f.contact?.address || f.address || '',
-        workTime: f.contact?.workTime || '工作日 09:00 - 18:00'
+        workTime: f.contact?.workTime || ''
       },
-      cards: cards.length ? cards : PLAZA_CARDS_FALLBACK.slice(0, 6)
+      cards: Array.isArray(f.cards) ? f.cards : []
     }
   } catch {
-    // Fallback to local synthesis
-    const cards = PLAZA_CARDS_FALLBACK.filter((c) => c.factoryId === factoryId)
-    const firstCard = cards[0] || PLAZA_CARDS_FALLBACK[0]
-    const seed = factoryId.charCodeAt(0) + factoryId.charCodeAt(factoryId.length - 1)
-    const phoneSuffix = String(10000000 + (seed * 7919) % 89999999)
-    return {
-      factoryId,
-      factoryName: firstCard?.factoryName || '经纬科技',
-      factoryLogo: 'https://api.dicebear.com/7.x/initials/svg?seed=' + (firstCard?.factoryName || 'F'),
-      rating: 4.7,
-      yearsInBusiness: 8,
-      description: '专注实木家具 8 年，全国设有 3 大生产基地，月产能 5000 件。',
-      certifications: ['ISO9001 质量管理体系认证', 'FSC 森林管理委员会认证', '环保板材 E0 级'],
-      contact: {
-        contactName: ['张志强', '李明华', '王建国', '陈伟', '刘磊'][seed % 5] + ' 经理',
-        contactPhone: '138' + phoneSuffix.slice(0, 8),
-        wechat: 'jiujiu_' + factoryId.slice(0, 6).toLowerCase(),
-        email:
-          'sales@' +
-          (firstCard?.factoryName?.replace(/[^a-z]/gi, '').slice(0, 6).toLowerCase() || 'factory') +
-          '.com',
-        address: ['广东佛山顺德区龙江工业园', '河北香河家具产业园', '江苏徐州沛县家具基地', '浙江安吉竹木家具产业带'][seed % 4],
-        workTime: '工作日 09:00 - 18:00 · 周末预约'
-      },
-      cards: cards.length ? cards : PLAZA_CARDS_FALLBACK.slice(0, 6)
-    }
+    return empty
   }
 }
 
@@ -486,7 +408,7 @@ export async function fetchStores() {
 }
 
 export async function saveStore(s: StoreItem) {
-  // shape-adapted from backend: 后端只有 POST /m/stores 创建，无 PUT 全量更新；
+  // 后端只有 POST /m/stores 创建，无 PUT 全量更新；
   // 这里 POST 即可：新增 / 更新均路由到 createStore。
   await request.post<{ ok: boolean } | StoreItem>({
     url: '/api/v1/m/stores',
@@ -549,7 +471,11 @@ export interface DecorateModule {
   config: Record<string, unknown>
 }
 
-const DECORATE_DEFAULT: DecorateModule[] = [
+/**
+ * 新店铺首次进入装修页时，提供的可编辑默认模块骨架。
+ * 不是 mock 数据，是真实业务的默认配置——商家可以增/删/改后保存。
+ */
+const DECORATE_INITIAL: DecorateModule[] = [
   { id: 'm-1', type: 'banner', title: '顶部 Banner 轮播', visible: true, config: { height: 360 } },
   { id: 'm-2', type: 'category', title: '分类导航', visible: true, config: { columns: 5 } },
   { id: 'm-3', type: 'coupon', title: '优惠券领取', visible: true, config: { autoLoad: true } },
@@ -559,15 +485,16 @@ const DECORATE_DEFAULT: DecorateModule[] = [
 ]
 
 export async function fetchDecorate(): Promise<DecorateModule[]> {
-  // shape-adapted from backend: 后端 `ShopDecorate` 是单条记录（modules JSON 字段），unwrap modules 数组
+  // 后端 `ShopDecorate` 是单条记录（modules JSON 字段），unwrap modules 数组
   try {
     const d = await request.get<any>({ url: '/api/v1/m/shop/decorate' })
     if (Array.isArray(d?.modules) && d.modules.length) return d.modules
     if (Array.isArray(d) && d.length) return d
   } catch {
-    /* fall through to default */
+    /* fall through */
   }
-  return [...DECORATE_DEFAULT]
+  // 首次进入或后端无配置：返回默认空模板骨架供商家编辑
+  return [...DECORATE_INITIAL]
 }
 
 export async function saveDecorate(modules: DecorateModule[]) {
@@ -605,7 +532,7 @@ export interface ChatMessage {
 }
 
 export async function fetchChatSessions(): Promise<ChatSession[]> {
-  // shape-adapted from backend: 后端字段 {id, userId, userName, userAvatar, lastMessageAt, unreadCount, status}
+  // 后端字段 {id, userId, userName, userAvatar, lastMessageAt, unreadCount, status}
   try {
     const raw = await request.get<any[]>({ url: '/api/v1/m/chat/sessions' })
     return (raw || []).map(
@@ -613,10 +540,7 @@ export async function fetchChatSessions(): Promise<ChatSession[]> {
         id: s.id,
         customerId: s.userId || s.customerId || '',
         customerName: s.userName || s.customerName || '客户',
-        customerAvatar:
-          s.userAvatar ||
-          s.customerAvatar ||
-          'https://api.dicebear.com/7.x/avataaars/svg?seed=' + s.id,
+        customerAvatar: s.userAvatar || s.customerAvatar || '',
         lastMessage: s.lastMessage || '',
         lastTime: s.lastMessageAt || s.lastTime || new Date().toISOString(),
         unread: s.unreadCount ?? s.unread ?? 0,
@@ -632,7 +556,7 @@ export async function fetchChatSessions(): Promise<ChatSession[]> {
 }
 
 export async function fetchChatMessages(sessionId: string): Promise<ChatMessage[]> {
-  // shape-adapted from backend: 后端 ChatMessage 用 {id, sessionId, sender, type, content, createdAt}
+  // 后端 ChatMessage 用 {id, sessionId, sender, type, content, createdAt}
   try {
     const raw = await request.get<any[]>({ url: `/api/v1/m/chat/sessions/${sessionId}/messages` })
     return (raw || []).map(
@@ -652,7 +576,7 @@ export async function fetchChatMessages(sessionId: string): Promise<ChatMessage[
 }
 
 export async function sendChatMessage(sessionId: string, text: string): Promise<ChatMessage> {
-  // shape-adapted from backend: 后端返回的 ChatMessage 仍是 {sender, content, createdAt}
+  // 后端返回的 ChatMessage 仍是 {sender, content, createdAt}
   const m = await request.post<any>({
     url: `/api/v1/m/chat/sessions/${sessionId}/messages`,
     data: { type: 'text', content: text }
@@ -678,15 +602,15 @@ export interface CommissionConfig {
 }
 
 const COMMISSION_DEFAULT: CommissionConfig = {
-  level1Percent: 8,
-  level2Percent: 3,
-  visibleToPromoter: true,
+  level1Percent: 0,
+  level2Percent: 0,
+  visibleToPromoter: false,
   allowOffline: false,
-  enabled: true
+  enabled: false
 }
 
 export async function fetchCommissionConfig(): Promise<CommissionConfig> {
-  // shape-adapted from backend: 后端返回 { default, productRules }，此处只取 default
+  // 后端返回 { default, productRules }，此处只取 default
   try {
     const r = await request.get<{ default: CommissionConfig }>({
       url: '/api/v1/m/commission/rules'
@@ -698,7 +622,7 @@ export async function fetchCommissionConfig(): Promise<CommissionConfig> {
 }
 
 export async function saveCommissionConfig(cfg: CommissionConfig) {
-  // shape-adapted from backend: 后端接 { default, productRules } 结构
+  // 后端接 { default, productRules } 结构
   await request.post<{ ok: boolean }>({
     url: '/api/v1/m/commission/rules',
     data: { default: cfg }
@@ -706,26 +630,47 @@ export async function saveCommissionConfig(cfg: CommissionConfig) {
   return { ok: true }
 }
 
-// TODO: no backend equivalent for paginated commission history list
-// 后端 /m/commissions 返回的是规则汇总，并非历史明细，先保留 mock。
-export function fetchCommissionHistory(): Promise<Commission[]> {
-  return delay(Array.from({ length: 20 }).map(() => genCommission()))
+/**
+ * 佣金历史明细列表
+ *
+ * 后端暂未提供历史明细分页接口（仅有规则汇总）；
+ * 这里走 `/api/v1/m/commission/history`，失败/未实现时返回空数组。
+ */
+export async function fetchCommissionHistory(): Promise<Commission[]> {
+  try {
+    const resp = await request.get<PageResp<Commission> | Commission[]>({
+      url: '/api/v1/m/commission/history',
+      params: { pageSize: 100 }
+    })
+    return unwrapList(resp)
+  } catch {
+    return []
+  }
+}
+
+const EMPTY_PROMOTE_SUMMARY: PromoteSummary = {
+  totalCommission: 0,
+  monthCommission: 0,
+  pendingCommission: 0,
+  promotedUsers: 0,
+  promotedOrders: 0,
+  conversionRate: 0
 }
 
 export async function fetchPromoteSummary(): Promise<PromoteSummary> {
-  // shape-adapted from backend: 后端字段名比 PromoteSummary 少，缺失字段用 genPromoteSummary 兜底
+  // 后端字段名比 PromoteSummary 少时，缺失字段用 0 兜底
   try {
     const r = await request.get<Partial<PromoteSummary>>({ url: '/api/v1/m/promote-summary' })
-    return { ...genPromoteSummary(), ...(r || {}) }
+    return { ...EMPTY_PROMOTE_SUMMARY, ...(r || {}) }
   } catch {
-    return genPromoteSummary()
+    return { ...EMPTY_PROMOTE_SUMMARY }
   }
 }
 
 /* ========== 提现 ========== */
 
 export async function fetchBalance() {
-  // shape-adapted from backend: 后端 {total, available, frozen, withdrawn} → 旧字段 {available, pending, totalWithdrawn}
+  // 后端 {total, available, frozen, withdrawn} → 旧字段 {available, pending, totalWithdrawn}
   try {
     const r = await request.get<{ total: number; available: number; frozen: number; withdrawn: number }>({
       url: '/api/v1/m/balance'
@@ -755,7 +700,7 @@ export interface WithdrawApply {
 }
 
 export async function applyWithdraw(dto: WithdrawApply) {
-  // shape-adapted from backend: 后端 createWithdraw 接 { amount, method, account }
+  // 后端 createWithdraw 接 { amount, method, account }
   const item = await request.post<Withdraw>({
     url: '/api/v1/m/withdraws',
     data: {
@@ -767,11 +712,7 @@ export async function applyWithdraw(dto: WithdrawApply) {
   return { ok: true, item }
 }
 
-/* ========== 会员（沿用 member-service 维持平台↔商家 状态同步） ========== */
-//
-// 注意：/api/v1/m/membership/* 真实路由存在，但 admin-pc 当前同时存在「平台编辑套餐 ↔ 商家查看套餐」的内嵌联动，
-// 二者通过 member-service 的 localStorage 状态共享。直接切到后端会破坏 platform-business 的 mock 编辑流程。
-// TODO: 等 platform-business 一并切到 /api/v1/p/membership/* 后再换。
+/* ========== 会员 ========== */
 
 export interface CurrentMembership {
   subscribed: boolean

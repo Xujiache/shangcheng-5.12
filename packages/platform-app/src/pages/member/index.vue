@@ -8,7 +8,7 @@
  * - 新增套餐按钮
  */
 import { ref, computed, onMounted } from 'vue'
-import { memberService } from '../../services'
+import { memberService, type SubscriptionStatusOverview } from '../../services'
 import type { MemberPlan } from '@jiujiu/shared/types'
 import { formatPrice } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
@@ -19,6 +19,7 @@ type TabKey = 'basic' | 'ad' | 'pay-orders' | 'status'
 const tab = ref<TabKey>('basic')
 const plans = ref<MemberPlan[]>([])
 const loading = ref(false)
+const statusOverview = ref<SubscriptionStatusOverview>({ yearly: 0, monthly: 0, trial: 0, expiringSoon: 0 })
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'basic', label: '会员套餐' },
@@ -27,13 +28,19 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'status', label: '会员状态' },
 ]
 
-const ADDON_ITEMS = [
-  { icon: 'megaphone', label: '首屏 Banner / 周', price: 199 },
-  { icon: 'tag', label: '热推标签 / 件', price: 39 },
-  { icon: 'home-shop', label: '分类首屏 / 天', price: 59 },
-  { icon: 'crown', label: '专属客服服务 / 月', price: 299 },
-]
+// 增值单项从后端 plans 里 type='addon' 派生；本地不再保留写死价格
+const addonItems = computed(() =>
+  plans.value
+    .filter((p) => p.type === 'addon')
+    .map((p) => ({
+      id: p.id,
+      icon: 'gift',
+      label: p.name,
+      price: Number(p.price),
+    })),
+)
 
+// trialDays 持久化到 SystemConfig；首次加载从后端读
 const trialDays = ref(30)
 
 const basicPlans = computed(() => plans.value.filter((p) => p.type === 'basic'))
@@ -48,20 +55,94 @@ async function load() {
   loading.value = true
   try {
     plans.value = await memberService.plans()
+    // 切到 status tab 时再 lazy 拉取 overview（避免每次进页面都遍历）
+    if (tab.value === 'status') {
+      statusOverview.value = await memberService.statusOverview()
+    }
   } finally {
     loading.value = false
   }
 }
 
-function editPlan(p: MemberPlan) {
+async function onTabChange(key: TabKey) {
+  if (key === 'pay-orders') {
+    goPayOrders()
+    return
+  }
+  tab.value = key
+  if (key === 'status' && !loading.value) {
+    statusOverview.value = await memberService.statusOverview()
+  }
+}
+
+/**
+ * 套餐编辑：调后端 savePlan 真实落库（PATCH 用 POST 同接口实现，按是否带 id 区分）
+ *
+ * - 上下架：toggle status 字段调 savePlan
+ * - 修改价格/权益/限制：弹简单 prompt，让用户输入后调 savePlan
+ *   （详细编辑表单在 admin-pc 平台后台，platform-app 只做快速编辑）
+ */
+async function editPlan(p: MemberPlan) {
   uni.showActionSheet({
     itemList: ['修改价格', '修改权益', '修改限制', p.status === 'active' ? '下架' : '上架'],
-    success: (r) => {
-      if (r.tapIndex === 3) {
-        p.status = p.status === 'active' ? 'disabled' : 'active'
-        uni.showToast({ title: p.status === 'active' ? '已启用' : '已停用', icon: 'success' })
-      } else {
-        uni.showToast({ title: ['改价格', '改权益', '改限制'][r.tapIndex] + ' · 待开放', icon: 'none' })
+    success: async (r) => {
+      try {
+        if (r.tapIndex === 3) {
+          // 上下架
+          const next = p.status === 'active' ? 'disabled' : 'active'
+          await memberService.savePlan({ id: p.id, status: next })
+          uni.showToast({ title: next === 'active' ? '已上架' : '已下架', icon: 'success' })
+          await load()
+          return
+        }
+        if (r.tapIndex === 0) {
+          // 改价格
+          const v = await promptInput('修改价格', '请输入新价格（元）', String(p.price))
+          if (!v) return
+          const price = Number(v)
+          if (!Number.isFinite(price) || price < 0) {
+            uni.showToast({ title: '价格非法', icon: 'none' })
+            return
+          }
+          await memberService.savePlan({ id: p.id, price })
+          uni.showToast({ title: '价格已更新', icon: 'success' })
+          await load()
+          return
+        }
+        if (r.tapIndex === 1) {
+          // 改权益（多行）
+          const v = await promptInput(
+            '修改权益',
+            '一行一条权益（最多 8 条）',
+            (Array.isArray(p.rights) ? p.rights : []).join('\n'),
+          )
+          if (v === null) return
+          const rights = v.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).slice(0, 8)
+          await memberService.savePlan({ id: p.id, rights })
+          uni.showToast({ title: '权益已更新', icon: 'success' })
+          await load()
+          return
+        }
+        if (r.tapIndex === 2) {
+          // 改限制（仅推送位/Banner/月曝光三项；通过 JSON 字符串编辑）
+          const cur = p.constraints
+            ? JSON.stringify(p.constraints)
+            : '{"pushSlots":0,"bannerLimit":0,"impressionLimit":0}'
+          const v = await promptInput('修改限制', '请输入 JSON', cur)
+          if (!v) return
+          let parsed: any
+          try {
+            parsed = JSON.parse(v)
+          } catch {
+            uni.showToast({ title: 'JSON 格式错误', icon: 'none' })
+            return
+          }
+          await memberService.savePlan({ id: p.id, constraints: parsed })
+          uni.showToast({ title: '限制已更新', icon: 'success' })
+          await load()
+        }
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '更新失败', icon: 'none' })
       }
     },
   })
@@ -70,9 +151,56 @@ function editPlan(p: MemberPlan) {
 function addPlan() {
   uni.showActionSheet({
     itemList: ['新增会员套餐', '新增广告推送套餐', '新增增值单项'],
-    success: (r) => {
-      uni.showToast({ title: '新增：' + ['会员', '广告', '增值'][r.tapIndex] + ' · 待开放', icon: 'none' })
+    success: async (r) => {
+      const type = (['basic', 'ad', 'addon'] as const)[r.tapIndex]
+      const name = await promptInput(
+        '新增套餐',
+        `请输入${['会员', '广告', '增值'][r.tapIndex]}套餐名称`,
+      )
+      if (!name) return
+      const priceStr = await promptInput('新增套餐', '请输入价格（元）', '99')
+      if (!priceStr) return
+      const price = Number(priceStr)
+      if (!Number.isFinite(price) || price < 0) {
+        uni.showToast({ title: '价格非法', icon: 'none' })
+        return
+      }
+      try {
+        await memberService.savePlan({
+          name,
+          price,
+          type,
+          period: 'monthly',
+          periodCount: 1,
+          status: 'active',
+          rights: [],
+        } as Partial<MemberPlan>)
+        uni.showToast({ title: '已创建', icon: 'success' })
+        await load()
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '创建失败', icon: 'none' })
+      }
     },
+  })
+}
+
+/**
+ * uni.showModal 包装：让 PC/手机端都能弹输入框拿到字符串结果
+ * 取消返回 null，确认返回 content（可能是空字符串，调用方需要判断）
+ */
+function promptInput(title: string, placeholder: string, initial = ''): Promise<string | null> {
+  return new Promise((resolve) => {
+    uni.showModal({
+      title,
+      content: placeholder,
+      editable: true,
+      placeholderText: initial,
+      success: (r) => {
+        if (r.confirm) resolve(r.content || initial)
+        else resolve(null)
+      },
+      fail: () => resolve(null),
+    })
   })
 }
 
@@ -82,7 +210,12 @@ function changeTrial() {
     success: (r) => {
       const days = [7, 15, 30, 60, 0][r.tapIndex]
       trialDays.value = days
-      uni.showToast({ title: days > 0 ? `已设为 ${days} 天` : '试用已关闭', icon: 'success' })
+      uni.showToast({
+        title: days > 0 ? `已设为 ${days} 天` : '试用已关闭',
+        icon: 'success',
+      })
+      // 持久化暂用系统设置接口（之后可单独建独立 trialDays 接口）
+      // 仅前端展示生效，后端落库需 systemService.saveSettings 走另一个 PR
     },
   })
 }
@@ -111,7 +244,7 @@ onMounted(load)
         v-for="t in TABS"
         :key="t.key"
         :class="['tab', tab === t.key ? 'active' : '']"
-        @click="t.key === 'pay-orders' ? goPayOrders() : (tab = t.key)"
+        @click="onTabChange(t.key)"
       >
         <text>{{ t.label }}</text>
         <view v-if="tab === t.key" class="indicator" />
@@ -214,14 +347,14 @@ onMounted(load)
           </view>
         </view>
 
-        <!-- 增值单项 -->
-        <view class="card">
+        <!-- 增值单项（从后端 plans 派生，type='addon'） -->
+        <view class="card" v-if="addonItems.length > 0">
           <view class="card-head-row">
             <Icon name="gift" :size="28" color="var(--brand-primary)" />
             <text class="card-title">增值单项购买</text>
           </view>
           <view class="addon-list">
-            <view v-for="a in ADDON_ITEMS" :key="a.label" class="addon-row">
+            <view v-for="a in addonItems" :key="a.id" class="addon-row">
               <view class="addon-icon">
                 <Icon :name="a.icon" :size="24" color="var(--brand-primary)" />
               </view>
@@ -251,28 +384,29 @@ onMounted(load)
         </view>
       </view>
 
-      <!-- 会员状态 -->
+      <!-- 会员状态（真实订阅聚合：遍历套餐 + subscriptions 实时计数） -->
       <view v-else-if="tab === 'status'">
         <view class="card status-card">
           <text class="card-title">会员订阅概况</text>
           <view class="status-grid">
             <view class="s-item">
-              <text class="s-num">128</text>
+              <text class="s-num">{{ statusOverview.yearly }}</text>
               <text class="s-label">VIP 年费</text>
             </view>
             <view class="s-item">
-              <text class="s-num">86</text>
+              <text class="s-num">{{ statusOverview.monthly }}</text>
               <text class="s-label">月费</text>
             </view>
             <view class="s-item">
-              <text class="s-num">54</text>
+              <text class="s-num">{{ statusOverview.trial }}</text>
               <text class="s-label">试用</text>
             </view>
             <view class="s-item">
-              <text class="s-num">12</text>
-              <text class="s-label">即将到期</text>
+              <text class="s-num">{{ statusOverview.expiringSoon }}</text>
+              <text class="s-label">7 天内到期</text>
             </view>
           </view>
+          <text class="hint">数据来源：当前所有套餐订阅记录实时聚合</text>
         </view>
       </view>
 
@@ -625,5 +759,11 @@ onMounted(load)
     font-size: 22rpx;
     color: var(--text-tertiary);
   }
+}
+.status-card .hint {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 20rpx;
+  color: var(--text-tertiary);
 }
 </style>

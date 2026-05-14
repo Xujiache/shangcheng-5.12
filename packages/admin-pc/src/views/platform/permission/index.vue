@@ -114,7 +114,7 @@
             <ElInput v-model="roleForm.name" placeholder="如：运营经理" />
           </ElFormItem>
           <ElFormItem label="描述">
-            <ElInput v-model="roleForm.desc" type="textarea" rows="2" />
+            <ElInput v-model="roleForm.desc" type="textarea" :rows="2" />
           </ElFormItem>
           <ElFormItem label="权限">
             <ElCheckboxGroup v-model="roleForm.permissions">
@@ -267,7 +267,7 @@
           dangerouslyUseHTMLString: true,
           confirmButtonText: '复制密码',
           showClose: true,
-          callback: async (action) => {
+          callback: async (action: string) => {
             if (action === 'confirm') {
               try {
                 await navigator.clipboard.writeText(pwd)

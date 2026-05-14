@@ -137,7 +137,8 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.commissionRules(mid)
   }
   @Get('promote-summary') async promoteSummary(@CurrentUser() u: AuthUser) {
-    return { totalCommission: 0, monthCommission: 0, promotedOrders: 0, promotedUsers: 0 }
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.promoteSummary(mid)
   }
   @Get('marketing') async marketingAlias(@CurrentUser() u: AuthUser) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.marketingOverview(mid)
@@ -323,7 +324,16 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.membershipNotices(mid)
   }
   @Post('membership/subscribe') async subscribe(@CurrentUser() u: AuthUser, @Body() dto: any) {
-    const mid = await this.svc.ensureMerchantId(u); return this.svc.subscribe(mid, dto)
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.subscribe(mid, u.sub, dto)
+  }
+  /** 前端轮询支付状态（拉起 wxpay 成功后调用，直到 status='paid' 才显示成功） */
+  @Get('membership/payments/:no/status') async membershipPayStatus(
+    @CurrentUser() u: AuthUser,
+    @Param('no') no: string,
+  ) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.getMembershipPaymentStatus(mid, no)
   }
   @Post('membership/cancel') async cancelSub(@CurrentUser() u: AuthUser) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.cancelSub(mid)

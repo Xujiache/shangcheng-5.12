@@ -1,17 +1,9 @@
 /**
- * 平台 PC 业务接口（已对接 /api/v1/p/* 真后端）
+ * 平台 PC 业务接口（对接 /api/v1/p/* 真后端）
  *
- * 个别后端缺失的子功能（如灰度、配置详情等）仍保留 mock，并标 TODO。
+ * 不再保留任何 mock / faker / 假数据 fallback。
+ * 后端无对应接口或调用失败时，统一返回空数组 / 默认空对象，让页面进入空态展示。
  */
-import {
-  genPlazaCard,
-  genPlazaPush,
-  genAdSlot,
-  genAdCreative,
-  genFeatureFlags,
-  placeholderImage,
-  faker
-} from '@jiujiu/shared/mock'
 import type {
   Merchant,
   Order,
@@ -28,9 +20,6 @@ import {
   getSubscriptionsByPlan as msGetSubsByPlan,
   type PaymentRecord
 } from './member-service'
-
-const delay = <T>(data: T, ms = 200): Promise<T> =>
-  new Promise((r) => setTimeout(() => r(data), ms))
 
 /* ============ 1. Dashboard ============ */
 export function fetchPlatformDashboard() {
@@ -140,26 +129,36 @@ export interface AdSlotVM {
   preview: string
 }
 
-// shape-adapted: 后端返回 AdSlot[]；前端聚合 creative 数量 + 演示用 CTR/曝光
-export async function fetchAdSlots() {
-  const [slots, creatives] = await Promise.all([
-    request.get<AdSlot[]>({ url: '/api/v1/p/ads/slots' }),
-    request.get<AdCreative[]>({ url: '/api/v1/p/ads/creatives' })
-  ])
-  const safeSlots = Array.isArray(slots) ? slots : []
-  const safeCreatives = Array.isArray(creatives) ? creatives : []
-  const list: AdSlotVM[] = safeSlots.map((s, i) => ({
-    id: s.id,
-    name: s.name,
-    target: (s.target ?? 'customer') as AdSlotVM['target'],
-    status: (['active', 'active', 'paused', 'ended', 'draft'] as const)[i % 5],
-    creativeCount: safeCreatives.filter((c) => c.slotId === s.id).length,
-    // TODO: no backend equivalent — CTR/曝光 暂用 mock
-    ctr: faker.number.float({ min: 1.2, max: 12.5, fractionDigits: 1 }),
-    impressions: faker.number.int({ min: 5000, max: 200000 }),
-    preview: placeholderImage(300, 120)
-  }))
-  return list
+/**
+ * 广告位列表
+ *
+ * 后端字段 status / ctr / impressions / preview 缺失时统一显示空值；
+ * 不再使用 faker 生成"演示数据"。
+ */
+export async function fetchAdSlots(): Promise<AdSlotVM[]> {
+  try {
+    const [slots, creatives] = await Promise.all([
+      request.get<AdSlot[]>({ url: '/api/v1/p/ads/slots' }),
+      request.get<AdCreative[]>({ url: '/api/v1/p/ads/creatives' })
+    ])
+    const safeSlots = Array.isArray(slots) ? slots : []
+    const safeCreatives = Array.isArray(creatives) ? creatives : []
+    return safeSlots.map((s) => {
+      const anyS = s as any
+      return {
+        id: s.id,
+        name: s.name,
+        target: (s.target ?? 'customer') as AdSlotVM['target'],
+        status: (anyS.status as AdSlotVM['status']) ?? 'draft',
+        creativeCount: safeCreatives.filter((c) => c.slotId === s.id).length,
+        ctr: typeof anyS.ctr === 'number' ? anyS.ctr : 0,
+        impressions: typeof anyS.impressions === 'number' ? anyS.impressions : 0,
+        preview: anyS.preview || anyS.previewUrl || ''
+      }
+    })
+  } catch {
+    return []
+  }
 }
 
 export function fetchAdCreatives(slotId?: string) {
@@ -170,24 +169,57 @@ export function fetchAdCreatives(slotId?: string) {
 }
 
 /* ============ 8. 选品广场 ============ */
-// TODO: no backend equivalent — 选品广场商品/工厂列表后端无对应路由，保留 mock
-const PLAZA_ITEMS = Array.from({ length: 25 }).map(() => {
-  const card = genPlazaCard()
-  return {
-    ...card,
-    status: faker.helpers.arrayElement(['pushing', 'pushing', 'pending', 'offline'] as const),
-    agencyCount: faker.number.int({ min: 0, max: 200 })
-  }
-})
 
-export type PlazaItem = (typeof PLAZA_ITEMS)[number]
+/**
+ * 平台选品广场列表项（与现有 view 字段保持一致：id / name / image / factory / price / tag）
+ * 后端返回 PlazaProductCard 时由 fetchPlatformPlaza 适配；缺字段时显示空值。
+ */
+export interface PlazaItem {
+  id: string
+  name: string
+  image: string
+  factory: string
+  price: number
+  status: 'pushing' | 'pending' | 'offline'
+  agencyCount: number
+  tag?: string
+}
 
-export async function fetchPlatformPlaza(tab: 'products' | 'factories' | 'records' = 'products') {
+/**
+ * 平台选品广场列表
+ *
+ * 后端未实现 products / factories 列表时返回空数组让页面进入空态。
+ * records tab 对应 /p/plaza/pushes 推送记录，已有后端接口。
+ */
+export async function fetchPlatformPlaza(
+  tab: 'products' | 'factories' | 'records' = 'products'
+): Promise<PlazaItem[] | PlazaPush[]> {
   if (tab === 'records') {
-    return request.get<PlazaPush[]>({ url: '/api/v1/p/plaza/pushes' })
+    try {
+      return await request.get<PlazaPush[]>({ url: '/api/v1/p/plaza/pushes' })
+    } catch {
+      return []
+    }
   }
-  // TODO: no backend equivalent — products / factories 仍返回 mock
-  return delay(PLAZA_ITEMS)
+  try {
+    const raw = await request.get<any[]>({
+      url: '/api/v1/p/plaza/products',
+      params: { tab }
+    })
+    const list = Array.isArray(raw) ? raw : []
+    return list.map((r: any): PlazaItem => ({
+      id: r.id || r.productId || '',
+      name: r.name || r.productName || '',
+      image: r.image || r.productImage || '',
+      factory: r.factory || r.factoryName || '',
+      price: typeof r.price === 'number' ? r.price : (typeof r.startPrice === 'number' ? r.startPrice : 0),
+      status: (r.status as PlazaItem['status']) || 'pending',
+      agencyCount: typeof r.agencyCount === 'number' ? r.agencyCount : 0,
+      tag: r.tag || (Array.isArray(r.tags) ? r.tags[0] : undefined)
+    }))
+  } catch {
+    return []
+  }
 }
 
 export interface PushPayload {
@@ -226,7 +258,7 @@ export function fetchPlanSubscriptions(planId: string) {
     .catch(() => msGetSubsByPlan(planId)) as ReturnType<typeof msGetSubsByPlan>
 }
 export function fetchAllSubscriptions() {
-  // TODO: no backend equivalent — 后端只暴露按 planId 查询；这里回退到 member-service
+  // 后端只暴露按 planId 查询；这里回退到 member-service（返回 []）
   return msGetSubs()
 }
 
@@ -321,7 +353,7 @@ export function saveSystemSettings(s: Partial<SystemSettings>) {
   })
 }
 
-/* ============ 12.1 法律协议（用户协议 / 隐私政策 / 信息收集清单） ============ */
+/* ============ 12.1 法律协议 ============ */
 export interface LegalAgreementItem {
   title: string
   updatedAt: string
@@ -343,7 +375,7 @@ export function saveLegalAgreements(data: Partial<LegalAgreements>) {
   })
 }
 
-/* ============ 12b. APP 发布管理（#7 软件自更新）============ */
+/* ============ 12b. APP 发布管理 ============ */
 export type AppPlatformKind = 'merchant' | 'platform'
 export interface AppReleaseRow {
   id: string
@@ -424,13 +456,16 @@ export interface GrayscaleConfig {
   rule: 'random' | 'whitelist' | 'level'
 }
 
-export function fetchFeatureFlags() {
-  return request
-    .get<FeatureFlag[]>({ url: '/api/v1/p/feature-flags' })
-    .catch(() => genFeatureFlags())
+export async function fetchFeatureFlags(): Promise<FeatureFlag[]> {
+  try {
+    const flags = await request.get<FeatureFlag[]>({ url: '/api/v1/p/feature-flags' })
+    return Array.isArray(flags) ? flags : []
+  } catch {
+    return []
+  }
 }
 export function toggleFeatureFlag(key: string) {
-  // shape-adapted: 前端按 key 调用；后端用 :id（同一字段），同时透传 enabled=true 由后端取反或前端无关心
+  // 前端按 key 调用；后端按 :id（同一字段）。同时透传 enabled=true 由后端取反或前端无关心
   return request.post<{ ok: boolean }>({
     url: `/api/v1/p/feature-flags/${key}/toggle`,
     data: {}

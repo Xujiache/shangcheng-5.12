@@ -277,13 +277,13 @@
   const createForm = reactive({
     name: '',
     target: 'customer' as AdSlotVM['target'],
-    preview: 'https://picsum.photos/seed/newad/300/120'
+    preview: ''
   })
 
   function onCreate() {
     createForm.name = ''
     createForm.target = 'customer'
-    createForm.preview = `https://picsum.photos/seed/ad-${Date.now()}/300/120`
+    createForm.preview = ''
     createOpen.value = true
   }
 
@@ -336,7 +336,7 @@
     editTarget.value = s
     editMode.value = cmd as 'upload' | 'target' | 'time'
     editForm.creativeTitle = ''
-    editForm.creativeImage = `https://picsum.photos/seed/cv-${Date.now()}/600/240`
+    editForm.creativeImage = ''
     editForm.creativeBudget = 1000
     editForm.newTarget = s.target
     const today = new Date().toISOString().slice(0, 10)

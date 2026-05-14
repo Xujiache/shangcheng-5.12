@@ -4,10 +4,12 @@
  * 平台端：CRUD 走 /api/v1/p/member-plans · /api/v1/p/member-pay-orders
  * 商户端：订阅/配额/缴费 走 /api/v1/m/membership/*
  *
- * 仍保留少量 localStorage 工具（DEMO 商家映射、通知聚合）作为前端纯计算的 fallback。
+ * 商家身份完全由后端 JWT 识别，前端不再保留任何 demo 商家映射。
+ * 通知聚合优先取后端 /m/membership/notices；失败时本地依据 订阅+配额 拼装。
  */
 import type { MemberPlan } from '@jiujiu/shared/types'
 import request from '@/utils/http'
+import { useUserStore } from '@/store/modules/user'
 
 /* ============ 类型 ============ */
 
@@ -61,31 +63,32 @@ export interface PaymentRecord {
   createdAt: string
 }
 
-/* ============ DEMO 商家映射（前端展示用 fallback） ============ */
-
-const DEMO_MERCHANTS = [
-  { id: 'demo-merchant-001', name: '经纬科技（北京·三里屯）' },
-  { id: 'demo-merchant-002', name: '佛山顺德龙江家具厂' },
-  { id: 'demo-merchant-003', name: '上海陆家嘴体验店' },
-  { id: 'demo-merchant-004', name: '广州天河旗舰店' },
-  { id: 'demo-merchant-005', name: '南方睡眠科技工厂' },
-  { id: 'demo-merchant-006', name: '岩板工厂直营' }
-]
-
 /* ============ 当前商家身份 ============ */
 
 /**
- * 当前商家 ID：后端通过 JWT 自动识别，前端无需传；该方法仅用于无 JWT 场景下的展示。
+ * 当前商家 ID：后端通过 JWT 自动识别，前端不再硬编码 demo 值。
+ * 优先取 user store 中的 userId（登录后由 /api/v1/auth/user-info 写入），缺失时返回空字符串
+ * （由后端 JWT 兜底，避免任何 mock 业务身份泄露）。
  */
 export function getCurrentMerchantId(): string {
-  return 'demo-merchant-001'
-}
-export function getCurrentMerchantName(): string {
-  return DEMO_MERCHANTS[0].name
+  try {
+    const id = useUserStore().info?.userId
+    return id != null ? String(id) : ''
+  } catch {
+    return ''
+  }
 }
 
-export function listDemoMerchants() {
-  return DEMO_MERCHANTS.slice()
+/**
+ * 当前商家展示名：从 user store info 读取 nickName / userName，避免使用 demo 占位名。
+ */
+export function getCurrentMerchantName(): string {
+  try {
+    const info = useUserStore().info as Partial<{ nickName: string; userName: string }>
+    return info?.nickName || info?.userName || ''
+  } catch {
+    return ''
+  }
 }
 
 /* ============ 套餐 CRUD ============ */
@@ -141,18 +144,55 @@ export interface SubscribeInput {
   payMethod?: 'wechat' | 'alipay' | 'balance'
 }
 
-export function subscribePlan(
-  input: SubscribeInput
-): Promise<{ ok: true; subscription: Subscription }> {
+export interface SubscribeResponse {
+  ok: true
+  /** 非生产 + wxpay 未配齐 → mockPaid=true 已直接激活（仅本地预览） */
+  mockPaid?: boolean
+  /** 真实下单：支付单号，前端可轮询 paymentStatus(no) 查到账 */
+  paymentNo?: string
+  recordId?: string
+  /** 真实下单：微信小程序 JSAPI 调起参数；admin-pc 在 PC Web 上无法直接使用，
+   *  但需要返回让上层判断"请去手机商家 APP 完成支付" */
+  miniPay?: {
+    appId: string
+    timeStamp: string
+    nonceStr: string
+    package: string
+    signType: 'RSA' | 'MD5'
+    paySign: string
+  }
+}
+
+export function subscribePlan(input: SubscribeInput): Promise<SubscribeResponse> {
   return request
-    .post<{ subscription: Subscription } | Subscription>({
+    .post<SubscribeResponse>({
       url: '/api/v1/m/membership/subscribe',
       data: { planId: input.planId, payMethod: input.payMethod }
     })
-    .then((res) => {
-      const s = (res as any)?.subscription ?? (res as Subscription)
-      return { ok: true as const, subscription: s as Subscription }
-    })
+    .then((res) => ({
+      ok: true as const,
+      mockPaid: res?.mockPaid ?? false,
+      paymentNo: res?.paymentNo,
+      recordId: res?.recordId,
+      miniPay: res?.miniPay
+    }))
+}
+
+/** 轮询支付状态 —— 与 merchant-app 共用同一后端 */
+export interface MembershipPaymentStatus {
+  id: string
+  no: string
+  planName: string
+  amount: number
+  status: 'pending' | 'paid' | 'refunding' | 'refunded' | 'failed'
+  paidAt?: string
+  createdAt: string
+}
+
+export function getMembershipPaymentStatus(no: string): Promise<MembershipPaymentStatus> {
+  return request.get<MembershipPaymentStatus>({
+    url: `/api/v1/m/membership/payments/${no}/status`
+  })
 }
 
 export function cancelSubscription(_merchantId?: string): Promise<{ ok: true }> {

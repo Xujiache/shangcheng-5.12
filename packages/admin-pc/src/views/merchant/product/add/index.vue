@@ -361,15 +361,8 @@
     categoryId: [] as string[],
     tags: [] as string[],
     description: '',
-    images: [
-      'https://picsum.photos/seed/p1/600',
-      'https://picsum.photos/seed/p2/600',
-      'https://picsum.photos/seed/p3/600'
-    ] as string[],
-    specs: [
-      { name: '尺寸', values: ['1.2m', '1.4m', '1.6m'] },
-      { name: '颜色', values: ['橡木', '胡桃木'] }
-    ] as SpecGroup[],
+    images: [] as string[],
+    specs: [] as SpecGroup[],
     pricingMode: 'standard' as 'standard' | 'by-size',
     pricePerSqm: 0,
     baseFee: 0,

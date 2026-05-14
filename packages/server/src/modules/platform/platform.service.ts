@@ -100,8 +100,110 @@ export class PlatformService {
       },
     }
   }
+  /**
+   * 平台运营报表
+   *
+   * period 支持：today / week / month / year
+   *   - today：按小时聚合，24 个桶
+   *   - week / month：按天聚合
+   *   - year：按月聚合，12 个桶
+   *
+   * 返回：
+   *   - salesTrend：[{date, value}] 销售额时间序列
+   *   - topMerchants：销售额 TOP 10 商家
+   *
+   * 全部走 Order 表实时聚合，无任何 mock 兜底。
+   */
   async stats(q: any) {
-    return { period: q.period || 'today', salesTrend: [], topMerchants: [] }
+    const period: 'today' | 'week' | 'month' | 'year' = ['today', 'week', 'month', 'year'].includes(q?.period)
+      ? q.period
+      : 'today'
+    const now = new Date()
+    let sinceDate: Date
+    let segments: number
+    let bucketMs: number
+    let labelFn: (d: Date) => string
+
+    if (period === 'today') {
+      sinceDate = new Date(now)
+      sinceDate.setHours(0, 0, 0, 0)
+      segments = 24
+      bucketMs = 3600_000
+      labelFn = (d) => `${String(d.getHours()).padStart(2, '0')}:00`
+    } else if (period === 'week') {
+      sinceDate = new Date(now.getTime() - 6 * 86400_000)
+      sinceDate.setHours(0, 0, 0, 0)
+      segments = 7
+      bucketMs = 86400_000
+      labelFn = (d) => `${d.getMonth() + 1}/${d.getDate()}`
+    } else if (period === 'month') {
+      sinceDate = new Date(now.getTime() - 29 * 86400_000)
+      sinceDate.setHours(0, 0, 0, 0)
+      segments = 30
+      bucketMs = 86400_000
+      labelFn = (d) => `${d.getMonth() + 1}/${d.getDate()}`
+    } else {
+      sinceDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+      segments = 12
+      bucketMs = 0 // year 模式按月切分，单独处理
+      labelFn = (d) => `${d.getMonth() + 1}月`
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where: { createdAt: { gte: sinceDate }, status: { in: ['pending_shipment', 'shipped', 'completed'] } },
+      select: { merchantId: true, payAmount: true, createdAt: true },
+    })
+
+    // 时间序列
+    const salesTrend: { date: string; value: number }[] = []
+    if (period === 'year') {
+      for (let i = 0; i < 12; i++) {
+        const segStart = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+        const segEnd = new Date(now.getFullYear(), now.getMonth() - (11 - i) + 1, 1)
+        const sum = orders
+          .filter((o) => o.createdAt >= segStart && o.createdAt < segEnd)
+          .reduce((s, o) => s + Number(o.payAmount), 0)
+        salesTrend.push({ date: labelFn(segStart), value: Math.round(sum) })
+      }
+    } else {
+      for (let i = 0; i < segments; i++) {
+        const segStart = new Date(sinceDate.getTime() + i * bucketMs)
+        const segEnd = new Date(segStart.getTime() + bucketMs)
+        const sum = orders
+          .filter((o) => o.createdAt >= segStart && o.createdAt < segEnd)
+          .reduce((s, o) => s + Number(o.payAmount), 0)
+        salesTrend.push({ date: labelFn(segStart), value: Math.round(sum) })
+      }
+    }
+
+    // TOP 商家
+    const byMerchant = new Map<string, number>()
+    for (const o of orders) {
+      const cur = byMerchant.get(o.merchantId) || 0
+      byMerchant.set(o.merchantId, cur + Number(o.payAmount))
+    }
+    const topIds = Array.from(byMerchant.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+    const merchantInfo = topIds.length
+      ? await this.prisma.merchant.findMany({
+          where: { id: { in: topIds.map(([id]) => id) } },
+          select: { id: true, name: true, type: true, region: true },
+        })
+      : []
+    const infoMap = new Map(merchantInfo.map((m) => [m.id, m]))
+    const topMerchants = topIds.map(([id, amount]) => {
+      const info = infoMap.get(id)
+      return {
+        merchantId: id,
+        name: info?.name || '未知商家',
+        type: info?.type || '',
+        region: info?.region || '',
+        sales: Math.round(amount),
+      }
+    })
+
+    return { period, salesTrend, topMerchants }
   }
 
   // ========== 商户 ==========
@@ -408,7 +510,17 @@ export class PlatformService {
     }))
   }
   async createAdmin(dto: any) {
-    const hash = await argon2.hash(dto.password || '123456')
+    const rawPassword = typeof dto.password === 'string' ? dto.password.trim() : ''
+    if (!rawPassword) {
+      throw new BizException(BizCode.INVALID_PARAMS, '必须设置初始密码')
+    }
+    if (rawPassword.length < 8) {
+      throw new BizException(BizCode.INVALID_PARAMS, '密码至少 8 位')
+    }
+    if (!dto.username || !String(dto.username).trim()) {
+      throw new BizException(BizCode.INVALID_PARAMS, '必须设置账号')
+    }
+    const hash = await argon2.hash(rawPassword)
     const u = await this.prisma.user.create({
       data: {
         username: dto.username,

@@ -323,7 +323,7 @@
     const newRule: CustomRule = {
       id: product.id,
       name: product.name,
-      image: product.images?.[0] || 'https://picsum.photos/seed/' + product.id + '/80/80',
+      image: product.images?.[0] || '',
       level1: customForm.level1,
       level2: customForm.level2,
       enabled: true

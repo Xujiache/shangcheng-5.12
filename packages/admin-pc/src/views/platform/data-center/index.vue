@@ -25,7 +25,7 @@
         :count="k.count"
         :description="k.desc"
         :icon="k.icon"
-        :iconStyle="k.iconStyle"
+        :iconStyle="k.iconStyle as any"
         separator=","
       />
     </div>

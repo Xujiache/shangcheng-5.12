@@ -64,19 +64,25 @@ const stats = computed(() => ({
 async function load() {
   loading.value = true
   try {
-    // 平台端只能调 /p/* 接口；后端 /p/plaza/products 返回全平台广场商品聚合，已实测正常
-    const res = (await http.get('/api/v1/p/plaza/products', { pageSize: 30 })) as { list: any[] }
-    items.value = (res.list ?? []).map((x: any, i: number) => ({
-      id: x.id ?? 'pl-' + i,
-      name: x.name ?? ['实木餐桌 #' + (i + 1), '真皮三人沙发', '软包大床 1.8m', '北欧岩板茶几', '智能升降桌'][i % 5],
-      factory: x.factory ?? ['经纬科技', '佛山家具厂', '南方睡眠科技', '岩板工厂', '创智办公'][i % 5],
-      price: x.price ?? [1288, 3680, 2180, 980, 2380][i % 5],
-      image: x.image ?? `https://picsum.photos/seed/plaza-${i}/400/400`,
-      tag: x.tag ?? ['🔥本周热推', '厂家直供', '新品', '高佣金 12%', '新品'][i % 5],
-      tagTone: i % 3 === 0 ? 'pop' : 'accent',
-      status: ['pushing', 'pushing', 'pending', 'pending', 'offline'][i % 5] as PlazaItem['status'],
-      agencyCount: [128, 86, 0, 0, 12][i % 5],
-    }))
+    // 平台端只能调 /p/* 接口；后端 /p/plaza/products 返回全平台广场商品聚合
+    const res = (await http.get('/api/v1/p/plaza/products', { pageSize: 30 })) as { list?: any[] }
+    const list = Array.isArray(res?.list) ? res!.list! : []
+    items.value = list.map((x: any, i: number): PlazaItem => {
+      const firstTag = x.tag || (Array.isArray(x.tags) ? x.tags[0] : '') || ''
+      return {
+        id: String(x.id ?? x.productId ?? `pl-${i}`),
+        name: x.name || x.productName || '',
+        factory: x.factory || x.factoryName || '',
+        price: typeof x.price === 'number' ? x.price : (typeof x.startPrice === 'number' ? x.startPrice : 0),
+        image: x.image || x.productImage || '',
+        tag: firstTag,
+        tagTone: i % 3 === 0 ? 'pop' : 'accent',
+        status: (x.status as PlazaItem['status']) || 'pending',
+        agencyCount: typeof x.agencyCount === 'number' ? x.agencyCount : 0,
+      }
+    })
+  } catch {
+    items.value = []
   } finally {
     loading.value = false
   }

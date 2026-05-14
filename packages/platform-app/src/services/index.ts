@@ -95,6 +95,12 @@ export const plazaService = {
 }
 
 // ============ 会员套餐 ============
+export interface SubscriptionStatusOverview {
+  yearly: number
+  monthly: number
+  trial: number
+  expiringSoon: number
+}
 export const memberService = {
   plans() {
     return http.get<MemberPlan[]>('/api/v1/p/member-plans')
@@ -102,8 +108,53 @@ export const memberService = {
   savePlan(dto: Partial<MemberPlan>) {
     return http.post<{ ok: boolean }>('/api/v1/p/member-plans', dto as unknown as Record<string, unknown>)
   },
+  deletePlan(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/p/member-plans/${id}`)
+  },
   payOrders(params: { status?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<unknown>>('/api/v1/p/member-pay-orders', params)
+  },
+  /**
+   * 订阅状态概览（聚合所有套餐的 subscriptions）
+   *
+   * 因后端目前只暴露按 planId 查询订阅，这里前端把所有 active 套餐遍历一遍
+   * 累加聚合（套餐数量通常很少，开销可接受）。
+   * 若后端补 /p/membership/overview 一把梭接口，则替换为该接口即可。
+   */
+  async statusOverview(): Promise<SubscriptionStatusOverview> {
+    const all = await http.get<MemberPlan[]>('/api/v1/p/member-plans').catch(() => [] as MemberPlan[])
+    if (!Array.isArray(all) || all.length === 0) {
+      return { yearly: 0, monthly: 0, trial: 0, expiringSoon: 0 }
+    }
+    const now = Date.now()
+    let yearly = 0
+    let monthly = 0
+    let trial = 0
+    let expiringSoon = 0
+    await Promise.all(
+      all.map(async (p) => {
+        try {
+          const subs = (await http.get<any[]>(
+            `/api/v1/p/member-plans/${p.id}/subscriptions`,
+          )) as Array<{ status?: string; endAt?: string }>
+          if (!Array.isArray(subs)) return
+          for (const s of subs) {
+            if (s.status === 'trial') trial += 1
+            else if (s.status === 'active') {
+              if (p.period === 'yearly') yearly += 1
+              else if (p.period === 'monthly') monthly += 1
+              if (s.endAt) {
+                const ms = new Date(s.endAt).getTime() - now
+                if (ms > 0 && ms <= 7 * 86400_000) expiringSoon += 1
+              }
+            }
+          }
+        } catch {
+          /* 单个套餐失败忽略，继续下一个 */
+        }
+      }),
+    )
+    return { yearly, monthly, trial, expiringSoon }
   },
 }
 

@@ -147,7 +147,7 @@
             />
           </ElFormItem>
           <ElFormItem label="备注">
-            <ElInput v-model="pushForm.remark" type="textarea" rows="3" placeholder="可选" />
+            <ElInput v-model="pushForm.remark" type="textarea" :rows="3" placeholder="可选" />
           </ElFormItem>
         </ElForm>
         <div class="pf-push__footer">

@@ -111,7 +111,8 @@
 <script setup lang="ts">
   import {
     fetchMerchantCategories,
-    saveMerchantCategories
+    saveMerchantCategories,
+    fetchPlatformCategoriesForMerchant
   } from '@/api/merchant-business'
   import type { Category } from '@jiujiu/shared/types'
   import { ElMessage, ElMessageBox } from 'element-plus'
@@ -134,62 +135,14 @@
   const source = ref<'platform' | 'custom'>('platform')
   const CUSTOM_KEY = 'jj_merchant_category_custom_v1'
 
-  /** 平台分类（mock 只读） */
-  const PLATFORM_TREE: TreeNode[] = [
-    {
-      id: 'pf-1',
-      parentId: null,
-      name: '客厅家具',
-      icon: 'ri:sofa-line',
-      sortOrder: 1,
-      visible: true,
-      productCount: 128,
-      children: [
-        { id: 'pf-1-1', parentId: 'pf-1', name: '沙发', icon: 'ri:sofa-line', visible: true, productCount: 56 },
-        { id: 'pf-1-2', parentId: 'pf-1', name: '茶几', icon: 'ri:table-line', visible: true, productCount: 32 },
-        { id: 'pf-1-3', parentId: 'pf-1', name: '电视柜', icon: 'ri:tv-line', visible: true, productCount: 24 },
-        { id: 'pf-1-4', parentId: 'pf-1', name: '边几', icon: 'ri:table-line', visible: true, productCount: 16 }
-      ]
-    },
-    {
-      id: 'pf-2',
-      parentId: null,
-      name: '餐厅家具',
-      icon: 'ri:restaurant-line',
-      sortOrder: 2,
-      visible: true,
-      productCount: 76,
-      children: [
-        { id: 'pf-2-1', parentId: 'pf-2', name: '餐桌', icon: 'ri:table-line', visible: true, productCount: 40 },
-        { id: 'pf-2-2', parentId: 'pf-2', name: '餐椅', icon: 'ri:armchair-line', visible: true, productCount: 28 },
-        { id: 'pf-2-3', parentId: 'pf-2', name: '餐边柜', icon: 'ri:archive-line', visible: true, productCount: 8 }
-      ]
-    },
-    {
-      id: 'pf-3',
-      parentId: null,
-      name: '卧室家具',
-      icon: 'ri:hotel-bed-line',
-      sortOrder: 3,
-      visible: true,
-      productCount: 92,
-      children: [
-        { id: 'pf-3-1', parentId: 'pf-3', name: '床', icon: 'ri:hotel-bed-line', visible: true, productCount: 48 },
-        { id: 'pf-3-2', parentId: 'pf-3', name: '床垫', icon: 'ri:hotel-line', visible: true, productCount: 22 },
-        { id: 'pf-3-3', parentId: 'pf-3', name: '衣柜', icon: 'ri:archive-line', visible: true, productCount: 22 }
-      ]
-    },
-    {
-      id: 'pf-4',
-      parentId: null,
-      name: '灯具',
-      icon: 'ri:lightbulb-line',
-      sortOrder: 4,
-      visible: true,
-      productCount: 58,
-      children: []
-    }
-  ]
+  /**
+   * 平台分类树
+   *
+   * 不再硬编码 demo 分类（"客厅家具/沙发"等）。
+   * source='platform' 时由 loadData() 从后端 /api/v1/m/categories?type=platform 拉真数据。
+   * 这里只声明一个空骨架，避免首次渲染前 undefined。
+   */
+  const PLATFORM_TREE: TreeNode[] = []
 
   function onSourceChange() {
     selectedNode.value = null
@@ -304,11 +257,42 @@
     router.push('/merchant/product/list')
   }
 
+  /** 把后端返回的平铺分类列表组成树（parentId / children） */
+  function buildTree(flat: Category[]): TreeNode[] {
+    const map = new Map<string, TreeNode>()
+    const roots: TreeNode[] = []
+    for (const c of flat) {
+      map.set(c.id, { ...c, visible: true, sortOrder: c.sort ?? 0, productCount: 0, children: [] })
+    }
+    for (const n of map.values()) {
+      if (n.parentId && map.has(n.parentId)) {
+        const parent = map.get(n.parentId)!
+        parent.children = parent.children || []
+        parent.children.push(n)
+      } else {
+        roots.push(n)
+      }
+    }
+    // 按 sort 升序
+    const sortRec = (list: TreeNode[]) => {
+      list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      list.forEach((n) => n.children && sortRec(n.children))
+    }
+    sortRec(roots)
+    return roots
+  }
+
   async function loadData() {
     if (source.value === 'platform') {
-      treeData.value = JSON.parse(JSON.stringify(PLATFORM_TREE))
+      // 拉真平台分类（type='platform' 由后端按权限返回）
+      try {
+        const flat = await fetchPlatformCategoriesForMerchant()
+        treeData.value = buildTree(flat)
+      } catch {
+        treeData.value = PLATFORM_TREE
+      }
     } else {
-      // 自定义：先读 localStorage，没有就从 shared mock 转换
+      // 自定义：先读 localStorage，没有就从后端拉真分类
       try {
         const raw = localStorage.getItem(CUSTOM_KEY)
         if (raw) {
@@ -320,14 +304,12 @@
       } catch {
         /* ignore */
       }
-      const flat = await fetchMerchantCategories()
-      treeData.value = flat.map((c, i) => ({
-        ...c,
-        visible: true,
-        sortOrder: i + 1,
-        productCount: Math.floor(Math.random() * 20),
-        children: []
-      }))
+      try {
+        const flat = await fetchMerchantCategories()
+        treeData.value = buildTree(flat)
+      } catch {
+        treeData.value = []
+      }
     }
     if (treeData.value.length) selectedNode.value = treeData.value[0]
     dirty.value = false

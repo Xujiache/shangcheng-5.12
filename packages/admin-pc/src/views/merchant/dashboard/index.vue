@@ -155,7 +155,10 @@
     month: String(now.getMonth() + 1).padStart(2, '0'),
     year: now.getFullYear()
   }
-  const nickName = computed(() => userStore.info?.nickname || userStore.info?.userName || '老板')
+  const nickName = computed(() => {
+    const info = userStore.info as Partial<{ nickname: string; userName: string }> | undefined
+    return info?.nickname || info?.userName || '老板'
+  })
 
   /* ====== 待办 ====== */
   const todoList = computed(() => {

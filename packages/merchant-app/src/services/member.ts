@@ -63,9 +63,34 @@ export interface PaymentRecord {
   createdAt: string
 }
 
+/** subscribe() 返回值 —— 真实下单链路 */
 export interface SubscribeResult {
   ok: boolean
-  subscription?: MembershipInfo
+  /** 非生产 + wxpay 未配齐 → mockPaid=true 已直接激活；否则需要走真实支付 */
+  mockPaid?: boolean
+  /** 支付单号（用于轮询状态） */
+  paymentNo: string
+  /** PaymentRecord id */
+  recordId: string
+  /** 微信小程序 uni.requestPayment 所需的全部字段（mockPaid=true 时不返回） */
+  miniPay?: {
+    appId: string
+    timeStamp: string
+    nonceStr: string
+    package: string
+    signType: 'RSA' | 'MD5'
+    paySign: string
+  }
+}
+
+export interface PaymentStatusVO {
+  id: string
+  no: string
+  planName: string
+  amount: number
+  status: 'pending' | 'paid' | 'refunding' | 'refunded' | 'failed'
+  paidAt?: string
+  createdAt: string
 }
 
 export const memberService = {
@@ -106,9 +131,14 @@ export const memberService = {
     return http.get<{ type: string; text: string; link?: string }[]>('/api/v1/m/membership/notices')
   },
 
-  /** 立即开通 / 续费（真实下单调起后端创建订阅 + 支付记录） */
+  /** 创建订阅订单：后端会写 PaymentRecord(pending) 并返回 wxpay miniPay 参数 */
   subscribe(planId: string, payMethod: 'wechat' | 'alipay' | 'balance' = 'wechat') {
     return http.post<SubscribeResult>('/api/v1/m/membership/subscribe', { planId, payMethod })
+  },
+
+  /** 轮询某笔订单是否已被微信回调激活（真实下单链路用） */
+  paymentStatus(no: string) {
+    return http.get<PaymentStatusVO>(`/api/v1/m/membership/payments/${no}/status`)
   },
 
   /** 取消订阅 */

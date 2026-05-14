@@ -11,3 +11,5 @@ export function orderNo(prefix = 'O') {
 export function refundNo() { return orderNo('R') }
 export function withdrawNo() { return orderNo('W') }
 export function payNo() { return orderNo('P') }
+/** 会员订阅缴费单号；带 MEM 前缀让 wxpay 回调能识别为会员订阅而非普通订单 */
+export function membershipNo() { return orderNo('MEM') }

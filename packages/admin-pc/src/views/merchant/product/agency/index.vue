@@ -446,7 +446,8 @@
         f = {
           factoryId: app.factoryId,
           factoryName: app.factoryName,
-          logo: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(app.factoryName)}`,
+          // ElAvatar 在 logo 为空时会显示默认占位图标，无需外链初始头像服务
+          logo: '',
           totalCount: 0,
           approvedCount: 0,
           pendingCount: 0,
@@ -752,7 +753,7 @@
     try {
       await ElMessageBox.confirm(`取消申请「${row.productName}」？`, '提示', { type: 'warning' })
       list.value = list.value.filter((a) => a.id !== row.id)
-      silentDelete(row.id)
+      if (row.id) silentDelete(row.id)
       ElMessage.success('已取消申请')
     } catch {
       /* cancel */

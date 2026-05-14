@@ -290,33 +290,8 @@
     } catch {
       /* ignore */
     }
-    // 默认 demo
-    const next1y = new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10)
-    const next30d = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)
-    authConfigs.value = [
-      {
-        storeId: 's-1',
-        storeName: '经纬科技（北京·三里屯）',
-        region: '北京市',
-        level: 'A',
-        priceVisible: 'wholesale',
-        categories: [],
-        markupRatio: 20,
-        expiresAt: next1y,
-        enabled: true
-      },
-      {
-        storeId: 's-2',
-        storeName: '上海陆家嘴体验店',
-        region: '上海市',
-        level: 'B',
-        priceVisible: 'retail',
-        categories: ['沙发', '茶几', '电视柜'],
-        markupRatio: 35,
-        expiresAt: next30d,
-        enabled: true
-      }
-    ]
+    // 没有本地缓存时返回空列表，由用户手动新增授权（不再注入示例门店）
+    authConfigs.value = []
   }
 
   function persistAuthConfigs() {

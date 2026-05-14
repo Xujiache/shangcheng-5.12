@@ -54,6 +54,101 @@ function pickPlan(code: 'monthly' | 'yearly') {
   selectedCode.value = code
 }
 
+/**
+ * 真实下单 + 调起微信支付 + 回调激活
+ *
+ * 流程：
+ *   1. 后端 subscribe() 创建 PaymentRecord(pending) + 返回 miniPay 参数
+ *      （非生产 + wxpay 未配齐：mockPaid=true，已直接激活，跳过 step 2~4）
+ *   2. 前端 uni.requestPayment(miniPay) 调起微信支付
+ *   3. 微信回调 /payments/wechat/notify → 后端 activateMembership(recordId)
+ *   4. 前端轮询 paymentStatus 直到 status='paid' 才算成功
+ */
+async function doRealPay(plan: MemberPlan, actionLabel: string) {
+  if (subscribing.value) return
+  subscribing.value = true
+  uni.showLoading({ title: '调起支付…', mask: true })
+
+  try {
+    const res = await memberService.subscribe(plan.id, 'wechat')
+    uni.hideLoading()
+
+    if (!res.ok) {
+      uni.showToast({ title: actionLabel + '失败，请稍后重试', icon: 'none' })
+      return
+    }
+
+    // 非生产兜底：已直接激活
+    if (res.mockPaid) {
+      uni.showToast({ title: actionLabel + '成功', icon: 'success' })
+      await load()
+      return
+    }
+
+    // 真实链路：调起微信支付
+    if (!res.miniPay) {
+      uni.showToast({ title: '支付参数缺失', icon: 'none' })
+      return
+    }
+
+    const mp = res.miniPay
+    await new Promise<void>((resolve, reject) => {
+      // @ts-ignore — uni 平台 API
+      uni.requestPayment({
+        provider: 'wxpay',
+        timeStamp: mp.timeStamp,
+        nonceStr: mp.nonceStr,
+        package: mp.package,
+        signType: mp.signType || 'RSA',
+        paySign: mp.paySign,
+        success: () => resolve(),
+        fail: (err: any) => reject(err),
+      })
+    })
+
+    // 微信成功回调只是说明用户点了"已支付"，是否真正到账要靠后端微信回调
+    // 这里轮询 paymentStatus（最多 6 秒），超时也只是提示用户稍后查看
+    uni.showLoading({ title: '确认支付状态…', mask: true })
+    const t0 = Date.now()
+    let paid = false
+    while (Date.now() - t0 < 6000) {
+      try {
+        const st = await memberService.paymentStatus(res.paymentNo)
+        if (st.status === 'paid') {
+          paid = true
+          break
+        }
+        if (st.status === 'failed' || st.status === 'refunded') {
+          uni.hideLoading()
+          uni.showToast({ title: '支付未成功，请重试', icon: 'none' })
+          return
+        }
+      } catch {
+        /* 忽略单次失败，下次再试 */
+      }
+      await new Promise((r) => setTimeout(r, 800))
+    }
+    uni.hideLoading()
+
+    if (paid) {
+      uni.showToast({ title: actionLabel + '成功', icon: 'success' })
+    } else {
+      uni.showToast({
+        title: '支付已发起，请稍后刷新查看会员状态',
+        icon: 'none',
+        duration: 2500,
+      })
+    }
+    await load()
+  } catch (e: any) {
+    uni.hideLoading()
+    const msg = e?.errMsg?.includes('cancel') ? '已取消支付' : e?.message || '支付失败'
+    uni.showToast({ title: msg, icon: 'none' })
+  } finally {
+    subscribing.value = false
+  }
+}
+
 async function subscribe() {
   if (!selected.value || subscribing.value) return
   const plan = selected.value
@@ -61,27 +156,8 @@ async function subscribe() {
     title: '确认开通',
     content: `开通${plan.name}，应付 ${formatPrice(plan.price)}`,
     confirmText: '立即支付',
-    success: async (r) => {
-      if (r.confirm) {
-        subscribing.value = true
-        uni.showLoading({ title: '调起支付…', mask: true })
-        try {
-          const res = await memberService.subscribe(plan.id, 'wechat')
-          uni.hideLoading()
-          if (res.ok) {
-            uni.showToast({ title: '开通成功', icon: 'success' })
-            // 重新拉取当前订阅，刷新顶部剩余天数
-            await load()
-          } else {
-            uni.showToast({ title: '开通失败，请稍后重试', icon: 'none' })
-          }
-        } catch (e: any) {
-          uni.hideLoading()
-          uni.showToast({ title: e?.message || '支付失败', icon: 'none' })
-        } finally {
-          subscribing.value = false
-        }
-      }
+    success: (r) => {
+      if (r.confirm) void doRealPay(plan, '开通')
     },
   })
 }
@@ -92,26 +168,8 @@ async function buyAddon(p: MemberPlan) {
     title: '购买增值',
     content: `购买「${p.name}」\n应付 ${formatPrice(p.price)}`,
     confirmText: '立即支付',
-    success: async (r) => {
-      if (r.confirm) {
-        subscribing.value = true
-        uni.showLoading({ title: '调起支付…', mask: true })
-        try {
-          const res = await memberService.subscribe(p.id, 'wechat')
-          uni.hideLoading()
-          if (res.ok) {
-            uni.showToast({ title: '购买成功', icon: 'success' })
-            await load()
-          } else {
-            uni.showToast({ title: '购买失败', icon: 'none' })
-          }
-        } catch (e: any) {
-          uni.hideLoading()
-          uni.showToast({ title: e?.message || '支付失败', icon: 'none' })
-        } finally {
-          subscribing.value = false
-        }
-      }
+    success: (r) => {
+      if (r.confirm) void doRealPay(p, '购买')
     },
   })
 }

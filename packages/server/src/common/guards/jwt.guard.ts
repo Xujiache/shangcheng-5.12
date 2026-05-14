@@ -26,9 +26,9 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) throw new BizException(BizCode.UNAUTHORIZED, '未登录')
 
     try {
-      const payload = await this.jwt.verifyAsync(token, {
-        secret: process.env.JWT_SECRET || 'please-change-me-in-production',
-      })
+      // 不再传 secret，让 JwtService 使用注册时通过 resolveJwtSecret 解析出来的密钥
+      // 这样生产环境一定使用真实 JWT_SECRET，不会回退到占位字符串
+      const payload = await this.jwt.verifyAsync(token)
       ;(req as any).user = payload
       return true
     } catch (e: any) {

@@ -53,8 +53,10 @@ export class UserMpController {
   @Get('promote/summary') promoteSummary(@CurrentUser() u: AuthUser) { return this.svc.promoteSummary(u.sub) }
   @Get('promote/orders') promoteOrders(@CurrentUser() u: AuthUser, @Query() q: any) { return this.svc.promoteOrders(u.sub, q) }
 
-  // 门店地图
-  @Public() @Get('stores/nearby') nearbyStores() { return this.svc.nearbyStores() }
+  // 门店地图（lat/lng 由小程序 uni.getLocation 真实定位上报；缺失则不计算距离）
+  @Public() @Get('stores/nearby') nearbyStores(@Query() q: any) {
+    return this.svc.nearbyStores({ lat: q?.lat, lng: q?.lng })
+  }
 
   // 店铺价格显示规则（user-mp 商品页用）
   @Public() @Get('shops/:merchantId/price-rule') shopPriceRule(@Param('merchantId') merchantId: string) {

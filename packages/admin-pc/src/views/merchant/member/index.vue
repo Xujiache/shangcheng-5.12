@@ -237,6 +237,7 @@
     type UsageQuota,
     type PaymentRecord
   } from '@/api/merchant-business'
+  import { getMembershipPaymentStatus } from '@/api/member-service'
   import type { MemberPlan } from '@jiujiu/shared/types'
   import { formatDateTime } from '@jiujiu/shared/utils'
   import { ElMessage } from 'element-plus'
@@ -324,17 +325,70 @@
     confirmOpen.value = true
   }
 
+  /**
+   * 真实下单流程（admin-pc PC Web）
+   *
+   * admin-pc 在 PC 上无法直接调起微信 JSAPI（小程序内才能用），
+   * 所以采用「PC 下单 + 提示去手机商家 APP 完成支付」的策略：
+   *
+   *   1. 调 subscribeMemberPlan 创建 PaymentRecord(pending) + 拿 miniPay 占位
+   *   2. 若后端非生产兜底（mockPaid=true）→ 已激活，直接刷新
+   *   3. 否则展示二维码/复制订单号 + 在 PC 上轮询 paymentStatus
+   *      直到用户在手机商家 APP 内完成支付，状态变成 paid
+   */
   async function doSubscribe() {
     if (!confirmPlan.value) return
-    subscribing.value = confirmPlan.value.id
+    const plan = confirmPlan.value
+    subscribing.value = plan.id
     try {
-      await subscribeMemberPlan(confirmPlan.value.id, payMethod.value)
-      ElMessage.success(`已订阅「${confirmPlan.value.name}」 · 支付 ¥${confirmPlan.value.price}`)
+      const res = await subscribeMemberPlan(plan.id, payMethod.value)
+      if (res.mockPaid) {
+        ElMessage.success(`已订阅「${plan.name}」 · 支付 ¥${plan.price}`)
+        confirmOpen.value = false
+        await load()
+        return
+      }
+      if (!res.paymentNo) {
+        ElMessage.error('下单失败，请稍后重试')
+        return
+      }
+      // 真实链路：admin-pc 在 PC 上无法直接调起微信 JSAPI
+      // 提示用户去手机商家 APP 完成支付，同时在后台轮询状态
+      ElMessage({
+        type: 'warning',
+        message: `订单已创建（编号 ${res.paymentNo}），请到手机商家 APP「会员中心」内完成支付`,
+        duration: 4000
+      })
       confirmOpen.value = false
-      await load()
+      await pollPaymentStatus(res.paymentNo, plan.name)
     } finally {
       subscribing.value = null
     }
+  }
+
+  async function pollPaymentStatus(no: string, planName: string) {
+    // 最长轮询 5 分钟（300 秒，每 3 秒一次 → 100 次）
+    const start = Date.now()
+    const maxMs = 5 * 60 * 1000
+    while (Date.now() - start < maxMs) {
+      try {
+        const st = await getMembershipPaymentStatus(no)
+        if (st.status === 'paid') {
+          ElMessage.success(`「${planName}」 支付成功，会员已激活`)
+          await load()
+          return
+        }
+        if (st.status === 'failed' || st.status === 'refunded') {
+          ElMessage.error(`支付未成功（${st.status}），请重新发起`)
+          return
+        }
+      } catch {
+        /* 单次失败忽略，下次再试 */
+      }
+      await new Promise((r) => setTimeout(r, 3000))
+    }
+    ElMessage.info('支付尚未确认，请稍后手动刷新查看会员状态')
+    await load()
   }
 
   async function onToggleAutoRenew(v: boolean | string | number) {

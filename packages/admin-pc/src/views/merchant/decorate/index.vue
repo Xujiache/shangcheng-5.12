@@ -237,10 +237,11 @@
   async function addModule(t: DecorateModule['type']) {
     const type = MODULE_TYPES.find((x) => x.value === t)!
     // Banner 配额联动：店铺装修加 Banner 占用 1 个 Banner 配额
+    let bannerRes: Awaited<ReturnType<typeof consumeQuota>> | null = null
     if (t === 'banner') {
-      const res = await consumeQuota('bannerLimit', 1)
-      if (!res.ok) {
-        ElMessage.warning(res.reason || 'Banner 配额不足，请升级套餐')
+      bannerRes = await consumeQuota('bannerLimit', 1)
+      if (!bannerRes.ok) {
+        ElMessage.warning(bannerRes.reason || 'Banner 配额不足，请升级套餐')
         addType.value = undefined
         return
       }
@@ -256,7 +257,8 @@
     selected.value = m
     addType.value = undefined
     if (t === 'banner') {
-      ElMessage.success(`已添加 Banner ${res.quota ? `· 已用 ${res.quota.used.bannerLimit}/${res.quota.limits.bannerLimit}` : ''}`)
+      const q = bannerRes?.quota
+      ElMessage.success(`已添加 Banner ${q ? `· 已用 ${q.used.bannerLimit}/${q.limits.bannerLimit}` : ''}`)
     }
   }
 
