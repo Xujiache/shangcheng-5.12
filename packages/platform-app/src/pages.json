@@ -1,7 +1,13 @@
 {
   "pages": [
-    { "path": "pages/auth/login", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
-    { "path": "pages/tabbar/home/index", "style": { "navigationBarTitleText": "平台管理 · 经纬科技" } },
+    {
+      "path": "pages/auth/login",
+      "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/tabbar/home/index",
+      "style": { "navigationBarTitleText": "平台管理 · 经纬科技" }
+    },
     { "path": "pages/tabbar/merchant/index", "style": { "navigationBarTitleText": "商户" } },
     { "path": "pages/tabbar/order/index", "style": { "navigationBarTitleText": "订单" } },
     { "path": "pages/tabbar/stats/index", "style": { "navigationBarTitleText": "数据" } },
@@ -27,19 +33,5 @@
     "navigationBarTitleText": "平台管理",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F7F8FA"
-  },
-  "tabBar": {
-    "custom": true,
-    "color": "#86909C",
-    "selectedColor": "#FF4D2D",
-    "backgroundColor": "#FFFFFF",
-    "borderStyle": "white",
-    "list": [
-      { "pagePath": "pages/tabbar/home/index", "text": "首页" },
-      { "pagePath": "pages/tabbar/merchant/index", "text": "商户" },
-      { "pagePath": "pages/tabbar/order/index", "text": "订单" },
-      { "pagePath": "pages/tabbar/stats/index", "text": "数据" },
-      { "pagePath": "pages/tabbar/me/index", "text": "我的" }
-    ]
   }
 }

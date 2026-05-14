@@ -9,7 +9,13 @@
  * - 北京时间口径
  */
 import { ref, computed, onMounted, watch } from 'vue'
-import { dashboardService, statsService, type PlatformStats, type StatsPeriod } from '../../../services'
+import { onShow } from '@dcloudio/uni-app'
+import {
+  dashboardService,
+  statsService,
+  type PlatformStats,
+  type StatsPeriod,
+} from '../../../services'
 import type { PlatformDashboard } from '@jiujiu/shared/types'
 import { formatWan } from '@jiujiu/shared/utils'
 import Icon from '../../../components/icon/icon.vue'
@@ -20,6 +26,9 @@ const stats = ref<PlatformStats | null>(null)
 const period = ref<StatsPeriod>('week')
 const loading = ref(true)
 const statsLoading = ref(false)
+/** 用于报错重试态:dashboard / stats 任一失败时显示，整页不再空白 */
+const dashboardError = ref('')
+const statsError = ref('')
 
 const statusBarHeight = computed(() => {
   try {
@@ -81,8 +90,11 @@ const KPI_CARDS = computed(() => {
 
 async function load() {
   loading.value = true
+  dashboardError.value = ''
   try {
     dashboard.value = await dashboardService.get()
+  } catch (e: any) {
+    dashboardError.value = e?.message || '加载失败,请下拉重试'
   } finally {
     loading.value = false
   }
@@ -95,13 +107,20 @@ async function load() {
  */
 async function loadStats() {
   statsLoading.value = true
+  statsError.value = ''
   try {
     stats.value = await statsService.get(period.value)
-  } catch {
+  } catch (e: any) {
     stats.value = null
+    statsError.value = e?.message || '销售趋势数据加载失败'
   } finally {
     statsLoading.value = false
   }
+}
+
+function retryAll() {
+  load()
+  loadStats()
 }
 
 watch(period, loadStats)
@@ -197,6 +216,17 @@ onMounted(() => {
   load()
   loadStats()
 })
+
+/**
+ * 切回数据 tab 时自动重试一次：
+ * - 上次失败 → 重新拉
+ * - 数据为空 → 重新拉
+ * - 正常有数据 → 也刷新一下（数据时效性敏感）
+ */
+onShow(() => {
+  if (!dashboard.value || dashboardError.value) load()
+  if (!stats.value || statsError.value) loadStats()
+})
 </script>
 
 <template>
@@ -225,6 +255,26 @@ onMounted(() => {
     </view>
 
     <scroll-view scroll-y class="scroll">
+      <!-- 顶层错误态：dashboard 加载失败 -->
+      <view v-if="dashboardError && !dashboard" class="err-card">
+        <Icon name="info" :size="64" color="#FF7A45" />
+        <text class="err-title">加载失败</text>
+        <text class="err-msg">{{ dashboardError }}</text>
+        <view class="err-btn" @click="retryAll">点击重试</view>
+      </view>
+
+      <!-- KPI 骨架屏 -->
+      <view v-if="loading && !dashboard" class="overview">
+        <view v-for="i in 4" :key="i" class="ov-item ov-skel">
+          <view class="ov-icon skel" />
+          <view class="ov-info">
+            <view class="skel-line w40" />
+            <view class="skel-line w70 tall" />
+            <view class="skel-line w30" />
+          </view>
+        </view>
+      </view>
+
       <!-- 4 大 KPI -->
       <view v-if="dashboard" class="overview">
         <view v-for="k in KPI_CARDS" :key="k.key" class="ov-item">
@@ -252,6 +302,30 @@ onMounted(() => {
         </view>
       </view>
 
+      <!-- 销售趋势：报错时显示单卡错误并提供重试 -->
+      <view v-if="statsError && !stats" class="chart-card err-inline">
+        <view class="card-head">
+          <view class="card-title-row">
+            <view class="title-dot" />
+            <text class="title">销售趋势</text>
+          </view>
+          <view class="err-retry" @click="loadStats">重试</view>
+        </view>
+        <text class="err-inline-msg">{{ statsError }}</text>
+      </view>
+
+      <!-- 销售趋势加载骨架 -->
+      <view v-else-if="statsLoading && !stats" class="chart-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <view class="title-dot" />
+            <text class="title">销售趋势</text>
+          </view>
+          <text class="meta">加载中…</text>
+        </view>
+        <view class="trend-svg-wrap skel" />
+      </view>
+
       <!-- 销售趋势（按周期切换 · /p/stats） -->
       <view v-if="stats" class="chart-card">
         <view class="card-head">
@@ -259,7 +333,9 @@ onMounted(() => {
             <view class="title-dot" />
             <text class="title">销售趋势</text>
           </view>
-          <text class="meta">{{ PERIOD_LABEL_MAP[period] }} · {{ stats.salesTrend.length }} 段</text>
+          <text class="meta"
+            >{{ PERIOD_LABEL_MAP[period] }} · {{ stats.salesTrend.length }} 段</text
+          >
         </view>
         <view class="trend-svg-wrap">
           <svg viewBox="0 0 100 44" preserveAspectRatio="none" class="trend-svg">
@@ -580,6 +656,102 @@ onMounted(() => {
   height: 0;
   padding: 16rpx 24rpx 0;
   box-sizing: border-box;
+}
+
+/* === 错误态/骨架 === */
+.err-card {
+  margin: 40rpx 0 24rpx;
+  background: var(--bg-card);
+  border-radius: 20rpx;
+  padding: 56rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14rpx;
+  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);
+  border: 1rpx solid rgba(15, 23, 42, 0.04);
+  .err-title {
+    font-size: 30rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .err-msg {
+    font-size: 24rpx;
+    color: var(--text-tertiary);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .err-btn {
+    margin-top: 16rpx;
+    padding: 18rpx 64rpx;
+    background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+    color: #fff;
+    font-size: 26rpx;
+    font-weight: 700;
+    border-radius: 999rpx;
+    box-shadow: 0 6rpx 18rpx rgba(255, 77, 45, 0.32);
+  }
+}
+.err-inline {
+  .err-inline-msg {
+    display: block;
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+    text-align: center;
+    padding: 24rpx 0;
+  }
+  .err-retry {
+    padding: 6rpx 22rpx;
+    background: var(--bg-page);
+    color: var(--brand-primary);
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    font-weight: 700;
+  }
+}
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.2s linear infinite;
+  border-radius: 12rpx;
+}
+@keyframes skel-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+.ov-skel {
+  .ov-icon.skel {
+    background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%) !important;
+    background-size: 200% 100%;
+    animation: skel-shimmer 1.2s linear infinite;
+  }
+  .skel-line {
+    height: 16rpx;
+    border-radius: 8rpx;
+    background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
+    background-size: 200% 100%;
+    animation: skel-shimmer 1.2s linear infinite;
+    margin-top: 8rpx;
+    &.tall {
+      height: 28rpx;
+      margin-top: 10rpx;
+    }
+    &.w30 {
+      width: 30%;
+    }
+    &.w40 {
+      width: 40%;
+    }
+    &.w70 {
+      width: 70%;
+    }
+  }
 }
 
 /* === KPI 4 宫格 === */

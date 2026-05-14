@@ -139,6 +139,16 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.listOrders(mid, q)
   }
+  /**
+   * 商家分享历史列表（merchant-app「我的分享」页 + admin-pc 兜底用）
+   *
+   * 路由顺序极其关键：必须放在 `orders/:id` 之前，否则 NestJS 会先匹配
+   * `/m/orders/shares` 为 `orderDetail(id='shares')`，新接口永远拿不到流量。
+   */
+  @Get('orders/shares') async merchantOrderShares(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.orderShare.listByMerchant(mid, q || {})
+  }
   @Get('orders/:id') async orderDetail(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.orderDetail(mid, id)

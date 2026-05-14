@@ -203,6 +203,22 @@ export const platformRoutes: AppRouteRecord = {
       ]
     },
 
+    // ============ 6.5 订单分享数据看板 ============
+    // 与运营管理（订单列表）同维度，但聚焦"商家分享行为 + 浏览数据"的看板，
+    // 不放进 ops 分组以免和"订单列表"语义混淆；后续若有"分享审核"等关联功能
+    // 可以演化成独立 group。
+    {
+      path: 'order-share',
+      name: 'PlatformOrderShare',
+      component: '/platform/order-share',
+      meta: {
+        title: 'menus.platform.orderShare',
+        icon: 'ri:share-line',
+        keepAlive: true,
+        ...ROLE_PLATFORM
+      }
+    },
+
     // ============ 7. 系统配置 ============
     {
       path: 'sys',

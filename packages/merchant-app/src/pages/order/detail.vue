@@ -5,7 +5,7 @@
  * 头信息 + 收货地址（一键识别）+ 商品 + 金额表 + 备注 + 操作
  */
 import { ref, computed, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { orderService } from '../../services/order'
 import { formatPrice, formatDateTime } from '@jiujiu/shared/utils'
 import type { Order, OrderStatus, ParsedAddress } from '@jiujiu/shared/types'
@@ -13,6 +13,44 @@ import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Section from '../../components/section/section.vue'
 import StatusTag from '../../components/status-tag/status-tag.vue'
 import Icon from '../../components/icon/icon.vue'
+import ShareSheet from '../../components/share-sheet/share-sheet.vue'
+
+// 分享订单
+const showShareSheet = ref(false)
+const lastShare = ref<{ shareCode: string; shareUrl: string } | null>(null)
+
+function openShare() {
+  if (!order.value) {
+    uni.showToast({ title: '订单加载中', icon: 'none' })
+    return
+  }
+  showShareSheet.value = true
+}
+
+function onShared(payload: { shareCode: string; shareUrl: string }) {
+  lastShare.value = payload
+  // 小程序原生分享会在用户点击微信"分享给朋友"时触发 onShareAppMessage,
+  // 这里只记录最后一次生成的分享信息供分享卡片复用
+}
+
+/**
+ * 微信小程序原生分享 —— 当用户从右上角胶囊按钮触发分享时调用。
+ * 优先用最近一次创建的分享链接(脱敏字段);若无则提示先在面板里配置一次。
+ */
+onShareAppMessage(() => {
+  const o = order.value
+  if (!o) return { title: '订单详情', path: '/pages/tabbar/order/index' }
+  if (lastShare.value) {
+    return {
+      title: `订单 ${o.no} · ${formatPrice(o.payAmount || 0)}`,
+      path: `/pages/share/order?code=${lastShare.value.shareCode}`,
+    }
+  }
+  return {
+    title: '请先在分享面板中配置可见内容',
+    path: `/pages/order/detail?id=${o.id}`,
+  }
+})
 
 const orderId = ref('')
 const order = ref<Order | null>(null)
@@ -23,7 +61,14 @@ const parseInput = ref('')
 const parsing = ref(false)
 const parsedResult = ref<ParsedAddress | null>(null)
 
-const STATUS_LABEL: Record<OrderStatus, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default'; desc: string }> = {
+const STATUS_LABEL: Record<
+  OrderStatus,
+  {
+    text: string
+    tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default'
+    desc: string
+  }
+> = {
   pending_payment: { text: '待付款', tone: 'warning', desc: '客户尚未支付，订单将自动关闭' },
   pending_shipment: { text: '待发货', tone: 'primary', desc: '客户已付款，请尽快安排发货' },
   shipped: { text: '已发货', tone: 'info', desc: '物流配送中，等待客户确认收货' },
@@ -33,7 +78,9 @@ const STATUS_LABEL: Record<OrderStatus, { text: string; tone: 'primary' | 'succe
   refunded: { text: '已退款', tone: 'default', desc: '订单已退款' },
 }
 
-const statusInfo = computed(() => (order.value ? STATUS_LABEL[order.value.status] : STATUS_LABEL.pending_shipment))
+const statusInfo = computed(() =>
+  order.value ? STATUS_LABEL[order.value.status] : STATUS_LABEL.pending_shipment,
+)
 
 async function load() {
   loading.value = true
@@ -65,12 +112,13 @@ async function doParse() {
   try {
     parsedResult.value = await orderService.parseAddress(parseInput.value)
     uni.hideLoading()
-    if (!parsedResult.value || (
-      !parsedResult.value.name &&
-      !parsedResult.value.phone &&
-      !parsedResult.value.region &&
-      !parsedResult.value.detail
-    )) {
+    if (
+      !parsedResult.value ||
+      (!parsedResult.value.name &&
+        !parsedResult.value.phone &&
+        !parsedResult.value.region &&
+        !parsedResult.value.detail)
+    ) {
       uni.showToast({ title: '未识别到有效信息', icon: 'none' })
     }
   } catch (e: any) {
@@ -159,7 +207,7 @@ onMounted(() => {
 
 <template>
   <view class="page">
-    <NavBar title="订单详情" />
+    <NavBar title="订单详情" right-text="分享" @right="openShare" />
 
     <view v-if="order" class="body">
       <!-- 状态条 -->
@@ -230,7 +278,9 @@ onMounted(() => {
           </view>
           <view class="fee-row">
             <text class="fee-label">运费</text>
-            <text class="fee-value">{{ order.shippingFee === 0 ? '包邮' : formatPrice(order.shippingFee) }}</text>
+            <text class="fee-value">{{
+              order.shippingFee === 0 ? '包邮' : formatPrice(order.shippingFee)
+            }}</text>
           </view>
           <view class="fee-row total">
             <text class="fee-label">实付金额</text>
@@ -262,7 +312,9 @@ onMounted(() => {
         </view>
         <view class="meta-row">
           <text class="meta-label">配送方式</text>
-          <text class="meta-value">{{ ({ factory: '厂家直发', local: '本地配送', pickup: '门店自提' })[order.shippingMethod] }}</text>
+          <text class="meta-value">{{
+            { factory: '厂家直发', local: '本地配送', pickup: '门店自提' }[order.shippingMethod]
+          }}</text>
         </view>
         <view v-if="order.remark" class="meta-row">
           <text class="meta-label">买家备注</text>
@@ -279,10 +331,24 @@ onMounted(() => {
         <Icon name="phone" :size="32" color="var(--text-primary)" />
         <text>联系客户</text>
       </view>
-      <view v-if="order.status === 'pending_shipment'" class="f-btn primary" @click="ship">发货</view>
-      <view v-else-if="order.status === 'shipped'" class="f-btn primary" @click="uni.showToast({ title: '物流跟踪', icon: 'none' })">查看物流</view>
-      <view v-else-if="order.status === 'after_sale'" class="f-btn primary" @click="uni.navigateTo({ url: `/pages/order/aftersale?orderId=${order.id}` })">处理售后</view>
-      <view v-else class="f-btn ghost" @click="uni.showToast({ title: '打印订单', icon: 'none' })">打印订单</view>
+      <view v-if="order.status === 'pending_shipment'" class="f-btn primary" @click="ship"
+        >发货</view
+      >
+      <view
+        v-else-if="order.status === 'shipped'"
+        class="f-btn primary"
+        @click="uni.showToast({ title: '物流跟踪', icon: 'none' })"
+        >查看物流</view
+      >
+      <view
+        v-else-if="order.status === 'after_sale'"
+        class="f-btn primary"
+        @click="uni.navigateTo({ url: `/pages/order/aftersale?orderId=${order.id}` })"
+        >处理售后</view
+      >
+      <view v-else class="f-btn ghost" @click="uni.showToast({ title: '打印订单', icon: 'none' })"
+        >打印订单</view
+      >
     </view>
 
     <!-- 一键识别弹窗 -->
@@ -327,6 +393,14 @@ onMounted(() => {
         </view>
       </view>
     </view>
+
+    <!-- 订单分享配置 sheet -->
+    <ShareSheet
+      :open="showShareSheet"
+      :order="order"
+      @close="showShareSheet = false"
+      @shared="onShared"
+    />
   </view>
 </template>
 
@@ -350,20 +424,39 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  &.status-pending_payment { background: linear-gradient(135deg, #FFAA33, #FF8845); }
-  &.status-pending_shipment { background: var(--brand-gradient); }
-  &.status-shipped { background: linear-gradient(135deg, #4A8BFF, #3A6FFF); }
-  &.status-completed { background: linear-gradient(135deg, #4FBF7C, #2FA362); }
-  &.status-cancelled { background: linear-gradient(135deg, #909EAB, #6B7780); }
-  &.status-after_sale { background: linear-gradient(135deg, #FF5252, #D93030); }
+  &.status-pending_payment {
+    background: linear-gradient(135deg, #ffaa33, #ff8845);
+  }
+  &.status-pending_shipment {
+    background: var(--brand-gradient);
+  }
+  &.status-shipped {
+    background: linear-gradient(135deg, #4a8bff, #3a6fff);
+  }
+  &.status-completed {
+    background: linear-gradient(135deg, #4fbf7c, #2fa362);
+  }
+  &.status-cancelled {
+    background: linear-gradient(135deg, #909eab, #6b7780);
+  }
+  &.status-after_sale {
+    background: linear-gradient(135deg, #ff5252, #d93030);
+  }
 
-  .status-info { flex: 1; }
+  .status-info {
+    flex: 1;
+  }
   .status-title-row {
     display: flex;
     align-items: center;
     gap: 8rpx;
-    .status-icon { font-size: 32rpx; }
-    .status-title { font-size: 32rpx; font-weight: 700; }
+    .status-icon {
+      font-size: 32rpx;
+    }
+    .status-title {
+      font-size: 32rpx;
+      font-weight: 700;
+    }
   }
   .status-desc {
     display: block;
@@ -374,7 +467,7 @@ onMounted(() => {
   .status-countdown {
     font-size: 28rpx;
     font-weight: 700;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     padding: 8rpx 16rpx;
     border-radius: 999rpx;
   }
@@ -389,8 +482,15 @@ onMounted(() => {
       display: flex;
       align-items: baseline;
       gap: 16rpx;
-      .addr-name { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-      .addr-phone { font-size: 26rpx; color: var(--text-secondary); }
+      .addr-name {
+        font-size: 30rpx;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .addr-phone {
+        font-size: 26rpx;
+        color: var(--text-secondary);
+      }
     }
     .addr-detail {
       display: block;
@@ -441,15 +541,29 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 8rpx;
-    .item-name { font-size: 28rpx; font-weight: 500; color: var(--text-primary); }
-    .item-spec { font-size: 22rpx; color: var(--text-tertiary); }
+    .item-name {
+      font-size: 28rpx;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .item-spec {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
     .item-price-row {
       margin-top: auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      .item-price { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
-      .item-qty { font-size: 22rpx; color: var(--text-tertiary); }
+      .item-price {
+        font-size: 26rpx;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .item-qty {
+        font-size: 22rpx;
+        color: var(--text-tertiary);
+      }
     }
   }
 }
@@ -463,14 +577,23 @@ onMounted(() => {
   align-items: center;
   padding: 12rpx 0;
   font-size: 26rpx;
-  .fee-label { color: var(--text-secondary); }
-  .fee-value { color: var(--text-primary); font-family: var(--font-family-base); }
-  .fee-value.discount { color: var(--status-error); }
+  .fee-label {
+    color: var(--text-secondary);
+  }
+  .fee-value {
+    color: var(--text-primary);
+    font-family: var(--font-family-base);
+  }
+  .fee-value.discount {
+    color: var(--status-error);
+  }
   &.total {
     border-top: 1rpx dashed var(--border-light);
     margin-top: 12rpx;
     padding-top: 16rpx;
-    .fee-label { font-weight: 700; }
+    .fee-label {
+      font-weight: 700;
+    }
     .fee-value.primary {
       color: var(--brand-primary);
       font-size: 32rpx;
@@ -485,8 +608,12 @@ onMounted(() => {
   padding: 12rpx 0;
   font-size: 24rpx;
   border-bottom: 1rpx solid var(--border-light);
-  &:last-child { border-bottom: none; }
-  .meta-label { color: var(--text-tertiary); }
+  &:last-child {
+    border-bottom: none;
+  }
+  .meta-label {
+    color: var(--text-tertiary);
+  }
   .meta-value {
     color: var(--text-primary);
     display: flex;
@@ -510,7 +637,7 @@ onMounted(() => {
   gap: 16rpx;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   background: var(--bg-card);
-  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
   .f-btn {
     flex: 1;
     height: 88rpx;
@@ -521,15 +648,23 @@ onMounted(() => {
     gap: 8rpx;
     font-size: 28rpx;
     font-weight: 700;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
-    &.primary { background: var(--brand-gradient); color: #fff; }
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    &.primary {
+      background: var(--brand-gradient);
+      color: #fff;
+    }
   }
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: flex-end;
+  display: flex;
+  align-items: flex-end;
 }
 .parse-sheet {
   width: 100%;
@@ -539,9 +674,17 @@ onMounted(() => {
   max-height: 80vh;
 }
 .parse-head {
-  display: flex; justify-content: space-between; align-items: center;
-  .parse-title { font-size: 32rpx; font-weight: 700; }
-  .parse-close { font-size: 28rpx; color: var(--text-tertiary); }
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  .parse-title {
+    font-size: 32rpx;
+    font-weight: 700;
+  }
+  .parse-close {
+    font-size: 28rpx;
+    color: var(--text-tertiary);
+  }
 }
 .parse-tip {
   margin-top: 12rpx;
@@ -571,7 +714,10 @@ onMounted(() => {
   line-height: 80rpx;
   font-size: 28rpx;
   font-weight: 600;
-  &.primary { background: var(--brand-gradient); color: #fff; }
+  &.primary {
+    background: var(--brand-gradient);
+    color: #fff;
+  }
 }
 .parse-result {
   margin-top: 16rpx;
@@ -594,9 +740,21 @@ onMounted(() => {
   background: var(--bg-card);
   border-radius: 8rpx;
   padding: 12rpx;
-  &.full { grid-column: 1 / -1; }
-  .cell-label { display: block; font-size: 20rpx; color: var(--text-tertiary); }
-  .cell-value { display: block; margin-top: 4rpx; font-size: 24rpx; color: var(--text-primary); font-weight: 500; }
+  &.full {
+    grid-column: 1 / -1;
+  }
+  .cell-label {
+    display: block;
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
+  .cell-value {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 24rpx;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
 }
 .parse-apply {
   margin-top: 12rpx;
@@ -608,5 +766,7 @@ onMounted(() => {
   font-size: 26rpx;
   font-weight: 600;
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

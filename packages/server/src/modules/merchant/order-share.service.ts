@@ -37,6 +37,7 @@ import { Injectable } from '@nestjs/common'
 import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
+import { buildPage, parsePage } from '../../common/utils/pagination.util'
 
 export type ShareField = 'basics' | 'customer' | 'pricing' | 'items' | 'extra'
 
@@ -296,5 +297,82 @@ export class OrderShareService {
       where: { key: `order_share:${shareCode}` },
       data: { value: updated as any },
     })
+  }
+
+  /**
+   * 商家维度分享历史（merchant-app「我的分享」/ admin-pc 兜底用）
+   *
+   * 查询策略与 platform 维度一致：SystemConfig key 前缀扫描 → 内存按 merchantId 过滤 →
+   * 内存排序 + 分页。同一商家分享数有限（通常 < 千级），扫 500 行可接受；如果未来
+   * 出现单商家 > 500 分享的极端场景，应按 schema 注释迁移到 OrderShare 正式表。
+   *
+   * 过滤维度：
+   *   - revoked: true/false（不传不过滤）
+   *   - orderId: 精确匹配（按订单回查分享）
+   *
+   * 每条记录会拼接 orderNo 摘要，便于前端列表直接 row.orderNo 展示，
+   * 避免 N 次详情查询。
+   */
+  async listByMerchant(
+    merchantId: string,
+    query: {
+      page?: number | string
+      pageSize?: number | string
+      revoked?: boolean | string
+      orderId?: string
+    } = {},
+  ) {
+    const { page, pageSize } = parsePage(query)
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: 'order_share:' } },
+      orderBy: { updatedAt: 'desc' },
+      take: 500,
+    })
+
+    // 解析 revoked 过滤值：query string 'true'/'false' 也兼容
+    let revokedFilter: boolean | null = null
+    if (query.revoked === true || query.revoked === 'true') revokedFilter = true
+    else if (query.revoked === false || query.revoked === 'false') revokedFilter = false
+
+    const matched: { shareCode: string; cfg: OrderShareConfig }[] = []
+    for (const r of rows) {
+      const cfg = r.value as unknown as OrderShareConfig
+      if (!cfg || cfg.merchantId !== merchantId) continue
+      if (revokedFilter !== null && !!cfg.revoked !== revokedFilter) continue
+      if (query.orderId && cfg.orderId !== query.orderId) continue
+      matched.push({ shareCode: r.key.replace('order_share:', ''), cfg })
+    }
+
+    const total = matched.length
+    const start = (page - 1) * pageSize
+    const slice = matched.slice(start, start + pageSize)
+
+    // 批量取订单号摘要
+    const orderIds = Array.from(new Set(slice.map((m) => m.cfg.orderId)))
+    const orderMap = new Map<string, string>()
+    if (orderIds.length) {
+      const orders = await this.prisma.order.findMany({
+        where: { id: { in: orderIds } },
+        select: { id: true, no: true },
+      })
+      for (const o of orders) orderMap.set(o.id, o.no)
+    }
+
+    const now = Date.now()
+    const list = slice.map(({ shareCode, cfg }) => ({
+      shareCode,
+      orderId: cfg.orderId,
+      orderNo: orderMap.get(cfg.orderId) || null,
+      merchantId: cfg.merchantId,
+      visibleFields: cfg.visibleFields || [],
+      expiresAt: cfg.expiresAt,
+      intro: cfg.intro || '',
+      viewCount: cfg.viewCount || 0,
+      revoked: !!cfg.revoked,
+      expired: !!(cfg.expiresAt && new Date(cfg.expiresAt).getTime() < now),
+      createdAt: cfg.createdAt,
+    }))
+
+    return buildPage(list, total, page, pageSize)
   }
 }

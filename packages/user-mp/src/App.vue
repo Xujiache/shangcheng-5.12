@@ -8,8 +8,15 @@ onLaunch(() => {
   const cartStore = useCartStore()
   userStore.hydrate()
   cartStore.hydrate()
-  // 已登录则立即建立 WS 订阅 + 拉一次最新资料（多端实时同步）
-  if (userStore.isLogin) {
+  // 直接读 storage，不依赖 pinia computed（同一微任务里 computed 未必已更新，
+  // 打包后 mp/App 端会出现「明明 hydrate 拿到 token 却走进未登录分支」的问题）
+  let loggedIn = false
+  try {
+    loggedIn = !!uni.getStorageSync('jiujiu_token')
+  } catch {
+    loggedIn = false
+  }
+  if (loggedIn) {
     userStore.refreshFromServer()
     userStore.connectProfileSync()
     cartStore.loadFromServer()

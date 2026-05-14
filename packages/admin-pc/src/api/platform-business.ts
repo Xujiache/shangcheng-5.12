@@ -881,3 +881,120 @@ export function saveGrayscale(cfg: GrayscaleConfig) {
 export function resetFeatureFlags() {
   return request.post<{ ok: boolean }>({ url: '/api/v1/p/feature-flags/reset' })
 }
+
+/* ============ 14. 订单分享数据看板 ============ */
+/**
+ * 订单分享条目
+ *
+ * 与后端 `platform.service.ts#orderShares` 单条返回结构对齐。
+ * - visibleFields: 可见字段白名单（basics / customer / pricing / items / extra）
+ * - expiresAt: null = 永久；ISO 字符串 = 到期时间
+ * - viewCount: 累计访问次数（异步累加，可能轻微延迟）
+ * - revoked: 商家主动撤销；expired: 当前时间已 > expiresAt
+ * - shareUrl: 后端拼好的完整 H5 分享链接（与 share-sheet 复制出来的一致）
+ */
+export interface OrderShare {
+  shareCode: string
+  orderId: string
+  orderNo?: string | null
+  merchantId: string
+  merchantName?: string
+  visibleFields: string[]
+  expiresAt: string | null
+  intro?: string
+  viewCount: number
+  revoked: boolean
+  expired: boolean
+  createdAt: string
+  shareUrl?: string
+}
+
+export interface OrderSharesPage {
+  list: OrderShare[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface OrderSharesStats {
+  totalShares: number
+  totalViews: number
+  active: number
+  revoked: number
+  expired: number
+  trend: { date: string; count: number }[]
+  topMerchants: { merchantId: string; name: string; shareCount: number; viewCount: number }[]
+}
+
+/**
+ * 订单分享分页列表
+ *
+ * 后端：GET /api/v1/p/order-shares
+ * 支持过滤：merchantId / revoked / startDate / endDate；分页 page / pageSize。
+ * 失败时返回空分页，让页面进入空态。
+ */
+export async function fetchOrderShares(params?: {
+  merchantId?: string
+  revoked?: boolean
+  startDate?: string
+  endDate?: string
+  page?: number
+  pageSize?: number
+}): Promise<OrderSharesPage> {
+  const query: Record<string, unknown> = {}
+  if (params?.merchantId) query.merchantId = params.merchantId
+  // 后端用字符串 'true'/'false' 也兼容；这里显式传 boolean 以走 query parser
+  if (typeof params?.revoked === 'boolean') query.revoked = params.revoked
+  if (params?.startDate) query.startDate = params.startDate
+  if (params?.endDate) query.endDate = params.endDate
+  if (params?.page) query.page = params.page
+  if (params?.pageSize) query.pageSize = params.pageSize
+
+  try {
+    const resp = await request.get<any>({
+      url: '/api/v1/p/order-shares',
+      params: query
+    })
+    const rawList: any[] = Array.isArray(resp?.list) ? resp.list : Array.isArray(resp) ? resp : []
+    return {
+      list: rawList as OrderShare[],
+      total: typeof resp?.total === 'number' ? resp.total : rawList.length,
+      page: typeof resp?.page === 'number' ? resp.page : (params?.page ?? 1),
+      pageSize: typeof resp?.pageSize === 'number' ? resp.pageSize : (params?.pageSize ?? 20)
+    }
+  } catch {
+    return { list: [], total: 0, page: params?.page ?? 1, pageSize: params?.pageSize ?? 20 }
+  }
+}
+
+/**
+ * 订单分享聚合统计
+ *
+ * 后端：GET /api/v1/p/order-shares/stats
+ * 用于 KPI 卡 + 近 7 日趋势 + TopN 商户面板。
+ * 接口失败时返回零值结构，避免页面 undefined 崩溃。
+ */
+export async function fetchOrderSharesStats(): Promise<OrderSharesStats> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/order-shares/stats' })
+    return {
+      totalShares: Number(resp?.totalShares || 0),
+      totalViews: Number(resp?.totalViews || 0),
+      active: Number(resp?.active || 0),
+      revoked: Number(resp?.revoked || 0),
+      expired: Number(resp?.expired || 0),
+      trend: Array.isArray(resp?.trend) ? resp.trend : [],
+      topMerchants: Array.isArray(resp?.topMerchants) ? resp.topMerchants : []
+    }
+  } catch {
+    return {
+      totalShares: 0,
+      totalViews: 0,
+      active: 0,
+      revoked: 0,
+      expired: 0,
+      trend: [],
+      topMerchants: []
+    }
+  }
+}

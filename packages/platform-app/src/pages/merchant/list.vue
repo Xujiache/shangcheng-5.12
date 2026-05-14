@@ -22,7 +22,8 @@ function go() {
     clearInterval(timer)
     timer = null
   }
-  uni.switchTab({ url: '/pages/tabbar/merchant/index' })
+  const url = '/pages/tabbar/merchant/index'
+  uni.switchTab({ url, fail: () => uni.reLaunch({ url }) })
 }
 
 function goHome() {
@@ -30,7 +31,8 @@ function goHome() {
     clearInterval(timer)
     timer = null
   }
-  uni.switchTab({ url: '/pages/tabbar/home/index' })
+  const url = '/pages/tabbar/home/index'
+  uni.switchTab({ url, fail: () => uni.reLaunch({ url }) })
 }
 
 onLoad(() => {

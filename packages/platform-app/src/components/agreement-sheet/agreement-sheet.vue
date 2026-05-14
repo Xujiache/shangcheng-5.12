@@ -18,7 +18,11 @@ interface Section {
   updatedAt: string
   body: string
 }
-interface AgreementSet { user: Section; privacy: Section; collect: Section }
+interface AgreementSet {
+  user: Section
+  privacy: Section
+  collect: Section
+}
 
 const props = defineProps<{ open: boolean; type: Kind }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -136,16 +140,23 @@ function close() {
 <template>
   <view v-if="open" class="mask" @click="close">
     <view class="sheet" @click.stop>
-      <view class="handle" />
-      <view class="head">
-        <text class="title">{{ current?.title || KIND_LABEL[type] }}</text>
-        <view class="close" @click="close">
-          <Icon name="close" :size="32" color="#909399" />
+      <view class="head-fixed">
+        <view class="handle" />
+        <view class="head">
+          <text class="title">{{ current?.title || KIND_LABEL[type] }}</text>
+          <view class="close" @click="close">
+            <Icon name="close" :size="32" color="#909399" />
+          </view>
         </view>
+        <text v-if="current?.updatedAt" class="updated">最近更新：{{ current.updatedAt }}</text>
       </view>
-      <text v-if="current?.updatedAt" class="updated">最近更新：{{ current.updatedAt }}</text>
 
-      <scroll-view scroll-y class="scroll">
+      <!--
+        scroll-view 用内联强制高度 60vh,避免 flex: 1; height: 0
+        在 mp-weixin / App 真包下高度计算失败导致无法滑动的问题。
+        max-height + min-height 保证短内容也撑开,长内容也能滚动。
+      -->
+      <scroll-view scroll-y enhanced :show-scrollbar="false" class="scroll" style="height: 60vh">
         <view v-if="loading" class="status-row">加载中…</view>
         <view v-else-if="error" class="status-row error">{{ error }}</view>
         <view v-else class="body">
@@ -161,10 +172,10 @@ function close() {
               <text>{{ b.text }}</text>
             </view>
             <view v-else-if="b.kind === 'tableHeader'" class="tr th">
-              <text v-for="(c, k) in (b.cells || [])" :key="k" class="td">{{ c }}</text>
+              <text v-for="(c, k) in b.cells || []" :key="k" class="td">{{ c }}</text>
             </view>
             <view v-else-if="b.kind === 'tableRow'" class="tr">
-              <text v-for="(c, k) in (b.cells || [])" :key="k" class="td">{{ c }}</text>
+              <text v-for="(c, k) in b.cells || []" :key="k" class="td">{{ c }}</text>
             </view>
             <view v-else-if="b.kind === 'tableSeparator'" class="table-sep" />
             <text v-else class="p">{{ b.text }}</text>
@@ -190,21 +201,34 @@ function close() {
   animation: fade-in 0.18s ease-out;
 }
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .sheet {
   width: 100%;
   background: #fff;
   border-radius: 36rpx 36rpx 0 0;
   max-height: 86vh;
-  display: flex;
-  flex-direction: column;
+  /* 改用 block + 子节点显式高度,
+     避免 flex: 1; height: 0 在 mp-weixin / App 上高度塌陷 */
+  display: block;
   animation: slide-up 0.24s ease-out;
+  overflow: hidden;
 }
 @keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.head-fixed {
+  background: #fff;
 }
 .handle {
   margin: 16rpx auto 8rpx;
@@ -228,7 +252,9 @@ function close() {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .close { padding: 8rpx; }
+  .close {
+    padding: 8rpx;
+  }
 }
 .updated {
   display: block;
@@ -237,16 +263,18 @@ function close() {
   color: #86909c;
 }
 .scroll {
-  flex: 1;
-  height: 0;
   padding: 0 32rpx 16rpx;
+  box-sizing: border-box;
+  /* height 通过 style 内联强制为 60vh */
 }
 .status-row {
   padding: 80rpx 0;
   text-align: center;
   font-size: 26rpx;
   color: #86909c;
-  &.error { color: #f53f3f; }
+  &.error {
+    color: #f53f3f;
+  }
 }
 .body {
   padding-bottom: 32rpx;
@@ -335,11 +363,17 @@ function close() {
     color: #1d2129;
   }
 }
-.table-sep { display: none; }
+.table-sep {
+  display: none;
+}
 .footer {
   padding: 16rpx 32rpx 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid #f2f3f5;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
 }
 .btn-close {
   height: 92rpx;
@@ -352,6 +386,8 @@ function close() {
   border-radius: 24rpx;
   letter-spacing: 4rpx;
   box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.32);
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>

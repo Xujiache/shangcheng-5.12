@@ -285,6 +285,16 @@ export class PlatformController {
     return this.svc.auditRecords(q)
   }
 
+  // ============ 订单分享数据看板（管理后台） ============
+  // 注意路由顺序：`stats` 必须放在 `:id` 系列之前，否则会被误判为 shareCode。
+  // 当前没有按 shareCode 单查的路由，但为后续扩展留好声明顺序。
+  @Get('order-shares/stats') orderSharesStats() {
+    return this.svc.orderSharesStats()
+  }
+  @Get('order-shares') orderShares(@Query() q: any) {
+    return this.svc.orderShares(q)
+  }
+
   // System
   @Get('system/settings') systemSettings() {
     return this.svc.systemSettings()

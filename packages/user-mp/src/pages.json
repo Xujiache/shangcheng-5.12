@@ -79,6 +79,10 @@
     {
       "root": "pages/promote",
       "pages": [{ "path": "index", "style": { "navigationBarTitleText": "推广分佣" } }]
+    },
+    {
+      "root": "pages/share",
+      "pages": [{ "path": "order", "style": { "navigationBarTitleText": "订单详情" } }]
     }
   ],
   "preloadRule": {

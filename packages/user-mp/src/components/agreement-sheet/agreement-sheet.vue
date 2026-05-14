@@ -18,7 +18,11 @@ interface Section {
   updatedAt: string
   body: string
 }
-interface AgreementSet { user: Section; privacy: Section; collect: Section }
+interface AgreementSet {
+  user: Section
+  privacy: Section
+  collect: Section
+}
 
 const props = defineProps<{ open: boolean; type: Kind }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -145,7 +149,13 @@ function close() {
       </view>
       <text v-if="current?.updatedAt" class="updated">最近更新：{{ current.updatedAt }}</text>
 
-      <scroll-view scroll-y class="scroll">
+      <scroll-view
+        scroll-y
+        class="scroll"
+        :enhanced="true"
+        :show-scrollbar="false"
+        :style="{ height: 'calc(86vh - 240rpx)' }"
+      >
         <view v-if="loading" class="status-row">加载中…</view>
         <view v-else-if="error" class="status-row error">{{ error }}</view>
         <view v-else class="body">
@@ -161,10 +171,10 @@ function close() {
               <text>{{ b.text }}</text>
             </view>
             <view v-else-if="b.kind === 'tableHeader'" class="tr th">
-              <text v-for="(c, k) in (b.cells || [])" :key="k" class="td">{{ c }}</text>
+              <text v-for="(c, k) in b.cells || []" :key="k" class="td">{{ c }}</text>
             </view>
             <view v-else-if="b.kind === 'tableRow'" class="tr">
-              <text v-for="(c, k) in (b.cells || [])" :key="k" class="td">{{ c }}</text>
+              <text v-for="(c, k) in b.cells || []" :key="k" class="td">{{ c }}</text>
             </view>
             <view v-else-if="b.kind === 'tableSeparator'" class="table-sep" />
             <text v-else class="p">{{ b.text }}</text>
@@ -190,21 +200,32 @@ function close() {
   animation: fade-in 0.18s ease-out;
 }
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .sheet {
   width: 100%;
   background: #fff;
   border-radius: 36rpx 36rpx 0 0;
   max-height: 86vh;
-  display: flex;
-  flex-direction: column;
+  // grid 比 flex 在 mp-weixin / App 打包后更稳：可滚动区天然拿到 1fr 剩余高度
+  // 行轨：handle / head / updated(可选) / scroll(可伸缩) / footer
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
   animation: slide-up 0.24s ease-out;
+  overflow: hidden;
 }
 @keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 .handle {
   margin: 16rpx auto 8rpx;
@@ -228,7 +249,9 @@ function close() {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .close { padding: 8rpx; }
+  .close {
+    padding: 8rpx;
+  }
 }
 .updated {
   display: block;
@@ -237,16 +260,20 @@ function close() {
   color: #86909c;
 }
 .scroll {
-  flex: 1;
-  height: 0;
+  // grid 1fr 行 + min-height:0 保证子节点不会撑破容器；
+  // height 走内联 style 的 calc(86vh - 240rpx) 兜底（部分小程序基础库 grid 测量不准）
+  min-height: 0;
   padding: 0 32rpx 16rpx;
+  box-sizing: border-box;
 }
 .status-row {
   padding: 80rpx 0;
   text-align: center;
   font-size: 26rpx;
   color: #86909c;
-  &.error { color: #f53f3f; }
+  &.error {
+    color: #f53f3f;
+  }
 }
 .body {
   padding-bottom: 32rpx;
@@ -335,8 +362,14 @@ function close() {
     color: #1d2129;
   }
 }
-.table-sep { display: none; }
+.table-sep {
+  display: none;
+}
 .footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: #fff;
   padding: 16rpx 32rpx 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid #f2f3f5;
@@ -352,6 +385,8 @@ function close() {
   border-radius: 24rpx;
   letter-spacing: 4rpx;
   box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.32);
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>

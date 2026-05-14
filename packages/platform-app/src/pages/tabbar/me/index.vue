@@ -81,11 +81,75 @@ onUnmounted(() => {
 })
 
 const MANAGE_ENTRIES = [
-  { key: 'audit', icon: 'check-circle', label: '入驻审核', desc: '商户入驻审核', to: '/pages/audit/merchant', tint: '#52C41A' },
-  { key: 'product-audit', icon: 'package', label: '商品审核', desc: '商品上架审核', to: '/pages/audit/product', tint: '#FF7A45' },
-  { key: 'ad', icon: 'megaphone', label: '广告管理', desc: '广告位 / 创意', to: '/pages/ad/index', tint: '#FAAD14' },
-  { key: 'plaza', icon: 'biz-plaza', label: '选品广场', desc: '商品 / 厂家推送', to: '/pages/plaza/index', tint: '#1296DB' },
+  {
+    key: 'audit',
+    icon: 'check-circle',
+    label: '入驻审核',
+    desc: '商户入驻审核',
+    to: '/pages/audit/merchant',
+    tint: '#52C41A',
+  },
+  {
+    key: 'product-audit',
+    icon: 'package',
+    label: '商品审核',
+    desc: '商品上架审核',
+    to: '/pages/audit/product',
+    tint: '#FF7A45',
+  },
+  {
+    key: 'ad',
+    icon: 'megaphone',
+    label: '广告管理',
+    desc: '广告位 / 创意',
+    to: '/pages/ad/index',
+    tint: '#FAAD14',
+  },
+  {
+    key: 'plaza',
+    icon: 'biz-plaza',
+    label: '选品广场',
+    desc: '商品 / 厂家推送',
+    to: '/pages/plaza/index',
+    tint: '#1296DB',
+  },
+  {
+    key: 'share-stats',
+    icon: 'gift',
+    label: '订单分享数据',
+    desc: '查看商家分享统计',
+    to: '',
+    action: 'share-stats',
+    tint: '#A855F7',
+  },
 ]
+
+/**
+ * 商家"订单分享"统计仅在 admin-pc 管理后台提供,
+ * 这里复制管理后台 URL + 友好提示,后续若 platform-app 上线 share-stats 页面再直接 navigateTo。
+ */
+function goShareStats() {
+  const url = 'https://admin.jiujiu.com/share-stats'
+  uni.setClipboardData({
+    data: url,
+    success: () => {
+      uni.showModal({
+        title: '订单分享数据',
+        content: `请在管理后台 PC 端查看:\n${url}\n（链接已复制到剪贴板）`,
+        showCancel: false,
+        confirmText: '我知道了',
+      })
+    },
+    fail: () => {
+      uni.showModal({
+        title: '订单分享数据',
+        content: `请在管理后台 PC 端查看:\n${url}`,
+        showCancel: false,
+        confirmText: '我知道了',
+      })
+    },
+  })
+}
 
 const SYSTEM_ENTRIES = [
   { key: 'member', icon: 'crown', label: '会员&套餐', to: '/pages/member/index' },
@@ -102,6 +166,14 @@ function goEntry(to: string) {
     return
   }
   uni.navigateTo({ url: to })
+}
+
+function goManageEntry(item: (typeof MANAGE_ENTRIES)[number]) {
+  if (item.action === 'share-stats') {
+    goShareStats()
+    return
+  }
+  goEntry(item.to ?? '')
 }
 
 function logout() {
@@ -132,7 +204,12 @@ function viewProfile() {
     <view class="hero">
       <view class="hero-row" @click="viewProfile">
         <view class="avatar-wrap">
-          <image v-if="adminStore.avatar" :src="adminStore.avatar" class="avatar" mode="aspectFill" />
+          <image
+            v-if="adminStore.avatar"
+            :src="adminStore.avatar"
+            class="avatar"
+            mode="aspectFill"
+          />
           <view v-else class="avatar fallback">
             {{ (adminStore.nickname || 'A')[0] }}
           </view>
@@ -173,7 +250,7 @@ function viewProfile() {
             v-for="e in MANAGE_ENTRIES"
             :key="e.key"
             class="manage-cell"
-            @click="goEntry(e.to)"
+            @click="goManageEntry(e)"
           >
             <view class="m-icon" :style="{ background: e.tint + '18' }">
               <Icon :name="e.icon" :size="40" :color="e.tint" />
@@ -227,7 +304,7 @@ function viewProfile() {
         <text>退出登录</text>
       </view>
 
-      <view style="height: 160rpx;" />
+      <view style="height: 160rpx" />
     </scroll-view>
 
     <TabBar current="me" />
@@ -242,9 +319,11 @@ function viewProfile() {
   flex-direction: column;
   overflow: hidden;
 }
-.status { background: linear-gradient(135deg, #FF4D2D, #FF9C6E); }
+.status {
+  background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
+}
 .hero {
-  background: linear-gradient(135deg, #FF4D2D, #FF9C6E);
+  background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   padding: 8rpx 0 36rpx;
   color: #fff;
 }
@@ -260,14 +339,14 @@ function viewProfile() {
   height: 128rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: rgba(255,255,255,0.2);
-  border: 4rpx solid rgba(255,255,255,0.4);
+  background: rgba(255, 255, 255, 0.2);
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
   .avatar {
     width: 100%;
     height: 100%;
     display: block;
     &.fallback {
-      background: rgba(255,255,255,0.3);
+      background: rgba(255, 255, 255, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -288,14 +367,17 @@ function viewProfile() {
     align-items: center;
     gap: 8rpx;
     flex-wrap: wrap;
-    .nick { font-size: 36rpx; font-weight: 800; }
+    .nick {
+      font-size: 36rpx;
+      font-weight: 800;
+    }
   }
   .role-badge {
     display: inline-flex;
     align-items: center;
     gap: 4rpx;
     padding: 4rpx 14rpx;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 999rpx;
     font-size: 20rpx;
     font-weight: 700;
@@ -314,7 +396,7 @@ function viewProfile() {
 .stat-row {
   margin: 16rpx 24rpx 0;
   padding: 12rpx;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 16rpx;
   display: flex;
   align-items: center;
@@ -396,8 +478,15 @@ function viewProfile() {
     justify-content: center;
     margin-bottom: 4rpx;
   }
-  .m-label { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
-  .m-desc { font-size: 20rpx; color: var(--text-tertiary); }
+  .m-label {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .m-desc {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
 }
 
 /* 系统行 */
@@ -413,7 +502,7 @@ function viewProfile() {
     width: 56rpx;
     height: 56rpx;
     border-radius: 16rpx;
-    background: rgba(255,77,45,0.08);
+    background: rgba(255, 77, 45, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -435,13 +524,13 @@ function viewProfile() {
   margin: 24rpx;
   height: 96rpx;
   background: var(--bg-card);
-  border: 1rpx solid rgba(255,59,48,0.3);
+  border: 1rpx solid rgba(255, 59, 48, 0.3);
   border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  color: #FF3B30;
+  color: #ff3b30;
   font-size: 28rpx;
   font-weight: 700;
 }

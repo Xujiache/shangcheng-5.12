@@ -6,18 +6,37 @@ import { checkAppUpdate } from './composables/useAppUpdate'
 onLaunch(() => {
   const userStore = useUserStore()
   userStore.hydrate()
-  try { uni.hideTabBar({ animation: false }) } catch { /* ignore */ }
-  if (!userStore.isLogin) {
+  try {
+    uni.hideTabBar({ animation: false })
+  } catch {
+    /* ignore */
+  }
+  // 关键修复：直接读 storage 判断，不依赖 pinia computed
+  // (pinia computed 在同一微任务内未必更新，会导致刚 hydrate 完读到 false → 误跳登录页)
+  let loggedIn = false
+  try {
+    loggedIn = !!uni.getStorageSync('jiujiu_token')
+  } catch {
+    loggedIn = false
+  }
+  if (!loggedIn) {
     setTimeout(() => uni.reLaunch({ url: '/pages/auth/login' }), 0)
   }
   // 启动 2.5s 后静默检查更新（让首页先稳定渲染）
-  setTimeout(() => { checkAppUpdate('merchant', { silent: true }) }, 2500)
+  setTimeout(() => {
+    checkAppUpdate('merchant', { silent: true })
+  }, 2500)
 })
 
 onShow(() => {
-  // 进入前台时再校验一次（被踢登录情况）
-  const userStore = useUserStore()
-  if (!userStore.accessToken) {
+  // 进入前台时再校验一次（被踢登录情况）：同样直接读 storage
+  let token = ''
+  try {
+    token = uni.getStorageSync('jiujiu_token') || ''
+  } catch {
+    token = ''
+  }
+  if (!token) {
     // 当前若已经在登录页则不重复跳
     const pages = getCurrentPages()
     const top = pages[pages.length - 1]

@@ -18,7 +18,11 @@ interface Section {
   updatedAt: string
   body: string
 }
-interface AgreementSet { user: Section; privacy: Section; collect: Section }
+interface AgreementSet {
+  user: Section
+  privacy: Section
+  collect: Section
+}
 
 const props = defineProps<{ open: boolean; type: Kind }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -145,7 +149,7 @@ function close() {
       </view>
       <text v-if="current?.updatedAt" class="updated">最近更新：{{ current.updatedAt }}</text>
 
-      <scroll-view scroll-y class="scroll">
+      <scroll-view scroll-y class="scroll" :style="{ maxHeight: 'calc(86vh - 280rpx)' }">
         <view v-if="loading" class="status-row">加载中…</view>
         <view v-else-if="error" class="status-row error">{{ error }}</view>
         <view v-else class="body">
@@ -161,10 +165,10 @@ function close() {
               <text>{{ b.text }}</text>
             </view>
             <view v-else-if="b.kind === 'tableHeader'" class="tr th">
-              <text v-for="(c, k) in (b.cells || [])" :key="k" class="td">{{ c }}</text>
+              <text v-for="(c, k) in b.cells || []" :key="k" class="td">{{ c }}</text>
             </view>
             <view v-else-if="b.kind === 'tableRow'" class="tr">
-              <text v-for="(c, k) in (b.cells || [])" :key="k" class="td">{{ c }}</text>
+              <text v-for="(c, k) in b.cells || []" :key="k" class="td">{{ c }}</text>
             </view>
             <view v-else-if="b.kind === 'tableSeparator'" class="table-sep" />
             <text v-else class="p">{{ b.text }}</text>
@@ -190,21 +194,32 @@ function close() {
   animation: fade-in 0.18s ease-out;
 }
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .sheet {
   width: 100%;
   background: #fff;
   border-radius: 36rpx 36rpx 0 0;
   max-height: 86vh;
+  /* 关键修复：用 flex + 子元素 min-height:0；同时 scroll-view 自带内联 max-height 兜底，
+     避免 mp-weixin / App 打包后 flex:1+height:0 计算失败导致 scroll-view 高度为 0 无法滑动 */
   display: flex;
   flex-direction: column;
+  min-height: 0;
   animation: slide-up 0.24s ease-out;
 }
 @keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 .handle {
   margin: 16rpx auto 8rpx;
@@ -228,7 +243,9 @@ function close() {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .close { padding: 8rpx; }
+  .close {
+    padding: 8rpx;
+  }
 }
 .updated {
   display: block;
@@ -237,16 +254,21 @@ function close() {
   color: #86909c;
 }
 .scroll {
-  flex: 1;
-  height: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* 兜底：scroll-view 模板上还有内联 max-height: calc(86vh - 280rpx)，
+     即便 flex min-height:0 在某些端不生效，也能保证有可视高度可滚动 */
   padding: 0 32rpx 16rpx;
+  box-sizing: border-box;
 }
 .status-row {
   padding: 80rpx 0;
   text-align: center;
   font-size: 26rpx;
   color: #86909c;
-  &.error { color: #f53f3f; }
+  &.error {
+    color: #f53f3f;
+  }
 }
 .body {
   padding-bottom: 32rpx;
@@ -335,7 +357,9 @@ function close() {
     color: #1d2129;
   }
 }
-.table-sep { display: none; }
+.table-sep {
+  display: none;
+}
 .footer {
   padding: 16rpx 32rpx 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
@@ -352,6 +376,8 @@ function close() {
   border-radius: 24rpx;
   letter-spacing: 4rpx;
   box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.32);
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>
