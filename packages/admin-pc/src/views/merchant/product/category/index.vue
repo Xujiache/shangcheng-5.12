@@ -292,15 +292,15 @@
         treeData.value = PLATFORM_TREE
       }
     } else {
-      // 自定义：先读 localStorage，没有就从后端拉真分类
+      // 自定义：以后端为单一真源（v2 修复）
+      //
+      // 旧逻辑曾把 localStorage 当主存储，从而出现"分类管理页看到去+门 / 商品创建下拉只看到去"
+      // 双轨制问题——管理页是浏览器本地缓存，下拉是真后端数据。
+      // 现在统一从 /api/v1/m/categories 拉，强制后端 = 真源。
+      //
+      // 一次性清理：如有遗留 localStorage 缓存就丢掉，避免重载又把假树拉回来。
       try {
-        const raw = localStorage.getItem(CUSTOM_KEY)
-        if (raw) {
-          treeData.value = JSON.parse(raw)
-          if (treeData.value.length) selectedNode.value = treeData.value[0]
-          dirty.value = false
-          return
-        }
+        localStorage.removeItem(CUSTOM_KEY)
       } catch {
         /* ignore */
       }
@@ -314,20 +314,6 @@
     if (treeData.value.length) selectedNode.value = treeData.value[0]
     dirty.value = false
   }
-
-  // 持久化自定义分类
-  watch(
-    treeData,
-    (v) => {
-      if (source.value !== 'custom') return
-      try {
-        localStorage.setItem(CUSTOM_KEY, JSON.stringify(v))
-      } catch {
-        /* ignore */
-      }
-    },
-    { deep: true }
-  )
 
   onMounted(loadData)
 </script>
