@@ -38,7 +38,7 @@ jobs:
 
       - name: Setup pnpm
         # corepack enable 会读 package.json#packageManager，自动装对的 pnpm 版本
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js ${{ matrix.node }}
         uses: actions/setup-node@v4
