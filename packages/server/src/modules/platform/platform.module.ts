@@ -9,5 +9,7 @@ import { MerchantModule } from '../merchant/merchant.module'
   imports: [forwardRef(() => MerchantModule)],
   controllers: [PlatformController],
   providers: [PlatformService],
+  // 导出 PlatformService 让 admin-pc-compat 委托查询，避免在该 controller 直连 Prisma
+  exports: [PlatformService],
 })
 export class PlatformModule {}

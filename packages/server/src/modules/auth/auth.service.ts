@@ -236,17 +236,39 @@ export class AuthService {
     }
   }
 
-  /** 刷新 Token */
+  /**
+   * 刷新 Token
+   *
+   * 错误语义精确化（P3-38）：
+   *   - 真正过期（jsonwebtoken 抛 TokenExpiredError）→ TOKEN_EXPIRED 2002
+   *     前端拦截器据此清 token 并跳转登录页
+   *   - 签名无效 / 结构错误 / payload 缺 `_r:1`（access token 传错位置 / 伪造 token）
+   *     → UNAUTHORIZED 2001 + 'invalid refresh token'
+   *     与"过期"区分，避免误导排查（之前所有错误都映射 TOKEN_EXPIRED）
+   *   - 其他未知异常一律按 UNAUTHORIZED 处理，绝不把内部错误明文回前端
+   */
   async refresh(dto: RefreshDto) {
+    let payload: any
     try {
       // 走 JwtService 注册时的密钥（resolveJwtSecret 已强制生产必须配置真实 JWT_SECRET）
-      const payload: any = await this.jwt.verifyAsync(dto.refreshToken)
-      if (!payload._r) throw new Error('not refresh token')
-      const tokens = await this.signTokens({ sub: payload.sub, role: payload.role, merchantId: payload.merchantId })
-      return tokens
-    } catch {
-      throw new BizException(BizCode.TOKEN_EXPIRED, 'refreshToken 已失效')
+      payload = await this.jwt.verifyAsync(dto.refreshToken)
+    } catch (e: any) {
+      if (e?.name === 'TokenExpiredError') {
+        throw new BizException(BizCode.TOKEN_EXPIRED, 'refreshToken 已过期')
+      }
+      // JsonWebTokenError / NotBeforeError / 其他签名问题 → 视为无效，而非过期
+      throw new BizException(BizCode.UNAUTHORIZED, 'invalid refresh token')
     }
+    // 结构合法但缺 `_r:1` 标识 → 不是 refresh token（极可能是 access token 误传）
+    if (!payload?._r) {
+      throw new BizException(BizCode.UNAUTHORIZED, 'invalid refresh token')
+    }
+    const tokens = await this.signTokens({
+      sub: payload.sub,
+      role: payload.role,
+      merchantId: payload.merchantId,
+    })
+    return tokens
   }
 
   /** 当前用户信息 */

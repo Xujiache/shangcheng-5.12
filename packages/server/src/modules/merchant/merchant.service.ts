@@ -5,15 +5,43 @@ import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
 import { withdrawNo, refundNo, membershipNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
+import { ChatGateway } from '../chat/chat.gateway'
 
 const QUOTA_KEYS = ['pushSlots', 'banner', 'impression'] as const
 type QuotaKey = (typeof QUOTA_KEYS)[number]
+
+/**
+ * Product 表第一类字段白名单 —— 防止前端误传 schema 不认的字段（如 freeShipping）
+ * 触发 PrismaClientValidationError。所有 by-size 字段都是首类列，已纳入白名单，
+ * 不需要 extraConfig 兜底。
+ */
+const PRODUCT_WRITABLE_FIELDS = [
+  'name', 'description', 'images', 'detailHtml', 'tags',
+  'categoryId', 'merchantCategoryId',
+  'priceRetailMin', 'priceRetailMax',
+  'priceWholesaleMin', 'priceWholesaleMax',
+  'priceMemberMin', 'priceMemberMax',
+  'pricingMode', 'pricePerSqm', 'baseFee', 'sizeUnit',
+  'minLength', 'minWidth', 'maxLength', 'maxWidth',
+  'totalStock', 'shipping', 'priceDisplayRules',
+  'status', 'rejectReason',
+] as const
+
+function pickProductFields(dto: any): Record<string, any> {
+  if (!dto || typeof dto !== 'object') return {}
+  const out: Record<string, any> = {}
+  for (const k of PRODUCT_WRITABLE_FIELDS) {
+    if (k in dto && dto[k] !== undefined) out[k] = dto[k]
+  }
+  return out
+}
 
 @Injectable()
 export class MerchantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly wxpay: WxPayService,
+    private readonly chat: ChatGateway,
   ) {}
 
   /**
@@ -96,19 +124,26 @@ export class MerchantService {
   async stats(merchantId: string, q: any) {
     const period = q.period || 'today'
     const days = period === 'year' ? 365 : period === 'month' ? 30 : period === 'week' ? 7 : 1
-    const since = new Date(Date.now() - days * 86400_000)
+    // 锚点日期：若前端传 q.date（如 '2026-05-14'）则以该日为窗口右端，否则以"现在"为锚点。
+    // 这样商家可以回看任意历史日期的报表，而不是永远只能看到滚动到"今天"的窗口。
+    const anchor = q.date ? new Date(String(q.date)) : new Date()
+    if (Number.isNaN(anchor.getTime())) {
+      throw new BizException(BizCode.INVALID_PARAMS, 'date 格式错误')
+    }
+    const since = new Date(anchor.getTime() - days * 86400_000)
+    const until = new Date(anchor.getTime())
     const orders = await this.prisma.order.findMany({
-      where: { merchantId, createdAt: { gte: since } },
+      where: { merchantId, createdAt: { gte: since, lte: until } },
       include: { items: { include: { product: { include: { category: true } } } } },
     })
 
-    // 销售趋势：按日聚合
+    // 销售趋势：按日聚合（锚点决定每个 bucket 的时间基准，确保历史查询也能正确分桶）
     const bucketSize = days <= 1 ? 1 : days <= 7 ? 1 : days <= 30 ? 1 : 30
     const buckets: { date: string; value: number }[] = []
     const segments = period === 'year' ? 12 : period === 'month' ? 30 : period === 'week' ? 7 : 24
     for (let i = segments - 1; i >= 0; i--) {
       const span = period === 'today' ? 3600_000 : 86400_000
-      const segStart = new Date(Date.now() - i * span)
+      const segStart = new Date(anchor.getTime() - i * span)
       if (period !== 'today') segStart.setHours(0, 0, 0, 0)
       const segEnd = new Date(segStart.getTime() + span)
       const sum = orders
@@ -184,11 +219,26 @@ export class MerchantService {
     if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
     return decimalToNumber(p)
   }
+  /**
+   * 商家添加商品
+   *
+   * 字段白名单：admin-pc 表单透传 freeShipping 等 schema 不认的字段，直接展开会
+   * 触发 PrismaClientValidationError → 整条商品落不下来。这里只挑 Product 模型
+   * 真实声明的列（含 pricingMode/pricePerSqm/baseFee/sizeUnit/minLength 等 by-size
+   * 第一类列），其余忽略。
+   *
+   * skus 单独从 dto 抽出，走嵌套 create；规格行字段（specs/specsLabel/priceRetail/
+   * priceWholesale/priceMember/stock/active）由 Prisma Sku 模型自行校验，无需在此白名单。
+   */
   async createProduct(merchantId: string, dto: any) {
-    const { skus = [], ...productData } = dto
+    const skus = Array.isArray(dto?.skus) ? dto.skus : []
+    const data = pickProductFields(dto)
+    // data 用 any 断言绕过 Prisma "必填字段缺失" 的类型推断 —— 因为白名单返回的是
+    // Record<string, any>，TS 看不到 name/categoryId；运行时由 Prisma 自身校验。
+    // 与原 `...productData` 行为一致，只是多了一层字段过滤。
     const created = await this.prisma.product.create({
       data: {
-        ...productData,
+        ...(data as any),
         merchantId,
         priceRetailMin: dto.priceRetailMin ?? 0,
         priceRetailMax: dto.priceRetailMax ?? 0,
@@ -199,11 +249,19 @@ export class MerchantService {
     })
     return decimalToNumber(created)
   }
+
+  /**
+   * 商家更新商品
+   *
+   * 同样走 pickProductFields 白名单，避免 dto.id / dto.merchantId / dto.skus / 任何
+   * 表单内部字段（如 freeShipping）污染 Prisma update payload。
+   * skus 更新需要走专门的 SKU 接口（增/删/改 SKU 行；当前 dto 简单覆盖会丢历史 SKU 关系，
+   * 故这里只更新 Product 本体字段）。
+   */
   async updateProduct(merchantId: string, id: string, dto: any) {
     const p = await this.prisma.product.findFirst({ where: { id, merchantId } })
     if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
-    // 显式剔除 merchantId/id，防止 dto 篡改商品归属
-    const { skus: _skus, id: _ignoreId, merchantId: _ignoreMid, ...data } = dto || {}
+    const data = pickProductFields(dto)
     const upd = await this.prisma.product.update({ where: { id }, data })
     return decimalToNumber(upd)
   }
@@ -282,7 +340,19 @@ export class MerchantService {
     const o = await this.prisma.order.findFirst({ where: { id, merchantId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
     if (o.status !== 'pending_shipment') throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单状态不允许发货')
-    await this.prisma.order.update({ where: { id }, data: { status: 'shipped', trackingCompany: company, trackingNumber, shippedAt: new Date() } })
+    const shippedAt = new Date()
+    await this.prisma.order.update({ where: { id }, data: { status: 'shipped', trackingCompany: company, trackingNumber, shippedAt } })
+    // 发货事件推给商家自己的 merchant 房间（列表/统计实时刷）；用户端将来若加 user 房间，可类似 broadcastUserUpdate 推 'order:update' 到 user:<userId>
+    try {
+      this.chat.emitOrderUpdate(merchantId, {
+        orderId: o.id,
+        no: o.no,
+        status: 'shipped',
+        trackingCompany: company,
+        trackingNumber,
+        updatedAt: shippedAt,
+      })
+    } catch {}
     return { ok: true }
   }
   async batchShip(merchantId: string, items: { id: string; company: string; trackingNumber: string }[]) {
@@ -315,14 +385,40 @@ export class MerchantService {
   async agreeRefund(merchantId: string, id: string, refundAmount?: number) {
     const r = await this.prisma.refund.findFirst({ where: { id, merchantId } })
     if (!r) throw new BizException(BizCode.NOT_FOUND, '售后单不存在')
+    const updatedAt = new Date()
     await this.prisma.refund.update({
       where: { id },
       data: { status: 'agreed', refundAmount: refundAmount ?? r.applyAmount },
     })
+    // 售后单状态变更复用 refund:new 事件流（商家端可在 useMerchantNotifyStream 里
+    // 一并处理"售后有新动态"通知，避免再开新事件名增加协议成本）
+    try {
+      this.chat.emitRefundNew(merchantId, {
+        refundId: r.id,
+        no: r.no,
+        orderId: r.orderId,
+        status: 'agreed',
+        refundAmount: Number(refundAmount ?? r.applyAmount),
+        updatedAt,
+      })
+    } catch {}
     return { ok: true }
   }
   async rejectRefund(merchantId: string, id: string, reason: string) {
+    const r = await this.prisma.refund.findFirst({ where: { id, merchantId } })
+    if (!r) throw new BizException(BizCode.NOT_FOUND, '售后单不存在')
+    const updatedAt = new Date()
     await this.prisma.refund.updateMany({ where: { id, merchantId }, data: { status: 'rejected', merchantReply: reason } })
+    try {
+      this.chat.emitRefundNew(merchantId, {
+        refundId: r.id,
+        no: r.no,
+        orderId: r.orderId,
+        status: 'rejected',
+        reason,
+        updatedAt,
+      })
+    } catch {}
     return { ok: true }
   }
 
@@ -697,6 +793,28 @@ export class MerchantService {
   }
   async createStore(merchantId: string, dto: any) {
     return this.prisma.store.create({ data: { ...dto, merchantId } })
+  }
+  /**
+   * 更新门店信息（admin-pc / merchant-app 编辑场景）
+   *
+   * 越权防护：必须先校验门店属于当前商家，否则 A 商家可改 B 商家门店。
+   * 字段白名单：显式剔除 id / merchantId / createdAt / updatedAt，
+   * 避免 dto 携带这些字段改门店归属或绕过审计字段。
+   */
+  async updateStore(merchantId: string, id: string, dto: any) {
+    const exist = await this.prisma.store.findFirst({
+      where: { id, merchantId },
+      select: { id: true },
+    })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '门店不存在或无权限')
+    const {
+      id: _ignoreId,
+      merchantId: _ignoreMid,
+      createdAt: _ignoreCreatedAt,
+      updatedAt: _ignoreUpdatedAt,
+      ...data
+    } = dto || {}
+    return this.prisma.store.update({ where: { id }, data })
   }
   async removeStore(merchantId: string, id: string) {
     await this.prisma.store.deleteMany({ where: { id, merchantId } })

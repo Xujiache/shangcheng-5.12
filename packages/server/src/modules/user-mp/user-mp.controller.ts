@@ -31,6 +31,9 @@ export class UserMpController {
   // Banner
   @Public() @Get('banners') banners() { return this.svc.banners() }
 
+  // 热搜词（搜索页用，可由平台管理员后台配置 SystemConfig.hot_keywords）
+  @Public() @Get('hot-keywords') hotKeywords() { return this.svc.hotKeywords() }
+
   // 地址
   @Get('addresses') addresses(@CurrentUser() u: AuthUser) { return this.svc.listAddresses(u.sub) }
   @Get('addresses/default') defaultAddress(@CurrentUser() u: AuthUser) { return this.svc.defaultAddress(u.sub) }
@@ -99,5 +102,17 @@ export class UserMpController {
   }
   @Post('chat/sessions/:id/read') chatRead(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     return this.svc.chatMarkRead(u.sub, id)
+  }
+
+  // ============ 购物车 ============
+  @Get('cart') listCart(@CurrentUser() u: AuthUser) { return this.svc.listCart(u.sub) }
+  @Post('cart') addCart(@CurrentUser() u: AuthUser, @Body() dto: { productId: string; skuId?: string; quantity?: number }) {
+    return this.svc.addCart(u.sub, dto)
+  }
+  @Patch('cart/:id') updateCart(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: { quantity: number }) {
+    return this.svc.updateCart(u.sub, id, dto)
+  }
+  @Delete('cart/:id') removeCart(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return this.svc.removeCart(u.sub, id)
   }
 }

@@ -4,7 +4,19 @@ import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
 import { MerchantService } from '../merchant/merchant.service'
+import { UpdateAdminDto } from './dto/update-admin.dto'
 import * as argon2 from 'argon2'
+
+/** updateAdmin 服务层二次过滤白名单（DTO 是入口防御，service 是出口防御，双保险） */
+const ADMIN_UPDATABLE_FIELDS = [
+  'username',
+  'phone',
+  'email',
+  'nickname',
+  'avatar',
+  'role',
+  'status',
+] as const
 
 @Injectable()
 export class PlatformService {
@@ -493,19 +505,25 @@ export class PlatformService {
     })
     if (!before) throw new BizException(BizCode.NOT_FOUND, '缴费记录不存在')
 
-    // 先更新状态，再视情况联动激活
-    await this.prisma.paymentRecord.update({ where: { id }, data: { status } })
-
-    if (status === 'paid' && before.planId && before.status !== 'paid') {
+    // 关键顺序：先 activate 再改状态（不能反过来）。
+    // activateMembership 内部会重新读 paymentRecord，若 status 已是 paid
+    // 就直接走幂等 alreadyPaid 分支早退，MerchantMembership 永远不会被创建。
+    // 因此必须趁 status 还是 pending 时调用，让它在事务里完成
+    //   "标记 paid + paidAt" + "创建 / 续期 MerchantMembership" 两件事。
+    if (status === 'paid' && before.status !== 'paid' && before.planId) {
       try {
         await this.merchantService.activateMembership(id)
+        return { ok: true, activated: true }
       } catch (e: any) {
-        // 激活失败不影响 status 写入；写日志便于人工跟进，但不抛错让前端误以为状态没更新
+        // 激活失败（如套餐已删除等）→ 写日志后降级为普通改状态，
+        // 避免人工补登记被卡死；后续可由运维手工修数据。
         this.logger.error(
           `[platform.updatePayStatus] activateMembership 失败 recordId=${id} err=${e?.message || e}`,
         )
       }
     }
+
+    await this.prisma.paymentRecord.update({ where: { id }, data: { status } })
     return { ok: true }
   }
   async approveRefund(id: string) {
@@ -610,13 +628,35 @@ export class PlatformService {
   }
 
   // ========== 管理员 / 角色 ==========
-  async admins() {
-    const list = await this.prisma.user.findMany({
-      where: { role: { in: ['admin', 'platform', 'super-admin'] } },
-      include: { adminRole: true },
-      orderBy: { createdAt: 'desc' },
-    })
-    return list.map((u) => ({
+  /**
+   * 平台管理员分页列表
+   *
+   * 支持：page / pageSize / keyword（在 username / nickname / email 中模糊匹配）
+   * 返回 buildPage 形式 { list, total, page, pageSize, hasMore }，
+   * 让 admin-pc 的 PaginatedResponse<UserItem> 类型可以直接消费。
+   */
+  async admins(query: any = {}) {
+    const { skip, take, page, pageSize } = parsePage(query)
+    const where: any = { role: { in: ['admin', 'platform', 'super-admin'] } }
+    const keyword = String(query?.keyword || '').trim()
+    if (keyword) {
+      where.OR = [
+        { username: { contains: keyword, mode: 'insensitive' } },
+        { nickname: { contains: keyword, mode: 'insensitive' } },
+        { email: { contains: keyword, mode: 'insensitive' } },
+      ]
+    }
+    const [rows, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take,
+        include: { adminRole: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ])
+    const list = rows.map((u) => ({
       id: u.id,
       username: u.username,
       nickname: u.nickname,
@@ -627,6 +667,7 @@ export class PlatformService {
       status: u.status,
       lastLoginAt: u.lastLoginAt,
     }))
+    return buildPage(list, total, page, pageSize)
   }
   async createAdmin(dto: any) {
     const rawPassword = typeof dto.password === 'string' ? dto.password.trim() : ''
@@ -653,13 +694,30 @@ export class PlatformService {
     })
     return { id: u.id, username: u.username }
   }
-  async updateAdmin(id: string, dto: any) {
-    const data: any = { ...dto }
-    delete data.id
-    if (dto.password) data.passwordHash = await argon2.hash(dto.password)
-    delete data.password
-    await this.prisma.user.update({ where: { id }, data })
-    return { ok: true }
+  /**
+   * 更新管理员账号 —— 字段白名单 + 越权防御
+   *
+   * 历史风险：之前是 `data: { ...dto }` 宽松 spread，
+   * 任何人都能通过 dto 注入 `passwordHash` / `id` / `merchantId` /
+   * `adminRoleId` / `createdAt` 等敏感字段达成提权或绕过密码哈希。
+   *
+   * 现在：
+   *   - controller 用 UpdateAdminDto + class-validator 白名单（入口防御）
+   *   - service 用 ADMIN_UPDATABLE_FIELDS 二次过滤（出口防御）
+   *   - 密码、roleId、merchantId 等敏感字段一律禁止通过本接口修改
+   */
+  async updateAdmin(id: string, dto: UpdateAdminDto) {
+    const allowed: Record<string, unknown> = {}
+    for (const k of ADMIN_UPDATABLE_FIELDS) {
+      if ((dto as Record<string, unknown>)[k] !== undefined) {
+        allowed[k] = (dto as Record<string, unknown>)[k]
+      }
+    }
+    if (Object.keys(allowed).length === 0) {
+      return { ok: true, updated: false }
+    }
+    await this.prisma.user.update({ where: { id }, data: allowed })
+    return { ok: true, updated: true }
   }
   async deleteAdmin(id: string) { await this.prisma.user.delete({ where: { id } }); return { ok: true } }
   async toggleAdmin(id: string) {
@@ -669,7 +727,34 @@ export class PlatformService {
     return { ok: true }
   }
 
-  async roles() { return this.prisma.adminRole.findMany({ orderBy: { createdAt: 'asc' } }) }
+  /**
+   * 平台后台角色分页列表
+   *
+   * 支持：page / pageSize / keyword（在 name / code 中模糊匹配）
+   * 返回 buildPage 形式 { list, total, page, pageSize, hasMore }，
+   * 与 admins 接口对齐，admin-pc 的 PaginatedResponse 类型统一消费。
+   */
+  async roles(query: any = {}) {
+    const { skip, take, page, pageSize } = parsePage(query)
+    const where: any = {}
+    const keyword = String(query?.keyword || '').trim()
+    if (keyword) {
+      where.OR = [
+        { name: { contains: keyword, mode: 'insensitive' } },
+        { code: { contains: keyword, mode: 'insensitive' } },
+      ]
+    }
+    const [list, total] = await Promise.all([
+      this.prisma.adminRole.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.adminRole.count({ where }),
+    ])
+    return buildPage(list, total, page, pageSize)
+  }
   async saveRole(dto: any) {
     if (dto.id) {
       const { id, ...data } = dto
@@ -682,17 +767,109 @@ export class PlatformService {
   }
   async deleteRole(id: string) { await this.prisma.adminRole.delete({ where: { id } }); return { ok: true } }
 
+  // ========== 审核记录 ==========
+  /**
+   * 审核日志分页查询（平台后台 / 商家申诉调阅用）
+   *
+   * AuditRecord 之前只在 approveMerchant/rejectMerchant/approveProduct/rejectProduct
+   * 等方法里 create，但从来没有读接口暴露，导致平台无法回溯"谁在什么时候批/驳的"。
+   *
+   * 支持过滤：
+   *   - type: 'merchant' | 'product'
+   *   - status: 'pending' | 'approved' | 'rejected' | 'auto_approved' | 'sample_check'
+   *   - targetId: 精确匹配某一被审核对象
+   *   - page / pageSize 分页（默认 1 / 20）
+   *
+   * 返回：
+   *   - 在 record 上挂 `auditor: { id, username, nickname }` 摘要（auditorId 不为空时）
+   *   - 标准 buildPage 形式 { list, total, page, pageSize, hasMore }
+   */
+  async auditRecords(query: any = {}) {
+    const { skip, take, page, pageSize } = parsePage(query)
+    const where: any = {}
+    if (query?.type && ['merchant', 'product'].includes(query.type)) where.type = query.type
+    if (query?.status) where.status = query.status
+    if (query?.targetId) where.targetId = query.targetId
+
+    const [rows, total] = await Promise.all([
+      this.prisma.auditRecord.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.auditRecord.count({ where }),
+    ])
+
+    // 批量取 actor 摘要：AuditRecord 没有 relation，手动 IN 查 User 拼接
+    const actorIds = Array.from(
+      new Set(rows.map((r) => r.auditorId).filter((id): id is string => !!id)),
+    )
+    const actorMap = new Map<string, { id: string; username: string | null; nickname: string }>()
+    if (actorIds.length) {
+      const actors = await this.prisma.user.findMany({
+        where: { id: { in: actorIds } },
+        select: { id: true, username: true, nickname: true },
+      })
+      for (const a of actors) actorMap.set(a.id, a)
+    }
+
+    const list = rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      targetId: r.targetId,
+      status: r.status,
+      reason: r.reason,
+      autoApproved: r.autoApproved,
+      sampleChecked: r.sampleChecked,
+      reviewedAt: r.reviewedAt,
+      createdAt: r.createdAt,
+      auditor: r.auditorId ? actorMap.get(r.auditorId) || null : null,
+    }))
+
+    return buildPage(list, total, page, pageSize)
+  }
+
   // ========== 系统配置 ==========
+  /**
+   * 系统设置 —— 平台后台「系统设置」页消费
+   *
+   * 返回稳定 shape：site / payment / logistics / service / security / business
+   * 即使 SystemConfig 表里没有任何记录，前端 `s.business.*` 也不会 undefined 报错。
+   *
+   * 已存在的数据会与默认值浅合并，避免后续新增字段时旧数据缺字段。
+   */
   async systemSettings() {
-    const v = await this.prisma.systemConfig.findUnique({ where: { key: 'system_settings' } })
-    return v?.value || {
+    const DEFAULT = {
       site: { name: '经纬科技', logo: '', icp: '' },
       payment: { wechat: { enabled: true }, alipay: { enabled: false }, balance: { enabled: true } },
       logistics: { providers: ['顺丰', '京东', '中通'], defaultFreight: 10 },
       service: { phone: '400-000-0000', email: 'support@jiujiu.com', workTime: '9:00-18:00' },
       security: { passwordPolicy: { minLength: 8, requireUppercase: true }, ipWhitelist: [] },
+      // P1-9 修复：admin-pc 系统设置页有 business 块（新商户/商品自动审核、平台佣金率、提现门槛），
+      // 之前默认对象缺这一块，前端 `s.business.*` 取值 undefined 报错
+      business: {
+        newMerchantAutoApprove: false,
+        newProductAutoApprove: false,
+        platformCommissionRate: 5,
+        withdrawMinAmount: 100,
+      },
+    }
+    const v = await this.prisma.systemConfig.findUnique({ where: { key: 'system_settings' } })
+    const persisted = (v?.value as Record<string, any>) || {}
+    return {
+      ...DEFAULT,
+      ...persisted,
+      // 嵌套字段浅合并，保证旧记录缺 business 时仍有默认值
+      business: { ...DEFAULT.business, ...((persisted as any).business || {}) },
     }
   }
+  /**
+   * 保存系统设置（透传到 SystemConfig）
+   *
+   * 任意可被 JSON 序列化的字段都允许写入；business 由前端控制是否包含。
+   * 保存后下次读取时会与最新 DEFAULT 浅合并，缺字段自动回退默认值。
+   */
   async saveSystemSettings(dto: any) {
     await this.prisma.systemConfig.upsert({
       where: { key: 'system_settings' },

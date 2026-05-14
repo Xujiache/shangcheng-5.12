@@ -38,6 +38,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.logger.error(exception.stack)
     }
 
+    // 微信支付 v3 回调：要求顶层 { code: 'SUCCESS'|'FAIL', message }
+    // 即使异常分支也不能被业务统一壳包装，否则微信会按梯度重试
+    if (req?.url && req.url.includes('/payments/wechat/notify')) {
+      res.status(200).json({ code: 'FAIL', message })
+      return
+    }
+
     res.status(status).json({
       code,
       data: null,

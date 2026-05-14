@@ -75,14 +75,22 @@ export class AppReleaseService {
   async remove(id: string, actor: { userId: string; role: string } | null) {
     const row = await this.prisma.appRelease.findUnique({ where: { id } })
     if (!row) throw new BizException(BizCode.NOT_FOUND, '发布不存在')
-    // 删除 MinIO 对象 + 数据库记录
-    try {
-      const key = row.url.split('/').slice(-3).join('/') // apk/yyyy/mm/xxx.apk
-      // controller 层已经强制 admin/platform/super-admin，调用 files.remove
-      // 需要传 actor 以通过 owner 校验；这里直接透传上层来的 actor，符合最小权限原则
-      await this.files.remove(key, actor)
-    } catch {
-      // MinIO 失败不阻塞 — 至少要把库里记录清掉
+    // 删除 MinIO 对象 + 数据库记录。
+    //
+    // 注意：早期实现用 row.url.split('/').slice(-3).join('/') 推导 key，
+    // 拿到的是 "yyyy/mm/xxx.apk" 而缺少 bizType 前缀（实际 key 是 "apk/yyyy/mm/xxx.apk"），
+    // 导致 files.remove 找不到 UploadedFile，S3 对象残留。
+    // 正确做法：用 url 反查 UploadedFile 表拿真实 key（在 files.uploadApk 时已写入）。
+    const uploaded = await this.prisma.uploadedFile.findFirst({ where: { url: row.url } })
+    const key = uploaded?.key
+    if (key) {
+      try {
+        // controller 层已经强制 admin/platform/super-admin，调用 files.remove
+        // 需要传 actor 以通过 owner 校验；这里直接透传上层来的 actor，符合最小权限原则
+        await this.files.remove(key, actor)
+      } catch {
+        // MinIO/UploadedFile 删除失败不阻塞 — 至少要把 AppRelease 表清掉，避免无效记录残留
+      }
     }
     await this.prisma.appRelease.delete({ where: { id } })
     return { ok: true }

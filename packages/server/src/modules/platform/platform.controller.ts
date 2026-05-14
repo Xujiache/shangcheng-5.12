@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger'
 import { PlatformService } from './platform.service'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
+import { UpdateAdminDto } from './dto/update-admin.dto'
 
 @ApiTags('平台端')
 @UseGuards(RolesGuard)
@@ -75,16 +76,20 @@ export class PlatformController {
   @Post('feature-flags/reset') resetFeatureFlags() { return this.svc.resetFeatureFlags() }
 
   // Admins / Roles
-  @Get('admins') admins() { return this.svc.admins() }
+  @Get('admins') admins(@Query() q: any) { return this.svc.admins(q) }
   @Post('admins') createAdmin(@Body() dto: any) { return this.svc.createAdmin(dto) }
-  @Put('admins/:id') updateAdmin(@Param('id') id: string, @Body() dto: any) { return this.svc.updateAdmin(id, dto) }
+  @Put('admins/:id') updateAdmin(@Param('id') id: string, @Body() dto: UpdateAdminDto) { return this.svc.updateAdmin(id, dto) }
   @Delete('admins/:id') deleteAdmin(@Param('id') id: string) { return this.svc.deleteAdmin(id) }
   @Post('admins/:id/toggle') toggleAdmin(@Param('id') id: string) { return this.svc.toggleAdmin(id) }
 
-  @Get('roles') roles() { return this.svc.roles() }
+  @Get('roles') roles(@Query() q: any) { return this.svc.roles(q) }
   @Post('roles') saveRole(@Body() dto: any) { return this.svc.saveRole(dto) }
   @Put('roles/:id') updateRole(@Param('id') id: string, @Body() dto: any) { return this.svc.updateRole(id, dto) }
   @Delete('roles/:id') deleteRole(@Param('id') id: string) { return this.svc.deleteRole(id) }
+
+  // Audit Records
+  // 查询所有审核日志（商家/商品审核流转），支持 type/status/targetId 过滤 + 分页
+  @Get('audit/records') auditRecords(@Query() q: any) { return this.svc.auditRecords(q) }
 
   // System
   @Get('system/settings') systemSettings() { return this.svc.systemSettings() }

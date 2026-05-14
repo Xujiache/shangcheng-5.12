@@ -4,9 +4,9 @@ import { AuthService } from './auth.service'
 import { AdminLoginDto } from './dto/login.dto'
 import { Public } from '../../common/decorators/public.decorator'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
-import { PrismaService } from '../../prisma/prisma.service'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
+import { PlatformService } from '../platform/platform.service'
 
 /**
  * admin-pc 旧路径兼容层（不含 /api/v1 前缀的全局映射在 main.ts 里做）
@@ -31,7 +31,7 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 export class AdminPcCompatController {
   constructor(
     private readonly authService: AuthService,
-    private readonly prisma: PrismaService,
+    private readonly platformService: PlatformService,
   ) {}
 
   @Public()
@@ -45,25 +45,24 @@ export class AdminPcCompatController {
     return this.authService.userInfo(user.sub)
   }
 
+  /**
+   * admin-pc 旧版用户列表（路径：/api/admin-pc/users）
+   *
+   * 委托 PlatformService.admins 完成查询和分页，避免该 controller 直连 Prisma 散漏鉴权
+   * 与分页规则；输出再适配 admin-pc 旧字段名 records / current / size / userId / userName。
+   */
   @Roles('platform', 'super-admin')
   @Get('users')
-  async users(@Query('current') current = '1', @Query('size') size = '20', @Query('keyword') keyword?: string) {
+  async users(
+    @Query('current') current = '1',
+    @Query('size') size = '20',
+    @Query('keyword') keyword?: string,
+  ) {
     const page = Math.max(1, Number(current) || 1)
     const pageSize = Math.min(100, Math.max(1, Number(size) || 20))
-    const where: any = { role: { in: ['admin', 'platform', 'super-admin'] } }
-    if (keyword) where.OR = [{ username: { contains: keyword } }, { nickname: { contains: keyword } }, { email: { contains: keyword } }]
-    const [list, total] = await Promise.all([
-      this.prisma.user.findMany({
-        where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-        include: { adminRole: true },
-      }),
-      this.prisma.user.count({ where }),
-    ])
+    const data = await this.platformService.admins({ page, pageSize, keyword })
     return {
-      records: list.map((u) => ({
+      records: data.list.map((u) => ({
         userId: u.id,
         userName: u.username,
         nickName: u.nickname,
@@ -71,21 +70,32 @@ export class AdminPcCompatController {
         avatar: u.avatar,
         status: u.status,
         roles: [u.role],
-        roleName: u.adminRole?.name,
+        roleName: u.roleName,
         lastLoginAt: u.lastLoginAt,
       })),
-      total,
-      current: page,
-      size: pageSize,
+      total: data.total,
+      current: data.page,
+      size: data.pageSize,
     }
   }
 
+  /**
+   * admin-pc 旧版角色列表（路径：/api/admin-pc/roles）
+   *
+   * 委托 PlatformService.roles 拉数据，对外仍返回 admin-pc 旧字段（roleId/roleCode/roleName...）。
+   */
   @Roles('platform', 'super-admin')
   @Get('roles')
-  async roles() {
-    const list = await this.prisma.adminRole.findMany({ orderBy: { createdAt: 'asc' } })
+  async roles(
+    @Query('current') current = '1',
+    @Query('size') size = '50',
+    @Query('keyword') keyword?: string,
+  ) {
+    const page = Math.max(1, Number(current) || 1)
+    const pageSize = Math.min(100, Math.max(1, Number(size) || 50))
+    const data = await this.platformService.roles({ page, pageSize, keyword })
     return {
-      records: list.map((r) => ({
+      records: data.list.map((r: any) => ({
         roleId: r.id,
         roleCode: r.code,
         roleName: r.name,
@@ -94,7 +104,9 @@ export class AdminPcCompatController {
         isSystem: r.isSystem,
         memberCount: r.memberCount,
       })),
-      total: list.length,
+      total: data.total,
+      current: data.page,
+      size: data.pageSize,
     }
   }
 

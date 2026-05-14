@@ -184,6 +184,9 @@ export class MerchantController {
   @Post('stores') async createStore(@CurrentUser() u: AuthUser, @Body() dto: any) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.createStore(mid, dto)
   }
+  @Put('stores/:id') async updateStore(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: any) {
+    const mid = await this.svc.ensureMerchantId(u); return this.svc.updateStore(mid, id, dto)
+  }
   @Delete('stores/:id') async removeStore(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.removeStore(mid, id)
   }

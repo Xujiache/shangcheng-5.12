@@ -2,9 +2,11 @@ import { Body, Controller, Headers, Post, Req } from '@nestjs/common'
 import type { RawBodyRequest } from '@nestjs/common'
 import type { Request } from 'express'
 import { Public } from '../../common/decorators/public.decorator'
+import { SkipResponseWrap } from '../../common/decorators/skip-response.decorator'
 import { WxPayService } from './wxpay.service'
 import { PrismaService } from '../../prisma/prisma.service'
 import { MerchantService } from '../merchant/merchant.service'
+import { ChatGateway } from '../chat/chat.gateway'
 import { Logger } from '@nestjs/common'
 
 /**
@@ -25,7 +27,10 @@ import { Logger } from '@nestjs/common'
  *   - 幂等：先按 wxTransactionId 或 (orderId, status='success') 查 Payment，命中直接 ACK
  *   - 事务：订单状态 + Payment 写入用 prisma.$transaction，任一失败回滚
  *   - 错误回 FAIL：业务失败返回 { code: 'FAIL' }，微信会按 5 分钟级别梯度重试
+ *   - @SkipResponseWrap()：跳过全局 ResponseInterceptor 包装，让 { code:'SUCCESS'|'FAIL' }
+ *     成为顶层结构，否则微信网关解析失败会无限重试这笔回调
  */
+@SkipResponseWrap()
 @Controller('payments')
 export class PaymentController {
   private readonly logger = new Logger(PaymentController.name)
@@ -34,6 +39,7 @@ export class PaymentController {
     private readonly wxpay: WxPayService,
     private readonly prisma: PrismaService,
     private readonly merchantService: MerchantService,
+    private readonly chat: ChatGateway,
   ) {}
 
   @Public()
@@ -125,12 +131,13 @@ export class PaymentController {
       }
 
       // 真实入账：订单状态更新 + Payment 写入放进同一个事务，避免出现"订单已改但 Payment 没落账"
+      const paidAt = new Date()
       await this.prisma.$transaction(async (tx) => {
         await tx.order.updateMany({
           where: { id: order.id, status: 'pending_payment' },
           data: {
             status: 'pending_shipment',
-            paidAt: new Date(),
+            paidAt,
             paymentMethod: 'wechat',
           },
         })
@@ -140,12 +147,24 @@ export class PaymentController {
             method: 'wechat',
             amount: order.payAmount,
             status: 'success',
-            paidAt: new Date(),
+            paidAt,
             wxTransactionId: transactionId || null,
           },
         })
       })
       this.logger.log(`[wxpay notify] 订单入账成功 no=${outTradeNo} txid=${transactionId}`)
+      // 推商家：订单已付款待发货。fire-and-forget，绝不能阻塞回调返回 SUCCESS
+      // （回调超时未返回会被微信无限重试，污染对账）
+      try {
+        this.chat.emitOrderUpdate(order.merchantId, {
+          orderId: order.id,
+          no: order.no,
+          status: 'pending_shipment',
+          updatedAt: paidAt,
+        })
+      } catch (e: any) {
+        this.logger.warn(`[wxpay notify] emit order:update 失败 orderId=${order.id}: ${e?.message || e}`)
+      }
       return { code: 'SUCCESS', message: 'OK' }
     } catch (e: any) {
       // 业务失败：返回 FAIL 让微信按梯度重试（不要吞错回 SUCCESS）

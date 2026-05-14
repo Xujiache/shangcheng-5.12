@@ -363,6 +363,8 @@ export class UserMpService {
     // 优惠券服务端重算：
     //   - 只信 couponId，金额一律服务端按 Coupon 配置 + totalAmount 推导
     //   - 校验：存在 / status=active / 在有效期内 / 商户匹配 / 门槛满足
+    //   - 校验：perUserLimit（每人限用次数）
+    //   - 校验：scope + scopeIds（券是否适用于这些 SKU）
     //   - type=fullReduce|fixed 按 amount 抵扣；type=discount 按 discountPercent 折扣率推
     //   - 抵扣金额不能超过订单金额本身
     let couponDiscount = 0
@@ -388,6 +390,52 @@ export class UserMpService {
           `订单金额需满 ${threshold} 元才可使用该优惠券`,
         )
       }
+
+      // perUserLimit 校验：统计该用户已经"非取消"的同券订单数；达到上限则拒绝
+      // 注意：这里不算并发安全（同一用户同时下两单可绕过 1 次），生产可考虑唯一索引兜底
+      if (coupon.perUserLimit && coupon.perUserLimit > 0) {
+        const userUsedCount = await this.prisma.order.count({
+          where: { userId, couponId: coupon.id, status: { not: 'cancelled' } },
+        })
+        if (userUsedCount >= coupon.perUserLimit) {
+          throw new BizException(BizCode.BUSINESS_ERROR, '该券已超出每人使用次数')
+        }
+      }
+
+      // scope 校验：scope='product' → scopeIds 是商品 id 数组（只要订单含任一命中商品即通过）
+      //            scope='merchant' → scopeIds 是商户 id 数组
+      //            scope='category' → scopeIds 是分类 id 数组（这里需要再查 product.categoryId）
+      //            scope='all' 或缺省 → 不做范围限制
+      if (
+        coupon.scope &&
+        coupon.scope !== 'all' &&
+        Array.isArray(coupon.scopeIds) &&
+        coupon.scopeIds.length > 0
+      ) {
+        const productIds = Array.from(new Set(skus.map((s) => s.productId)))
+        let matched = false
+        if (coupon.scope === 'product') {
+          matched = productIds.some((pid) => coupon.scopeIds.includes(pid))
+        } else if (coupon.scope === 'merchant') {
+          matched = coupon.scopeIds.includes(merchantId)
+        } else if (coupon.scope === 'category') {
+          // 走一次查询补全分类信息（订单 SKU 数量通常很小）
+          const products = await this.prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: { categoryId: true },
+          })
+          matched = products.some(
+            (p) => p.categoryId && coupon.scopeIds.includes(p.categoryId),
+          )
+        } else {
+          // 未知 scope 取保守策略：不允许使用
+          matched = false
+        }
+        if (!matched) {
+          throw new BizException(BizCode.BUSINESS_ERROR, '该券不适用于当前订单')
+        }
+      }
+
       if (coupon.type === 'fullReduce' || coupon.type === 'fixed') {
         couponDiscount = coupon.amount ? Number(coupon.amount) : 0
       } else if (coupon.type === 'discount' && typeof coupon.discountPercent === 'number') {
@@ -400,7 +448,8 @@ export class UserMpService {
 
     const payAmount = Math.max(0, totalAmount + shippingFee - couponDiscount)
 
-    // 订单创建 + 扣库存放进一个事务，避免"订单已建但库存没扣"的资金泄漏
+    // 订单创建 + 扣库存 + 扣优惠券 used 计数放进一个事务，
+    // 避免"订单已建但库存没扣 / used 没递增"的脏数据
     const order = await this.prisma.$transaction(async (tx) => {
       const created = await tx.order.create({
         data: {
@@ -422,8 +471,31 @@ export class UserMpService {
       for (const it of normItems) {
         await tx.sku.update({ where: { id: it.skuId }, data: { stock: { decrement: it.quantity } } })
       }
+      if (couponId) {
+        await tx.coupon.update({
+          where: { id: couponId },
+          data: { used: { increment: 1 } },
+        })
+      }
       return created
     })
+
+    // fire-and-forget WS 推送：商家端 useMerchantNotifyStream 订阅 'order:new'
+    // 推送失败绝不能影响订单创建主流程，所以裹一层 try/catch
+    try {
+      this.chat.emitOrderNew(merchantId, {
+        id: order.id,
+        no: order.no,
+        merchantId,
+        totalAmount: Number(order.totalAmount),
+        payAmount: Number(order.payAmount),
+        itemsCount: orderItemsData.reduce((s, it) => s + it.quantity, 0),
+        status: order.status,
+        createdAt: order.createdAt,
+      })
+    } catch {
+      // already wrapped in gateway; 这里防御性兜底
+    }
 
     return { orderId: order.id, orderNo: order.no, payAmount: Number(order.payAmount) }
   }
@@ -477,13 +549,24 @@ export class UserMpService {
 
     // 非生产 + 商户号未配齐 → mock 模式：保留预览体验，立即标已付
     if (!isProd && !this.wxpay.isReady()) {
+      const paidAt = new Date()
       await this.prisma.payment.create({
-        data: { orderId: o.id, method: 'wechat', amount: o.payAmount, status: 'success', paidAt: new Date() },
+        data: { orderId: o.id, method: 'wechat', amount: o.payAmount, status: 'success', paidAt },
       })
       await this.prisma.order.update({
         where: { id: o.id },
-        data: { status: 'pending_shipment', paymentMethod: 'wechat', paidAt: new Date() },
+        data: { status: 'pending_shipment', paymentMethod: 'wechat', paidAt },
       })
+      // 与生产回调路径保持一致：通知商家"已付款待发货"
+      try {
+        this.chat.emitOrderUpdate(o.merchantId, {
+          orderId: o.id,
+          no: o.no,
+          status: 'pending_shipment',
+          updatedAt: paidAt,
+          mockPaid: true,
+        })
+      } catch {}
       return { ok: true, mockPaid: true, miniPay: pay }
     }
 
@@ -494,7 +577,16 @@ export class UserMpService {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
     if (o.status !== 'shipped') throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单尚未发货')
-    await this.prisma.order.update({ where: { id: o.id }, data: { status: 'completed', completedAt: new Date() } })
+    const completedAt = new Date()
+    await this.prisma.order.update({ where: { id: o.id }, data: { status: 'completed', completedAt } })
+    try {
+      this.chat.emitOrderUpdate(o.merchantId, {
+        orderId: o.id,
+        no: o.no,
+        status: 'completed',
+        updatedAt: completedAt,
+      })
+    } catch {}
     return { ok: true }
   }
 
@@ -510,10 +602,11 @@ export class UserMpService {
 
     // 取消时必须回滚 SKU 库存，否则会出现"用户疯狂下单 → 取消"刷库存的耗竭攻击。
     // 状态改写 + 每条 item 的库存 increment 放进同一个事务，确保原子。
+    const cancelledAt = new Date()
     await this.prisma.$transaction(async (tx) => {
       await tx.order.update({
         where: { id: o.id },
-        data: { status: 'cancelled', cancelledAt: new Date() },
+        data: { status: 'cancelled', cancelledAt },
       })
       for (const it of o.items) {
         await tx.sku.update({
@@ -522,6 +615,14 @@ export class UserMpService {
         })
       }
     })
+    try {
+      this.chat.emitOrderUpdate(o.merchantId, {
+        orderId: o.id,
+        no: o.no,
+        status: 'cancelled',
+        updatedAt: cancelledAt,
+      })
+    } catch {}
     return { ok: true }
   }
 
@@ -569,6 +670,31 @@ export class UserMpService {
   async banners() {
     const v = await this.prisma.systemConfig.findUnique({ where: { key: 'banners' } })
     return v?.value || []
+  }
+
+  // ========== 热搜词 ==========
+  /**
+   * 用户端搜索页 hot-keywords 接口
+   *
+   * 优先从 SystemConfig key='hot_keywords' 读管理员配置（value 接受字符串数组
+   * 或 { list: string[] } 两种 shape，兼容前后端约定差异），否则返回内置兜底词。
+   *
+   * 返回纯 string[]，前端 take(N) 自行截断。
+   */
+  async hotKeywords(): Promise<string[]> {
+    const DEFAULTS = ['咖啡', '奶茶', '螺蛳粉', '面包', '烧烤', '水果', '蔬菜', '早餐']
+    try {
+      const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'hot_keywords' } })
+      const raw = cfg?.value as any
+      let list: string[] = []
+      if (Array.isArray(raw)) list = raw
+      else if (raw && Array.isArray(raw.list)) list = raw.list
+      list = list.filter((k) => typeof k === 'string' && k.trim()).map((k) => k.trim())
+      if (list.length > 0) return list
+    } catch {
+      // SystemConfig 读取失败一律回退默认词，保证前端始终有词可显
+    }
+    return DEFAULTS
   }
 
   // ========== 地址 ==========
@@ -932,6 +1058,165 @@ export class UserMpService {
       where: { sessionId, sender: 'merchant', read: false },
       data: { read: true },
     })
+    return { ok: true }
+  }
+
+  // ========== 购物车 ==========
+  /**
+   * 列出当前用户购物车
+   *
+   * 包含商品 / SKU 摘要（图片、名称、规格、价格、库存），方便前端直接渲染。
+   * 同时把过期下架商品/SKU 自动剔除展示（不删 DB，避免误删），保持视图整洁。
+   */
+  async listCart(userId: string) {
+    const items = await this.prisma.cartItem.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        product: {
+          select: {
+            id: true, name: true, images: true, status: true,
+            priceRetailMin: true, merchantId: true,
+          },
+        },
+        sku: {
+          select: {
+            id: true, specsLabel: true, priceRetail: true,
+            stock: true, active: true,
+          },
+        },
+      },
+    })
+    return items.map((it) => ({
+      id: it.id,
+      productId: it.productId,
+      skuId: it.skuId,
+      quantity: it.quantity,
+      product: it.product
+        ? {
+            id: it.product.id,
+            name: it.product.name,
+            image: it.product.images?.[0] || '',
+            status: it.product.status,
+            merchantId: it.product.merchantId,
+          }
+        : null,
+      sku: it.sku
+        ? {
+            id: it.sku.id,
+            specsLabel: it.sku.specsLabel,
+            price: Number(it.sku.priceRetail),
+            stock: it.sku.stock,
+            active: it.sku.active,
+          }
+        : null,
+      // 整条是否仍可下单（前端给灰禁用 + 提示用）
+      available:
+        !!it.product && it.product.status === 'active' && !!it.sku && it.sku.active && it.sku.stock > 0,
+      createdAt: it.createdAt,
+      updatedAt: it.updatedAt,
+    }))
+  }
+
+  /**
+   * 添加到购物车
+   *
+   * - 必须传 productId；skuId 可选，未传时取该商品任一启用 SKU 兜底（避免数据库 NOT NULL 报错）
+   * - 已存在同 (userId, skuId) → 在原数量上 +quantity（受 SKU.stock 上限保护）
+   * - 不存在则 create
+   *
+   * 校验：商品 + SKU 必须真实存在，并属于同一商品；quantity ≥ 1
+   */
+  async addCart(
+    userId: string,
+    dto: { productId: string; skuId?: string; quantity?: number },
+  ) {
+    const productId = String(dto?.productId || '').trim()
+    if (!productId) throw new BizException(BizCode.INVALID_PARAMS, '缺少商品 ID')
+    const qty = Math.max(1, Math.floor(Number(dto?.quantity ?? 1)))
+    if (!Number.isFinite(qty)) throw new BizException(BizCode.INVALID_PARAMS, '数量必须为正整数')
+
+    const product = await this.prisma.product.findUnique({ where: { id: productId } })
+    if (!product) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+    if (product.status !== 'active') {
+      throw new BizException(BizCode.PRODUCT_OFFLINE, '商品已下架')
+    }
+
+    // skuId 兜底：取该商品任一 active SKU
+    let sku: { id: string; productId: string; stock: number; active: boolean } | null = null
+    if (dto?.skuId) {
+      const found = await this.prisma.sku.findUnique({ where: { id: dto.skuId } })
+      if (!found || found.productId !== productId) {
+        throw new BizException(BizCode.NOT_FOUND, 'SKU 不存在或不属于该商品')
+      }
+      sku = { id: found.id, productId: found.productId, stock: found.stock, active: found.active }
+    } else {
+      const fallback = await this.prisma.sku.findFirst({
+        where: { productId, active: true },
+        orderBy: { createdAt: 'asc' },
+      })
+      if (!fallback) {
+        throw new BizException(BizCode.NOT_FOUND, '该商品暂无可购买规格')
+      }
+      sku = { id: fallback.id, productId: fallback.productId, stock: fallback.stock, active: fallback.active }
+    }
+    if (!sku.active) {
+      throw new BizException(BizCode.PRODUCT_OFFLINE, '该规格已下架')
+    }
+
+    // upsert by (userId, skuId)；已存在则数量累加，且不超过库存
+    const existing = await this.prisma.cartItem.findUnique({
+      where: { userId_skuId: { userId, skuId: sku.id } },
+    })
+    const targetQty = (existing?.quantity || 0) + qty
+    if (sku.stock > 0 && targetQty > sku.stock) {
+      throw new BizException(BizCode.STOCK_INSUFFICIENT, `库存不足，最多可加 ${sku.stock} 件`)
+    }
+    if (existing) {
+      return this.prisma.cartItem.update({
+        where: { id: existing.id },
+        data: { quantity: targetQty },
+      })
+    }
+    return this.prisma.cartItem.create({
+      data: { userId, productId, skuId: sku.id, quantity: qty },
+    })
+  }
+
+  /**
+   * 修改购物车某条数量
+   *
+   * - 必须属于当前用户（防越权改别人购物车）
+   * - quantity ≥ 1（如要清零请走 removeCart）
+   * - 超过 SKU 库存上限会拒绝（防"无限堆数量"绕过下单校验）
+   */
+  async updateCart(userId: string, id: string, dto: { quantity: number }) {
+    const item = await this.prisma.cartItem.findFirst({
+      where: { id, userId },
+      include: { sku: { select: { stock: true, active: true } } },
+    })
+    if (!item) throw new BizException(BizCode.NOT_FOUND, '购物车条目不存在或无权限')
+
+    const qty = Math.floor(Number(dto?.quantity ?? 0))
+    if (!Number.isFinite(qty) || qty < 1) {
+      throw new BizException(BizCode.INVALID_PARAMS, '数量必须为正整数')
+    }
+    if (item.sku && item.sku.stock > 0 && qty > item.sku.stock) {
+      throw new BizException(BizCode.STOCK_INSUFFICIENT, `库存不足，最多可设 ${item.sku.stock} 件`)
+    }
+    return this.prisma.cartItem.update({ where: { id }, data: { quantity: qty } })
+  }
+
+  /**
+   * 删除购物车条目（必须属于当前用户）
+   *
+   * 使用 deleteMany 双条件，避免按 id 单删时 A 用户能干掉 B 用户的条目
+   */
+  async removeCart(userId: string, id: string) {
+    const r = await this.prisma.cartItem.deleteMany({ where: { id, userId } })
+    if (r.count === 0) {
+      throw new BizException(BizCode.NOT_FOUND, '购物车条目不存在或无权限')
+    }
     return { ok: true }
   }
 }

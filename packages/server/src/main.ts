@@ -2,12 +2,10 @@ import { NestFactory, Reflector } from '@nestjs/core'
 import { ValidationPipe, RequestMethod } from '@nestjs/common'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import { JwtService } from '@nestjs/jwt'
 import { IoAdapter } from '@nestjs/platform-socket.io'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
-import { JwtAuthGuard } from './common/guards/jwt.guard'
 
 async function bootstrap() {
   // rawBody:true 是微信支付 v3 回调验签的强依赖——
@@ -31,13 +29,13 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false }),
   )
 
-  app.useGlobalInterceptors(new ResponseInterceptor())
+  // ResponseInterceptor 需要 Reflector 读取 @SkipResponseWrap 元数据
+  const reflector = app.get(Reflector)
+  app.useGlobalInterceptors(new ResponseInterceptor(reflector))
   app.useGlobalFilters(new GlobalExceptionFilter())
 
-  // 全局 JWT 守卫（@Public 跳过）
-  const reflector = app.get(Reflector)
-  const jwtService = app.get(JwtService)
-  app.useGlobalGuards(new JwtAuthGuard(reflector, jwtService))
+  // 全局守卫（JwtAuthGuard + ThrottlerGuard）已通过 APP_GUARD 在 AppModule 注册，
+  // 这里不再 useGlobalGuards，避免双重执行；走 DI 注册也便于守卫注入 Reflector/JwtService
 
   // Swagger
   const config = new DocumentBuilder()

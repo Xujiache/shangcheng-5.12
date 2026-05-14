@@ -223,4 +223,57 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!this.server) return
     this.server.to(`user:${userId}`).emit('user:update', { user })
   }
+
+  /**
+   * 商家端实时通知 —— 新订单
+   *
+   * 触发点：user-mp.service.createOrder() 订单建单成功（status=pending_payment）。
+   * 接收方：商家所有已 auth 的 socket（房间 merchant:<merchantId>）。
+   * 用法：merchant-app 的 useMerchantNotifyStream 订阅 'order:new' 后即可弹通知/刷新待发货数。
+   *
+   * 失败保护：自身 try/catch；外部 service 也再裹一层避免推送异常阻塞主业务。
+   */
+  emitOrderNew(merchantId: string, payload: any) {
+    if (!this.server || !merchantId) return
+    try {
+      this.server.to(`merchant:${merchantId}`).emit('order:new', payload)
+    } catch (e: any) {
+      this.logger.warn(`emitOrderNew failed merchantId=${merchantId}: ${e?.message || e}`)
+    }
+  }
+
+  /**
+   * 商家端实时通知 —— 订单状态变更
+   *
+   * 触发点示例：
+   *   - 微信支付回调后订单转 pending_shipment
+   *   - 商家发货 → shipped
+   *   - 用户确认收货 → completed
+   *   - 用户取消 → cancelled
+   *
+   * payload 建议字段：{ orderId, no?, status, updatedAt }
+   */
+  emitOrderUpdate(merchantId: string, payload: any) {
+    if (!this.server || !merchantId) return
+    try {
+      this.server.to(`merchant:${merchantId}`).emit('order:update', payload)
+    } catch (e: any) {
+      this.logger.warn(`emitOrderUpdate failed merchantId=${merchantId}: ${e?.message || e}`)
+    }
+  }
+
+  /**
+   * 商家端实时通知 —— 新售后单
+   *
+   * 触发点：用户发起退款/售后申请时（当前仓库无对外创建退款的 controller；
+   * 预留接口给未来 user-mp 退款入口或 admin 代发起退款接入）。
+   */
+  emitRefundNew(merchantId: string, payload: any) {
+    if (!this.server || !merchantId) return
+    try {
+      this.server.to(`merchant:${merchantId}`).emit('refund:new', payload)
+    } catch (e: any) {
+      this.logger.warn(`emitRefundNew failed merchantId=${merchantId}: ${e?.message || e}`)
+    }
+  }
 }
