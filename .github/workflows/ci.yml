@@ -34,7 +34,7 @@ jobs:
         node: ['20']
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup pnpm
         # corepack enable 会读 package.json#packageManager，自动装对的 pnpm 版本
