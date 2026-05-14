@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
 import { ApiTags, ApiConsumes } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { FilesService } from './files.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
@@ -55,6 +56,9 @@ export class FilesController {
    */
   @Post('upload')
   @ApiConsumes('multipart/form-data')
+  // 走独立 upload 桶(60/min),不消耗业务 default 桶 —— 商品编辑可能一波上传 30+ 张图,
+  // 撞 default 限流会导致 toast "Too Many Requests" + 后续业务请求一起被卡。
+  @Throttle({ upload: { limit: 60, ttl: 60_000 } })
   @UseInterceptors(FileInterceptor('file'))
   upload(
     @UploadedFile() file: any,
@@ -69,6 +73,7 @@ export class FilesController {
 
   @Post('batch-upload')
   @ApiConsumes('multipart/form-data')
+  @Throttle({ upload: { limit: 60, ttl: 60_000 } })
   @UseInterceptors(FilesInterceptor('files', 20))
   batchUpload(
     @UploadedFiles() files: any[],
