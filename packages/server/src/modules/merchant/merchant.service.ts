@@ -54,6 +54,55 @@ function pickProductFields(dto: any): Record<string, any> {
   return out
 }
 
+/**
+ * 从 SKU 数组计算 Product 的价格 min/max 聚合。
+ *
+ * 为什么必须由后端算：
+ *   - 前端各端实现散乱，user-mp / merchant-app / admin-pc / platform-app 都可能
+ *     创建/编辑商品，谁也别指望都正确填 priceRetailMin/Max
+ *   - 早期实现直接 `dto.priceRetailMin ?? 0`，前端不传就落库 0，造成用户填了 ¥999
+ *     的 SKU 价、平台审核页和小程序展示都是 0 的诡异现象
+ *
+ * SKU 全空时（pricingMode=customSize 之类的特殊商品）回落到 dto.priceRetailMin。
+ */
+function aggregateSkuPrices(
+  skus: Array<{ priceWholesale: number; priceRetail: number; priceMember: number }>,
+  dto: any,
+): {
+  priceRetailMin: number
+  priceRetailMax: number
+  priceWholesaleMin: number
+  priceWholesaleMax: number
+  priceMemberMin: number
+  priceMemberMax: number
+} {
+  if (skus.length === 0) {
+    // 无 SKU 的兜底：用 dto 显式传的（如按平米定价的商品）
+    const r = Number(dto?.priceRetailMin ?? 0)
+    const w = Number(dto?.priceWholesaleMin ?? r)
+    const m = Number(dto?.priceMemberMin ?? r)
+    return {
+      priceRetailMin: r,
+      priceRetailMax: Number(dto?.priceRetailMax ?? r),
+      priceWholesaleMin: w,
+      priceWholesaleMax: Number(dto?.priceWholesaleMax ?? w),
+      priceMemberMin: m,
+      priceMemberMax: Number(dto?.priceMemberMax ?? m),
+    }
+  }
+  const retails = skus.map((s) => s.priceRetail || 0)
+  const wholesales = skus.map((s) => s.priceWholesale || 0)
+  const members = skus.map((s) => s.priceMember || 0)
+  return {
+    priceRetailMin: Math.min(...retails),
+    priceRetailMax: Math.max(...retails),
+    priceWholesaleMin: Math.min(...wholesales),
+    priceWholesaleMax: Math.max(...wholesales),
+    priceMemberMin: Math.min(...members),
+    priceMemberMax: Math.max(...members),
+  }
+}
+
 @Injectable()
 export class MerchantService {
   constructor(
@@ -322,6 +371,10 @@ export class MerchantService {
       active: s.active !== false,
     }))
     const data = pickProductFields(dto)
+    // 价格聚合：从 SKU 真实值算 priceRetailMin/Max + priceWholesaleMin
+    // 之前直接取 dto.priceRetailMin（前端不传就是 0），导致用户填了 999 的 SKU 价
+    // 但 Product 聚合仍是 0 → 平台审核页 / 用户端展示价格全是 0
+    const agg = aggregateSkuPrices(skus, dto)
     // data 用 any 断言绕过 Prisma "必填字段缺失" 的类型推断 —— 因为白名单返回的是
     // Record<string, any>，TS 看不到 name/categoryId；运行时由 Prisma 自身校验。
     // 与原 `...productData` 行为一致，只是多了一层字段过滤。
@@ -329,8 +382,12 @@ export class MerchantService {
       data: {
         ...(data as any),
         merchantId,
-        priceRetailMin: dto.priceRetailMin ?? 0,
-        priceRetailMax: dto.priceRetailMax ?? 0,
+        priceRetailMin: agg.priceRetailMin,
+        priceRetailMax: agg.priceRetailMax,
+        priceWholesaleMin: agg.priceWholesaleMin,
+        priceWholesaleMax: agg.priceWholesaleMax,
+        priceMemberMin: agg.priceMemberMin,
+        priceMemberMax: agg.priceMemberMax,
         status: dto.status || 'auditing',
         skus: { create: skus },
       },
@@ -403,6 +460,34 @@ export class MerchantService {
         })
       }
     })
+
+    // 更新完 SKU 后，重新聚合 Product 价格 min/max（dto 不传聚合字段时也能保持一致）
+    // 只在本次确实改了 SKU 才重算；纯字段更新跳过避免无谓查询
+    if (Array.isArray(dto?.skus)) {
+      const activeSkus = await this.prisma.sku.findMany({
+        where: { productId: id, active: true },
+        select: { priceRetail: true, priceWholesale: true, priceMember: true },
+      })
+      const agg = aggregateSkuPrices(
+        activeSkus.map((s) => ({
+          priceRetail: Number(s.priceRetail),
+          priceWholesale: Number(s.priceWholesale),
+          priceMember: Number(s.priceMember),
+        })),
+        dto,
+      )
+      await this.prisma.product.update({
+        where: { id },
+        data: {
+          priceRetailMin: agg.priceRetailMin,
+          priceRetailMax: agg.priceRetailMax,
+          priceWholesaleMin: agg.priceWholesaleMin,
+          priceWholesaleMax: agg.priceWholesaleMax,
+          priceMemberMin: agg.priceMemberMin,
+          priceMemberMax: agg.priceMemberMax,
+        },
+      })
+    }
 
     // 重新 fetch 一次返回最新数据(含 skus)
     const refreshed = await this.prisma.product.findUnique({

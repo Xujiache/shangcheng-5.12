@@ -544,8 +544,34 @@ function pickCategory(cat: Category) {
 /* ============ Init ============ */
 
 async function loadCats() {
+  // 平台 + 商家自定义分类合并展示
+  // 之前只拉 platformList → 商家无论在 APP 端或商家工作台建了多少自定义分类，
+  // 添加商品时都看不到，必须用平台预设分类。这是 admin-pc 同款 bug 的 APP 版。
   try {
-    platformCats.value = await categoryService.platformList()
+    const [platform, own] = await Promise.all([
+      categoryService.platformList().catch(() => [] as Category[]),
+      categoryService.merchantList().catch(() => [] as Category[]),
+    ])
+    // 给自定义分类挂一个"我的分类"虚拟父节点，避免和平台分类混排
+    // 若自定义分类自己已有 parentId 链路，保留原结构；只把"顶级（parentId=null）"
+    // 改挂到虚拟父下
+    const VIRTUAL_PARENT_ID = '__my__'
+    const ownReparented = own.map((c) => ({
+      ...c,
+      parentId: c.parentId ? c.parentId : VIRTUAL_PARENT_ID,
+    }))
+    const virtualParent: Category = {
+      id: VIRTUAL_PARENT_ID,
+      parentId: null,
+      name: '我的分类',
+      icon: '',
+      sort: 9999,
+      type: 'merchant',
+    } as any
+    platformCats.value = [
+      ...platform,
+      ...(own.length ? [virtualParent, ...ownReparented] : []),
+    ]
   } catch {}
 }
 
@@ -666,15 +692,24 @@ async function submit(status: 'draft' | 'submit') {
         specGroups.value.forEach((g, i) => {
           if (s.specs[i] !== undefined) specsObj[g.name] = s.specs[i]
         })
+        // 价格 fallback：商家常常只填了批发价、零售/会员价留空（=0）
+        // 但 Product 价格聚合用 priceRetailMin = min(skus.priceRetail) → 全 0
+        // 用户体验上的"提交 999 → 平台看到 0"就是这个 bug
+        // 容错：如果批发价有值而零售价为 0，用批发价填上；会员价同理
+        const w = Number(s.priceWholesale) || 0
+        const r = Number(s.priceRetail) || 0
+        const m = Number(s.priceMember) || 0
+        const finalRetail = r > 0 ? r : w
+        const finalMember = m > 0 ? m : finalRetail
         return {
           // id 仅在编辑模式有值,后端 updateProduct 据此 update 现有行;为空则 create 新行
           ...(s.id ? { id: s.id } : {}),
           specs: specsObj,
           specsLabel: s.specs.join(' · '),
           image: s.image || undefined,
-          priceWholesale: Number(s.priceWholesale),
-          priceRetail: Number(s.priceRetail),
-          priceMember: Number(s.priceMember),
+          priceWholesale: w,
+          priceRetail: finalRetail,
+          priceMember: finalMember,
           stock: Number(s.stock),
           active: s.active,
         }
