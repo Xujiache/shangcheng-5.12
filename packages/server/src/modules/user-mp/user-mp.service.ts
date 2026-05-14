@@ -755,6 +755,41 @@ export class UserMpService {
     return { ...DEFAULT, ...((cfg?.value as any) || {}) }
   }
 
+  /**
+   * 当前用户在某店铺的价格分级身份。
+   *
+   * priceTier 是按 (merchantId, userId) 维度配置的(商家在「客户管理」里给客户标 member/agency),
+   * 存在 SystemConfig key=cust_tier_<merchantId>_<userId> 里。useShopPriceRule 之前用
+   * `user.role==='member' || user.isMember===true` 判断 —— User 表根本没有这俩字段,
+   * 商家设的等级永远到不了用户端;这里把这条链路接通。
+   *
+   *  - factory/store/merchant 角色 → 直接 agency(代理人天然能看批发价)
+   *  - SystemConfig.priceTier=='member'|'vip' → member
+   *  - SystemConfig.priceTier=='agency'|'wholesale' → agency
+   *  - 其它 → customer
+   */
+  async myTierInShop(userId: string, merchantId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user) return { myTier: 'guest' as const, priceAuthorized: false }
+    if (['factory', 'store', 'merchant'].includes(user.role)) {
+      return { myTier: 'agency' as const, priceAuthorized: true }
+    }
+    const [tierCfg, authCfg] = await Promise.all([
+      this.prisma.systemConfig.findUnique({
+        where: { key: `cust_tier_${merchantId}_${userId}` },
+      }),
+      this.prisma.systemConfig.findUnique({
+        where: { key: `cust_auth_${merchantId}_${userId}` },
+      }),
+    ])
+    const priceTier = String((tierCfg?.value as any)?.priceTier ?? 'retail').toLowerCase()
+    const priceAuthorized = !!(authCfg?.value as any)?.authorized
+    let myTier: 'customer' | 'member' | 'agency' = 'customer'
+    if (priceTier === 'member' || priceTier === 'vip') myTier = 'member'
+    else if (priceTier === 'agency' || priceTier === 'wholesale') myTier = 'agency'
+    return { myTier, priceAuthorized }
+  }
+
   // ========== 在线客服（用户端） ==========
 
   async chatSessions(userId: string) {

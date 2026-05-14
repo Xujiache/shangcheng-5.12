@@ -320,14 +320,33 @@ export class MerchantService {
       this.prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
       this.prisma.user.count({ where }),
     ])
+    // 批量读 priceTier / authorized 配置;之前是硬编码 retail,商家看不到自己设的值
+    const cfgKeys = users.flatMap((u) => [
+      `cust_tier_${merchantId}_${u.id}`,
+      `cust_auth_${merchantId}_${u.id}`,
+    ])
+    const cfgs = cfgKeys.length
+      ? await this.prisma.systemConfig.findMany({ where: { key: { in: cfgKeys } } })
+      : []
+    const tierMap = new Map<string, string>()
+    const authMap = new Map<string, boolean>()
+    const tierPrefix = `cust_tier_${merchantId}_`
+    const authPrefix = `cust_auth_${merchantId}_`
+    for (const c of cfgs) {
+      if (c.key.startsWith(tierPrefix)) {
+        tierMap.set(c.key.slice(tierPrefix.length), (c.value as any)?.priceTier ?? 'retail')
+      } else if (c.key.startsWith(authPrefix)) {
+        authMap.set(c.key.slice(authPrefix.length), !!(c.value as any)?.authorized)
+      }
+    }
     return buildPage(users.map((u) => ({
       id: u.id,
       avatar: u.avatar,
       nickname: u.nickname,
       phone: u.phone,
       kind: u.role === 'promoter' ? 'promoter' : 'normal',
-      priceTier: 'retail',
-      priceAuthorized: false,
+      priceTier: tierMap.get(u.id) ?? 'retail',
+      priceAuthorized: authMap.get(u.id) ?? false,
     })), total, page, pageSize)
   }
   async setCustomerPriceTier(merchantId: string, userId: string, priceTier: string) {

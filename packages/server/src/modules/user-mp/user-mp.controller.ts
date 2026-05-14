@@ -58,9 +58,14 @@ export class UserMpController {
     return this.svc.nearbyStores({ lat: q?.lat, lng: q?.lng })
   }
 
-  // 店铺价格显示规则（user-mp 商品页用）
+  // 店铺价格显示规则（user-mp 商品页用,无需登录）
   @Public() @Get('shops/:merchantId/price-rule') shopPriceRule(@Param('merchantId') merchantId: string) {
     return this.svc.shopPriceRule(merchantId)
+  }
+
+  // 当前用户在某店铺的身份（需登录;商家在「客户管理」里设的 member/agency 分级）
+  @Get('shops/:merchantId/my-tier') myTier(@CurrentUser() u: AuthUser, @Param('merchantId') merchantId: string) {
+    return this.svc.myTierInShop(u.sub, merchantId)
   }
 
   // 用户资料读写

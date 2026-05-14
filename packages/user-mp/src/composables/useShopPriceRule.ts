@@ -55,19 +55,26 @@ function readRule(): ShopPriceRule {
 const rule = ref<ShopPriceRule>(readRule())
 
 /**
- * 从后端拉取最新规则（用户端通过商品 merchantId 查询对应店铺的规则）
- * 路由：GET /api/v1/u/products/:id → 后端 productDetail 内联了商家 priceRule（待后端补全）
- *
- * 当前临时方案：用户端没有直接读规则的接口，仅靠 localStorage 跨端共享。
- * 长期方案：在 user-mp 端 product detail 响应里返回 merchant.priceRule。
+ * 当前用户在每个店铺的分级身份缓存(由 fetchShopPriceRuleByMerchant 写入)。
+ * 同一用户在不同店可能有不同 tier,所以按 merchantId 索引;由后端 myTierInShop 真实下发,
+ * 不再用「User.role==='member'」这种不存在的字段瞎猜。
  */
+const myTierByMerchant = ref<Record<string, CustomerTier>>({})
+const currentMerchantId = ref<string>('')
+
 export function reloadShopPriceRule() {
   rule.value = readRule()
 }
 
-/** 通过 merchantId 主动拉取（如果有此商户的最新规则） */
+/**
+ * 通过 merchantId 主动拉取店铺规则 + 当前用户在该店的身份。
+ *   - rule:   GET /u/shops/:merchantId/price-rule (公开)
+ *   - myTier: GET /u/shops/:merchantId/my-tier   (需登录;未登录跳过)
+ */
 export async function fetchShopPriceRuleByMerchant(merchantId: string): Promise<ShopPriceRule | null> {
   if (!merchantId) return null
+  currentMerchantId.value = merchantId
+
   try {
     const data = await http.get<ShopPriceRule>(`/api/v1/u/shops/${merchantId}/price-rule`, undefined, { silent: true })
     if (data) {
@@ -77,12 +84,29 @@ export async function fetchShopPriceRuleByMerchant(merchantId: string): Promise<
           localStorage.setItem(STORAGE_KEY, JSON.stringify(rule.value))
         }
       } catch {}
-      return rule.value
     }
   } catch {
-    // 接口不可达（未来才加）：保持本地缓存
+    // 接口不可达：保持本地缓存
   }
-  return null
+
+  // 已登录用户顺带拉自己的分级身份;未登录或接口失败都不影响店铺规则展示
+  try {
+    const userStore = useUserStore()
+    if (userStore.isLogin) {
+      const tier = await http.get<{ myTier: CustomerTier; priceAuthorized: boolean }>(
+        `/api/v1/u/shops/${merchantId}/my-tier`,
+        undefined,
+        { silent: true },
+      )
+      if (tier?.myTier) {
+        myTierByMerchant.value = { ...myTierByMerchant.value, [merchantId]: tier.myTier }
+      }
+    }
+  } catch {
+    /* 未登录或接口缺失:viewerTier 走本地兜底 */
+  }
+
+  return rule.value
 }
 
 /** 用 storage 事件监听跨 tab 修改（H5 端） */
@@ -117,19 +141,21 @@ export function useShopPriceRule() {
   const userStore = useUserStore()
 
   /**
-   * 当前查看者身份：
+   * 当前查看者身份(按 merchantId 维度,因为同一用户在不同店可能不同分级):
    *  - guest      未登录
-   *  - agency     已申请代理 / 加盟门店（role: factory / store / merchant）
-   *  - member     付费会员（暂时按 user.role === 'member' 或 user.isMember 判断）
-   *  - customer   其它已登录用户
+   *  - 已 fetch 过 my-tier 的店铺 → 用后端真实下发的 tier
+   *  - 否则按 user.role 兜底:factory/store/merchant → agency,其余 → customer
+   *    (老的 user.role==='member' / u.isMember 判断已下线,改由后端 myTierInShop 真实裁决)
    */
   const viewerTier = computed<CustomerTier>(() => {
     if (!userStore.isLogin) return 'guest'
+    const mid = currentMerchantId.value
+    const remoteTier = mid ? myTierByMerchant.value[mid] : undefined
+    if (remoteTier) return remoteTier
     const u = userStore.user as any
     if (!u) return 'customer'
     const role: string = u.role || ''
     if (role === 'factory' || role === 'store' || role === 'merchant') return 'agency'
-    if (role === 'member' || u.isMember === true) return 'member'
     return 'customer'
   })
 
