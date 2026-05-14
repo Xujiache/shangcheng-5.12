@@ -33,7 +33,7 @@ export class FilesController {
   }
 
   @Delete(':key')
-  remove(@Param('key') key: string) {
-    return this.filesService.remove(key)
+  remove(@Param('key') key: string, @CurrentUser() user: AuthUser) {
+    return this.filesService.remove(key, user ? { userId: user.sub, role: user.role } : null)
   }
 }

@@ -139,10 +139,32 @@ export class FilesService implements OnModuleInit {
     return { url, key, size: file.size }
   }
 
-  async remove(key: string) {
+  /**
+   * 删除上传文件。
+   *
+   * 越权防护：
+   *   - 普通账号只能删自己上传的文件（按 ownerId 匹配）
+   *   - admin / platform / super-admin 可以删任意文件
+   * 若文件不存在或当前用户既不是 owner 也不是管理员，抛 FORBIDDEN，绝不静默成功，
+   * 否则攻击者可以遍历文件 key 删别人的图片/视频。
+   */
+  async remove(
+    key: string,
+    actor: { userId: string; role: string } | null,
+  ) {
     if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
+    const file = await this.prisma.uploadedFile.findUnique({ where: { key } })
+    if (!file) {
+      // 文件已经不存在：返回成功，前端清理掉本地引用即可（兼容历史用法）
+      return { ok: true }
+    }
+    const isAdmin = !!actor && ['admin', 'platform', 'super-admin'].includes(actor.role)
+    const isOwner = !!actor?.userId && file.ownerId === actor.userId
+    if (!isAdmin && !isOwner) {
+      throw new BizException(BizCode.FORBIDDEN, '无权删除该文件')
+    }
     await this.client.removeObject(this.bucket, key).catch(() => null)
-    await this.prisma.uploadedFile.deleteMany({ where: { key } })
+    await this.prisma.uploadedFile.delete({ where: { key } })
     return { ok: true }
   }
 }

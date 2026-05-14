@@ -1,98 +1,83 @@
 <claude-mem-context>
 # Memory Context
 
-# [商城5.0] recent context, 2026-05-13 3:19am GMT+8
+# [商城5.0] recent context, 2026-05-14 1:26pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (13,829t read) | 123,651t work | 89% savings
+Stats: 50 obs (15,506t read) | 275,094t work | 94% savings
 
-### May 13, 2026
-S77 User asked how to publish the WeChat mini program (小程序). Session examined the user-mp project configuration (uni-app + Vue 3 based) to understand build and deployment requirements for the production release. (May 13, 1:48 AM)
-S78 Prepare WeChat mini program (user-mp) for publication: resolve blocking platform incompatibilities, implement cross-platform support, and validate the build output (May 13, 1:58 AM)
-S79 Fix compilation failures in user-mp uni-app(x) project: resolve JavaScript syntax error and missing debug module dependency (May 13, 2:10 AM)
-S80 Fixed "crypto is not defined" error in WeChat mini program (user-mp) build by replacing nanoid dependency with environment-compatible ID generation (May 13, 2:27 AM)
-S81 Fix "ReferenceError: crypto is not defined" in WeChat mini-program caused by nanoid dependency attempting to access unavailable crypto API (May 13, 2:35 AM)
-S82 Fix URLSearchParams ReferenceError in mini-program and ensure cross-platform browser API compatibility across the codebase (May 13, 2:47 AM)
-442 2:48a 🔵 Systematic scan reveals additional Web API usage in mini-program codebase
-443 " 🔵 useTencentMap.ts contains same URLSearchParams issue plus unguarded fetch() call
-444 2:49a 🔵 Shared package validate.ts uses URL constructor without environment guard
-445 " 🔵 isUrl validation function in shared package uses URL constructor in try-catch pattern
-446 " ⚖️ Created task to systematically fix mini-program browser API compatibility issues
-447 " ✅ Task to fix mini-program browser API compatibility marked as in progress
-448 " 🔴 Fixed URLSearchParams in useTencentMap.ts staticImageUrl with manual query string builder
-449 2:50a 🔴 Fixed fetch() API usage in useTencentMap.ts searchPlaces with uni.request()
-450 " 🔵 useShopPriceRule.ts already implements proper H5/mini-program storage compatibility
-451 2:51a 🔵 Mini-program build completes successfully after URLSearchParams and fetch() fixes
-452 " ✅ Task to fix mini-program browser API compatibility marked as completed
-S83 Fix hideTabBar:fail error in user-mp mini program with custom TabBar enabled (May 13, 2:51 AM)
-453 2:57a 🔵 Dart Sass Legacy JS API Deprecation Warnings in uni-app Build
-454 " 🔵 AST Compilation Warning in Address Edit Page
-455 " 🔵 Module Resolution Failure for Debug Package in socket.io-parser
-S84 WeChat mini-program "经纬科技商城" (EWSN Tech Shopping Mall) configuration and launch preparation - identified blocking issues and provided detailed task breakdown (May 13, 2:58 AM)
-S85 WeChat mini-program "经纬科技商城" (Jingwei Tech Mall) complete launch preparation: polyfills, optimization, health checks, and submission materials (May 13, 2:58 AM)
-456 3:00a ✅ WeChat mini-program polyfills and critical fixes staged for commit
-457 " 🟣 Custom nanoid replacement for WeChat mini-program crypto compatibility
-458 " ✅ manifest.json reformatted and permissions declared for location access
-459 " 🔴 Removed problematic uni.hideTabBar() call from app lifecycle
-460 3:01a 🟣 WebSocket polyfill injection for WeChat mini-program real-time chat
-461 " 🟣 Platform-aware socket.io configuration for mini-program transport constraints
-462 " 🟣 URLSearchParams and fetch API replacements for Tencent map integration
-463 " 🟣 globalThis.crypto polyfill with getRandomValues fallback
-464 " 🔵 Four polyfill and shim modules totaling 175 lines deployed for mini-program compatibility
-465 " ✅ Committed mp-weixin runtime polyfills for production publish
-466 3:02a 🔵 Git push rejected: local main branch behind remote (non-fast-forward)
-467 " 🔵 Git branch divergence: parallel commits on local and remote main
-468 " 🔵 Merge conflicts during rebase: useChatSocket.ts and manifest.json overlap
-469 3:03a 🔵 Merge conflict analysis: static vs dynamic socket.io import strategies
-470 " ✅ Resolved merge conflict in useChatSocket.ts by merging both approaches
-471 " 🔵 manifest.json merge conflict: app-plus native config vs clean polyfill structure
-472 " ✅ Resolved manifest.json merge conflict: unified multi-platform configuration
-473 3:04a ✅ Rebase completed: mp-weixin polyfills rebased onto app-plus feature
-474 " ✅ Pushed mp-weixin polyfills to remote: production code now deployed to GitHub
-475 " 🟣 Created preflight-mp.ts health check script for mini-program pre-submission validation
-476 3:05a ✅ Started clean rebuild of mp-weixin distribution package with polyfill fixes
-477 " 🟣 Created comprehensive mini-program submission guide (SUBMISSION.md)
-478 3:07a ✅ mp-weixin build completed successfully with all runtime polyfills
-480 " 🔵 Built package app.json validated: 17 pages, custom tabbar, permissions declared
-483 " 🔵 Confirmed: WebSocket polyfill bundled in dist, loaded at app initialization
-485 3:08a 🔵 Production dist package structure complete: 10 directories, all components present
-489 3:09a 🔵 Identified vendor.js optimization: faker.js static import inflating bundle size
-490 " 🔵 Root cause identified: main.ts static import of mock module forces faker.js bundling
-491 " ✅ Fixed vendor.js bloat: converted mock imports to dynamic, enables tree-shaking of faker.js
-492 3:10a 🔵 Found second static import of mock module: request.ts line 10
-495 " ✅ Completed vendor.js optimization: all static mock imports converted to dynamic
-499 3:12a 🔵 Package size unchanged: 3.3M total, 2.9M vendor.js (faker.js not tree-shaken)
-500 " 🔵 Confirmed: faker.js still bundled in vendor.js (567 references)
-501 " 🟣 Created mockStub.ts: production stub for @jiujiu/shared/mock to eliminate faker.js bundling
-503 3:13a ✅ Updated vite.config.ts: conditional alias for mockStub in mp-weixin production builds
-505 " ✅ SUCCESSFUL: Mock stub alias eliminated faker.js, 86% package size reduction
-S86 WeChat mini-program launch preparation - Confirming mchid and creating memory documentation for WeChat credentials and credentials setup (May 13, 3:18 AM)
-**Investigated**: - WeChat credentials: AppID (wxe8ed8b7d9d154165), mchid (1745510292, clarified from initial ambiguity with 1450532317)
-    - Backend environment variable naming: WX_PAY_MCH_ID (not WXPAY_MCH_ID)
-    - Public key ID: PUB_KEY_ID_0117455102922026051200211756004802
-    - Icon component implementation: 70+ SVG path icons already in place (icon.vue component complete)
-    - Memory documentation structure for project knowledge retention
+### May 14, 2026
+959 12:47a ✅ Remove static padding-top from order header CSS
+960 " ✅ Apply dynamic status bar padding to product page header
+961 12:48a 🔴 Apply dynamic status bar padding to product header template
+962 " ✅ Remove static padding-top from product header CSS
+963 12:49a ✅ Successfully compiled merchant-app with status bar padding fixes
+964 12:53a 🔵 Missing Android Phone Call Permission
+S146 Issue #7 Android auto-update system — implement full stack across NestJS backend, admin-pc Vue, merchant-app and platform-app UniApp; plan-mode observer session writing plan file to C:\Users\Administrator\.claude\plans\calm-whistling-adleman.md (May 14, 1:12 AM)
+S147 Issue #7 Android app auto-update system — full-stack implementation across NestJS backend, Vue admin-pc, and UniApp mobile apps (merchant-app + platform-app) (May 14, 1:16 AM)
+S149 Pull latest changes and batch-commit 7 fixes for merchant app: token refresh, stats page, personal center, and product page improvements (May 14, 1:36 AM)
+1070 1:52a 🟣 Silent token refresh on 401 errors
+1071 " 🟣 Data statistics page interaction improvements
+1072 " 🟣 Personal center page redesign with grouped settings and dynamic version
+1073 " 🟣 Product add page: icons, SKU simplification, price rules migration
+1074 " 🔵 Dashboard todos verified as backend-driven counts
+S150 Push batch of 7 fixes to GitHub; resolved git divergence with upstream SMS/auth commits and successfully deployed (May 14, 1:54 AM)
+1078 1:55a 🔵 Git push rejected due to remote divergence
+1079 1:56a 🔵 Upstream commits identified after fetch
+1080 " 🔵 Upstream changes affect multiple overlapping files, potential merge conflicts identified
+1081 " 🔵 Upstream auth performance optimization: fire-and-forget SMS with background retry
+1082 " 🔵 Git rebase succeeded without conflicts
+1083 1:57a ✅ Code deployed to GitHub: batch of 7 fixes + 2 upstream SMS commits
+S157 User requested to pull the latest changes ("拉取一下最新的"); verification showed local branch is already synchronized with upstream (May 14, 1:57 AM)
+1142 12:41p 🔵 Repository branch already synchronized with upstream
+S158 User requested to pull latest changes; discovered local branch already synchronized with remote but with 50+ uncommitted modifications across monorepo (May 14, 12:42 PM)
+1143 12:43p 🔵 Substantial refactoring across monorepo affecting core backend services and member features
+1144 12:44p ✅ Authentication flow refactored from mock accounts to real backend user info lookup
+1145 " 🟣 Security hardening and production environment enforcement across auth and merchant services
+1146 " 🟣 Member subscription status overview and dynamic addon offerings
+1147 " 🟣 Merchant promotion analytics and factory follow-list persistence via SystemConfig
+1148 12:45p ✅ Removed VITE_USE_MOCK configuration flag from development environment
+1149 " 🟣 Payment processing split for dual transaction types: membership subscriptions and product orders
+1150 " 🔄 Merchant app subscription payment refactored into reusable doRealPay flow
+1151 " ✅ S3 file upload service hardened: explicit production credential enforcement
+1152 " 🟣 User mini-program geolocation integration for store discovery
+1153 " ✅ Payment page hardened: removed mock order defaults and added order validation
+1154 " 🟣 User mini-program WeChat binding hardened with production environment enforcement
+1155 " 🟣 Platform analytics dashboard with real-time sales trend and merchant rankings
+1156 " ✅ JWT authentication centralized secret resolution to enforce production validation
+1157 " 🟣 Membership subscription payment ID generator with MEM prefix for callback routing
+1158 " ✅ Production hardening batch committed: mock bailouts eliminated across full stack
+S161 Pull latest changes and complete full membership chain audit + fixes for e-commerce platform (May 14, 12:46 PM)
+S166 Pull/start work session to implement and validate trial days persistence feature across the full stack (server, admin-pc, platform-app), plus fixing member-related data chain breaks from previous work (May 14, 12:56 PM)
+1159 12:58p 🔵 SystemConfig Model Structure in Prisma Schema
+1160 " 🔵 SystemConfig Already Used for Multiple Settings; trialDays Persistence Partially Implemented
+1161 " 🔵 changeTrial() Function Structure and Persistence Gap in platform-app
+1162 12:59p 🟣 Backend Trial Days Persistence APIs Added to Platform Service
+1163 " 🟣 Trial Days HTTP Endpoints Added to Platform Controller
+1164 " 🟣 Trial Days API Client Functions Added to admin-pc
+1166 " ✅ Trial Days ElSelect Component Enhanced with Backend Sync
+1167 1:00p 🟣 Trial Days Change Handler Implemented in admin-pc Component
+1168 " 🟣 Trial Days Initialization from Backend on Page Load
+1169 " 🟣 Trial Days API Methods Added to platform-app memberService
+1170 " 🟣 Trial Days Initialization Integrated into platform-app Page Load
+1171 1:01p 🟣 Trial Days Persistence Handler Implemented in platform-app
+S168 Commit and validate membership system full-stack implementation combining member data chain repairs + trial days persistence feature, then prepare for origin push (May 14, 1:01 PM)
+1192 1:12p 🔵 Client-side role membership checks deprecated in favor of backend tier decision
+1193 " ✅ Work in progress: migrating user role/membership checks across merchant and user-mp modules
+1194 " 🔴 Fixed customer price-tier chain: merchant-assigned tiers now propagate to frontend
+1195 1:13p ✅ Customer-tier chain fix committed to main; branch 3 commits ahead of origin
+S171 Fixed customer-tier resolution chain across frontend and backend; wired merchant price-tier assignments to reach customers via new my-tier endpoint (May 14, 1:13 PM)
+**Investigated**: TypeScript compilation status of user-mp package; searched for deprecated role/membership check patterns (user.role === 'member', u.isMember); reviewed git status showing modified files across merchant and user-mp modules; examined commit history and branch state
 
-**Learned**: - mchid value 1745510292 is definitively correct (verified against verify-wxpay.ts and wxpay.service.ts)
-    - The first mentioned mchid (1450532317) was user error in initial request, now cleared
-    - Icon system uses computed path lookup with SVG viewBox 24×24 and configurable stroke/fill
-    - Credentials are project-critical for payment binding and must be documented centrally
+**Learned**: Platform's "customer membership" is not a paid subscription but per-merchant price-tier assignments (guest/customer/agency/member) set in merchant's customers panel to control which prices customers see. Previous implementation relied on non-existent User table fields (user.role, user.isMember) and ignored persisted tier settings. System architecture requires three-part chain: merchant sets tier → backend reads from SystemConfig → frontend queries my-tier endpoint per shop and caches result
 
-**Completed**: - All 11 technical tasks from prior session completion: polyfills (WebSocket, crypto, URLSearchParams), bundle optimization (3.3MB → 541KB), code pushed to origin/main
-    - Package size verification: vendor.js reduced from 2.9MB to 125KB by eliminating faker.js via Vite alias
-    - Memory documentation: created wx_credentials.md with AppID, mchid, env variable names, and rationale
-    - Updated MEMORY.md index to link WX credentials reference
+**Completed**: Committed customer-tier chain fix (e5c032a) resolving three interconnected breaks: (1) merchant.service.ts listCustomers now batch-reads actual tiers from SystemConfig instead of hardcoding retail/unauthorized; (2) useShopPriceRule.ts dropped dead User table fields and now trusts backend my-tier endpoint; (3) added new GET /u/shops/:merchantId/my-tier endpoint with tiered resolution logic (role-based → agency, SystemConfig tier resolution → member/agency/customer). Modified 4 files with 102 insertions, 17 deletions. Local main branch is 3 commits ahead of origin/main (includes membership admin-pc field wiring and production hardening commits)
 
-**Next Steps**: 1. Run preflight health check on server: `pnpm tsx scripts/preflight-mp.ts` (verifies HTTPS cert, 5 API endpoints, WebSocket /ws/chat, Tencent map)
-    2. Import project to WeChat dev tools (directory: packages/user-mp/dist/build/mp-weixin, AppID auto-fills)
-    3. Real device testing per docs/小程序发布/SUBMISSION.md section 8 self-test checklist (10 items)
-    4. Configure WeChat backend (mp.weixin.qq.com): domains, privacy directives, payment binding with mchid 1745510292, subscription templates
-    5. Upload version 1.0.0 to WeChat with provided version notes (section 7)
-    6. Submit for audit review
+**Next Steps**: Awaiting decision on whether to push the 3 local commits (customer-tier fix, membership wiring, production hardening) to origin/main
 
 
-Access 124k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 275k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

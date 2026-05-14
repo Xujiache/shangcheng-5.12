@@ -72,13 +72,15 @@ export class AppReleaseService {
     })
   }
 
-  async remove(id: string) {
+  async remove(id: string, actor: { userId: string; role: string } | null) {
     const row = await this.prisma.appRelease.findUnique({ where: { id } })
     if (!row) throw new BizException(BizCode.NOT_FOUND, '发布不存在')
     // 删除 MinIO 对象 + 数据库记录
     try {
       const key = row.url.split('/').slice(-3).join('/') // apk/yyyy/mm/xxx.apk
-      await this.files.remove(key)
+      // controller 层已经强制 admin/platform/super-admin，调用 files.remove
+      // 需要传 actor 以通过 owner 校验；这里直接透传上层来的 actor，符合最小权限原则
+      await this.files.remove(key, actor)
     } catch {
       // MinIO 失败不阻塞 — 至少要把库里记录清掉
     }

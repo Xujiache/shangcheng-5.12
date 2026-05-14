@@ -1,4 +1,6 @@
 import { Body, Controller, Headers, Post, Req } from '@nestjs/common'
+import type { RawBodyRequest } from '@nestjs/common'
+import type { Request } from 'express'
 import { Public } from '../../common/decorators/public.decorator'
 import { WxPayService } from './wxpay.service'
 import { PrismaService } from '../../prisma/prisma.service'
@@ -16,6 +18,13 @@ import { Logger } from '@nestjs/common'
  *   2. 会员订阅缴费（outTradeNo 以 MEM 开头）
  *      → 通过 attach 字段（"membership:<recordId>"）或 PaymentRecord.no 找到
  *        待支付的 PaymentRecord，调 MerchantService.activateMembership 真正激活会员
+ *
+ * 关键保护：
+ *   - rawBody 真实读取：main.ts 启用 NestExpress { rawBody: true } 后 req.rawBody 是 Buffer，
+ *     验签必须用这份原始字节（JSON.stringify(body) 会被字段顺序 / 转义影响导致签名不一致）
+ *   - 幂等：先按 wxTransactionId 或 (orderId, status='success') 查 Payment，命中直接 ACK
+ *   - 事务：订单状态 + Payment 写入用 prisma.$transaction，任一失败回滚
+ *   - 错误回 FAIL：业务失败返回 { code: 'FAIL' }，微信会按 5 分钟级别梯度重试
  */
 @Controller('payments')
 export class PaymentController {
@@ -32,61 +41,100 @@ export class PaymentController {
   async wechatNotify(
     @Headers() headers: Record<string, string>,
     @Body() body: any,
-    @Req() req: any,
+    @Req() req: RawBodyRequest<Request>,
   ) {
-    const raw = typeof req.rawBody === 'string' ? req.rawBody : JSON.stringify(body)
+    const rawBuf = req.rawBody
+    const raw = rawBuf
+      ? (Buffer.isBuffer(rawBuf) ? rawBuf.toString('utf8') : String(rawBuf))
+      : JSON.stringify(body)
     const ok = await this.wxpay.verifyNotify(headers, raw)
     if (!ok) return { code: 'FAIL', message: '签名验证失败' }
 
+    let decrypted: any = null
+    if (body?.resource?.ciphertext) {
+      try {
+        decrypted = this.wxpay.decryptResource(body.resource)
+      } catch (e: any) {
+        this.logger.error(`[wxpay notify] 解密失败：${e?.message || e}`)
+        return { code: 'FAIL', message: '解密失败，请重试' }
+      }
+    }
+    const outTradeNo: string = decrypted?.out_trade_no || body?.out_trade_no
+    const tradeState: string = decrypted?.trade_state || body?.trade_state
+    const transactionId: string = decrypted?.transaction_id || body?.transaction_id
+    const attach: string = decrypted?.attach || body?.attach || ''
+
+    if (!outTradeNo || tradeState !== 'SUCCESS') {
+      // 非成功事件直接 ACK 即可（微信只会对 FAIL 重试）
+      return { code: 'SUCCESS', message: 'OK' }
+    }
+
     try {
-      let decrypted: any = null
-      if (body?.resource?.ciphertext) {
-        try {
-          decrypted = this.wxpay.decryptResource(body.resource)
-        } catch (e: any) {
-          this.logger.error(`[wxpay notify] 解密失败：${e?.message || e}`)
-        }
-      }
-      const outTradeNo: string = decrypted?.out_trade_no || body?.out_trade_no
-      const tradeState: string = decrypted?.trade_state || body?.trade_state
-      const transactionId: string = decrypted?.transaction_id || body?.transaction_id
-      const attach: string = decrypted?.attach || body?.attach || ''
-
-      if (!outTradeNo || tradeState !== 'SUCCESS') {
-        // 非成功事件直接 ACK，避免微信重试
-        return { code: 'SUCCESS', message: 'OK' }
-      }
-
       // 1) 会员订阅缴费回调
       const isMembership = outTradeNo.startsWith('MEM') || attach.startsWith('membership:')
       if (isMembership) {
         const recordIdFromAttach = attach.startsWith('membership:') ? attach.slice('membership:'.length) : null
-        // 优先用 attach 里的 recordId，找不到再按 outTradeNo 查
         let record = recordIdFromAttach
           ? await this.prisma.paymentRecord.findUnique({ where: { id: recordIdFromAttach } })
           : null
         if (!record) {
           record = await this.prisma.paymentRecord.findUnique({ where: { no: outTradeNo } })
         }
-        if (record && record.status === 'pending') {
-          await this.merchantService.activateMembership(record.id).catch((e: any) => {
-            this.logger.error(`[wxpay notify] 会员激活失败 record=${record!.id} err=${e?.message || e}`)
-          })
-          this.logger.log(`[wxpay notify] 会员激活成功 no=${outTradeNo} txid=${transactionId}`)
-        } else if (!record) {
+        if (!record) {
           this.logger.warn(`[wxpay notify] 找不到 PaymentRecord no=${outTradeNo}`)
+          // 业务上找不到记录就当未处理 → 让微信继续重试，给运维一个补登记的窗口
+          return { code: 'FAIL', message: 'PaymentRecord not found' }
+        }
+        if (record.status === 'paid') {
+          this.logger.log(`[wxpay notify] 会员幂等命中 no=${outTradeNo}（PaymentRecord 已 paid）`)
+          return { code: 'SUCCESS', message: 'OK' }
+        }
+        if (record.status === 'pending') {
+          await this.merchantService.activateMembership(record.id)
+          this.logger.log(`[wxpay notify] 会员激活成功 no=${outTradeNo} txid=${transactionId}`)
+        } else {
+          // refunding / refunded / failed 等不合法状态 → 仍当作 SUCCESS 让微信停止重试，由人工对账
+          this.logger.warn(`[wxpay notify] PaymentRecord 状态异常 no=${outTradeNo} status=${record.status}`)
         }
         return { code: 'SUCCESS', message: 'OK' }
       }
 
-      // 2) 普通商品订单
-      await this.prisma.order.updateMany({
-        where: { no: outTradeNo, status: 'pending_payment' },
-        data: { status: 'pending_shipment', paidAt: new Date() },
-      })
+      // 2) 普通商品订单 —— 幂等保护
+      // 优先按 wxTransactionId 查（同一笔微信交易号只入账一次）
+      if (transactionId) {
+        const dupByTx = await this.prisma.payment.findFirst({
+          where: { wxTransactionId: transactionId, status: 'success' },
+        })
+        if (dupByTx) {
+          this.logger.log(`[wxpay notify] 幂等命中（wxTransactionId） txid=${transactionId}`)
+          return { code: 'SUCCESS', message: 'OK' }
+        }
+      }
       const order = await this.prisma.order.findFirst({ where: { no: outTradeNo } })
-      if (order) {
-        await this.prisma.payment.create({
+      if (!order) {
+        this.logger.warn(`[wxpay notify] 找不到 Order no=${outTradeNo}`)
+        return { code: 'FAIL', message: 'Order not found' }
+      }
+      // 按 (orderId, status=success) 二次幂等：上一次写 Payment 但订单状态未改也能拦住
+      const dupByOrder = await this.prisma.payment.findFirst({
+        where: { orderId: order.id, status: 'success' },
+      })
+      if (dupByOrder) {
+        this.logger.log(`[wxpay notify] 幂等命中（orderId） orderId=${order.id}`)
+        return { code: 'SUCCESS', message: 'OK' }
+      }
+
+      // 真实入账：订单状态更新 + Payment 写入放进同一个事务，避免出现"订单已改但 Payment 没落账"
+      await this.prisma.$transaction(async (tx) => {
+        await tx.order.updateMany({
+          where: { id: order.id, status: 'pending_payment' },
+          data: {
+            status: 'pending_shipment',
+            paidAt: new Date(),
+            paymentMethod: 'wechat',
+          },
+        })
+        await tx.payment.create({
           data: {
             orderId: order.id,
             method: 'wechat',
@@ -96,10 +144,13 @@ export class PaymentController {
             wxTransactionId: transactionId || null,
           },
         })
-      }
+      })
+      this.logger.log(`[wxpay notify] 订单入账成功 no=${outTradeNo} txid=${transactionId}`)
+      return { code: 'SUCCESS', message: 'OK' }
     } catch (e: any) {
-      this.logger.error(`[wxpay notify] update order failed: ${e?.message || e}`)
+      // 业务失败：返回 FAIL 让微信按梯度重试（不要吞错回 SUCCESS）
+      this.logger.error(`[wxpay notify] 业务处理失败 no=${outTradeNo}: ${e?.message || e}`)
+      return { code: 'FAIL', message: e?.message || '处理失败，请重试' }
     }
-    return { code: 'SUCCESS', message: 'OK' }
   }
 }

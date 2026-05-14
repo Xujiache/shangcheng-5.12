@@ -50,8 +50,11 @@ export class MerchantController {
   }
 
   // ============ 分类 ============
-  @Get('categories') async categories(@CurrentUser() u: AuthUser) {
-    const mid = await this.svc.ensureMerchantId(u); return this.svc.listCategories(mid, 'merchant')
+  // 商家自定义分类（默认）和平台公共分类两套数据共用同一个接口，
+  // 前端通过 ?type=platform 切换；不传 / 其他值视为 merchant
+  @Get('categories') async categories(@CurrentUser() u: AuthUser, @Query('type') type?: string) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.listCategories(mid, type === 'platform' ? 'platform' : 'merchant')
   }
   @Post('categories') async createCategory(@CurrentUser() u: AuthUser, @Body() dto: any) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.createCategory(mid, dto)
@@ -140,8 +143,18 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.promoteSummary(mid)
   }
+  /** 商家维度佣金历史明细（关联订单 + 推广人），分页 */
+  @Get('commission/history') async commissionHistory(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.commissionHistory(mid, q)
+  }
   @Get('marketing') async marketingAlias(@CurrentUser() u: AuthUser) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.marketingOverview(mid)
+  }
+  /** 商家维度营销活动统一列表（Coupon + FlashSale + GroupBuy 合一），分页；可选 ?kind=coupon|flashSale|groupBuy ?status=active 等 */
+  @Get('marketing/activities') async marketingActivities(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.marketingActivities(mid, q)
   }
   @Get('staff') async staffAlias(@CurrentUser() u: AuthUser, @Query() q: any) {
     const mid = await this.svc.ensureMerchantId(u); return this.svc.listStaffs(mid, q)

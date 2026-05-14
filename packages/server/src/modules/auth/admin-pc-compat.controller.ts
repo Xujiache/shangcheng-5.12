@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { AuthService } from './auth.service'
 import { AdminLoginDto } from './dto/login.dto'
@@ -6,6 +6,7 @@ import { Public } from '../../common/decorators/public.decorator'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { PrismaService } from '../../prisma/prisma.service'
 import { Roles } from '../../common/decorators/roles.decorator'
+import { RolesGuard } from '../../common/guards/roles.guard'
 
 /**
  * admin-pc 旧路径兼容层（不含 /api/v1 前缀的全局映射在 main.ts 里做）
@@ -17,8 +18,15 @@ import { Roles } from '../../common/decorators/roles.decorator'
  *   - /api/role/list → /api/v1/admin-pc/roles
  *   - /api/v3/system/menus → /api/v1/admin-pc/menus
  * main.ts 中再 setGlobalPrefix 例外，让旧路径无 prefix 也能命中
+ *
+ * 权限：类级别挂 RolesGuard；@Roles 在方法级精细控制
+ *   - login 用 @Public 跳过 JWT
+ *   - user-info / menus 不限角色（任意已登录账号都能取自己的信息 / 菜单）
+ *   - users / roles 列表必须是 platform / super-admin（与 PlatformController 一致），
+ *     避免普通商家拿到全部管理员清单
  */
 @ApiTags('admin-pc 兼容')
+@UseGuards(RolesGuard)
 @Controller('admin-pc')
 export class AdminPcCompatController {
   constructor(

@@ -1,13 +1,21 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
+import { MerchantService } from '../merchant/merchant.service'
 import * as argon2 from 'argon2'
 
 @Injectable()
 export class PlatformService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(PlatformService.name)
+
+  constructor(
+    private readonly prisma: PrismaService,
+    // forwardRef 防 MerchantService ↔ PlatformService 双向引用导致 Nest 启动失败
+    @Inject(forwardRef(() => MerchantService))
+    private readonly merchantService: MerchantService,
+  ) {}
 
   // ========== Dashboard ==========
   async dashboard() {
@@ -207,11 +215,41 @@ export class PlatformService {
   }
 
   // ========== 商户 ==========
+  /**
+   * 商户列表。
+   *
+   * 历史上有两套查询写法：
+   *   - admin-pc 早期视图传 `tab=all|active|pending|disabled|factory|store`（单一字段）
+   *   - 新视图传 `status` + `type`（两个字段）
+   *
+   * 两套并存，所以这里都接，避免新前端切换页签筛不到。
+   * `tab` 优先级低于显式 `status`/`type`，让外部可以叠加更细的过滤。
+   */
   async merchants(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const where: any = {}
+    // 显式 status / type 优先
     if (q.status && q.status !== 'all') where.status = q.status
     if (q.type && q.type !== 'all') where.type = q.type
+    // tab 兼容：当外部没传 status/type 时由 tab 推导
+    if (q.tab && typeof q.tab === 'string') {
+      const tab = q.tab
+      if (tab === 'all') {
+        // 不过滤
+      } else if (tab === 'disabled') {
+        if (!where.status) where.status = 'disabled'
+      } else if (tab === 'pending') {
+        if (!where.status) where.status = 'pending'
+      } else if (tab === 'active') {
+        if (!where.status) where.status = 'active'
+      } else if (tab === 'rejected') {
+        if (!where.status) where.status = 'rejected'
+      } else if (tab === 'factory') {
+        if (!where.type) where.type = 'factory'
+      } else if (tab === 'store') {
+        if (!where.type) where.type = 'store'
+      }
+    }
     if (q.keyword) where.OR = [{ name: { contains: q.keyword } }, { legalName: { contains: q.keyword } }]
     const [list, total] = await Promise.all([
       this.prisma.merchant.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
@@ -438,8 +476,36 @@ export class PlatformService {
     )
     return buildPage(mapped, total, page, pageSize)
   }
+  /**
+   * 平台手动改 PaymentRecord 状态（人工补登记 / 修正异常订单）。
+   *
+   * 关键业务联动：当人工把缴费订单标成 `paid` 时，必须同步触发会员激活
+   * （否则会出现"订单已付但 MerchantMembership 没建/没续期"的数据脱节）。
+   *
+   * activateMembership 自带幂等：
+   *   - record.status 已是 paid → 直接返回 alreadyPaid，不会重复扣账
+   *   - planId 已被删除 → 抛 BUSINESS_ERROR，由平台日志承接
+   */
   async updatePayStatus(id: string, status: string) {
+    const before = await this.prisma.paymentRecord.findUnique({
+      where: { id },
+      select: { id: true, status: true, planId: true },
+    })
+    if (!before) throw new BizException(BizCode.NOT_FOUND, '缴费记录不存在')
+
+    // 先更新状态，再视情况联动激活
     await this.prisma.paymentRecord.update({ where: { id }, data: { status } })
+
+    if (status === 'paid' && before.planId && before.status !== 'paid') {
+      try {
+        await this.merchantService.activateMembership(id)
+      } catch (e: any) {
+        // 激活失败不影响 status 写入；写日志便于人工跟进，但不抛错让前端误以为状态没更新
+        this.logger.error(
+          `[platform.updatePayStatus] activateMembership 失败 recordId=${id} err=${e?.message || e}`,
+        )
+      }
+    }
     return { ok: true }
   }
   async approveRefund(id: string) {

@@ -1,5 +1,6 @@
 import { NestFactory, Reflector } from '@nestjs/core'
 import { ValidationPipe, RequestMethod } from '@nestjs/common'
+import { NestExpressApplication } from '@nestjs/platform-express'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { JwtService } from '@nestjs/jwt'
 import { IoAdapter } from '@nestjs/platform-socket.io'
@@ -9,7 +10,13 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { JwtAuthGuard } from './common/guards/jwt.guard'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true })
+  // rawBody:true 是微信支付 v3 回调验签的强依赖——
+  // verifyNotify 要拿到 *未被 JSON.parse 改写过* 的原始字节，
+  // 否则 Wechatpay-Signature 永远算不出一致的 SHA256-RSA 摘要。
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    cors: true,
+    rawBody: true,
+  })
   // 为 WebSocket Gateway 启用 socket.io IoAdapter，namespace 走 /ws/chat
   app.useWebSocketAdapter(new IoAdapter(app))
 

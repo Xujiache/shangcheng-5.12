@@ -202,7 +202,8 @@ export class MerchantService {
   async updateProduct(merchantId: string, id: string, dto: any) {
     const p = await this.prisma.product.findFirst({ where: { id, merchantId } })
     if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
-    const { skus, id: _ignore, ...data } = dto
+    // 显式剔除 merchantId/id，防止 dto 篡改商品归属
+    const { skus: _skus, id: _ignoreId, merchantId: _ignoreMid, ...data } = dto || {}
     const upd = await this.prisma.product.update({ where: { id }, data })
     return decimalToNumber(upd)
   }
@@ -226,14 +227,35 @@ export class MerchantService {
     return this.prisma.category.create({ data: { ...dto, type: 'merchant', merchantId } })
   }
   async updateCategory(merchantId: string, id: string, dto: any) {
-    return this.prisma.category.update({ where: { id }, data: dto })
+    // 越权防护：必须先校验该分类属于当前 merchantId，否则 A 商家可改 B 商家分类
+    const exist = await this.prisma.category.findFirst({
+      where: { id, merchantId, type: 'merchant' },
+      select: { id: true },
+    })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '分类不存在或无权限')
+    // 显式剔除 merchantId / type / id，防止 dto 携带这些字段改归属
+    const { id: _ignoreId, merchantId: _ignoreMid, type: _ignoreType, ...data } = dto || {}
+    return this.prisma.category.update({ where: { id }, data })
   }
   async deleteCategory(merchantId: string, id: string) {
+    // 同 updateCategory：先校验归属
+    const exist = await this.prisma.category.findFirst({
+      where: { id, merchantId, type: 'merchant' },
+      select: { id: true },
+    })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '分类不存在或无权限')
     await this.prisma.category.delete({ where: { id } })
     return { ok: true }
   }
   async sortCategories(merchantId: string, ids: string[]) {
+    // 排序时同样要确保 ids 全部属于当前 merchant，否则可以悄悄改其它商家分类的 sort
+    const owned = await this.prisma.category.findMany({
+      where: { id: { in: ids }, merchantId, type: 'merchant' },
+      select: { id: true },
+    })
+    const ownedSet = new Set(owned.map((c) => c.id))
     for (let i = 0; i < ids.length; i++) {
+      if (!ownedSet.has(ids[i])) continue
       await this.prisma.category.update({ where: { id: ids[i] }, data: { sort: i } })
     }
     return { ok: true }
@@ -446,6 +468,172 @@ export class MerchantService {
     }
   }
 
+  /**
+   * 商家维度 · 佣金明细分页
+   *
+   * 列出所有"成交订单 → 给推广人结算"的 Commission 记录，关联订单元信息。
+   * 用于 merchant-app 推广中心「我家店铺给推广人发了多少佣金」明细查询。
+   *
+   * Commission 表本身没有 merchantId 字段，按所属 Order.merchantId 关联过滤。
+   */
+  async commissionHistory(merchantId: string, q: any) {
+    const { skip, take, page, pageSize } = parsePage(q)
+    const where: any = { order: { merchantId } }
+    if (q.status && q.status !== 'all') where.status = q.status
+    const [list, total] = await Promise.all([
+      this.prisma.commission.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          order: { select: { id: true, no: true, payAmount: true, status: true, createdAt: true } },
+          user: { select: { id: true, nickname: true, avatar: true, phone: true } },
+        },
+      }),
+      this.prisma.commission.count({ where }),
+    ])
+    return buildPage(
+      list.map((c) => ({
+        id: c.id,
+        orderId: c.orderId,
+        orderNo: c.order?.no || '',
+        orderAmount: Number(c.order?.payAmount || 0),
+        orderStatus: c.order?.status || '',
+        promoterId: c.userId,
+        promoterName: c.user?.nickname || '',
+        promoterAvatar: c.user?.avatar || '',
+        promoterPhone: c.user?.phone || '',
+        level: c.level,
+        amount: Number(c.amount),
+        status: c.status,
+        settledAt: c.settledAt,
+        createdAt: c.createdAt,
+      })),
+      total,
+      page,
+      pageSize,
+    )
+  }
+
+  /**
+   * 商家维度 · 营销活动统一列表
+   *
+   * 合并 Coupon + FlashSale + GroupBuy 三种营销活动到一个分页结构，
+   * 给 merchant-app「营销中心」一站式展示用。
+   *
+   * - kind 字段：coupon / flashSale / groupBuy 区分类型
+   * - status 透传；其他维度字段按各自模型映射到统一 shape
+   * - 排序按 createdAt 倒序；分页在合并后再 slice，避免三次跨表 join 复杂度
+   *
+   * 由于三类活动数据量都不大（单商户量级 < 1k），合并→切片是足够稳妥的做法；
+   * 若后续单类型超过 10k 条，再下沉到 SQL UNION。
+   */
+  async marketingActivities(merchantId: string, q: any) {
+    const { skip, take, page, pageSize } = parsePage(q)
+    const kindFilter = typeof q?.kind === 'string' ? q.kind : null
+    const statusFilter = q?.status && q.status !== 'all' ? q.status : null
+
+    const [coupons, flashSales, groupBuys] = await Promise.all([
+      kindFilter && kindFilter !== 'coupon'
+        ? Promise.resolve([])
+        : this.prisma.coupon.findMany({
+            where: { merchantId, ...(statusFilter ? { status: statusFilter } : {}) },
+            orderBy: { createdAt: 'desc' },
+            take: 500,
+          }),
+      kindFilter && kindFilter !== 'flashSale'
+        ? Promise.resolve([])
+        : this.prisma.flashSale.findMany({
+            where: { merchantId, ...(statusFilter ? { status: statusFilter } : {}) },
+            orderBy: { createdAt: 'desc' },
+            take: 500,
+          }),
+      kindFilter && kindFilter !== 'groupBuy'
+        ? Promise.resolve([])
+        : this.prisma.groupBuy.findMany({
+            where: { merchantId, ...(statusFilter ? { status: statusFilter } : {}) },
+            orderBy: { createdAt: 'desc' },
+            take: 500,
+          }),
+    ])
+
+    // FlashSale / GroupBuy 模型在 Prisma 中只有 productId 字段（没有 product 关系），
+    // 一次性把所有用到的 product 查回来做内存 join，避免 N+1
+    const productIds = Array.from(
+      new Set(
+        ([] as string[])
+          .concat(flashSales.map((f) => f.productId).filter(Boolean) as string[])
+          .concat(groupBuys.map((g) => g.productId).filter(Boolean) as string[]),
+      ),
+    )
+    const productMap = new Map<string, { id: string; name: string; images: string[] }>()
+    if (productIds.length) {
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true, images: true },
+      })
+      for (const p of products) productMap.set(p.id, p)
+    }
+
+    const unified: Array<any> = []
+    for (const c of coupons) {
+      unified.push({
+        id: c.id,
+        kind: 'coupon' as const,
+        name: c.name,
+        status: c.status,
+        amount: c.amount ? Number(c.amount) : null,
+        discountPercent: c.discountPercent,
+        threshold: c.threshold ? Number(c.threshold) : null,
+        stock: c.stock,
+        received: c.received,
+        used: c.used,
+        validFrom: c.validFrom,
+        validTo: c.validTo,
+        scope: c.scope,
+        createdAt: c.createdAt,
+      })
+    }
+    for (const f of flashSales) {
+      const prod = productMap.get(f.productId)
+      unified.push({
+        id: f.id,
+        kind: 'flashSale' as const,
+        name: `限时秒杀：${prod?.name || ''}`,
+        status: f.status,
+        productId: f.productId,
+        productImage: prod?.images?.[0] || '',
+        price: Number(f.price),
+        stock: f.stock,
+        sold: f.sold,
+        validFrom: f.startAt,
+        validTo: f.endAt,
+        createdAt: f.createdAt,
+      })
+    }
+    for (const g of groupBuys) {
+      const prod = productMap.get(g.productId)
+      unified.push({
+        id: g.id,
+        kind: 'groupBuy' as const,
+        name: `拼团：${prod?.name || ''}`,
+        status: g.status,
+        productId: g.productId,
+        productImage: prod?.images?.[0] || '',
+        price: Number(g.price),
+        groupSize: g.groupSize,
+        validHours: g.validHours,
+        createdAt: g.createdAt,
+      })
+    }
+
+    unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    const total = unified.length
+    const sliced = unified.slice(skip, skip + take)
+    return buildPage(sliced, total, page, pageSize)
+  }
+
   // ========== 提现 ==========
   async listWithdraws(merchantId: string, q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
@@ -552,7 +740,17 @@ export class MerchantService {
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
   }
   async createStaff(merchantId: string, dto: any) { return this.prisma.staff.create({ data: { ...dto, merchantId } }) }
-  async updateStaff(merchantId: string, id: string, dto: any) { return this.prisma.staff.update({ where: { id }, data: dto }) }
+  async updateStaff(merchantId: string, id: string, dto: any) {
+    // 越权防护：必须先校验 staff 归属，否则 A 商家可改 B 商家员工
+    const exist = await this.prisma.staff.findFirst({
+      where: { id, merchantId },
+      select: { id: true },
+    })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '员工不存在或无权限')
+    // 防止 dto 携带 merchantId/id 改归属
+    const { id: _ignoreId, merchantId: _ignoreMid, ...data } = dto || {}
+    return this.prisma.staff.update({ where: { id }, data })
+  }
   async removeStaff(merchantId: string, id: string) { await this.prisma.staff.deleteMany({ where: { id, merchantId } }); return { ok: true } }
 
   // ========== 装修 ==========
@@ -562,10 +760,12 @@ export class MerchantService {
     return d
   }
   async saveDecorate(merchantId: string, dto: any) {
+    // 显式剔除 id/merchantId，避免 dto 携带这些字段被 upsert 接受导致换归属
+    const { id: _ignoreId, merchantId: _ignoreMid, ...data } = dto || {}
     return this.prisma.shopDecorate.upsert({
       where: { merchantId },
-      update: dto,
-      create: { ...dto, merchantId },
+      update: data,
+      create: { ...data, merchantId },
     })
   }
 

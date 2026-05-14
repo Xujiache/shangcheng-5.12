@@ -42,8 +42,8 @@ export class AppReleaseController {
   @UseGuards(RolesGuard)
   @Roles('admin', 'platform', 'super-admin')
   @Delete('p/app-releases/:id')
-  remove(@Param('id') id: string) {
-    return this.svc.remove(id)
+  remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.svc.remove(id, user ? { userId: user.sub, role: user.role } : null)
   }
 
   // ===== 端上公开（启动时检查更新）=====

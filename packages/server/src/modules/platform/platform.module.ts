@@ -1,6 +1,13 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { PlatformController } from './platform.controller'
 import { PlatformService } from './platform.service'
+import { MerchantModule } from '../merchant/merchant.module'
 
-@Module({ controllers: [PlatformController], providers: [PlatformService] })
+@Module({
+  // forwardRef 防 MerchantModule ↔ PlatformModule 潜在循环依赖（即使当前没有，
+  // 也提前包一层，后续 Merchant 端如果反向依赖 Platform 不至于一上来就崩）
+  imports: [forwardRef(() => MerchantModule)],
+  controllers: [PlatformController],
+  providers: [PlatformService],
+})
 export class PlatformModule {}

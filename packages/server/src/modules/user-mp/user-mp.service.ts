@@ -311,8 +311,9 @@ export class UserMpService {
       quantity: Number(it.quantity ?? it.qty ?? 1),
     }))
     const shippingMethod = dto.shippingMethod || dto.shipping || 'factory'
-    // 兼容：couponId 字符串（指向 Coupon.id）；dto.coupon 旧字段是优惠金额（数字），不当 couponId
-    const couponId = typeof dto.couponId === 'string' ? dto.couponId : null
+    // 仅接受 couponId 字符串（指向 Coupon.id）；旧字段 dto.couponDiscount/dto.coupon 一律忽略——
+    // 前端可篡改的金额绝不能进入服务端计费链路
+    const couponId = typeof dto.couponId === 'string' && dto.couponId ? dto.couponId : null
 
     if (!dto.addressId) throw new BizException(BizCode.INVALID_PARAMS, '缺少收货地址')
     const address = await this.prisma.address.findFirst({ where: { id: dto.addressId, userId } })
@@ -322,12 +323,22 @@ export class UserMpService {
     const skus = await this.prisma.sku.findMany({ where: { id: { in: skuIds } }, include: { product: true } })
     if (skus.length !== normItems.length) throw new BizException(BizCode.NOT_FOUND, '部分 SKU 不存在')
 
+    // 多商户聚合校验：所有 SKU 必须属同一 merchantId，否则强制让用户拆单。
+    // 否则订单会出现"挂在 A 商家、却含 B 商家商品"的脏数据，直接污染发货 / 对账 / 佣金。
+    const merchantSet = new Set<string>()
+    for (const sku of skus) merchantSet.add(sku.product.merchantId)
+    if (merchantSet.size === 0) {
+      throw new BizException(BizCode.NOT_FOUND, '部分 SKU 不存在')
+    }
+    if (merchantSet.size > 1) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '不支持跨商户合并下单，请分别下单')
+    }
+    const merchantId = Array.from(merchantSet)[0]
+
     let totalAmount = 0
-    let merchantId = ''
     const orderItemsData = normItems.map((it) => {
       const sku = skus.find((s) => s.id === it.skuId)!
       if (sku.stock < it.quantity) throw new BizException(BizCode.STOCK_INSUFFICIENT, `${sku.product.name} 库存不足`)
-      merchantId = sku.product.merchantId
       const price = Number(sku.priceRetail)
       totalAmount += price * it.quantity
       return {
@@ -348,31 +359,71 @@ export class UserMpService {
     const shippingFee = Number.isFinite(Number(dto.shippingFee))
       ? Math.max(0, Number(dto.shippingFee))
       : 0
-    const couponDiscount = Number(dto.couponDiscount ?? dto.coupon ?? 0)
+
+    // 优惠券服务端重算：
+    //   - 只信 couponId，金额一律服务端按 Coupon 配置 + totalAmount 推导
+    //   - 校验：存在 / status=active / 在有效期内 / 商户匹配 / 门槛满足
+    //   - type=fullReduce|fixed 按 amount 抵扣；type=discount 按 discountPercent 折扣率推
+    //   - 抵扣金额不能超过订单金额本身
+    let couponDiscount = 0
+    if (couponId) {
+      const coupon = await this.prisma.coupon.findUnique({ where: { id: couponId } })
+      if (!coupon) {
+        throw new BizException(BizCode.NOT_FOUND, '优惠券不存在')
+      }
+      if (coupon.status !== 'active') {
+        throw new BizException(BizCode.BUSINESS_ERROR, '优惠券未启用或已下架')
+      }
+      const now = new Date()
+      if (coupon.validFrom > now || coupon.validTo < now) {
+        throw new BizException(BizCode.BUSINESS_ERROR, '优惠券不在有效期内')
+      }
+      if (coupon.merchantId !== merchantId) {
+        throw new BizException(BizCode.BUSINESS_ERROR, '该优惠券不适用于本商品')
+      }
+      const threshold = coupon.threshold ? Number(coupon.threshold) : 0
+      if (threshold > 0 && totalAmount < threshold) {
+        throw new BizException(
+          BizCode.BUSINESS_ERROR,
+          `订单金额需满 ${threshold} 元才可使用该优惠券`,
+        )
+      }
+      if (coupon.type === 'fullReduce' || coupon.type === 'fixed') {
+        couponDiscount = coupon.amount ? Number(coupon.amount) : 0
+      } else if (coupon.type === 'discount' && typeof coupon.discountPercent === 'number') {
+        // discountPercent 语义：85 表示打 85 折，抵扣 15%
+        const offRate = Math.max(0, Math.min(100, 100 - coupon.discountPercent)) / 100
+        couponDiscount = Math.round(totalAmount * offRate * 100) / 100
+      }
+      if (couponDiscount > totalAmount) couponDiscount = totalAmount
+    }
+
     const payAmount = Math.max(0, totalAmount + shippingFee - couponDiscount)
 
-    const order = await this.prisma.order.create({
-      data: {
-        no: orderNo(),
-        userId,
-        merchantId,
-        totalAmount,
-        shippingFee,
-        payAmount,
-        shippingMethod,
-        address: address as any,
-        remark: dto.remark || null,
-        couponId,
-        couponDiscount: couponDiscount > 0 ? couponDiscount : null,
-        expiresAt: new Date(Date.now() + 30 * 60_000),
-        items: { create: orderItemsData },
-      },
+    // 订单创建 + 扣库存放进一个事务，避免"订单已建但库存没扣"的资金泄漏
+    const order = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          no: orderNo(),
+          userId,
+          merchantId,
+          totalAmount,
+          shippingFee,
+          payAmount,
+          shippingMethod,
+          address: address as any,
+          remark: dto.remark || null,
+          couponId,
+          couponDiscount: couponDiscount > 0 ? couponDiscount : null,
+          expiresAt: new Date(Date.now() + 30 * 60_000),
+          items: { create: orderItemsData },
+        },
+      })
+      for (const it of normItems) {
+        await tx.sku.update({ where: { id: it.skuId }, data: { stock: { decrement: it.quantity } } })
+      }
+      return created
     })
-
-    // 扣减库存
-    for (const it of normItems) {
-      await this.prisma.sku.update({ where: { id: it.skuId }, data: { stock: { decrement: it.quantity } } })
-    }
 
     return { orderId: order.id, orderNo: order.no, payAmount: Number(order.payAmount) }
   }
@@ -448,12 +499,29 @@ export class UserMpService {
   }
 
   async cancelOrder(userId: string, id: string) {
-    const o = await this.prisma.order.findFirst({ where: { id, userId } })
+    const o = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: true },
+    })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
     if (!['pending_payment', 'pending_shipment'].includes(o.status)) {
       throw new BizException(BizCode.ORDER_STATUS_INVALID, '当前状态不允许取消')
     }
-    await this.prisma.order.update({ where: { id: o.id }, data: { status: 'cancelled', cancelledAt: new Date() } })
+
+    // 取消时必须回滚 SKU 库存，否则会出现"用户疯狂下单 → 取消"刷库存的耗竭攻击。
+    // 状态改写 + 每条 item 的库存 increment 放进同一个事务，确保原子。
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: o.id },
+        data: { status: 'cancelled', cancelledAt: new Date() },
+      })
+      for (const it of o.items) {
+        await tx.sku.update({
+          where: { id: it.skuId },
+          data: { stock: { increment: it.quantity } },
+        })
+      }
+    })
     return { ok: true }
   }
 
