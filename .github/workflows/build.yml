@@ -55,7 +55,7 @@ jobs:
         run: pnpm --filter @jiujiu/server build
 
       - name: Upload server dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-dist
           path: packages/server/dist
@@ -82,7 +82,7 @@ jobs:
         run: pnpm --filter @jiujiu/admin-pc build
 
       - name: Upload admin-pc dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: admin-pc-dist
           path: packages/admin-pc/dist
@@ -117,7 +117,7 @@ jobs:
         run: pnpm --filter @jiujiu/${{ matrix.app }} build:h5
 
       - name: Upload ${{ matrix.app }} dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.app }}-dist
           # uni-app 默认 H5 产物：dist/build/h5
