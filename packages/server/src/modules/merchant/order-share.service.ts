@@ -218,21 +218,31 @@ export class OrderShareService {
       throw new BizException(BizCode.FORBIDDEN, '该分享链接已过期')
     }
 
-    const order = await this.prisma.order.findUnique({
+    // 商户在 Merchant 表，order.merchantId 是字符串外键；用 select 拿出来。
+    // Merchant 表没有 logo 字段（avatar 走 SystemConfig profile-extras）
+    const orderRow = (await this.prisma.order.findUnique({
       where: { id: cfg.orderId },
       include: {
         items: true,
-        merchant: { select: { id: true, name: true, logo: true, contactPhone: true } },
       },
-    })
-    if (!order) throw new BizException(BizCode.NOT_FOUND, '订单已不存在')
+    })) as any
+    if (!orderRow) throw new BizException(BizCode.NOT_FOUND, '订单已不存在')
+
+    const merchantRow = orderRow.merchantId
+      ? await this.prisma.merchant.findUnique({
+          where: { id: orderRow.merchantId },
+          select: { id: true, name: true, contactPhone: true },
+        })
+      : null
+
+    const order: any = orderRow
 
     const visible = new Set(cfg.visibleFields)
     const result: any = {
       shareCode,
       intro: cfg.intro,
       expiresAt: cfg.expiresAt,
-      merchant: order.merchant,
+      merchant: merchantRow,
     }
 
     if (visible.has('basics')) {
@@ -267,7 +277,7 @@ export class OrderShareService {
       }
     }
     if (visible.has('items')) {
-      result.items = order.items.map((it) => ({
+      result.items = order.items.map((it: any) => ({
         id: it.id,
         productName: it.productName,
         productImage: it.productImage,
