@@ -1,11 +1,20 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as argon2 from 'argon2'
 import { randomInt } from 'node:crypto'
+import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
-import { AdminLoginDto, PhoneLoginDto, RefreshDto, SmsCodeDto, WechatLoginDto } from './dto/login.dto'
+import {
+  AdminLoginDto,
+  PhoneLoginDto,
+  RefreshDto,
+  SmsCodeDto,
+  WechatLoginDto,
+} from './dto/login.dto'
 import { SmsService } from '../sms/sms.service'
+import { RefreshTokenBlacklistService } from './refresh-token-blacklist.service'
+import { _clearJwtUserCache } from '../../common/guards/jwt.guard'
 
 export interface TokenPair {
   accessToken: string
@@ -13,19 +22,43 @@ export interface TokenPair {
   expiresIn: number
 }
 
+/** 12 字符 jti（足以承载几十亿条记录且明显短于 UUID） */
+const genJti = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 12)
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly sms: SmsService,
+    private readonly refreshBlacklist: RefreshTokenBlacklistService,
   ) {}
 
-  private async signTokens(payload: { sub: string; role: string; merchantId?: string }): Promise<TokenPair> {
+  /**
+   * 签发 access + refresh token 对。
+   *
+   * jti（JWT ID）安全说明：
+   *   - access / refresh 各持独立的 jti（access 的 jti 仅作审计；refresh 的 jti 是 rotation 关键）
+   *   - refresh() 拿到旧 refresh token 时会先 isRevoked(jti) 检查；
+   *     一次性 refresh 成功后旧 jti 立即加入黑名单，攻击者拿到旧 token 也用不了。
+   */
+  private async signTokens(payload: {
+    sub: string
+    role: string
+    merchantId?: string
+  }): Promise<TokenPair> {
     const accessTtl = Number(process.env.JWT_ACCESS_TOKEN_TTL) || 7200
     const refreshTtl = Number(process.env.JWT_REFRESH_TOKEN_TTL) || 604800
-    const accessToken = await this.jwt.signAsync(payload, { expiresIn: accessTtl })
-    const refreshToken = await this.jwt.signAsync({ ...payload, _r: 1 }, { expiresIn: refreshTtl })
+    const accessToken = await this.jwt.signAsync(
+      { ...payload, jti: genJti() },
+      { expiresIn: accessTtl },
+    )
+    const refreshToken = await this.jwt.signAsync(
+      { ...payload, _r: 1, jti: genJti() },
+      { expiresIn: refreshTtl },
+    )
     return { accessToken, refreshToken, expiresIn: accessTtl }
   }
 
@@ -74,7 +107,10 @@ export class AuthService {
         const data: any = await r.json()
         if (data?.errcode && data.errcode !== 0) {
           // 40029 = invalid code, 45011 = frequency limit, etc.
-          throw new BizException(BizCode.INVALID_PARAMS, `微信登录失败：${data.errmsg || data.errcode}`)
+          throw new BizException(
+            BizCode.INVALID_PARAMS,
+            `微信登录失败：${data.errmsg || data.errcode}`,
+          )
         }
         if (data?.openid) {
           openid = data.openid
@@ -90,10 +126,7 @@ export class AuthService {
       }
     } else if (isProd) {
       // 生产环境必须配齐 WeChat 凭证
-      throw new BizException(
-        BizCode.BUSINESS_ERROR,
-        '服务端未配置微信小程序凭证，无法完成登录',
-      )
+      throw new BizException(BizCode.BUSINESS_ERROR, '服务端未配置微信小程序凭证，无法完成登录')
     }
 
     if (!openid) {
@@ -116,7 +149,11 @@ export class AuthService {
         },
       })
     }
-    const tokens = await this.signTokens({ sub: user.id, role: user.role, merchantId: user.merchantId || undefined })
+    const tokens = await this.signTokens({
+      sub: user.id,
+      role: user.role,
+      merchantId: user.merchantId || undefined,
+    })
     return { user: this.toUser(user), ...tokens, expiresAt: Date.now() + tokens.expiresIn * 1000 }
   }
 
@@ -145,7 +182,11 @@ export class AuthService {
       })
     }
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
-    const tokens = await this.signTokens({ sub: user.id, role: user.role, merchantId: user.merchantId || undefined })
+    const tokens = await this.signTokens({
+      sub: user.id,
+      role: user.role,
+      merchantId: user.merchantId || undefined,
+    })
     return { user: this.toUser(user), ...tokens, expiresAt: Date.now() + tokens.expiresIn * 1000 }
   }
 
@@ -196,15 +237,11 @@ export class AuthService {
           if (!res.ok) {
             // 失败：删掉这条 SmsCode（避免用户拿到没真正发出去的验证码后困惑）
             // 同时这意味着 phoneLogin 校验会拒绝该 code，让用户重发
-            this.prisma.smsCode
-              .delete({ where: { id: row.id } })
-              .catch(() => {})
+            this.prisma.smsCode.delete({ where: { id: row.id } }).catch(() => {})
           }
         })
         .catch(() => {
-          this.prisma.smsCode
-            .delete({ where: { id: row.id } })
-            .catch(() => {})
+          this.prisma.smsCode.delete({ where: { id: row.id } }).catch(() => {})
         })
     }
     return { ok: true }
@@ -226,7 +263,11 @@ export class AuthService {
     if (user.status === 'disabled') throw new BizException(BizCode.FORBIDDEN, '账号已禁用')
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
-    const tokens = await this.signTokens({ sub: user.id, role: user.role, merchantId: user.merchantId || undefined })
+    const tokens = await this.signTokens({
+      sub: user.id,
+      role: user.role,
+      merchantId: user.merchantId || undefined,
+    })
     return {
       user: this.toUser(user),
       ...tokens,
@@ -237,7 +278,7 @@ export class AuthService {
   }
 
   /**
-   * 刷新 Token
+   * 刷新 Token —— 带 rotation 防重放
    *
    * 错误语义精确化（P3-38）：
    *   - 真正过期（jsonwebtoken 抛 TokenExpiredError）→ TOKEN_EXPIRED 2002
@@ -245,29 +286,49 @@ export class AuthService {
    *   - 签名无效 / 结构错误 / payload 缺 `_r:1`（access token 传错位置 / 伪造 token）
    *     → UNAUTHORIZED 2001 + 'invalid refresh token'
    *     与"过期"区分，避免误导排查（之前所有错误都映射 TOKEN_EXPIRED）
+   *   - 已被 rotation 吊销 → UNAUTHORIZED + 'refresh token revoked'
    *   - 其他未知异常一律按 UNAUTHORIZED 处理，绝不把内部错误明文回前端
+   *
+   * Rotation 流程：
+   *   1. verifyAsync 通过 + payload._r === 1 → 拿到旧 jti
+   *   2. isRevoked(jti) → 若已吊销，拒绝（防泄露后重放）
+   *   3. 重新 signTokens 得到全新 access + refresh（新 jti）
+   *   4. 把旧 jti 加入黑名单，TTL = 旧 refresh token 剩余有效期
+   *      —— 攻击者拿到旧 refresh token 后续刷新会被 step 2 拦截
    */
   async refresh(dto: RefreshDto) {
     let payload: any
     try {
-      // 走 JwtService 注册时的密钥（resolveJwtSecret 已强制生产必须配置真实 JWT_SECRET）
       payload = await this.jwt.verifyAsync(dto.refreshToken)
     } catch (e: any) {
       if (e?.name === 'TokenExpiredError') {
         throw new BizException(BizCode.TOKEN_EXPIRED, 'refreshToken 已过期')
       }
-      // JsonWebTokenError / NotBeforeError / 其他签名问题 → 视为无效，而非过期
       throw new BizException(BizCode.UNAUTHORIZED, 'invalid refresh token')
     }
-    // 结构合法但缺 `_r:1` 标识 → 不是 refresh token（极可能是 access token 误传）
     if (!payload?._r) {
       throw new BizException(BizCode.UNAUTHORIZED, 'invalid refresh token')
     }
+
+    const oldJti: string | undefined = payload.jti
+    if (oldJti && this.refreshBlacklist.isRevoked(oldJti)) {
+      // 已被 rotation 吊销过的 refresh token 再次出现 = 强烈的重放/泄露信号
+      throw new BizException(BizCode.UNAUTHORIZED, 'refresh token revoked')
+    }
+
     const tokens = await this.signTokens({
       sub: payload.sub,
       role: payload.role,
       merchantId: payload.merchantId,
     })
+
+    // 吊销旧 jti：TTL = 旧 refresh token 剩余有效期（payload.exp 是 unix 秒）
+    // 兼容旧客户端：老 refresh token 不带 jti，跳过吊销但仍返回新 token（平滑升级）
+    if (oldJti && typeof payload.exp === 'number') {
+      const remainSec = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
+      this.refreshBlacklist.revoke(oldJti, remainSec)
+    }
+
     return tokens
   }
 
@@ -276,5 +337,47 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
     return this.toUser(user)
+  }
+
+  /**
+   * 注销登录 —— 真吊销
+   *
+   * 安全设计要点：
+   *   - 如果带 refreshToken：verify 拿 jti，加入 refresh-token-blacklist；
+   *     即便攻击者拿到这个 refresh token 也无法换新 access token。
+   *   - 即使 verify 失败（已过期 / 篡改）也吞掉异常，按"已失效"返回 ok=true，
+   *     不向客户端泄露"token 是什么状态"的副信息，并避免给攻击者扫探的接口。
+   *   - 同步清除 JwtGuard 的 user 缓存：让管理员"禁用 + 用户主动 logout"双重保险时，
+   *     该账号即使持仍未过期的 access token 也会下次请求即重查 DB，被禁用立即失效。
+   *
+   * 局限性：access token 本身（JWT 无状态）无法在过期前强制作废，因此客户端必须
+   * 在收到 ok=true 后立刻删除本地存的 access/refresh token；前端拦截器也已做这步。
+   * 若严格要求"access token 也能即时吊销"，需要切到 token-introspection / Redis 黑名单。
+   */
+  async logout(refreshToken?: string, callerSub?: string): Promise<{ ok: true }> {
+    if (refreshToken) {
+      try {
+        const payload: any = await this.jwt.verifyAsync(refreshToken)
+        const jti: string | undefined = payload?.jti
+        if (jti && typeof payload?.exp === 'number') {
+          const remainSec = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
+          this.refreshBlacklist.revoke(jti, remainSec)
+        }
+        if (!callerSub && payload?.sub) callerSub = payload.sub
+      } catch (e: any) {
+        // 过期 / 篡改 / 结构错 → 一律按已失效处理。不抛错保证幂等。
+        this.logger.debug(
+          `[auth.logout] refresh token verify failed (treated as already invalid): ${e?.message || e}`,
+        )
+      }
+    }
+    if (callerSub) {
+      try {
+        _clearJwtUserCache(callerSub)
+      } catch {
+        // 缓存清理失败不影响登出语义；最坏只是 60s 内仍有缓存命中
+      }
+    }
+    return { ok: true }
   }
 }

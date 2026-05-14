@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
 import { AdminPcCompatController } from './admin-pc-compat.controller'
 import { PlatformModule } from '../platform/platform.module'
+import { RefreshTokenBlacklistService } from './refresh-token-blacklist.service'
 
 /**
  * JWT 密钥解析。
@@ -16,9 +17,7 @@ function resolveJwtSecret(): string {
   const v = process.env.JWT_SECRET
   if (v && v.length >= 16) return v
   if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      '[security] 生产环境必须设置 JWT_SECRET (≥16 字符)，缺失或过短一律拒绝启动',
-    )
+    throw new Error('[security] 生产环境必须设置 JWT_SECRET (≥16 字符)，缺失或过短一律拒绝启动')
   }
   return v || 'dev-only-please-change-me-in-production'
 }
@@ -35,7 +34,7 @@ function resolveJwtSecret(): string {
     PlatformModule,
   ],
   controllers: [AuthController, AdminPcCompatController],
-  providers: [AuthService],
+  providers: [AuthService, RefreshTokenBlacklistService],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

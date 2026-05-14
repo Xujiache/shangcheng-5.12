@@ -32,9 +32,9 @@ import { readFileSync, existsSync } from 'fs'
 export interface PrepayParams {
   outTradeNo: string
   description: string
-  totalFen: number          // 单位：分
-  openid: string            // 用户 openid（必填）
-  attach?: string           // 附加数据
+  totalFen: number // 单位：分
+  openid: string // 用户 openid（必填）
+  attach?: string // 附加数据
 }
 
 /** 小程序端 uni.requestPayment 需要的字段 */
@@ -42,7 +42,7 @@ export interface MiniPayInvoke {
   appId: string
   timeStamp: string
   nonceStr: string
-  package: string           // "prepay_id=xxx"
+  package: string // "prepay_id=xxx"
   signType: 'RSA' | 'MD5'
   paySign: string
 }
@@ -199,11 +199,29 @@ export class WxPayService {
       return false
     }
 
+    // 时间戳新鲜度校验：拒绝 ±5 分钟以外的回调，防止攻击者抓包后离线重放。
+    // 微信官方建议范围 ±5min；超出窗口的回调即便签名正确也不再视为有效。
+    // 解析失败（非数字）一律拒绝；正常微信回调始终是 unix 秒整数字符串。
+    const tsNum = Number(timestamp)
+    if (!Number.isFinite(tsNum)) {
+      this.logger.warn(`[wxpay notify] Wechatpay-Timestamp 不是有效数字：${timestamp}`)
+      return false
+    }
+    const skewSec = Math.abs(Date.now() / 1000 - tsNum)
+    if (skewSec > 300) {
+      this.logger.warn(
+        `[wxpay notify] 时间戳超出 ±5min 窗口（skew=${skewSec.toFixed(1)}s），疑似回放，拒绝`,
+      )
+      return false
+    }
+
     const pubKeyId = process.env.WX_PAY_PUB_KEY_ID || ''
     const pubKeyPath = process.env.WX_PAY_PUB_KEY_PATH || ''
     // 新模式：Wechatpay-Serial 应该匹配我们配置的 PUB_KEY_ID
     if (pubKeyId && serial && serial !== pubKeyId) {
-      this.logger.warn(`[wxpay notify] Wechatpay-Serial 不匹配本地公钥 ID。expected=${pubKeyId} got=${serial}`)
+      this.logger.warn(
+        `[wxpay notify] Wechatpay-Serial 不匹配本地公钥 ID。expected=${pubKeyId} got=${serial}`,
+      )
       return false
     }
     if (!pubKeyPath || !existsSync(pubKeyPath)) {
@@ -224,6 +242,108 @@ export class WxPayService {
     return ok
   }
 
+  /**
+   * 申请微信支付 v3 退款
+   *
+   * 接口：POST https://api.mch.weixin.qq.com/v3/refund/domestic/refunds
+   *
+   * 生产策略：
+   *   - 商户配置齐全（isReady()=true）→ 调真实接口；
+   *     退款金额单位：分（refundAmount / totalAmount 进来时是元，内部 * 100 → 分）
+   *   - 非生产 / 配置缺失 → 返回 mockRefund，立即成功，便于联调
+   *   - 生产但配置缺失 → 抛错，绝不返回 mock（与下单同样原则，防"凭空退钱"）
+   *
+   * 返回：
+   *   - { refundId, status: 'PROCESSING' | 'SUCCESS' }
+   *   - SUCCESS 表示微信侧已即时确认（少见，多数为 PROCESSING + 异步回调）
+   *   - 调用方应把 refundId 持久化，等待 wxpay 异步退款结果通知
+   *
+   * 注意：
+   *   - 当前没有抽出独立的"通用 v3 POST 调用器"，因此这里直接复用 buildAuthHeader/signRSA，
+   *     与 createMiniPay 风格保持一致
+   *   - 真实微信会校验 out_refund_no 幂等：同一 out_refund_no 重发会返回先前结果
+   *     业务侧务必为同一退款单复用同一 outRefundNo（refundId）
+   */
+  async createRefund(params: {
+    outTradeNo: string
+    outRefundNo: string
+    reason?: string
+    refundAmount: number
+    totalAmount: number
+  }): Promise<{ refundId: string; status: 'PROCESSING' | 'SUCCESS' }> {
+    if (!params.outTradeNo || !params.outRefundNo) {
+      throw new Error('createRefund: outTradeNo / outRefundNo 必填')
+    }
+    if (!(params.refundAmount > 0) || !(params.totalAmount > 0)) {
+      throw new Error('createRefund: 金额必须为正')
+    }
+    if (params.refundAmount > params.totalAmount) {
+      throw new Error('createRefund: 退款金额不能大于原订单金额')
+    }
+
+    if (!this.isReady()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('微信支付未配置（缺商户号/API V3 密钥/证书），退款功能暂不可用')
+      }
+      return this.mockRefund(params)
+    }
+
+    const notifyUrl = process.env.WX_PAY_REFUND_NOTIFY_URL || process.env.WX_PAY_NOTIFY_URL || ''
+    const keyPath = process.env.WX_PAY_KEY_PATH!
+
+    const body: Record<string, any> = {
+      out_trade_no: params.outTradeNo,
+      out_refund_no: params.outRefundNo,
+      reason: (params.reason || '').slice(0, 80) || undefined,
+      notify_url: notifyUrl || undefined,
+      amount: {
+        refund: Math.round(params.refundAmount * 100),
+        total: Math.round(params.totalAmount * 100),
+        currency: 'CNY',
+      },
+    }
+    const bodyStr = JSON.stringify(body)
+    const urlPath = '/v3/refund/domestic/refunds'
+    const auth = await this.buildAuthHeader('POST', urlPath, bodyStr, keyPath)
+
+    const r = await fetch(`https://api.mch.weixin.qq.com${urlPath}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Accept-Language': 'zh-CN',
+        Authorization: auth,
+      },
+      body: bodyStr,
+    })
+    const resp: any = await r.json().catch(() => ({}))
+    if (!resp || !resp.refund_id) {
+      this.logger.error(`[wxpay] refund failed: ${JSON.stringify(resp)}`)
+      throw new Error(`微信退款失败：${resp?.message || resp?.code || 'unknown'}`)
+    }
+    // 微信文档：status 可能是 SUCCESS / PROCESSING / CLOSED / ABNORMAL
+    // 这里只把"已处理中 / 已成功"两种当成同步成功返回，其余视作异常抛
+    const status = resp.status as string | undefined
+    if (status === 'SUCCESS' || status === 'PROCESSING') {
+      return { refundId: resp.refund_id, status }
+    }
+    throw new Error(`微信退款返回异常状态：${status || 'unknown'}`)
+  }
+
+  /**
+   * 仅供非生产环境使用的本地退款占位。
+   * createRefund() 已在生产环境前置拒绝调用本方法，永远不会写到生产。
+   */
+  private mockRefund(params: { outTradeNo: string; outRefundNo: string }): {
+    refundId: string
+    status: 'SUCCESS'
+  } {
+    this.logger.warn(
+      `[wxpay] [dev-only] 商户号未配齐，使用占位退款：outTradeNo=${params.outTradeNo} outRefundNo=${params.outRefundNo}`,
+    )
+    return { refundId: `dev_refund_${params.outRefundNo}`, status: 'SUCCESS' }
+  }
+
   /** 解密微信回调的 resource.ciphertext（AES-256-GCM） */
   decryptResource(resource: { ciphertext: string; associated_data?: string; nonce: string }): any {
     const v3Key = process.env.WX_PAY_API_V3_KEY || ''
@@ -231,7 +351,11 @@ export class WxPayService {
     const buf = Buffer.from(resource.ciphertext, 'base64')
     const authTag = buf.slice(buf.length - 16)
     const data = buf.slice(0, buf.length - 16)
-    const decipher = createDecipheriv('aes-256-gcm', Buffer.from(v3Key, 'utf-8'), Buffer.from(resource.nonce, 'utf-8'))
+    const decipher = createDecipheriv(
+      'aes-256-gcm',
+      Buffer.from(v3Key, 'utf-8'),
+      Buffer.from(resource.nonce, 'utf-8'),
+    )
     decipher.setAuthTag(authTag)
     if (resource.associated_data) {
       decipher.setAAD(Buffer.from(resource.associated_data, 'utf-8'))

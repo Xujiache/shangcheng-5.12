@@ -80,12 +80,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const payload: any = await this.jwt.verifyAsync(data.token)
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } })
-      if (!user) { client.emit('error', { message: '用户不存在' }); return }
+      if (!user) {
+        client.emit('error', { message: '用户不存在' })
+        return
+      }
 
       client.data.role = data.role
       if (data.role === 'merchant') {
         const m = await this.prisma.merchant.findUnique({ where: { userId: user.id } })
-        if (!m) { client.emit('error', { message: '当前账号未关联商户' }); return }
+        if (!m) {
+          client.emit('error', { message: '当前账号未关联商户' })
+          return
+        }
         client.data.merchantId = m.id
         client.data.userId = user.id
         // 商家也进自己的 user 房间，资料更新同样同步
@@ -113,18 +119,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthedSocket,
     @MessageBody() data: { sessionId: string },
   ): Promise<void> {
-    if (!client.data.role) { client.emit('error', { message: '未鉴权' }); return }
+    if (!client.data.role) {
+      client.emit('error', { message: '未鉴权' })
+      return
+    }
     const session = await this.findOwnSession(client, data.sessionId)
-    if (!session) { client.emit('error', { message: '无此会话访问权限' }); return }
+    if (!session) {
+      client.emit('error', { message: '无此会话访问权限' })
+      return
+    }
     client.join(`session:${data.sessionId}`)
     client.emit('joined', { sessionId: data.sessionId })
   }
 
   @SubscribeMessage('leave')
-  onLeave(
-    @ConnectedSocket() client: AuthedSocket,
-    @MessageBody() data: { sessionId: string },
-  ) {
+  onLeave(@ConnectedSocket() client: AuthedSocket, @MessageBody() data: { sessionId: string }) {
     client.leave(`session:${data.sessionId}`)
     client.emit('left', { sessionId: data.sessionId })
   }
@@ -135,10 +144,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthedSocket,
     @MessageBody() data: { sessionId: string; kind?: string; content: string },
   ): Promise<void> {
-    if (!client.data.role) { client.emit('error', { message: '未鉴权' }); return }
+    if (!client.data.role) {
+      client.emit('error', { message: '未鉴权' })
+      return
+    }
     if (!data.content || !data.content.trim()) return
     const session = await this.findOwnSession(client, data.sessionId)
-    if (!session) { client.emit('error', { message: '无此会话访问权限' }); return }
+    if (!session) {
+      client.emit('error', { message: '无此会话访问权限' })
+      return
+    }
 
     const sender = client.data.role === 'merchant' ? 'merchant' : 'user'
     const msg = await this.prisma.chatMessage.create({
@@ -164,11 +179,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   /** 4. 正在输入提示（不持久化） */
   @SubscribeMessage('typing')
-  onTyping(
+  async onTyping(
     @ConnectedSocket() client: AuthedSocket,
     @MessageBody() data: { sessionId: string; on: boolean },
   ) {
     if (!client.data.role) return
+    if (!data?.sessionId) return
+    // 与 onMessage / onRead 一致校验会话归属：不属于当前 socket 的会话静默丢弃，
+    // 避免攻击者伪造任意 sessionId 在他人会话里持续触发 "对方正在输入..." 骚扰
+    const session = await this.findOwnSession(client, data.sessionId)
+    if (!session) return
     client.to(`session:${data.sessionId}`).emit('typing', {
       sessionId: data.sessionId,
       fromRole: client.data.role,
@@ -274,6 +294,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(`merchant:${merchantId}`).emit('refund:new', payload)
     } catch (e: any) {
       this.logger.warn(`emitRefundNew failed merchantId=${merchantId}: ${e?.message || e}`)
+    }
+  }
+
+  /**
+   * HTTP REST 入口（user-mp 的 chatSend / merchant 的 chatSend）发完消息后，
+   * 通过本方法把同一条 ChatMessage 同步推送到房间，让对方在 WS 长连中即时收到。
+   *
+   * 此前 HTTP 链路只写 DB，对方需要等下次 chatMessages 拉接口才能看到消息，
+   * 体验上等于"客服没收到消息" —— 这是 P1 体验断点。
+   *
+   * 注意：
+   *   - WS 链路（onMessage 内部 emit）已带广播，仅 HTTP 链路缺这一步
+   *   - 失败 fire-and-forget，不阻塞 HTTP 主流程；DB 已落库的消息丢推送也不影响后续轮询
+   *   - 仅推送给已 join(`session:<sessionId>`) 的 socket；用户/商家未在线就跳过
+   */
+  emitChatMessage(sessionId: string, message: any) {
+    if (!this.server || !sessionId) return
+    try {
+      this.server.to(`session:${sessionId}`).emit('message', { sessionId, message })
+    } catch (e: any) {
+      this.logger.warn(`emitChatMessage failed sessionId=${sessionId}: ${e?.message || e}`)
     }
   }
 }

@@ -37,7 +37,8 @@ export class UserMpService {
 
   async updateProfile(userId: string, dto: any) {
     const data: any = {}
-    if (typeof dto.nickname === 'string' && dto.nickname.trim()) data.nickname = dto.nickname.trim().slice(0, 32)
+    if (typeof dto.nickname === 'string' && dto.nickname.trim())
+      data.nickname = dto.nickname.trim().slice(0, 32)
     if (typeof dto.avatar === 'string') data.avatar = dto.avatar
     if (typeof dto.gender === 'number' && [0, 1, 2].includes(dto.gender)) data.gender = dto.gender
     if (typeof dto.email === 'string' && dto.email.trim()) {
@@ -89,7 +90,8 @@ export class UserMpService {
   async bindPhone(userId: string, dto: { phone: string; code: string }) {
     const phone = String(dto.phone || '').trim()
     const code = String(dto.code || '').trim()
-    if (!/^1[3-9]\d{9}$/.test(phone)) throw new BizException(BizCode.INVALID_PARAMS, '手机号格式不正确')
+    if (!/^1[3-9]\d{9}$/.test(phone))
+      throw new BizException(BizCode.INVALID_PARAMS, '手机号格式不正确')
     if (!/^\d{4,6}$/.test(code)) throw new BizException(BizCode.INVALID_PARAMS, '验证码格式不正确')
 
     // 验证码核验（与 phoneLogin 一致）
@@ -102,7 +104,10 @@ export class UserMpService {
     // 占用检查
     const occupied = await this.prisma.user.findUnique({ where: { phone } })
     if (occupied && occupied.id !== userId) {
-      throw new BizException(BizCode.BUSINESS_ERROR, '该手机号已被其他账号绑定，请直接使用手机号登录')
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '该手机号已被其他账号绑定，请直接使用手机号登录',
+      )
     }
 
     const me = await this.prisma.user.findUnique({ where: { id: userId } })
@@ -149,7 +154,10 @@ export class UserMpService {
         const r = await fetch(url, { method: 'GET' })
         const data: any = await r.json()
         if (data?.errcode && data.errcode !== 0) {
-          throw new BizException(BizCode.INVALID_PARAMS, `微信授权失败：${data.errmsg || data.errcode}`)
+          throw new BizException(
+            BizCode.INVALID_PARAMS,
+            `微信授权失败：${data.errmsg || data.errcode}`,
+          )
         }
         if (data?.openid) {
           openid = data.openid
@@ -163,10 +171,7 @@ export class UserMpService {
         // 非生产：继续走兜底
       }
     } else if (isProd) {
-      throw new BizException(
-        BizCode.BUSINESS_ERROR,
-        '服务端未配置微信小程序凭证，无法绑定微信',
-      )
+      throw new BizException(BizCode.BUSINESS_ERROR, '服务端未配置微信小程序凭证，无法绑定微信')
     }
     if (!openid) {
       if (isProd) {
@@ -277,7 +282,10 @@ export class UserMpService {
 
   // ========== 分类 ==========
   async listCategories() {
-    const cats = await this.prisma.category.findMany({ where: { type: 'platform' }, orderBy: { sort: 'asc' } })
+    const cats = await this.prisma.category.findMany({
+      where: { type: 'platform' },
+      orderBy: { sort: 'asc' },
+    })
     return cats
   }
 
@@ -287,14 +295,23 @@ export class UserMpService {
     const where: any = { userId }
     if (q.status) where.status = q.status
     const [list, total] = await Promise.all([
-      this.prisma.order.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, include: { items: true } }),
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { items: true },
+      }),
       this.prisma.order.count({ where }),
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
   }
 
   async orderDetail(userId: string, id: string) {
-    const o = await this.prisma.order.findFirst({ where: { id, userId }, include: { items: true, payments: true } })
+    const o = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: true, payments: true },
+    })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
     return decimalToNumber(o)
   }
@@ -320,8 +337,12 @@ export class UserMpService {
     if (!address) throw new BizException(BizCode.NOT_FOUND, '地址不存在')
 
     const skuIds = normItems.map((i) => i.skuId)
-    const skus = await this.prisma.sku.findMany({ where: { id: { in: skuIds } }, include: { product: true } })
-    if (skus.length !== normItems.length) throw new BizException(BizCode.NOT_FOUND, '部分 SKU 不存在')
+    const skus = await this.prisma.sku.findMany({
+      where: { id: { in: skuIds } },
+      include: { product: true },
+    })
+    if (skus.length !== normItems.length)
+      throw new BizException(BizCode.NOT_FOUND, '部分 SKU 不存在')
 
     // 多商户聚合校验：所有 SKU 必须属同一 merchantId，否则强制让用户拆单。
     // 否则订单会出现"挂在 A 商家、却含 B 商家商品"的脏数据，直接污染发货 / 对账 / 佣金。
@@ -338,7 +359,8 @@ export class UserMpService {
     let totalAmount = 0
     const orderItemsData = normItems.map((it) => {
       const sku = skus.find((s) => s.id === it.skuId)!
-      if (sku.stock < it.quantity) throw new BizException(BizCode.STOCK_INSUFFICIENT, `${sku.product.name} 库存不足`)
+      if (sku.stock < it.quantity)
+        throw new BizException(BizCode.STOCK_INSUFFICIENT, `${sku.product.name} 库存不足`)
       const price = Number(sku.priceRetail)
       totalAmount += price * it.quantity
       return {
@@ -424,9 +446,7 @@ export class UserMpService {
             where: { id: { in: productIds } },
             select: { categoryId: true },
           })
-          matched = products.some(
-            (p) => p.categoryId && coupon.scopeIds.includes(p.categoryId),
-          )
+          matched = products.some((p) => p.categoryId && coupon.scopeIds.includes(p.categoryId))
         } else {
           // 未知 scope 取保守策略：不允许使用
           matched = false
@@ -469,7 +489,10 @@ export class UserMpService {
         },
       })
       for (const it of normItems) {
-        await tx.sku.update({ where: { id: it.skuId }, data: { stock: { decrement: it.quantity } } })
+        await tx.sku.update({
+          where: { id: it.skuId },
+          data: { stock: { decrement: it.quantity } },
+        })
       }
       if (couponId) {
         await tx.coupon.update({
@@ -524,18 +547,12 @@ export class UserMpService {
 
     // 生产环境且商户号未配齐：立刻拒绝，不进 mock 通路
     if (isProd && !this.wxpay.isReady()) {
-      throw new BizException(
-        BizCode.BUSINESS_ERROR,
-        '微信支付未配置，暂时无法下单，请联系商家',
-      )
+      throw new BizException(BizCode.BUSINESS_ERROR, '微信支付未配置，暂时无法下单，请联系商家')
     }
 
     // 生产环境必须有真实 openid，否则无法走微信小程序原生支付
     if (isProd && !openid) {
-      throw new BizException(
-        BizCode.INVALID_PARAMS,
-        '当前账号未绑定微信，请先绑定微信后再支付',
-      )
+      throw new BizException(BizCode.INVALID_PARAMS, '当前账号未绑定微信，请先绑定微信后再支付')
     }
 
     // createMiniPay 内部也会在生产环境二次拦截，避免任何旁路
@@ -578,7 +595,10 @@ export class UserMpService {
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
     if (o.status !== 'shipped') throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单尚未发货')
     const completedAt = new Date()
-    await this.prisma.order.update({ where: { id: o.id }, data: { status: 'completed', completedAt } })
+    await this.prisma.order.update({
+      where: { id: o.id },
+      data: { status: 'completed', completedAt },
+    })
     try {
       this.chat.emitOrderUpdate(o.merchantId, {
         orderId: o.id,
@@ -640,10 +660,7 @@ export class UserMpService {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
     if (o.status !== 'pending_shipment') {
-      throw new BizException(
-        BizCode.ORDER_STATUS_INVALID,
-        '订单当前状态无需催发货',
-      )
+      throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单当前状态无需催发货')
     }
 
     // 30 分钟去重
@@ -716,7 +733,10 @@ export class UserMpService {
     const detail = String(dto?.detail ?? '').trim()
     const isDefault = Boolean(dto?.isDefault)
     if (!name || !phone || !region || !detail) {
-      throw new BizException(BizCode.INVALID_PARAMS, '请填写完整的收货地址（姓名/手机号/地区/详细地址）')
+      throw new BizException(
+        BizCode.INVALID_PARAMS,
+        '请填写完整的收货地址（姓名/手机号/地区/详细地址）',
+      )
     }
     if (!/^1[3-9]\d{9}$/.test(phone)) {
       throw new BizException(BizCode.INVALID_PARAMS, '手机号格式不正确')
@@ -726,12 +746,18 @@ export class UserMpService {
 
   async listAddresses(userId: string) {
     await this.assertUserExists(userId)
-    return this.prisma.address.findMany({ where: { userId }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] })
+    return this.prisma.address.findMany({
+      where: { userId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    })
   }
   async defaultAddress(userId: string) {
     await this.assertUserExists(userId)
     const a = await this.prisma.address.findFirst({ where: { userId, isDefault: true } })
-    return a || (await this.prisma.address.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } }))
+    return (
+      a ||
+      (await this.prisma.address.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } }))
+    )
   }
   async createAddress(userId: string, dto: any) {
     await this.assertUserExists(userId)
@@ -744,7 +770,10 @@ export class UserMpService {
   async updateAddress(userId: string, id: string, dto: any) {
     await this.assertUserExists(userId)
     // 确保只能改自己的地址
-    const exist = await this.prisma.address.findFirst({ where: { id, userId }, select: { id: true } })
+    const exist = await this.prisma.address.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    })
     if (!exist) throw new BizException(BizCode.NOT_FOUND, '地址不存在或无权限')
     const data = this.sanitizeAddressDto(dto)
     if (data.isDefault) {
@@ -760,7 +789,10 @@ export class UserMpService {
 
   // ========== 收藏 ==========
   async listFavorites(userId: string) {
-    const favs = await this.prisma.favorite.findMany({ where: { userId }, include: { product: true } })
+    const favs = await this.prisma.favorite.findMany({
+      where: { userId },
+      include: { product: true },
+    })
     return favs.map((f) => ({
       id: f.id,
       productId: f.productId,
@@ -808,6 +840,121 @@ export class UserMpService {
     }
   }
 
+  /**
+   * 用户领取优惠券
+   *
+   * 由于当前 Prisma schema 没有独立 UserCoupon 中间表(详见 README 数据模型设计),
+   * 这里用 SystemConfig 作为最小可用方案兜底:
+   *   - key 形如 `user_coupon:<userId>:<couponId>` → value: { count, ids: [], claimedAt }
+   *     ids 记录每张券的唯一编号(便于后续核销),count 用于查"已领几张"做 perUserLimit 检查
+   *
+   * 业务校验:
+   *   1. 券存在 + 状态 active + 在有效期内
+   *   2. 总库存(stock=0 即不限)还剩余
+   *   3. 用户已领数量 < perUserLimit(同样 0 视为不限,但保底视为至少 1)
+   *   4. Coupon.received 原子 +1(用 update 的 increment,避免并发超领)
+   *
+   * 后续升级路径:把 SystemConfig 兼容层迁到正式 UserCoupon 表(userId + couponId + status + usedAt)
+   * 即可获得完整核销追踪能力,且本接口对外形状不变。
+   */
+  async claimCoupon(userId: string, couponId: string) {
+    if (!userId) throw new BizException(BizCode.UNAUTHORIZED, '未登录')
+    const now = new Date()
+    const c = await this.prisma.coupon.findUnique({ where: { id: couponId } })
+    if (!c) throw new BizException(BizCode.NOT_FOUND, '优惠券不存在')
+    if (c.status !== 'active') {
+      throw new BizException(BizCode.BUSINESS_ERROR, '优惠券未上架或已下架')
+    }
+    if (c.validFrom > now || c.validTo < now) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '优惠券不在有效期内')
+    }
+    if (c.stock > 0 && c.received >= c.stock) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '优惠券已被领完')
+    }
+    const cfgKey = `user_coupon:${userId}:${couponId}`
+    const exist = await this.prisma.systemConfig.findUnique({ where: { key: cfgKey } })
+    const claimed = (exist?.value as any)?.count || 0
+    const limit = c.perUserLimit > 0 ? c.perUserLimit : 1
+    if (claimed >= limit) {
+      throw new BizException(BizCode.BUSINESS_ERROR, `每人最多领 ${limit} 张,已达上限`)
+    }
+    // 生成本张券的唯一编号(后续核销时用),格式 'UC' + base36 时间戳 + 随机 6 位
+    const ucNo = `UC${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+    const nextIds = [...((exist?.value as any)?.ids || []), ucNo]
+    // 原子更新 Coupon.received 防超领
+    await this.prisma.$transaction([
+      this.prisma.coupon.update({ where: { id: couponId }, data: { received: { increment: 1 } } }),
+      this.prisma.systemConfig.upsert({
+        where: { key: cfgKey },
+        update: {
+          value: {
+            count: claimed + 1,
+            ids: nextIds,
+            claimedAt: now.toISOString(),
+          } as any,
+        },
+        create: {
+          key: cfgKey,
+          value: { count: 1, ids: [ucNo], claimedAt: now.toISOString() } as any,
+        },
+      }),
+    ])
+    return { ok: true, no: ucNo, count: claimed + 1 }
+  }
+
+  /**
+   * 我的优惠券列表（汇总用户已领的所有券 + 关联券基础信息）
+   *
+   * 实现策略：
+   *   - 拿 SystemConfig 里 key 形如 `user_coupon:<userId>:%` 的所有条目
+   *   - 解析出 couponId,批量取 Coupon 关联信息
+   *   - 当前 Prisma 不支持 LIKE，用 startsWith 等价（PostgreSQL 实际生成 ILIKE）
+   *
+   * 后续若迁到 UserCoupon 表，此查询会变成简单的 join + filter，无需多层处理。
+   */
+  async myCoupons(userId: string) {
+    if (!userId) return { list: [], total: 0 }
+    const prefix = `user_coupon:${userId}:`
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: prefix } },
+      take: 200,
+    })
+    if (!rows.length) return { list: [], total: 0 }
+    const couponIds = rows.map((r) => r.key.slice(prefix.length))
+    const coupons = await this.prisma.coupon.findMany({
+      where: { id: { in: couponIds } },
+      include: { merchant: { select: { id: true, name: true } } },
+    })
+    const cmap = new Map(coupons.map((c) => [c.id, c]))
+    const now = new Date()
+    const list = rows
+      .map((r) => {
+        const cid = r.key.slice(prefix.length)
+        const c = cmap.get(cid)
+        if (!c) return null
+        const claimed = (r.value as any) || {}
+        const expired = c.validTo < now
+        return {
+          couponId: c.id,
+          name: c.name,
+          type: c.type,
+          amount: c.amount != null ? Number(c.amount) : null,
+          discountPercent: c.discountPercent,
+          threshold: c.threshold != null ? Number(c.threshold) : null,
+          merchantId: c.merchantId,
+          merchantName: c.merchant?.name || '',
+          validFrom: c.validFrom,
+          validTo: c.validTo,
+          count: claimed.count || 0,
+          ids: claimed.ids || [],
+          claimedAt: claimed.claimedAt || null,
+          status: expired ? 'expired' : c.status,
+        }
+      })
+      .filter((x): x is NonNullable<typeof x> => !!x)
+    return { list, total: list.length }
+  }
+
   // ========== 预约量尺 ==========
   async submitBooking(userId: string | null, dto: any) {
     const b = await this.prisma.booking.create({
@@ -830,9 +977,15 @@ export class UserMpService {
     const total = cms.reduce((s, c) => s + Number(c.amount), 0)
     const now = new Date()
     const thisMonth = cms
-      .filter((c) => c.createdAt.getMonth() === now.getMonth() && c.createdAt.getFullYear() === now.getFullYear())
+      .filter(
+        (c) =>
+          c.createdAt.getMonth() === now.getMonth() &&
+          c.createdAt.getFullYear() === now.getFullYear(),
+      )
       .reduce((s, c) => s + Number(c.amount), 0)
-    const pending = cms.filter((c) => c.status === 'pending').reduce((s, c) => s + Number(c.amount), 0)
+    const pending = cms
+      .filter((c) => c.status === 'pending')
+      .reduce((s, c) => s + Number(c.amount), 0)
     return { total, thisMonth, pending, people: 0, orderCount: cms.length, conversion: 0 }
   }
 
@@ -1013,10 +1166,11 @@ export class UserMpService {
   }
 
   async ensureChatSession(userId: string, merchantId: string) {
+    // 必须由调用方明确指定 merchantId（前端要么从店铺详情进入，要么从订单详情发起）。
+    // 之前 fallback "随便挑一个 active 商户" 会让用户莫名其妙开到一家陌生店的客服会话，
+    // 既污染商家的客服面板（陌生用户消息），又给了攻击者枚举 merchantId 的入口。
     if (!merchantId) {
-      const m = await this.prisma.merchant.findFirst({ where: { status: 'active' } })
-      if (!m) throw new BizException(BizCode.NOT_FOUND, '当前无可用商户')
-      merchantId = m.id
+      throw new BizException(BizCode.INVALID_PARAMS, '请从店铺进入客服')
     }
     const existing = await this.prisma.chatSession.findUnique({
       where: { userId_merchantId: { userId, merchantId } },
@@ -1048,6 +1202,11 @@ export class UserMpService {
       where: { id: sessionId },
       data: { lastMessageAt: new Date(), unreadCount: { increment: 1 } },
     })
+    // 同步推送给房间内的所有 WS（包括商家端）；HTTP 链路之前只写 DB，对方要等下次轮询才看得到 → P1 体验断点
+    // fire-and-forget：失败不影响 HTTP 主流程
+    try {
+      this.chat.emitChatMessage(sessionId, m)
+    } catch {}
     return m
   }
 
@@ -1075,14 +1234,21 @@ export class UserMpService {
       include: {
         product: {
           select: {
-            id: true, name: true, images: true, status: true,
-            priceRetailMin: true, merchantId: true,
+            id: true,
+            name: true,
+            images: true,
+            status: true,
+            priceRetailMin: true,
+            merchantId: true,
           },
         },
         sku: {
           select: {
-            id: true, specsLabel: true, priceRetail: true,
-            stock: true, active: true,
+            id: true,
+            specsLabel: true,
+            priceRetail: true,
+            stock: true,
+            active: true,
           },
         },
       },
@@ -1112,7 +1278,11 @@ export class UserMpService {
         : null,
       // 整条是否仍可下单（前端给灰禁用 + 提示用）
       available:
-        !!it.product && it.product.status === 'active' && !!it.sku && it.sku.active && it.sku.stock > 0,
+        !!it.product &&
+        it.product.status === 'active' &&
+        !!it.sku &&
+        it.sku.active &&
+        it.sku.stock > 0,
       createdAt: it.createdAt,
       updatedAt: it.updatedAt,
     }))
@@ -1127,10 +1297,7 @@ export class UserMpService {
    *
    * 校验：商品 + SKU 必须真实存在，并属于同一商品；quantity ≥ 1
    */
-  async addCart(
-    userId: string,
-    dto: { productId: string; skuId?: string; quantity?: number },
-  ) {
+  async addCart(userId: string, dto: { productId: string; skuId?: string; quantity?: number }) {
     const productId = String(dto?.productId || '').trim()
     if (!productId) throw new BizException(BizCode.INVALID_PARAMS, '缺少商品 ID')
     const qty = Math.max(1, Math.floor(Number(dto?.quantity ?? 1)))
@@ -1158,7 +1325,12 @@ export class UserMpService {
       if (!fallback) {
         throw new BizException(BizCode.NOT_FOUND, '该商品暂无可购买规格')
       }
-      sku = { id: fallback.id, productId: fallback.productId, stock: fallback.stock, active: fallback.active }
+      sku = {
+        id: fallback.id,
+        productId: fallback.productId,
+        stock: fallback.stock,
+        active: fallback.active,
+      }
     }
     if (!sku.active) {
       throw new BizException(BizCode.PRODUCT_OFFLINE, '该规格已下架')

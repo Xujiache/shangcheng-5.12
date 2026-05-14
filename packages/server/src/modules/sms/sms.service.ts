@@ -36,6 +36,26 @@
  */
 import { Injectable, Logger } from '@nestjs/common'
 import { Agent } from 'undici'
+import { createHash } from 'node:crypto'
+
+/**
+ * 短信验证码日志脱敏。
+ *
+ * 完整 code 永远不应该出现在日志里 —— 即便是 dev 模式：
+ *   - 共享日志（pino/journald/elk）的运维 / 同事会无意中看到
+ *   - 容器编排 / CI 输出常被截屏共享
+ *   - 攻击者拿到旧日志即可未经允许辅助暴力撞库
+ *
+ * 脱敏方案：保留后 2 位（用于人工核对最后几位是否一致），
+ * 加上 4 位 sha256 前缀指纹（用于跨日志条目对照同一验证码而无需明文）。
+ */
+function maskCode(code: string): string {
+  const c = String(code || '')
+  if (!c) return ''
+  const tail = c.length >= 2 ? c.slice(-2) : c
+  const hashed = createHash('sha256').update(c).digest('hex').slice(0, 4)
+  return `**${tail}#${hashed}`
+}
 
 @Injectable()
 export class SmsService {
@@ -73,13 +93,17 @@ export class SmsService {
         this.logger.log(`[SMS][${provider}] phone=${phone} ok=true elapsed=${Date.now() - t0}ms`)
         return { ok: true }
       }
-      this.logger.log(`[SMS][${provider}] phone=${phone} code=${code} (no provider, dev mode)`)
+      // dev 模式不真发短信，code 仍写入 SmsCode 表供开发查询；
+      // 日志只打脱敏指纹，避免把验证码写进可被他人共享的日志流
+      this.logger.log(
+        `[SMS][${provider}] phone=${phone} code=${maskCode(code)} (no provider, dev mode)`,
+      )
       return { ok: true }
     } catch (e: any) {
-      const reason = String(e?.message || e).replace(/^guoyangyun:\s*/, '').slice(0, 120)
-      this.logger.error(
-        `[SMS] phone=${phone} elapsed=${Date.now() - t0}ms failed: ${reason}`,
-      )
+      const reason = String(e?.message || e)
+        .replace(/^guoyangyun:\s*/, '')
+        .slice(0, 120)
+      this.logger.error(`[SMS] phone=${phone} elapsed=${Date.now() - t0}ms failed: ${reason}`)
       return { ok: false, reason }
     }
   }
@@ -90,8 +114,7 @@ export class SmsService {
     code: string,
     _scene: 'login' | 'register' | 'reset',
   ): Promise<void> {
-    const url =
-      process.env.GYY_SMS_API_URL || 'https://api.guoyangyun.com/api/sms/smsmtm.htm'
+    const url = process.env.GYY_SMS_API_URL || 'https://api.guoyangyun.com/api/sms/smsmtm.htm'
     const appkey = process.env.GYY_SMS_APPKEY || process.env.GYY_SMS_USERNAME || ''
     const appsecret = process.env.GYY_SMS_APPSECRET || process.env.GYY_SMS_PASSWORD || ''
     const smsSignId = process.env.GYY_SMS_SIGN || ''

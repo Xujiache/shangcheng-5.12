@@ -31,23 +31,42 @@ export class PlatformService {
 
   // ========== Dashboard ==========
   async dashboard() {
-    const today0 = new Date(); today0.setHours(0, 0, 0, 0)
+    const today0 = new Date()
+    today0.setHours(0, 0, 0, 0)
     const yesterday0 = new Date(today0.getTime() - 86400_000)
 
     const [
-      merchants, merchantsYday,
-      orderAgg, todayOrderAgg, ydayOrderAgg,
-      users, usersYday,
-      pendingMerchants, pendingProducts,
-      pendingAds, complaints, pendingWithdraws,
-      factoryCount, storeCount,
-      ymCount, yyCount, trialCount,
+      merchants,
+      merchantsYday,
+      orderAgg,
+      todayOrderAgg,
+      ydayOrderAgg,
+      users,
+      usersYday,
+      pendingMerchants,
+      pendingProducts,
+      pendingAds,
+      complaints,
+      pendingWithdraws,
+      factoryCount,
+      storeCount,
+      ymCount,
+      yyCount,
+      trialCount,
     ] = await Promise.all([
       this.prisma.merchant.count({ where: { status: 'active' } }),
       this.prisma.merchant.count({ where: { status: 'active', createdAt: { lt: today0 } } }),
       this.prisma.order.aggregate({ _sum: { payAmount: true }, _count: true }),
-      this.prisma.order.aggregate({ where: { createdAt: { gte: today0 } }, _sum: { payAmount: true }, _count: true }),
-      this.prisma.order.aggregate({ where: { createdAt: { gte: yesterday0, lt: today0 } }, _sum: { payAmount: true }, _count: true }),
+      this.prisma.order.aggregate({
+        where: { createdAt: { gte: today0 } },
+        _sum: { payAmount: true },
+        _count: true,
+      }),
+      this.prisma.order.aggregate({
+        where: { createdAt: { gte: yesterday0, lt: today0 } },
+        _sum: { payAmount: true },
+        _count: true,
+      }),
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: { lt: today0 } } }),
       this.prisma.merchant.count({ where: { status: 'pending' } }),
@@ -57,8 +76,12 @@ export class PlatformService {
       this.prisma.withdraw.count({ where: { status: 'pending' } }),
       this.prisma.merchant.count({ where: { type: 'factory', status: 'active' } }),
       this.prisma.merchant.count({ where: { type: 'store', status: 'active' } }),
-      this.prisma.merchantMembership.count({ where: { status: { in: ['active'] }, plan: { period: 'yearly' } } }),
-      this.prisma.merchantMembership.count({ where: { status: { in: ['active'] }, plan: { period: 'monthly' } } }),
+      this.prisma.merchantMembership.count({
+        where: { status: { in: ['active'] }, plan: { period: 'yearly' } },
+      }),
+      this.prisma.merchantMembership.count({
+        where: { status: { in: ['active'] }, plan: { period: 'monthly' } },
+      }),
       this.prisma.merchantMembership.count({ where: { status: 'trial' } }),
     ])
 
@@ -90,7 +113,10 @@ export class PlatformService {
       const c = it.product?.category?.name || '其它'
       catMap.set(c, (catMap.get(c) || 0) + Number(it.unitPrice) * it.quantity)
     }
-    const categorySales = Array.from(catMap.entries()).map(([category, value]) => ({ category, value: Math.round(value) }))
+    const categorySales = Array.from(catMap.entries()).map(([category, value]) => ({
+      category,
+      value: Math.round(value),
+    }))
 
     return {
       overview: {
@@ -135,7 +161,9 @@ export class PlatformService {
    * 全部走 Order 表实时聚合，无任何 mock 兜底。
    */
   async stats(q: any) {
-    const period: 'today' | 'week' | 'month' | 'year' = ['today', 'week', 'month', 'year'].includes(q?.period)
+    const period: 'today' | 'week' | 'month' | 'year' = ['today', 'week', 'month', 'year'].includes(
+      q?.period,
+    )
       ? q.period
       : 'today'
     const now = new Date()
@@ -170,7 +198,10 @@ export class PlatformService {
     }
 
     const orders = await this.prisma.order.findMany({
-      where: { createdAt: { gte: sinceDate }, status: { in: ['pending_shipment', 'shipped', 'completed'] } },
+      where: {
+        createdAt: { gte: sinceDate },
+        status: { in: ['pending_shipment', 'shipped', 'completed'] },
+      },
       select: { merchantId: true, payAmount: true, createdAt: true },
     })
 
@@ -262,22 +293,55 @@ export class PlatformService {
         if (!where.type) where.type = 'store'
       }
     }
-    if (q.keyword) where.OR = [{ name: { contains: q.keyword } }, { legalName: { contains: q.keyword } }]
+    if (q.keyword)
+      where.OR = [{ name: { contains: q.keyword } }, { legalName: { contains: q.keyword } }]
     const [list, total] = await Promise.all([
       this.prisma.merchant.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
       this.prisma.merchant.count({ where }),
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
   }
-  async auditMerchants(q: any) { return this.merchants({ ...q, status: 'pending' }) }
+  async auditMerchants(q: any) {
+    return this.merchants({ ...q, status: 'pending' })
+  }
+  /**
+   * 审核通过商家入驻申请。
+   *
+   * 关键：必须同步把申请人 `User.role` 从 `customer` 升级为 `merchant`，
+   * 并设 `User.merchantId`，否则申请人审核通过后用同一账号无法登录
+   * merchant-app（RolesGuard 拒绝 customer 访问 /m/* 路由），形成入驻闭环断裂。
+   */
   async approveMerchant(id: string) {
-    await this.prisma.merchant.update({ where: { id }, data: { status: 'active' } })
-    await this.prisma.auditRecord.create({ data: { type: 'merchant', targetId: id, status: 'approved' } })
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { id },
+      select: { id: true, userId: true, type: true },
+    })
+    if (!merchant) throw new BizException(BizCode.NOT_FOUND, '商家不存在')
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.merchant.update({ where: { id }, data: { status: 'active' } })
+      if (merchant.userId) {
+        // 申请人可能是工厂(factory)/门店(store)申请，按 Merchant.type 决定 role
+        const targetRole = ['factory', 'store'].includes(merchant.type as string)
+          ? (merchant.type as string)
+          : 'merchant'
+        await tx.user.update({
+          where: { id: merchant.userId },
+          data: { role: targetRole, merchantId: merchant.id },
+        })
+      }
+      await tx.auditRecord.create({ data: { type: 'merchant', targetId: id, status: 'approved' } })
+    })
     return { ok: true }
   }
   async rejectMerchant(id: string, reason: string) {
-    await this.prisma.merchant.update({ where: { id }, data: { status: 'rejected', rejectReason: reason } })
-    await this.prisma.auditRecord.create({ data: { type: 'merchant', targetId: id, status: 'rejected', reason } })
+    await this.prisma.merchant.update({
+      where: { id },
+      data: { status: 'rejected', rejectReason: reason },
+    })
+    await this.prisma.auditRecord.create({
+      data: { type: 'merchant', targetId: id, status: 'rejected', reason },
+    })
     return { ok: true }
   }
   async pauseMerchant(id: string) {
@@ -296,7 +360,13 @@ export class PlatformService {
     if (q.status && q.status !== 'all') where.status = q.status
     if (q.keyword) where.no = { contains: q.keyword }
     const [list, total] = await Promise.all([
-      this.prisma.order.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, include: { merchant: true, user: true } }),
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { merchant: true, user: true },
+      }),
       this.prisma.order.count({ where }),
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
@@ -309,23 +379,31 @@ export class PlatformService {
     const where: any = status === 'pending' ? { status: 'auditing' } : { status }
     if (q.keyword) where.name = { contains: q.keyword }
     const [list, total] = await Promise.all([
-      this.prisma.product.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, include: { merchant: true } }),
+      this.prisma.product.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { merchant: true },
+      }),
       this.prisma.product.count({ where }),
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
   }
   async getAuditConfig() {
     const v = await this.prisma.systemConfig.findUnique({ where: { key: 'audit_product_config' } })
-    return v?.value || {
-      autoApprove: false,
-      conditions: [
-        { key: 'vip', label: 'VIP 商家', enabled: true },
-        { key: 'credit', label: '信用 A/B', enabled: true },
-        { key: 'rejectRate', label: '驳回率 < 5%', enabled: true },
-        { key: 'category', label: '常见品类', enabled: false },
-      ],
-      samplingRate: 10,
-    }
+    return (
+      v?.value || {
+        autoApprove: false,
+        conditions: [
+          { key: 'vip', label: 'VIP 商家', enabled: true },
+          { key: 'credit', label: '信用 A/B', enabled: true },
+          { key: 'rejectRate', label: '驳回率 < 5%', enabled: true },
+          { key: 'category', label: '常见品类', enabled: false },
+        ],
+        samplingRate: 10,
+      }
+    )
   }
   async saveAuditConfig(dto: any) {
     await this.prisma.systemConfig.upsert({
@@ -337,20 +415,36 @@ export class PlatformService {
   }
   async approveProduct(id: string) {
     await this.prisma.product.update({ where: { id }, data: { status: 'active' } })
-    await this.prisma.auditRecord.create({ data: { type: 'product', targetId: id, status: 'approved' } })
+    await this.prisma.auditRecord.create({
+      data: { type: 'product', targetId: id, status: 'approved' },
+    })
     return { ok: true }
   }
   async rejectProduct(id: string, reason: string) {
-    await this.prisma.product.update({ where: { id }, data: { status: 'rejected', rejectReason: reason } })
-    await this.prisma.auditRecord.create({ data: { type: 'product', targetId: id, status: 'rejected', reason } })
+    await this.prisma.product.update({
+      where: { id },
+      data: { status: 'rejected', rejectReason: reason },
+    })
+    await this.prisma.auditRecord.create({
+      data: { type: 'product', targetId: id, status: 'rejected', reason },
+    })
     return { ok: true }
   }
 
   // ========== 广告 ==========
-  async adSlots() { return decimalToNumber(await this.prisma.adSlot.findMany({ orderBy: { sort: 'asc' } })) }
-  async createAdSlot(dto: any) { return decimalToNumber(await this.prisma.adSlot.create({ data: dto })) }
-  async updateAdSlot(id: string, dto: any) { return decimalToNumber(await this.prisma.adSlot.update({ where: { id }, data: dto })) }
-  async deleteAdSlot(id: string) { await this.prisma.adSlot.delete({ where: { id } }); return { ok: true } }
+  async adSlots() {
+    return decimalToNumber(await this.prisma.adSlot.findMany({ orderBy: { sort: 'asc' } }))
+  }
+  async createAdSlot(dto: any) {
+    return decimalToNumber(await this.prisma.adSlot.create({ data: dto }))
+  }
+  async updateAdSlot(id: string, dto: any) {
+    return decimalToNumber(await this.prisma.adSlot.update({ where: { id }, data: dto }))
+  }
+  async deleteAdSlot(id: string) {
+    await this.prisma.adSlot.delete({ where: { id } })
+    return { ok: true }
+  }
   async adCreatives(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const where: any = {}
@@ -361,9 +455,16 @@ export class PlatformService {
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
   }
-  async createAdCreative(dto: any) { return decimalToNumber(await this.prisma.adCreative.create({ data: dto })) }
-  async updateAdCreative(id: string, dto: any) { return decimalToNumber(await this.prisma.adCreative.update({ where: { id }, data: dto })) }
-  async deleteAdCreative(id: string) { await this.prisma.adCreative.delete({ where: { id } }); return { ok: true } }
+  async createAdCreative(dto: any) {
+    return decimalToNumber(await this.prisma.adCreative.create({ data: dto }))
+  }
+  async updateAdCreative(id: string, dto: any) {
+    return decimalToNumber(await this.prisma.adCreative.update({ where: { id }, data: dto }))
+  }
+  async deleteAdCreative(id: string) {
+    await this.prisma.adCreative.delete({ where: { id } })
+    return { ok: true }
+  }
 
   // ========== 选品广场推送 ==========
   async plazaPushes(q: any) {
@@ -388,18 +489,31 @@ export class PlatformService {
   async plazaProductsAll(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const [list, total] = await Promise.all([
-      this.prisma.product.findMany({ where: { status: 'active' }, skip, take, include: { merchant: true } }),
+      this.prisma.product.findMany({
+        where: { status: 'active' },
+        skip,
+        take,
+        include: { merchant: true },
+      }),
       this.prisma.product.count({ where: { status: 'active' } }),
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
   }
   async plazaFactoriesAll() {
-    return this.prisma.merchant.findMany({ where: { type: 'factory', status: 'active' }, take: 200 })
+    return this.prisma.merchant.findMany({
+      where: { type: 'factory', status: 'active' },
+      take: 200,
+    })
   }
   async plazaRecords(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const [list, total] = await Promise.all([
-      this.prisma.agencyApplication.findMany({ skip, take, orderBy: { createdAt: 'desc' }, include: { merchant: true } }),
+      this.prisma.agencyApplication.findMany({
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { merchant: true },
+      }),
       this.prisma.agencyApplication.count(),
     ])
     return buildPage(list, total, page, pageSize)
@@ -433,7 +547,11 @@ export class PlatformService {
       const { id, ...data } = dto
       return decimalToNumber(await this.prisma.memberPlan.update({ where: { id }, data }))
     }
-    return decimalToNumber(await this.prisma.memberPlan.create({ data: { ...dto, code: dto.code || `plan_${Date.now()}` } }))
+    return decimalToNumber(
+      await this.prisma.memberPlan.create({
+        data: { ...dto, code: dto.code || `plan_${Date.now()}` },
+      }),
+    )
   }
   async deleteMemberPlan(id: string) {
     await this.prisma.memberPlan.delete({ where: { id } })
@@ -450,10 +568,7 @@ export class PlatformService {
       orderBy: { createdAt: 'desc' },
     })
     return list.map((m) => {
-      const totalDays = Math.max(
-        1,
-        Math.ceil((m.endAt.getTime() - m.startAt.getTime()) / 86400000),
-      )
+      const totalDays = Math.max(1, Math.ceil((m.endAt.getTime() - m.startAt.getTime()) / 86400000))
       return decimalToNumber({
         ...m,
         merchantName: m.merchant?.name ?? '',
@@ -476,7 +591,13 @@ export class PlatformService {
     const where: any = {}
     if (q.status) where.status = q.status
     const [list, total] = await Promise.all([
-      this.prisma.paymentRecord.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, include: { merchant: true } }),
+      this.prisma.paymentRecord.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { merchant: true },
+      }),
       this.prisma.paymentRecord.count({ where }),
     ])
     const mapped = list.map((r) =>
@@ -531,7 +652,10 @@ export class PlatformService {
     return { ok: true }
   }
   async rejectRefund(id: string, reason: string) {
-    await this.prisma.paymentRecord.update({ where: { id }, data: { status: 'paid', refundReason: reason } })
+    await this.prisma.paymentRecord.update({
+      where: { id },
+      data: { status: 'paid', refundReason: reason },
+    })
     return { ok: true }
   }
 
@@ -553,9 +677,23 @@ export class PlatformService {
       sort?: number
     }> = [
       // 用户明确要求：门店端默认不显示「门店」入口
-      { key: 'home.entry.store', label: '门店入口（仅厂家）', group: 'home_entry', defaultEnabled: false, audience: 'store', sort: 10 },
+      {
+        key: 'home.entry.store',
+        label: '门店入口（仅厂家）',
+        group: 'home_entry',
+        defaultEnabled: false,
+        audience: 'store',
+        sort: 10,
+      },
       // 用户明确要求：门店端默认不显示「上传到选品广场」按钮
-      { key: 'role.button.uploadToPlaza', label: '上传到选品广场', group: 'role_button', defaultEnabled: false, audience: 'store', sort: 10 },
+      {
+        key: 'role.button.uploadToPlaza',
+        label: '上传到选品广场',
+        group: 'role_button',
+        defaultEnabled: false,
+        audience: 'store',
+        sort: 10,
+      },
     ]
     for (const d of DEFAULTS) {
       await this.prisma.featureFlag.upsert({
@@ -612,12 +750,24 @@ export class PlatformService {
   }
   async featureFlagGray() {
     const flags = await this.prisma.featureFlag.findMany()
-    return flags.map((f) => ({ key: f.key, label: f.label, grayPercent: f.grayPercent, grayWhitelist: f.grayWhitelist, audience: f.audience, scheduledAt: f.scheduledAt }))
+    return flags.map((f) => ({
+      key: f.key,
+      label: f.label,
+      grayPercent: f.grayPercent,
+      grayWhitelist: f.grayWhitelist,
+      audience: f.audience,
+      scheduledAt: f.scheduledAt,
+    }))
   }
   async setFeatureFlagGray(dto: any) {
     await this.prisma.featureFlag.update({
       where: { key: dto.key },
-      data: { grayPercent: dto.grayPercent ?? 100, grayWhitelist: dto.grayWhitelist || [], audience: dto.audience, scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null },
+      data: {
+        grayPercent: dto.grayPercent ?? 100,
+        grayWhitelist: dto.grayWhitelist || [],
+        audience: dto.audience,
+        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
+      },
     })
     return { ok: true }
   }
@@ -669,7 +819,15 @@ export class PlatformService {
     }))
     return buildPage(list, total, page, pageSize)
   }
-  async createAdmin(dto: any) {
+  /**
+   * 创建平台管理员账号。
+   *
+   * 安全要求（防纵向提权）：
+   *   - 任何非 super-admin 调用者，role 只能落到 'admin' / 'platform'
+   *   - 仅 super-admin 才能创建 super-admin
+   *   - 未声明 role 默认 'platform'（最小权限）
+   */
+  async createAdmin(dto: any, callerRole?: string) {
     const rawPassword = typeof dto.password === 'string' ? dto.password.trim() : ''
     if (!rawPassword) {
       throw new BizException(BizCode.INVALID_PARAMS, '必须设置初始密码')
@@ -680,6 +838,14 @@ export class PlatformService {
     if (!dto.username || !String(dto.username).trim()) {
       throw new BizException(BizCode.INVALID_PARAMS, '必须设置账号')
     }
+    const ALLOWED_NORMAL_ROLES = ['admin', 'platform']
+    let role = dto.role || 'platform'
+    if (role === 'super-admin' && callerRole !== 'super-admin') {
+      throw new BizException(BizCode.FORBIDDEN, '仅 super-admin 可创建 super-admin')
+    }
+    if (!ALLOWED_NORMAL_ROLES.includes(role) && role !== 'super-admin') {
+      role = 'platform'
+    }
     const hash = await argon2.hash(rawPassword)
     const u = await this.prisma.user.create({
       data: {
@@ -687,7 +853,7 @@ export class PlatformService {
         email: dto.email,
         nickname: dto.nickname || dto.username,
         passwordHash: hash,
-        role: dto.role || 'platform',
+        role,
         adminRoleId: dto.roleId,
         avatar: dto.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dto.username}`,
       },
@@ -706,12 +872,23 @@ export class PlatformService {
    *   - service 用 ADMIN_UPDATABLE_FIELDS 二次过滤（出口防御）
    *   - 密码、roleId、merchantId 等敏感字段一律禁止通过本接口修改
    */
-  async updateAdmin(id: string, dto: UpdateAdminDto) {
+  async updateAdmin(id: string, dto: UpdateAdminDto, callerRole?: string, callerSub?: string) {
     const allowed: Record<string, unknown> = {}
     for (const k of ADMIN_UPDATABLE_FIELDS) {
       if ((dto as Record<string, unknown>)[k] !== undefined) {
         allowed[k] = (dto as Record<string, unknown>)[k]
       }
+    }
+    if (allowed.role !== undefined) {
+      if (allowed.role === 'super-admin' && callerRole !== 'super-admin') {
+        throw new BizException(BizCode.FORBIDDEN, '仅 super-admin 可指派 super-admin 角色')
+      }
+      if (id === callerSub && allowed.role !== callerRole) {
+        throw new BizException(BizCode.FORBIDDEN, '不允许修改自己的角色')
+      }
+    }
+    if (id === callerSub && allowed.status === 'disabled') {
+      throw new BizException(BizCode.FORBIDDEN, '不允许禁用自己')
     }
     if (Object.keys(allowed).length === 0) {
       return { ok: true, updated: false }
@@ -719,11 +896,17 @@ export class PlatformService {
     await this.prisma.user.update({ where: { id }, data: allowed })
     return { ok: true, updated: true }
   }
-  async deleteAdmin(id: string) { await this.prisma.user.delete({ where: { id } }); return { ok: true } }
+  async deleteAdmin(id: string) {
+    await this.prisma.user.delete({ where: { id } })
+    return { ok: true }
+  }
   async toggleAdmin(id: string) {
     const u = await this.prisma.user.findUnique({ where: { id } })
     if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
-    await this.prisma.user.update({ where: { id }, data: { status: u.status === 'active' ? 'disabled' : 'active' } })
+    await this.prisma.user.update({
+      where: { id },
+      data: { status: u.status === 'active' ? 'disabled' : 'active' },
+    })
     return { ok: true }
   }
 
@@ -760,12 +943,17 @@ export class PlatformService {
       const { id, ...data } = dto
       return this.prisma.adminRole.update({ where: { id }, data })
     }
-    return this.prisma.adminRole.create({ data: { ...dto, code: dto.code || `role_${Date.now()}` } })
+    return this.prisma.adminRole.create({
+      data: { ...dto, code: dto.code || `role_${Date.now()}` },
+    })
   }
   async updateRole(id: string, dto: any) {
     return this.prisma.adminRole.update({ where: { id }, data: dto })
   }
-  async deleteRole(id: string) { await this.prisma.adminRole.delete({ where: { id } }); return { ok: true } }
+  async deleteRole(id: string) {
+    await this.prisma.adminRole.delete({ where: { id } })
+    return { ok: true }
+  }
 
   // ========== 审核记录 ==========
   /**
@@ -830,6 +1018,255 @@ export class PlatformService {
     return buildPage(list, total, page, pageSize)
   }
 
+  // ========== 提现审核（平台层） ==========
+  /**
+   * 平台审核提现申请的分页列表
+   *
+   * 之前提现审核挂在商家自助接口下属于产品设计错误（商家自审 = 无审核），
+   * 这里在平台层重建：支持 status / keyword / 商家筛选 + 分页。
+   *
+   * 返回每条记录会扁平化商家摘要（merchantName / merchantType / merchantStatus）
+   * 给 admin-pc「提现审核」表格直接 row.merchantName 消费。
+   */
+  async withdrawsList(q: any) {
+    const { skip, take, page, pageSize } = parsePage(q)
+    const where: any = {}
+    if (q?.status && q.status !== 'all') where.status = q.status
+    if (q?.merchantId) where.merchantId = q.merchantId
+    if (q?.keyword) {
+      where.OR = [{ no: { contains: q.keyword } }, { account: { contains: q.keyword } }]
+    }
+    const [rows, total] = await Promise.all([
+      this.prisma.withdraw.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          merchant: { select: { id: true, name: true, type: true, status: true } },
+          user: { select: { id: true, nickname: true, phone: true } },
+        },
+      }),
+      this.prisma.withdraw.count({ where }),
+    ])
+    const list = rows.map((r) =>
+      decimalToNumber({
+        ...r,
+        merchantName: r.merchant?.name ?? '',
+        merchantType: r.merchant?.type ?? '',
+        merchantStatus: r.merchant?.status ?? '',
+        applicantName: r.user?.nickname ?? '',
+        applicantPhone: r.user?.phone ?? '',
+      }),
+    )
+    return buildPage(list, total, page, pageSize)
+  }
+
+  /**
+   * 平台审核 → 通过
+   *
+   * 仅允许 pending → approved；其他状态一律拒绝（避免误把 paid 改成 approved 等）。
+   * 同步写入 reviewedBy + reviewedAt + remark；不直接转 paid（保留运营手动 mark-paid 步骤）。
+   */
+  async approveWithdraw(id: string, remark: string | undefined, callerSub?: string) {
+    const w = await this.prisma.withdraw.findUnique({ where: { id } })
+    if (!w) throw new BizException(BizCode.NOT_FOUND, '提现单不存在')
+    if (w.status !== 'pending') {
+      throw new BizException(BizCode.BUSINESS_ERROR, `当前状态 ${w.status} 不可审核通过`)
+    }
+    await this.prisma.withdraw.update({
+      where: { id },
+      data: {
+        status: 'approved',
+        reviewedBy: callerSub || null,
+        reviewedAt: new Date(),
+        remark: remark || w.remark || null,
+      },
+    })
+    return { ok: true }
+  }
+
+  /**
+   * 平台审核 → 驳回
+   *
+   * 仅允许 pending → rejected；其他状态拒绝。
+   * 注：当前 Merchant schema 没有 balance 表，商家可用余额是按完成订单 - 已 paid 提现实时算的，
+   *   驳回时无需回写余额。如果未来引入冻结余额，需要在事务里同时退回冻结额。
+   */
+  async rejectWithdrawPlat(id: string, reason: string, callerSub?: string) {
+    if (!reason || !reason.trim()) {
+      throw new BizException(BizCode.INVALID_PARAMS, '请填写驳回原因')
+    }
+    const w = await this.prisma.withdraw.findUnique({ where: { id } })
+    if (!w) throw new BizException(BizCode.NOT_FOUND, '提现单不存在')
+    if (w.status !== 'pending') {
+      throw new BizException(BizCode.BUSINESS_ERROR, `当前状态 ${w.status} 不可驳回`)
+    }
+    await this.prisma.withdraw.update({
+      where: { id },
+      data: {
+        status: 'rejected',
+        reviewedBy: callerSub || null,
+        reviewedAt: new Date(),
+        remark: reason.trim(),
+      },
+    })
+    return { ok: true }
+  }
+
+  /**
+   * 平台标记打款完成
+   *
+   * 仅允许 approved → paid；其他状态拒绝（防止跳步把 pending 直接打款）。
+   * - transactionId：第三方支付流水号（可选，运营走线下转账时可留空）
+   * - remark：运营追加备注（如银行回单号等）。
+   * 写入 paidAt = now，便于商家端「我的提现记录」展示到账时间。
+   */
+  async markWithdrawPaid(
+    id: string,
+    body: { transactionId?: string; remark?: string },
+    callerSub?: string,
+  ) {
+    const w = await this.prisma.withdraw.findUnique({ where: { id } })
+    if (!w) throw new BizException(BizCode.NOT_FOUND, '提现单不存在')
+    if (w.status !== 'approved') {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        `当前状态 ${w.status} 不可标记打款（必须先审核通过）`,
+      )
+    }
+    // 把 transactionId / 备注合并到 remarkTags / remark：
+    //  - Withdraw schema 没有独立 transactionId 字段，把它附加到 remark 末尾，
+    //    格式 `<原备注> | tx=xxx`，便于后续日志查询。
+    const tail = body?.transactionId ? ` | tx=${body.transactionId}` : ''
+    const newRemark = (body?.remark || w.remark || '') + tail
+    await this.prisma.withdraw.update({
+      where: { id },
+      data: {
+        status: 'paid',
+        paidAt: new Date(),
+        reviewedBy: w.reviewedBy || callerSub || null,
+        remark: newRemark.trim() || null,
+      },
+    })
+    return { ok: true }
+  }
+
+  // ========== 抽检 / 平台广场上下架 ==========
+  /**
+   * 平台抽检某商品的审核结果。
+   *
+   * 用途：审核已自动通过后平台运营复核（"抽检"），可推翻自动结果。
+   * passed=false 时必须填 reason，避免无理由驳回；同时回写 Product.status='rejected'。
+   * 写入 AuditRecord.sampleChecked=true 便于审计区分人工 vs 自动审。
+   */
+  async sampleCheckProduct(
+    productId: string,
+    passed: boolean,
+    reason?: string,
+    callerSub?: string,
+  ) {
+    const p = await this.prisma.product.findUnique({ where: { id: productId } })
+    if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+    if (!passed && (!reason || !reason.trim())) {
+      throw new BizException(BizCode.INVALID_PARAMS, '抽检不通过必须填写原因')
+    }
+    const newStatus = passed ? 'active' : 'rejected'
+    await this.prisma.$transaction([
+      this.prisma.product.update({
+        where: { id: productId },
+        data: { status: newStatus, rejectReason: passed ? null : reason!.trim() },
+      }),
+      this.prisma.auditRecord.create({
+        data: {
+          type: 'product',
+          targetId: productId,
+          status: passed ? 'approved' : 'rejected',
+          reason: passed ? null : reason!.trim(),
+          auditorId: callerSub || null,
+          sampleChecked: true,
+          reviewedAt: new Date(),
+        },
+      }),
+    ])
+    return { ok: true, productId, status: newStatus }
+  }
+
+  /**
+   * 平台维度上下架某商品（仅控制广场展示，不动商家原始 status）。
+   *
+   * 当前 Product schema 没有独立的 `plazaVisible` 列，因此用 SystemConfig 兜底，
+   * key 形如 `plaza:product:${productId}`，value 为 { online: boolean, at: ISO }。
+   * - 选品广场列表查询时可批量 IN 读这些 key 过滤；
+   * - 后续若加 plazaVisible 列，可在此一并迁移而不破坏接口形状。
+   */
+  async setPlazaProductOnline(productId: string, online: boolean) {
+    const p = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, merchantId: true },
+    })
+    if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+    const key = `plaza:product:${productId}`
+    await this.prisma.systemConfig.upsert({
+      where: { key },
+      update: { value: { online: !!online, at: new Date().toISOString() } as any },
+      create: { key, value: { online: !!online, at: new Date().toISOString() } as any },
+    })
+    return { ok: true, productId, online: !!online }
+  }
+
+  // ========== 超管重置管理员密码 ==========
+  /**
+   * 仅 super-admin 可调；
+   * 用于「我忘记密码 / 给同事重置」场景，由超管直接覆盖密码（无需短信验证码）。
+   *
+   * 安全约束：
+   *   1. 调用方角色必须是 super-admin —— 普通 admin / platform 拒绝
+   *   2. 不允许给自己重置（防自锁、防绕过审计）
+   *   3. 密码长度 ≥ 8
+   *   4. 目标用户必须是后台管理员角色（admin/platform/super-admin），不能拿去重置普通用户密码
+   *      —— 普通用户走 phone-login 走短信重置链路，与本接口完全隔离
+   *   5. 不能把另一个 super-admin 的密码改了（防超管之间互相覆盖；要改请走人工流程）
+   */
+  async resetAdminPassword(
+    id: string,
+    newPwd: string,
+    callerSub: string | undefined,
+    callerRole: string | undefined,
+  ) {
+    if (callerRole !== 'super-admin') {
+      throw new BizException(BizCode.FORBIDDEN, '仅 super-admin 可重置管理员密码')
+    }
+    if (!callerSub) {
+      throw new BizException(BizCode.UNAUTHORIZED, '未登录')
+    }
+    if (id === callerSub) {
+      throw new BizException(BizCode.FORBIDDEN, '不允许重置自己的密码（请走个人设置）')
+    }
+    const pwd = typeof newPwd === 'string' ? newPwd.trim() : ''
+    if (pwd.length < 8) {
+      throw new BizException(BizCode.INVALID_PARAMS, '新密码至少 8 位')
+    }
+    const target = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true },
+    })
+    if (!target) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+    if (!['admin', 'platform', 'super-admin'].includes(target.role)) {
+      // 普通客户/商家请走自助找回（短信验证码），不允许通过本接口覆盖密码
+      throw new BizException(BizCode.FORBIDDEN, '该账号非后台管理员，不可通过本接口重置')
+    }
+    if (target.role === 'super-admin') {
+      throw new BizException(
+        BizCode.FORBIDDEN,
+        '不允许重置另一位 super-admin 的密码（请走人工流程）',
+      )
+    }
+    const hash = await argon2.hash(pwd)
+    await this.prisma.user.update({ where: { id }, data: { passwordHash: hash } })
+    return { ok: true, userId: id }
+  }
+
   // ========== 系统配置 ==========
   /**
    * 系统设置 —— 平台后台「系统设置」页消费
@@ -842,7 +1279,11 @@ export class PlatformService {
   async systemSettings() {
     const DEFAULT = {
       site: { name: '经纬科技', logo: '', icp: '' },
-      payment: { wechat: { enabled: true }, alipay: { enabled: false }, balance: { enabled: true } },
+      payment: {
+        wechat: { enabled: true },
+        alipay: { enabled: false },
+        balance: { enabled: true },
+      },
       logistics: { providers: ['顺丰', '京东', '中通'], defaultFreight: 10 },
       service: { phone: '400-000-0000', email: 'support@jiujiu.com', workTime: '9:00-18:00' },
       security: { passwordPolicy: { minLength: 8, requireUppercase: true }, ipWhitelist: [] },
