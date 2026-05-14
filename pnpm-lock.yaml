@@ -251,25 +251,43 @@ importers:
         version: 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vite@7.3.3(@types/node@24.12.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))(vue@3.5.34(typescript@5.6.3))
       '@dcloudio/uni-mp-weixin':
         specifier: 3.0.0-alpha-5000820260508001
-        version: 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))
+        version: 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(debug@4.4.3)(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))
       '@jiujiu/shared':
         specifier: workspace:*
         version: link:../shared
+      '@socket.io/component-emitter':
+        specifier: ^3.1.2
+        version: 3.1.2
       dayjs:
         specifier: ^1.11.13
         version: 1.11.20
+      debug:
+        specifier: ^4.4.3
+        version: 4.4.3
+      engine.io-client:
+        specifier: ^6.6.4
+        version: 6.6.4
+      engine.io-parser:
+        specifier: ^5.2.3
+        version: 5.2.3
       pinia:
         specifier: ^2.2.4
         version: 2.3.1(typescript@5.6.3)(vue@3.5.34(typescript@5.6.3))
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3
+      socket.io-parser:
+        specifier: ^4.2.6
+        version: 4.2.6
       vue:
         specifier: ^3.5.21
         version: 3.5.34(typescript@5.6.3)
       vue-i18n:
         specifier: ^9.14.0
         version: 9.14.5(vue@3.5.34(typescript@5.6.3))
+      ws:
+        specifier: ^8.20.0
+        version: 8.20.0
     devDependencies:
       '@dcloudio/types':
         specifier: ^3.4.15
@@ -537,7 +555,7 @@ importers:
         version: 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vite@7.3.3(@types/node@24.12.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))(vue@3.5.34(typescript@5.6.3))
       '@dcloudio/uni-mp-weixin':
         specifier: 3.0.0-alpha-5000820260508001
-        version: 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))
+        version: 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(debug@4.4.3)(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))
       '@jiujiu/shared':
         specifier: workspace:*
         version: link:../shared
@@ -9429,7 +9447,7 @@ snapshots:
       '@dcloudio/uni-shared': 3.0.0-alpha-5000820260508001
       '@vue/shared': 3.4.21
 
-  '@dcloudio/uni-mp-weixin@3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))':
+  '@dcloudio/uni-mp-weixin@3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(debug@4.4.3)(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))':
     dependencies:
       '@dcloudio/uni-cli-shared': 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))
       '@dcloudio/uni-mp-compiler': 3.0.0-alpha-5000820260508001(@vueuse/core@13.9.0(vue@3.5.34(typescript@5.6.3)))(postcss@8.5.14)(rollup@4.60.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))(vue@3.5.34(typescript@5.6.3))
@@ -9437,7 +9455,7 @@ snapshots:
       '@dcloudio/uni-mp-vue': 3.0.0-alpha-5000820260508001
       '@dcloudio/uni-shared': 3.0.0-alpha-5000820260508001
       '@vue/shared': 3.4.21
-      jimp: 0.10.3
+      jimp: 0.10.3(debug@4.4.3)
       licia: 1.41.1
       qrcode-reader: 1.0.4
       qrcode-terminal: 0.12.0
@@ -10017,12 +10035,12 @@ snapshots:
   '@jimp/bmp@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       bmp-js: 0.1.0
       core-js: 3.49.0
 
-  '@jimp/core@0.10.3':
+  '@jimp/core@0.10.3(debug@4.4.3)':
     dependencies:
       '@babel/runtime': 7.29.2
       '@jimp/utils': 0.10.3
@@ -10031,7 +10049,7 @@ snapshots:
       core-js: 3.49.0
       exif-parser: 0.1.12
       file-type: 9.0.0
-      load-bmfont: 1.4.2
+      load-bmfont: 1.4.2(debug@4.4.3)
       mkdirp: 0.5.6
       phin: 2.9.3
       pixelmatch: 4.0.2
@@ -10039,10 +10057,10 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@jimp/custom@0.10.3':
+  '@jimp/custom@0.10.3(debug@4.4.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/core': 0.10.3
+      '@jimp/core': 0.10.3(debug@4.4.3)
       core-js: 3.49.0
     transitivePeerDependencies:
       - debug
@@ -10050,7 +10068,7 @@ snapshots:
   '@jimp/gif@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
       omggif: 1.0.10
@@ -10058,7 +10076,7 @@ snapshots:
   '@jimp/jpeg@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
       jpeg-js: 0.3.7
@@ -10066,28 +10084,28 @@ snapshots:
   '@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-blur@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-circle@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-color@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
       tinycolor2: 1.6.0
@@ -10095,7 +10113,7 @@ snapshots:
   '@jimp/plugin-contain@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-scale@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)))':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-scale': 0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))
@@ -10105,7 +10123,7 @@ snapshots:
   '@jimp/plugin-cover@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-scale@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)))':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-crop': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-scale': 0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))
@@ -10115,35 +10133,35 @@ snapshots:
   '@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-displace@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-dither@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-fisheye@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-flip@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-rotate@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)))':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-rotate': 0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
@@ -10151,53 +10169,53 @@ snapshots:
   '@jimp/plugin-gaussian@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-invert@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-mask@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-normalize@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
-  '@jimp/plugin-print@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))':
+  '@jimp/plugin-print@0.10.3(@jimp/custom@0.10.3(debug@4.4.3))(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3(debug@4.4.3)))(debug@4.4.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
-      load-bmfont: 1.4.2
+      load-bmfont: 1.4.2(debug@4.4.3)
     transitivePeerDependencies:
       - debug
 
   '@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-rotate@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-crop': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
@@ -10207,7 +10225,7 @@ snapshots:
   '@jimp/plugin-scale@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
@@ -10215,7 +10233,7 @@ snapshots:
   '@jimp/plugin-shadow@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blur@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-blur': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/utils': 0.10.3
@@ -10224,16 +10242,16 @@ snapshots:
   '@jimp/plugin-threshold@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-color@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-color': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
-  '@jimp/plugins@0.10.3(@jimp/custom@0.10.3)':
+  '@jimp/plugins@0.10.3(@jimp/custom@0.10.3(debug@4.4.3))(debug@4.4.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-blur': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-circle': 0.10.3(@jimp/custom@0.10.3)
@@ -10249,7 +10267,7 @@ snapshots:
       '@jimp/plugin-invert': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-mask': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-normalize': 0.10.3(@jimp/custom@0.10.3)
-      '@jimp/plugin-print': 0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))
+      '@jimp/plugin-print': 0.10.3(@jimp/custom@0.10.3(debug@4.4.3))(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3(debug@4.4.3)))(debug@4.4.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-rotate': 0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))
       '@jimp/plugin-scale': 0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))
@@ -10263,7 +10281,7 @@ snapshots:
   '@jimp/png@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
       pngjs: 3.4.0
@@ -10271,7 +10289,7 @@ snapshots:
   '@jimp/tiff@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       core-js: 3.49.0
       utif: 2.0.1
 
@@ -10279,7 +10297,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.2
       '@jimp/bmp': 0.10.3(@jimp/custom@0.10.3)
-      '@jimp/custom': 0.10.3
+      '@jimp/custom': 0.10.3(debug@4.4.3)
       '@jimp/gif': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/jpeg': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/png': 0.10.3(@jimp/custom@0.10.3)
@@ -11767,7 +11785,7 @@ snapshots:
 
   axios@1.16.0:
     dependencies:
-      follow-redirects: 1.16.0
+      follow-redirects: 1.16.0(debug@4.4.3)
       form-data: 4.0.5
       proxy-from-env: 2.1.0
     transitivePeerDependencies:
@@ -12030,9 +12048,9 @@ snapshots:
 
   caniuse-lite@1.0.30001792: {}
 
-  centra@2.7.0:
+  centra@2.7.0(debug@4.4.3):
     dependencies:
-      follow-redirects: 1.16.0
+      follow-redirects: 1.16.0(debug@4.4.3)
     transitivePeerDependencies:
       - debug
 
@@ -13163,7 +13181,9 @@ snapshots:
 
   flatted@3.4.2: {}
 
-  follow-redirects@1.16.0: {}
+  follow-redirects@1.16.0(debug@4.4.3):
+    optionalDependencies:
+      debug: 4.4.3
 
   foreground-child@3.3.1:
     dependencies:
@@ -14035,11 +14055,11 @@ snapshots:
       - supports-color
       - ts-node
 
-  jimp@0.10.3:
+  jimp@0.10.3(debug@4.4.3):
     dependencies:
       '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.10.3
-      '@jimp/plugins': 0.10.3(@jimp/custom@0.10.3)
+      '@jimp/custom': 0.10.3(debug@4.4.3)
+      '@jimp/plugins': 0.10.3(@jimp/custom@0.10.3(debug@4.4.3))(debug@4.4.3)
       '@jimp/types': 0.10.3(@jimp/custom@0.10.3)
       core-js: 3.49.0
       regenerator-runtime: 0.13.11
@@ -14259,14 +14279,14 @@ snapshots:
       rfdc: 1.4.1
       wrap-ansi: 9.0.2
 
-  load-bmfont@1.4.2:
+  load-bmfont@1.4.2(debug@4.4.3):
     dependencies:
       buffer-equal: 0.0.1
       mime: 1.6.0
       parse-bmfont-ascii: 1.0.6
       parse-bmfont-binary: 1.0.6
       parse-bmfont-xml: 1.1.6
-      phin: 3.7.1
+      phin: 3.7.1(debug@4.4.3)
       xhr: 2.6.0
       xtend: 4.0.2
     transitivePeerDependencies:
@@ -14799,9 +14819,9 @@ snapshots:
 
   phin@2.9.3: {}
 
-  phin@3.7.1:
+  phin@3.7.1(debug@4.4.3):
     dependencies:
-      centra: 2.7.0
+      centra: 2.7.0(debug@4.4.3)
     transitivePeerDependencies:
       - debug
 
