@@ -700,8 +700,14 @@ async function submit(status: 'draft' | 'submit') {
     uni.hideLoading()
     uni.showToast({ title: status === 'draft' ? '已保存' : '已提交', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 800)
-  } catch {
+  } catch (e: any) {
+    // 不能再用空 catch 吞错误 —— 之前有过"toast 提交成功但商品没落库"的反馈,
+    // 真因(throttler / 字段校验失败 / 商家未绑定)都被吞掉,排查时只能猜。
+    // 这里把后端 message 抬到 UI,长一点也没关系,信息密度优先。
     uni.hideLoading()
+    const msg = e?.message || e?.errMsg || '提交失败,请重试'
+    uni.showToast({ title: msg, icon: 'none', duration: 3000 })
+    console.error('[product/add submit failed]', e)
   }
 }
 

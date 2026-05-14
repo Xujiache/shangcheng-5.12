@@ -242,13 +242,42 @@ export interface ProductAuditConfig {
   samplingRate: number
 }
 
+/**
+ * 平台商品审核列表。
+ *
+ * 后端 Product 模型的真实 status enum 是 `auditing / active / offline / rejected`
+ * (见 server/prisma/schema.prisma + merchant.service.createProduct L334)。
+ * 但平台审核视图按 `pending / auto_approved / rejected` 三种 TabKey 渲染,
+ * 客户端 filter `p.status === tab.value` 必然把 `auditing` 漏掉 —— 这就是
+ * "商家提交了但审核中 tab 完全空白"的根因。
+ *
+ * 这里在适配层把 `auditing` 归一化成 `pending`,后端不动、视图不动。
+ * 平铺 merchant.name → merchantName,image 取 images[0],submittedAt 兜底 createdAt。
+ */
 export async function fetchProductAudits(): Promise<AuditProduct[]> {
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/audit/products',
       params: { pageSize: 100 }
     })
-    return unwrapPage<AuditProduct>(resp)
+    const raw = unwrapPage<any>(resp)
+    return raw.map(
+      (p): AuditProduct => ({
+        id: p.id,
+        name: p.name || '',
+        image: p.image || (Array.isArray(p.images) ? p.images[0] : '') || '',
+        category: p.category?.name || p.categoryName || '',
+        merchant:
+          (typeof p.merchant === 'object' ? p.merchant?.name : p.merchant) ||
+          p.merchantName ||
+          '',
+        price: Number(p.priceRetailMin ?? p.price ?? 0),
+        submittedAt: p.submittedAt || p.createdAt || '',
+        // 关键归一化:DB schema 用 'auditing',视图 TabKey 用 'pending'
+        status: p.status === 'auditing' ? 'pending' : p.status,
+        rejectReason: p.rejectReason ?? undefined
+      })
+    )
   } catch {
     return []
   }
