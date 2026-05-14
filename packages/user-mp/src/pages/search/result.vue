@@ -52,7 +52,8 @@ async function search(reset = true) {
         pageSize: PAGE_SIZE,
       })
       products.value = reset ? result.list : [...products.value, ...result.list]
-      hasMore.value = (result.list?.length ?? 0) >= PAGE_SIZE
+      // 优先用后端 hasMore；后端没返时按本页数量兜底判断
+      hasMore.value = result.hasMore ?? (result.list?.length ?? 0) >= PAGE_SIZE
     } else {
       const result = await shopService.search({
         keyword: keyword.value,
@@ -60,7 +61,7 @@ async function search(reset = true) {
         pageSize: PAGE_SIZE,
       })
       shops.value = reset ? result.list : [...shops.value, ...result.list]
-      hasMore.value = (result.list?.length ?? 0) >= PAGE_SIZE
+      hasMore.value = result.hasMore ?? (result.list?.length ?? 0) >= PAGE_SIZE
     }
   } catch (e: any) {
     uni.showToast({ title: e?.message || '搜索失败', icon: 'none' })
@@ -151,12 +152,7 @@ onMounted(() => {
       </view>
     </view>
 
-    <scroll-view
-      scroll-y
-      class="scroll"
-      @scrolltolower="loadMore"
-      :lower-threshold="200"
-    >
+    <scroll-view scroll-y class="scroll" @scrolltolower="loadMore" :lower-threshold="200">
       <!-- 商品 tab：两列瀑布流 -->
       <view v-if="tab === 'product'">
         <view v-if="!loading && products.length === 0" class="empty">
@@ -165,12 +161,7 @@ onMounted(() => {
         </view>
         <view v-else class="waterfall">
           <view class="col">
-            <view
-              v-for="(p, i) in colLeft"
-              :key="p.id"
-              class="wf-card"
-              @click="goDetail(p)"
-            >
+            <view v-for="(p, i) in colLeft" :key="p.id" class="wf-card" @click="goDetail(p)">
               <image
                 :src="p.images?.[0]"
                 mode="aspectFill"
@@ -184,12 +175,7 @@ onMounted(() => {
             </view>
           </view>
           <view class="col">
-            <view
-              v-for="(p, i) in colRight"
-              :key="p.id"
-              class="wf-card"
-              @click="goDetail(p)"
-            >
+            <view v-for="(p, i) in colRight" :key="p.id" class="wf-card" @click="goDetail(p)">
               <image
                 :src="p.images?.[0]"
                 mode="aspectFill"
@@ -212,12 +198,7 @@ onMounted(() => {
           <text class="empty-sub">换个关键词试试</text>
         </view>
         <view v-else class="shop-list">
-          <view
-            v-for="s in shops"
-            :key="s.id"
-            class="shop-card"
-            @click="goShop(s)"
-          >
+          <view v-for="s in shops" :key="s.id" class="shop-card" @click="goShop(s)">
             <view class="shop-logo">
               <text>{{ s.name.charAt(0) }}</text>
             </view>
@@ -244,8 +225,10 @@ onMounted(() => {
       </view>
 
       <view v-if="loadingMore" class="loadmore">加载中…</view>
-      <view v-else-if="!hasMore && (products.length > 0 || shops.length > 0)" class="loadmore">没有更多了</view>
-      <view style="height: 32rpx;" />
+      <view v-else-if="!hasMore && (products.length > 0 || shops.length > 0)" class="loadmore"
+        >没有更多了</view
+      >
+      <view style="height: 32rpx" />
     </scroll-view>
   </view>
 </template>
@@ -282,9 +265,20 @@ onMounted(() => {
     padding: 0 20rpx;
     background: #f5f6f8;
     border-radius: 999rpx;
-    .input { flex: 1; height: 100%; font-size: 28rpx; color: #1d2129; }
-    .ph { color: #c9cdd4; }
-    .clear { display: flex; align-items: center; padding: 4rpx; }
+    .input {
+      flex: 1;
+      height: 100%;
+      font-size: 28rpx;
+      color: #1d2129;
+    }
+    .ph {
+      color: #c9cdd4;
+    }
+    .clear {
+      display: flex;
+      align-items: center;
+      padding: 4rpx;
+    }
   }
   .search-btn {
     padding: 0 16rpx;
@@ -346,7 +340,7 @@ onMounted(() => {
   background: #fff;
   border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 .wf-img {
   width: 100%;
@@ -386,7 +380,7 @@ onMounted(() => {
   padding: 24rpx;
   background: #fff;
   border-radius: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   &:active {
     transform: scale(0.99);
   }

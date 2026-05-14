@@ -43,7 +43,13 @@ import {
 export type { Subscription, UsageQuota, PaymentRecord, MembershipNotice, QuotaKey }
 
 /** 后端分页响应解包 */
-interface PageResp<T> { list: T[]; total: number; page: number; pageSize: number; hasMore?: boolean }
+interface PageResp<T> {
+  list: T[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore?: boolean
+}
 /**
  * 与 `platform-business.ts#unwrapPage` 行为对齐：
  * 兼容 `{list}` / `{items}` / `{records}` / 裸数组 / 空值五种形态，
@@ -56,6 +62,49 @@ function unwrapList<T>(resp: any): T[] {
   if (Array.isArray(resp.items)) return resp.items as T[]
   if (Array.isArray(resp.records)) return resp.records as T[]
   return []
+}
+
+/* ========== 文件上传 ========== */
+
+/**
+ * 文件上传响应（与后端 `files.service.ts#upload` 对齐）
+ *
+ * 返回字段：
+ *   - url:      可公开访问的最终 URL（如 OSS / 七牛 / S3 直链）
+ *   - key:      存储 key（删除 / 后续运维使用）
+ *   - size:     字节数
+ *   - mimeType: 上传时的 MIME，便于前端二次校验
+ */
+export interface UploadedFileInfo {
+  url: string
+  key: string
+  size?: number
+  mimeType?: string
+}
+
+/**
+ * 上传单张图片到后端 `/api/v1/files/upload`
+ *
+ * 之前商品 add 页直接用 `URL.createObjectURL(file)` 生成 blob: 链接塞进
+ * `form.images`，提交时把这些临时链接传给后端 → 服务器拿到的是
+ * `blob:http://localhost:.../xxx` 字符串，落库后 C 端无法回显（404）。
+ *
+ * 该 helper 走 multipart/form-data：FormData 内 axios 不会被 http 拦截器误塞
+ * Content-Type=application/json（参见 utils/http/index.ts L87 的 FormData 短路），
+ * 边界值由浏览器自动添加，无需手动设置 `Content-Type: multipart/form-data`。
+ *
+ * @param file    `<input type=file>` 拿到的 File 对象
+ * @param bizType 业务分类（落库写到 UploadedFile.bizType，用于资源回收 / 隔离）
+ */
+export async function uploadImage(file: File, bizType = 'product'): Promise<UploadedFileInfo> {
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('bizType', bizType)
+  const res = await request.post<UploadedFileInfo>({
+    url: '/api/v1/files/upload',
+    data: fd
+  })
+  return res
 }
 
 /* ========== Dashboard ========== */
@@ -236,6 +285,7 @@ export function createAgencyApplication(dto: {
 
 // kept for backward-compat with views that still call save (now a no-op,
 // since each mutation goes through updateAgencyApplication individually)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function saveAgencyApplications(_list: AgencyApplication[]): void {
   // No-op — per-row save replaced this batch write.
 }
@@ -300,6 +350,21 @@ export interface CustomerTier {
 function isVip(u: User & { priceTier?: string }): boolean {
   const tier = u.priceTier
   return tier === 'member' || tier === 'agency'
+}
+
+/**
+ * 切换客户黑名单状态
+ *
+ * 后端 `PATCH /m/customers/:id/blacklist` 接收 `{ on: boolean }`，返回
+ * `{ ok, blocked }`。failed 时由调用方 catch 后回滚 UI 状态（避免列表显示
+ * 已加入但 DB 没改）。
+ */
+export function setCustomerBlacklist(id: string, on: boolean) {
+  return request.request<{ ok: boolean; blocked: boolean }>({
+    url: `/api/v1/m/customers/${encodeURIComponent(id)}/blacklist`,
+    method: 'PATCH',
+    data: { on }
+  })
 }
 
 export async function fetchCustomers(tier: CustomerTier['key'] = 'all') {
@@ -369,6 +434,51 @@ export async function fetchMarketingActivities(): Promise<MarketingActivity[]> {
   }
 }
 
+/**
+ * 优惠券新建 / 更新 / 删除 / 启停
+ *
+ * 对接后端 `/api/v1/m/marketing/coupons` 一组 REST 接口（后端工程师正在落地）。
+ * - 新建 / 编辑共用同一 payload，编辑场景需要走 PUT 携带 :id
+ * - toggle 接口接受 `{active: boolean}`，启停状态走单独路径避免与编辑混淆
+ *
+ * 接口缺失时由调用方 catch 后回滚 UI 状态。
+ */
+export interface CouponPayload {
+  type: MarketingActivity['type']
+  title: string
+  description?: string
+  startAt?: string
+  endAt?: string
+  status?: MarketingActivity['status']
+}
+
+export function createCoupon(payload: CouponPayload) {
+  return request.post<MarketingActivity>({
+    url: '/api/v1/m/marketing/coupons',
+    data: payload
+  })
+}
+
+export function updateCoupon(id: string, payload: Partial<CouponPayload>) {
+  return request.put<MarketingActivity>({
+    url: `/api/v1/m/marketing/coupons/${encodeURIComponent(id)}`,
+    data: payload
+  })
+}
+
+export function deleteCoupon(id: string) {
+  return request.del<{ ok: boolean }>({
+    url: `/api/v1/m/marketing/coupons/${encodeURIComponent(id)}`
+  })
+}
+
+export function toggleCoupon(id: string, active: boolean) {
+  return request.post<{ ok: boolean; status: MarketingActivity['status'] }>({
+    url: `/api/v1/m/marketing/coupons/${encodeURIComponent(id)}/toggle`,
+    data: { active }
+  })
+}
+
 /* ========== 选品广场 ========== */
 
 export async function fetchPlazaCards() {
@@ -436,10 +546,9 @@ export async function fetchFactoryDetail(factoryId: string): Promise<FactoryDeta
       rating: typeof f.rating === 'number' ? f.rating : 0,
       yearsInBusiness: typeof f.yearsInBusiness === 'number' ? f.yearsInBusiness : 0,
       description: f.desc || f.description || '',
-      certifications:
-        Array.isArray(f.qualifications)
-          ? f.qualifications.map((q: any) => q.name || '').filter(Boolean)
-          : Array.isArray(f.certifications)
+      certifications: Array.isArray(f.qualifications)
+        ? f.qualifications.map((q: any) => q.name || '').filter(Boolean)
+        : Array.isArray(f.certifications)
           ? f.certifications
           : [],
       contact: {
@@ -481,12 +590,20 @@ export async function fetchStores() {
 }
 
 export async function saveStore(s: StoreItem) {
-  // 后端只有 POST /m/stores 创建，无 PUT 全量更新；
-  // 这里 POST 即可：新增 / 更新均路由到 createStore。
-  await request.post<{ ok: boolean } | StoreItem>({
-    url: '/api/v1/m/stores',
-    data: s
-  })
+  // 后端实际同时实现了 POST /m/stores（创建）与 PUT /m/stores/:id（更新）。
+  // 之前的实现一律走 POST，导致编辑场景产生重复门店或更新被吞，编辑面板返回后
+  // 列表依然是旧数据。这里按 id 走分支：有 id 时走 PUT，新增走 POST。
+  if (s.id) {
+    await request.put<{ ok: boolean } | StoreItem>({
+      url: `/api/v1/m/stores/${encodeURIComponent(s.id)}`,
+      data: s
+    })
+  } else {
+    await request.post<{ ok: boolean } | StoreItem>({
+      url: '/api/v1/m/stores',
+      data: s
+    })
+  }
   return { ok: true }
 }
 
@@ -747,7 +864,12 @@ export async function fetchPromoteSummary(): Promise<PromoteSummary> {
 export async function fetchBalance() {
   // 后端 {total, available, frozen, withdrawn} → 旧字段 {available, pending, totalWithdrawn}
   try {
-    const r = await request.get<{ total: number; available: number; frozen: number; withdrawn: number }>({
+    const r = await request.get<{
+      total: number
+      available: number
+      frozen: number
+      withdrawn: number
+    }>({
       url: '/api/v1/m/balance'
     })
     return {

@@ -4,6 +4,19 @@
 import { http } from '../utils/request'
 import type { Product, Category, ProductCreateDto, Pagination } from '@jiujiu/shared/types'
 
+export type MerchantProductPayload = Omit<ProductCreateDto, 'priceDisplayRules'> &
+  Partial<Pick<ProductCreateDto, 'priceDisplayRules'>> & {
+    pricingMode?: 'standard' | 'by-size'
+    pricePerSqm?: number
+    minLength?: number
+    minWidth?: number
+    maxLength?: number
+    maxWidth?: number
+    baseFee?: number
+    sizeUnit?: 'cm' | 'm'
+    status?: 'draft' | 'auditing'
+  }
+
 export const productService = {
   list(params: { status?: string; keyword?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<Product>>('/api/v1/m/products', params)
@@ -11,10 +24,10 @@ export const productService = {
   detail(id: string) {
     return http.get<Product>(`/api/v1/m/products/${id}`)
   },
-  create(dto: ProductCreateDto) {
+  create(dto: MerchantProductPayload) {
     return http.post<Product>('/api/v1/m/products', dto)
   },
-  update(id: string, dto: Partial<ProductCreateDto>) {
+  update(id: string, dto: Partial<MerchantProductPayload>) {
     return http.put<Product>(`/api/v1/m/products/${id}`, dto)
   },
   batchOffline(ids: string[]) {

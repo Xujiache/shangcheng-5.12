@@ -45,21 +45,36 @@
         </div>
         <ElImage :src="s.preview" fit="cover" class="pf-slot__preview" />
         <div class="pf-slot__stats">
-          <div><b>{{ formatWan(s.impressions) }}</b><span>曝光</span></div>
-          <div><b>{{ formatWan(Math.round(s.impressions * s.ctr / 100)) }}</b><span>点击</span></div>
-          <div><b>{{ s.ctr }}%</b><span>CTR</span></div>
-          <div><b>{{ s.creativeCount }}</b><span>创意</span></div>
+          <div
+            ><b>{{ formatWan(s.impressions) }}</b
+            ><span>曝光</span></div
+          >
+          <div
+            ><b>{{ formatWan(Math.round((s.impressions * s.ctr) / 100)) }}</b
+            ><span>点击</span></div
+          >
+          <div
+            ><b>{{ s.ctr }}%</b><span>CTR</span></div
+          >
+          <div
+            ><b>{{ s.creativeCount }}</b
+            ><span>创意</span></div
+          >
         </div>
         <div class="pf-slot__actions">
           <ElButton plain @click="viewStats(s)">查看数据</ElButton>
           <ElDropdown trigger="click" @command="(cmd) => onEdit(s, cmd)">
-            <ElButton type="primary" plain>编辑 <ArtSvgIcon icon="ri:arrow-down-s-line" /></ElButton>
+            <ElButton type="primary" plain
+              >编辑 <ArtSvgIcon icon="ri:arrow-down-s-line"
+            /></ElButton>
             <template #dropdown>
               <ElDropdownMenu>
                 <ElDropdownItem command="upload">上传新创意</ElDropdownItem>
                 <ElDropdownItem command="target">修改投放目标</ElDropdownItem>
                 <ElDropdownItem command="time">修改时段</ElDropdownItem>
-                <ElDropdownItem command="pause">{{ s.status === 'paused' ? '恢复投放' : '暂停投放' }}</ElDropdownItem>
+                <ElDropdownItem command="pause">{{
+                  s.status === 'paused' ? '恢复投放' : '暂停投放'
+                }}</ElDropdownItem>
               </ElDropdownMenu>
             </template>
           </ElDropdown>
@@ -69,7 +84,11 @@
 
     <!-- 创意 -->
     <ElCard v-else-if="tab === 'creatives'" shadow="never">
-      <ElTable :data="creatives" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="creatives"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="创意" min-width="260">
           <template #default="{ row }">
             <div class="flex items-center gap-3">
@@ -109,7 +128,12 @@
           <span class="font-medium">{{ s.name }}</span>
           <div class="flex items-center gap-3">
             <span class="text-xs text-g-500">CTR</span>
-            <ElProgress :percentage="Math.min(100, s.ctr * 8)" :stroke-width="10" :color="ctrColor(s.ctr)" style="width: 160px" />
+            <ElProgress
+              :percentage="Math.min(100, s.ctr * 8)"
+              :stroke-width="10"
+              :color="ctrColor(s.ctr)"
+              style="width: 160px"
+            />
             <span class="text-primary font-semibold">{{ s.ctr }}%</span>
           </div>
         </div>
@@ -132,18 +156,27 @@
             </ElRadioGroup>
           </ElFormItem>
           <ElFormItem label="预览图（默认占位图）">
-            <ElImage :src="createForm.preview" fit="cover" style="width: 100%; height: 120px; border-radius: 8px" />
+            <ElImage
+              :src="createForm.preview"
+              fit="cover"
+              style="width: 100%; height: 120px; border-radius: 8px"
+            />
           </ElFormItem>
         </ElForm>
         <div class="pf-drawer__footer">
           <ElButton @click="createOpen = false">取消</ElButton>
-          <ElButton type="primary" @click="submitCreate">创建</ElButton>
+          <ElButton type="primary" :loading="submittingCreate" @click="submitCreate">创建</ElButton>
         </div>
       </div>
     </ElDrawer>
 
     <!-- 查看广告位详细数据 Dialog -->
-    <ElDialog v-model="statsOpen" :title="(statsTarget?.name || '') + ' · 数据详情'" width="520px" align-center>
+    <ElDialog
+      v-model="statsOpen"
+      :title="(statsTarget?.name || '') + ' · 数据详情'"
+      width="520px"
+      align-center
+    >
       <div v-if="statsTarget" class="pf-stats-detail">
         <div class="pf-stats-grid">
           <div class="pf-stats-cell">
@@ -151,7 +184,9 @@
             <div class="label">总曝光</div>
           </div>
           <div class="pf-stats-cell">
-            <div class="num">{{ formatWan(Math.round(statsTarget.impressions * statsTarget.ctr / 100)) }}</div>
+            <div class="num">{{
+              formatWan(Math.round((statsTarget.impressions * statsTarget.ctr) / 100))
+            }}</div>
             <div class="label">总点击</div>
           </div>
           <div class="pf-stats-cell">
@@ -165,13 +200,25 @@
         </div>
         <ElDescriptions :column="1" border class="mt-4">
           <ElDescriptionsItem label="状态">
-            <ElTag :type="statusTypeOf(statsTarget.status)" size="small">{{ statusLabelOf(statsTarget.status) }}</ElTag>
+            <ElTag :type="statusTypeOf(statsTarget.status)" size="small">{{
+              statusLabelOf(statsTarget.status)
+            }}</ElTag>
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="投放对象">{{ targetLabelOf(statsTarget.target) }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="投放对象">{{
+            targetLabelOf(statsTarget.target)
+          }}</ElDescriptionsItem>
           <ElDescriptionsItem label="点击率指标">
-            <ElProgress :percentage="Math.min(100, statsTarget.ctr * 8)" :stroke-width="14" :color="ctrColor(statsTarget.ctr)" />
+            <ElProgress
+              :percentage="Math.min(100, statsTarget.ctr * 8)"
+              :stroke-width="14"
+              :color="ctrColor(statsTarget.ctr)"
+            />
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="预估单次点击">¥{{ (statsTarget.impressions * statsTarget.ctr * 0.001).toFixed(2) }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="预估单次点击"
+            >¥{{
+              (statsTarget.impressions * statsTarget.ctr * 0.001).toFixed(2)
+            }}</ElDescriptionsItem
+          >
         </ElDescriptions>
       </div>
       <template #footer>
@@ -183,7 +230,13 @@
     <ElDrawer v-model="editOpen" :size="460" :with-header="false">
       <div class="pf-drawer">
         <h3 class="m-0">
-          {{ editMode === 'upload' ? '上传新创意' : editMode === 'target' ? '修改投放目标' : '修改投放时段' }}
+          {{
+            editMode === 'upload'
+              ? '上传新创意'
+              : editMode === 'target'
+                ? '修改投放目标'
+                : '修改投放时段'
+          }}
           <span class="text-sm text-g-500 font-normal">· {{ editTarget?.name }}</span>
         </h3>
         <ElForm :model="editForm" label-position="top">
@@ -192,10 +245,20 @@
               <ElInput v-model="editForm.creativeTitle" placeholder="如：双11 全场五折" />
             </ElFormItem>
             <ElFormItem label="创意图">
-              <ElImage :src="editForm.creativeImage" fit="cover" style="width: 100%; height: 120px; border-radius: 8px" />
+              <ElImage
+                :src="editForm.creativeImage"
+                fit="cover"
+                style="width: 100%; height: 120px; border-radius: 8px"
+              />
             </ElFormItem>
             <ElFormItem label="预算（元）">
-              <ElInputNumber v-model="editForm.creativeBudget" :min="100" :max="100000" :step="100" style="width: 100%" />
+              <ElInputNumber
+                v-model="editForm.creativeBudget"
+                :min="100"
+                :max="100000"
+                :step="100"
+                style="width: 100%"
+              />
             </ElFormItem>
           </template>
           <template v-else-if="editMode === 'target'">
@@ -223,7 +286,7 @@
         </ElForm>
         <div class="pf-drawer__footer">
           <ElButton @click="editOpen = false">取消</ElButton>
-          <ElButton type="primary" @click="submitEdit">保存</ElButton>
+          <ElButton type="primary" :loading="submittingEdit" @click="submitEdit">保存</ElButton>
         </div>
       </div>
     </ElDrawer>
@@ -231,7 +294,14 @@
 </template>
 
 <script setup lang="ts">
-  import { fetchAdSlots, fetchAdCreatives, type AdSlotVM } from '@/api/platform-business'
+  import {
+    fetchAdSlots,
+    fetchAdCreatives,
+    createAdSlot,
+    updateAdSlot,
+    createAdCreative,
+    type AdSlotVM
+  } from '@/api/platform-business'
   import type { AdCreative } from '@jiujiu/shared/types'
   import { formatWan } from '@jiujiu/shared/utils'
   import { ElMessage } from 'element-plus'
@@ -247,12 +317,38 @@
     const active = slots.value.filter((s) => s.status === 'active').length
     const totalImp = slots.value.reduce((s, x) => s + x.impressions, 0)
     const totalCreative = slots.value.reduce((s, x) => s + x.creativeCount, 0)
-    const avgCtr = slots.value.length ? slots.value.reduce((s, x) => s + x.ctr, 0) / slots.value.length : 0
+    const avgCtr = slots.value.length
+      ? slots.value.reduce((s, x) => s + x.ctr, 0) / slots.value.length
+      : 0
     return [
-      { key: 'active', icon: 'ri:advertisement-line', label: '投放中', value: active, color: '#FF4D2D' },
-      { key: 'creative', icon: 'ri:image-line', label: '创意数', value: totalCreative, color: '#FF7A45' },
-      { key: 'imp', icon: 'ri:eye-line', label: '总曝光', value: formatWan(totalImp), color: '#10B981' },
-      { key: 'ctr', icon: 'ri:percent-line', label: '平均 CTR', value: avgCtr.toFixed(1) + '%', color: '#A855F7' }
+      {
+        key: 'active',
+        icon: 'ri:advertisement-line',
+        label: '投放中',
+        value: active,
+        color: '#FF4D2D'
+      },
+      {
+        key: 'creative',
+        icon: 'ri:image-line',
+        label: '创意数',
+        value: totalCreative,
+        color: '#FF7A45'
+      },
+      {
+        key: 'imp',
+        icon: 'ri:eye-line',
+        label: '总曝光',
+        value: formatWan(totalImp),
+        color: '#10B981'
+      },
+      {
+        key: 'ctr',
+        icon: 'ri:percent-line',
+        label: '平均 CTR',
+        value: avgCtr.toFixed(1) + '%',
+        color: '#A855F7'
+      }
     ]
   })
 
@@ -274,6 +370,7 @@
 
   // ====== 新建广告位 Drawer ======
   const createOpen = ref(false)
+  const submittingCreate = ref(false)
   const createForm = reactive({
     name: '',
     target: 'customer' as AdSlotVM['target'],
@@ -287,23 +384,29 @@
     createOpen.value = true
   }
 
-  function submitCreate() {
+  async function submitCreate() {
     if (!createForm.name.trim()) {
       ElMessage.warning('请填写广告位名称')
       return
     }
-    slots.value.unshift({
-      id: 'slot-' + Date.now(),
-      name: createForm.name.trim(),
-      target: createForm.target,
-      status: 'draft',
-      creativeCount: 0,
-      ctr: 0,
-      impressions: 0,
-      preview: createForm.preview
-    })
-    createOpen.value = false
-    ElMessage.success(`已创建广告位：${createForm.name}`)
+    if (submittingCreate.value) return
+    submittingCreate.value = true
+    try {
+      await createAdSlot({
+        name: createForm.name.trim(),
+        target: createForm.target,
+        preview: createForm.preview,
+        status: 'draft'
+      })
+      createOpen.value = false
+      ElMessage.success(`已创建广告位：${createForm.name}`)
+      // 重新拉真实数据，避免本地 unshift 与后端 ID 错位
+      await load()
+    } catch (e: any) {
+      ElMessage.error(e?.message || '创建失败，请稍后重试')
+    } finally {
+      submittingCreate.value = false
+    }
   }
 
   // ====== 查看广告位详细数据 Dialog ======
@@ -327,10 +430,19 @@
     timeRange: [] as string[]
   })
 
-  function onEdit(s: AdSlotVM, cmd: string) {
+  async function onEdit(s: AdSlotVM, cmd: string) {
     if (cmd === 'pause') {
-      s.status = s.status === 'paused' ? 'active' : 'paused'
-      ElMessage.success(s.status === 'paused' ? '已暂停投放' : '已恢复投放')
+      // 切换广告位投放状态：调真接口 + 失败回滚
+      const original = s.status
+      const next: AdSlotVM['status'] = original === 'paused' ? 'active' : 'paused'
+      s.status = next
+      try {
+        await updateAdSlot(s.id, { status: next })
+        ElMessage.success(next === 'paused' ? '已暂停投放' : '已恢复投放')
+      } catch (e: any) {
+        s.status = original
+        ElMessage.error(e?.message || '操作失败，请稍后重试')
+      }
       return
     }
     editTarget.value = s
@@ -345,39 +457,55 @@
     editOpen.value = true
   }
 
-  function submitEdit() {
+  const submittingEdit = ref(false)
+
+  async function submitEdit() {
     if (!editTarget.value) return
-    if (editMode.value === 'upload') {
-      if (!editForm.creativeTitle.trim()) {
-        ElMessage.warning('请填写创意标题')
+    if (submittingEdit.value) return
+    submittingEdit.value = true
+    try {
+      if (editMode.value === 'upload') {
+        if (!editForm.creativeTitle.trim()) {
+          ElMessage.warning('请填写创意标题')
+          return
+        }
+        await createAdCreative({
+          slotId: editTarget.value.id,
+          title: editForm.creativeTitle.trim(),
+          image: editForm.creativeImage,
+          link: '#',
+          startAt: editForm.timeRange[0] || new Date().toISOString().slice(0, 10),
+          endAt: editForm.timeRange[1] || '',
+          budget: editForm.creativeBudget,
+          priority: 50
+        })
+        ElMessage.success('创意已上传，进入审核队列')
+        // 重新拉创意列表与广告位（creativeCount 同步）
+        await load()
+      } else if (editMode.value === 'target') {
+        const original = editTarget.value.target
+        const next = editForm.newTarget
+        editTarget.value.target = next
+        try {
+          await updateAdSlot(editTarget.value.id, { target: next })
+          ElMessage.success(`投放对象已改为：${targetLabelOf(next)}`)
+        } catch (e: any) {
+          editTarget.value.target = original
+          throw e
+        }
+      } else {
+        // TODO: 等后端 AdSlot 模型补 startAt/endAt 字段后再补该 PUT，
+        // 当前 AdSlot 表只存 name/target/preview/status，时段配置在创意维度
+        ElMessage.info('时段配置请在「上传新创意」入口中按创意维度设置')
+        editOpen.value = false
         return
       }
-      editTarget.value.creativeCount += 1
-      creatives.value.unshift({
-        id: 'c-' + Date.now(),
-        slotId: editTarget.value.id,
-        title: editForm.creativeTitle.trim(),
-        image: editForm.creativeImage,
-        link: '#',
-        startAt: editForm.timeRange[0] || new Date().toISOString().slice(0, 10),
-        endAt: editForm.timeRange[1] || '',
-        budget: editForm.creativeBudget,
-        spent: 0,
-        impressions: 0,
-        clicks: 0,
-        status: 'pending',
-        priority: 50,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as AdCreative)
-      ElMessage.success('创意已上传，进入审核队列')
-    } else if (editMode.value === 'target') {
-      editTarget.value.target = editForm.newTarget
-      ElMessage.success(`投放对象已改为：${targetLabelOf(editForm.newTarget)}`)
-    } else {
-      ElMessage.success(`投放时段已更新为 ${editForm.timeRange[0]} ~ ${editForm.timeRange[1]}`)
+      editOpen.value = false
+    } catch (e: any) {
+      ElMessage.error(e?.message || '保存失败，请稍后重试')
+    } finally {
+      submittingEdit.value = false
     }
-    editOpen.value = false
   }
 
   async function load() {
@@ -390,21 +518,22 @@
 
 <style scoped lang="scss">
   .pf-ad {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
+
   .text-g-500 {
     color: #6b7280;
   }
@@ -414,7 +543,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -423,35 +552,35 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 16px 18px;
       display: flex;
-      align-items: center;
       gap: 14px;
+      align-items: center;
+      padding: 16px 18px;
     }
   }
 
   .pf-kpi__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    height: 44px;
     font-size: 22px;
-    flex-shrink: 0;
+    border-radius: 12px;
   }
 
   .pf-kpi__num {
     font-size: 22px;
     font-weight: 700;
-    color: var(--art-gray-800, #1f2937);
     line-height: 1;
+    color: var(--art-gray-800, #1f2937);
   }
 
   .pf-kpi__label {
+    margin-top: 4px;
     font-size: 12px;
     color: #6b7280;
-    margin-top: 4px;
   }
 
   .pf-toolbar {
@@ -472,24 +601,24 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      padding: 18px;
     }
   }
 
   .pf-slot__head {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
+    justify-content: space-between;
   }
 
   .pf-slot__preview {
     width: 100%;
     height: 120px;
-    border-radius: 8px;
     overflow: hidden;
+    border-radius: 8px;
   }
 
   .pf-slot__stats {
@@ -507,29 +636,29 @@
 
       b {
         font-size: 16px;
-        color: var(--art-gray-800, #1f2937);
         font-weight: 700;
+        color: var(--art-gray-800, #1f2937);
       }
 
       span {
+        margin-top: 2px;
         font-size: 11px;
         color: #6b7280;
-        margin-top: 2px;
       }
     }
   }
 
   .pf-slot__actions {
     display: flex;
-    justify-content: flex-end;
     gap: 8px;
+    justify-content: flex-end;
   }
 
   .pf-creative-thumb {
+    flex-shrink: 0;
     width: 80px;
     height: 32px;
     border-radius: 4px;
-    flex-shrink: 0;
   }
 
   .pf-stats-list {
@@ -540,8 +669,8 @@
 
   .pf-stats-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 10px 4px;
     border-bottom: 1px dashed var(--art-border-color, #e5e7eb);
 
@@ -552,17 +681,17 @@
 
   /* Drawer 通用 */
   .pf-drawer {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: 100%;
+    padding: 22px;
   }
 
   .pf-drawer__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     margin-top: auto;
   }
 
@@ -574,22 +703,22 @@
   }
 
   .pf-stats-cell {
-    text-align: center;
     padding: 14px 8px;
-    background: linear-gradient(135deg, rgba(255, 77, 45, 0.06), rgba(255, 77, 45, 0.02));
+    text-align: center;
+    background: linear-gradient(135deg, rgb(255 77 45 / 6%), rgb(255 77 45 / 2%));
     border-radius: 10px;
 
     .num {
       font-size: 20px;
       font-weight: 700;
-      color: var(--el-color-primary, #ff4d2d);
       line-height: 1;
+      color: var(--el-color-primary, #ff4d2d);
     }
 
     .label {
+      margin-top: 6px;
       font-size: 11px;
       color: var(--art-gray-500, #6b7280);
-      margin-top: 6px;
     }
   }
 </style>

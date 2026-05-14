@@ -67,11 +67,7 @@
         <template #header>
           <div class="mp-card__title"><span>类目销售占比</span></div>
         </template>
-        <ArtRingChart
-          v-if="categoryData.length"
-          height="360px"
-          :data="categoryData"
-        />
+        <ArtRingChart v-if="categoryData.length" height="360px" :data="categoryData" />
       </ElCard>
     </div>
 
@@ -80,11 +76,7 @@
         <template #header>
           <div class="mp-card__title"><span>新老客户对比</span></div>
         </template>
-        <ArtRingChart
-          v-if="customerData.length"
-          height="280px"
-          :data="customerData"
-        />
+        <ArtRingChart v-if="customerData.length" height="280px" :data="customerData" />
       </ElCard>
 
       <ElCard shadow="hover" class="mp-card">
@@ -114,8 +106,11 @@
   const stats = ref<DashboardData['stats']>()
   const trend = ref<DashboardData['trend']>()
 
-  const periodLabel = computed(() =>
-    ({ today: '今日 24 小时', week: '最近 7 天', month: '最近 30 天', year: '最近 12 个月' })[period.value]
+  const periodLabel = computed(
+    () =>
+      ({ today: '今日 24 小时', week: '最近 7 天', month: '最近 30 天', year: '最近 12 个月' })[
+        period.value
+      ]
   )
 
   const kpis = computed(() => {
@@ -123,10 +118,38 @@
     if (!t) return []
     const fmt = (n: number) => `${n >= 0 ? '↑' : '↓'} ${Math.abs(n)}% 较上一周期`
     return [
-      { title: '销售额', count: t.sales, decimals: 0, desc: fmt(t.salesDelta), icon: 'ri:money-cny-circle-line', iconStyle: 'bg-[#FF4D2D]' },
-      { title: '订单数', count: t.orders, decimals: 0, desc: fmt(t.ordersDelta), icon: 'ri:shopping-bag-3-line', iconStyle: 'bg-[#3B82F6]' },
-      { title: '客单价', count: Math.round(t.sales / Math.max(t.orders, 1)), decimals: 0, desc: '环比 +3%', icon: 'ri:line-chart-fill', iconStyle: 'bg-[#10B981]' },
-      { title: '新增客户', count: t.newCustomers, decimals: 0, desc: fmt(t.newCustomersDelta), icon: 'ri:user-add-line', iconStyle: 'bg-[#A855F7]' }
+      {
+        title: '销售额',
+        count: t.sales,
+        decimals: 0,
+        desc: fmt(t.salesDelta),
+        icon: 'ri:money-cny-circle-line',
+        iconStyle: 'bg-[#FF4D2D]'
+      },
+      {
+        title: '订单数',
+        count: t.orders,
+        decimals: 0,
+        desc: fmt(t.ordersDelta),
+        icon: 'ri:shopping-bag-3-line',
+        iconStyle: 'bg-[#3B82F6]'
+      },
+      {
+        title: '客单价',
+        count: Math.round(t.sales / Math.max(t.orders, 1)),
+        decimals: 0,
+        desc: '环比 +3%',
+        icon: 'ri:line-chart-fill',
+        iconStyle: 'bg-[#10B981]'
+      },
+      {
+        title: '新增客户',
+        count: t.newCustomers,
+        decimals: 0,
+        desc: fmt(t.newCustomersDelta),
+        icon: 'ri:user-add-line',
+        iconStyle: 'bg-[#A855F7]'
+      }
     ]
   })
 
@@ -137,7 +160,9 @@
 
   const trendXAxis = computed(() => trend.value?.salesTrend.map((p) => p.date) || [])
 
-  const categoryData = computed(() => trend.value?.categoryBars.map((c) => ({ name: c.category, value: c.sales })) || [])
+  const categoryData = computed(
+    () => trend.value?.categoryBars.map((c) => ({ name: c.category, value: c.sales })) || []
+  )
 
   const customerData = computed(() => {
     if (!trend.value) return []
@@ -152,8 +177,59 @@
     return s.length > 12 ? s.slice(0, 12) + '...' : s
   }
 
+  /**
+   * 前端 CSV 导出
+   *
+   * 直接基于已经拉到的 dashboard / trend 数据拼装，Blob + URL.createObjectURL
+   * 触发下载；参照 `views/platform/data-center/index.vue` 已有方案，避免引入
+   * 新依赖。包含核心 KPI / 趋势 / 类目 / 热销 / 新老客户分布五块业务字段。
+   */
   function exportCsv() {
-    ElMessage.success(`已导出 ${period.value} 数据`)
+    if (!stats.value || !trend.value) {
+      ElMessage.warning('数据加载中，请稍候')
+      return
+    }
+    const t = stats.value.today
+    const rows: string[][] = []
+    rows.push(['经纬科技 · 商家数据报表'])
+    rows.push(['导出周期', periodLabel.value])
+    rows.push(['导出时间', new Date().toLocaleString('zh-CN')])
+    rows.push([])
+    rows.push(['核心指标'])
+    rows.push(['销售额', String(t.sales), fmtDelta(t.salesDelta)])
+    rows.push(['订单数', String(t.orders), fmtDelta(t.ordersDelta)])
+    rows.push(['客单价', String(Math.round(t.sales / Math.max(t.orders, 1)))])
+    rows.push(['新增客户', String(t.newCustomers), fmtDelta(t.newCustomersDelta)])
+    rows.push([])
+    rows.push(['销售趋势', '销售额'])
+    trend.value.salesTrend.forEach((p) => rows.push([p.date, String(p.value)]))
+    rows.push([])
+    rows.push(['热销 Top10', '销量'])
+    trend.value.topProducts.slice(0, 10).forEach((p) => rows.push([p.name, String(p.sales)]))
+    rows.push([])
+    rows.push(['类目销售', '销量'])
+    trend.value.categoryBars.forEach((c) => rows.push([c.category, String(c.sales)]))
+    rows.push([])
+    rows.push(['新老客户对比', '占比'])
+    const ca = trend.value.customerAnalysis
+    rows.push(['新客户', Math.round(ca.newRatio * 100) + '%'])
+    rows.push(['老客户', Math.round(ca.oldRatio * 100) + '%'])
+
+    const csv =
+      '\ufeff' +
+      rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `merchant-stats-${period.value}-${Date.now()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success(`已导出 ${rows.length} 行数据`)
+  }
+
+  function fmtDelta(n: number) {
+    return `${n >= 0 ? '+' : '-'}${Math.abs(n)}%`
   }
 
   async function load() {
@@ -167,16 +243,16 @@
 
 <style scoped lang="scss">
   .mp-stats {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-kpi-row {
@@ -184,7 +260,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -194,7 +270,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: 1fr;
     }
   }
@@ -205,8 +281,8 @@
 
   .mp-card__title {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     width: 100%;
     font-size: 15px;
     font-weight: 600;

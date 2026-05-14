@@ -51,6 +51,18 @@ export const useUserStore = defineStore('user', () => {
     accessToken.value = session.accessToken
     refreshToken.value = session.refreshToken
     persist()
+    // 登录成功 → 拉一次服务端购物车覆盖本地（动态 import 避免 user/cart store 循环依赖）
+    import('./cart')
+      .then(({ useCartStore }) => {
+        useCartStore()
+          .loadFromServer()
+          .catch(() => {
+            /* ignore */
+          })
+      })
+      .catch(() => {
+        /* ignore */
+      })
   }
 
   /** 合并部分字段更新（来自 PATCH 响应 / WS 推送） */
@@ -86,22 +98,36 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /** PATCH 修改资料 — 成功后 store 即时更新 + 服务端 WS 也会广播给同账号其他设备 */
-  async function updateProfile(dto: { nickname?: string; avatar?: string; gender?: number; email?: string }) {
-    const fresh = await http.patch<Partial<User>>('/api/v1/u/profile', dto as Record<string, unknown>)
+  async function updateProfile(dto: {
+    nickname?: string
+    avatar?: string
+    gender?: number
+    email?: string
+  }) {
+    const fresh = await http.patch<Partial<User>>(
+      '/api/v1/u/profile',
+      dto as Record<string, unknown>,
+    )
     if (fresh) setUserInfo(fresh)
     return fresh
   }
 
   /** 绑定手机号（需先调 sms-code 发验证码） */
   async function bindPhone(payload: { phone: string; code: string }) {
-    const fresh = await http.post<Partial<User>>('/api/v1/u/bind-phone', payload as Record<string, unknown>)
+    const fresh = await http.post<Partial<User>>(
+      '/api/v1/u/bind-phone',
+      payload as Record<string, unknown>,
+    )
     if (fresh) setUserInfo(fresh)
     return fresh
   }
 
   /** 绑定微信（传 uni.login 拿到的 code） */
   async function bindWechat(payload: { code: string }) {
-    const fresh = await http.post<Partial<User>>('/api/v1/u/bind-wechat', payload as Record<string, unknown>)
+    const fresh = await http.post<Partial<User>>(
+      '/api/v1/u/bind-wechat',
+      payload as Record<string, unknown>,
+    )
     if (fresh) setUserInfo(fresh)
     return fresh
   }
@@ -141,7 +167,9 @@ export const useUserStore = defineStore('user', () => {
         reconnectionAttempts: 8,
         reconnectionDelay: 1500,
       })
-      chatSock.on('connect', () => chatSock.emit('auth', { token: accessToken.value, role: 'user' }))
+      chatSock.on('connect', () =>
+        chatSock.emit('auth', { token: accessToken.value, role: 'user' }),
+      )
       chatSock.on('user:update', (msg: any) => {
         if (msg?.user) setUserInfo(msg.user)
       })
@@ -151,7 +179,9 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function disconnectProfileSync() {
-    try { chatSock?.disconnect?.() } catch {}
+    try {
+      chatSock?.disconnect?.()
+    } catch {}
     chatSock = null
   }
 

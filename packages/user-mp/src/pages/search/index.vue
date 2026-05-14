@@ -15,10 +15,20 @@ const STORAGE_KEY = 'jiujiu_search_history'
 
 /**
  * 热搜词默认兜底列表
- * TODO: 后端 GET /api/v1/u/hot-keywords 接口上线后由 loadHotWords() 覆盖
- *       接口约定：返回 string[]，按搜索热度倒序，最多 10 条
+ *
+ * 后端 GET /api/v1/u/hot-keywords 已上线（由平台后台 SystemConfig 维护）。
+ * loadHotWords() 拉到结果即覆盖；接口 404 / 网络失败时保持这份 fallback，不阻塞页面。
+ * 约定：接口返回 string[]，按搜索热度倒序，最多 10 条。
  */
-const HOT_WORDS_FALLBACK = ['岩板餐桌', '北欧沙发', '智能升降桌', '实木家具', '羊毛地毯', '吸顶灯', '岩板茶几']
+const HOT_WORDS_FALLBACK = [
+  '岩板餐桌',
+  '北欧沙发',
+  '智能升降桌',
+  '实木家具',
+  '羊毛地毯',
+  '吸顶灯',
+  '岩板茶几',
+]
 const hotWords = ref<string[]>([...HOT_WORDS_FALLBACK])
 
 const keyword = ref('')
@@ -138,12 +148,7 @@ onMounted(() => {
         </view>
       </view>
       <view class="chips">
-        <view
-          v-for="w in history"
-          :key="w"
-          class="chip"
-          @click="doSearch(w)"
-        >
+        <view v-for="w in history" :key="w" class="chip" @click="doSearch(w)">
           <text>{{ w }}</text>
           <view class="chip-close" @click.stop="removeHistoryItem(w, $event)">
             <Icon name="close" :size="20" color="#86909c" />
@@ -157,12 +162,7 @@ onMounted(() => {
         <text class="title">热门搜索</text>
       </view>
       <view class="chips">
-        <view
-          v-for="w in hotWords"
-          :key="w"
-          class="chip chip-hot"
-          @click="doSearch(w)"
-        >
+        <view v-for="w in hotWords" :key="w" class="chip chip-hot" @click="doSearch(w)">
           {{ w }}
         </view>
       </view>
@@ -225,7 +225,9 @@ onMounted(() => {
     font-size: 28rpx;
     color: #ff4d2d;
     font-weight: 600;
-    &:active { opacity: 0.7; }
+    &:active {
+      opacity: 0.7;
+    }
   }
 }
 .section {

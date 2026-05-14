@@ -42,14 +42,16 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'rejected', label: '已驳回' },
 ]
 
-// 当前 tab 下 list 都是同状态,所以 counts.<currentTab> = list.length,
-// 其他 tab 没有数据时显示空。后端不会一次返回三个 status 的 count,
-// 想要全量徽章数需要单独再发 3 次请求,这里只显示当前 tab 的数字。
-const counts = computed(() => ({
-  pending: tab.value === 'pending' ? list.value.length : 0,
-  auto_approved: tab.value === 'auto_approved' ? list.value.length : 0,
-  rejected: tab.value === 'rejected' ? list.value.length : 0,
-}))
+/**
+ * 三个 tab 的徽章数:onMounted 时并行拉 3 个 status 的 total,
+ * 后续操作（通过/驳回/抽检不通过/切 tab 拉新数据）后局部更新。
+ * 不依赖后端单独的 counts 聚合接口,降低后端改动面。
+ */
+const counts = ref<Record<TabKey, number>>({
+  pending: 0,
+  auto_approved: 0,
+  rejected: 0,
+})
 
 // loadList 已按 status 拉取,这里直接返回整份列表。
 const filtered = computed(() => list.value)
@@ -73,8 +75,36 @@ async function loadList(status: TabKey = tab.value) {
   try {
     const res = await productAuditService.list({ status, pageSize: 50 })
     list.value = res.list as unknown as AuditProduct[]
+    counts.value[status] = res.total ?? list.value.length
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * 并行拉 3 个 tab 的 total,只用响应里的 total 字段,
+ * pageSize=1 减少传输负担,首屏即可显示真实徽章数。
+ */
+async function loadCounts() {
+  const tabs: TabKey[] = ['pending', 'auto_approved', 'rejected']
+  try {
+    const results = await Promise.all(
+      tabs.map((status) =>
+        productAuditService
+          .list({ status, pageSize: 1 })
+          .catch(
+            () =>
+              ({ total: 0, list: [] }) as unknown as Awaited<
+                ReturnType<typeof productAuditService.list>
+              >,
+          ),
+      ),
+    )
+    tabs.forEach((status, i) => {
+      counts.value[status] = (results[i] as { total?: number }).total ?? 0
+    })
+  } catch (e) {
+    console.error('loadCounts failed', e)
   }
 }
 
@@ -84,7 +114,10 @@ async function toggleAutoApprove() {
   if (!config.value) return
   config.value.autoApprove = !config.value.autoApprove
   await productAuditService.saveConfig({ autoApprove: config.value.autoApprove })
-  uni.showToast({ title: config.value.autoApprove ? '已开启自动通过' : '已关闭自动通过', icon: 'success' })
+  uni.showToast({
+    title: config.value.autoApprove ? '已开启自动通过' : '已关闭自动通过',
+    icon: 'success',
+  })
 }
 
 async function toggleCondition(key: string) {
@@ -116,6 +149,8 @@ function approve(p: AuditProduct) {
       if (r.confirm) {
         await productAuditService.approve(p.id)
         list.value = list.value.filter((x) => x.id !== p.id)
+        counts.value.pending = Math.max(0, counts.value.pending - 1)
+        counts.value.auto_approved = counts.value.auto_approved + 1
         uni.showToast({ title: '已通过', icon: 'success' })
       }
     },
@@ -128,20 +163,61 @@ function reject(p: AuditProduct) {
     success: async (r) => {
       const reason = ['图片不清晰', '商品描述违规', '价格异常', '类目不符', '其他原因'][r.tapIndex]
       await productAuditService.reject(p.id, reason)
-      p.status = 'rejected'
+      list.value = list.value.filter((x) => x.id !== p.id)
+      counts.value.pending = Math.max(0, counts.value.pending - 1)
+      counts.value.rejected = counts.value.rejected + 1
       uni.showToast({ title: '已驳回', icon: 'success' })
     },
   })
 }
 
+/**
+ * 抽检流程:
+ * 1. ActionSheet 选「抽检通过 / 抽检不通过」
+ * 2. 不通过 → 二次 Modal 录原因（必填,空走 cancel）
+ * 3. 调 POST /p/audit/products/:id/sample-check
+ * 4. 不通过会让后端下架,前端把该卡从 auto_approved 列表移除并刷新 rejected 徽章
+ */
 function spotCheck(p: AuditProduct) {
-  uni.showModal({
-    title: '抽检',
-    content: `对「${p.name}」进行抽检审查，若发现问题可手动下架。`,
+  uni.showActionSheet({
+    itemList: ['抽检通过（仅留痕）', '抽检不通过（自动下架）'],
     success: (r) => {
-      if (r.confirm) uni.showToast({ title: '已加入抽检队列', icon: 'success' })
+      if (r.tapIndex === 0) {
+        doSampleCheck(p, true)
+      } else if (r.tapIndex === 1) {
+        uni.showModal({
+          title: '抽检不通过',
+          content: '请填写下架原因（将同步至商户)',
+          editable: true,
+          placeholderText: '如:图片侵权 / 描述虚假 / 商品已停产',
+          confirmColor: '#FF3B30',
+          success: (m) => {
+            if (m.confirm && m.content && m.content.trim()) {
+              doSampleCheck(p, false, m.content.trim())
+            } else if (m.confirm) {
+              uni.showToast({ title: '请填写原因', icon: 'none' })
+            }
+          },
+        })
+      }
     },
   })
+}
+
+async function doSampleCheck(p: AuditProduct, passed: boolean, reason?: string) {
+  try {
+    await productAuditService.sampleCheck(p.id, passed, reason)
+    if (passed) {
+      uni.showToast({ title: '抽检通过已记录', icon: 'success' })
+    } else {
+      list.value = list.value.filter((x) => x.id !== p.id)
+      counts.value.auto_approved = Math.max(0, counts.value.auto_approved - 1)
+      counts.value.rejected = counts.value.rejected + 1
+      uni.showToast({ title: '已下架并记录原因', icon: 'success' })
+    }
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+  }
 }
 
 function viewDetail(p: AuditProduct) {
@@ -155,6 +231,7 @@ function viewDetail(p: AuditProduct) {
 onMounted(() => {
   loadConfig()
   loadList()
+  loadCounts()
 })
 </script>
 
@@ -186,7 +263,10 @@ onMounted(() => {
       <view v-if="config" class="cond-card">
         <view class="cond-head">
           <text class="title">免审条件（满足任一即可）</text>
-          <text class="sub">{{ config.conditions.filter(c => c.enabled).length }} / {{ config.conditions.length }}</text>
+          <text class="sub"
+            >{{ config.conditions.filter((c) => c.enabled).length }} /
+            {{ config.conditions.length }}</text
+          >
         </view>
         <view class="cond-list">
           <view
@@ -196,12 +276,7 @@ onMounted(() => {
             @click="toggleCondition(c.key)"
           >
             <view class="cond-check">
-              <Icon
-                v-if="c.enabled"
-                name="check-circle"
-                :size="36"
-                color="var(--brand-primary)"
-              />
+              <Icon v-if="c.enabled" name="check-circle" :size="36" color="var(--brand-primary)" />
               <Icon v-else name="circle" :size="36" color="var(--text-tertiary)" />
             </view>
             <text class="cond-label">{{ c.label }}</text>
@@ -235,18 +310,20 @@ onMounted(() => {
 
       <!-- 商品卡 -->
       <view class="list">
-        <view
-          v-for="p in filtered"
-          :key="p.id"
-          class="card"
-        >
+        <view v-for="p in filtered" :key="p.id" class="card">
           <view class="card-row">
             <image :src="p.image" mode="aspectFill" class="img" />
             <view class="info">
               <view class="info-head">
                 <text class="name">{{ p.name }}</text>
                 <view :class="['status-tag', p.status]">
-                  {{ p.status === 'pending' ? '待审' : p.status === 'auto_approved' ? '自动通过' : '已驳回' }}
+                  {{
+                    p.status === 'pending'
+                      ? '待审'
+                      : p.status === 'auto_approved'
+                        ? '自动通过'
+                        : '已驳回'
+                  }}
                 </view>
               </view>
               <text class="meta">{{ p.merchant }} · {{ p.category }}</text>
@@ -270,13 +347,13 @@ onMounted(() => {
 
         <EmptyState
           v-if="!loading && filtered.length === 0"
-          :title="`暂无${TABS.find(t => t.key === tab)?.label}商品`"
+          :title="`暂无${TABS.find((t) => t.key === tab)?.label}商品`"
           desc="开启自动通过可减少人工审核工作量"
           icon="package"
         />
       </view>
 
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -299,8 +376,8 @@ onMounted(() => {
 .auto-card {
   margin: 16rpx 24rpx 0;
   padding: 20rpx 24rpx;
-  background: linear-gradient(135deg, rgba(255,77,45,0.08), rgba(255,156,110,0.04));
-  border: 1rpx solid rgba(255,77,45,0.2);
+  background: linear-gradient(135deg, rgba(255, 77, 45, 0.08), rgba(255, 156, 110, 0.04));
+  border: 1rpx solid rgba(255, 77, 45, 0.2);
   border-radius: 20rpx;
 }
 .auto-head {
@@ -319,7 +396,7 @@ onMounted(() => {
   width: 72rpx;
   height: 72rpx;
   border-radius: 20rpx;
-  background: rgba(255,77,45,0.12);
+  background: rgba(255, 77, 45, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -331,8 +408,15 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  .t1 { font-size: 28rpx; font-weight: 800; color: var(--text-primary); }
-  .t2 { font-size: 20rpx; color: var(--text-tertiary); }
+  .t1 {
+    font-size: 28rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .t2 {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
 }
 .toggle {
   display: flex;
@@ -349,7 +433,7 @@ onMounted(() => {
     height: 36rpx;
     border-radius: 50%;
     background: var(--text-tertiary);
-    transition: all .2s;
+    transition: all 0.2s;
   }
   .text {
     padding-right: 12rpx;
@@ -359,9 +443,13 @@ onMounted(() => {
   }
   &.on {
     border-color: var(--brand-primary);
-    background: rgba(255,77,45,0.08);
-    .thumb { background: var(--brand-primary); }
-    .text { color: var(--brand-primary); }
+    background: rgba(255, 77, 45, 0.08);
+    .thumb {
+      background: var(--brand-primary);
+    }
+    .text {
+      color: var(--brand-primary);
+    }
   }
 }
 
@@ -379,7 +467,11 @@ onMounted(() => {
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: 16rpx;
-  .title { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
+  .title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
   .sub {
     font-size: 22rpx;
     color: var(--brand-primary);
@@ -397,8 +489,13 @@ onMounted(() => {
   gap: 12rpx;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
-  .cond-check { padding: 4rpx; flex-shrink: 0; }
+  &:last-child {
+    border-bottom: none;
+  }
+  .cond-check {
+    padding: 4rpx;
+    flex-shrink: 0;
+  }
   .cond-label {
     flex: 1;
     font-size: 26rpx;
@@ -410,8 +507,14 @@ onMounted(() => {
     border-radius: 999rpx;
     font-size: 20rpx;
     font-weight: 700;
-    &.on { background: rgba(82,196,26,0.1); color: #52C41A; }
-    &.off { background: var(--bg-page); color: var(--text-tertiary); }
+    &.on {
+      background: rgba(82, 196, 26, 0.1);
+      color: #52c41a;
+    }
+    &.off {
+      background: var(--bg-page);
+      color: var(--text-tertiary);
+    }
   }
 }
 .sampling {
@@ -421,7 +524,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  .s-label { font-size: 24rpx; color: var(--text-tertiary); }
+  .s-label {
+    font-size: 24rpx;
+    color: var(--text-tertiary);
+  }
   .s-value {
     display: flex;
     align-items: center;
@@ -455,7 +561,9 @@ onMounted(() => {
     color: var(--brand-primary);
     font-weight: 700;
   }
-  .tab-label { font-size: 26rpx; }
+  .tab-label {
+    font-size: 26rpx;
+  }
   .tab-count {
     font-size: 18rpx;
     color: var(--text-tertiary);
@@ -530,9 +638,18 @@ onMounted(() => {
     border-radius: 999rpx;
     font-size: 20rpx;
     font-weight: 700;
-    &.pending { background: rgba(255,77,45,0.12); color: var(--brand-primary); }
-    &.auto_approved { background: rgba(82,196,26,0.12); color: #52C41A; }
-    &.rejected { background: rgba(0,0,0,0.06); color: var(--text-tertiary); }
+    &.pending {
+      background: rgba(255, 77, 45, 0.12);
+      color: var(--brand-primary);
+    }
+    &.auto_approved {
+      background: rgba(82, 196, 26, 0.12);
+      color: #52c41a;
+    }
+    &.rejected {
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--text-tertiary);
+    }
   }
 }
 .meta {
@@ -554,7 +671,10 @@ onMounted(() => {
     color: var(--brand-primary);
     font-family: var(--font-family-base);
   }
-  .time { font-size: 20rpx; color: var(--text-tertiary); }
+  .time {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
 }
 .actions {
   display: flex;
@@ -577,7 +697,7 @@ onMounted(() => {
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 </style>

@@ -172,7 +172,7 @@ async function onAddCart(p: Product) {
       uni.showToast({ title: '商品信息加载失败', icon: 'none' })
       return
     }
-    cartStore.add({
+    await cartStore.addCart({
       productId: p.id,
       skuId: firstSku.id,
       name: p.name,
@@ -186,9 +186,9 @@ async function onAddCart(p: Product) {
     } else {
       uni.showToast({ title: '已加入购物车', icon: 'success' })
     }
-  } catch {
+  } catch (e: any) {
     uni.hideLoading()
-    uni.showToast({ title: '商品信息加载失败', icon: 'none' })
+    uni.showToast({ title: e?.message || '商品信息加载失败', icon: 'none' })
   }
 }
 
@@ -288,16 +288,27 @@ onShow(() => {
 
       <view class="waterfall">
         <view class="col">
-          <view
-            v-for="(p, i) in colLeft"
-            :key="p.id"
-            class="wf-card"
-            @click="goDetail(p)"
-          >
+          <view v-for="(p, i) in colLeft" :key="p.id" class="wf-card" @click="goDetail(p)">
             <view class="wf-img-wrap">
-              <image :src="p.images?.[0]" mode="aspectFill" lazy-load class="wf-img" :style="{ height: imgHeightOf(i * 2) + 'rpx' }" />
-              <view class="wf-fav" :class="{ active: isFavorited(p) }" @click.stop="toggleFavorite(p, $event)">
-                <Icon :name="isFavorited(p) ? 'heart' : 'heart'" :size="28" :color="isFavorited(p) ? '#FF3B30' : '#fff'" :fill="isFavorited(p)" :stroke="2" />
+              <image
+                :src="p.images?.[0]"
+                mode="aspectFill"
+                lazy-load
+                class="wf-img"
+                :style="{ height: imgHeightOf(i * 2) + 'rpx' }"
+              />
+              <view
+                class="wf-fav"
+                :class="{ active: isFavorited(p) }"
+                @click.stop="toggleFavorite(p, $event)"
+              >
+                <Icon
+                  :name="isFavorited(p) ? 'heart' : 'heart'"
+                  :size="28"
+                  :color="isFavorited(p) ? '#FF3B30' : '#fff'"
+                  :fill="isFavorited(p)"
+                  :stroke="2"
+                />
               </view>
             </view>
             <view class="wf-info">
@@ -320,16 +331,27 @@ onShow(() => {
           </view>
         </view>
         <view class="col">
-          <view
-            v-for="(p, i) in colRight"
-            :key="p.id"
-            class="wf-card"
-            @click="goDetail(p)"
-          >
+          <view v-for="(p, i) in colRight" :key="p.id" class="wf-card" @click="goDetail(p)">
             <view class="wf-img-wrap">
-              <image :src="p.images?.[0]" mode="aspectFill" lazy-load class="wf-img" :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }" />
-              <view class="wf-fav" :class="{ active: isFavorited(p) }" @click.stop="toggleFavorite(p, $event)">
-                <Icon name="heart" :size="28" :color="isFavorited(p) ? '#FF3B30' : '#fff'" :fill="isFavorited(p)" :stroke="2" />
+              <image
+                :src="p.images?.[0]"
+                mode="aspectFill"
+                lazy-load
+                class="wf-img"
+                :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }"
+              />
+              <view
+                class="wf-fav"
+                :class="{ active: isFavorited(p) }"
+                @click.stop="toggleFavorite(p, $event)"
+              >
+                <Icon
+                  name="heart"
+                  :size="28"
+                  :color="isFavorited(p) ? '#FF3B30' : '#fff'"
+                  :fill="isFavorited(p)"
+                  :stroke="2"
+                />
               </view>
             </view>
             <view class="wf-info">
@@ -358,7 +380,7 @@ onShow(() => {
         <text v-else-if="!hasMore && products.length > 0">— 已经到底了 —</text>
         <text v-else-if="hasMore && products.length > 0">上拉加载更多</text>
       </view>
-      <view style="height: 160rpx;" />
+      <view style="height: 160rpx" />
     </scroll-view>
 
     <TabBar current="home" />
@@ -390,7 +412,11 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    .letter { color: #fff; font-weight: 800; font-size: 28rpx; }
+    .letter {
+      color: #fff;
+      font-weight: 800;
+      font-size: 28rpx;
+    }
   }
   .shop-name {
     flex: 1;
@@ -438,7 +464,7 @@ onShow(() => {
     color: #fff;
     font-size: 26rpx;
     font-weight: 600;
-    text-shadow: 0 1rpx 2rpx rgba(0,0,0,.4);
+    text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.4);
     max-width: 70%;
   }
 }
@@ -451,9 +477,9 @@ onShow(() => {
   .dot {
     width: 12rpx;
     height: 6rpx;
-    background: rgba(255,255,255,0.5);
+    background: rgba(255, 255, 255, 0.5);
     border-radius: 3rpx;
-    transition: width .3s;
+    transition: width 0.3s;
     &.active {
       width: 24rpx;
       background: #fff;
@@ -593,7 +619,7 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .wf-meta {

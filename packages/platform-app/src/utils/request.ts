@@ -9,9 +9,10 @@
  */
 import type { ApiResult } from '@jiujiu/shared/types'
 
-const BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) ||
-  (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
+// 后端统一入口 https://ewsn.top —— 不再支持本地 server,
+// .env 缺失 / uni-app mp-weixin 注入失败 / build 模式不匹配等任何场景,
+// 都直接走线上,避免一切"连不上 localhost:3001"类故障。
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
 const LOGIN_PATH = '/pages/auth/login'
 const TOKEN_KEY = 'jiujiu_admin_token'
 const REFRESH_KEY = 'jiujiu_admin_refresh_token'
@@ -41,10 +42,7 @@ function buildUrl(url: string, params?: Record<string, unknown>): string {
  * /api/v1/m/app/latest 走 @Public 装饰器,merchant + platform 端都需要它来检查 APK 更新,
  * 不应被 guardNamespace 拦截。
  */
-const PLATFORM_PUBLIC_ALLOW = new Set([
-  '/api/v1/u/agreements',
-  '/api/v1/m/app/latest',
-])
+const PLATFORM_PUBLIC_ALLOW = new Set(['/api/v1/u/agreements', '/api/v1/m/app/latest'])
 function guardNamespace(url: string): void {
   if (import.meta.env.PROD) return
   if (!url.startsWith('/api/v1/')) return
@@ -109,7 +107,9 @@ function tryRefresh(): Promise<boolean> {
   try {
     return refreshPromise
   } finally {
-    refreshPromise.finally(() => { refreshPromise = null })
+    refreshPromise.finally(() => {
+      refreshPromise = null
+    })
   }
 }
 
@@ -140,7 +140,19 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
         }
         resolve(res.data as ApiResult<T>)
       },
-      fail: (err) => reject(err),
+      fail: (err: any) => {
+        // 把 uni.request 的 fail 错误结构 ({errMsg:'request:fail ...'})
+        // 转成 Error,带出网络层 / DNS / SSL / 跨域 / 超时 等具体原因,
+        // 避免 catch 端只看到 "登录失败" 这种空话
+        const raw = err?.errMsg || err?.message || ''
+        let friendly = raw || '网络请求失败'
+        if (/ECONNREFUSED|abort|fail/i.test(raw)) {
+          friendly = `无法连接后端 ${BASE_URL},请检查网络或联系运维`
+        }
+        const e = new Error(friendly)
+        ;(e as any).cause = err
+        reject(e)
+      },
     })
   })
 }

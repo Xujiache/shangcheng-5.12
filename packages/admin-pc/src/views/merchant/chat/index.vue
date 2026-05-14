@@ -16,7 +16,13 @@
         <template #header>
           <div class="flex items-center justify-between">
             <span class="font-semibold">会话</span>
-            <ElInput v-model="keyword" placeholder="搜索" size="small" style="width: 130px" :prefix-icon="Search" />
+            <ElInput
+              v-model="keyword"
+              placeholder="搜索"
+              size="small"
+              style="width: 130px"
+              :prefix-icon="Search"
+            />
           </div>
         </template>
         <div class="mp-sessions">
@@ -65,11 +71,7 @@
             class="mp-msg"
             :class="{ self: m.from === 'merchant' }"
           >
-            <ElAvatar
-              v-if="m.from === 'customer'"
-              :src="current.customerAvatar"
-              :size="32"
-            />
+            <ElAvatar v-if="m.from === 'customer'" :src="current.customerAvatar" :size="32" />
             <div class="mp-msg__bubble">{{ m.text }}</div>
           </div>
         </div>
@@ -121,7 +123,9 @@
               <div class="text-xs text-g-500">订单</div>
             </div>
             <div>
-              <div class="text-lg font-semibold text-primary">¥{{ current.totalSpent.toLocaleString() }}</div>
+              <div class="text-lg font-semibold text-primary"
+                >¥{{ current.totalSpent.toLocaleString() }}</div
+              >
               <div class="text-xs text-g-500">累计消费</div>
             </div>
           </div>
@@ -129,7 +133,10 @@
           <h4 class="m-0 mb-2 text-sm text-g-700">客户标签</h4>
           <div class="flex flex-wrap gap-1">
             <ElTag v-for="t in current.tags" :key="t" effect="plain" size="small">{{ t }}</ElTag>
-            <ElTag type="primary" effect="plain" size="small" class="cursor-pointer">+ 添加</ElTag>
+            <!-- TODO: 等后端 chat 标签管理接口上线后接入；当前禁用避免误导 -->
+            <ElTooltip content="标签管理开发中" placement="top">
+              <ElTag type="info" effect="plain" size="small" class="tag-disabled"> + 添加 </ElTag>
+            </ElTooltip>
           </div>
         </div>
         <ElEmpty v-else description="选择会话查看客户档案" :image-size="60" />
@@ -158,7 +165,13 @@
   const keyword = ref('')
   const msgAreaRef = ref<HTMLElement>()
 
-  const quickReplies = ['您好，请问需要什么帮助？', '稍等，我帮您查一下', '可以发图给我看看', '已为您下单优惠券', '抱歉，让您久等了']
+  const quickReplies = [
+    '您好，请问需要什么帮助？',
+    '稍等，我帮您查一下',
+    '可以发图给我看看',
+    '已为您下单优惠券',
+    '抱歉，让您久等了'
+  ]
 
   const totalUnread = computed(() => sessions.value.reduce((a, s) => a + s.unread, 0))
 
@@ -203,17 +216,17 @@
 
 <style scoped lang="scss">
   .mp-chat {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: calc(100vh - 100px);
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
@@ -221,13 +234,13 @@
   }
 
   .mp-chat__layout {
-    flex: 1;
     display: grid;
+    flex: 1;
     grid-template-columns: 320px 1fr 280px;
     gap: 14px;
     min-height: 0;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: 280px 1fr;
 
       .mp-chat__profile {
@@ -239,16 +252,16 @@
   .mp-chat__sessions,
   .mp-chat__main,
   .mp-chat__profile {
-    border-radius: 12px;
-    height: 100%;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 12px;
 
     :deep(.el-card__body) {
       flex: 1;
-      overflow: hidden;
       padding: 0;
+      overflow: hidden;
     }
   }
 
@@ -260,11 +273,11 @@
 
   .mp-sess {
     display: flex;
-    align-items: center;
     gap: 10px;
+    align-items: center;
     padding: 12px 14px;
-    border-bottom: 1px solid var(--art-border-color, #f3f4f6);
     cursor: pointer;
+    border-bottom: 1px solid var(--art-border-color, #f3f4f6);
     transition: all 0.15s;
 
     &:hover {
@@ -272,14 +285,14 @@
     }
 
     &.active {
-      background: rgba(255, 77, 45, 0.06);
+      background: rgb(255 77 45 / 6%);
     }
   }
 
   .mp-sess__head {
     display: flex;
-    align-items: center;
     gap: 4px;
+    align-items: center;
     font-size: 14px;
   }
 
@@ -295,20 +308,20 @@
   }
 
   .mp-sess__time {
-    font-size: 11px;
-    color: var(--art-gray-400, #9ca3af);
     align-self: flex-start;
     padding-top: 2px;
+    font-size: 11px;
+    color: var(--art-gray-400, #9ca3af);
   }
 
   /* 消息区 */
   .mp-msg-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 18px;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 12px;
+    padding: 18px;
+    overflow-y: auto;
     background: #fafbfc;
   }
 
@@ -322,27 +335,27 @@
       align-self: flex-end;
 
       .mp-msg__bubble {
-        background: var(--el-color-primary, #ff4d2d);
         color: #fff;
+        background: var(--el-color-primary, #ff4d2d);
       }
     }
   }
 
   .mp-msg__bubble {
     padding: 10px 14px;
-    border-radius: 12px;
-    background: #fff;
-    border: 1px solid var(--art-border-color, #e5e7eb);
     font-size: 13px;
     line-height: 1.5;
     word-break: break-word;
+    background: #fff;
+    border: 1px solid var(--art-border-color, #e5e7eb);
+    border-radius: 12px;
   }
 
   /* 输入区 */
   .mp-input {
-    border-top: 1px solid var(--art-border-color, #e5e7eb);
     padding: 12px 14px;
     background: #fff;
+    border-top: 1px solid var(--art-border-color, #e5e7eb);
   }
 
   .mp-quick {
@@ -365,8 +378,8 @@
 
   .mp-profile__hero {
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
   }
 
   .mp-profile__stat {
@@ -374,5 +387,10 @@
     grid-template-columns: 1fr 1fr;
     gap: 10px;
     text-align: center;
+  }
+
+  .tag-disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
   }
 </style>

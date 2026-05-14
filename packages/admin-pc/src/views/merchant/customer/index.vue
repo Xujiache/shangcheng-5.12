@@ -5,7 +5,8 @@
       <div>
         <h2 class="m-0 text-xl font-semibold">客户管理</h2>
         <p class="mt-1 text-sm text-g-500">
-          总客户 {{ all.length }} · 会员 <b class="text-primary">{{ vipCount }}</b> · 分佣 <b style="color:#FF4D2D">{{ agencyCount }}</b> · 黑名单 {{ blacklistCount }}
+          总客户 {{ all.length }} · 会员 <b class="text-primary">{{ vipCount }}</b> · 分佣
+          <b style="color: #ff4d2d">{{ agencyCount }}</b> · 黑名单 {{ blacklistCount }}
         </p>
       </div>
       <div class="flex gap-2">
@@ -35,7 +36,11 @@
     </ElCard>
 
     <ElCard shadow="never" v-loading="loading">
-      <ElTable :data="filteredList" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filteredList"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="客户" min-width="240">
           <template #default="{ row }">
             <div class="mp-row-cell">
@@ -43,8 +48,16 @@
               <div>
                 <div class="font-medium">
                   {{ row.nickname }}
-                  <ElTag v-if="isVip(row)" type="warning" size="small" effect="dark" class="ml-1">VIP</ElTag>
-                  <ElTag v-if="row.status === 'disabled'" type="danger" size="small" effect="plain" class="ml-1">
+                  <ElTag v-if="isVip(row)" type="warning" size="small" effect="dark" class="ml-1"
+                    >VIP</ElTag
+                  >
+                  <ElTag
+                    v-if="row.status === 'disabled'"
+                    type="danger"
+                    size="small"
+                    effect="plain"
+                    class="ml-1"
+                  >
                     黑名单
                   </ElTag>
                 </div>
@@ -55,7 +68,9 @@
         </ElTableColumn>
         <ElTableColumn label="客户层级" width="120" align="center">
           <template #default="{ row }">
-            <ElTag :type="tierMetaOf(tierOf(row)).tagType" size="small">{{ tierMetaOf(tierOf(row)).label }}</ElTag>
+            <ElTag :type="tierMetaOf(tierOf(row)).tagType" size="small">{{
+              tierMetaOf(tierOf(row)).label
+            }}</ElTag>
             <div class="text-xs text-g-500 mt-1">见 {{ tierMetaOf(tierOf(row)).priceLabel }}</div>
           </template>
         </ElTableColumn>
@@ -95,7 +110,7 @@
         </ElTableColumn>
         <ElTableColumn label="累计消费" width="120" align="right">
           <template #default="{ row }">
-            <span class="text-primary font-semibold">¥{{ totalConsumeOf(row) }}</span>
+            <span class="text-primary font-semibold">{{ totalConsumeOf(row) }}</span>
           </template>
         </ElTableColumn>
         <ElTableColumn label="操作" width="240" align="center" fixed="right">
@@ -126,7 +141,9 @@
             <div class="text-lg font-semibold">{{ current.nickname }}</div>
             <div class="text-xs text-g-500 mt-1">{{ current.phone || '未绑定手机' }}</div>
             <div class="mt-2 flex gap-1">
-              <ElTag v-if="isVip(current)" type="warning" effect="dark" size="small">VIP 会员</ElTag>
+              <ElTag v-if="isVip(current)" type="warning" effect="dark" size="small"
+                >VIP 会员</ElTag
+              >
               <ElTag v-if="current.status === 'disabled'" type="danger" size="small">黑名单</ElTag>
               <ElTag type="info" effect="plain" size="small">
                 注册 {{ formatRelative(current.createdAt) }}
@@ -139,7 +156,7 @@
           <h4 class="m-0 mb-3 text-sm text-g-700">消费数据</h4>
           <div class="mp-stat-row">
             <div class="mp-stat">
-              <div class="mp-stat__val text-primary">¥{{ totalConsumeOf(current) }}</div>
+              <div class="mp-stat__val text-primary">{{ totalConsumeOf(current) }}</div>
               <div class="mp-stat__lbl">累计消费</div>
             </div>
             <div class="mp-stat">
@@ -156,13 +173,7 @@
         <ElCard shadow="never" class="mp-detail__card">
           <h4 class="m-0 mb-3 text-sm text-g-700">客户标签</h4>
           <div class="flex flex-wrap gap-2">
-            <ElTag
-              v-for="t in tagsOf(current)"
-              :key="t"
-              closable
-              effect="plain"
-              size="small"
-            >
+            <ElTag v-for="t in tagsOf(current)" :key="t" closable effect="plain" size="small">
               {{ t }}
             </ElTag>
             <ElTag type="primary" effect="plain" size="small" class="cursor-pointer">+ 添加</ElTag>
@@ -179,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-  import { fetchCustomers } from '@/api/merchant-business'
+  import { fetchCustomers, setCustomerBlacklist } from '@/api/merchant-business'
   import type { User } from '@jiujiu/shared/types'
   import { formatDate, formatRelative } from '@jiujiu/shared/utils'
   import { ElMessage } from 'element-plus'
@@ -195,7 +206,7 @@
     { label: '黑名单', value: 'blacklist' as const }
   ]
 
-  const tier = ref<typeof tabs[number]['value']>('all')
+  const tier = ref<(typeof tabs)[number]['value']>('all')
   const keyword = ref('')
   const loading = ref(false)
   const all = ref<User[]>([])
@@ -203,30 +214,45 @@
   const detailOpen = ref(false)
   const current = ref<User>()
 
-  /** 客户层级判定：用 id 哈希派生稳定的层级（接真后端时改读 user.tier 字段） */
-  type CustomerTier = 'normal' | 'vip' | 'agency'
-  function tierOf(u: User): CustomerTier {
-    if (u.status === 'disabled') return 'normal'
-    const c = u.id.charCodeAt(u.id.length - 1)
-    if (c % 7 === 0) return 'agency'
-    if (c % 4 === 0) return 'vip'
-    return 'normal'
+  /**
+   * 客户层级 = 后端 priceTier 字段
+   *
+   * 后端 `merchant.service.listCustomers` 通过 SystemConfig 商家级配置返回每个
+   * 客户的真实价格档位（guest / customer / member / agency），fetchCustomers
+   * 已把这个字段透传到前端。旧实现走 id 哈希派生，永远拿不到商家在客户后台
+   * 设置的真实档位 → 客户管理页和会员价 / 批发价的真实场景脱节，是死路径。
+   */
+  type CustomerTier = 'guest' | 'customer' | 'member' | 'agency'
+  type CustomerRow = User & {
+    priceTier?: CustomerTier | string
+    orderCount?: number
+    totalSpent?: number
   }
-  function isVip(u: User) {
-    return tierOf(u) === 'vip'
+  function tierOf(u: CustomerRow): CustomerTier {
+    const t = u.priceTier
+    if (t === 'agency' || t === 'member' || t === 'customer' || t === 'guest') return t
+    return 'guest'
   }
-  function isAgency(u: User) {
+  function isVip(u: CustomerRow) {
+    const t = tierOf(u)
+    return t === 'member' || t === 'agency'
+  }
+  function isAgency(u: CustomerRow) {
     return tierOf(u) === 'agency'
   }
 
   function tierMetaOf(t: CustomerTier) {
-    return (
-      {
-        normal: { label: '普通', color: '#3B82F6', tagType: 'info' as const, priceLabel: '零售价' },
-        vip: { label: '会员', color: '#A855F7', tagType: 'warning' as const, priceLabel: '会员价' },
-        agency: { label: '分佣', color: '#FF4D2D', tagType: 'danger' as const, priceLabel: '批发价' }
-      }
-    )[t]
+    return {
+      guest: { label: '游客', color: '#94a3b8', tagType: 'info' as const, priceLabel: '游客价' },
+      customer: { label: '普通', color: '#3B82F6', tagType: 'info' as const, priceLabel: '零售价' },
+      member: {
+        label: '会员',
+        color: '#A855F7',
+        tagType: 'warning' as const,
+        priceLabel: '会员价'
+      },
+      agency: { label: '分佣', color: '#FF4D2D', tagType: 'danger' as const, priceLabel: '批发价' }
+    }[t]
   }
 
   const vipCount = computed(() => all.value.filter(isVip).length)
@@ -241,38 +267,42 @@
     )
   })
 
-  function countOf(t: typeof tabs[number]['value']) {
+  function countOf(t: (typeof tabs)[number]['value']) {
     if (t === 'all') return all.value.length
     if (t === 'vip') return all.value.filter(isVip).length
     if (t === 'agency') return all.value.filter(isAgency).length
     if (t === 'blacklist') return all.value.filter((u) => u.status === 'disabled').length
-    return all.value.filter((u) => tierOf(u) === 'normal' && u.status !== 'disabled').length
+    // normal = 不是 VIP/Agency 且未禁用
+    return all.value.filter((u) => !isVip(u) && u.status !== 'disabled').length
   }
 
-  function tagsOf(u: User): string[] {
+  function tagsOf(u: CustomerRow): string[] {
     const tags: string[] = []
     const t = tierOf(u)
-    if (t === 'vip') tags.push('会员')
+    if (t === 'member') tags.push('会员')
     if (t === 'agency') tags.push('分佣')
-    const c = u.id.charCodeAt(u.id.length - 1)
-    if (c % 3 === 0) tags.push('高客单')
-    if (c % 5 === 0) tags.push('复购')
-    if (c % 8 === 0) tags.push('忠诚')
+    if (u.status === 'disabled') tags.push('黑名单')
     return tags
   }
 
-  function totalConsumeOf(u: User) {
-    return (u.id.charCodeAt(u.id.length - 1) * 137 + 800).toLocaleString()
+  // === 真实业务统计 ===
+  // 后端 listCustomers 暂未统计 orderCount / totalSpent / avgOrder，
+  // 字段缺失时显式提示「暂未统计」，避免用假哈希骗用户以为有数据
+  function totalConsumeOf(u: CustomerRow) {
+    if (typeof u.totalSpent === 'number') return '¥' + u.totalSpent.toLocaleString()
+    return '暂未统计'
   }
 
-  function orderCountOf(u: User) {
-    return (u.id.charCodeAt(u.id.length - 1) % 12) + 1
+  function orderCountOf(u: CustomerRow) {
+    if (typeof u.orderCount === 'number') return u.orderCount
+    return '—'
   }
 
-  function avgOrderOf(u: User) {
-    const total = u.id.charCodeAt(u.id.length - 1) * 137 + 800
-    const cnt = (u.id.charCodeAt(u.id.length - 1) % 12) + 1
-    return '¥' + Math.round(total / cnt).toLocaleString()
+  function avgOrderOf(u: CustomerRow) {
+    if (typeof u.totalSpent === 'number' && typeof u.orderCount === 'number' && u.orderCount > 0) {
+      return '¥' + Math.round(u.totalSpent / u.orderCount).toLocaleString()
+    }
+    return '—'
   }
 
   function openDetail(u: User) {
@@ -280,9 +310,18 @@
     detailOpen.value = true
   }
 
-  function toggleBlacklist(u: User) {
-    u.status = u.status === 'disabled' ? 'active' : 'disabled'
-    ElMessage.success(u.status === 'disabled' ? '已加入黑名单' : '已移出黑名单')
+  async function toggleBlacklist(u: User) {
+    const original = u.status
+    const nextOn = original !== 'disabled'
+    // 乐观更新：先翻转 UI，失败时回滚（避免列表显示成功但 DB 没改）
+    u.status = nextOn ? 'disabled' : 'active'
+    try {
+      await setCustomerBlacklist(u.id, nextOn)
+      ElMessage.success(nextOn ? '已加入黑名单' : '已移出黑名单')
+    } catch (e: any) {
+      u.status = original
+      ElMessage.error(e?.message || '操作失败，请稍后重试')
+    }
   }
 
   async function loadData() {
@@ -300,7 +339,8 @@
       } else if (tier.value === 'agency') {
         list.value = fetched.filter(isAgency)
       } else {
-        list.value = fetched.filter((u) => tierOf(u) === 'normal' && u.status !== 'disabled')
+        // normal tab = guest / customer 这两档（不是会员、不是分佣、且未禁用）
+        list.value = fetched.filter((u) => !isVip(u) && u.status !== 'disabled')
       }
     } finally {
       loading.value = false
@@ -312,16 +352,16 @@
 
 <style scoped lang="scss">
   .mp-customer {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
@@ -344,30 +384,30 @@
 
   .mp-row-cell {
     display: flex;
-    align-items: center;
     gap: 10px;
+    align-items: center;
   }
 
   /* === 抽屉 === */
 
   .mp-detail {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 22px;
   }
 
   .mp-detail__hero {
     display: flex;
-    align-items: center;
     gap: 14px;
+    align-items: center;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--art-border-color, #e5e7eb);
   }
 
   .mp-detail__card {
-    border-radius: 10px;
     background: #fafbfc;
+    border-radius: 10px;
 
     :deep(.el-card__body) {
       padding: 14px 16px;
@@ -390,15 +430,15 @@
   }
 
   .mp-stat__lbl {
+    margin-top: 4px;
     font-size: 12px;
     color: var(--art-gray-500, #6b7280);
-    margin-top: 4px;
   }
 
   .mp-detail__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     padding-top: 6px;
   }
 </style>

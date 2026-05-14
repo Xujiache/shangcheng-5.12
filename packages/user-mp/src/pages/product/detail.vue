@@ -137,7 +137,9 @@ async function load() {
         const row = favs.find((f) => f.productId === productId.value)
         favorited.value = !!row
         favoriteRowId.value = row?.id || ''
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   } catch (e) {
     console.error('load product failed:', e)
@@ -188,7 +190,7 @@ const viewerBadge = computed(
       customer: '普通客户',
       agency: '授权门店',
       member: '会员客户',
-    })[viewerTier.value]
+    })[viewerTier.value],
 )
 
 const specGroups = computed(() => {
@@ -203,6 +205,40 @@ const specGroups = computed(() => {
     })
   })
   return Object.fromEntries(Object.entries(groups).map(([k, v]) => [k, [...v]]))
+})
+
+/**
+ * 评价列表：优先取后端 product.reviews 字段。
+ * 没有 Review model 上线前显示空态，避免硬编码假评价（之前 "L***张：实物比图片好看…"
+ * 是占位文案，给用户判断的时候会误导）。
+ */
+interface ProductReview {
+  id: string
+  nickname: string
+  avatar?: string
+  rating: number
+  content: string
+  createdAt?: string
+}
+const reviews = computed<ProductReview[]>(() => {
+  const list = (product.value as any)?.reviews
+  return Array.isArray(list) ? list : []
+})
+
+/**
+ * 参数表：优先取后端 product.specs（Record<string,string>）；
+ * 没有则展示统一空态指引"详情图查看完整参数"。
+ */
+interface SpecRow {
+  k: string
+  v: string
+}
+const paramRows = computed<SpecRow[]>(() => {
+  const raw = (product.value as any)?.specs
+  if (!raw || typeof raw !== 'object') return []
+  return Object.entries(raw)
+    .filter(([_, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => ({ k, v: String(v) }))
 })
 
 function selectSpec(group: string | number, val: string) {
@@ -255,7 +291,9 @@ async function toggleFav() {
         const favs = await favoriteService.list()
         const row = favs.find((f) => f.productId === product.value!.id)
         favoriteRowId.value = row?.id || ''
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       uni.showToast({ title: '已收藏', icon: 'success' })
     }
   } catch (e: any) {
@@ -279,7 +317,7 @@ function specLabel() {
   return Object.values(specSelections.value).join(' / ') || '默认规格'
 }
 
-function confirmSku() {
+async function confirmSku() {
   if (!product.value) return
   if (isBySize.value) {
     if (!sizeValid.value) {
@@ -296,9 +334,13 @@ function confirmSku() {
     : specLabel()
 
   // 真实 SKU 匹配（按规格找数据库 sku.id）；按尺寸定价或匹配失败回退首个 SKU
-  const matchedSku = !isBySize.value && product.value.skus?.find((s) => {
-    return Object.entries(specSelections.value).every(([k, v]) => String((s.specs as any)?.[k]) === v)
-  })
+  const matchedSku =
+    !isBySize.value &&
+    product.value.skus?.find((s) => {
+      return Object.entries(specSelections.value).every(
+        ([k, v]) => String((s.specs as any)?.[k]) === v,
+      )
+    })
   const realSkuId = (matchedSku && matchedSku.id) || product.value.skus?.[0]?.id || ''
 
   if (!realSkuId) {
@@ -316,12 +358,20 @@ function confirmSku() {
     qty: qty.value,
   }
 
-  showSku.value = false
-
   if (skuMode.value === 'cart') {
-    cartStore.add(item)
-    uni.showToast({ title: '已加入购物车', icon: 'success' })
+    // 登录态走后端 POST /u/cart；未登录态本地缓存。失败保留弹层让用户重试
+    try {
+      uni.showLoading({ title: '加购中…', mask: true })
+      await cartStore.addCart(item)
+      uni.hideLoading()
+      showSku.value = false
+      uni.showToast({ title: '已加入购物车', icon: 'success' })
+    } catch (e: any) {
+      uni.hideLoading()
+      uni.showToast({ title: e?.message || '加购失败', icon: 'none' })
+    }
   } else {
+    showSku.value = false
     // 立即购买：单独存 buyNow，不污染购物车
     cartStore.setBuyNow(item)
     uni.navigateTo({ url: '/pages/order/confirm?fromSku=1' })
@@ -377,7 +427,13 @@ onShareTimeline(() => ({
 
   <!-- 正常 -->
   <view v-else class="page">
-    <NavBar title="商品详情" right-icon="share" bg="rgba(255,255,255,0.9)" color="var(--text-primary)" :sticky="true" />
+    <NavBar
+      title="商品详情"
+      right-icon="share"
+      bg="rgba(255,255,255,0.9)"
+      color="var(--text-primary)"
+      :sticky="true"
+    />
 
     <scroll-view scroll-y class="scroll">
       <view class="banner">
@@ -393,9 +449,7 @@ onShareTimeline(() => ({
             <image :src="img" mode="aspectFill" class="banner-img" />
           </swiper-item>
         </swiper>
-        <view class="banner-counter">
-          {{ swiperIndex + 1 }} / {{ product.images.length }}
-        </view>
+        <view class="banner-counter"> {{ swiperIndex + 1 }} / {{ product.images.length }} </view>
       </view>
 
       <view class="price-block">
@@ -417,7 +471,13 @@ onShareTimeline(() => ({
           <text>厂家直发</text>
         </view>
         <view class="tags">
-          <TagChip v-for="t in product.tags?.slice(0, 4)" :key="t" :text="t" tone="soft" size="sm" />
+          <TagChip
+            v-for="t in product.tags?.slice(0, 4)"
+            :key="t"
+            :text="t"
+            tone="soft"
+            size="sm"
+          />
         </view>
       </view>
 
@@ -442,17 +502,31 @@ onShareTimeline(() => ({
       <view class="card review">
         <view class="review-head">
           <text class="title">用户评价（{{ product.commentCount }}）</text>
-          <text class="action">查看全部 ›</text>
+          <text v-if="reviews.length > 0" class="action">查看全部 ›</text>
         </view>
-        <view class="review-item">
-          <view class="reviewer">
-            <view class="avatar">L</view>
-            <text class="nickname">L***张</text>
-            <view class="stars">
-              <Icon v-for="i in 5" :key="i" name="star-fill" :size="24" color="#FFB300" />
+        <template v-if="reviews.length > 0">
+          <view v-for="r in reviews.slice(0, 3)" :key="r.id" class="review-item">
+            <view class="reviewer">
+              <image v-if="r.avatar" :src="r.avatar" class="avatar avatar-img" />
+              <view v-else class="avatar">{{ (r.nickname || 'U').slice(0, 1).toUpperCase() }}</view>
+              <text class="nickname">{{ r.nickname }}</text>
+              <view class="stars">
+                <Icon
+                  v-for="i in 5"
+                  :key="i"
+                  name="star-fill"
+                  :size="24"
+                  :color="i <= (r.rating || 5) ? '#FFB300' : '#E5E6EB'"
+                />
+              </view>
             </view>
+            <text class="content">{{ r.content }}</text>
           </view>
-          <text class="content">实物比图片好看，做工扎实，物流也快，很满意～</text>
+        </template>
+        <view v-else class="review-empty">
+          <Icon name="star" :size="48" color="var(--text-tertiary)" />
+          <text class="empty-title">暂无评价</text>
+          <text class="empty-sub">等收到货来当第一个评价的人吧～</text>
         </view>
       </view>
 
@@ -469,20 +543,28 @@ onShareTimeline(() => ({
           mode="widthFix"
           class="detail-img"
         />
-        <view class="param-table">
-          <view class="param-row" v-for="(p, i) in [['品牌', '经纬科技'], ['材质', '橡木实木'], ['工艺', '原木手工'], ['产地', '佛山顺德']]" :key="i">
-            <text class="k">{{ p[0] }}</text>
-            <text class="v">{{ p[1] }}</text>
+        <view v-if="paramRows.length > 0" class="param-table">
+          <view class="param-row" v-for="p in paramRows" :key="p.k">
+            <text class="k">{{ p.k }}</text>
+            <text class="v">{{ p.v }}</text>
           </view>
+        </view>
+        <view v-else class="param-empty">
+          <Icon name="info" :size="28" color="var(--text-tertiary)" />
+          <text>商家未提供参数表，详细规格请参考上方详情图</text>
         </view>
       </view>
 
-      <view style="height: 160rpx;" />
+      <view style="height: 160rpx" />
     </scroll-view>
 
     <view class="action-bar">
       <view class="icon-btn" @click="toggleFav">
-        <Icon :name="favorited ? 'star-fill' : 'star'" :size="40" :color="favorited ? '#FFB300' : 'var(--text-secondary)'" />
+        <Icon
+          :name="favorited ? 'star-fill' : 'star'"
+          :size="40"
+          :color="favorited ? '#FFB300' : 'var(--text-secondary)'"
+        />
         <text>收藏</text>
       </view>
       <view class="icon-btn" @click="goChat">
@@ -576,7 +658,8 @@ onShareTimeline(() => ({
                     :key="v"
                     :class="['chip', specSelections[key] === v ? 'active' : '']"
                     @click="selectSpec(key, v)"
-                  >{{ v }}</view>
+                    >{{ v }}</view
+                  >
                 </view>
               </view>
             </view>
@@ -592,7 +675,8 @@ onShareTimeline(() => ({
                   :key="v"
                   :class="['chip', specSelections[key] === v ? 'active' : '']"
                   @click="selectSpec(key, v)"
-                >{{ v }}</view>
+                  >{{ v }}</view
+                >
               </view>
             </view>
           </template>
@@ -633,7 +717,8 @@ onShareTimeline(() => ({
 }
 
 /* 错误页 / 加载页 */
-.error-page, .loading-page {
+.error-page,
+.loading-page {
   align-items: center;
 }
 .error-wrap {
@@ -650,12 +735,12 @@ onShareTimeline(() => ({
     line-height: 140rpx;
     text-align: center;
     border-radius: 50%;
-    background: linear-gradient(135deg, #FFB199, #FF6E4D);
+    background: linear-gradient(135deg, #ffb199, #ff6e4d);
     color: #fff;
     font-size: 72rpx;
     font-weight: 800;
     margin-bottom: 16rpx;
-    box-shadow: 0 8rpx 24rpx rgba(255,77,45,0.35);
+    box-shadow: 0 8rpx 24rpx rgba(255, 77, 45, 0.35);
   }
   .error-title {
     font-size: 36rpx;
@@ -674,7 +759,8 @@ onShareTimeline(() => ({
     gap: 16rpx;
     margin-top: 16rpx;
   }
-  .btn-ghost, .btn-primary {
+  .btn-ghost,
+  .btn-primary {
     padding: 18rpx 40rpx;
     border-radius: 999rpx;
     font-size: 26rpx;
@@ -688,7 +774,7 @@ onShareTimeline(() => ({
   .btn-primary {
     background: $brand-gradient;
     color: #fff;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.35);
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.35);
   }
 }
 .loading-wrap {
@@ -716,7 +802,7 @@ onShareTimeline(() => ({
     position: absolute;
     right: 24rpx;
     bottom: 24rpx;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     color: #fff;
     padding: 4rpx 16rpx;
     border-radius: 999rpx;
@@ -803,13 +889,26 @@ onShareTimeline(() => ({
     display: flex;
     align-items: center;
     justify-content: space-between;
-    .title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-    .action { font-size: 22rpx; color: var(--brand-primary); }
+    .title {
+      font-size: 28rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .action {
+      font-size: 22rpx;
+      color: var(--brand-primary);
+    }
   }
   .review-item {
     display: flex;
     flex-direction: column;
     gap: 8rpx;
+    padding-bottom: 12rpx;
+    border-bottom: 1rpx dashed var(--border-light);
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
     .reviewer {
       display: flex;
       align-items: center;
@@ -825,20 +924,69 @@ onShareTimeline(() => ({
         justify-content: center;
         font-size: 22rpx;
         font-weight: 800;
+        overflow: hidden;
       }
-      .nickname { font-size: 24rpx; color: var(--text-primary); }
-      .stars { display: flex; gap: 2rpx; margin-left: auto; }
+      .avatar-img {
+        background: var(--bg-page);
+      }
+      .nickname {
+        font-size: 24rpx;
+        color: var(--text-primary);
+      }
+      .stars {
+        display: flex;
+        gap: 2rpx;
+        margin-left: auto;
+      }
     }
-    .content { font-size: 24rpx; color: var(--text-secondary); line-height: 1.5; }
+    .content {
+      font-size: 24rpx;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
   }
+  .review-empty {
+    padding: 32rpx 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4rpx;
+    .empty-title {
+      font-size: 26rpx;
+      color: var(--text-secondary);
+    }
+    .empty-sub {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
+  }
+}
+.param-empty {
+  margin-top: 12rpx;
+  padding: 24rpx;
+  background: var(--bg-page);
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  color: var(--text-tertiary);
 }
 .section-title-block {
   display: flex;
   align-items: center;
   gap: 12rpx;
   padding: 32rpx 64rpx;
-  .line { flex: 1; height: 1rpx; background: var(--border-default); }
-  .title { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
+  .line {
+    flex: 1;
+    height: 1rpx;
+    background: var(--border-default);
+  }
+  .title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
 }
 .detail-imgs {
   background: var(--bg-card);
@@ -860,7 +1008,9 @@ onShareTimeline(() => ({
   .param-row {
     display: flex;
     border-bottom: 1rpx solid var(--border-light);
-    &:last-child { border-bottom: none; }
+    &:last-child {
+      border-bottom: none;
+    }
     .k {
       width: 200rpx;
       padding: 16rpx 24rpx;
@@ -887,7 +1037,7 @@ onShareTimeline(() => ({
   display: flex;
   align-items: center;
   gap: 16rpx;
-  box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.04);
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.04);
   z-index: 50;
   .icon-btn {
     width: 80rpx;
@@ -898,7 +1048,8 @@ onShareTimeline(() => ({
     font-size: 20rpx;
     color: var(--text-secondary);
   }
-  .cart-btn, .buy-btn {
+  .cart-btn,
+  .buy-btn {
     flex: 1;
     height: 80rpx;
     display: flex;
@@ -914,7 +1065,7 @@ onShareTimeline(() => ({
     opacity: 0.95;
   }
   .cart-btn {
-    background: #FFB300;
+    background: #ffb300;
     border-radius: 80rpx 0 0 80rpx;
   }
   .buy-btn {
@@ -926,7 +1077,7 @@ onShareTimeline(() => ({
 .sku-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 100;
   display: flex;
   align-items: flex-end;
@@ -1012,14 +1163,16 @@ onShareTimeline(() => ({
     background: var(--bg-card);
     &.active {
       border-color: var(--brand-primary);
-      background: rgba(255,77,45,0.08);
+      background: rgba(255, 77, 45, 0.08);
       color: var(--brand-primary);
       font-weight: 600;
     }
   }
   .sg-block {
     margin-bottom: 16rpx;
-    &:last-child { margin-bottom: 0; }
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 }
 
@@ -1079,7 +1232,9 @@ onShareTimeline(() => ({
       font-family: $font-family-base;
       text-align: center;
       box-sizing: border-box;
-      &:focus { border-color: var(--brand-primary); }
+      &:focus {
+        border-color: var(--brand-primary);
+      }
     }
   }
   .size-x {
@@ -1117,8 +1272,8 @@ onShareTimeline(() => ({
   align-items: baseline;
   gap: 6rpx;
   padding: 16rpx;
-  background: linear-gradient(135deg, rgba(255,77,45,0.08), rgba(255,156,110,0.04));
-  border: 1rpx solid rgba(255,77,45,0.2);
+  background: linear-gradient(135deg, rgba(255, 77, 45, 0.08), rgba(255, 156, 110, 0.04));
+  border: 1rpx solid rgba(255, 77, 45, 0.2);
   border-radius: 12rpx;
   .st-label {
     font-size: 24rpx;
@@ -1139,14 +1294,17 @@ onShareTimeline(() => ({
     font-family: $font-family-base;
   }
   &.invalid {
-    border-color: rgba(255,59,48,0.4);
-    background: rgba(255,59,48,0.04);
-    .st-cur, .st-num { color: #FF3B30; }
+    border-color: rgba(255, 59, 48, 0.4);
+    background: rgba(255, 59, 48, 0.04);
+    .st-cur,
+    .st-num {
+      color: #ff3b30;
+    }
   }
 }
 .size-warn {
   font-size: 22rpx;
-  color: #FF3B30;
+  color: #ff3b30;
   padding: 4rpx 8rpx;
 }
 .qty-row {
@@ -1184,7 +1342,7 @@ onShareTimeline(() => ({
     border-radius: 999rpx;
     font-size: 30rpx;
     font-weight: 700;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
   }
 }
 </style>

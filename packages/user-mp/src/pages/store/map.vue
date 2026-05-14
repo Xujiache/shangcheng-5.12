@@ -18,7 +18,9 @@ const stores = ref<NearbyStore[]>([])
 const selectedId = ref<string>('')
 const showList = ref(false)
 
-const selected = computed(() => stores.value.find((s) => s.id === selectedId.value) ?? stores.value[0])
+const selected = computed(
+  () => stores.value.find((s) => s.id === selectedId.value) ?? stores.value[0],
+)
 
 /** 通过 uni.getLocation 拿到经纬度（失败时返回 null，由后端走"不带定位"逻辑） */
 function resolveUserLocation(): Promise<{ lat: number; lng: number } | null> {
@@ -73,6 +75,11 @@ function navigateTo() {
 
 function toggleList() {
   showList.value = !showList.value
+}
+
+/** 跳门店列表页（独立卡片视图，含距离排序 + 营业徽标） */
+function goListPage() {
+  uni.navigateTo({ url: '/pages/store/list' })
 }
 
 /** map markers */
@@ -130,12 +137,7 @@ onMounted(load)
       <!-- H5 / 其它平台：腾讯静态地图 PNG + 可点击 pin 列表浮层 -->
       <!-- #ifndef MP-WEIXIN -->
       <view class="map-fallback">
-        <image
-          v-if="staticMapUrl"
-          :src="staticMapUrl"
-          mode="aspectFill"
-          class="map-static"
-        />
+        <image v-if="staticMapUrl" :src="staticMapUrl" mode="aspectFill" class="map-static" />
         <view v-else class="grid" />
         <!-- 静态图上方半透明 pin 浮层，让用户能切换"选中门店" -->
         <view class="pin-layer">
@@ -191,8 +193,11 @@ onMounted(load)
       <view class="list-sheet" @click.stop>
         <view class="sheet-head">
           <text class="title">附近门店（{{ stores.length }}）</text>
-          <view class="close" @click="showList = false">
-            <Icon name="close" :size="32" color="var(--text-tertiary)" />
+          <view class="head-right">
+            <text class="open-list" @click="goListPage">完整列表 ›</text>
+            <view class="close" @click="showList = false">
+              <Icon name="close" :size="32" color="var(--text-tertiary)" />
+            </view>
           </view>
         </view>
         <scroll-view scroll-y class="sheet-body">
@@ -226,8 +231,12 @@ onMounted(load)
 .map-wrap {
   flex: 1;
   position: relative;
-  background: #E0E0E0;
-  .map { width: 100%; height: 100%; display: block; }
+  background: #e0e0e0;
+  .map {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 }
 .map-fallback {
   position: absolute;
@@ -278,7 +287,7 @@ onMounted(load)
   color: #fff;
   border-radius: 999rpx;
   font-size: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.4);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.4);
 }
 .bottom-card {
   background: var(--bg-card);
@@ -299,8 +308,15 @@ onMounted(load)
     flex-direction: column;
     gap: 6rpx;
     min-width: 0;
-    .name { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-    .address { font-size: 22rpx; color: var(--text-tertiary); }
+    .name {
+      font-size: 30rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .address {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
   .distance-tag {
     display: flex;
@@ -336,13 +352,13 @@ onMounted(load)
   &.primary {
     background: $brand-gradient;
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .list-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 100;
   display: flex;
   align-items: flex-end;
@@ -361,8 +377,24 @@ onMounted(load)
   align-items: center;
   justify-content: space-between;
   border-bottom: 1rpx solid var(--border-light);
-  .title { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-  .close { padding: 8rpx; }
+  .title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .head-right {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+  .open-list {
+    font-size: 22rpx;
+    color: var(--brand-primary);
+    font-weight: 600;
+  }
+  .close {
+    padding: 8rpx;
+  }
 }
 .sheet-body {
   flex: 1;
@@ -375,7 +407,7 @@ onMounted(load)
   gap: 16rpx;
   border-bottom: 1rpx dashed var(--border-light);
   &.active {
-    background: rgba(255,77,45,0.04);
+    background: rgba(255, 77, 45, 0.04);
   }
   .store-info {
     flex: 1;
@@ -383,8 +415,15 @@ onMounted(load)
     flex-direction: column;
     gap: 4rpx;
     min-width: 0;
-    .name { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-    .address { font-size: 22rpx; color: var(--text-tertiary); }
+    .name {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .address {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
   .store-distance {
     font-size: 22rpx;

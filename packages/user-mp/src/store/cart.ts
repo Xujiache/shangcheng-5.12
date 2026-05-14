@@ -1,12 +1,23 @@
 /**
  * 购物车 store
  *
- * 两条线分开：
- *   lines     —— 用户加入购物车的商品（多个）
- *   buyNow    —— 立即购买的临时单一行（不进购物车，仅供确认订单页读取）
+ * 两条数据通道：
+ *   lines      —— 已加购商品（多个）
+ *   buyNow     —— 立即购买的临时单一行（不进购物车，仅供确认订单页读取）
+ *
+ * 三种运行模式：
+ *   1. 未登录态：纯本地 ref + uni.storage，离线可用
+ *   2. 登录态读：loadFromServer() 从 /u/cart 拉真值替换本地
+ *   3. 登录态写：addCart / updateCart / removeCart 优先调后端，本地做乐观更新
+ *
+ * 未登录 → 登录的合并策略（待办）：
+ *   当前实现是「登录后服务端覆盖本地」（与淘宝 / 京东一致）。
+ *   如需把匿名期加购合并上去，需在 setSession 时遍历本地 lines 调 cartService.add()，
+ *   并按 productId+skuId 去重，复杂度较高，暂不在 Wave3 范围内。
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { cartService, type ServerCartItem } from '../services'
 
 export interface CartLine {
   id: string
@@ -22,6 +33,33 @@ export interface CartLine {
 
 const STORAGE_KEY = 'jiujiu_cart'
 const BUYNOW_KEY = 'jiujiu_buynow'
+const TOKEN_KEY = 'jiujiu_token'
+
+/**
+ * 通过 token 是否存在判断登录态。
+ * 直接读 storage 而不引用 useUserStore 是为了避免 user/cart 双向依赖。
+ */
+function isLoggedIn(): boolean {
+  try {
+    return !!uni.getStorageSync(TOKEN_KEY)
+  } catch {
+    return false
+  }
+}
+
+function serverToLine(it: ServerCartItem): CartLine {
+  return {
+    id: it.id,
+    productId: it.productId,
+    skuId: it.skuId,
+    name: it.product?.name ?? '',
+    spec: it.sku?.specsLabel || '默认规格',
+    image: it.product?.image ?? '',
+    price: Number(it.sku?.priceRetail ?? it.product?.priceRetailMin ?? 0),
+    qty: it.quantity,
+    selected: true,
+  }
+}
 
 export const useCartStore = defineStore('cart', () => {
   const lines = ref<CartLine[]>([])
@@ -40,18 +78,28 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   function persist() {
-    try { uni.setStorageSync(STORAGE_KEY, JSON.stringify(lines.value)) } catch { /* ignore */ }
+    try {
+      uni.setStorageSync(STORAGE_KEY, JSON.stringify(lines.value))
+    } catch {
+      /* ignore */
+    }
   }
 
   function persistBuyNow() {
     try {
       if (buyNow.value) uni.setStorageSync(BUYNOW_KEY, JSON.stringify(buyNow.value))
       else uni.removeStorageSync(BUYNOW_KEY)
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
+  /* ========== 本地操作（未登录态使用 / 也作为乐观更新底层） ========== */
+
   function add(line: Omit<CartLine, 'id' | 'qty' | 'selected'> & { qty?: number }) {
-    const existing = lines.value.find((l) => l.productId === line.productId && l.skuId === line.skuId)
+    const existing = lines.value.find(
+      (l) => l.productId === line.productId && l.skuId === line.skuId,
+    )
     if (existing) {
       existing.qty += line.qty ?? 1
     } else {
@@ -112,6 +160,114 @@ export const useCartStore = defineStore('cart', () => {
     persist()
   }
 
+  /* ========== 服务器同步（登录态使用） ========== */
+
+  /** 从 /u/cart 拉取后端真值，替换本地。已勾选状态按 id 继承 */
+  async function loadFromServer(): Promise<void> {
+    if (!isLoggedIn()) return
+    try {
+      const items = await cartService.list()
+      const prevSelected = new Map(lines.value.map((l) => [l.id, l.selected]))
+      lines.value = (items || []).map((it) => {
+        const ln = serverToLine(it)
+        if (prevSelected.has(ln.id)) ln.selected = prevSelected.get(ln.id) as boolean
+        return ln
+      })
+      persist()
+    } catch {
+      // 拉取失败保留本地缓存（弱网/离线场景）
+    }
+  }
+
+  /**
+   * 加购：登录态优先后端 POST，成功后 reload；未登录态走本地。
+   * 调用方应 await 此方法再 toast，避免「显示成功后后端失败」的体验问题。
+   */
+  async function addCart(
+    line: Omit<CartLine, 'id' | 'qty' | 'selected'> & { qty?: number },
+  ): Promise<void> {
+    if (!isLoggedIn()) {
+      add(line)
+      return
+    }
+    await cartService.add({
+      productId: line.productId,
+      skuId: line.skuId || undefined,
+      quantity: line.qty ?? 1,
+    })
+    await loadFromServer()
+  }
+
+  /**
+   * 改数量：登录态后端 PATCH + 乐观更新；未登录态纯本地。
+   * 后端失败时回滚 qty。
+   */
+  async function updateCart(id: string, qty: number): Promise<void> {
+    if (qty < 1) return
+    const prev = lines.value.find((x) => x.id === id)
+    const prevQty = prev?.qty
+    if (prev) {
+      prev.qty = qty
+      persist()
+    }
+    if (!isLoggedIn()) return
+    try {
+      await cartService.update(id, { quantity: qty })
+    } catch (e) {
+      if (prev && typeof prevQty === 'number') {
+        prev.qty = prevQty
+        persist()
+      }
+      throw e
+    }
+  }
+
+  /**
+   * 删除条目：登录态后端 DELETE + 乐观移除；未登录态纯本地。
+   * 后端失败时把整行恢复。
+   */
+  async function removeCart(id: string): Promise<void> {
+    const prevList = lines.value
+    lines.value = lines.value.filter((l) => l.id !== id)
+    persist()
+    if (!isLoggedIn()) return
+    try {
+      await cartService.remove(id)
+    } catch (e) {
+      lines.value = prevList
+      persist()
+      throw e
+    }
+  }
+
+  /**
+   * 批量删除选中：登录态逐条调后端，全部成功才本地移除；
+   * 任一失败 → 调 loadFromServer 重新对齐避免脏数据。
+   */
+  async function removeSelected(): Promise<void> {
+    const selectedIds = lines.value.filter((l) => l.selected).map((l) => l.id)
+    if (selectedIds.length === 0) return
+    if (!isLoggedIn()) {
+      clearSelected()
+      return
+    }
+    const failed: string[] = []
+    for (const id of selectedIds) {
+      try {
+        await cartService.remove(id)
+      } catch {
+        failed.push(id)
+      }
+    }
+    if (failed.length === 0) {
+      lines.value = lines.value.filter((l) => !selectedIds.includes(l.id))
+      persist()
+    } else {
+      await loadFromServer()
+      throw new Error(`${failed.length} 件删除失败`)
+    }
+  }
+
   const totalCount = computed(() => lines.value.reduce((s, l) => s + l.qty, 0))
   const selectedLines = computed(() => lines.value.filter((l) => l.selected))
   const allSelected = computed(() => lines.value.length > 0 && lines.value.every((l) => l.selected))
@@ -132,5 +288,10 @@ export const useCartStore = defineStore('cart', () => {
     update,
     setAllSelected,
     clearSelected,
+    loadFromServer,
+    addCart,
+    updateCart,
+    removeCart,
+    removeSelected,
   }
 })

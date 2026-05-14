@@ -2,7 +2,14 @@
  * 平台端服务聚合
  */
 import { http } from '../utils/request'
-import type { Merchant, Product, Pagination, MemberPlan, FeatureFlag, PlatformDashboard } from '@jiujiu/shared/types'
+import type {
+  Merchant,
+  Product,
+  Pagination,
+  MemberPlan,
+  FeatureFlag,
+  PlatformDashboard,
+} from '@jiujiu/shared/types'
 
 // 认证逻辑统一走 packages/platform-app/src/services/auth.ts 的 platformAuthService
 
@@ -32,7 +39,15 @@ export const statsService = {
 
 // ============ 商户 ============
 export const merchantService = {
-  list(params: { type?: string; status?: string; keyword?: string; page?: number; pageSize?: number } = {}) {
+  list(
+    params: {
+      type?: string
+      status?: string
+      keyword?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) {
     return http.get<Pagination<Merchant>>('/api/v1/p/merchants', params)
   },
   auditList(params: { status?: string; page?: number; pageSize?: number } = {}) {
@@ -66,13 +81,28 @@ export const productAuditService = {
     return http.get<ProductAuditConfig>('/api/v1/p/audit/products/config')
   },
   saveConfig(config: Partial<ProductAuditConfig>) {
-    return http.post<{ ok: boolean }>('/api/v1/p/audit/products/config', config as unknown as Record<string, unknown>)
+    return http.post<{ ok: boolean }>(
+      '/api/v1/p/audit/products/config',
+      config as unknown as Record<string, unknown>,
+    )
   },
   approve(id: string) {
     return http.post<{ ok: boolean }>(`/api/v1/p/products/${id}/approve`)
   },
   reject(id: string, reason: string) {
     return http.post<{ ok: boolean }>(`/api/v1/p/products/${id}/reject`, { reason })
+  },
+  /**
+   * 抽检审查（针对已自动通过/已上架商品):
+   * - passed=true → 通过抽检（仅留痕,不影响上架状态）
+   * - passed=false → 抽检不通过（后端会自动下架并记录原因）
+   * 对应后端路由 POST /api/v1/p/audit/products/:id/sample-check
+   */
+  sampleCheck(id: string, passed: boolean, reason?: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/audit/products/${id}/sample-check`, {
+      passed,
+      reason,
+    })
   },
 }
 
@@ -161,7 +191,10 @@ export const memberService = {
     return http.get<MemberPlan[]>('/api/v1/p/member-plans')
   },
   savePlan(dto: Partial<MemberPlan>) {
-    return http.post<{ ok: boolean }>('/api/v1/p/member-plans', dto as unknown as Record<string, unknown>)
+    return http.post<{ ok: boolean }>(
+      '/api/v1/p/member-plans',
+      dto as unknown as Record<string, unknown>,
+    )
   },
   deletePlan(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/member-plans/${id}`)
@@ -203,7 +236,9 @@ export const memberService = {
    * 若后端补 /p/membership/overview 一把梭接口，则替换为该接口即可。
    */
   async statusOverview(): Promise<SubscriptionStatusOverview> {
-    const all = await http.get<MemberPlan[]>('/api/v1/p/member-plans').catch(() => [] as MemberPlan[])
+    const all = await http
+      .get<MemberPlan[]>('/api/v1/p/member-plans')
+      .catch(() => [] as MemberPlan[])
     if (!Array.isArray(all) || all.length === 0) {
       return { yearly: 0, monthly: 0, trial: 0, expiringSoon: 0 }
     }
@@ -269,13 +304,19 @@ export const featureFlagService = {
 }
 
 // ============ 权限管理 ============
+/**
+ * 状态字面量与后端 prisma.user.status 对齐：
+ *   - 'active'    可登录
+ *   - 'disabled'  已停用（toggleAdmin 与 'active' 互翻）
+ * 历史前端用过 'paused'，已统一改为 'disabled'，避免接口写回时被服务端忽略
+ */
 export interface AdminUser {
   id: string
   nickname: string
   username: string
   role: string
   avatar?: string
-  status: 'active' | 'paused'
+  status: 'active' | 'disabled'
   lastLoginAt?: string
 }
 export interface AdminRole {
@@ -284,12 +325,27 @@ export interface AdminRole {
   desc: string
   permissions: string[]
 }
+/**
+ * 解包后端可能返回的「数组」或「分页对象」两种形态。
+ * 后端 `/p/admins` `/p/roles` 已升级为分页 `{list,total,page,pageSize}`，
+ * 旧实现可能仍返数组，统一在此处适配。
+ */
+function unwrapList<T>(raw: any): T[] {
+  if (Array.isArray(raw)) return raw as T[]
+  if (raw && Array.isArray(raw.list)) return raw.list as T[]
+  if (raw && Array.isArray(raw.records)) return raw.records as T[]
+  if (raw && Array.isArray(raw.items)) return raw.items as T[]
+  return []
+}
+
 export const permissionService = {
-  admins() {
-    return http.get<AdminUser[]>('/api/v1/p/admins')
+  async admins() {
+    const raw = await http.get<any>('/api/v1/p/admins', { pageSize: 100 })
+    return unwrapList<AdminUser>(raw)
   },
-  roles() {
-    return http.get<AdminRole[]>('/api/v1/p/roles')
+  async roles() {
+    const raw = await http.get<any>('/api/v1/p/roles', { pageSize: 100 })
+    return unwrapList<AdminRole>(raw)
   },
   saveRole(dto: Partial<AdminRole>) {
     return http.post<{ ok: boolean }>('/api/v1/p/roles', dto as unknown as Record<string, unknown>)
@@ -358,10 +414,7 @@ export interface AppRelease {
 }
 export const appReleaseService = {
   list(platform?: AppReleasePlatform) {
-    return http.get<AppRelease[]>(
-      '/api/v1/p/app-releases',
-      platform ? { platform } : undefined,
-    )
+    return http.get<AppRelease[]>('/api/v1/p/app-releases', platform ? { platform } : undefined)
   },
   remove(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/app-releases/${id}`)
@@ -371,7 +424,15 @@ export const appReleaseService = {
 // ============ 系统设置 ============
 /**
  * 与 admin-pc 后台共用同一 SystemConfig 记录（key=system_settings）。
- * business 子段持久化"注册商家上限"与"平台抽佣比例",前端两端透写同字段。
+ *
+ * business 子段字段名严格对齐后端 platform.service.ts::systemSettings DEFAULT：
+ *   - newMerchantAutoApprove   新商家自动审核
+ *   - newProductAutoApprove    新商品自动审核
+ *   - platformCommissionRate   平台抽佣比例（%）
+ *   - withdrawMinAmount        提现门槛（元）
+ *
+ * TODO: "注册商家上限"目前后端未持久化字段，admin-pc 与 platform-app 都暂未保存。
+ *       如要启用，需要后端在 business 块新增 registerLimit + 注册流程中校验。
  */
 export interface SystemSettings {
   site: { name: string; logo: string; icp: string }
@@ -379,13 +440,21 @@ export interface SystemSettings {
   logistics: { providers: string[]; defaultFreight: number }
   service: { phone: string; email: string; workTime: string }
   security: { passwordPolicy: string; ipWhitelist: string[] }
-  business?: { registerLimit: number; commissionRate: number }
+  business?: {
+    newMerchantAutoApprove?: boolean
+    newProductAutoApprove?: boolean
+    platformCommissionRate?: number
+    withdrawMinAmount?: number
+  }
 }
 export const systemService = {
   settings() {
     return http.get<SystemSettings>('/api/v1/p/system/settings')
   },
   saveSettings(dto: Partial<SystemSettings>) {
-    return http.post<{ ok: boolean }>('/api/v1/p/system/settings', dto as unknown as Record<string, unknown>)
+    return http.post<{ ok: boolean }>(
+      '/api/v1/p/system/settings',
+      dto as unknown as Record<string, unknown>,
+    )
   },
 }

@@ -17,7 +17,12 @@
         <ElButton plain @click="batchMode = !batchMode">
           {{ batchMode ? '退出批量' : '批量推送' }}
         </ElButton>
-        <ElButton type="primary" :icon="Plus" :disabled="batchMode && selectedIds.size === 0" @click="openPush">
+        <ElButton
+          type="primary"
+          :icon="Plus"
+          :disabled="batchMode && selectedIds.size === 0"
+          @click="openPush"
+        >
           {{ batchMode ? `推送 (${selectedIds.size})` : '快速推送' }}
         </ElButton>
       </div>
@@ -69,11 +74,15 @@
             </div>
             <div class="flex justify-between items-center mt-2 text-xs text-g-500">
               <span>代理 {{ item.agencyCount }} 家</span>
-              <ElTag size="small" :type="statusTypeOf(item.status)">{{ statusLabelOf(item.status) }}</ElTag>
+              <ElTag size="small" :type="statusTypeOf(item.status)">{{
+                statusLabelOf(item.status)
+              }}</ElTag>
             </div>
           </div>
           <div class="pf-item__actions">
-            <ElButton v-if="item.status !== 'offline'" link type="primary" @click="pushOne(item)">推送</ElButton>
+            <ElButton v-if="item.status !== 'offline'" link type="primary" @click="pushOne(item)"
+              >推送</ElButton
+            >
             <ElButton v-else link type="success" @click="onlineOne(item)">上线</ElButton>
             <ElButton link type="danger" @click="offlineOne(item)">下架</ElButton>
           </div>
@@ -85,7 +94,11 @@
 
     <!-- 推送记录 -->
     <ElCard v-else shadow="never">
-      <ElTable :data="records" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="records"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="推送 ID" prop="id" width="200" />
         <ElTableColumn label="投放对象" width="140">
           <template #default="{ row }">
@@ -94,10 +107,12 @@
         </ElTableColumn>
         <ElTableColumn label="备注" prop="note" min-width="220" />
         <ElTableColumn label="推送时间" width="180">
-          <template #default="{ row }">{{ formatDateTime(row.pushedAt || row.createdAt) }}</template>
+          <template #default="{ row }">{{
+            formatDateTime(row.pushedAt || row.createdAt)
+          }}</template>
         </ElTableColumn>
         <ElTableColumn label="状态" width="100" align="center">
-          <template #default="{ row }">
+          <template #default>
             <ElTag size="small" type="success">已推送</ElTag>
           </template>
         </ElTableColumn>
@@ -163,13 +178,14 @@
   import {
     fetchPlatformPlaza,
     pushPlaza,
+    setPlazaProductOnline,
     type PlazaItem,
     type PushPayload
   } from '@/api/platform-business'
   import type { PlazaPush } from '@jiujiu/shared/types'
   import { formatDateTime } from '@jiujiu/shared/utils'
   import { ElMessage } from 'element-plus'
-  import { Refresh, Search, Plus } from '@element-plus/icons-vue'
+  import { Search, Plus } from '@element-plus/icons-vue'
 
   defineOptions({ name: 'PlatformPlaza' })
 
@@ -205,9 +221,27 @@
     const totalAgency = items.value.reduce((s, x) => s + x.agencyCount, 0)
     const pushing = items.value.filter((x) => x.status === 'pushing').length
     return [
-      { key: 'pushing', icon: 'ri:rocket-line', label: '在推商品', value: pushing, color: '#FF4D2D' },
-      { key: 'factories', icon: 'ri:building-line', label: '入驻厂家', value: factories, color: '#FF7A45' },
-      { key: 'agency', icon: 'ri:share-line', label: '总代理数', value: totalAgency, color: '#10B981' }
+      {
+        key: 'pushing',
+        icon: 'ri:rocket-line',
+        label: '在推商品',
+        value: pushing,
+        color: '#FF4D2D'
+      },
+      {
+        key: 'factories',
+        icon: 'ri:building-line',
+        label: '入驻厂家',
+        value: factories,
+        color: '#FF7A45'
+      },
+      {
+        key: 'agency',
+        icon: 'ri:share-line',
+        label: '总代理数',
+        value: totalAgency,
+        color: '#10B981'
+      }
     ]
   })
 
@@ -218,7 +252,14 @@
     return ({ pushing: '在推', pending: '待上线', offline: '已下架' } as const)[s]
   }
   function targetLabelOf(t: string) {
-    return ({ all: '全部商户', factory: '仅厂家', store: '仅门店', customer: '客户' } as Record<string, string>)[t] || t
+    return (
+      (
+        { all: '全部商户', factory: '仅厂家', store: '仅门店', customer: '客户' } as Record<
+          string,
+          string
+        >
+      )[t] || t
+    )
   }
 
   function toggle(id: string) {
@@ -265,12 +306,29 @@
   }
 
   async function offlineOne(item: PlazaItem) {
+    const original = item.status
+    // 乐观更新：先翻转 UI，失败时回滚
     item.status = 'offline'
-    ElMessage.success('已下架')
+    try {
+      const res = await setPlazaProductOnline(item.id, false)
+      if (res?.status) item.status = res.status
+      ElMessage.success('已下架')
+    } catch (e: any) {
+      item.status = original
+      ElMessage.error(e?.message || '下架失败，请稍后重试')
+    }
   }
   async function onlineOne(item: PlazaItem) {
+    const original = item.status
     item.status = 'pushing'
-    ElMessage.success('已上线')
+    try {
+      const res = await setPlazaProductOnline(item.id, true)
+      if (res?.status) item.status = res.status
+      ElMessage.success('已上线')
+    } catch (e: any) {
+      item.status = original
+      ElMessage.error(e?.message || '上架失败，请稍后重试')
+    }
   }
 
   async function load() {
@@ -283,23 +341,24 @@
 
 <style scoped lang="scss">
   .pf-plaza {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     flex-wrap: wrap;
     gap: 12px;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
+
   .text-g-500 {
     color: #6b7280;
   }
@@ -317,7 +376,7 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 14px;
 
-    @media (max-width: 900px) {
+    @media (width <= 900px) {
       grid-template-columns: 1fr;
     }
   }
@@ -326,35 +385,35 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 16px 18px;
       display: flex;
-      align-items: center;
       gap: 14px;
+      align-items: center;
+      padding: 16px 18px;
     }
   }
 
   .pf-kpi__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    height: 44px;
     font-size: 22px;
-    flex-shrink: 0;
+    border-radius: 12px;
   }
 
   .pf-kpi__num {
     font-size: 22px;
     font-weight: 700;
-    color: var(--art-gray-800, #1f2937);
     line-height: 1;
+    color: var(--art-gray-800, #1f2937);
   }
 
   .pf-kpi__label {
+    margin-top: 4px;
     font-size: 12px;
     color: #6b7280;
-    margin-top: 4px;
   }
 
   .pf-toolbar {
@@ -373,21 +432,21 @@
 
   .pf-item {
     position: relative;
+    overflow: hidden;
     background: #fff;
     border: 1px solid var(--art-border-color, #e5e7eb);
     border-radius: 12px;
-    overflow: hidden;
     transition: all 0.18s;
 
     &:hover {
       border-color: var(--el-color-primary, #ff4d2d);
+      box-shadow: 0 8px 24px -10px rgb(255 77 45 / 25%);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px -10px rgba(255, 77, 45, 0.25);
     }
 
     &.selected {
+      background: rgb(255 77 45 / 4%);
       border-color: var(--el-color-primary, #ff4d2d);
-      background: rgba(255, 77, 45, 0.04);
     }
   }
 
@@ -396,16 +455,16 @@
     top: 8px;
     left: 8px;
     z-index: 2;
-    background: #fff;
     padding: 4px;
+    background: #fff;
     border-radius: 6px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
   }
 
   .pf-item__img {
+    display: block;
     width: 100%;
     aspect-ratio: 1;
-    display: block;
   }
 
   .pf-item__body {
@@ -414,25 +473,25 @@
 
   .pf-item__actions {
     display: flex;
-    justify-content: flex-end;
     gap: 6px;
+    justify-content: flex-end;
     padding: 6px 12px 12px;
-    border-top: 1px dashed var(--art-border-color, #e5e7eb);
     margin-top: 6px;
+    border-top: 1px dashed var(--art-border-color, #e5e7eb);
   }
 
   .pf-push {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: 100%;
+    padding: 22px;
   }
 
   .pf-push__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     margin-top: auto;
   }
 </style>

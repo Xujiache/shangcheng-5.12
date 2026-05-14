@@ -12,6 +12,7 @@ onLaunch(() => {
   if (userStore.isLogin) {
     userStore.refreshFromServer()
     userStore.connectProfileSync()
+    cartStore.loadFromServer()
   }
   console.log('经纬科技 用户端 启动')
 })
@@ -27,7 +28,9 @@ page {
 }
 
 /* 全局滚动条隐藏 */
-::-webkit-scrollbar { display: none; }
+::-webkit-scrollbar {
+  display: none;
+}
 
 /* H5：隐藏 uni 默认 tabBar（自定义 TabBar 接管） */
 .uni-tabbar,

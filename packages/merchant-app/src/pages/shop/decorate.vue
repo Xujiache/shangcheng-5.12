@@ -3,16 +3,26 @@
  * MA-17 · 店铺装修（实时预览）
  *
  * 主题色 + 字体 + Banner + 商品展示风格 + 顶部 mini 手机预览
+ *
+ * Wave5 升级：Banner 上传走 /files/upload，落库前确保所有 banner.image
+ * 都是 https URL —— 之前直接绑定 tempFilePaths 会导致换设备 / 刷新就 404。
  */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { shopService } from '../../services/store'
 import type { ShopDecorate } from '../../services/store'
 import { productService } from '../../services/product'
+import { uploadImages } from '../../utils/upload'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Section from '../../components/section/section.vue'
 
-interface PreviewProduct { name: string; price: number; image: string }
+interface PreviewProduct {
+  name: string
+  price: number
+  image: string
+}
 const previewProducts = ref<PreviewProduct[]>([])
+
+const uploading = ref(false)
 
 const config = reactive<ShopDecorate>({
   merchantId: 'm-self',
@@ -79,11 +89,28 @@ function pickLayout(l: 'waterfall' | 'twoColumn' | 'singleLarge') {
 }
 
 function addBanner() {
+  const remain = 5 - config.banners.length
+  if (remain <= 0) {
+    uni.showToast({ title: '最多 5 张 Banner', icon: 'none' })
+    return
+  }
   uni.chooseImage({
-    count: Math.max(1, 5 - config.banners.length),
-    success: (res) => {
-      const paths = (res as { tempFilePaths: string[] }).tempFilePaths
-      config.banners = [...config.banners, ...paths.map((p) => ({ image: p }))].slice(0, 5)
+    count: remain,
+    sourceType: ['album', 'camera'],
+    success: async (res) => {
+      const paths = (res as { tempFilePaths: string[] }).tempFilePaths || []
+      if (paths.length === 0) return
+      uploading.value = true
+      try {
+        const urls = await uploadImages(paths, 'decorate')
+        if (urls.length > 0) {
+          config.banners = [...config.banners, ...urls.map((u) => ({ image: u }))].slice(0, 5)
+        }
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || 'Banner 上传失败', icon: 'none' })
+      } finally {
+        uploading.value = false
+      }
     },
   })
 }
@@ -94,16 +121,33 @@ function removeBanner(i: number) {
 
 const previewBanners = computed(() => config.banners)
 
-const fontFamily = computed(() => ({
-  modern: '"PingFang SC", "Helvetica Neue", sans-serif',
-  elegant: '"Source Han Serif", "STSong", serif',
-  playful: '"Hiragino Sans GB", "Microsoft YaHei", sans-serif',
-  minimal: '"PingFang HK", "Helvetica Light", sans-serif',
-}[config.fontStyle]))
+const fontFamily = computed(
+  () =>
+    ({
+      modern: '"PingFang SC", "Helvetica Neue", sans-serif',
+      elegant: '"Source Han Serif", "STSong", serif',
+      playful: '"Hiragino Sans GB", "Microsoft YaHei", sans-serif',
+      minimal: '"PingFang HK", "Helvetica Light", sans-serif',
+    })[config.fontStyle],
+)
 
 async function save() {
-  await shopService.saveDecorate(config)
-  uni.showToast({ title: '已保存', icon: 'success' })
+  if (uploading.value) {
+    uni.showToast({ title: 'Banner 仍在上传中，请稍候', icon: 'none' })
+    return
+  }
+  // 防御：banners 必须全部是 http(s) URL，避免本地 tempFilePaths 被写库
+  const bad = config.banners.find((b) => !/^https?:\/\//i.test(b.image))
+  if (bad) {
+    uni.showToast({ title: '存在未上传完成的 Banner，请重新选择', icon: 'none', duration: 2000 })
+    return
+  }
+  try {
+    await shopService.saveDecorate(config)
+    uni.showToast({ title: '已保存', icon: 'success' })
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+  }
 }
 async function preview() {
   uni.showToast({ title: '在客户端预览', icon: 'none' })
@@ -123,7 +167,12 @@ onMounted(load)
           <text>9:41</text>
           <text>5G</text>
         </view>
-        <view class="phone-header" :style="{ background: `linear-gradient(135deg, ${config.themeColor}, ${config.themeColor}AA)` }">
+        <view
+          class="phone-header"
+          :style="{
+            background: `linear-gradient(135deg, ${config.themeColor}, ${config.themeColor}AA)`,
+          }"
+        >
           <view class="ph-name">经纬科技 · 旗舰店</view>
           <view class="ph-search">搜索商品</view>
         </view>
@@ -150,15 +199,13 @@ onMounted(load)
           <view class="ph-tab">活动</view>
         </view>
         <view :class="['phone-grid', `layout-${config.productLayout}`]">
-          <view
-            v-for="(p, i) in previewProducts"
-            :key="i"
-            class="ph-prod"
-          >
+          <view v-for="(p, i) in previewProducts" :key="i" class="ph-prod">
             <image :src="p.image" class="ph-prod-img" mode="aspectFill" />
             <view class="ph-prod-info">
               <text class="ph-prod-name">{{ p.name }}</text>
-              <text class="ph-prod-price" :style="{ color: config.themeColor }">¥{{ p.price }}</text>
+              <text class="ph-prod-price" :style="{ color: config.themeColor }"
+                >¥{{ p.price }}</text
+              >
             </view>
           </view>
           <view v-if="previewProducts.length === 0" class="phone-grid-empty">
@@ -202,16 +249,23 @@ onMounted(load)
       </Section>
 
       <!-- Banner -->
-      <Section :title="`首页 Banner · ${config.banners.length} / 5`" sub="支持轮播">
+      <Section
+        :title="`首页 Banner · ${config.banners.length} / 5`"
+        :sub="uploading ? '上传中…' : '支持轮播'"
+      >
         <view class="banner-grid">
           <view v-for="(b, i) in config.banners" :key="i" class="banner-cell">
             <image :src="b.image" class="banner-cell-img" mode="aspectFill" />
             <view class="banner-del" @click="removeBanner(i)">✕</view>
             <view v-if="i === 0" class="banner-main">首张</view>
           </view>
-          <view v-if="config.banners.length < 5" class="banner-add" @click="addBanner">
-            <text class="add-icon">＋</text>
-            <text class="add-text">上传 Banner</text>
+          <view
+            v-if="config.banners.length < 5"
+            :class="['banner-add', uploading ? 'is-uploading' : '']"
+            @click="addBanner"
+          >
+            <text class="add-icon">{{ uploading ? '⌛' : '＋' }}</text>
+            <text class="add-text">{{ uploading ? '上传中…' : '上传 Banner' }}</text>
             <text class="add-tip">建议 750×360</text>
           </view>
         </view>
@@ -227,7 +281,11 @@ onMounted(load)
             @click="pickLayout(l.value)"
           >
             <view :class="['layout-mock', `mock-${l.value}`]">
-              <view class="mock-block" v-for="i in (l.value === 'singleLarge' ? 2 : 4)" :key="i"></view>
+              <view
+                class="mock-block"
+                v-for="i in l.value === 'singleLarge' ? 2 : 4"
+                :key="i"
+              ></view>
             </view>
             <text class="layout-label">{{ l.label }}</text>
             <text class="layout-desc">{{ l.desc }}</text>
@@ -258,7 +316,7 @@ onMounted(load)
   background: #fff;
   border-radius: 24rpx;
   overflow: hidden;
-  box-shadow: 0 16rpx 48rpx rgba(0,0,0,0.4);
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.4);
 }
 .phone-status {
   display: flex;
@@ -277,8 +335,8 @@ onMounted(load)
   }
   .ph-search {
     margin-top: 8rpx;
-    background: rgba(255,255,255,0.25);
-    color: rgba(255,255,255,0.85);
+    background: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.85);
     padding: 8rpx 12rpx;
     border-radius: 999rpx;
     font-size: 16rpx;
@@ -287,7 +345,10 @@ onMounted(load)
 .phone-banner {
   width: 100%;
   height: 160rpx;
-  .banner-img { width: 100%; height: 100%; }
+  .banner-img {
+    width: 100%;
+    height: 100%;
+  }
 }
 .phone-banner-empty {
   display: flex;
@@ -316,14 +377,17 @@ onMounted(load)
     font-size: 16rpx;
     color: #6b7280;
     padding: 4rpx 0;
-    &.active { font-weight: 700; }
+    &.active {
+      font-weight: 700;
+    }
   }
 }
 .phone-grid {
   padding: 8rpx;
   display: grid;
   gap: 8rpx;
-  &.layout-waterfall, &.layout-twoColumn {
+  &.layout-waterfall,
+  &.layout-twoColumn {
     grid-template-columns: 1fr 1fr;
   }
   &.layout-singleLarge {
@@ -358,7 +422,7 @@ onMounted(load)
 }
 .preview-cta {
   font-size: 22rpx;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
 .body {
   padding: 16rpx 24rpx 40rpx;
@@ -407,20 +471,37 @@ onMounted(load)
   .font-sample {
     font-size: 32rpx;
     color: var(--text-primary);
-    &.font-modern { font-family: 'PingFang SC', sans-serif; }
-    &.font-elegant { font-family: 'STSong', 'Source Han Serif', serif; }
-    &.font-playful { font-family: 'Hiragino Sans GB', sans-serif; }
-    &.font-minimal { font-family: 'PingFang HK', sans-serif; font-weight: 300; }
+    &.font-modern {
+      font-family: 'PingFang SC', sans-serif;
+    }
+    &.font-elegant {
+      font-family: 'STSong', 'Source Han Serif', serif;
+    }
+    &.font-playful {
+      font-family: 'Hiragino Sans GB', sans-serif;
+    }
+    &.font-minimal {
+      font-family: 'PingFang HK', sans-serif;
+      font-weight: 300;
+    }
   }
-  .font-label { font-size: 22rpx; color: var(--brand-primary); font-weight: 700; }
-  .font-desc { font-size: 18rpx; color: var(--text-tertiary); }
+  .font-label {
+    font-size: 22rpx;
+    color: var(--brand-primary);
+    font-weight: 700;
+  }
+  .font-desc {
+    font-size: 18rpx;
+    color: var(--text-tertiary);
+  }
 }
 .banner-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12rpx;
 }
-.banner-cell, .banner-add {
+.banner-cell,
+.banner-add {
   position: relative;
   aspect-ratio: 2 / 1;
   border-radius: 12rpx;
@@ -428,7 +509,10 @@ onMounted(load)
 }
 .banner-cell {
   background: var(--bg-hover);
-  .banner-cell-img { width: 100%; height: 100%; }
+  .banner-cell-img {
+    width: 100%;
+    height: 100%;
+  }
   .banner-del {
     position: absolute;
     top: 8rpx;
@@ -436,7 +520,7 @@ onMounted(load)
     width: 40rpx;
     height: 40rpx;
     border-radius: 50%;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0, 0, 0, 0.55);
     color: #fff;
     text-align: center;
     line-height: 40rpx;
@@ -461,9 +545,26 @@ onMounted(load)
   align-items: center;
   justify-content: center;
   gap: 4rpx;
-  .add-icon { font-size: 48rpx; color: var(--text-tertiary); }
-  .add-text { font-size: 22rpx; color: var(--text-secondary); }
-  .add-tip { font-size: 18rpx; color: var(--text-tertiary); }
+  .add-icon {
+    font-size: 48rpx;
+    color: var(--text-tertiary);
+  }
+  .add-text {
+    font-size: 22rpx;
+    color: var(--text-secondary);
+  }
+  .add-tip {
+    font-size: 18rpx;
+    color: var(--text-tertiary);
+  }
+  &.is-uploading {
+    border-color: var(--brand-primary);
+    background: rgba(255, 77, 45, 0.04);
+    .add-icon,
+    .add-text {
+      color: var(--brand-primary);
+    }
+  }
 }
 .layout-grid {
   display: grid;
@@ -483,8 +584,16 @@ onMounted(load)
     background: var(--brand-primary-ghost);
     border-color: var(--brand-primary);
   }
-  .layout-label { font-size: 24rpx; font-weight: 700; color: var(--text-primary); }
-  .layout-desc { font-size: 18rpx; color: var(--text-tertiary); text-align: center; }
+  .layout-label {
+    font-size: 24rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .layout-desc {
+    font-size: 18rpx;
+    color: var(--text-tertiary);
+    text-align: center;
+  }
 }
 .layout-mock {
   width: 100%;
@@ -497,8 +606,12 @@ onMounted(load)
   &.mock-waterfall {
     grid-template-columns: 1fr 1fr;
     grid-auto-rows: 1fr;
-    .mock-block:nth-child(2) { aspect-ratio: 1 / 1.3; }
-    .mock-block:nth-child(3) { aspect-ratio: 1.3 / 1; }
+    .mock-block:nth-child(2) {
+      aspect-ratio: 1 / 1.3;
+    }
+    .mock-block:nth-child(3) {
+      aspect-ratio: 1.3 / 1;
+    }
   }
   &.mock-twoColumn {
     grid-template-columns: 1fr 1fr;
@@ -513,5 +626,7 @@ onMounted(load)
   background: var(--bg-hover);
   border-radius: 4rpx;
 }
-.safe-bottom { height: 80rpx; }
+.safe-bottom {
+  height: 80rpx;
+}
 </style>

@@ -11,9 +11,77 @@ import { onLoad } from '@dcloudio/uni-app'
 import { categoryService, productService } from '../../services/product'
 import { formatPrice } from '@jiujiu/shared/utils'
 import type { Category } from '@jiujiu/shared/types'
+import { BASE_URL } from '../../utils/request'
+import { useUserStore } from '../../store/user'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 import StatusTag from '../../components/status-tag/status-tag.vue'
+
+const userStore = useUserStore()
+const uploading = ref(false)
+
+/**
+ * 上传单张图片到 /files/upload，返回正式 URL
+ *
+ * 选图后必须先上传换成 https URL 再写入 form.images，绝不能把 tempFilePaths
+ * 直接提交给后端 productService.create — 后端服务器无法访问本机临时路径，
+ * 商品落库后图片只会在原选图设备上能看一次，下次刷新就 404。
+ */
+function uploadImage(tempPath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    uni.uploadFile({
+      url: BASE_URL + '/api/v1/files/upload',
+      filePath: tempPath,
+      name: 'file',
+      formData: { bizType: 'product' },
+      header: userStore.accessToken ? { Authorization: `Bearer ${userStore.accessToken}` } : {},
+      success: (res: any) => {
+        try {
+          const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+          if (data?.code === 0 && data?.data?.url) {
+            resolve(data.data.url as string)
+          } else {
+            reject(new Error(data?.message || '上传失败'))
+          }
+        } catch (e: any) {
+          reject(e)
+        }
+      },
+      fail: (err: any) => reject(err instanceof Error ? err : new Error(err?.errMsg || '上传失败')),
+    })
+  })
+}
+
+/** 并发上传一组本地路径，逐张成功 push；任一失败终止后续 */
+async function uploadImages(tempPaths: string[]): Promise<string[]> {
+  if (tempPaths.length === 0) return []
+  uploading.value = true
+  const total = tempPaths.length
+  uni.showLoading({ title: total > 1 ? `上传中 0/${total}` : '上传中…', mask: true })
+  const urls: string[] = []
+  try {
+    for (let i = 0; i < tempPaths.length; i++) {
+      if (total > 1) uni.showLoading({ title: `上传中 ${i + 1}/${total}`, mask: true })
+      urls.push(await uploadImage(tempPaths[i]))
+    }
+    uni.hideLoading()
+    return urls
+  } catch (e: any) {
+    uni.hideLoading()
+    if (urls.length > 0) {
+      // 部分成功的不丢，提示用户哪些没传上
+      uni.showToast({
+        title: `已上传 ${urls.length}/${total}，剩余失败: ${e?.message || '未知错误'}`,
+        icon: 'none',
+        duration: 2500,
+      })
+      return urls
+    }
+    throw e
+  } finally {
+    uploading.value = false
+  }
+}
 
 type PricingMode = 'standard' | 'by-size'
 
@@ -86,8 +154,8 @@ const priceWholesaleRange = computed(() => {
   return min === max ? formatPrice(min) : `${formatPrice(min)} ~ ${formatPrice(max)}`
 })
 
-const selectedCategoryName = computed(() =>
-  platformCats.value.find((c) => c.id === form.categoryId)?.name ?? '',
+const selectedCategoryName = computed(
+  () => platformCats.value.find((c) => c.id === form.categoryId)?.name ?? '',
 )
 
 /** 按尺寸定价示例：以最小尺寸算 */
@@ -107,9 +175,17 @@ function chooseImage() {
   uni.chooseImage({
     count: 9 - form.images.length,
     sourceType: ['album', 'camera'],
-    success: (res) => {
+    success: async (res) => {
       const paths = (res as { tempFilePaths: string[] }).tempFilePaths || []
-      form.images = [...form.images, ...paths].slice(0, 9)
+      if (paths.length === 0) return
+      try {
+        const urls = await uploadImages(paths)
+        if (urls.length > 0) {
+          form.images = [...form.images, ...urls].slice(0, 9)
+        }
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
+      }
     },
   })
 }
@@ -130,12 +206,18 @@ function replaceImage(i: number) {
   uni.chooseImage({
     count: 1,
     sourceType: ['album', 'camera'],
-    success: (res) => {
+    success: async (res) => {
       const paths = (res as { tempFilePaths: string[] }).tempFilePaths || []
-      if (paths[0]) {
-        const next = [...form.images]
-        next[i] = paths[0]
-        form.images = next
+      if (!paths[0]) return
+      try {
+        const [url] = await uploadImages([paths[0]])
+        if (url) {
+          const next = [...form.images]
+          next[i] = url
+          form.images = next
+        }
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
       }
     },
   })
@@ -200,7 +282,10 @@ function addSpecGroup() {
     return
   }
   uni.showActionSheet({
-    itemList: [...PRESET_SPEC_NAMES.filter((n) => !specGroups.value.find((g) => g.name === n)), '自定义…'],
+    itemList: [
+      ...PRESET_SPEC_NAMES.filter((n) => !specGroups.value.find((g) => g.name === n)),
+      '自定义…',
+    ],
     success: (r) => {
       const available = PRESET_SPEC_NAMES.filter((n) => !specGroups.value.find((g) => g.name === n))
       if (r.tapIndex === available.length) {
@@ -331,14 +416,16 @@ function regenerateSkus() {
   skus.value = combos.map((c) => {
     const key = c.join('|')
     const old = oldMap.get(key)
-    return old ?? {
-      specs: c,
-      priceWholesale: 0,
-      priceRetail: 0,
-      priceMember: 0,
-      stock: 0,
-      active: true,
-    }
+    return (
+      old ?? {
+        specs: c,
+        priceWholesale: 0,
+        priceRetail: 0,
+        priceMember: 0,
+        stock: 0,
+        active: true,
+      }
+    )
   })
 }
 
@@ -432,7 +519,16 @@ async function loadProduct() {
     form.tags = data.tags ?? []
     form.shipping = data.shipping ?? ['factory']
     // 检查是否有按尺寸定价的扩展字段
-    const ext = (data as unknown as { pricingMode?: PricingMode; pricePerSqm?: number; minLength?: number; minWidth?: number; maxLength?: number; maxWidth?: number; baseFee?: number; sizeUnit?: 'cm' | 'm' })
+    const ext = data as unknown as {
+      pricingMode?: PricingMode
+      pricePerSqm?: number
+      minLength?: number
+      minWidth?: number
+      maxLength?: number
+      maxWidth?: number
+      baseFee?: number
+      sizeUnit?: 'cm' | 'm'
+    }
     if (ext.pricingMode === 'by-size') {
       form.pricingMode = 'by-size'
       form.pricePerSqm = ext.pricePerSqm ?? 0
@@ -452,6 +548,18 @@ async function submit(status: 'draft' | 'submit') {
   if (!form.name) return uni.showToast({ title: '请填写商品名称', icon: 'none' })
   if (!form.categoryId) return uni.showToast({ title: '请选择分类', icon: 'none' })
   if (form.images.length === 0) return uni.showToast({ title: '请上传至少一张主图', icon: 'none' })
+  // 防御：images 必须全部是 http(s) URL，否则后端拿到本地路径会落库脏数据
+  const badImage = form.images.find((u) => !/^https?:\/\//i.test(u))
+  if (badImage) {
+    return uni.showToast({
+      title: '存在未上传完成的图片，请稍候重试',
+      icon: 'none',
+      duration: 2000,
+    })
+  }
+  if (uploading.value) {
+    return uni.showToast({ title: '图片仍在上传，请稍候', icon: 'none' })
+  }
   if (form.pricingMode === 'by-size' && form.pricePerSqm <= 0) {
     return uni.showToast({ title: '请填写每平米单价', icon: 'none' })
   }
@@ -496,9 +604,9 @@ async function submit(status: 'draft' | 'submit') {
       sizeUnit: form.pricingMode === 'by-size' ? form.sizeUnit : undefined,
     }
     if (isEdit.value) {
-      await productService.update(productId.value, dto as unknown as Record<string, unknown>)
+      await productService.update(productId.value, dto)
     } else {
-      await productService.create(dto as unknown as Record<string, unknown>)
+      await productService.create(dto)
     }
     uni.hideLoading()
     uni.showToast({ title: status === 'draft' ? '已保存' : '已提交', icon: 'success' })
@@ -546,7 +654,11 @@ onMounted(async () => {
             <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1)">
               <Icon name="chevron-up" :size="22" color="#fff" />
             </view>
-            <view v-if="i < form.images.length - 1" class="img-move down" @click.stop="moveImage(i, 1)">
+            <view
+              v-if="i < form.images.length - 1"
+              class="img-move down"
+              @click.stop="moveImage(i, 1)"
+            >
               <Icon name="chevron-down" :size="22" color="#fff" />
             </view>
           </view>
@@ -561,7 +673,12 @@ onMounted(async () => {
       <view class="section">
         <view class="row">
           <text class="row-label required">商品名称</text>
-          <input v-model="form.name" class="row-input" placeholder="必填，最多 30 字" maxlength="30" />
+          <input
+            v-model="form.name"
+            class="row-input"
+            placeholder="必填，最多 30 字"
+            maxlength="30"
+          />
         </view>
         <view class="row">
           <text class="row-label required">商品分类</text>
@@ -574,7 +691,12 @@ onMounted(async () => {
         </view>
         <view class="row align-top">
           <text class="row-label">简介</text>
-          <textarea v-model="form.description" class="row-textarea" placeholder="可选 · 一句话描述商品卖点" maxlength="80" />
+          <textarea
+            v-model="form.description"
+            class="row-textarea"
+            placeholder="可选 · 一句话描述商品卖点"
+            maxlength="80"
+          />
         </view>
       </view>
 
@@ -582,7 +704,11 @@ onMounted(async () => {
       <view class="section">
         <view class="section-head">
           <text class="title">定价模式</text>
-          <StatusTag :text="form.pricingMode === 'standard' ? '标准' : '按尺寸'" tone="primary" fill />
+          <StatusTag
+            :text="form.pricingMode === 'standard' ? '标准' : '按尺寸'"
+            tone="primary"
+            fill
+          />
         </view>
         <view class="mode-row">
           <view
@@ -632,28 +758,59 @@ onMounted(async () => {
           <view class="bs-row">
             <text class="bs-label">尺寸单位</text>
             <view class="unit-toggle">
-              <view :class="['ut-btn', form.sizeUnit === 'cm' ? 'active' : '']" @click="form.sizeUnit = 'cm'">cm</view>
-              <view :class="['ut-btn', form.sizeUnit === 'm' ? 'active' : '']" @click="form.sizeUnit = 'm'">m</view>
+              <view
+                :class="['ut-btn', form.sizeUnit === 'cm' ? 'active' : '']"
+                @click="form.sizeUnit = 'cm'"
+                >cm</view
+              >
+              <view
+                :class="['ut-btn', form.sizeUnit === 'm' ? 'active' : '']"
+                @click="form.sizeUnit = 'm'"
+                >m</view
+              >
             </view>
           </view>
           <view class="bs-row">
             <text class="bs-label">最小尺寸</text>
-            <input v-model.number="form.minLength" type="number" class="bs-input dim" :placeholder="`最小长(${form.sizeUnit})`" />
+            <input
+              v-model.number="form.minLength"
+              type="number"
+              class="bs-input dim"
+              :placeholder="`最小长(${form.sizeUnit})`"
+            />
             <text class="bs-x">×</text>
-            <input v-model.number="form.minWidth" type="number" class="bs-input dim" :placeholder="`最小宽(${form.sizeUnit})`" />
+            <input
+              v-model.number="form.minWidth"
+              type="number"
+              class="bs-input dim"
+              :placeholder="`最小宽(${form.sizeUnit})`"
+            />
           </view>
           <view class="bs-row">
             <text class="bs-label">最大尺寸</text>
-            <input v-model.number="form.maxLength" type="number" class="bs-input dim" :placeholder="`最大长(${form.sizeUnit})`" />
+            <input
+              v-model.number="form.maxLength"
+              type="number"
+              class="bs-input dim"
+              :placeholder="`最大长(${form.sizeUnit})`"
+            />
             <text class="bs-x">×</text>
-            <input v-model.number="form.maxWidth" type="number" class="bs-input dim" :placeholder="`最大宽(${form.sizeUnit})`" />
+            <input
+              v-model.number="form.maxWidth"
+              type="number"
+              class="bs-input dim"
+              :placeholder="`最大宽(${form.sizeUnit})`"
+            />
           </view>
 
           <!-- 实时预览 -->
           <view class="bs-preview">
             <text class="preview-label">价格预览（以最小尺寸）</text>
             <view class="preview-formula">
-              <text class="formula-part">{{ form.minLength }}{{ form.sizeUnit }} × {{ form.minWidth }}{{ form.sizeUnit }}</text>
+              <text class="formula-part"
+                >{{ form.minLength }}{{ form.sizeUnit }} × {{ form.minWidth
+                }}{{ form.sizeUnit }}</text
+              >
               <text class="formula-eq">=</text>
               <text class="formula-part accent">{{ sizeExampleArea }} m²</text>
               <text class="formula-eq">×</text>
@@ -679,7 +836,8 @@ onMounted(async () => {
             :key="t"
             :class="['tag-pill', { active: form.tags.includes(t) }]"
             @click="toggleTag(t)"
-          >{{ t }}</view>
+            >{{ t }}</view
+          >
         </view>
       </view>
 
@@ -688,11 +846,19 @@ onMounted(async () => {
         <text class="title">物流方式</text>
         <view class="ship-row">
           <view
-            v-for="s in [{ k: 'factory', l: '厂家直发' }, { k: 'local', l: '本地配送' }, { k: 'pickup', l: '门店自提' }]"
+            v-for="s in [
+              { k: 'factory', l: '厂家直发' },
+              { k: 'local', l: '本地配送' },
+              { k: 'pickup', l: '门店自提' },
+            ]"
             :key="s.k"
-            :class="['ship-pill', { active: form.shipping.includes(s.k as 'factory' | 'local' | 'pickup') }]"
+            :class="[
+              'ship-pill',
+              { active: form.shipping.includes(s.k as 'factory' | 'local' | 'pickup') },
+            ]"
             @click="toggleShipping(s.k as 'factory' | 'local' | 'pickup')"
-          >{{ s.l }}</view>
+            >{{ s.l }}</view
+          >
         </view>
       </view>
 
@@ -742,9 +908,7 @@ onMounted(async () => {
           <text class="title">SKU 价格与库存</text>
           <text class="sub">{{ skus.length }} 条</text>
         </view>
-        <view v-if="skus.length === 0" class="sku-empty">
-          请先在上方为每个规格添加至少一个值
-        </view>
+        <view v-if="skus.length === 0" class="sku-empty"> 请先在上方为每个规格添加至少一个值 </view>
         <view v-else class="sku-actions">
           <view class="sku-action" @click="batchFillPrice">
             <Icon name="lightning" :size="22" color="var(--brand-primary)" />
@@ -767,7 +931,11 @@ onMounted(async () => {
                   </view>
                 </view>
               </view>
-              <switch :checked="s.active" @change="(e) => s.active = e.detail.value" style="transform: scale(0.7)" />
+              <switch
+                :checked="s.active"
+                @change="(e) => (s.active = e.detail.value)"
+                style="transform: scale(0.7)"
+              />
             </view>
             <view class="sku-grid">
               <view class="sku-field">
@@ -775,16 +943,31 @@ onMounted(async () => {
                 <input v-model.number="s.stock" type="number" class="field-input" placeholder="0" />
               </view>
               <view class="sku-field">
-                <text class="field-label" style="color:#1296DB">批发价</text>
-                <input v-model.number="s.priceWholesale" type="digit" class="field-input" placeholder="¥0" />
+                <text class="field-label" style="color: #1296db">批发价</text>
+                <input
+                  v-model.number="s.priceWholesale"
+                  type="digit"
+                  class="field-input"
+                  placeholder="¥0"
+                />
               </view>
               <view class="sku-field">
-                <text class="field-label" style="color:var(--brand-primary)">零售价</text>
-                <input v-model.number="s.priceRetail" type="digit" class="field-input" placeholder="¥0" />
+                <text class="field-label" style="color: var(--brand-primary)">零售价</text>
+                <input
+                  v-model.number="s.priceRetail"
+                  type="digit"
+                  class="field-input"
+                  placeholder="¥0"
+                />
               </view>
               <view class="sku-field">
-                <text class="field-label" style="color:#A855F7">会员价</text>
-                <input v-model.number="s.priceMember" type="digit" class="field-input" placeholder="¥0" />
+                <text class="field-label" style="color: #a855f7">会员价</text>
+                <input
+                  v-model.number="s.priceMember"
+                  type="digit"
+                  class="field-input"
+                  placeholder="¥0"
+                />
               </view>
             </view>
           </view>
@@ -792,7 +975,7 @@ onMounted(async () => {
         <view v-if="skus.length > 0" class="sku-summary">
           <text class="sum-label">总库存</text>
           <text class="sum-value">{{ totalStock }}</text>
-          <text class="sum-label" style="margin-left:24rpx">批发价区间</text>
+          <text class="sum-label" style="margin-left: 24rpx">批发价区间</text>
           <text class="sum-value">{{ priceWholesaleRange || '—' }}</text>
         </view>
       </view>
@@ -846,7 +1029,8 @@ onMounted(async () => {
                 :key="s.id"
                 :class="['cat-sub', { active: form.categoryId === s.id }]"
                 @click="pickCategory(s)"
-              >{{ s.name }}</view>
+                >{{ s.name }}</view
+              >
             </view>
           </view>
         </scroll-view>
@@ -872,8 +1056,15 @@ onMounted(async () => {
   border-radius: 16rpx;
   padding: 24rpx;
   box-shadow: var(--shadow-sm);
-  .title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-  .sub { font-size: 22rpx; color: var(--text-tertiary); }
+  .title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .sub {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .section-head {
     display: flex;
     align-items: center;
@@ -889,7 +1080,8 @@ onMounted(async () => {
   grid-template-columns: repeat(4, 1fr);
   gap: 12rpx;
 }
-.img-cell, .img-add {
+.img-cell,
+.img-add {
   aspect-ratio: 1;
   border-radius: 12rpx;
   overflow: hidden;
@@ -897,7 +1089,10 @@ onMounted(async () => {
 }
 .img-cell {
   background: var(--bg-hover);
-  .img { width: 100%; height: 100%; }
+  .img {
+    width: 100%;
+    height: 100%;
+  }
   .img-idx {
     position: absolute;
     top: 4rpx;
@@ -907,7 +1102,7 @@ onMounted(async () => {
     height: 32rpx;
     line-height: 32rpx;
     text-align: center;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     color: #fff;
     border-radius: 6rpx;
     font-size: 18rpx;
@@ -936,23 +1131,31 @@ onMounted(async () => {
     width: 36rpx;
     height: 36rpx;
     border-radius: 50%;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
-    &.danger { background: rgba(255,59,48,0.85); }
+    &.danger {
+      background: rgba(255, 59, 48, 0.85);
+    }
   }
   .img-move {
     position: absolute;
     width: 32rpx;
     height: 32rpx;
     border-radius: 50%;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
-    &.up { right: 4rpx; bottom: 44rpx; }
-    &.down { right: 4rpx; bottom: 4rpx; }
+    &.up {
+      right: 4rpx;
+      bottom: 44rpx;
+    }
+    &.down {
+      right: 4rpx;
+      bottom: 4rpx;
+    }
   }
 }
 .img-add {
@@ -963,7 +1166,10 @@ onMounted(async () => {
   justify-content: center;
   gap: 4rpx;
   background: var(--bg-page);
-  .add-text { font-size: 20rpx; color: var(--text-tertiary); }
+  .add-text {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
 }
 
 /* 通用行 */
@@ -972,13 +1178,21 @@ onMounted(async () => {
   align-items: center;
   padding: 16rpx 0;
   border-bottom: 1rpx solid var(--border-light);
-  &:last-child { border-bottom: none; }
-  &.align-top { align-items: flex-start; }
+  &:last-child {
+    border-bottom: none;
+  }
+  &.align-top {
+    align-items: flex-start;
+  }
   .row-label {
     width: 160rpx;
     font-size: 26rpx;
     color: var(--text-secondary);
-    &.required::before { content: '*'; color: var(--status-error, #FF3B30); margin-right: 4rpx; }
+    &.required::before {
+      content: '*';
+      color: var(--status-error, #ff3b30);
+      margin-right: 4rpx;
+    }
   }
   .row-input {
     flex: 1;
@@ -996,9 +1210,16 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    .picker-text { font-size: 26rpx; color: var(--text-primary); }
-    .picker-text.placeholder { color: var(--text-tertiary); }
-    .arrow { color: var(--text-tertiary); }
+    .picker-text {
+      font-size: 26rpx;
+      color: var(--text-primary);
+    }
+    .picker-text.placeholder {
+      color: var(--text-tertiary);
+    }
+    .arrow {
+      color: var(--text-tertiary);
+    }
   }
 }
 
@@ -1020,25 +1241,33 @@ onMounted(async () => {
   gap: 6rpx;
   &.active {
     border-color: var(--brand-primary);
-    background: rgba(255,77,45,0.04);
+    background: rgba(255, 77, 45, 0.04);
     border-style: solid;
   }
   .mode-icon {
     width: 64rpx;
     height: 64rpx;
     border-radius: 16rpx;
-    background: rgba(255,77,45,0.1);
+    background: rgba(255, 77, 45, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 4rpx;
   }
-  .mode-title { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
-  .mode-desc { font-size: 20rpx; color: var(--text-tertiary); text-align: center; }
+  .mode-title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .mode-desc {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+    text-align: center;
+  }
 }
 
 .by-size-block {
-  background: linear-gradient(180deg, rgba(255,77,45,0.04), transparent);
+  background: linear-gradient(180deg, rgba(255, 77, 45, 0.04), transparent);
   border-radius: 16rpx;
   padding: 16rpx;
   display: flex;
@@ -1054,7 +1283,11 @@ onMounted(async () => {
     width: 200rpx;
     font-size: 24rpx;
     color: var(--text-secondary);
-    &.required::before { content: '*'; color: #FF3B30; margin-right: 4rpx; }
+    &.required::before {
+      content: '*';
+      color: #ff3b30;
+      margin-right: 4rpx;
+    }
   }
   .bs-input {
     flex: 1;
@@ -1065,7 +1298,10 @@ onMounted(async () => {
     border-radius: 8rpx;
     font-size: 24rpx;
     color: var(--text-primary);
-    &.dim { flex: 1; min-width: 0; }
+    &.dim {
+      flex: 1;
+      min-width: 0;
+    }
   }
   .bs-unit {
     flex-shrink: 0;
@@ -1119,7 +1355,10 @@ onMounted(async () => {
       font-size: 22rpx;
       color: var(--text-primary);
       font-family: var(--font-family-base);
-      &.accent { color: var(--brand-primary); font-weight: 700; }
+      &.accent {
+        color: var(--brand-primary);
+        font-weight: 700;
+      }
     }
     .formula-eq {
       font-size: 22rpx;
@@ -1132,8 +1371,15 @@ onMounted(async () => {
     gap: 4rpx;
     color: var(--brand-primary);
     font-family: var(--font-family-base);
-    .total-cur { font-size: 26rpx; font-weight: 800; }
-    .total-num { font-size: 48rpx; font-weight: 800; line-height: 1; }
+    .total-cur {
+      font-size: 26rpx;
+      font-weight: 800;
+    }
+    .total-num {
+      font-size: 48rpx;
+      font-weight: 800;
+      line-height: 1;
+    }
   }
 }
 
@@ -1144,14 +1390,15 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 12rpx;
 }
-.tag-pill, .ship-pill {
+.tag-pill,
+.ship-pill {
   padding: 8rpx 20rpx;
   border-radius: 999rpx;
   background: var(--bg-hover);
   color: var(--text-secondary);
   font-size: 24rpx;
   &.active {
-    background: rgba(255,77,45,0.08);
+    background: rgba(255, 77, 45, 0.08);
     color: var(--brand-primary);
     border: 1rpx solid var(--brand-primary);
   }
@@ -1168,7 +1415,7 @@ onMounted(async () => {
   align-items: center;
   gap: 4rpx;
   padding: 6rpx 14rpx;
-  background: rgba(255,77,45,0.08);
+  background: rgba(255, 77, 45, 0.08);
   color: var(--brand-primary);
   border-radius: 999rpx;
   font-size: 22rpx;
@@ -1179,7 +1426,9 @@ onMounted(async () => {
   border-radius: 12rpx;
   padding: 16rpx;
   margin-bottom: 12rpx;
-  &:last-child { margin-bottom: 0; }
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 .sg-head {
   display: flex;
@@ -1196,7 +1445,9 @@ onMounted(async () => {
       color: var(--text-primary);
     }
   }
-  .sg-remove { padding: 4rpx; }
+  .sg-remove {
+    padding: 4rpx;
+  }
 }
 .sg-values {
   display: flex;
@@ -1258,7 +1509,7 @@ onMounted(async () => {
   align-items: center;
   gap: 4rpx;
   padding: 8rpx 16rpx;
-  background: rgba(255,77,45,0.08);
+  background: rgba(255, 77, 45, 0.08);
   color: var(--brand-primary);
   border-radius: 999rpx;
   font-size: 22rpx;
@@ -1286,7 +1537,12 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
-    .sku-idx { font-size: 20rpx; font-weight: 600; color: var(--text-tertiary); font-family: var(--font-family-base); }
+    .sku-idx {
+      font-size: 20rpx;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      font-family: var(--font-family-base);
+    }
   }
   .sku-spec-tags {
     display: flex;
@@ -1321,7 +1577,11 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
-    .field-label { font-size: 20rpx; color: var(--text-tertiary); font-weight: 600; }
+    .field-label {
+      font-size: 20rpx;
+      color: var(--text-tertiary);
+      font-weight: 600;
+    }
     .field-input {
       background: var(--bg-card);
       border: 1rpx solid var(--border-default);
@@ -1337,8 +1597,14 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   font-size: 22rpx;
-  .sum-label { color: var(--text-tertiary); margin-right: 8rpx; }
-  .sum-value { color: var(--brand-primary); font-weight: 700; }
+  .sum-label {
+    color: var(--text-tertiary);
+    margin-right: 8rpx;
+  }
+  .sum-value {
+    color: var(--brand-primary);
+    font-weight: 700;
+  }
 }
 
 /* 价格显示规则 — 全局化提示卡 */
@@ -1347,11 +1613,13 @@ onMounted(async () => {
   align-items: center;
   gap: 16rpx;
   padding: 20rpx 24rpx;
-  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
-  border: 2rpx solid #FFE0CD;
+  background: linear-gradient(135deg, #fff6f1, #ffe9dc);
+  border: 2rpx solid #ffe0cd;
   border-radius: 16rpx;
   margin-top: 12rpx;
-  &:active { opacity: 0.85; }
+  &:active {
+    opacity: 0.85;
+  }
 }
 .rule-mig-icon {
   width: 64rpx;
@@ -1391,7 +1659,7 @@ onMounted(async () => {
   gap: 16rpx;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   background: var(--bg-card);
-  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
   .footer-btn {
     flex: 1;
     height: 88rpx;
@@ -1407,14 +1675,14 @@ onMounted(async () => {
     &.primary {
       background: var(--brand-gradient);
       color: #fff;
-      box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.4);
+      box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.4);
     }
   }
 }
 .cat-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
   display: flex;
   align-items: flex-end;
@@ -1435,7 +1703,10 @@ onMounted(async () => {
   border-bottom: 1rpx solid var(--border-light);
   font-size: 30rpx;
   font-weight: 700;
-  .cat-close { font-size: 28rpx; color: var(--text-tertiary); }
+  .cat-close {
+    font-size: 28rpx;
+    color: var(--text-tertiary);
+  }
 }
 .cat-scroll {
   flex: 1;
@@ -1463,11 +1734,13 @@ onMounted(async () => {
     border-radius: 999rpx;
     border: 1rpx solid transparent;
     &.active {
-      background: rgba(255,77,45,0.08);
+      background: rgba(255, 77, 45, 0.08);
       color: var(--brand-primary);
       border-color: var(--brand-primary);
     }
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

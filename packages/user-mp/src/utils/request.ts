@@ -12,11 +12,10 @@
  */
 import type { ApiResult } from '@jiujiu/shared/types'
 
-// uni-app mp-weixin build 不会把 .env.production 的 VITE_* 注入到产物里
-// （H5 会，mp-weixin 不会——uni-app quirk），所以 prod 时写死 https://ewsn.top 兜底。
-const BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) ||
-  (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
+// 后端统一入口 https://ewsn.top —— 不再支持本地 server,
+// .env 缺失 / uni-app mp-weixin 注入失败 / build 模式不匹配等任何场景,
+// 都直接走线上,避免一切"连不上 localhost:3001"类故障。
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
 const LOGIN_PATH = '/pages/auth/login'
 
 const TOKEN_KEY = 'jiujiu_token'
@@ -152,7 +151,9 @@ function tryRefresh(): Promise<boolean> {
     return refreshPromise
   } finally {
     // 清掉 in-flight 占位（无论结果都释放，等下次再调时才会重新发起）
-    refreshPromise.finally(() => { refreshPromise = null })
+    refreshPromise.finally(() => {
+      refreshPromise = null
+    })
   }
 }
 

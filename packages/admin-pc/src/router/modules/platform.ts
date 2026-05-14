@@ -119,6 +119,18 @@ export const platformRoutes: AppRouteRecord = {
             keepAlive: true,
             ...ROLE_PLATFORM
           }
+        },
+        {
+          // 与后端 GET /api/v1/p/audit/records 对齐：审核流转日志（商家/商品通批驳记录）
+          path: 'records',
+          name: 'PlatformAuditRecord',
+          component: '/platform/audit-record',
+          meta: {
+            title: 'menus.platform.auditRecord',
+            icon: 'ri:history-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
         }
       ]
     },

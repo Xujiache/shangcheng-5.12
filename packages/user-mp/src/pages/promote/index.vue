@@ -14,16 +14,18 @@ import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
 const summary = ref<Awaited<ReturnType<typeof promoteService.summary>>>({
-  total: 0, thisMonth: 0, pending: 0, people: 0, orderCount: 0, conversion: 0,
+  total: 0,
+  thisMonth: 0,
+  pending: 0,
+  people: 0,
+  orderCount: 0,
+  conversion: 0,
 })
 const orders = ref<{ id: string; orderNo: string; amount: number; createdAt: string }[]>([])
 
 async function load() {
   try {
-    const [s, o] = await Promise.all([
-      promoteService.summary(),
-      promoteService.orders(),
-    ])
+    const [s, o] = await Promise.all([promoteService.summary(), promoteService.orders()])
     summary.value = s
     orders.value = o.list ?? []
   } catch (e) {
@@ -31,28 +33,69 @@ async function load() {
   }
 }
 
+/** 客服微信号（如需变更可放进 SystemConfig） */
+const SUPPORT_WECHAT = 'jiujiu_kefu'
+
+/**
+ * 推广提现：后端目前没有 /u/promote/withdraw 接口，统一引导联系客服。
+ * 之前 setTimeout 假成功容易让用户以为真到账，已改为复制客服微信号的诚实流程。
+ */
 function withdraw() {
   uni.showModal({
-    title: '佣金提现',
-    content: `本次提现金额 ¥${summary.value.thisMonth} ，预计 1-3 个工作日到账微信钱包`,
+    title: '推广收益提现',
+    content: `本月待结算 ¥${summary.value.thisMonth || 0}。当前提现走人工审核，复制客服微信号后联系客服核对账户后到账，预计 1-3 个工作日。`,
+    confirmText: '复制客服微信',
+    cancelText: '我再想想',
     success: (r) => {
-      if (r.confirm) uni.showToast({ title: '提现申请已提交', icon: 'success' })
+      if (r.confirm) {
+        uni.setClipboardData({
+          data: SUPPORT_WECHAT,
+          success: () => uni.showToast({ title: '客服微信号已复制', icon: 'success' }),
+          fail: () =>
+            uni.showToast({
+              title: '复制失败，请手动添加 ' + SUPPORT_WECHAT,
+              icon: 'none',
+              duration: 2500,
+            }),
+        })
+      }
     },
   })
 }
 
+/**
+ * 生成专属推广海报（极简方案）：
+ *  1. 把当前推广分享链接放入剪贴板
+ *  2. 提示用户去通讯录 / 朋友圈粘贴；或长按主页二维码海报截图（后期接 canvas 真海报时替换）
+ *
+ * 之所以不走 canvas 是因为 mp-weixin 真渲染需要：
+ *   - 二维码图片来源（带 token 的服务端签名 URL，后端暂未提供）
+ *   - 头像跨域白名单
+ *   - canvas 2d 性能 / 截图保存权限
+ * 这些条件不齐全的情况下做半成品反而误导用户。
+ */
 function genPoster() {
-  uni.showLoading({ title: '生成海报中…' })
-  setTimeout(() => {
-    uni.hideLoading()
-    uni.showToast({ title: '海报已保存到相册', icon: 'success' })
-  }, 1200)
+  const link = 'https://ewsn.top/?ref=' + (summary.value.people > 0 ? 'promoter' : 'invite')
+  uni.setClipboardData({
+    data: link,
+    success: () => {
+      uni.showModal({
+        title: '推广链接已复制',
+        content:
+          '可以粘贴到微信好友 / 朋友圈分享。\n\n如果需要带二维码的海报图，请联系客服获取专属海报模板。',
+        confirmText: '我知道了',
+        showCancel: false,
+      })
+    },
+    fail: () => uni.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
+  })
 }
 
 function showHelp() {
   uni.showModal({
     title: '推广分佣规则',
-    content: '邀请好友通过你的专属链接下单，即可获得订单金额 8% 的一级佣金，二级佣金 3%。佣金次月结算。',
+    content:
+      '邀请好友通过你的专属链接下单，即可获得订单金额 8% 的一级佣金，二级佣金 3%。佣金次月结算。',
     showCancel: false,
   })
 }
@@ -126,7 +169,7 @@ onMounted(load)
       </view>
     </view>
 
-    <view style="height: 40rpx;" />
+    <view style="height: 40rpx" />
   </view>
 </template>
 
@@ -143,7 +186,7 @@ onMounted(load)
   color: #fff;
   border-radius: 24rpx;
   overflow: hidden;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
   display: flex;
   flex-direction: column;
   gap: 8rpx;
@@ -153,10 +196,13 @@ onMounted(load)
     top: -40rpx;
     width: 240rpx;
     height: 240rpx;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
   }
-  .hero-label { font-size: 24rpx; opacity: 0.85; }
+  .hero-label {
+    font-size: 24rpx;
+    opacity: 0.85;
+  }
   .hero-value {
     font-size: 72rpx;
     font-weight: 800;
@@ -173,18 +219,25 @@ onMounted(load)
       display: flex;
       flex-direction: column;
       gap: 2rpx;
-      .meta-label { font-size: 20rpx; opacity: 0.8; }
+      .meta-label {
+        font-size: 20rpx;
+        opacity: 0.8;
+      }
       .meta-value {
         font-size: 26rpx;
         font-weight: 700;
         font-family: $font-family-base;
       }
     }
-    .hero-divider { width: 1rpx; height: 48rpx; background: rgba(255,255,255,0.3); }
+    .hero-divider {
+      width: 1rpx;
+      height: 48rpx;
+      background: rgba(255, 255, 255, 0.3);
+    }
     .withdraw-btn {
       margin-left: auto;
       padding: 12rpx 32rpx;
-      background: rgba(255,255,255,0.25);
+      background: rgba(255, 255, 255, 0.25);
       border-radius: 999rpx;
       font-size: 24rpx;
       font-weight: 700;
@@ -206,7 +259,10 @@ onMounted(load)
   align-items: center;
   gap: 4rpx;
   box-shadow: $shadow-sm;
-  .grid-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .grid-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .grid-value {
     font-size: 36rpx;
     font-weight: 800;
@@ -239,8 +295,15 @@ onMounted(load)
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 12rpx;
-  .title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-  .action { font-size: 22rpx; color: var(--text-tertiary); }
+  .title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .action {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 .list-row {
   display: flex;
@@ -248,13 +311,21 @@ onMounted(load)
   align-items: center;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .list-info {
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .list-no { font-size: 26rpx; color: var(--text-primary); }
-    .list-time { font-size: 22rpx; color: var(--text-tertiary); }
+    .list-no {
+      font-size: 26rpx;
+      color: var(--text-primary);
+    }
+    .list-time {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
   .list-amount {
     font-size: 28rpx;

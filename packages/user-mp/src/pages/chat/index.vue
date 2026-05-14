@@ -39,6 +39,8 @@ onMounted(async () => {
     const s = await chatService.ensureSession(merchantId.value || undefined)
     sessionId.value = s.id
     merchantId.value = s.merchantId
+    // 取后端的真实商家名（官方客服 / 自营时为空，兜底"客服"）
+    if (s.merchantName) merchantName.value = s.merchantName
 
     // 拉一次历史
     const list = await chatService.messages(s.id)
@@ -76,7 +78,9 @@ onShow(() => {
 })
 
 onUnmounted(() => {
-  try { sock?.disconnect() } catch {}
+  try {
+    sock?.disconnect()
+  } catch {}
 })
 
 async function onSend() {
@@ -145,12 +149,7 @@ const fmtTime = (s: string) => {
       <view class="empty" v-if="!messages.length">
         <text>没有消息，发个招呼吧～</text>
       </view>
-      <view
-        v-for="m in messages"
-        :key="m.id"
-        class="row"
-        :class="{ mine: isMine(m) }"
-      >
+      <view v-for="m in messages" :key="m.id" class="row" :class="{ mine: isMine(m) }">
         <view class="avatar">{{ isMine(m) ? '我' : merchantName.slice(0, 1) }}</view>
         <view class="bubble">
           <view class="sender">{{ senderLabel(m) }} · {{ fmtTime(m.createdAt) }}</view>
@@ -161,7 +160,7 @@ const fmtTime = (s: string) => {
       <view v-if="otherTyping" class="typing">
         <text>{{ merchantName }} 正在输入…</text>
       </view>
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
 
     <view class="composer">
@@ -217,7 +216,9 @@ const fmtTime = (s: string) => {
       background: linear-gradient(135deg, #ff4d2d, #ff7a45);
       color: #fff;
 
-      .sender { color: rgba(255, 255, 255, 0.85); }
+      .sender {
+        color: rgba(255, 255, 255, 0.85);
+      }
     }
   }
 }
@@ -293,8 +294,12 @@ const fmtTime = (s: string) => {
   font-weight: 600;
   transition: opacity 0.18s;
 
-  &.disabled { opacity: 0.5; }
-  &:active { transform: scale(0.97); }
+  &.disabled {
+    opacity: 0.5;
+  }
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 .safe-bottom {

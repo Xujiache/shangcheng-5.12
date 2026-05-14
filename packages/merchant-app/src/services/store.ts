@@ -21,7 +21,10 @@ export const storeService = {
     return http.get<StoreAuthConfig>(`/api/v1/m/stores/${id}/auth`)
   },
   saveAuth(id: string, data: Partial<StoreAuthConfig>) {
-    return http.post<{ ok: boolean }>(`/api/v1/m/stores/${id}/auth`, data as Record<string, unknown>)
+    return http.post<{ ok: boolean }>(
+      `/api/v1/m/stores/${id}/auth`,
+      data as Record<string, unknown>,
+    )
   },
   /** 删除门店（用于驳回入驻申请） */
   remove(id: string) {
@@ -57,7 +60,10 @@ export const shopService = {
     return http.get<ShopDecorate>('/api/v1/m/shop/decorate')
   },
   saveDecorate(data: ShopDecorate) {
-    return http.post<ShopDecorate>('/api/v1/m/shop/decorate', data as unknown as Record<string, unknown>)
+    return http.post<ShopDecorate>(
+      '/api/v1/m/shop/decorate',
+      data as unknown as Record<string, unknown>,
+    )
   },
 }
 
@@ -78,6 +84,20 @@ export interface MarketingCoupon {
   status: 'pending' | 'active' | 'paused' | 'ended'
 }
 
+/** 优惠券创建/编辑 DTO（id / 统计字段由后端维护，前端不传） */
+export interface MarketingCouponDto {
+  name: string
+  type: 'fullReduce' | 'discount' | 'fixed'
+  amount?: number
+  discountPercent?: number
+  threshold?: number
+  stock: number
+  validFrom: string
+  validTo: string
+  perUserLimit?: number
+  scope?: 'all' | 'category' | 'product'
+}
+
 export interface MarketingOverview {
   coupons: { active: number; ended: number; totalReceived: number; totalUsed: number }
   flashSales: { active: number; planned: number; sold: number }
@@ -90,6 +110,28 @@ export const marketingService = {
   },
   couponList(params: { status?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<MarketingCoupon>>('/api/v1/m/marketing/coupons', params)
+  },
+  createCoupon(dto: MarketingCouponDto) {
+    return http.post<MarketingCoupon>(
+      '/api/v1/m/marketing/coupons',
+      dto as unknown as Record<string, unknown>,
+    )
+  },
+  updateCoupon(id: string, dto: Partial<MarketingCouponDto>) {
+    return http.put<MarketingCoupon>(
+      `/api/v1/m/marketing/coupons/${id}`,
+      dto as Record<string, unknown>,
+    )
+  },
+  removeCoupon(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/m/marketing/coupons/${id}`)
+  },
+  /** 启用 / 暂停（active=true 启用，false 暂停） */
+  toggleCoupon(id: string, active: boolean) {
+    return http.post<{ ok: boolean; status: MarketingCoupon['status'] }>(
+      `/api/v1/m/marketing/coupons/${id}/toggle`,
+      { active },
+    )
   },
 }
 
@@ -190,29 +232,57 @@ export interface AgencyApplicationRow {
 }
 
 export const plazaService = {
-  products(params: { keyword?: string; tab?: string; tags?: string; factoryId?: string; page?: number; pageSize?: number } = {}) {
+  products(
+    params: {
+      keyword?: string
+      tab?: string
+      tags?: string
+      factoryId?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) {
     return http.get<Pagination<PlazaPlazaProduct>>('/api/v1/m/plaza/products', params)
   },
-  factories(params: { region?: string; category?: string; minRating?: number; keyword?: string } = {}) {
+  factories(
+    params: { region?: string; category?: string; minRating?: number; keyword?: string } = {},
+  ) {
     return http.get<PlazaFactoryItem[]>('/api/v1/m/plaza/factories', params)
   },
   rateFactory(id: string, score: number) {
-    return http.post<{ ok: boolean; rating: number; ratingCount: number }>(`/api/v1/m/plaza/factories/${id}/rate`, { score })
+    return http.post<{ ok: boolean; rating: number; ratingCount: number }>(
+      `/api/v1/m/plaza/factories/${id}/rate`,
+      { score },
+    )
   },
   factory(id: string) {
     return http.get<PlazaFactoryDetail>(`/api/v1/m/plaza/factories/${id}`)
   },
   follow(id: string, on: boolean) {
-    return http.post<{ ok: boolean; followed: boolean }>(`/api/v1/m/plaza/factories/${id}/follow`, { on })
+    return http.post<{ ok: boolean; followed: boolean }>(`/api/v1/m/plaza/factories/${id}/follow`, {
+      on,
+    })
   },
-  applyAgency(data: { factoryId: string; productIds: string[]; markupPercent: number; autoSyncPrice: boolean; message?: string }) {
+  applyAgency(data: {
+    factoryId: string
+    productIds: string[]
+    markupPercent: number
+    autoSyncPrice: boolean
+    message?: string
+  }) {
     return http.post<{ ok: boolean; status: string; id: string }>('/api/v1/m/plaza/agency', data)
   },
   agencyApplications(params: { status?: string } = {}) {
     return http.get<AgencyApplicationRow[]>('/api/v1/m/plaza/applications', params)
   },
-  updateAgencyApplication(id: string, data: { myRetailPrice?: number; markupRatio?: number; status?: string }) {
-    return http.patch<{ ok: boolean }>(`/api/v1/m/plaza/applications/${id}`, data as Record<string, unknown>)
+  updateAgencyApplication(
+    id: string,
+    data: { myRetailPrice?: number; markupRatio?: number; status?: string },
+  ) {
+    return http.patch<{ ok: boolean }>(
+      `/api/v1/m/plaza/applications/${id}`,
+      data as Record<string, unknown>,
+    )
   },
   cancelAgencyApplication(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/m/plaza/applications/${id}`)

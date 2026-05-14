@@ -25,18 +25,17 @@ interface RuntimeVersion {
 function readRuntimeVersion(): RuntimeVersion {
   try {
     const sys = uni.getSystemInfoSync() as any
-    const os = (sys.platform || '').toLowerCase() === 'android'
-      ? 'android'
-      : (sys.platform || '').toLowerCase() === 'ios'
-      ? 'ios'
-      : 'other'
+    const os =
+      (sys.platform || '').toLowerCase() === 'android'
+        ? 'android'
+        : (sys.platform || '').toLowerCase() === 'ios'
+          ? 'ios'
+          : 'other'
     const version = sys.appVersion || sys.appVersionName || '0.0.0'
     let versionCode = Number(sys.appVersionCode) || 0
     // App-plus：通过 plus.runtime 取更准确的 versionCode
     try {
-      // @ts-expect-error plus 仅 App-plus 存在
       if (typeof plus !== 'undefined' && plus?.runtime?.versionCode) {
-        // @ts-expect-error
         versionCode = Number(plus.runtime.versionCode) || versionCode
       }
     } catch {}
@@ -54,7 +53,9 @@ function getIgnored(): number {
   }
 }
 function setIgnored(code: number) {
-  try { uni.setStorageSync(IGNORE_KEY, String(code)) } catch {}
+  try {
+    uni.setStorageSync(IGNORE_KEY, String(code))
+  } catch {}
 }
 function clearIgnoredIfStale(latestCode: number) {
   const ig = getIgnored()
@@ -69,19 +70,16 @@ function clearIgnoredIfStale(latestCode: number) {
 function downloadAndInstall(url: string, onProgress?: (pct: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      // @ts-expect-error App-plus only
       if (typeof plus === 'undefined' || !plus.downloader) {
         reject(new Error('plus.downloader 不可用'))
         return
       }
-      // @ts-expect-error
       const dtask = plus.downloader.createDownload(
         url,
         { method: 'GET' },
         (d: any, status: number) => {
           if (status === 200) {
             try {
-              // @ts-expect-error
               plus.runtime.install(
                 d.filename,
                 { force: false },
@@ -116,9 +114,7 @@ function showUpdatePrompt(
   changelog: string,
   force: boolean,
 ) {
-  const content =
-    `最新版本：v${version}\n` +
-    (changelog ? `\n更新内容：\n${changelog}\n` : '\n')
+  const content = `最新版本：v${version}\n` + (changelog ? `\n更新内容：\n${changelog}\n` : '\n')
 
   uni.showModal({
     title: force ? '需要更新（强制）' : '发现新版本',
@@ -143,7 +139,6 @@ function showUpdatePrompt(
             success: (rr) => {
               if (rr.confirm) {
                 try {
-                  // @ts-expect-error App-plus only
                   plus.runtime.openURL(url)
                 } catch {}
               }

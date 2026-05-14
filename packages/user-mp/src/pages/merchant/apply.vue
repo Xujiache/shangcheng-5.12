@@ -24,9 +24,7 @@ const userStore = useUserStore()
 const CATEGORIES = ['家具', '灯具', '布艺', '厨卫', '摆件', '建材', '家电', '定制']
 
 // 文件上传地址（与 me/edit.vue / merchant-app 的 profile 保持一致，直连后端 /files/upload）
-const UPLOAD_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) ||
-  (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
+const UPLOAD_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
 
 const form = ref({
   type: 'factory' as 'factory' | 'store',
@@ -61,9 +59,7 @@ async function uploadOne(tempPath: string): Promise<string> {
       url: UPLOAD_URL + '/api/v1/files/upload',
       filePath: tempPath,
       name: 'file',
-      header: userStore.accessToken
-        ? { Authorization: `Bearer ${userStore.accessToken}` }
-        : {},
+      header: userStore.accessToken ? { Authorization: `Bearer ${userStore.accessToken}` } : {},
       success: (res: any) => {
         try {
           const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
@@ -157,11 +153,14 @@ async function submit() {
   if (!form.value.name) return uni.showToast({ title: '请填写主体名称', icon: 'none' })
   if (!form.value.legalRep) return uni.showToast({ title: '请填写法人姓名', icon: 'none' })
   if (!form.value.contact) return uni.showToast({ title: '请填写联系人', icon: 'none' })
-  if (!/^1[3-9]\d{9}$/.test(form.value.contactPhone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
-  if (!form.value.region) return uni.showToast({ title: '请填写所在区域（省/市/区）', icon: 'none' })
+  if (!/^1[3-9]\d{9}$/.test(form.value.contactPhone))
+    return uni.showToast({ title: '手机号格式错误', icon: 'none' })
+  if (!form.value.region)
+    return uni.showToast({ title: '请填写所在区域（省/市/区）', icon: 'none' })
   if (!form.value.address) return uni.showToast({ title: '请填写详细地址', icon: 'none' })
   if (!form.value.businessLicense) return uni.showToast({ title: '请上传营业执照', icon: 'none' })
-  if (form.value.categories.length === 0) return uni.showToast({ title: '请选择至少一个经营品类', icon: 'none' })
+  if (form.value.categories.length === 0)
+    return uni.showToast({ title: '请选择至少一个经营品类', icon: 'none' })
 
   submitting.value = true
   try {
@@ -214,7 +213,11 @@ async function submit() {
           @click="pickRole('factory')"
         >
           <view class="role-icon">
-            <Icon name="factory" :size="56" :color="form.type === 'factory' ? '#fff' : 'var(--brand-primary)'" />
+            <Icon
+              name="factory"
+              :size="56"
+              :color="form.type === 'factory' ? '#fff' : 'var(--brand-primary)'"
+            />
           </view>
           <text class="role-title">申请为厂家</text>
           <text class="role-desc">可被门店申请代理</text>
@@ -228,7 +231,11 @@ async function submit() {
           @click="pickRole('store')"
         >
           <view class="role-icon">
-            <Icon name="home-shop" :size="56" :color="form.type === 'store' ? '#fff' : 'var(--brand-primary)'" />
+            <Icon
+              name="home-shop"
+              :size="56"
+              :color="form.type === 'store' ? '#fff' : 'var(--brand-primary)'"
+            />
           </view>
           <text class="role-title">申请为门店</text>
           <text class="role-desc">代理厂家商品销售</text>
@@ -254,7 +261,12 @@ async function submit() {
         </view>
         <view class="row">
           <text class="label">统一信用代码</text>
-          <input v-model="form.creditCode" class="input" placeholder="18 位社会信用代码（选填）" maxlength="18" />
+          <input
+            v-model="form.creditCode"
+            class="input"
+            placeholder="18 位社会信用代码（选填）"
+            maxlength="18"
+          />
         </view>
         <view class="row">
           <text class="label">联系人</text>
@@ -262,7 +274,13 @@ async function submit() {
         </view>
         <view class="row">
           <text class="label">联系电话</text>
-          <input v-model="form.contactPhone" class="input" type="number" maxlength="11" placeholder="13800138000" />
+          <input
+            v-model="form.contactPhone"
+            class="input"
+            type="number"
+            maxlength="11"
+            placeholder="13800138000"
+          />
         </view>
         <view class="row">
           <text class="label">所在区域</text>
@@ -292,17 +310,17 @@ async function submit() {
         <view class="row col">
           <text class="label">资质照片（选填，最多 4 张）</text>
           <view class="upload-grid">
-            <view
-              v-for="(img, i) in form.qualifications"
-              :key="i"
-              class="upload-img"
-            >
+            <view v-for="(img, i) in form.qualifications" :key="i" class="upload-img">
               <image :src="img" mode="aspectFill" class="img" />
               <view class="img-close" @click="removeQualification(i)">
                 <Icon name="close" :size="20" color="#fff" />
               </view>
             </view>
-            <view v-if="form.qualifications.length < 4" class="upload-add" @click="uploadQualification">
+            <view
+              v-if="form.qualifications.length < 4"
+              class="upload-add"
+              @click="uploadQualification"
+            >
               <Icon name="plus" :size="36" color="var(--text-tertiary)" />
               <text>上传</text>
             </view>
@@ -317,7 +335,8 @@ async function submit() {
               :key="c"
               :class="['chip', form.categories.includes(c) ? 'active' : '']"
               @click="toggleCategory(c)"
-            >{{ c }}</view>
+              >{{ c }}</view
+            >
           </view>
         </view>
       </view>
@@ -328,7 +347,7 @@ async function submit() {
         </view>
         <text class="tip">预计 1-3 个工作日内完成审核</text>
       </view>
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -340,7 +359,10 @@ async function submit() {
   flex-direction: column;
   background: var(--bg-page);
 }
-.scroll { flex: 1; height: 0; }
+.scroll {
+  flex: 1;
+  height: 0;
+}
 .welcome {
   padding: 32rpx 24rpx;
   text-align: center;
@@ -378,19 +400,29 @@ async function submit() {
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
-  transition: all .2s;
+  transition: all 0.2s;
   &.active {
     background: $brand-gradient;
     border-color: transparent;
     color: #fff;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
-    .role-title, .role-desc { color: #fff; }
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+    .role-title,
+    .role-desc {
+      color: #fff;
+    }
   }
   .role-icon {
     margin-bottom: 12rpx;
   }
-  .role-title { font-size: 28rpx; font-weight: 800; color: var(--text-primary); }
-  .role-desc { font-size: 22rpx; color: var(--text-tertiary); }
+  .role-title {
+    font-size: 28rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .role-desc {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .role-btn {
     margin-top: 12rpx;
     padding: 8rpx 24rpx;
@@ -399,7 +431,7 @@ async function submit() {
     font-size: 24rpx;
     font-weight: 600;
     &.on {
-      background: rgba(255,255,255,0.25);
+      background: rgba(255, 255, 255, 0.25);
       border-color: transparent;
     }
   }
@@ -417,7 +449,9 @@ async function submit() {
   gap: 16rpx;
   padding: 24rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   &.col {
     flex-direction: column;
     align-items: stretch;
@@ -440,7 +474,8 @@ async function submit() {
   gap: 16rpx;
   flex-wrap: wrap;
 }
-.upload-img, .upload-add {
+.upload-img,
+.upload-add {
   width: 160rpx;
   height: 160rpx;
   border-radius: 16rpx;
@@ -450,7 +485,11 @@ async function submit() {
   background: var(--bg-page);
   border: 1rpx solid var(--border-default);
   overflow: hidden;
-  .img { width: 100%; height: 100%; display: block; }
+  .img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
   .img-close {
     position: absolute;
     top: 4rpx;
@@ -458,7 +497,7 @@ async function submit() {
     width: 32rpx;
     height: 32rpx;
     border-radius: 50%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -508,9 +547,14 @@ async function submit() {
     border-radius: 999rpx;
     font-size: 32rpx;
     font-weight: 700;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
-    &.loading { opacity: 0.7; }
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+    &.loading {
+      opacity: 0.7;
+    }
   }
-  .tip { font-size: 22rpx; color: var(--text-tertiary); }
+  .tip {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 </style>

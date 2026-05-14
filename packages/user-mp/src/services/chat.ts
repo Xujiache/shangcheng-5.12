@@ -39,14 +39,26 @@ export const chatService = {
   sessions(): Promise<ChatSessionSummary[]> {
     return http.get<ChatSessionSummary[]>('/api/v1/u/chat/sessions')
   },
-  ensureSession(merchantId?: string): Promise<{ id: string; merchantId: string }> {
-    return http.post<{ id: string; merchantId: string }>('/api/v1/u/chat/sessions', { merchantId })
+  /**
+   * 进入会话：后端会确保 sessionId 存在并返回会话基础信息。
+   * `merchantName` 可能为空（如官方客服没绑商家档案），前端兜底显示"客服"。
+   */
+  ensureSession(
+    merchantId?: string,
+  ): Promise<{ id: string; merchantId: string; merchantName?: string }> {
+    return http.post<{ id: string; merchantId: string; merchantName?: string }>(
+      '/api/v1/u/chat/sessions',
+      { merchantId },
+    )
   },
   messages(sessionId: string): Promise<ChatMessage[]> {
     return http.get<ChatMessage[]>(`/api/v1/u/chat/sessions/${sessionId}/messages`)
   },
   send(sessionId: string, content: string, type = 'text'): Promise<ChatMessage> {
-    return http.post<ChatMessage>(`/api/v1/u/chat/sessions/${sessionId}/messages`, { type, content })
+    return http.post<ChatMessage>(`/api/v1/u/chat/sessions/${sessionId}/messages`, {
+      type,
+      content,
+    })
   },
   markRead(sessionId: string): Promise<{ ok: boolean }> {
     return http.post<{ ok: boolean }>(`/api/v1/u/chat/sessions/${sessionId}/read`, {})

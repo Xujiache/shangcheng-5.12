@@ -51,12 +51,14 @@ async function onLogin() {
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => uni.reLaunch({ url: '/pages/tabbar/home/index' }), 500)
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '登录失败', icon: 'none' })
+    // 失败原因优先级:后端 BizException message > 网络错误 errMsg > 兜底
+    const msg = e?.message || e?.errMsg || '登录失败,请检查网络'
+    uni.showToast({ title: msg, icon: 'none', duration: 2500 })
+    console.error('[platform-app][login] 登录失败:', e)
   } finally {
     loading.value = false
   }
 }
-
 </script>
 
 <template>
@@ -92,13 +94,10 @@ async function onLogin() {
         </view>
         <view class="input-wrap">
           <text class="prefix-icon">密</text>
-          <input
-            v-model="password"
-            class="input"
-            :password="!showPwd"
-            placeholder="6 位以上"
-          />
-          <text class="suffix-toggle" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
+          <input v-model="password" class="input" :password="!showPwd" placeholder="6 位以上" />
+          <text class="suffix-toggle" @click="showPwd = !showPwd">{{
+            showPwd ? '隐藏' : '显示'
+          }}</text>
         </view>
       </view>
 
@@ -118,7 +117,9 @@ async function onLogin() {
         :class="['submit', (!canSubmit || loading) && 'disabled']"
         :disabled="!canSubmit || loading"
         @click="onLogin"
-      >{{ loading ? '登录中…' : '登 录' }}</button>
+      >
+        {{ loading ? '登录中…' : '登 录' }}
+      </button>
     </view>
 
     <view class="footer">
@@ -132,7 +133,7 @@ async function onLogin() {
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #0E1320;
+  background: #0e1320;
   position: relative;
   overflow: hidden;
   padding: 120rpx 40rpx 40rpx;
@@ -142,8 +143,8 @@ async function onLogin() {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 10%, rgba(255,77,45,0.25) 0%, transparent 50%),
-    radial-gradient(circle at 90% 100%, rgba(255,156,110,0.18) 0%, transparent 55%);
+    radial-gradient(circle at 20% 10%, rgba(255, 77, 45, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 90% 100%, rgba(255, 156, 110, 0.18) 0%, transparent 55%);
   pointer-events: none;
 }
 .header {
@@ -157,12 +158,12 @@ async function onLogin() {
   font-size: 64rpx;
   font-weight: 900;
   color: #fff;
-  background: linear-gradient(135deg, #FF6B45 0%, #FF4D2D 100%);
+  background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
   width: 160rpx;
   height: 160rpx;
   line-height: 160rpx;
   border-radius: 32rpx;
-  box-shadow: 0 16rpx 48rpx rgba(255,77,45,0.4);
+  box-shadow: 0 16rpx 48rpx rgba(255, 77, 45, 0.4);
   letter-spacing: 4rpx;
 }
 .title {
@@ -176,16 +177,16 @@ async function onLogin() {
   display: block;
   margin-top: 8rpx;
   font-size: 22rpx;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255, 255, 255, 0.45);
   font-family: var(--font-family-base);
 }
 .card {
   position: relative;
   z-index: 1;
-  background: rgba(255,255,255,0.98);
+  background: rgba(255, 255, 255, 0.98);
   border-radius: 32rpx;
   padding: 48rpx 32rpx 32rpx;
-  box-shadow: 0 32rpx 64rpx rgba(0,0,0,0.4);
+  box-shadow: 0 32rpx 64rpx rgba(0, 0, 0, 0.4);
 }
 .card-head {
   margin-bottom: 32rpx;
@@ -217,7 +218,7 @@ async function onLogin() {
   }
   .forgot {
     font-size: 24rpx;
-    color: #FF4D2D;
+    color: #ff4d2d;
   }
 }
 .input-wrap {
@@ -230,7 +231,7 @@ async function onLogin() {
   border-radius: 16rpx;
   transition: all 0.2s;
   &:focus-within {
-    border-color: #FF4D2D;
+    border-color: #ff4d2d;
     background: #fff;
   }
   .prefix-icon {
@@ -248,7 +249,7 @@ async function onLogin() {
   }
   .suffix-toggle {
     font-size: 24rpx;
-    color: #FF4D2D;
+    color: #ff4d2d;
     padding: 8rpx 16rpx;
     margin-left: 8rpx;
   }
@@ -266,34 +267,41 @@ async function onLogin() {
     transition: all 0.2s;
     flex-shrink: 0;
     &.on {
-      background: #FF4D2D;
-      border-color: #FF4D2D;
-      box-shadow: inset 0 0 0 4rpx #fff, 0 0 0 1rpx #FF4D2D;
+      background: #ff4d2d;
+      border-color: #ff4d2d;
+      box-shadow:
+        inset 0 0 0 4rpx #fff,
+        0 0 0 1rpx #ff4d2d;
     }
   }
   .agree-text {
     font-size: 24rpx;
     color: #86909c;
-    .hl { color: #FF4D2D; }
+    .hl {
+      color: #ff4d2d;
+    }
   }
 }
 .submit {
   width: 100%;
   height: 96rpx;
   line-height: 96rpx;
-  background: linear-gradient(135deg, #FF6B45 0%, #FF4D2D 100%);
+  background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
   color: #fff;
   font-size: 32rpx;
   font-weight: 700;
   letter-spacing: 8rpx;
   border-radius: 16rpx;
   border: none;
-  box-shadow: 0 12rpx 24rpx rgba(255,77,45,0.4);
-  &.disabled, &[disabled] {
+  box-shadow: 0 12rpx 24rpx rgba(255, 77, 45, 0.4);
+  &.disabled,
+  &[disabled] {
     opacity: 0.5;
     box-shadow: none;
   }
-  &::after { border: none; }
+  &::after {
+    border: none;
+  }
 }
 .footer {
   position: relative;
@@ -305,11 +313,11 @@ async function onLogin() {
   gap: 6rpx;
   .copyright {
     font-size: 22rpx;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
   }
   .version {
     font-size: 20rpx;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255, 255, 255, 0.3);
     font-family: var(--font-family-base);
   }
 }

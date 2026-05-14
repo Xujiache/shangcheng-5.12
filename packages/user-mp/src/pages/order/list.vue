@@ -7,12 +7,15 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { orderService } from '../../services'
+import { orderService, productService } from '../../services'
+import { useCartStore } from '../../store/cart'
 import type { Order } from '@jiujiu/shared/types'
 import { formatPrice } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
 import Icon from '../../components/icon/icon.vue'
+
+const cartStore = useCartStore()
 
 type TabKey = 'all' | 'pending_payment' | 'pending_shipment' | 'shipped' | 'after_sale'
 
@@ -105,17 +108,71 @@ function confirmOrder(o: Order) {
   })
 }
 
+/**
+ * 申请售后：跳订单详情并附 action=refund 让详情页弹起售后类型 ActionSheet。
+ * （未来如果做独立 pages/order/refund.vue 退款页，可把 action 改为 navigateTo 那个新页。）
+ */
 function applyAfter(o: Order) {
-  uni.showActionSheet({
-    itemList: ['退货退款', '换货', '维修', '不想要了'],
-    success: (r) => {
-      uni.showToast({ title: '申请：' + ['退货退款', '换货', '维修', '不想要了'][r.tapIndex], icon: 'none' })
-    },
-  })
+  uni.navigateTo({ url: `/pages/order/detail?id=${o.id}&action=refund` })
 }
 
-function reorder(o: Order) {
-  uni.showToast({ title: '再来一单', icon: 'none' })
+/**
+ * 再来一单：拉订单详情，按行调 cartStore.addCart 复购。
+ * - 商品已下架 / SKU 失效 → 跳过 + 提示
+ * - 全部失败 → 不跳购物车，留在原页面
+ * - 至少一条成功 → 跳购物车
+ */
+async function reorder(o: Order) {
+  uni.showLoading({ title: '处理中…', mask: true })
+  try {
+    const detail = await orderService.detail(o.id)
+    const items = detail?.items || []
+    if (items.length === 0) {
+      uni.hideLoading()
+      uni.showToast({ title: '订单无商品可复购', icon: 'none' })
+      return
+    }
+    let success = 0
+    const skippedNames: string[] = []
+    for (const it of items) {
+      try {
+        // 拉商品详情确认上架 + SKU 还在
+        const pDetail = await productService.detail(it.productId, { silent: true })
+        if (!pDetail || (pDetail as any).status === 'off') {
+          skippedNames.push(it.productName)
+          continue
+        }
+        const sku = (pDetail.skus || []).find((s: any) => s.id === it.skuId) || pDetail.skus?.[0]
+        if (!sku?.id) {
+          skippedNames.push(it.productName)
+          continue
+        }
+        await cartStore.addCart({
+          productId: it.productId,
+          skuId: sku.id,
+          name: it.productName,
+          spec: sku.specsLabel || it.specsLabel || '默认规格',
+          image: it.productImage,
+          price: Number(sku.priceRetail ?? it.unitPrice) || it.unitPrice,
+          qty: it.quantity,
+        })
+        success += 1
+      } catch {
+        skippedNames.push(it.productName)
+      }
+    }
+    uni.hideLoading()
+    if (success === 0) {
+      uni.showToast({ title: '商品已下架或库存不足', icon: 'none', duration: 2000 })
+      return
+    }
+    const tail = skippedNames.length > 0 ? `（${skippedNames.length} 件已下架跳过）` : ''
+    uni.showToast({ title: `已加入 ${success} 件${tail}`, icon: 'success', duration: 1500 })
+    setTimeout(() => uni.switchTab({ url: '/pages/tabbar/cart/index' }), 600)
+  } catch (e: any) {
+    uni.hideLoading()
+    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+  }
 }
 
 function copyOrderNo(o: Order) {
@@ -148,12 +205,7 @@ function totalQty(o: Order): number {
     </view>
 
     <scroll-view scroll-y class="scroll">
-      <view
-        v-for="o in orders"
-        :key="o.id"
-        class="order-card"
-        @click="goDetail(o)"
-      >
+      <view v-for="o in orders" :key="o.id" class="order-card" @click="goDetail(o)">
         <!-- 头部：订单号 + 状态徽标 -->
         <view class="head">
           <view class="head-left" @click.stop="copyOrderNo(o)">
@@ -165,7 +217,10 @@ function totalQty(o: Order): number {
           </view>
           <view
             class="status-badge"
-            :style="{ color: STATUS_META[o.status]?.tint, background: (STATUS_META[o.status]?.tint || '#86909C') + '14' }"
+            :style="{
+              color: STATUS_META[o.status]?.tint,
+              background: (STATUS_META[o.status]?.tint || '#86909C') + '14',
+            }"
           >
             {{ STATUS_META[o.status]?.label || o.status }}
           </view>
@@ -173,11 +228,7 @@ function totalQty(o: Order): number {
 
         <!-- 商品列表 -->
         <view class="lines">
-          <view
-            v-for="l in (o.items || []).slice(0, 2)"
-            :key="l.id"
-            class="line"
-          >
+          <view v-for="l in (o.items || []).slice(0, 2)" :key="l.id" class="line">
             <image :src="l.productImage" mode="aspectFill" class="line-img" />
             <view class="line-info">
               <text class="line-name">{{ l.productName }}</text>
@@ -234,7 +285,7 @@ function totalQty(o: Order): number {
         desc="去首页逛逛吧"
         icon="package"
       />
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -253,7 +304,7 @@ function totalQty(o: Order): number {
   display: flex;
   background: var(--bg-card);
   border-bottom: 1rpx solid var(--border-light);
-  box-shadow: 0 1rpx 4rpx rgba(0,0,0,0.02);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.02);
 }
 .tab {
   flex: 1;
@@ -263,7 +314,7 @@ function totalQty(o: Order): number {
   font-size: 26rpx;
   color: var(--text-secondary);
   position: relative;
-  transition: color .2s;
+  transition: color 0.2s;
   &.active {
     color: var(--brand-primary);
     font-weight: 700;
@@ -312,7 +363,7 @@ function totalQty(o: Order): number {
   gap: 16rpx;
   padding: 20rpx 24rpx;
   border-bottom: 1rpx dashed var(--border-light);
-  background: linear-gradient(180deg, rgba(255,77,45,0.02), transparent);
+  background: linear-gradient(180deg, rgba(255, 77, 45, 0.02), transparent);
   min-width: 0;
 }
 .head-left {
@@ -488,7 +539,7 @@ function totalQty(o: Order): number {
   &.primary {
     background: $brand-gradient;
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 </style>

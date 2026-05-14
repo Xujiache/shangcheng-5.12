@@ -72,10 +72,12 @@
             </div>
           </div>
           <div class="mp-activity__ops">
-            <ElButton size="small" @click="ElMessage.info('数据分析')">数据</ElButton>
+            <!-- TODO: 等后端 marketing 统计接口上线后改为跳转数据详情 -->
+            <ElButton size="small" disabled>统计开发中</ElButton>
             <ElButton
               size="small"
               :type="act.status === 'running' ? 'warning' : 'primary'"
+              :loading="togglingId === act.id"
               @click="toggleStatus(act)"
             >
               {{ act.status === 'running' ? '暂停' : '启用' }}
@@ -112,7 +114,7 @@
       </ElForm>
       <template #footer>
         <ElButton @click="createOpen = false">取消</ElButton>
-        <ElButton type="primary" @click="confirmCreate">创建</ElButton>
+        <ElButton type="primary" :loading="submitting" @click="confirmCreate">创建</ElButton>
       </template>
     </ElDialog>
   </div>
@@ -121,6 +123,8 @@
 <script setup lang="ts">
   import {
     fetchMarketingActivities,
+    createCoupon,
+    toggleCoupon,
     type MarketingActivity
   } from '@/api/merchant-business'
   import { ElMessage } from 'element-plus'
@@ -137,6 +141,8 @@
   ]
 
   const loading = ref(false)
+  const submitting = ref(false)
+  const togglingId = ref<string | null>(null)
   const list = ref<MarketingActivity[]>([])
   const filterType = ref<MarketingActivity['type'] | 'all'>('all')
   const filterStatus = ref<MarketingActivity['status'] | 'all'>('all')
@@ -187,9 +193,24 @@
     )[s]
   }
 
-  function toggleStatus(act: MarketingActivity) {
-    act.status = act.status === 'running' ? 'paused' : 'running'
-    ElMessage.success(act.status === 'running' ? '已启用' : '已暂停')
+  async function toggleStatus(act: MarketingActivity) {
+    if (togglingId.value) return
+    const original = act.status
+    const nextRunning = original !== 'running'
+    togglingId.value = act.id
+    // 乐观更新：先翻转 UI，失败时回滚
+    act.status = nextRunning ? 'running' : 'paused'
+    try {
+      const res = await toggleCoupon(act.id, nextRunning)
+      // 后端如返回了 status，以后端为准（更准确）
+      if (res?.status) act.status = res.status
+      ElMessage.success(nextRunning ? '已启用' : '已暂停')
+    } catch (e: any) {
+      act.status = original
+      ElMessage.error(e?.message || '操作失败，请稍后重试')
+    } finally {
+      togglingId.value = null
+    }
   }
 
   function openCreate() {
@@ -198,24 +219,31 @@
     createOpen.value = true
   }
 
-  function confirmCreate() {
+  async function confirmCreate() {
     if (!newAct.title) {
       ElMessage.warning('请填写活动名称')
       return
     }
-    list.value.unshift({
-      id: 'mk-' + Date.now(),
-      type: newAct.type,
-      title: newAct.title,
-      description: newAct.description || '—',
-      status: 'draft',
-      startAt: newActDate.value?.[0] || '',
-      endAt: newActDate.value?.[1] || '',
-      joinCount: 0,
-      conversion: 0
-    })
-    createOpen.value = false
-    ElMessage.success('活动已创建（草稿）')
+    if (submitting.value) return
+    submitting.value = true
+    try {
+      await createCoupon({
+        type: newAct.type,
+        title: newAct.title,
+        description: newAct.description || '',
+        startAt: newActDate.value?.[0] || '',
+        endAt: newActDate.value?.[1] || '',
+        status: 'draft'
+      })
+      createOpen.value = false
+      ElMessage.success('活动已创建（草稿）')
+      // 重新拉取真实数据，避免本地 unshift 与后端 ID / 字段错位
+      await loadData()
+    } catch (e: any) {
+      ElMessage.error(e?.message || '创建失败，请稍后重试')
+    } finally {
+      submitting.value = false
+    }
   }
 
   async function loadData() {
@@ -232,16 +260,16 @@
 
 <style scoped lang="scss">
   .mp-marketing {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   /* === 类型卡片 === */
@@ -251,43 +279,43 @@
     grid-template-columns: repeat(5, 1fr);
     gap: 12px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: repeat(3, 1fr);
     }
   }
 
   .mp-type-card {
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
     padding: 16px 18px;
-    border-radius: 12px;
+    cursor: pointer;
     background: #fff;
     border: 1.5px solid var(--art-border-color, #e5e7eb);
-    cursor: pointer;
+    border-radius: 12px;
     transition: all 0.2s;
 
     &:hover {
+      box-shadow: 0 6px 18px -10px rgb(0 0 0 / 15%);
       transform: translateY(-2px);
-      box-shadow: 0 6px 18px -10px rgba(0, 0, 0, 0.15);
     }
 
     &.active {
-      border-color: var(--accent);
       background: color-mix(in srgb, var(--accent) 8%, white);
+      border-color: var(--accent);
     }
   }
 
   .mp-type-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    color: #fff;
-    font-size: 22px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    color: #fff;
+    border-radius: 12px;
   }
 
   .mp-type-name {
@@ -297,9 +325,9 @@
   }
 
   .mp-type-count {
+    margin-top: 2px;
     font-size: 12px;
     color: var(--art-gray-500, #6b7280);
-    margin-top: 2px;
   }
 
   /* === 活动卡片 === */
@@ -311,38 +339,57 @@
   }
 
   .mp-activity {
-    padding: 16px 18px;
-    border-radius: 12px;
-    background: #fff;
-    border: 1px solid var(--art-border-color, #e5e7eb);
     display: flex;
     flex-direction: column;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--art-border-color, #e5e7eb);
+    border-radius: 12px;
     transition: all 0.18s;
 
     &:hover {
       border-color: var(--el-color-primary, #ff4d2d);
-      box-shadow: 0 4px 14px -6px rgba(255, 77, 45, 0.18);
+      box-shadow: 0 4px 14px -6px rgb(255 77 45 / 18%);
     }
   }
 
   .mp-activity__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 8px;
   }
 
   .mp-activity__tag {
     padding: 2px 10px;
-    border-radius: 12px;
     font-size: 11px;
     font-weight: 600;
+    border-radius: 12px;
 
-    &.type-coupon { background: rgba(255, 77, 45, 0.1); color: #ff4d2d; }
-    &.type-discount { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    &.type-group { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    &.type-seckill { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-    &.type-distribute { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+    &.type-coupon {
+      color: #ff4d2d;
+      background: rgb(255 77 45 / 10%);
+    }
+
+    &.type-discount {
+      color: #3b82f6;
+      background: rgb(59 130 246 / 10%);
+    }
+
+    &.type-group {
+      color: #10b981;
+      background: rgb(16 185 129 / 10%);
+    }
+
+    &.type-seckill {
+      color: #f59e0b;
+      background: rgb(245 158 11 / 10%);
+    }
+
+    &.type-distribute {
+      color: #a855f7;
+      background: rgb(168 85 247 / 10%);
+    }
   }
 
   .mp-activity__title {
@@ -352,15 +399,15 @@
   }
 
   .mp-activity__desc {
+    margin-top: 4px;
     font-size: 12px;
     color: var(--art-gray-500, #6b7280);
-    margin-top: 4px;
   }
 
   .mp-activity__meta {
+    margin-top: 6px;
     font-size: 11px;
     color: var(--art-gray-400, #9ca3af);
-    margin-top: 6px;
   }
 
   .mp-activity__stats {
@@ -376,16 +423,16 @@
   }
 
   .mp-activity__stat-lbl {
+    margin-top: 2px;
     font-size: 11px;
     color: var(--art-gray-500, #6b7280);
-    margin-top: 2px;
     text-align: center;
   }
 
   .mp-activity__ops {
     display: flex;
-    justify-content: flex-end;
     gap: 8px;
+    justify-content: flex-end;
     margin-top: 12px;
   }
 </style>

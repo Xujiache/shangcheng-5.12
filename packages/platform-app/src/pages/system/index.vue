@@ -15,21 +15,18 @@ import Icon from '../../components/icon/icon.vue'
 const settings = ref<SystemSettings | null>(null)
 const loading = ref(false)
 /**
- * registerLimit / commissionRate 与 admin-pc 共用同一 SystemConfig 记录,
- * 字段路径 settings.business.{registerLimit,commissionRate}。
- * 这里两个本地 ref 仅作为表单展示态,实际真相在 settings.business。
+ * 与 admin-pc 共用同一 SystemConfig 记录,字段路径 settings.business.platformCommissionRate。
+ * 本地 ref 仅作为表单展示态,实际真相在 settings.business。
  */
-const registerLimit = ref(500)
-const commissionRate = ref(2)
+const platformCommissionRate = ref(5)
 
 async function load() {
   loading.value = true
   try {
     const s = await systemService.settings()
     settings.value = s
-    if (s?.business) {
-      if (typeof s.business.registerLimit === 'number') registerLimit.value = s.business.registerLimit
-      if (typeof s.business.commissionRate === 'number') commissionRate.value = s.business.commissionRate
+    if (s?.business && typeof s.business.platformCommissionRate === 'number') {
+      platformCommissionRate.value = s.business.platformCommissionRate
     }
   } finally {
     loading.value = false
@@ -48,12 +45,12 @@ async function save() {
   }
 }
 
-/** 将 registerLimit / commissionRate 写回 settings.business 再持久化 */
+/** 把当前 commission 写回 settings.business 再持久化（保留其它已有字段） */
 async function persistBusiness() {
   if (!settings.value) return
   settings.value.business = {
-    registerLimit: registerLimit.value,
-    commissionRate: commissionRate.value,
+    ...(settings.value.business || {}),
+    platformCommissionRate: platformCommissionRate.value,
   }
   await save()
 }
@@ -103,21 +100,11 @@ function editIcp() {
   })
 }
 
-function changeRegisterLimit() {
-  uni.showActionSheet({
-    itemList: ['100 家', '200 家', '500 家', '1000 家', '不限制'],
-    success: async (r) => {
-      registerLimit.value = [100, 200, 500, 1000, 9999][r.tapIndex]
-      await persistBusiness()
-    },
-  })
-}
-
 function changeCommissionRate() {
   uni.showActionSheet({
     itemList: ['1% 抽佣', '2% 抽佣', '3% 抽佣', '5% 抽佣'],
     success: async (r) => {
-      commissionRate.value = [1, 2, 3, 5][r.tapIndex]
+      platformCommissionRate.value = [1, 2, 3, 5][r.tapIndex]
       await persistBusiness()
     },
   })
@@ -190,17 +177,10 @@ onMounted(load)
             <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
           </view>
         </view>
-        <view class="row" @click="changeRegisterLimit">
-          <text class="r-label">注册商家上限</text>
-          <view class="r-value">
-            <text class="value-num">{{ registerLimit >= 9999 ? '不限' : registerLimit + ' 家' }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
-          </view>
-        </view>
         <view class="row" @click="changeCommissionRate">
           <text class="r-label">平台抽佣比例</text>
           <view class="r-value">
-            <text class="value-num accent">{{ commissionRate }}%</text>
+            <text class="value-num accent">{{ platformCommissionRate }}%</text>
             <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
           </view>
         </view>
@@ -248,7 +228,10 @@ onMounted(load)
             <text class="p-name">微信支付</text>
             <text class="p-desc">官方接口 · 实时到账</text>
           </view>
-          <view :class="['switch', settings.payment.wechat ? 'on' : '']" @click="togglePayment('wechat')">
+          <view
+            :class="['switch', settings.payment.wechat ? 'on' : '']"
+            @click="togglePayment('wechat')"
+          >
             <view class="thumb" />
           </view>
         </view>
@@ -260,7 +243,10 @@ onMounted(load)
             <text class="p-name">支付宝</text>
             <text class="p-desc">官方接口 · 实时到账</text>
           </view>
-          <view :class="['switch', settings.payment.alipay ? 'on' : '']" @click="togglePayment('alipay')">
+          <view
+            :class="['switch', settings.payment.alipay ? 'on' : '']"
+            @click="togglePayment('alipay')"
+          >
             <view class="thumb" />
           </view>
         </view>
@@ -272,7 +258,10 @@ onMounted(load)
             <text class="p-name">余额支付</text>
             <text class="p-desc">商户余额钱包</text>
           </view>
-          <view :class="['switch', settings.payment.balance ? 'on' : '']" @click="togglePayment('balance')">
+          <view
+            :class="['switch', settings.payment.balance ? 'on' : '']"
+            @click="togglePayment('balance')"
+          >
             <view class="thumb" />
           </view>
         </view>
@@ -342,7 +331,7 @@ onMounted(load)
         </view>
       </view>
 
-      <view style="height: 60rpx;" />
+      <view style="height: 60rpx" />
     </scroll-view>
   </view>
 </template>
@@ -364,19 +353,19 @@ onMounted(load)
 .hero {
   margin: 16rpx 24rpx 0;
   padding: 24rpx;
-  background: linear-gradient(135deg, #FF4D2D, #FF9C6E);
+  background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   color: #fff;
   border-radius: 24rpx;
   display: flex;
   align-items: center;
   gap: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.25);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.25);
 }
 .site-logo {
   width: 96rpx;
   height: 96rpx;
   border-radius: 24rpx;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,7 +387,10 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  .site-name { font-size: 32rpx; font-weight: 800; }
+  .site-name {
+    font-size: 32rpx;
+    font-weight: 800;
+  }
   .site-icp {
     font-size: 22rpx;
     opacity: 0.9;
@@ -433,7 +425,9 @@ onMounted(load)
   padding: 24rpx 0;
   gap: 16rpx;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .r-label {
     flex-shrink: 0;
     width: 200rpx;
@@ -473,8 +467,14 @@ onMounted(load)
       border-radius: 999rpx;
       font-size: 20rpx;
       font-weight: 700;
-      &.on { background: rgba(82,196,26,0.1); color: #52C41A; }
-      &.warn { background: rgba(250,173,20,0.1); color: #FAAD14; }
+      &.on {
+        background: rgba(82, 196, 26, 0.1);
+        color: #52c41a;
+      }
+      &.warn {
+        background: rgba(250, 173, 20, 0.1);
+        color: #faad14;
+      }
     }
   }
 }
@@ -485,7 +485,9 @@ onMounted(load)
   gap: 16rpx;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .pay-icon {
   width: 64rpx;
@@ -502,8 +504,15 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 2rpx;
-  .p-name { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
-  .p-desc { font-size: 20rpx; color: var(--text-tertiary); }
+  .p-name {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .p-desc {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
 }
 .switch {
   flex-shrink: 0;
@@ -513,7 +522,7 @@ onMounted(load)
   background: var(--bg-page);
   border: 1rpx solid var(--border-default);
   position: relative;
-  transition: all .2s;
+  transition: all 0.2s;
   .thumb {
     position: absolute;
     top: 2rpx;
@@ -522,8 +531,8 @@ onMounted(load)
     height: 36rpx;
     border-radius: 50%;
     background: var(--text-tertiary);
-    transition: all .2s;
-    box-shadow: 0 1rpx 3rpx rgba(0,0,0,0.15);
+    transition: all 0.2s;
+    box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.15);
   }
   &.on {
     background: var(--brand-primary);

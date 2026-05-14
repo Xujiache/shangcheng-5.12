@@ -7,14 +7,15 @@
  */
 import type { ApiResult } from '@jiujiu/shared/types'
 
-export const BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) ||
-  (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
+// 后端统一入口 https://ewsn.top —— 不再支持本地 server,
+// .env 缺失 / uni-app mp-weixin 注入失败 / build 模式不匹配等任何场景,
+// 都直接走线上,避免一切"连不上 localhost:3001"类故障。
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
 const LOGIN_PATH = '/pages/auth/login'
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-  data?: Record<string, unknown>
+  data?: unknown
   params?: Record<string, unknown>
   headers?: Record<string, string>
   silent?: boolean
@@ -78,7 +79,7 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
     uni.request({
       url: BASE_URL + url,
       method: (options.method ?? 'GET') as any,
-      data: options.data,
+      data: options.data as UniNamespace.RequestOptions['data'],
       header: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -145,7 +146,9 @@ function tryRefresh(): Promise<boolean> {
     return refreshPromise
   } finally {
     // 清掉 in-flight 占位（无论结果都释放，等下次再调时才会重新发起）
-    refreshPromise.finally(() => { refreshPromise = null })
+    refreshPromise.finally(() => {
+      refreshPromise = null
+    })
   }
 }
 
@@ -219,17 +222,17 @@ export const http = {
   ) => request<T>(url, { ...options, method: 'GET', params }),
   post: <T = unknown>(
     url: string,
-    data?: Record<string, unknown>,
+    data?: unknown,
     options?: Omit<RequestOptions, 'method' | 'data'>,
   ) => request<T>(url, { ...options, method: 'POST', data }),
   put: <T = unknown>(
     url: string,
-    data?: Record<string, unknown>,
+    data?: unknown,
     options?: Omit<RequestOptions, 'method' | 'data'>,
   ) => request<T>(url, { ...options, method: 'PUT', data }),
   patch: <T = unknown>(
     url: string,
-    data?: Record<string, unknown>,
+    data?: unknown,
     options?: Omit<RequestOptions, 'method' | 'data'>,
   ) => request<T>(url, { ...options, method: 'PATCH', data }),
   del: <T = unknown>(url: string, options?: Omit<RequestOptions, 'method'>) =>

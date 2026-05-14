@@ -34,6 +34,7 @@ const markupRange = ref('¥200~500')
 const commission = ref(8)
 const pushText = ref('平台精选 · 厂家直供 · 一键代理')
 const submitting = ref(false)
+const saving = ref(false)
 
 const POSITIONS = ['商家APP · 广场入口', '广场首屏 Banner', '分类首屏', '客户端首页推荐']
 const ALL_TAGS = ['🔥本周热推', '新品', '厂家直供', '高佣金', '黑五特惠', 'A 级商户']
@@ -53,9 +54,7 @@ const positionAvailable = computed(() => POSITIONS.filter((p) => !positions.valu
  */
 onLoad((options) => {
   const rawIds: string =
-    (options?.productIds as string | undefined) ||
-    (options?.productId as string | undefined) ||
-    ''
+    (options?.productIds as string | undefined) || (options?.productId as string | undefined) || ''
   const ids = rawIds
     .split(',')
     .map((s) => s.trim())
@@ -139,9 +138,35 @@ function changeCommission() {
   })
 }
 
+/**
+ * 草稿保存：调真后端,落库 `status: 'draft'`,
+ * 后端 createPush 已支持透传 status(prisma 字段 ∈ draft/pending/active/offline/ended)。
+ * 草稿保存后不跳页,允许用户继续编辑追加内容,与「立即推送」语义区分。
+ */
 async function saveDraft() {
-  uni.showToast({ title: '已存草稿', icon: 'success' })
-  setTimeout(() => uni.navigateBack(), 600)
+  if (saving.value) return
+  saving.value = true
+  try {
+    await plazaService.createPush({
+      subjectType: subjectType.value,
+      productIds: products.value.map((p) => p.id),
+      positions: positions.value,
+      tags: tags.value,
+      audience: audience.value,
+      scheduleStart: scheduleStart.value,
+      scheduleEnd: scheduleEnd.value,
+      weight: weight.value,
+      markupRange: markupRange.value,
+      commission: commission.value,
+      pushText: pushText.value,
+      status: 'draft',
+    })
+    uni.showToast({ title: '草稿已保存', icon: 'success' })
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
 }
 
 function goPushList() {
@@ -171,9 +196,12 @@ async function submit() {
       markupRange: markupRange.value,
       commission: commission.value,
       pushText: pushText.value,
+      status: 'pending',
     })
     uni.showToast({ title: '推送已发布', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 800)
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '推送失败', icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -192,11 +220,13 @@ async function submit() {
           <view
             :class="['chip', subjectType === 'product' ? 'active' : '']"
             @click="subjectType = 'product'"
-          >商品</view>
+            >商品</view
+          >
           <view
             :class="['chip', subjectType === 'factory' ? 'active' : '']"
             @click="subjectType = 'factory'"
-          >厂家</view>
+            >厂家</view
+          >
         </view>
       </view>
 
@@ -230,7 +260,8 @@ async function submit() {
             :key="p"
             :class="['chip', positions.includes(p) ? 'active' : '']"
             @click="togglePosition(p)"
-          >{{ p }}</view>
+            >{{ p }}</view
+          >
         </view>
       </view>
 
@@ -243,7 +274,8 @@ async function submit() {
             :key="t"
             :class="['chip', tags.includes(t) ? 'active' : '']"
             @click="toggleTag(t)"
-          >{{ t }}</view>
+            >{{ t }}</view
+          >
           <view class="chip add" @click="addCustomTag">
             <Icon name="plus" :size="22" color="var(--brand-primary)" />
             <text>自定义</text>
@@ -260,7 +292,8 @@ async function submit() {
             :key="a.key"
             :class="['chip', audience === a.key ? 'active' : '']"
             @click="audience = a.key"
-          >{{ a.label }}</view>
+            >{{ a.label }}</view
+          >
         </view>
       </view>
 
@@ -302,11 +335,13 @@ async function submit() {
         <input v-model="pushText" class="push-input" placeholder="平台精选 · 厂家直供 · 一键代理" />
       </view>
 
-      <view style="height: 180rpx;" />
+      <view style="height: 180rpx" />
     </scroll-view>
 
     <view class="ft">
-      <view class="ft-btn ghost" @click="saveDraft">存草稿</view>
+      <view :class="['ft-btn ghost', saving ? 'loading' : '']" @click="saveDraft">
+        {{ saving ? '保存中…' : '存草稿' }}
+      </view>
       <view :class="['ft-btn primary', submitting ? 'loading' : '']" @click="submit">
         {{ submitting ? '推送中…' : '立即推送' }}
       </view>
@@ -345,7 +380,7 @@ async function submit() {
     align-items: center;
     gap: 4rpx;
     padding: 6rpx 14rpx;
-    background: rgba(255,77,45,0.08);
+    background: rgba(255, 77, 45, 0.08);
     color: var(--brand-primary);
     border-radius: 999rpx;
     font-size: 22rpx;
@@ -362,7 +397,9 @@ async function submit() {
 .chip-row {
   display: flex;
   gap: 12rpx;
-  &.wrap { flex-wrap: wrap; }
+  &.wrap {
+    flex-wrap: wrap;
+  }
 }
 .chip {
   padding: 10rpx 20rpx;
@@ -379,7 +416,7 @@ async function submit() {
     border-color: transparent;
     color: #fff;
     font-weight: 600;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
   &.add {
     color: var(--brand-primary);
@@ -411,7 +448,9 @@ async function submit() {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .remove { padding: 4rpx; }
+  .remove {
+    padding: 4rpx;
+  }
 }
 .more {
   margin-top: 4rpx;
@@ -425,8 +464,13 @@ async function submit() {
   justify-content: space-between;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
-  .r-label { font-size: 26rpx; color: var(--text-tertiary); }
+  &:last-child {
+    border-bottom: none;
+  }
+  .r-label {
+    font-size: 26rpx;
+    color: var(--text-tertiary);
+  }
   .r-value {
     display: flex;
     align-items: center;
@@ -460,7 +504,7 @@ async function submit() {
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
   background: var(--bg-card);
   border-top: 1rpx solid var(--border-light);
-  box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.04);
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 .ft-btn {
   flex: 1;
@@ -474,12 +518,17 @@ async function submit() {
     background: var(--bg-card);
     border: 1rpx solid var(--border-default);
     color: var(--text-primary);
+    &.loading {
+      opacity: 0.7;
+    }
   }
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
-    &.loading { opacity: 0.7; }
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+    &.loading {
+      opacity: 0.7;
+    }
   }
 }
 </style>

@@ -113,7 +113,11 @@
   const userStore = useUserStore()
   const { accessToken } = userStore
 
-  const uploadImageUrl = `${import.meta.env.VITE_API_URL}/api/common/upload`
+  // 与 utils/http baseURL 解析口径一致：优先 VITE_API_BASE_URL（全栈统一命名），
+  // 回退到旧变量 VITE_API_URL，避免迁移过程中文章封面上传指向 `undefined/api/...`。
+  const _env = (import.meta as any).env || {}
+  const _apiBase = _env.VITE_API_BASE_URL || _env.VITE_API_URL || ''
+  const uploadImageUrl = `${_apiBase}/api/common/upload`
   const uploadHeaders = { Authorization: accessToken }
 
   const pageMode = ref<PageModeEnum>(PageModeEnum.Add)

@@ -62,7 +62,9 @@ export interface PlatformMerchantsParams {
  *
  * 后端返回 buildPage 分页对象时统一 unwrap 成数组。
  */
-export async function fetchPlatformMerchants(params: PlatformMerchantsParams = {}): Promise<Merchant[]> {
+export async function fetchPlatformMerchants(
+  params: PlatformMerchantsParams = {}
+): Promise<Merchant[]> {
   // 后端 parsePage 将 pageSize 上限钳制在 100；这里同步使用 100，避免"以为拿到 200 条实际只有 100"的误解
   const query: Record<string, unknown> = { pageSize: 100 }
   if (params.keyword) query.keyword = params.keyword
@@ -143,6 +145,82 @@ export function rejectMerchant(id: string, reason: string) {
     url: `/api/v1/p/merchants/${id}/reject`,
     data: { reason }
   })
+}
+
+/* ============ 5.5 审核日志（商家/商品流转记录） ============ */
+/**
+ * 审核日志条目
+ *
+ * 对齐后端 `platform.service.ts#auditRecords` 返回结构。
+ * 后端实际通过 `auditor: { id, username, nickname }` 字段挂关联人摘要，
+ * 此处把它打平成 `actorId` + `actorName` 方便表格列直接绑定；
+ * 同时保留 `actor` 嵌套字段供详情场景使用。
+ */
+export interface AuditRecord {
+  id: string
+  type: 'merchant' | 'product'
+  targetId: string
+  status: 'approved' | 'rejected' | 'pending' | 'auto_approved' | 'sample_check'
+  reason?: string | null
+  actorId?: string | null
+  actorName?: string | null
+  createdAt: string
+  reviewedAt?: string | null
+  autoApproved?: boolean
+  sampleChecked?: boolean
+  actor?: { id: string; username: string | null; nickname: string } | null
+}
+
+export interface AuditRecordsPage {
+  list: AuditRecord[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+/**
+ * 平台审核日志分页查询
+ *
+ * 后端：GET /api/v1/p/audit/records
+ * 支持过滤：type / status / targetId；分页 page / pageSize。
+ * 失败时返回空分页，让页面进入空态。
+ */
+export async function fetchAuditRecords(params?: {
+  type?: string
+  status?: string
+  targetId?: string
+  page?: number
+  pageSize?: number
+}): Promise<AuditRecordsPage> {
+  try {
+    const resp = await request.get<any>({
+      url: '/api/v1/p/audit/records',
+      params: params || {}
+    })
+    const rawList: any[] = Array.isArray(resp?.list) ? resp.list : Array.isArray(resp) ? resp : []
+    const list: AuditRecord[] = rawList.map((r) => ({
+      id: r.id,
+      type: r.type,
+      targetId: r.targetId,
+      status: r.status,
+      reason: r.reason ?? null,
+      actorId: r.auditor?.id ?? r.auditorId ?? null,
+      actorName: r.auditor?.nickname || r.auditor?.username || null,
+      createdAt: r.createdAt,
+      reviewedAt: r.reviewedAt ?? null,
+      autoApproved: !!r.autoApproved,
+      sampleChecked: !!r.sampleChecked,
+      actor: r.auditor ?? null
+    }))
+    return {
+      list,
+      total: typeof resp?.total === 'number' ? resp.total : list.length,
+      page: typeof resp?.page === 'number' ? resp.page : (params?.page ?? 1),
+      pageSize: typeof resp?.pageSize === 'number' ? resp.pageSize : (params?.pageSize ?? 20)
+    }
+  } catch {
+    return { list: [], total: 0, page: params?.page ?? 1, pageSize: params?.pageSize ?? 20 }
+  }
 }
 
 /* ============ 6. 商品审核 ============ */
@@ -252,6 +330,86 @@ export async function fetchAdCreatives(slotId?: string): Promise<AdCreative[]> {
   }
 }
 
+/* ---- 广告位 CRUD ---- */
+/**
+ * 后端 `platform.controller.ts` 已暴露 POST/PUT/DELETE `ads/slots` 完整链路：
+ * 创建 / 更新 / 暂停 / 删除都走同一入口；status: 'paused' / 'active' 切换由调用方决定。
+ * 这里只透传 payload，view 层负责拼装 DTO（名称 / 投放对象 / 预览图 / 状态等）。
+ */
+export function createAdSlot(payload: {
+  name: string
+  target: AdSlotVM['target']
+  preview?: string
+  status?: AdSlotVM['status']
+}) {
+  return request.post<AdSlot>({ url: '/api/v1/p/ads/slots', data: payload })
+}
+
+export function updateAdSlot(
+  id: string,
+  payload: Partial<{
+    name: string
+    target: AdSlotVM['target']
+    preview: string
+    status: AdSlotVM['status']
+  }>
+) {
+  return request.put<AdSlot>({
+    url: `/api/v1/p/ads/slots/${encodeURIComponent(id)}`,
+    data: payload
+  })
+}
+
+export function deleteAdSlot(id: string) {
+  return request.del<{ ok: boolean }>({
+    url: `/api/v1/p/ads/slots/${encodeURIComponent(id)}`
+  })
+}
+
+/* ---- 创意 CRUD ---- */
+/**
+ * 后端 `platform.controller.ts` 已暴露 POST/PUT/DELETE `ads/creatives`；
+ * 新建创意会进入 status='pending' 队列等待审核。view 层提交后应 reload 列表，
+ * 避免本地 unshift 导致字段 / ID 与后端错位。
+ */
+export function createAdCreative(payload: {
+  slotId: string
+  title: string
+  image?: string
+  link?: string
+  startAt?: string
+  endAt?: string
+  budget?: number
+  priority?: number
+}) {
+  return request.post<AdCreative>({ url: '/api/v1/p/ads/creatives', data: payload })
+}
+
+export function updateAdCreative(
+  id: string,
+  payload: Partial<{
+    title: string
+    image: string
+    link: string
+    startAt: string
+    endAt: string
+    budget: number
+    status: 'active' | 'paused' | 'pending'
+    priority: number
+  }>
+) {
+  return request.put<AdCreative>({
+    url: `/api/v1/p/ads/creatives/${encodeURIComponent(id)}`,
+    data: payload
+  })
+}
+
+export function deleteAdCreative(id: string) {
+  return request.del<{ ok: boolean }>({
+    url: `/api/v1/p/ads/creatives/${encodeURIComponent(id)}`
+  })
+}
+
 /* ============ 8. 选品广场 ============ */
 
 /**
@@ -297,16 +455,23 @@ export async function fetchPlatformPlaza(
       params: { tab }
     })
     const list = Array.isArray(raw) ? raw : []
-    return list.map((r: any): PlazaItem => ({
-      id: r.id || r.productId || '',
-      name: r.name || r.productName || '',
-      image: r.image || r.productImage || '',
-      factory: r.factory || r.factoryName || '',
-      price: typeof r.price === 'number' ? r.price : (typeof r.startPrice === 'number' ? r.startPrice : 0),
-      status: (r.status as PlazaItem['status']) || 'pending',
-      agencyCount: typeof r.agencyCount === 'number' ? r.agencyCount : 0,
-      tag: r.tag || (Array.isArray(r.tags) ? r.tags[0] : undefined)
-    }))
+    return list.map(
+      (r: any): PlazaItem => ({
+        id: r.id || r.productId || '',
+        name: r.name || r.productName || '',
+        image: r.image || r.productImage || '',
+        factory: r.factory || r.factoryName || '',
+        price:
+          typeof r.price === 'number'
+            ? r.price
+            : typeof r.startPrice === 'number'
+              ? r.startPrice
+              : 0,
+        status: (r.status as PlazaItem['status']) || 'pending',
+        agencyCount: typeof r.agencyCount === 'number' ? r.agencyCount : 0,
+        tag: r.tag || (Array.isArray(r.tags) ? r.tags[0] : undefined)
+      })
+    )
   } catch {
     return []
   }
@@ -328,11 +493,29 @@ export function pushPlaza(payload: PushPayload) {
   })
 }
 
+/**
+ * 切换广场商品上下架状态
+ *
+ * 后端 `PATCH /p/plaza/products/:id/online` 接收 `{ on: boolean }`，
+ * 返回 `{ ok, status }`。failed 时调用方 catch 后回滚 UI 状态，避免
+ * 列表显示已上架但 DB 还是 offline。
+ */
+export function setPlazaProductOnline(id: string, on: boolean) {
+  return request.request<{ ok: boolean; status?: PlazaItem['status'] }>({
+    url: `/api/v1/p/plaza/products/${encodeURIComponent(id)}/online`,
+    method: 'PATCH',
+    data: { on }
+  })
+}
+
 /* ============ 9. 会员套餐 ============ */
 
 export async function fetchPlatformMemberPlans(): Promise<MemberPlan[]> {
   try {
-    const resp = await request.get<any>({ url: '/api/v1/p/member-plans', params: { pageSize: 100 } })
+    const resp = await request.get<any>({
+      url: '/api/v1/p/member-plans',
+      params: { pageSize: 100 }
+    })
     return unwrapPage<MemberPlan>(resp)
   } catch {
     return []
@@ -349,7 +532,7 @@ export async function fetchMemberTrialDays(): Promise<number> {
 export function saveMemberTrialDays(days: number) {
   return request.put<{ ok: boolean; days: number }>({
     url: '/api/v1/p/member-plans/trial-days',
-    data: { days },
+    data: { days }
   })
 }
 export function savePlatformMemberPlan(plan: Partial<MemberPlan>) {
@@ -378,7 +561,7 @@ export async function fetchMemberPayOrders(): Promise<PayOrderItem[]> {
   try {
     const resp = await request.get<any>({
       url: '/api/v1/p/member-pay-orders',
-      params: { pageSize: 100 },
+      params: { pageSize: 100 }
     })
     return unwrapPage<PayOrderItem>(resp)
   } catch {
@@ -476,6 +659,11 @@ export function removeAdminUser(id: string) {
  *     `v-model="form.payment.wechat"` 写入裸 boolean 后台无法持久化 enabled 状态）。
  *   - security.passwordPolicy 为 `{ minLength, requireUppercase }` 对象，
  *     旧版枚举 'strict'|'normal'|'loose' 已无法表达后端形态，前端改为两个独立字段。
+ *   - business 子结构按后端 default 形态对齐：
+ *       newMerchantAutoApprove / newProductAutoApprove / platformCommissionRate /
+ *       withdrawMinAmount。旧字段 `registerLimit` / `commissionRate` 在后端 default
+ *       对象里根本不存在，提交后落库被忽略 + 下次拉取又被默认值覆盖，形成"保存看似
+ *       成功、刷新还是旧值"的死循环。
  */
 export interface PaymentChannelConfig {
   enabled: boolean
@@ -483,6 +671,12 @@ export interface PaymentChannelConfig {
 export interface PasswordPolicyConfig {
   minLength: number
   requireUppercase: boolean
+}
+export interface BusinessSettings {
+  newMerchantAutoApprove: boolean
+  newProductAutoApprove: boolean
+  platformCommissionRate: number
+  withdrawMinAmount: number
 }
 export interface SystemSettings {
   site: { name: string; logo: string; icp: string }
@@ -494,7 +688,7 @@ export interface SystemSettings {
   logistics: { providers: string[]; defaultFreight: number }
   service: { phone: string; email: string; workTime: string }
   security: { passwordPolicy: PasswordPolicyConfig; ipWhitelist: string[] }
-  business: { registerLimit: number; commissionRate: number }
+  business: BusinessSettings
 }
 
 export function fetchSystemSettings() {

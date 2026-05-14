@@ -48,7 +48,9 @@
             <ArtSvgIcon icon="ri:store-2-line" /> {{ card.factoryName }}
           </div>
           <div class="mp-card__tags">
-            <ElTag v-for="t in card.tags" :key="t" size="small" type="info" effect="plain">{{ t }}</ElTag>
+            <ElTag v-for="t in card.tags" :key="t" size="small" type="info" effect="plain">{{
+              t
+            }}</ElTag>
           </div>
           <div class="mp-card__row">
             <div>
@@ -56,7 +58,9 @@
               <div class="mp-card__price-label">出厂起</div>
             </div>
             <div>
-              <div class="mp-card__markup">+{{ card.suggestMarkupMin }}~{{ card.suggestMarkupMax }}</div>
+              <div class="mp-card__markup"
+                >+{{ card.suggestMarkupMin }}~{{ card.suggestMarkupMax }}</div
+              >
               <div class="mp-card__price-label">建议加价</div>
             </div>
           </div>
@@ -104,7 +108,11 @@
           <h4 class="m-0 mb-3 text-sm text-g-700">主营商品（{{ factory.cards.length }} 件）</h4>
           <div class="mp-factory__products">
             <div v-for="c in factory.cards.slice(0, 6)" :key="c.productId" class="mp-mini">
-              <ElImage :src="c.productImage" fit="cover" style="width: 80px; height: 80px; border-radius: 8px" />
+              <ElImage
+                :src="c.productImage"
+                fit="cover"
+                style="width: 80px; height: 80px; border-radius: 8px"
+              />
               <div class="flex-1 min-w-0">
                 <div class="line-clamp-1 text-sm">{{ c.productName }}</div>
                 <div class="text-primary text-sm font-semibold mt-1">¥{{ c.startPrice }}</div>
@@ -148,19 +156,25 @@
           <ArtSvgIcon icon="ri:phone-line" class="text-primary" />
           <span class="text-g-500">联系电话</span>
           <b class="font-mono">{{ factory.contact.contactPhone }}</b>
-          <ElButton link type="primary" size="small" @click="copy(factory.contact.contactPhone)">复制</ElButton>
+          <ElButton link type="primary" size="small" @click="copy(factory.contact.contactPhone)"
+            >复制</ElButton
+          >
         </div>
         <div class="mp-contact__row">
           <ArtSvgIcon icon="ri:wechat-line" class="text-primary" />
           <span class="text-g-500">微信号</span>
           <b class="font-mono">{{ factory.contact.wechat }}</b>
-          <ElButton link type="primary" size="small" @click="copy(factory.contact.wechat)">复制</ElButton>
+          <ElButton link type="primary" size="small" @click="copy(factory.contact.wechat)"
+            >复制</ElButton
+          >
         </div>
         <div class="mp-contact__row">
           <ArtSvgIcon icon="ri:mail-line" class="text-primary" />
           <span class="text-g-500">邮箱</span>
           <b class="font-mono">{{ factory.contact.email }}</b>
-          <ElButton link type="primary" size="small" @click="copy(factory.contact.email)">复制</ElButton>
+          <ElButton link type="primary" size="small" @click="copy(factory.contact.email)"
+            >复制</ElButton
+          >
         </div>
         <div class="mp-contact__row">
           <ArtSvgIcon icon="ri:map-pin-line" class="text-primary" />
@@ -186,6 +200,7 @@
     fetchPlazaCards,
     fetchFactoryDetail,
     consumeQuota,
+    createAgencyApplication,
     type FactoryDetail
   } from '@/api/merchant-business'
   import type { PlazaProductCard } from '@jiujiu/shared/types'
@@ -228,8 +243,7 @@
     if (keyword.value) {
       const kw = keyword.value.toLowerCase()
       list = list.filter(
-        (c) =>
-          c.productName.toLowerCase().includes(kw) || c.factoryName.toLowerCase().includes(kw)
+        (c) => c.productName.toLowerCase().includes(kw) || c.factoryName.toLowerCase().includes(kw)
       )
     }
     return list
@@ -241,18 +255,30 @@
 
   async function onApply(c: PlazaProductCard) {
     if (applied.value.has(c.productId)) return
-    // 配额联动：消耗 1 个推送位
-    const res = await consumeQuota('pushSlots', 1)
-    if (!res.ok) {
-      ElMessage.warning(res.reason || '推送位配额不足，请升级套餐')
-      return
-    }
+    // 乐观更新：先把按钮置为「已申请」防止重复点击，失败时回滚
     applied.value.add(c.productId)
-    ElMessage.success(
-      res.quota
-        ? `已申请代理「${c.productName}」 · 推送位 ${res.quota.used.pushSlots}/${res.quota.limits.pushSlots}`
-        : `已申请代理「${c.productName}」`
-    )
+    try {
+      await createAgencyApplication({
+        factoryId: c.factoryId,
+        productIds: [c.productId]
+      })
+      // 后端创建成功后再扣本地配额（consumeQuota 是 member-service 本地配额状态，
+      // 不应在 API 失败时被扣，否则用户实际没申请但配额已被消耗）
+      const res = await consumeQuota('pushSlots', 1)
+      if (!res.ok) {
+        ElMessage.warning(res.reason || '推送位配额不足，请升级套餐')
+        return
+      }
+      ElMessage.success(
+        res.quota
+          ? `已申请代理「${c.productName}」 · 推送位 ${res.quota.used.pushSlots}/${res.quota.limits.pushSlots}`
+          : `已申请代理「${c.productName}」`
+      )
+    } catch (e: any) {
+      // 后端失败：回滚本地 Set
+      applied.value.delete(c.productId)
+      ElMessage.error(e?.message || '申请失败，请稍后重试')
+    }
   }
 
   async function openFactory(c: PlazaProductCard) {
@@ -274,16 +300,16 @@
 
 <style scoped lang="scss">
   .mp-plaza {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-toolbar {
@@ -306,17 +332,17 @@
   }
 
   .mp-card {
+    overflow: hidden;
+    cursor: pointer;
     background: #fff;
     border: 1px solid var(--art-border-color, #e5e7eb);
     border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
     transition: all 0.18s ease;
 
     &:hover {
       border-color: var(--el-color-primary, #ff4d2d);
+      box-shadow: 0 8px 24px -10px rgb(255 77 45 / 20%);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px -10px rgba(255, 77, 45, 0.2);
     }
   }
 
@@ -330,15 +356,15 @@
     top: 8px;
     left: 8px;
     padding: 2px 8px;
-    border-radius: 4px;
     font-size: 11px;
-    background: var(--el-color-primary);
     color: #fff;
+    background: var(--el-color-primary);
+    border-radius: 4px;
   }
 
   .mp-card__applied {
-    left: auto;
     right: 8px;
+    left: auto;
     background: #10b981;
   }
 
@@ -347,31 +373,31 @@
   }
 
   .mp-card__name {
+    display: -webkit-box;
+    height: 40px;
+    overflow: hidden;
     font-size: 14px;
     font-weight: 500;
     color: var(--art-gray-800, #1f2937);
-    overflow: hidden;
-    display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    height: 40px;
   }
 
   .mp-card__factory {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin: 6px 0;
     font-size: 12px;
     color: var(--art-gray-500, #6b7280);
-    margin: 6px 0;
-    display: flex;
-    align-items: center;
-    gap: 4px;
   }
 
   .mp-card__tags {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin-bottom: 8px;
     min-height: 18px;
+    margin-bottom: 8px;
   }
 
   .mp-card__row {
@@ -382,49 +408,49 @@
   }
 
   .mp-card__price {
-    color: var(--el-color-primary, #ff4d2d);
     font-size: 16px;
     font-weight: 600;
+    color: var(--el-color-primary, #ff4d2d);
   }
 
   .mp-card__markup {
-    color: #10b981;
     font-size: 13px;
     font-weight: 500;
+    color: #10b981;
   }
 
   .mp-card__price-label {
+    margin-top: 2px;
     font-size: 11px;
     color: var(--art-gray-500, #9ca3af);
-    margin-top: 2px;
   }
 
   .mp-card__bottom {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     margin-top: 8px;
   }
 
   /* Drawer */
   .mp-factory {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 22px;
   }
 
   .mp-factory__head {
     display: flex;
-    align-items: flex-start;
     gap: 14px;
+    align-items: flex-start;
     padding-bottom: 14px;
     border-bottom: 1px solid var(--art-border-color, #e5e7eb);
   }
 
   .mp-factory__card {
-    border-radius: 10px;
     background: #fafbfc;
+    border-radius: 10px;
 
     :deep(.el-card__body) {
       padding: 14px 16px;
@@ -445,8 +471,8 @@
 
   .mp-factory__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     padding-top: 6px;
   }
 
@@ -460,20 +486,20 @@
   .mp-contact__row {
     display: grid;
     grid-template-columns: 24px 90px 1fr auto;
-    align-items: center;
     gap: 10px;
+    align-items: center;
     padding: 10px 12px;
+    font-size: 13px;
     background: #fafbfc;
     border-radius: 8px;
-    font-size: 13px;
 
     b {
-      color: var(--art-gray-800, #1f2937);
       font-weight: 600;
+      color: var(--art-gray-800, #1f2937);
     }
   }
 
   .font-mono {
-    font-family: ui-monospace, 'SF Mono', 'Consolas', monospace;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
   }
 </style>

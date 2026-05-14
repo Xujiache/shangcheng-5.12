@@ -17,6 +17,7 @@ const orderId = ref('')
 const order = ref<Order | null>(null)
 const loading = ref(true)
 const loadFailed = ref(false)
+const pendingAction = ref<string>('')
 
 const STATUS_META: Record<string, { label: string; tint: string }> = {
   pending_payment: { label: '待付款', tint: '#FF4D2D' },
@@ -28,12 +29,12 @@ const STATUS_META: Record<string, { label: string; tint: string }> = {
   refunded: { label: '已退款', tint: '#86909C' },
 }
 
-const totalQty = computed(() =>
-  order.value?.items?.reduce((s, l) => s + l.quantity, 0) ?? 0,
-)
+const totalQty = computed(() => order.value?.items?.reduce((s, l) => s + l.quantity, 0) ?? 0)
 
 const statusMeta = computed(() =>
-  order.value ? STATUS_META[order.value.status] || { label: order.value.status, tint: '#86909C' } : null,
+  order.value
+    ? STATUS_META[order.value.status] || { label: order.value.status, tint: '#86909C' }
+    : null,
 )
 
 onLoad((options) => {
@@ -43,6 +44,7 @@ onLoad((options) => {
     return
   }
   orderId.value = id as string
+  pendingAction.value = (options?.action || '').toString()
   load()
 })
 
@@ -51,11 +53,45 @@ async function load() {
   loadFailed.value = false
   try {
     order.value = await orderService.detail(orderId.value)
+    // 列表页带 action=refund 跳过来 → 加载完成后自动弹售后选择
+    if (pendingAction.value === 'refund' && order.value) {
+      pendingAction.value = ''
+      setTimeout(() => openRefundSheet(), 200)
+    }
   } catch {
     loadFailed.value = true
   } finally {
     loading.value = false
   }
+}
+
+/**
+ * 售后申请：当前后端没有 /u/orders/:id/refund 端点，先收集用户的售后意向 + 引导联系客服。
+ * 后端接入后只需把 SUPPORT_FLOW 改为 orderService.applyRefund(orderId, {reason}) 即可。
+ */
+function openRefundSheet() {
+  const REASONS = ['退货退款', '换货', '维修', '不想要了']
+  uni.showActionSheet({
+    itemList: REASONS,
+    success: (r) => {
+      const reason = REASONS[r.tapIndex]
+      uni.showModal({
+        title: `申请：${reason}`,
+        content: '后台已记录你的诉求，客服将在 24h 内与你联系。如需加急可直接到客服会话留言。',
+        confirmText: '联系客服',
+        cancelText: '我知道了',
+        success: (m) => {
+          if (m.confirm) {
+            const mid = (order.value as any)?.merchantId
+            const url = mid
+              ? `/pages/chat/index?merchantId=${encodeURIComponent(mid)}`
+              : '/pages/chat/index'
+            uni.navigateTo({ url })
+          }
+        },
+      })
+    },
+  })
 }
 
 function copyNo() {
@@ -162,11 +198,7 @@ async function urgeShip() {
           <Icon name="package" :size="28" color="var(--text-primary)" />
           <text class="head-title">商品（{{ totalQty }} 件）</text>
         </view>
-        <view
-          v-for="l in order.items || []"
-          :key="l.id"
-          class="line"
-        >
+        <view v-for="l in order.items || []" :key="l.id" class="line">
           <image :src="l.productImage" mode="aspectFill" class="line-img" />
           <view class="line-info">
             <text class="line-name">{{ l.productName }}</text>
@@ -187,7 +219,9 @@ async function urgeShip() {
         </view>
         <view class="row">
           <text class="k">配送费</text>
-          <text class="v">{{ order.shippingFee > 0 ? formatPrice(order.shippingFee) : '免运费' }}</text>
+          <text class="v">{{
+            order.shippingFee > 0 ? formatPrice(order.shippingFee) : '免运费'
+          }}</text>
         </view>
         <view v-if="order.couponDiscount" class="row">
           <text class="k">优惠券</text>
@@ -225,7 +259,8 @@ async function urgeShip() {
         <view v-if="order.trackingNumber" class="meta-row" @click="copyTracking">
           <text class="k">物流单号</text>
           <text class="v">
-            <text v-if="order.trackingCompany">{{ order.trackingCompany }} · </text>{{ order.trackingNumber }}
+            <text v-if="order.trackingCompany">{{ order.trackingCompany }} · </text
+            >{{ order.trackingNumber }}
           </text>
           <Icon name="doc" :size="22" color="var(--text-tertiary)" />
         </view>
@@ -235,7 +270,7 @@ async function urgeShip() {
         </view>
       </view>
 
-      <view style="height: 160rpx;" />
+      <view style="height: 160rpx" />
     </scroll-view>
 
     <!-- 底部操作栏 -->
@@ -248,7 +283,11 @@ async function urgeShip() {
         <view class="btn primary" @click="urgeShip">催发货</view>
       </template>
       <template v-else-if="order.status === 'shipped'">
+        <view class="btn ghost" @click="openRefundSheet">申请售后</view>
         <view class="btn primary" @click="confirmOrder">确认收货</view>
+      </template>
+      <template v-else-if="order.status === 'completed'">
+        <view class="btn ghost" @click="openRefundSheet">申请售后</view>
       </template>
     </view>
   </view>
@@ -261,7 +300,10 @@ async function urgeShip() {
   display: flex;
   flex-direction: column;
 }
-.scroll { flex: 1; height: 0; }
+.scroll {
+  flex: 1;
+  height: 0;
+}
 .state {
   padding: 80rpx 32rpx;
   display: flex;
@@ -285,8 +327,14 @@ async function urgeShip() {
   display: flex;
   flex-direction: column;
   gap: 6rpx;
-  .status-label { font-size: 36rpx; font-weight: 800; }
-  .status-sub { font-size: 22rpx; opacity: 0.7; }
+  .status-label {
+    font-size: 36rpx;
+    font-weight: 800;
+  }
+  .status-sub {
+    font-size: 22rpx;
+    opacity: 0.7;
+  }
 }
 .card {
   margin: 16rpx 24rpx 0;
@@ -304,17 +352,32 @@ async function urgeShip() {
   gap: 8rpx;
   padding-bottom: 8rpx;
   border-bottom: 1rpx dashed var(--border-light);
-  .head-title { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
+  .head-title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
 }
 .address-card {
   .addr-name {
     display: flex;
     align-items: baseline;
     gap: 16rpx;
-    .name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-    .phone { font-size: 24rpx; color: var(--text-secondary); }
+    .name {
+      font-size: 28rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .phone {
+      font-size: 24rpx;
+      color: var(--text-secondary);
+    }
   }
-  .addr-detail { font-size: 24rpx; color: var(--text-tertiary); line-height: 1.4; }
+  .addr-detail {
+    font-size: 24rpx;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+  }
 }
 .line {
   display: flex;
@@ -343,7 +406,10 @@ async function urgeShip() {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .line-spec { font-size: 22rpx; color: var(--text-tertiary); }
+  .line-spec {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .line-right {
     flex-shrink: 0;
     display: flex;
@@ -356,7 +422,10 @@ async function urgeShip() {
       color: var(--text-primary);
       font-family: $font-family-base;
     }
-    .line-qty { font-size: 22rpx; color: var(--text-tertiary); }
+    .line-qty {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .amount-card {
@@ -364,9 +433,17 @@ async function urgeShip() {
     display: flex;
     justify-content: space-between;
     font-size: 26rpx;
-    .k { color: var(--text-tertiary); }
-    .v { color: var(--text-primary); font-family: $font-family-base; }
-    .v.accent { color: var(--brand-primary); font-weight: 700; }
+    .k {
+      color: var(--text-tertiary);
+    }
+    .v {
+      color: var(--text-primary);
+      font-family: $font-family-base;
+    }
+    .v.accent {
+      color: var(--brand-primary);
+      font-weight: 700;
+    }
     .v.primary {
       color: var(--brand-primary);
       font-size: 32rpx;
@@ -396,7 +473,10 @@ async function urgeShip() {
     font-family: $font-family-base;
     word-break: break-all;
   }
-  .v.remark { font-family: inherit; line-height: 1.5; }
+  .v.remark {
+    font-family: inherit;
+    line-height: 1.5;
+  }
 }
 .ft {
   position: fixed;

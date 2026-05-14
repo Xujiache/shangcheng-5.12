@@ -16,19 +16,18 @@
     </div>
 
     <!-- 三栏分段表单 -->
-    <ElForm
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      label-position="top"
-      class="mp-form"
-    >
+    <ElForm ref="formRef" :model="form" :rules="rules" label-position="top" class="mp-form">
       <!-- §1 基础信息 -->
       <ElCard shadow="never" class="mp-section">
         <template #header><span class="mp-section__title">① 基础信息</span></template>
 
         <ElFormItem label="商品名称" prop="name">
-          <ElInput v-model="form.name" placeholder="如 实木北欧餐桌 A 款" maxlength="60" show-word-limit />
+          <ElInput
+            v-model="form.name"
+            placeholder="如 实木北欧餐桌 A 款"
+            maxlength="60"
+            show-word-limit
+          />
         </ElFormItem>
 
         <div class="mp-row-2">
@@ -54,7 +53,13 @@
         </div>
 
         <ElFormItem label="商品简介">
-          <ElInput v-model="form.description" type="textarea" :rows="3" maxlength="200" show-word-limit />
+          <ElInput
+            v-model="form.description"
+            type="textarea"
+            :rows="3"
+            maxlength="200"
+            show-word-limit
+          />
         </ElFormItem>
 
         <!-- 图片 CRUD -->
@@ -66,7 +71,11 @@
               class="mp-image"
               :class="{ 'is-main': i === 0 }"
             >
-              <ElImage :src="img" fit="cover" style="width: 110px; height: 110px; border-radius: 8px" />
+              <ElImage
+                :src="img"
+                fit="cover"
+                style="width: 110px; height: 110px; border-radius: 8px"
+              />
               <div class="mp-image__badge">{{ i + 1 }}</div>
               <span v-if="i === 0" class="mp-image__main">主图</span>
               <div class="mp-image__ops">
@@ -78,14 +87,29 @@
                   v-if="i < form.images.length - 1"
                   @click="moveImage(i, 1)"
                 />
-                <ElButton size="small" circle :icon="Delete" type="danger" @click="removeImage(i)" />
+                <ElButton
+                  size="small"
+                  circle
+                  :icon="Delete"
+                  type="danger"
+                  @click="removeImage(i)"
+                />
               </div>
             </div>
-            <label class="mp-image-add">
+            <!-- 上传中的占位（每个等待中的请求一个 spinner，与 form.images 区分开） -->
+            <div
+              v-for="n in uploadingCount"
+              :key="`uploading-${n}`"
+              class="mp-image mp-image--uploading"
+            >
+              <ElIcon class="mp-image__spinner"><Loading /></ElIcon>
+              <span class="text-[10px] text-g-500 mt-1">上传中</span>
+            </div>
+            <label class="mp-image-add" v-if="form.images.length + uploadingCount < MAX_IMAGES">
               <input type="file" accept="image/*" multiple class="hidden" @change="onUpload" />
               <ArtSvgIcon icon="ri:add-line" class="text-2xl" />
               <span class="mt-1 text-xs text-g-500">上传图片</span>
-              <span class="text-[10px] text-g-400 mt-1">最多 9 张</span>
+              <span class="text-[10px] text-g-400 mt-1">最多 {{ MAX_IMAGES }} 张</span>
             </label>
           </div>
         </ElFormItem>
@@ -108,7 +132,13 @@
               >
                 <ElOption v-for="n in SPEC_NAME_OPTIONS" :key="n" :label="n" :value="n" />
               </ElSelect>
-              <ElButton text type="danger" size="small" :icon="Delete" @click="removeSpecGroup(gi)" />
+              <ElButton
+                text
+                type="danger"
+                size="small"
+                :icon="Delete"
+                @click="removeSpecGroup(gi)"
+              />
             </div>
             <div class="mp-spec-values">
               <ElTag
@@ -143,9 +173,19 @@
           <div class="mp-sku-matrix__head">
             <span>共 {{ skuMatrix.length }} 个 SKU</span>
             <div class="flex gap-2">
-              <ElInputNumber v-model="batchFillPrice" :min="0" placeholder="批量价格" controls-position="right" />
+              <ElInputNumber
+                v-model="batchFillPrice"
+                :min="0"
+                placeholder="批量价格"
+                controls-position="right"
+              />
               <ElButton size="small" @click="onBatchFillPrice">填零售价</ElButton>
-              <ElInputNumber v-model="batchFillStock" :min="0" placeholder="批量库存" controls-position="right" />
+              <ElInputNumber
+                v-model="batchFillStock"
+                :min="0"
+                placeholder="批量库存"
+                controls-position="right"
+              />
               <ElButton size="small" @click="onBatchFillStock">填库存</ElButton>
             </div>
           </div>
@@ -236,7 +276,12 @@
         </div>
 
         <ElFormItem label="包邮" v-if="form.pricingMode === 'standard'">
-          <ElSwitch v-model="form.freeShipping" inline-prompt active-text="包邮" inactive-text="不包邮" />
+          <ElSwitch
+            v-model="form.freeShipping"
+            inline-prompt
+            active-text="包邮"
+            inactive-text="不包邮"
+          />
         </ElFormItem>
       </ElCard>
 
@@ -286,27 +331,24 @@
     <div class="mp-sticky-bottom">
       <ElButton size="large" @click="router.back()">取消</ElButton>
       <ElButton size="large" @click="saveDraft">保存草稿</ElButton>
-      <ElButton size="large" type="primary" @click="submit" :loading="submitting">提交审核</ElButton>
+      <ElButton size="large" type="primary" @click="submit" :loading="submitting"
+        >提交审核</ElButton
+      >
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-  import {
-    ArrowLeft,
-    Bottom,
-    Delete,
-    Plus,
-    Top
-  } from '@element-plus/icons-vue'
+  import { ArrowLeft, Bottom, Delete, Loading, Plus, Top } from '@element-plus/icons-vue'
 
   import { useShopPriceVisibility } from '@/composables/useShopPriceVisibility'
   import {
     fetchMerchantCategories,
     fetchPlatformCategoriesForMerchant,
     createMerchantProduct,
-    updateMerchantProduct
+    updateMerchantProduct,
+    uploadImage
   } from '@/api/merchant-business'
   import type { Category } from '@jiujiu/shared/types'
 
@@ -448,12 +490,6 @@
 
   type PriceVisibility = 'hidden' | 'wholesale' | 'retail' | 'member'
 
-  function ruleDescOf(row: { tier: string; price: PriceVisibility; canBuy: boolean }) {
-    const priceText = ({ hidden: '隐藏', wholesale: '批发价', retail: '零售价', member: '会员价' } as Record<string, string>)[row.price]
-    const buyText = row.canBuy ? '可下单' : '联系询价'
-    return `看到「${priceText}」 · ${buyText}`
-  }
-
   const skuMatrix = ref<SkuRow[]>([])
 
   const rules: FormRules = {
@@ -466,9 +502,7 @@
         trigger: 'change'
       }
     ],
-    pricePerSqm: [
-      { type: 'number', min: 0.1, message: '请输入每平方米单价', trigger: 'blur' }
-    ]
+    pricePerSqm: [{ type: 'number', min: 0.1, message: '请输入每平方米单价', trigger: 'blur' }]
   }
 
   const formRef = ref<FormInstance>()
@@ -476,14 +510,55 @@
 
   /* ===== 图片 ===== */
 
-  function onUpload(e: Event) {
+  // 正在上传的图片数；>0 时表示有图片还没拿到对象存储 URL，submit/saveDraft 需要被拦截。
+  // 之前的实现把 `URL.createObjectURL(file)` 生成的 blob: 链接直接塞进 form.images
+  // 提交，服务器存到数据库的就是 `blob:http://localhost:.../xxx`，C 端无法回显（404）。
+  // 现在选图后立即通过 `/api/v1/files/upload` 上传，拿到对象存储 URL 再写回 form.images。
+  const uploadingCount = ref(0)
+  const MAX_IMAGES = 9
+  const MAX_IMAGE_MB = 5 // 与后端 files.service 校验保持一致（图片 ≤ 5MB）
+
+  async function onUpload(e: Event) {
     const input = e.target as HTMLInputElement
     const files = Array.from(input.files || [])
+    input.value = '' // 提前清空，避免选同一张图触发不了 change
+
+    const accepted: File[] = []
     for (const f of files) {
-      if (form.images.length >= 9) break
-      form.images.push(URL.createObjectURL(f))
+      if (form.images.length + accepted.length + uploadingCount.value >= MAX_IMAGES) {
+        ElMessage.warning(`最多 ${MAX_IMAGES} 张图片`)
+        break
+      }
+      if (!f.type.startsWith('image/')) {
+        ElMessage.warning(`「${f.name}」不是图片文件，已跳过`)
+        continue
+      }
+      if (f.size / 1024 / 1024 > MAX_IMAGE_MB) {
+        ElMessage.warning(`「${f.name}」超过 ${MAX_IMAGE_MB}MB，已跳过`)
+        continue
+      }
+      accepted.push(f)
     }
-    input.value = ''
+    if (!accepted.length) return
+
+    // 并行上传，单张失败不影响其他张；按到达顺序 push 到 form.images。
+    uploadingCount.value += accepted.length
+    await Promise.all(
+      accepted.map(async (f) => {
+        try {
+          const r = await uploadImage(f, 'product')
+          if (r?.url) {
+            form.images.push(r.url)
+          } else {
+            ElMessage.error(`「${f.name}」上传失败：服务端未返回 URL`)
+          }
+        } catch (err: any) {
+          ElMessage.error(err?.message || `「${f.name}」上传失败`)
+        } finally {
+          uploadingCount.value -= 1
+        }
+      })
+    )
   }
 
   function removeImage(i: number) {
@@ -494,6 +569,26 @@
     const j = i + dir
     if (j < 0 || j >= form.images.length) return
     ;[form.images[i], form.images[j]] = [form.images[j], form.images[i]]
+  }
+
+  /**
+   * 图片 URL 合法性校验
+   *
+   * submit / saveDraft 之前最终防御：
+   *   - 必须全部是 http:// 或 https:// 开头的真实 URL
+   *   - 任何 blob: / data: / 空字符串 / 相对路径都视为非法（说明上传失败或 helper 失效）
+   */
+  function ensureImagesUploaded(): boolean {
+    if (uploadingCount.value > 0) {
+      ElMessage.error(`还有 ${uploadingCount.value} 张图片正在上传，请等待完成后再提交`)
+      return false
+    }
+    const bad = form.images.find((u) => !/^https?:\/\//i.test(u))
+    if (bad) {
+      ElMessage.error('存在未成功上传的图片，请删除后重新上传')
+      return false
+    }
+    return true
   }
 
   /* ===== 规格 ===== */
@@ -611,8 +706,12 @@
       }
     })
     const retailPrices = skus.map((s) => s.priceRetail).filter((n) => typeof n === 'number')
-    const wholesalePrices = skus.map((s) => s.priceWholesale).filter((n) => typeof n === 'number' && n > 0)
-    const memberPrices = skus.map((s) => s.priceMember).filter((n) => typeof n === 'number' && n > 0)
+    const wholesalePrices = skus
+      .map((s) => s.priceWholesale)
+      .filter((n) => typeof n === 'number' && n > 0)
+    const memberPrices = skus
+      .map((s) => s.priceMember)
+      .filter((n) => typeof n === 'number' && n > 0)
     return {
       name: form.name,
       categoryId: leafCategoryId,
@@ -660,6 +759,7 @@
       ElMessage.warning('请补全必填项')
       return
     }
+    if (!ensureImagesUploaded()) return
     submitting.value = true
     try {
       const payload = buildProductPayload({ status: 'auditing' })
@@ -679,6 +779,7 @@
   }
 
   async function saveDraft() {
+    if (!ensureImagesUploaded()) return
     submitting.value = true
     try {
       const payload = buildProductPayload({ status: 'draft' })
@@ -703,16 +804,16 @@
 
 <style scoped lang="scss">
   .mp-product-add {
-    padding: 16px 16px 100px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px 16px 100px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-section {
@@ -725,30 +826,30 @@
   }
 
   .mp-section--notice {
-    border: 1px dashed #fde6df;
     background: linear-gradient(135deg, #fff8f5 0%, #fffbf3 100%);
+    border: 1px dashed #fde6df;
   }
 
   .mp-rule-notice {
     display: flex;
+    gap: 16px;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
   }
 
   .mp-rule-notice__main {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
     flex: 1;
+    gap: 12px;
+    align-items: flex-start;
     min-width: 0;
   }
 
   .mp-rule-notice__icon {
-    color: var(--el-color-primary, #ff4d2d);
-    font-size: 26px;
     flex-shrink: 0;
     margin-top: 2px;
+    font-size: 26px;
+    color: var(--el-color-primary, #ff4d2d);
   }
 
   .mp-rule-notice__title {
@@ -758,21 +859,21 @@
   }
 
   .mp-rule-notice__sub {
-    font-size: 12px;
-    color: #606266;
     margin-top: 6px;
+    font-size: 12px;
     line-height: 1.7;
+    color: #606266;
   }
 
   .mp-rule-notice__pill {
     display: inline-block;
     padding: 2px 10px;
     margin: 0 4px 4px 0;
-    background: rgba(255, 77, 45, 0.08);
-    color: #ff4d2d;
-    border-radius: 999px;
     font-size: 11px;
     font-weight: 500;
+    color: #ff4d2d;
+    background: rgb(255 77 45 / 8%);
+    border-radius: 999px;
   }
 
   .mp-row-2 {
@@ -805,8 +906,8 @@
     position: relative;
     width: 110px;
     height: 110px;
-    border-radius: 8px;
     overflow: hidden;
+    border-radius: 8px;
 
     &.is-main {
       box-shadow: 0 0 0 2px var(--el-color-primary, #ff4d2d);
@@ -817,15 +918,15 @@
     position: absolute;
     top: 4px;
     left: 4px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    font-size: 11px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    color: #fff;
+    background: rgb(0 0 0 / 55%);
+    border-radius: 50%;
   }
 
   .mp-image__main {
@@ -833,19 +934,19 @@
     top: 4px;
     right: 4px;
     padding: 1px 6px;
-    border-radius: 4px;
-    background: var(--el-color-primary, #ff4d2d);
-    color: #fff;
     font-size: 11px;
+    color: #fff;
+    background: var(--el-color-primary, #ff4d2d);
+    border-radius: 4px;
   }
 
   .mp-image__ops {
     position: absolute;
-    inset: auto 0 4px 0;
+    inset: auto 0 4px;
     display: flex;
     gap: 4px;
-    padding: 0 4px;
     justify-content: center;
+    padding: 0 4px;
     opacity: 0;
     transition: opacity 0.18s;
   }
@@ -855,26 +956,54 @@
   }
 
   .mp-image-add {
-    width: 110px;
-    height: 110px;
-    border: 1.5px dashed var(--art-border-color, #e5e7eb);
-    border-radius: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.18s;
+    width: 110px;
+    height: 110px;
     color: var(--art-gray-500, #6b7280);
+    cursor: pointer;
+    border: 1.5px dashed var(--art-border-color, #e5e7eb);
+    border-radius: 8px;
+    transition: all 0.18s;
 
     &:hover {
-      border-color: var(--el-color-primary, #ff4d2d);
       color: var(--el-color-primary, #ff4d2d);
-      background: rgba(255, 77, 45, 0.04);
+      background: rgb(255 77 45 / 4%);
+      border-color: var(--el-color-primary, #ff4d2d);
     }
 
     .hidden {
       display: none;
+    }
+  }
+
+  .mp-image--uploading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 110px;
+    height: 110px;
+    color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 77 45 / 5%);
+    border: 1.5px dashed var(--el-color-primary, #ff4d2d);
+    border-radius: 8px;
+  }
+
+  .mp-image__spinner {
+    font-size: 24px;
+    animation: mp-spin 1s linear infinite;
+  }
+
+  @keyframes mp-spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
     }
   }
 
@@ -889,15 +1018,15 @@
 
   .mp-spec-group {
     padding: 12px;
+    background: #fafbfc;
     border: 1px solid var(--art-border-color, #e5e7eb);
     border-radius: 10px;
-    background: #fafbfc;
   }
 
   .mp-spec-group__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 8px;
   }
 
@@ -916,8 +1045,8 @@
 
   .mp-sku-matrix__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 10px;
     font-size: 13px;
     color: var(--art-gray-700, #374151);
@@ -927,35 +1056,35 @@
 
   .mp-bysize {
     padding: 14px;
+    background: linear-gradient(135deg, rgb(255 77 45 / 6%), rgb(255 77 45 / 2%));
+    border: 1px dashed rgb(255 77 45 / 30%);
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(255, 77, 45, 0.06), rgba(255, 77, 45, 0.02));
-    border: 1px dashed rgba(255, 77, 45, 0.3);
   }
 
   .mp-bysize-preview {
-    margin-top: 6px;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 8px;
+    margin-top: 6px;
     font-size: 13px;
-    color: var(--el-color-primary, #ff4d2d);
     font-weight: 500;
+    color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 255 255 / 70%);
+    border-radius: 8px;
   }
 
   /* ===== Sticky 底部 ===== */
 
   .mp-sticky-bottom {
     position: fixed;
+    right: 0;
     bottom: 0;
     left: var(--art-sidebar-width, 230px);
-    right: 0;
     z-index: 5;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: 12px 28px;
     background: #fff;
     border-top: 1px solid var(--art-border-color, #e5e7eb);
-    padding: 12px 28px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    box-shadow: 0 -4px 12px -8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -4px 12px -8px rgb(0 0 0 / 5%);
   }
 </style>

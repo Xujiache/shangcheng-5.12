@@ -18,6 +18,13 @@ import { authService } from '../../services'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
+/**
+ * 文件上传 BASE_URL 与 utils/request 同源（VITE_API_BASE_URL）。
+ * 之前写死 https://ewsn.top 在 dev 环境 + 自建后端时会 CORS / 404。
+ * 与 merchant/apply.vue 的上传逻辑保持一致。
+ */
+const UPLOAD_BASE = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
+
 const userStore = useUserStore()
 
 const form = reactive({
@@ -92,7 +99,7 @@ function chooseAvatar() {
       try {
         const uploadRes = await new Promise<{ url: string }>((resolve, reject) => {
           uni.uploadFile({
-            url: 'https://ewsn.top/api/v1/files/upload',
+            url: `${UPLOAD_BASE}/api/v1/files/upload`,
             filePath: tempPath,
             name: 'file',
             header: { Authorization: `Bearer ${userStore.accessToken}` },
@@ -285,12 +292,7 @@ async function bindWechat() {
       <view class="divider" />
       <view class="row">
         <text class="label">邮箱</text>
-        <input
-          v-model="form.email"
-          class="input"
-          placeholder="可选，用于接收通知"
-          maxlength="60"
-        />
+        <input v-model="form.email" class="input" placeholder="可选，用于接收通知" maxlength="60" />
       </view>
     </view>
 
@@ -380,9 +382,13 @@ async function bindWechat() {
             :class="['code-btn', (phoneDialog.countdown > 0 || phoneDialog.sending) && 'disabled']"
             @click="sendPhoneCode"
           >
-            {{ phoneDialog.countdown > 0
-              ? `${phoneDialog.countdown}s 后重发`
-              : phoneDialog.sending ? '发送中…' : '获取验证码' }}
+            {{
+              phoneDialog.countdown > 0
+                ? `${phoneDialog.countdown}s 后重发`
+                : phoneDialog.sending
+                  ? '发送中…'
+                  : '获取验证码'
+            }}
           </view>
         </view>
         <view
@@ -597,7 +603,9 @@ async function bindWechat() {
     font-weight: 800;
     color: #1d2129;
   }
-  .dialog-close { padding: 4rpx; }
+  .dialog-close {
+    padding: 4rpx;
+  }
 }
 .dialog-sub {
   font-size: 22rpx;
@@ -616,10 +624,26 @@ async function bindWechat() {
     border-color: rgba(255, 77, 45, 0.4);
     background: #fff;
   }
-  .prefix { font-size: 28rpx; color: #1d2129; font-weight: 600; }
-  .divider-v { width: 2rpx; height: 36rpx; background: #e5e5e5; margin: 0 16rpx; }
-  .input { flex: 1; height: 100%; font-size: 28rpx; color: #1d2129; }
-  .ph { color: #c9cdd4; }
+  .prefix {
+    font-size: 28rpx;
+    color: #1d2129;
+    font-weight: 600;
+  }
+  .divider-v {
+    width: 2rpx;
+    height: 36rpx;
+    background: #e5e5e5;
+    margin: 0 16rpx;
+  }
+  .input {
+    flex: 1;
+    height: 100%;
+    font-size: 28rpx;
+    color: #1d2129;
+  }
+  .ph {
+    color: #c9cdd4;
+  }
 }
 .code-field {
   position: relative;
@@ -633,7 +657,10 @@ async function bindWechat() {
   font-size: 22rpx;
   font-weight: 600;
   white-space: nowrap;
-  &.disabled { background: #f0f0f0; color: #86909c; }
+  &.disabled {
+    background: #f0f0f0;
+    color: #86909c;
+  }
 }
 .dialog-submit {
   margin-top: 8rpx;
@@ -647,7 +674,11 @@ async function bindWechat() {
   border-radius: 999rpx;
   letter-spacing: 4rpx;
   box-shadow: 0 8rpx 20rpx rgba(255, 77, 45, 0.32);
-  &.disabled { opacity: 0.6; }
-  &:active { transform: scale(0.98); }
+  &.disabled {
+    opacity: 0.6;
+  }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>

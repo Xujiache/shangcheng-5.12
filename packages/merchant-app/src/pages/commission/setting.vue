@@ -3,10 +3,14 @@
  * MA-12 · 佣金设置
  *
  * 默认比例（一级 + 二级）+ 商品自定义 + 对分佣可见 / 线下结算开关
+ *
+ * Wave5 升级：单品编辑 / 移除等所有修改即时自动落库（防抖 300ms），
+ * 顶部不再需要"保存"按钮，改为"已自动保存"状态指示器，
+ * 避免用户改完忘点"保存"就丢失。
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { commissionService } from '../../services/customer'
-import type { CommissionRuleBundle, ProductCommissionRule } from '../../services/customer'
+import type { ProductCommissionRule } from '../../services/customer'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Section from '../../components/section/section.vue'
 import StatusTag from '../../components/status-tag/status-tag.vue'
@@ -23,6 +27,70 @@ const ruleDefault = reactive({
 const productRules = ref<ProductCommissionRule[]>([])
 
 const editing = ref<ProductCommissionRule | null>(null)
+
+/* ============ 自动保存机制 ============ */
+
+/** 初始 load 完成后才允许触发自动保存（避免读取就被回写） */
+const loaded = ref(false)
+/** 后台正在 POST */
+const saving = ref(false)
+/** 上次成功保存时间戳 */
+const lastSavedAt = ref<number | null>(null)
+/** 是否还有未 flush 的修改（save 期间又被改了） */
+const dirty = ref(false)
+/** 用于驱动「X 秒前」文案重渲染的 tick */
+const nowTick = ref(Date.now())
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+let agoTimer: ReturnType<typeof setInterval> | null = null
+
+function scheduleSave() {
+  if (!loaded.value) return
+  dirty.value = true
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(flushSave, 300)
+}
+
+async function flushSave() {
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+  }
+  if (saving.value) return
+  saving.value = true
+  dirty.value = false
+  const snapshot = {
+    default: { ...ruleDefault },
+    productRules: productRules.value.map((p) => ({ ...p })),
+  }
+  try {
+    await commissionService.saveRules(snapshot)
+    lastSavedAt.value = Date.now()
+    nowTick.value = Date.now()
+  } catch (e: any) {
+    dirty.value = true
+    uni.showToast({ title: e?.message || '自动保存失败', icon: 'none' })
+  } finally {
+    saving.value = false
+    if (dirty.value) scheduleSave()
+  }
+}
+
+/** 顶部状态文案 */
+const navRightText = computed(() => {
+  if (saving.value) return '保存中…'
+  if (!loaded.value || lastSavedAt.value == null) return ''
+  const sec = Math.max(0, Math.floor((nowTick.value - lastSavedAt.value) / 1000))
+  if (sec < 5) return '已自动保存'
+  if (sec < 60) return `已保存 ${sec}s 前`
+  return `已保存 ${Math.floor(sec / 60)} 分前`
+})
+
+/** 用户点击右上角 → 主动 flush 一次（即便没改也无副作用） */
+function manualFlush() {
+  if (!loaded.value) return
+  flushSave()
+}
 
 async function load() {
   try {
@@ -46,9 +114,15 @@ function openEdit(p: ProductCommissionRule) {
 function saveEdit() {
   if (!editing.value) return
   const idx = productRules.value.findIndex((p) => p.productId === editing.value!.productId)
-  if (idx >= 0) productRules.value[idx] = editing.value
+  if (idx >= 0) {
+    productRules.value = [
+      ...productRules.value.slice(0, idx),
+      editing.value,
+      ...productRules.value.slice(idx + 1),
+    ]
+  }
   editing.value = null
-  uni.showToast({ title: '已更新' })
+  uni.showToast({ title: '已更新（自动保存中）' })
 }
 
 function removeProductRule(p: ProductCommissionRule) {
@@ -58,23 +132,37 @@ function removeProductRule(p: ProductCommissionRule) {
     success: (r) => {
       if (r.confirm) {
         productRules.value = productRules.value.filter((x) => x.productId !== p.productId)
-        uni.showToast({ title: '已移除' })
+        uni.showToast({ title: '已移除（自动保存中）' })
       }
     },
   })
 }
 
-async function save() {
-  await commissionService.saveRules({ default: ruleDefault, productRules: productRules.value })
-  uni.showToast({ title: '已保存', icon: 'success' })
-}
+watch(ruleDefault, scheduleSave, { deep: true })
+watch(productRules, scheduleSave, { deep: true })
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  loaded.value = true
+  agoTimer = setInterval(() => {
+    nowTick.value = Date.now()
+  }, 5000)
+})
+
+onBeforeUnmount(() => {
+  if (agoTimer) clearInterval(agoTimer)
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+    // 卸载前如有未 flush 的脏数据，立即同步触发一次
+    if (dirty.value) flushSave()
+  }
+})
 </script>
 
 <template>
   <view class="page">
-    <NavBar title="佣金设置" right-text="保存" @right="save" />
+    <NavBar title="佣金设置" :right-text="navRightText" @right="manualFlush" />
 
     <view class="body">
       <!-- 总开关 -->
@@ -83,7 +171,11 @@ onMounted(load)
           <text class="hero-title">分销佣金</text>
           <text class="hero-desc">客户分享购买后，自动结算佣金到推广者账户</text>
         </view>
-        <switch :checked="ruleDefault.enabled" color="#FF4D2D" @change="(e) => ruleDefault.enabled = e.detail.value" />
+        <switch
+          :checked="ruleDefault.enabled"
+          color="#FF4D2D"
+          @change="(e) => (ruleDefault.enabled = e.detail.value)"
+        />
       </view>
 
       <Section title="默认佣金比例" sub="全店通用">
@@ -125,7 +217,9 @@ onMounted(load)
         </view>
         <view class="total-tip">
           <text>累计 </text>
-          <text class="total-num">{{ ruleDefault.level1Percent + ruleDefault.level2Percent }}%</text>
+          <text class="total-num"
+            >{{ ruleDefault.level1Percent + ruleDefault.level2Percent }}%</text
+          >
           <text>，需小于商品毛利率</text>
         </view>
       </Section>
@@ -136,14 +230,22 @@ onMounted(load)
             <text class="opt-name">对分佣客户可见</text>
             <text class="opt-desc">在客户端展示推广佣金详情</text>
           </view>
-          <switch :checked="ruleDefault.visibleToPromoter" color="#FF4D2D" @change="(e) => ruleDefault.visibleToPromoter = e.detail.value" />
+          <switch
+            :checked="ruleDefault.visibleToPromoter"
+            color="#FF4D2D"
+            @change="(e) => (ruleDefault.visibleToPromoter = e.detail.value)"
+          />
         </view>
         <view class="opt-row">
           <view class="opt-info">
             <text class="opt-name">允许线下结算</text>
             <text class="opt-desc">不通过系统自动结算，由商家私下转账</text>
           </view>
-          <switch :checked="ruleDefault.allowOffline" color="#FF4D2D" @change="(e) => ruleDefault.allowOffline = e.detail.value" />
+          <switch
+            :checked="ruleDefault.allowOffline"
+            color="#FF4D2D"
+            @change="(e) => (ruleDefault.allowOffline = e.detail.value)"
+          />
         </view>
       </Section>
 
@@ -218,9 +320,19 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 16rpx;
-  .hero-info { flex: 1; }
-  .hero-title { font-size: 32rpx; font-weight: 700; }
-  .hero-desc { display: block; margin-top: 4rpx; font-size: 22rpx; opacity: 0.9; }
+  .hero-info {
+    flex: 1;
+  }
+  .hero-title {
+    font-size: 32rpx;
+    font-weight: 700;
+  }
+  .hero-desc {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    opacity: 0.9;
+  }
 }
 .rate-row {
   display: flex;
@@ -228,15 +340,24 @@ onMounted(load)
   align-items: center;
   padding: 16rpx 0;
   border-bottom: 1rpx solid var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .rate-info {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  .rate-label { font-size: 26rpx; font-weight: 600; color: var(--text-primary); }
-  .rate-tip { font-size: 22rpx; color: var(--text-tertiary); }
+  .rate-label {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .rate-tip {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 .rate-control {
   display: flex;
@@ -289,14 +410,23 @@ onMounted(load)
   padding: 16rpx 0;
   border-bottom: 1rpx solid var(--border-light);
   gap: 16rpx;
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .opt-info {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .opt-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); }
-    .opt-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .opt-name {
+      font-size: 26rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .opt-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .prod-list {
@@ -309,7 +439,9 @@ onMounted(load)
   gap: 16rpx;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .prod-img {
     width: 96rpx;
     height: 96rpx;
@@ -331,7 +463,10 @@ onMounted(load)
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
     }
-    .prod-rate { display: flex; gap: 8rpx; }
+    .prod-rate {
+      display: flex;
+      gap: 8rpx;
+    }
   }
   .prod-actions {
     display: flex;
@@ -341,7 +476,9 @@ onMounted(load)
       padding: 4rpx 16rpx;
       font-size: 22rpx;
       color: var(--brand-primary);
-      &.danger { color: var(--status-error); }
+      &.danger {
+        color: var(--status-error);
+      }
     }
   }
 }
@@ -352,10 +489,13 @@ onMounted(load)
   color: var(--text-tertiary);
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0 48rpx;
 }
 .edit-sheet {
@@ -365,18 +505,27 @@ onMounted(load)
   padding: 24rpx;
 }
 .edit-head {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 28rpx;
   font-weight: 700;
   margin-bottom: 16rpx;
-  .close { font-size: 28rpx; color: var(--text-tertiary); }
+  .close {
+    font-size: 28rpx;
+    color: var(--text-tertiary);
+  }
 }
 .edit-row {
   display: flex;
   align-items: center;
   gap: 16rpx;
   padding: 12rpx 0;
-  .edit-label { width: 140rpx; font-size: 26rpx; color: var(--text-secondary); }
+  .edit-label {
+    width: 140rpx;
+    font-size: 26rpx;
+    color: var(--text-secondary);
+  }
   .edit-input {
     flex: 1;
     background: var(--bg-page);
@@ -384,19 +533,33 @@ onMounted(load)
     padding: 12rpx 16rpx;
     font-size: 26rpx;
   }
-  .edit-unit { color: var(--text-tertiary); }
+  .edit-unit {
+    color: var(--text-tertiary);
+  }
 }
 .edit-footer {
   display: flex;
   gap: 12rpx;
   margin-top: 16rpx;
   .edit-btn {
-    flex: 1; height: 80rpx; border-radius: 999rpx;
-    text-align: center; line-height: 80rpx;
-    font-size: 26rpx; font-weight: 600;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
-    &.primary { background: var(--brand-gradient); color: #fff; }
+    flex: 1;
+    height: 80rpx;
+    border-radius: 999rpx;
+    text-align: center;
+    line-height: 80rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    &.primary {
+      background: var(--brand-gradient);
+      color: #fff;
+    }
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

@@ -50,10 +50,13 @@ const ORDER_ENTRIES = [
 ]
 
 const TOOL_ENTRIES = [
+  { key: 'favorite', icon: 'star', label: '我的收藏', to: '/pages/favorite/list', auth: true },
+  { key: 'coupon', icon: 'discount', label: '领券中心', to: '/pages/coupon/center' },
   { key: 'address', icon: 'location', label: '收货地址', to: '/pages/address/list', auth: true },
   { key: 'book', icon: 'ruler', label: '预约量尺', to: '/pages/booking/index' },
   { key: 'promote', icon: 'discount', label: '推广分佣', to: '/pages/promote/index' },
-  { key: 'map', icon: 'location-pin', label: '门店地址', to: '/pages/store/map' },
+  { key: 'stores', icon: 'location-pin', label: '附近门店', to: '/pages/store/list' },
+  { key: 'map', icon: 'location-pin', label: '门店地图', to: '/pages/store/map' },
   { key: 'share', icon: 'share', label: '分享小程序', to: '' },
   { key: 'apply', icon: 'home-shop', label: '商家入驻', to: '/pages/merchant/apply' },
   { key: 'settings', icon: 'gear', label: '设置', to: '' },
@@ -68,7 +71,7 @@ function goOrder(status: string) {
   uni.navigateTo({ url: `/pages/order/list?status=${status}` })
 }
 
-function goEntry(item: typeof TOOL_ENTRIES[number]) {
+function goEntry(item: (typeof TOOL_ENTRIES)[number]) {
   if ((item as any).auth && !userStore.isLogin) {
     return goLogin()
   }
@@ -79,7 +82,10 @@ function goEntry(item: typeof TOOL_ENTRIES[number]) {
       itemList: ['复制小程序链接', '取消'],
       success: (r) => {
         if (r.tapIndex === 0) {
-          uni.setClipboardData({ data: 'https://ewsn.top', success: () => uni.showToast({ title: '链接已复制', icon: 'success' }) })
+          uni.setClipboardData({
+            data: 'https://ewsn.top',
+            success: () => uni.showToast({ title: '链接已复制', icon: 'success' }),
+          })
         }
       },
     })
@@ -90,7 +96,10 @@ function goEntry(item: typeof TOOL_ENTRIES[number]) {
     uni.showActionSheet({
       itemList: ['账号管理', '消息通知', '清除缓存', '关于我们'],
       success: (r) => {
-        uni.showToast({ title: ['账号管理', '消息通知', '清除缓存', '关于我们'][r.tapIndex], icon: 'none' })
+        uni.showToast({
+          title: ['账号管理', '消息通知', '清除缓存', '关于我们'][r.tapIndex],
+          icon: 'none',
+        })
       },
     })
     return
@@ -131,14 +140,20 @@ function goAllOrders() {
 
     <view class="hero" @click="goEditProfile">
       <view class="avatar-wrap">
-        <image v-if="userStore.isLogin && userStore.avatar" :src="userStore.avatar" class="avatar-img" />
+        <image
+          v-if="userStore.isLogin && userStore.avatar"
+          :src="userStore.avatar"
+          class="avatar-img"
+        />
         <view v-else class="avatar-placeholder">
           <text class="qmark">?</text>
         </view>
       </view>
       <view class="hero-info">
         <text class="nick">{{ userStore.isLogin ? userStore.nickname : '未登录' }}</text>
-        <text class="sub">{{ userStore.isLogin ? '点击编辑个人信息' : '微信一键登录可查看零售价' }}</text>
+        <text class="sub">{{
+          userStore.isLogin ? '点击编辑个人信息' : '微信一键登录可查看零售价'
+        }}</text>
         <view v-if="!userStore.isLogin" class="login-btn" @click.stop="goLogin">
           <Icon name="wechat" :size="28" color="#fff" />
           <text>微信登录</text>
@@ -147,7 +162,12 @@ function goAllOrders() {
           <text>退出登录</text>
         </view>
       </view>
-      <Icon v-if="userStore.isLogin" name="chevron-right" :size="32" color="rgba(255,255,255,0.7)" />
+      <Icon
+        v-if="userStore.isLogin"
+        name="chevron-right"
+        :size="32"
+        color="rgba(255,255,255,0.7)"
+      />
     </view>
 
     <view class="card">
@@ -156,12 +176,7 @@ function goAllOrders() {
         <text class="action" @click="goAllOrders">全部订单 ›</text>
       </view>
       <view class="order-grid">
-        <view
-          v-for="o in ORDER_ENTRIES"
-          :key="o.key"
-          class="order-cell"
-          @click="goOrder(o.key)"
-        >
+        <view v-for="o in ORDER_ENTRIES" :key="o.key" class="order-cell" @click="goOrder(o.key)">
           <view class="order-icon" :style="{ background: `${o.tint}18`, color: o.tint }">
             <Icon :name="o.icon" :size="40" :color="o.tint" />
           </view>
@@ -201,7 +216,7 @@ function goAllOrders() {
       </template>
     </view>
 
-    <view style="height: 160rpx;" />
+    <view style="height: 160rpx" />
 
     <TabBar current="me" />
   </view>
@@ -233,8 +248,8 @@ function goAllOrders() {
     height: 140rpx;
     border-radius: 50%;
     overflow: hidden;
-    background: rgba(255,255,255,0.2);
-    border: 4rpx solid rgba(255,255,255,0.5);
+    background: rgba(255, 255, 255, 0.2);
+    border: 4rpx solid rgba(255, 255, 255, 0.5);
     .avatar-img {
       width: 100%;
       height: 100%;
@@ -246,7 +261,12 @@ function goAllOrders() {
       display: flex;
       align-items: center;
       justify-content: center;
-      .qmark { color: #fff; font-size: 64rpx; font-weight: 800; opacity: 0.9; }
+      .qmark {
+        color: #fff;
+        font-size: 64rpx;
+        font-weight: 800;
+        opacity: 0.9;
+      }
     }
   }
   .hero-info {
@@ -254,16 +274,23 @@ function goAllOrders() {
     display: flex;
     flex-direction: column;
     gap: 8rpx;
-    .nick { font-size: 36rpx; font-weight: 800; }
-    .sub { font-size: 22rpx; opacity: 0.9; }
+    .nick {
+      font-size: 36rpx;
+      font-weight: 800;
+    }
+    .sub {
+      font-size: 22rpx;
+      opacity: 0.9;
+    }
   }
-  .login-btn, .logout-btn {
+  .login-btn,
+  .logout-btn {
     margin-top: 8rpx;
     display: inline-flex;
     align-items: center;
     gap: 8rpx;
     padding: 12rpx 24rpx;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 999rpx;
     font-size: 24rpx;
     font-weight: 600;
@@ -285,8 +312,15 @@ function goAllOrders() {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16rpx;
-  .title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-  .action { font-size: 22rpx; color: var(--text-tertiary); }
+  .title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .action {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 .order-grid {
   display: grid;
@@ -327,7 +361,7 @@ function goAllOrders() {
     width: 56rpx;
     height: 56rpx;
     border-radius: 16rpx;
-    background: rgba(255,77,45,0.08);
+    background: rgba(255, 77, 45, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -353,7 +387,7 @@ function goAllOrders() {
     border: none !important;
   }
   &:active {
-    background: rgba(0,0,0,0.04) !important;
+    background: rgba(0, 0, 0, 0.04) !important;
   }
 }
 </style>

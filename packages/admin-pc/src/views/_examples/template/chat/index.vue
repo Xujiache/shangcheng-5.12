@@ -21,7 +21,7 @@
           </div>
         </div>
         <div class="mt-3">
-          <ElInput v-model="searchQuery" placeholder="搜索联系人" prefix-icon="Search" clearable />
+          <ElInput v-model="searchQuery" placeholder="搜索联系人" :prefix-icon="Search" clearable />
         </div>
         <ElDropdown trigger="click" placement="bottom-start">
           <span class="mt-5 c-p">
@@ -155,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Picture, Paperclip, ArrowDown } from '@element-plus/icons-vue'
+  import { Picture, Paperclip, ArrowDown, Search } from '@element-plus/icons-vue'
   import { mittBus } from '@/utils/sys'
   import meAvatar from '@/assets/images/avatar/avatar5.webp'
   import aiAvatar from '@/assets/images/avatar/avatar10.webp'

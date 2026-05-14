@@ -14,7 +14,9 @@ import TabBar from '../../../components/tab-bar/tab-bar.vue'
 const orders = ref<Order[]>([])
 const loading = ref(false)
 const keyword = ref('')
-const tab = ref<'all' | 'pending_payment' | 'pending_shipment' | 'shipped' | 'after_sale' | 'completed'>('all')
+const tab = ref<
+  'all' | 'pending_payment' | 'pending_shipment' | 'shipped' | 'after_sale' | 'completed'
+>('all')
 
 const statusBarHeight = computed(() => {
   try {
@@ -47,17 +49,39 @@ const filtered = computed(() => {
   if (tab.value !== 'all') res = res.filter((o) => o.status === tab.value)
   if (keyword.value) {
     const kw = keyword.value.toLowerCase()
-    res = res.filter((o) => o.no.toLowerCase().includes(kw) || o.address?.name?.includes(keyword.value))
+    res = res.filter(
+      (o) => o.no.toLowerCase().includes(kw) || o.address?.name?.includes(keyword.value),
+    )
   }
   return res
 })
 
+/**
+ * 同日比较:按 `YYYY-MM-DD`（本地时区）字符串相等判定。
+ * 不引入 dayjs/moment,避免本页额外依赖；
+ * formatDate 已经在 stats 里用过,这里直接复用其行为口径。
+ */
+function isToday(date: string | number | Date | undefined): boolean {
+  if (!date) return false
+  try {
+    return formatDate(date, 'YYYY-MM-DD') === formatDate(new Date(), 'YYYY-MM-DD')
+  } catch {
+    return false
+  }
+}
+
 const stats = computed(() => {
   const total = orders.value.length
-  const gmv = orders.value.filter((o) => o.status === 'completed').reduce((s, o) => s + o.payAmount, 0)
-  const today = orders.value.length
-  // 售后投诉 = 当前 50 条订单中状态为 after_sale 的数量
-  // TODO: 接入独立 /p/complaints?status=open 后改为后端聚合，避免被订单截断窗口影响
+  const gmv = orders.value
+    .filter((o) => o.status === 'completed')
+    .reduce((s, o) => s + o.payAmount, 0)
+  // 今日订单:按 createdAt 同日过滤,而非简单返回当前列表长度
+  // TODO: 后续后端补 /p/stats/today 聚合接口后改为直读,避免被 50 条窗口截断
+  const today = orders.value.filter((o) => isToday(o.createdAt)).length
+  // 售后投诉:OrderStatus 里只有 after_sale（售后中），refunded 视为已完结不计入。
+  // refunding 是 MemberPayOrder 的状态,不属于 Order,不混入。
+  // TODO: 后续后端补 /p/complaints?status=open 聚合接口后改为直读,
+  //       避免被订单 50 条窗口截断（与 today 同理）
   const complaint = orders.value.filter((o) => o.status === 'after_sale').length
   return { total, gmv, today, complaint }
 })
@@ -135,7 +159,13 @@ onMounted(load)
       <view v-for="o in filtered" :key="o.id" class="card" @click="goDetail(o)">
         <view class="card-head">
           <text class="no">{{ o.no }}</text>
-          <view class="status" :style="{ color: STATUS_META[o.status]?.tint, background: (STATUS_META[o.status]?.tint || '#86909C') + '14' }">
+          <view
+            class="status"
+            :style="{
+              color: STATUS_META[o.status]?.tint,
+              background: (STATUS_META[o.status]?.tint || '#86909C') + '14',
+            }"
+          >
             {{ STATUS_META[o.status]?.label || o.status }}
           </view>
         </view>
@@ -157,8 +187,13 @@ onMounted(load)
           </view>
         </view>
       </view>
-      <EmptyState v-if="!loading && filtered.length === 0" title="暂无订单" desc="订单产生后会同步到这里" icon="biz-order" />
-      <view style="height: 160rpx;" />
+      <EmptyState
+        v-if="!loading && filtered.length === 0"
+        title="暂无订单"
+        desc="订单产生后会同步到这里"
+        icon="biz-order"
+      />
+      <view style="height: 160rpx" />
     </scroll-view>
 
     <TabBar current="order" />
@@ -174,7 +209,7 @@ onMounted(load)
   overflow: hidden;
 }
 .top {
-  background: linear-gradient(135deg, #FF4D2D, #FF9C6E);
+  background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   color: #fff;
   padding-bottom: 28rpx;
 }
@@ -184,14 +219,20 @@ onMounted(load)
   align-items: baseline;
   gap: 12rpx;
   text {
-    &:first-child { font-size: 36rpx; font-weight: 800; }
+    &:first-child {
+      font-size: 36rpx;
+      font-weight: 800;
+    }
   }
-  .meta { font-size: 22rpx; opacity: 0.85; }
+  .meta {
+    font-size: 22rpx;
+    opacity: 0.85;
+  }
 }
 .kpis {
   margin: 0 24rpx;
   padding: 16rpx;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 16rpx;
   display: flex;
   align-items: center;
@@ -225,7 +266,11 @@ onMounted(load)
   height: 72rpx;
   background: var(--bg-page);
   border-radius: 999rpx;
-  .search-input { flex: 1; height: 100%; font-size: 26rpx; }
+  .search-input {
+    flex: 1;
+    height: 100%;
+    font-size: 26rpx;
+  }
 }
 .tabs-scroll {
   background: var(--bg-card);
@@ -292,7 +337,8 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  .addr, .qty {
+  .addr,
+  .qty {
     display: flex;
     align-items: center;
     gap: 4rpx;
@@ -306,15 +352,26 @@ onMounted(load)
   justify-content: space-between;
   padding-top: 8rpx;
   border-top: 1rpx dashed var(--border-light);
-  .time { font-size: 20rpx; color: var(--text-tertiary); font-family: var(--font-family-base); }
+  .time {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+    font-family: var(--font-family-base);
+  }
   .amount {
     display: flex;
     align-items: baseline;
     gap: 2rpx;
     color: var(--brand-primary);
     font-family: var(--font-family-base);
-    .cur { font-size: 22rpx; font-weight: 800; }
-    .num { font-size: 32rpx; font-weight: 800; line-height: 1; }
+    .cur {
+      font-size: 22rpx;
+      font-weight: 800;
+    }
+    .num {
+      font-size: 32rpx;
+      font-weight: 800;
+      line-height: 1;
+    }
   }
 }
 </style>

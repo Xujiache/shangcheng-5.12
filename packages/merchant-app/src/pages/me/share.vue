@@ -41,12 +41,9 @@ function systemShare() {
   if (!downloadUrl.value) return
   try {
     // App-plus：调起系统分享面板
-    // @ts-expect-error uni.share 在 App-plus 才有
-    if (typeof uni.share === 'function') {
-      uni.share({
-        provider: 'system',
-        type: 0,
-        title: '经纬科技 · 商家版',
+    if (typeof uni.shareWithSystem === 'function') {
+      uni.shareWithSystem({
+        type: 'text',
         summary: `点击下载安装：${version.value}`,
         href: downloadUrl.value,
         success: () => uni.showToast({ title: '已唤起系统分享', icon: 'none' }),
@@ -127,8 +124,8 @@ function goBack() {
     <view class="tip">
       <Icon name="info" :size="28" color="#86909c" />
       <text class="tip-text">
-        分享给好友后，对方使用浏览器扫码或点击链接即可下载 APK 安装包。
-        iOS 暂不支持自动安装，建议引导对方前往 App Store。
+        分享给好友后，对方使用浏览器扫码或点击链接即可下载 APK 安装包。 iOS
+        暂不支持自动安装，建议引导对方前往 App Store。
       </text>
     </view>
   </view>
@@ -137,13 +134,13 @@ function goBack() {
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #F7F8FA;
+  background: #f7f8fa;
   padding-bottom: 48rpx;
 }
 .hero {
   background:
-    radial-gradient(120% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
-    linear-gradient(160deg, #FF6B45 0%, #FF4D2D 50%, #E63A1F 100%);
+    radial-gradient(120% 80% at 100% 0%, #ff8a5e 0%, transparent 60%),
+    linear-gradient(160deg, #ff6b45 0%, #ff4d2d 50%, #e63a1f 100%);
   padding: 0 32rpx 80rpx;
   border-bottom-left-radius: 36rpx;
   border-bottom-right-radius: 36rpx;
@@ -157,8 +154,8 @@ function goBack() {
   width: 64rpx;
   height: 64rpx;
   border-radius: 16rpx;
-  background: rgba(255,255,255,0.18);
-  border: 2rpx solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -177,7 +174,7 @@ function goBack() {
   display: block;
   margin-top: 24rpx;
   font-size: 24rpx;
-  color: rgba(255,255,255,0.86);
+  color: rgba(255, 255, 255, 0.86);
   text-align: center;
 }
 
@@ -186,7 +183,7 @@ function goBack() {
   background: #fff;
   border-radius: 32rpx;
   padding: 36rpx 32rpx 28rpx;
-  box-shadow: 0 16rpx 48rpx rgba(0,0,0,0.08);
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -197,8 +194,8 @@ function goBack() {
 .qr-wrap {
   width: 360rpx;
   height: 360rpx;
-  background: #FFF6F1;
-  border: 2rpx solid #FFE0CD;
+  background: #fff6f1;
+  border: 2rpx solid #ffe0cd;
   border-radius: 20rpx;
   padding: 16rpx;
   display: flex;
@@ -230,7 +227,7 @@ function goBack() {
 }
 .url-row {
   width: 100%;
-  background: #F7F8FA;
+  background: #f7f8fa;
   border-radius: 16rpx;
   padding: 16rpx 20rpx;
   margin-top: 4rpx;
@@ -259,14 +256,16 @@ function goBack() {
   font-size: 22rpx;
   color: #4e5969;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.04);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
   transition: transform 0.15s;
-  &:active { transform: scale(0.96); }
+  &:active {
+    transform: scale(0.96);
+  }
 }
 .action-btn.primary {
-  background: linear-gradient(135deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(135deg, #ff6b45, #ff4d2d);
   color: #fff;
-  box-shadow: 0 8rpx 20rpx rgba(255,77,45,0.32);
+  box-shadow: 0 8rpx 20rpx rgba(255, 77, 45, 0.32);
 }
 
 .tip {

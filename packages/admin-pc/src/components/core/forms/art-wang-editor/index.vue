@@ -20,7 +20,7 @@
 <script setup lang="ts">
   import '@wangeditor/editor/dist/css/style.css'
   import { onBeforeUnmount, onMounted, shallowRef, computed } from 'vue'
-  // @ts-ignore — 第三方包未提供类型声明文件
+  // @ts-expect-error — 第三方包未提供类型声明文件
   import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
   import { useUserStore } from '@/store/modules/user'
   import EmojiText from '@/utils/ui/emojo'
@@ -72,10 +72,14 @@
   } as const
 
   // 计算属性：上传服务器地址
-  const uploadServer = computed(
-    () =>
-      props.uploadConfig?.server || `${import.meta.env.VITE_API_URL}/api/common/upload/wangeditor`
-  )
+  // 与 utils/http 的 baseURL 解析对齐：优先 VITE_API_BASE_URL（与全栈统一命名），
+  // 回退旧变量 VITE_API_URL，最后退化为相对路径，避免老 .env 切换期间编辑器图片上传指向 undefined。
+  const uploadServer = computed(() => {
+    if (props.uploadConfig?.server) return props.uploadConfig.server
+    const env = (import.meta as any).env || {}
+    const base = env.VITE_API_BASE_URL || env.VITE_API_URL || ''
+    return `${base}/api/common/upload/wangeditor`
+  })
 
   // 合并上传配置
   const mergedUploadConfig = computed(() => ({

@@ -101,8 +101,7 @@ function persistAndToast(tierName: string) {
 function resetDefault() {
   uni.showModal({
     title: '恢复默认规则',
-    content:
-      '将所有规则改回默认：访客禁止 / 普通客户看零售价 / 授权门店看批发价 / 会员看会员价',
+    content: '将所有规则改回默认：访客禁止 / 普通客户看零售价 / 授权门店看批发价 / 会员看会员价',
     success: (r) => {
       if (r.confirm) {
         rule.value = { ...DEFAULT }
@@ -141,8 +140,10 @@ onShow(load)
             <text class="hero-pill">核心</text>
           </view>
           <text class="hero-sub">
-            按对方身份显示对应价格。决定客户能否看到价格、能看到什么价。
-            改一次，<text class="hero-em">全店所有商品立即生效</text>。
+            按对方身份显示对应价格。决定客户能否看到价格、能看到什么价。 改一次，<text
+              class="hero-em"
+              >全店所有商品立即生效</text
+            >。
           </text>
         </view>
       </view>
@@ -153,20 +154,42 @@ onShow(load)
 
     <!-- 规则列表 -->
     <view class="card">
-      <!-- 未登录访客 -->
-      <view class="rule-row">
+      <!--
+        未登录访客 ——
+        与下面 3 行的"价格档"选择不同,访客只有"是否能进店"二态:
+          关 → 访客被挡在门外,小程序首页提示"请先登录"
+          开 → 访客可浏览商品,价格按【普通客户】那行规则显示
+        所以这里是 switch 而非 segmented pills,UI 不对称是刻意的。
+      -->
+      <view class="rule-row guest-row">
         <view class="rule-icon" style="background: rgba(156, 163, 175, 0.12); color: #9ca3af">
           <Icon name="user-line" :size="32" color="#9ca3af" />
         </view>
         <view class="rule-main">
           <text class="rule-label">未登录访客</text>
-          <text class="rule-hint">未授权小程序的访客</text>
+          <text class="rule-hint">
+            {{
+              rule.guestAllow
+                ? '允许浏览 · 价格按【普通客户】规则显示'
+                : '禁止进入 · 必须先登录小程序才能看店'
+            }}
+          </text>
         </view>
-        <switch
-          :checked="rule.guestAllow"
-          color="#FF4D2D"
-          @change="(e: any) => { rule.guestAllow = e.detail.value; persistAndToast('未登录访客') }"
-        />
+        <view class="guest-switch">
+          <text class="guest-state" :class="{ on: rule.guestAllow }">
+            {{ rule.guestAllow ? '允许' : '禁止' }}
+          </text>
+          <switch
+            :checked="rule.guestAllow"
+            color="#FF4D2D"
+            @change="
+              (e: any) => {
+                rule.guestAllow = e.detail.value
+                persistAndToast('未登录访客')
+              }
+            "
+          />
+        </view>
       </view>
 
       <!-- 普通客户 -->
@@ -182,14 +205,24 @@ onShow(load)
           <view
             class="pill"
             :class="{ active: rule.customerPrice === 'retail' }"
-            @click="() => { rule.customerPrice = 'retail'; persistAndToast('普通客户') }"
+            @click="
+              () => {
+                rule.customerPrice = 'retail'
+                persistAndToast('普通客户')
+              }
+            "
           >
             显示零售价
           </view>
           <view
             class="pill"
             :class="{ active: rule.customerPrice === 'hidden' }"
-            @click="() => { rule.customerPrice = 'hidden'; persistAndToast('普通客户') }"
+            @click="
+              () => {
+                rule.customerPrice = 'hidden'
+                persistAndToast('普通客户')
+              }
+            "
           >
             不显示价格
           </view>
@@ -209,14 +242,24 @@ onShow(load)
           <view
             class="pill"
             :class="{ active: rule.agencyPrice === 'wholesale' }"
-            @click="() => { rule.agencyPrice = 'wholesale'; persistAndToast('授权门店') }"
+            @click="
+              () => {
+                rule.agencyPrice = 'wholesale'
+                persistAndToast('授权门店')
+              }
+            "
           >
             批发价
           </view>
           <view
             class="pill"
             :class="{ active: rule.agencyPrice === 'retail' }"
-            @click="() => { rule.agencyPrice = 'retail'; persistAndToast('授权门店') }"
+            @click="
+              () => {
+                rule.agencyPrice = 'retail'
+                persistAndToast('授权门店')
+              }
+            "
           >
             零售价
           </view>
@@ -236,14 +279,24 @@ onShow(load)
           <view
             class="pill"
             :class="{ active: rule.memberPrice === 'member' }"
-            @click="() => { rule.memberPrice = 'member'; persistAndToast('会员客户') }"
+            @click="
+              () => {
+                rule.memberPrice = 'member'
+                persistAndToast('会员客户')
+              }
+            "
           >
             会员价
           </view>
           <view
             class="pill"
             :class="{ active: rule.memberPrice === 'retail' }"
-            @click="() => { rule.memberPrice = 'retail'; persistAndToast('会员客户') }"
+            @click="
+              () => {
+                rule.memberPrice = 'retail'
+                persistAndToast('会员客户')
+              }
+            "
           >
             零售价
           </view>
@@ -402,6 +455,29 @@ onShow(load)
   padding: 4rpx;
   border-radius: 999rpx;
   flex-shrink: 0;
+}
+
+// 访客行:开关 + 状态文字"允许/禁止",让用户一眼看出当前状态
+.guest-switch {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.guest-state {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #909399;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #f5f6f8;
+  transition: all 0.2s ease;
+
+  &.on {
+    color: #fff;
+    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
+  }
 }
 
 .pill {

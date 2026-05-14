@@ -123,20 +123,39 @@ async function loadProducts() {
   }
 }
 
-watch(() => level1Id.value, () => {
-  level2Id.value = ''
-  loadProducts()
-})
+watch(
+  () => level1Id.value,
+  () => {
+    level2Id.value = ''
+    loadProducts()
+  },
+)
 // 切二级也重新拉
-watch(() => level2Id.value, () => {
-  loadProducts()
-})
+watch(
+  () => level2Id.value,
+  () => {
+    loadProducts()
+  },
+)
 
 function goSearch() {
   uni.navigateTo({ url: '/pages/search/index' })
 }
 function goDetail(p: Product) {
   uni.navigateTo({ url: `/pages/product/detail?id=${p.id}` })
+}
+
+/**
+ * 跳到完整商品列表页（带分类参数）。
+ * 给用户在 tab 内瀑布流之外的"全分类深查"出口，支持排序/分页。
+ */
+function goAllProducts() {
+  const cid = level2Id.value || level1Id.value
+  if (!cid) {
+    uni.showToast({ title: '请选择分类', icon: 'none' })
+    return
+  }
+  uni.navigateTo({ url: `/pages/product/list?categoryId=${encodeURIComponent(cid)}` })
 }
 
 function priceVisibleOf(p: Product): boolean {
@@ -199,21 +218,33 @@ onMounted(() => {
     <view class="bread">
       <text>{{ breadcrumb }}</text>
       <text class="count" v-if="!loading">共 {{ products.length }} 件</text>
+      <view class="grow" />
+      <text class="bread-more" @click="goAllProducts">查看全部 ›</text>
     </view>
 
     <scroll-view scroll-y class="scroll">
       <view class="waterfall">
         <view class="col">
-          <view
-            v-for="(p, i) in colLeft"
-            :key="p.id"
-            class="wf-card"
-            @click="goDetail(p)"
-          >
+          <view v-for="(p, i) in colLeft" :key="p.id" class="wf-card" @click="goDetail(p)">
             <view class="wf-img-wrap">
-              <image :src="p.images?.[0]" mode="aspectFill" class="wf-img" :style="{ height: imgHeightOf(i * 2) + 'rpx' }" />
-              <view class="wf-fav" :class="{ active: isFavorited(p) }" @click.stop="toggleFavorite(p, $event)">
-                <Icon name="heart" :size="26" :color="isFavorited(p) ? '#FF3B30' : '#fff'" :fill="isFavorited(p)" :stroke="2" />
+              <image
+                :src="p.images?.[0]"
+                mode="aspectFill"
+                class="wf-img"
+                :style="{ height: imgHeightOf(i * 2) + 'rpx' }"
+              />
+              <view
+                class="wf-fav"
+                :class="{ active: isFavorited(p) }"
+                @click.stop="toggleFavorite(p, $event)"
+              >
+                <Icon
+                  name="heart"
+                  :size="26"
+                  :color="isFavorited(p) ? '#FF3B30' : '#fff'"
+                  :fill="isFavorited(p)"
+                  :stroke="2"
+                />
               </view>
             </view>
             <view class="wf-info">
@@ -229,16 +260,26 @@ onMounted(() => {
           </view>
         </view>
         <view class="col">
-          <view
-            v-for="(p, i) in colRight"
-            :key="p.id"
-            class="wf-card"
-            @click="goDetail(p)"
-          >
+          <view v-for="(p, i) in colRight" :key="p.id" class="wf-card" @click="goDetail(p)">
             <view class="wf-img-wrap">
-              <image :src="p.images?.[0]" mode="aspectFill" class="wf-img" :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }" />
-              <view class="wf-fav" :class="{ active: isFavorited(p) }" @click.stop="toggleFavorite(p, $event)">
-                <Icon name="heart" :size="26" :color="isFavorited(p) ? '#FF3B30' : '#fff'" :fill="isFavorited(p)" :stroke="2" />
+              <image
+                :src="p.images?.[0]"
+                mode="aspectFill"
+                class="wf-img"
+                :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }"
+              />
+              <view
+                class="wf-fav"
+                :class="{ active: isFavorited(p) }"
+                @click.stop="toggleFavorite(p, $event)"
+              >
+                <Icon
+                  name="heart"
+                  :size="26"
+                  :color="isFavorited(p) ? '#FF3B30' : '#fff'"
+                  :fill="isFavorited(p)"
+                  :stroke="2"
+                />
               </view>
             </view>
             <view class="wf-info">
@@ -255,7 +296,7 @@ onMounted(() => {
         </view>
       </view>
       <view v-if="!loading && products.length === 0" class="empty">该分类暂无商品</view>
-      <view style="height: 160rpx;" />
+      <view style="height: 160rpx" />
     </scroll-view>
 
     <TabBar current="category" />
@@ -282,7 +323,10 @@ onMounted(() => {
   height: 64rpx;
   background: var(--bg-page);
   border-radius: 999rpx;
-  .placeholder { font-size: 26rpx; color: var(--text-tertiary); }
+  .placeholder {
+    font-size: 26rpx;
+    color: var(--text-tertiary);
+  }
 }
 
 .l1-scroll {
@@ -305,7 +349,9 @@ onMounted(() => {
   color: var(--text-primary);
   position: relative;
   padding: 0 4rpx;
-  .dash { height: 4rpx; }
+  .dash {
+    height: 4rpx;
+  }
   &.active {
     color: var(--brand-primary);
     font-weight: 700;
@@ -340,7 +386,7 @@ onMounted(() => {
     background: $brand-gradient;
     border-color: transparent;
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .l2-empty {
@@ -357,10 +403,26 @@ onMounted(() => {
   font-size: 24rpx;
   font-weight: 700;
   color: var(--text-primary);
-  .count { font-size: 20rpx; font-weight: 400; color: var(--text-tertiary); }
+  .count {
+    font-size: 20rpx;
+    font-weight: 400;
+    color: var(--text-tertiary);
+  }
+  .grow {
+    flex: 1;
+  }
+  .bread-more {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: var(--brand-primary);
+  }
 }
 
-.scroll { flex: 1; height: 0; padding-top: 16rpx; }
+.scroll {
+  flex: 1;
+  height: 0;
+  padding-top: 16rpx;
+}
 .waterfall {
   padding: 0 16rpx;
   display: flex;

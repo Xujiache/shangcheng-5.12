@@ -5,9 +5,24 @@ import { http } from '../utils/request'
 import type { Product, Category, Pagination, UserSession, Order } from '@jiujiu/shared/types'
 
 // ============ 商品 ============
+/**
+ * 商品列表查询参数。
+ *
+ * - `merchantId` / `sort` 字段后端如未实现会被忽略，前端兜底做客户端排序，
+ *   避免 UI 把"按销量"按钮变成空操作。
+ */
+export interface ProductListParams {
+  keyword?: string
+  categoryId?: string
+  merchantId?: string
+  /** 兼容后端 / 前端兜底：newest 新品 · sales 销量 · price-asc 价格升 · price-desc 价格降 */
+  sort?: 'newest' | 'sales' | 'price-asc' | 'price-desc'
+  page?: number
+  pageSize?: number
+}
 export const productService = {
-  list(params: { keyword?: string; categoryId?: string; page?: number; pageSize?: number } = {}) {
-    return http.get<Pagination<Product>>('/api/v1/u/products', params)
+  list(params: ProductListParams = {}) {
+    return http.get<Pagination<Product>>('/api/v1/u/products', params as Record<string, unknown>)
   },
   detail(id: string, options?: { silent?: boolean }) {
     return http.get<Product & { skus: any[] }>(`/api/v1/u/products/${id}`, undefined, options)
@@ -31,7 +46,9 @@ export interface SearchShop {
   gmv: number
 }
 export const shopService = {
-  search(params: { keyword?: string; type?: 'factory' | 'store'; page?: number; pageSize?: number } = {}) {
+  search(
+    params: { keyword?: string; type?: 'factory' | 'store'; page?: number; pageSize?: number } = {},
+  ) {
     return http.get<Pagination<SearchShop>>('/api/v1/u/shops', params)
   },
 }
@@ -94,6 +111,50 @@ export const orderService = {
   },
   urge(id: string) {
     return http.post<{ ok: boolean }>(`/api/v1/u/orders/${id}/urge`)
+  },
+}
+
+// ============ 购物车（服务器端持久化） ============
+/**
+ * 购物车条目（后端 user-mp.service.ts::listCart 返回结构）
+ *
+ * 与本地 CartLine 的差异：
+ *   - 服务端只关心 productId / skuId / quantity，name / image / price 走嵌套 product/sku
+ *   - 本地 CartLine 是扁平化的渲染结构，由 store 内 serverToLine() 适配
+ */
+export interface ServerCartItem {
+  id: string
+  productId: string
+  skuId: string
+  quantity: number
+  product: {
+    id: string
+    name: string
+    image: string
+    status: string
+    merchantId: string
+    priceRetailMin?: number
+  } | null
+  sku: {
+    id: string
+    specsLabel: string | null
+    priceRetail: number
+    stock: number
+    active: boolean
+  } | null
+}
+export const cartService = {
+  list() {
+    return http.get<ServerCartItem[]>('/api/v1/u/cart')
+  },
+  add(dto: { productId: string; skuId?: string; quantity?: number }) {
+    return http.post<ServerCartItem>('/api/v1/u/cart', dto as Record<string, unknown>)
+  },
+  update(id: string, dto: { quantity: number }) {
+    return http.patch<ServerCartItem>(`/api/v1/u/cart/${id}`, dto as Record<string, unknown>)
+  },
+  remove(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/u/cart/${id}`)
   },
 }
 
@@ -162,6 +223,20 @@ export const couponService = {
   list() {
     return http.get<{ list: Coupon[]; total: number }>('/api/v1/u/coupons')
   },
+  /**
+   * 领取优惠券。
+   *
+   * 调用 `POST /u/coupons/:id/claim`：
+   * - 200 成功（后端返回新的用户券记录 id）
+   * - 后端可能返回 `alreadyClaimed: true` 表示重复领取（本前端把它当作成功提示给用户）
+   * - 后端尚未上线时，本地兜底捕获 4xx/5xx，由调用方 toast 提示
+   */
+  claim(couponId: string) {
+    return http.post<{ ok: boolean; userCouponId?: string; alreadyClaimed?: boolean }>(
+      `/api/v1/u/coupons/${couponId}/claim`,
+      {},
+    )
+  },
 }
 
 export interface Coupon {
@@ -188,17 +263,29 @@ export interface Booking {
 }
 export const bookingService = {
   submit(dto: Booking) {
-    return http.post<{ ok: boolean; ticketId: string }>('/api/v1/u/booking', dto as unknown as Record<string, unknown>)
+    return http.post<{ ok: boolean; ticketId: string }>(
+      '/api/v1/u/booking',
+      dto as unknown as Record<string, unknown>,
+    )
   },
 }
 
 // ============ 推广分佣 ============
 export const promoteService = {
   summary() {
-    return http.get<{ total: number; thisMonth: number; pending: number; people: number; orderCount: number; conversion: number }>('/api/v1/u/promote/summary')
+    return http.get<{
+      total: number
+      thisMonth: number
+      pending: number
+      people: number
+      orderCount: number
+      conversion: number
+    }>('/api/v1/u/promote/summary')
   },
   orders() {
-    return http.get<Pagination<{ id: string; orderNo: string; amount: number; createdAt: string }>>('/api/v1/u/promote/orders')
+    return http.get<Pagination<{ id: string; orderNo: string; amount: number; createdAt: string }>>(
+      '/api/v1/u/promote/orders',
+    )
   },
 }
 

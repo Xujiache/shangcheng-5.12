@@ -53,12 +53,16 @@ function toggleAll() {
   cartStore.setAllSelected(!allChecked.value)
 }
 
-function changeQty(id: string, delta: number) {
+async function changeQty(id: string, delta: number) {
   const l = cartStore.lines.find((x) => x.id === id)
   if (!l) return
   const next = l.qty + delta
   if (next < 1) return
-  cartStore.update(id, { qty: next })
+  try {
+    await cartStore.updateCart(id, next)
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '修改数量失败', icon: 'none' })
+  }
 }
 
 async function removeFav(f: Favorite) {
@@ -85,7 +89,7 @@ async function addFavToCart(f: Favorite) {
       uni.showToast({ title: '该商品暂无可用规格', icon: 'none' })
       return
     }
-    cartStore.add({
+    await cartStore.addCart({
       productId: f.productId,
       skuId: firstSku.id,
       name: f.name,
@@ -113,10 +117,13 @@ function deleteSelected() {
   uni.showModal({
     title: '提示',
     content: `确认删除 ${cartStore.selectedLines.length} 件商品？`,
-    success: (r) => {
-      if (r.confirm) {
-        cartStore.clearSelected()
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await cartStore.removeSelected()
         uni.showToast({ title: '已删除', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '部分商品删除失败', icon: 'none' })
       }
     },
   })
@@ -131,7 +138,11 @@ function goCheckout() {
 }
 
 function goAllFavorites() {
-  uni.showToast({ title: '我的收藏全部', icon: 'none' })
+  if (!userStore.isLogin) {
+    goLogin()
+    return
+  }
+  uni.navigateTo({ url: '/pages/favorite/list' })
 }
 
 function goHome() {
@@ -140,12 +151,14 @@ function goHome() {
 
 onMounted(() => {
   cartStore.hydrate()
+  cartStore.loadFromServer()
   load()
 })
-// 每次切到购物车 tab 都重新拉收藏，
-// 否则在首页 / 详情页加的收藏不会立刻出现在 onShow 时
+// 每次切到购物车 tab 都重新拉一次（收藏 + 后端购物车），
+// 否则在首页 / 详情页加的收藏 / 加购不会立刻出现在 onShow 时
 onShow(() => {
   cartStore.hydrate()
+  cartStore.loadFromServer()
   load()
 })
 </script>
@@ -225,12 +238,7 @@ onShow(() => {
               color="var(--brand-primary)"
               :fill="false"
             />
-            <Icon
-              v-else
-              name="circle"
-              :size="44"
-              color="var(--text-tertiary)"
-            />
+            <Icon v-else name="circle" :size="44" color="var(--text-tertiary)" />
           </view>
           <image :src="l.image" mode="aspectFill" class="thumb" />
           <view class="line-info">
@@ -262,18 +270,13 @@ onShow(() => {
         <view class="empty-btn" @click="goHome">去逛逛</view>
       </view>
 
-      <view style="height: 200rpx;" />
+      <view style="height: 200rpx" />
     </scroll-view>
 
     <!-- 底栏 -->
     <view v-if="cartStore.lines.length > 0" class="ft">
       <view class="ft-check" @click="toggleAll">
-        <Icon
-          v-if="allChecked"
-          name="check-circle"
-          :size="44"
-          color="var(--brand-primary)"
-        />
+        <Icon v-if="allChecked" name="check-circle" :size="44" color="var(--brand-primary)" />
         <Icon v-else name="circle" :size="44" color="var(--text-tertiary)" />
         <text class="ft-check-text">全选</text>
       </view>
@@ -286,9 +289,7 @@ onShow(() => {
       <view v-if="!editMode" class="ft-btn primary" @click="goCheckout">
         去结算({{ lineCount }})
       </view>
-      <view v-else class="ft-btn danger" @click="deleteSelected">
-        删除({{ lineCount }})
-      </view>
+      <view v-else class="ft-btn danger" @click="deleteSelected"> 删除({{ lineCount }}) </view>
     </view>
 
     <TabBar current="cart" />
@@ -325,12 +326,15 @@ onShow(() => {
     font-weight: 700;
     color: var(--text-primary);
   }
-  .fav-action { font-size: 22rpx; color: var(--text-tertiary); }
+  .fav-action {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 .fav-login {
   margin: 4rpx 24rpx 12rpx;
   padding: 20rpx;
-  background: linear-gradient(135deg, rgba(255,77,45,0.06), rgba(255,179,0,0.06));
+  background: linear-gradient(135deg, rgba(255, 77, 45, 0.06), rgba(255, 179, 0, 0.06));
   border: 1rpx dashed var(--brand-primary);
   border-radius: 16rpx;
   display: flex;
@@ -340,7 +344,7 @@ onShow(() => {
     width: 72rpx;
     height: 72rpx;
     border-radius: 50%;
-    background: rgba(255,77,45,0.1);
+    background: rgba(255, 77, 45, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -350,8 +354,15 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .title { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
-    .desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .title {
+      font-size: 26rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
   .fav-login-btn {
     padding: 8rpx 20rpx;
@@ -360,7 +371,7 @@ onShow(() => {
     border-radius: 999rpx;
     font-size: 22rpx;
     font-weight: 600;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .fav-empty {
@@ -408,11 +419,11 @@ onShow(() => {
     width: 36rpx;
     height: 36rpx;
     border-radius: 50%;
-    background: rgba(255,255,255,0.9);
+    background: rgba(255, 255, 255, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1rpx 4rpx rgba(0,0,0,0.1);
+    box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.1);
   }
 }
 .fav-info {
@@ -470,8 +481,12 @@ onShow(() => {
   gap: 16rpx;
   padding: 24rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
-  .check { padding: 4rpx; }
+  &:last-child {
+    border-bottom: none;
+  }
+  .check {
+    padding: 4rpx;
+  }
   .thumb {
     width: 160rpx;
     height: 160rpx;
@@ -539,7 +554,9 @@ onShow(() => {
   flex-direction: column;
   align-items: center;
   gap: 12rpx;
-  .empty-icon-wrap { opacity: 0.35; }
+  .empty-icon-wrap {
+    opacity: 0.35;
+  }
   .empty-title {
     margin-top: 12rpx;
     font-size: 28rpx;
@@ -557,7 +574,7 @@ onShow(() => {
     border-radius: 999rpx;
     font-size: 26rpx;
     font-weight: 600;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .ft {
@@ -581,7 +598,9 @@ onShow(() => {
   gap: 8rpx;
   font-size: 24rpx;
   color: var(--text-primary);
-  .ft-check-text { font-size: 24rpx; }
+  .ft-check-text {
+    font-size: 24rpx;
+  }
 }
 .ft-total {
   flex: 1;
@@ -590,7 +609,10 @@ onShow(() => {
   align-items: baseline;
   justify-content: flex-end;
   gap: 8rpx;
-  .ft-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .ft-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .ft-value {
     font-size: 36rpx;
     font-weight: 800;
@@ -609,10 +631,10 @@ onShow(() => {
   color: #fff;
   &.primary {
     background: $brand-gradient;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
   &.danger {
-    background: #FF3B30;
+    background: #ff3b30;
   }
 }
 </style>

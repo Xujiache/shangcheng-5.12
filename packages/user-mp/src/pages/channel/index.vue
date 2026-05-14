@@ -80,6 +80,13 @@ const CONFIGS: Record<ChannelKey, ChannelConfig> = {
   },
 }
 
+/**
+ * 默认推荐券（仅前端硬编码，用于活动频道顶部条做"视觉占位 + 引导跳转"）。
+ *
+ * 这里不调 couponService 实际领取，避免和真实券 id 冲突；
+ * 用户点"领取"或"全部券"按钮统一跳 /pages/coupon/center 走真实数据 + 真实 claim。
+ * 真实可领券列表请到 领券中心 看。
+ */
 const COUPONS = [
   { id: 'c-new', amount: 30, threshold: 200, name: '新人专享', tag: '满200用' },
   { id: 'c-100', amount: 100, threshold: 1000, name: '大额满减', tag: '满1000用' },
@@ -165,7 +172,7 @@ async function onAddCart(p: Product) {
       uni.showToast({ title: '该商品暂无可用规格，请到详情页查看', icon: 'none' })
       return
     }
-    cartStore.add({
+    await cartStore.addCart({
       productId: p.id,
       skuId: firstSku.id,
       name: p.name,
@@ -185,22 +192,33 @@ async function onAddCart(p: Product) {
   }
 }
 
-function receiveCoupon(c: typeof COUPONS[number]) {
-  uni.showToast({ title: `已领取「${c.name}」券`, icon: 'success' })
+/** 频道页券位是"展示款"——点击直接跳领券中心，让用户在真实可领券列表里挑 */
+function receiveCoupon(_c: (typeof COUPONS)[number]) {
+  uni.navigateTo({ url: '/pages/coupon/center' })
 }
 
+/** 顶部"全部券"按钮 */
+function goCouponCenter() {
+  uni.navigateTo({ url: '/pages/coupon/center' })
+}
+
+/**
+ * 开通会员：
+ *   本前端目前没有会员订阅独立流程（后端用户端无 /u/member/subscribe 接口），
+ *   为避免之前 setTimeout 假成功的误导，统一引导到 APP 端商家订阅页面。
+ *   待后端补上 /u/member/subscribe + 微信小程序订阅签名后再接入真实支付。
+ */
 function openMember() {
   uni.showModal({
     title: '开通会员',
-    content: '月费 ¥99 / 年费 ¥899\n会员可享 9 折零售价、免运费、生日礼等权益',
-    confirmText: '立即开通',
+    content:
+      '会员订阅暂仅支持商家 APP 端开通。请在「商家 APP · 我的 · 会员订阅」处购买月卡/年卡，或联系客服。',
+    confirmText: '联系客服',
+    cancelText: '我知道了',
     success: (r) => {
       if (r.confirm) {
-        uni.showLoading({ title: '支付中…' })
-        setTimeout(() => {
-          uni.hideLoading()
-          uni.showToast({ title: '开通成功', icon: 'success' })
-        }, 1000)
+        // 跳客服会话；如果之前没绑商家就走 ensureSession 找官方客服
+        uni.navigateTo({ url: '/pages/chat/index' })
       }
     },
   })
@@ -213,7 +231,9 @@ function memberSave(p: Product): number {
 
 /** TOP 3 商品（热销榜专用） */
 const top3 = computed(() => products.value.slice(0, 3))
-const rest = computed(() => (config.value.feature === 'top3' ? products.value.slice(3) : products.value))
+const rest = computed(() =>
+  config.value.feature === 'top3' ? products.value.slice(3) : products.value,
+)
 
 const colLeft = computed(() => rest.value.filter((_, i) => i % 2 === 0))
 const colRight = computed(() => rest.value.filter((_, i) => i % 2 === 1))
@@ -246,6 +266,7 @@ function imgHeightOf(i: number): number {
         <view class="strip-head">
           <text class="strip-title">领券中心</text>
           <text class="strip-desc">下单立省，叠加更优惠</text>
+          <text class="strip-more" @click="goCouponCenter">全部券 ›</text>
         </view>
         <scroll-view scroll-x class="coupon-scroll" :show-scrollbar="false">
           <view class="coupon-list">
@@ -294,12 +315,7 @@ function imgHeightOf(i: number): number {
           <text class="strip-desc">本周最火</text>
         </view>
         <view class="top3-list">
-          <view
-            v-for="(p, i) in top3"
-            :key="p.id"
-            class="top-card"
-            @click="goDetail(p)"
-          >
+          <view v-for="(p, i) in top3" :key="p.id" class="top-card" @click="goDetail(p)">
             <view :class="['rank-badge', `rank-${i + 1}`]">
               <text>{{ i + 1 }}</text>
             </view>
@@ -349,13 +365,13 @@ function imgHeightOf(i: number): number {
 
       <view class="waterfall">
         <view class="col">
-          <view
-            v-for="(p, i) in colLeft"
-            :key="p.id"
-            class="wf-card"
-            @click="goDetail(p)"
-          >
-            <image :src="p.images?.[0]" mode="aspectFill" class="wf-img" :style="{ height: imgHeightOf(i * 2) + 'rpx' }" />
+          <view v-for="(p, i) in colLeft" :key="p.id" class="wf-card" @click="goDetail(p)">
+            <image
+              :src="p.images?.[0]"
+              mode="aspectFill"
+              class="wf-img"
+              :style="{ height: imgHeightOf(i * 2) + 'rpx' }"
+            />
             <view class="wf-info">
               <text class="wf-name">{{ p.name }}</text>
               <view class="wf-row">
@@ -365,7 +381,10 @@ function imgHeightOf(i: number): number {
                     <Icon name="lock" :size="18" color="var(--text-tertiary)" />
                     <text>登录可见</text>
                   </view>
-                  <text v-if="config.key === 'vip' && priceVisibleOf(p) && memberSave(p) > 0" class="wf-save">
+                  <text
+                    v-if="config.key === 'vip' && priceVisibleOf(p) && memberSave(p) > 0"
+                    class="wf-save"
+                  >
                     会员省 ¥{{ memberSave(p) }}
                   </text>
                 </view>
@@ -381,13 +400,13 @@ function imgHeightOf(i: number): number {
           </view>
         </view>
         <view class="col">
-          <view
-            v-for="(p, i) in colRight"
-            :key="p.id"
-            class="wf-card"
-            @click="goDetail(p)"
-          >
-            <image :src="p.images?.[0]" mode="aspectFill" class="wf-img" :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }" />
+          <view v-for="(p, i) in colRight" :key="p.id" class="wf-card" @click="goDetail(p)">
+            <image
+              :src="p.images?.[0]"
+              mode="aspectFill"
+              class="wf-img"
+              :style="{ height: imgHeightOf(i * 2 + 1) + 'rpx' }"
+            />
             <view class="wf-info">
               <text class="wf-name">{{ p.name }}</text>
               <view class="wf-row">
@@ -397,7 +416,10 @@ function imgHeightOf(i: number): number {
                     <Icon name="lock" :size="18" color="var(--text-tertiary)" />
                     <text>登录可见</text>
                   </view>
-                  <text v-if="config.key === 'vip' && priceVisibleOf(p) && memberSave(p) > 0" class="wf-save">
+                  <text
+                    v-if="config.key === 'vip' && priceVisibleOf(p) && memberSave(p) > 0"
+                    class="wf-save"
+                  >
                     会员省 ¥{{ memberSave(p) }}
                   </text>
                 </view>
@@ -415,7 +437,7 @@ function imgHeightOf(i: number): number {
       </view>
 
       <view class="bottom-tip">— 已经到底了 —</view>
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -427,7 +449,10 @@ function imgHeightOf(i: number): number {
   flex-direction: column;
   background: var(--bg-page);
 }
-.scroll { flex: 1; height: 0; }
+.scroll {
+  flex: 1;
+  height: 0;
+}
 
 /* Banner */
 .banner {
@@ -438,7 +463,7 @@ function imgHeightOf(i: number): number {
   align-items: center;
   gap: 16rpx;
   color: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.08);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
   &::after {
@@ -448,7 +473,7 @@ function imgHeightOf(i: number): number {
     top: -40rpx;
     width: 200rpx;
     height: 200rpx;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
   }
   .banner-info {
@@ -467,7 +492,9 @@ function imgHeightOf(i: number): number {
       opacity: 0.9;
     }
   }
-  .banner-icon { z-index: 1; }
+  .banner-icon {
+    z-index: 1;
+  }
 }
 
 /* 优惠券条 */
@@ -481,10 +508,25 @@ function imgHeightOf(i: number): number {
   display: flex;
   align-items: baseline;
   gap: 12rpx;
-  .strip-title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-  .strip-desc { font-size: 22rpx; color: var(--text-tertiary); }
+  .strip-title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .strip-desc {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
+  .strip-more {
+    margin-left: auto;
+    font-size: 22rpx;
+    color: var(--brand-primary);
+    font-weight: 600;
+  }
 }
-.coupon-scroll { white-space: nowrap; }
+.coupon-scroll {
+  white-space: nowrap;
+}
 .coupon-list {
   display: inline-flex;
   gap: 12rpx;
@@ -494,18 +536,20 @@ function imgHeightOf(i: number): number {
   display: inline-flex;
   flex: 0 0 auto;
   width: 380rpx;
-  background: linear-gradient(90deg, #FF4D2D, #FF7A45);
+  background: linear-gradient(90deg, #ff4d2d, #ff7a45);
   color: #fff;
   border-radius: 16rpx;
   padding: 20rpx;
   align-items: center;
   gap: 12rpx;
-  box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+  box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   .coupon-amount {
     display: flex;
     align-items: baseline;
     flex-shrink: 0;
-    .cur { font-size: 22rpx; }
+    .cur {
+      font-size: 22rpx;
+    }
     .num {
       font-size: 56rpx;
       font-weight: 800;
@@ -519,8 +563,14 @@ function imgHeightOf(i: number): number {
     flex-direction: column;
     gap: 4rpx;
     min-width: 0;
-    .coupon-name { font-size: 24rpx; font-weight: 700; }
-    .coupon-thresh { font-size: 20rpx; opacity: 0.85; }
+    .coupon-name {
+      font-size: 24rpx;
+      font-weight: 700;
+    }
+    .coupon-thresh {
+      font-size: 20rpx;
+      opacity: 0.85;
+    }
   }
   .coupon-btn {
     flex-shrink: 0;
@@ -536,14 +586,14 @@ function imgHeightOf(i: number): number {
 /* 会员条 */
 .member-strip {
   margin: 16rpx 24rpx 0;
-  background: linear-gradient(135deg, #2D1B47, #5C3D87);
+  background: linear-gradient(135deg, #2d1b47, #5c3d87);
   border-radius: 24rpx;
   padding: 24rpx;
   color: #fff;
   display: flex;
   flex-direction: column;
   gap: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(168,85,247,0.3);
+  box-shadow: 0 4rpx 16rpx rgba(168, 85, 247, 0.3);
 }
 .member-head {
   display: flex;
@@ -569,12 +619,12 @@ function imgHeightOf(i: number): number {
   .member-btn {
     flex-shrink: 0;
     padding: 12rpx 28rpx;
-    background: linear-gradient(135deg, #FFD89B, #FFB300);
-    color: #5C2D00;
+    background: linear-gradient(135deg, #ffd89b, #ffb300);
+    color: #5c2d00;
     border-radius: 999rpx;
     font-size: 26rpx;
     font-weight: 700;
-    box-shadow: 0 2rpx 8rpx rgba(255,179,0,0.4);
+    box-shadow: 0 2rpx 8rpx rgba(255, 179, 0, 0.4);
   }
 }
 .benefit-grid {
@@ -591,13 +641,20 @@ function imgHeightOf(i: number): number {
     width: 64rpx;
     height: 64rpx;
     border-radius: 16rpx;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  .benefit-label { font-size: 22rpx; font-weight: 700; }
-  .benefit-desc { font-size: 18rpx; opacity: 0.8; text-align: center; }
+  .benefit-label {
+    font-size: 22rpx;
+    font-weight: 700;
+  }
+  .benefit-desc {
+    font-size: 18rpx;
+    opacity: 0.8;
+    text-align: center;
+  }
 }
 
 /* TOP 3 */
@@ -635,9 +692,15 @@ function imgHeightOf(i: number): number {
     font-weight: 800;
     font-family: $font-family-base;
     z-index: 2;
-    &.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); }
-    &.rank-2 { background: linear-gradient(135deg, #C0C0C0, #888); }
-    &.rank-3 { background: linear-gradient(135deg, #CD7F32, #8B4513); }
+    &.rank-1 {
+      background: linear-gradient(135deg, #ffd700, #ffa500);
+    }
+    &.rank-2 {
+      background: linear-gradient(135deg, #c0c0c0, #888);
+    }
+    &.rank-3 {
+      background: linear-gradient(135deg, #cd7f32, #8b4513);
+    }
   }
   .top-img {
     width: 160rpx;
@@ -661,7 +724,10 @@ function imgHeightOf(i: number): number {
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .top-sales { font-size: 22rpx; color: var(--text-tertiary); }
+    .top-sales {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
     .top-row {
       display: flex;
       align-items: center;
@@ -692,7 +758,7 @@ function imgHeightOf(i: number): number {
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+      box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
     }
   }
 }
@@ -740,7 +806,11 @@ function imgHeightOf(i: number): number {
   font-size: 26rpx;
   font-weight: 700;
   color: var(--text-primary);
-  .line { flex: 1; height: 1rpx; background: var(--border-default); }
+  .line {
+    flex: 1;
+    height: 1rpx;
+    background: var(--border-default);
+  }
 }
 
 /* 瀑布流 */
@@ -816,7 +886,7 @@ function imgHeightOf(i: number): number {
 }
 .wf-save {
   font-size: 18rpx;
-  color: #A855F7;
+  color: #a855f7;
   font-weight: 600;
 }
 .wf-add {
@@ -828,7 +898,7 @@ function imgHeightOf(i: number): number {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+  box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
 }
 .wf-meta {
   display: flex;

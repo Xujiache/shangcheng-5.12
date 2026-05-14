@@ -4,6 +4,16 @@
  *
  * 包含：通知开关、夜间模式、语言、缓存清理、版本号、隐私协议链接
  * 所有偏好持久化到本地 uni storage，重启后生效；夜间模式作用于全局 CSS 变量。
+ *
+ * Wave5 评估（2026-05）：
+ * 通知偏好刻意"仅本地"，与新订单 WS 推送、AppPush 等服务端推送解耦：
+ *   1. 关闭"推送通知"只影响 APP 内提示，不影响系统通知栏权限；
+ *   2. 通常无需跨设备同步（移动端每台设备的提示噪音诉求不同）。
+ * 后续如需多端同步（如商家在 PC 和 APP 双端登录），可：
+ *   - 后端补一个 `GET / POST /api/v1/m/profile/notify-prefs` 接口；
+ *   - 这里把 load() / save() 改成 storage 优先 + 在 onMounted 后异步 merge 服务端；
+ *   - save() 防抖批量上传，避免单 toggle 就触发请求。
+ * 目前不动，保持轻量。
  */
 import { ref, onMounted } from 'vue'
 import Icon from '../../components/icon/icon.vue'
@@ -41,7 +51,9 @@ function load() {
 }
 
 function save() {
-  try { uni.setStorageSync(KEY, JSON.stringify(prefs.value)) } catch {}
+  try {
+    uni.setStorageSync(KEY, JSON.stringify(prefs.value))
+  } catch {}
 }
 
 function toggleNotify(key: 'notify' | 'notifyOrder' | 'notifyAfterSale' | 'notifyChat') {
@@ -93,7 +105,9 @@ function clearCache() {
         const info = uni.getStorageInfoSync()
         for (const k of info.keys || []) {
           if (!keepKeys.includes(k)) {
-            try { uni.removeStorageSync(k) } catch {}
+            try {
+              uni.removeStorageSync(k)
+            } catch {}
           }
         }
         estimateCache()
@@ -132,26 +146,53 @@ onMounted(load)
         </view>
         <switch :checked="prefs.notify" color="#FF4D2D" @click.stop="toggleNotify('notify')" />
       </view>
-      <view class="row" :class="{ 'row-disabled': !prefs.notify }" @click="prefs.notify && toggleNotify('notifyOrder')">
+      <view
+        class="row"
+        :class="{ 'row-disabled': !prefs.notify }"
+        @click="prefs.notify && toggleNotify('notifyOrder')"
+      >
         <view class="row-info">
           <text class="row-label">新订单提醒</text>
           <text class="row-sub">有新订单时震动 + 弹窗</text>
         </view>
-        <switch :checked="prefs.notifyOrder && prefs.notify" :disabled="!prefs.notify" color="#FF4D2D" @click.stop="prefs.notify && toggleNotify('notifyOrder')" />
+        <switch
+          :checked="prefs.notifyOrder && prefs.notify"
+          :disabled="!prefs.notify"
+          color="#FF4D2D"
+          @click.stop="prefs.notify && toggleNotify('notifyOrder')"
+        />
       </view>
-      <view class="row" :class="{ 'row-disabled': !prefs.notify }" @click="prefs.notify && toggleNotify('notifyAfterSale')">
+      <view
+        class="row"
+        :class="{ 'row-disabled': !prefs.notify }"
+        @click="prefs.notify && toggleNotify('notifyAfterSale')"
+      >
         <view class="row-info">
           <text class="row-label">售后提醒</text>
           <text class="row-sub">退款 / 售后申请时提醒</text>
         </view>
-        <switch :checked="prefs.notifyAfterSale && prefs.notify" :disabled="!prefs.notify" color="#FF4D2D" @click.stop="prefs.notify && toggleNotify('notifyAfterSale')" />
+        <switch
+          :checked="prefs.notifyAfterSale && prefs.notify"
+          :disabled="!prefs.notify"
+          color="#FF4D2D"
+          @click.stop="prefs.notify && toggleNotify('notifyAfterSale')"
+        />
       </view>
-      <view class="row" :class="{ 'row-disabled': !prefs.notify }" @click="prefs.notify && toggleNotify('notifyChat')">
+      <view
+        class="row"
+        :class="{ 'row-disabled': !prefs.notify }"
+        @click="prefs.notify && toggleNotify('notifyChat')"
+      >
         <view class="row-info">
           <text class="row-label">客服消息</text>
           <text class="row-sub">客户咨询时声音提示</text>
         </view>
-        <switch :checked="prefs.notifyChat && prefs.notify" :disabled="!prefs.notify" color="#FF4D2D" @click.stop="prefs.notify && toggleNotify('notifyChat')" />
+        <switch
+          :checked="prefs.notifyChat && prefs.notify"
+          :disabled="!prefs.notify"
+          color="#FF4D2D"
+          @click.stop="prefs.notify && toggleNotify('notifyChat')"
+        />
       </view>
     </view>
 
@@ -231,12 +272,18 @@ onMounted(load)
   justify-content: space-between;
   padding: 24rpx 28rpx;
   border-top: 1rpx solid #f0f2f5;
-  &:first-of-type { border-top: none; }
-  &:active { background: #fafbfc; }
+  &:first-of-type {
+    border-top: none;
+  }
+  &:active {
+    background: #fafbfc;
+  }
 }
 .row-disabled {
   opacity: 0.6;
-  &:active { background: transparent; }
+  &:active {
+    background: transparent;
+  }
 }
 .row-info {
   flex: 1;
@@ -244,7 +291,15 @@ onMounted(load)
   flex-direction: column;
   gap: 4rpx;
 }
-.row-label { font-size: 28rpx; color: #1d2129; }
-.row-sub { font-size: 22rpx; color: #86909c; }
-.safe-bottom { height: 60rpx; }
+.row-label {
+  font-size: 28rpx;
+  color: #1d2129;
+}
+.row-sub {
+  font-size: 22rpx;
+  color: #86909c;
+}
+.safe-bottom {
+  height: 60rpx;
+}
 </style>

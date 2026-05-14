@@ -36,7 +36,8 @@ const ROLE_TINT: Record<string, string> = {
 }
 
 const memberCountOf = computed(() => {
-  return (roleId: string) => admins.value.filter((a) => roles.value.find((r) => r.id === roleId)?.name === a.role).length
+  return (roleId: string) =>
+    admins.value.filter((a) => roles.value.find((r) => r.id === roleId)?.name === a.role).length
 })
 
 async function load() {
@@ -102,17 +103,21 @@ function viewMembers(r: AdminRole) {
 /**
  * 管理员操作：移动端只接停用/恢复 + 删除。改角色/重置密码涉及 secret-field 操作,
  * 走 admin-pc。所有真实 API:
- * - POST /p/admins/:id/toggle  状态翻转（active ↔ paused）
+ * - POST /p/admins/:id/toggle  状态翻转（active ↔ disabled）
  * - DELETE /p/admins/:id        硬删 user 记录
  */
 function manageAdmin(a: AdminUser) {
   uni.showActionSheet({
-    itemList: [a.status === 'active' ? '停用账号' : '恢复账号', '删除管理员', '改角色 / 重置密码（去 admin-pc）'],
+    itemList: [
+      a.status === 'active' ? '停用账号' : '恢复账号',
+      '删除管理员',
+      '改角色 / 重置密码（去 admin-pc）',
+    ],
     success: async (s) => {
       try {
         if (s.tapIndex === 0) {
           await permissionService.toggleAdmin(a.id)
-          a.status = a.status === 'active' ? 'paused' : 'active'
+          a.status = a.status === 'active' ? 'disabled' : 'active'
           uni.showToast({ title: a.status === 'active' ? '已恢复' : '已停用', icon: 'success' })
         } else if (s.tapIndex === 1) {
           uni.showModal({
@@ -205,7 +210,7 @@ onMounted(load)
             <Icon name="check-circle" :size="28" color="#52C41A" />
           </view>
           <view class="s-info">
-            <text class="s-num">{{ admins.filter(a => a.status === 'active').length }}</text>
+            <text class="s-num">{{ admins.filter((a) => a.status === 'active').length }}</text>
             <text class="s-label">在线</text>
           </view>
         </view>
@@ -221,7 +226,13 @@ onMounted(load)
             <view class="card-info">
               <view class="info-head">
                 <text class="name">{{ r.name }}</text>
-                <view class="count-tag" :style="{ color: ROLE_TINT[r.name] || '#86909C', background: (ROLE_TINT[r.name] || '#86909C') + '14' }">
+                <view
+                  class="count-tag"
+                  :style="{
+                    color: ROLE_TINT[r.name] || '#86909C',
+                    background: (ROLE_TINT[r.name] || '#86909C') + '14',
+                  }"
+                >
                   {{ memberCountOf(r.id) }} 人
                 </view>
               </view>
@@ -230,7 +241,9 @@ onMounted(load)
                 <view v-for="p in r.permissions.slice(0, 4)" :key="p" class="perm">
                   {{ p === '*' ? '全部权限' : p }}
                 </view>
-                <text v-if="r.permissions.length > 4" class="perm-more">+{{ r.permissions.length - 4 }}</text>
+                <text v-if="r.permissions.length > 4" class="perm-more"
+                  >+{{ r.permissions.length - 4 }}</text
+                >
               </view>
             </view>
           </view>
@@ -266,7 +279,13 @@ onMounted(load)
             </view>
             <view class="meta-row">
               <text class="meta-label">角色</text>
-              <view class="role-mini" :style="{ color: ROLE_TINT[a.role] || '#86909C', background: (ROLE_TINT[a.role] || '#86909C') + '14' }">
+              <view
+                class="role-mini"
+                :style="{
+                  color: ROLE_TINT[a.role] || '#86909C',
+                  background: (ROLE_TINT[a.role] || '#86909C') + '14',
+                }"
+              >
                 {{ a.role }}
               </view>
             </view>
@@ -285,7 +304,7 @@ onMounted(load)
         />
       </view>
 
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -410,7 +429,7 @@ onMounted(load)
   font-size: 36rpx;
   font-weight: 800;
   flex-shrink: 0;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.12);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
 }
 .card-info {
   flex: 1;
@@ -462,7 +481,7 @@ onMounted(load)
 }
 .perm-more {
   padding: 2rpx 12rpx;
-  background: rgba(255,77,45,0.08);
+  background: rgba(255, 77, 45, 0.08);
   color: var(--brand-primary);
   border-radius: 999rpx;
   font-size: 18rpx;
@@ -490,7 +509,7 @@ onMounted(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 
@@ -535,8 +554,14 @@ onMounted(load)
   border-radius: 999rpx;
   font-size: 20rpx;
   font-weight: 700;
-  &.active { background: rgba(82,196,26,0.1); color: #52C41A; }
-  &.paused { background: rgba(0,0,0,0.05); color: var(--text-tertiary); }
+  &.active {
+    background: rgba(82, 196, 26, 0.1);
+    color: #52c41a;
+  }
+  &.disabled {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-tertiary);
+  }
 }
 .meta-row {
   display: flex;

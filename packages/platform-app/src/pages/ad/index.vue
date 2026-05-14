@@ -20,6 +20,20 @@ const slots = ref<AdSlot[]>([])
 const creatives = ref<any[]>([])
 const loading = ref(false)
 
+/**
+ * admin-pc 广告管理后台地址:
+ *   - 路由位置: packages/admin-pc/src/router/modules/platform.ts → `/platform/ad`
+ *   - 优先读 VITE_ADMIN_BASE_URL 环境变量,默认拼接 API base 兼容现网
+ *
+ * 移动端不适合做素材上传 / 富文本编辑,所以新建广告位 / 创意都引导回后台。
+ */
+const ADMIN_AD_URL = (() => {
+  const adminBase = (import.meta as any).env?.VITE_ADMIN_BASE_URL as string | undefined
+  if (adminBase) return `${adminBase.replace(/\/$/, '')}/platform/ad`
+  const apiBase = ((import.meta as any).env?.VITE_API_BASE_URL as string | undefined) || ''
+  return `${apiBase.replace(/\/$/, '')}/platform/ad`
+})()
+
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'slots', label: '广告位' },
   { key: 'create', label: '创意' },
@@ -49,14 +63,79 @@ async function load() {
 
 /**
  * 新建广告位/创意涉及上传素材、富表单,移动端不便承载,
- * 直接引导用户去 admin-pc 后台创建。
+ * 直接引导用户去 admin-pc 后台创建,并提供"复制后台 URL"快捷操作。
  */
 function createAd() {
   uni.showModal({
     title: '新建广告',
-    content: '新建广告位 / 创意请到 admin-pc 管理后台 → 广告管理 → 新建,完成素材上传后 platform-app 这里实时可见。',
-    confirmText: '我知道了',
-    showCancel: false,
+    content: `新建广告位 / 创意请到 admin-pc 管理后台 → 广告管理 → 新建,完成素材上传后 platform-app 这里实时可见。\n\n后台地址：\n${ADMIN_AD_URL}`,
+    confirmText: '复制地址',
+    cancelText: '我知道了',
+    success: (r) => {
+      if (r.confirm) copyAdminUrl()
+    },
+  })
+}
+
+/**
+ * 复制 admin-pc 广告管理 URL 到剪贴板,
+ * 兼容 H5（uni.setClipboardData 在 H5 端有时静默失败,降级到 navigator.clipboard）。
+ */
+function copyAdminUrl() {
+  uni.setClipboardData({
+    data: ADMIN_AD_URL,
+    success: () => uni.showToast({ title: '后台地址已复制', icon: 'success' }),
+    fail: () => {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          navigator.clipboard
+            .writeText(ADMIN_AD_URL)
+            .then(() => uni.showToast({ title: '后台地址已复制', icon: 'success' }))
+            .catch(() => uni.showToast({ title: '复制失败,请手动复制', icon: 'none' }))
+        } else {
+          uni.showToast({ title: '复制失败,请手动复制', icon: 'none' })
+        }
+      } catch {
+        uni.showToast({ title: '复制失败,请手动复制', icon: 'none' })
+      }
+    },
+  })
+}
+
+/**
+ * "快速暂停 / 恢复"一键操作:遍历 active 广告位全暂停,或反之。
+ * 对运营来说大促前后批量切换很常用,避免一个个 editSlot。
+ */
+async function quickToggleAll() {
+  const activeCount = slots.value.filter((s) => s.status === 'active').length
+  const pausedCount = slots.value.filter((s) => s.status === 'paused').length
+  if (activeCount + pausedCount === 0) {
+    uni.showToast({ title: '暂无可操作的广告位', icon: 'none' })
+    return
+  }
+  const willPause = activeCount > 0
+  const title = willPause
+    ? `批量暂停 ${activeCount} 个进行中广告位？`
+    : `批量恢复 ${pausedCount} 个已暂停广告位？`
+  uni.showModal({
+    title: '批量操作',
+    content: title,
+    success: async (r) => {
+      if (!r.confirm) return
+      const target = willPause ? 'active' : 'paused'
+      const next: 'active' | 'paused' = willPause ? 'paused' : 'active'
+      const todo = slots.value.filter((s) => s.status === target)
+      try {
+        await Promise.all(todo.map((s) => adService.updateSlot(s.id, { status: next })))
+        todo.forEach((s) => (s.status = next))
+        uni.showToast({
+          title: willPause ? `已暂停 ${todo.length} 个` : `已恢复 ${todo.length} 个`,
+          icon: 'success',
+        })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '批量操作失败', icon: 'none' })
+      }
+    },
   })
 }
 
@@ -135,9 +214,10 @@ const totalStats = computed(() => ({
   totalImpressions: slots.value.reduce((s, x) => s + x.impressions, 0),
   totalCreatives: slots.value.reduce((s, x) => s + x.creativeCount, 0),
   activeSlots: slots.value.filter((x) => x.status === 'active').length,
-  avgCtr: slots.value.length > 0
-    ? (slots.value.reduce((s, x) => s + x.ctr, 0) / slots.value.length).toFixed(1)
-    : '0',
+  avgCtr:
+    slots.value.length > 0
+      ? (slots.value.reduce((s, x) => s + x.ctr, 0) / slots.value.length).toFixed(1)
+      : '0',
 }))
 
 onMounted(load)
@@ -160,6 +240,23 @@ onMounted(load)
     </view>
 
     <scroll-view scroll-y class="scroll">
+      <!-- PC 后台引导 banner -->
+      <view class="admin-banner">
+        <view class="ab-icon">
+          <Icon name="info" :size="32" color="#1296DB" />
+        </view>
+        <view class="ab-body">
+          <text class="ab-title">新建广告位 / 创意请用 PC 后台</text>
+          <text class="ab-desc"
+            >移动端只做查看 + 暂停/恢复 + 删除,复杂表单与素材上传请在 admin-pc</text
+          >
+        </view>
+        <view class="ab-actions">
+          <view class="ab-btn primary" @click.stop="copyAdminUrl">复制后台 URL</view>
+          <view class="ab-btn ghost" @click.stop="quickToggleAll">批量暂停/恢复</view>
+        </view>
+      </view>
+
       <!-- 顶部统计 -->
       <view class="stats-card">
         <view class="stat-item">
@@ -190,7 +287,10 @@ onMounted(load)
             <text class="name">{{ s.name }}</text>
             <view
               class="status-tag"
-              :style="{ color: STATUS_META[s.status]?.tint, background: (STATUS_META[s.status]?.tint || '#86909C') + '14' }"
+              :style="{
+                color: STATUS_META[s.status]?.tint,
+                background: (STATUS_META[s.status]?.tint || '#86909C') + '14',
+              }"
             >
               {{ STATUS_META[s.status]?.label || s.status }}
             </view>
@@ -249,7 +349,12 @@ onMounted(load)
             <view class="btn ghost danger" @click.stop="deleteCreative(c)">删除</view>
           </view>
         </view>
-        <EmptyState v-if="!loading && creatives.length === 0" title="暂无创意" desc="点击右上角创建" icon="image-plus" />
+        <EmptyState
+          v-if="!loading && creatives.length === 0"
+          title="暂无创意"
+          desc="点击右上角创建"
+          icon="image-plus"
+        />
       </view>
 
       <view v-else class="list">
@@ -268,7 +373,11 @@ onMounted(load)
         </view>
         <view class="card">
           <text class="rank-title">各广告位曝光排行</text>
-          <view v-for="(s, i) in [...slots].sort((a, b) => b.impressions - a.impressions)" :key="s.id" class="rank-row">
+          <view
+            v-for="(s, i) in [...slots].sort((a, b) => b.impressions - a.impressions)"
+            :key="s.id"
+            class="rank-row"
+          >
             <view :class="['rank-num', i < 3 ? `rank-${i + 1}` : '']">{{ i + 1 }}</view>
             <text class="rank-name">{{ s.name }}</text>
             <text class="rank-val">{{ formatWan(s.impressions) }}</text>
@@ -276,7 +385,7 @@ onMounted(load)
         </view>
       </view>
 
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -321,15 +430,76 @@ onMounted(load)
   height: 0;
   box-sizing: border-box;
 }
+.admin-banner {
+  margin: 16rpx 24rpx 0;
+  padding: 20rpx;
+  background: linear-gradient(135deg, rgba(18, 150, 219, 0.08), rgba(18, 150, 219, 0.02));
+  border: 1rpx dashed rgba(18, 150, 219, 0.4);
+  border-radius: 16rpx;
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  .ab-icon {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    background: rgba(18, 150, 219, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .ab-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+    .ab-title {
+      font-size: 26rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .ab-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+      line-height: 1.5;
+    }
+  }
+  .ab-actions {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    align-items: flex-end;
+  }
+  .ab-btn {
+    padding: 10rpx 18rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    font-weight: 700;
+    white-space: nowrap;
+    &.primary {
+      background: #1296db;
+      color: #fff;
+      box-shadow: 0 2rpx 6rpx rgba(18, 150, 219, 0.3);
+    }
+    &.ghost {
+      background: var(--bg-card);
+      border: 1rpx solid rgba(18, 150, 219, 0.3);
+      color: #1296db;
+    }
+  }
+}
 .stats-card {
   margin: 16rpx 24rpx 0;
   padding: 20rpx 16rpx;
-  background: linear-gradient(135deg, #FF4D2D, #FF9C6E);
+  background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   color: #fff;
   border-radius: 20rpx;
   display: flex;
   align-items: center;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.2);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.2);
   .stat-item {
     flex: 1;
     text-align: center;
@@ -350,7 +520,7 @@ onMounted(load)
   .stat-divider {
     width: 1rpx;
     height: 48rpx;
-    background: rgba(255,255,255,0.3);
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 .list {
@@ -403,7 +573,7 @@ onMounted(load)
   height: 200rpx;
   border-radius: 16rpx;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(255,77,45,0.08), rgba(255,156,110,0.04));
+  background: linear-gradient(135deg, rgba(255, 77, 45, 0.08), rgba(255, 156, 110, 0.04));
 }
 .preview-bg {
   width: 100%;
@@ -430,7 +600,10 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 2rpx;
-  .m-label { font-size: 20rpx; color: var(--text-tertiary); }
+  .m-label {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
   .m-value {
     font-size: 26rpx;
     font-weight: 800;
@@ -457,7 +630,7 @@ onMounted(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .bottom-btn {
@@ -472,7 +645,7 @@ onMounted(load)
   border-radius: 16rpx;
   font-size: 28rpx;
   font-weight: 700;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
 }
 
 /* 创意卡 */
@@ -522,8 +695,8 @@ onMounted(load)
   align-items: center;
   gap: 8rpx;
   .btn.ghost.danger {
-    color: #FF3B30;
-    border-color: rgba(255,59,48,0.3);
+    color: #ff3b30;
+    border-color: rgba(255, 59, 48, 0.3);
   }
 }
 
@@ -531,11 +704,11 @@ onMounted(load)
 .big-stat-card {
   margin-bottom: 16rpx;
   padding: 32rpx 24rpx;
-  background: linear-gradient(135deg, #FF4D2D, #FAAD14);
+  background: linear-gradient(135deg, #ff4d2d, #faad14);
   color: #fff;
   border-radius: 20rpx;
   text-align: center;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
   .bs-title {
     font-size: 24rpx;
     opacity: 0.9;
@@ -559,7 +732,10 @@ onMounted(load)
       line-height: 1;
       font-family: var(--font-family-base);
     }
-    .bs-label { font-size: 22rpx; opacity: 0.85; }
+    .bs-label {
+      font-size: 22rpx;
+      opacity: 0.85;
+    }
   }
 }
 .rank-title {
@@ -574,7 +750,9 @@ onMounted(load)
   gap: 12rpx;
   padding: 12rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .rank-num {
     width: 48rpx;
     height: 48rpx;
@@ -588,9 +766,18 @@ onMounted(load)
     font-size: 24rpx;
     flex-shrink: 0;
     font-family: var(--font-family-base);
-    &.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #fff; }
-    &.rank-2 { background: linear-gradient(135deg, #C0C0C0, #888); color: #fff; }
-    &.rank-3 { background: linear-gradient(135deg, #CD7F32, #8B4513); color: #fff; }
+    &.rank-1 {
+      background: linear-gradient(135deg, #ffd700, #ffa500);
+      color: #fff;
+    }
+    &.rank-2 {
+      background: linear-gradient(135deg, #c0c0c0, #888);
+      color: #fff;
+    }
+    &.rank-3 {
+      background: linear-gradient(135deg, #cd7f32, #8b4513);
+      color: #fff;
+    }
   }
   .rank-name {
     flex: 1;
