@@ -380,6 +380,7 @@ export class PlatformService {
   async auditProducts(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const status = q.status || 'pending'
+    // 前端语义 pending = DB 的 auditing；其他 status 透传
     const where: any = status === 'pending' ? { status: 'auditing' } : { status }
     if (q.keyword) where.name = { contains: q.keyword }
     const [list, total] = await Promise.all([
@@ -392,7 +393,25 @@ export class PlatformService {
       }),
       this.prisma.product.count({ where }),
     ])
-    return buildPage(list.map(decimalToNumber), total, page, pageSize)
+    // 映射成 admin-pc AuditProduct 形状：
+    //   - status: 'auditing' → 'pending'（前端 tab key 是 'pending'，否则 filter 不到）
+    //   - 字段平铺：image / category / merchant / price / submittedAt
+    const mapped = list.map((p: any) => {
+      const d = decimalToNumber(p)
+      return {
+        id: d.id,
+        name: d.name,
+        image: Array.isArray(d.images) && d.images[0] ? d.images[0] : '',
+        category: d.categoryId || '',
+        merchant: p.merchant?.name || '',
+        merchantId: d.merchantId,
+        price: Number(d.priceRetailMin ?? d.priceWholesaleMin ?? 0),
+        submittedAt: (d.createdAt instanceof Date ? d.createdAt : new Date(d.createdAt)).toISOString(),
+        status: d.status === 'auditing' ? 'pending' : d.status,
+        rejectReason: d.rejectReason || undefined,
+      }
+    })
+    return buildPage(mapped, total, page, pageSize)
   }
   async getAuditConfig() {
     const v = await this.prisma.systemConfig.findUnique({ where: { key: 'audit_product_config' } })
