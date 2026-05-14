@@ -311,35 +311,16 @@ onShow(() => {
         </view>
         <view v-else-if="statsLoading && !stats" class="chart-skel" />
         <view v-else-if="stats && stats.salesTrend.length > 0" class="trend-wrap">
-          <svg viewBox="0 0 100 44" preserveAspectRatio="none" class="trend-svg">
-            <defs>
-              <linearGradient id="sales-g-v3" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.32" />
-                <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
-              </linearGradient>
-              <linearGradient id="sales-line-v3" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#FF4D2D" />
-                <stop offset="100%" stop-color="#F59E0B" />
-              </linearGradient>
-            </defs>
-            <polygon :points="salesTrendPoints.area" fill="url(#sales-g-v3)" />
-            <polyline
-              :points="salesTrendPoints.line"
-              fill="none"
-              stroke="url(#sales-line-v3)"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <circle
+          <!-- View-based 柱状图(每点一根细条)。原 <svg> 在 uniapp App / mp-weixin 端
+               会让整页(连同 TabBar)空白塌陷,只在 H5 上能正常显示;换成 view 后全平台稳定。 -->
+          <view class="bars bars-sales">
+            <view
               v-for="(p, i) in salesTrendPoints.dots"
               :key="i"
-              :cx="p.x"
-              :cy="p.y"
-              r="0.8"
-              fill="#FF4D2D"
+              class="bar bar-sales"
+              :style="{ height: ((44 - p.y) / 40 * 100).toFixed(1) + '%' }"
             />
-          </svg>
+          </view>
         </view>
         <view v-else class="empty-chart">
           <text class="empty-emoji">📊</text>
@@ -388,35 +369,15 @@ onShow(() => {
           <text class="meta">近 14 天</text>
         </view>
         <view v-if="trendPoints.dots.length > 0" class="trend-wrap">
-          <svg viewBox="0 0 100 44" preserveAspectRatio="none" class="trend-svg">
-            <defs>
-              <linearGradient id="trend-g-v3" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#A855F7" stop-opacity="0.32" />
-                <stop offset="100%" stop-color="#A855F7" stop-opacity="0" />
-              </linearGradient>
-              <linearGradient id="trend-line-v3" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#A855F7" />
-                <stop offset="100%" stop-color="#EC4899" />
-              </linearGradient>
-            </defs>
-            <polygon :points="trendPoints.area" fill="url(#trend-g-v3)" />
-            <polyline
-              :points="trendPoints.line"
-              fill="none"
-              stroke="url(#trend-line-v3)"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <circle
+          <!-- 见上方注释:原 <svg> 在 App / 小程序端会塌陷整页,换成 view 柱状图 -->
+          <view class="bars bars-reg">
+            <view
               v-for="(p, i) in trendPoints.dots"
               :key="i"
-              :cx="p.x"
-              :cy="p.y"
-              r="0.8"
-              fill="#A855F7"
+              class="bar bar-reg"
+              :style="{ height: ((44 - p.y) / 40 * 100).toFixed(1) + '%' }"
             />
-          </svg>
+          </view>
         </view>
         <view v-else class="empty-chart">
           <text class="empty-emoji">👥</text>
@@ -785,10 +746,27 @@ onShow(() => {
   height: 220rpx;
   width: 100%;
 }
-.trend-svg {
+/* 柱状条阵列 —— 替代原 <svg sparkline>(在 App / mp-weixin 端会塌陷整页) */
+.bars {
   width: 100%;
   height: 100%;
-  display: block;
+  display: flex;
+  align-items: flex-end;
+  gap: 4rpx;
+  padding: 0 4rpx;
+  box-sizing: border-box;
+}
+.bar {
+  flex: 1;
+  min-height: 4rpx;
+  border-radius: 4rpx 4rpx 0 0;
+  transition: height 0.3s ease;
+}
+.bar-sales {
+  background: linear-gradient(180deg, #FF4D2D, #F59E0B);
+}
+.bar-reg {
+  background: linear-gradient(180deg, #A855F7, #EC4899);
 }
 
 /* === 卡内错误 === */
