@@ -372,12 +372,12 @@ export class MerchantService {
     }))
     const data = pickProductFields(dto)
     // 价格聚合：从 SKU 真实值算 priceRetailMin/Max + priceWholesaleMin
-    // 之前直接取 dto.priceRetailMin（前端不传就是 0），导致用户填了 999 的 SKU 价
-    // 但 Product 聚合仍是 0 → 平台审核页 / 用户端展示价格全是 0
     const agg = aggregateSkuPrices(skus, dto)
-    // data 用 any 断言绕过 Prisma "必填字段缺失" 的类型推断 —— 因为白名单返回的是
-    // Record<string, any>，TS 看不到 name/categoryId；运行时由 Prisma 自身校验。
-    // 与原 `...productData` 行为一致，只是多了一层字段过滤。
+
+    // 商品审核状态决策 —— 之前一律 'auditing'，平台开启"自动免审"也无效。
+    // 现在：管理员开启 autoApprove + 商家满足所有勾上的条件 → 'auto_approved'（直接上架）
+    const initialStatus = dto.status || (await this.decideAuditStatus(merchantId, dto))
+
     const created = await this.prisma.product.create({
       data: {
         ...(data as any),
@@ -388,12 +388,65 @@ export class MerchantService {
         priceWholesaleMax: agg.priceWholesaleMax,
         priceMemberMin: agg.priceMemberMin,
         priceMemberMax: agg.priceMemberMax,
-        status: dto.status || 'auditing',
+        status: initialStatus,
         skus: { create: skus },
       },
       include: { skus: true },
     })
+
+    // 自动通过的商品也写一条 AuditRecord，方便审核日志页能查到
+    if (initialStatus === 'auto_approved' || initialStatus === 'active') {
+      await this.prisma.auditRecord.create({
+        data: {
+          type: 'product',
+          targetId: created.id,
+          status: 'approved',
+          remark: initialStatus === 'auto_approved' ? '自动通过（满足审核免检条件）' : null,
+        } as any,
+      }).catch(() => {})
+    }
     return decimalToNumber(created)
+  }
+
+  /**
+   * 按平台审核配置 + 商家信用，决定新商品落库时的 status
+   *
+   * 规则：
+   *   - autoApprove=false：一律走人工审核（'auditing'）
+   *   - autoApprove=true 但有任一勾上的条件不满足：'auditing'
+   *   - 所有勾上的条件都满足：'auto_approved'（可立即上架）
+   *
+   * 条件实现（与 platform service 默认 conditions 对齐）：
+   *   - vip       商家 level=A/B（暂以 level 表示 VIP 等级）
+   *   - credit    商家 credit=A/B
+   *   - rejectRate 商家 rejectRate < 5%
+   *   - category  暂未实现具体分类白名单（默认满足）
+   */
+  private async decideAuditStatus(merchantId: string, _dto: any): Promise<string> {
+    const cfgRow = await this.prisma.systemConfig.findUnique({
+      where: { key: 'audit_product_config' },
+    })
+    const cfg: any = cfgRow?.value || {}
+    if (!cfg.autoApprove) return 'auditing'
+
+    const m = await this.prisma.merchant.findUnique({ where: { id: merchantId } })
+    if (!m) return 'auditing'
+
+    const enabled = (Array.isArray(cfg.conditions) ? cfg.conditions : []).filter(
+      (c: any) => c?.enabled,
+    )
+    for (const c of enabled) {
+      if (c.key === 'vip') {
+        // VIP 暂以 level=A/B 判定（schema 没有专门 vip 字段）
+        if (m.level !== 'A' && m.level !== 'B') return 'auditing'
+      } else if (c.key === 'credit') {
+        if (m.credit !== 'A' && m.credit !== 'B') return 'auditing'
+      } else if (c.key === 'rejectRate') {
+        if ((m.rejectRate ?? 0) >= 0.05) return 'auditing'
+      }
+      // category 条件未实现具体白名单 → 视为满足
+    }
+    return 'auto_approved'
   }
 
   /**

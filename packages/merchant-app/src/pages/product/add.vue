@@ -545,33 +545,19 @@ function pickCategory(cat: Category) {
 
 async function loadCats() {
   // 平台 + 商家自定义分类合并展示
-  // 之前只拉 platformList → 商家无论在 APP 端或商家工作台建了多少自定义分类，
-  // 添加商品时都看不到，必须用平台预设分类。这是 admin-pc 同款 bug 的 APP 版。
+  //
+  // picker template 是按「parentId=null 一级 → parentId=父id 二级」两层树渲染的。
+  // 之前的虚拟父方案会把自定义分类的子分类切断（因为子的 parentId 仍指向真实父，
+  // 但真实父被改成挂在虚拟父下变成"二级"，子分类找不到 root → 不可见）。
+  //
+  // 现简化为直接拼接：自定义一级分类（parentId=null）和平台一级分类同列；
+  // 自定义子分类的 parentId 指向自定义一级即可被 picker 二级查询命中。
   try {
     const [platform, own] = await Promise.all([
       categoryService.platformList().catch(() => [] as Category[]),
       categoryService.merchantList().catch(() => [] as Category[]),
     ])
-    // 给自定义分类挂一个"我的分类"虚拟父节点，避免和平台分类混排
-    // 若自定义分类自己已有 parentId 链路，保留原结构；只把"顶级（parentId=null）"
-    // 改挂到虚拟父下
-    const VIRTUAL_PARENT_ID = '__my__'
-    const ownReparented = own.map((c) => ({
-      ...c,
-      parentId: c.parentId ? c.parentId : VIRTUAL_PARENT_ID,
-    }))
-    const virtualParent: Category = {
-      id: VIRTUAL_PARENT_ID,
-      parentId: null,
-      name: '我的分类',
-      icon: '',
-      sort: 9999,
-      type: 'merchant',
-    } as any
-    platformCats.value = [
-      ...platform,
-      ...(own.length ? [virtualParent, ...ownReparented] : []),
-    ]
+    platformCats.value = [...platform, ...own]
   } catch {}
 }
 

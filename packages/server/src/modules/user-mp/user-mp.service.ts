@@ -220,7 +220,8 @@ export class UserMpService {
    */
   async listProducts(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
-    const where: any = { status: 'active' }
+    // 自动通过(auto_approved) = 已上架可售，与 active 等价对用户可见
+    const where: any = { status: { in: ['active', 'auto_approved'] } }
     if (q.keyword) {
       const kw = String(q.keyword).trim()
       if (kw) where.name = { contains: kw, mode: 'insensitive' }

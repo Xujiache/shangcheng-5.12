@@ -413,20 +413,33 @@ export class PlatformService {
     })
     return buildPage(mapped, total, page, pageSize)
   }
+  /**
+   * 商品审核配置（autoApprove 主开关 / conditions 命中条件 / samplingRate 抽检比例）
+   *
+   * Bug 修复：之前用 `v?.value || defaults` —— 一旦 stored 有任何值就完全覆盖默认，
+   * 导致前端保存时只更新部分字段（如只改 samplingRate）后续读取就丢失 autoApprove。
+   * 现改成 deep-merge：以 defaults 为底，stored 覆盖到键。
+   */
   async getAuditConfig() {
     const v = await this.prisma.systemConfig.findUnique({ where: { key: 'audit_product_config' } })
-    return (
-      v?.value || {
-        autoApprove: false,
-        conditions: [
-          { key: 'vip', label: 'VIP 商家', enabled: true },
-          { key: 'credit', label: '信用 A/B', enabled: true },
-          { key: 'rejectRate', label: '驳回率 < 5%', enabled: true },
-          { key: 'category', label: '常见品类', enabled: false },
-        ],
-        samplingRate: 10,
-      }
-    )
+    const defaults = {
+      autoApprove: false,
+      conditions: [
+        { key: 'vip', label: 'VIP 商家', enabled: true },
+        { key: 'credit', label: '信用 A/B', enabled: true },
+        { key: 'rejectRate', label: '驳回率 < 5%', enabled: true },
+        { key: 'category', label: '常见品类', enabled: false },
+      ],
+      samplingRate: 10,
+    }
+    const stored = (v?.value as any) || {}
+    return {
+      autoApprove: typeof stored.autoApprove === 'boolean' ? stored.autoApprove : defaults.autoApprove,
+      conditions: Array.isArray(stored.conditions) && stored.conditions.length > 0
+        ? stored.conditions
+        : defaults.conditions,
+      samplingRate: typeof stored.samplingRate === 'number' ? stored.samplingRate : defaults.samplingRate,
+    }
   }
   async saveAuditConfig(dto: any) {
     await this.prisma.systemConfig.upsert({
