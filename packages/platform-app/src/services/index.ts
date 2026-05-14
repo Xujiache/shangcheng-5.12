@@ -74,8 +74,25 @@ export interface ProductAuditConfig {
   samplingRate: number
 }
 export const productAuditService = {
-  list(params: { status?: string; page?: number; pageSize?: number } = {}) {
-    return http.get<Pagination<Product>>('/api/v1/p/audit/products', params)
+  /**
+   * 商品审核列表。
+   *
+   * 后端 Product.status enum 是 `auditing / active / offline / rejected`(prisma schema 真值),
+   * 但 audit 视图的 TabKey 是 `pending / active / rejected`,模板里 `v-if="p.status === 'pending'"`
+   * 永远不会匹配 DB 的 'auditing' → 渲染空白 + 操作按钮失踪。
+   *
+   * 这里在 service 层把 `auditing → pending` 归一化,后端不动、视图不动,
+   * 与 admin-pc 同名函数的归一化保持一致。
+   */
+  async list(params: { status?: string; page?: number; pageSize?: number } = {}) {
+    const res = await http.get<Pagination<Product>>('/api/v1/p/audit/products', params)
+    if (res && Array.isArray((res as any).list)) {
+      ;(res as any).list = (res as any).list.map((p: any) => ({
+        ...p,
+        status: p?.status === 'auditing' ? 'pending' : p?.status,
+      }))
+    }
+    return res
   },
   config() {
     return http.get<ProductAuditConfig>('/api/v1/p/audit/products/config')

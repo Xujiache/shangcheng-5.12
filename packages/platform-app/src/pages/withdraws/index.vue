@@ -244,10 +244,10 @@ const tabCount = computed(() => total.value)
           <view
             class="status-tag"
             :style="{
-              color: STATUS_META[row.status].color,
-              background: STATUS_META[row.status].bg,
+              color: STATUS_META[row.status]?.color || '#86909C',
+              background: STATUS_META[row.status]?.bg || 'rgba(134,144,156,0.1)',
             }"
-            >{{ STATUS_META[row.status].label }}</view
+            >{{ STATUS_META[row.status]?.label || row.status || '未知' }}</view
           >
           <view class="amount">
             <text class="amount-cur">¥</text>

@@ -38,6 +38,12 @@ const TYPE_META: Record<MerchantType, { label: string; tint: string }> = {
   factory: { label: '厂家', tint: '#FF4D2D' },
   store: { label: '门店', tint: '#FAAD14' },
 }
+// 兜底:历史脏数据 / 新枚举值会让 TYPE_META[m.type] 取到 undefined,
+// 模板里 `.tint` 会让整张列表 v-for 渲染崩 → "商户管理 tab 整页空白"。
+const TYPE_FALLBACK = { label: '其他', tint: '#86909C' }
+function typeMetaOf(t: string | undefined | null) {
+  return (t && (TYPE_META as Record<string, { label: string; tint: string }>)[t]) || TYPE_FALLBACK
+}
 
 const PLAN_LABEL: Record<string, string> = {
   yearly: 'VIP 年费',
@@ -131,7 +137,7 @@ watch(tab, () => {
 function viewDetail(m: Merchant) {
   uni.showModal({
     title: m.name,
-    content: `类型: ${TYPE_META[m.type].label}\n主体: ${m.legalName}\n联系人: ${m.contact} ${m.contactPhone}\n地区: ${m.region}\n累计 GMV: ¥${formatWan(m.totalGmv ?? 0)}\n信用: ${m.credit ?? 'B'}级`,
+    content: `类型: ${typeMetaOf(m.type).label}\n主体: ${m.legalName || '—'}\n联系人: ${m.contact || '—'} ${m.contactPhone || ''}\n地区: ${m.region || '—'}\n累计 GMV: ¥${formatWan(m.totalGmv ?? 0)}\n信用: ${m.credit ?? 'B'}级`,
     showCancel: false,
   })
 }
@@ -253,7 +259,7 @@ onShow(() => {
     <view class="body">
       <view v-for="m in filtered" :key="m.id" class="card">
         <view class="card-head">
-          <view class="avatar" :style="{ background: TYPE_META[m.type].tint }">
+          <view class="avatar" :style="{ background: typeMetaOf(m.type).tint }">
             <text>{{ avatarOf(m) }}</text>
           </view>
           <view class="head-info">
@@ -262,11 +268,11 @@ onShow(() => {
               <view
                 class="type-tag"
                 :style="{
-                  color: TYPE_META[m.type].tint,
-                  background: TYPE_META[m.type].tint + '14',
+                  color: typeMetaOf(m.type).tint,
+                  background: typeMetaOf(m.type).tint + '14',
                 }"
               >
-                {{ TYPE_META[m.type].label }}
+                {{ typeMetaOf(m.type).label }}
               </view>
               <view v-if="m.status === 'disabled'" class="status-tag">已停用</view>
             </view>

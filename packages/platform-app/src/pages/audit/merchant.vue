@@ -28,6 +28,12 @@ const TYPE_META: Record<MerchantType, { label: string; tint: string }> = {
   factory: { label: '厂家', tint: '#FF4D2D' },
   store: { label: '门店', tint: '#FAAD14' },
 }
+// 兜底:历史脏数据 / 新枚举值会让 TYPE_META[m.type] 取到 undefined,
+// 之前模板里直接 `.tint` 会 throw,导致整个 v-for 列表渲染崩 → "首页有红标但点进去空白"。
+const TYPE_FALLBACK = { label: '其他', tint: '#86909C' }
+function typeMetaOf(t: string | undefined | null) {
+  return (t && (TYPE_META as Record<string, { label: string; tint: string }>)[t]) || TYPE_FALLBACK
+}
 
 const filtered = computed(() => list.value)
 
@@ -58,7 +64,7 @@ watch(tab, () => {
 function viewDetail(m: Merchant) {
   uni.showModal({
     title: m.name,
-    content: `主体: ${m.legalName}\n法人: ${m.legalRep}\n联系人: ${m.contact} (${m.contactPhone})\n地区: ${m.region}\n地址: ${m.address}\n经营品类: ${m.categories.join('、')}\n信用代码: ${m.creditCode}`,
+    content: `主体: ${m.legalName || '—'}\n法人: ${m.legalRep || '—'}\n联系人: ${m.contact || '—'} (${m.contactPhone || '—'})\n地区: ${m.region || '—'}\n地址: ${m.address || '—'}\n经营品类: ${(m.categories || []).join('、') || '—'}\n信用代码: ${m.creditCode || '—'}`,
     showCancel: false,
   })
 }
@@ -123,9 +129,9 @@ onMounted(load)
             <text class="name">{{ m.name }}</text>
             <view
               class="type-tag"
-              :style="{ color: TYPE_META[m.type].tint, background: TYPE_META[m.type].tint + '14' }"
+              :style="{ color: typeMetaOf(m.type).tint, background: typeMetaOf(m.type).tint + '14' }"
             >
-              {{ TYPE_META[m.type].label }}
+              {{ typeMetaOf(m.type).label }}
             </view>
           </view>
           <text class="time">{{ formatDate(m.createdAt) }}</text>
@@ -142,16 +148,16 @@ onMounted(load)
           </view>
           <view class="meta">
             <Icon name="tag" :size="22" color="var(--text-tertiary)" />
-            <text class="ellipsis">{{ m.categories.slice(0, 4).join(' / ') }}</text>
+            <text class="ellipsis">{{ (m.categories || []).slice(0, 4).join(' / ') }}</text>
           </view>
         </view>
 
         <!-- 资质图 -->
         <view class="qual-row">
-          <view v-for="(q, i) in m.qualifications.slice(0, 3)" :key="i" class="qual-img-wrap">
+          <view v-for="(q, i) in (m.qualifications || []).slice(0, 3)" :key="i" class="qual-img-wrap">
             <image :src="q" mode="aspectFill" class="qual-img" />
           </view>
-          <text v-if="m.qualifications.length > 3" class="qual-more">+{{ m.qualifications.length - 3 }} 张</text>
+          <text v-if="(m.qualifications || []).length > 3" class="qual-more">+{{ (m.qualifications || []).length - 3 }} 张</text>
         </view>
 
         <view v-if="m.status === 'rejected' && m.rejectReason" class="reject-reason">
