@@ -1,0 +1,68 @@
+# ----------------------------------------------------------------------------
+# CI: 静态检查 + 类型检查 + 单元测试（PR 与 main 分支必跑）
+#
+# 设计原则：
+#   - 不阻塞主分支：lint / typecheck 失败 → 红灯；test 暂用 || true 软失败，
+#     等 packages/server/test/ 模板补全为真正可跑用例后再去掉 || true。
+#   - 单 Node 版本（20.x）：仓库 engines.node 已锁 >=20.19.0；引入 matrix
+#     会让 pnpm 缓存命中率下降、且暂无多版本验证需求。
+#   - pnpm 通过 packageManager 字段（package.json）自动启用 corepack。
+# ----------------------------------------------------------------------------
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一 PR 连续 push 时取消旧任务，节省 Actions 配额
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-typecheck-test:
+    name: lint / typecheck / test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        # corepack enable 会读 package.json#packageManager，自动装对的 pnpm 版本
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Install dependencies
+        # --frozen-lockfile 强制 pnpm-lock.yaml 与 package.json 完全一致
+        # 偶发"lockfile 不一致"通常意味着 PR 漏提交 lockfile，要红灯阻断
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @jiujiu/shared (上游依赖，必须最先编译)
+        # admin-pc / server / 各端都通过 workspace:* 引用 @jiujiu/shared，
+        # 后续 typecheck/lint 需要它的 dist + 类型产物
+        run: pnpm --filter @jiujiu/shared build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests (server)
+        # ⚠️ 暂用 || true 软失败：server/test/ 当前为 describe.skip 模板，
+        # 等真正补全可跑用例后，把这里改成 `pnpm test:server`（去掉 || true）
+        run: pnpm test:server || true

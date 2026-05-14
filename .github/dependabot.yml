@@ -1,0 +1,56 @@
+# ----------------------------------------------------------------------------
+# Dependabot：每周一拉取上游 pnpm / GitHub Actions 依赖更新 PR。
+#
+# 策略：
+#   - 根 pnpm workspace（package-ecosystem: npm + directory: "/"）每周一次，
+#     按主、次/补丁分组减少 PR 噪音。
+#   - GitHub Actions workflow 文件每周扫一次，确保 setup-node / pnpm/action-setup
+#     等关键 action 跟得上。
+#   - 暂时不开 Docker / Submodule ecosystem（仓库目前未引入相应文件）。
+# ----------------------------------------------------------------------------
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - pnpm
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # major 单独走 PR，方便人工逐条审 breaking change
+      pnpm-major:
+        update-types:
+          - major
+      # minor + patch 合并成一个 PR，降低 review 负担
+      pnpm-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # 锁住关键 alpha 依赖：uni-app 全家桶
+      # 这些包是日构建版（3.0.0-alpha-…），dependabot 不应自动追
+      - dependency-name: '@dcloudio/*'
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: ci
+      include: scope

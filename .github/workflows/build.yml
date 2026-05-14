@@ -1,0 +1,126 @@
+# ----------------------------------------------------------------------------
+# Build: 构建 server + 4 个前端（admin-pc / user-mp / merchant-app / platform-app）
+#        并把产物作为 artifact 上传到本次 workflow run，方便手动取产物或对接发布。
+#
+# 触发：push 到 main。PR 期间不构建（PR 阶段只跑 CI 静态检查省时间）。
+#
+# 产物分布：
+#   - packages/server/dist            ← nest build（NestJS 后端）
+#   - packages/shared/dist            ← tsup（共享层；server/前端都依赖）
+#   - packages/admin-pc/dist          ← vite build（PC 后台）
+#   - packages/user-mp/dist/build/h5  ← uni build（用户小程序的 H5 调试构建）
+#   - packages/merchant-app/dist/build/h5
+#   - packages/platform-app/dist/build/h5
+#
+# 注：uni-app 默认会把 build:h5 输出到 `dist/build/h5/`；mp-weixin / app 构建
+# 需要 HBuilderX 或开通对应平台账号，CI 暂不接入。
+# ----------------------------------------------------------------------------
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-server:
+    name: Build server (NestJS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @jiujiu/shared
+        run: pnpm --filter @jiujiu/shared build
+
+      - name: Generate Prisma client
+        # nest build 引用了 @prisma/client，prisma generate 必须先跑
+        run: pnpm --filter @jiujiu/server exec prisma generate
+
+      - name: Build server
+        run: pnpm --filter @jiujiu/server build
+
+      - name: Upload server dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-dist
+          path: packages/server/dist
+          retention-days: 7
+
+  build-admin-pc:
+    name: Build admin-pc (Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @jiujiu/shared
+        run: pnpm --filter @jiujiu/shared build
+
+      - name: Build admin-pc
+        run: pnpm --filter @jiujiu/admin-pc build
+
+      - name: Upload admin-pc dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-pc-dist
+          path: packages/admin-pc/dist
+          retention-days: 7
+
+  build-uniapps:
+    name: Build ${{ matrix.app }} (uni-app H5)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - user-mp
+          - merchant-app
+          - platform-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @jiujiu/shared
+        run: pnpm --filter @jiujiu/shared build
+
+      - name: Build ${{ matrix.app }} (H5)
+        # uni-app 默认 H5 构建：mp-weixin / app 端构建需要平台 SDK & 账号，CI 暂略
+        run: pnpm --filter @jiujiu/${{ matrix.app }} build:h5
+
+      - name: Upload ${{ matrix.app }} dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-dist
+          # uni-app 默认 H5 产物：dist/build/h5
+          path: packages/${{ matrix.app }}/dist
+          retention-days: 7
+          if-no-files-found: warn

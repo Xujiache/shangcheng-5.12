@@ -23,7 +23,6 @@
     "@jiujiu/shared": "workspace:*",
     "@socket.io/component-emitter": "^3.1.2",
     "dayjs": "^1.11.13",
-    "debug": "^4.4.3",
     "engine.io-client": "^6.6.4",
     "engine.io-parser": "^5.2.3",
     "pinia": "^2.2.4",

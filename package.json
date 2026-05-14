@@ -24,7 +24,10 @@
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "test:server": "pnpm --filter @jiujiu/server test",
     "clean": "pnpm -r exec rm -rf node_modules dist .turbo",
+    "prisma:migrate-init": "pnpm --filter @jiujiu/server prisma migrate dev --name init --create-only",
+    "prisma:deploy": "pnpm --filter @jiujiu/server prisma migrate deploy",
     "prepare": "husky"
   },
   "devDependencies": {
