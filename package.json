@@ -37,7 +37,7 @@
     "lint-staged": "^15.5.2",
     "only-allow": "^1.2.1",
     "prettier": "^3.5.3",
-    "tsx": "^4.20.3",
+    "tsx": "^4.21.1",
     "typescript": "~5.6.3"
   },
   "lint-staged": {
