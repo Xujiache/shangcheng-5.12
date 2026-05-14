@@ -99,8 +99,21 @@ const TODO_LIST = computed(() => {
     },
     { key: 'product', label: '待审核商品', count: t.pendingProducts, to: '/pages/audit/product' },
     { key: 'ad', label: '广告创意待审', count: t.pendingAds, to: '/pages/ad/index' },
-    { key: 'complaint', label: '售后投诉', count: t.complaints, to: '/pages/tabbar/order/index' },
-    { key: 'withdraw', label: '待审核提现', count: t.pendingWithdraws, to: '' },
+    {
+      key: 'complaint',
+      label: '售后投诉',
+      count: t.complaints,
+      // 跳订单 tab,通过 storage 'order_init_tab' 把 after_sale 子分类
+      // 传给 order/index.vue —— 因为 switchTab 不支持 query
+      to: '/pages/tabbar/order/index?status=after_sale',
+    },
+    {
+      key: 'withdraw',
+      label: '待审核提现',
+      count: t.pendingWithdraws,
+      // 已对接 GET /p/withdraws 列表 + approve/reject/mark-paid 完整审批流(Wave5)
+      to: '/pages/withdraws/index',
+    },
   ]
 })
 
@@ -183,10 +196,33 @@ function goTodo(item: (typeof TODO_LIST.value)[number]) {
     return
   }
   if (!item.to) {
-    uni.showToast({ title: item.label + ' · 待开放', icon: 'none' })
+    // TODO_LIST 全部已绑定真实路径,这里仅作未来扩展防御
+    uni.showToast({
+      title: item.label + ' · 正在准备中,请等待下一版',
+      icon: 'none',
+      duration: 1600,
+    })
     return
   }
-  uni.navigateTo({ url: item.to })
+  // 切分 url 与 query —— switchTab 不允许带 query,需要把参数转存到 storage,
+  // 由目标 tabbar 页面在 onShow 里读取再清除（见 order/index.vue 的 order_init_tab）
+  const queryIdx = item.to.indexOf('?')
+  const base = queryIdx >= 0 ? item.to.slice(0, queryIdx) : item.to
+  const query = queryIdx >= 0 ? item.to.slice(queryIdx + 1) : ''
+  if (query && base === '/pages/tabbar/order/index') {
+    try {
+      const usp = new URLSearchParams(query)
+      const status = usp.get('status')
+      if (status) uni.setStorageSync('order_init_tab', status)
+    } catch {
+      /* ignore parse error */
+    }
+  }
+  if (base.startsWith('/pages/tabbar/')) {
+    uni.switchTab({ url: base, fail: () => uni.reLaunch({ url: item.to }) })
+  } else {
+    uni.navigateTo({ url: item.to })
+  }
 }
 
 function goEntry(item: (typeof QUICK_ENTRIES)[number]) {
@@ -198,7 +234,7 @@ function goEntry(item: (typeof QUICK_ENTRIES)[number]) {
 }
 
 function goNotify() {
-  uni.showToast({ title: '消息中心 · 待开放', icon: 'none' })
+  uni.navigateTo({ url: '/pages/notify/index' })
 }
 
 onMounted(load)
@@ -259,7 +295,7 @@ onShow(load)
       </view>
     </view>
 
-    <scroll-view scroll-y class="scroll">
+    <view class="body">
       <!-- 错误态：load 失败 -->
       <view v-if="errorMsg && !dashboard" class="err-block">
         <Icon name="info" :size="56" color="#FF7A45" />
@@ -386,21 +422,29 @@ onShow(load)
           </view>
         </view>
       </view>
-
-      <view style="height: 200rpx" />
-    </scroll-view>
+    </view>
 
     <TabBar current="home" />
   </view>
 </template>
 
 <style lang="scss" scoped>
+/**
+ * 自然文档流布局（不用 display:flex; overflow:hidden 撑高,
+ * 避免 mp-weixin/App 真包高度计算失败导致整页塌陷 + TabBar 一起丢失。
+ * Hero 用 sticky 吸顶；TabBar 由组件自身 position:fixed 兜底）
+ */
 .page {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
   background: var(--bg-page);
-  overflow: hidden;
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+/* 顶部 Hero 吸顶 */
+.hero {
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
 /* === Hero 顶部双大字 === */
@@ -517,9 +561,7 @@ onShow(load)
 }
 
 /* === 滚动容器 === */
-.scroll {
-  flex: 1;
-  height: 0;
+.body {
   padding: 16rpx 24rpx 0;
   box-sizing: border-box;
 }

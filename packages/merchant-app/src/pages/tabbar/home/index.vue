@@ -20,6 +20,7 @@ import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
 import { useStatusBar } from '../../../composables/useStatusBar'
+import { safeSwitchTab } from '../../../utils/tab-nav'
 
 useHideNativeTabBar()
 const { heroPaddingTop } = useStatusBar(16)
@@ -44,26 +45,53 @@ async function loadProfile() {
 
 /** 主入口（一行 5 个,共两行 → 一共 10 个槽位:7 核心 + 3 个扩展直接展开,不再用"更多") */
 const CORE_ENTRIES = [
-  { key: 'product', icon: 'biz-product', label: '商品', to: '/pages/tabbar/product/index', tint: 'orange' },
+  {
+    key: 'product',
+    icon: 'biz-product',
+    label: '商品',
+    to: '/pages/tabbar/product/index',
+    tint: 'orange',
+  },
   { key: 'order', icon: 'biz-order', label: '订单', to: '/pages/tabbar/order/index', tint: 'blue' },
-  { key: 'customer', icon: 'biz-customer', label: '客户', to: '/pages/customer/index', tint: 'green' },
-  { key: 'stats', icon: 'biz-stats', label: '数据', to: '/pages/tabbar/stats/index', tint: 'purple' },
+  {
+    key: 'customer',
+    icon: 'biz-customer',
+    label: '客户',
+    to: '/pages/customer/index',
+    tint: 'green',
+  },
+  {
+    key: 'stats',
+    icon: 'biz-stats',
+    label: '数据',
+    to: '/pages/tabbar/stats/index',
+    tint: 'purple',
+  },
   { key: 'chat', icon: 'biz-chat', label: '客服', to: '/pages/chat/index', tint: 'pink' },
-  { key: 'marketing', icon: 'biz-marketing', label: '营销', to: '/pages/marketing/index', tint: 'yellow' },
+  {
+    key: 'marketing',
+    icon: 'biz-marketing',
+    label: '营销',
+    to: '/pages/marketing/index',
+    tint: 'yellow',
+  },
   { key: 'store', icon: 'biz-store', label: '门店', to: '/pages/store/index', tint: 'cyan' },
   { key: 'staff', icon: 'biz-staff', label: '员工', to: '/pages/staff/index', tint: 'teal' },
   { key: 'agency', icon: 'tag', label: '代理', to: '/pages/product/agency-list', tint: 'red' },
   { key: 'price-rule', icon: 'wallet', label: '价格', to: '/pages/shop/price-rule', tint: 'gray' },
 ]
 
-const visibleCore = computed(() =>
-  CORE_ENTRIES.filter((e) => flagStore.isHomeEntryEnabled(e.key)),
-)
+const visibleCore = computed(() => CORE_ENTRIES.filter((e) => flagStore.isHomeEntryEnabled(e.key)))
 
 const totalTodos = computed(() => {
   if (!dashboard.value) return 0
   const t = dashboard.value.todos
-  return (t.pendingShipment ?? 0) + (t.pendingRefund ?? 0) + (t.pendingStoreAuth ?? 0) + (t.pendingStaff ?? 0)
+  return (
+    (t.pendingShipment ?? 0) +
+    (t.pendingRefund ?? 0) +
+    (t.pendingStoreAuth ?? 0) +
+    (t.pendingStaff ?? 0)
+  )
 })
 
 async function loadData() {
@@ -96,10 +124,14 @@ function goNotif() {
 
 function goEntry(to: string) {
   if (to.startsWith('/pages/tabbar/')) {
-    uni.switchTab({ url: to })
+    safeSwitchTab(to)
   } else {
     uni.navigateTo({ url: to })
   }
+}
+
+function goPendingOrder() {
+  safeSwitchTab('/pages/tabbar/order/index')
 }
 
 onMounted(() => {
@@ -205,11 +237,7 @@ onShow(() => {
           </view>
         </view>
         <scroll-view scroll-x class="plaza-scroll" :show-scrollbar="false">
-          <view
-            v-for="item in dashboard.plazaHighlights"
-            :key="item.productId"
-            class="plaza-item"
-          >
+          <view v-for="item in dashboard.plazaHighlights" :key="item.productId" class="plaza-item">
             <image class="plaza-img" :src="item.productImage" mode="aspectFill" />
             <text class="plaza-price">{{ formatPrice(item.price) }}</text>
           </view>
@@ -229,7 +257,7 @@ onShow(() => {
       <!-- 待办 -->
       <Section :title="`待办 · ${totalTodos}`">
         <view class="todo-list">
-          <view class="todo-item" @click="uni.switchTab({ url: '/pages/tabbar/order/index' })">
+          <view class="todo-item" @click="goPendingOrder">
             <view class="dot dot-primary"></view>
             <text class="todo-text">{{ dashboard.todos.pendingShipment }} 笔订单待发货</text>
             <Icon name="forward" :size="24" color="var(--text-tertiary)" />
@@ -281,7 +309,7 @@ onShow(() => {
       width: 72rpx;
       height: 72rpx;
       border-radius: 50%;
-      background: rgba(255,255,255,0.25);
+      background: rgba(255, 255, 255, 0.25);
       backdrop-filter: blur(10rpx);
       display: flex;
       align-items: center;
@@ -290,9 +318,15 @@ onShow(() => {
       font-size: 36rpx;
       font-weight: 700;
       overflow: hidden;
-      .avatar-img { width: 100%; height: 100%; }
+      .avatar-img {
+        width: 100%;
+        height: 100%;
+      }
     }
-    .brand-info { display: flex; flex-direction: column; }
+    .brand-info {
+      display: flex;
+      flex-direction: column;
+    }
     .brand-name {
       font-size: 30rpx;
       font-weight: 700;
@@ -301,7 +335,7 @@ onShow(() => {
     .brand-sub {
       margin-top: 4rpx;
       font-size: 20rpx;
-      color: rgba(255,255,255,0.85);
+      color: rgba(255, 255, 255, 0.85);
     }
   }
   .notif {
@@ -309,11 +343,13 @@ onShow(() => {
     width: 64rpx;
     height: 64rpx;
     border-radius: 50%;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    .notif-icon { font-size: 32rpx; }
+    .notif-icon {
+      font-size: 32rpx;
+    }
     .notif-badge {
       position: absolute;
       top: -4rpx;
@@ -350,7 +386,9 @@ onShow(() => {
   flex: 1;
   min-width: 0;
   transition: transform 0.15s;
-  &:active { transform: scale(0.97); }
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 .entry-grid {
@@ -365,7 +403,9 @@ onShow(() => {
   align-items: center;
   gap: 10rpx;
   transition: transform 0.15s;
-  &:active { transform: scale(0.92); }
+  &:active {
+    transform: scale(0.92);
+  }
 }
 .entry-icon {
   width: 80rpx;
@@ -374,7 +414,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.10);
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
   &::after {
@@ -383,7 +423,7 @@ onShow(() => {
     position: absolute;
     inset: 2rpx;
     border-radius: 20rpx;
-    background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 50%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 50%);
     pointer-events: none;
   }
 }
@@ -393,16 +433,46 @@ onShow(() => {
   font-weight: 500;
 }
 /* tint 配色:每格独立渐变 + 同色阴影 */
-.tint-orange  { background: linear-gradient(135deg, #FFB088, #FF5722); box-shadow: 0 6rpx 14rpx rgba(255, 87, 34, 0.32); }
-.tint-blue    { background: linear-gradient(135deg, #7FD0FA, #1E88E5); box-shadow: 0 6rpx 14rpx rgba(30, 136, 229, 0.32); }
-.tint-green   { background: linear-gradient(135deg, #A6DDA8, #43A047); box-shadow: 0 6rpx 14rpx rgba(67, 160, 71, 0.32); }
-.tint-purple  { background: linear-gradient(135deg, #CE93D8, #8E24AA); box-shadow: 0 6rpx 14rpx rgba(142, 36, 170, 0.32); }
-.tint-pink    { background: linear-gradient(135deg, #F48FB1, #E91E63); box-shadow: 0 6rpx 14rpx rgba(233, 30, 99, 0.32); }
-.tint-yellow  { background: linear-gradient(135deg, #FFE082, #FFA000); box-shadow: 0 6rpx 14rpx rgba(255, 160, 0, 0.32); }
-.tint-cyan    { background: linear-gradient(135deg, #80DEEA, #00838F); box-shadow: 0 6rpx 14rpx rgba(0, 131, 143, 0.32); }
-.tint-teal    { background: linear-gradient(135deg, #80CBC4, #00897B); box-shadow: 0 6rpx 14rpx rgba(0, 137, 123, 0.32); }
-.tint-red     { background: linear-gradient(135deg, #EF9A9A, #E53935); box-shadow: 0 6rpx 14rpx rgba(229, 57, 53, 0.32); }
-.tint-gray    { background: linear-gradient(135deg, #CFD8DC, #607D8B); box-shadow: 0 6rpx 14rpx rgba(96, 125, 139, 0.30); }
+.tint-orange {
+  background: linear-gradient(135deg, #ffb088, #ff5722);
+  box-shadow: 0 6rpx 14rpx rgba(255, 87, 34, 0.32);
+}
+.tint-blue {
+  background: linear-gradient(135deg, #7fd0fa, #1e88e5);
+  box-shadow: 0 6rpx 14rpx rgba(30, 136, 229, 0.32);
+}
+.tint-green {
+  background: linear-gradient(135deg, #a6dda8, #43a047);
+  box-shadow: 0 6rpx 14rpx rgba(67, 160, 71, 0.32);
+}
+.tint-purple {
+  background: linear-gradient(135deg, #ce93d8, #8e24aa);
+  box-shadow: 0 6rpx 14rpx rgba(142, 36, 170, 0.32);
+}
+.tint-pink {
+  background: linear-gradient(135deg, #f48fb1, #e91e63);
+  box-shadow: 0 6rpx 14rpx rgba(233, 30, 99, 0.32);
+}
+.tint-yellow {
+  background: linear-gradient(135deg, #ffe082, #ffa000);
+  box-shadow: 0 6rpx 14rpx rgba(255, 160, 0, 0.32);
+}
+.tint-cyan {
+  background: linear-gradient(135deg, #80deea, #00838f);
+  box-shadow: 0 6rpx 14rpx rgba(0, 131, 143, 0.32);
+}
+.tint-teal {
+  background: linear-gradient(135deg, #80cbc4, #00897b);
+  box-shadow: 0 6rpx 14rpx rgba(0, 137, 123, 0.32);
+}
+.tint-red {
+  background: linear-gradient(135deg, #ef9a9a, #e53935);
+  box-shadow: 0 6rpx 14rpx rgba(229, 57, 53, 0.32);
+}
+.tint-gray {
+  background: linear-gradient(135deg, #cfd8dc, #607d8b);
+  box-shadow: 0 6rpx 14rpx rgba(96, 125, 139, 0.3);
+}
 
 .plaza-card {
   background: var(--bg-card);
@@ -410,7 +480,7 @@ onShow(() => {
   padding: 24rpx;
   box-shadow: var(--shadow-md);
   border: 2rpx solid var(--brand-primary-ghost);
-  background-image: linear-gradient(135deg, rgba(255,77,45,0.04), transparent);
+  background-image: linear-gradient(135deg, rgba(255, 77, 45, 0.04), transparent);
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -420,7 +490,9 @@ onShow(() => {
     justify-content: space-between;
     align-items: center;
   }
-  .plaza-info { flex: 1; }
+  .plaza-info {
+    flex: 1;
+  }
   .plaza-title-row {
     display: flex;
     align-items: center;
@@ -455,7 +527,9 @@ onShow(() => {
     color: #fff;
     border-radius: 999rpx;
     font-size: 24rpx;
-    .arrow { font-size: 24rpx; }
+    .arrow {
+      font-size: 24rpx;
+    }
   }
 
   .plaza-scroll {
@@ -493,14 +567,22 @@ onShow(() => {
   gap: 16rpx;
   padding: 20rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .dot {
     width: 12rpx;
     height: 12rpx;
     border-radius: 50%;
-    &.dot-primary { background: var(--brand-primary); }
-    &.dot-warning { background: var(--status-warning); }
-    &.dot-info { background: var(--status-info); }
+    &.dot-primary {
+      background: var(--brand-primary);
+    }
+    &.dot-warning {
+      background: var(--status-warning);
+    }
+    &.dot-info {
+      background: var(--status-info);
+    }
   }
   .todo-text {
     flex: 1;

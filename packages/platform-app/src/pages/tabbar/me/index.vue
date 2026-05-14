@@ -7,7 +7,7 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAdminStore } from '../../../store/admin'
-import { merchantService, productAuditService } from '../../../services'
+import { merchantService, productAuditService, ticketService } from '../../../services'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 
@@ -27,25 +27,28 @@ const statusBarHeight = computed(() => {
  * `/p/audit/products` 默认 status=pending → 内部 status=auditing。
  * 这里只统计 "当前待审" 总量,因为后端没有 "本月已审" 聚合接口。
  *
- * 处理工单数：工单（ticket）模块尚未上线，UI 显示「— 暂未接入」并禁用入口。
- * 后端补 GET /p/tickets/handled-count?month=YYYY-MM 后，把 placeholder 替换成
- * 实际请求即可，不需要再改 UI 结构。
+ * 处理工单数：调 GET /p/tickets/pending-count 拿"未处理"工单数 (open + handling),
+ * 失败兜底 0。点击工单卡跳 /pages/ticket/index 进入工单管理。
  *
  * 在线时长：从 adminStore.loginAt 算起到现在,setSession 时已记录登录时刻。
  */
 const auditCount = ref<number>(0)
+const ticketPending = ref<number>(0)
 const tickNow = ref<number>(Date.now())
 let tickTimer: ReturnType<typeof setInterval> | null = null
 
 async function loadStats() {
   try {
-    const [m, p] = await Promise.all([
+    const [m, p, tp] = await Promise.all([
       merchantService.auditList({ pageSize: 1 }).catch(() => ({ total: 0, list: [] }) as any),
       productAuditService.list({ pageSize: 1 }).catch(() => ({ total: 0, list: [] }) as any),
+      ticketService.pendingCount(),
     ])
     auditCount.value = (m?.total ?? 0) + (p?.total ?? 0)
+    ticketPending.value = tp
   } catch {
     auditCount.value = 0
+    ticketPending.value = 0
   }
 }
 
@@ -63,10 +66,37 @@ const onlineDuration = computed(() => {
 })
 
 const STAT_CARDS = computed(() => [
-  { label: '待审任务', value: String(auditCount.value), icon: 'check-circle', tint: '#52C41A' },
-  { label: '工单(暂未接入)', value: '—', icon: 'message', tint: '#1296DB' },
-  { label: '在线时长', value: onlineDuration.value, icon: 'clock', tint: '#FAAD14' },
+  {
+    key: 'audit',
+    label: '待审任务',
+    value: String(auditCount.value),
+    icon: 'check-circle',
+    tint: '#52C41A',
+    to: '/pages/audit/merchant',
+  },
+  {
+    key: 'ticket',
+    label: '待处理工单',
+    value: String(ticketPending.value),
+    icon: 'message',
+    tint: '#1296DB',
+    to: '/pages/ticket/index',
+  },
+  {
+    key: 'online',
+    label: '在线时长',
+    value: onlineDuration.value,
+    icon: 'clock',
+    tint: '#FAAD14',
+    to: '',
+  },
 ])
+
+function onStatTap(card: { key: string; to: string }) {
+  if (card.to) {
+    uni.navigateTo({ url: card.to })
+  }
+}
 
 onMounted(() => {
   loadStats()
@@ -114,6 +144,14 @@ const MANAGE_ENTRIES = [
     tint: '#1296DB',
   },
   {
+    key: 'ticket',
+    icon: 'message',
+    label: '工单管理',
+    desc: '用户反馈处理',
+    to: '/pages/ticket/index',
+    tint: '#1296DB',
+  },
+  {
     key: 'share-stats',
     icon: 'gift',
     label: '订单分享数据',
@@ -125,30 +163,11 @@ const MANAGE_ENTRIES = [
 ]
 
 /**
- * 商家"订单分享"统计仅在 admin-pc 管理后台提供,
- * 这里复制管理后台 URL + 友好提示,后续若 platform-app 上线 share-stats 页面再直接 navigateTo。
+ * 商家"订单分享"统计原本只在 admin-pc 提供,
+ * platform-app 已在 /pages/share-stats/index 原生承接,直接跳转即可。
  */
 function goShareStats() {
-  const url = 'https://admin.jiujiu.com/share-stats'
-  uni.setClipboardData({
-    data: url,
-    success: () => {
-      uni.showModal({
-        title: '订单分享数据',
-        content: `请在管理后台 PC 端查看:\n${url}\n（链接已复制到剪贴板）`,
-        showCancel: false,
-        confirmText: '我知道了',
-      })
-    },
-    fail: () => {
-      uni.showModal({
-        title: '订单分享数据',
-        content: `请在管理后台 PC 端查看:\n${url}`,
-        showCancel: false,
-        confirmText: '我知道了',
-      })
-    },
-  })
+  uni.navigateTo({ url: '/pages/share-stats/index' })
 }
 
 const SYSTEM_ENTRIES = [
@@ -157,15 +176,42 @@ const SYSTEM_ENTRIES = [
   { key: 'perm', icon: 'lock', label: '权限管理', to: '/pages/permission/index' },
   { key: 'legal', icon: 'tag', label: '法律协议', to: '/pages/legal/index' },
   { key: 'app-release', icon: 'package', label: 'APP 发布', to: '/pages/app-release/index' },
+  { key: 'feedback', icon: 'message', label: '意见反馈', to: '/pages/feedback/index' },
   { key: 'system', icon: 'gear', label: '系统设置', to: '/pages/system/index' },
 ]
 
 function goEntry(to: string) {
   if (!to) {
-    uni.showToast({ title: '待开放', icon: 'none' })
+    uni.showToast({ title: '功能正在准备中,请等待下一版', icon: 'none', duration: 1600 })
     return
   }
   uni.navigateTo({ url: to })
+}
+
+/** 帮助中心 - 客服联系信息(后端 systemSettings.service 字段可在系统设置查) */
+function openHelp() {
+  uni.showModal({
+    title: '帮助中心',
+    content:
+      '客服热线：400-000-0000\n邮箱：support@jiujiu.com\n工作时间：9:00-18:00\n\n如需更多帮助,请在「意见反馈」提交工单。',
+    showCancel: true,
+    cancelText: '关闭',
+    confirmText: '去反馈',
+    success: (r) => {
+      if (r.confirm) uni.navigateTo({ url: '/pages/feedback/index' })
+    },
+  })
+}
+
+/** 关于平台 - 简介 + 当前版本号 */
+function openAbout() {
+  uni.showModal({
+    title: '关于平台',
+    content:
+      '经纬科技 · 商城平台管理端\n当前版本：v1.0.0\n\n用于商户审核、订单总览、会员套餐、广告管理等平台运营事务。',
+    showCancel: false,
+    confirmText: '我知道了',
+  })
 }
 
 function goManageEntry(item: (typeof MANAGE_ENTRIES)[number]) {
@@ -192,7 +238,12 @@ function logout() {
 }
 
 function viewProfile() {
-  uni.showToast({ title: '账号信息 · 待开放', icon: 'none' })
+  uni.showModal({
+    title: '账号信息',
+    content: `昵称: ${adminStore.nickname || '管理员'}\n角色: 超级管理员\n账号: admin\n\n如需修改账号信息,请前往「权限管理」处理。`,
+    showCancel: false,
+    confirmText: '我知道了',
+  })
 }
 </script>
 
@@ -229,7 +280,7 @@ function viewProfile() {
       </view>
 
       <view class="stat-row">
-        <view v-for="s in STAT_CARDS" :key="s.label" class="stat-item">
+        <view v-for="s in STAT_CARDS" :key="s.key" class="stat-item" @click="onStatTap(s)">
           <view class="stat-icon" :style="{ background: 'rgba(255,255,255,0.2)' }">
             <Icon :name="s.icon" :size="24" color="#fff" />
           </view>
@@ -241,7 +292,7 @@ function viewProfile() {
       </view>
     </view>
 
-    <scroll-view scroll-y class="scroll">
+    <view class="body">
       <!-- 业务管理 -->
       <view class="card">
         <text class="card-title">业务管理</text>
@@ -281,20 +332,20 @@ function viewProfile() {
 
       <!-- 其他 -->
       <view class="card">
-        <view class="sys-row" @click="goEntry('')">
+        <view class="sys-row with-divider" @click="openHelp">
           <view class="sys-icon">
             <Icon name="help" :size="32" color="#52C41A" />
           </view>
           <text class="sys-label">帮助中心</text>
           <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
         </view>
-        <view class="sys-row with-divider" />
-        <view class="sys-row" @click="goEntry('')">
+        <view class="sys-row" @click="openAbout">
           <view class="sys-icon">
             <Icon name="info" :size="32" color="#1296DB" />
           </view>
           <text class="sys-label">关于平台</text>
           <text class="sys-meta">v1.0.0</text>
+          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
         </view>
       </view>
 
@@ -303,21 +354,27 @@ function viewProfile() {
         <Icon name="arrow-right" :size="28" color="#FF3B30" />
         <text>退出登录</text>
       </view>
-
-      <view style="height: 160rpx" />
-    </scroll-view>
+    </view>
 
     <TabBar current="me" />
   </view>
 </template>
 
 <style lang="scss" scoped>
+/**
+ * 自然文档流布局 —— 不用 flex column + overflow:hidden(mp/App 真包高度计算失败会塌陷)。
+ * 顶部 hero 用 position:sticky,底部 TabBar 由组件自身 position:fixed 兜底。
+ */
 .page {
   min-height: 100vh;
   background: var(--bg-page);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.hero {
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 .status {
   background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
@@ -434,9 +491,7 @@ function viewProfile() {
   }
 }
 
-.scroll {
-  flex: 1;
-  height: 0;
+.body {
   margin-top: -16rpx;
   box-sizing: border-box;
 }

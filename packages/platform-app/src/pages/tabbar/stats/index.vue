@@ -1,12 +1,22 @@
 <script setup lang="ts">
 /**
- * PA-Tab · 平台数据中心（v2 · 与商户/订单页统一橙色系风格）
+ * PA-Tab · 平台数据中心（v3 · 自然文档流 + sticky 顶部 + fixed TabBar）
  *
- * 视觉：
- * - 顶部沿用全站统一的 #FF4D2D → #FF9C6E 橙色渐变（之前是橙紫不一致已修复）
- * - 顶部条 = 标题 + 周期切换胶囊 + 导出按钮（与 me 页平齐）
- * - 4 张 KPI 卡（商户/订单/GMV/用户）+ 注册趋势 SVG + 商户构成 + 类目排行 + 会员分布
- * - 北京时间口径
+ * 重做原因（v2 → v3）：
+ *   v2 用 `display:flex; overflow:hidden` + `scroll-view { flex:1; height:0 }`,
+ *   在 mp-weixin / App 真包里高度计算失败 → 整页连同 TabBar 都塌陷为 0 显示。
+ *
+ * v3 架构（永不塌陷）：
+ *   - `.page { min-height:100vh; padding-bottom:220rpx }` —— 自然文档流,内容多了自动撑高
+ *   - 顶部条用 `position: sticky; top: 0` —— 滚动时吸顶
+ *   - 底部 TabBar 用 `position: fixed; bottom: 0` —— 永远可见
+ *   - 不用任何 `scroll-view` —— 让 mp-weixin / App / H5 用页面默认滚动
+ *
+ * 视觉升级：
+ *   - Hero KPI 区:今日总览大字 + 同比
+ *   - 4 张 KPI 卡:更细腻的渐变 + 高对比文字
+ *   - 销售趋势 mini-chart + 周期切换
+ *   - TOP 5 商家 + 商户构成 + 会员分布
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
@@ -24,9 +34,8 @@ import TabBar from '../../../components/tab-bar/tab-bar.vue'
 const dashboard = ref<PlatformDashboard | null>(null)
 const stats = ref<PlatformStats | null>(null)
 const period = ref<StatsPeriod>('week')
-const loading = ref(true)
+const dashboardLoading = ref(true)
 const statsLoading = ref(false)
-/** 用于报错重试态:dashboard / stats 任一失败时显示，整页不再空白 */
 const dashboardError = ref('')
 const statsError = ref('')
 
@@ -44,6 +53,12 @@ const PERIODS = [
   { key: 'month' as const, label: '本月' },
   { key: 'year' as const, label: '本年' },
 ]
+const PERIOD_LABEL: Record<StatsPeriod, string> = {
+  today: '今日',
+  week: '本周',
+  month: '本月',
+  year: '本年',
+}
 
 const KPI_CARDS = computed(() => {
   const d = dashboard.value
@@ -51,60 +66,60 @@ const KPI_CARDS = computed(() => {
   return [
     {
       key: 'merchants',
-      label: '商户',
+      label: '商户总数',
       icon: 'home-shop',
-      tint: '#FF4D2D',
+      tint: '#3B82F6',
+      bg: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)',
       value: d.overview.merchants,
       delta: d.overview.merchantsDelta,
-      isMoney: false,
+      unit: '',
     },
     {
       key: 'orders',
-      label: '订单',
+      label: '订单总数',
       icon: 'biz-order',
-      tint: '#FF7A45',
+      tint: '#FF4D2D',
+      bg: 'linear-gradient(135deg, #FFE4D9, #FED7AA)',
       value: d.overview.orders,
       delta: d.overview.ordersDelta,
-      isMoney: false,
+      unit: '',
     },
     {
       key: 'gmv',
       label: '交易额',
       icon: 'wallet',
-      tint: '#FAAD14',
+      tint: '#F59E0B',
+      bg: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
       value: d.overview.gmv,
       delta: d.overview.gmvDelta,
-      isMoney: true,
+      unit: '%',
+      money: true,
     },
     {
       key: 'users',
-      label: '用户',
+      label: '注册用户',
       icon: 'user',
       tint: '#A855F7',
+      bg: 'linear-gradient(135deg, #F3E8FF, #E9D5FF)',
       value: d.overview.users,
       delta: d.overview.usersDelta,
-      isMoney: false,
+      unit: '',
     },
   ]
 })
 
 async function load() {
-  loading.value = true
+  dashboardLoading.value = true
   dashboardError.value = ''
   try {
     dashboard.value = await dashboardService.get()
   } catch (e: any) {
-    dashboardError.value = e?.message || '加载失败,请下拉重试'
+    dashboardError.value = e?.message || '数据加载失败,请重试'
   } finally {
-    loading.value = false
+    dashboardLoading.value = false
   }
 }
 
-/**
- * 拉 GET /p/stats?period=xxx：返回销售趋势 + TOP10 商家。
- * 与 dashboard 的 categorySales 互补,这里展示按周期切换的销售曲线和商家排行。
- * dashboard 上的数据只有"近 14 天注册趋势 / 全期类目分布",粒度不变。
- */
 async function loadStats() {
   statsLoading.value = true
   statsError.value = ''
@@ -112,7 +127,7 @@ async function loadStats() {
     stats.value = await statsService.get(period.value)
   } catch (e: any) {
     stats.value = null
-    statsError.value = e?.message || '销售趋势数据加载失败'
+    statsError.value = e?.message || '销售趋势加载失败'
   } finally {
     statsLoading.value = false
   }
@@ -125,25 +140,33 @@ function retryAll() {
 
 watch(period, loadStats)
 
-const PERIOD_LABEL_MAP: Record<StatsPeriod, string> = {
-  today: '今日',
-  week: '本周',
-  month: '本月',
-  year: '本年',
-}
-
 const salesTrendPoints = computed(() => {
   const data = stats.value?.salesTrend ?? []
-  if (data.length === 0)
-    return { line: '', area: '', dots: [] as { x: number; y: number; v: number; label: string }[] }
+  if (data.length === 0) {
+    return { line: '', area: '', dots: [] as { x: number; y: number }[] }
+  }
   const max = Math.max(...data.map((d) => d.value), 1)
   const w = data.length > 1 ? 100 / (data.length - 1) : 100
-  const padY = 4
-  const dots = data.map((d, i) => {
-    const x = i * w
-    const y = padY + 32 - (d.value / max) * 28
-    return { x, y, v: d.value, label: d.date }
-  })
+  const dots = data.map((d, i) => ({
+    x: i * w,
+    y: 4 + 32 - (d.value / max) * 28,
+  }))
+  const line = dots.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const area = `${dots[0].x.toFixed(1)},40 ${line} ${dots[dots.length - 1].x.toFixed(1)},40`
+  return { line, area, dots }
+})
+
+const trendPoints = computed(() => {
+  const data = dashboard.value?.registrationTrend?.slice(-14) ?? []
+  if (data.length === 0) {
+    return { line: '', area: '', dots: [] as { x: number; y: number }[] }
+  }
+  const max = Math.max(...data.map((d) => d.value), 1)
+  const w = data.length > 1 ? 100 / (data.length - 1) : 100
+  const dots = data.map((d, i) => ({
+    x: i * w,
+    y: 4 + 32 - (d.value / max) * 28,
+  }))
   const line = dots.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
   const area = `${dots[0].x.toFixed(1)},40 ${line} ${dots[dots.length - 1].x.toFixed(1)},40`
   return { line, area, dots }
@@ -153,31 +176,14 @@ const maxMerchantSales = computed(() =>
   Math.max(...(stats.value?.topMerchants?.map((m) => m.sales) ?? [1])),
 )
 
-const trendPoints = computed(() => {
-  const data = dashboard.value?.registrationTrend?.slice(-14) ?? []
-  if (data.length === 0)
-    return { line: '', area: '', dots: [] as { x: number; y: number; v: number; label: string }[] }
-  const max = Math.max(...data.map((d) => d.value), 1)
-  const w = data.length > 1 ? 100 / (data.length - 1) : 100
-  const padY = 4 // 顶部留白避免线条贴边
-  const dots = data.map((d, i) => {
-    const x = i * w
-    const y = padY + 32 - (d.value / max) * 28
-    return { x, y, v: d.value, label: d.date }
-  })
-  const line = dots.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
-  const area = `${dots[0].x.toFixed(1)},40 ${line} ${dots[dots.length - 1].x.toFixed(1)},40`
-  return { line, area, dots }
-})
-
 const maxCategory = computed(() =>
   Math.max(...(dashboard.value?.categorySales?.map((c) => c.value) ?? [1])),
 )
 
 const merchantTotal = computed(() => {
-  const d = dashboard.value
+  const d = dashboard.value?.merchantTypeDistribution
   if (!d) return 1
-  return (d.merchantTypeDistribution?.factory ?? 0) + (d.merchantTypeDistribution?.store ?? 0) || 1
+  return (d.factory ?? 0) + (d.store ?? 0) || 1
 })
 
 const memberTotal = computed(() => {
@@ -196,13 +202,11 @@ function formatBeijingNow(): string {
     minute: '2-digit',
     hour12: false,
   }).formatToParts(new Date())
-  const valueOf = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
-  return `${valueOf('year')}-${valueOf('month')}-${valueOf('day')} ${valueOf('hour')}:${valueOf('minute')}`
+  const v = (t: string) => parts.find((p) => p.type === t)?.value ?? ''
+  return `${v('year')}-${v('month')}-${v('day')} ${v('hour')}:${v('minute')}`
 }
 
-const todayString = computed(() => {
-  return formatBeijingNow()
-})
+const todayString = computed(() => formatBeijingNow())
 
 function exportReport() {
   uni.showLoading({ title: '导出中…' })
@@ -217,12 +221,6 @@ onMounted(() => {
   loadStats()
 })
 
-/**
- * 切回数据 tab 时自动重试一次：
- * - 上次失败 → 重新拉
- * - 数据为空 → 重新拉
- * - 正常有数据 → 也刷新一下（数据时效性敏感）
- */
 onShow(() => {
   if (!dashboard.value || dashboardError.value) load()
   if (!stats.value || statsError.value) loadStats()
@@ -231,7 +229,7 @@ onShow(() => {
 
 <template>
   <view class="page">
-    <!-- 顶部彩色条（与商户/订单页统一橙色） -->
+    <!-- 顶部 sticky 渐变条 -->
     <view class="top-bar" :style="{ paddingTop: statusBarHeight }">
       <view class="top-row">
         <view class="top-title-block">
@@ -239,7 +237,7 @@ onShow(() => {
           <text class="top-time">{{ todayString }} · 北京时间</text>
         </view>
         <view class="export-btn" @click="exportReport">
-          <Icon name="doc" :size="26" color="#fff" />
+          <Icon name="doc" :size="24" color="#fff" />
           <text>导出</text>
         </view>
       </view>
@@ -254,106 +252,81 @@ onShow(() => {
       </view>
     </view>
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 顶层错误态：dashboard 加载失败 -->
+    <!-- 主内容区(自然文档流,绝不塌陷) -->
+    <view class="body">
+      <!-- 顶层错误态 -->
       <view v-if="dashboardError && !dashboard" class="err-card">
-        <Icon name="info" :size="64" color="#FF7A45" />
+        <text class="err-emoji">⚠️</text>
         <text class="err-title">加载失败</text>
         <text class="err-msg">{{ dashboardError }}</text>
         <view class="err-btn" @click="retryAll">点击重试</view>
       </view>
 
-      <!-- KPI 骨架屏 -->
-      <view v-if="loading && !dashboard" class="overview">
-        <view v-for="i in 4" :key="i" class="ov-item ov-skel">
-          <view class="ov-icon skel" />
-          <view class="ov-info">
-            <view class="skel-line w40" />
-            <view class="skel-line w70 tall" />
-            <view class="skel-line w30" />
-          </view>
+      <!-- 骨架屏 -->
+      <view v-if="dashboardLoading && !dashboard && !dashboardError" class="kpi-grid">
+        <view v-for="i in 4" :key="i" class="kpi-card skel">
+          <view class="skel-icon" />
+          <view class="skel-line w50" />
+          <view class="skel-line w70 tall" />
+          <view class="skel-line w40" />
         </view>
       </view>
 
-      <!-- 4 大 KPI -->
-      <view v-if="dashboard" class="overview">
-        <view v-for="k in KPI_CARDS" :key="k.key" class="ov-item">
-          <view class="ov-icon" :style="{ background: k.tint + '18' }">
-            <Icon :name="k.icon" :size="30" :color="k.tint" />
-          </view>
-          <view class="ov-info">
-            <text class="ov-label">{{ k.label }}</text>
-            <view class="ov-num-row">
-              <text v-if="k.isMoney" class="ov-cur">¥</text>
-              <text class="ov-num">{{ formatWan(k.value) }}</text>
+      <!-- 4 KPI 卡片(异色 + 渐变背景) -->
+      <view v-if="dashboard" class="kpi-grid">
+        <view v-for="k in KPI_CARDS" :key="k.key" class="kpi-card" :style="{ background: k.bg }">
+          <view class="kpi-head">
+            <view class="kpi-icon" :style="{ background: '#fff', color: k.tint }">
+              <Icon :name="k.icon" :size="28" :color="k.tint" />
             </view>
-            <view :class="['ov-delta', (k.delta ?? 0) >= 0 ? 'up' : 'down']">
+            <view :class="['kpi-delta', (k.delta ?? 0) >= 0 ? 'up' : 'down']">
               <Icon
                 :name="(k.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="16"
-                :color="(k.delta ?? 0) >= 0 ? '#52C41A' : '#FF3B30'"
+                :size="14"
+                :color="(k.delta ?? 0) >= 0 ? '#16A34A' : '#DC2626'"
               />
-              <text
-                >{{ (k.delta ?? 0) >= 0 ? '+' : '' }}{{ k.delta ?? 0
-                }}{{ k.key === 'gmv' ? '%' : '' }}</text
-              >
+              <text>{{ (k.delta ?? 0) >= 0 ? '+' : '' }}{{ k.delta ?? 0 }}{{ k.unit }}</text>
             </view>
           </view>
+          <text class="kpi-label">{{ k.label }}</text>
+          <view class="kpi-value-row">
+            <text v-if="k.money" class="kpi-cur">¥</text>
+            <text class="kpi-value" :style="{ color: k.tint }">{{ formatWan(k.value) }}</text>
+          </view>
         </view>
       </view>
 
-      <!-- 销售趋势：报错时显示单卡错误并提供重试 -->
-      <view v-if="statsError && !stats" class="chart-card err-inline">
+      <!-- 销售趋势 -->
+      <view class="chart-card">
         <view class="card-head">
           <view class="card-title-row">
             <view class="title-dot" />
             <text class="title">销售趋势</text>
           </view>
-          <view class="err-retry" @click="loadStats">重试</view>
+          <text class="meta">{{ PERIOD_LABEL[period] }}</text>
         </view>
-        <text class="err-inline-msg">{{ statsError }}</text>
-      </view>
-
-      <!-- 销售趋势加载骨架 -->
-      <view v-else-if="statsLoading && !stats" class="chart-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">销售趋势</text>
-          </view>
-          <text class="meta">加载中…</text>
+        <view v-if="statsError && !stats" class="inline-err">
+          <text class="inline-err-msg">{{ statsError }}</text>
+          <view class="inline-err-btn" @click="loadStats">重试</view>
         </view>
-        <view class="trend-svg-wrap skel" />
-      </view>
-
-      <!-- 销售趋势（按周期切换 · /p/stats） -->
-      <view v-if="stats" class="chart-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">销售趋势</text>
-          </view>
-          <text class="meta"
-            >{{ PERIOD_LABEL_MAP[period] }} · {{ stats.salesTrend.length }} 段</text
-          >
-        </view>
-        <view class="trend-svg-wrap">
+        <view v-else-if="statsLoading && !stats" class="chart-skel" />
+        <view v-else-if="stats && stats.salesTrend.length > 0" class="trend-wrap">
           <svg viewBox="0 0 100 44" preserveAspectRatio="none" class="trend-svg">
             <defs>
-              <linearGradient id="sales-g" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="sales-g-v3" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.32" />
                 <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
               </linearGradient>
-              <linearGradient id="sales-line" x1="0" y1="0" x2="1" y2="0">
+              <linearGradient id="sales-line-v3" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stop-color="#FF4D2D" />
-                <stop offset="100%" stop-color="#FAAD14" />
+                <stop offset="100%" stop-color="#F59E0B" />
               </linearGradient>
             </defs>
-            <polygon :points="salesTrendPoints.area" fill="url(#sales-g)" />
+            <polygon :points="salesTrendPoints.area" fill="url(#sales-g-v3)" />
             <polyline
               :points="salesTrendPoints.line"
               fill="none"
-              stroke="url(#sales-line)"
+              stroke="url(#sales-line-v3)"
               stroke-width="1.6"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -368,43 +341,44 @@ onShow(() => {
             />
           </svg>
         </view>
+        <view v-else class="empty-chart">
+          <text class="empty-emoji">📊</text>
+          <text class="empty-text">{{ PERIOD_LABEL[period] }} 暂无数据</text>
+        </view>
       </view>
 
-      <!-- TOP10 商家（按周期切换 · /p/stats） -->
-      <view v-if="stats && stats.topMerchants.length > 0" class="chart-card">
+      <!-- TOP 商家 -->
+      <view v-if="stats && stats.topMerchants && stats.topMerchants.length > 0" class="chart-card">
         <view class="card-head">
           <view class="card-title-row">
             <view class="title-dot" />
-            <text class="title">TOP{{ stats.topMerchants.length }} 商家</text>
+            <text class="title">TOP {{ Math.min(stats.topMerchants.length, 10) }} 商家</text>
           </view>
-          <text class="meta">{{ PERIOD_LABEL_MAP[period] }} GMV</text>
+          <text class="meta">{{ PERIOD_LABEL[period] }} GMV</text>
         </view>
-        <view class="cat-list">
-          <view v-for="(m, i) in stats.topMerchants" :key="m.merchantId" class="cat-row">
-            <view class="cat-label">
+        <view class="list">
+          <view
+            v-for="(m, i) in stats.topMerchants.slice(0, 10)"
+            :key="m.merchantId"
+            class="list-row"
+          >
+            <view
+              :class="['rank-mini', i === 0 && 'rank-1', i === 1 && 'rank-2', i === 2 && 'rank-3']"
+              >{{ i + 1 }}</view
+            >
+            <text class="list-name">{{ m.name }}</text>
+            <view class="list-bar-wrap">
               <view
-                :class="[
-                  'rank-mini',
-                  i === 0 && 'rank-1',
-                  i === 1 && 'rank-2',
-                  i === 2 && 'rank-3',
-                ]"
-                >{{ i + 1 }}</view
-              >
-              <text class="cat-name">{{ m.name }}</text>
-            </view>
-            <view class="cat-bar-wrap">
-              <view
-                class="cat-bar"
+                class="list-bar"
                 :style="{ width: ((m.sales / maxMerchantSales) * 100).toFixed(0) + '%' }"
               />
             </view>
-            <text class="cat-val">¥{{ formatWan(m.sales) }}</text>
+            <text class="list-val">¥{{ formatWan(m.sales) }}</text>
           </view>
         </view>
       </view>
 
-      <!-- 注册趋势 -->
+      <!-- 用户注册趋势 -->
       <view v-if="dashboard" class="chart-card">
         <view class="card-head">
           <view class="card-title-row">
@@ -413,23 +387,23 @@ onShow(() => {
           </view>
           <text class="meta">近 14 天</text>
         </view>
-        <view class="trend-svg-wrap">
+        <view v-if="trendPoints.dots.length > 0" class="trend-wrap">
           <svg viewBox="0 0 100 44" preserveAspectRatio="none" class="trend-svg">
             <defs>
-              <linearGradient id="trend-g" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.32" />
-                <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
+              <linearGradient id="trend-g-v3" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#A855F7" stop-opacity="0.32" />
+                <stop offset="100%" stop-color="#A855F7" stop-opacity="0" />
               </linearGradient>
-              <linearGradient id="trend-line" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#FF4D2D" />
-                <stop offset="100%" stop-color="#FF9C6E" />
+              <linearGradient id="trend-line-v3" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#A855F7" />
+                <stop offset="100%" stop-color="#EC4899" />
               </linearGradient>
             </defs>
-            <polygon :points="trendPoints.area" fill="url(#trend-g)" />
+            <polygon :points="trendPoints.area" fill="url(#trend-g-v3)" />
             <polyline
               :points="trendPoints.line"
               fill="none"
-              stroke="url(#trend-line)"
+              stroke="url(#trend-line-v3)"
               stroke-width="1.6"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -440,9 +414,13 @@ onShow(() => {
               :cx="p.x"
               :cy="p.y"
               r="0.8"
-              fill="#FF4D2D"
+              fill="#A855F7"
             />
           </svg>
+        </view>
+        <view v-else class="empty-chart">
+          <text class="empty-emoji">👥</text>
+          <text class="empty-text">暂无注册数据</text>
         </view>
       </view>
 
@@ -465,7 +443,7 @@ onShow(() => {
                   '%',
               }"
             />
-            <view class="p-tag" :style="{ background: '#FF4D2D' }" />
+            <view class="p-dot factory-dot" />
             <text class="p-label">厂家</text>
             <text class="p-pct"
               >{{
@@ -483,7 +461,7 @@ onShow(() => {
                   '%',
               }"
             />
-            <view class="p-tag" :style="{ background: '#FAAD14' }" />
+            <view class="p-dot store-dot" />
             <text class="p-label">门店</text>
             <text class="p-pct"
               >{{
@@ -496,35 +474,31 @@ onShow(() => {
       </view>
 
       <!-- 类目销售排行 -->
-      <view v-if="dashboard" class="chart-card">
+      <view
+        v-if="dashboard && dashboard.categorySales && dashboard.categorySales.length > 0"
+        class="chart-card"
+      >
         <view class="card-head">
           <view class="card-title-row">
             <view class="title-dot" />
             <text class="title">类目销售排行</text>
           </view>
-          <text class="meta">TOP {{ dashboard.categorySales?.length || 0 }}</text>
+          <text class="meta">TOP {{ dashboard.categorySales.length }}</text>
         </view>
-        <view class="cat-list">
-          <view v-for="(c, i) in dashboard.categorySales" :key="c.category" class="cat-row">
-            <view class="cat-label">
+        <view class="list">
+          <view v-for="(c, i) in dashboard.categorySales" :key="c.category" class="list-row">
+            <view
+              :class="['rank-mini', i === 0 && 'rank-1', i === 1 && 'rank-2', i === 2 && 'rank-3']"
+              >{{ i + 1 }}</view
+            >
+            <text class="list-name">{{ c.category }}</text>
+            <view class="list-bar-wrap">
               <view
-                :class="[
-                  'rank-mini',
-                  i === 0 && 'rank-1',
-                  i === 1 && 'rank-2',
-                  i === 2 && 'rank-3',
-                ]"
-                >{{ i + 1 }}</view
-              >
-              <text class="cat-name">{{ c.category }}</text>
-            </view>
-            <view class="cat-bar-wrap">
-              <view
-                class="cat-bar"
+                class="list-bar orange"
                 :style="{ width: ((c.value / maxCategory) * 100).toFixed(0) + '%' }"
               />
             </view>
-            <text class="cat-val">¥{{ formatWan(c.value) }}</text>
+            <text class="list-val">¥{{ formatWan(c.value) }}</text>
           </view>
         </view>
       </view>
@@ -574,31 +548,35 @@ onShow(() => {
           </view>
         </view>
       </view>
+    </view>
 
-      <view style="height: 200rpx" />
-    </scroll-view>
-
+    <!-- TabBar 固定底部,永不丢失 -->
     <TabBar current="stats" />
   </view>
 </template>
 
 <style lang="scss" scoped>
+/* === 根容器:自然文档流,不用 flex 撑高,绝不塌陷 === */
 .page {
   min-height: 100vh;
-  background: var(--bg-page);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  background: #f7f8fa;
+  /* 底部留出 TabBar (约 100rpx + 安全区) + 一点视觉缓冲 */
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 
-/* === 与商户/订单页统一的橙色顶部 === */
+/* === 顶部 sticky bar (滚动时吸顶) === */
 .top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   color: #fff;
-  padding-bottom: 24rpx;
+  padding-bottom: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.18);
 }
 .top-row {
-  padding: 20rpx 24rpx 16rpx;
+  padding: 16rpx 28rpx 14rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -610,6 +588,7 @@ onShow(() => {
   .top-title {
     font-size: 36rpx;
     font-weight: 800;
+    letter-spacing: 1rpx;
   }
   .top-time {
     font-size: 20rpx;
@@ -626,10 +605,9 @@ onShow(() => {
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 600;
-  backdrop-filter: blur(8rpx);
 }
 .periods {
-  margin: 0 24rpx;
+  margin: 0 28rpx;
   padding: 4rpx;
   background: rgba(255, 255, 255, 0.16);
   border-radius: 999rpx;
@@ -651,33 +629,33 @@ onShow(() => {
   }
 }
 
-.scroll {
-  flex: 1;
-  height: 0;
-  padding: 16rpx 24rpx 0;
-  box-sizing: border-box;
+/* === 主内容区 === */
+.body {
+  padding: 20rpx 24rpx 0;
 }
 
-/* === 错误态/骨架 === */
+/* === 错误态 === */
 .err-card {
-  margin: 40rpx 0 24rpx;
-  background: var(--bg-card);
-  border-radius: 20rpx;
-  padding: 56rpx 32rpx;
+  margin: 60rpx 0 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 60rpx 32rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14rpx;
-  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);
-  border: 1rpx solid rgba(15, 23, 42, 0.04);
+  gap: 12rpx;
+  box-shadow: 0 4rpx 20rpx rgba(15, 23, 42, 0.06);
+  .err-emoji {
+    font-size: 80rpx;
+  }
   .err-title {
-    font-size: 30rpx;
+    font-size: 32rpx;
     font-weight: 800;
-    color: var(--text-primary);
+    color: #1d2129;
   }
   .err-msg {
     font-size: 24rpx;
-    color: var(--text-tertiary);
+    color: #86909c;
     text-align: center;
     line-height: 1.6;
   }
@@ -692,154 +670,96 @@ onShow(() => {
     box-shadow: 0 6rpx 18rpx rgba(255, 77, 45, 0.32);
   }
 }
-.err-inline {
-  .err-inline-msg {
-    display: block;
-    font-size: 22rpx;
-    color: var(--text-tertiary);
-    text-align: center;
-    padding: 24rpx 0;
-  }
-  .err-retry {
-    padding: 6rpx 22rpx;
-    background: var(--bg-page);
-    color: var(--brand-primary);
-    border-radius: 999rpx;
-    font-size: 22rpx;
-    font-weight: 700;
-  }
-}
-.skel {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
-  background-size: 200% 100%;
-  animation: skel-shimmer 1.2s linear infinite;
-  border-radius: 12rpx;
-}
-@keyframes skel-shimmer {
-  0% {
-    background-position: 100% 0;
-  }
-  100% {
-    background-position: -100% 0;
-  }
-}
-.ov-skel {
-  .ov-icon.skel {
-    background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%) !important;
-    background-size: 200% 100%;
-    animation: skel-shimmer 1.2s linear infinite;
-  }
-  .skel-line {
-    height: 16rpx;
-    border-radius: 8rpx;
-    background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
-    background-size: 200% 100%;
-    animation: skel-shimmer 1.2s linear infinite;
-    margin-top: 8rpx;
-    &.tall {
-      height: 28rpx;
-      margin-top: 10rpx;
-    }
-    &.w30 {
-      width: 30%;
-    }
-    &.w40 {
-      width: 40%;
-    }
-    &.w70 {
-      width: 70%;
-    }
-  }
-}
 
-/* === KPI 4 宫格 === */
-.overview {
+/* === 4 张 KPI 卡 === */
+.kpi-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12rpx;
-  margin-bottom: 16rpx;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
 }
-.ov-item {
-  background: var(--bg-card);
-  border-radius: 20rpx;
-  padding: 20rpx;
+.kpi-card {
+  padding: 24rpx 22rpx;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  position: relative;
+  overflow: hidden;
+  min-height: 200rpx;
+  box-sizing: border-box;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.05);
+}
+.kpi-head {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);
-  border: 1rpx solid rgba(15, 23, 42, 0.04);
+  justify-content: space-between;
 }
-.ov-icon {
+.kpi-icon {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 16rpx;
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
 }
-.ov-info {
-  flex: 1;
-  min-width: 0;
+.kpi-delta {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 2rpx;
-  .ov-label {
-    font-size: 20rpx;
-    color: var(--text-tertiary);
+  padding: 4rpx 10rpx;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999rpx;
+  font-size: 18rpx;
+  font-weight: 700;
+  font-family: var(--font-family-base);
+  backdrop-filter: blur(4rpx);
+  &.up {
+    color: #16a34a;
   }
-  .ov-num-row {
-    display: flex;
-    align-items: baseline;
-    gap: 2rpx;
-    .ov-cur {
-      font-size: 20rpx;
-      font-weight: 800;
-      color: var(--text-primary);
-    }
-    .ov-num {
-      font-size: 32rpx;
-      font-weight: 800;
-      color: var(--text-primary);
-      line-height: 1;
-      font-family: var(--font-family-base);
-    }
+  &.down {
+    color: #dc2626;
   }
-  .ov-delta {
-    display: flex;
-    align-items: center;
-    gap: 2rpx;
-    font-size: 18rpx;
-    font-weight: 600;
+}
+.kpi-label {
+  font-size: 22rpx;
+  color: #4e5969;
+  font-weight: 600;
+}
+.kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4rpx;
+  .kpi-cur {
+    font-size: 24rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .kpi-value {
+    font-size: 44rpx;
+    font-weight: 900;
+    line-height: 1;
     font-family: var(--font-family-base);
-    &.up {
-      color: #52c41a;
-    }
-    &.down {
-      color: #ff3b30;
-    }
   }
 }
 
-/* === 通用卡片 === */
+/* === 通用 chart-card === */
 .chart-card {
-  background: var(--bg-card);
+  background: #fff;
   border-radius: 20rpx;
   padding: 24rpx;
   margin-bottom: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);
-  border: 1rpx solid rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.04);
 }
 .card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16rpx;
+  margin-bottom: 18rpx;
   .meta {
     font-size: 20rpx;
-    color: var(--text-tertiary);
+    color: #86909c;
     font-family: var(--font-family-base);
   }
 }
@@ -850,7 +770,7 @@ onShow(() => {
   .title {
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #1d2129;
   }
 }
 .title-dot {
@@ -860,8 +780,8 @@ onShow(() => {
   background: linear-gradient(180deg, #ff4d2d, #ff9c6e);
 }
 
-/* === 趋势 SVG === */
-.trend-svg-wrap {
+/* === 趋势图 === */
+.trend-wrap {
   height: 220rpx;
   width: 100%;
 }
@@ -869,6 +789,116 @@ onShow(() => {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* === 卡内错误 === */
+.inline-err {
+  padding: 40rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14rpx;
+}
+.inline-err-msg {
+  font-size: 24rpx;
+  color: #86909c;
+}
+.inline-err-btn {
+  padding: 10rpx 32rpx;
+  background: rgba(255, 77, 45, 0.1);
+  color: #ff4d2d;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+/* === 空态 === */
+.empty-chart {
+  height: 220rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  .empty-emoji {
+    font-size: 64rpx;
+    opacity: 0.5;
+  }
+  .empty-text {
+    font-size: 22rpx;
+    color: #c9cdd4;
+  }
+}
+
+/* === 列表（TOP 商家 / 类目排行） === */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+.rank-mini {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 10rpx;
+  background: #f5f6f8;
+  color: #86909c;
+  font-size: 20rpx;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family-base);
+  flex-shrink: 0;
+  &.rank-1 {
+    background: linear-gradient(135deg, #ffb300, #ff6b45);
+    color: #fff;
+  }
+  &.rank-2 {
+    background: linear-gradient(135deg, #ffd89b, #ffb300);
+    color: #fff;
+  }
+  &.rank-3 {
+    background: linear-gradient(135deg, #ffe4d9, #ff9c6e);
+    color: #fff;
+  }
+}
+.list-name {
+  width: 140rpx;
+  font-size: 24rpx;
+  color: #1d2129;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-bar-wrap {
+  flex: 1;
+  height: 14rpx;
+  background: #f5f6f8;
+  border-radius: 999rpx;
+  overflow: hidden;
+  min-width: 80rpx;
+}
+.list-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 999rpx;
+  transition: width 0.5s ease;
+  &.orange {
+    background: linear-gradient(90deg, #ff4d2d, #ff9c6e);
+  }
+}
+.list-val {
+  min-width: 100rpx;
+  text-align: right;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #ff4d2d;
+  font-family: var(--font-family-base);
 }
 
 /* === 商户类型分布 === */
@@ -879,131 +909,67 @@ onShow(() => {
 }
 .pie-item {
   position: relative;
-  height: 64rpx;
-  background: var(--bg-page);
-  border-radius: 16rpx;
+  height: 72rpx;
+  background: #f7f8fa;
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
-  padding: 0 16rpx;
-  gap: 10rpx;
-  overflow: hidden;
-  .pie-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, rgba(255, 77, 45, 0.18), rgba(255, 77, 45, 0.04));
-    border-radius: 16rpx;
-    transition: width 0.5s ease;
-  }
-  &.store .pie-bar {
-    background: linear-gradient(90deg, rgba(250, 173, 20, 0.2), rgba(250, 173, 20, 0.04));
-  }
-  .p-tag {
-    width: 8rpx;
-    height: 32rpx;
-    border-radius: 4rpx;
-    z-index: 1;
-  }
-  .p-label {
-    font-size: 24rpx;
-    font-weight: 700;
-    color: var(--text-primary);
-    z-index: 1;
-  }
-  .p-pct {
-    margin-left: auto;
-    font-size: 20rpx;
-    font-weight: 600;
-    color: var(--text-tertiary);
-    font-family: var(--font-family-base);
-    z-index: 1;
-  }
-  .p-num {
-    margin-left: 16rpx;
-    font-size: 28rpx;
-    font-weight: 800;
-    color: var(--brand-primary);
-    font-family: var(--font-family-base);
-    z-index: 1;
-  }
-  &.store .p-num {
-    color: #faad14;
-  }
-}
-
-/* === 类目销售 === */
-.cat-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14rpx;
-}
-.cat-row {
-  display: flex;
-  align-items: center;
+  padding: 0 20rpx;
   gap: 12rpx;
-}
-.cat-label {
-  width: 156rpx;
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  font-size: 24rpx;
-  color: var(--text-primary);
-  .rank-mini {
-    width: 30rpx;
-    height: 30rpx;
-    border-radius: 8rpx;
-    background: var(--bg-page);
-    color: var(--text-tertiary);
-    font-size: 18rpx;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-family-base);
-    flex-shrink: 0;
-    &.rank-1 {
-      background: linear-gradient(135deg, #ffb300, #ff6b45);
-      color: #fff;
-    }
-    &.rank-2 {
-      background: linear-gradient(135deg, #ffd89b, #ffb300);
-      color: #fff;
-    }
-    &.rank-3 {
-      background: linear-gradient(135deg, #ffe4d9, #ff9c6e);
-      color: #fff;
-    }
-  }
-  .cat-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-.cat-bar-wrap {
-  flex: 1;
-  height: 16rpx;
-  background: var(--bg-page);
-  border-radius: 999rpx;
   overflow: hidden;
-  .cat-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #ff4d2d, #ff9c6e);
-    border-radius: 999rpx;
-    transition: width 0.5s ease;
+}
+.pie-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 18rpx;
+  transition: width 0.5s ease;
+}
+.pie-item.factory .pie-bar {
+  background: linear-gradient(90deg, rgba(255, 77, 45, 0.2), rgba(255, 77, 45, 0.04));
+}
+.pie-item.store .pie-bar {
+  background: linear-gradient(90deg, rgba(250, 173, 20, 0.22), rgba(250, 173, 20, 0.04));
+}
+.p-dot {
+  width: 12rpx;
+  height: 32rpx;
+  border-radius: 4rpx;
+  z-index: 1;
+  &.factory-dot {
+    background: #ff4d2d;
+  }
+  &.store-dot {
+    background: #faad14;
   }
 }
-.cat-val {
-  min-width: 100rpx;
-  text-align: right;
-  font-size: 22rpx;
+.p-label {
+  font-size: 26rpx;
   font-weight: 700;
-  color: var(--brand-primary);
+  color: #1d2129;
+  z-index: 1;
+}
+.p-pct {
+  margin-left: auto;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #86909c;
   font-family: var(--font-family-base);
+  z-index: 1;
+}
+.p-num {
+  margin-left: 14rpx;
+  font-size: 30rpx;
+  font-weight: 800;
+  font-family: var(--font-family-base);
+  z-index: 1;
+}
+.pie-item.factory .p-num {
+  color: #ff4d2d;
+}
+.pie-item.store .p-num {
+  color: #faad14;
 }
 
 /* === 会员分布 === */
@@ -1011,50 +977,110 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 16rpx 0 4rpx;
+  padding: 20rpx 0 8rpx;
 }
 .md-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  .md-circle {
-    width: 120rpx;
-    height: 120rpx;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.12);
-    &.yearly {
-      background: linear-gradient(135deg, #ffd89b, #ff6b45);
-    }
-    &.monthly {
-      background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
-    }
-    &.trial {
-      background: linear-gradient(135deg, #faad14, #ffb300);
-    }
+  gap: 10rpx;
+}
+.md-circle {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.12);
+  &.yearly {
+    background: linear-gradient(135deg, #ffd89b, #ff6b45);
   }
-  .md-num {
-    font-size: 36rpx;
-    font-weight: 800;
-    line-height: 1;
-    font-family: var(--font-family-base);
+  &.monthly {
+    background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   }
-  .md-pct {
-    margin-top: 2rpx;
-    font-size: 18rpx;
-    font-weight: 600;
-    opacity: 0.85;
-    font-family: var(--font-family-base);
+  &.trial {
+    background: linear-gradient(135deg, #faad14, #ffb300);
   }
-  .md-label {
-    font-size: 22rpx;
-    color: var(--text-primary);
-    font-weight: 600;
+}
+.md-num {
+  font-size: 38rpx;
+  font-weight: 900;
+  line-height: 1;
+  font-family: var(--font-family-base);
+}
+.md-pct {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  opacity: 0.92;
+  font-family: var(--font-family-base);
+}
+.md-label {
+  font-size: 22rpx;
+  color: #4e5969;
+  font-weight: 600;
+}
+
+/* === 骨架屏 === */
+.skel {
+  position: relative;
+  background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s linear infinite;
+  border-radius: 12rpx;
+}
+.kpi-card.skel {
+  background: #fff;
+  border: 1rpx dashed #ebeef5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10rpx;
+}
+.skel-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s linear infinite;
+}
+.skel-line {
+  height: 20rpx;
+  border-radius: 8rpx;
+  background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s linear infinite;
+  &.tall {
+    height: 36rpx;
+  }
+  &.w40 {
+    width: 40%;
+  }
+  &.w50 {
+    width: 50%;
+  }
+  &.w70 {
+    width: 70%;
+  }
+}
+.chart-skel {
+  height: 220rpx;
+  border-radius: 12rpx;
+  background: linear-gradient(90deg, #f1f3f6 0%, #fafbfc 50%, #f1f3f6 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s linear infinite;
+}
+@keyframes skel-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
   }
 }
 </style>

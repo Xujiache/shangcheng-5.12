@@ -12,6 +12,7 @@ import { ref, computed, onMounted } from 'vue'
 import { appService, type AppRelease } from '../../services/app'
 import { useStatusBar } from '../../composables/useStatusBar'
 import Icon from '../../components/icon/icon.vue'
+import { safeBackOrHome } from '../../utils/tab-nav'
 
 const { heroPaddingTop } = useStatusBar(24)
 
@@ -75,7 +76,7 @@ function saveQr() {
 }
 
 function goBack() {
-  uni.navigateBack({ delta: 1, fail: () => uni.switchTab({ url: '/pages/tabbar/me/index' }) })
+  safeBackOrHome('/pages/tabbar/me/index')
 }
 </script>
 

@@ -302,4 +302,59 @@ export class PlatformController {
   @Post('system/settings') saveSystemSettings(@Body() dto: any) {
     return this.svc.saveSystemSettings(dto)
   }
+
+  // ============ 工单系统 ============
+  // 工单基于 SystemConfig key='ticket:<id>' 兜底存储,详见 svc.tickets() 注释
+  // 路由顺序:`handled-count` / `pending-count` 必须在 `:id` 系列之前
+  @Get('tickets/handled-count') handledTicketCount() {
+    return this.svc.handledTicketCount()
+  }
+  @Get('tickets/pending-count') pendingTicketCount() {
+    return this.svc.pendingTicketCount()
+  }
+  @Get('tickets') tickets(@Query() q: any) {
+    return this.svc.tickets(q)
+  }
+  @Post('tickets') createTicket(@Body() dto: any, @CurrentUser() u: AuthUser) {
+    return this.svc.createTicket({
+      title: dto?.title,
+      content: dto?.content,
+      fromUserId: dto?.fromUserId || u?.sub,
+      fromUserName: dto?.fromUserName,
+      priority: dto?.priority,
+    })
+  }
+  @Post('tickets/:id/handle') handleTicket(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @CurrentUser() u: AuthUser,
+  ) {
+    return this.svc.handleTicket(id, dto, u?.sub)
+  }
+
+  // ============ 消息中心 ============
+  // 同样基于 SystemConfig key='notification:<id>' 兜底存储;
+  // 平台运营人员看到的系统通知/待办提醒/业务提示三类。
+  @Get('notifications') notifications(@Query() q: any) {
+    return this.svc.notifications(q)
+  }
+  @Post('notifications/read-all') notificationsReadAll(@CurrentUser() u: AuthUser) {
+    return this.svc.notificationsReadAll(u?.sub)
+  }
+  @Post('notifications/:id/read') notificationRead(
+    @Param('id') id: string,
+    @CurrentUser() u: AuthUser,
+  ) {
+    return this.svc.notificationRead(id, u?.sub)
+  }
+
+  // ============ 反馈 ============
+  // 反馈记录基于 SystemConfig key='feedback:<id>' 兜底存储,
+  // 平台运营人员可在 admin-pc / platform-app 查看 / 处理。
+  @Post('feedback') submitFeedback(@Body() dto: any, @CurrentUser() u: AuthUser) {
+    return this.svc.submitFeedback(dto, u?.sub)
+  }
+  @Get('feedback') feedbackList(@Query() q: any) {
+    return this.svc.feedbackList(q)
+  }
 }

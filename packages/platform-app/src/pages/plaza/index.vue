@@ -89,7 +89,10 @@ async function load() {
         const normStatus: PlazaItemStatus =
           rawStatus === 'active'
             ? 'pushing'
-            : rawStatus === 'pushing' || rawStatus === 'pending' || rawStatus === 'offline' || rawStatus === 'rejected'
+            : rawStatus === 'pushing' ||
+                rawStatus === 'pending' ||
+                rawStatus === 'offline' ||
+                rawStatus === 'rejected'
               ? (rawStatus as PlazaItemStatus)
               : 'pending'
         return {
@@ -112,36 +115,36 @@ async function load() {
     } else if (tab.value === 'factories') {
       const list = (await plazaService.factories()) as any[]
       const arr = Array.isArray(list) ? list : []
-      items.value = arr.map((x: any, i: number): PlazaItem => ({
-        id: String(x.id ?? `fac-${i}`),
-        name: x.name || x.legalName || '未命名厂家',
-        factory: x.region || x.address || '',
-        price: 0,
-        image: x.logo || x.avatar || '',
-        tag: x.type === 'factory' ? '厂家' : x.type,
-        tagTone: 'accent',
-        status: x.status === 'active' ? 'pushing' : 'offline',
-        agencyCount: typeof x.agencyCount === 'number' ? x.agencyCount : 0,
-      }))
+      items.value = arr.map(
+        (x: any, i: number): PlazaItem => ({
+          id: String(x.id ?? `fac-${i}`),
+          name: x.name || x.legalName || '未命名厂家',
+          factory: x.region || x.address || '',
+          price: 0,
+          image: x.logo || x.avatar || '',
+          tag: x.type === 'factory' ? '厂家' : x.type,
+          tagTone: 'accent',
+          status: x.status === 'active' ? 'pushing' : 'offline',
+          agencyCount: typeof x.agencyCount === 'number' ? x.agencyCount : 0,
+        }),
+      )
     } else {
       const res = (await plazaService.records({ pageSize: 30 })) as { list?: any[] }
       const list = Array.isArray(res?.list) ? res!.list! : []
-      items.value = list.map((x: any, i: number): PlazaItem => ({
-        id: String(x.id ?? `rec-${i}`),
-        name: x.merchant?.name || x.merchantName || '代理申请记录',
-        factory: x.applicantName || x.applicantPhone || '',
-        price: typeof x.expectedAmount === 'number' ? x.expectedAmount : 0,
-        image: '',
-        tag: x.status || '处理中',
-        tagTone: 'accent',
-        status:
-          x.status === 'approved'
-            ? 'pushing'
-            : x.status === 'rejected'
-              ? 'offline'
-              : 'pending',
-        agencyCount: 0,
-      }))
+      items.value = list.map(
+        (x: any, i: number): PlazaItem => ({
+          id: String(x.id ?? `rec-${i}`),
+          name: x.merchant?.name || x.merchantName || '代理申请记录',
+          factory: x.applicantName || x.applicantPhone || '',
+          price: typeof x.expectedAmount === 'number' ? x.expectedAmount : 0,
+          image: '',
+          tag: x.status || '处理中',
+          tagTone: 'accent',
+          status:
+            x.status === 'approved' ? 'pushing' : x.status === 'rejected' ? 'offline' : 'pending',
+          agencyCount: 0,
+        }),
+      )
     }
   } catch {
     items.value = []
@@ -183,24 +186,121 @@ function pushOne(item: PlazaItem) {
 }
 
 /**
- * 平台端"下架推送"按钮：
- * 后端没有针对单个 plazaPush 的下架接口（只能整条 update 推送记录的 status,
- * 但 platform-app 没必要复刻完整推送编辑器）。这里给出明确指引而不是假装"已下架"。
+ * 平台端"下架推送"按钮 —— 直接调 PATCH /p/plaza/products/:id/online {online:false},
+ * 后端把状态存在 SystemConfig 兜底键 `plaza:product:${productId}`(不改 product.status,
+ * 商家上下架与平台广场可见状态各自独立)。
+ *
+ * UI 乐观更新:点击后先把卡片 status 切到 offline,失败再回滚 + toast,
+ * 避免用户看到"已下架"但实际仍在广场曝光的脱节状态。
+ *
+ * 仅 products tab 渲染下架按钮,因后端没有对应"下架厂家"接口;
+ * 调用方(template / editItem)已保证此函数只在 products tab 触发。
  */
-function offlineOne(item: PlazaItem) {
-  uni.showModal({
-    title: '下架推送',
-    content: `下架「${item.name}」请到 admin-pc 管理后台 → 选品广场 → 推送记录，单条暂停或整条推送下线。`,
-    confirmText: '我知道了',
-    showCancel: false,
+const togglingId = ref<string | null>(null)
+async function offlineOne(item: PlazaItem) {
+  if (tab.value !== 'products') return
+  if (togglingId.value) return
+  const confirmed = await new Promise<boolean>((resolve) => {
+    uni.showModal({
+      title: '下架商品',
+      content: `确定要从选品广场下架「${item.name}」吗?\n下架后商家端选品广场将不再展示此商品,商家自身的商品库存/上架状态不受影响。`,
+      confirmText: '确认下架',
+      confirmColor: '#FF4D2D',
+      success: (r) => resolve(!!r.confirm),
+      fail: () => resolve(false),
+    })
   })
+  if (!confirmed) return
+  togglingId.value = item.id
+  const prevStatus = item.status
+  // 乐观更新:列表里把卡片 status 改成 offline
+  const idx = items.value.findIndex((x) => x.id === item.id)
+  if (idx >= 0) items.value[idx] = { ...items.value[idx], status: 'offline' }
+  try {
+    await plazaService.setProductOnline(item.id, false)
+    uni.showToast({ title: '已下架', icon: 'success' })
+  } catch (e: any) {
+    if (idx >= 0) items.value[idx] = { ...items.value[idx], status: prevStatus }
+    uni.showToast({ title: e?.message || '下架失败,已回滚', icon: 'none' })
+  } finally {
+    togglingId.value = null
+  }
 }
 
+/** 把已下架商品重新上架到选品广场(同接口反向). */
+async function onlineOne(item: PlazaItem) {
+  if (tab.value !== 'products') return
+  if (togglingId.value) return
+  togglingId.value = item.id
+  const prevStatus = item.status
+  const idx = items.value.findIndex((x) => x.id === item.id)
+  if (idx >= 0) items.value[idx] = { ...items.value[idx], status: 'pushing' }
+  try {
+    await plazaService.setProductOnline(item.id, true)
+    uni.showToast({ title: '已上架', icon: 'success' })
+  } catch (e: any) {
+    if (idx >= 0) items.value[idx] = { ...items.value[idx], status: prevStatus }
+    uni.showToast({ title: e?.message || '上架失败,已回滚', icon: 'none' })
+  } finally {
+    togglingId.value = null
+  }
+}
+
+/**
+ * 卡片「编辑」按钮 —— 给出当前 Tab 下真实可用的快捷操作:
+ *   - products: 复制商品 ID / 新建推送 / 切换上下架(广场可见性)
+ *   - factories: 复制厂家 ID / 新建推送
+ *   - records: 复制记录 ID(仅查看入口,详细操作走 admin-pc)
+ * 不再出现「改位置/改标签」这种纯 toast 占位。
+ */
 function editItem(item: PlazaItem) {
+  if (tab.value === 'products') {
+    const isOnline = item.status === 'pushing' || item.status === 'active'
+    const items_ = ['复制商品 ID', '新建推送', isOnline ? '从广场下架' : '上架到广场']
+    uni.showActionSheet({
+      itemList: items_,
+      success: (r) => {
+        if (r.tapIndex === 0) {
+          uni.setClipboardData({
+            data: item.id,
+            success: () => uni.showToast({ title: 'ID 已复制', icon: 'success' }),
+          })
+        } else if (r.tapIndex === 1) {
+          pushOne(item)
+        } else if (r.tapIndex === 2) {
+          if (isOnline) offlineOne(item)
+          else onlineOne(item)
+        }
+      },
+    })
+    return
+  }
+  if (tab.value === 'factories') {
+    uni.showActionSheet({
+      itemList: ['复制厂家 ID', '新建推送'],
+      success: (r) => {
+        if (r.tapIndex === 0) {
+          uni.setClipboardData({
+            data: item.id,
+            success: () => uni.showToast({ title: 'ID 已复制', icon: 'success' }),
+          })
+        } else if (r.tapIndex === 1) {
+          pushOne(item)
+        }
+      },
+    })
+    return
+  }
+  // records tab
   uni.showActionSheet({
-    itemList: ['修改推送位置', '修改标签', '修改投放对象', '查看数据'],
+    itemList: ['复制记录 ID'],
     success: (r) => {
-      uni.showToast({ title: ['改位置', '改标签', '改对象', '查数据'][r.tapIndex], icon: 'none' })
+      if (r.tapIndex === 0) {
+        uni.setClipboardData({
+          data: item.id,
+          success: () => uni.showToast({ title: 'ID 已复制', icon: 'success' }),
+        })
+      }
     },
   })
 }
@@ -285,7 +385,10 @@ onMounted(load)
                 <text class="name">{{ x.name }}</text>
                 <view
                   class="status-tag"
-                  :style="{ color: statusMeta(x.status).tint, background: statusMeta(x.status).tint + '14' }"
+                  :style="{
+                    color: statusMeta(x.status).tint,
+                    background: statusMeta(x.status).tint + '14',
+                  }"
                 >
                   {{ statusMeta(x.status).label }}
                 </view>
@@ -301,11 +404,41 @@ onMounted(load)
 
           <view class="actions" @click.stop>
             <view class="btn ghost" @click="editItem(x)">编辑</view>
-            <view
-              :class="['btn', x.status === 'pushing' ? 'dark' : 'primary']"
-              @click="x.status === 'pushing' ? offlineOne(x) : pushOne(x)"
-            >
-              {{ x.status === 'pushing' ? '下架' : '推送' }}
+            <!--
+              动作按钮根据 tab + status 渲染,只在后端真实支持的组合上启用对应能力:
+
+              products tab(后端有 setPlazaProductOnline 接口):
+                - pushing/active → 下架(真接口,处理中禁点)
+                - offline       → 上架(同接口反向) + 推送(创建广告位)
+                - 其它          → 推送
+
+              factories tab:
+                - 推送(把厂家作为推送对象到 push 页)
+
+              records tab:
+                - 仅"编辑"按钮(代理申请记录是只读流水)
+            -->
+            <template v-if="tab === 'products'">
+              <template v-if="x.status === 'offline'">
+                <view
+                  :class="['btn ghost', togglingId === x.id ? 'loading' : '']"
+                  @click="onlineOne(x)"
+                >
+                  {{ togglingId === x.id ? '处理中…' : '上架' }}
+                </view>
+                <view class="btn primary" @click="pushOne(x)">推送</view>
+              </template>
+              <view
+                v-else-if="x.status === 'pushing' || x.status === 'active'"
+                :class="['btn dark', togglingId === x.id ? 'loading' : '']"
+                @click="offlineOne(x)"
+              >
+                {{ togglingId === x.id ? '处理中…' : '下架' }}
+              </view>
+              <view v-else class="btn primary" @click="pushOne(x)">推送</view>
+            </template>
+            <view v-else-if="tab === 'factories'" class="btn primary" @click="pushOne(x)">
+              推送
             </view>
           </view>
         </view>
@@ -318,7 +451,7 @@ onMounted(load)
         />
       </view>
 
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -378,7 +511,10 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  .s-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .s-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .s-value {
     font-size: 36rpx;
     font-weight: 800;
@@ -417,7 +553,7 @@ onMounted(load)
   border-radius: 999rpx;
   font-size: 24rpx;
   font-weight: 700;
-  box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+  box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   &.on {
     background: var(--text-primary);
   }
@@ -444,10 +580,10 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 16rpx;
-  transition: all .2s;
+  transition: all 0.2s;
   &.selected {
     border: 2rpx solid var(--brand-primary);
-    background: rgba(255,77,45,0.04);
+    background: rgba(255, 77, 45, 0.04);
   }
 }
 .card-body {
@@ -519,8 +655,14 @@ onMounted(load)
     border-radius: 999rpx;
     font-size: 18rpx;
     font-weight: 600;
-    &.tone-accent { background: rgba(255,77,45,0.1); color: var(--brand-primary); }
-    &.tone-pop { background: linear-gradient(90deg, #FFF4E5, #FFE4C7); color: #B25900; }
+    &.tone-accent {
+      background: rgba(255, 77, 45, 0.1);
+      color: var(--brand-primary);
+    }
+    &.tone-pop {
+      background: linear-gradient(90deg, #fff4e5, #ffe4c7);
+      color: #b25900;
+    }
   }
 }
 .agency {
@@ -548,11 +690,15 @@ onMounted(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
   &.dark {
     background: var(--text-primary);
     color: #fff;
+  }
+  &.loading {
+    opacity: 0.6;
+    pointer-events: none;
   }
 }
 </style>

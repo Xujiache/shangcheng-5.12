@@ -1509,4 +1509,286 @@ export class PlatformService {
     })
     return { ok: true }
   }
+
+  // ========== 工单系统 (基于 SystemConfig 兜底) ==========
+  /**
+   * 工单系统最小实现 —— 不改 prisma schema,沿用 SystemConfig key='ticket:<id>'。
+   *
+   * 用 SystemConfig 兜底 (而不是单独建表) 的理由:
+   *   - 业务量小且早期容易迭代字段
+   *   - 已有 SystemConfig 通用读写,无需 migration
+   *   - 字段以 JSON 形式存储,新增字段无需 ALTER
+   *
+   * 数据形态 (TicketRow):
+   *   { id, title, content, fromUserId, fromUserName, status:'open'|'handling'|'closed',
+   *     priority:'low'|'normal'|'high', createdAt, handledBy?, handledAt?, reply? }
+   *
+   * 未来若业务扩展,可以无痛迁到独立 Ticket 表 + 全文索引。
+   */
+  async tickets(query: any = {}) {
+    const { skip, take, page, pageSize } = parsePage(query)
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: 'ticket:' } },
+      orderBy: { updatedAt: 'desc' },
+    })
+    let all = rows
+      .map((r) => {
+        const v = (r.value || {}) as Record<string, any>
+        return {
+          id: v.id || r.key.replace(/^ticket:/, ''),
+          title: v.title || '',
+          content: v.content || '',
+          fromUserId: v.fromUserId || null,
+          fromUserName: v.fromUserName || '匿名用户',
+          status: v.status || 'open',
+          priority: v.priority || 'normal',
+          createdAt: v.createdAt || r.updatedAt.toISOString(),
+          handledBy: v.handledBy || null,
+          handledAt: v.handledAt || null,
+          reply: v.reply || '',
+        }
+      })
+      .filter((t) => t.id)
+
+    if (query?.status && query.status !== 'all') {
+      all = all.filter((t) => t.status === query.status)
+    }
+    if (query?.priority && query.priority !== 'all') {
+      all = all.filter((t) => t.priority === query.priority)
+    }
+    if (query?.keyword) {
+      const kw = String(query.keyword).toLowerCase()
+      all = all.filter(
+        (t) =>
+          t.title.toLowerCase().includes(kw) ||
+          t.content.toLowerCase().includes(kw) ||
+          t.fromUserName.toLowerCase().includes(kw),
+      )
+    }
+
+    const total = all.length
+    const list = all.slice(skip, skip + take)
+    return buildPage(list, total, page, pageSize)
+  }
+
+  /** 已处理工单数 (最近 30 天 closed) — 给 platform-app 个人中心徽章用 */
+  async handledTicketCount() {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000)
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: 'ticket:' } },
+      select: { value: true, updatedAt: true },
+    })
+    const count = rows.filter((r) => {
+      const v = (r.value || {}) as Record<string, any>
+      if (v.status !== 'closed') return false
+      const handledAt = v.handledAt ? new Date(v.handledAt) : r.updatedAt
+      return handledAt.getTime() >= thirtyDaysAgo.getTime()
+    }).length
+    return { count }
+  }
+
+  /** 未处理工单数 (open + handling) — 给个人中心徽章用 */
+  async pendingTicketCount() {
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: 'ticket:' } },
+      select: { value: true },
+    })
+    const count = rows.filter((r) => {
+      const v = (r.value || {}) as Record<string, any>
+      return v.status === 'open' || v.status === 'handling' || !v.status
+    }).length
+    return { count }
+  }
+
+  /**
+   * 处理工单 — 写回 reply / status / handledBy / handledAt 到 SystemConfig。
+   *
+   * @param id 工单 id (会拼成 key='ticket:<id>')
+   * @param dto.reply 回复内容
+   * @param dto.status 目标状态 open / handling / closed
+   * @param callerSub 当前管理员 sub (写入 handledBy)
+   */
+  async handleTicket(
+    id: string,
+    dto: { reply?: string; status?: 'open' | 'handling' | 'closed' },
+    callerSub?: string,
+  ) {
+    if (!id) throw new BizException(BizCode.INVALID_PARAMS, '工单 id 必填')
+    const key = `ticket:${id}`
+    const row = await this.prisma.systemConfig.findUnique({ where: { key } })
+    if (!row) throw new BizException(BizCode.NOT_FOUND, '工单不存在')
+    const cur = (row.value || {}) as Record<string, any>
+    const nextStatus = dto?.status || cur.status || 'handling'
+    if (!['open', 'handling', 'closed'].includes(nextStatus)) {
+      throw new BizException(BizCode.INVALID_PARAMS, 'status 仅支持 open/handling/closed')
+    }
+    const next = {
+      ...cur,
+      id: cur.id || id,
+      reply: dto?.reply ?? cur.reply ?? '',
+      status: nextStatus,
+      handledBy: callerSub || cur.handledBy || null,
+      handledAt: new Date().toISOString(),
+    }
+    await this.prisma.systemConfig.update({ where: { key }, data: { value: next } })
+    return { ok: true, ticket: next }
+  }
+
+  /**
+   * 创建工单 — 用户端/管理后台 都可调用。
+   *
+   * id 由后端生成 (Date.now()-rand),写入 SystemConfig key='ticket:<id>'。
+   * status 默认 'open',priority 默认 'normal'。
+   */
+  async createTicket(dto: {
+    title: string
+    content: string
+    fromUserId?: string
+    fromUserName?: string
+    priority?: 'low' | 'normal' | 'high'
+  }) {
+    if (!dto?.title) throw new BizException(BizCode.INVALID_PARAMS, '工单标题必填')
+    const id = `${Date.now()}${Math.random().toString(36).slice(2, 6)}`
+    const value = {
+      id,
+      title: dto.title,
+      content: dto.content || '',
+      fromUserId: dto.fromUserId || null,
+      fromUserName: dto.fromUserName || '匿名用户',
+      status: 'open',
+      priority: dto.priority || 'normal',
+      createdAt: new Date().toISOString(),
+      handledBy: null,
+      handledAt: null,
+      reply: '',
+    }
+    await this.prisma.systemConfig.create({
+      data: { key: `ticket:${id}`, value },
+    })
+    return value
+  }
+
+  // ============ 消息中心 (基于 SystemConfig 兜底) ============
+  /**
+   * 平台消息中心:系统通知 / 待办提醒 / 业务提示
+   * 存储:SystemConfig key='notification:<id>' value={id,type,title,content,unread,createdAt,readBy[]}
+   * 用户维度:readBy 数组记录哪些 user.sub 已读;markAll 时把 readBy 加入 callerSub
+   *
+   * 实际生产推荐迁移到 Notification 正式表 + Redis 维度缓存;现阶段量级 < 千级可用。
+   */
+  async notifications(query: any = {}) {
+    const page = Math.max(1, Number(query?.page) || 1)
+    const pageSize = Math.min(100, Math.max(1, Number(query?.pageSize) || 20))
+    const type = query?.type || ''
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: 'notification:' } },
+      orderBy: { updatedAt: 'desc' },
+      take: 500,
+    })
+    let list = rows.map((r) => (r.value as any) || {}).filter((n) => n && n.id)
+    if (type && type !== 'all') {
+      list = list.filter((n) => n.type === type)
+    }
+    const total = list.length
+    const start = (page - 1) * pageSize
+    return {
+      list: list.slice(start, start + pageSize),
+      total,
+      page,
+      pageSize,
+      hasMore: start + pageSize < total,
+    }
+  }
+
+  async notificationsReadAll(callerSub?: string) {
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: 'notification:' } },
+      take: 500,
+    })
+    let updated = 0
+    for (const r of rows) {
+      const cfg = (r.value as any) || {}
+      const readBy: string[] = Array.isArray(cfg.readBy) ? cfg.readBy : []
+      if (callerSub && !readBy.includes(callerSub)) {
+        readBy.push(callerSub)
+        await this.prisma.systemConfig
+          .update({
+            where: { key: r.key },
+            data: { value: { ...cfg, readBy, unread: false } as any },
+          })
+          .catch(() => {})
+        updated += 1
+      }
+    }
+    return { ok: true, updated }
+  }
+
+  async notificationRead(id: string, callerSub?: string) {
+    const row = await this.prisma.systemConfig.findUnique({
+      where: { key: `notification:${id}` },
+    })
+    if (!row) throw new BizException(BizCode.NOT_FOUND, '消息不存在')
+    const cfg = (row.value as any) || {}
+    const readBy: string[] = Array.isArray(cfg.readBy) ? cfg.readBy : []
+    if (callerSub && !readBy.includes(callerSub)) {
+      readBy.push(callerSub)
+    }
+    await this.prisma.systemConfig.update({
+      where: { key: `notification:${id}` },
+      data: { value: { ...cfg, readBy, unread: false } as any },
+    })
+    return { ok: true }
+  }
+
+  // ============ 反馈 (基于 SystemConfig 兜底) ============
+  /**
+   * 用户/管理员提交反馈
+   * Body: {type:'suggestion'|'bug'|'experience'|'other', content, contact?, images?[]}
+   */
+  async submitFeedback(dto: any, callerSub?: string) {
+    if (!dto?.content || String(dto.content).trim().length < 10) {
+      throw new BizException(BizCode.INVALID_PARAMS, '反馈内容至少 10 字')
+    }
+    const validTypes = ['suggestion', 'bug', 'experience', 'other']
+    const type = validTypes.includes(dto?.type) ? dto.type : 'other'
+    const id = `${Date.now()}${Math.random().toString(36).slice(2, 6)}`
+    const value = {
+      id,
+      type,
+      content: String(dto.content).slice(0, 1000),
+      contact: dto?.contact ? String(dto.contact).slice(0, 100) : '',
+      images: Array.isArray(dto?.images) ? dto.images.slice(0, 3) : [],
+      fromUserId: callerSub || null,
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    }
+    await this.prisma.systemConfig.create({
+      data: { key: `feedback:${id}`, value },
+    })
+    return { ok: true, id }
+  }
+
+  async feedbackList(query: any = {}) {
+    const page = Math.max(1, Number(query?.page) || 1)
+    const pageSize = Math.min(100, Math.max(1, Number(query?.pageSize) || 20))
+    const type = query?.type || ''
+    const status = query?.status || ''
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { startsWith: 'feedback:' } },
+      orderBy: { updatedAt: 'desc' },
+      take: 500,
+    })
+    let list = rows.map((r) => (r.value as any) || {}).filter((f) => f && f.id)
+    if (type && type !== 'all') list = list.filter((f) => f.type === type)
+    if (status && status !== 'all') list = list.filter((f) => f.status === status)
+    const total = list.length
+    const start = (page - 1) * pageSize
+    return {
+      list: list.slice(start, start + pageSize),
+      total,
+      page,
+      pageSize,
+      hasMore: start + pageSize < total,
+    }
+  }
 }

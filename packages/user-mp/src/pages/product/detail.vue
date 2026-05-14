@@ -18,6 +18,7 @@ import type { Product, SKU } from '@jiujiu/shared/types'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 import TagChip from '../../components/tag-chip/tag-chip.vue'
+import { safeSwitchTab } from '../../utils/tab-nav'
 
 const userStore = useUserStore()
 const cartStore = useCartStore()
@@ -153,10 +154,10 @@ function goBack() {
     if (pages.length > 1) {
       uni.navigateBack({ delta: 1 })
     } else {
-      uni.switchTab({ url: '/pages/tabbar/home/index' })
+      safeSwitchTab('/pages/tabbar/home/index')
     }
   } catch {
-    uni.switchTab({ url: '/pages/tabbar/home/index' })
+    safeSwitchTab('/pages/tabbar/home/index')
   }
 }
 
@@ -241,13 +242,25 @@ const paramRows = computed<SpecRow[]>(() => {
     .map(([k, v]) => ({ k, v: String(v) }))
 })
 
+/**
+ * 商品详情图列表：
+ * - 新版商家端把详情图独立存到 product.detailImages（最多 20 张）
+ * - 老商品仅有 images（主图+轮播图），向下兼容 images.slice(1) 当作详情图展示
+ */
+const detailImagesList = computed<string[]>(() => {
+  const p = product.value as unknown as { detailImages?: string[]; images?: string[] } | null
+  if (!p) return []
+  if (Array.isArray(p.detailImages) && p.detailImages.length > 0) return p.detailImages
+  return (p.images ?? []).slice(1)
+})
+
 function selectSpec(group: string | number, val: string) {
   specSelections.value[String(group)] = val
 }
 
 /** 跳首页（模板直接 uni.xxx 在 vue-tsc 严格模式下不被识别，封一层） */
 function goHome() {
-  uni.switchTab({ url: '/pages/tabbar/home/index' })
+  safeSwitchTab('/pages/tabbar/home/index')
 }
 
 function openSku(mode: 'cart' | 'buy') {
@@ -537,7 +550,7 @@ onShareTimeline(() => ({
       </view>
       <view class="detail-imgs">
         <image
-          v-for="(img, i) in product.images.slice(1)"
+          v-for="(img, i) in detailImagesList"
           :key="i"
           :src="img"
           mode="widthFix"

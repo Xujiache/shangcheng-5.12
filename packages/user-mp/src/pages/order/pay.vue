@@ -11,6 +11,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { orderService } from '../../services'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
+import { safeSwitchTab } from '../../utils/tab-nav'
 
 const orderId = ref('')
 const orderNo = ref('')
@@ -41,7 +42,7 @@ onMounted(() => {
         title: '支付超时',
         content: '订单已被关闭',
         showCancel: false,
-        success: () => uni.switchTab({ url: '/pages/tabbar/me/index' }),
+        success: () => safeSwitchTab('/pages/tabbar/me/index'),
       })
     }
   }, 1000)
@@ -58,7 +59,13 @@ const timeStr = computed(() => {
 })
 
 const METHODS = [
-  { key: 'wechat', icon: 'wechat', label: '微信支付', desc: '微信小程序内原生支付', tint: '#3CB244' },
+  {
+    key: 'wechat',
+    icon: 'wechat',
+    label: '微信支付',
+    desc: '微信小程序内原生支付',
+    tint: '#3CB244',
+  },
 ]
 
 /**
@@ -195,13 +202,19 @@ function goAgreement() {
   flex-direction: column;
   align-items: center;
   gap: 12rpx;
-  .hero-label { font-size: 24rpx; color: var(--text-tertiary); }
+  .hero-label {
+    font-size: 24rpx;
+    color: var(--text-tertiary);
+  }
   .hero-amount {
     display: flex;
     align-items: baseline;
     color: var(--brand-primary);
     font-family: $font-family-base;
-    .cur { font-size: 36rpx; font-weight: 800; }
+    .cur {
+      font-size: 36rpx;
+      font-weight: 800;
+    }
     .num {
       font-size: 80rpx;
       font-weight: 800;
@@ -233,9 +246,11 @@ function goAgreement() {
   gap: 16rpx;
   padding: 24rpx;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   &.active {
-    background: rgba(255,77,45,0.04);
+    background: rgba(255, 77, 45, 0.04);
   }
   .method-icon {
     width: 64rpx;
@@ -250,8 +265,15 @@ function goAgreement() {
     display: flex;
     flex-direction: column;
     gap: 2rpx;
-    .method-label { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-    .method-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .method-label {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .method-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .pay-btn-wrap {
@@ -271,12 +293,16 @@ function goAgreement() {
   border-radius: 999rpx;
   font-size: 32rpx;
   font-weight: 700;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
-  &.loading { opacity: 0.7; }
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+  &.loading {
+    opacity: 0.7;
+  }
 }
 .agree {
   font-size: 20rpx;
   color: var(--text-tertiary);
-  .link { color: var(--brand-primary); }
+  .link {
+    color: var(--brand-primary);
+  }
 }
 </style>

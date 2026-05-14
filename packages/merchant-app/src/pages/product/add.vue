@@ -108,12 +108,13 @@ const isEdit = computed(() => !!productId.value)
 const form = reactive({
   name: '',
   description: '',
+  /** 主图:封面/橱窗用,最多 10 张,首张为商品主图 */
   images: [] as string[],
+  /** 详情图:商品详情页内嵌图(替代富文本 detailHtml),最多 20 张 */
+  detailImages: [] as string[],
   categoryId: '',
   merchantCategoryId: '',
-  tags: [] as string[],
   shipping: ['factory'] as ('factory' | 'local' | 'pickup')[],
-  detailHtml: '',
   pricingMode: 'standard' as PricingMode,
   /** 按尺寸定价：每平方米单价（元） */
   pricePerSqm: 0,
@@ -138,10 +139,12 @@ const specGroups = ref<SpecGroup[]>([])
 /** SKU 矩阵 */
 const skus = ref<SkuRow[]>([])
 const platformCats = ref<Category[]>([])
-const PRESET_TAGS = ['新品', '包邮', '厂家直发', '热销', '限时', '推荐', '环保', 'A级品']
 const PRESET_SPEC_NAMES = ['尺寸', '颜色', '材质', '款式', '功能', '规格']
+
+/** 主图 / 详情图共享操作 — 抽出来避免两套几乎相同的代码 */
+const MAIN_MAX = 10
+const DETAIL_MAX = 20
 const showCatPicker = ref(false)
-const previewIdx = ref<number | null>(null)
 
 /* ============ Computed ============ */
 
@@ -169,11 +172,23 @@ const sizeExamplePrice = computed(() => {
   return Number((area * form.pricePerSqm + form.baseFee).toFixed(2))
 })
 
-/* ============ Image CRUD (FX-2) ============ */
+/* ============ Image CRUD — 主图/详情图共用 ============ */
 
-function chooseImage() {
+type ImageField = 'images' | 'detailImages'
+
+function maxOf(field: ImageField): number {
+  return field === 'images' ? MAIN_MAX : DETAIL_MAX
+}
+
+function chooseImage(field: ImageField = 'images') {
+  const list = form[field]
+  const max = maxOf(field)
+  if (list.length >= max) {
+    uni.showToast({ title: `最多上传 ${max} 张`, icon: 'none' })
+    return
+  }
   uni.chooseImage({
-    count: 9 - form.images.length,
+    count: max - list.length,
     sourceType: ['album', 'camera'],
     success: async (res) => {
       const paths = (res as { tempFilePaths: string[] }).tempFilePaths || []
@@ -181,7 +196,7 @@ function chooseImage() {
       try {
         const urls = await uploadImages(paths)
         if (urls.length > 0) {
-          form.images = [...form.images, ...urls].slice(0, 9)
+          form[field] = [...form[field], ...urls].slice(0, max)
         }
       } catch (e: any) {
         uni.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
@@ -190,19 +205,22 @@ function chooseImage() {
   })
 }
 
-function removeImage(i: number) {
+function removeImage(i: number, field: ImageField = 'images') {
   uni.showModal({
     title: '删除图片',
-    content: i === 0 ? '当前为主图，删除后将自动使用下一张作为主图。' : '确认删除该图片？',
+    content:
+      field === 'images' && i === 0
+        ? '当前为主图，删除后将自动使用下一张作为主图。'
+        : '确认删除该图片？',
     success: (r) => {
       if (r.confirm) {
-        form.images = form.images.filter((_, idx) => idx !== i)
+        form[field] = form[field].filter((_, idx) => idx !== i)
       }
     },
   })
 }
 
-function replaceImage(i: number) {
+function replaceImage(i: number, field: ImageField = 'images') {
   uni.chooseImage({
     count: 1,
     sourceType: ['album', 'camera'],
@@ -212,9 +230,9 @@ function replaceImage(i: number) {
       try {
         const [url] = await uploadImages([paths[0]])
         if (url) {
-          const next = [...form.images]
+          const next = [...form[field]]
           next[i] = url
-          form.images = next
+          form[field] = next
         }
       } catch (e: any) {
         uni.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
@@ -223,48 +241,51 @@ function replaceImage(i: number) {
   })
 }
 
-function setAsMain(i: number) {
+function setAsMain(i: number, field: ImageField = 'images') {
   if (i === 0) return
-  const next = [...form.images]
+  const next = [...form[field]]
   const [picked] = next.splice(i, 1)
   next.unshift(picked)
-  form.images = next
+  form[field] = next
   uni.showToast({ title: '已设为主图', icon: 'success' })
 }
 
-function moveImage(i: number, direction: -1 | 1) {
+function moveImage(i: number, direction: -1 | 1, field: ImageField = 'images') {
   const target = i + direction
-  if (target < 0 || target >= form.images.length) return
-  const next = [...form.images]
+  const list = form[field]
+  if (target < 0 || target >= list.length) return
+  const next = [...list]
   ;[next[i], next[target]] = [next[target], next[i]]
-  form.images = next
+  form[field] = next
 }
 
-function previewImage(i: number) {
+function previewImage(i: number, field: ImageField = 'images') {
   uni.previewImage({
-    urls: form.images,
-    current: form.images[i],
+    urls: form[field],
+    current: form[field][i],
   })
 }
 
-function showImageMenu(i: number) {
+function showImageMenu(i: number, field: ImageField = 'images') {
+  const list = form[field]
   const items: string[] = []
-  if (i > 0) items.push('设为主图')
+  // 详情图无"设为主图"概念
+  if (field === 'images' && i > 0) items.push('设为主图')
   items.push('替换')
   if (i > 0) items.push('上移')
-  if (i < form.images.length - 1) items.push('下移')
+  if (i < list.length - 1) items.push('下移')
   items.push('预览')
   items.push('删除')
   uni.showActionSheet({
     itemList: items,
     success: (r) => {
       const label = items[r.tapIndex]
-      if (label === '设为主图') setAsMain(i)
-      else if (label === '替换') replaceImage(i)
-      else if (label === '上移') moveImage(i, -1)
-      else if (label === '下移') moveImage(i, 1)
-      else if (label === '预览') previewImage(i)
-      else if (label === '删除') removeImage(i)
+      if (label === '设为主图') setAsMain(i, field)
+      else if (label === '替换') replaceImage(i, field)
+      else if (label === '上移') moveImage(i, -1, field)
+      else if (label === '下移') moveImage(i, 1, field)
+      else if (label === '预览') previewImage(i, field)
+      else if (label === '删除') removeImage(i, field)
     },
   })
 }
@@ -482,12 +503,7 @@ function switchPricingMode(mode: PricingMode) {
   }
 }
 
-/* ============ Form / Tags ============ */
-
-function toggleTag(t: string) {
-  if (form.tags.includes(t)) form.tags = form.tags.filter((x) => x !== t)
-  else form.tags = [...form.tags, t]
-}
+/* ============ Form ============ */
 
 function toggleShipping(s: 'factory' | 'local' | 'pickup') {
   if (form.shipping.includes(s)) form.shipping = form.shipping.filter((x) => x !== s)
@@ -514,9 +530,13 @@ async function loadProduct() {
     form.name = data.name
     form.description = data.description ?? ''
     form.images = data.images ?? []
+    // 兼容历史商品:旧版把详情图存在 images[1..],新版独立字段 detailImages
+    form.detailImages = ((data as unknown as { detailImages?: string[] }).detailImages ?? []).slice(
+      0,
+      DETAIL_MAX,
+    )
     form.categoryId = data.categoryId
     form.merchantCategoryId = data.merchantCategoryId ?? ''
-    form.tags = data.tags ?? []
     form.shipping = data.shipping ?? ['factory']
     // 检查是否有按尺寸定价的扩展字段
     const ext = data as unknown as {
@@ -574,8 +594,9 @@ async function submit(status: 'draft' | 'submit') {
       name: form.name,
       description: form.description,
       images: form.images,
-      detailHtml: form.detailHtml,
-      tags: form.tags,
+      detailImages: form.detailImages,
+      // 商品标签已下架,空数组覆盖避免历史脏数据
+      tags: [],
       shipping: form.shipping,
       // 价格显示规则已迁到「店铺设置 - 价格规则」全局，单品不再单独配置
       skus: skus.value.map((s) => {
@@ -631,48 +652,52 @@ onMounted(async () => {
     <NavBar :title="isEdit ? '编辑商品' : '添加商品'" right-text="预览" />
 
     <view class="body">
-      <!-- 主图 + 详情图 CRUD -->
+      <!-- 商品主图 -->
       <view class="section">
         <view class="section-head">
-          <text class="title">主图与详情图</text>
-          <text class="sub">{{ form.images.length }} / 9 · 首张为主图，长按编辑</text>
+          <text class="title">商品主图</text>
+          <text class="sub">{{ form.images.length }} / {{ MAIN_MAX }} · 首张为主图，长按编辑</text>
         </view>
         <view class="image-grid">
-          <view v-for="(img, i) in form.images" :key="i" class="img-cell" @click="showImageMenu(i)">
+          <view
+            v-for="(img, i) in form.images"
+            :key="`m-${i}`"
+            class="img-cell"
+            @click="showImageMenu(i, 'images')"
+          >
             <image :src="img" class="img" mode="aspectFill" />
             <view v-if="i === 0" class="img-main">主图</view>
             <view class="img-idx">{{ i + 1 }}</view>
             <view class="img-actions">
-              <view class="img-btn" @click.stop="previewImage(i)">
+              <view class="img-btn" @click.stop="previewImage(i, 'images')">
                 <Icon name="eye" :size="22" color="#fff" />
               </view>
-              <view class="img-btn danger" @click.stop="removeImage(i)">
+              <view class="img-btn danger" @click.stop="removeImage(i, 'images')">
                 <Icon name="close" :size="22" color="#fff" />
               </view>
             </view>
-            <!-- 排序按钮（双角标）-->
-            <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1)">
+            <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'images')">
               <Icon name="chevron-up" :size="22" color="#fff" />
             </view>
             <view
               v-if="i < form.images.length - 1"
               class="img-move down"
-              @click.stop="moveImage(i, 1)"
+              @click.stop="moveImage(i, 1, 'images')"
             >
               <Icon name="chevron-down" :size="22" color="#fff" />
             </view>
           </view>
-          <view v-if="form.images.length < 9" class="img-add" @click="chooseImage">
+          <view v-if="form.images.length < MAIN_MAX" class="img-add" @click="chooseImage('images')">
             <Icon name="plus" :size="48" color="var(--text-tertiary)" />
-            <text class="add-text">上传</text>
+            <text class="add-text">上传主图</text>
           </view>
         </view>
       </view>
 
-      <!-- 基本信息 -->
+      <!-- 基本信息：标题 / 分类 / 简介 -->
       <view class="section">
         <view class="row">
-          <text class="row-label required">商品名称</text>
+          <text class="row-label required">商品标题</text>
           <input
             v-model="form.name"
             class="row-input"
@@ -690,13 +715,60 @@ onMounted(async () => {
           </view>
         </view>
         <view class="row align-top">
-          <text class="row-label">简介</text>
+          <text class="row-label">商品简介</text>
           <textarea
             v-model="form.description"
             class="row-textarea"
             placeholder="可选 · 一句话描述商品卖点"
             maxlength="80"
           />
+        </view>
+      </view>
+
+      <!-- 商品详情图 -->
+      <view class="section">
+        <view class="section-head">
+          <text class="title">商品详情图</text>
+          <text class="sub"
+            >{{ form.detailImages.length }} / {{ DETAIL_MAX }} · 按顺序展示在商品详情页</text
+          >
+        </view>
+        <view class="image-grid">
+          <view
+            v-for="(img, i) in form.detailImages"
+            :key="`d-${i}`"
+            class="img-cell"
+            @click="showImageMenu(i, 'detailImages')"
+          >
+            <image :src="img" class="img" mode="aspectFill" />
+            <view class="img-idx">{{ i + 1 }}</view>
+            <view class="img-actions">
+              <view class="img-btn" @click.stop="previewImage(i, 'detailImages')">
+                <Icon name="eye" :size="22" color="#fff" />
+              </view>
+              <view class="img-btn danger" @click.stop="removeImage(i, 'detailImages')">
+                <Icon name="close" :size="22" color="#fff" />
+              </view>
+            </view>
+            <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'detailImages')">
+              <Icon name="chevron-up" :size="22" color="#fff" />
+            </view>
+            <view
+              v-if="i < form.detailImages.length - 1"
+              class="img-move down"
+              @click.stop="moveImage(i, 1, 'detailImages')"
+            >
+              <Icon name="chevron-down" :size="22" color="#fff" />
+            </view>
+          </view>
+          <view
+            v-if="form.detailImages.length < DETAIL_MAX"
+            class="img-add"
+            @click="chooseImage('detailImages')"
+          >
+            <Icon name="plus" :size="48" color="var(--text-tertiary)" />
+            <text class="add-text">上传详情图</text>
+          </view>
         </view>
       </view>
 
@@ -824,20 +896,6 @@ onMounted(async () => {
               <text class="total-num">{{ sizeExamplePrice }}</text>
             </view>
           </view>
-        </view>
-      </view>
-
-      <!-- 标签 -->
-      <view class="section">
-        <text class="title">商品标签</text>
-        <view class="tag-grid">
-          <view
-            v-for="t in PRESET_TAGS"
-            :key="t"
-            :class="['tag-pill', { active: form.tags.includes(t) }]"
-            @click="toggleTag(t)"
-            >{{ t }}</view
-          >
         </view>
       </view>
 
@@ -1383,14 +1441,7 @@ onMounted(async () => {
   }
 }
 
-/* 标签 */
-.tag-grid {
-  margin-top: 12rpx;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-}
-.tag-pill,
+/* 物流 pill */
 .ship-pill {
   padding: 8rpx 20rpx;
   border-radius: 999rpx;

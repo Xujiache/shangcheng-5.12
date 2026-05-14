@@ -4,6 +4,7 @@
  */
 import { computed } from 'vue'
 import Icon from '../icon/icon.vue'
+import { safeBackOrHome } from '../../utils/tab-nav'
 
 const props = withDefaults(
   defineProps<{
@@ -37,10 +38,7 @@ const emit = defineEmits<{
 
 function onBack() {
   emit('back')
-  uni.navigateBack({
-    delta: 1,
-    fail: () => uni.switchTab({ url: '/pages/tabbar/home/index' }),
-  })
+  safeBackOrHome('/pages/tabbar/home/index')
 }
 
 const statusBarHeight = computed(() => {
@@ -93,13 +91,17 @@ const bgStyle = computed(() => (props.transparent ? 'transparent' : props.bg))
   align-items: center;
   height: 88rpx;
   padding: 0 16rpx;
-  .left, .right {
+  .left,
+  .right {
     min-width: 88rpx;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  .right { justify-content: flex-end; padding-right: 8rpx; }
+  .right {
+    justify-content: flex-end;
+    padding-right: 8rpx;
+  }
 
   .center {
     flex: 1;

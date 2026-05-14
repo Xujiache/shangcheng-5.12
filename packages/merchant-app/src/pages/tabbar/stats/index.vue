@@ -18,6 +18,7 @@ import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
 import { useStatusBar } from '../../../composables/useStatusBar'
+import { safeSwitchTab } from '../../../utils/tab-nav'
 
 useHideNativeTabBar()
 const { heroPaddingTop } = useStatusBar(24)
@@ -36,12 +37,8 @@ const TABS = [
   { key: 'year', label: '本年' },
 ]
 
-const totalSales = computed(() =>
-  stats.value?.salesTrend.reduce((s, x) => s + x.value, 0) ?? 0,
-)
-const totalOrders = computed(() =>
-  stats.value?.topProducts.reduce((s, p) => s + p.sales, 0) ?? 0,
-)
+const totalSales = computed(() => stats.value?.salesTrend.reduce((s, x) => s + x.value, 0) ?? 0)
+const totalOrders = computed(() => stats.value?.topProducts.reduce((s, p) => s + p.sales, 0) ?? 0)
 const avgOrder = computed(() =>
   totalOrders.value === 0 ? 0 : Math.round(totalSales.value / totalOrders.value),
 )
@@ -109,7 +106,7 @@ function pickDate(e: { detail: { value: string } }) {
 
 function goAllProducts() {
   // 商品列表本身按 sales desc 排（后端默认），跳过去能看到完整销量排名
-  uni.switchTab({ url: '/pages/tabbar/product/index' })
+  safeSwitchTab('/pages/tabbar/product/index')
 }
 
 function trendDirection(idx: number) {
@@ -128,10 +125,10 @@ const periodText = computed(() =>
   period.value === 'today'
     ? '今日 24h'
     : period.value === 'week'
-    ? '近 7 日'
-    : period.value === 'month'
-    ? '近 30 日'
-    : '近 12 月',
+      ? '近 7 日'
+      : period.value === 'month'
+        ? '近 30 日'
+        : '近 12 月',
 )
 </script>
 
@@ -167,7 +164,9 @@ const periodText = computed(() =>
               :size="20"
               :color="direction === 'down' ? '#FF3B30' : '#52C41A'"
             />
-            <text>{{ direction === 'down' ? '环比下降' : direction === 'up' ? '环比上升' : '持平' }}</text>
+            <text>{{
+              direction === 'down' ? '环比下降' : direction === 'up' ? '环比上升' : '持平'
+            }}</text>
           </view>
         </view>
         <view class="overview-grid">
@@ -210,7 +209,7 @@ const periodText = computed(() =>
               <view class="top-bar">
                 <view
                   class="top-bar-fill"
-                  :style="{ width: ((p.sales / (topProducts[0]?.sales || 1)) * 100) + '%' }"
+                  :style="{ width: (p.sales / (topProducts[0]?.sales || 1)) * 100 + '%' }"
                 />
               </view>
             </view>
@@ -248,12 +247,12 @@ const periodText = computed(() =>
             </view>
             <view class="ca-legend">
               <view class="legend-row">
-                <view class="legend-dot" style="background: #FF4D2D" />
+                <view class="legend-dot" style="background: #ff4d2d" />
                 <text class="legend-label">新客户</text>
                 <text class="legend-value">{{ newRatio }}%</text>
               </view>
               <view class="legend-row">
-                <view class="legend-dot" style="background: #1F2937" />
+                <view class="legend-dot" style="background: #1f2937" />
                 <text class="legend-label">老客户</text>
                 <text class="legend-value">{{ 100 - newRatio }}%</text>
               </view>
@@ -286,7 +285,11 @@ const periodText = computed(() =>
     content: '';
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.18) 0%, transparent 50%);
+    background-image: radial-gradient(
+      circle at 80% 20%,
+      rgba(255, 255, 255, 0.18) 0%,
+      transparent 50%
+    );
     pointer-events: none;
   }
 }
@@ -305,7 +308,7 @@ const periodText = computed(() =>
     width: 72rpx;
     height: 72rpx;
     border-radius: 50%;
-    background: rgba(255,255,255,0.22);
+    background: rgba(255, 255, 255, 0.22);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -313,7 +316,7 @@ const periodText = computed(() =>
 }
 .period-tabs {
   margin-top: 24rpx;
-  background: rgba(255,255,255,0.18);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 999rpx;
   padding: 6rpx;
   position: relative;
@@ -323,12 +326,18 @@ const periodText = computed(() =>
     background: transparent !important;
     padding: 14rpx 24rpx;
     border-radius: 999rpx;
-    .tab-text { color: rgba(255,255,255,0.85); font-size: 26rpx; }
+    .tab-text {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 26rpx;
+    }
   }
   :deep(.tab.active) {
     background: #fff !important;
-    box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.12);
-    .tab-text { color: var(--brand-primary) !important; font-weight: 700; }
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.12);
+    .tab-text {
+      color: var(--brand-primary) !important;
+      font-weight: 700;
+    }
   }
 }
 
@@ -346,7 +355,9 @@ const periodText = computed(() =>
   background: #fff;
   border-radius: 24rpx;
   padding: 28rpx 24rpx 24rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.06), 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow:
+    0 8rpx 32rpx rgba(0, 0, 0, 0.06),
+    0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 .overview-head {
   display: flex;
@@ -366,9 +377,18 @@ const periodText = computed(() =>
     border-radius: 999rpx;
     font-size: 20rpx;
     font-weight: 600;
-    &.up { background: rgba(82,196,26,0.1); color: #52C41A; }
-    &.down { background: rgba(255,59,48,0.1); color: #FF3B30; }
-    &.flat { background: rgba(134,144,156,0.1); color: var(--text-tertiary); }
+    &.up {
+      background: rgba(82, 196, 26, 0.1);
+      color: #52c41a;
+    }
+    &.down {
+      background: rgba(255, 59, 48, 0.1);
+      color: #ff3b30;
+    }
+    &.flat {
+      background: rgba(134, 144, 156, 0.1);
+      color: var(--text-tertiary);
+    }
   }
 }
 .overview-grid {
@@ -400,7 +420,7 @@ const periodText = computed(() =>
     white-space: nowrap;
   }
   &.primary .ov-value {
-    background: linear-gradient(135deg, #FF6B45, #FF4D2D);
+    background: linear-gradient(135deg, #ff6b45, #ff4d2d);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -410,14 +430,26 @@ const periodText = computed(() =>
     width: 48rpx;
     height: 6rpx;
     border-radius: 3rpx;
-    &.primary-bar { background: linear-gradient(90deg, #FF6B45, #FF4D2D); }
-    &.success-bar { background: #52C41A; }
-    &.info-bar { background: #1296DB; }
+    &.primary-bar {
+      background: linear-gradient(90deg, #ff6b45, #ff4d2d);
+    }
+    &.success-bar {
+      background: #52c41a;
+    }
+    &.info-bar {
+      background: #1296db;
+    }
   }
 }
 .ov-divider {
   width: 1rpx;
-  background: linear-gradient(180deg, transparent, var(--border-light) 30%, var(--border-light) 70%, transparent);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--border-light) 30%,
+    var(--border-light) 70%,
+    transparent
+  );
   margin: 0 4rpx;
 }
 
@@ -428,7 +460,9 @@ const periodText = computed(() =>
   gap: 12rpx;
   margin-top: 8rpx;
 }
-.ca-donut { flex-shrink: 0; }
+.ca-donut {
+  flex-shrink: 0;
+}
 .ca-legend {
   flex: 1;
   display: flex;
@@ -471,7 +505,9 @@ const periodText = computed(() =>
   gap: 16rpx;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .rank {
     width: 48rpx;
     height: 48rpx;
@@ -483,9 +519,16 @@ const periodText = computed(() =>
     color: #fff;
     flex-shrink: 0;
     font-family: var(--font-family-base);
-    &.rank-1 { background: linear-gradient(135deg, #FFB74D, #FF8A65); box-shadow: 0 4rpx 12rpx rgba(255,138,101,0.35); }
-    &.rank-2 { background: linear-gradient(135deg, #B0BEC5, #78909C); }
-    &.rank-3 { background: linear-gradient(135deg, #BCAAA4, #8D6E63); }
+    &.rank-1 {
+      background: linear-gradient(135deg, #ffb74d, #ff8a65);
+      box-shadow: 0 4rpx 12rpx rgba(255, 138, 101, 0.35);
+    }
+    &.rank-2 {
+      background: linear-gradient(135deg, #b0bec5, #78909c);
+    }
+    &.rank-3 {
+      background: linear-gradient(135deg, #bcaaa4, #8d6e63);
+    }
     &.rank-rest {
       background: var(--bg-page);
       color: var(--text-tertiary);
@@ -570,5 +613,7 @@ const periodText = computed(() =>
   font-size: 22rpx;
   color: var(--text-tertiary);
 }
-.safe-bottom { height: 80rpx; }
+.safe-bottom {
+  height: 80rpx;
+}
 </style>

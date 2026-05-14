@@ -4,6 +4,7 @@
  * 平台视角的全平台订单监控，原型未画 → 按平台风格补完
  */
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { http } from '../../../utils/request'
 import type { Order } from '@jiujiu/shared/types'
 import { formatPrice, formatWan, formatDate } from '@jiujiu/shared/utils'
@@ -109,7 +110,26 @@ function search() {
   // keyword 双向绑定即过滤
 }
 
+/**
+ * 接受其它页面（home/index.vue 待办「售后投诉」入口）通过 storage
+ * 'order_init_tab' 传入的目标 tab,switchTab 不支持 query 才有这层 workaround,
+ * 读完即清除,避免下次进 tab 还停在旧分类。
+ */
+const VALID_TABS = new Set(TABS.map((t) => t.key))
+function applyInitTabFromStorage() {
+  try {
+    const target = uni.getStorageSync('order_init_tab') as string
+    if (target && VALID_TABS.has(target as typeof tab.value)) {
+      tab.value = target as typeof tab.value
+    }
+    if (target) uni.removeStorageSync('order_init_tab')
+  } catch {
+    /* ignore */
+  }
+}
+
 onMounted(load)
+onShow(applyInitTabFromStorage)
 </script>
 
 <template>
@@ -155,7 +175,7 @@ onMounted(load)
       </view>
     </scroll-view>
 
-    <scroll-view scroll-y class="scroll">
+    <view class="body">
       <view v-for="o in filtered" :key="o.id" class="card" @click="goDetail(o)">
         <view class="card-head">
           <text class="no">{{ o.no }}</text>
@@ -193,22 +213,27 @@ onMounted(load)
         desc="订单产生后会同步到这里"
         icon="biz-order"
       />
-      <view style="height: 160rpx" />
-    </scroll-view>
+    </view>
 
     <TabBar current="order" />
   </view>
 </template>
 
 <style lang="scss" scoped>
+/**
+ * 自然文档流布局 —— 不用 flex column + overflow:hidden(mp/App 真包会塌陷)。
+ * 顶部条用 position:sticky 吸顶,底部 TabBar 由组件自身 position:fixed 兜底。
+ */
 .page {
   min-height: 100vh;
   background: var(--bg-page);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   color: #fff;
   padding-bottom: 28rpx;
@@ -294,9 +319,7 @@ onMounted(load)
     font-weight: 700;
   }
 }
-.scroll {
-  flex: 1;
-  height: 0;
+.body {
   padding: 16rpx 24rpx;
   box-sizing: border-box;
 }

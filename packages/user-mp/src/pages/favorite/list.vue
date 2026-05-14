@@ -19,6 +19,7 @@ import { useCartStore } from '../../store/cart'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
 import Icon from '../../components/icon/icon.vue'
+import { safeSwitchTab } from '../../utils/tab-nav'
 
 const userStore = useUserStore()
 const cartStore = useCartStore()
@@ -104,7 +105,7 @@ async function addToCart(f: Favorite) {
 }
 
 function goHome() {
-  uni.switchTab({ url: '/pages/tabbar/home/index' })
+  safeSwitchTab('/pages/tabbar/home/index')
 }
 
 onMounted(load)

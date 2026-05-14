@@ -44,8 +44,10 @@ const PLAN_LABEL: Record<string, string> = {
 
 const filtered = computed(() => {
   let res = list.value
-  if (tab.value === 'factory') res = res.filter((m) => m.type === 'factory' && m.status !== 'disabled')
-  else if (tab.value === 'store') res = res.filter((m) => m.type === 'store' && m.status !== 'disabled')
+  if (tab.value === 'factory')
+    res = res.filter((m) => m.type === 'factory' && m.status !== 'disabled')
+  else if (tab.value === 'store')
+    res = res.filter((m) => m.type === 'store' && m.status !== 'disabled')
   else if (tab.value === 'disabled') res = res.filter((m) => m.status === 'disabled')
   else res = res.filter((m) => m.status !== 'pending')
   if (keyword.value) {
@@ -92,7 +94,10 @@ function setPermission(m: Merchant) {
   uni.showActionSheet({
     itemList: ['授权所有权限', '仅基础权限', '仅查看', '自定义权限'],
     success: (r) => {
-      uni.showToast({ title: '已设置：' + ['全部', '基础', '查看', '自定义'][r.tapIndex], icon: 'none' })
+      uni.showToast({
+        title: '已设置：' + ['全部', '基础', '查看', '自定义'][r.tapIndex],
+        icon: 'none',
+      })
     },
   })
 }
@@ -101,7 +106,9 @@ function togglePause(m: Merchant) {
   const isActive = m.status === 'active'
   uni.showModal({
     title: isActive ? '停用商户' : '恢复商户',
-    content: isActive ? `停用「${m.name}」后将无法登录商家端，已上架商品下架。` : `恢复「${m.name}」营业。`,
+    content: isActive
+      ? `停用「${m.name}」后将无法登录商家端，已上架商品下架。`
+      : `恢复「${m.name}」营业。`,
     success: async (r) => {
       if (r.confirm) {
         if (isActive) {
@@ -194,18 +201,17 @@ onShow(load)
         <view class="sw-dot" />
         <text class="sw-label">厂家 & 门店按钮图标 显示开关</text>
       </view>
-      <view :class="['sw-toggle', showBtnSwitch ? 'on' : '']" @click="showBtnSwitch = !showBtnSwitch">
+      <view
+        :class="['sw-toggle', showBtnSwitch ? 'on' : '']"
+        @click="showBtnSwitch = !showBtnSwitch"
+      >
         <view class="sw-thumb" />
         <text class="sw-text">{{ showBtnSwitch ? '常开' : '关闭' }}</text>
       </view>
     </view>
 
-    <scroll-view scroll-y class="scroll">
-      <view
-        v-for="m in filtered"
-        :key="m.id"
-        class="card"
-      >
+    <view class="body">
+      <view v-for="m in filtered" :key="m.id" class="card">
         <view class="card-head">
           <view class="avatar" :style="{ background: TYPE_META[m.type].tint }">
             <text>{{ avatarOf(m) }}</text>
@@ -215,7 +221,10 @@ onShow(load)
               <text class="name">{{ m.name }}</text>
               <view
                 class="type-tag"
-                :style="{ color: TYPE_META[m.type].tint, background: TYPE_META[m.type].tint + '14' }"
+                :style="{
+                  color: TYPE_META[m.type].tint,
+                  background: TYPE_META[m.type].tint + '14',
+                }"
               >
                 {{ TYPE_META[m.type].label }}
               </view>
@@ -248,23 +257,28 @@ onShow(load)
         :desc="keyword ? '尝试其他关键词' : '该分类下还没有商户'"
         icon="home-shop"
       />
-      <view style="height: 160rpx;" />
-    </scroll-view>
+    </view>
 
     <TabBar current="merchant" />
   </view>
 </template>
 
 <style lang="scss" scoped>
+/**
+ * 自然文档流布局 —— 不用 flex column + overflow:hidden(mp/App 真包会塌陷)。
+ * 顶部条用 position:sticky 吸顶,底部 TabBar 由组件自身 position:fixed 兜底。
+ */
 .page {
   min-height: 100vh;
   background: var(--bg-page);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 .top-bar {
-  background: linear-gradient(135deg, #FF4D2D, #FF9C6E);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
   color: #fff;
   padding-bottom: 24rpx;
 }
@@ -273,13 +287,16 @@ onShow(load)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  .top-title { font-size: 36rpx; font-weight: 800; }
+  .top-title {
+    font-size: 36rpx;
+    font-weight: 800;
+  }
   .audit-btn {
     display: flex;
     align-items: center;
     gap: 6rpx;
     padding: 8rpx 20rpx;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 999rpx;
     font-size: 22rpx;
     font-weight: 600;
@@ -289,7 +306,7 @@ onShow(load)
   display: flex;
   margin: 16rpx 24rpx 0;
   padding: 16rpx;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 16rpx;
   backdrop-filter: blur(8rpx);
   .ts-item {
@@ -311,7 +328,7 @@ onShow(load)
   }
   .ts-divider {
     width: 1rpx;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
   }
 }
 .header {
@@ -363,7 +380,7 @@ onShow(load)
   padding: 16rpx 20rpx;
   background: var(--bg-card);
   border-radius: 16rpx;
-  border: 1rpx dashed rgba(255,77,45,0.3);
+  border: 1rpx dashed rgba(255, 77, 45, 0.3);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -376,10 +393,13 @@ onShow(load)
       width: 16rpx;
       height: 16rpx;
       border-radius: 50%;
-      background: #52C41A;
-      box-shadow: 0 0 0 4rpx rgba(82,196,26,0.2);
+      background: #52c41a;
+      box-shadow: 0 0 0 4rpx rgba(82, 196, 26, 0.2);
     }
-    .sw-label { font-size: 24rpx; color: var(--text-primary); }
+    .sw-label {
+      font-size: 24rpx;
+      color: var(--text-primary);
+    }
   }
   .sw-toggle {
     display: flex;
@@ -394,7 +414,7 @@ onShow(load)
       height: 32rpx;
       border-radius: 50%;
       background: var(--text-tertiary);
-      transition: all .2s;
+      transition: all 0.2s;
     }
     .sw-text {
       padding: 0 8rpx;
@@ -403,14 +423,16 @@ onShow(load)
       font-weight: 600;
     }
     &.on {
-      .sw-thumb { background: var(--brand-primary); }
-      .sw-text { color: var(--brand-primary); }
+      .sw-thumb {
+        background: var(--brand-primary);
+      }
+      .sw-text {
+        color: var(--brand-primary);
+      }
     }
   }
 }
-.scroll {
-  flex: 1;
-  height: 0;
+.body {
   padding: 16rpx 24rpx;
   box-sizing: border-box;
 }
@@ -442,7 +464,7 @@ onShow(load)
   font-size: 36rpx;
   font-weight: 800;
   flex-shrink: 0;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 }
 .head-info {
   flex: 1;
@@ -477,7 +499,7 @@ onShow(load)
   .status-tag {
     flex-shrink: 0;
     padding: 4rpx 14rpx;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0, 0, 0, 0.05);
     color: var(--text-tertiary);
     border-radius: 999rpx;
     font-size: 20rpx;
@@ -500,8 +522,8 @@ onShow(load)
   border-radius: 999rpx;
   font-size: 18rpx;
   &.ok {
-    background: rgba(82,196,26,0.1);
-    color: #52C41A;
+    background: rgba(82, 196, 26, 0.1);
+    color: #52c41a;
     font-weight: 600;
   }
 }
@@ -526,7 +548,7 @@ onShow(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
   &.dark {
     background: var(--text-primary);

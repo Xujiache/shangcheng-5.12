@@ -1,38 +1,46 @@
 <script setup lang="ts">
 /**
- * PA-05 · 广告管理
- * 还原 原型图/platform-app.jsx::PA_Ad
- * - Tab：广告位 / 创建 / 数据
- * - 广告位卡：名称 + 状态 + 目标 + 曝光/点击 + 预览图 + 操作
+ * PA-05 · 广告管理（移动端全量实现）
+ *
+ * 改造前: 创建广告 / 编辑素材 / 修改时段 全部弹 modal 引导去 admin-pc。
+ * 改造后: 全部能力上移动端,通过 FormSheet 完整实现 CRUD,后端真接口落库。
+ *
+ * 功能矩阵:
+ *   - 广告位 (slots):  新建 / 改素材 (名称 / 投放对象 / 预览图) / 改时段 (start-end) / 暂停-恢复 / 删除
+ *   - 创意   (creatives):新建 (标题 + 图 + 链接 + 投放槽位) / 编辑 (标题 + 图 + 时段) / 删除
+ *   - 数据   (stats):    曝光排行 + 总曝光 + 平均 CTR (只读)
+ *
+ * 后端依赖:
+ *   - POST / PUT / DELETE  /api/v1/p/ads/slots
+ *   - POST / PUT / DELETE  /api/v1/p/ads/creatives
+ *   - POST                 /api/v1/files/upload (bizType=misc)
+ *
+ * 兜底字段 (后端 AdSlot 模型暂无 preview/startAt/endAt):
+ *   - 走 system_settings.business.adSlotMeta 落库, 详见 adService.updateSlot / loadSlotMetaMap。
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { adService } from '../../services'
-import type { AdSlot } from '../../services'
+import type {
+  AdSlot,
+  AdCreativeRow,
+  CreateAdSlotDto,
+  UpdateAdSlotDto,
+  CreateAdCreativeDto,
+  UpdateAdCreativeDto,
+} from '../../services'
+import { pickAndUploadImage } from '../../utils/upload'
 import { formatWan } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
+import FormSheet from '../../components/form-sheet/form-sheet.vue'
 
 type TabKey = 'slots' | 'create' | 'stats'
 
 const tab = ref<TabKey>('slots')
 const slots = ref<AdSlot[]>([])
-const creatives = ref<any[]>([])
+const creatives = ref<AdCreativeRow[]>([])
 const loading = ref(false)
-
-/**
- * admin-pc 广告管理后台地址:
- *   - 路由位置: packages/admin-pc/src/router/modules/platform.ts → `/platform/ad`
- *   - 优先读 VITE_ADMIN_BASE_URL 环境变量,默认拼接 API base 兼容现网
- *
- * 移动端不适合做素材上传 / 富文本编辑,所以新建广告位 / 创意都引导回后台。
- */
-const ADMIN_AD_URL = (() => {
-  const adminBase = (import.meta as any).env?.VITE_ADMIN_BASE_URL as string | undefined
-  if (adminBase) return `${adminBase.replace(/\/$/, '')}/platform/ad`
-  const apiBase = ((import.meta as any).env?.VITE_API_BASE_URL as string | undefined) || ''
-  return `${apiBase.replace(/\/$/, '')}/platform/ad`
-})()
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'slots', label: '广告位' },
@@ -45,67 +53,177 @@ const STATUS_META: Record<string, { label: string; tint: string }> = {
   paused: { label: '已暂停', tint: '#FAAD14' },
   ended: { label: '已结束', tint: '#86909C' },
   draft: { label: '草稿', tint: '#1296DB' },
+  pending: { label: '待审', tint: '#FAAD14' },
+  rejected: { label: '已驳回', tint: '#FF3B30' },
+}
+
+const TARGET_OPTIONS = [
+  { value: 'customer', label: '客户(小程序)' },
+  { value: 'factory', label: '厂家' },
+  { value: 'store', label: '门店' },
+  { value: 'all', label: '全部端' },
+]
+const TARGET_LABEL: Record<string, string> = {
+  customer: '客户',
+  factory: '厂家',
+  store: '门店',
+  all: '全端',
 }
 
 async function load() {
   loading.value = true
   try {
-    const [slotList, creativeList] = await Promise.all([
+    const [slotList, creativeResp] = await Promise.all([
       adService.slots(),
-      adService.creatives({ pageSize: 30 }),
+      adService.creatives({ pageSize: 50 }),
     ])
     slots.value = slotList
-    creatives.value = (creativeList as any).list ?? []
+    creatives.value = (creativeResp as any)?.list ?? []
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
 }
 
-/**
- * 新建广告位/创意涉及上传素材、富表单,移动端不便承载,
- * 直接引导用户去 admin-pc 后台创建,并提供"复制后台 URL"快捷操作。
- */
-function createAd() {
-  uni.showModal({
-    title: '新建广告',
-    content: `新建广告位 / 创意请到 admin-pc 管理后台 → 广告管理 → 新建,完成素材上传后 platform-app 这里实时可见。\n\n后台地址：\n${ADMIN_AD_URL}`,
-    confirmText: '复制地址',
-    cancelText: '我知道了',
-    success: (r) => {
-      if (r.confirm) copyAdminUrl()
-    },
-  })
+// ============================================================
+// 广告位:新建 sheet
+// ============================================================
+type SlotMode = 'create' | 'edit-asset' | 'edit-time'
+const slotSheetOpen = ref(false)
+const slotSheetMode = ref<SlotMode>('create')
+const editingSlotId = ref<string | null>(null)
+const slotSubmitting = ref(false)
+const slotForm = reactive({
+  name: '',
+  target: 'customer',
+  scene: '',
+  preview: '',
+  startAt: '',
+  endAt: '',
+})
+
+function resetSlotForm() {
+  slotForm.name = ''
+  slotForm.target = 'customer'
+  slotForm.scene = ''
+  slotForm.preview = ''
+  slotForm.startAt = ''
+  slotForm.endAt = ''
 }
 
-/**
- * 复制 admin-pc 广告管理 URL 到剪贴板,
- * 兼容 H5（uni.setClipboardData 在 H5 端有时静默失败,降级到 navigator.clipboard）。
- */
-function copyAdminUrl() {
-  uni.setClipboardData({
-    data: ADMIN_AD_URL,
-    success: () => uni.showToast({ title: '后台地址已复制', icon: 'success' }),
-    fail: () => {
-      try {
-        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-          navigator.clipboard
-            .writeText(ADMIN_AD_URL)
-            .then(() => uni.showToast({ title: '后台地址已复制', icon: 'success' }))
-            .catch(() => uni.showToast({ title: '复制失败,请手动复制', icon: 'none' }))
-        } else {
-          uni.showToast({ title: '复制失败,请手动复制', icon: 'none' })
-        }
-      } catch {
-        uni.showToast({ title: '复制失败,请手动复制', icon: 'none' })
+function openCreateSlot() {
+  resetSlotForm()
+  editingSlotId.value = null
+  slotSheetMode.value = 'create'
+  slotSheetOpen.value = true
+}
+
+function openEditSlotAsset(s: AdSlot) {
+  resetSlotForm()
+  editingSlotId.value = s.id
+  slotForm.name = s.name
+  slotForm.target = s.target || 'customer'
+  slotForm.scene = s.scene || ''
+  slotForm.preview = s.preview || ''
+  slotSheetMode.value = 'edit-asset'
+  slotSheetOpen.value = true
+}
+
+function openEditSlotTime(s: AdSlot) {
+  resetSlotForm()
+  editingSlotId.value = s.id
+  slotForm.name = s.name
+  const today = new Date().toISOString().slice(0, 10)
+  const next30 = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10)
+  slotForm.startAt = s.startAt || today
+  slotForm.endAt = s.endAt || next30
+  slotSheetMode.value = 'edit-time'
+  slotSheetOpen.value = true
+}
+
+const slotSheetTitle = computed(() => {
+  if (slotSheetMode.value === 'create') return '新建广告位'
+  if (slotSheetMode.value === 'edit-asset') return '修改广告位素材'
+  return '修改投放时段'
+})
+
+const slotSheetConfirmDisabled = computed(() => {
+  if (slotSheetMode.value === 'edit-time') {
+    return !slotForm.startAt || !slotForm.endAt
+  }
+  return !slotForm.name.trim()
+})
+
+async function onPickSlotPreview() {
+  try {
+    const url = await pickAndUploadImage({ bizType: 'misc' })
+    slotForm.preview = url
+    uni.showToast({ title: '已上传', icon: 'success' })
+  } catch (e: any) {
+    if (!/cancel/i.test(e?.message || '')) {
+      uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+    }
+  }
+}
+
+async function submitSlotSheet() {
+  if (slotSubmitting.value) return
+  slotSubmitting.value = true
+  try {
+    if (slotSheetMode.value === 'create') {
+      if (!slotForm.name.trim()) {
+        uni.showToast({ title: '请填写广告位名称', icon: 'none' })
+        return
       }
-    },
-  })
+      const dto: CreateAdSlotDto = {
+        name: slotForm.name.trim(),
+        target: slotForm.target,
+        scene: slotForm.scene.trim() || undefined,
+        preview: slotForm.preview || undefined,
+        startAt: slotForm.startAt || undefined,
+        endAt: slotForm.endAt || undefined,
+        status: 'active',
+      }
+      await adService.createSlot(dto)
+      uni.showToast({ title: '已创建', icon: 'success' })
+    } else if (slotSheetMode.value === 'edit-asset' && editingSlotId.value) {
+      const dto: UpdateAdSlotDto = {
+        name: slotForm.name.trim(),
+        target: slotForm.target,
+        scene: slotForm.scene.trim() || undefined,
+        preview: slotForm.preview || undefined,
+      }
+      await adService.updateSlot(editingSlotId.value, dto)
+      uni.showToast({ title: '已保存', icon: 'success' })
+    } else if (slotSheetMode.value === 'edit-time' && editingSlotId.value) {
+      if (!slotForm.startAt || !slotForm.endAt) {
+        uni.showToast({ title: '请选择起止日期', icon: 'none' })
+        return
+      }
+      if (slotForm.startAt > slotForm.endAt) {
+        uni.showToast({ title: '结束日期不能早于开始', icon: 'none' })
+        return
+      }
+      const dto: UpdateAdSlotDto = {
+        startAt: slotForm.startAt,
+        endAt: slotForm.endAt,
+      }
+      await adService.updateSlot(editingSlotId.value, dto)
+      uni.showToast({ title: '时段已更新', icon: 'success' })
+    }
+    slotSheetOpen.value = false
+    await load()
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+  } finally {
+    slotSubmitting.value = false
+  }
 }
 
-/**
- * "快速暂停 / 恢复"一键操作:遍历 active 广告位全暂停,或反之。
- * 对运营来说大促前后批量切换很常用,避免一个个 editSlot。
- */
+// ============================================================
+// 广告位:暂停/恢复 + 删除 + 批量
+// ============================================================
 async function quickToggleAll() {
   const activeCount = slots.value.filter((s) => s.status === 'active').length
   const pausedCount = slots.value.filter((s) => s.status === 'paused').length
@@ -148,24 +266,33 @@ function viewStats(s: AdSlot) {
 }
 
 /**
- * 广告位编辑：移动端只接最常用的"暂停/恢复"开关,
- * 调 PUT /p/ads/slots/:id 透传 status。其他配置项跳 admin-pc。
+ * 广告位编辑入口:聚合操作列表(action sheet)
+ *   - 修改素材 → 打开 edit-asset sheet
+ *   - 修改时段 → 打开 edit-time sheet
+ *   - 暂停/恢复 → 单次 updateSlot 调用
+ *   - 删除 → 二次确认 + deleteSlot
  */
-function editSlot(s: AdSlot) {
+function openSlotActions(s: AdSlot) {
+  const items = [
+    '修改素材 (名称 / 投放对象 / 预览图)',
+    '修改投放时段',
+    s.status === 'paused' ? '恢复投放' : '暂停投放',
+    '删除广告位',
+  ]
   uni.showActionSheet({
-    itemList: [
-      s.status === 'paused' ? '恢复投放' : '暂停投放',
-      '删除广告位',
-      '修改素材 / 时段（去 admin-pc）',
-    ],
+    itemList: items,
     success: async (r) => {
       try {
         if (r.tapIndex === 0) {
+          openEditSlotAsset(s)
+        } else if (r.tapIndex === 1) {
+          openEditSlotTime(s)
+        } else if (r.tapIndex === 2) {
           const next = s.status === 'paused' ? 'active' : 'paused'
           await adService.updateSlot(s.id, { status: next })
           s.status = next
           uni.showToast({ title: next === 'active' ? '已恢复' : '已暂停', icon: 'success' })
-        } else if (r.tapIndex === 1) {
+        } else if (r.tapIndex === 3) {
           uni.showModal({
             title: '删除广告位',
             content: `确认删除「${s.name}」？该位下的创意会同时清除。`,
@@ -178,8 +305,6 @@ function editSlot(s: AdSlot) {
               }
             },
           })
-        } else {
-          uni.showToast({ title: '请到 admin-pc 后台修改', icon: 'none' })
         }
       } catch (e: any) {
         uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
@@ -188,11 +313,135 @@ function editSlot(s: AdSlot) {
   })
 }
 
-/**
- * 创意删除：DELETE /p/ads/creatives/:id。
- * 创意上下架在 admin-pc 也没单独按钮,这里仅做删除。
- */
-function deleteCreative(c: any) {
+// ============================================================
+// 创意:新建 / 编辑 sheet
+// ============================================================
+type CreativeMode = 'create' | 'edit'
+const creativeSheetOpen = ref(false)
+const creativeSheetMode = ref<CreativeMode>('create')
+const editingCreativeId = ref<string | null>(null)
+const creativeSubmitting = ref(false)
+const creativeForm = reactive({
+  title: '',
+  image: '',
+  link: '',
+  slotId: '',
+  startAt: '',
+  endAt: '',
+  budget: 1000,
+})
+
+function resetCreativeForm() {
+  creativeForm.title = ''
+  creativeForm.image = ''
+  creativeForm.link = ''
+  creativeForm.slotId = slots.value[0]?.id || ''
+  creativeForm.startAt = new Date().toISOString().slice(0, 10)
+  creativeForm.endAt = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10)
+  creativeForm.budget = 1000
+}
+
+function openCreateCreative() {
+  if (slots.value.length === 0) {
+    uni.showToast({ title: '请先创建广告位', icon: 'none' })
+    return
+  }
+  resetCreativeForm()
+  editingCreativeId.value = null
+  creativeSheetMode.value = 'create'
+  creativeSheetOpen.value = true
+}
+
+function openEditCreative(c: AdCreativeRow) {
+  resetCreativeForm()
+  editingCreativeId.value = c.id
+  creativeForm.title = c.title || ''
+  creativeForm.image = c.image || ''
+  creativeForm.link = c.link || ''
+  creativeForm.slotId = c.slotId
+  creativeForm.startAt = (c.startAt || '').slice(0, 10) || creativeForm.startAt
+  creativeForm.endAt = (c.endAt || '').slice(0, 10) || creativeForm.endAt
+  creativeForm.budget = c.budget || 1000
+  creativeSheetMode.value = 'edit'
+  creativeSheetOpen.value = true
+}
+
+const creativeSheetTitle = computed(() =>
+  creativeSheetMode.value === 'create' ? '新建创意' : '编辑创意',
+)
+
+const creativeSheetConfirmDisabled = computed(() => {
+  return (
+    !creativeForm.title.trim() ||
+    !creativeForm.slotId ||
+    !creativeForm.startAt ||
+    !creativeForm.endAt
+  )
+})
+
+async function onPickCreativeImage() {
+  try {
+    const url = await pickAndUploadImage({ bizType: 'misc' })
+    creativeForm.image = url
+    uni.showToast({ title: '已上传', icon: 'success' })
+  } catch (e: any) {
+    if (!/cancel/i.test(e?.message || '')) {
+      uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+    }
+  }
+}
+
+async function submitCreativeSheet() {
+  if (creativeSubmitting.value) return
+  creativeSubmitting.value = true
+  try {
+    if (!creativeForm.title.trim()) {
+      uni.showToast({ title: '请填写创意标题', icon: 'none' })
+      return
+    }
+    if (!creativeForm.slotId) {
+      uni.showToast({ title: '请选择广告位', icon: 'none' })
+      return
+    }
+    if (creativeForm.startAt > creativeForm.endAt) {
+      uni.showToast({ title: '结束日期不能早于开始', icon: 'none' })
+      return
+    }
+    if (creativeSheetMode.value === 'create') {
+      const dto: CreateAdCreativeDto = {
+        slotId: creativeForm.slotId,
+        title: creativeForm.title.trim(),
+        image: creativeForm.image || undefined,
+        link: creativeForm.link.trim() || undefined,
+        startAt: creativeForm.startAt,
+        endAt: creativeForm.endAt,
+        budget: Number(creativeForm.budget) || 0,
+        status: 'active',
+      }
+      await adService.createCreative(dto)
+      uni.showToast({ title: '已创建', icon: 'success' })
+    } else if (editingCreativeId.value) {
+      const dto: UpdateAdCreativeDto = {
+        title: creativeForm.title.trim(),
+        image: creativeForm.image || undefined,
+        link: creativeForm.link.trim() || undefined,
+        startAt: creativeForm.startAt,
+        endAt: creativeForm.endAt,
+        budget: Number(creativeForm.budget) || 0,
+      }
+      await adService.updateCreative(editingCreativeId.value, dto)
+      uni.showToast({ title: '已保存', icon: 'success' })
+    }
+    creativeSheetOpen.value = false
+    await load()
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+  } finally {
+    creativeSubmitting.value = false
+  }
+}
+
+function deleteCreative(c: AdCreativeRow) {
   uni.showModal({
     title: '删除创意',
     content: `确认删除「${c.title || c.id}」？删除后历史曝光数据保留,该创意不再展示。`,
@@ -201,13 +450,31 @@ function deleteCreative(c: any) {
       if (!r.confirm) return
       try {
         await adService.deleteCreative(c.id)
-        creatives.value = creatives.value.filter((x: any) => x.id !== c.id)
+        creatives.value = creatives.value.filter((x: AdCreativeRow) => x.id !== c.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e: any) {
         uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
       }
     },
   })
+}
+
+function openCreativeActions(c: AdCreativeRow) {
+  uni.showActionSheet({
+    itemList: ['编辑创意 (标题 / 图 / 时段)', '删除创意'],
+    success: (r) => {
+      if (r.tapIndex === 0) openEditCreative(c)
+      else if (r.tapIndex === 1) deleteCreative(c)
+    },
+  })
+}
+
+// ============================================================
+// 顶部右上角 + 按钮: 根据当前 tab 决定 "新建广告位" 还是 "新建创意"
+// ============================================================
+function onNavRightTap() {
+  if (tab.value === 'create') openCreateCreative()
+  else openCreateSlot()
 }
 
 const totalStats = computed(() => ({
@@ -220,12 +487,16 @@ const totalStats = computed(() => ({
       : '0',
 }))
 
+function slotNameOf(slotId: string): string {
+  return slots.value.find((s) => s.id === slotId)?.name || slotId
+}
+
 onMounted(load)
 </script>
 
 <template>
   <view class="page">
-    <NavBar title="广告管理" right-icon="plus" @right="createAd" />
+    <NavBar title="广告管理" right-icon="plus" @right="onNavRightTap" />
 
     <view class="tabs">
       <view
@@ -240,23 +511,6 @@ onMounted(load)
     </view>
 
     <scroll-view scroll-y class="scroll">
-      <!-- PC 后台引导 banner -->
-      <view class="admin-banner">
-        <view class="ab-icon">
-          <Icon name="info" :size="32" color="#1296DB" />
-        </view>
-        <view class="ab-body">
-          <text class="ab-title">新建广告位 / 创意请用 PC 后台</text>
-          <text class="ab-desc"
-            >移动端只做查看 + 暂停/恢复 + 删除,复杂表单与素材上传请在 admin-pc</text
-          >
-        </view>
-        <view class="ab-actions">
-          <view class="ab-btn primary" @click.stop="copyAdminUrl">复制后台 URL</view>
-          <view class="ab-btn ghost" @click.stop="quickToggleAll">批量暂停/恢复</view>
-        </view>
-      </view>
-
       <!-- 顶部统计 -->
       <view class="stats-card">
         <view class="stat-item">
@@ -280,8 +534,19 @@ onMounted(load)
         </view>
       </view>
 
-      <!-- Tab 内容 -->
+      <!-- Tab: 广告位 -->
       <view v-if="tab === 'slots'" class="list">
+        <view class="quick-toolbar">
+          <view class="qt-btn primary" @click="openCreateSlot">
+            <Icon name="plus" :size="24" color="#fff" />
+            <text>新建广告位</text>
+          </view>
+          <view class="qt-btn ghost" @click="quickToggleAll">
+            <Icon name="refresh" :size="22" color="#FF4D2D" />
+            <text>批量暂停/恢复</text>
+          </view>
+        </view>
+
         <view v-for="s in slots" :key="s.id" class="card">
           <view class="card-head">
             <text class="name">{{ s.name }}</text>
@@ -297,14 +562,18 @@ onMounted(load)
           </view>
           <view class="meta">
             <Icon name="navigation" :size="22" color="var(--text-tertiary)" />
-            <text>{{ s.scene }} · 目标 {{ s.target }}</text>
+            <text>{{ s.scene || '未设场景' }} · 目标 {{ TARGET_LABEL[s.target] || s.target }}</text>
+          </view>
+          <view v-if="s.startAt && s.endAt" class="meta">
+            <Icon name="calendar" :size="22" color="var(--text-tertiary)" />
+            <text>{{ s.startAt }} ~ {{ s.endAt }}</text>
           </view>
 
-          <!-- 预览图占位 -->
           <view class="preview">
-            <view class="preview-bg">
+            <image v-if="s.preview" :src="s.preview" mode="aspectFill" class="preview-img" />
+            <view v-else class="preview-bg">
               <Icon name="megaphone" :size="56" color="rgba(255,77,45,0.3)" />
-              <text class="preview-text">广告位预览 · {{ s.name }}</text>
+              <text class="preview-text">未上传预览图</text>
             </view>
           </view>
 
@@ -325,38 +594,53 @@ onMounted(load)
 
           <view class="actions">
             <view class="btn ghost" @click="viewStats(s)">数据</view>
-            <view class="btn primary" @click="editSlot(s)">编辑</view>
+            <view class="btn primary" @click="openSlotActions(s)">编辑</view>
           </view>
         </view>
 
-        <view class="bottom-btn" @click="createAd">
-          <Icon name="plus" :size="32" color="#fff" />
-          <text>创建广告位（目标：厂家 / 门店 / 客户）</text>
-        </view>
+        <EmptyState
+          v-if="!loading && slots.length === 0"
+          title="暂无广告位"
+          desc="点击「新建广告位」开始投放"
+          icon="megaphone"
+        />
       </view>
 
+      <!-- Tab: 创意 -->
       <view v-else-if="tab === 'create'" class="list">
+        <view class="quick-toolbar">
+          <view class="qt-btn primary" @click="openCreateCreative">
+            <Icon name="plus" :size="24" color="#fff" />
+            <text>新建创意</text>
+          </view>
+        </view>
+
         <view v-for="c in creatives" :key="c.id" class="creative-card">
-          <image :src="c.image" mode="aspectFill" class="creative-img" />
+          <image v-if="c.image" :src="c.image" mode="aspectFill" class="creative-img" />
+          <view v-else class="creative-img placeholder">
+            <Icon name="image-plus" :size="40" color="#C9CDD4" />
+          </view>
           <view class="creative-info">
             <text class="c-title">{{ c.title }}</text>
             <text class="c-meta">点击 {{ c.clicks }} · 曝光 {{ formatWan(c.impressions) }}</text>
+            <text class="c-meta">归属:{{ slotNameOf(c.slotId) }}</text>
             <view class="c-status" :style="{ color: STATUS_META[c.status]?.tint }">
               {{ STATUS_META[c.status]?.label }}
             </view>
           </view>
-          <view class="creative-actions">
-            <view class="btn ghost danger" @click.stop="deleteCreative(c)">删除</view>
+          <view class="more-btn" @click.stop="openCreativeActions(c)">
+            <Icon name="more-v" :size="32" color="var(--text-tertiary)" />
           </view>
         </view>
         <EmptyState
           v-if="!loading && creatives.length === 0"
           title="暂无创意"
-          desc="点击右上角创建"
+          desc="点击「新建创意」上传素材"
           icon="image-plus"
         />
       </view>
 
+      <!-- Tab: 数据 -->
       <view v-else class="list">
         <view class="big-stat-card">
           <text class="bs-title">本月广告数据</text>
@@ -382,11 +666,212 @@ onMounted(load)
             <text class="rank-name">{{ s.name }}</text>
             <text class="rank-val">{{ formatWan(s.impressions) }}</text>
           </view>
+          <EmptyState
+            v-if="!loading && slots.length === 0"
+            title="暂无数据"
+            desc="先创建几个广告位"
+            icon="megaphone"
+          />
         </view>
       </view>
 
       <view style="height: 40rpx" />
     </scroll-view>
+
+    <!-- 广告位 sheet (create / edit-asset / edit-time) -->
+    <FormSheet
+      :open="slotSheetOpen"
+      :title="slotSheetTitle"
+      :confirm-text="slotSheetMode === 'create' ? '创建' : '保存'"
+      :loading="slotSubmitting"
+      :disabled="slotSheetConfirmDisabled"
+      @close="slotSheetOpen = false"
+      @confirm="submitSlotSheet"
+    >
+      <!-- 通用字段 -->
+      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+        <text class="form-label">广告位名称<text class="required">*</text></text>
+        <input
+          v-model="slotForm.name"
+          class="form-input"
+          placeholder="如:首页 Banner / 商品详情顶部"
+          maxlength="40"
+        />
+      </view>
+      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+        <text class="form-label">投放对象</text>
+        <view class="seg-group">
+          <view
+            v-for="opt in TARGET_OPTIONS"
+            :key="opt.value"
+            :class="['seg-item', slotForm.target === opt.value ? 'active' : '']"
+            @click="slotForm.target = opt.value"
+          >
+            {{ opt.label }}
+          </view>
+        </view>
+      </view>
+      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+        <text class="form-label">场景描述</text>
+        <input
+          v-model="slotForm.scene"
+          class="form-input"
+          placeholder="可选,如「首页轮播大图」"
+          maxlength="40"
+        />
+      </view>
+      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+        <text class="form-label">预览图(目标 URL 落地图)</text>
+        <view class="upload-box" @click="onPickSlotPreview">
+          <image
+            v-if="slotForm.preview"
+            :src="slotForm.preview"
+            class="upload-preview"
+            mode="aspectFill"
+          />
+          <view v-else class="upload-placeholder">
+            <Icon name="image-plus" :size="48" color="#C9CDD4" />
+            <text class="upload-hint">点击选图上传</text>
+          </view>
+        </view>
+        <view v-if="slotForm.preview" class="upload-actions">
+          <text class="link-action" @click="slotForm.preview = ''">移除</text>
+          <text class="link-action" @click="onPickSlotPreview">重新上传</text>
+        </view>
+      </view>
+
+      <!-- 修改时段:仅日期范围 -->
+      <view v-if="slotSheetMode === 'edit-time'" class="form-tip">
+        投放时段持久化至系统配置 (system_settings.business.adSlotMeta), 后端 AdSlot
+        主表后续加字段后会自动迁移读写。
+      </view>
+      <view v-if="slotSheetMode === 'edit-time'" class="form-row">
+        <text class="form-label">开始日期<text class="required">*</text></text>
+        <picker
+          mode="date"
+          :value="slotForm.startAt"
+          @change="(e: any) => (slotForm.startAt = e.detail.value)"
+        >
+          <view class="form-input picker">
+            <text>{{ slotForm.startAt || '请选择' }}</text>
+            <Icon name="calendar" :size="28" color="#86909C" />
+          </view>
+        </picker>
+      </view>
+      <view v-if="slotSheetMode === 'edit-time'" class="form-row">
+        <text class="form-label">结束日期<text class="required">*</text></text>
+        <picker
+          mode="date"
+          :value="slotForm.endAt"
+          @change="(e: any) => (slotForm.endAt = e.detail.value)"
+        >
+          <view class="form-input picker">
+            <text>{{ slotForm.endAt || '请选择' }}</text>
+            <Icon name="calendar" :size="28" color="#86909C" />
+          </view>
+        </picker>
+      </view>
+    </FormSheet>
+
+    <!-- 创意 sheet (create / edit) -->
+    <FormSheet
+      :open="creativeSheetOpen"
+      :title="creativeSheetTitle"
+      :confirm-text="creativeSheetMode === 'create' ? '创建' : '保存'"
+      :loading="creativeSubmitting"
+      :disabled="creativeSheetConfirmDisabled"
+      @close="creativeSheetOpen = false"
+      @confirm="submitCreativeSheet"
+    >
+      <view class="form-row">
+        <text class="form-label">创意标题<text class="required">*</text></text>
+        <input
+          v-model="creativeForm.title"
+          class="form-input"
+          placeholder="如:双11 全场五折"
+          maxlength="40"
+        />
+      </view>
+      <view class="form-row">
+        <text class="form-label">归属广告位<text class="required">*</text></text>
+        <picker
+          mode="selector"
+          :range="slots"
+          range-key="name"
+          :value="slots.findIndex((s) => s.id === creativeForm.slotId)"
+          :disabled="creativeSheetMode === 'edit'"
+          @change="(e: any) => (creativeForm.slotId = slots[e.detail.value]?.id || '')"
+        >
+          <view :class="['form-input', 'picker', creativeSheetMode === 'edit' ? 'disabled' : '']">
+            <text>{{ slotNameOf(creativeForm.slotId) || '请选择广告位' }}</text>
+            <Icon name="chevron-down" :size="28" color="#86909C" />
+          </view>
+        </picker>
+      </view>
+      <view class="form-row">
+        <text class="form-label">创意图<text class="required">*</text></text>
+        <view class="upload-box" @click="onPickCreativeImage">
+          <image
+            v-if="creativeForm.image"
+            :src="creativeForm.image"
+            class="upload-preview"
+            mode="aspectFill"
+          />
+          <view v-else class="upload-placeholder">
+            <Icon name="image-plus" :size="48" color="#C9CDD4" />
+            <text class="upload-hint">点击选图上传</text>
+          </view>
+        </view>
+        <view v-if="creativeForm.image" class="upload-actions">
+          <text class="link-action" @click="creativeForm.image = ''">移除</text>
+          <text class="link-action" @click="onPickCreativeImage">重新上传</text>
+        </view>
+      </view>
+      <view class="form-row">
+        <text class="form-label">点击跳转链接</text>
+        <input
+          v-model="creativeForm.link"
+          class="form-input"
+          placeholder="https:// 或 /pages/xxx"
+          maxlength="200"
+        />
+      </view>
+      <view class="form-row form-row-half">
+        <view class="half-col">
+          <text class="form-label">开始日期</text>
+          <picker
+            mode="date"
+            :value="creativeForm.startAt"
+            @change="(e: any) => (creativeForm.startAt = e.detail.value)"
+          >
+            <view class="form-input picker">
+              <text>{{ creativeForm.startAt }}</text>
+            </view>
+          </picker>
+        </view>
+        <view class="half-col">
+          <text class="form-label">结束日期</text>
+          <picker
+            mode="date"
+            :value="creativeForm.endAt"
+            @change="(e: any) => (creativeForm.endAt = e.detail.value)"
+          >
+            <view class="form-input picker">
+              <text>{{ creativeForm.endAt }}</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+      <view class="form-row">
+        <text class="form-label">预算(元)</text>
+        <input
+          v-model.number="creativeForm.budget"
+          class="form-input"
+          type="number"
+          placeholder="0 表示不设上限"
+        />
+      </view>
+    </FormSheet>
   </view>
 </template>
 
@@ -430,67 +915,7 @@ onMounted(load)
   height: 0;
   box-sizing: border-box;
 }
-.admin-banner {
-  margin: 16rpx 24rpx 0;
-  padding: 20rpx;
-  background: linear-gradient(135deg, rgba(18, 150, 219, 0.08), rgba(18, 150, 219, 0.02));
-  border: 1rpx dashed rgba(18, 150, 219, 0.4);
-  border-radius: 16rpx;
-  display: flex;
-  align-items: flex-start;
-  gap: 16rpx;
-  .ab-icon {
-    width: 56rpx;
-    height: 56rpx;
-    border-radius: 50%;
-    background: rgba(18, 150, 219, 0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .ab-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-    .ab-title {
-      font-size: 26rpx;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .ab-desc {
-      font-size: 22rpx;
-      color: var(--text-tertiary);
-      line-height: 1.5;
-    }
-  }
-  .ab-actions {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-    align-items: flex-end;
-  }
-  .ab-btn {
-    padding: 10rpx 18rpx;
-    border-radius: 999rpx;
-    font-size: 22rpx;
-    font-weight: 700;
-    white-space: nowrap;
-    &.primary {
-      background: #1296db;
-      color: #fff;
-      box-shadow: 0 2rpx 6rpx rgba(18, 150, 219, 0.3);
-    }
-    &.ghost {
-      background: var(--bg-card);
-      border: 1rpx solid rgba(18, 150, 219, 0.3);
-      color: #1296db;
-    }
-  }
-}
+
 .stats-card {
   margin: 16rpx 24rpx 0;
   padding: 20rpx 16rpx;
@@ -526,6 +951,34 @@ onMounted(load)
 .list {
   padding: 16rpx 24rpx;
 }
+
+.quick-toolbar {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+  .qt-btn {
+    flex: 1;
+    height: 80rpx;
+    border-radius: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    font-size: 26rpx;
+    font-weight: 700;
+    &.primary {
+      background: var(--brand-gradient);
+      color: #fff;
+      box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+    }
+    &.ghost {
+      background: var(--bg-card);
+      color: var(--brand-primary);
+      border: 1rpx solid rgba(255, 77, 45, 0.3);
+    }
+  }
+}
+
 .card {
   background: var(--bg-card);
   border-radius: 20rpx;
@@ -574,6 +1027,10 @@ onMounted(load)
   border-radius: 16rpx;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(255, 77, 45, 0.08), rgba(255, 156, 110, 0.04));
+}
+.preview-img {
+  width: 100%;
+  height: 100%;
 }
 .preview-bg {
   width: 100%;
@@ -633,20 +1090,6 @@ onMounted(load)
     box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
-.bottom-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  margin: 16rpx 0 0;
-  padding: 24rpx;
-  background: var(--brand-gradient);
-  color: #fff;
-  border-radius: 16rpx;
-  font-size: 28rpx;
-  font-weight: 700;
-  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
-}
 
 /* 创意卡 */
 .creative-card {
@@ -657,7 +1100,7 @@ onMounted(load)
   padding: 16rpx;
   margin-bottom: 12rpx;
   box-shadow: var(--shadow-sm);
-  align-items: center;
+  align-items: flex-start;
 }
 .creative-img {
   width: 160rpx;
@@ -665,6 +1108,11 @@ onMounted(load)
   border-radius: 12rpx;
   flex-shrink: 0;
   background: var(--bg-page);
+  &.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 .creative-info {
   flex: 1;
@@ -689,15 +1137,9 @@ onMounted(load)
     font-weight: 700;
   }
 }
-.creative-actions {
+.more-btn {
+  padding: 8rpx;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  .btn.ghost.danger {
-    color: #ff3b30;
-    border-color: rgba(255, 59, 48, 0.3);
-  }
 }
 
 /* 数据 tab */
@@ -794,6 +1236,117 @@ onMounted(load)
     color: var(--brand-primary);
     font-family: var(--font-family-base);
     flex-shrink: 0;
+  }
+}
+
+/* ===== 表单 sheet 通用样式 ===== */
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 12rpx 0;
+  &.form-row-half {
+    flex-direction: row;
+    gap: 16rpx;
+    .half-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10rpx;
+    }
+  }
+}
+.form-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  .required {
+    color: #ff3b30;
+    margin-left: 4rpx;
+  }
+}
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  background: #f7f8fa;
+  border: 1rpx solid #e5e6eb;
+  border-radius: 16rpx;
+  color: #1d2129;
+  &.picker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  &.disabled {
+    opacity: 0.6;
+  }
+}
+.form-tip {
+  margin: 4rpx 0 8rpx;
+  padding: 14rpx 16rpx;
+  background: rgba(18, 150, 219, 0.06);
+  border-left: 4rpx solid #1296db;
+  border-radius: 0 12rpx 12rpx 0;
+  font-size: 22rpx;
+  color: #4e5969;
+  line-height: 1.6;
+}
+.seg-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  .seg-item {
+    padding: 12rpx 24rpx;
+    background: #f7f8fa;
+    border: 1rpx solid #e5e6eb;
+    border-radius: 999rpx;
+    font-size: 24rpx;
+    color: var(--text-secondary);
+    &.active {
+      background: rgba(255, 77, 45, 0.1);
+      border-color: #ff4d2d;
+      color: #ff4d2d;
+      font-weight: 700;
+    }
+  }
+}
+.upload-box {
+  width: 100%;
+  height: 240rpx;
+  border-radius: 16rpx;
+  background: #f7f8fa;
+  border: 2rpx dashed #c9cdd4;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .upload-preview {
+    width: 100%;
+    height: 100%;
+  }
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+    .upload-hint {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
+  }
+}
+.upload-actions {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 8rpx;
+  .link-action {
+    font-size: 24rpx;
+    color: #1296db;
+    font-weight: 600;
   }
 }
 </style>

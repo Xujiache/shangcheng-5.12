@@ -26,9 +26,11 @@ export interface Product extends BaseEntity {
   merchantCategoryId?: ID
   name: string
   description?: string
-  /** 主图 + 详情图 */
+  /** 主图（封面/橱窗用，商家端最多 10 张，首张为商品主图） */
   images: string[]
-  /** 富文本详情 */
+  /** 商品详情图（按顺序在商品详情页内展示，最多 20 张；老数据可能为空，回退到 images.slice(1)） */
+  detailImages?: string[]
+  /** 富文本详情（已被 detailImages 取代，保留兼容老商品） */
   detailHtml?: string
   tags: string[]
   /** 价格区间（来自 SKU 聚合） */
@@ -114,6 +116,7 @@ export interface ProductCreateDto {
   name: string
   description?: string
   images: string[]
+  detailImages?: string[]
   detailHtml?: string
   tags: string[]
   shipping: ('factory' | 'local' | 'pickup')[]

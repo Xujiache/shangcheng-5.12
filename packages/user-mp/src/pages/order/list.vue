@@ -14,6 +14,7 @@ import { formatPrice } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
 import Icon from '../../components/icon/icon.vue'
+import { safeSwitchTab } from '../../utils/tab-nav'
 
 const cartStore = useCartStore()
 
@@ -168,7 +169,7 @@ async function reorder(o: Order) {
     }
     const tail = skippedNames.length > 0 ? `（${skippedNames.length} 件已下架跳过）` : ''
     uni.showToast({ title: `已加入 ${success} 件${tail}`, icon: 'success', duration: 1500 })
-    setTimeout(() => uni.switchTab({ url: '/pages/tabbar/cart/index' }), 600)
+    setTimeout(() => safeSwitchTab('/pages/tabbar/cart/index'), 600)
   } catch (e: any) {
     uni.hideLoading()
     uni.showToast({ title: e?.message || '操作失败', icon: 'none' })

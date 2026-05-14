@@ -18,6 +18,11 @@ import { useUserStore } from '../../store'
 import { useTencentMap } from '../../composables/useTencentMap'
 import { useStatusBar } from '../../composables/useStatusBar'
 import { BASE_URL } from '../../utils/request'
+import { safeBackOrHome } from '../../utils/tab-nav'
+
+function goBack() {
+  safeBackOrHome('/pages/tabbar/me/index')
+}
 
 const userStore = useUserStore()
 const { heroPaddingTop } = useStatusBar(24)
@@ -202,7 +207,9 @@ async function saveProfile() {
     Object.assign(form, { ...DEFAULT_PROFILE, ...updated })
     original.value = { ...form }
     // 通知其他页面（home / me/index）：店铺信息已变，下次 onShow 强制刷新
-    try { uni.setStorageSync('merchant_profile_changed_at', Date.now()) } catch {}
+    try {
+      uni.setStorageSync('merchant_profile_changed_at', Date.now())
+    } catch {}
     uni.hideLoading()
     uni.showToast({ title: '已保存', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 600)
@@ -212,9 +219,7 @@ async function saveProfile() {
   }
 }
 
-const hasChange = computed(
-  () => JSON.stringify(form) !== JSON.stringify(original.value)
-)
+const hasChange = computed(() => JSON.stringify(form) !== JSON.stringify(original.value))
 
 function toggleCategory(c: string) {
   const idx = form.categories.indexOf(c)
@@ -230,7 +235,7 @@ onMounted(loadProfile)
     <!-- Hero · 渐变 + 头像 + 头部信息 -->
     <view class="hero" :style="{ paddingTop: heroPaddingTop }">
       <view class="hero-top">
-        <view class="back-btn" @click="() => uni.navigateBack({ delta: 1, fail: () => uni.switchTab({ url: '/pages/tabbar/me/index' }) })">
+        <view class="back-btn" @click="goBack">
           <Icon name="back" :size="32" color="#fff" />
         </view>
         <text class="hero-title">个人信息</text>
@@ -262,7 +267,13 @@ onMounted(loadProfile)
         <text class="label">店名</text>
         <view class="field">
           <view class="prefix"><Icon name="biz-shop-decorate" :size="32" color="#86909c" /></view>
-          <input v-model="form.shopName" class="input" placeholder="请输入店名" placeholder-class="ph" maxlength="40" />
+          <input
+            v-model="form.shopName"
+            class="input"
+            placeholder="请输入店名"
+            placeholder-class="ph"
+            maxlength="40"
+          />
         </view>
       </view>
 
@@ -279,7 +290,13 @@ onMounted(loadProfile)
         <text class="label">联系人</text>
         <view class="field">
           <view class="prefix"><Icon name="biz-me" :size="32" color="#86909c" /></view>
-          <input v-model="form.contactName" class="input" placeholder="请输入联系人" placeholder-class="ph" maxlength="20" />
+          <input
+            v-model="form.contactName"
+            class="input"
+            placeholder="请输入联系人"
+            placeholder-class="ph"
+            maxlength="20"
+          />
         </view>
       </view>
 
@@ -287,7 +304,14 @@ onMounted(loadProfile)
         <text class="label">联系手机</text>
         <view class="field">
           <view class="prefix"><Icon name="phone" :size="32" color="#86909c" /></view>
-          <input v-model="form.contactPhone" class="input" placeholder="例：13912345678" placeholder-class="ph" maxlength="20" type="number" />
+          <input
+            v-model="form.contactPhone"
+            class="input"
+            placeholder="例：13912345678"
+            placeholder-class="ph"
+            maxlength="20"
+            type="number"
+          />
         </view>
       </view>
 
@@ -295,7 +319,13 @@ onMounted(loadProfile)
         <text class="label">邮箱</text>
         <view class="field">
           <view class="prefix"><Icon name="mail" :size="32" color="#86909c" /></view>
-          <input v-model="form.email" class="input" placeholder="例：contact@example.com" placeholder-class="ph" maxlength="60" />
+          <input
+            v-model="form.email"
+            class="input"
+            placeholder="例：contact@example.com"
+            placeholder-class="ph"
+            maxlength="60"
+          />
         </view>
       </view>
     </view>
@@ -314,7 +344,9 @@ onMounted(loadProfile)
         </text>
         <view class="cat-selector" @click="showCategoryPicker = true">
           <view v-if="form.categories.length" class="cat-tags">
-            <view v-for="c in form.categories" :key="c" class="cat-chip">{{ displayCategory(c) }}</view>
+            <view v-for="c in form.categories" :key="c" class="cat-chip">{{
+              displayCategory(c)
+            }}</view>
           </view>
           <text v-else class="cat-placeholder">点击选择经营品类</text>
           <Icon name="forward" :size="24" color="#c9cdd4" />
@@ -325,7 +357,13 @@ onMounted(loadProfile)
         <text class="label">联系地址</text>
         <view class="field">
           <view class="prefix"><Icon name="location" :size="32" color="#86909c" /></view>
-          <input v-model="form.address" class="input" placeholder="详细地址" placeholder-class="ph" maxlength="100" />
+          <input
+            v-model="form.address"
+            class="input"
+            placeholder="详细地址"
+            placeholder-class="ph"
+            maxlength="100"
+          />
         </view>
         <view class="map-btn" @click="pickAddressOnMap">
           <Icon name="location" :size="28" color="#FF4D2D" />
@@ -435,8 +473,8 @@ onMounted(loadProfile)
 /* ===== Hero ===== */
 .hero {
   background:
-    radial-gradient(120% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
-    linear-gradient(160deg, #FF6B45 0%, #FF4D2D 50%, #E63A1F 100%);
+    radial-gradient(120% 80% at 100% 0%, #ff8a5e 0%, transparent 60%),
+    linear-gradient(160deg, #ff6b45 0%, #ff4d2d 50%, #e63a1f 100%);
   padding: 0 32rpx 64rpx;
   border-bottom-left-radius: 36rpx;
   border-bottom-right-radius: 36rpx;
@@ -452,8 +490,8 @@ onMounted(loadProfile)
   width: 64rpx;
   height: 64rpx;
   border-radius: 16rpx;
-  background: rgba(255,255,255,0.18);
-  border: 2rpx solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -482,15 +520,17 @@ onMounted(loadProfile)
   height: 168rpx;
   padding: 6rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.15));
-  border: 3rpx solid rgba(255,255,255,0.4);
-  box-shadow: 0 12rpx 32rpx rgba(0,0,0,0.18);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.15));
+  border: 3rpx solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.18);
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.15s;
-  &:active { transform: scale(0.96); }
+  &:active {
+    transform: scale(0.96);
+  }
 }
 .avatar-img {
   width: 100%;
@@ -501,7 +541,7 @@ onMounted(loadProfile)
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #fff, #FFE6DC);
+  background: linear-gradient(135deg, #fff, #ffe6dc);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -509,7 +549,7 @@ onMounted(loadProfile)
 .avatar text {
   font-size: 64rpx;
   font-weight: 800;
-  background: linear-gradient(135deg, #FF6B45, #E63A1F);
+  background: linear-gradient(135deg, #ff6b45, #e63a1f);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -521,12 +561,12 @@ onMounted(loadProfile)
   width: 50rpx;
   height: 50rpx;
   border-radius: 50%;
-  background: #FF4D2D;
+  background: #ff4d2d;
   border: 3rpx solid #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.2);
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
 }
 .hero-name {
   font-size: 36rpx;
@@ -537,7 +577,7 @@ onMounted(loadProfile)
 }
 .hero-no {
   font-size: 22rpx;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   letter-spacing: 1rpx;
 }
 
@@ -547,7 +587,7 @@ onMounted(loadProfile)
   background: #fff;
   border-radius: 28rpx;
   padding: 28rpx 28rpx 8rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.06);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.06);
 }
 .card:first-of-type {
   margin-top: -32rpx;
@@ -564,7 +604,7 @@ onMounted(loadProfile)
   width: 8rpx;
   height: 28rpx;
   border-radius: 4rpx;
-  background: linear-gradient(180deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(180deg, #ff6b45, #ff4d2d);
 }
 .section-title {
   font-size: 30rpx;
@@ -598,17 +638,19 @@ onMounted(loadProfile)
   align-items: center;
   height: 92rpx;
   padding: 0 24rpx;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: #f7f8fa;
+  border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 .field:focus-within {
-  border-color: #FFB199;
+  border-color: #ffb199;
   background: #fff;
 }
 .field-readonly {
-  background: #FAFAFB;
+  background: #fafafb;
   border-style: dashed;
 }
 .prefix {
@@ -647,12 +689,14 @@ onMounted(loadProfile)
   gap: 12rpx;
   min-height: 92rpx;
   padding: 16rpx 24rpx;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: #f7f8fa;
+  border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
   transition: background 0.2s;
 }
-.cat-selector:active { background: #fff; }
+.cat-selector:active {
+  background: #fff;
+}
 .cat-tags {
   flex: 1;
   display: flex;
@@ -661,9 +705,9 @@ onMounted(loadProfile)
 }
 .cat-chip {
   padding: 8rpx 18rpx;
-  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
-  color: #FF4D2D;
-  border: 2rpx solid #FFD3BD;
+  background: linear-gradient(135deg, #fff6f1, #ffe9dc);
+  color: #ff4d2d;
+  border: 2rpx solid #ffd3bd;
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 600;
@@ -681,20 +725,22 @@ onMounted(loadProfile)
   align-items: center;
   gap: 10rpx;
   padding: 18rpx 22rpx;
-  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
-  border: 2rpx solid #FFE0CD;
+  background: linear-gradient(135deg, #fff6f1, #ffe9dc);
+  border: 2rpx solid #ffe0cd;
   border-radius: 16rpx;
   font-size: 24rpx;
-  color: #FF4D2D;
+  color: #ff4d2d;
   font-weight: 500;
 }
-.map-btn text { flex: 1; }
+.map-btn text {
+  flex: 1;
+}
 
 /* textarea */
 .textarea-wrap {
   position: relative;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: #f7f8fa;
+  border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
   padding: 20rpx 24rpx 36rpx;
 }
@@ -721,7 +767,7 @@ onMounted(loadProfile)
   right: 0;
   bottom: 0;
   padding: 24rpx 28rpx calc(24rpx + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(247,248,250,0) 0%, #F7F8FA 30%);
+  background: linear-gradient(180deg, rgba(247, 248, 250, 0) 0%, #f7f8fa 30%);
   z-index: 10;
 }
 .btn-save {
@@ -737,13 +783,19 @@ onMounted(loadProfile)
   border: none;
   transition: all 0.2s ease;
 }
-.btn-save::after { border: none; }
+.btn-save::after {
+  border: none;
+}
 .btn-save--active {
-  background: linear-gradient(135deg, #FF6B45 0%, #FF4D2D 100%);
+  background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
   box-shadow: 0 12rpx 28rpx rgba(255, 77, 45, 0.35);
 }
-.btn-save:active { transform: scale(0.98); }
-.safe-bottom { height: 240rpx; }
+.btn-save:active {
+  transform: scale(0.98);
+}
+.safe-bottom {
+  height: 240rpx;
+}
 
 .picker-mask {
   position: fixed;
@@ -769,9 +821,21 @@ onMounted(loadProfile)
   padding: 28rpx 32rpx;
   border-bottom: 1rpx solid #f0f2f5;
 }
-.picker-title { font-size: 30rpx; font-weight: 600; color: #303133; }
-.picker-close { font-size: 28rpx; color: #ff4d2d; font-weight: 500; }
-.picker-body { flex: 1; overflow-y: auto; padding: 12rpx 0; }
+.picker-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #303133;
+}
+.picker-close {
+  font-size: 28rpx;
+  color: #ff4d2d;
+  font-weight: 500;
+}
+.picker-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12rpx 0;
+}
 .picker-item {
   display: flex;
   justify-content: space-between;
@@ -780,13 +844,20 @@ onMounted(loadProfile)
   font-size: 28rpx;
   color: #303133;
   border-bottom: 1rpx solid #f5f6f8;
-  &:active { background: #fafbfc; }
-  &--active { color: #ff4d2d; font-weight: 500; }
+  &:active {
+    background: #fafbfc;
+  }
+  &--active {
+    color: #ff4d2d;
+    font-weight: 500;
+  }
 }
 
 .row--map {
   background: linear-gradient(135deg, rgba(255, 77, 45, 0.04), transparent);
-  &:active { background: linear-gradient(135deg, rgba(255, 77, 45, 0.08), transparent); }
+  &:active {
+    background: linear-gradient(135deg, rgba(255, 77, 45, 0.08), transparent);
+  }
 }
 .mpick-mask {
   position: fixed;
@@ -811,8 +882,16 @@ onMounted(loadProfile)
   padding: 24rpx 32rpx;
   border-bottom: 1rpx solid #f0f2f5;
 }
-.mpick-title { font-size: 30rpx; font-weight: 700; color: #303133; }
-.mpick-close { font-size: 26rpx; color: #ff4d2d; font-weight: 600; }
+.mpick-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #303133;
+}
+.mpick-close {
+  font-size: 26rpx;
+  color: #ff4d2d;
+  font-weight: 600;
+}
 .mpick-search {
   display: flex;
   gap: 12rpx;
@@ -837,7 +916,11 @@ onMounted(loadProfile)
   font-size: 26rpx;
   font-weight: 600;
 }
-.mpick-list { flex: 1; height: 0; padding: 12rpx 0; }
+.mpick-list {
+  flex: 1;
+  height: 0;
+  padding: 12rpx 0;
+}
 .mpick-empty {
   padding: 80rpx 0;
   text-align: center;
@@ -850,9 +933,24 @@ onMounted(loadProfile)
   gap: 16rpx;
   padding: 24rpx 32rpx;
   border-bottom: 1rpx solid #f5f6f8;
-  &:active { background: #fafbfc; }
+  &:active {
+    background: #fafbfc;
+  }
 }
-.mpick-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
-.mpick-item-name { font-size: 28rpx; font-weight: 600; color: #303133; }
-.mpick-item-addr { font-size: 22rpx; color: #909399; }
+.mpick-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.mpick-item-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #303133;
+}
+.mpick-item-addr {
+  font-size: 22rpx;
+  color: #909399;
+}
 </style>

@@ -107,6 +107,18 @@ export const productAuditService = {
 }
 
 // ============ 广告 ============
+/**
+ * AdSlot 前端视图模型。
+ *
+ * 注意:后端 prisma AdSlot 模型现有字段是 code/name/scene/target/position/size/sort/unitPrice/enabled/status,
+ * `preview` / `startAt` / `endAt` 在后端模型中**当前没有**,
+ * 调用 createSlot/updateSlot 时已在前端 sanitize,
+ * 不会把未识别字段透传到 prisma 触发 ValidationError。
+ *
+ * - preview 暂存方案:走 SystemConfig 兜底(business.adSlotMeta),不污染 AdSlot 表
+ * - startAt/endAt 同上(广告位维度的投放时段配置)
+ * - 后端如果以后给 AdSlot 加字段,把 SLOT_PRISMA_FIELDS 白名单扩一下即可
+ */
 export interface AdSlot {
   id: string
   name: string
@@ -116,19 +128,218 @@ export interface AdSlot {
   creativeCount: number
   ctr: number
   impressions: number
+  /** 客户端补全字段, 来自 SystemConfig 兜底 */
+  preview?: string
+  startAt?: string
+  endAt?: string
 }
+
+export interface AdCreativeRow {
+  id: string
+  slotId: string
+  title: string
+  image?: string
+  link?: string
+  startAt?: string
+  endAt?: string
+  budget?: number
+  spent?: number
+  impressions: number
+  clicks: number
+  status: 'active' | 'paused' | 'ended' | 'pending' | 'rejected'
+  priority?: number
+}
+
+export type CreateAdSlotDto = {
+  name: string
+  target?: string
+  scene?: string
+  status?: AdSlot['status']
+  position?: string
+  preview?: string
+  startAt?: string
+  endAt?: string
+}
+export type UpdateAdSlotDto = Partial<CreateAdSlotDto>
+export type CreateAdCreativeDto = {
+  slotId: string
+  title: string
+  image?: string
+  link?: string
+  startAt?: string
+  endAt?: string
+  budget?: number
+  priority?: number
+  status?: AdCreativeRow['status']
+}
+export type UpdateAdCreativeDto = Partial<Omit<CreateAdCreativeDto, 'slotId'>>
+
+/** AdSlot 后端 prisma 字段白名单, 用于过滤 dto 防 ValidationError */
+const SLOT_PRISMA_FIELDS = [
+  'name',
+  'code',
+  'scene',
+  'target',
+  'position',
+  'size',
+  'sort',
+  'unitPrice',
+  'enabled',
+  'status',
+] as const
+
+/** AdCreative 后端 prisma 字段白名单 */
+const CREATIVE_PRISMA_FIELDS = [
+  'slotId',
+  'title',
+  'image',
+  'video',
+  'link',
+  'startAt',
+  'endAt',
+  'budget',
+  'priority',
+  'status',
+] as const
+
+function pickAdFields<K extends string>(dto: any, allow: readonly K[]): Record<K, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const k of allow) {
+    if (dto?.[k] !== undefined && dto[k] !== null && dto[k] !== '') {
+      out[k] = dto[k]
+    }
+  }
+  return out as Record<K, unknown>
+}
+
+/**
+ * SystemConfig 兜底存储: 广告位的 preview / startAt / endAt
+ *
+ * 后端 platform.service systemSettings 用的是 SystemConfig.key='system_settings',
+ * 我们这里复用同一个机制, 把 ad slot meta 挂在 system_settings.business.adSlotMeta 下,
+ * 不污染主表 schema。读取走 systemService.settings(), 写走 systemService.saveSettings()。
+ *
+ * TODO: 后端给 AdSlot 加 preview/startAt/endAt 字段后, 删除这两个 helper, 走主表更新。
+ */
+type SlotMetaEntry = { preview?: string; startAt?: string; endAt?: string }
+async function loadSlotMetaMap(): Promise<Record<string, SlotMetaEntry>> {
+  try {
+    const s = await http.get<any>('/api/v1/p/system/settings', undefined, { silent: true })
+    return (s?.business?.adSlotMeta as Record<string, SlotMetaEntry>) || {}
+  } catch {
+    return {}
+  }
+}
+
+async function saveSlotMetaMap(map: Record<string, SlotMetaEntry>) {
+  // 读 → 合并 → 写, 避免覆盖 business 块的其它字段(commissionRate / withdrawMinAmount 等)
+  let current: any = {}
+  try {
+    current = (await http.get<any>('/api/v1/p/system/settings')) || {}
+  } catch {
+    current = {}
+  }
+  const next = {
+    ...current,
+    business: {
+      ...(current.business || {}),
+      adSlotMeta: map,
+    },
+  }
+  return http.post<{ ok: boolean }>('/api/v1/p/system/settings', next)
+}
+
 export const adService = {
-  slots() {
-    return http.get<AdSlot[]>('/api/v1/p/ads/slots')
+  /**
+   * 拉广告位列表 + 合并 SystemConfig 里的 preview / startAt / endAt 兜底字段。
+   * 在调用方看 slots[i].preview 等就跟原生字段一样, 无需关心后端是否落库。
+   */
+  async slots(): Promise<AdSlot[]> {
+    const [list, metaMap] = await Promise.all([
+      http.get<AdSlot[]>('/api/v1/p/ads/slots'),
+      loadSlotMetaMap(),
+    ])
+    if (!Array.isArray(list)) return []
+    return list.map((s) => ({
+      ...s,
+      preview: metaMap[s.id]?.preview || (s as any).preview || '',
+      startAt: metaMap[s.id]?.startAt || (s as any).startAt || '',
+      endAt: metaMap[s.id]?.endAt || (s as any).endAt || '',
+    }))
   },
   creatives(params: { slotId?: string; page?: number; pageSize?: number } = {}) {
-    return http.get<Pagination<unknown>>('/api/v1/p/ads/creatives', params)
+    return http.get<Pagination<AdCreativeRow>>('/api/v1/p/ads/creatives', params)
   },
-  updateSlot(id: string, dto: Partial<AdSlot> & Record<string, unknown>) {
-    return http.put<AdSlot>(`/api/v1/p/ads/slots/${id}`, dto)
+  /**
+   * 新建广告位:
+   * - code 必填且唯一, 自动生成: slot_<ts>
+   * - status 默认 draft
+   * - preview / startAt / endAt 走 SystemConfig 兜底落库, 不进 AdSlot 表
+   */
+  async createSlot(dto: CreateAdSlotDto): Promise<AdSlot> {
+    const code = `slot_${Date.now()}`
+    const corePayload = {
+      ...pickAdFields({ ...dto, status: dto.status || 'draft', code }, SLOT_PRISMA_FIELDS),
+    }
+    const created = await http.post<AdSlot>('/api/v1/p/ads/slots', corePayload)
+    const slotId = (created as any)?.id
+    if (slotId && (dto.preview || dto.startAt || dto.endAt)) {
+      const map = await loadSlotMetaMap()
+      map[slotId] = {
+        preview: dto.preview || '',
+        startAt: dto.startAt || '',
+        endAt: dto.endAt || '',
+      }
+      await saveSlotMetaMap(map).catch(() => {
+        // 兜底存失败不影响主流程, 已经创建成功了
+      })
+    }
+    return created
+  },
+  /**
+   * 改广告位:
+   * - 主表字段(name/target/status/scene/...)走 PUT /p/ads/slots/:id
+   * - preview / startAt / endAt 走 SystemConfig 同步
+   */
+  async updateSlot(id: string, dto: UpdateAdSlotDto): Promise<AdSlot> {
+    const core = pickAdFields(dto, SLOT_PRISMA_FIELDS)
+    let result: any = null
+    if (Object.keys(core).length > 0) {
+      result = await http.put<AdSlot>(`/api/v1/p/ads/slots/${id}`, core)
+    }
+    if (dto.preview !== undefined || dto.startAt !== undefined || dto.endAt !== undefined) {
+      const map = await loadSlotMetaMap()
+      map[id] = {
+        ...(map[id] || {}),
+        ...(dto.preview !== undefined ? { preview: dto.preview } : {}),
+        ...(dto.startAt !== undefined ? { startAt: dto.startAt } : {}),
+        ...(dto.endAt !== undefined ? { endAt: dto.endAt } : {}),
+      }
+      await saveSlotMetaMap(map).catch(() => {})
+    }
+    return result as AdSlot
   },
   deleteSlot(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/ads/slots/${id}`)
+  },
+  createCreative(dto: CreateAdCreativeDto) {
+    const payload = pickAdFields(
+      {
+        ...dto,
+        status: dto.status || 'active',
+        priority: typeof dto.priority === 'number' ? dto.priority : 50,
+        startAt: dto.startAt || new Date().toISOString().slice(0, 10),
+        endAt: dto.endAt || new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10),
+      },
+      CREATIVE_PRISMA_FIELDS,
+    )
+    return http.post<AdCreativeRow>('/api/v1/p/ads/creatives', payload)
+  },
+  updateCreative(id: string, dto: UpdateAdCreativeDto) {
+    return http.put<AdCreativeRow>(
+      `/api/v1/p/ads/creatives/${id}`,
+      pickAdFields(dto, CREATIVE_PRISMA_FIELDS),
+    )
   },
   deleteCreative(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/ads/creatives/${id}`)
@@ -165,8 +376,12 @@ export const plazaService = {
   createPush(dto: Record<string, unknown>) {
     return http.post<{ ok: boolean }>('/api/v1/p/plaza/pushes', dto)
   },
-  /** 全平台商品聚合（products tab） */
-  products(params: { pageSize?: number } = {}) {
+  /** 全平台商品聚合（products tab）
+   *
+   * 后端 `plazaProductsAll` 默认拉 `status='active'` 商品(已通过审核且未下架),
+   * include 了 merchant 关联,这正是平台端"新建推送 → 选商品"需要的源。
+   */
+  products(params: { page?: number; pageSize?: number; keyword?: string } = {}) {
     return http.get<Pagination<unknown> | unknown[]>('/api/v1/p/plaza/products', params)
   },
   /** 全平台厂家列表（factories tab） */
@@ -177,6 +392,19 @@ export const plazaService = {
   records(params: { pageSize?: number } = {}) {
     return http.get<Pagination<unknown>>('/api/v1/p/plaza/records', params)
   },
+  /**
+   * 平台维度控制商品在选品广场是否展示 —— 不动 product.status,
+   * 走 SystemConfig 兜底键 `plaza:product:${productId}`。
+   *
+   * 对应后端 PATCH /api/v1/p/plaza/products/:id/online,
+   * body `{ online: boolean }`,失败时调用方应回滚 UI 状态。
+   */
+  setProductOnline(productId: string, online: boolean) {
+    return http.patch<{ ok: boolean; status?: string }>(
+      `/api/v1/p/plaza/products/${encodeURIComponent(productId)}/online`,
+      { online },
+    )
+  },
 }
 
 // ============ 会员套餐 ============
@@ -185,6 +413,28 @@ export interface SubscriptionStatusOverview {
   monthly: number
   trial: number
   expiringSoon: number
+}
+/**
+ * 套餐订阅商家行 —— 由后端 `planSubscriptions` 扁平化输出:
+ *   - merchantName / planName / planType / price 已 flatten 到顶层
+ *   - subscribedAt 即 createdAt,totalDays 由 endAt-startAt 计算
+ *   - status ∈ trial/active/expired (与 MerchantMembership 一致)
+ */
+export interface PlanSubscriptionRow {
+  id: string
+  merchantId: string
+  planId: string
+  planCode: string
+  planName: string
+  planType: string
+  merchantName: string
+  price: number
+  startAt: string
+  endAt: string
+  status: 'trial' | 'active' | 'expired'
+  autoRenew?: boolean
+  totalDays: number
+  subscribedAt: string
 }
 export const memberService = {
   plans() {
@@ -198,6 +448,10 @@ export const memberService = {
   },
   deletePlan(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/member-plans/${id}`)
+  },
+  /** 查询某套餐当前所有订阅商家(用于套餐详情展开行) */
+  planSubscriptions(planId: string) {
+    return http.get<PlanSubscriptionRow[]>(`/api/v1/p/member-plans/${planId}/subscriptions`)
   },
   /** 新商家通用试用天数(0=关闭),走 SystemConfig 全局配置 */
   async trialDays(): Promise<number> {
@@ -338,6 +592,28 @@ function unwrapList<T>(raw: any): T[] {
   return []
 }
 
+/** 角色创建/编辑 DTO, 与 admin-pc saveAdminRole 字段对齐 */
+export interface AdminRoleDto {
+  id?: string
+  name: string
+  desc?: string
+  permissions: string[]
+}
+
+/** 管理员创建/编辑 DTO, 与后端 createAdmin/updateAdmin 字段对齐 */
+export interface AdminUserDto {
+  id?: string
+  username: string
+  nickname?: string
+  email?: string
+  phone?: string
+  /** prisma user.role 字段, 取值: super-admin / admin / platform */
+  role: string
+  /** 新建管理员必填, 至少 8 位; 修改管理员忽略 */
+  password?: string
+  avatar?: string
+}
+
 export const permissionService = {
   async admins() {
     const raw = await http.get<any>('/api/v1/p/admins', { pageSize: 100 })
@@ -347,11 +623,69 @@ export const permissionService = {
     const raw = await http.get<any>('/api/v1/p/roles', { pageSize: 100 })
     return unwrapList<AdminRole>(raw)
   },
-  saveRole(dto: Partial<AdminRole>) {
-    return http.post<{ ok: boolean }>('/api/v1/p/roles', dto as unknown as Record<string, unknown>)
+  /**
+   * 新建/更新角色
+   * - 后端 saveRole 看 dto.id: 有就 update, 无就 create
+   * - 也兼容显式 PUT /p/roles/:id 通道(updateRole)
+   */
+  saveRole(dto: AdminRoleDto) {
+    return http.post<AdminRole>('/api/v1/p/roles', dto as unknown as Record<string, unknown>)
+  },
+  updateRole(id: string, dto: Partial<AdminRoleDto>) {
+    return http.put<AdminRole>(`/api/v1/p/roles/${id}`, dto as unknown as Record<string, unknown>)
   },
   deleteRole(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/roles/${id}`)
+  },
+  /**
+   * 新建管理员: POST /p/admins
+   *
+   * 后端校验:
+   *   - username / password 必填
+   *   - password 至少 8 位
+   *   - role 仅 admin/platform/super-admin, super-admin 仅 super-admin 调用方可指派
+   */
+  createAdminUser(dto: AdminUserDto) {
+    return http.post<{ id: string; username: string }>(
+      '/api/v1/p/admins',
+      dto as unknown as Record<string, unknown>,
+    )
+  },
+  /**
+   * 修改管理员: PUT /p/admins/:id
+   *
+   * 服务端二次过滤 ADMIN_UPDATABLE_FIELDS:
+   *   username / phone / email / nickname / avatar / role / status
+   */
+  updateAdminUser(id: string, dto: Partial<AdminUserDto>) {
+    return http.put<{ ok: boolean; updated: boolean }>(
+      `/api/v1/p/admins/${id}`,
+      dto as unknown as Record<string, unknown>,
+    )
+  },
+  /**
+   * 统一保存接口(创建/更新自动分流)
+   * - id 存在 → updateAdminUser
+   * - 否则 → createAdminUser
+   * UI 调用方表单填完直接 saveAdminUser(form), 不用判断模式
+   */
+  saveAdminUser(dto: AdminUserDto) {
+    if (dto.id) {
+      const { id, ...rest } = dto
+      return this.updateAdminUser(id, rest)
+    }
+    return this.createAdminUser(dto)
+  },
+  /**
+   * 超管重置管理员密码: POST /p/admins/:id/reset-password
+   *
+   * 后端鉴权: 仅 super-admin 可调, 不可重置自己 / 其它 super-admin / 普通客户
+   * 后端校验: 密码至少 8 位
+   */
+  resetAdminPassword(id: string, newPassword: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/admins/${id}/reset-password`, {
+      password: newPassword,
+    })
   },
   deleteAdmin(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/admins/${id}`)
@@ -421,31 +755,333 @@ export const appReleaseService = {
   },
 }
 
+// ============ 订单分享数据 ============
+/**
+ * 平台后台 · 订单分享统计与列表
+ *
+ * 后端: packages/server/src/modules/platform/platform.controller.ts
+ *   GET /api/v1/p/order-shares       → Pagination<OrderShareRow>
+ *   GET /api/v1/p/order-shares/stats → OrderShareStats
+ *
+ * 数据底层来自 SystemConfig (key 前缀 'order_share:'),由 merchant-app
+ * `POST /m/orders/:id/share` 生成。前端可见字段 visibleFields ⊂
+ * ['basics','customer','pricing','items','extra']。
+ */
+export interface OrderShareRow {
+  shareCode: string
+  orderId: string
+  orderNo: string | null
+  merchantId: string
+  merchantName: string
+  visibleFields: string[]
+  expiresAt: string | null
+  intro: string
+  viewCount: number
+  revoked: boolean
+  expired: boolean
+  createdAt: string
+  shareUrl: string
+}
+export interface OrderShareStats {
+  totalShares: number
+  totalViews: number
+  active: number
+  revoked: number
+  expired: number
+  trend: { date: string; count: number }[]
+  topMerchants: { merchantId: string; name: string; shareCount: number; viewCount: number }[]
+}
+export const orderShareService = {
+  list(
+    params: {
+      page?: number
+      pageSize?: number
+      merchantId?: string
+      revoked?: boolean
+      startDate?: string
+      endDate?: string
+    } = {},
+  ) {
+    return http.get<Pagination<OrderShareRow>>('/api/v1/p/order-shares', params)
+  },
+  stats() {
+    return http.get<OrderShareStats>('/api/v1/p/order-shares/stats')
+  },
+}
+
+// ============ 消息中心（容错降级） ============
+/**
+ * 平台消息中心 —— 后端可能尚未实现 `/p/notifications`,
+ * service 内部已 catch 异常并返回 null,前端可凭此切换到本地 mock 演示。
+ */
+export type NotifyType = 'system' | 'todo' | 'business'
+export interface NotifyItem {
+  id: string
+  type: NotifyType
+  title: string
+  content: string
+  unread: boolean
+  createdAt: string
+}
+export const notifyService = {
+  async list(): Promise<NotifyItem[] | null> {
+    try {
+      const r = await http.get<{ list?: NotifyItem[] } | NotifyItem[]>(
+        '/api/v1/p/notifications',
+        undefined,
+        { silent: true },
+      )
+      if (Array.isArray(r)) return r
+      if (r && Array.isArray((r as any).list)) return (r as any).list
+      return null
+    } catch {
+      return null
+    }
+  },
+  async markAllRead(): Promise<boolean> {
+    try {
+      await http.post<{ ok: boolean }>('/api/v1/p/notifications/read-all', undefined, {
+        silent: true,
+      })
+      return true
+    } catch {
+      return false
+    }
+  },
+}
+
+// ============ 反馈（容错降级） ============
+/**
+ * 平台反馈提交 —— 后端 `/p/feedback` 若尚未上线,service 抛出后由调用方落地到
+ * 本地 storage (key: jiujiu_platform_feedback_local),保证用户提交不丢。
+ */
+export interface FeedbackDto {
+  type: 'feature' | 'bug' | 'experience' | 'other'
+  content: string
+  contact?: string
+  images?: string[]
+}
+export const feedbackService = {
+  submit(dto: FeedbackDto) {
+    return http.post<{ ok: boolean; id?: string }>(
+      '/api/v1/p/feedback',
+      dto as unknown as Record<string, unknown>,
+      { silent: true },
+    )
+  },
+}
+
+// ============ 工单系统 ============
+/**
+ * 与后端 PlatformController.tickets() 对齐：
+ *   GET    /api/v1/p/tickets?status=&priority=&page=&pageSize=
+ *   GET    /api/v1/p/tickets/handled-count
+ *   GET    /api/v1/p/tickets/pending-count
+ *   POST   /api/v1/p/tickets               (创建)
+ *   POST   /api/v1/p/tickets/:id/handle    (处理:回复 + 改状态)
+ *
+ * 后端用 SystemConfig key='ticket:<id>' 兜底存储,无需独立 Ticket 表 migration。
+ */
+export type TicketStatus = 'open' | 'handling' | 'closed'
+export type TicketPriority = 'low' | 'normal' | 'high'
+export interface Ticket {
+  id: string
+  title: string
+  content: string
+  fromUserId: string | null
+  fromUserName: string
+  status: TicketStatus
+  priority: TicketPriority
+  createdAt: string
+  handledBy: string | null
+  handledAt: string | null
+  reply: string
+}
+export const ticketService = {
+  list(
+    params: {
+      status?: TicketStatus | 'all'
+      priority?: TicketPriority | 'all'
+      keyword?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) {
+    return http.get<Pagination<Ticket>>('/api/v1/p/tickets', params)
+  },
+  async pendingCount(): Promise<number> {
+    try {
+      const r = await http.get<{ count: number }>('/api/v1/p/tickets/pending-count', undefined, {
+        silent: true,
+      })
+      return typeof r?.count === 'number' ? r.count : 0
+    } catch {
+      return 0
+    }
+  },
+  async handledCount(): Promise<number> {
+    try {
+      const r = await http.get<{ count: number }>('/api/v1/p/tickets/handled-count', undefined, {
+        silent: true,
+      })
+      return typeof r?.count === 'number' ? r.count : 0
+    } catch {
+      return 0
+    }
+  },
+  handle(id: string, dto: { reply?: string; status?: TicketStatus }) {
+    return http.post<{ ok: boolean; ticket: Ticket }>(
+      `/api/v1/p/tickets/${id}/handle`,
+      dto as unknown as Record<string, unknown>,
+    )
+  },
+  create(dto: {
+    title: string
+    content: string
+    priority?: TicketPriority
+    fromUserName?: string
+  }) {
+    return http.post<Ticket>('/api/v1/p/tickets', dto as unknown as Record<string, unknown>)
+  },
+}
+
+// ============ 提现审核 (平台后端 Wave5 加的 /p/withdraws 系列接口) ============
+export type WithdrawStatus = 'pending' | 'approved' | 'rejected' | 'paid'
+export interface Withdraw {
+  id: string
+  merchantId: string
+  merchantName?: string
+  applicantName?: string
+  amount: number
+  method?: string // bank / alipay / wechat
+  account?: string
+  status: WithdrawStatus
+  remark?: string
+  reason?: string
+  reviewerId?: string
+  reviewedAt?: string
+  paidAt?: string
+  createdAt: string
+}
+
+export const withdrawService = {
+  list(params?: {
+    status?: WithdrawStatus | 'all'
+    merchantId?: string
+    keyword?: string
+    page?: number
+    pageSize?: number
+  }) {
+    return http.get<{
+      list: Withdraw[]
+      total: number
+      page: number
+      pageSize: number
+      hasMore?: boolean
+    }>('/api/v1/p/withdraws', params)
+  },
+  approve(id: string, remark?: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/withdraws/${encodeURIComponent(id)}/approve`, {
+      remark,
+    })
+  },
+  reject(id: string, reason: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/withdraws/${encodeURIComponent(id)}/reject`, {
+      reason,
+    })
+  },
+  markPaid(id: string, body: { transactionId?: string; remark?: string }) {
+    return http.post<{ ok: boolean }>(
+      `/api/v1/p/withdraws/${encodeURIComponent(id)}/mark-paid`,
+      body,
+    )
+  },
+}
+
+// ============ 操作日志 ============
+/**
+ * 与后端 PlatformController.auditRecords() 对齐：
+ *   GET /api/v1/p/audit/records?type=merchant|product&status=&targetId=&page=&pageSize=
+ *
+ * 用于平台后台「操作日志」页面 — 查询所有审核流转记录。
+ */
+export type AuditRecordType = 'merchant' | 'product'
+export type AuditRecordStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'auto_approved'
+  | 'sample_check'
+export interface AuditRecord {
+  id: string
+  type: AuditRecordType
+  targetId: string
+  status: AuditRecordStatus
+  reason: string | null
+  autoApproved: boolean
+  sampleChecked: boolean
+  reviewedAt: string | null
+  createdAt: string
+  auditor: { id: string; username: string | null; nickname: string } | null
+}
+export const auditLogService = {
+  list(
+    params: {
+      type?: AuditRecordType | 'all'
+      status?: AuditRecordStatus | 'all'
+      targetId?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) {
+    // 把 'all' 翻成 undefined,避免后端把字面量当查询条件
+    const q: Record<string, unknown> = {}
+    if (params.type && params.type !== 'all') q.type = params.type
+    if (params.status && params.status !== 'all') q.status = params.status
+    if (params.targetId) q.targetId = params.targetId
+    if (params.page) q.page = params.page
+    if (params.pageSize) q.pageSize = params.pageSize
+    return http.get<Pagination<AuditRecord>>('/api/v1/p/audit/records', q)
+  },
+}
+
 // ============ 系统设置 ============
 /**
  * 与 admin-pc 后台共用同一 SystemConfig 记录（key=system_settings）。
  *
- * business 子段字段名严格对齐后端 platform.service.ts::systemSettings DEFAULT：
- *   - newMerchantAutoApprove   新商家自动审核
- *   - newProductAutoApprove    新商品自动审核
- *   - platformCommissionRate   平台抽佣比例（%）
- *   - withdrawMinAmount        提现门槛（元）
+ * 字段形态严格对齐后端 platform.service.ts::systemSettings DEFAULT:
+ *   - payment.*           {enabled: boolean}  对象,不要写裸 boolean(admin-pc 形态)
+ *   - security.passwordPolicy {minLength: number, requireUppercase: boolean}
+ *   - business.*          四项:newMerchantAutoApprove / newProductAutoApprove /
+ *                         platformCommissionRate(%) / withdrawMinAmount(元)
  *
- * TODO: "注册商家上限"目前后端未持久化字段，admin-pc 与 platform-app 都暂未保存。
- *       如要启用，需要后端在 business 块新增 registerLimit + 注册流程中校验。
+ * 兼容历史：旧 platform-app 曾写过 `payment.wechat: true` 这种裸 boolean,
+ * 读取端需要做 normalize(见 system/index.vue#normalizeSettings)。
  */
+export interface PaymentChannelConfig {
+  enabled: boolean
+}
+export interface PasswordPolicyConfig {
+  minLength: number
+  requireUppercase: boolean
+}
+export interface BusinessSettings {
+  newMerchantAutoApprove: boolean
+  newProductAutoApprove: boolean
+  platformCommissionRate: number
+  withdrawMinAmount: number
+}
 export interface SystemSettings {
   site: { name: string; logo: string; icp: string }
-  payment: { wechat: boolean; alipay: boolean; balance: boolean }
+  payment: {
+    wechat: PaymentChannelConfig
+    alipay: PaymentChannelConfig
+    balance: PaymentChannelConfig
+  }
   logistics: { providers: string[]; defaultFreight: number }
   service: { phone: string; email: string; workTime: string }
-  security: { passwordPolicy: string; ipWhitelist: string[] }
-  business?: {
-    newMerchantAutoApprove?: boolean
-    newProductAutoApprove?: boolean
-    platformCommissionRate?: number
-    withdrawMinAmount?: number
-  }
+  security: { passwordPolicy: PasswordPolicyConfig; ipWhitelist: string[] }
+  business: BusinessSettings
 }
 export const systemService = {
   settings() {

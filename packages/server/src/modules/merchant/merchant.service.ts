@@ -19,6 +19,7 @@ const PRODUCT_WRITABLE_FIELDS = [
   'name',
   'description',
   'images',
+  'detailImages',
   'detailHtml',
   'tags',
   'categoryId',

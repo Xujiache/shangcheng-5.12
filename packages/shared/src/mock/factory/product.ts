@@ -62,6 +62,10 @@ export function genProduct(opts?: {
     images: Array.from({ length: faker.number.int({ min: 3, max: 6 }) }).map(() =>
       placeholderImage(800, 800),
     ),
+    // 商品详情图（5~10 张长图，模拟商家上传的产品参数图/场景图）
+    detailImages: Array.from({ length: faker.number.int({ min: 5, max: 10 }) }).map(() =>
+      placeholderImage(750, 1200),
+    ),
     detailHtml: `<p>${faker.commerce.productDescription()}</p><p>采用${faker.helpers.arrayElement(SPEC_OPTIONS.material)}工艺，匠心制作。</p>`,
     tags: pickN(TAGS, faker.number.int({ min: 1, max: 3 })),
     priceRetailMin: priceRetail,

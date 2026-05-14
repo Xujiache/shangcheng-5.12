@@ -223,6 +223,9 @@ model Product {
   name                String
   description         String?
   images              String[] @default([])
+  // 商品详情图（按顺序展示，商家端最多 20 张；老数据若为空则回退到 images.slice(1)）
+  detailImages        String[] @default([])
+  // 富文本详情（已被 detailImages 取代，保留兼容历史数据）
   detailHtml          String?
   tags                String[] @default([])
   // 价格聚合

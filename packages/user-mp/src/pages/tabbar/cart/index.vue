@@ -18,6 +18,7 @@ import { formatPrice } from '@jiujiu/shared/utils'
 import NavBar from '../../../components/nav-bar/nav-bar.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
+import { safeSwitchTab } from '../../../utils/tab-nav'
 
 const cartStore = useCartStore()
 const userStore = useUserStore()
@@ -146,7 +147,7 @@ function goAllFavorites() {
 }
 
 function goHome() {
-  uni.switchTab({ url: '/pages/tabbar/home/index' })
+  safeSwitchTab('/pages/tabbar/home/index')
 }
 
 onMounted(() => {

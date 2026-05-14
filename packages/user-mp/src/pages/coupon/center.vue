@@ -20,6 +20,7 @@ import { useUserStore } from '../../store/user'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
 import Icon from '../../components/icon/icon.vue'
+import { safeSwitchTab } from '../../utils/tab-nav'
 
 const userStore = useUserStore()
 
@@ -45,7 +46,7 @@ function goLogin() {
 }
 
 function goHome() {
-  uni.switchTab({ url: '/pages/tabbar/home/index' })
+  safeSwitchTab('/pages/tabbar/home/index')
 }
 
 async function claim(c: Coupon) {

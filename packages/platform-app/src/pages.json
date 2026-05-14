@@ -25,7 +25,24 @@
     { "path": "pages/permission/index", "style": { "navigationBarTitleText": "权限管理" } },
     { "path": "pages/system/index", "style": { "navigationBarTitleText": "系统设置" } },
     { "path": "pages/legal/index", "style": { "navigationBarTitleText": "法律协议管理" } },
-    { "path": "pages/app-release/index", "style": { "navigationBarTitleText": "APP 发布管理" } }
+    { "path": "pages/app-release/index", "style": { "navigationBarTitleText": "APP 发布管理" } },
+    { "path": "pages/ticket/index", "style": { "navigationBarTitleText": "工单管理" } },
+    { "path": "pages/operation-log/index", "style": { "navigationBarTitleText": "操作日志" } },
+    { "path": "pages/withdraws/index", "style": { "navigationBarTitleText": "提现审核" } }
+  ],
+  "subPackages": [
+    {
+      "root": "pages/notify",
+      "pages": [{ "path": "index", "style": { "navigationBarTitleText": "消息中心" } }]
+    },
+    {
+      "root": "pages/share-stats",
+      "pages": [{ "path": "index", "style": { "navigationBarTitleText": "订单分享数据" } }]
+    },
+    {
+      "root": "pages/feedback",
+      "pages": [{ "path": "index", "style": { "navigationBarTitleText": "意见反馈" } }]
+    }
   ],
   "globalStyle": {
     "navigationStyle": "custom",

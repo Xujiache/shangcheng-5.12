@@ -12,9 +12,10 @@ import type { ApiResult } from '@jiujiu/shared/types'
 // 后端统一入口 https://ewsn.top —— 不再支持本地 server,
 // .env 缺失 / uni-app mp-weixin 注入失败 / build 模式不匹配等任何场景,
 // 都直接走线上,避免一切"连不上 localhost:3001"类故障。
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
+export const PLATFORM_TOKEN_KEY = 'jiujiu_admin_token'
 const LOGIN_PATH = '/pages/auth/login'
-const TOKEN_KEY = 'jiujiu_admin_token'
+const TOKEN_KEY = PLATFORM_TOKEN_KEY
 const REFRESH_KEY = 'jiujiu_admin_refresh_token'
 const USER_KEY = 'jiujiu_admin'
 
