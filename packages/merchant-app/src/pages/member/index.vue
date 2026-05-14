@@ -19,6 +19,15 @@ const loading = ref(true)
 const subscribing = ref(false)
 const selectedCode = ref<'monthly' | 'yearly'>('yearly')
 
+/** 支付状态轮询配置：30s 总时长，1.5s 间隔（约 20 次） */
+const PAY_POLL_TOTAL_MS = 30 * 1000
+const PAY_POLL_INTERVAL_MS = 1500
+
+/** 最近一次发起的支付单号，用于超时后用户主动「刷新状态」 */
+const pendingPaymentNo = ref<string>('')
+const pendingActionLabel = ref<string>('开通')
+const showRefreshBtn = ref(false)
+
 const basicPlans = computed(() => plans.value.filter((p) => p.type === 'basic'))
 const adPlans = computed(() => plans.value.filter((p) => p.type === 'ad'))
 const addonPlans = computed(() => plans.value.filter((p) => p.type === 'addon'))
@@ -64,6 +73,69 @@ function pickPlan(code: 'monthly' | 'yearly') {
  *   3. 微信回调 /payments/wechat/notify → 后端 activateMembership(recordId)
  *   4. 前端轮询 paymentStatus 直到 status='paid' 才算成功
  */
+/**
+ * 轮询支付状态：默认 30 秒（PAY_POLL_TOTAL_MS），1.5 秒/次（PAY_POLL_INTERVAL_MS），约 20 次。
+ *
+ * 返回：
+ *   - 'paid'    支付成功
+ *   - 'failed'  支付失败 / 已退款（终态）
+ *   - 'timeout' 轮询窗口耗尽仍未到终态
+ */
+async function pollPaymentStatus(
+  paymentNo: string,
+  totalMs = PAY_POLL_TOTAL_MS,
+  intervalMs = PAY_POLL_INTERVAL_MS,
+): Promise<'paid' | 'failed' | 'timeout'> {
+  const t0 = Date.now()
+  while (Date.now() - t0 < totalMs) {
+    try {
+      const st = await memberService.paymentStatus(paymentNo)
+      if (st.status === 'paid') return 'paid'
+      if (st.status === 'failed' || st.status === 'refunded') return 'failed'
+    } catch {
+      /* 单次失败忽略，下次再试 */
+    }
+    await new Promise((r) => setTimeout(r, intervalMs))
+  }
+  return 'timeout'
+}
+
+/**
+ * 用户主动「刷新状态」：再走一遍轮询窗口（30s）
+ *
+ * 仅当上次支付走到了 timeout 才会显示该入口（showRefreshBtn=true）
+ */
+async function refreshPayStatus() {
+  if (!pendingPaymentNo.value || subscribing.value) return
+  subscribing.value = true
+  uni.showLoading({ title: '查询支付状态…', mask: true })
+  try {
+    const result = await pollPaymentStatus(pendingPaymentNo.value)
+    uni.hideLoading()
+    if (result === 'paid') {
+      uni.showToast({ title: pendingActionLabel.value + '成功', icon: 'success' })
+      showRefreshBtn.value = false
+      pendingPaymentNo.value = ''
+      await load()
+    } else if (result === 'failed') {
+      uni.showToast({ title: '支付未成功，请重试', icon: 'none' })
+      showRefreshBtn.value = false
+      pendingPaymentNo.value = ''
+    } else {
+      uni.showToast({
+        title: '仍未确认到账，请稍后再试或联系客服',
+        icon: 'none',
+        duration: 2500,
+      })
+    }
+  } catch (e: any) {
+    uni.hideLoading()
+    uni.showToast({ title: e?.message || '查询失败', icon: 'none' })
+  } finally {
+    subscribing.value = false
+  }
+}
+
 async function doRealPay(plan: MemberPlan, actionLabel: string) {
   if (subscribing.value) return
   subscribing.value = true
@@ -107,37 +179,29 @@ async function doRealPay(plan: MemberPlan, actionLabel: string) {
     })
 
     // 微信成功回调只是说明用户点了"已支付"，是否真正到账要靠后端微信回调
-    // 这里轮询 paymentStatus（最多 6 秒），超时也只是提示用户稍后查看
+    // 30 秒轮询窗口（1.5s 一次，约 20 次）—— 超时给"刷新状态"按钮，用户可主动再查一轮
+    pendingPaymentNo.value = res.paymentNo
+    pendingActionLabel.value = actionLabel
+    showRefreshBtn.value = false
     uni.showLoading({ title: '确认支付状态…', mask: true })
-    const t0 = Date.now()
-    let paid = false
-    while (Date.now() - t0 < 6000) {
-      try {
-        const st = await memberService.paymentStatus(res.paymentNo)
-        if (st.status === 'paid') {
-          paid = true
-          break
-        }
-        if (st.status === 'failed' || st.status === 'refunded') {
-          uni.hideLoading()
-          uni.showToast({ title: '支付未成功，请重试', icon: 'none' })
-          return
-        }
-      } catch {
-        /* 忽略单次失败，下次再试 */
-      }
-      await new Promise((r) => setTimeout(r, 800))
-    }
+    const result = await pollPaymentStatus(res.paymentNo)
     uni.hideLoading()
 
-    if (paid) {
+    if (result === 'paid') {
       uni.showToast({ title: actionLabel + '成功', icon: 'success' })
+      pendingPaymentNo.value = ''
+      showRefreshBtn.value = false
+    } else if (result === 'failed') {
+      uni.showToast({ title: '支付未成功，请重试', icon: 'none' })
+      pendingPaymentNo.value = ''
+      showRefreshBtn.value = false
     } else {
       uni.showToast({
-        title: '支付已发起，请稍后刷新查看会员状态',
+        title: '支付已发起，请稍后点击"刷新状态"查看',
         icon: 'none',
         duration: 2500,
       })
+      showRefreshBtn.value = true
     }
     await load()
   } catch (e: any) {
@@ -210,6 +274,12 @@ onMounted(load)
         <view v-if="currentMembership.expiringSoon" class="mc-warning">
           ⚠️ 即将到期，请尽快续费以免影响经营
         </view>
+      </view>
+
+      <!-- 支付状态轮询超时 → 让用户主动再查一轮 -->
+      <view v-if="showRefreshBtn" class="pay-refresh">
+        <text class="pay-refresh-tip">支付已发起但暂未确认到账</text>
+        <view class="pay-refresh-btn" @click="refreshPayStatus">刷新状态</view>
       </view>
       <!-- 基础套餐：月费 / 年费 -->
       <view class="plans">
@@ -453,6 +523,31 @@ onMounted(load)
   font-weight: 600;
   position: relative;
   z-index: 1;
+}
+.pay-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  background: linear-gradient(135deg, #FFF7E6, #FFE7BA);
+  border: 2rpx solid #FFB91A;
+  border-radius: 16rpx;
+  .pay-refresh-tip {
+    flex: 1;
+    font-size: 24rpx;
+    color: #C2410C;
+    font-weight: 600;
+  }
+  .pay-refresh-btn {
+    padding: 12rpx 24rpx;
+    background: var(--brand-gradient);
+    color: #fff;
+    border-radius: 999rpx;
+    font-size: 24rpx;
+    font-weight: 700;
+    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+  }
 }
 .plans {
   display: flex;

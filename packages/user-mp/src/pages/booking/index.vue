@@ -17,7 +17,10 @@ const form = ref({
   name: '',
   phone: '',
   address: '',
+  /** 后端要的 ISO 字符串，提交时发它 */
   appointAt: '',
+  /** 仅用于按钮上展示的人类可读文本（如「今天 14:00」），不会发后端 */
+  appointAtLabel: '',
   space: '客厅',
   remark: '',
 })
@@ -50,11 +53,47 @@ function chooseAddress() {
   })
 }
 
+/**
+ * 构造预约时间槽：今天 / 明天 / 后天 × {09:00, 14:00, 16:00}
+ * - label：界面显示
+ * - iso：发给后端的 ISO 字符串（Date.toISOString()）
+ */
+function buildTimeSlots() {
+  const days = [
+    { offset: 0, name: '今天' },
+    { offset: 1, name: '明天' },
+    { offset: 2, name: '后天' },
+  ]
+  const hours = [9, 14, 16]
+  const slots: { label: string; iso: string }[] = []
+  const now = new Date()
+  for (const d of days) {
+    for (const h of hours) {
+      const dt = new Date(now)
+      dt.setDate(dt.getDate() + d.offset)
+      dt.setHours(h, 0, 0, 0)
+      // 今天且已过的时段跳过
+      if (d.offset === 0 && dt.getTime() <= now.getTime()) continue
+      const hh = String(h).padStart(2, '0')
+      slots.push({ label: `${d.name} ${hh}:00`, iso: dt.toISOString() })
+    }
+  }
+  return slots
+}
+
 function chooseTime() {
+  const slots = buildTimeSlots()
+  if (slots.length === 0) {
+    uni.showToast({ title: '今天已无可预约时段，请选明天', icon: 'none' })
+    return
+  }
   uni.showActionSheet({
-    itemList: ['今天 14:00', '今天 16:00', '明天 09:00', '明天 14:00', '后天 10:00'],
+    itemList: slots.map((s) => s.label),
     success: (r) => {
-      form.value.appointAt = ['今天 14:00', '今天 16:00', '明天 09:00', '明天 14:00', '后天 10:00'][r.tapIndex]
+      const picked = slots[r.tapIndex]
+      if (!picked) return
+      form.value.appointAt = picked.iso
+      form.value.appointAtLabel = picked.label
     },
   })
 }
@@ -71,6 +110,7 @@ async function submit() {
       name: form.value.name,
       phone: form.value.phone,
       address: form.value.address,
+      // 已是 ISO 字符串（new Date(...).toISOString()）
       appointAt: form.value.appointAt,
       space: form.value.space,
       remark: form.value.remark,
@@ -117,8 +157,8 @@ async function submit() {
         <text class="label">预约时间</text>
         <view class="time-row">
           <Icon name="calendar" :size="28" color="var(--text-tertiary)" />
-          <text :class="['value', form.appointAt ? '' : 'placeholder']">
-            {{ form.appointAt || '选择日期 / 时段' }}
+          <text :class="['value', form.appointAtLabel ? '' : 'placeholder']">
+            {{ form.appointAtLabel || '选择日期 / 时段' }}
           </text>
         </view>
         <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />

@@ -12,8 +12,12 @@ import { ref, computed, nextTick, onMounted } from 'vue'
 import { chatService } from '../../services/store'
 import type { ChatSessionItem, ChatMessageItem, QuickReplyItem } from '../../services/store'
 import { formatRelative } from '@jiujiu/shared/utils'
+import { BASE_URL } from '../../utils/request'
+import { useUserStore } from '../../store'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
+
+const userStore = useUserStore()
 
 const sessions = ref<ChatSessionItem[]>([])
 const messages = ref<ChatMessageItem[]>([])
@@ -108,14 +112,27 @@ function applyQuick(q: QuickReplyItem) {
   showQuick.value = false
 }
 
+/**
+ * 发图：选图 → 上传到 /api/v1/files/upload 拿到 URL → 调 chatService.send(type:'image', content:url)
+ *
+ * 失败时：toast + 回滚乐观消息
+ */
 async function sendImage() {
   showActions.value = false
+  if (!currentSessionId.value) {
+    uni.showToast({ title: '请先选择会话', icon: 'none' })
+    return
+  }
   uni.chooseImage({
     count: 1,
+    sizeType: ['compressed'],
     success: async (res) => {
       const path = (res as { tempFilePaths: string[] }).tempFilePaths[0]
-      const newMsg: ChatMessageItem = {
-        id: 'tmp-' + Date.now(),
+      if (!path) return
+
+      const tmpId = 'tmp-' + Date.now()
+      const optimistic: ChatMessageItem = {
+        id: tmpId,
         sessionId: currentSessionId.value,
         sender: 'merchant',
         type: 'image',
@@ -123,9 +140,51 @@ async function sendImage() {
         createdAt: new Date().toISOString(),
         read: true,
       }
-      messages.value = [...messages.value, newMsg]
+      messages.value = [...messages.value, optimistic]
       await nextTick()
       scrollToBottom()
+
+      uni.showLoading({ title: '上传中…', mask: true })
+      try {
+        const uploadRes = await new Promise<{ url: string }>((resolve, reject) => {
+          uni.uploadFile({
+            url: BASE_URL + '/api/v1/files/upload',
+            filePath: path,
+            name: 'file',
+            formData: { bizType: 'chat' },
+            header: userStore.accessToken
+              ? { Authorization: `Bearer ${userStore.accessToken}` }
+              : {},
+            success: (r: any) => {
+              try {
+                const data = typeof r.data === 'string' ? JSON.parse(r.data) : r.data
+                if (data?.code === 0 && data?.data?.url) resolve({ url: data.data.url })
+                else reject(new Error(data?.message || '上传失败'))
+              } catch (e: any) {
+                reject(e)
+              }
+            },
+            fail: (err: any) => reject(err),
+          })
+        })
+
+        const sent = await chatService.send(currentSessionId.value, {
+          type: 'image',
+          content: uploadRes.url,
+        })
+
+        const idx = messages.value.findIndex((m) => m.id === tmpId)
+        if (idx >= 0) {
+          messages.value.splice(idx, 1, { ...sent, type: 'image', content: uploadRes.url })
+        }
+        if (current.value) current.value.lastMessage = '[图片]'
+        uni.hideLoading()
+      } catch (e: any) {
+        uni.hideLoading()
+        const idx = messages.value.findIndex((m) => m.id === tmpId)
+        if (idx >= 0) messages.value.splice(idx, 1)
+        uni.showToast({ title: e?.message || '发送失败', icon: 'none' })
+      }
     },
   })
 }

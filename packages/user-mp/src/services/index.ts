@@ -37,6 +37,21 @@ export const shopService = {
 }
 
 // ============ 订单 ============
+/**
+ * 创建订单 DTO。
+ *
+ * 注意优惠券字段：**只传 couponId**（如果用户选了券）。
+ * 严禁前端传 `couponDiscount` 等数字字段——后端会查 Coupon 表自行重算，
+ * 前端的金额仅用于本地预览合计，发数字过去会被后端忽略且容易引入对账偏差。
+ */
+export interface OrderCreateDto {
+  addressId: string
+  items: { skuId: string; productId?: string; quantity: number }[]
+  couponId?: string
+  shippingMethod?: 'factory' | 'local' | 'pickup'
+  remark?: string
+}
+
 export const orderService = {
   list(params: { status?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<Order>>('/api/v1/u/orders', params)
@@ -44,8 +59,11 @@ export const orderService = {
   detail(id: string) {
     return http.get<Order>(`/api/v1/u/orders/${id}`)
   },
-  create(dto: Record<string, unknown>) {
-    return http.post<{ orderId: string; orderNo: string; payAmount: number }>('/api/v1/u/orders', dto)
+  create(dto: OrderCreateDto) {
+    return http.post<{ orderId: string; orderNo: string; payAmount: number }>(
+      '/api/v1/u/orders',
+      dto as unknown as Record<string, unknown>,
+    )
   },
   /**
    * 发起支付。
@@ -189,7 +207,12 @@ export interface NearbyStore {
   id: string
   name: string
   address: string
-  distance: number
+  /**
+   * 距离（km）。后端按 Haversine 距用户坐标计算；
+   * 未授权定位（小程序拒绝 uni.getLocation）时为 null，
+   * 前端模板按 `distance != null` 判断展示"未授权定位"。
+   */
+  distance: number | null
   phone: string
   lat: number
   lng: number

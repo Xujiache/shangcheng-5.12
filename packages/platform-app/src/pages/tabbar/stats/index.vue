@@ -8,16 +8,18 @@
  * - 4 张 KPI 卡（商户/订单/GMV/用户）+ 注册趋势 SVG + 商户构成 + 类目排行 + 会员分布
  * - 北京时间口径
  */
-import { ref, computed, onMounted } from 'vue'
-import { dashboardService } from '../../../services'
+import { ref, computed, onMounted, watch } from 'vue'
+import { dashboardService, statsService, type PlatformStats, type StatsPeriod } from '../../../services'
 import type { PlatformDashboard } from '@jiujiu/shared/types'
 import { formatWan } from '@jiujiu/shared/utils'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 
 const dashboard = ref<PlatformDashboard | null>(null)
-const period = ref<'today' | 'week' | 'month' | 'year'>('week')
+const stats = ref<PlatformStats | null>(null)
+const period = ref<StatsPeriod>('week')
 const loading = ref(true)
+const statsLoading = ref(false)
 
 const statusBarHeight = computed(() => {
   try {
@@ -86,6 +88,52 @@ async function load() {
   }
 }
 
+/**
+ * 拉 GET /p/stats?period=xxx：返回销售趋势 + TOP10 商家。
+ * 与 dashboard 的 categorySales 互补,这里展示按周期切换的销售曲线和商家排行。
+ * dashboard 上的数据只有"近 14 天注册趋势 / 全期类目分布",粒度不变。
+ */
+async function loadStats() {
+  statsLoading.value = true
+  try {
+    stats.value = await statsService.get(period.value)
+  } catch {
+    stats.value = null
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+watch(period, loadStats)
+
+const PERIOD_LABEL_MAP: Record<StatsPeriod, string> = {
+  today: '今日',
+  week: '本周',
+  month: '本月',
+  year: '本年',
+}
+
+const salesTrendPoints = computed(() => {
+  const data = stats.value?.salesTrend ?? []
+  if (data.length === 0)
+    return { line: '', area: '', dots: [] as { x: number; y: number; v: number; label: string }[] }
+  const max = Math.max(...data.map((d) => d.value), 1)
+  const w = data.length > 1 ? 100 / (data.length - 1) : 100
+  const padY = 4
+  const dots = data.map((d, i) => {
+    const x = i * w
+    const y = padY + 32 - (d.value / max) * 28
+    return { x, y, v: d.value, label: d.date }
+  })
+  const line = dots.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const area = `${dots[0].x.toFixed(1)},40 ${line} ${dots[dots.length - 1].x.toFixed(1)},40`
+  return { line, area, dots }
+})
+
+const maxMerchantSales = computed(() =>
+  Math.max(...(stats.value?.topMerchants?.map((m) => m.sales) ?? [1])),
+)
+
 const trendPoints = computed(() => {
   const data = dashboard.value?.registrationTrend?.slice(-14) ?? []
   if (data.length === 0)
@@ -145,7 +193,10 @@ function exportReport() {
   }, 800)
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadStats()
+})
 </script>
 
 <template>
@@ -197,6 +248,82 @@ onMounted(load)
                 }}{{ k.key === 'gmv' ? '%' : '' }}</text
               >
             </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 销售趋势（按周期切换 · /p/stats） -->
+      <view v-if="stats" class="chart-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <view class="title-dot" />
+            <text class="title">销售趋势</text>
+          </view>
+          <text class="meta">{{ PERIOD_LABEL_MAP[period] }} · {{ stats.salesTrend.length }} 段</text>
+        </view>
+        <view class="trend-svg-wrap">
+          <svg viewBox="0 0 100 44" preserveAspectRatio="none" class="trend-svg">
+            <defs>
+              <linearGradient id="sales-g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.32" />
+                <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
+              </linearGradient>
+              <linearGradient id="sales-line" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#FF4D2D" />
+                <stop offset="100%" stop-color="#FAAD14" />
+              </linearGradient>
+            </defs>
+            <polygon :points="salesTrendPoints.area" fill="url(#sales-g)" />
+            <polyline
+              :points="salesTrendPoints.line"
+              fill="none"
+              stroke="url(#sales-line)"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle
+              v-for="(p, i) in salesTrendPoints.dots"
+              :key="i"
+              :cx="p.x"
+              :cy="p.y"
+              r="0.8"
+              fill="#FF4D2D"
+            />
+          </svg>
+        </view>
+      </view>
+
+      <!-- TOP10 商家（按周期切换 · /p/stats） -->
+      <view v-if="stats && stats.topMerchants.length > 0" class="chart-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <view class="title-dot" />
+            <text class="title">TOP{{ stats.topMerchants.length }} 商家</text>
+          </view>
+          <text class="meta">{{ PERIOD_LABEL_MAP[period] }} GMV</text>
+        </view>
+        <view class="cat-list">
+          <view v-for="(m, i) in stats.topMerchants" :key="m.merchantId" class="cat-row">
+            <view class="cat-label">
+              <view
+                :class="[
+                  'rank-mini',
+                  i === 0 && 'rank-1',
+                  i === 1 && 'rank-2',
+                  i === 2 && 'rank-3',
+                ]"
+                >{{ i + 1 }}</view
+              >
+              <text class="cat-name">{{ m.name }}</text>
+            </view>
+            <view class="cat-bar-wrap">
+              <view
+                class="cat-bar"
+                :style="{ width: ((m.sales / maxMerchantSales) * 100).toFixed(0) + '%' }"
+              />
+            </view>
+            <text class="cat-val">¥{{ formatWan(m.sales) }}</text>
           </view>
         </view>
       </view>

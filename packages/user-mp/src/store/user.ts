@@ -106,20 +106,41 @@ export const useUserStore = defineStore('user', () => {
     return fresh
   }
 
-  /** 建立 WS 连接订阅 user:update 事件（多端实时同步） */
+  /**
+   * 建立 WS 连接订阅 user:update 事件（多端实时同步）
+   *
+   * 平台差异（与 useChatSocket.ts 保持一致）：
+   *   - H5: 优先用 window.location.origin（同源/反代场景），允许 websocket + polling
+   *   - mp-weixin: 小程序 polling 走 XHR，没有 XMLHttpRequest，强制 websocket-only；
+   *     origin 写死 https://ewsn.top（small program build 时 import.meta.env 不会注入）
+   */
   async function connectProfileSync() {
     if (chatSock || !accessToken.value) return
     try {
       const mod = await import('socket.io-client')
       const io = (mod as any).io || (mod as any).default
-      // 计算 origin（H5/mp 都兼容）
+
+      // 计算 origin（与 useChatSocket.ts 同套推导）
       let origin = ''
       // #ifdef H5
-      if (typeof window !== 'undefined') origin = window.location.origin
+      if (typeof window !== 'undefined' && window.location) origin = window.location.origin
       // #endif
+      if (!origin) origin = ((import.meta as any).env?.VITE_API_BASE_URL ?? '') as string
       if (!origin) origin = 'https://ewsn.top'
-      const transports = ['websocket', 'polling']
-      chatSock = io(origin, { path: '/ws/chat', transports, reconnection: true, reconnectionAttempts: 8 })
+
+      // 平台 transports（与 useChatSocket.ts 同套）
+      let transports: string[] = ['websocket', 'polling']
+      // #ifdef MP-WEIXIN
+      transports = ['websocket']
+      // #endif
+
+      chatSock = io(origin, {
+        path: '/ws/chat',
+        transports,
+        reconnection: true,
+        reconnectionAttempts: 8,
+        reconnectionDelay: 1500,
+      })
       chatSock.on('connect', () => chatSock.emit('auth', { token: accessToken.value, role: 'user' }))
       chatSock.on('user:update', (msg: any) => {
         if (msg?.user) setUserInfo(msg.user)

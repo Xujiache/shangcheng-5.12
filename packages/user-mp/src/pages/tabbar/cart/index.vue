@@ -12,7 +12,7 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useCartStore } from '../../../store/cart'
 import { useUserStore } from '../../../store/user'
-import { favoriteService } from '../../../services'
+import { favoriteService, productService } from '../../../services'
 import type { Favorite } from '../../../services'
 import { formatPrice } from '@jiujiu/shared/utils'
 import NavBar from '../../../components/nav-bar/nav-bar.vue'
@@ -61,20 +61,48 @@ function changeQty(id: string, delta: number) {
   cartStore.update(id, { qty: next })
 }
 
-function removeFav(f: Favorite) {
+async function removeFav(f: Favorite) {
+  // 乐观更新 + 调真接口；失败回滚
+  const snapshot = favorites.value
   favorites.value = favorites.value.filter((x) => x.id !== f.id)
-  uni.showToast({ title: '已取消收藏', icon: 'none' })
+  try {
+    await favoriteService.remove(f.id)
+    uni.showToast({ title: '已取消收藏', icon: 'none' })
+  } catch (e: any) {
+    favorites.value = snapshot
+    uni.showToast({ title: e?.message || '取消失败', icon: 'none' })
+  }
 }
-function addFavToCart(f: Favorite) {
-  cartStore.add({
-    productId: f.productId,
-    skuId: f.productId + '-default',
-    name: f.name,
-    spec: '默认规格',
-    image: f.image,
-    price: f.price,
-  })
-  uni.showToast({ title: '已加入购物车', icon: 'success' })
+async function addFavToCart(f: Favorite) {
+  // 收藏卡是商品级，没有 sku；先拉详情拿第一个真实 SKU
+  // 多 SKU 商品提示让用户去详情页选规格。
+  try {
+    uni.showLoading({ title: '加购中…', mask: true })
+    const detail = await productService.detail(f.productId, { silent: true })
+    const firstSku = detail?.skus?.[0]
+    if (!firstSku?.id) {
+      uni.hideLoading()
+      uni.showToast({ title: '该商品暂无可用规格', icon: 'none' })
+      return
+    }
+    cartStore.add({
+      productId: f.productId,
+      skuId: firstSku.id,
+      name: f.name,
+      spec: firstSku.specsLabel || '默认规格',
+      image: f.image,
+      price: Number(firstSku.priceRetail ?? f.price) || f.price,
+    })
+    uni.hideLoading()
+    if ((detail?.skus?.length ?? 0) > 1) {
+      uni.showToast({ title: '已按默认规格加购，可在详情页切换', icon: 'none', duration: 1500 })
+    } else {
+      uni.showToast({ title: '已加入购物车', icon: 'success' })
+    }
+  } catch (e: any) {
+    uni.hideLoading()
+    uni.showToast({ title: e?.message || '加购失败', icon: 'none' })
+  }
 }
 
 function deleteSelected() {

@@ -149,20 +149,40 @@ function goDetail(p: Product) {
   uni.navigateTo({ url: `/pages/product/detail?id=${p.id}` })
 }
 
-function onAddCart(p: Product) {
+async function onAddCart(p: Product) {
   if (!userStore.isLogin) {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  cartStore.add({
-    productId: p.id,
-    skuId: p.id + '-default',
-    name: p.name,
-    spec: '默认规格',
-    image: p.images?.[0] ?? '',
-    price: p.priceRetailMin,
-  })
-  uni.showToast({ title: '已加入购物车', icon: 'success' })
+  // 频道页瀑布流加购：拉详情拿真实 SKU id。
+  // 多 SKU 时本期简化为取第一个；后续可改成跳详情页让用户选规格。
+  try {
+    uni.showLoading({ title: '加购中…', mask: true })
+    const detail = await productService.detail(p.id, { silent: true })
+    const firstSku = detail?.skus?.[0]
+    if (!firstSku?.id) {
+      uni.hideLoading()
+      uni.showToast({ title: '该商品暂无可用规格，请到详情页查看', icon: 'none' })
+      return
+    }
+    cartStore.add({
+      productId: p.id,
+      skuId: firstSku.id,
+      name: p.name,
+      spec: firstSku.specsLabel || '默认规格',
+      image: p.images?.[0] ?? '',
+      price: Number(firstSku.priceRetail ?? p.priceRetailMin) || p.priceRetailMin,
+    })
+    uni.hideLoading()
+    if ((detail?.skus?.length ?? 0) > 1) {
+      uni.showToast({ title: '已按默认规格加购，可在详情页切换', icon: 'none', duration: 1500 })
+    } else {
+      uni.showToast({ title: '已加入购物车', icon: 'success' })
+    }
+  } catch (e: any) {
+    uni.hideLoading()
+    uni.showToast({ title: e?.message || '加购失败', icon: 'none' })
+  }
 }
 
 function receiveCoupon(c: typeof COUPONS[number]) {

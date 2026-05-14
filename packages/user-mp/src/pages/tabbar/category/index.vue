@@ -8,7 +8,7 @@
  * - 商品瀑布流
  */
 import { ref, computed, onMounted, watch } from 'vue'
-import { categoryService, productService } from '../../../services'
+import { categoryService, productService, favoriteService } from '../../../services'
 import { useUserStore } from '../../../store/user'
 import type { Category, Product } from '@jiujiu/shared/types'
 import Icon from '../../../components/icon/icon.vue'
@@ -20,37 +20,59 @@ const products = ref<Product[]>([])
 const loading = ref(false)
 const level1Id = ref<string>('')
 const level2Id = ref<string>('')
-const favoriteIds = ref<Set<string>>(new Set())
+// productId → favoriteRowId（删除时要传后端 row id，与首页/详情页保持一致）
+const favoriteRowMap = ref<Map<string, string>>(new Map())
+const favoriteIds = computed(() => new Set(favoriteRowMap.value.keys()))
 
-const FAVORITE_KEY = 'jiujiu_favorite_ids'
+async function loadFavorites() {
+  if (!userStore.isLogin) {
+    favoriteRowMap.value = new Map()
+    return
+  }
+  try {
+    const list = await favoriteService.list()
+    const m = new Map<string, string>()
+    for (const f of list || []) m.set(f.productId, f.id)
+    favoriteRowMap.value = m
+  } catch {
+    /* 拉失败不阻塞分类页渲染 */
+  }
+}
 
-function loadFavorites() {
-  try {
-    const raw = uni.getStorageSync(FAVORITE_KEY)
-    if (raw) favoriteIds.value = new Set(JSON.parse(raw))
-  } catch {}
-}
-function persistFavorites() {
-  try {
-    uni.setStorageSync(FAVORITE_KEY, JSON.stringify([...favoriteIds.value]))
-  } catch {}
-}
-function toggleFavorite(p: Product, e?: any) {
+async function toggleFavorite(p: Product, e?: any) {
   if (e?.stopPropagation) e.stopPropagation()
   if (!userStore.isLogin) {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  const next = new Set(favoriteIds.value)
-  if (next.has(p.id)) {
-    next.delete(p.id)
-    uni.showToast({ title: '已取消收藏', icon: 'none', duration: 1000 })
+  const m = new Map(favoriteRowMap.value)
+  const existingRow = m.get(p.id)
+  // 乐观更新：先改本地，失败再回滚
+  if (existingRow) {
+    m.delete(p.id)
+    favoriteRowMap.value = m
+    try {
+      await favoriteService.remove(existingRow)
+      uni.showToast({ title: '已取消收藏', icon: 'none', duration: 1000 })
+    } catch (err: any) {
+      m.set(p.id, existingRow)
+      favoriteRowMap.value = new Map(m)
+      uni.showToast({ title: err?.message || '取消收藏失败', icon: 'none' })
+    }
   } else {
-    next.add(p.id)
-    uni.showToast({ title: '已收藏', icon: 'success', duration: 1000 })
+    m.set(p.id, '__pending__')
+    favoriteRowMap.value = m
+    try {
+      await favoriteService.add(p.id)
+      uni.showToast({ title: '已收藏', icon: 'success', duration: 1000 })
+      // 拉一次，把临时 id 换成真 id（购物车页那边只看 list 接口结果）
+      await loadFavorites()
+    } catch (err: any) {
+      m.delete(p.id)
+      favoriteRowMap.value = new Map(m)
+      uni.showToast({ title: err?.message || '收藏失败', icon: 'none' })
+    }
   }
-  favoriteIds.value = next
-  persistFavorites()
 }
 function isFavorited(p: Product): boolean {
   return favoriteIds.value.has(p.id)

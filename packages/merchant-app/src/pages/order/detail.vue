@@ -7,8 +7,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { orderService } from '../../services/order'
-import { formatPrice, formatDateTime, parseAddress } from '@jiujiu/shared/utils'
-import type { Order, OrderStatus } from '@jiujiu/shared/types'
+import { formatPrice, formatDateTime } from '@jiujiu/shared/utils'
+import type { Order, OrderStatus, ParsedAddress } from '@jiujiu/shared/types'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Section from '../../components/section/section.vue'
 import StatusTag from '../../components/status-tag/status-tag.vue'
@@ -20,7 +20,8 @@ const loading = ref(true)
 
 const showParseDialog = ref(false)
 const parseInput = ref('')
-const parsedResult = ref<{ name?: string; phone?: string; region?: string; detail?: string } | null>(null)
+const parsing = ref(false)
+const parsedResult = ref<ParsedAddress | null>(null)
 
 const STATUS_LABEL: Record<OrderStatus, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default'; desc: string }> = {
   pending_payment: { text: '待付款', tone: 'warning', desc: '客户尚未支付，订单将自动关闭' },
@@ -49,25 +50,69 @@ function openParse() {
   showParseDialog.value = true
 }
 
-function doParse() {
+/**
+ * 调后端 POST /m/orders/parse-address 解析地址
+ *
+ * 后端使用更稳定的解析器（含全国地区库），比前端 regex 准确
+ */
+async function doParse() {
   if (!parseInput.value.trim()) {
     uni.showToast({ title: '请粘贴客户地址', icon: 'none' })
     return
   }
-  parsedResult.value = parseAddress(parseInput.value)
+  parsing.value = true
+  uni.showLoading({ title: '解析中…', mask: true })
+  try {
+    parsedResult.value = await orderService.parseAddress(parseInput.value)
+    uni.hideLoading()
+    if (!parsedResult.value || (
+      !parsedResult.value.name &&
+      !parsedResult.value.phone &&
+      !parsedResult.value.region &&
+      !parsedResult.value.detail
+    )) {
+      uni.showToast({ title: '未识别到有效信息', icon: 'none' })
+    }
+  } catch (e: any) {
+    uni.hideLoading()
+    uni.showToast({ title: e?.message || '解析失败', icon: 'none' })
+  } finally {
+    parsing.value = false
+  }
 }
 
+/**
+ * 应用解析结果到当前订单地址
+ *
+ * 由于后端目前未提供 PUT /m/orders/:id 接口（merchant.controller 中仅有 ship / parse-address），
+ * 这里只能：
+ *   1) 本地更新 order.value.address，让用户立刻看到结果
+ *   2) 同步复制到剪贴板，方便用户粘贴到其他系统或当作发货备注
+ *   3) toast 提示"已解析，请复制使用"
+ */
 function applyParsed() {
   if (!order.value || !parsedResult.value) return
+  const p = parsedResult.value
   order.value.address = {
     ...order.value.address,
-    name: parsedResult.value.name || order.value.address.name,
-    phone: parsedResult.value.phone || order.value.address.phone,
-    region: parsedResult.value.region || order.value.address.region,
-    detail: parsedResult.value.detail || order.value.address.detail,
+    name: p.name || order.value.address.name,
+    phone: p.phone || order.value.address.phone,
+    region: p.region || order.value.address.region,
+    detail: p.detail || order.value.address.detail,
+  }
+  const text = [p.name, p.phone, p.region, p.detail].filter(Boolean).join(' ')
+  if (text) {
+    uni.setClipboardData({
+      data: text,
+      success: () => {
+        uni.showToast({ title: '已解析并复制，请粘贴使用', icon: 'none', duration: 2200 })
+      },
+      fail: () => uni.showToast({ title: '已解析', icon: 'success' }),
+    })
+  } else {
+    uni.showToast({ title: '已应用解析结果', icon: 'success' })
   }
   showParseDialog.value = false
-  uni.showToast({ title: '已应用解析结果', icon: 'success' })
 }
 
 function copyOrderNo() {

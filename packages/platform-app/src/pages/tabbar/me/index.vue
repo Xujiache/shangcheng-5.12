@@ -5,8 +5,9 @@
  * - 快捷入口（系统设置/权限/功能开关/会员/数据）
  * - 退出登录
  */
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAdminStore } from '../../../store/admin'
+import { merchantService, productAuditService } from '../../../services'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 
@@ -20,11 +21,63 @@ const statusBarHeight = computed(() => {
   }
 })
 
-const STAT_CARDS = [
-  { label: '本月审核', value: '38', icon: 'check-circle', tint: '#52C41A' },
-  { label: '处理工单', value: '12', icon: 'message', tint: '#1296DB' },
-  { label: '在线时长', value: '6.2h', icon: 'clock', tint: '#FAAD14' },
-]
+/**
+ * 本月审核数 = 商户审核待办 + 商品审核待办,基于后端 total 字段。
+ * 后端 `/p/audit/merchants` 默认只返 status=pending,
+ * `/p/audit/products` 默认 status=pending → 内部 status=auditing。
+ * 这里只统计 "当前待审" 总量,因为后端没有 "本月已审" 聚合接口。
+ *
+ * 处理工单数：后端没有工单模块,先 0,TODO 等 ticket 模块上线后接 GET /p/tickets/handled-count?month=YYYY-MM
+ *
+ * 在线时长：从 adminStore.loginAt 算起到现在,setSession 时已记录登录时刻。
+ */
+const auditCount = ref<number>(0)
+const ticketCount = ref<number>(0)
+const tickNow = ref<number>(Date.now())
+let tickTimer: ReturnType<typeof setInterval> | null = null
+
+async function loadStats() {
+  try {
+    const [m, p] = await Promise.all([
+      merchantService.auditList({ pageSize: 1 }).catch(() => ({ total: 0, list: [] }) as any),
+      productAuditService.list({ pageSize: 1 }).catch(() => ({ total: 0, list: [] }) as any),
+    ])
+    auditCount.value = (m?.total ?? 0) + (p?.total ?? 0)
+  } catch {
+    auditCount.value = 0
+  }
+}
+
+function formatOnlineDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return '—'
+  const totalMin = Math.floor(ms / 60000)
+  if (totalMin < 60) return `${totalMin}m`
+  const h = totalMin / 60
+  return `${h.toFixed(1)}h`
+}
+
+const onlineDuration = computed(() => {
+  if (!adminStore.loginAt) return '—'
+  return formatOnlineDuration(tickNow.value - adminStore.loginAt)
+})
+
+const STAT_CARDS = computed(() => [
+  { label: '待审任务', value: String(auditCount.value), icon: 'check-circle', tint: '#52C41A' },
+  { label: '处理工单', value: String(ticketCount.value), icon: 'message', tint: '#1296DB' },
+  { label: '在线时长', value: onlineDuration.value, icon: 'clock', tint: '#FAAD14' },
+])
+
+onMounted(() => {
+  loadStats()
+  tickTimer = setInterval(() => {
+    tickNow.value = Date.now()
+  }, 60000)
+})
+
+onUnmounted(() => {
+  if (tickTimer) clearInterval(tickTimer)
+  tickTimer = null
+})
 
 const MANAGE_ENTRIES = [
   { key: 'audit', icon: 'check-circle', label: '入驻审核', desc: '商户入驻审核', to: '/pages/audit/merchant', tint: '#52C41A' },

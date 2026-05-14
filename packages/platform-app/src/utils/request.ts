@@ -36,10 +36,14 @@ function buildUrl(url: string, params?: Record<string, unknown>): string {
 }
 
 /**
- * 平台端只允许调：/p/* 私有 + /auth/* + /files/* + 个别公开接口（如协议）
+ * 平台端只允许调：/p/* 私有 + /auth/* + /files/* + 个别公开接口（如协议、APP 自更新）
+ *
+ * /api/v1/m/app/latest 走 @Public 装饰器,merchant + platform 端都需要它来检查 APK 更新,
+ * 不应被 guardNamespace 拦截。
  */
 const PLATFORM_PUBLIC_ALLOW = new Set([
   '/api/v1/u/agreements',
+  '/api/v1/m/app/latest',
 ])
 function guardNamespace(url: string): void {
   if (import.meta.env.PROD) return

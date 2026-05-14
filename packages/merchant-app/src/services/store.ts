@@ -23,6 +23,10 @@ export const storeService = {
   saveAuth(id: string, data: Partial<StoreAuthConfig>) {
     return http.post<{ ok: boolean }>(`/api/v1/m/stores/${id}/auth`, data as Record<string, unknown>)
   },
+  /** 删除门店（用于驳回入驻申请） */
+  remove(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/m/stores/${id}`)
+  },
 }
 
 export const staffService = {

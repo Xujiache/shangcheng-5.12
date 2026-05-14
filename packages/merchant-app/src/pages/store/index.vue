@@ -71,27 +71,73 @@ function goAuth(s: Store) {
 function callStore(s: Store) {
   uni.makePhoneCall({ phoneNumber: s.phone })
 }
+/**
+ * 通过门店申请
+ *
+ * 后端目前无 PUT /m/stores/:id 也无 /approve 端点，门店"启用"通过设置授权有效期落地：
+ *   POST /m/stores/:id/auth { level, authValidFrom, authValidTo, ... }
+ * 设置成功后：
+ *   1) 后端把 authValidFrom / authValidTo / level / authConfig 写到 Store 表
+ *   2) 前端乐观更新 s.status = 'active' 让 UI 立刻反映
+ *
+ * 注意：Store.status 列在数据库不会被 saveAuth 改写（后端未支持），
+ *      所以列表下次拉取仍可能是 'pending' —— 这是当前后端能力的真实情况，
+ *      不在 merchant-app 修复范围内（只允许动 merchant-app/src）。
+ */
 function approve(s: Store) {
   uni.showModal({
     title: '通过门店申请',
-    content: `通过「${s.name}」入驻申请，门店将获得 A 级默认权限。`,
-    success: (r) => {
-      if (r.confirm) {
+    content: `通过「${s.name}」入驻申请，将颁发 ${s.level || 'A'} 级 1 年授权。`,
+    success: async (r) => {
+      if (!r.confirm) return
+      uni.showLoading({ title: '审核中…', mask: true })
+      try {
+        const now = new Date()
+        const to = new Date(now)
+        to.setFullYear(to.getFullYear() + 1)
+        const fmt = (d: Date) => d.toISOString().slice(0, 10)
+        await storeService.saveAuth(s.id, {
+          level: (s.level || 'A') as 'A' | 'B' | 'C',
+          visiblePriceTiers: ['retail', 'wholesale'],
+          productPolicies: [],
+          authValidFrom: fmt(now),
+          authValidTo: fmt(to),
+        })
         s.status = 'active'
+        s.authValidFrom = fmt(now)
+        s.authValidTo = fmt(to)
+        uni.hideLoading()
         uni.showToast({ title: '已通过' })
+      } catch (e: any) {
+        uni.hideLoading()
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
 }
+/**
+ * 驳回门店申请
+ *
+ * 由于无后端"软驳回"路径，按用户指示走删除门店（DELETE /m/stores/:id）。
+ * 删除后从列表本地移除。
+ */
 function reject(s: Store) {
   uni.showModal({
-    title: '驳回申请',
+    title: '驳回申请（将删除门店）',
     editable: true,
-    placeholderText: '请填写驳回理由',
-    success: (r) => {
-      if (r.confirm) {
-        s.status = 'cancelled'
+    placeholderText: '请填写驳回理由（仅本地记录）',
+    success: async (r) => {
+      if (!r.confirm) return
+      uni.showLoading({ title: '处理中…', mask: true })
+      try {
+        await storeService.remove(s.id)
+        const idx = list.value.findIndex((x) => x.id === s.id)
+        if (idx >= 0) list.value.splice(idx, 1)
+        uni.hideLoading()
         uni.showToast({ title: '已驳回' })
+      } catch (e: any) {
+        uni.hideLoading()
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })

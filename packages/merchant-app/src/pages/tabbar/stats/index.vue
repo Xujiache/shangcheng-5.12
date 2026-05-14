@@ -46,13 +46,26 @@ const avgOrder = computed(() =>
   totalOrders.value === 0 ? 0 : Math.round(totalSales.value / totalOrders.value),
 )
 
+/**
+ * 拉取统计数据
+ *
+ * 周期 period 来自 Tab；customDate 来自日期 picker（可选）
+ *
+ * watch(period) 会自动驱动重新加载；customDate 改变时由 pickDate 主动调用
+ */
 async function loadStats() {
   loading.value = true
   try {
-    stats.value = await dashboardService.getStats(period.value)
+    stats.value = await dashboardService.getStats(period.value, customDate.value || undefined)
   } finally {
     loading.value = false
   }
+}
+
+/** Tab 周期切换 → 重新拉数据（清掉自定义日期，避免概念冲突） */
+function changePeriod(p: Period) {
+  period.value = p
+  customDate.value = ''
 }
 
 watch(period, loadStats)
@@ -78,9 +91,20 @@ const donutSegments = computed(() => {
 const catLabels = computed(() => stats.value?.categoryBars.map((c) => c.category) ?? [])
 const catValues = computed(() => stats.value?.categoryBars.map((c) => c.sales) ?? [])
 
+/**
+ * 选择某天 → 切到「今日」周期 + 把 date 作为附加 query 让后端按天过滤
+ *
+ * 后端 stats 接口的 query 是 any，会接受 date 字段
+ * （当前实现可能仅做提示用途，但语义上必须发起一次刷新而不是只 toast）
+ */
 function pickDate(e: { detail: { value: string } }) {
   customDate.value = e.detail.value
-  uni.showToast({ title: `已切换至 ${customDate.value}`, icon: 'none' })
+  if (period.value !== 'today') {
+    period.value = 'today' // 触发 watch → loadStats
+  } else {
+    loadStats() // 已经是 today，需要手动刷新带上新 date
+  }
+  uni.showToast({ title: `已查看 ${customDate.value}`, icon: 'none' })
 }
 
 function goAllProducts() {
@@ -128,6 +152,7 @@ const periodText = computed(() =>
         :items="TABS"
         variant="capsule"
         class="period-tabs"
+        @change="(k: string) => changePeriod(k as Period)"
       />
     </view>
 

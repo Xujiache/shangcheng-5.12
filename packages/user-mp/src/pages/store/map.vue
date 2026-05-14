@@ -164,11 +164,14 @@ onMounted(load)
       <view class="card-head">
         <view class="card-info">
           <text class="name">{{ selected.name }}</text>
-          <text class="address">{{ selected.address }} · 距您 {{ selected.distance }}km</text>
+          <text class="address">
+            {{ selected.address }} ·
+            {{ selected.distance != null ? '距您 ' + selected.distance + 'km' : '未授权定位' }}
+          </text>
         </view>
         <view class="distance-tag">
           <Icon name="navigation" :size="20" color="var(--brand-primary)" />
-          <text>{{ selected.distance }}km</text>
+          <text>{{ selected.distance != null ? selected.distance + 'km' : '未授权定位' }}</text>
         </view>
       </view>
       <view class="card-actions">
@@ -204,7 +207,7 @@ onMounted(load)
               <text class="address">{{ s.address }}</text>
             </view>
             <view class="store-distance">
-              <text>{{ s.distance }}km</text>
+              <text>{{ s.distance != null ? s.distance + 'km' : '未授权定位' }}</text>
             </view>
           </view>
         </scroll-view>

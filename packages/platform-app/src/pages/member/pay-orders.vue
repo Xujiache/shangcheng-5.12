@@ -82,6 +82,74 @@ function viewDetail(o: PayOrderItem) {
   })
 }
 
+/**
+ * 同意退款：POST /p/member-pay-orders/:id/approve-refund
+ * 后端把 paymentRecord.status 置 refunded（实际打款流程在另一个 worker 处理）。
+ */
+async function approveRefund(o: PayOrderItem) {
+  uni.showModal({
+    title: '同意退款',
+    content: `确认同意「${o.merchantName}」¥${formatPrice(o.amount)} 退款？提交后无法撤回。`,
+    confirmColor: '#FF3B30',
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await memberService.approveRefund(o.id)
+        o.status = 'refunded'
+        uni.showToast({ title: '已同意退款', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+/**
+ * 驳回退款：POST /p/member-pay-orders/:id/reject-refund
+ * 后端把 paymentRecord.status 回写为 paid + 记录 refundReason。
+ */
+function rejectRefund(o: PayOrderItem) {
+  uni.showModal({
+    title: '驳回退款',
+    editable: true,
+    placeholderText: '请输入驳回原因',
+    success: async (r) => {
+      if (!r.confirm) return
+      const reason = (r.content || '').trim() || '平台审核未通过'
+      try {
+        await memberService.rejectRefund(o.id, reason)
+        o.status = 'paid'
+        uni.showToast({ title: '已驳回', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+/**
+ * 改单状态：PATCH /p/member-pay-orders/:id/status
+ * 用于人工修正个别订单状态（如线下补单 → paid）。
+ */
+function changeStatus(o: PayOrderItem) {
+  const options: PayOrderItem['status'][] = ['pending', 'paid', 'refunding', 'refunded']
+  const labels = options.map((s) => STATUS_META[s].label)
+  uni.showActionSheet({
+    itemList: labels,
+    success: async (r) => {
+      const next = options[r.tapIndex]
+      if (!next || next === o.status) return
+      try {
+        await memberService.updatePayStatus(o.id, next)
+        o.status = next
+        uni.showToast({ title: '状态已更新', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '更新失败', icon: 'none' })
+      }
+    },
+  })
+}
+
 function exportCsv() {
   uni.showLoading({ title: '导出中…' })
   setTimeout(() => {
@@ -168,6 +236,15 @@ onMounted(load)
           </view>
           <text v-if="o.paidAt" class="time">{{ formatDate(o.paidAt) }}</text>
           <text v-else class="time pending-text">未支付</text>
+        </view>
+
+        <!-- 退款审批 + 状态变更 -->
+        <view class="op-row" @click.stop>
+          <template v-if="o.status === 'refunding'">
+            <view class="op-btn danger" @click="rejectRefund(o)">驳回退款</view>
+            <view class="op-btn primary" @click="approveRefund(o)">同意退款</view>
+          </template>
+          <view class="op-btn ghost" @click="changeStatus(o)">改状态</view>
         </view>
       </view>
 
@@ -409,6 +486,36 @@ onMounted(load)
       color: #FAAD14;
       font-weight: 600;
     }
+  }
+}
+.op-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8rpx;
+  margin-top: 8rpx;
+  padding-top: 8rpx;
+  border-top: 1rpx dashed var(--border-light);
+}
+.op-btn {
+  flex-shrink: 0;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  &.ghost {
+    background: var(--bg-card);
+    border: 1rpx solid var(--border-default);
+    color: var(--text-secondary);
+  }
+  &.primary {
+    background: var(--brand-gradient);
+    color: #fff;
+    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+  }
+  &.danger {
+    background: var(--bg-card);
+    border: 1rpx solid rgba(255,59,48,0.4);
+    color: #FF3B30;
   }
 }
 </style>

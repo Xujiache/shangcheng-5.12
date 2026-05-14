@@ -11,7 +11,7 @@ import { ref, computed, onMounted } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { useCartStore } from '../../store/cart'
 import { addressService, orderService, couponService } from '../../services'
-import type { Address, Coupon } from '../../services'
+import type { Address, Coupon, OrderCreateDto } from '../../services'
 import { formatPrice } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
@@ -166,13 +166,16 @@ async function submit() {
   }
   submitting.value = true
   try {
-    const result = await orderService.create({
+    // 优惠券：只传 couponId（已选时），后端基于 Coupon 表自行重算金额；
+    // 前端 couponDiscount 仅用于本地预览合计，禁止发到后端污染计算。
+    const dto: OrderCreateDto = {
       addressId: address.value.id,
       items: lines.value.map((l) => ({ skuId: l.skuId, productId: l.productId, quantity: l.qty })),
-      couponDiscount: couponDiscount.value,
       shippingMethod: shippingMethod.value,
       remark: remark.value,
-    })
+    }
+    if (selectedCouponId.value) dto.couponId = selectedCouponId.value
+    const result = await orderService.create(dto)
     // 立即购买：清 buyNow；购物车结算：清已勾选
     if (fromSku.value) cartStore.clearBuyNow()
     else cartStore.clearSelected()

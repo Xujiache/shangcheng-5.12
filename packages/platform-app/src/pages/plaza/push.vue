@@ -18,14 +18,17 @@ import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
 const subjectType = ref<'product' | 'factory'>('product')
-// 商品由上一步页面通过 query string 传入（productId / count），
-// 这里不再硬编码示例商品，避免出现"假数据已选 6 件"误导用户
+// 商品由上一步页面通过 query string 传入（productIds 逗号分隔 / 单品 productId / 仅 count），
+// 这里不再硬编码示例商品,避免出现"假数据已选 6 件"误导用户
 const products = ref<{ id: string; name: string }[]>([])
 const positions = ref<string[]>(['商家APP · 广场入口'])
 const tags = ref<string[]>(['🔥本周热推'])
 const audience = ref<'all' | 'region' | 'level'>('all')
-const scheduleStart = ref('2026-05-11')
-const scheduleEnd = ref('2026-06-11')
+
+const today = new Date()
+const in30Days = new Date(today.getTime() + 30 * 86400000)
+const scheduleStart = ref(today.toISOString().slice(0, 10))
+const scheduleEnd = ref(in30Days.toISOString().slice(0, 10))
 const weight = ref(80)
 const markupRange = ref('¥200~500')
 const commission = ref(8)
@@ -42,13 +45,26 @@ const AUDIENCE_OPTS = [
 
 const positionAvailable = computed(() => POSITIONS.filter((p) => !positions.value.includes(p)))
 
+/**
+ * 上一步页面（plaza/index.vue）跳转过来时,通过 query 串带商品 ID:
+ * - `productIds=a,b,c` 批量推送（首选,主流程）
+ * - `productId=xxx` 单品推送（兼容旧链接）
+ * 把它们填入 `products.value`,后续 submit 才能拿到真实 productIds 传给后端。
+ */
 onLoad((options) => {
-  if (options?.count) {
-    // 从批量页跳入时已有商品
+  const rawIds: string =
+    (options?.productIds as string | undefined) ||
+    (options?.productId as string | undefined) ||
+    ''
+  const ids = rawIds
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (ids.length > 0) {
+    products.value = ids.map((id) => ({ id, name: `商品 ${id}` }))
+    uni.showToast({ title: `已选 ${ids.length} 件`, icon: 'none' })
+  } else if (options?.count) {
     uni.showToast({ title: `已选 ${options.count} 件`, icon: 'none' })
-  }
-  if (options?.productId) {
-    // 从单品推送跳入
   }
 })
 

@@ -14,13 +14,23 @@ import Icon from '../../components/icon/icon.vue'
 
 const settings = ref<SystemSettings | null>(null)
 const loading = ref(false)
+/**
+ * registerLimit / commissionRate 与 admin-pc 共用同一 SystemConfig 记录,
+ * 字段路径 settings.business.{registerLimit,commissionRate}。
+ * 这里两个本地 ref 仅作为表单展示态,实际真相在 settings.business。
+ */
 const registerLimit = ref(500)
 const commissionRate = ref(2)
 
 async function load() {
   loading.value = true
   try {
-    settings.value = await systemService.settings()
+    const s = await systemService.settings()
+    settings.value = s
+    if (s?.business) {
+      if (typeof s.business.registerLimit === 'number') registerLimit.value = s.business.registerLimit
+      if (typeof s.business.commissionRate === 'number') commissionRate.value = s.business.commissionRate
+    }
   } finally {
     loading.value = false
   }
@@ -36,6 +46,16 @@ async function save() {
   } catch {
     uni.hideLoading()
   }
+}
+
+/** 将 registerLimit / commissionRate 写回 settings.business 再持久化 */
+async function persistBusiness() {
+  if (!settings.value) return
+  settings.value.business = {
+    registerLimit: registerLimit.value,
+    commissionRate: commissionRate.value,
+  }
+  await save()
 }
 
 function editSiteName() {
@@ -86,9 +106,9 @@ function editIcp() {
 function changeRegisterLimit() {
   uni.showActionSheet({
     itemList: ['100 家', '200 家', '500 家', '1000 家', '不限制'],
-    success: (r) => {
+    success: async (r) => {
       registerLimit.value = [100, 200, 500, 1000, 9999][r.tapIndex]
-      uni.showToast({ title: '已设置', icon: 'success' })
+      await persistBusiness()
     },
   })
 }
@@ -96,9 +116,9 @@ function changeRegisterLimit() {
 function changeCommissionRate() {
   uni.showActionSheet({
     itemList: ['1% 抽佣', '2% 抽佣', '3% 抽佣', '5% 抽佣'],
-    success: (r) => {
+    success: async (r) => {
       commissionRate.value = [1, 2, 3, 5][r.tapIndex]
-      uni.showToast({ title: `平台抽佣 ${commissionRate.value}%`, icon: 'success' })
+      await persistBusiness()
     },
   })
 }

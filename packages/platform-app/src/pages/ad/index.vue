@@ -47,15 +47,16 @@ async function load() {
   }
 }
 
+/**
+ * 新建广告位/创意涉及上传素材、富表单,移动端不便承载,
+ * 直接引导用户去 admin-pc 后台创建。
+ */
 function createAd() {
-  uni.showActionSheet({
-    itemList: ['目标：客户（小程序）', '目标：厂家+门店（商家 APP）', '目标：仅门店', '目标：会员'],
-    success: (r) => {
-      uni.showToast({
-        title: '创建：' + ['客户广告', '商家广告', '门店广告', '会员广告'][r.tapIndex],
-        icon: 'none',
-      })
-    },
+  uni.showModal({
+    title: '新建广告',
+    content: '新建广告位 / 创意请到 admin-pc 管理后台 → 广告管理 → 新建,完成素材上传后 platform-app 这里实时可见。',
+    confirmText: '我知道了',
+    showCancel: false,
   })
 }
 
@@ -67,11 +68,65 @@ function viewStats(s: AdSlot) {
   })
 }
 
+/**
+ * 广告位编辑：移动端只接最常用的"暂停/恢复"开关,
+ * 调 PUT /p/ads/slots/:id 透传 status。其他配置项跳 admin-pc。
+ */
 function editSlot(s: AdSlot) {
   uni.showActionSheet({
-    itemList: ['上传新创意', '修改投放目标', '修改时段', s.status === 'paused' ? '恢复投放' : '暂停投放'],
-    success: (r) => {
-      uni.showToast({ title: ['上传创意', '改目标', '改时段', '暂停/恢复'][r.tapIndex], icon: 'none' })
+    itemList: [
+      s.status === 'paused' ? '恢复投放' : '暂停投放',
+      '删除广告位',
+      '修改素材 / 时段（去 admin-pc）',
+    ],
+    success: async (r) => {
+      try {
+        if (r.tapIndex === 0) {
+          const next = s.status === 'paused' ? 'active' : 'paused'
+          await adService.updateSlot(s.id, { status: next })
+          s.status = next
+          uni.showToast({ title: next === 'active' ? '已恢复' : '已暂停', icon: 'success' })
+        } else if (r.tapIndex === 1) {
+          uni.showModal({
+            title: '删除广告位',
+            content: `确认删除「${s.name}」？该位下的创意会同时清除。`,
+            confirmColor: '#FF3B30',
+            success: async (m) => {
+              if (m.confirm) {
+                await adService.deleteSlot(s.id)
+                slots.value = slots.value.filter((x) => x.id !== s.id)
+                uni.showToast({ title: '已删除', icon: 'success' })
+              }
+            },
+          })
+        } else {
+          uni.showToast({ title: '请到 admin-pc 后台修改', icon: 'none' })
+        }
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+/**
+ * 创意删除：DELETE /p/ads/creatives/:id。
+ * 创意上下架在 admin-pc 也没单独按钮,这里仅做删除。
+ */
+function deleteCreative(c: any) {
+  uni.showModal({
+    title: '删除创意',
+    content: `确认删除「${c.title || c.id}」？删除后历史曝光数据保留,该创意不再展示。`,
+    confirmColor: '#FF3B30',
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await adService.deleteCreative(c.id)
+        creatives.value = creatives.value.filter((x: any) => x.id !== c.id)
+        uni.showToast({ title: '已删除', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+      }
     },
   })
 }
@@ -189,6 +244,9 @@ onMounted(load)
             <view class="c-status" :style="{ color: STATUS_META[c.status]?.tint }">
               {{ STATUS_META[c.status]?.label }}
             </view>
+          </view>
+          <view class="creative-actions">
+            <view class="btn ghost danger" @click.stop="deleteCreative(c)">删除</view>
           </view>
         </view>
         <EmptyState v-if="!loading && creatives.length === 0" title="暂无创意" desc="点击右上角创建" icon="image-plus" />
@@ -456,6 +514,16 @@ onMounted(load)
   .c-status {
     font-size: 20rpx;
     font-weight: 700;
+  }
+}
+.creative-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  .btn.ghost.danger {
+    color: #FF3B30;
+    border-color: rgba(255,59,48,0.3);
   }
 }
 

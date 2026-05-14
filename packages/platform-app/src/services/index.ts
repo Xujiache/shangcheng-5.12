@@ -18,6 +18,23 @@ export const dashboardService = {
   },
 }
 
+// ============ 数据中心（按周期统计） ============
+export type StatsPeriod = 'today' | 'week' | 'month' | 'year'
+export interface PlatformStats {
+  period: StatsPeriod
+  salesTrend: { date: string; value: number }[]
+  topMerchants: { merchantId: string; name: string; type: string; region: string; sales: number }[]
+}
+export const statsService = {
+  /**
+   * GET /p/stats?period=today|week|month|year
+   * 返回销售趋势 + TOP10 商家，用于数据中心页二级钻取。
+   */
+  get(period: StatsPeriod = 'week') {
+    return http.get<PlatformStats>('/api/v1/p/stats', { period })
+  },
+}
+
 // ============ 商户 ============
 export const merchantService = {
   list(params: { type?: string; status?: string; keyword?: string; page?: number; pageSize?: number } = {}) {
@@ -82,6 +99,15 @@ export const adService = {
   creatives(params: { slotId?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<unknown>>('/api/v1/p/ads/creatives', params)
   },
+  updateSlot(id: string, dto: Partial<AdSlot> & Record<string, unknown>) {
+    return http.put<AdSlot>(`/api/v1/p/ads/slots/${id}`, dto)
+  },
+  deleteSlot(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/p/ads/slots/${id}`)
+  },
+  deleteCreative(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/p/ads/creatives/${id}`)
+  },
 }
 
 // ============ 选品广场 ============
@@ -91,6 +117,18 @@ export const plazaService = {
   },
   createPush(dto: Record<string, unknown>) {
     return http.post<{ ok: boolean }>('/api/v1/p/plaza/pushes', dto)
+  },
+  /** 全平台商品聚合（products tab） */
+  products(params: { pageSize?: number } = {}) {
+    return http.get<Pagination<unknown> | unknown[]>('/api/v1/p/plaza/products', params)
+  },
+  /** 全平台厂家列表（factories tab） */
+  factories() {
+    return http.get<unknown[]>('/api/v1/p/plaza/factories')
+  },
+  /** 平台代理申请记录（records tab） */
+  records(params: { pageSize?: number } = {}) {
+    return http.get<Pagination<unknown>>('/api/v1/p/plaza/records', params)
   },
 }
 
@@ -125,6 +163,20 @@ export const memberService = {
   },
   payOrders(params: { status?: string; page?: number; pageSize?: number } = {}) {
     return http.get<Pagination<unknown>>('/api/v1/p/member-pay-orders', params)
+  },
+  /** 同意退款 */
+  approveRefund(id: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/member-pay-orders/${id}/approve-refund`)
+  },
+  /** 驳回退款（需带原因） */
+  rejectRefund(id: string, reason: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/member-pay-orders/${id}/reject-refund`, {
+      reason,
+    })
+  },
+  /** 手工改单状态：paid / pending / refunding / refunded */
+  updatePayStatus(id: string, status: string) {
+    return http.patch<{ ok: boolean }>(`/api/v1/p/member-pay-orders/${id}/status`, { status })
   },
   /**
    * 订阅状态概览（聚合所有套餐的 subscriptions）
@@ -206,15 +258,30 @@ export const permissionService = {
   saveRole(dto: Partial<AdminRole>) {
     return http.post<{ ok: boolean }>('/api/v1/p/roles', dto as unknown as Record<string, unknown>)
   },
+  deleteRole(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/p/roles/${id}`)
+  },
+  deleteAdmin(id: string) {
+    return http.del<{ ok: boolean }>(`/api/v1/p/admins/${id}`)
+  },
+  /** 切换管理员启用/停用状态（POST 无参，后端自动取反） */
+  toggleAdmin(id: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/admins/${id}/toggle`)
+  },
 }
 
 // ============ 系统设置 ============
+/**
+ * 与 admin-pc 后台共用同一 SystemConfig 记录（key=system_settings）。
+ * business 子段持久化"注册商家上限"与"平台抽佣比例",前端两端透写同字段。
+ */
 export interface SystemSettings {
   site: { name: string; logo: string; icp: string }
   payment: { wechat: boolean; alipay: boolean; balance: boolean }
   logistics: { providers: string[]; defaultFreight: number }
   service: { phone: string; email: string; workTime: string }
   security: { passwordPolicy: string; ipWhitelist: string[] }
+  business?: { registerLimit: number; commissionRate: number }
 }
 export const systemService = {
   settings() {

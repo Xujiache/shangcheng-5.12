@@ -17,6 +17,7 @@ import { profileService, type MerchantProfile } from '../../services/profile'
 import { useUserStore } from '../../store'
 import { useTencentMap } from '../../composables/useTencentMap'
 import { useStatusBar } from '../../composables/useStatusBar'
+import { BASE_URL } from '../../utils/request'
 
 const userStore = useUserStore()
 const { heroPaddingTop } = useStatusBar(24)
@@ -77,9 +78,10 @@ function chooseAvatar() {
       try {
         const uploadRes = await new Promise<{ url: string }>((resolve, reject) => {
           uni.uploadFile({
-            url: 'https://ewsn.top/api/v1/files/upload',
+            url: BASE_URL + '/api/v1/files/upload',
             filePath: tempPath,
             name: 'file',
+            formData: { bizType: 'avatar' },
             header: { Authorization: `Bearer ${userStore.accessToken}` },
             success: (res: any) => {
               try {

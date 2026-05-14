@@ -8,7 +8,7 @@
  * - Tab（待审 / 自动通过 / 已驳回）
  * - 商品卡：图 + 名 + 商户 + 类目 + 价 + 提交时间 + 操作
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { productAuditService } from '../../services'
 import type { ProductAuditConfig } from '../../services'
 import { formatDate, formatPrice } from '@jiujiu/shared/utils'
@@ -42,13 +42,17 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'rejected', label: '已驳回' },
 ]
 
+// 当前 tab 下 list 都是同状态,所以 counts.<currentTab> = list.length,
+// 其他 tab 没有数据时显示空。后端不会一次返回三个 status 的 count,
+// 想要全量徽章数需要单独再发 3 次请求,这里只显示当前 tab 的数字。
 const counts = computed(() => ({
-  pending: list.value.filter((p) => p.status === 'pending').length,
-  auto_approved: list.value.filter((p) => p.status === 'auto_approved').length,
-  rejected: list.value.filter((p) => p.status === 'rejected').length,
+  pending: tab.value === 'pending' ? list.value.length : 0,
+  auto_approved: tab.value === 'auto_approved' ? list.value.length : 0,
+  rejected: tab.value === 'rejected' ? list.value.length : 0,
 }))
 
-const filtered = computed(() => list.value.filter((p) => p.status === tab.value))
+// loadList 已按 status 拉取,这里直接返回整份列表。
+const filtered = computed(() => list.value)
 
 async function loadConfig() {
   try {
@@ -58,15 +62,23 @@ async function loadConfig() {
   }
 }
 
-async function loadList() {
+/**
+ * 拉取审核列表
+ * - status 默认走当前 tab,可在切 tab 时由 watcher 传入对应值
+ * - 后端 `/p/audit/products?status=pending` 会内部映射为 `status: 'auditing'`,
+ *   其它 status 透传给 prisma 查 product 表
+ */
+async function loadList(status: TabKey = tab.value) {
   loading.value = true
   try {
-    const res = await productAuditService.list({ pageSize: 50 })
+    const res = await productAuditService.list({ status, pageSize: 50 })
     list.value = res.list as unknown as AuditProduct[]
   } finally {
     loading.value = false
   }
 }
+
+watch(tab, (next) => loadList(next))
 
 async function toggleAutoApprove() {
   if (!config.value) return

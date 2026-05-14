@@ -29,6 +29,31 @@ const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
 
+/** 常用快递公司列表（按调用频次排序） */
+const SHIP_COMPANIES = [
+  { code: 'SF', name: '顺丰速运' },
+  { code: 'JD', name: '京东物流' },
+  { code: 'ZTO', name: '中通快递' },
+  { code: 'YTO', name: '圆通速递' },
+  { code: 'YD', name: '韵达快递' },
+  { code: 'BEST', name: '百世快递' },
+  { code: 'EMS', name: '中国邮政' },
+] as const
+
+const shipDialog = ref<{
+  visible: boolean
+  order: Order | null
+  companyIndex: number
+  trackingNumber: string
+  submitting: boolean
+}>({
+  visible: false,
+  order: null,
+  companyIndex: 0,
+  trackingNumber: '',
+  submitting: false,
+})
+
 const TABS = computed(() => [
   { key: 'all' as Tab, label: '全部', badge: total.value },
   { key: 'pending_payment' as Tab, label: '待付款' },
@@ -74,31 +99,88 @@ function onAction(action: string, order: Order) {
   if (action === 'detail') {
     uni.navigateTo({ url: `/pages/order/detail?id=${order.id}` })
   } else if (action === 'ship') {
-    showShipDialog(order)
+    openShipDialog(order)
   } else if (action === 'tracking') {
-    uni.showModal({
-      title: '物流信息',
-      content: `${order.trackingCompany ?? '顺丰'}\n${order.trackingNumber ?? 'SF' + Date.now()}`,
-      showCancel: false,
-    })
+    showTracking(order)
   } else if (action === 'refund') {
     uni.navigateTo({ url: `/pages/order/aftersale?orderId=${order.id}` })
   }
 }
 
-function showShipDialog(order: Order) {
+/**
+ * 物流跟踪弹窗：缺失数据时显示"暂无物流信息"，而不是 'SF' + Date.now() 这种假占位
+ */
+function showTracking(order: Order) {
+  const company = order.trackingCompany?.trim()
+  const number = order.trackingNumber?.trim()
+  if (!company && !number) {
+    uni.showModal({
+      title: '物流信息',
+      content: '暂无物流信息',
+      showCancel: false,
+    })
+    return
+  }
   uni.showModal({
-    title: '填写物流单号',
-    editable: true,
-    placeholderText: '请输入运单号',
-    success: async (r) => {
-      if (r.confirm && r.content) {
-        await orderService.ship(order.id, { company: '顺丰', trackingNumber: r.content })
-        uni.showToast({ title: '已发货' })
-        load(true)
-      }
-    },
+    title: '物流信息',
+    content: `${company || '未知快递'}\n${number || '暂无运单号'}`,
+    showCancel: false,
   })
+}
+
+/** 打开发货弹窗（快递公司下拉 + 运单号输入） */
+function openShipDialog(order: Order) {
+  shipDialog.value = {
+    visible: true,
+    order,
+    companyIndex: 0,
+    trackingNumber: '',
+    submitting: false,
+  }
+}
+
+function closeShipDialog() {
+  if (shipDialog.value.submitting) return
+  shipDialog.value.visible = false
+  shipDialog.value.order = null
+}
+
+function onShipCompanyChange(e: { detail: { value: string | number } }) {
+  shipDialog.value.companyIndex = Number(e.detail.value)
+}
+
+async function confirmShip() {
+  const dlg = shipDialog.value
+  if (!dlg.order) return
+  const tracking = dlg.trackingNumber.trim()
+  if (!tracking) {
+    uni.showToast({ title: '请输入运单号', icon: 'none' })
+    return
+  }
+  if (!/^[A-Za-z0-9\-]{4,40}$/.test(tracking)) {
+    uni.showToast({ title: '运单号格式不正确', icon: 'none' })
+    return
+  }
+  const company = SHIP_COMPANIES[dlg.companyIndex]?.name
+  if (!company) {
+    uni.showToast({ title: '请选择快递公司', icon: 'none' })
+    return
+  }
+  dlg.submitting = true
+  uni.showLoading({ title: '发货中…', mask: true })
+  try {
+    await orderService.ship(dlg.order.id, { company, trackingNumber: tracking })
+    uni.hideLoading()
+    uni.showToast({ title: '已发货' })
+    dlg.visible = false
+    dlg.order = null
+    load(true)
+  } catch (e: any) {
+    uni.hideLoading()
+    uni.showToast({ title: e?.message || '发货失败', icon: 'none' })
+  } finally {
+    dlg.submitting = false
+  }
 }
 
 function goDetail(order: Order) {
@@ -164,6 +246,50 @@ onPullDownRefresh(() => load(true))
     </view>
 
     <view class="safe-bottom" />
+
+    <!-- 发货弹窗：快递公司下拉 + 运单号输入 -->
+    <view v-if="shipDialog.visible" class="ship-mask" @click="closeShipDialog">
+      <view class="ship-sheet" @click.stop>
+        <view class="ship-head">
+          <text class="ship-title">填写物流信息</text>
+          <text class="ship-close" @click="closeShipDialog">✕</text>
+        </view>
+        <view class="ship-body">
+          <view class="ship-field">
+            <text class="ship-label">快递公司</text>
+            <picker
+              mode="selector"
+              :range="SHIP_COMPANIES.map(c => c.name)"
+              :value="shipDialog.companyIndex"
+              @change="onShipCompanyChange"
+            >
+              <view class="ship-select">
+                <text>{{ SHIP_COMPANIES[shipDialog.companyIndex]?.name || '请选择' }}</text>
+                <Icon name="forward" :size="24" color="var(--text-tertiary)" />
+              </view>
+            </picker>
+          </view>
+          <view class="ship-field">
+            <text class="ship-label">运单号</text>
+            <input
+              v-model="shipDialog.trackingNumber"
+              class="ship-input"
+              placeholder="请输入或粘贴运单号"
+              maxlength="40"
+            />
+          </view>
+        </view>
+        <view class="ship-actions">
+          <view class="ship-btn ghost" @click="closeShipDialog">取消</view>
+          <view
+            :class="['ship-btn', 'primary', { disabled: shipDialog.submitting }]"
+            @click="confirmShip"
+          >
+            {{ shipDialog.submitting ? '提交中…' : '确认发货' }}
+          </view>
+        </view>
+      </view>
+    </view>
 
     <TabBar current="order" />
   </view>
@@ -285,4 +411,99 @@ onPullDownRefresh(() => load(true))
   color: var(--text-tertiary);
 }
 .safe-bottom { height: 40rpx; }
+
+/* 发货弹窗 */
+.ship-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+}
+.ship-sheet {
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: 24rpx 24rpx 0 0;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+}
+.ship-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-bottom: 1rpx solid var(--border-light);
+  .ship-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .ship-close {
+    font-size: 32rpx;
+    color: var(--text-tertiary);
+    padding: 0 8rpx;
+  }
+}
+.ship-body {
+  padding: 20rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.ship-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  .ship-label {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+}
+.ship-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  height: 88rpx;
+  background: var(--bg-page);
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: var(--text-primary);
+}
+.ship-input {
+  padding: 0 24rpx;
+  height: 88rpx;
+  background: var(--bg-page);
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: var(--text-primary);
+}
+.ship-actions {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx 32rpx 0;
+}
+.ship-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  &.ghost {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  &.primary {
+    background: var(--brand-gradient);
+    color: #fff;
+    box-shadow: 0 4rpx 12rpx rgba(255,77,45,0.3);
+    &.disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  }
+}
 </style>

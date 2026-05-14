@@ -7,8 +7,8 @@
  * - 搜索 + 批量推送
  * - 商品卡：图 + 名 + 厂家 + 价格 + 标签 + 状态 + 代理数
  */
-import { ref, computed, onMounted } from 'vue'
-import { http } from '../../utils/request'
+import { ref, computed, onMounted, watch } from 'vue'
+import { plazaService } from '../../services'
 import { formatPrice } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
@@ -61,32 +61,85 @@ const stats = computed(() => ({
   totalAgency: items.value.reduce((s, x) => s + x.agencyCount, 0),
 }))
 
+/**
+ * 三种 tab 走不同后端聚合接口：
+ * - products:  /p/plaza/products   全平台已上架商品
+ * - factories: /p/plaza/factories  全平台 active 工厂
+ * - records:   /p/plaza/records    代理申请记录（agencyApplication）
+ *
+ * 三者返回结构不一致,统一适配成同一 `PlazaItem` 让卡片复用。
+ */
 async function load() {
   loading.value = true
   try {
-    // 平台端只能调 /p/* 接口；后端 /p/plaza/products 返回全平台广场商品聚合
-    const res = (await http.get('/api/v1/p/plaza/products', { pageSize: 30 })) as { list?: any[] }
-    const list = Array.isArray(res?.list) ? res!.list! : []
-    items.value = list.map((x: any, i: number): PlazaItem => {
-      const firstTag = x.tag || (Array.isArray(x.tags) ? x.tags[0] : '') || ''
-      return {
-        id: String(x.id ?? x.productId ?? `pl-${i}`),
-        name: x.name || x.productName || '',
-        factory: x.factory || x.factoryName || '',
-        price: typeof x.price === 'number' ? x.price : (typeof x.startPrice === 'number' ? x.startPrice : 0),
-        image: x.image || x.productImage || '',
-        tag: firstTag,
-        tagTone: i % 3 === 0 ? 'pop' : 'accent',
-        status: (x.status as PlazaItem['status']) || 'pending',
+    if (tab.value === 'products') {
+      const res = (await plazaService.products({ pageSize: 30 })) as { list?: any[] } | any[]
+      const list = Array.isArray(res) ? res : Array.isArray(res?.list) ? res!.list! : []
+      items.value = list.map((x: any, i: number): PlazaItem => {
+        const firstTag = x.tag || (Array.isArray(x.tags) ? x.tags[0] : '') || ''
+        return {
+          id: String(x.id ?? x.productId ?? `pl-${i}`),
+          name: x.name || x.productName || '',
+          factory: x.factory || x.factoryName || (x.merchant?.name ?? ''),
+          price:
+            typeof x.price === 'number'
+              ? x.price
+              : typeof x.startPrice === 'number'
+                ? x.startPrice
+                : 0,
+          image: x.image || x.productImage || (x.images?.[0] ?? ''),
+          tag: firstTag,
+          tagTone: i % 3 === 0 ? 'pop' : 'accent',
+          status: (x.status as PlazaItem['status']) || 'pending',
+          agencyCount: typeof x.agencyCount === 'number' ? x.agencyCount : 0,
+        }
+      })
+    } else if (tab.value === 'factories') {
+      const list = (await plazaService.factories()) as any[]
+      const arr = Array.isArray(list) ? list : []
+      items.value = arr.map((x: any, i: number): PlazaItem => ({
+        id: String(x.id ?? `fac-${i}`),
+        name: x.name || x.legalName || '未命名厂家',
+        factory: x.region || x.address || '',
+        price: 0,
+        image: x.logo || x.avatar || '',
+        tag: x.type === 'factory' ? '厂家' : x.type,
+        tagTone: 'accent',
+        status: x.status === 'active' ? 'pushing' : 'offline',
         agencyCount: typeof x.agencyCount === 'number' ? x.agencyCount : 0,
-      }
-    })
+      }))
+    } else {
+      const res = (await plazaService.records({ pageSize: 30 })) as { list?: any[] }
+      const list = Array.isArray(res?.list) ? res!.list! : []
+      items.value = list.map((x: any, i: number): PlazaItem => ({
+        id: String(x.id ?? `rec-${i}`),
+        name: x.merchant?.name || x.merchantName || '代理申请记录',
+        factory: x.applicantName || x.applicantPhone || '',
+        price: typeof x.expectedAmount === 'number' ? x.expectedAmount : 0,
+        image: '',
+        tag: x.status || '处理中',
+        tagTone: 'accent',
+        status:
+          x.status === 'approved'
+            ? 'pushing'
+            : x.status === 'rejected'
+              ? 'offline'
+              : 'pending',
+        agencyCount: 0,
+      }))
+    }
   } catch {
     items.value = []
   } finally {
     loading.value = false
   }
 }
+
+watch(tab, () => {
+  selectedIds.value = new Set()
+  batchMode.value = false
+  load()
+})
 
 function toggleSelect(id: string) {
   if (selectedIds.value.has(id)) selectedIds.value.delete(id)
@@ -104,23 +157,27 @@ function batchPush() {
     uni.showToast({ title: '请先勾选商品', icon: 'none' })
     return
   }
-  uni.navigateTo({ url: `/pages/plaza/push?count=${selectedIds.value.size}` })
+  const ids = Array.from(selectedIds.value).join(',')
+  uni.navigateTo({
+    url: `/pages/plaza/push?productIds=${encodeURIComponent(ids)}&count=${selectedIds.value.size}`,
+  })
 }
 
 function pushOne(item: PlazaItem) {
-  uni.navigateTo({ url: `/pages/plaza/push?productId=${item.id}` })
+  uni.navigateTo({ url: `/pages/plaza/push?productIds=${encodeURIComponent(item.id)}` })
 }
 
+/**
+ * 平台端"下架推送"按钮：
+ * 后端没有针对单个 plazaPush 的下架接口（只能整条 update 推送记录的 status,
+ * 但 platform-app 没必要复刻完整推送编辑器）。这里给出明确指引而不是假装"已下架"。
+ */
 function offlineOne(item: PlazaItem) {
   uni.showModal({
     title: '下架推送',
-    content: `下架「${item.name}」？已合作的 ${item.agencyCount} 家门店不受影响。`,
-    success: (r) => {
-      if (r.confirm) {
-        item.status = 'offline'
-        uni.showToast({ title: '已下架', icon: 'success' })
-      }
-    },
+    content: `下架「${item.name}」请到 admin-pc 管理后台 → 选品广场 → 推送记录，单条暂停或整条推送下线。`,
+    confirmText: '我知道了',
+    showCancel: false,
   })
 }
 

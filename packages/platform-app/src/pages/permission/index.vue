@@ -53,23 +53,34 @@ async function load() {
   }
 }
 
+/**
+ * 角色操作：移动端只接最危险的"删除",创建/改名/改权限因为表单复杂引导去 admin-pc。
+ * DELETE /p/roles/:id 后端硬删 prisma.adminRole，已分配该角色的管理员会变成无角色。
+ */
 function editRole(r: AdminRole) {
   uni.showActionSheet({
-    itemList: ['修改名称', '修改权限', '查看成员', '删除角色'],
+    itemList: ['查看成员', '删除角色', '改名 / 改权限（去 admin-pc）'],
     success: (s) => {
-      if (s.tapIndex === 3) {
+      if (s.tapIndex === 0) {
+        viewMembers(r)
+      } else if (s.tapIndex === 1) {
         uni.showModal({
           title: '删除角色',
           content: `确认删除角色「${r.name}」？该角色下的成员将变为无权限状态。`,
-          success: (m) => {
-            if (m.confirm) {
+          confirmColor: '#FF3B30',
+          success: async (m) => {
+            if (!m.confirm) return
+            try {
+              await permissionService.deleteRole(r.id)
               roles.value = roles.value.filter((x) => x.id !== r.id)
               uni.showToast({ title: '已删除', icon: 'success' })
+            } catch (e: any) {
+              uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
             }
           },
         })
       } else {
-        uni.showToast({ title: ['改名', '改权限', '查成员'][s.tapIndex] + ' · 待开放', icon: 'none' })
+        uni.showToast({ title: '请到 admin-pc 后台修改', icon: 'none' })
       }
     },
   })
@@ -88,29 +99,53 @@ function viewMembers(r: AdminRole) {
   })
 }
 
+/**
+ * 管理员操作：移动端只接停用/恢复 + 删除。改角色/重置密码涉及 secret-field 操作,
+ * 走 admin-pc。所有真实 API:
+ * - POST /p/admins/:id/toggle  状态翻转（active ↔ paused）
+ * - DELETE /p/admins/:id        硬删 user 记录
+ */
 function manageAdmin(a: AdminUser) {
   uni.showActionSheet({
-    itemList: ['修改角色', '重置密码', a.status === 'active' ? '停用账号' : '恢复账号', '删除管理员'],
-    success: (s) => {
-      if (s.tapIndex === 2) {
-        a.status = a.status === 'active' ? 'paused' : 'active'
-        uni.showToast({ title: a.status === 'active' ? '已恢复' : '已停用', icon: 'success' })
-      } else if (s.tapIndex === 3) {
-        admins.value = admins.value.filter((x) => x.id !== a.id)
-        uni.showToast({ title: '已删除', icon: 'success' })
-      } else {
-        uni.showToast({ title: ['改角色', '重置密码'][s.tapIndex] + ' · 待开放', icon: 'none' })
+    itemList: [a.status === 'active' ? '停用账号' : '恢复账号', '删除管理员', '改角色 / 重置密码（去 admin-pc）'],
+    success: async (s) => {
+      try {
+        if (s.tapIndex === 0) {
+          await permissionService.toggleAdmin(a.id)
+          a.status = a.status === 'active' ? 'paused' : 'active'
+          uni.showToast({ title: a.status === 'active' ? '已恢复' : '已停用', icon: 'success' })
+        } else if (s.tapIndex === 1) {
+          uni.showModal({
+            title: '删除管理员',
+            content: `确认删除「${a.nickname}」？删除后此账号无法登录平台。`,
+            confirmColor: '#FF3B30',
+            success: async (m) => {
+              if (!m.confirm) return
+              try {
+                await permissionService.deleteAdmin(a.id)
+                admins.value = admins.value.filter((x) => x.id !== a.id)
+                uni.showToast({ title: '已删除', icon: 'success' })
+              } catch (e: any) {
+                uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+              }
+            },
+          })
+        } else {
+          uni.showToast({ title: '请到 admin-pc 后台修改', icon: 'none' })
+        }
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
 }
 
 function addNew() {
-  uni.showActionSheet({
-    itemList: ['新增角色', '新增管理员'],
-    success: (s) => {
-      uni.showToast({ title: '新增' + ['角色', '管理员'][s.tapIndex] + ' · 待开放', icon: 'none' })
-    },
+  uni.showModal({
+    title: '新增角色 / 管理员',
+    content: '新增角色 / 管理员涉及权限配置和密码生成,请到 admin-pc 管理后台 → 权限管理 → 新增。',
+    confirmText: '我知道了',
+    showCancel: false,
   })
 }
 

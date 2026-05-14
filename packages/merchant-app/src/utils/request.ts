@@ -7,7 +7,7 @@
  */
 import type { ApiResult } from '@jiujiu/shared/types'
 
-const BASE_URL =
+export const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string) ||
   (import.meta.env.DEV ? 'http://localhost:3001' : 'https://ewsn.top')
 const LOGIN_PATH = '/pages/auth/login'

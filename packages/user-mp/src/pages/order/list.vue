@@ -65,7 +65,7 @@ function switchTab(k: TabKey) {
 }
 
 function goDetail(o: Order) {
-  uni.showToast({ title: '订单详情 · ' + o.id, icon: 'none' })
+  uni.navigateTo({ url: `/pages/order/detail?id=${o.id}` })
 }
 
 function payOrder(o: Order) {
