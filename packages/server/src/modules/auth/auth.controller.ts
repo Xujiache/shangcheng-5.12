@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Post } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { Throttle } from '@nestjs/throttler'
+import { Throttle, SkipThrottle } from '@nestjs/throttler'
 import { AuthService } from './auth.service'
 import {
   AdminLoginDto,
@@ -79,11 +79,15 @@ export class AuthController {
    * 注意 access token 本身无法主动作废（JWT 无状态），客户端必须在收到 {ok:true}
    * 后立刻删除本地 access token / refresh token。
    */
+  // logout / user-info 不是爆破目标，跳过严格桶（auth/sms/payment-notify），只走 default(60/60s)
+  // 否则 admin-pc 启动时并发拉 user-info > 3 次就被 sms 桶误杀
+  @SkipThrottle({ auth: true, sms: true, 'payment-notify': true })
   @Post('logout')
   logout(@Body() dto: LogoutDto, @CurrentUser() user: AuthUser) {
     return this.authService.logout(dto?.refreshToken, user?.sub)
   }
 
+  @SkipThrottle({ auth: true, sms: true, 'payment-notify': true })
   @Get('user-info')
   userInfo(@CurrentUser() user: AuthUser) {
     return this.authService.userInfo(user.sub)
