@@ -49,9 +49,18 @@ const ORDER_ENTRIES = [
   { key: 'after_sale', icon: 'help', label: '售后', tint: '#52C41A' },
 ]
 
+/**
+ * 工具入口列表。
+ *
+ * 「设置」按钮已删除(P1-17)：原实现是 showActionSheet 后 showToast「敬请期待」式占位，
+ *   且后端没有「账号管理/消息通知/清除缓存/关于我们」对应配置，留着是给用户挖坑。
+ *   待真实「设置中心」上线后再加回。
+ * 「我的优惠券」新增(P1-15)：对应 /u/my-coupons 接口与新建的 pages/coupon/my.vue。
+ */
 const TOOL_ENTRIES = [
   { key: 'favorite', icon: 'star', label: '我的收藏', to: '/pages/favorite/list', auth: true },
   { key: 'coupon', icon: 'discount', label: '领券中心', to: '/pages/coupon/center' },
+  { key: 'myCoupon', icon: 'discount', label: '我的优惠券', to: '/pages/coupon/my', auth: true },
   { key: 'address', icon: 'location', label: '收货地址', to: '/pages/address/list', auth: true },
   { key: 'book', icon: 'ruler', label: '预约量尺', to: '/pages/booking/index' },
   { key: 'promote', icon: 'discount', label: '推广分佣', to: '/pages/promote/index' },
@@ -59,7 +68,6 @@ const TOOL_ENTRIES = [
   { key: 'map', icon: 'location-pin', label: '门店地图', to: '/pages/store/map' },
   { key: 'share', icon: 'share', label: '分享小程序', to: '' },
   { key: 'apply', icon: 'home-shop', label: '商家入驻', to: '/pages/merchant/apply' },
-  { key: 'settings', icon: 'gear', label: '设置', to: '' },
 ]
 
 function goLogin() {
@@ -90,18 +98,6 @@ function goEntry(item: (typeof TOOL_ENTRIES)[number]) {
       },
     })
     // #endif
-    return
-  }
-  if (item.key === 'settings') {
-    uni.showActionSheet({
-      itemList: ['账号管理', '消息通知', '清除缓存', '关于我们'],
-      success: (r) => {
-        uni.showToast({
-          title: ['账号管理', '消息通知', '清除缓存', '关于我们'][r.tapIndex],
-          icon: 'none',
-        })
-      },
-    })
     return
   }
   if (item.to) uni.navigateTo({ url: item.to })

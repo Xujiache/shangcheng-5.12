@@ -1,5 +1,15 @@
 /**
  * 订单 / 售后 服务
+ *
+ * P3-21:商家端售后**只走 /m/refunds 这一条路径**。
+ *
+ * 后端给售后保留了两套等价路由:
+ *   - GET  /m/refunds                + POST /m/refunds/:id/agree|reject  (这套)
+ *   - GET  /m/aftersales             + POST /m/aftersales/:id/review     (别名)
+ * 二者底层都打到 MerchantService.listRefunds/agreeRefund/rejectRefund。
+ * 前端固定用 refundService(refunds 路径),禁止再加 aftersalesService,
+ * 避免列表分页/筛选/操作走两条互不通气的链路出现"agree 在 A 列里成功了,
+ * 但 B 列里还是 pending"的撕裂。
  */
 import { http } from '../utils/request'
 import type { Order, Refund, Pagination, ParsedAddress } from '@jiujiu/shared/types'

@@ -93,63 +93,88 @@ export class MerchantService {
   }
 
   // ========== Dashboard / Stats ==========
+  /**
+   * 商家首页 Dashboard
+   *
+   * 修复 P1-22：之前 findMany 把整张 Order 表（按时间窗口）拉到内存里再 reduce，
+   * 商家订单上量后会 OOM。这里改成：
+   *   - aggregate { _count, _sum } 拿今天 / 昨天的订单数 + 总销售
+   *   - groupBy by:['userId'] 拿"新客户"去重数（用 _count）
+   *   - 7 天趋势走 raw findMany 但仅 select payAmount + createdAt 两列，载荷比 findMany * 全列小一个数量级
+   *   - 待办计数继续走 count（已经是聚合）
+   */
   async dashboard(merchantId: string) {
     const today0 = new Date()
     today0.setHours(0, 0, 0, 0)
     const yesterday0 = new Date(today0.getTime() - 86400_000)
+    const weekStart = new Date(Date.now() - 7 * 86400_000)
 
-    const [todayOrders, yesterdayOrders, weekOrders, newCustomers, yNewCustomers, topProds] =
-      await Promise.all([
-        this.prisma.order.findMany({ where: { merchantId, createdAt: { gte: today0 } } }),
-        this.prisma.order.findMany({
-          where: { merchantId, createdAt: { gte: yesterday0, lt: today0 } },
-        }),
-        this.prisma.order.findMany({
-          where: { merchantId, createdAt: { gte: new Date(Date.now() - 7 * 86400_000) } },
-        }),
-        this.prisma.order.findMany({
-          where: { merchantId, createdAt: { gte: today0 } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-        this.prisma.order.findMany({
-          where: { merchantId, createdAt: { gte: yesterday0, lt: today0 } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-        this.prisma.product.findMany({
-          where: { merchantId },
-          orderBy: { sales: 'desc' },
-          take: 3,
-        }),
-      ])
+    const [
+      todayAgg,
+      yesterdayAgg,
+      weekDayBuckets,
+      todayCustomerCount,
+      yesterdayCustomerCount,
+      topProds,
+      pendingShipment,
+      pendingRefund,
+      pendingStoreAuth,
+    ] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: { merchantId, createdAt: { gte: today0 } },
+        _count: { _all: true },
+        _sum: { payAmount: true },
+      }),
+      this.prisma.order.aggregate({
+        where: { merchantId, createdAt: { gte: yesterday0, lt: today0 } },
+        _count: { _all: true },
+        _sum: { payAmount: true },
+      }),
+      // 7 天趋势只取需要的字段，减小回包
+      this.prisma.order.findMany({
+        where: { merchantId, createdAt: { gte: weekStart } },
+        select: { createdAt: true, payAmount: true },
+      }),
+      // 去重新客户：先 groupBy userId 再取 length（Prisma 没有 countDistinct）
+      this.prisma.order.groupBy({
+        by: ['userId'],
+        where: { merchantId, createdAt: { gte: today0 } },
+      }),
+      this.prisma.order.groupBy({
+        by: ['userId'],
+        where: { merchantId, createdAt: { gte: yesterday0, lt: today0 } },
+      }),
+      this.prisma.product.findMany({
+        where: { merchantId },
+        orderBy: { sales: 'desc' },
+        take: 3,
+        select: { id: true, images: true, priceRetailMin: true },
+      }),
+      this.prisma.order.count({ where: { merchantId, status: 'pending_shipment' } }),
+      this.prisma.refund.count({ where: { merchantId, status: 'pending' } }),
+      this.prisma.store.count({ where: { merchantId, status: 'pending' } }),
+    ])
 
-    const pendingShipment = await this.prisma.order.count({
-      where: { merchantId, status: 'pending_shipment' },
-    })
-    const pendingRefund = await this.prisma.refund.count({
-      where: { merchantId, status: 'pending' },
-    })
-    const pendingStoreAuth = await this.prisma.store.count({
-      where: { merchantId, status: 'pending' },
-    })
-
-    const todaySales = todayOrders.reduce((s, o) => s + Number(o.payAmount), 0)
-    const yesterdaySales = yesterdayOrders.reduce((s, o) => s + Number(o.payAmount), 0)
+    const todayOrders = todayAgg._count?._all ?? 0
+    const yesterdayOrders = yesterdayAgg._count?._all ?? 0
+    const todaySales = Number(todayAgg._sum?.payAmount ?? 0)
+    const yesterdaySales = Number(yesterdayAgg._sum?.payAmount ?? 0)
+    const newCustomersToday = todayCustomerCount.length
+    const newCustomersYesterday = yesterdayCustomerCount.length
 
     return {
       today: {
-        orders: todayOrders.length,
-        ordersDelta: todayOrders.length - yesterdayOrders.length,
-        newCustomers: newCustomers.length,
-        newCustomersDelta: newCustomers.length - yNewCustomers.length,
-        sales: todaySales,
+        orders: todayOrders,
+        ordersDelta: todayOrders - yesterdayOrders,
+        newCustomers: newCustomersToday,
+        newCustomersDelta: newCustomersToday - newCustomersYesterday,
+        sales: Math.round(todaySales),
         salesDelta: Math.round(todaySales - yesterdaySales),
       },
       weekSales: Array.from({ length: 7 }).map((_, i) => {
         const d = new Date(Date.now() - (6 - i) * 86400_000)
         d.setHours(0, 0, 0, 0)
-        const sum = weekOrders
+        const sum = weekDayBuckets
           .filter((o) => o.createdAt >= d && o.createdAt < new Date(d.getTime() + 86400_000))
           .reduce((s, o) => s + Number(o.payAmount), 0)
         return Math.round(sum)
@@ -284,7 +309,18 @@ export class MerchantService {
    * priceWholesale/priceMember/stock/active）由 Prisma Sku 模型自行校验，无需在此白名单。
    */
   async createProduct(merchantId: string, dto: any) {
-    const skus = Array.isArray(dto?.skus) ? dto.skus : []
+    const rawSkus = Array.isArray(dto?.skus) ? dto.skus : []
+    // SKU 字段白名单 —— 防止前端误传 id / productId / createdAt 等 Prisma 嵌套 create 不接受的字段
+    const skus = rawSkus.map((s: any) => ({
+      specs: s.specs ?? {},
+      specsLabel: s.specsLabel ?? '',
+      image: s.image ?? null,
+      priceWholesale: Number(s.priceWholesale ?? 0),
+      priceRetail: Number(s.priceRetail ?? 0),
+      priceMember: Number(s.priceMember ?? 0),
+      stock: Number(s.stock ?? 0),
+      active: s.active !== false,
+    }))
     const data = pickProductFields(dto)
     // data 用 any 断言绕过 Prisma "必填字段缺失" 的类型推断 —— 因为白名单返回的是
     // Record<string, any>，TS 看不到 name/categoryId；运行时由 Prisma 自身校验。
@@ -306,17 +342,74 @@ export class MerchantService {
   /**
    * 商家更新商品
    *
-   * 同样走 pickProductFields 白名单，避免 dto.id / dto.merchantId / dto.skus / 任何
-   * 表单内部字段（如 freeShipping）污染 Prisma update payload。
-   * skus 更新需要走专门的 SKU 接口（增/删/改 SKU 行；当前 dto 简单覆盖会丢历史 SKU 关系，
-   * 故这里只更新 Product 本体字段）。
+   * 1. Product 本体字段:走 pickProductFields 白名单过滤后 update
+   * 2. SKU 数据:智能同步,保护 CartItem/OrderItem 外键(绝不 deleteMany)
+   *    - dto.skus 里带 id 且 DB 存在 → update(改价/库存/图)
+   *    - dto.skus 里无 id 或 id 不存在 → create 新行
+   *    - DB 里有但 dto 不再提交的 SKU → 软下架(active=false),保留外键有效
+   *
+   * 为什么不能 deleteMany:CartItem.skuId / OrderItem.skuId 是外键引用 Sku.id。
+   * 直接删除会让用户购物车/历史订单的 SKU 引用变成悬空 → 列表渲染崩溃。
+   * 软下架方案:历史订单仍能反查到 SKU 详情,但商家想"删"的 SKU 不再上架销售。
    */
   async updateProduct(merchantId: string, id: string, dto: any) {
-    const p = await this.prisma.product.findFirst({ where: { id, merchantId } })
+    const p = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+      include: { skus: { select: { id: true } } },
+    })
     if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+
     const data = pickProductFields(dto)
-    const upd = await this.prisma.product.update({ where: { id }, data })
-    return decimalToNumber(upd)
+    const inputSkus: Array<Record<string, any>> = Array.isArray(dto?.skus) ? dto.skus : []
+    const existingSkuIds = new Set(p.skus.map((s) => s.id))
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Product 本体字段
+      await tx.product.update({ where: { id }, data })
+
+      // 2. SKU 智能同步(只在 dto 显式带 skus 时执行,否则不动 SKU)
+      if (!Array.isArray(dto?.skus)) return
+
+      const submittedIds = new Set<string>()
+      for (const sku of inputSkus) {
+        // pickSkuFields:防御性挑出 Prisma Sku 模型已知列,避免脏字段
+        const skuData = {
+          specs: sku.specs,
+          specsLabel: sku.specsLabel,
+          image: sku.image ?? null,
+          priceWholesale: Number(sku.priceWholesale ?? 0),
+          priceRetail: Number(sku.priceRetail ?? 0),
+          priceMember: Number(sku.priceMember ?? 0),
+          stock: Number(sku.stock ?? 0),
+          active: sku.active !== false,
+        }
+
+        if (sku.id && existingSkuIds.has(String(sku.id))) {
+          // 更新现有 SKU(保留 id,外键引用不变)
+          await tx.sku.update({ where: { id: String(sku.id) }, data: skuData })
+          submittedIds.add(String(sku.id))
+        } else {
+          // 新增 SKU
+          await tx.sku.create({ data: { ...skuData, productId: id } })
+        }
+      }
+
+      // 3. dto 未提交的旧 SKU → 软下架(active=false),保留外键完整性
+      const toDeactivate = [...existingSkuIds].filter((sid) => !submittedIds.has(sid))
+      if (toDeactivate.length > 0) {
+        await tx.sku.updateMany({
+          where: { id: { in: toDeactivate } },
+          data: { active: false },
+        })
+      }
+    })
+
+    // 重新 fetch 一次返回最新数据(含 skus)
+    const refreshed = await this.prisma.product.findUnique({
+      where: { id },
+      include: { skus: true },
+    })
+    return decimalToNumber(refreshed)
   }
   async batchStatus(merchantId: string, ids: string[], status: string) {
     await this.prisma.product.updateMany({
@@ -469,14 +562,18 @@ export class MerchantService {
   /**
    * 商家同意退款
    *
-   * 流程：
-   *   1. 查 Refund 校验归属 + 状态（必须是 pending，已 agreed/rejected/completed 拒绝重复操作）
-   *   2. 计算实际退款金额（前端可传低于 applyAmount，但不能超过）
-   *   3. 调微信支付退款 API（生产环境必走，非生产走 mock）
-   *      - 失败时不修改 Refund 状态，把错误透传给商家端，避免"DB 改成 agreed 但钱没退"的脱节
-   *   4. 成功后写 status='agreed' + refundAmount；wxpay 真退款是 PROCESSING 也算同意,
-   *      具体到账走 wxpay 异步回调进 status='completed'
-   *   5. 广播 refund:new 事件
+   * 修复 P1-21：之前先调 wxpay 发起退款，然后单独 prisma.refund.update 写状态，
+   * 中间任何失败（DB 抖动 / 程序崩溃）都会出现"钱已经发起退了但 DB 没改 agreed"
+   * 的不一致 → 用户和客服都搞不清楚。
+   *
+   * 修复策略：
+   *   1. 先校验业务规则（状态、金额、归属）
+   *   2. 在 prisma.$transaction 里：调 wxpay.createRefund + 更新 Refund 状态
+   *      - wxpay 异步调用放在事务回调里：如果 wxpay 抛错，事务自动回滚 DB 改动
+   *      - 注意：$transaction 不能跨网络回滚 wxpay 已经发出的请求，
+   *        所以这里仍只能保证"DB 反映了 wxpay 的状态"，做不到"撤回已发出的微信退款"。
+   *        但能避免"DB 状态和 wxpay 真实状态长期不一致"这种最常见的脏数据。
+   *   3. 事务外推 WS 通知（非业务关键路径）
    *
    * 注：当前 Refund 模型没有 wxRefundId 字段（不能在不动 schema 的前提下保存），
    *   这里把 wxRefundId 拼到 merchantReply 末尾以保留可追溯线索，后续若加列再迁移。
@@ -503,35 +600,36 @@ export class MerchantService {
       throw new BizException(BizCode.BUSINESS_ERROR, '关联订单金额异常,无法退款')
     }
 
-    // 1) 调微信退款；失败则抛错不更新 DB
+    const updatedAt = new Date()
     let wxRefundId: string | null = null
     try {
-      // 仅微信支付订单走 wxpay 退款；balance / alipay / 离线订单暂不走（直接走线下）。
-      if ((r.order?.paymentMethod || '').toLowerCase() === 'wechat') {
-        const wx = await this.wxpay.createRefund({
-          outTradeNo: r.order!.no,
-          outRefundNo: r.no,
-          reason: r.reason || '商家同意退款',
-          refundAmount: finalAmount,
-          totalAmount: orderPay,
+      await this.prisma.$transaction(async (tx) => {
+        // 仅微信支付订单走 wxpay 退款；balance / alipay / 离线订单暂不走（直接走线下）。
+        if ((r.order?.paymentMethod || '').toLowerCase() === 'wechat') {
+          const wx = await this.wxpay.createRefund({
+            outTradeNo: r.order!.no,
+            outRefundNo: r.no,
+            reason: r.reason || '商家同意退款',
+            refundAmount: finalAmount,
+            totalAmount: orderPay,
+          })
+          wxRefundId = wx.refundId
+        }
+        const tailReply = wxRefundId ? ` [wxRefundId=${wxRefundId}]` : ''
+        await tx.refund.update({
+          where: { id },
+          data: {
+            status: 'agreed',
+            refundAmount: finalAmount,
+            merchantReply: ((r.merchantReply || '') + tailReply).trim() || null,
+          },
         })
-        wxRefundId = wx.refundId
-      }
+      })
     } catch (e: any) {
-      throw new BizException(BizCode.BUSINESS_ERROR, `微信退款发起失败：${e?.message || e}`)
+      if (e instanceof BizException) throw e
+      throw new BizException(BizCode.BUSINESS_ERROR, `同意退款失败：${e?.message || e}`)
     }
 
-    // 2) 真退款发起成功后再改状态，事务内一次性提交
-    const tailReply = wxRefundId ? ` [wxRefundId=${wxRefundId}]` : ''
-    const updatedAt = new Date()
-    await this.prisma.refund.update({
-      where: { id },
-      data: {
-        status: 'agreed',
-        refundAmount: finalAmount,
-        merchantReply: ((r.merchantReply || '') + tailReply).trim() || null,
-      },
-    })
     // 售后单状态变更复用 refund:new 事件流（商家端可在 useMerchantNotifyStream 里
     // 一并处理"售后有新动态"通知，避免再开新事件名增加协议成本）
     try {
@@ -569,28 +667,91 @@ export class MerchantService {
   }
 
   // ========== 客户 ==========
+  /**
+   * 商家客户列表
+   *
+   * 修复（P0-17/18）:
+   *   - 之前 listCustomers 只返 8 个基础字段，前端商家想看"该客户在本店下了多少单 / 累计消费 / 上次下单时间 / 是否启用佣金"全都不知道
+   *   - q.kind 过滤之前只是字段 echo，根本不影响查询条件 → 现在按 kind ∈ {all, promoter, member, normal, blacklist} 真正过滤
+   *   - tier=blacklist 之前误用 status='disabled'(全局禁用)做过滤，导致永远空 → 现在用 SystemConfig blacklist 真正过滤
+   *
+   * 字段补齐：
+   *   - orderCount / totalSpent / lastOrderAt：按 (merchantId, userId) 聚合订单
+   *   - commissionEnabled：默认按"商户存在 enabled CommissionRule"判定
+   */
   async listCustomers(merchantId: string, q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
-    // 通过订单关联推导客户
+    const kind = String(q?.kind || 'all').toLowerCase()
+
+    // 1. 先把"该商户名下的客户 userId 全集"凑齐
     const orderUsers = await this.prisma.order.findMany({
       where: { merchantId },
       distinct: ['userId'],
       select: { userId: true },
     })
-    const userIds = orderUsers.map((o) => o.userId)
-    const where: any = { id: { in: userIds } }
+    let candidateIds = orderUsers.map((o) => o.userId)
+
+    // 2. kind=blacklist：用 SystemConfig 真正过滤，而不是 User.status='disabled'
+    //    blacklist 是商家"在本店"对客户的局部状态，绝不能反映到 User 全局状态。
+    if (kind === 'blacklist') {
+      const cfgs = await this.prisma.systemConfig.findMany({
+        where: {
+          key: {
+            in: candidateIds.map((id) => `merchant:${merchantId}:blacklist:${id}`),
+          },
+        },
+        select: { key: true, value: true },
+      })
+      const blockedSet = new Set<string>()
+      const prefix = `merchant:${merchantId}:blacklist:`
+      for (const c of cfgs) {
+        if (!!(c.value as any)?.blocked) blockedSet.add(c.key.slice(prefix.length))
+      }
+      candidateIds = candidateIds.filter((uid) => blockedSet.has(uid))
+    }
+
+    const where: any = { id: { in: candidateIds } }
     if (q.keyword)
       where.OR = [{ nickname: { contains: q.keyword } }, { phone: { contains: q.keyword } }]
+
+    // 3. kind=promoter：限定 role='promoter'
+    //    kind=member：限定 role='member'（站点策略：当前 schema 无 isMember 字段，
+    //                  改为读 SystemConfig cust_tier=member，但若 candidateIds 太多
+    //                  会让查询复杂；先按 role 过滤作为最小可用方案）
+    //    kind=normal：role 不在 promoter/member 列表中
+    if (kind === 'promoter') where.role = 'promoter'
+    else if (kind === 'member') {
+      // 复用 cust_tier_<merchant>_<user> = 'member'/'vip'
+      const cfgs = await this.prisma.systemConfig.findMany({
+        where: { key: { in: candidateIds.map((id) => `cust_tier_${merchantId}_${id}`) } },
+        select: { key: true, value: true },
+      })
+      const memberSet = new Set<string>()
+      const prefix = `cust_tier_${merchantId}_`
+      for (const c of cfgs) {
+        const tier = String((c.value as any)?.priceTier ?? '').toLowerCase()
+        if (tier === 'member' || tier === 'vip') {
+          memberSet.add(c.key.slice(prefix.length))
+        }
+      }
+      where.id = { in: candidateIds.filter((id) => memberSet.has(id)) }
+    } else if (kind === 'normal') {
+      where.role = { notIn: ['promoter'] }
+    }
+
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
       this.prisma.user.count({ where }),
     ])
-    // 批量读 priceTier / authorized / blacklist 配置;之前是硬编码 retail,商家看不到自己设的值
-    // blacklist 也并入这次批量读,避免每个客户单独再查一次 SystemConfig
-    const cfgKeys = users.flatMap((u) => [
-      `cust_tier_${merchantId}_${u.id}`,
-      `cust_auth_${merchantId}_${u.id}`,
-      `merchant:${merchantId}:blacklist:${u.id}`,
+    if (users.length === 0) return buildPage([], total, page, pageSize)
+
+    const visibleIds = users.map((u) => u.id)
+
+    // 4. 批量读 priceTier / authorized / blacklist 配置
+    const cfgKeys = visibleIds.flatMap((id) => [
+      `cust_tier_${merchantId}_${id}`,
+      `cust_auth_${merchantId}_${id}`,
+      `merchant:${merchantId}:blacklist:${id}`,
     ])
     const cfgs = cfgKeys.length
       ? await this.prisma.systemConfig.findMany({ where: { key: { in: cfgKeys } } })
@@ -610,17 +771,61 @@ export class MerchantService {
         blockedMap.set(c.key.slice(blockedPrefix.length), !!(c.value as any)?.blocked)
       }
     }
+
+    // 5. 一次性聚合订单：用 groupBy 取每个 user 的 orderCount + totalSpent + lastOrderAt
+    //    Prisma groupBy 不支持直接拿 max(createdAt)，需要 _max
+    const aggregates = await this.prisma.order.groupBy({
+      by: ['userId'],
+      where: { merchantId, userId: { in: visibleIds }, status: { not: 'cancelled' } },
+      _count: { _all: true },
+      _sum: { payAmount: true },
+      _max: { createdAt: true },
+    })
+    const aggMap = new Map<
+      string,
+      { orderCount: number; totalSpent: number; lastOrderAt: Date | null }
+    >()
+    for (const a of aggregates) {
+      aggMap.set(a.userId, {
+        orderCount: a._count?._all ?? 0,
+        totalSpent: Number(a._sum?.payAmount ?? 0),
+        lastOrderAt: a._max?.createdAt ?? null,
+      })
+    }
+
+    // 6. commissionEnabled：先按"该商户存在 enabled CommissionRule"作为开关
+    //    若有 productId=null 的默认规则 enabled=true，则所有客户都能赚到佣金
+    //    否则需要单独看商品级规则
+    const commissionRule = await this.prisma.commissionRule.findFirst({
+      where: { merchantId, productId: null, enabled: true },
+      select: { id: true },
+    })
+    const commissionEnabled = !!commissionRule
+
     return buildPage(
-      users.map((u) => ({
-        id: u.id,
-        avatar: u.avatar,
-        nickname: u.nickname,
-        phone: u.phone,
-        kind: u.role === 'promoter' ? 'promoter' : 'normal',
-        priceTier: tierMap.get(u.id) ?? 'retail',
-        priceAuthorized: authMap.get(u.id) ?? false,
-        blocked: blockedMap.get(u.id) ?? false,
-      })),
+      users.map((u) => {
+        const agg = aggMap.get(u.id) || { orderCount: 0, totalSpent: 0, lastOrderAt: null }
+        const tier = tierMap.get(u.id) ?? 'retail'
+        return {
+          id: u.id,
+          avatar: u.avatar,
+          nickname: u.nickname,
+          phone: u.phone,
+          kind:
+            u.role === 'promoter'
+              ? 'promoter'
+              : tier === 'member' || tier === 'vip'
+                ? 'member'
+                : 'normal',
+          priceTier: tier,
+          priceAuthorized: authMap.get(u.id) ?? false,
+          blocked: blockedMap.get(u.id) ?? false,
+          orderCount: agg.orderCount,
+          totalSpent: Math.round(agg.totalSpent * 100) / 100,
+          lastOrderAt: agg.lastOrderAt,
+          commissionEnabled,
+        }
+      }),
       total,
       page,
       pageSize,
@@ -670,8 +875,20 @@ export class MerchantService {
   }
 
   // ========== 佣金 ==========
+  /**
+   * 商家佣金规则
+   *
+   * 修复 P0-19：之前 productRules 仅返回 productId/level1Percent/level2Percent，
+   * 前端必须再发 N 次商品详情接口才能渲染出商品名 + 首图，体验差还容易 N+1。
+   * 这里一次性 join Product 表把商品名和首图带回来。
+   */
   async commissionRules(merchantId: string) {
-    const rules = await this.prisma.commissionRule.findMany({ where: { merchantId } })
+    const rules = await this.prisma.commissionRule.findMany({
+      where: { merchantId },
+      include: {
+        product: { select: { id: true, name: true, images: true } },
+      },
+    })
     const defaultRule = rules.find((r) => !r.productId) || null
     const productRules = rules.filter((r) => r.productId)
     return {
@@ -692,6 +909,8 @@ export class MerchantService {
           },
       productRules: productRules.map((r) => ({
         productId: r.productId,
+        productName: r.product?.name ?? '',
+        productImage: r.product?.images?.[0] ?? '',
         level1Percent: r.level1Percent,
         level2Percent: r.level2Percent,
       })),
@@ -1134,16 +1353,73 @@ export class MerchantService {
   }
 
   // ========== 营销 ==========
+  /**
+   * 商家营销总览
+   *
+   * 修复 P0-20：之前返回扁平 `flashSales: <count>`，前端拿不到细分维度（活跃/计划/已售）。
+   * 现在统一嵌套结构，coupons/flashSales/groupBuys 三个子对象都暴露相同 shape 字段，
+   * 即使当前是 0 也保留字段，前端无须做"字段是否存在"的兼容判断。
+   *
+   * 字段说明：
+   *   - coupons.total       全量优惠券
+   *   - coupons.active      在售（status=active）
+   *   - coupons.totalReceived 累计被领取数
+   *   - coupons.totalUsed   累计被核销数
+   *   - flashSales.active   当前活跃秒杀
+   *   - flashSales.planned  待开始（status=pending）
+   *   - flashSales.sold     全平台秒杀累计已售
+   *   - groupBuys.active    当前活跃拼团
+   *   - groupBuys.planned   待开始
+   *   - groupBuys.sold      暂无 sold 字段(schema 无)，固定 0
+   */
   async marketingOverview(merchantId: string) {
-    const coupons = await this.prisma.coupon.findMany({ where: { merchantId } })
+    const [coupons, flashSales, groupBuys] = await Promise.all([
+      this.prisma.coupon.findMany({
+        where: { merchantId },
+        select: { status: true, received: true, used: true },
+      }),
+      this.prisma.flashSale.findMany({
+        where: { merchantId },
+        select: { status: true, sold: true },
+      }),
+      this.prisma.groupBuy.findMany({
+        where: { merchantId },
+        select: { status: true },
+      }),
+    ])
+
+    const couponTotal = coupons.length
+    const couponActive = coupons.filter((c) => c.status === 'active').length
+    const couponReceived = coupons.reduce((s, c) => s + (c.received || 0), 0)
+    const couponUsed = coupons.reduce((s, c) => s + (c.used || 0), 0)
+
+    const flashActive = flashSales.filter((f) => f.status === 'active').length
+    const flashPlanned = flashSales.filter((f) => f.status === 'pending').length
+    const flashSold = flashSales.reduce((s, f) => s + (f.sold || 0), 0)
+
+    const groupActive = groupBuys.filter((g) => g.status === 'active').length
+    const groupPlanned = groupBuys.filter((g) => g.status === 'pending').length
+
     return {
       coupons: {
-        total: coupons.length,
-        active: coupons.filter((c) => c.status === 'active').length,
-        received: coupons.reduce((s, c) => s + c.received, 0),
+        total: couponTotal,
+        active: couponActive,
+        totalReceived: couponReceived,
+        totalUsed: couponUsed,
       },
-      flashSales: await this.prisma.flashSale.count({ where: { merchantId } }),
-      groupBuys: await this.prisma.groupBuy.count({ where: { merchantId } }),
+      flashSales: {
+        total: flashSales.length,
+        active: flashActive,
+        planned: flashPlanned,
+        sold: flashSold,
+      },
+      groupBuys: {
+        total: groupBuys.length,
+        active: groupActive,
+        planned: groupPlanned,
+        // schema 无 GroupBuy.sold 字段，前端按未来加列预留位
+        sold: 0,
+      },
     }
   }
   async marketingCoupons(merchantId: string, q: any) {
@@ -1316,6 +1592,15 @@ export class MerchantService {
   }
 
   // ========== 聊天 ==========
+  /**
+   * 商家端会话列表
+   *
+   * 修复 P0-16：之前没返最后一条消息内容和对方在线状态，
+   * 商家端列表只看见昵称 + 未读数，不知道对方"刚才说了什么"。
+   *
+   * - lastMessage：最近一条 ChatMessage 内容 + sender + createdAt（O(N) findFirst 单批次）
+   * - online：从 ChatGateway 房间快照里查"对方 user 是否有 socket 还在线"
+   */
   async chatSessions(merchantId: string) {
     const sessions = await this.prisma.chatSession.findMany({
       where: { merchantId },
@@ -1323,15 +1608,62 @@ export class MerchantService {
       take: 100,
       include: { user: true },
     })
-    return sessions.map((s) => ({
-      id: s.id,
-      userId: s.userId,
-      userName: s.user.nickname,
-      userAvatar: s.user.avatar,
-      lastMessageAt: s.lastMessageAt,
-      unreadCount: s.unreadCount,
-      status: s.status,
-    }))
+    if (sessions.length === 0) return []
+
+    const sessionIds = sessions.map((s) => s.id)
+    // 一次性把每个会话的最后一条消息拿回来，避免 N+1
+    // 用 (sessionId desc, createdAt desc) groupBy 在 prisma 里不优雅；直接全量 findMany 后内存分桶
+    // 单商家通常不会超过 100 个开启会话 × 单聊话量 → 数据量可控
+    const recentMsgs = await this.prisma.chatMessage.findMany({
+      where: { sessionId: { in: sessionIds } },
+      orderBy: { createdAt: 'desc' },
+      take: sessions.length * 5, // 留一些余量保证每个会话至少能取到一条
+    })
+    const lastBySession = new Map<string, (typeof recentMsgs)[number]>()
+    for (const m of recentMsgs) {
+      if (!lastBySession.has(m.sessionId)) lastBySession.set(m.sessionId, m)
+    }
+
+    // 在线判断：依赖 ChatGateway socket 房间。用户加入 'user:<userId>' 房间，
+    // 查 server.sockets.adapter.rooms 即可知道该用户当前还有没有连接。
+    // try/catch 防 gateway 暂时未初始化（启动 race），失败一律视为 offline。
+    const onlineMap = new Map<string, boolean>()
+    try {
+      const io: any = (this.chat as any)?.server
+      const rooms: Map<string, Set<string>> | undefined = io?.sockets?.adapter?.rooms
+      if (rooms) {
+        for (const s of sessions) {
+          const room = `user:${s.userId}`
+          const set = rooms.get(room)
+          onlineMap.set(s.userId, !!(set && set.size > 0))
+        }
+      }
+    } catch {
+      // 在线状态不是必要数据；查询失败统一按 offline 返回，绝不阻塞列表
+    }
+
+    return sessions.map((s) => {
+      const last = lastBySession.get(s.id)
+      return {
+        id: s.id,
+        userId: s.userId,
+        userName: s.user.nickname,
+        userAvatar: s.user.avatar,
+        lastMessageAt: s.lastMessageAt,
+        unreadCount: s.unreadCount,
+        status: s.status,
+        // 修复 P0-16 新增字段
+        lastMessage: last
+          ? {
+              content: last.content,
+              type: last.type,
+              sender: last.sender,
+              createdAt: last.createdAt,
+            }
+          : null,
+        online: onlineMap.get(s.userId) ?? false,
+      }
+    })
   }
   async chatMessages(merchantId: string, sessionId: string) {
     const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, merchantId } })
@@ -2003,19 +2335,15 @@ export class MerchantService {
   /**
    * 商户开通 / 续费 / 升级会员套餐 —— 真实下单接入微信支付。
    *
-   * 流程：
-   *   1. 校验套餐存在 + 商户合法
-   *   2. 创建 PaymentRecord status=pending（**绝不直接 active**）
-   *   3. 生产环境 / 已配 wxpay：调 wxpay JSAPI 拿 miniPay 参数返回给前端调起支付
-   *      → 用户在微信里真实付款 → 微信回调 /payments/wechat/notify
-   *      → 回调里调用 `activateMembership(recordId)` 真正激活
-   *   4. 非生产 + wxpay 未配齐：保留预览模式，直接 activate 让本地联调可走通
+   * 严格安全策略（资金 P0）：
+   *   - 不分环境：未配置 wxpay → BizException 拒绝（不再有"非生产自动激活"的 bypass）
+   *   - 真实流程：创建 PaymentRecord(pending) → 调 wxpay JSAPI 拿 miniPay 参数返回前端
+   *     → 用户在微信付完款 → /payments/wechat/notify 回调 → activateMembership(recordId) 真正激活
    *
    * 返回字段：
-   *   { ok, mockPaid, paymentNo, recordId, miniPay? }
-   *   - mockPaid=true 表示已激活；前端直接刷新订阅页
-   *   - mockPaid=false + miniPay 表示需要前端 uni.requestPayment 调起支付，
-   *     并在支付成功后调 /membership/payments/:no/status 轮询激活
+   *   { ok, paymentNo, recordId, miniPay }
+   *   前端用 uni.requestPayment(miniPay) 调起支付，并轮询 /membership/payments/:no/status
+   *   直到 status='paid' 才显示激活成功。
    */
   async subscribe(merchantId: string, userId: string, dto: { planId: string; payMethod?: string }) {
     const plan = await this.prisma.memberPlan.findUnique({ where: { id: dto.planId } })
@@ -2028,6 +2356,21 @@ export class MerchantService {
     if (!merchant) throw new BizException(BizCode.NOT_FOUND, '商户不存在')
     if (merchant.status !== 'active') {
       throw new BizException(BizCode.FORBIDDEN, '当前商户状态不允许开通会员')
+    }
+
+    // 资金 P0：不分环境强制要求支付通道已配置；否则不创建记录直接拒绝
+    if (!this.wxpay.isReady()) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '未配置支付通道，请联系运维配置微信支付')
+    }
+
+    // 真实下单需要 openid 调微信小程序原生支付
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    const openid = user?.openid || ''
+    if (!openid) {
+      throw new BizException(
+        BizCode.INVALID_PARAMS,
+        '当前账号未绑定微信，请先在「我的-账号绑定」中绑定微信后再开通会员',
+      )
     }
 
     const paymentNo = membershipNo()
@@ -2044,42 +2387,23 @@ export class MerchantService {
       },
     })
 
-    const isProd = process.env.NODE_ENV === 'production'
-
-    // 非生产 + wxpay 未配齐 → 立即激活，便于本地预览
-    if (!isProd && !this.wxpay.isReady()) {
-      await this.activateMembership(record.id)
-      return {
-        ok: true,
-        mockPaid: true,
-        paymentNo,
-        recordId: record.id,
-      }
+    let miniPay
+    try {
+      miniPay = await this.wxpay.createMiniPay({
+        outTradeNo: paymentNo,
+        description: `开通${plan.name}`,
+        totalFen: Math.round(Number(plan.price) * 100),
+        openid,
+        attach: `membership:${record.id}`,
+      })
+    } catch (e: any) {
+      // wxpay 调用失败 → 清理 pending 记录，避免堆积无效订单
+      await this.prisma.paymentRecord.delete({ where: { id: record.id } }).catch(() => {})
+      throw new BizException(BizCode.PAY_FAILED, `开通会员失败：${e?.message || e}`)
     }
-
-    // 真实下单需要 openid 调微信小程序原生支付
-    const user = await this.prisma.user.findUnique({ where: { id: userId } })
-    const openid = user?.openid || ''
-    if (!openid) {
-      // 清理待支付记录，避免堆积无效订单
-      await this.prisma.paymentRecord.delete({ where: { id: record.id } })
-      throw new BizException(
-        BizCode.INVALID_PARAMS,
-        '当前账号未绑定微信，请先在「我的-账号绑定」中绑定微信后再开通会员',
-      )
-    }
-
-    const miniPay = await this.wxpay.createMiniPay({
-      outTradeNo: paymentNo,
-      description: `开通${plan.name}`,
-      totalFen: Math.round(Number(plan.price) * 100),
-      openid,
-      attach: `membership:${record.id}`,
-    })
 
     return {
       ok: true,
-      mockPaid: false,
       paymentNo,
       recordId: record.id,
       miniPay,

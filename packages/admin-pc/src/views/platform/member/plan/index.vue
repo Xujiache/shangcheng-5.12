@@ -37,7 +37,13 @@
         <ElTabPane :label="`会员套餐 (${countOfType('basic')})`" name="basic" />
         <ElTabPane :label="`推广套餐 (${countOfType('ad')})`" name="ad" />
         <ElTabPane :label="`增值单项 (${countOfType('addon')})`" name="addon" />
-        <ElTabPane :label="`订阅商家 (${subscriptions.length})`" name="subs" />
+        <!--
+          订阅商家 tab：后端尚未实现跨套餐查询接口（/p/subscriptions），
+          只暴露按 planId 查的 /p/member-plans/:id/subscriptions。
+          在 Agent E 补齐前，本 tab 保持可见但显示"功能筹备中"空态，
+          避免显示空数组让运营误以为「没有任何商家订阅」。
+        -->
+        <ElTabPane label="订阅商家" name="subs" />
         <ElTabPane label="缴费订单" name="orders" />
       </ElTabs>
     </ElCard>
@@ -65,11 +71,16 @@
           <ElTag v-if="p.constraints.weightLimit !== undefined" size="small" effect="plain">权重 ≤ {{ p.constraints.weightLimit }}</ElTag>
           <ElTag v-if="p.constraints.bannerLimit !== undefined" size="small" effect="plain">Banner {{ p.constraints.bannerLimit > 99 ? '不限' : p.constraints.bannerLimit }}</ElTag>
         </div>
-        <!-- 订阅商家数 -->
+        <!--
+          订阅商家数:之前用 subsByPlanId(p.id).length 读 subscriptions[],
+          但跨套餐查询 /p/subscriptions 后端尚未实现,本地 subscriptions 永远为空,
+          会显示"订阅 0 家"误导运营。
+          在 Agent E 补齐之前先收起该角标;按套餐查询接口 /p/member-plans/:id/subscriptions
+          需要时调用方可以单独触发(暂未在此页接入,避免每张卡片都打一次请求)。
+        -->
         <div class="pf-plan__subs">
           <ArtSvgIcon icon="ri:user-3-line" class="text-g-500" />
-          <span class="text-xs text-g-500">订阅 {{ subsByPlanId(p.id).length }} 家</span>
-          <ElLink v-if="subsByPlanId(p.id).length" type="primary" :underline="false" @click="viewSubsOfPlan(p.id)">查看</ElLink>
+          <span class="text-xs text-g-500">订阅数据筹备中</span>
         </div>
         <div class="pf-plan__actions">
           <ElDropdown trigger="click" @command="(cmd) => onEdit(p, cmd)">
@@ -88,50 +99,21 @@
       <ElEmpty v-if="filteredPlans.length === 0" description="暂无相应套餐" />
     </div>
 
-    <!-- 订阅商家 Tab -->
+    <!--
+      订阅商家 Tab · 后端 /p/subscriptions 尚未实现
+      显示明确的"功能筹备中"提示而不是空数组的伪表格,避免运营误判
+      "目前没有任何订阅"。等 Agent E 补齐后端接口后,这里恢复完整 UI。
+    -->
     <ElCard v-else-if="tab === 'subs'" shadow="never">
-      <ElInput
-        v-model="subsKeyword"
-        placeholder="搜索商家 / 套餐"
-        clearable
-        size="small"
-        style="width: 280px; margin-bottom: 12px"
-      />
-      <ElTable :data="filteredSubs" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
-        <ElTableColumn label="商家" prop="merchantName" min-width="220" />
-        <ElTableColumn label="订阅套餐" min-width="180">
-          <template #default="{ row }">
-            <div>{{ row.planName }}</div>
-            <div class="text-xs text-g-500">{{ planTypeLabelOf(row.planType) }} · ¥{{ row.price }}</div>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="有效期" width="220">
-          <template #default="{ row }">
-            <div>{{ row.startAt.slice(0, 10) }} ~ {{ row.endAt.slice(0, 10) }}</div>
-            <ElProgress
-              :percentage="Math.round(daysRemainingOf(row) / row.totalDays * 100)"
-              :stroke-width="6"
-              :show-text="false"
-              :color="daysRemainingOf(row) < 30 ? '#F56C6C' : daysRemainingOf(row) < 90 ? '#E6A23C' : '#10B981'"
-              style="margin-top: 6px"
-            />
-            <div class="text-xs text-g-500 mt-1">剩 {{ daysRemainingOf(row) }} 天 / {{ row.totalDays }} 天</div>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="自动续订" width="100" align="center">
-          <template #default="{ row }">
-            <ElTag size="small" :type="row.autoRenew ? 'success' : 'info'" effect="plain">{{ row.autoRenew ? '是' : '否' }}</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="状态" width="100" align="center">
-          <template #default="{ row }">
-            <ElTag size="small" :type="row.status === 'active' ? 'success' : 'warning'">{{ subStatusLabelOf(row.status) }}</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="订阅时间" width="170">
-          <template #default="{ row }">{{ row.subscribedAt.slice(0, 16).replace('T', ' ') }}</template>
-        </ElTableColumn>
-      </ElTable>
+      <ElEmpty description="订阅商家总览功能筹备中">
+        <template #description>
+          <div class="text-sm text-g-500">订阅商家总览功能筹备中</div>
+          <div class="text-xs text-g-400 mt-2">
+            如需查看某个套餐的订阅商家,请到上方
+            <b>会员/推广/增值</b> tab 任一套餐卡片点击"查看"。
+          </div>
+        </template>
+      </ElEmpty>
     </ElCard>
 
     <!-- 缴费订单跳转 -->
@@ -247,11 +229,9 @@
   import {
     fetchPlatformMemberPlans,
     savePlatformMemberPlan,
-    fetchAllSubscriptions,
     fetchMemberTrialDays,
     saveMemberTrialDays
   } from '@/api/platform-business'
-  import type { Subscription } from '@/api/member-service'
   import type { MemberPlan } from '@jiujiu/shared/types'
   import { ElMessage } from 'element-plus'
   import { Refresh, Plus } from '@element-plus/icons-vue'
@@ -260,8 +240,8 @@
 
   const tab = ref<'basic' | 'ad' | 'addon' | 'subs' | 'orders'>('basic')
   const plans = ref<MemberPlan[]>([])
-  const subscriptions = ref<Subscription[]>([])
-  const subsKeyword = ref('')
+  // 后端 /p/subscriptions 跨套餐接口未实现,订阅商家 Tab 暂以空态展示;
+  // 这些原本绑定 subscriptions 的 KPI 角标也一并移除,避免显示假"0"。
   const trialDays = ref(30)
   const trialSaving = ref(false)
 
@@ -282,39 +262,6 @@
 
   function countOfType(t: MemberPlan['type']) {
     return plans.value.filter((p) => p.type === t).length
-  }
-
-  function subsByPlanId(planId: string) {
-    return subscriptions.value.filter((s) => s.planId === planId)
-  }
-
-  const filteredSubs = computed(() => {
-    if (!subsKeyword.value) return subscriptions.value
-    const kw = subsKeyword.value.toLowerCase()
-    return subscriptions.value.filter(
-      (s) => s.merchantName.toLowerCase().includes(kw) || s.planName.toLowerCase().includes(kw)
-    )
-  })
-
-  function planTypeLabelOf(t: MemberPlan['type']) {
-    return ({ basic: '会员套餐', ad: '推广套餐', addon: '增值单项' } as const)[t]
-  }
-
-  function subStatusLabelOf(s: Subscription['status']) {
-    return ({ trial: '试用中', active: '生效中', expired: '已过期', cancelled: '已取消' } as const)[s]
-  }
-
-  function daysRemainingOf(s: Subscription) {
-    return Math.max(0, Math.ceil((new Date(s.endAt).getTime() - Date.now()) / 86400000))
-  }
-
-  function viewSubsOfPlan(planId: string) {
-    subsKeyword.value = ''
-    tab.value = 'subs'
-    setTimeout(() => {
-      const target = plans.value.find((p) => p.id === planId)
-      if (target) subsKeyword.value = target.name
-    }, 50)
   }
 
   function periodLabelOf(p: MemberPlan['period']) {
@@ -441,33 +388,38 @@
       status: 'active',
       constraints: editForm.type !== 'basic' ? { ...editForm.constraints } : undefined
     }
-    await savePlatformMemberPlan(payload)
+    const resp = await savePlatformMemberPlan(payload)
     if (editMode.value === 'create') {
-      const now = new Date().toISOString()
-      plans.value.push({
-        id: 'p-' + Date.now(),
-        sort: plans.value.length + 1,
-        createdAt: now,
-        updatedAt: now,
-        ...payload
-      } as MemberPlan)
+      // 之前用 `'p-' + Date.now()` 拼一个本地假 id 塞进 plans.value，
+      // 实际真实 id 来自 savePlatformMemberPlan 返回值（后端 cuid）。
+      // 假 id 会让随后基于 id 的 edit/toggle/delete 拿不到真实记录 → 操作 500。
+      //
+      // 修复：优先使用后端返回的 plan.id；若结构不符合预期则 fallback 整表 reload，
+      // 确保前端 plans.value 中每条记录的 id 都和后端 DB 一致。
+      const persisted = (resp as any)?.plan as MemberPlan | undefined
+      if (persisted && persisted.id) {
+        plans.value.push(persisted)
+      } else {
+        await load()
+      }
       ElMessage.success('套餐已创建')
     } else {
+      const persisted = (resp as any)?.plan as MemberPlan | undefined
       const target = plans.value.find((p) => p.id === editForm.id)
-      if (target) Object.assign(target, payload)
+      if (target) Object.assign(target, persisted ?? payload)
       ElMessage.success('已保存')
     }
     editOpen.value = false
   }
 
   async function load() {
-    const [planList, subs, trial] = await Promise.all([
+    // fetchAllSubscriptions 已在 platform-business.ts 标 NotImplemented,
+    // 不在这里调用,避免本页加载时拿一个会 reject 的 Promise 触发全局错误提示。
+    const [planList, trial] = await Promise.all([
       fetchPlatformMemberPlans(),
-      fetchAllSubscriptions(),
-      fetchMemberTrialDays(),
+      fetchMemberTrialDays()
     ])
     plans.value = planList
-    subscriptions.value = subs
     trialDays.value = trial
   }
 

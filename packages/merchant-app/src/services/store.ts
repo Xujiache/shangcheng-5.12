@@ -98,10 +98,18 @@ export interface MarketingCouponDto {
   scope?: 'all' | 'category' | 'product'
 }
 
+/**
+ * 营销概览
+ *
+ * 字段以后端 marketing/overview(merchant.service.ts:1205) 返回为准:
+ *   coupons    = { total, active, received }
+ *   flashSales = number  (limit-time sale 总数)
+ *   groupBuys  = number  (group-buy 总数)
+ */
 export interface MarketingOverview {
-  coupons: { active: number; ended: number; totalReceived: number; totalUsed: number }
-  flashSales: { active: number; planned: number; sold: number }
-  groupBuys: { active: number; ended: number; totalGroups: number }
+  coupons: { total: number; active: number; received: number }
+  flashSales: number
+  groupBuys: number
 }
 
 export const marketingService = {
@@ -135,13 +143,27 @@ export const marketingService = {
   },
 }
 
+/**
+ * 商家会话列表项
+ *
+ * 字段以后端 `MerchantService.chatSessions` 返回为准:
+ *   - lastMessage: 最近一条消息的简要,服务端聚合自 ChatMessage 表,会话从未发过消息时为 null
+ *   - online: 客户当前是否在线,由 ChatGateway socket 房间快照判断,gateway 未就绪时回退 false
+ */
 export interface ChatSessionItem {
   id: string
+  userId: string
   userName: string
   userAvatar: string
-  lastMessage: string
+  lastMessage: {
+    content: string
+    type: string
+    sender: 'user' | 'merchant'
+    createdAt: string
+  } | null
   lastMessageAt: string
   unreadCount: number
+  status: 'open' | 'closed' | string
   online: boolean
 }
 

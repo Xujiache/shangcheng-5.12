@@ -14,7 +14,6 @@
     { "path": "pages/tabbar/me/index", "style": { "navigationBarTitleText": "我的" } },
     { "path": "pages/audit/merchant", "style": { "navigationBarTitleText": "商户入驻审核" } },
     { "path": "pages/audit/product", "style": { "navigationBarTitleText": "商品审核" } },
-    { "path": "pages/merchant/list", "style": { "navigationBarTitleText": "商户列表" } },
     { "path": "pages/ad/index", "style": { "navigationBarTitleText": "广告管理" } },
     { "path": "pages/plaza/index", "style": { "navigationBarTitleText": "选品广场推送" } },
     { "path": "pages/plaza/push", "style": { "navigationBarTitleText": "新建推送" } },
@@ -28,7 +27,8 @@
     { "path": "pages/app-release/index", "style": { "navigationBarTitleText": "APP 发布管理" } },
     { "path": "pages/ticket/index", "style": { "navigationBarTitleText": "工单管理" } },
     { "path": "pages/operation-log/index", "style": { "navigationBarTitleText": "操作日志" } },
-    { "path": "pages/withdraws/index", "style": { "navigationBarTitleText": "提现审核" } }
+    { "path": "pages/withdraws/index", "style": { "navigationBarTitleText": "提现审核" } },
+    { "path": "pages/refunds/index", "style": { "navigationBarTitleText": "售后审核" } }
   ],
   "subPackages": [
     {
@@ -41,7 +41,10 @@
     },
     {
       "root": "pages/feedback",
-      "pages": [{ "path": "index", "style": { "navigationBarTitleText": "意见反馈" } }]
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "意见反馈" } },
+        { "path": "admin-list", "style": { "navigationBarTitleText": "反馈队列" } }
+      ]
     }
   ],
   "globalStyle": {

@@ -71,11 +71,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`socket disconnected: ${client.id}`)
   }
 
-  /** 1. 鉴权：握手后必须先发 auth 才能 join/message */
+  /**
+   * 1. 鉴权：握手后必须先发 auth 才能 join/message
+   *
+   * 安全 P0：role 完全从 JWT payload 中解析，**不接受**任何客户端传入的 role 字段。
+   * 之前接受 `data.role` 让任何已登录用户都能把自己标成 merchant 加 merchant 房间，
+   * 接收他商家的订单广播 / 售后单广播，等于把后台数据流推给任意外部用户。
+   *
+   * payload.role 取自登录时 signTokens 注入的字段（顾客=customer/promoter；
+   * 商家=factory/store/merchant；后台=admin/platform/super-admin）。
+   * 这里把 factory/store/merchant 视为商家 role，其余视为用户 role；
+   * 想接 merchant 通道必须先在 User 表确实绑定到商户（findUnique by userId）。
+   */
   @SubscribeMessage('auth')
   async onAuth(
     @ConnectedSocket() client: AuthedSocket,
-    @MessageBody() data: { token: string; role: 'user' | 'merchant' },
+    @MessageBody() data: { token: string },
   ): Promise<void> {
     try {
       const payload: any = await this.jwt.verifyAsync(data.token)
@@ -85,13 +96,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return
       }
 
-      client.data.role = data.role
-      if (data.role === 'merchant') {
+      // 严格根据 JWT payload.role 推导通道，禁止读取 data.role
+      const jwtRole = String(payload?.role || user.role || 'customer').toLowerCase()
+      const isMerchantRole = ['factory', 'store', 'merchant'].includes(jwtRole)
+
+      if (isMerchantRole) {
         const m = await this.prisma.merchant.findUnique({ where: { userId: user.id } })
         if (!m) {
           client.emit('error', { message: '当前账号未关联商户' })
           return
         }
+        client.data.role = 'merchant'
         client.data.merchantId = m.id
         client.data.userId = user.id
         // 商家也进自己的 user 房间，资料更新同样同步
@@ -99,6 +114,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // 商家额外进 merchant 房间（如以后要给商家广播订单等）
         client.join(`merchant:${m.id}`)
       } else {
+        client.data.role = 'user'
         client.data.userId = user.id
         // 用户进自己 user 房间，资料更新会推到所有 socket
         client.join(`user:${user.id}`)

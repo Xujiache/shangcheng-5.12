@@ -16,7 +16,19 @@ import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 import EmptyState from '../../components/empty-state/empty-state.vue'
 
-type TabKey = 'pending' | 'auto_approved' | 'rejected'
+/**
+ * 商品审核 tab 严格对齐后端 prisma Product.status 取值:
+ *   draft / auditing / active / offline / rejected
+ *
+ * tab → 后端 status 映射:
+ *   - pending  → 后端内部映射为 status=auditing
+ *   - active   → 已通过审核(原 "auto_approved" tab 实际语义)
+ *   - rejected → 已驳回
+ *
+ * 历史上有一个 'auto_approved' tab,但 prisma Product.status 没有该字面量(那是 autoApproved Boolean 字段),
+ * 已删除。"自动通过 / 抽检" 操作仍保留,只是归入 active(已上架)tab 下显示。
+ */
+type TabKey = 'pending' | 'active' | 'rejected'
 
 interface AuditProduct {
   id: string
@@ -27,7 +39,9 @@ interface AuditProduct {
   merchant: string
   price: number
   submittedAt: string
-  status: 'pending' | 'auto_approved' | 'rejected'
+  status: 'pending' | 'active' | 'rejected'
+  /** 后端 product.autoApproved 字段 —— 用于在 active 列表中标识 "自动通过" 子集 */
+  autoApproved?: boolean
 }
 
 const tab = ref<TabKey>('pending')
@@ -38,7 +52,7 @@ const showConfigDetail = ref(false)
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'pending', label: '待审核' },
-  { key: 'auto_approved', label: '自动通过' },
+  { key: 'active', label: '已上架' },
   { key: 'rejected', label: '已驳回' },
 ]
 
@@ -49,7 +63,7 @@ const TABS: { key: TabKey; label: string }[] = [
  */
 const counts = ref<Record<TabKey, number>>({
   pending: 0,
-  auto_approved: 0,
+  active: 0,
   rejected: 0,
 })
 
@@ -86,7 +100,7 @@ async function loadList(status: TabKey = tab.value) {
  * pageSize=1 减少传输负担,首屏即可显示真实徽章数。
  */
 async function loadCounts() {
-  const tabs: TabKey[] = ['pending', 'auto_approved', 'rejected']
+  const tabs: TabKey[] = ['pending', 'active', 'rejected']
   try {
     const results = await Promise.all(
       tabs.map((status) =>
@@ -150,7 +164,7 @@ function approve(p: AuditProduct) {
         await productAuditService.approve(p.id)
         list.value = list.value.filter((x) => x.id !== p.id)
         counts.value.pending = Math.max(0, counts.value.pending - 1)
-        counts.value.auto_approved = counts.value.auto_approved + 1
+        counts.value.active = counts.value.active + 1
         uni.showToast({ title: '已通过', icon: 'success' })
       }
     },
@@ -211,7 +225,7 @@ async function doSampleCheck(p: AuditProduct, passed: boolean, reason?: string) 
       uni.showToast({ title: '抽检通过已记录', icon: 'success' })
     } else {
       list.value = list.value.filter((x) => x.id !== p.id)
-      counts.value.auto_approved = Math.max(0, counts.value.auto_approved - 1)
+      counts.value.active = Math.max(0, counts.value.active - 1)
       counts.value.rejected = counts.value.rejected + 1
       uni.showToast({ title: '已下架并记录原因', icon: 'success' })
     }
@@ -320,8 +334,10 @@ onMounted(() => {
                   {{
                     p.status === 'pending'
                       ? '待审'
-                      : p.status === 'auto_approved'
-                        ? '自动通过'
+                      : p.status === 'active'
+                        ? p.autoApproved
+                          ? '自动通过'
+                          : '已通过'
                         : '已驳回'
                   }}
                 </view>
@@ -335,7 +351,7 @@ onMounted(() => {
           </view>
           <view class="actions">
             <view class="btn ghost" @click="viewDetail(p)">详情</view>
-            <template v-if="p.status === 'auto_approved'">
+            <template v-if="p.status === 'active'">
               <view class="btn ghost" @click="spotCheck(p)">抽检</view>
             </template>
             <template v-else-if="p.status === 'pending'">
@@ -642,7 +658,7 @@ onMounted(() => {
       background: rgba(255, 77, 45, 0.12);
       color: var(--brand-primary);
     }
-    &.auto_approved {
+    &.active {
       background: rgba(82, 196, 26, 0.12);
       color: #52c41a;
     }

@@ -1,6 +1,7 @@
 import { Body, Controller, Headers, Post, Req } from '@nestjs/common'
 import type { RawBodyRequest } from '@nestjs/common'
 import type { Request } from 'express'
+import { Throttle } from '@nestjs/throttler'
 import { Public } from '../../common/decorators/public.decorator'
 import { SkipResponseWrap } from '../../common/decorators/skip-response.decorator'
 import { WxPayService } from './wxpay.service'
@@ -42,7 +43,10 @@ export class PaymentController {
     private readonly chat: ChatGateway,
   ) {}
 
+  // P1-25：微信支付回调走 'payment-notify' 桶（200/min/IP），
+  // 微信高峰期会高频重试，桶要宽松；同时拒绝 default 桶的 60/min 误杀
   @Public()
+  @Throttle({ 'payment-notify': { limit: 200, ttl: 60_000 } })
   @Post('wechat/notify')
   async wechatNotify(
     @Headers() headers: Record<string, string>,

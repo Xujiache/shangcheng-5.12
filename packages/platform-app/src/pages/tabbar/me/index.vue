@@ -7,7 +7,9 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAdminStore } from '../../../store/admin'
-import { merchantService, productAuditService, ticketService } from '../../../services'
+import { merchantService, productAuditService, ticketService, systemService } from '../../../services'
+import { platformAuthService } from '../../../services/auth'
+import type { SystemSettings } from '../../../services'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 
@@ -37,6 +39,62 @@ const ticketPending = ref<number>(0)
 const tickNow = ref<number>(Date.now())
 let tickTimer: ReturnType<typeof setInterval> | null = null
 
+/**
+ * 真实登录用户信息(GET /auth/user-info)
+ *
+ * 取代历史写死的"超级管理员 / admin"信息。
+ * 未加载 / 加载失败时 → null,UI 优先回退到 adminStore 内的本地缓存
+ * (登录时 setSession 已写入),再回退到通用占位"管理员",
+ * 严禁出现固定 role 文案。
+ */
+interface MeUserInfo {
+  id?: string
+  username?: string
+  nickname?: string
+  role?: string
+  avatar?: string
+  phone?: string
+  lastLoginAt?: string
+}
+const userInfo = ref<MeUserInfo | null>(null)
+
+/** 系统设置(客服联系信息源于 settings.service.{phone,email,workTime}) */
+const sysSettings = ref<SystemSettings | null>(null)
+const sysSettingsLoaded = ref(false)
+
+const ROLE_LABEL: Record<string, string> = {
+  'super-admin': '超级管理员',
+  superadmin: '超级管理员',
+  platform: '平台管理员',
+  admin: '管理员',
+  merchant: '商户管理员',
+  customer: '普通用户',
+  agency: '代理商',
+  factory: '厂家',
+  visitor: '访客',
+}
+
+/** 头像/昵称/用户名 优先后端实时数据,fallback 到本地登录态 */
+const meNickname = computed(
+  () => userInfo.value?.nickname || adminStore.nickname || '管理员',
+)
+const meUsername = computed(() => userInfo.value?.username || '—')
+const meRoleKey = computed(() => userInfo.value?.role || '')
+const meRoleLabel = computed(() => ROLE_LABEL[meRoleKey.value] || meRoleKey.value || '管理员')
+
+/** 最近登录时间(真值,来自后端 user.lastLoginAt) */
+function formatLastLogin(iso?: string): string {
+  if (!iso) return ''
+  const t = new Date(iso).getTime()
+  if (!Number.isFinite(t)) return ''
+  const diff = Date.now() - t
+  if (diff < 60_000) return '最近登录 · 刚刚'
+  if (diff < 3600_000) return `最近登录 · ${Math.floor(diff / 60_000)} 分钟前`
+  if (diff < 86400_000) return `最近登录 · ${Math.floor(diff / 3600_000)} 小时前`
+  return `最近登录 · ${Math.floor(diff / 86400_000)} 天前`
+}
+const lastLoginText = computed(() => formatLastLogin(userInfo.value?.lastLoginAt))
+
 async function loadStats() {
   try {
     const [m, p, tp] = await Promise.all([
@@ -49,6 +107,29 @@ async function loadStats() {
   } catch {
     auditCount.value = 0
     ticketPending.value = 0
+  }
+}
+
+/** 拉取真实登录用户信息(用于头部展示 + viewProfile 弹窗) */
+async function loadMe() {
+  try {
+    const info = (await platformAuthService.userInfo()) as MeUserInfo | null
+    if (info && typeof info === 'object') {
+      userInfo.value = info
+    }
+  } catch {
+    // 失败保留 null,UI 自动 fallback 到本地缓存,不展示假数据
+  }
+}
+
+/** 拉取系统设置(供 openHelp 显示真实客服联系信息) */
+async function loadSettings() {
+  try {
+    sysSettings.value = await systemService.settings()
+  } catch {
+    sysSettings.value = null
+  } finally {
+    sysSettingsLoaded.value = true
   }
 }
 
@@ -100,6 +181,8 @@ function onStatTap(card: { key: string; to: string }) {
 
 onMounted(() => {
   loadStats()
+  loadMe()
+  loadSettings()
   tickTimer = setInterval(() => {
     tickNow.value = Date.now()
   }, 60000)
@@ -176,7 +259,8 @@ const SYSTEM_ENTRIES = [
   { key: 'perm', icon: 'lock', label: '权限管理', to: '/pages/permission/index' },
   { key: 'legal', icon: 'tag', label: '法律协议', to: '/pages/legal/index' },
   { key: 'app-release', icon: 'package', label: 'APP 发布', to: '/pages/app-release/index' },
-  { key: 'feedback', icon: 'message', label: '意见反馈', to: '/pages/feedback/index' },
+  { key: 'feedback-list', icon: 'message', label: '反馈队列', to: '/pages/feedback/admin-list' },
+  { key: 'feedback', icon: 'message', label: '我要反馈', to: '/pages/feedback/index' },
   { key: 'system', icon: 'gear', label: '系统设置', to: '/pages/system/index' },
 ]
 
@@ -188,12 +272,46 @@ function goEntry(to: string) {
   uni.navigateTo({ url: to })
 }
 
-/** 帮助中心 - 客服联系信息(后端 systemSettings.service 字段可在系统设置查) */
+/**
+ * 帮助中心 —— 真读 GET /p/system/settings 的 service.{phone,email,workTime}。
+ * 未配置时显示"暂未配置,请联系平台运营",严禁出现写死的 400-000-0000 / support@jiujiu.com
+ * 这类伪造客服信息(早期硬编码会让用户误拨)。
+ */
 function openHelp() {
+  const svc = sysSettings.value?.service
+  const phone = (svc?.phone || '').trim()
+  const email = (svc?.email || '').trim()
+  const workTime = (svc?.workTime || '').trim()
+
+  // 若 settings 还在加载中或后端未配置任何字段,提示运营完善
+  if (!sysSettingsLoaded.value) {
+    uni.showToast({ title: '正在加载客服信息...', icon: 'none' })
+    return
+  }
+  if (!phone && !email && !workTime) {
+    uni.showModal({
+      title: '帮助中心',
+      content: '暂未配置客服联系方式,请联系平台运营前往「系统设置 → 客服信息」配置后再试。',
+      showCancel: true,
+      cancelText: '关闭',
+      confirmText: '去反馈',
+      success: (r) => {
+        if (r.confirm) uni.navigateTo({ url: '/pages/feedback/index' })
+      },
+    })
+    return
+  }
+
+  const lines: string[] = []
+  if (phone) lines.push(`客服热线:${phone}`)
+  if (email) lines.push(`邮箱:${email}`)
+  if (workTime) lines.push(`工作时间:${workTime}`)
+  lines.push('')
+  lines.push('如需更多帮助,请在「我要反馈」提交工单。')
+
   uni.showModal({
     title: '帮助中心',
-    content:
-      '客服热线：400-000-0000\n邮箱：support@jiujiu.com\n工作时间：9:00-18:00\n\n如需更多帮助,请在「意见反馈」提交工单。',
+    content: lines.join('\n'),
     showCancel: true,
     cancelText: '关闭',
     confirmText: '去反馈',
@@ -237,10 +355,23 @@ function logout() {
   })
 }
 
+/**
+ * 账号信息弹窗 —— 优先使用 GET /auth/user-info 返回的真实数据
+ * (loadMe() 已在 onMounted 触发)。后端可能尚未返回时回退到本地登录态,
+ * 严禁继续硬编码 role="超级管理员" / username="admin"。
+ */
 function viewProfile() {
+  const lines: string[] = []
+  lines.push(`昵称: ${meNickname.value}`)
+  lines.push(`角色: ${meRoleLabel.value}`)
+  lines.push(`账号: ${meUsername.value}`)
+  if (userInfo.value?.phone) lines.push(`手机: ${userInfo.value.phone}`)
+  lines.push('')
+  lines.push('如需修改账号信息,请前往「权限管理」处理。')
+
   uni.showModal({
     title: '账号信息',
-    content: `昵称: ${adminStore.nickname || '管理员'}\n角色: 超级管理员\n账号: admin\n\n如需修改账号信息,请前往「权限管理」处理。`,
+    content: lines.join('\n'),
     showCancel: false,
     confirmText: '我知道了',
   })
@@ -267,14 +398,14 @@ function viewProfile() {
         </view>
         <view class="info">
           <view class="name-row">
-            <text class="nick">{{ adminStore.nickname }}</text>
+            <text class="nick">{{ meNickname }}</text>
             <view class="role-badge">
               <Icon name="crown" :size="20" color="#fff" />
-              <text>超级管理员</text>
+              <text>{{ meRoleLabel }}</text>
             </view>
           </view>
-          <text class="sub">平台管理员 · admin</text>
-          <text class="last-login">最近登录 · 刚刚 · IP 192.168.x.x</text>
+          <text class="sub">{{ meRoleLabel }} · {{ meUsername }}</text>
+          <text v-if="lastLoginText" class="last-login">{{ lastLoginText }}</text>
         </view>
         <Icon name="chevron-right" :size="32" color="rgba(255,255,255,0.7)" />
       </view>

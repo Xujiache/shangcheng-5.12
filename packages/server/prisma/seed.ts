@@ -3,14 +3,14 @@
  *
  * 3 个核心账号，互相之间有完整的业务关联：
  *
- *   customer@demo (phone=13800000000, 密码=123456 / 验证码=0000)
+ *   customer@demo (phone=13800000000, 密码=<SEED_DEFAULT_PASSWORD env>)
  *     ├─ 在 merchant@demo 下 5 个订单（不同状态：待付/待发/已发/完成/售后）
  *     ├─ 收藏 merchant@demo 的 3 个商品
  *     ├─ 购物车有 1 个 merchant@demo 的 SKU
  *     ├─ 给 merchant@demo 发了 1 条客服消息
  *     └─ 申请了 1 个退款（针对已完成订单）
  *
- *   merchant@demo (factory 角色, 密码=123456)
+ *   merchant@demo (factory 角色, 密码=<SEED_DEFAULT_PASSWORD env>)
  *     ├─ 6 商品 + 18 SKU
  *     ├─ 1 门店 + 2 员工
  *     ├─ 已订阅"广告专业"套餐 + 缴费记录
@@ -19,12 +19,17 @@
  *     ├─ 装修配置 + 优惠券 + 佣金规则
  *     └─ 已被 admin@demo 审核通过（status=active）
  *
- *   admin@demo (platform 角色, 密码=123456)
+ *   admin@demo (platform 角色, 密码=<SEED_DEFAULT_PASSWORD env>)
  *     ├─ 审核记录：通过了 merchant@demo 入驻
  *     ├─ 审核记录：通过了 merchant@demo 的 1 个商品
  *     └─ 平台运营角色（platform_ops）
  *
- * 运行：pnpm --filter @jiujiu/server prisma:seed
+ * 运行：
+ *   SEED_DEFAULT_PASSWORD=<至少 8 位强密码> pnpm --filter @jiujiu/server prisma:seed
+ *
+ * 安全 P0：脚本不再硬编码 "123456" 之类的弱口令；
+ * 必须从环境变量 SEED_DEFAULT_PASSWORD 读取，缺失或长度 < 8 直接拒绝运行。
+ * 这样避免 seed 完不小心被对外暴露默认账号。
  */
 import { PrismaClient } from '@prisma/client'
 import * as argon2 from 'argon2'
@@ -79,9 +84,22 @@ async function clearAll() {
 
 async function main() {
   console.log('🌱 开始 seed...\n')
+
+  // 安全 P0：禁止硬编码弱口令。强制从环境变量读取。
+  const seedPass = process.env.SEED_DEFAULT_PASSWORD || ''
+  if (!seedPass || seedPass.length < 8) {
+    throw new Error(
+      [
+        '[seed] 拒绝运行：SEED_DEFAULT_PASSWORD 未设置或长度 < 8',
+        '请在执行前设置该环境变量，例如：',
+        '  SEED_DEFAULT_PASSWORD=<强密码> pnpm --filter @jiujiu/server prisma:seed',
+      ].join('\n'),
+    )
+  }
+
   await clearAll()
 
-  const passHash = await argon2.hash('123456')
+  const passHash = await argon2.hash(seedPass)
 
   // ============ 1. 系统配置 ============
   await prisma.systemConfig.create({

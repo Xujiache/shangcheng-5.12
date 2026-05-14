@@ -459,7 +459,71 @@ function deleteCreative(c: AdCreativeRow) {
   })
 }
 
+/**
+ * 审核通过(pending → active)
+ * 调 adService.approveCreative —— 内部会优先调 approve 真接口,
+ * 未实现时降级到 updateCreative({status:'active'}) 并 console.warn 提示 Agent E。
+ */
+function approveCreative(c: AdCreativeRow) {
+  uni.showModal({
+    title: '审核通过',
+    content: `通过创意「${c.title || c.id}」？通过后立即上线展示。`,
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await adService.approveCreative(c.id)
+        c.status = 'active'
+        uni.showToast({ title: '已通过', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '审核失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+/**
+ * 审核驳回(pending → rejected)
+ * 需录入原因(将同步到商户/创意所属人)
+ */
+function rejectCreative(c: AdCreativeRow) {
+  uni.showModal({
+    title: '驳回创意',
+    content: '请填写驳回原因(将同步至创意提交方)',
+    editable: true,
+    placeholderText: '如:素材不清晰 / 文案违规 / 链接无效',
+    confirmColor: '#FF3B30',
+    success: async (m) => {
+      if (!m.confirm) return
+      const reason = (m.content || '').trim()
+      if (!reason) {
+        uni.showToast({ title: '请填写原因', icon: 'none' })
+        return
+      }
+      try {
+        await adService.rejectCreative(c.id, reason)
+        c.status = 'rejected'
+        uni.showToast({ title: '已驳回', icon: 'success' })
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+      }
+    },
+  })
+}
+
 function openCreativeActions(c: AdCreativeRow) {
+  // 待审创意优先展示审核入口,其它状态保持编辑 / 删除
+  if (c.status === 'pending') {
+    uni.showActionSheet({
+      itemList: ['审核通过', '驳回', '编辑创意 (标题 / 图 / 时段)', '删除创意'],
+      success: (r) => {
+        if (r.tapIndex === 0) approveCreative(c)
+        else if (r.tapIndex === 1) rejectCreative(c)
+        else if (r.tapIndex === 2) openEditCreative(c)
+        else if (r.tapIndex === 3) deleteCreative(c)
+      },
+    })
+    return
+  }
   uni.showActionSheet({
     itemList: ['编辑创意 (标题 / 图 / 时段)', '删除创意'],
     success: (r) => {
@@ -626,6 +690,10 @@ onMounted(load)
             <text class="c-meta">归属:{{ slotNameOf(c.slotId) }}</text>
             <view class="c-status" :style="{ color: STATUS_META[c.status]?.tint }">
               {{ STATUS_META[c.status]?.label }}
+            </view>
+            <view v-if="c.status === 'pending'" class="c-audit-row">
+              <view class="audit-btn reject" @click.stop="rejectCreative(c)">驳回</view>
+              <view class="audit-btn primary" @click.stop="approveCreative(c)">通过</view>
             </view>
           </view>
           <view class="more-btn" @click.stop="openCreativeActions(c)">
@@ -1135,6 +1203,27 @@ onMounted(load)
   .c-status {
     font-size: 20rpx;
     font-weight: 700;
+  }
+  .c-audit-row {
+    display: flex;
+    gap: 12rpx;
+    margin-top: 8rpx;
+    .audit-btn {
+      flex: 0 0 auto;
+      padding: 8rpx 20rpx;
+      border-radius: 999rpx;
+      font-size: 22rpx;
+      font-weight: 700;
+      &.reject {
+        background: var(--bg-card);
+        border: 1rpx solid var(--border-default);
+        color: var(--text-primary);
+      }
+      &.primary {
+        background: var(--brand-gradient);
+        color: #fff;
+      }
+    }
   }
 }
 .more-btn {

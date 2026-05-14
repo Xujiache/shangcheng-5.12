@@ -121,6 +121,20 @@ export class PlatformController {
   @Delete('ads/creatives/:id') deleteAdCreative(@Param('id') id: string) {
     return this.svc.deleteAdCreative(id)
   }
+  // 广告创意审核（pending → active / rejected） + 写 AuditRecord，复用 approveProduct / rejectProduct 套路
+  @Post('ads/creatives/:id/approve') approveAdCreative(
+    @Param('id') id: string,
+    @CurrentUser() u: AuthUser,
+  ) {
+    return this.svc.approveAdCreative(id, u?.sub)
+  }
+  @Post('ads/creatives/:id/reject') rejectAdCreative(
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+    @CurrentUser() u: AuthUser,
+  ) {
+    return this.svc.rejectAdCreative(id, reason, u?.sub)
+  }
 
   // Plaza
   @Get('plaza/pushes') plazaPushes(@Query() q: any) {
@@ -356,5 +370,26 @@ export class PlatformController {
   }
   @Get('feedback') feedbackList(@Query() q: any) {
     return this.svc.feedbackList(q)
+  }
+
+  // ============ 售后/退款审核（平台层） ============
+  // 注意：前端 platform-app refundService 用的是 `agree` 不是 `approve`，
+  // 这里端点名称必须严格匹配前端调用（POST /p/refunds/:id/agree）。
+  @Get('refunds') refunds(@Query() q: any) {
+    return this.svc.listRefunds(q)
+  }
+  @Post('refunds/:id/agree') agreeRefund(
+    @Param('id') id: string,
+    @Body('refundAmount') refundAmount: number | undefined,
+    @CurrentUser() u: AuthUser,
+  ) {
+    return this.svc.agreeRefund(id, refundAmount, u?.sub)
+  }
+  @Post('refunds/:id/reject') rejectRefundPlat(
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+    @CurrentUser() u: AuthUser,
+  ) {
+    return this.svc.rejectRefundPlat(id, reason, u?.sub)
   }
 }

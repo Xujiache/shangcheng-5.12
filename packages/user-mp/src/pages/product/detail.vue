@@ -194,18 +194,165 @@ const viewerBadge = computed(
     })[viewerTier.value],
 )
 
-const specGroups = computed(() => {
-  if (!product.value?.skus?.length) {
-    return { 尺寸: ['1.2m', '1.4m', '1.6m'], 材质: ['橡木', '胡桃木'] }
-  }
+/**
+ * 规格组 —— 从商品真实 SKU 数据反推出每个规格名的可选值。
+ * 没 SKU 数据就返回空对象(单 SKU/无规格商品),弹层会跳过规格组只显示数量。
+ * 之前的硬编码 fallback `{ 尺寸: [...], 材质: [...] }` 是开发期占位,
+ * 生产里会让用户看到跟商品无关的假规格,已删除。
+ */
+const specGroups = computed<Record<string, string[]>>(() => {
+  if (!product.value?.skus?.length) return {}
   const groups: Record<string, Set<string>> = {}
   product.value.skus.forEach((sku) => {
+    if (sku.active === false) return
     Object.entries(sku.specs).forEach(([k, v]) => {
       if (!groups[k]) groups[k] = new Set()
       groups[k].add(String(v))
     })
   })
   return Object.fromEntries(Object.entries(groups).map(([k, v]) => [k, [...v]]))
+})
+
+/**
+ * 视觉规格组判定 —— 当某规格的所有取值都能从 SKU.image 找到对应缩略图时,
+ * 才升级为"图片+文字"卡片模式(对齐截图首组"圆黑把手/拉花把手"那种)。
+ *
+ * 设计原则:必须有真实图片才显示视觉模式。绝不用 index 1:1 映射主图这种
+ * 脆弱猜测(主图顺序跟规格值顺序毫无业务关联,会显示完全错位的图)。
+ * 商家未上传 SKU.image → 所有规格都降级为纯文字 chip,这是诚实的降级方案。
+ */
+const visualSpecKey = computed<string | null>(() => {
+  if (!product.value?.skus?.length) return null
+  const keys = Object.keys(specGroups.value)
+  // 只考虑第一个规格组作为视觉规格组(避免多组图片堆叠);
+  // 第一组的每个值都必须能从至少一条 SKU 拿到 image 才升级
+  const first = keys[0]
+  if (!first) return null
+  const values = specGroups.value[first] || []
+  if (values.length === 0) return null
+  const allHaveImage = values.every((v) =>
+    product.value!.skus.some(
+      (sku) =>
+        String((sku.specs as any)?.[first]) === v &&
+        typeof (sku as any).image === 'string' &&
+        (sku as any).image,
+    ),
+  )
+  return allHaveImage ? first : null
+})
+
+/** 给视觉规格取缩略图:从匹配该规格值的首条 SKU.image 拿,严格要求 SKU 自带 image */
+function thumbForSpecValue(key: string, value: string): string {
+  const sku = product.value?.skus?.find(
+    (s) =>
+      String((s.specs as any)?.[key]) === value &&
+      typeof (s as any).image === 'string' &&
+      (s as any).image,
+  )
+  return (sku as any)?.image || ''
+}
+
+/** 已选规格的连缀描述 —— 用于 SKU 头部"已选择 xxx xxx xxx"行 */
+const selectedSpecSummary = computed(() => {
+  // by-size 模式专属摘要
+  if (isBySize.value) {
+    if (customLength.value > 0 && customWidth.value > 0) {
+      return `已选 ${customLength.value}×${customWidth.value}${sizeUnit.value} · ${customArea.value} m²`
+    }
+    return '请输入定制尺寸'
+  }
+  // 标准定价模式:列出缺失的规格组
+  const allKeys = Object.keys(specGroups.value)
+  const missing = allKeys.filter((k) => !specSelections.value[k])
+  if (missing.length > 0 && allKeys.length > 0) {
+    return `请选择:${missing.join(' / ')}`
+  }
+  const vals = allKeys.map((k) => specSelections.value[k]).filter(Boolean)
+  return vals.length > 0 ? `已选 ${vals.join(' · ')}` : '请选择规格'
+})
+
+/** SKU 弹层主按钮是否可点 —— 必须选满所有规格组(by-size 必须输入有效尺寸) */
+const skuReadyToConfirm = computed(() => {
+  if (isBySize.value) return sizeValid.value && customTotal.value > 0
+  const allKeys = Object.keys(specGroups.value)
+  // 无规格组(单 SKU 商品)直接放行
+  if (allKeys.length === 0) return true
+  return allKeys.every((k) => !!specSelections.value[k])
+})
+
+/** SKU 弹层主按钮文案 */
+const confirmBtnLabel = computed(() => {
+  if (!skuReadyToConfirm.value) {
+    if (isBySize.value) return '请输入尺寸'
+    const missing = Object.keys(specGroups.value).filter((k) => !specSelections.value[k])
+    return missing.length > 0 ? `请选择 ${missing[0]}` : '请选择规格'
+  }
+  return skuMode.value === 'cart' ? '加入购物车' : '立即购买'
+})
+
+/**
+ * 当前已选规格对应的真实 SKU(全部 specGroup 都选满才返回);
+ * 用于 SKU 弹层 header 价格跟随选择动态变化。
+ */
+const selectedSku = computed(() => {
+  if (!product.value?.skus?.length) return null
+  const allKeys = Object.keys(specGroups.value)
+  if (allKeys.length === 0) return product.value.skus[0] ?? null
+  if (!allKeys.every((k) => !!specSelections.value[k])) return null
+  return (
+    product.value.skus.find(
+      (s) =>
+        s.active !== false &&
+        allKeys.every((k) => String((s.specs as any)?.[k]) === specSelections.value[k]),
+    ) ?? null
+  )
+})
+
+/**
+ * 已选 SKU 的实际单价 —— 用 displayPolicy.priceKind 选 wholesale/retail/member
+ * 与商品聚合价 currentPrice 不同:这是用户即将下单的真实金额,SKU header 必须用这个。
+ */
+const selectedSkuPrice = computed<number | null>(() => {
+  const sku = selectedSku.value
+  if (!sku) return null
+  const kind = displayPolicy.value.priceKind
+  if (kind === 'wholesale') return Number((sku as any).priceWholesale ?? 0)
+  if (kind === 'member') return Number((sku as any).priceMember ?? 0)
+  return Number((sku as any).priceRetail ?? 0)
+})
+
+/** SKU 弹层头部的价格展示 —— 跟随用户已选 SKU 动态变化,而不是商品聚合价 */
+const headerPriceDisplay = computed(() => {
+  if (isBySize.value) {
+    if (customLength.value > 0 && customWidth.value > 0 && customTotal.value > 0) {
+      return { prefix: '¥', amount: customTotal.value.toFixed(2), hint: '' }
+    }
+    return { prefix: '', amount: '', hint: '待输入尺寸' }
+  }
+  // 未选满规格:显示商品聚合价让用户大概知道价位(价格不可见时直接提示)
+  if (selectedSkuPrice.value === null) {
+    if (!priceVisible.value) return { prefix: '', amount: '', hint: '请选择规格' }
+    return { prefix: '¥', amount: String(currentPrice.value), hint: '' }
+  }
+  // 已选满:显示该 SKU 的真实单价
+  return { prefix: '¥', amount: String(selectedSkuPrice.value), hint: '' }
+})
+
+/**
+ * 物流方式文案 —— 只读 product.shipping 真实字段
+ *
+ * 注意:绝不在这里硬编码"48小时内发货""免运费"这类承诺,
+ * 后端 schema 没有 deliveryDays/freeShipping 字段,凭空写文案=对用户撒谎。
+ * 商家未来需要时效承诺,需先扩展 Product schema,再从字段读取。
+ */
+const shippingPromise = computed(() => {
+  const map: Record<string, string> = {
+    factory: '厂家直发',
+    local: '本地配送',
+    pickup: '门店自提',
+  }
+  const ways = (product.value?.shipping || []).map((s) => map[s]).filter(Boolean)
+  return ways.length > 0 ? ways.join(' / ') : ''
 })
 
 /**
@@ -332,42 +479,59 @@ function specLabel() {
 
 async function confirmSku() {
   if (!product.value) return
-  if (isBySize.value) {
-    if (!sizeValid.value) {
-      uni.showToast({ title: `尺寸需在 ${sizeRangeHint.value} 之间`, icon: 'none' })
+
+  // 按钮未就绪时,提示用户具体缺什么(不允许静默兜底到首个 SKU,避免下错单)
+  if (!skuReadyToConfirm.value) {
+    if (isBySize.value) {
+      uni.showToast({
+        title: sizeValid.value ? '请输入有效尺寸' : `尺寸需在 ${sizeRangeHint.value} 之间`,
+        icon: 'none',
+      })
       return
     }
-    if (customTotal.value <= 0) {
-      uni.showToast({ title: '请输入有效尺寸', icon: 'none' })
+    const missing = Object.keys(specGroups.value).filter((k) => !specSelections.value[k])
+    if (missing.length > 0) {
+      uni.showToast({ title: `请先选择「${missing.join('/')}」`, icon: 'none' })
       return
     }
   }
+
   const spec = isBySize.value
     ? `${customLength.value}×${customWidth.value} ${sizeUnit.value} · ${customArea.value} m²`
     : specLabel()
 
-  // 真实 SKU 匹配（按规格找数据库 sku.id）；按尺寸定价或匹配失败回退首个 SKU
-  const matchedSku =
-    !isBySize.value &&
-    product.value.skus?.find((s) => {
-      return Object.entries(specSelections.value).every(
-        ([k, v]) => String((s.specs as any)?.[k]) === v,
-      )
-    })
-  const realSkuId = (matchedSku && matchedSku.id) || product.value.skus?.[0]?.id || ''
+  // 严格 SKU 匹配:by-size 取首个 active SKU,标准模式取 selectedSku
+  // (selectedSku 已用 active 过滤+全 spec 严格匹配;未匹配上拒单,绝不 fallback)
+  let targetSku: any = null
+  if (isBySize.value) {
+    targetSku = product.value.skus?.find((s) => s.active !== false) ?? null
+  } else {
+    targetSku = selectedSku.value
+  }
 
-  if (!realSkuId) {
-    uni.showToast({ title: '该商品无可用规格', icon: 'none' })
+  if (!targetSku?.id) {
+    uni.showToast({ title: '该规格组合暂时缺货', icon: 'none' })
     return
+  }
+
+  // 下单价格优先用 SKU 真实单价(跟随规格);
+  // by-size 模式用 customTotal(用户输入尺寸算出的真实金额);
+  // 兜底用 currentPrice(商品聚合价,但严格 selectedSku 匹配后理论不会走到)
+  let orderPrice = currentPrice.value
+  if (isBySize.value) {
+    orderPrice = customTotal.value
+  } else if (selectedSkuPrice.value !== null) {
+    orderPrice = selectedSkuPrice.value
   }
 
   const item = {
     productId: product.value.id,
-    skuId: realSkuId,
+    skuId: String(targetSku.id),
     name: product.value.name,
     spec,
-    image: product.value.images?.[0] ?? '',
-    price: currentPrice.value,
+    // 优先用 SKU 自带的代表图(精准对应规格),没有则降级到商品主图
+    image: targetSku.image || product.value.images?.[0] || '',
+    price: orderPrice,
     qty: qty.value,
   }
 
@@ -602,19 +766,24 @@ onShareTimeline(() => ({
 
     <view v-if="showSku" class="sku-mask" @click="showSku = false">
       <view class="sku-sheet" @click.stop>
+        <!-- 紧凑 sticky 头部:商品图 + 价格(+优惠券) + 已选规格摘要 -->
         <view class="sku-head">
           <image :src="product.images?.[0]" mode="aspectFill" class="sku-img" />
           <view class="sku-info">
-            <text class="sku-price">¥ {{ currentPrice }}</text>
-            <text class="sku-name">{{ product.name }}</text>
-            <text class="sku-selected">已选：{{ specLabel() }}</text>
+            <view class="sku-price-row">
+              <text v-if="headerPriceDisplay.prefix" class="sku-cur">{{ headerPriceDisplay.prefix }}</text>
+              <text v-if="headerPriceDisplay.amount" class="sku-price">{{ headerPriceDisplay.amount }}</text>
+              <text v-if="headerPriceDisplay.hint" class="sku-price-hint">{{ headerPriceDisplay.hint }}</text>
+            </view>
+            <text class="sku-selected">{{ selectedSpecSummary }}</text>
           </view>
           <view class="sku-close" @click="showSku = false">
-            <Icon name="close" :size="36" color="var(--text-tertiary)" />
+            <Icon name="close" :size="32" color="var(--text-tertiary)" />
           </view>
         </view>
+
         <scroll-view scroll-y class="sku-body">
-          <!-- 按尺寸定价模式 -->
+          <!-- 按尺寸定价输入区 -->
           <template v-if="isBySize">
             <view class="size-block">
               <view class="size-head">
@@ -662,54 +831,68 @@ onShareTimeline(() => ({
                 ⚠ 尺寸需在 {{ sizeRangeHint }} 之间
               </text>
             </view>
-            <view class="spec-group" v-if="Object.keys(specGroups).length > 0">
-              <view v-for="(vals, key) in specGroups" :key="key" class="sg-block">
-                <text class="group-name">{{ key }}</text>
-                <view class="chip-list">
-                  <view
-                    v-for="v in vals"
-                    :key="v"
-                    :class="['chip', specSelections[key] === v ? 'active' : '']"
-                    @click="selectSpec(key, v)"
-                    >{{ v }}</view
-                  >
-                </view>
-              </view>
-            </view>
           </template>
 
-          <!-- 标准定价模式 -->
-          <template v-else>
-            <view v-for="(vals, key) in specGroups" :key="key" class="spec-group">
-              <text class="group-name">{{ key }}</text>
-              <view class="chip-list">
-                <view
-                  v-for="v in vals"
-                  :key="v"
-                  :class="['chip', specSelections[key] === v ? 'active' : '']"
-                  @click="selectSpec(key, v)"
-                  >{{ v }}</view
-                >
+          <!-- 规格组:每个 key 一个 section -->
+          <view v-for="(vals, key) in specGroups" :key="key" class="spec-group">
+            <!-- 视觉规格组无标题,直接展示图片卡片;其他规格组保留标题 -->
+            <text v-if="key !== visualSpecKey" class="group-name">{{ key }}</text>
+
+            <!-- 视觉规格:图片+文字卡片(仅当所有规格值都有 SKU.image 时触发) -->
+            <view v-if="key === visualSpecKey" class="swatch-list">
+              <view
+                v-for="v in vals"
+                :key="v"
+                :class="['swatch', specSelections[key] === v ? 'active' : '']"
+                @click="selectSpec(key, v)"
+              >
+                <image
+                  :src="thumbForSpecValue(String(key), v)"
+                  mode="aspectFill"
+                  class="swatch-img"
+                />
+                <text class="swatch-text">{{ v }}</text>
               </view>
             </view>
-          </template>
 
-          <view class="spec-group">
+            <!-- 普通规格:文字 chip -->
+            <view v-else class="chip-list">
+              <view
+                v-for="v in vals"
+                :key="v"
+                :class="['chip', specSelections[key] === v ? 'active' : '']"
+                @click="selectSpec(key, v)"
+                >{{ v }}</view
+              >
+            </view>
+          </view>
+
+          <!-- 数量:紧凑显示 -->
+          <view class="spec-group qty-group">
             <text class="group-name">数量</text>
             <view class="qty-row">
               <view class="qty-btn" @click="changeQty(-1)">
-                <Icon name="minus" :size="28" color="var(--text-primary)" />
+                <Icon name="minus" :size="26" color="var(--text-primary)" />
               </view>
               <text class="qty-val">{{ qty }}</text>
               <view class="qty-btn" @click="changeQty(1)">
-                <Icon name="plus" :size="28" color="var(--text-primary)" />
+                <Icon name="plus" :size="26" color="var(--text-primary)" />
               </view>
             </view>
           </view>
         </scroll-view>
+
+        <!-- 底部:物流方式(有则展示) + 主按钮 -->
         <view class="sku-ft">
-          <view class="confirm-btn" @click="confirmSku">
-            {{ skuMode === 'cart' ? '确认加入购物车' : '立即购买' }}
+          <view v-if="shippingPromise" class="ft-promise">
+            <Icon name="info" :size="20" color="var(--text-tertiary)" />
+            <text>配送方式:{{ shippingPromise }}</text>
+          </view>
+          <view
+            :class="['confirm-btn', { disabled: !skuReadyToConfirm }]"
+            @click="confirmSku"
+          >
+            {{ confirmBtnLabel }}
           </view>
         </view>
       </view>
@@ -1103,89 +1286,152 @@ onShareTimeline(() => ({
   flex-direction: column;
   max-height: 80vh;
 }
+/* SKU 头部:商品图 + 价格 + 已选规格摘要 + X */
 .sku-head {
-  padding: 24rpx;
+  padding: 24rpx 24rpx 20rpx;
   display: flex;
   gap: 16rpx;
+  align-items: center;
+  background: var(--bg-card);
   border-bottom: 1rpx solid var(--border-light);
   .sku-img {
-    // mp-weixin 负 margin 必须配 position+z-index 才能浮出
-    position: relative;
-    z-index: 1;
-    width: 160rpx;
-    height: 160rpx;
+    flex-shrink: 0;
+    width: 128rpx;
+    height: 128rpx;
     border-radius: 12rpx;
-    margin-top: -40rpx;
     background: var(--bg-page);
-    border: 4rpx solid var(--bg-card);
   }
   .sku-info {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 8rpx;
-    .sku-price {
-      font-size: 40rpx;
-      font-weight: 800;
+    .sku-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 2rpx;
       color: var(--brand-primary);
       font-family: $font-family-base;
+      .sku-cur {
+        font-size: 26rpx;
+        font-weight: 800;
+      }
+      .sku-price {
+        font-size: 44rpx;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .sku-price-hint {
+        font-size: 26rpx;
+        font-weight: 600;
+        color: var(--text-tertiary);
+      }
     }
-    .sku-name {
-      font-size: 24rpx;
-      color: var(--text-primary);
+    .sku-selected {
+      font-size: 22rpx;
+      color: var(--text-secondary);
       display: -webkit-box;
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
-    }
-    .sku-selected {
-      font-size: 22rpx;
-      color: var(--text-tertiary);
+      word-break: break-all;
     }
   }
   .sku-close {
-    padding: 8rpx;
+    flex-shrink: 0;
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    background: var(--bg-page);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 .sku-body {
   flex: 1;
   height: 0;
-  padding: 0 24rpx;
+  padding: 0 24rpx 20rpx;
 }
+
+/* 规格组:标题 + chip/swatch 容器 */
 .spec-group {
-  padding: 24rpx 0;
-  border-bottom: 1rpx dashed var(--border-light);
+  padding: 24rpx 0 4rpx;
   .group-name {
     display: block;
-    font-size: 26rpx;
-    font-weight: 600;
+    font-size: 28rpx;
+    font-weight: 700;
     margin-bottom: 16rpx;
     color: var(--text-primary);
   }
   .chip-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 12rpx;
+    gap: 16rpx;
   }
   .chip {
-    padding: 12rpx 24rpx;
-    border: 1rpx solid var(--border-default);
-    border-radius: 999rpx;
-    font-size: 24rpx;
+    padding: 14rpx 28rpx;
+    border: 2rpx solid transparent;
+    border-radius: 12rpx;
+    font-size: 26rpx;
     color: var(--text-primary);
-    background: var(--bg-card);
+    background: var(--bg-page);
+    line-height: 1.2;
     &.active {
       border-color: var(--brand-primary);
-      background: rgba(255, 77, 45, 0.08);
+      background: var(--bg-card);
       color: var(--brand-primary);
       font-weight: 600;
     }
   }
-  .sg-block {
-    margin-bottom: 16rpx;
-    &:last-child {
-      margin-bottom: 0;
+}
+
+/* 视觉型规格:图片 + 文字卡片(对齐截图首组的"圆黑把手/拉花把手"卡片) */
+.swatch-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+}
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border: 2rpx solid transparent;
+  border-radius: 12rpx;
+  background: var(--bg-page);
+  overflow: hidden;
+  &.active {
+    border-color: var(--brand-primary);
+    background: var(--bg-card);
+    .swatch-text {
+      color: var(--brand-primary);
+      font-weight: 600;
     }
+  }
+  .swatch-img {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--bg-card);
+    display: block;
+  }
+  .swatch-text {
+    padding: 14rpx 8rpx;
+    text-align: center;
+    font-size: 24rpx;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+}
+
+/* 数量行:紧凑显示 */
+.qty-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0 4rpx;
+  .group-name {
+    margin-bottom: 0;
   }
 }
 
@@ -1323,29 +1569,47 @@ onShareTimeline(() => ({
 .qty-row {
   display: inline-flex;
   align-items: center;
-  border: 1rpx solid var(--border-default);
+  background: var(--bg-page);
   border-radius: 8rpx;
   overflow: hidden;
   .qty-btn {
-    width: 64rpx;
+    width: 60rpx;
     height: 56rpx;
     display: flex;
     align-items: center;
     justify-content: center;
+    &:active {
+      background: rgba(0, 0, 0, 0.04);
+    }
   }
   .qty-val {
     min-width: 80rpx;
     text-align: center;
-    border-left: 1rpx solid var(--border-default);
-    border-right: 1rpx solid var(--border-default);
-    font-size: 26rpx;
+    font-size: 28rpx;
     font-family: $font-family-base;
+    font-weight: 600;
     line-height: 56rpx;
+    background: var(--bg-card);
   }
 }
+
+/* 底部:承诺文案 + 主按钮 */
 .sku-ft {
-  padding: 24rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  padding: 16rpx 24rpx;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  background: var(--bg-card);
+  border-top: 1rpx solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  .ft-promise {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6rpx;
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .confirm-btn {
     height: 88rpx;
     line-height: 88rpx;
@@ -1356,6 +1620,12 @@ onShareTimeline(() => ({
     font-size: 30rpx;
     font-weight: 700;
     box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+    /* 未选满规格时的禁用态:灰底无阴影,但仍可点击触发"请先选择 xxx"提示 */
+    &.disabled {
+      background: var(--bg-hover);
+      color: var(--text-tertiary);
+      box-shadow: none;
+    }
   }
 }
 </style>

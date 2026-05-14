@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
-import { orderNo } from '../../common/utils/id.util'
+import { orderNo, refundNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
 import { ChatGateway } from '../chat/chat.gateway'
 
@@ -210,6 +210,13 @@ export class UserMpService {
    *   - 不传：返回所有
    *
    * 实现：每次查询先把分类树展开一层，把当前节点 + 其直接子节点 ID 一起作为 `IN` 列表传 prisma。
+   *
+   * sort 排序字段（修复 P0-15 之前永远按 sales desc）：
+   *   - 'price-asc'  → 价格升序（priceRetailMin asc）
+   *   - 'price-desc' → 价格降序（priceRetailMin desc）
+   *   - 'sales'      → 销量降序（默认行为，前端"综合"按钮）
+   *   - 'newest'     → 上架时间倒序（createdAt desc）
+   *   - 其他/未传    → 与 'sales' 一致（向后兼容）
    */
   async listProducts(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
@@ -227,8 +234,26 @@ export class UserMpService {
       where.categoryId = { in: ids }
     }
     if (q.merchantId) where.merchantId = q.merchantId
+
+    const sort = String(q?.sort || '').trim()
+    let orderBy: any
+    switch (sort) {
+      case 'price-asc':
+        orderBy = { priceRetailMin: 'asc' }
+        break
+      case 'price-desc':
+        orderBy = { priceRetailMin: 'desc' }
+        break
+      case 'newest':
+        orderBy = { createdAt: 'desc' }
+        break
+      case 'sales':
+      default:
+        orderBy = { sales: 'desc' }
+    }
+
     const [list, total] = await Promise.all([
-      this.prisma.product.findMany({ where, skip, take, orderBy: { sales: 'desc' } }),
+      this.prisma.product.findMany({ where, skip, take, orderBy }),
       this.prisma.product.count({ where }),
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
@@ -313,7 +338,14 @@ export class UserMpService {
       include: { items: true, payments: true },
     })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
-    return decimalToNumber(o)
+    // expiresIn (秒) 计算 —— user-mp 待付款倒计时直接消费该字段
+    // 只在 pending_payment 状态下有意义，其他状态返回 null 避免误导
+    let expiresIn: number | null = null
+    if (o.status === 'pending_payment' && o.expiresAt) {
+      const diff = Math.floor((o.expiresAt.getTime() - Date.now()) / 1000)
+      expiresIn = diff > 0 ? diff : 0
+    }
+    return decimalToNumber({ ...o, expiresIn })
   }
 
   async createOrder(userId: string, dto: any) {
@@ -356,20 +388,69 @@ export class UserMpService {
     }
     const merchantId = Array.from(merchantSet)[0]
 
+    // ===== 价格分级解析（资金安全 P0）=====
+    // 之前固定按 sku.priceRetail 计价，会让会员/代理客户被收原价；同时未校验店铺规则
+    // (是否允许游客购买 / 是否禁卖 / 是否拉黑该客户)。
+    //
+    // 修复后链路：
+    //   1. 买家在该店铺被商家拉黑 → 直接 FORBIDDEN
+    //   2. 取 buyer 在该店的 tier（myTierInShop：customer/member/agency/guest）
+    //   3. 取店铺级 priceRule（guestAllow/customerPrice/agencyPrice/memberPrice）
+    //   4. guest=guestAllow=false → 拒绝
+    //   5. 任意 tier 的价格策略 == 'hidden' → 拒绝（隐藏价格意味着不可下单）
+    //   6. 按 tier→strategy 映射出 'retail' | 'wholesale' | 'member'，
+    //      最终选 sku.priceRetail / priceWholesale / priceMember 作为成交价
+    //
+    // 由此商家在「客户管理」给某买家标 agency，并把店铺规则设置成 agencyPrice=wholesale
+    // 后，该客户下单实际入账金额会按 priceWholesale 计算，不再是 priceRetail。
+    const blacklistCfg = await this.prisma.systemConfig.findUnique({
+      where: { key: `merchant:${merchantId}:blacklist:${userId}` },
+    })
+    if (!!(blacklistCfg?.value as any)?.blocked) {
+      throw new BizException(BizCode.FORBIDDEN, '抱歉，您已被该店铺加入黑名单，无法下单')
+    }
+    const { myTier } = await this.myTierInShop(userId, merchantId)
+    const shopRule = await this.shopPriceRule(merchantId)
+    if (myTier === 'guest' && shopRule.guestAllow === false) {
+      throw new BizException(BizCode.FORBIDDEN, '该店铺不对游客开放，请先登录')
+    }
+    // 按 tier 查"价格策略" key；映射 guest 走 customerPrice（同未授权用户）
+    const tierStrategy: 'retail' | 'wholesale' | 'member' | 'hidden' =
+      myTier === 'member'
+        ? (shopRule.memberPrice as any) || 'member'
+        : myTier === 'agency'
+          ? (shopRule.agencyPrice as any) || 'wholesale'
+          : (shopRule.customerPrice as any) || 'retail'
+    if (tierStrategy === 'hidden') {
+      throw new BizException(BizCode.FORBIDDEN, '该店铺禁止当前身份直接下单，请联系商家')
+    }
+    const pickUnitPrice = (sku: { priceRetail: any; priceWholesale: any; priceMember: any }) => {
+      if (tierStrategy === 'wholesale') return Number(sku.priceWholesale)
+      if (tierStrategy === 'member') return Number(sku.priceMember)
+      return Number(sku.priceRetail)
+    }
+
     let totalAmount = 0
     const orderItemsData = normItems.map((it) => {
       const sku = skus.find((s) => s.id === it.skuId)!
       if (sku.stock < it.quantity)
         throw new BizException(BizCode.STOCK_INSUFFICIENT, `${sku.product.name} 库存不足`)
-      const price = Number(sku.priceRetail)
-      totalAmount += price * it.quantity
+      const unitPrice = pickUnitPrice(sku)
+      if (!(unitPrice > 0)) {
+        // 价格异常（如商家未填该 tier 的价格、价格为 0/NaN）一律拒单，绝不按 0 元成交
+        throw new BizException(
+          BizCode.BUSINESS_ERROR,
+          `${sku.product.name} 当前身份暂无可用价格，请联系商家`,
+        )
+      }
+      totalAmount += unitPrice * it.quantity
       return {
         productId: sku.productId,
         skuId: sku.id,
         productName: sku.product.name,
         productImage: sku.product.images[0] || '',
         specsLabel: sku.specsLabel,
-        unitPrice: sku.priceRetail,
+        unitPrice,
         quantity: it.quantity,
       }
     })
@@ -459,8 +540,16 @@ export class UserMpService {
       if (coupon.type === 'fullReduce' || coupon.type === 'fixed') {
         couponDiscount = coupon.amount ? Number(coupon.amount) : 0
       } else if (coupon.type === 'discount' && typeof coupon.discountPercent === 'number') {
-        // discountPercent 语义：85 表示打 85 折，抵扣 15%
-        const offRate = Math.max(0, Math.min(100, 100 - coupon.discountPercent)) / 100
+        // discountPercent 语义统一：0~1 小数,表示"折后比例"
+        //   - 0.85 → 打 85 折(消费者付 85%,抵扣 15%)
+        //   - 0.5  → 打 5 折(消费者付 50%,抵扣 50%)
+        //   - 1    → 不打折
+        //   - 0    → 全免单
+        // 历史数据兼容：若误存成 0~100 范围(如 85),按 /100 自动归一化
+        const raw = Number(coupon.discountPercent)
+        const ratio = raw > 1 ? raw / 100 : raw
+        const clamped = Math.max(0, Math.min(1, ratio))
+        const offRate = 1 - clamped
         couponDiscount = Math.round(totalAmount * offRate * 100) / 100
       }
       if (couponDiscount > totalAmount) couponDiscount = totalAmount
@@ -526,13 +615,14 @@ export class UserMpService {
   /**
    * 用户发起支付：
    *   - method='wechat'（默认/唯一）：调微信支付 JSAPI 拿 prepay 参数，前端用 uni.requestPayment 调起
-   *   - 非生产 + 商户号未配齐时：返回 mock prepay + 立即标订单已付（仅供本地预览）
    *
    * 真正"付款成功"的标记由微信回调 /api/v1/payments/wechat/notify 触发；
    * 这个接口只负责"准备付款参数"。
    *
-   * 生产环境（NODE_ENV=production）严禁 mockPaid，必须等真实回调；否则商户号未配齐
-   * 时直接抛错给前端，绝不静默把订单标已付。
+   * 严格安全策略（资金 P0）：
+   *   - 不分环境：微信支付未配置(`wxpay.isReady()=false`) → 一律 BizException 拒绝。
+   *   - 严禁任何 mockPaid 路径把订单标已付。开发期商家想本地联调请配真实沙箱凭证。
+   *   - openid 缺失 → 拒绝，避免在 wxpay 这一层才抛底层错。
    */
   async payOrder(userId: string, id: string, _method: string) {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
@@ -543,51 +633,30 @@ export class UserMpService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     const openid = user?.openid || ''
-    const isProd = process.env.NODE_ENV === 'production'
 
-    // 生产环境且商户号未配齐：立刻拒绝，不进 mock 通路
-    if (isProd && !this.wxpay.isReady()) {
-      throw new BizException(BizCode.BUSINESS_ERROR, '微信支付未配置，暂时无法下单，请联系商家')
+    // 商户号未配齐 → 立刻拒绝，运维需配齐 WX_PAY_* 环境变量
+    if (!this.wxpay.isReady()) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '未配置支付通道，请联系运维配置微信支付')
     }
 
-    // 生产环境必须有真实 openid，否则无法走微信小程序原生支付
-    if (isProd && !openid) {
+    if (!openid) {
       throw new BizException(BizCode.INVALID_PARAMS, '当前账号未绑定微信，请先绑定微信后再支付')
     }
 
-    // createMiniPay 内部也会在生产环境二次拦截，避免任何旁路
-    const pay = await this.wxpay.createMiniPay({
-      outTradeNo: o.no,
-      description: `订单 ${o.no}`,
-      totalFen: Math.round(Number(o.payAmount) * 100),
-      openid,
-      attach: o.id,
-    })
-
-    // 非生产 + 商户号未配齐 → mock 模式：保留预览体验，立即标已付
-    if (!isProd && !this.wxpay.isReady()) {
-      const paidAt = new Date()
-      await this.prisma.payment.create({
-        data: { orderId: o.id, method: 'wechat', amount: o.payAmount, status: 'success', paidAt },
+    let pay
+    try {
+      pay = await this.wxpay.createMiniPay({
+        outTradeNo: o.no,
+        description: `订单 ${o.no}`,
+        totalFen: Math.round(Number(o.payAmount) * 100),
+        openid,
+        attach: o.id,
       })
-      await this.prisma.order.update({
-        where: { id: o.id },
-        data: { status: 'pending_shipment', paymentMethod: 'wechat', paidAt },
-      })
-      // 与生产回调路径保持一致：通知商家"已付款待发货"
-      try {
-        this.chat.emitOrderUpdate(o.merchantId, {
-          orderId: o.id,
-          no: o.no,
-          status: 'pending_shipment',
-          updatedAt: paidAt,
-          mockPaid: true,
-        })
-      } catch {}
-      return { ok: true, mockPaid: true, miniPay: pay }
+    } catch (e: any) {
+      throw new BizException(BizCode.PAY_FAILED, `微信支付下单失败：${e?.message || e}`)
     }
 
-    return { ok: true, mockPaid: false, miniPay: pay }
+    return { ok: true, miniPay: pay }
   }
 
   async confirmOrder(userId: string, id: string) {
@@ -608,6 +677,122 @@ export class UserMpService {
       })
     } catch {}
     return { ok: true }
+  }
+
+  /**
+   * 用户发起售后/退款（功能残缺 P0-13）
+   *
+   * 之前用户端的售后弹窗仅前端 toast 假装成功，订单状态从来没改成 after_sale，
+   * 商家也收不到售后单 —— 整条售后链路是断的。
+   *
+   * 现在实现：
+   *   1. 校验订单存在 + 归属 + 状态可发起售后（已付/已发/已完成都允许）
+   *   2. 校验申请金额合法（必须 > 0 且 ≤ 实付金额）
+   *   3. 在一个事务里：
+   *      - 创建 Refund 记录 status=pending
+   *      - 把 Order.status 设为 'after_sale'（先存一个原状态用于商家拒单后回滚）
+   *   4. fire-and-forget 推商家"新售后单"通知
+   *
+   * 注：Refund 需要 orderItemId，schema 是 1:1 关联 OrderItem。
+   * 单订单含多 SKU 时，用户实际想退指定行；前端 dto.orderItemId 显式传时按显式来，
+   * 否则取订单第一条 item 兜底（更精细的"逐行退款"可后续扩展为多条 Refund）。
+   */
+  async refundOrder(
+    userId: string,
+    id: string,
+    dto: { reason: string; amount?: number; orderItemId?: string; description?: string; evidence?: string[]; type?: 'refund_only' | 'refund_with_return' },
+  ) {
+    const reason = String(dto?.reason || '').trim()
+    if (!reason) throw new BizException(BizCode.INVALID_PARAMS, '请填写售后原因')
+    const o = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: true },
+    })
+    if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
+
+    const allowedStatus = ['pending_shipment', 'shipped', 'completed']
+    if (!allowedStatus.includes(o.status)) {
+      throw new BizException(
+        BizCode.ORDER_STATUS_INVALID,
+        '当前订单状态不允许发起售后（仅已付款/已发货/已完成订单可申请）',
+      )
+    }
+
+    if (!o.items || o.items.length === 0) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '订单缺少商品项，无法发起售后')
+    }
+
+    let target = o.items[0]
+    if (dto?.orderItemId) {
+      const found = o.items.find((it) => it.id === dto.orderItemId)
+      if (!found) throw new BizException(BizCode.NOT_FOUND, '指定订单项不存在')
+      target = found
+    }
+
+    const payAmount = Number(o.payAmount)
+    const applyAmount =
+      typeof dto?.amount === 'number' && !Number.isNaN(dto.amount)
+        ? Number(dto.amount)
+        : payAmount
+    if (!(applyAmount > 0)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '退款金额必须大于 0')
+    }
+    if (applyAmount > payAmount) {
+      throw new BizException(BizCode.INVALID_PARAMS, '退款金额不能超过订单实付金额')
+    }
+
+    // 防重复发起：同订单已存在 pending/agreed/in_progress 的 Refund → 拒绝
+    const dup = await this.prisma.refund.findFirst({
+      where: { orderId: o.id, status: { in: ['pending', 'agreed', 'in_progress'] } },
+      select: { id: true, status: true },
+    })
+    if (dup) {
+      throw new BizException(BizCode.CONFLICT, '该订单已有进行中的售后单，请勿重复提交')
+    }
+
+    const refundType = dto?.type === 'refund_only' ? 'refund_only' : 'refund_with_return'
+
+    // 事务：原子性写入 Refund + 切 Order.status='after_sale'
+    const result = await this.prisma.$transaction(async (tx) => {
+      const refund = await tx.refund.create({
+        data: {
+          no: refundNo(),
+          orderId: o.id,
+          orderItemId: target.id,
+          userId: o.userId,
+          merchantId: o.merchantId,
+          type: refundType,
+          reason,
+          description: dto?.description ? String(dto.description).slice(0, 500) : null,
+          evidence: Array.isArray(dto?.evidence)
+            ? dto.evidence.filter((x: any) => typeof x === 'string').slice(0, 9)
+            : [],
+          applyAmount,
+          status: 'pending',
+        },
+      })
+      await tx.order.update({
+        where: { id: o.id },
+        data: { status: 'after_sale' },
+      })
+      return refund
+    })
+
+    // 商家端 WS 实时推
+    try {
+      this.chat.emitRefundNew(o.merchantId, {
+        refundId: result.id,
+        no: result.no,
+        orderId: o.id,
+        orderNo: o.no,
+        status: 'pending',
+        applyAmount,
+        reason,
+        createdAt: result.createdAt,
+      })
+    } catch {}
+
+    return { ok: true, refundId: result.id, refundNo: result.no, status: 'pending' }
   }
 
   async cancelOrder(userId: string, id: string) {
@@ -905,36 +1090,106 @@ export class UserMpService {
   /**
    * 我的优惠券列表（汇总用户已领的所有券 + 关联券基础信息）
    *
+   * 前端 user-mp couponService.my() 类型契约：直接返回 `MyCoupon[]`（不是 PageObject），
+   * 每条带 `no`（用户券唯一编号）+ `status: 'unused' | 'used' | 'expired'` +
+   * `usedAt?` + `claimedAt`。前端 pages/coupon/my.vue 按 tab 三态过滤显示。
+   *
    * 实现策略：
    *   - 拿 SystemConfig 里 key 形如 `user_coupon:<userId>:%` 的所有条目
-   *   - 解析出 couponId,批量取 Coupon 关联信息
-   *   - 当前 Prisma 不支持 LIKE，用 startsWith 等价（PostgreSQL 实际生成 ILIKE）
+   *   - 一个 SystemConfig 行可能包含同一 couponId 的多张券（ids[]），全部展开成多条记录
+   *   - 同时读 `user_coupon_used:<userId>:<no>` 已使用流水（claimCoupon 与未来核销逻辑写入），
+   *     缺失则视为未使用
+   *   - 过期判定：validTo < now → expired（即便 status='used' 也视为 expired，UI 优先展示已使用更友好，
+   *     这里以"已使用 > 已过期"为优先级返回 status）
+   *   - 支持 query.status 过滤：'unused' | 'used' | 'expired'
    *
-   * 后续若迁到 UserCoupon 表，此查询会变成简单的 join + filter，无需多层处理。
+   * 后续若迁到 UserCoupon 表，本方法只需把"读 SystemConfig 多条"改成"查 UserCoupon 单表"，
+   * 对外类型不变，前端 0 改动。
    */
-  async myCoupons(userId: string) {
-    if (!userId) return { list: [], total: 0 }
+  async myCoupons(
+    userId: string,
+    query: { status?: 'unused' | 'used' | 'expired' } = {},
+  ): Promise<
+    Array<{
+      no: string
+      couponId: string
+      name: string
+      type: string
+      amount: number | null
+      discountPercent: number | null
+      threshold: number | null
+      merchantId: string
+      merchantName: string
+      validFrom: Date
+      validTo: Date
+      status: 'unused' | 'used' | 'expired'
+      usedAt: string | null
+      claimedAt: string | null
+    }>
+  > {
+    if (!userId) return []
     const prefix = `user_coupon:${userId}:`
-    const rows = await this.prisma.systemConfig.findMany({
-      where: { key: { startsWith: prefix } },
-      take: 200,
-    })
-    if (!rows.length) return { list: [], total: 0 }
+    const usedPrefix = `user_coupon_used:${userId}:`
+    const [rows, usedRows] = await Promise.all([
+      this.prisma.systemConfig.findMany({ where: { key: { startsWith: prefix } }, take: 200 }),
+      this.prisma.systemConfig.findMany({ where: { key: { startsWith: usedPrefix } }, take: 500 }),
+    ])
+    if (!rows.length) return []
+
     const couponIds = rows.map((r) => r.key.slice(prefix.length))
     const coupons = await this.prisma.coupon.findMany({
       where: { id: { in: couponIds } },
       include: { merchant: { select: { id: true, name: true } } },
     })
     const cmap = new Map(coupons.map((c) => [c.id, c]))
+
+    // 已使用映射：key = no(用户券编号) → { usedAt }
+    const usedMap = new Map<string, { usedAt: string | null }>()
+    for (const u of usedRows) {
+      const no = u.key.slice(usedPrefix.length)
+      const v = (u.value as any) || {}
+      usedMap.set(no, { usedAt: v.usedAt || null })
+    }
+
     const now = new Date()
-    const list = rows
-      .map((r) => {
-        const cid = r.key.slice(prefix.length)
-        const c = cmap.get(cid)
-        if (!c) return null
-        const claimed = (r.value as any) || {}
+    const list: Array<{
+      no: string
+      couponId: string
+      name: string
+      type: string
+      amount: number | null
+      discountPercent: number | null
+      threshold: number | null
+      merchantId: string
+      merchantName: string
+      validFrom: Date
+      validTo: Date
+      status: 'unused' | 'used' | 'expired'
+      usedAt: string | null
+      claimedAt: string | null
+    }> = []
+    for (const r of rows) {
+      const couponId = r.key.slice(prefix.length)
+      const c = cmap.get(couponId)
+      if (!c) continue
+      const claimed = (r.value as any) || {}
+      const ids: string[] = Array.isArray(claimed.ids) ? claimed.ids : []
+      // 历史数据兜底：ids 缺失但 count > 0 时，至少生成 count 条占位 no（防该用户的券完全丢失）
+      const fallbackCount = Number(claimed.count) || 0
+      const noList: string[] =
+        ids.length > 0
+          ? ids
+          : Array.from({ length: fallbackCount }, (_, i) => `LEGACY_${couponId}_${i + 1}`)
+
+      for (const no of noList) {
+        const usedInfo = usedMap.get(no)
         const expired = c.validTo < now
-        return {
+        let status: 'unused' | 'used' | 'expired'
+        if (usedInfo) status = 'used'
+        else if (expired) status = 'expired'
+        else status = 'unused'
+        list.push({
+          no,
           couponId: c.id,
           name: c.name,
           type: c.type,
@@ -945,14 +1200,23 @@ export class UserMpService {
           merchantName: c.merchant?.name || '',
           validFrom: c.validFrom,
           validTo: c.validTo,
-          count: claimed.count || 0,
-          ids: claimed.ids || [],
+          status,
+          usedAt: usedInfo?.usedAt || null,
           claimedAt: claimed.claimedAt || null,
-          status: expired ? 'expired' : c.status,
-        }
-      })
-      .filter((x): x is NonNullable<typeof x> => !!x)
-    return { list, total: list.length }
+        })
+      }
+    }
+
+    // status 过滤
+    const want = query?.status
+    const filtered = want ? list.filter((x) => x.status === want) : list
+    // claimedAt desc（最近领到的排前面）
+    filtered.sort((a, b) => {
+      const ta = a.claimedAt ? new Date(a.claimedAt).getTime() : 0
+      const tb = b.claimedAt ? new Date(b.claimedAt).getTime() : 0
+      return tb - ta
+    })
+    return filtered
   }
 
   // ========== 预约量尺 ==========
@@ -972,8 +1236,23 @@ export class UserMpService {
   }
 
   // ========== 推广 ==========
+  /**
+   * 推广人维度概览
+   *
+   * 真实统计（之前 people=0 / conversion=0 都是占位）：
+   *   - total / thisMonth / pending：commission amount 聚合
+   *   - people：commission 关联订单的"去重买家数"（衡量该推广人带来过多少不同顾客）
+   *   - orderCount：commission 关联的去重订单数
+   *   - conversion：转化率 = 订单数 / 曝光数
+   *     当前 schema 没有 promote 曝光埋点表，conversion 暂返回 null 让前端展示"暂无数据"，
+   *     避免对外发布"0%"误导推广人。后续若加 promote_click / promote_impression 表，
+   *     这里再补真分母。
+   */
   async promoteSummary(userId: string) {
-    const cms = await this.prisma.commission.findMany({ where: { userId } })
+    const cms = await this.prisma.commission.findMany({
+      where: { userId },
+      include: { order: { select: { userId: true } } },
+    })
     const total = cms.reduce((s, c) => s + Number(c.amount), 0)
     const now = new Date()
     const thisMonth = cms
@@ -986,7 +1265,78 @@ export class UserMpService {
     const pending = cms
       .filter((c) => c.status === 'pending')
       .reduce((s, c) => s + Number(c.amount), 0)
-    return { total, thisMonth, pending, people: 0, orderCount: cms.length, conversion: 0 }
+    const orderIds = new Set<string>()
+    const buyerIds = new Set<string>()
+    for (const c of cms) {
+      orderIds.add(c.orderId)
+      if (c.order?.userId) buyerIds.add(c.order.userId)
+    }
+    return {
+      total: Math.round(total * 100) / 100,
+      thisMonth: Math.round(thisMonth * 100) / 100,
+      pending: Math.round(pending * 100) / 100,
+      people: buyerIds.size,
+      orderCount: orderIds.size,
+      // 没有曝光埋点表，先返回 null 让前端显示"暂无数据"
+      conversion: null,
+    }
+  }
+
+  /**
+   * 推广分享链接
+   *
+   * 真实链接（之前没有实现）：
+   *   - 前端约定 `PROMOTE_LANDING_URL` 环境变量为推广落地页（如商城首页 / 注册页）
+   *   - 后端追加 `?ref=<userId>` 给 inviterId 绑定逻辑识别
+   *   - 用户首次通过 ?ref=xxx 落地并登录/注册 → User.inviterId 写入
+   *
+   * 返回结构与前端期望保持兼容：{ url, ref }
+   */
+  async promoteShareLink(userId: string) {
+    if (!userId) throw new BizException(BizCode.UNAUTHORIZED, '请先登录')
+    // 校验用户存在 + 没被禁用，否则不给签发推广链接
+    const u = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!u) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+    if (u.status === 'disabled') {
+      throw new BizException(BizCode.FORBIDDEN, '当前账号已被禁用，无法生成推广链接')
+    }
+    const base = (process.env.PROMOTE_LANDING_URL || '').trim()
+    if (!base) {
+      // 没配置落地页直接抛错，绝不返回 about:blank 这类占位
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '推广落地页未配置，请联系运维设置 PROMOTE_LANDING_URL',
+      )
+    }
+    const sep = base.includes('?') ? '&' : '?'
+    return { url: `${base}${sep}ref=${encodeURIComponent(userId)}`, ref: userId }
+  }
+
+  /**
+   * 推广关系绑定（首次落地 → 登录后调用）
+   *
+   * 客户端流程：用户通过 ?ref=xxx 进入小程序，前端把 ref 缓存；
+   * 登录成功后调用本接口完成 inviterId 绑定（仅首次有效，避免反复改邀请人）。
+   */
+  async bindInviter(userId: string, inviterId: string) {
+    if (!userId) throw new BizException(BizCode.UNAUTHORIZED, '请先登录')
+    if (!inviterId) throw new BizException(BizCode.INVALID_PARAMS, '缺少邀请人 ID')
+    if (inviterId === userId) {
+      throw new BizException(BizCode.INVALID_PARAMS, '不能将自己设为邀请人')
+    }
+    const me = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!me) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+    if (me.inviterId) {
+      // 已绑定过 → 幂等返回，不允许覆盖
+      return { ok: true, inviterId: me.inviterId, alreadyBound: true }
+    }
+    const inviter = await this.prisma.user.findUnique({ where: { id: inviterId } })
+    if (!inviter) throw new BizException(BizCode.NOT_FOUND, '邀请人不存在')
+    if (inviter.status === 'disabled') {
+      throw new BizException(BizCode.FORBIDDEN, '邀请人账号已被禁用')
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: { inviterId } })
+    return { ok: true, inviterId, alreadyBound: false }
   }
 
   async promoteOrders(userId: string, q: any) {
@@ -1012,6 +1362,72 @@ export class UserMpService {
       page,
       pageSize,
     )
+  }
+
+  /**
+   * 推广分佣规则正文（前端 user-mp 推广页"规则"弹窗使用）
+   *
+   * 数据源：SystemConfig key='promote.rules' value={ body: string, updatedAt?: string }
+   * 前端 PromoteRules 契约：{ body: string, updatedAt?: string } | null
+   * 未配置返回 null；前端会显示"详情请咨询平台客服"兜底文案。
+   *
+   * 严格零硬编码：绝不在后端写死 "一级 8% / 二级 3%" 等百分比文案 —— 业务可能随时调整。
+   * 平台管理员通过 `POST /p/system/settings` 写入 promote.rules 配置。
+   */
+  async promoteRules(): Promise<{ body: string; updatedAt?: string } | null> {
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'promote.rules' } })
+    if (!cfg) return null
+    const raw = cfg.value as any
+    // 兼容两种存储形态：纯字符串 / { body, updatedAt? } 对象
+    let body = ''
+    let updatedAt: string | undefined
+    if (typeof raw === 'string') {
+      body = raw.trim()
+    } else if (raw && typeof raw === 'object') {
+      body = typeof raw.body === 'string' ? raw.body.trim() : ''
+      updatedAt = typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined
+    }
+    if (!body) return null
+    return updatedAt
+      ? { body, updatedAt }
+      : { body, updatedAt: cfg.updatedAt.toISOString() }
+  }
+
+  /**
+   * 公开系统设置（user-mp 端可访问；脱敏后的平台公开配置）
+   *
+   * 数据源：SystemConfig key='system_settings' value.service 子对象 + 备用独立 key 兜底
+   * 前端 SystemSettings 契约：
+   *   { customerServiceWechat?: string | null,
+   *     customerServicePhone?: string | null,
+   *     customerServiceHours?: string | null,
+   *     customerServiceEmail?: string | null,
+   *     icp?: string | null,
+   *     [k]: unknown }
+   * 未配置字段返 null；前端按 null=未提供降级展示，绝不硬编码客服联系方式。
+   *
+   * 安全：绝不暴露 SystemConfig 全量（避免泄露 IP 白名单 / 密码策略 / business 内部配置）。
+   * 只白名单"对用户公开"的字段。
+   */
+  async systemSettings() {
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'system_settings' } })
+    const raw = (cfg?.value as any) || {}
+    const service = (raw.service as any) || {}
+    const site = (raw.site as any) || {}
+    // 多 key 兜底：旧数据可能把客服信息直接挂在顶层，新数据规范挂在 service.* 下
+    const wechat = service.customerServiceWechat ?? service.wechat ?? raw.customerServiceWechat ?? null
+    const phone = service.customerServicePhone ?? service.phone ?? raw.customerServicePhone ?? null
+    const hours = service.customerServiceHours ?? service.workTime ?? raw.customerServiceHours ?? null
+    const email = service.customerServiceEmail ?? service.email ?? raw.customerServiceEmail ?? null
+    const icp = site.icp ?? raw.icp ?? null
+    return {
+      customerServiceWechat: wechat || null,
+      customerServicePhone: phone || null,
+      customerServiceHours: hours || null,
+      customerServiceEmail: email || null,
+      icp: icp || null,
+      siteName: site.name || null,
+    }
   }
 
   // ========== 附近门店 ==========
@@ -1226,6 +1642,9 @@ export class UserMpService {
    *
    * 包含商品 / SKU 摘要（图片、名称、规格、价格、库存），方便前端直接渲染。
    * 同时把过期下架商品/SKU 自动剔除展示（不删 DB，避免误删），保持视图整洁。
+   *
+   * 字段契约 P0：SKU 响应统一返回 `{ priceRetail, priceWholesale, priceMember }` 三个字段，
+   * 不再返回含糊的 `price` 字段。前端按 myTier + shopPriceRule 自己选展示哪个价。
    */
   async listCart(userId: string) {
     const items = await this.prisma.cartItem.findMany({
@@ -1247,6 +1666,8 @@ export class UserMpService {
             id: true,
             specsLabel: true,
             priceRetail: true,
+            priceWholesale: true,
+            priceMember: true,
             stock: true,
             active: true,
           },
@@ -1271,7 +1692,9 @@ export class UserMpService {
         ? {
             id: it.sku.id,
             specsLabel: it.sku.specsLabel,
-            price: Number(it.sku.priceRetail),
+            priceRetail: Number(it.sku.priceRetail),
+            priceWholesale: Number(it.sku.priceWholesale),
+            priceMember: Number(it.sku.priceMember),
             stock: it.sku.stock,
             active: it.sku.active,
           }

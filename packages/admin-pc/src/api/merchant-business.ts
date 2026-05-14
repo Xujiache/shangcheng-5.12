@@ -171,15 +171,33 @@ export function createMerchantProduct(payload: any) {
 /**
  * 更新商品
  *
- * 后端 `PUT /m/products/:id` 不会同步更新 SKU（merchant.service.updateProduct 显式
- * 剔除 skus 字段），因此 SKU 编辑需要走独立接口（暂未实现，后端工程师跟进）。
- * 目前 PUT 仅用来更新商品主体字段。
+ * 后端 `PUT /m/products/:id` 在 Wave3 中已修复为「同步更新 SKU 矩阵」：
+ *   - 调用方应在 payload.skus 数组中带上每个 SKU 的 id（编辑现有行）或不带 id（新行）
+ *   - 后端会按 id diff 出 update / create / delete 三集，避免编辑后旧 SKU 残留
+ * 调用方禁止把 SKU 拆成独立的 sku 接口请求，统一在 update 时透传完整 skus 数组。
  */
 export function updateMerchantProduct(id: string, payload: any) {
   return request.put<Product>({
     url: `/api/v1/m/products/${encodeURIComponent(id)}`,
     data: payload
   })
+}
+
+/**
+ * 获取商品详情（编辑商品页回填用）
+ *
+ * 后端 `GET /m/products/:id` 直接返回 Product 实体 + skus 数组，
+ * 字段含 categoryId / images / name / description / status / skus[]+specs/specsLabel/价格/库存/active
+ * 以及按尺寸定价的 pricingMode / pricePerSqm / minLength / minWidth / maxLength / maxWidth / baseFee / sizeUnit
+ *
+ * 失败时返回 null，由调用方决定空态展示策略（避免静默把页面留在空表单导致提交"新建")。
+ */
+export async function fetchMerchantProductDetail(id: string): Promise<any | null> {
+  try {
+    return await request.get<any>({ url: `/api/v1/m/products/${encodeURIComponent(id)}` })
+  } catch {
+    return null
+  }
 }
 
 /* ========== 分类 ========== */
@@ -305,13 +323,40 @@ export async function fetchMerchantOrders(params: OrderQuery = {}) {
   return unwrapList<Order>(resp)
 }
 
-export async function shipOrders(ids: string[]) {
-  const items = ids.map((id) => ({ id, company: '默认快递', trackingNumber: 'TR' + Date.now() }))
+/**
+ * 单个订单的发货项（与后端 `m/orders/batch-ship` DTO 一致）
+ *
+ * 之前实现固定 `company: '默认快递' + trackingNumber: 'TR' + Date.now()`，
+ * 等同于在数据库里写入"完全无法对接物流系统"的假单号。
+ * 现要求调用方必须真实采集 company / trackingNumber 后再调用。
+ */
+export interface ShipItem {
+  id: string
+  company: string
+  trackingNumber: string
+}
+
+/**
+ * 批量发货
+ *
+ * @param items 每单的发货信息（订单 ID + 快递公司 + 真实运单号）
+ * 调用方必须先在 UI 上让用户为每单填写公司 + 单号，禁止内部伪造。
+ */
+export async function shipOrders(items: ShipItem[]) {
+  if (!items || items.length === 0) {
+    throw new Error('请至少选择一单需要发货的订单')
+  }
+  const invalid = items.find(
+    (it) => !it.id || !it.company?.trim() || !it.trackingNumber?.trim()
+  )
+  if (invalid) {
+    throw new Error('请填写完整的快递公司与运单号后再发货')
+  }
   const r = await request.post<{ ok: boolean; count: number }>({
     url: '/api/v1/m/orders/batch-ship',
     data: { items }
   })
-  return { ok: r.ok, shipped: r.count ?? ids.length }
+  return { ok: r.ok, shipped: r.count ?? items.length }
 }
 
 /* ========== 售后 ========== */
@@ -368,33 +413,41 @@ export function setCustomerBlacklist(id: string, on: boolean) {
 }
 
 export async function fetchCustomers(tier: CustomerTier['key'] = 'all') {
-  // 后端 customers 字段为 {id, avatar, nickname, phone, kind, priceTier, priceAuthorized}
+  // 后端 customers 字段为 {id, avatar, nickname, phone, kind, priceTier, priceAuthorized, blocked}
   // 缺少 User 必填的 role/status/createdAt 字段，因此映射时补齐默认值
-  // 并保留 priceTier / kind / priceAuthorized 用于 VIP 判定与后续 UI 展示
+  // 并保留 priceTier / kind / priceAuthorized / blocked 用于 VIP 与黑名单判定。
+  //
+  // 旧实现固定 `status: 'active'`，导致 tier='blacklist' 过滤永远空：
+  // 后端有 blocked 标记但前端从未读取。修复方式：根据 blocked 字段把 status
+  // 映射成 active / disabled，保持上层 (User.status === 'disabled') 黑名单判定有效。
   try {
     const resp = await request.get<PageResp<any>>({
       url: '/api/v1/m/customers',
       params: { pageSize: 100 }
     })
     const raw = unwrapList<any>(resp)
-    let list: (User & { priceTier?: string; kind?: string; priceAuthorized?: boolean })[] = raw.map(
-      (u: any) => ({
-        id: u.id,
-        nickname: u.nickname ?? '',
-        avatar: u.avatar ?? '',
-        phone: u.phone,
-        role: u.kind === 'promoter' ? 'promoter' : 'customer',
-        status: 'active',
-        createdAt: u.createdAt ?? new Date().toISOString(),
-        updatedAt: u.updatedAt ?? new Date().toISOString(),
-        priceTier: u.priceTier,
-        kind: u.kind,
-        priceAuthorized: u.priceAuthorized
-      })
-    )
+    let list: (User & {
+      priceTier?: string
+      kind?: string
+      priceAuthorized?: boolean
+      blocked?: boolean
+    })[] = raw.map((u: any) => ({
+      id: u.id,
+      nickname: u.nickname ?? '',
+      avatar: u.avatar ?? '',
+      phone: u.phone,
+      role: u.kind === 'promoter' ? 'promoter' : 'customer',
+      status: u.blocked ? 'disabled' : 'active',
+      createdAt: u.createdAt ?? new Date().toISOString(),
+      updatedAt: u.updatedAt ?? new Date().toISOString(),
+      priceTier: u.priceTier,
+      kind: u.kind,
+      priceAuthorized: u.priceAuthorized,
+      blocked: !!u.blocked
+    }))
     if (tier === 'vip') list = list.filter(isVip)
-    else if (tier === 'normal') list = list.filter((u) => !isVip(u))
-    else if (tier === 'blacklist') list = list.filter((u) => u.status === 'disabled')
+    else if (tier === 'normal') list = list.filter((u) => !isVip(u) && !u.blocked)
+    else if (tier === 'blacklist') list = list.filter((u) => u.blocked === true)
     return list as User[]
   } catch {
     return []

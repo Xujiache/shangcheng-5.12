@@ -55,7 +55,12 @@ const addonItems = computed(() =>
     })),
 )
 
-const trialDays = ref(30)
+/**
+ * 全局新商户试用期 —— 来自后端 SystemConfig key=member:trialDays。
+ * null 表示后端尚未配置(memberService.trialDays 失败或返 falsy days),
+ * UI 显示"暂无配置",不再硬编码 30 天默认值误导运营。
+ */
+const trialDays = ref<number | null>(null)
 
 const basicPlans = computed(() => plans.value.filter((p) => p.type === 'basic'))
 const adPlans = computed(() => plans.value.filter((p) => p.type === 'ad'))
@@ -68,8 +73,12 @@ const planCount = computed(() => ({
 async function load() {
   loading.value = true
   try {
-    const [planList, td] = await Promise.all([memberService.plans(), memberService.trialDays()])
+    const [planList, td] = await Promise.all([
+      memberService.plans(),
+      memberService.trialDays().catch(() => null),
+    ])
     plans.value = planList
+    // trialDays() 可能返回 null(后端未配置或加载失败),保持 null 以触发 UI 空态提示
     trialDays.value = td
     if (tab.value === 'status') {
       statusOverview.value = await memberService.statusOverview()
@@ -514,7 +523,15 @@ onMounted(load)
             <text class="trial-label">新商户试用期</text>
             <text class="trial-desc">新注册商户自动赠送基础套餐</text>
           </view>
-          <text class="trial-value">{{ trialDays > 0 ? `${trialDays} 天` : '已关闭' }}</text>
+          <text class="trial-value">
+            {{
+              trialDays === null
+                ? '暂无配置'
+                : trialDays > 0
+                  ? `${trialDays} 天`
+                  : '已关闭'
+            }}
+          </text>
           <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
         </view>
 

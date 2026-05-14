@@ -1,8 +1,12 @@
 /**
- * 客户管理 / 佣金 / 提现 服务
+ * 客户管理 / 佣金 服务
+ *
+ * 提现处理已下沉到平台端(/p/withdraws);商家端的 /m/withdraws/:id/review
+ * 与 /m/withdraws/:id/reject 已在后端标记 @deprecated。本端不再保留提现审核
+ * 入口及对应 withdrawService —— 商家不应自审提现。
  */
 import { http } from '../utils/request'
-import type { Withdraw, Pagination } from '@jiujiu/shared/types'
+import type { Pagination } from '@jiujiu/shared/types'
 
 export interface MerchantCustomer {
   id: string
@@ -58,17 +62,5 @@ export const commissionService = {
   },
   saveRules(data: Partial<CommissionRuleBundle>) {
     return http.post<{ ok: boolean }>('/api/v1/m/commission/rules', data as Record<string, unknown>)
-  },
-}
-
-export const withdrawService = {
-  list(params: { status?: string; page?: number; pageSize?: number } = {}) {
-    return http.get<Pagination<Withdraw>>('/api/v1/m/withdraws', params)
-  },
-  review(id: string, data: { actualAmount: number; remark?: string; remarkTags?: string[] }) {
-    return http.post<{ ok: boolean }>(`/api/v1/m/withdraws/${id}/review`, data)
-  },
-  reject(id: string, reason: string) {
-    return http.post<{ ok: boolean }>(`/api/v1/m/withdraws/${id}/reject`, { reason })
   },
 }

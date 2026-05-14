@@ -199,6 +199,20 @@ export const platformRoutes: AppRouteRecord = {
             keepAlive: true,
             ...ROLE_PLATFORM
           }
+        },
+        {
+          // 平台层提现审核：商家提交申请 → 平台通过 → 标记打款
+          // 后端 /p/withdraws (list/approve/reject/mark-paid) 已实现，
+          // 这里挂在「会员与支付」分组下，与缴费订单同维度。
+          path: '/platform/withdraws',
+          name: 'PlatformWithdraws',
+          component: '/platform/withdraws',
+          meta: {
+            title: '提现审核',
+            icon: 'ri:wallet-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
         }
       ]
     },

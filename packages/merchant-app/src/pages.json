@@ -14,7 +14,6 @@
     { "path": "pages/order/aftersale", "style": { "navigationBarTitleText": "售后处理" } },
     { "path": "pages/customer/index", "style": { "navigationBarTitleText": "客户管理" } },
     { "path": "pages/commission/setting", "style": { "navigationBarTitleText": "佣金设置" } },
-    { "path": "pages/withdraw/index", "style": { "navigationBarTitleText": "提现处理" } },
     { "path": "pages/store/index", "style": { "navigationBarTitleText": "门店管理" } },
     { "path": "pages/store/auth", "style": { "navigationBarTitleText": "门店授权" } },
     { "path": "pages/staff/index", "style": { "navigationBarTitleText": "员工管理" } },

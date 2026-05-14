@@ -69,6 +69,33 @@ export class UserMpController {
   @Post('orders/:id/urge') urge(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     return this.svc.urgeOrder(u.sub, id)
   }
+  /**
+   * 用户发起售后退款（功能残缺 P0-13 修复）
+   *
+   * body: { reason, amount?, orderItemId?, description?, evidence?, type? }
+   * - reason: 必填,售后原因
+   * - amount: 退款金额,默认订单实付金额
+   * - orderItemId: 多 SKU 订单指定退某一行;省略默认订单首条
+   * - type: 'refund_only' | 'refund_with_return',默认 refund_with_return
+   * 响应: { ok, refundId, refundNo, status:'pending' }
+   *
+   * 服务端事务保证 Refund 创建 + Order.status='after_sale' 原子,
+   * 失败任一回滚,绝不出现"订单变 after_sale 但 Refund 未创建"的脏数据。
+   */
+  @Post('orders/:id/refund') refundOrder(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: {
+      reason: string
+      amount?: number
+      orderItemId?: string
+      description?: string
+      evidence?: string[]
+      type?: 'refund_only' | 'refund_with_return'
+    },
+  ) {
+    return this.svc.refundOrder(u.sub, id, dto)
+  }
 
   // Banner
   @Public() @Get('banners') banners() {
@@ -125,9 +152,19 @@ export class UserMpController {
   @Post('coupons/:id/claim') claimCoupon(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     return this.svc.claimCoupon(u.sub, id)
   }
-  /** 我的优惠券列表（已领，包含未用、已用、已过期） */
-  @Get('my-coupons') myCoupons(@CurrentUser() u: AuthUser) {
-    return this.svc.myCoupons(u.sub)
+  /**
+   * 我的优惠券列表（已领，包含未用 / 已用 / 已过期）
+   *
+   * 必须登录（防匿名扫探 user-mp 端的 user_coupon SystemConfig key）。
+   * Query: status='unused' | 'used' | 'expired'（可选；缺省返回全部）
+   * Response: MyCoupon[]（**数组** 不是分页对象，前端 couponService.my() 直接消费）
+   */
+  @Get('my-coupons') myCoupons(@CurrentUser() u: AuthUser, @Query() q: any) {
+    const status =
+      q?.status === 'unused' || q?.status === 'used' || q?.status === 'expired'
+        ? q.status
+        : undefined
+    return this.svc.myCoupons(u.sub, { status })
   }
 
   // 预约量尺 —— @Public 允许匿名提交（首屏量尺引流场景），
@@ -146,6 +183,27 @@ export class UserMpController {
   }
   @Get('promote/orders') promoteOrders(@CurrentUser() u: AuthUser, @Query() q: any) {
     return this.svc.promoteOrders(u.sub, q)
+  }
+  /** 我的推广分享链接（用户点"分享海报/复制链接"时调用） */
+  @Get('promote/share-link') promoteShareLink(@CurrentUser() u: AuthUser) {
+    return this.svc.promoteShareLink(u.sub)
+  }
+  /**
+   * 推广分佣规则（前端 user-mp 推广页弹窗使用）
+   *
+   * 公开接口，未登录也可读。后端读 SystemConfig key='promote.rules'，
+   * 未配置时返回 null，由前端展示"详情请咨询客服"兜底文案，
+   * 严禁后端写死任何百分比（业务可能随时调整）。
+   */
+  @Public() @Get('promote/rules') promoteRules() {
+    return this.svc.promoteRules()
+  }
+  /** 绑定邀请人（用户首次通过 ?ref=xxx 进入并登录后调用，幂等） */
+  @Post('promote/bind-inviter') bindInviter(
+    @CurrentUser() u: AuthUser,
+    @Body('inviterId') inviterId: string,
+  ) {
+    return this.svc.bindInviter(u.sub, inviterId)
   }
 
   // 门店地图（lat/lng 由小程序 uni.getLocation 真实定位上报；缺失则不计算距离）
@@ -190,6 +248,18 @@ export class UserMpController {
   // 入驻
   @Post('merchant-apply') merchantApply(@CurrentUser() u: AuthUser, @Body() dto: any) {
     return this.svc.merchantApply(u?.sub || null, dto)
+  }
+
+  /**
+   * 公开系统设置（客服联系方式 / 备案号等）
+   *
+   * 平台后台在 SystemConfig.key='system_settings' 写完整配置，
+   * 这里只把"对用户公开"的几个字段读出来返给 user-mp，绝不返回 IP 白名单 / 密码策略等内部字段。
+   * 字段未配置则返回 null，由前端展示"未提供"占位。
+   * 调用方：promote 页面、me 页客服入口、底部备案号展示等。
+   */
+  @Public() @Get('system/settings') systemSettings() {
+    return this.svc.systemSettings()
   }
 
   // ============ 在线客服（用户端） ============

@@ -274,6 +274,9 @@ model Sku {
   product        Product  @relation(fields: [productId], references: [id])
   specs          Json     // { size: '1.4m', color: '橡木' }
   specsLabel     String
+  // SKU 代表图(可选):用户端选规格弹层的视觉规格组按此图展示;
+  // 例如"颜色:红色"对应的红色实物图。无图则降级为纯文字 chip。
+  image          String?
   priceWholesale Decimal  @db.Decimal(10, 2)
   priceRetail    Decimal  @db.Decimal(10, 2)
   priceMember    Decimal  @db.Decimal(10, 2)
@@ -670,6 +673,12 @@ model AdSlot {
   unitPrice   Decimal? @db.Decimal(10, 2)
   enabled     Boolean  @default(true)
   status      String   @default("active")
+  // 广告位预览图 / 投放时段（P0：从 SystemConfig.business.adSlotMeta 兜底升级为主表字段）
+  // 兼容旧 SystemConfig 兜底：service 读取时仍合并 SystemConfig.adSlotMeta，
+  // 运维需要执行 migrateAdSlotMeta() 把历史 meta 同步到主表后再清理 SystemConfig key
+  preview     String?
+  startAt     DateTime?
+  endAt       DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

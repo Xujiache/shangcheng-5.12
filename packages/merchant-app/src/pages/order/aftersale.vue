@@ -5,6 +5,7 @@
  * Tab(待处理/处理中/已完成/已拒绝) + 退款单卡 + 凭证 + 操作
  */
 import { ref, computed, onMounted } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { refundService } from '../../services/order'
 import { formatPrice, formatDateTime } from '@jiujiu/shared/utils'
 import type { Refund, RefundStatus } from '@jiujiu/shared/types'
@@ -21,6 +22,13 @@ const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
 const total = ref(0)
+
+/**
+ * 携带 orderId 进入时:仅展示该订单的售后单
+ *
+ * 由 onLoad 在 onMounted 之前同步赋值,确保第一次 load() 已经能拿到 orderId。
+ */
+const orderId = ref<string>('')
 
 const TABS = computed(() => [
   { key: 'all' as Tab, label: '全部', badge: total.value },
@@ -58,9 +66,12 @@ async function load(reset = false) {
       pageSize: 10,
       status: tab.value === 'all' ? undefined : tab.value,
     })
-    list.value = reset ? data.list : [...list.value, ...data.list]
-    total.value = data.total
-    hasMore.value = !!data.hasMore
+    // 后端 listRefunds 不支持按 orderId 过滤(merchant.service.ts:521 where 仅取 merchantId/status),
+    // 这里本地兜底:从订单详情跳进来时,只展示该订单的售后单。
+    const filtered = orderId.value ? data.list.filter((r) => r.orderId === orderId.value) : data.list
+    list.value = reset ? filtered : [...list.value, ...filtered]
+    total.value = orderId.value ? filtered.length : data.total
+    hasMore.value = !!data.hasMore && !orderId.value
   } finally {
     loading.value = false
   }
@@ -99,6 +110,11 @@ function previewEvidence(imgs: string[], idx: number) {
   uni.previewImage({ urls: imgs, current: imgs[idx] })
 }
 
+onLoad((opts) => {
+  // 来源:订单列表/详情页"申请售后"按钮 → /pages/order/aftersale?orderId=xxx
+  // 拿到 orderId 后,列表只展示该订单的售后单(本地 filter,见 load()),分页禁用
+  orderId.value = (opts as { orderId?: string })?.orderId || ''
+})
 onMounted(() => load(true))
 </script>
 

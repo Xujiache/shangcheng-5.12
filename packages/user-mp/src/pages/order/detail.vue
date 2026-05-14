@@ -5,7 +5,7 @@
  * 调 GET /api/v1/u/orders/:id 拿订单全量字段（含 items / address 快照 / 价格明细 / 物流单号 / 时间节点）。
  * 入口：pages/order/list.vue 任意状态下的"查看详情"或卡片整体点击。
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { orderService } from '../../services'
 import type { Order } from '@jiujiu/shared/types'
@@ -18,6 +18,10 @@ const order = ref<Order | null>(null)
 const loading = ref(true)
 const loadFailed = ref(false)
 const pendingAction = ref<string>('')
+const refunding = ref(false)
+/** 待付款倒计时（秒），来源 order.expiresIn；没有就为 null，UI 不显示 */
+const remainSeconds = ref<number | null>(null)
+let expiresTimer: any = null
 
 const STATUS_META: Record<string, { label: string; tint: string }> = {
   pending_payment: { label: '待付款', tint: '#FF4D2D' },
@@ -26,7 +30,6 @@ const STATUS_META: Record<string, { label: string; tint: string }> = {
   completed: { label: '已完成', tint: '#52C41A' },
   cancelled: { label: '已取消', tint: '#86909C' },
   after_sale: { label: '售后中', tint: '#FAAD14' },
-  refunded: { label: '已退款', tint: '#86909C' },
 }
 
 const totalQty = computed(() => order.value?.items?.reduce((s, l) => s + l.quantity, 0) ?? 0)
@@ -53,6 +56,7 @@ async function load() {
   loadFailed.value = false
   try {
     order.value = await orderService.detail(orderId.value)
+    syncExpiresTimer()
     // 列表页带 action=refund 跳过来 → 加载完成后自动弹售后选择
     if (pendingAction.value === 'refund' && order.value) {
       pendingAction.value = ''
@@ -66,8 +70,55 @@ async function load() {
 }
 
 /**
- * 售后申请：当前后端没有 /u/orders/:id/refund 端点，先收集用户的售后意向 + 引导联系客服。
- * 后端接入后只需把 SUPPORT_FLOW 改为 orderService.applyRefund(orderId, {reason}) 即可。
+ * 同步待付款倒计时。
+ * 后端在 pending_payment 状态会返回 `expiresIn`(秒),无该字段时不显示倒计时。
+ */
+function syncExpiresTimer() {
+  if (expiresTimer) {
+    clearInterval(expiresTimer)
+    expiresTimer = null
+  }
+  const o = order.value
+  if (!o || o.status !== 'pending_payment') {
+    remainSeconds.value = null
+    return
+  }
+  const seed = Number((o as any).expiresIn)
+  if (!Number.isFinite(seed) || seed <= 0) {
+    remainSeconds.value = null
+    return
+  }
+  remainSeconds.value = Math.floor(seed)
+  expiresTimer = setInterval(() => {
+    if (remainSeconds.value == null) return
+    remainSeconds.value = Math.max(0, remainSeconds.value - 1)
+    if (remainSeconds.value <= 0) {
+      clearInterval(expiresTimer)
+      expiresTimer = null
+    }
+  }, 1000)
+}
+
+const expiresHint = computed(() => {
+  if (remainSeconds.value == null || remainSeconds.value <= 0) return ''
+  const m = Math.floor(remainSeconds.value / 60)
+  const s = remainSeconds.value % 60
+  return `剩余 ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} 关闭`
+})
+
+onUnmounted(() => {
+  if (expiresTimer) {
+    clearInterval(expiresTimer)
+    expiresTimer = null
+  }
+})
+
+/**
+ * 售后申请。
+ *
+ * 调后端 `POST /u/orders/:id/refund`：受理成功后订单状态会被推到 after_sale。
+ * 失败给真实错误（不再"假装受理"），让用户感知到需要重试或换通道。
+ * 联系客服由用户主动选择,不再强制弹"客服会话留言"那种打折交互。
  */
 function openRefundSheet() {
   const REASONS = ['退货退款', '换货', '维修', '不想要了']
@@ -75,23 +126,44 @@ function openRefundSheet() {
     itemList: REASONS,
     success: (r) => {
       const reason = REASONS[r.tapIndex]
-      uni.showModal({
-        title: `申请：${reason}`,
-        content: '后台已记录你的诉求，客服将在 24h 内与你联系。如需加急可直接到客服会话留言。',
-        confirmText: '联系客服',
-        cancelText: '我知道了',
-        success: (m) => {
-          if (m.confirm) {
-            const mid = (order.value as any)?.merchantId
-            const url = mid
-              ? `/pages/chat/index?merchantId=${encodeURIComponent(mid)}`
-              : '/pages/chat/index'
-            uni.navigateTo({ url })
-          }
-        },
-      })
+      submitRefund(reason)
     },
   })
+}
+
+async function submitRefund(reason: string) {
+  if (!order.value || refunding.value) return
+  refunding.value = true
+  uni.showLoading({ title: '提交中…', mask: true })
+  try {
+    await orderService.refund(order.value.id, {
+      reason,
+      amount: Number(order.value.payAmount) || undefined,
+    })
+    uni.hideLoading()
+    uni.showToast({ title: '售后申请已提交,等待商家处理', icon: 'success', duration: 1800 })
+    setTimeout(() => load(), 400)
+  } catch (e: any) {
+    uni.hideLoading()
+    const msg = e?.message || '提交失败'
+    uni.showModal({
+      title: '售后申请失败',
+      content: `${msg}\n如长时间无法提交,可联系商家客服处理。`,
+      confirmText: '联系客服',
+      cancelText: '我知道了',
+      success: (m) => {
+        if (m.confirm) {
+          const mid = (order.value as any)?.merchantId
+          const url = mid
+            ? `/pages/chat/index?merchantId=${encodeURIComponent(mid)}`
+            : '/pages/chat/index'
+          uni.navigateTo({ url })
+        }
+      },
+    })
+  } finally {
+    refunding.value = false
+  }
 }
 
 function copyNo() {
@@ -174,8 +246,8 @@ async function urgeShip() {
         :style="{ background: (statusMeta?.tint || '#86909C') + '14', color: statusMeta?.tint }"
       >
         <text class="status-label">{{ statusMeta?.label }}</text>
-        <text v-if="order.expiresIn && order.status === 'pending_payment'" class="status-sub">
-          请尽快付款
+        <text v-if="order.status === 'pending_payment' && expiresHint" class="status-sub">
+          {{ expiresHint }}
         </text>
       </view>
 

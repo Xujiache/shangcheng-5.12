@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common'
+import { Body, Controller, Get, HttpStatus, Post } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { AuthService } from './auth.service'
 import {
   AdminLoginDto,
@@ -10,6 +11,7 @@ import {
 } from './dto/login.dto'
 import { Public } from '../../common/decorators/public.decorator'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
+import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 
 /**
  * 注销请求体：可选 refreshToken。
@@ -26,31 +28,40 @@ class LogoutDto {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // P1-25：登录类接口走 'auth' 桶（10/min/IP），防爆破
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @Post('wechat-login')
   wechatLogin(@Body() dto: WechatLoginDto) {
     return this.authService.wechatLogin(dto)
   }
 
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @Post('phone-login')
   phoneLogin(@Body() dto: PhoneLoginDto) {
     return this.authService.phoneLogin(dto)
   }
 
+  // P1-25：发短信验证码走 'sms' 桶（3/min/IP），防短信轰炸
   @Public()
+  @Throttle({ sms: { limit: 3, ttl: 60_000 } })
   @Post('sms-code')
   sendSmsCode(@Body() dto: SmsCodeDto) {
     return this.authService.sendSmsCode(dto)
   }
 
+  // P1-25：后台登录走 'auth' 桶（10/min/IP），防字典攻击
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @Post('admin-login')
   adminLogin(@Body() dto: AdminLoginDto) {
     return this.authService.adminLogin(dto)
   }
 
+  // P1-25：refresh 走 'auth' 桶（同登录），防 token 频繁刷
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @Post('refresh')
   refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto)
@@ -79,24 +90,31 @@ export class AuthController {
   }
 
   /**
-   * 动态菜单接口
+   * 动态菜单接口（修复 P1-23）
    *
-   * 当前架构说明：
+   * 当前架构说明（重要！）：
    *   - admin-pc 客户端走「前端静态路由 + MenuProcessor 按角色过滤」的方案
    *     （`packages/admin-pc/src/router/modules/*.ts` + 前端 menu 模块）；
-   *   - 后端这里返回 `[]` 作为兜底，让前端调用不报 404；
-   *   - 不是真的"无菜单"，而是「菜单是客户端静态资源 + roles[] 过滤」的结果。
+   *   - 后端没有 RoleMenu 模型，也没有 SystemConfig.menus 存储；
+   *   - 因此当前不存在「后端可下发的动态菜单源」。
    *
-   * 后续若改为后端下发动态菜单（DB 持久化菜单树）：
-   *   1. 新增 Menu 模型 / SystemConfig 'menus' 配置；
-   *   2. 在 service 按 callerRole 过滤可见树；
-   *   3. 返回 [{ path, name, icon, children: [...] }] 结构。
+   * 之前实现返回 `[]` 装作正常，会让前端误以为"配置成功只是没数据"，
+   * 难以发现"后端根本没实现菜单"的真实情况（审查中被列为 P1-23）。
    *
-   * 此前注释里只写了"兜底"，没说清这是有意设计还是 TODO，容易让前端误以为该接口缺实现，
-   * 因此此处补充清楚两端的边界。
+   * 修复策略：
+   *   1. 显式抛 501 Not Implemented + BizCode.BUSINESS_ERROR；
+   *   2. 前端拦截器需识别 501 并 fallback 到静态路由（admin-pc 已有 MenuProcessor）；
+   *   3. 后续若上线后端动态菜单：
+   *      - 新增 Menu 模型 / SystemConfig 'menus' 配置；
+   *      - 在 service 按 callerRole 过滤可见树；
+   *      - 返回 [{ path, name, icon, children: [...] }] 结构。
    */
   @Get('menus')
   menus() {
-    return []
+    throw new BizException(
+      BizCode.BUSINESS_ERROR,
+      '动态菜单接口未实现：当前 admin-pc 走前端静态路由 + 角色过滤方案',
+      HttpStatus.NOT_IMPLEMENTED,
+    )
   }
 }

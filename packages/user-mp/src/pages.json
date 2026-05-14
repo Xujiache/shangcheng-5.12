@@ -58,7 +58,10 @@
     },
     {
       "root": "pages/coupon",
-      "pages": [{ "path": "center", "style": { "navigationBarTitleText": "领券中心" } }]
+      "pages": [
+        { "path": "center", "style": { "navigationBarTitleText": "领券中心" } },
+        { "path": "my", "style": { "navigationBarTitleText": "我的优惠券" } }
+      ]
     },
     {
       "root": "pages/merchant",

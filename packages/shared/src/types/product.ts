@@ -74,6 +74,8 @@ export interface SKU extends BaseEntity {
   specs: Record<string, string>
   /** 规格摘要 */
   specsLabel: string
+  /** SKU 代表图（可选）—— 用户端选规格弹层视觉规格组按此图展示 */
+  image?: string
   priceWholesale: number
   priceRetail: number
   priceMember: number

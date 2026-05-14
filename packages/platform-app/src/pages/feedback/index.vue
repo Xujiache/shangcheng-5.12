@@ -27,8 +27,10 @@ import Icon from '../../components/icon/icon.vue'
 const DRAFT_KEY = 'jiujiu_platform_feedback_draft'
 const LOCAL_FALLBACK_KEY = 'jiujiu_platform_feedback_local'
 
+// 后端 platform.service.submitFeedback validTypes = ['suggestion','bug','experience','other'],
+// 任何其它值会被悄悄改成 'other' 落库。这里"功能建议"对齐为 suggestion。
 const TYPE_OPTIONS: { key: FeedbackDto['type']; label: string; icon: string; tint: string }[] = [
-  { key: 'feature', label: '功能建议', icon: 'sparkles', tint: '#1296DB' },
+  { key: 'suggestion', label: '功能建议', icon: 'sparkles', tint: '#1296DB' },
   { key: 'bug', label: 'Bug 反馈', icon: 'info', tint: '#FF3B30' },
   { key: 'experience', label: '体验问题', icon: 'heart', tint: '#FF7A45' },
   { key: 'other', label: '其他', icon: 'message', tint: '#86909C' },
@@ -36,7 +38,7 @@ const TYPE_OPTIONS: { key: FeedbackDto['type']; label: string; icon: string; tin
 
 const adminStore = useAdminStore()
 
-const type = ref<FeedbackDto['type']>('feature')
+const type = ref<FeedbackDto['type']>('suggestion')
 const content = ref('')
 const contact = ref('')
 const images = ref<string[]>([])

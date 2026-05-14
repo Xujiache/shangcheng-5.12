@@ -101,11 +101,12 @@ const TODO_LIST = computed(() => {
     { key: 'ad', label: '广告创意待审', count: t.pendingAds, to: '/pages/ad/index' },
     {
       key: 'complaint',
+      // dashboard.todos.complaints 后端取自 prisma.refund.count({status:'pending'}),
+      // 即"待审退款单数",和订单 after_sale 子分类不是同一指标,
+      // 必须跳到独立的售后审核列表页才一致。
       label: '售后投诉',
       count: t.complaints,
-      // 跳订单 tab,通过 storage 'order_init_tab' 把 after_sale 子分类
-      // 传给 order/index.vue —— 因为 switchTab 不支持 query
-      to: '/pages/tabbar/order/index?status=after_sale',
+      to: '/pages/refunds/index',
     },
     {
       key: 'withdraw',

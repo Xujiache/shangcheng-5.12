@@ -127,9 +127,26 @@ export function getCurrentSubscription(_merchantId?: string): Promise<Subscripti
     .catch(() => null)
 }
 
-export function getAllSubscriptions(): Promise<Subscription[]> {
-  // TODO: no backend equivalent — 后端只暴露按 planId 查询；这里返回空数组占位
-  return Promise.resolve([])
+/**
+ * 跨套餐的全量订阅查询占位
+ *
+ * 后端目前**没有** `GET /p/subscriptions` 接口（只暴露按 planId 查询）。
+ * 历史实现 `Promise.resolve([])` 会把"接口缺失"伪装成"真的 0 条"，
+ * 让运营误以为没人订阅。
+ *
+ * 现在改为抛 NotImplemented 错误，调用方必须显式 catch 并显示"功能筹备中"。
+ * 等 Agent E 实现 `GET /p/subscriptions` 后，把这里改成 `request.get(...)`。
+ */
+export class SubscriptionsNotImplementedError extends Error {
+  readonly code = 'SUBSCRIPTIONS_NOT_IMPLEMENTED'
+  constructor() {
+    super('后端尚未实现 /p/subscriptions 全量查询接口')
+    this.name = 'SubscriptionsNotImplementedError'
+  }
+}
+
+export function getAllSubscriptions(): Promise<never> {
+  return Promise.reject(new SubscriptionsNotImplementedError())
 }
 
 export function getSubscriptionsByPlan(planId: string): Promise<Subscription[]> {

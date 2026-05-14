@@ -16,14 +16,14 @@
  *   WX_PAY_KEY_PATH    商户私钥文件（apiclient_key.pem）
  *   WX_PAY_CERT_PATH   商户证书文件（apiclient_cert.pem）
  *   WX_PAY_NOTIFY_URL  支付结果回调地址（https://ewsn.top/...）
+ *   WX_PAY_PUB_KEY_ID  微信支付公钥 ID（新模式 Wechatpay-Serial 比对）
+ *   WX_PAY_PUB_KEY_PATH 微信支付公钥 .pem 路径（验签用）
  *
- * 当前状态：
- *   - 商户号申请中，env 留空：
- *       · 非生产环境（NODE_ENV !== 'production'）→ prepay() 返回占位 prepay_id 让流程跑通
- *       · 生产环境（NODE_ENV === 'production'）→ prepay() 直接抛错，绝不返回占位，
- *         避免"未付款也能拿货"的资金风险
- *   - 用户回填 4 个 env + 上传 2 个 pem 文件 → 自动切到真实下单
- *   - 同样地，verifyNotify 在生产环境缺公钥时一律拒绝，绝不放行未验签的回调
+ * 资金安全策略（不分环境）：
+ *   - createMiniPay：env 未配齐 → 直接抛错，绝不返回占位 prepay，
+ *     避免"未付款也能拿货"的资金风险（开发期请配真实沙箱凭证）
+ *   - verifyNotify：未配齐 / 公钥缺失 → 直接拒绝回调，绝不放行未验签的回调
+ *   - createRefund：env 未配齐 → 直接抛错，绝不返回占位退款
  */
 import { Injectable, Logger } from '@nestjs/common'
 import { createDecipheriv, createSign, createVerify, randomBytes } from 'crypto'
@@ -65,12 +65,8 @@ export class WxPayService {
   /** JSAPI 下单 → 返回小程序调起支付所需的全部字段 */
   async createMiniPay(args: PrepayParams): Promise<MiniPayInvoke> {
     if (!this.isReady()) {
-      if (process.env.NODE_ENV === 'production') {
-        // 生产环境严禁返回 mock 支付，防止"无需付款即得商品"的资金风险
-        throw new Error('微信支付未配置（缺商户号/API V3 密钥/证书），暂不可下单')
-      }
-      // 仅非生产返回开发期兜底 prepay，让前端流程可演示
-      return this.mockMiniPay(args)
+      // 资金 P0：不分环境一律抛错，绝不返回任何 mock 支付参数
+      throw new Error('微信支付未配置（缺商户号/API V3 密钥/证书），暂不可下单')
     }
 
     const appid = process.env.WX_MINIAPP_APPID!
@@ -126,22 +122,6 @@ export class WxPayService {
     }
   }
 
-  /**
-   * 仅供非生产环境使用的本地 prepay 占位。
-   * createMiniPay() 已在生产环境前置拒绝调用本方法，永远不会写到生产。
-   */
-  private mockMiniPay(args: PrepayParams): MiniPayInvoke {
-    this.logger.warn(`[wxpay] [dev-only] 商户号未配齐，使用占位 prepay：${args.outTradeNo}`)
-    return {
-      appId: process.env.WX_MINIAPP_APPID || 'wx-dev-only',
-      timeStamp: String(Math.floor(Date.now() / 1000)),
-      nonceStr: randomBytes(16).toString('hex'),
-      package: `prepay_id=dev_${args.outTradeNo}`,
-      signType: 'RSA',
-      paySign: 'DEV_ONLY_SIGNATURE',
-    }
-  }
-
   /** 构造 v3 Authorization 头 */
   private async buildAuthHeader(
     method: string,
@@ -166,7 +146,7 @@ export class WxPayService {
   }
 
   /**
-   * 回调签名校验（新版"微信支付公钥"模式）
+   * 回调签名校验（新版"微信支付公钥"模式）—— 严格安全策略
    *
    * 微信回调请求头里会带：
    *   Wechatpay-Timestamp
@@ -178,16 +158,17 @@ export class WxPayService {
    *   1. 用 Wechatpay-Serial 在本地查找对应公钥（新模式下就用 WX_PAY_PUB_KEY_ID 对应的 .pem）
    *   2. 用公钥 verify(message) → 是否匹配签名
    *
-   * 没配公钥（PUB_KEY_PATH 文件不存在）→ 仅非生产视为预览模式放行，生产环境一律拒绝。
+   * 关键修复（资金安全 P0）：
+   *   - 之前的非生产环境会"未配置就放行"，这给了开发期 Bypass 真实签名的可能，
+   *     即任何人构造一个回调就能把订单标已付。
+   *   - 现在不论环境，未配置微信支付就一律拒绝处理回调；
+   *     开发期商家想本地联调真实支付，请配真实沙箱凭证。
+   *   - 公钥缺失同样直接拒绝，绝不放行未验签的回调。
    */
   async verifyNotify(headers: Record<string, string>, bodyRaw: string): Promise<boolean> {
-    const isProd = process.env.NODE_ENV === 'production'
     if (!this.isReady()) {
-      if (isProd) {
-        this.logger.error('[wxpay notify] 生产环境未配置微信支付，拒绝处理回调')
-        return false
-      }
-      return true
+      this.logger.error('[wxpay notify] 微信支付未配置（缺商户号/API V3 密钥/证书），拒绝处理回调')
+      return false
     }
 
     const timestamp = headers['wechatpay-timestamp'] || headers['Wechatpay-Timestamp']
@@ -225,12 +206,8 @@ export class WxPayService {
       return false
     }
     if (!pubKeyPath || !existsSync(pubKeyPath)) {
-      if (isProd) {
-        this.logger.error(`[wxpay notify] 生产环境缺少微信支付公钥文件：${pubKeyPath}，拒绝回调`)
-        return false
-      }
-      this.logger.warn(`[wxpay notify] 微信支付公钥文件不存在：${pubKeyPath}。非生产模式跳过验签`)
-      return true
+      this.logger.error(`[wxpay notify] 缺少微信支付公钥文件：${pubKeyPath}，拒绝回调`)
+      return false
     }
 
     const pubKey = readFileSync(pubKeyPath, 'utf-8')
@@ -247,11 +224,10 @@ export class WxPayService {
    *
    * 接口：POST https://api.mch.weixin.qq.com/v3/refund/domestic/refunds
    *
-   * 生产策略：
-   *   - 商户配置齐全（isReady()=true）→ 调真实接口；
-   *     退款金额单位：分（refundAmount / totalAmount 进来时是元，内部 * 100 → 分）
-   *   - 非生产 / 配置缺失 → 返回 mockRefund，立即成功，便于联调
-   *   - 生产但配置缺失 → 抛错，绝不返回 mock（与下单同样原则，防"凭空退钱"）
+   * 资金安全策略（不分环境）：
+   *   - env 未配齐 → 直接抛错，绝不返回任何 mock 退款，
+   *     防"凭空退钱"（开发期请配真实沙箱凭证）
+   *   - 退款金额单位：元（内部 * 100 → 分）
    *
    * 返回：
    *   - { refundId, status: 'PROCESSING' | 'SUCCESS' }
@@ -282,10 +258,8 @@ export class WxPayService {
     }
 
     if (!this.isReady()) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('微信支付未配置（缺商户号/API V3 密钥/证书），退款功能暂不可用')
-      }
-      return this.mockRefund(params)
+      // 资金 P0：不分环境一律抛错，绝不返回任何 mock 退款
+      throw new Error('微信支付未配置（缺商户号/API V3 密钥/证书），退款功能暂不可用')
     }
 
     const notifyUrl = process.env.WX_PAY_REFUND_NOTIFY_URL || process.env.WX_PAY_NOTIFY_URL || ''
@@ -328,20 +302,6 @@ export class WxPayService {
       return { refundId: resp.refund_id, status }
     }
     throw new Error(`微信退款返回异常状态：${status || 'unknown'}`)
-  }
-
-  /**
-   * 仅供非生产环境使用的本地退款占位。
-   * createRefund() 已在生产环境前置拒绝调用本方法，永远不会写到生产。
-   */
-  private mockRefund(params: { outTradeNo: string; outRefundNo: string }): {
-    refundId: string
-    status: 'SUCCESS'
-  } {
-    this.logger.warn(
-      `[wxpay] [dev-only] 商户号未配齐，使用占位退款：outTradeNo=${params.outTradeNo} outRefundNo=${params.outRefundNo}`,
-    )
-    return { refundId: `dev_refund_${params.outRefundNo}`, status: 'SUCCESS' }
   }
 
   /** 解密微信回调的 resource.ciphertext（AES-256-GCM） */

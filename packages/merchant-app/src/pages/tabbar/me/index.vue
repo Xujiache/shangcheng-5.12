@@ -13,6 +13,9 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '../../../store'
 import { profileService, type MerchantProfile } from '../../../services/profile'
+import { memberService } from '../../../services/member'
+import type { MemberPlan } from '@jiujiu/shared/types'
+import { formatPrice } from '@jiujiu/shared/utils'
 import StatusTag from '../../../components/status-tag/status-tag.vue'
 import Icon from '../../../components/icon/icon.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
@@ -28,6 +31,35 @@ const userStore = useUserStore()
 const profile = ref<MerchantProfile | null>(null)
 const loading = ref(false)
 
+/**
+ * 会员套餐(月费/年费/试用天数)从后端动态读取,P2-17 删除"月费 ¥99 / 年费 ¥899 · 试用 30 天"硬编码。
+ * - basicPlans 只取 type='basic' 的套餐,后端可能返回 0~N 条,所以渲染要做空集兜底。
+ * - trialDays 取所有 basic 套餐中第一个有值的;若都没有就不展示试用文案。
+ */
+const plans = ref<MemberPlan[]>([])
+
+const basicPlans = computed(() => plans.value.filter((p) => p.type === 'basic'))
+const monthlyPlan = computed(() => basicPlans.value.find((p) => p.period === 'monthly'))
+const yearlyPlan = computed(() => basicPlans.value.find((p) => p.period === 'yearly'))
+const trialDays = computed(() => {
+  for (const p of basicPlans.value) {
+    if (typeof p.trialDays === 'number' && p.trialDays > 0) return p.trialDays
+  }
+  return 0
+})
+
+/** 会员卡副标题:按"月费 ¥X / 年费 ¥Y · 试用 N 天"拼;后端未返回则展示去开通指引 */
+const memberSub = computed(() => {
+  const parts: string[] = []
+  if (monthlyPlan.value) parts.push(`月费 ${formatPrice(monthlyPlan.value.price)}`)
+  if (yearlyPlan.value) parts.push(`年费 ${formatPrice(yearlyPlan.value.price)}`)
+  let line = parts.join(' / ')
+  if (trialDays.value > 0) {
+    line = line ? `${line} · 试用 ${trialDays.value} 天` : `试用 ${trialDays.value} 天`
+  }
+  return line || '查看可选套餐'
+})
+
 async function refresh() {
   if (loading.value) return
   loading.value = true
@@ -40,7 +72,18 @@ async function refresh() {
   }
 }
 
-onMounted(refresh)
+async function loadPlans() {
+  try {
+    plans.value = await memberService.getPlans()
+  } catch {
+    // 接口失败时保持空数组,memberSub 会回退到"查看可选套餐"
+  }
+}
+
+onMounted(() => {
+  refresh()
+  loadPlans()
+})
 onShow(refresh)
 
 const shopName = computed(() => profile.value?.shopName || '未命名店铺')
@@ -67,13 +110,19 @@ interface SettingItem {
   sub?: () => string
 }
 
-/** 分组设置：账户 / 应用 / 关于（每个图标自带配色） */
+/** 分组设置：账户 / 经营 / 应用 / 关于（每个图标自带配色） */
 const SETTING_GROUPS: { title: string; items: SettingItem[] }[] = [
   {
     title: '账户',
     items: [
       { icon: 'biz-me', label: '个人信息', action: 'profile', tint: 'orange' },
       { icon: 'share', label: '分享 APP', action: 'share', tint: 'green' },
+    ],
+  },
+  {
+    title: '经营',
+    items: [
+      { icon: 'wallet', label: '佣金设置', action: 'commission', tint: 'orange' },
     ],
   },
   {
@@ -104,6 +153,7 @@ function handle(action: string) {
     share: () => uni.navigateTo({ url: '/pages/me/share' }),
     profile: () => uni.navigateTo({ url: '/pages/me/profile' }),
     settings: () => uni.navigateTo({ url: '/pages/me/settings' }),
+    commission: () => uni.navigateTo({ url: '/pages/commission/setting' }),
     update: () => checkAppUpdate('merchant', { silent: false }),
     contact: () =>
       uni.showModal({
@@ -169,7 +219,7 @@ function logout() {
             <Icon name="crown" :size="32" color="#5C2A00" />
             <text class="m-title">会员开通</text>
           </view>
-          <text class="m-sub">月费 ¥99 / 年费 ¥899 · 试用 30 天</text>
+          <text class="m-sub">{{ memberSub }}</text>
         </view>
         <view class="m-btn">
           <text>续费 / 升级</text>

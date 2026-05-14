@@ -102,7 +102,10 @@ function addBanner() {
       if (paths.length === 0) return
       uploading.value = true
       try {
-        const urls = await uploadImages(paths, 'decorate')
+        // 后端 files 白名单(files.controller.ts:33)只允许 product/avatar/idcard/apk/chat/misc;
+        // 装修 Banner 没有独立类别,先用 product 兜底落库,落库后 URL 与商品图同源。
+        // 后续如需独立目录,需后端在白名单加 'decorate' 后再切回。
+        const urls = await uploadImages(paths, 'product')
         if (urls.length > 0) {
           config.banners = [...config.banners, ...urls.map((u) => ({ image: u }))].slice(0, 5)
         }

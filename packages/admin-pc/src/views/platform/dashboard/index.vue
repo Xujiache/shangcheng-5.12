@@ -165,7 +165,7 @@
         desc: '商家 / 推广员的提现申请',
         count: t?.pendingWithdraws ?? 0,
         tint: '#A855F7',
-        to: '/platform/member/orders'
+        to: '/platform/withdraws'
       }
     ]
   })

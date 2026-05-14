@@ -38,9 +38,17 @@ const TABS = [
 ]
 
 const totalSales = computed(() => stats.value?.salesTrend.reduce((s, x) => s + x.value, 0) ?? 0)
-const totalOrders = computed(() => stats.value?.topProducts.reduce((s, p) => s + p.sales, 0) ?? 0)
-const avgOrder = computed(() =>
-  totalOrders.value === 0 ? 0 : Math.round(totalSales.value / totalOrders.value),
+/**
+ * 注意:这里聚合的是 TOP 商品的销量之和,**不是**真实的订单笔数。
+ *
+ * 后端 stats 接口(/api/v1/m/dashboard/stats)目前没有按周期返回订单总数,
+ * 用销量当订单数会让"客单价"=销售额/订单数 失真(销量包含同一订单多件),
+ * 故 P1-14 修复:
+ *   - 这里改名为 topProductsSales,语义诚实
+ *   - 概览卡片删掉"订单数 / 客单价"两栏,等后端补真订单聚合再加
+ */
+const topProductsSales = computed(
+  () => stats.value?.topProducts.reduce((s, p) => s + p.sales, 0) ?? 0,
 )
 
 /**
@@ -177,15 +185,9 @@ const periodText = computed(() =>
           </view>
           <view class="ov-divider" />
           <view class="ov-item">
-            <text class="ov-label">订单数</text>
-            <text class="ov-value">{{ totalOrders }}</text>
+            <text class="ov-label">TOP 商品销量</text>
+            <text class="ov-value">{{ topProductsSales }}</text>
             <view class="ov-bar success-bar" />
-          </view>
-          <view class="ov-divider" />
-          <view class="ov-item">
-            <text class="ov-label">客单价</text>
-            <text class="ov-value">{{ formatPrice(avgOrder) }}</text>
-            <view class="ov-bar info-bar" />
           </view>
         </view>
       </view>

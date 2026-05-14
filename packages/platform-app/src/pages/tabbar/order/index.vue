@@ -3,7 +3,7 @@
  * PA-Tab · 平台订单总览
  * 平台视角的全平台订单监控，原型未画 → 按平台风格补完
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { http } from '../../../utils/request'
 import type { Order } from '@jiujiu/shared/types'
@@ -12,12 +12,18 @@ import Icon from '../../../components/icon/icon.vue'
 import EmptyState from '../../../components/empty-state/empty-state.vue'
 import TabBar from '../../../components/tab-bar/tab-bar.vue'
 
+type OrderTab =
+  | 'all'
+  | 'pending_payment'
+  | 'pending_shipment'
+  | 'shipped'
+  | 'after_sale'
+  | 'completed'
+
 const orders = ref<Order[]>([])
 const loading = ref(false)
 const keyword = ref('')
-const tab = ref<
-  'all' | 'pending_payment' | 'pending_shipment' | 'shipped' | 'after_sale' | 'completed'
->('all')
+const tab = ref<OrderTab>('all')
 
 const statusBarHeight = computed(() => {
   try {
@@ -45,9 +51,13 @@ const STATUS_META: Record<string, { label: string; tint: string }> = {
   after_sale: { label: '售后中', tint: '#FAAD14' },
 }
 
+/**
+ * 关键字本地过滤 —— status 已交给后端 (load 时按 tab 拉对应分类),
+ * 这里只做订单号 / 收货人模糊搜索的客户端兜底,避免每输入一个字都打一次接口。
+ * 如果后期后端 /p/orders 支持 keyword 参数,可移除此处客户端过滤。
+ */
 const filtered = computed(() => {
   let res = orders.value
-  if (tab.value !== 'all') res = res.filter((o) => o.status === tab.value)
   if (keyword.value) {
     const kw = keyword.value.toLowerCase()
     res = res.filter(
@@ -87,16 +97,27 @@ const stats = computed(() => {
   return { total, gmv, today, complaint }
 })
 
+/**
+ * 切换 tab 时把分类传给后端,避免本地 50 条窗口截断只能看到一种状态。
+ * - 'all' → 不传 status,后端返回全部
+ * - 其它 → 透传 OrderStatus 字面量
+ */
 async function load() {
   loading.value = true
   try {
+    const params: Record<string, unknown> = { pageSize: 50 }
+    if (tab.value !== 'all') params.status = tab.value
     // 平台端订单总览：必须走 /p/orders，/m/orders 是商家私有数据会触发 403
-    const res = (await http.get('/api/v1/p/orders', { pageSize: 50 })) as { list: Order[] }
+    const res = (await http.get('/api/v1/p/orders', params)) as { list: Order[] }
     orders.value = res.list ?? []
   } finally {
     loading.value = false
   }
 }
+
+watch(tab, () => {
+  load()
+})
 
 function goDetail(o: Order) {
   uni.showModal({
@@ -115,12 +136,12 @@ function search() {
  * 'order_init_tab' 传入的目标 tab,switchTab 不支持 query 才有这层 workaround,
  * 读完即清除,避免下次进 tab 还停在旧分类。
  */
-const VALID_TABS = new Set(TABS.map((t) => t.key))
+const VALID_TABS = new Set<OrderTab>(TABS.map((t) => t.key as OrderTab))
 function applyInitTabFromStorage() {
   try {
     const target = uni.getStorageSync('order_init_tab') as string
-    if (target && VALID_TABS.has(target as typeof tab.value)) {
-      tab.value = target as typeof tab.value
+    if (target && VALID_TABS.has(target as OrderTab)) {
+      tab.value = target as OrderTab
     }
     if (target) uni.removeStorageSync('order_init_tab')
   } catch {

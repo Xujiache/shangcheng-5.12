@@ -6,6 +6,7 @@ import { decimalToNumber } from '../../common/utils/decimal.util'
 import { MerchantService } from '../merchant/merchant.service'
 import type { OrderShareConfig } from '../merchant/order-share.service'
 import { UpdateAdminDto } from './dto/update-admin.dto'
+import { WxPayService } from '../payment/wxpay.service'
 import * as argon2 from 'argon2'
 
 /** updateAdmin 服务层二次过滤白名单（DTO 是入口防御，service 是出口防御，双保险） */
@@ -28,6 +29,8 @@ export class PlatformService {
     // forwardRef 防 MerchantService ↔ PlatformService 双向引用导致 Nest 启动失败
     @Inject(forwardRef(() => MerchantService))
     private readonly merchantService: MerchantService,
+    // PaymentModule 是 @Global，可直接注入；平台代审退款时调微信支付 v3
+    private readonly wxpay: WxPayService,
   ) {}
 
   // ========== Dashboard ==========
@@ -433,15 +436,89 @@ export class PlatformService {
   }
 
   // ========== 广告 ==========
+  /**
+   * AdSlot 写入字段白名单。
+   * - preview / startAt / endAt 走主表（schema 已加列），不再走 SystemConfig 兜底
+   * - 其它非 schema 字段一律丢弃，避免 prisma ValidationError
+   *
+   * TODO(运维): 历史数据如有 SystemConfig.system_settings.business.adSlotMeta，
+   * 需要执行 migrateAdSlotMeta() 把兜底数据同步回主表（详见 README 数据迁移）。
+   */
+  private readonly AD_SLOT_FIELDS = [
+    'code',
+    'name',
+    'scene',
+    'target',
+    'position',
+    'size',
+    'sort',
+    'unitPrice',
+    'enabled',
+    'status',
+    'preview',
+    'startAt',
+    'endAt',
+  ] as const
+
+  private sanitizeAdSlotDto(dto: any) {
+    if (!dto || typeof dto !== 'object') return {}
+    const out: Record<string, any> = {}
+    for (const k of this.AD_SLOT_FIELDS) {
+      if (dto[k] === undefined || dto[k] === null) continue
+      if (k === 'startAt' || k === 'endAt') {
+        const d = new Date(dto[k])
+        if (Number.isFinite(d.getTime())) out[k] = d
+      } else {
+        out[k] = dto[k]
+      }
+    }
+    return out
+  }
+
   async adSlots() {
-    return decimalToNumber(await this.prisma.adSlot.findMany({ orderBy: { sort: 'asc' } }))
+    const list = await this.prisma.adSlot.findMany({ orderBy: { sort: 'asc' } })
+    // 兼容旧数据：若主表 preview/startAt/endAt 为空但 SystemConfig 仍有兜底 meta，
+    // 读时合并展示（不写回，避免每次读触发副作用）；运维迁移完成后此分支自然为空。
+    let meta: Record<string, { preview?: string; startAt?: string; endAt?: string }> = {}
+    try {
+      const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'system_settings' } })
+      const business = (cfg?.value as any)?.business
+      if (business && business.adSlotMeta && typeof business.adSlotMeta === 'object') {
+        meta = business.adSlotMeta
+      }
+    } catch {
+      // 兜底读失败不影响主流程
+    }
+    return list.map((s) => {
+      const m = meta[s.id] || {}
+      return decimalToNumber({
+        ...s,
+        preview: s.preview || m.preview || null,
+        startAt: s.startAt || (m.startAt ? new Date(m.startAt) : null),
+        endAt: s.endAt || (m.endAt ? new Date(m.endAt) : null),
+      })
+    })
   }
+
   async createAdSlot(dto: any) {
-    return decimalToNumber(await this.prisma.adSlot.create({ data: dto }))
+    const data = this.sanitizeAdSlotDto(dto)
+    if (!data.code) {
+      throw new BizException(BizCode.INVALID_PARAMS, '广告位 code 必填')
+    }
+    if (!data.name) {
+      throw new BizException(BizCode.INVALID_PARAMS, '广告位 name 必填')
+    }
+    return decimalToNumber(await this.prisma.adSlot.create({ data: data as any }))
   }
+
   async updateAdSlot(id: string, dto: any) {
-    return decimalToNumber(await this.prisma.adSlot.update({ where: { id }, data: dto }))
+    const data = this.sanitizeAdSlotDto(dto)
+    if (Object.keys(data).length === 0) {
+      throw new BizException(BizCode.INVALID_PARAMS, '没有可更新的字段')
+    }
+    return decimalToNumber(await this.prisma.adSlot.update({ where: { id }, data: data as any }))
   }
+
   async deleteAdSlot(id: string) {
     await this.prisma.adSlot.delete({ where: { id } })
     return { ok: true }
@@ -464,6 +541,76 @@ export class PlatformService {
   }
   async deleteAdCreative(id: string) {
     await this.prisma.adCreative.delete({ where: { id } })
+    return { ok: true }
+  }
+
+  /**
+   * 广告创意审核通过（pending → active）
+   *
+   * 复用 approveProduct 套路：
+   *   1. 校验存在 + 当前状态确实是 pending（防误把 paused/ended 再批一遍）
+   *   2. 写 AdCreative.status='active'
+   *   3. 写 AuditRecord(type='ad', targetId=creativeId, status='approved')
+   *
+   * 注：AuditRecord.type 此前枚举只列了 merchant/product，这里扩展 'ad'。
+   * 前端 audit-records 表格按 type 透传过滤，新 type 不会破坏旧筛选。
+   */
+  async approveAdCreative(id: string, callerSub?: string) {
+    const c = await this.prisma.adCreative.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    })
+    if (!c) throw new BizException(BizCode.NOT_FOUND, '广告创意不存在')
+    if (c.status !== 'pending') {
+      throw new BizException(BizCode.BUSINESS_ERROR, `当前状态 ${c.status} 不可审核通过`)
+    }
+    await this.prisma.$transaction([
+      this.prisma.adCreative.update({ where: { id }, data: { status: 'active' } }),
+      this.prisma.auditRecord.create({
+        data: {
+          type: 'ad',
+          targetId: id,
+          status: 'approved',
+          auditorId: callerSub || null,
+          reviewedAt: new Date(),
+        },
+      }),
+    ])
+    return { ok: true }
+  }
+
+  /**
+   * 广告创意审核驳回（pending → rejected）
+   *
+   * reason 必填，原因写进 AuditRecord.reason 供运营回溯。
+   * 与 approveAdCreative 保持同一审核入口语义，前端 platform-app 已经在调
+   * `POST /p/ads/creatives/:id/reject` 接口（带 silent 降级），落地后立即生效。
+   */
+  async rejectAdCreative(id: string, reason: string, callerSub?: string) {
+    if (!reason || !String(reason).trim()) {
+      throw new BizException(BizCode.INVALID_PARAMS, '请填写驳回原因')
+    }
+    const c = await this.prisma.adCreative.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    })
+    if (!c) throw new BizException(BizCode.NOT_FOUND, '广告创意不存在')
+    if (c.status !== 'pending') {
+      throw new BizException(BizCode.BUSINESS_ERROR, `当前状态 ${c.status} 不可驳回`)
+    }
+    await this.prisma.$transaction([
+      this.prisma.adCreative.update({ where: { id }, data: { status: 'rejected' } }),
+      this.prisma.auditRecord.create({
+        data: {
+          type: 'ad',
+          targetId: id,
+          status: 'rejected',
+          reason: String(reason).trim(),
+          auditorId: callerSub || null,
+          reviewedAt: new Date(),
+        },
+      }),
+    ])
     return { ok: true }
   }
 
@@ -976,7 +1123,9 @@ export class PlatformService {
   async auditRecords(query: any = {}) {
     const { skip, take, page, pageSize } = parsePage(query)
     const where: any = {}
-    if (query?.type && ['merchant', 'product'].includes(query.type)) where.type = query.type
+    if (query?.type && ['merchant', 'product', 'ad', 'refund'].includes(query.type)) {
+      where.type = query.type
+    }
     if (query?.status) where.status = query.status
     if (query?.targetId) where.targetId = query.targetId
 
@@ -1790,5 +1939,217 @@ export class PlatformService {
       pageSize,
       hasMore: start + pageSize < total,
     }
+  }
+
+  // ============ 售后/退款审核（平台层） ============
+  /**
+   * 平台审核 Refund 分页列表
+   *
+   * 业务背景：用户在 user-mp 发起售后会建一条 Refund(status=pending)，
+   * 商家可以在 merchant-app 自审同意/驳回；但很多场景需要平台代审（商家长期不响应、
+   * 商家被禁用、争议升级等），此前完全没有平台维度审核入口，前端 platform-app 的
+   * `pages/refunds/index.vue` 一直显示空态。这里补齐 GET/agree/reject 三端点。
+   *
+   * 参数：status / keyword / merchantId / page / pageSize
+   * 字段扁平化：userName / merchantName / orderNo 拼到行上，便于前端直接 row.* 渲染
+   */
+  async listRefunds(q: any = {}) {
+    const { skip, take, page, pageSize } = parsePage(q)
+    const where: any = {}
+    if (q?.status && q.status !== 'all') where.status = q.status
+    if (q?.merchantId) where.merchantId = q.merchantId
+    if (q?.keyword) {
+      const kw = String(q.keyword).trim()
+      if (kw) {
+        where.OR = [
+          { no: { contains: kw, mode: 'insensitive' } },
+          { reason: { contains: kw, mode: 'insensitive' } },
+        ]
+      }
+    }
+    const [rows, total] = await Promise.all([
+      this.prisma.refund.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          order: { select: { id: true, no: true } },
+          user: { select: { id: true, nickname: true, phone: true } },
+          merchant: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.refund.count({ where }),
+    ])
+    const list = rows.map((r) =>
+      decimalToNumber({
+        id: r.id,
+        no: r.no,
+        orderId: r.orderId,
+        orderNo: r.order?.no || null,
+        userId: r.userId,
+        userName: r.user?.nickname || r.user?.phone || '',
+        merchantId: r.merchantId,
+        merchantName: r.merchant?.name || '',
+        type: r.type,
+        reason: r.reason,
+        description: r.description,
+        evidence: r.evidence,
+        applyAmount: Number(r.applyAmount),
+        refundAmount: r.refundAmount != null ? Number(r.refundAmount) : null,
+        status: r.status,
+        merchantReply: r.merchantReply,
+        completedAt: r.completedAt,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      }),
+    )
+    return buildPage(list, total, page, pageSize)
+  }
+
+  /**
+   * 平台代审退款 → 同意（pending → completed）
+   *
+   * 资金安全 P0 流程（事务包裹真退款）：
+   *   1. 校验存在 + 当前状态 pending（其他状态拒绝，避免重复退款）
+   *   2. refundAmount 校验：未传则取 applyAmount；上限不能超过订单实付金额
+   *   3. 找到该订单的成功支付记录（Payment.status='success'），缺失直接抛错
+   *      —— 防止"订单未真实付款也走退款"的脏数据
+   *   4. 事务包：
+   *      - 调 wxpay.createRefund 真退款（refundId 持久化到 Payment.wxTransactionId/refundedAt）
+   *      - Refund.update 设 status='completed', refundAmount, completedAt
+   *      - Payment.update 设 status='refunded'（如全额退）, refundedAt, refundAmount
+   *      - Order.update 设 status='refunded'
+   *   5. wxpay 调用失败 → 整个事务回滚，Refund 仍是 pending 让运营重试
+   *
+   * 注：当前实现按"全额退一次"语义；多次部分退款需要补 partial-refund 流程，
+   * 文档已挂 TODO（参考 wxpay.createRefund 的 out_refund_no 幂等）。
+   */
+  async agreeRefund(id: string, refundAmount: number | undefined, callerSub?: string) {
+    const r = await this.prisma.refund.findUnique({
+      where: { id },
+      include: { order: { include: { payments: true } } },
+    })
+    if (!r) throw new BizException(BizCode.NOT_FOUND, '售后单不存在')
+    if (r.status !== 'pending') {
+      throw new BizException(BizCode.BUSINESS_ERROR, `当前状态 ${r.status} 不可审核通过`)
+    }
+    const applyAmount = Number(r.applyAmount)
+    const payAmount = Number(r.order.payAmount)
+    // 平台审核时允许覆盖金额：未传则按用户申请金额，传了则做范围校验
+    const targetAmount =
+      typeof refundAmount === 'number' && Number.isFinite(refundAmount)
+        ? Number(refundAmount)
+        : applyAmount
+    if (!(targetAmount > 0)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '退款金额必须大于 0')
+    }
+    if (targetAmount > payAmount) {
+      throw new BizException(BizCode.INVALID_PARAMS, '退款金额不能超过订单实付金额')
+    }
+
+    // 找一条已成功的支付记录作为退款来源
+    const paidPayment = r.order.payments.find((p) => p.status === 'success')
+    if (!paidPayment) {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '该订单暂无已成功的支付记录，无法发起真退款',
+      )
+    }
+
+    // 真调微信退款 —— 失败抛 BizException 让前端展示
+    let refundResp: { refundId: string; status: 'PROCESSING' | 'SUCCESS' }
+    try {
+      refundResp = await this.wxpay.createRefund({
+        outTradeNo: r.order.no,
+        outRefundNo: r.no,
+        reason: r.reason || '平台代审通过',
+        refundAmount: targetAmount,
+        totalAmount: payAmount,
+      })
+    } catch (e: any) {
+      throw new BizException(BizCode.PAY_FAILED, `微信退款失败：${e?.message || e}`)
+    }
+
+    // 事务持久化 Refund / Payment / Order 的状态切换
+    await this.prisma.$transaction([
+      this.prisma.refund.update({
+        where: { id: r.id },
+        data: {
+          status: 'completed',
+          refundAmount: targetAmount,
+          completedAt: new Date(),
+          merchantReply: `平台代审通过 (auditor=${callerSub || '-'}, wxRefundId=${refundResp.refundId})`,
+        },
+      }),
+      this.prisma.payment.update({
+        where: { id: paidPayment.id },
+        data: {
+          status: targetAmount >= payAmount ? 'refunded' : paidPayment.status,
+          refundedAt: new Date(),
+          refundAmount: targetAmount,
+        },
+      }),
+      this.prisma.order.update({
+        where: { id: r.orderId },
+        data: { status: 'refunded' },
+      }),
+      this.prisma.auditRecord.create({
+        data: {
+          type: 'refund',
+          targetId: r.id,
+          status: 'approved',
+          reason: `平台代审通过，金额=${targetAmount}`,
+          auditorId: callerSub || null,
+          reviewedAt: new Date(),
+        },
+      }),
+    ])
+
+    return {
+      ok: true,
+      refundId: r.id,
+      wxRefundId: refundResp.refundId,
+      wxRefundStatus: refundResp.status,
+      refundAmount: targetAmount,
+    }
+  }
+
+  /**
+   * 平台代审退款 → 驳回（pending → rejected）
+   *
+   * reason 必填，原因同时写到 Refund.merchantReply（前端列表展示该字段）和 AuditRecord.reason。
+   * 订单状态保持 after_sale，等用户改申请 / 关单 / 走商家再审。
+   */
+  async rejectRefundPlat(id: string, reason: string, callerSub?: string) {
+    if (!reason || !String(reason).trim()) {
+      throw new BizException(BizCode.INVALID_PARAMS, '请填写驳回原因')
+    }
+    const r = await this.prisma.refund.findUnique({ where: { id } })
+    if (!r) throw new BizException(BizCode.NOT_FOUND, '售后单不存在')
+    if (r.status !== 'pending') {
+      throw new BizException(BizCode.BUSINESS_ERROR, `当前状态 ${r.status} 不可驳回`)
+    }
+    const trimReason = String(reason).trim()
+    await this.prisma.$transaction([
+      this.prisma.refund.update({
+        where: { id: r.id },
+        data: {
+          status: 'rejected',
+          merchantReply: `平台代审驳回：${trimReason}`,
+        },
+      }),
+      this.prisma.auditRecord.create({
+        data: {
+          type: 'refund',
+          targetId: r.id,
+          status: 'rejected',
+          reason: trimReason,
+          auditorId: callerSub || null,
+          reviewedAt: new Date(),
+        },
+      }),
+    ])
+    return { ok: true }
   }
 }

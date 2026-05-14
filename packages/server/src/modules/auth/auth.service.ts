@@ -72,6 +72,9 @@ export class AuthService {
       userName: u.username || u.nickname,
       roles: [u.role],
       buttons: [],
+      // 关联 AdminRole.name 平铺，便于前端直接展示角色显示名（admin-pc 用户中心 / 平台账号列表）
+      // u.adminRole 在调用方使用 include: { adminRole: true } 时存在；缺失时为 null
+      roleName: u.adminRole?.name ?? null,
     }
   }
 
@@ -137,9 +140,12 @@ export class AuthService {
       openid = dto.code ? `dev_wx_${dto.code.slice(0, 16)}` : `dev_wx_anon_${Date.now()}`
     }
 
-    let user = await this.prisma.user.findUnique({ where: { openid } })
+    let user = await this.prisma.user.findUnique({
+      where: { openid },
+      include: { adminRole: true },
+    })
     if (!user) {
-      user = await this.prisma.user.create({
+      const created = await this.prisma.user.create({
         data: {
           openid,
           unionid: unionid || undefined,
@@ -148,11 +154,15 @@ export class AuthService {
           role: 'customer',
         },
       })
+      user = await this.prisma.user.findUnique({
+        where: { id: created.id },
+        include: { adminRole: true },
+      })
     }
     const tokens = await this.signTokens({
-      sub: user.id,
-      role: user.role,
-      merchantId: user.merchantId || undefined,
+      sub: user!.id,
+      role: user!.role,
+      merchantId: user!.merchantId || undefined,
     })
     return { user: this.toUser(user), ...tokens, expiresAt: Date.now() + tokens.expiresIn * 1000 }
   }
@@ -170,9 +180,12 @@ export class AuthService {
     if (!rec) throw new BizException(BizCode.INVALID_PARAMS, '验证码错误或已过期')
     await this.prisma.smsCode.update({ where: { id: rec.id }, data: { used: true } })
 
-    let user = await this.prisma.user.findUnique({ where: { phone: dto.phone } })
+    let user = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+      include: { adminRole: true },
+    })
     if (!user) {
-      user = await this.prisma.user.create({
+      const created = await this.prisma.user.create({
         data: {
           phone: dto.phone,
           nickname: `用户${dto.phone.slice(-4)}`,
@@ -180,12 +193,16 @@ export class AuthService {
           role: 'customer',
         },
       })
+      user = await this.prisma.user.findUnique({
+        where: { id: created.id },
+        include: { adminRole: true },
+      })
     }
-    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+    await this.prisma.user.update({ where: { id: user!.id }, data: { lastLoginAt: new Date() } })
     const tokens = await this.signTokens({
-      sub: user.id,
-      role: user.role,
-      merchantId: user.merchantId || undefined,
+      sub: user!.id,
+      role: user!.role,
+      merchantId: user!.merchantId || undefined,
     })
     return { user: this.toUser(user), ...tokens, expiresAt: Date.now() + tokens.expiresIn * 1000 }
   }
@@ -197,16 +214,26 @@ export class AuthService {
    *   1. 校验手机号格式 & 60s 节流
    *   2. 写 SmsCode 表（必须同步，phone-login 校验依赖它）
    *   3. **立即** 返回 { ok: true }
-   *   4. 异步去调国阳云，发完后台日志记录（成功/失败都不影响客户端）
+   *   4. 异步去调短信 provider，发完后台日志记录（成功/失败都不影响客户端）
    *
-   * 失败原因（如"黑名单"）会写到 SmsCode.failReason 字段，便于后台排查；
-   * 如果上游调用失败，下次用户重发会重新建一条 SmsCode 记录。
+   * 失败原因会写到日志便于后台排查；如果上游调用失败，
+   * 下次用户重发会重新建一条 SmsCode 记录。
    *
-   * 非生产 / SMS_PROVIDER=none 时：不真发，DB 里有真 6 位码，开发者可在 SmsCode 表查。
+   * 安全 P0（生产）：SMS_PROVIDER === 'none' 在生产环境一律抛错，
+   * 因为这意味着没有真实下发短信通道，用户根本收不到验证码 → 留接口风险。
+   * 非生产 / 开发期：保留 SMS_PROVIDER=none 兜底，DB 里有真 6 位码，
+   * 开发者可在 SmsCode 表里查码做联调（同样需控制好 SmsCode 表的访问权限）。
    */
   async sendSmsCode(dto: SmsCodeDto) {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
-    const useRealSms = provider !== 'none' && process.env.NODE_ENV === 'production'
+    const isProd = process.env.NODE_ENV === 'production'
+    if (isProd && provider === 'none') {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '短信服务未配置，请联系运维配置 SMS_PROVIDER',
+      )
+    }
+    const useRealSms = provider !== 'none' && isProd
     // 用 crypto.randomInt 替代 Math.random，避免可预测的伪随机序列被穷举
     const code = String(randomInt(100000, 1000000))
 
@@ -254,6 +281,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findFirst({
       where: { OR: [{ username }, { email: username }] },
+      include: { adminRole: true },
     })
     if (!user || !user.passwordHash) {
       throw new BizException(BizCode.INVALID_PARAMS, '账号或密码错误')
@@ -334,7 +362,10 @@ export class AuthService {
 
   /** 当前用户信息 */
   async userInfo(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { adminRole: true },
+    })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
     return this.toUser(user)
   }

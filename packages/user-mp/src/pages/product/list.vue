@@ -93,23 +93,13 @@ function buildParams(p: number): ProductListParams {
   }
 }
 
-/** 后端可能尚未支持 sort 参数,这里做客户端兜底排序 */
-function applyClientSort(list: Product[]): Product[] {
-  const arr = list.slice()
-  switch (sort.value) {
-    case 'newest':
-      return arr.sort((a, b) => (String(a.createdAt) < String(b.createdAt) ? 1 : -1))
-    case 'sales':
-      return arr.sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0))
-    case 'price-asc':
-      return arr.sort((a, b) => (a.priceRetailMin ?? 0) - (b.priceRetailMin ?? 0))
-    case 'price-desc':
-      return arr.sort((a, b) => (b.priceRetailMin ?? 0) - (a.priceRetailMin ?? 0))
-    default:
-      return arr
-  }
-}
-
+/**
+ * 加载列表。
+ *
+ * 排序参数直接传后端 `sort`（newest/sales/price-asc/price-desc），后端已统一支持。
+ * 删除了原本的 `applyClientSort` 兜底：分页场景下客户端排序只能在「当前已加载页」
+ * 内排，会出现"第 1 页按销量降序，第 2 页加载后又乱掉"的体验，比不排还糟。
+ */
 async function load(reset = true) {
   if (loading.value) return
   loading.value = true
@@ -121,8 +111,7 @@ async function load(reset = true) {
   try {
     const res = await productService.list(buildParams(page.value))
     const list = res.list ?? []
-    const next = reset ? list : [...products.value, ...list]
-    products.value = applyClientSort(next)
+    products.value = reset ? list : [...products.value, ...list]
     hasMore.value = res.hasMore ?? list.length >= PAGE_SIZE
   } catch (e: any) {
     uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
@@ -138,7 +127,7 @@ async function loadMore() {
     page.value += 1
     const res = await productService.list(buildParams(page.value))
     if ((res.list?.length ?? 0) > 0) {
-      products.value = applyClientSort([...products.value, ...res.list])
+      products.value = [...products.value, ...res.list]
     }
     hasMore.value = res.hasMore ?? (res.list?.length ?? 0) >= PAGE_SIZE
   } catch (e: any) {

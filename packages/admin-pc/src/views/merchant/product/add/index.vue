@@ -348,6 +348,7 @@
     fetchPlatformCategoriesForMerchant,
     createMerchantProduct,
     updateMerchantProduct,
+    fetchMerchantProductDetail,
     uploadImage
   } from '@/api/merchant-business'
   import type { Category } from '@jiujiu/shared/types'
@@ -420,6 +421,15 @@
     values: string[]
   }
   interface SkuRow {
+    /**
+     * 后端 SKU 主键 —— 新建时为空字符串，编辑模式由 loadProduct 回填。
+     * 后端 updateProduct 据此决定 update/create/delete：
+     *   - 有 id 且仍在数组：update
+     *   - 无 id：create
+     *   - 数据库已存在但 dto.skus 没出现：delete
+     * 不带 id 提交编辑会让原有 SKU 全部被识别为新增 → 库存翻倍 / 旧 SKU 残留。
+     */
+    id?: string
     specs: string[]
     priceWholesale: number
     priceRetail: number
@@ -696,6 +706,8 @@
         if (name) specRecord[name] = row.specs[i] ?? ''
       })
       return {
+        // id 仅在编辑模式有值；后端按 id 走 update，未带 id 走 create
+        ...(row.id ? { id: row.id } : {}),
         specs: specRecord,
         specsLabel: row.specs.join(' / '),
         priceWholesale: row.priceWholesale,
@@ -796,9 +808,83 @@
     }
   }
 
-  onMounted(() => {
-    loadCategories()
-    rebuildSku()
+  /**
+   * 编辑模式回填
+   *
+   * 当 URL 携带 ?id=xxx 时，从后端拉取商品详情写回所有 form 字段 + SKU 矩阵。
+   * 之前 onMounted 完全忽略 query.id → 编辑商品时看到的是全新空表单，
+   * 用户随便填几个字段点「提交审核」实际上等同于「新建一份新商品」，
+   * 原商品所有字段被替换为空白。
+   *
+   * 实现要点：
+   *   - 先用 form.specs / skuMatrix 还原规格组与 SKU 矩阵，再让 rebuildSku 合并
+   *     现有 SKU 价格 / 库存 / id；rebuildSku 在 oldKeys 命中时会复用整行（含 id）
+   *   - 按尺寸定价 (pricingMode = 'by-size') 的扩展字段一并还原
+   */
+  async function loadProduct() {
+    if (!editingId.value) return
+    const data = await fetchMerchantProductDetail(editingId.value)
+    if (!data) {
+      ElMessage.warning('商品不存在或已被删除')
+      router.replace('/merchant/product/list')
+      return
+    }
+    form.name = data.name ?? ''
+    form.description = data.description ?? ''
+    form.images = Array.isArray(data.images) ? [...data.images] : []
+    form.tags = Array.isArray(data.tags) ? [...data.tags] : []
+    // categoryId 是 cascader 链路：后端只存叶子 id，UI 用 array
+    form.categoryId = data.categoryId ? [data.categoryId] : []
+    // 按尺寸定价的扩展字段
+    if (data.pricingMode === 'by-size') {
+      form.pricingMode = 'by-size'
+      form.pricePerSqm = Number(data.pricePerSqm ?? 0)
+      form.baseFee = Number(data.baseFee ?? 0)
+      form.sizeUnit = (data.sizeUnit as 'cm' | 'm') ?? 'cm'
+      form.minLength = Number(data.minLength ?? 50)
+      form.minWidth = Number(data.minWidth ?? 50)
+      form.maxLength = Number(data.maxLength ?? 600)
+      form.maxWidth = Number(data.maxWidth ?? 400)
+    } else {
+      form.pricingMode = 'standard'
+      form.freeShipping = !!data.freeShipping
+    }
+
+    // 还原规格组与 SKU 矩阵（参考 merchant-app 同款 loadProduct 实现）
+    const dbSkus: Array<Record<string, any>> = Array.isArray(data.skus) ? data.skus : []
+    if (dbSkus.length > 0) {
+      // 按首次出现顺序反推 specGroups（保持 SKU 矩阵列顺序与历史一致）
+      const groupOrder: string[] = []
+      const groupValues: Record<string, string[]> = {}
+      for (const sku of dbSkus) {
+        const specs = (sku.specs ?? {}) as Record<string, string>
+        for (const [k, v] of Object.entries(specs)) {
+          if (!groupOrder.includes(k)) groupOrder.push(k)
+          if (!groupValues[k]) groupValues[k] = []
+          if (!groupValues[k].includes(String(v))) groupValues[k].push(String(v))
+        }
+      }
+      form.specs = groupOrder.map((name) => ({ name, values: groupValues[name] }))
+
+      // 直接用后端数据构建 SKU 矩阵，保留每行的真实 id
+      skuMatrix.value = dbSkus.map((sku) => ({
+        id: String(sku.id ?? ''),
+        specs: groupOrder.map((g) => String((sku.specs ?? {})[g] ?? '')),
+        priceWholesale: Number(sku.priceWholesale ?? 0),
+        priceRetail: Number(sku.priceRetail ?? 0),
+        priceMember: Number(sku.priceMember ?? 0),
+        stock: Number(sku.stock ?? 0),
+        active: sku.active !== false
+      }))
+    }
+  }
+
+  onMounted(async () => {
+    await loadCategories()
+    if (editingId.value) {
+      await loadProduct()
+    }
+    if (skuMatrix.value.length === 0) rebuildSku()
   })
 </script>
 

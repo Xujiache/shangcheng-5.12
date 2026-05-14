@@ -46,7 +46,12 @@ const showTierPicker = ref<MerchantCustomer | null>(null)
 async function load() {
   loading.value = true
   try {
-    const data = await customerService.list({ kind: tab.value, keyword: keyword.value || undefined })
+    // 'all' tab 不传 kind,后端按缺省返回全量;其他 tab(promoter/member/normal)
+    // 透传给后端做服务端过滤(避免本地切 tab 仅过滤当前页造成翻页错位)
+    const data = await customerService.list({
+      kind: tab.value === 'all' ? undefined : tab.value,
+      keyword: keyword.value || undefined,
+    })
     list.value = data.list
     total.value = data.total
   } finally {
@@ -105,7 +110,7 @@ onMounted(load)
             <view class="name-row">
               <text class="name">{{ c.nickname }}</text>
               <StatusTag :text="KIND_LABEL[c.kind].text" :tone="KIND_LABEL[c.kind].tone" />
-              <StatusTag :text="c.groupTag" tone="info" />
+              <StatusTag v-if="c.groupTag" :text="c.groupTag" tone="info" />
             </view>
             <text class="phone">{{ maskPhone(c.phone) }}</text>
           </view>

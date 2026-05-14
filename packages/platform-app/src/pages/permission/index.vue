@@ -94,8 +94,14 @@ const USER_ROLE_OPTIONS = [
   { value: 'platform', label: '平台普通 (platform)' },
 ]
 
+/**
+ * 角色成员数 = 后端 AdminRole.name 与 user.adminRole.name 关联后的统计。
+ * 后端 listAdmins 已通过 include: { adminRole: true } 把 roleName 注入响应,
+ * 这里必须比对 admin.roleName(可配置角色名),不能比对 admin.role
+ * (user.role 是 admin/platform/super-admin 固定字面量,与角色表无关)。
+ */
 const memberCountOf = computed(() => {
-  return (roleName: string) => admins.value.filter((a) => a.role === roleName).length
+  return (roleName: string) => admins.value.filter((a) => a.roleName === roleName).length
 })
 
 async function load() {
@@ -194,7 +200,9 @@ async function submitRoleSheet() {
 }
 
 function viewMembers(r: AdminRole) {
-  const members = admins.value.filter((a) => a.role === r.name)
+  // 同 memberCountOf:按 roleName 比对(后端 listAdmins 注入的 adminRole.name),
+  // 旧实现比对 a.role(user.role 字段)会永远是空集合。
+  const members = admins.value.filter((a) => a.roleName === r.name)
   if (members.length === 0) {
     uni.showToast({ title: '暂无成员', icon: 'none' })
     return
@@ -597,11 +605,11 @@ onMounted(load)
               <view
                 class="role-mini"
                 :style="{
-                  color: ROLE_TINT[a.role] || '#86909C',
-                  background: (ROLE_TINT[a.role] || '#86909C') + '14',
+                  color: ROLE_TINT[a.roleName || a.role] || '#86909C',
+                  background: (ROLE_TINT[a.roleName || a.role] || '#86909C') + '14',
                 }"
               >
-                {{ a.role }}
+                {{ a.roleName || a.role }}
               </view>
             </view>
             <text class="last-login">最近登录 · {{ formatLastLogin(a.lastLoginAt) }}</text>

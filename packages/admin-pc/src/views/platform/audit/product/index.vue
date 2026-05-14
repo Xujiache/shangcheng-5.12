@@ -150,6 +150,7 @@
     saveProductAuditConfig,
     approveProduct,
     rejectProduct,
+    sampleCheckProduct,
     type AuditProduct,
     type ProductAuditConfig
   } from '@/api/platform-business'
@@ -212,9 +213,17 @@
         confirmButtonText: '加入抽检',
         cancelButtonText: '取消'
       })
-      ElMessage.success('已加入抽检队列')
     } catch {
-      /* cancel */
+      return
+    }
+    // 真正调后端 sample-check 接口（之前只是 toast 没真请求,
+    // 表示"已加入抽检队列"但 DB 里什么都没发生,是典型的演示按钮）
+    try {
+      await sampleCheckProduct(p.id)
+      ElMessage.success('已加入抽检队列')
+      await load()
+    } catch (e: any) {
+      ElMessage.error(e?.message || '操作失败，请稍后重试')
     }
   }
 

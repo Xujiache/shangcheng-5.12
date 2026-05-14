@@ -1,14 +1,19 @@
 /**
  * 文件上传公共 helper · merchant-app
  *
- * 把"先选图后立即上传换 https URL"的样板提到一处，
+ * 把"先选图后立即上传换 https URL"的样板提到一处,
  * 后端落库前所有图片字段必须是 http(s) URL —— 直接把 tempFilePaths
- * 提交给后端会造成"只在原选图设备能看一次，刷新就 404"的脏数据。
+ * 提交给后端会造成"只在原选图设备能看一次,刷新就 404"的脏数据。
  *
- * 已替换的调用点：
+ * 已替换的调用点:
  *   - pages/product/add.vue           bizType=product
- *   - pages/shop/decorate.vue         bizType=decorate
+ *   - pages/shop/decorate.vue         bizType=product(decorate 未在白名单,先用 product 兜底)
  * 后续新增上传场景请直接引用此处的 uploadImage / uploadImages。
+ *
+ * P3-20 修复:默认 bizType 从 'common' 改为 'misc'。
+ * 后端 files.controller.ts BIZ_TYPE_WHITELIST = {product, avatar, idcard, apk, chat, misc};
+ * 旧默认 'common' 不在白名单,会被服务端拒绝 INVALID_PARAMS,
+ * 走 helper 又忘传 bizType 的场景一律落 misc 安全兜底。
  */
 import { BASE_URL } from './request'
 
@@ -23,7 +28,7 @@ function getToken(): string {
 }
 
 /** 单张本地临时路径 → 远端 https URL */
-export function uploadImage(tempPath: string, bizType = 'common'): Promise<string> {
+export function uploadImage(tempPath: string, bizType = 'misc'): Promise<string> {
   const token = getToken()
   return new Promise((resolve, reject) => {
     uni.uploadFile({
@@ -56,7 +61,7 @@ export function uploadImage(tempPath: string, bizType = 'common'): Promise<strin
  * - 任一失败时：之前成功的 URL 不丢，向上抛出剩余失败原因，调用方决定是否提示
  * - 显示带进度的 loading（多张时形如 "上传中 2/5"）
  */
-export async function uploadImages(tempPaths: string[], bizType = 'common'): Promise<string[]> {
+export async function uploadImages(tempPaths: string[], bizType = 'misc'): Promise<string[]> {
   if (tempPaths.length === 0) return []
   const total = tempPaths.length
   uni.showLoading({ title: total > 1 ? `上传中 0/${total}` : '上传中…', mask: true })

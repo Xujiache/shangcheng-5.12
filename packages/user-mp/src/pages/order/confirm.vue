@@ -87,14 +87,19 @@ const bestCoupon = computed(() => {
 function discountOf(c: Coupon, sub: number): number {
   if (c.type === 'fullReduce') return Number(c.amount || 0)
   if (c.type === 'fixed') return Number(c.amount || 0)
+  // discountPercent 是 0~1 区间的小数（0.85 = 85 折，即支付 85%）
+  // 折扣金额 = subtotal * (1 - discountPercent)
   if (c.type === 'discount') return Math.round((sub * (1 - (c.discountPercent || 1))) * 100) / 100
   return 0
 }
 
 function couponLabel(c: Coupon): string {
-  if (c.type === 'fullReduce') return `${c.name}（满 ${c.threshold} 减 ${c.amount}）`
-  if (c.type === 'fixed') return `${c.name}（直减 ${c.amount}）`
-  if (c.type === 'discount') return `${c.name}（${(c.discountPercent || 1) * 10} 折）`
+  if (c.type === 'fullReduce') return `${c.name}(满 ${c.threshold} 减 ${c.amount})`
+  if (c.type === 'fixed') return `${c.name}(直减 ${c.amount})`
+  // 0.85 → 8.5 折
+  if (c.type === 'discount') {
+    return `${c.name}(${((c.discountPercent || 1) * 10).toFixed(1)} 折)`
+  }
   return c.name
 }
 

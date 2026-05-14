@@ -430,8 +430,14 @@ export interface PlazaItem {
 /**
  * 平台选品广场列表
  *
- * 后端未实现 products / factories 列表时返回空数组让页面进入空态。
- * records tab 对应 /p/plaza/pushes 推送记录，已有后端接口。
+ * tab 取值：
+ *   - products: 调 /p/plaza/products，返回商品适配后的 PlazaItem[]
+ *   - factories: 调 /p/plaza/factories，返回厂家适配后的 PlazaItem[]
+ *     （后端返回 Merchant 数组，前端按 id/name/logo 映射成卡片样式；
+ *      厂家本身无 price / agencyCount，对应字段置空让 UI 进入空态展示）
+ *   - records: 调 /p/plaza/pushes，返回推送记录 PlazaPush[]
+ *
+ * 任一 tab 接口失败时返回空数组，让页面进入空态。
  */
 export async function fetchPlatformPlaza(
   tab: 'products' | 'factories' | 'records' = 'products'
@@ -445,6 +451,27 @@ export async function fetchPlatformPlaza(
         params: { pageSize: 100 }
       })
       return unwrapPage<PlazaPush>(resp)
+    } catch {
+      return []
+    }
+  }
+  if (tab === 'factories') {
+    try {
+      const raw = await request.get<any>({ url: '/api/v1/p/plaza/factories' })
+      const list = unwrapPage<any>(raw)
+      // Merchant → PlazaItem 适配：厂家没有 price / agencyCount，UI 上对应位置显示 0 即可
+      return list.map(
+        (m: any): PlazaItem => ({
+          id: m.id || '',
+          name: m.name || '',
+          image: m.logo || m.image || '',
+          factory: m.name || '',
+          price: 0,
+          status: (m.status === 'active' ? 'pushing' : 'pending') as PlazaItem['status'],
+          agencyCount: typeof m.agencyCount === 'number' ? m.agencyCount : 0,
+          tag: m.type === 'factory' ? '厂家' : m.type
+        })
+      )
     } catch {
       return []
     }
@@ -477,34 +504,72 @@ export async function fetchPlatformPlaza(
   }
 }
 
+/**
+ * 新建广场推送 DTO
+ *
+ * 字段对齐 Prisma `PlazaPush` 模型与 shared `PlazaPushCreateDto`：
+ *   - targetType / productIds / factoryIds: 推送目标（商品 or 厂家）
+ *   - positions / tags / audience: 投放位置 / 标签 / 受众（audience 当前为字符串）
+ *   - scheduledStart / scheduledEnd: 投放时段（ISO 字符串，后端会 new Date 解析）
+ *   - weight: 权重 0-99
+ *   - pushText: 推送语
+ *
+ * 旧字段 `target / startAt / endAt / remark / productIds`(仅) 与后端 schema 不对齐，
+ * 会被 Prisma 直接忽略 → 落库后无投放对象 / 时段，相当于「成功创建但什么都不会推」。
+ */
 export interface PushPayload {
-  productIds: string[]
-  target: 'all' | 'factory' | 'store'
-  startAt: string
-  endAt: string
+  targetType: 'product' | 'factory'
+  productIds?: string[]
+  factoryIds?: string[]
+  positions: string[]
+  tags: string[]
+  audience: string
+  scheduledStart: string
+  scheduledEnd: string
   weight: number
-  remark?: string
+  pushText?: string
 }
 
+/**
+ * 创建广场推送
+ *
+ * 后端 `POST /p/plaza/pushes` 直接返回 PlazaPush 记录（不返回 pushedCount）。
+ * 调用方应基于 productIds.length / factoryIds.length 自己提示数量。
+ */
 export function pushPlaza(payload: PushPayload) {
-  return request.post<{ ok: boolean; pushedCount: number }>({
+  return request.post<PlazaPush>({
     url: '/api/v1/p/plaza/pushes',
     data: payload
   })
 }
 
 /**
+ * 抽检商品
+ *
+ * 后端 `POST /p/audit/products/:id/sample-check`：把"自动通过"的商品
+ * 加入人工抽检队列。失败时调用方 catch 后给出错误提示。
+ */
+export function sampleCheckProduct(id: string) {
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/audit/products/${encodeURIComponent(id)}/sample-check`
+  })
+}
+
+/**
  * 切换广场商品上下架状态
  *
- * 后端 `PATCH /p/plaza/products/:id/online` 接收 `{ on: boolean }`，
+ * 后端 `PATCH /p/plaza/products/:id/online` 接收 `{ online: boolean }`，
  * 返回 `{ ok, status }`。failed 时调用方 catch 后回滚 UI 状态，避免
  * 列表显示已上架但 DB 还是 offline。
+ *
+ * 注意：之前传 `{ on }` 是字段名错误（后端按 `online` 解析），
+ * 导致后端永远收不到目标状态、默认行为不可预期。
  */
-export function setPlazaProductOnline(id: string, on: boolean) {
+export function setPlazaProductOnline(id: string, online: boolean) {
   return request.request<{ ok: boolean; status?: PlazaItem['status'] }>({
     url: `/api/v1/p/plaza/products/${encodeURIComponent(id)}/online`,
     method: 'PATCH',
-    data: { on }
+    data: { online }
   })
 }
 
@@ -535,11 +600,26 @@ export function saveMemberTrialDays(days: number) {
     data: { days }
   })
 }
-export function savePlatformMemberPlan(plan: Partial<MemberPlan>) {
-  return request.post<{ ok: boolean; plan: MemberPlan }>({
+/**
+ * 新建 / 更新会员套餐
+ *
+ * 后端 `POST /p/member-plans` 直接返回更新后的 MemberPlan 实体（带真实 cuid）。
+ * 旧实现给的返回类型 `{ ok, plan }` 与后端形态不符，导致调用方拿不到真实 id 兜
+ * 底 fallback 到本地伪 id（如 `'p-' + Date.now()`），后续基于此 id 的 edit/toggle/
+ * delete 全部 500。
+ *
+ * 这里统一 unwrap：兼容裸 MemberPlan / `{plan}` / `{data}` 三种历史形态，返回
+ * `{ ok, plan }` 给上层使用，确保 plan.id 永远是后端 cuid。
+ */
+export async function savePlatformMemberPlan(
+  plan: Partial<MemberPlan>
+): Promise<{ ok: boolean; plan: MemberPlan }> {
+  const resp = await request.post<any>({
     url: '/api/v1/p/member-plans',
     data: plan
   })
+  const persisted: MemberPlan = (resp as any)?.plan ?? (resp as any)?.data ?? (resp as MemberPlan)
+  return { ok: true, plan: persisted }
 }
 export function removePlatformMemberPlan(id: string) {
   return request.del<{ ok: boolean }>({ url: `/api/v1/p/member-plans/${id}` })
@@ -549,9 +629,138 @@ export function fetchPlanSubscriptions(planId: string) {
     .get<unknown[]>({ url: `/api/v1/p/member-plans/${planId}/subscriptions` })
     .catch(() => msGetSubsByPlan(planId)) as ReturnType<typeof msGetSubsByPlan>
 }
-export function fetchAllSubscriptions() {
-  // 后端只暴露按 planId 查询；这里回退到 member-service（返回 []）
-  return msGetSubs()
+/**
+ * 平台层"全部订阅商家"列表
+ *
+ * 后端当前只暴露 `GET /p/member-plans/:planId/subscriptions`（按 planId 查），
+ * **没有** 跨套餐的 `GET /p/subscriptions` 接口。
+ *
+ * TODO(backend): 等 Agent E 实现 `GET /p/subscriptions` 后，把这里改成 request.get。
+ * 在那之前调用方应自行处理"功能筹备中"的空态，避免显示"0 条"误导运营。
+ *
+ * 调用方约定：catch 到 NotImplementedError 时收起订阅总览区，
+ * 不要把空数组当成"真的没人订阅"。
+ */
+export class SubscriptionsNotImplementedError extends Error {
+  readonly code = 'SUBSCRIPTIONS_NOT_IMPLEMENTED'
+  constructor() {
+    super('后端尚未实现 /p/subscriptions 全量查询接口')
+    this.name = 'SubscriptionsNotImplementedError'
+  }
+}
+
+export function fetchAllSubscriptions(): Promise<never> {
+  return Promise.reject(new SubscriptionsNotImplementedError())
+}
+
+// 强引用一下，避免 tree-shaking 把 msGetSubs 误删（后续接入后可能恢复使用）
+void msGetSubs
+
+/* ============ 9.5 平台提现审核 ============ */
+
+/**
+ * 平台提现审核记录
+ *
+ * 对齐后端 `platform.service.withdrawsList` 返回的字段；只取页面要用的子集，
+ * 其余字段（如商户原始名称 / 关联订单）按需后续扩展。
+ */
+export interface PlatformWithdrawItem {
+  id: string
+  merchantId: string
+  merchantName?: string
+  /** 提现金额 */
+  amount: number
+  method: 'wechat' | 'bank' | 'alipay'
+  account: string
+  /** pending=待审核 / approved=已通过 / rejected=已驳回 / paid=已打款 */
+  status: 'pending' | 'approved' | 'rejected' | 'paid'
+  remark?: string | null
+  rejectReason?: string | null
+  transactionId?: string | null
+  createdAt: string
+  reviewedAt?: string | null
+  paidAt?: string | null
+}
+
+export interface PlatformWithdrawsPage {
+  list: PlatformWithdrawItem[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+/**
+ * 平台提现审核分页
+ *
+ * 后端：`GET /api/v1/p/withdraws`，支持 status / merchantId 过滤 + 分页。
+ * 失败时返回空分页，让页面进入空态。
+ */
+export async function fetchPlatformWithdraws(params?: {
+  status?: 'pending' | 'approved' | 'rejected' | 'paid'
+  merchantId?: string
+  page?: number
+  pageSize?: number
+}): Promise<PlatformWithdrawsPage> {
+  const query: Record<string, unknown> = {}
+  if (params?.status) query.status = params.status
+  if (params?.merchantId) query.merchantId = params.merchantId
+  query.page = params?.page ?? 1
+  query.pageSize = params?.pageSize ?? 20
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/withdraws', params: query })
+    const rawList: any[] = Array.isArray(resp?.list) ? resp.list : Array.isArray(resp) ? resp : []
+    return {
+      list: rawList.map(
+        (r: any): PlatformWithdrawItem => ({
+          id: r.id,
+          merchantId: r.merchantId || r.merchant?.id || '',
+          merchantName: r.merchant?.name || r.merchantName,
+          amount: Number(r.amount ?? 0),
+          method: (r.method as PlatformWithdrawItem['method']) || 'wechat',
+          account: r.account || '',
+          status: (r.status as PlatformWithdrawItem['status']) || 'pending',
+          remark: r.remark ?? null,
+          rejectReason: r.rejectReason ?? null,
+          transactionId: r.transactionId ?? null,
+          createdAt: r.createdAt,
+          reviewedAt: r.reviewedAt ?? null,
+          paidAt: r.paidAt ?? null
+        })
+      ),
+      total: typeof resp?.total === 'number' ? resp.total : rawList.length,
+      page: typeof resp?.page === 'number' ? resp.page : (params?.page ?? 1),
+      pageSize: typeof resp?.pageSize === 'number' ? resp.pageSize : (params?.pageSize ?? 20)
+    }
+  } catch {
+    return { list: [], total: 0, page: params?.page ?? 1, pageSize: params?.pageSize ?? 20 }
+  }
+}
+
+/** 通过提现申请 */
+export function approvePlatformWithdraw(id: string, remark?: string) {
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/withdraws/${encodeURIComponent(id)}/approve`,
+    data: { remark: remark || '' }
+  })
+}
+
+/** 驳回提现申请（必填理由） */
+export function rejectPlatformWithdraw(id: string, reason: string) {
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/withdraws/${encodeURIComponent(id)}/reject`,
+    data: { reason }
+  })
+}
+
+/** 已通过的提现 → 标记打款完成（带流水号便于对账） */
+export function markPlatformWithdrawPaid(
+  id: string,
+  payload: { transactionId?: string; remark?: string }
+) {
+  return request.post<{ ok: boolean }>({
+    url: `/api/v1/p/withdraws/${encodeURIComponent(id)}/mark-paid`,
+    data: payload
+  })
 }
 
 /* ============ 10. 缴费订单 ============ */

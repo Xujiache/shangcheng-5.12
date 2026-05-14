@@ -12,19 +12,21 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
  *
  * - 显式配置 CORS_ORIGIN（逗号分隔）→ 严格按白名单匹配
  * - 未配置 + 非生产 → 退化为允许任意源（true），便于本地多端联调
- * - 未配置 + 生产 → 同样回退到 true 但打 warn 日志（生产强烈要求显式配置）
+ * - 未配置 + 生产 → 直接退出进程（exit 1），强制运维显式配置白名单。
  *
- * 设计原则：避免"硬性强制"导致部署失败 —— 把配置缺失的代价转嫁给运维 log，
- * 而不是直接拒绝启动让线上挂掉。
+ * 安全 P0：生产环境绝不允许"允许任意源"的兜底，否则任意第三方页面都能携 cookie
+ * 调本服务接口，等同于 CSRF / 跨站数据泄露的开门钥匙。宁可启动失败让运维补配置，
+ * 也绝不放过这道防线。
  */
 function resolveCorsOrigin(): boolean | string[] {
   const raw = process.env.CORS_ORIGIN
   if (!raw || !raw.trim()) {
     if (process.env.NODE_ENV === 'production') {
-      Logger.warn(
-        '[security] 生产环境未配置 CORS_ORIGIN，当前回退为允许任意源；强烈建议设置为前端域名列表（逗号分隔）',
+      Logger.error(
+        '[security] 生产环境未配置 CORS_ORIGIN —— 启动中止。请在环境变量中设置允许的前端域名列表（逗号分隔），例如 https://m.example.com,https://admin.example.com',
         'Bootstrap',
       )
+      process.exit(1)
     }
     return true
   }
@@ -83,10 +85,13 @@ async function bootstrap() {
   // 全局守卫（JwtAuthGuard + ThrottlerGuard）已通过 APP_GUARD 在 AppModule 注册，
   // 这里不再 useGlobalGuards，避免双重执行；走 DI 注册也便于守卫注入 Reflector/JwtService
 
-  // Swagger —— 仅非生产环境暴露，避免生产环境 /api/docs 泄露内部接口结构
-  // 如生产确需开放，可通过 SWAGGER_ENABLED=1 显式强开
-  const swaggerEnabled =
-    process.env.NODE_ENV !== 'production' || process.env.SWAGGER_ENABLED === '1'
+  // Swagger —— 仅非生产环境暴露
+  //
+  // 安全 P0：生产环境强制关闭 /api/docs，不接受 SWAGGER_ENABLED=1 等"绕过开关"。
+  // /api/docs 会把所有接口结构 + 参数 schema 暴露给互联网，给攻击者免费提供攻击面图。
+  // 真正需要看接口文档的内部场景，请在运维网段单独跑一个非生产实例，
+  // 而不是在线上开洞。
+  const swaggerEnabled = process.env.NODE_ENV !== 'production'
   if (swaggerEnabled) {
     const config = new DocumentBuilder()
       .setTitle('经纬科技 API')
@@ -104,7 +109,7 @@ async function bootstrap() {
   if (swaggerEnabled) {
     console.log(`📖 Swagger docs at http://localhost:${port}/api/docs`)
   } else {
-    console.log('📖 Swagger 已在生产环境禁用（如需开启请设置 SWAGGER_ENABLED=1）')
+    console.log('📖 Swagger 在生产环境已强制关闭')
   }
 }
 

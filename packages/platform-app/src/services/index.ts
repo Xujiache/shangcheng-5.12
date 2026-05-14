@@ -219,7 +219,11 @@ function pickAdFields<K extends string>(dto: any, allow: readonly K[]): Record<K
  * 我们这里复用同一个机制, 把 ad slot meta 挂在 system_settings.business.adSlotMeta 下,
  * 不污染主表 schema。读取走 systemService.settings(), 写走 systemService.saveSettings()。
  *
- * TODO: 后端给 AdSlot 加 preview/startAt/endAt 字段后, 删除这两个 helper, 走主表更新。
+ * TODO(Agent E - 后端): 等 Agent E 在 prisma AdSlot 主表加 preview / startAt / endAt 三列
+ * (以及对应的 platform controller PATCH 路由)后, 本文件 loadSlotMetaMap / saveSlotMetaMap
+ * 这两个 helper 即可删除, 调用点改成直接 PATCH /p/ads/slots/:id 单字段更新, 不再需要
+ * "读出整张 system_settings → 合并 business.adSlotMeta → 写回"这种重补丁。
+ * 详见审查报告 P3-17。
  */
 type SlotMetaEntry = { preview?: string; startAt?: string; endAt?: string }
 async function loadSlotMetaMap(): Promise<Record<string, SlotMetaEntry>> {
@@ -344,6 +348,50 @@ export const adService = {
   deleteCreative(id: string) {
     return http.del<{ ok: boolean }>(`/api/v1/p/ads/creatives/${id}`)
   },
+  /**
+   * 广告创意审核通过(pending → active)
+   *
+   * 后端理想接口: `POST /api/v1/p/ads/creatives/:id/approve` —— **当前未实现**,
+   * 需 Agent E 在 PlatformController 补对应路由 + 落审计记录。
+   *
+   * 接口未就绪期间,本方法暂走 updateCreative({status:'active'}) 实现等价语义,
+   * console.warn 提示后端待补,避免后续 PR 漏改。
+   */
+  async approveCreative(id: string) {
+    try {
+      return await http.post<{ ok: boolean }>(
+        `/api/v1/p/ads/creatives/${encodeURIComponent(id)}/approve`,
+        undefined,
+        { silent: true },
+      )
+    } catch {
+      // eslint-disable-next-line no-console -- Agent E 待补 approve 路由的明确提示
+      console.warn(
+        '[adService.approveCreative] 后端 /p/ads/creatives/:id/approve 未实现,降级使用 updateCreative({status:"active"})。请在后端 PlatformController 补 approve/reject 路由后移除该 fallback。',
+      )
+      return adService.updateCreative(id, { status: 'active' })
+    }
+  },
+  /**
+   * 广告创意审核驳回(pending → rejected)
+   * 与 approveCreative 同模式:理想接口 `POST /p/ads/creatives/:id/reject`(body: { reason }),
+   * 当前后端未实现 → 降级为 updateCreative({status:'rejected'})。
+   */
+  async rejectCreative(id: string, _reason: string) {
+    try {
+      return await http.post<{ ok: boolean }>(
+        `/api/v1/p/ads/creatives/${encodeURIComponent(id)}/reject`,
+        { reason: _reason },
+        { silent: true },
+      )
+    } catch {
+      // eslint-disable-next-line no-console -- Agent E 待补 reject 路由的明确提示
+      console.warn(
+        '[adService.rejectCreative] 后端 /p/ads/creatives/:id/reject 未实现,降级使用 updateCreative({status:"rejected"})。请在后端 PlatformController 补 approve/reject 路由后移除该 fallback。',
+      )
+      return adService.updateCreative(id, { status: 'rejected' })
+    }
+  },
 }
 
 // ============ 选品广场 ============
@@ -453,14 +501,16 @@ export const memberService = {
   planSubscriptions(planId: string) {
     return http.get<PlanSubscriptionRow[]>(`/api/v1/p/member-plans/${planId}/subscriptions`)
   },
-  /** 新商家通用试用天数(0=关闭),走 SystemConfig 全局配置 */
-  async trialDays(): Promise<number> {
-    try {
-      const r = await http.get<{ days: number }>('/api/v1/p/member-plans/trial-days')
-      return typeof r?.days === 'number' ? r.days : 30
-    } catch {
-      return 30
-    }
+  /**
+   * 新商家通用试用天数(0=关闭),走 SystemConfig 全局配置
+   *
+   * 调用接口 GET /api/v1/p/member-plans/trial-days 返回 { days }。
+   * 若后端尚未配置(响应体没有 days 字段),返回 null,调用方应展示
+   * "暂无配置"提示,严禁回退到任何硬编码默认值(历史曾默认 30 天导致误导)。
+   */
+  async trialDays(): Promise<number | null> {
+    const r = await http.get<{ days?: number }>('/api/v1/p/member-plans/trial-days')
+    return typeof r?.days === 'number' ? r.days : null
   },
   saveTrialDays(days: number) {
     return http.put<{ ok: boolean; days: number }>('/api/v1/p/member-plans/trial-days', { days })
@@ -568,7 +618,19 @@ export interface AdminUser {
   id: string
   nickname: string
   username: string
+  /**
+   * user 表上固定的 user.role 字段(super-admin / admin / platform 等),
+   * 与 AdminRole 表中可自定义的角色名(roleName)不是一回事。
+   */
   role: string
+  /**
+   * 关联 AdminRole.name —— 后端 listAdmins 通过 include: { adminRole: true } 注入,
+   * 用于在 UI 上展示该管理员所属的可配置角色名(运营经理/审核员/客服/…)。
+   *
+   * 权限管理页角色成员数比对必须用这个字段,而不是 user.role(后者只会是
+   * 'admin' / 'platform' / 'super-admin' 三种固定字面量,与角色表 name 无关)。
+   */
+  roleName?: string
   avatar?: string
   status: 'active' | 'disabled'
   lastLoginAt?: string
@@ -809,10 +871,14 @@ export const orderShareService = {
   },
 }
 
-// ============ 消息中心（容错降级） ============
+// ============ 消息中心 ============
 /**
- * 平台消息中心 —— 后端可能尚未实现 `/p/notifications`,
- * service 内部已 catch 异常并返回 null,前端可凭此切换到本地 mock 演示。
+ * 平台消息中心 —— 已对接后端真接口,无任何 mock/兜底数据:
+ *   GET  /api/v1/p/notifications              拉列表
+ *   POST /api/v1/p/notifications/read-all     标记全部已读
+ *   POST /api/v1/p/notifications/:id/read     标记单条已读
+ *
+ * list 接口失败返回 null,调用方据此显示空态 + 重试,严禁切换到任何演示数据。
  */
 export type NotifyType = 'system' | 'todo' | 'business'
 export interface NotifyItem {
@@ -848,18 +914,53 @@ export const notifyService = {
       return false
     }
   },
+  /**
+   * 标记单条通知已读 —— 对应后端 `POST /p/notifications/:id/read`,
+   * 在通知详情打开时调用,失败 silent 返回 false,调用方据此决定是否更新本地状态。
+   */
+  async markRead(id: string): Promise<boolean> {
+    try {
+      await http.post<{ ok: boolean }>(
+        `/api/v1/p/notifications/${encodeURIComponent(id)}/read`,
+        undefined,
+        { silent: true },
+      )
+      return true
+    } catch {
+      return false
+    }
+  },
 }
 
-// ============ 反馈（容错降级） ============
+// ============ 反馈 ============
 /**
- * 平台反馈提交 —— 后端 `/p/feedback` 若尚未上线,service 抛出后由调用方落地到
- * 本地 storage (key: jiujiu_platform_feedback_local),保证用户提交不丢。
+ * 平台反馈 —— 与后端 PlatformController.feedback() 对齐:
+ *   POST /api/v1/p/feedback                                    提交反馈(用户/管理员均可)
+ *   GET  /api/v1/p/feedback?type=&status=&page=&pageSize=     查询反馈队列(运营查看)
+ *
+ * 提交接口 silent 标志开启:接口失败由调用方落 storage 兜底保留用户输入,
+ * 队列查询失败抛出由调用方显示空态 + 重试。
+ *
+ * 反馈类型 —— 严格对齐后端 platform.service.submitFeedback validTypes:
+ *   'suggestion' | 'bug' | 'experience' | 'other'
+ * 历史前端用过 'feature',提交后被后端静默改成 'other' 导致归类错乱,已统一为 'suggestion'。
  */
 export interface FeedbackDto {
-  type: 'feature' | 'bug' | 'experience' | 'other'
+  type: 'suggestion' | 'bug' | 'experience' | 'other'
   content: string
   contact?: string
   images?: string[]
+}
+export type FeedbackStatus = 'open' | 'handling' | 'closed'
+export interface FeedbackRow {
+  id: string
+  type: FeedbackDto['type']
+  content: string
+  contact?: string
+  images?: string[]
+  fromUserId: string | null
+  status: FeedbackStatus
+  createdAt: string
 }
 export const feedbackService = {
   submit(dto: FeedbackDto) {
@@ -868,6 +969,22 @@ export const feedbackService = {
       dto as unknown as Record<string, unknown>,
       { silent: true },
     )
+  },
+  list(
+    params: {
+      type?: FeedbackDto['type'] | 'all'
+      status?: FeedbackStatus | 'all'
+      page?: number
+      pageSize?: number
+    } = {},
+  ) {
+    // 'all' → undefined,后端会忽略 falsy 字段
+    const q: Record<string, unknown> = {}
+    if (params.type && params.type !== 'all') q.type = params.type
+    if (params.status && params.status !== 'all') q.status = params.status
+    if (params.page) q.page = params.page
+    if (params.pageSize) q.pageSize = params.pageSize
+    return http.get<Pagination<FeedbackRow>>('/api/v1/p/feedback', q)
   },
 }
 
@@ -942,6 +1059,67 @@ export const ticketService = {
     fromUserName?: string
   }) {
     return http.post<Ticket>('/api/v1/p/tickets', dto as unknown as Record<string, unknown>)
+  },
+}
+
+// ============ 售后/退款审核（平台维度) ============
+/**
+ * 平台维度的售后/退款审核 —— 对应 prisma.Refund 表,后端预期暴露:
+ *   GET    /api/v1/p/refunds?status=&merchantId=&page=&pageSize=
+ *   POST   /api/v1/p/refunds/:id/agree      (refundAmount?)
+ *   POST   /api/v1/p/refunds/:id/reject     (reason)
+ *
+ * 该接口集合**当前后端未完整实现**(只有商家维度 `/m/refunds`),
+ * 由 Agent E 在后端补 PlatformController.refunds() 路由后即可工作。
+ * 调用方在接口未就绪期间应显示空态 + 重试,严禁渲染任何假数据。
+ */
+export type RefundStatus = 'pending' | 'agreed' | 'rejected' | 'in_progress' | 'completed'
+export interface RefundRow {
+  id: string
+  no: string
+  orderId: string
+  orderNo?: string
+  userId: string
+  userName?: string
+  merchantId: string
+  merchantName?: string
+  type: 'refund_only' | 'refund_with_return'
+  reason: string
+  description?: string
+  evidence: string[]
+  applyAmount: number
+  refundAmount?: number | null
+  status: RefundStatus
+  merchantReply?: string | null
+  completedAt?: string | null
+  createdAt: string
+  updatedAt: string
+}
+export const refundService = {
+  list(
+    params: {
+      status?: RefundStatus | 'all'
+      merchantId?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) {
+    const q: Record<string, unknown> = {}
+    if (params.status && params.status !== 'all') q.status = params.status
+    if (params.merchantId) q.merchantId = params.merchantId
+    if (params.page) q.page = params.page
+    if (params.pageSize) q.pageSize = params.pageSize
+    return http.get<Pagination<RefundRow>>('/api/v1/p/refunds', q)
+  },
+  agree(id: string, refundAmount?: number) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/refunds/${encodeURIComponent(id)}/agree`, {
+      refundAmount,
+    })
+  },
+  reject(id: string, reason: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/p/refunds/${encodeURIComponent(id)}/reject`, {
+      reason,
+    })
   },
 }
 

@@ -2,42 +2,79 @@
 /**
  * UM-05 · 支付
  * 还原 原型图/user-mini.jsx::UM_Pay
- * - 顶部大金额展示 + 倒计时
- * - 支付方式选择（微信支付 / 余额）
- * - 立即支付
+ * - 顶部大金额展示 + 倒计时(来自 order.expiresAt/expiresIn，无该字段不显示)
+ * - 支付方式选择(当前仅微信小程序原生支付)
+ * - 立即支付：严格走微信 invoke + 回调，绝不本地"假装支付成功"
+ *
+ * 关键修复：
+ *   - P0-9：删除 mockPaid 直接当成功的兜底分支（开发态后端若仍返 mockPaid 由后端自身负责
+ *           推订单状态，前端永远等真实微信支付回调）
+ *   - P1-18：倒计时改用 order.expiresAt / expiresIn（后端真实剩余时间），不再硬编码 15 分钟
+ *   - P1-19：用户协议跳转改为 AgreementSheet 真协议（拉 /api/v1/u/agreements）
  */
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { orderService } from '../../services'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
+import AgreementSheet from '../../components/agreement-sheet/agreement-sheet.vue'
 import { safeSwitchTab } from '../../utils/tab-nav'
 
 const orderId = ref('')
 const orderNo = ref('')
 const amount = ref(0)
-// 仅保留微信内的微信原生支付
 const method = ref<'wechat'>('wechat')
-const seconds = ref(15 * 60)
+/** 剩余支付秒数：null = 未知（不显示倒计时） */
+const seconds = ref<number | null>(null)
 const paying = ref(false)
-let timer: any
+const showAgreement = ref(false)
+let timer: any = null
 
 onLoad((options) => {
   orderId.value = options?.orderId ?? ''
   orderNo.value = options?.orderNo ?? ''
   amount.value = Number(options?.amount ?? 0)
   if (!orderId.value) {
-    // 没拿到 orderId，禁止用户点支付（旧版会兜底 'o-mock' 进入支付）
     uni.showToast({ title: '订单信息缺失', icon: 'none' })
     setTimeout(() => uni.navigateBack(), 1200)
+    return
   }
+  loadExpires()
 })
 
-onMounted(() => {
+/**
+ * 拉订单详情，按后端 expiresIn(秒) 或 expiresAt(ISO) 算剩余时间。
+ * 字段缺失 → 不显示倒计时(让用户自己看订单列表里的关单时间)。
+ */
+async function loadExpires() {
+  try {
+    const o: any = await orderService.detail(orderId.value)
+    let left: number | null = null
+    if (Number.isFinite(Number(o?.expiresIn))) {
+      left = Math.max(0, Math.floor(Number(o.expiresIn)))
+    } else if (o?.expiresAt) {
+      const diff = Math.floor((new Date(o.expiresAt).getTime() - Date.now()) / 1000)
+      if (Number.isFinite(diff)) left = Math.max(0, diff)
+    }
+    if (left == null || left <= 0) {
+      seconds.value = null
+      return
+    }
+    seconds.value = left
+    startTimer()
+  } catch {
+    seconds.value = null
+  }
+}
+
+function startTimer() {
+  if (timer) clearInterval(timer)
   timer = setInterval(() => {
-    seconds.value--
+    if (seconds.value == null) return
+    seconds.value -= 1
     if (seconds.value <= 0) {
       clearInterval(timer)
+      timer = null
       uni.showModal({
         title: '支付超时',
         content: '订单已被关闭',
@@ -46,13 +83,21 @@ onMounted(() => {
       })
     }
   }, 1000)
+}
+
+onMounted(() => {
+  // 倒计时由 loadExpires() 在拿到 expiresIn 后启动
 })
 
 onUnmounted(() => {
-  if (timer) clearInterval(timer)
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
 })
 
 const timeStr = computed(() => {
+  if (seconds.value == null) return ''
   const m = Math.floor(seconds.value / 60)
   const s = seconds.value % 60
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
@@ -74,8 +119,9 @@ const METHODS = [
  *   2. uni.requestPayment(miniPay) 调起微信支付
  *   3. 微信回调 /api/v1/payments/wechat/notify 真正标订单已付
  *
- * 注：生产环境 mockPaid 永远不会出现；该字段仅在后端商户号未配齐的开发联调阶段会返回。
- * 客户端仍然兼容性识别，避免开发态卡死。
+ * 严禁任何"前端识别到 mockPaid 直接当支付成功"的逻辑（P0-9）：
+ *   订单状态必须由后端基于真实支付/真实回调推进，
+ *   前端唯一可信的"成功"信号是 uni.requestPayment 的 success 回调。
  */
 async function pay() {
   if (!orderId.value) {
@@ -88,37 +134,32 @@ async function pay() {
     const resp: any = await orderService.pay(orderId.value, method.value)
     uni.hideLoading()
 
-    if (resp?.mockPaid) {
-      uni.showToast({ title: '支付成功', icon: 'success' })
-      setTimeout(() => uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' }), 1200)
+    if (!resp?.miniPay) {
+      uni.showToast({ title: '支付参数缺失，请稍后重试', icon: 'none' })
       return
     }
 
-    if (resp?.miniPay) {
-      const mp = resp.miniPay
-      // @ts-ignore — uni 平台 API
-      uni.requestPayment({
-        provider: 'wxpay',
-        timeStamp: mp.timeStamp,
-        nonceStr: mp.nonceStr,
-        package: mp.package,
-        signType: mp.signType || 'RSA',
-        paySign: mp.paySign,
-        success: () => {
-          uni.showToast({ title: '支付成功', icon: 'success' })
-          setTimeout(
-            () => uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' }),
-            1200,
-          )
-        },
-        fail: (err: any) => {
-          const msg = err?.errMsg?.includes('cancel') ? '已取消支付' : '支付失败'
-          uni.showToast({ title: msg, icon: 'none' })
-        },
-      })
-    } else {
-      uni.showToast({ title: '支付参数缺失', icon: 'none' })
-    }
+    const mp = resp.miniPay
+    // @ts-ignore — uni 平台 API
+    uni.requestPayment({
+      provider: 'wxpay',
+      timeStamp: mp.timeStamp,
+      nonceStr: mp.nonceStr,
+      package: mp.package,
+      signType: mp.signType || 'RSA',
+      paySign: mp.paySign,
+      success: () => {
+        uni.showToast({ title: '支付成功', icon: 'success' })
+        setTimeout(
+          () => uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' }),
+          1200,
+        )
+      },
+      fail: (err: any) => {
+        const msg = err?.errMsg?.includes('cancel') ? '已取消支付' : '支付失败'
+        uni.showToast({ title: msg, icon: 'none' })
+      },
+    })
   } catch (e: any) {
     uni.hideLoading()
     uni.showToast({ title: e?.message || '支付失败', icon: 'none' })
@@ -128,7 +169,7 @@ async function pay() {
 }
 
 function goAgreement() {
-  uni.showToast({ title: '《用户协议》', icon: 'none' })
+  showAgreement.value = true
 }
 </script>
 
@@ -142,7 +183,7 @@ function goAgreement() {
         <text class="cur">¥</text>
         <text class="num">{{ amount.toFixed(2) }}</text>
       </view>
-      <view class="hero-time">
+      <view v-if="timeStr" class="hero-time">
         <Icon name="clock" :size="24" color="var(--text-tertiary)" />
         <text>剩余支付时间 {{ timeStr }}</text>
       </view>
@@ -184,6 +225,9 @@ function goAgreement() {
         <text class="link" @click="goAgreement">《用户协议》</text>
       </view>
     </view>
+
+    <!-- 用户协议弹层(拉 /api/v1/u/agreements 真协议正文,本地不再 toast 占位) -->
+    <AgreementSheet :open="showAgreement" type="user" @close="showAgreement = false" />
   </view>
 </template>
 

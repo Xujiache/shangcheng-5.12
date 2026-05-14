@@ -4,7 +4,7 @@
  *
  * 顶部统计 + Tab + 门店卡（等级 + 授权状态 + 联系/授权操作）
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { storeService } from '../../services/store'
 import type { Store } from '@jiujiu/shared/types'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
@@ -45,25 +45,39 @@ const LEVEL_COLOR: Record<string, string> = {
   C: 'linear-gradient(135deg, #E0E0E0, #B0B0B0)',
 }
 
+/**
+ * 状态过滤为本地,因为后端 `listStores` (merchant.service.ts:1244)
+ * 只支持 `keyword` (模糊匹配 name) 和分页,没有 status 字段过滤。
+ *
+ * 搜索关键字 → 透传后端,避免只对当前一页本地 filter 导致漏命中。
+ */
 const filtered = computed(() => {
-  let res = list.value
-  if (tab.value !== 'all') res = res.filter((s) => s.status === tab.value)
-  if (keyword.value) {
-    const kw = keyword.value.toLowerCase()
-    res = res.filter((s) => s.name.toLowerCase().includes(kw) || s.contact.includes(keyword.value))
-  }
-  return res
+  if (tab.value === 'all') return list.value
+  return list.value.filter((s) => s.status === tab.value)
 })
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 async function load() {
   loading.value = true
   try {
-    const data = await storeService.list({ pageSize: 30 })
+    const data = await storeService.list({
+      pageSize: 30,
+      keyword: keyword.value.trim() || undefined,
+    })
     list.value = data.list
   } finally {
     loading.value = false
   }
 }
+
+/** 关键词改变 → 300ms 防抖触发后端检索 */
+watch(keyword, () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    load()
+  }, 300)
+})
 
 function goAuth(s: Store) {
   uni.navigateTo({ url: `/pages/store/auth?id=${s.id}&name=${encodeURIComponent(s.name)}&level=${s.level}` })
@@ -76,13 +90,11 @@ function callStore(s: Store) {
  *
  * 后端目前无 PUT /m/stores/:id 也无 /approve 端点，门店"启用"通过设置授权有效期落地：
  *   POST /m/stores/:id/auth { level, authValidFrom, authValidTo, ... }
- * 设置成功后：
- *   1) 后端把 authValidFrom / authValidTo / level / authConfig 写到 Store 表
- *   2) 前端乐观更新 s.status = 'active' 让 UI 立刻反映
  *
- * 注意：Store.status 列在数据库不会被 saveAuth 改写（后端未支持），
- *      所以列表下次拉取仍可能是 'pending' —— 这是当前后端能力的真实情况，
- *      不在 merchant-app 修复范围内（只允许动 merchant-app/src）。
+ * 修复 P2-15:授权落库后必须重新 load() 全量列表,**不要**本地乐观把
+ * s.status = 'active' 改掉。后端 saveAuth 当前未改写 Store.status,
+ * 强行本地写 active 会和"下次拉取仍是 pending"对不上,造成用户体验混乱。
+ * 重新拉取 → 列表展示的状态以后端为准,出现不一致就直接暴露给用户/后端排查。
  */
 function approve(s: Store) {
   uni.showModal({
@@ -103,11 +115,9 @@ function approve(s: Store) {
           authValidFrom: fmt(now),
           authValidTo: fmt(to),
         })
-        s.status = 'active'
-        s.authValidFrom = fmt(now)
-        s.authValidTo = fmt(to)
         uni.hideLoading()
         uni.showToast({ title: '已通过' })
+        await load()
       } catch (e: any) {
         uni.hideLoading()
         uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
@@ -118,8 +128,8 @@ function approve(s: Store) {
 /**
  * 驳回门店申请
  *
- * 由于无后端"软驳回"路径，按用户指示走删除门店（DELETE /m/stores/:id）。
- * 删除后从列表本地移除。
+ * 无后端"软驳回"路径,按用户指示走删除门店(DELETE /m/stores/:id);
+ * 删除后重新 load() 全量列表(P2-15:不再本地 splice,以服务端为准)。
  */
 function reject(s: Store) {
   uni.showModal({
@@ -131,10 +141,9 @@ function reject(s: Store) {
       uni.showLoading({ title: '处理中…', mask: true })
       try {
         await storeService.remove(s.id)
-        const idx = list.value.findIndex((x) => x.id === s.id)
-        if (idx >= 0) list.value.splice(idx, 1)
         uni.hideLoading()
         uni.showToast({ title: '已驳回' })
+        await load()
       } catch (e: any) {
         uni.hideLoading()
         uni.showToast({ title: e?.message || '操作失败', icon: 'none' })

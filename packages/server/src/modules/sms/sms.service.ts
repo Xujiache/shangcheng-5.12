@@ -79,6 +79,9 @@ export class SmsService {
    * 返回结构化结果而不是 boolean，便于上层把上游具体原因
    * （如"黑名单"/"手机号码不正确"/"模板已停用"）原样回传给用户，
    * 避免出现千篇一律的"短信发送失败"。
+   *
+   * 安全 P0（生产）：SMS_PROVIDER === 'none' 在生产环境一律返回 ok:false，
+   * 不允许"dev 模式静默成功"的假 ok 通路。
    */
   async sendVerifyCode(
     phone: string,
@@ -86,12 +89,19 @@ export class SmsService {
     scene: 'login' | 'register' | 'reset' = 'login',
   ): Promise<{ ok: boolean; reason?: string }> {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
+    const isProd = process.env.NODE_ENV === 'production'
     const t0 = Date.now()
     try {
       if (provider === 'guoyangyun') {
         await this.adapterGuoyangyun(phone, code, scene)
         this.logger.log(`[SMS][${provider}] phone=${phone} ok=true elapsed=${Date.now() - t0}ms`)
         return { ok: true }
+      }
+      // 生产环境若 provider=none 一律返回失败，绝不静默 ok（防"装作发了"导致用户收不到码）
+      if (isProd) {
+        const reason = '生产环境未配置短信通道（SMS_PROVIDER=none）'
+        this.logger.error(`[SMS] phone=${phone} ${reason}`)
+        return { ok: false, reason }
       }
       // dev 模式不真发短信，code 仍写入 SmsCode 表供开发查询；
       // 日志只打脱敏指纹，避免把验证码写进可被他人共享的日志流

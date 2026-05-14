@@ -88,7 +88,10 @@
           </div>
         </div>
 
-        <ElEmpty v-if="filteredItems.length === 0" description="暂无相应商品" />
+        <ElEmpty
+          v-if="filteredItems.length === 0"
+          :description="tab === 'factories' ? '暂无相应厂家' : '暂无相应商品'"
+        />
       </div>
     </ElCard>
 
@@ -102,18 +105,23 @@
         <ElTableColumn label="推送 ID" prop="id" width="200" />
         <ElTableColumn label="投放对象" width="140">
           <template #default="{ row }">
-            <ElTag size="small" effect="plain">{{ targetLabelOf(row.target) }}</ElTag>
+            <ElTag size="small" effect="plain">{{ targetLabelOf(row.audience) }}</ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="备注" prop="note" min-width="220" />
-        <ElTableColumn label="推送时间" width="180">
-          <template #default="{ row }">{{
-            formatDateTime(row.pushedAt || row.createdAt)
-          }}</template>
+        <ElTableColumn label="推送语" prop="pushText" min-width="220">
+          <template #default="{ row }">
+            <span v-if="row.pushText">{{ row.pushText }}</span>
+            <span v-else class="text-g-500">—</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="创建时间" width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </ElTableColumn>
         <ElTableColumn label="状态" width="100" align="center">
-          <template #default>
-            <ElTag size="small" type="success">已推送</ElTag>
+          <template #default="{ row }">
+            <ElTag size="small" :type="pushStatusType(row.status)">{{
+              pushStatusLabel(row.status)
+            }}</ElTag>
           </template>
         </ElTableColumn>
       </ElTable>
@@ -133,7 +141,7 @@
         />
         <ElForm :model="pushForm" label-position="top">
           <ElFormItem label="投放对象">
-            <ElRadioGroup v-model="pushForm.target">
+            <ElRadioGroup v-model="pushForm.audience">
               <ElRadioButton value="all">全部商户</ElRadioButton>
               <ElRadioButton value="factory">仅厂家</ElRadioButton>
               <ElRadioButton value="store">仅门店</ElRadioButton>
@@ -161,8 +169,13 @@
               style="width: 100%"
             />
           </ElFormItem>
-          <ElFormItem label="备注">
-            <ElInput v-model="pushForm.remark" type="textarea" :rows="3" placeholder="可选" />
+          <ElFormItem label="推送语">
+            <ElInput
+              v-model="pushForm.pushText"
+              type="textarea"
+              :rows="3"
+              placeholder="可选 · 展示在商家端推送卡片上"
+            />
           </ElFormItem>
         </ElForm>
         <div class="pf-push__footer">
@@ -198,13 +211,30 @@
   const pushOpen = ref(false)
   const submitting = ref(false)
 
+  /**
+   * 当前推送表单。
+   *
+   * 字段含义对齐后端 PlazaPush schema：
+   *   - targetType: 'product' / 'factory'，由当前 tab 决定
+   *   - productIds / factoryIds: 二选一
+   *   - audience: 投放对象（all/factory/store/customer）
+   *   - positions: 推送位置（后端 String[] 字段）
+   *   - tags: 推送标签
+   *   - scheduledStart / scheduledEnd: 投放时段
+   *   - weight: 权重
+   *   - pushText: 推送语（来自旧 remark 字段，重命名以贴近后端）
+   */
   const pushForm = reactive<PushPayload>({
+    targetType: 'product',
     productIds: [],
-    target: 'all',
-    startAt: '',
-    endAt: '',
+    factoryIds: [],
+    positions: [],
+    tags: [],
+    audience: 'all',
+    scheduledStart: '',
+    scheduledEnd: '',
     weight: 50,
-    remark: ''
+    pushText: ''
   })
   const pushDateRange = ref<[string, string]>(['', ''])
 
@@ -261,6 +291,34 @@
       )[t] || t
     )
   }
+  // PlazaPush.status 与商品 status 名称不同（draft/pending/active/offline/ended），
+  // 单独建一组映射，不再复用商品的 statusType/statusLabel。
+  function pushStatusType(s: string) {
+    return (
+      (
+        {
+          active: 'success',
+          pending: 'warning',
+          draft: 'info',
+          offline: 'info',
+          ended: 'info'
+        } as Record<string, 'success' | 'warning' | 'info' | 'danger'>
+      )[s] || 'info'
+    )
+  }
+  function pushStatusLabel(s: string) {
+    return (
+      (
+        {
+          active: '推送中',
+          pending: '待生效',
+          draft: '草稿',
+          offline: '已下线',
+          ended: '已结束'
+        } as Record<string, string>
+      )[s] || s
+    )
+  }
 
   function toggle(id: string) {
     if (selectedIds.value.has(id)) selectedIds.value.delete(id)
@@ -269,19 +327,46 @@
   }
 
   function pushOne(item: PlazaItem) {
-    pushForm.productIds = [item.id]
+    if (tab.value === 'factories') {
+      pushForm.targetType = 'factory'
+      pushForm.factoryIds = [item.id]
+      pushForm.productIds = []
+    } else {
+      pushForm.targetType = 'product'
+      pushForm.productIds = [item.id]
+      pushForm.factoryIds = []
+    }
     openPush()
   }
 
   function openPush() {
+    const isFactory = tab.value === 'factories'
+    pushForm.targetType = isFactory ? 'factory' : 'product'
     if (batchMode.value) {
       if (selectedIds.value.size === 0) {
-        ElMessage.warning('请先勾选商品')
+        ElMessage.warning(isFactory ? '请先勾选厂家' : '请先勾选商品')
         return
       }
-      pushForm.productIds = Array.from(selectedIds.value)
-    } else if (pushForm.productIds.length === 0) {
-      pushForm.productIds = items.value.slice(0, 5).map((x) => x.id)
+      const ids = Array.from(selectedIds.value)
+      if (isFactory) {
+        pushForm.factoryIds = ids
+        pushForm.productIds = []
+      } else {
+        pushForm.productIds = ids
+        pushForm.factoryIds = []
+      }
+    } else {
+      const fallback = items.value.slice(0, 5).map((x) => x.id)
+      const currentIds = isFactory ? pushForm.factoryIds : pushForm.productIds
+      if (!currentIds || currentIds.length === 0) {
+        if (isFactory) {
+          pushForm.factoryIds = fallback
+          pushForm.productIds = []
+        } else {
+          pushForm.productIds = fallback
+          pushForm.factoryIds = []
+        }
+      }
     }
     const today = new Date().toISOString().slice(0, 10)
     const next7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
@@ -292,14 +377,18 @@
   async function submitPush() {
     submitting.value = true
     try {
-      pushForm.startAt = pushDateRange.value[0]
-      pushForm.endAt = pushDateRange.value[1]
-      const res = await pushPlaza({ ...pushForm })
-      ElMessage.success(`已推送 ${res.pushedCount} 件商品`)
+      pushForm.scheduledStart = pushDateRange.value[0]
+      pushForm.scheduledEnd = pushDateRange.value[1]
+      await pushPlaza({ ...pushForm })
+      // 后端 createPlazaPush 直接返回 PlazaPush 记录而非 pushedCount；
+      // 不再假装显示数量，统一 toast「已创建推送任务」，避免 NaN 误导运营。
+      ElMessage.success('已创建推送任务')
       pushOpen.value = false
       selectedIds.value = new Set()
       batchMode.value = false
       await load()
+    } catch (e: any) {
+      ElMessage.error(e?.message || '推送失败，请稍后重试')
     } finally {
       submitting.value = false
     }
@@ -331,10 +420,29 @@
     }
   }
 
+  /**
+   * 按当前 tab 拉取列表 + 拉一次推送记录
+   *
+   * - products / factories: 写入 items，网格展示
+   * - records: 写入 records，表格展示
+   *
+   * tab 切换时也走这里，确保「推送厂家」标签切换后真的调 /p/plaza/factories
+   * 而不是停留在商品数据上。
+   */
   async function load() {
-    items.value = (await fetchPlatformPlaza('products')) as PlazaItem[]
+    if (tab.value === 'products' || tab.value === 'factories') {
+      items.value = (await fetchPlatformPlaza(tab.value)) as PlazaItem[]
+    }
+    // 推送记录与商品/厂家是独立维度，每次重载顺带刷一次
     records.value = (await fetchPlatformPlaza('records')) as PlazaPush[]
   }
+
+  // 切换 tab 时清空批量勾选并重新拉取
+  watch(tab, () => {
+    selectedIds.value = new Set()
+    batchMode.value = false
+    load()
+  })
 
   onMounted(load)
 </script>

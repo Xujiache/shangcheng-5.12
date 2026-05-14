@@ -1,5 +1,7 @@
 export * from './common'
 export * from './auth'
+// 用户域类型契约入口（当前为 ./auth 的精选 re-export，详见 user.ts 注释）
+export * from './user'
 export * from './merchant'
 export * from './product'
 export * from './order'

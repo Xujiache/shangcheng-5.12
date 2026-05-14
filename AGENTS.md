@@ -1,83 +1,83 @@
 <claude-mem-context>
 # Memory Context
 
-# [商城5.0] recent context, 2026-05-14 1:26pm GMT+8
+# [商城5.0] recent context, 2026-05-14 9:46pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (15,506t read) | 275,094t work | 94% savings
+Stats: 50 obs (18,211t read) | 122,536t work | 85% savings
 
 ### May 14, 2026
-959 12:47a ✅ Remove static padding-top from order header CSS
-960 " ✅ Apply dynamic status bar padding to product page header
-961 12:48a 🔴 Apply dynamic status bar padding to product header template
-962 " ✅ Remove static padding-top from product header CSS
-963 12:49a ✅ Successfully compiled merchant-app with status bar padding fixes
-964 12:53a 🔵 Missing Android Phone Call Permission
-S146 Issue #7 Android auto-update system — implement full stack across NestJS backend, admin-pc Vue, merchant-app and platform-app UniApp; plan-mode observer session writing plan file to C:\Users\Administrator\.claude\plans\calm-whistling-adleman.md (May 14, 1:12 AM)
-S147 Issue #7 Android app auto-update system — full-stack implementation across NestJS backend, Vue admin-pc, and UniApp mobile apps (merchant-app + platform-app) (May 14, 1:16 AM)
-S149 Pull latest changes and batch-commit 7 fixes for merchant app: token refresh, stats page, personal center, and product page improvements (May 14, 1:36 AM)
-1070 1:52a 🟣 Silent token refresh on 401 errors
-1071 " 🟣 Data statistics page interaction improvements
-1072 " 🟣 Personal center page redesign with grouped settings and dynamic version
-1073 " 🟣 Product add page: icons, SKU simplification, price rules migration
-1074 " 🔵 Dashboard todos verified as backend-driven counts
-S150 Push batch of 7 fixes to GitHub; resolved git divergence with upstream SMS/auth commits and successfully deployed (May 14, 1:54 AM)
-1078 1:55a 🔵 Git push rejected due to remote divergence
-1079 1:56a 🔵 Upstream commits identified after fetch
-1080 " 🔵 Upstream changes affect multiple overlapping files, potential merge conflicts identified
-1081 " 🔵 Upstream auth performance optimization: fire-and-forget SMS with background retry
-1082 " 🔵 Git rebase succeeded without conflicts
-1083 1:57a ✅ Code deployed to GitHub: batch of 7 fixes + 2 upstream SMS commits
-S157 User requested to pull the latest changes ("拉取一下最新的"); verification showed local branch is already synchronized with upstream (May 14, 1:57 AM)
-1142 12:41p 🔵 Repository branch already synchronized with upstream
-S158 User requested to pull latest changes; discovered local branch already synchronized with remote but with 50+ uncommitted modifications across monorepo (May 14, 12:42 PM)
-1143 12:43p 🔵 Substantial refactoring across monorepo affecting core backend services and member features
-1144 12:44p ✅ Authentication flow refactored from mock accounts to real backend user info lookup
-1145 " 🟣 Security hardening and production environment enforcement across auth and merchant services
-1146 " 🟣 Member subscription status overview and dynamic addon offerings
-1147 " 🟣 Merchant promotion analytics and factory follow-list persistence via SystemConfig
-1148 12:45p ✅ Removed VITE_USE_MOCK configuration flag from development environment
-1149 " 🟣 Payment processing split for dual transaction types: membership subscriptions and product orders
-1150 " 🔄 Merchant app subscription payment refactored into reusable doRealPay flow
-1151 " ✅ S3 file upload service hardened: explicit production credential enforcement
-1152 " 🟣 User mini-program geolocation integration for store discovery
-1153 " ✅ Payment page hardened: removed mock order defaults and added order validation
-1154 " 🟣 User mini-program WeChat binding hardened with production environment enforcement
-1155 " 🟣 Platform analytics dashboard with real-time sales trend and merchant rankings
-1156 " ✅ JWT authentication centralized secret resolution to enforce production validation
-1157 " 🟣 Membership subscription payment ID generator with MEM prefix for callback routing
-1158 " ✅ Production hardening batch committed: mock bailouts eliminated across full stack
-S161 Pull latest changes and complete full membership chain audit + fixes for e-commerce platform (May 14, 12:46 PM)
-S166 Pull/start work session to implement and validate trial days persistence feature across the full stack (server, admin-pc, platform-app), plus fixing member-related data chain breaks from previous work (May 14, 12:56 PM)
-1159 12:58p 🔵 SystemConfig Model Structure in Prisma Schema
-1160 " 🔵 SystemConfig Already Used for Multiple Settings; trialDays Persistence Partially Implemented
-1161 " 🔵 changeTrial() Function Structure and Persistence Gap in platform-app
-1162 12:59p 🟣 Backend Trial Days Persistence APIs Added to Platform Service
-1163 " 🟣 Trial Days HTTP Endpoints Added to Platform Controller
-1164 " 🟣 Trial Days API Client Functions Added to admin-pc
-1166 " ✅ Trial Days ElSelect Component Enhanced with Backend Sync
-1167 1:00p 🟣 Trial Days Change Handler Implemented in admin-pc Component
-1168 " 🟣 Trial Days Initialization from Backend on Page Load
-1169 " 🟣 Trial Days API Methods Added to platform-app memberService
-1170 " 🟣 Trial Days Initialization Integrated into platform-app Page Load
-1171 1:01p 🟣 Trial Days Persistence Handler Implemented in platform-app
-S168 Commit and validate membership system full-stack implementation combining member data chain repairs + trial days persistence feature, then prepare for origin push (May 14, 1:01 PM)
-1192 1:12p 🔵 Client-side role membership checks deprecated in favor of backend tier decision
-1193 " ✅ Work in progress: migrating user role/membership checks across merchant and user-mp modules
-1194 " 🔴 Fixed customer price-tier chain: merchant-assigned tiers now propagate to frontend
-1195 1:13p ✅ Customer-tier chain fix committed to main; branch 3 commits ahead of origin
-S171 Fixed customer-tier resolution chain across frontend and backend; wired merchant price-tier assignments to reach customers via new my-tier endpoint (May 14, 1:13 PM)
-**Investigated**: TypeScript compilation status of user-mp package; searched for deprecated role/membership check patterns (user.role === 'member', u.isMember); reviewed git status showing modified files across merchant and user-mp modules; examined commit history and branch state
+S182 Push to GitHub and review all work completed: comprehensive full-stack production hardening batch covering 9 commits across server, admin-pc, and mobile packages. (May 14, 2:19 PM)
+S183 Code review and readiness assessment: evaluate the 9-commit production hardening batch (C+ to A− progress) and identify remaining gaps before production deployment. (May 14, 2:40 PM)
+S184 Production readiness score assessment: evaluate current state (87/100) versus starting baseline (65/100) and identify specific blockers to 90+ readiness. (May 14, 2:42 PM)
+S187 Pull remote changes and review what was pushed (git fetch + status check) (May 14, 2:44 PM)
+1322 2:57p 🔴 Socket.io Rollup bundling resolution via transitive dependency hoisting
+1323 " 🔵 New CI/CD workflows and audit-record admin view added; 591 lines of local changes in progress
+1324 " 🔵 Local socket.io dependency changes match remote commit 017beaa exactly
+1325 2:58p 🔵 Local WIP stashed and branch rebased to origin/main (commit 017beaa)
+1326 " 🔵 Stash pop created merge conflicts on socket.io dependency files
+1327 " 🔵 Merge conflict resolution required: 25+ files staged, 2 files with unresolved conflicts
+1328 2:59p 🔵 Merge conflicts resolved: accepted remote socket.io dependency fixes
+1329 " 🟣 JWT authentication guard enhanced with in-process LRU user cache
+1330 " 🟣 Refresh token blacklist service for rotation-based revocation
+1331 " 🟣 GitHub Actions CI/CD pipeline with lint, typecheck, and test automation
+1332 " 🔄 Cart store redesigned for offline-first, server-sync hybrid model
+S191 Diagnosed and resolved frontend login failures for monorepo e-commerce platform with 4 apps; configured all frontend environments to use production backend at https://ewsn.top (May 14, 3:00 PM)
+1362 3:46p 🔵 Platform-app request utility confirms backend connection infrastructure with token refresh
+1363 " 🔵 Platform-app auth service and admin store manage login state and tokens
+1364 3:47p 🔵 Backend auth controller provides admin-login and token refresh endpoints
+1366 " 🔵 Backend adminLogin service validates credentials and returns tokens with user session
+1367 " 🔵 Database seed creates admin@demo test user with platform role and 123456 password
+1369 3:48p 🔵 Backend server at localhost:3001 not responding to HTTP requests
+1372 3:52p 🔵 Backend API verified operational with monorepo frontend apps configured
+1373 " 🔵 Frontend production environments configured for https://ewsn.top backend with Tencent Map integration
+1374 3:53p ✅ platform-app configured to use remote backend https://ewsn.top by default
+1375 3:54p ✅ merchant-app configured to use remote backend https://ewsn.top by default
+1376 " ✅ user-mp configured to use remote backend and disabled mock mode by default
+1377 " ✅ Created platform-app production environment configuration file
+1378 " 🔵 platform-app production readiness verified: 56 HTTP operations, mock layer removed, core endpoints healthy
+S192 Upload e-commerce platform v5.0 to GitHub with infrastructure setup, backend security hardening, and comprehensive frontend/API integration (May 14, 3:55 PM)
+1411 4:53p ✅ Staged infrastructure and configuration files for commit
+1412 4:54p ✅ Reorganized staging into infrastructure batch with proper .gitignore enforcement
+1413 4:56p 🟣 Infrastructure commit: CI/CD pipelines, testing foundation, and env standardization
+1414 " 🟣 Backend security hardening: JWT user-status cache, refresh-token rotation, and authorization tightening
+1415 4:57p ✅ Staged all frontend packages for commit
+1416 4:59p 🔵 Backwards-compatibility stub for agency application batch save refactored to per-row mutations
+1417 " ✅ Suppressed eslint unused-vars warning for backwards-compatibility stub
+1418 " ✅ Upgraded TypeScript directive from @ts-ignore to @ts-expect-error for WangEditor import
+1421 5:02p 🔵 ESLint pre-commit failure: PriceVisibility type removed but still referenced
+1422 " 🔴 Restored PriceVisibility type definition removed by incomplete refactoring
+1423 5:03p 🟣 Frontend polish commit: audit-record view, cart cloud-sync, favorite/coupon pages, and 3-app API wiring
+1424 " 🔵 Three commits successfully created; 4 modified files with pending changes remain
+1425 5:04p ✅ Successfully pushed 3 commits to GitHub main branch
+1426 " 🟣 Order-share service for cross-end order event subscriptions
+1427 " ✅ Final commit successfully pushed to GitHub; 4-commit session complete
+S193 上传到github (Upload to GitHub) — Deploy order-share full-chain feature to remote repository (May 14, 5:05 PM)
+1428 5:25p 🟣 Order sharing feature implemented across monorepo
+1429 5:26p 🟣 Order-share full-chain feature committed with integrated backend and 4-package frontend
+1430 5:27p ✅ Order-share feature pushed to GitHub (origin/main)
+S194 Review and commit product editor revamp with expanded image handling (10 cover + 20 detail images), complete removal of deprecated tags feature, and platform-app administrative polish (Wave 5) (May 14, 5:27 PM)
+1471 7:12p 🔵 Product tags deprecated, cleared during form submission
+1472 " 🔵 Tag UI components completely removed from product form template
+1473 7:13p 🔵 Large-scale product system changes staged across entire monorepo
+1479 7:14p 🟣 Product editor revamp: 10 cover images, 20 detail images, tags removed
+1480 7:15p ✅ Product editor revamp committed and pushed to main branch
+S205 Pull remote commit 1816c9f and inspect both remote fix and local pending changes (May 14, 7:15 PM)
+1496 8:14p 🔵 Remote repository has server build fix ahead of local
+1497 8:15p ✅ Pulled server build fix for order-share schema and jest types
+1498 " 🔵 Remote fix addressed schema assumption bugs in order-share service; local work adds SKU image handling
+S209 Package the user mini-program client for WeChat mini-program release (May 14, 9:42 PM)
+**Investigated**: Examined monorepo structure (jiujiu-mall with pnpm workspaces), verified user-mp package configuration including package.json (uni-app 3.0.0 with Vue 3, Socket.IO, Pinia), reviewed environment configurations (.env and .env.production pointing to https://ewsn.top backend), confirmed build structure and WeChat AppID (wxe8ed8b7d9d154165)
 
-**Learned**: Platform's "customer membership" is not a paid subscription but per-merchant price-tier assignments (guest/customer/agency/member) set in merchant's customers panel to control which prices customers see. Previous implementation relied on non-existent User table fields (user.role, user.isMember) and ignored persisted tier settings. System architecture requires three-part chain: merchant sets tier → backend reads from SystemConfig → frontend queries my-tier endpoint per shop and caches result
+**Learned**: User-mp is a uni-app project that compiles to multiple targets (mp-weixin, h5, app). Monorepo uses pnpm workspaces with @jiujiu/shared as common dependency. Production build requires building shared package first, then user-mp with build:mp-weixin target. Build output structure includes app entry point (app.js, app.json, app.wxss) plus organized modules (pages, components, services, store). Tencent Map integration requires separate Key configuration for POI search functionality
 
-**Completed**: Committed customer-tier chain fix (e5c032a) resolving three interconnected breaks: (1) merchant.service.ts listCustomers now batch-reads actual tiers from SystemConfig instead of hardcoding retail/unauthorized; (2) useShopPriceRule.ts dropped dead User table fields and now trusts backend my-tier endpoint; (3) added new GET /u/shops/:merchantId/my-tier endpoint with tiered resolution logic (role-based → agency, SystemConfig tier resolution → member/agency/customer). Modified 4 files with 102 insertions, 17 deletions. Local main branch is 3 commits ahead of origin/main (includes membership admin-pc field wiring and production hardening commits)
+**Completed**: Built @jiujiu/shared package (ESM + DTS, 4.2s total, no errors). Built @jiujiu/user-mp for WeChat mini-program (mp-weixin), output generated to packages/user-mp/dist/build/mp-weixin/ (759 KB total). Verified build package contains correct AppID configuration, ES6 compilation, minification, and big package support enabled. Backend configured to https://ewsn.top in production mode
 
-**Next Steps**: Awaiting decision on whether to push the 3 local commits (customer-tier fix, membership wiring, production hardening) to origin/main
+**Next Steps**: User is ready to upload build to WeChat developer tools. Pending steps: (1) Import dist/build/mp-weixin directory in WeChat Developer Tools, (2) Upload with version number, (3) Submit for review on mp.weixin.qq.com, (4) Once approved, publish to production. Pre-launch verification needed: ensure request/socket domain whitelist includes ewsn.top in WeChat backend settings
 
 
-Access 275k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 123k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

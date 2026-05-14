@@ -10,10 +10,12 @@
  *   2. 登录态读：loadFromServer() 从 /u/cart 拉真值替换本地
  *   3. 登录态写：addCart / updateCart / removeCart 优先调后端，本地做乐观更新
  *
- * 未登录 → 登录的合并策略（待办）：
- *   当前实现是「登录后服务端覆盖本地」（与淘宝 / 京东一致）。
- *   如需把匿名期加购合并上去，需在 setSession 时遍历本地 lines 调 cartService.add()，
- *   并按 productId+skuId 去重，复杂度较高，暂不在 Wave3 范围内。
+ * 未登录 → 登录的合并策略（当前实现 & 已知限制）：
+ *   登录成功后会调用 `loadFromServer()` 用服务端购物车**完整覆盖**本地（与淘宝/京东
+ *   主流做法一致）。匿名期间在本地加购的条目**不会**自动合并到服务端。
+ *   如未来需要合并：
+ *     在 `setSession()` 中遍历本地 `lines`，按 (productId+skuId) 调 `cartService.add()`
+ *     做幂等合并，再 `loadFromServer()` 覆盖。当前暂不实现。
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
@@ -47,15 +49,29 @@ function isLoggedIn(): boolean {
   }
 }
 
+/**
+ * 选价策略：购物车每条由不同商家的不同 displayPolicy 决定真实成交价，
+ * 但 store 层拿不到每家店铺的规则上下文，且后端在「下单时」会重新按 displayPolicy
+ * 验算单价（防前端造价）。因此本地仅渲染一个"展示价"——优先级：
+ *
+ *   priceRetail > 老接口的 sku.price > 商品聚合最低零售价
+ *
+ * 该展示价仅用于购物车页合计预览；真正下单价格以后端 createOrder 返回的
+ * payAmount 为准（前端不再用本地价格做最终结算）。
+ */
 function serverToLine(it: ServerCartItem): CartLine {
+  const sku = it.sku
+  const displayPrice = Number(
+    sku?.priceRetail ?? sku?.price ?? it.product?.priceRetailMin ?? 0,
+  )
   return {
     id: it.id,
     productId: it.productId,
     skuId: it.skuId,
     name: it.product?.name ?? '',
-    spec: it.sku?.specsLabel || '默认规格',
+    spec: sku?.specsLabel || '默认规格',
     image: it.product?.image ?? '',
-    price: Number(it.sku?.priceRetail ?? it.product?.priceRetailMin ?? 0),
+    price: Number.isFinite(displayPrice) ? displayPrice : 0,
     qty: it.quantity,
     selected: true,
   }

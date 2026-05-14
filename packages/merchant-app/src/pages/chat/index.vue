@@ -412,7 +412,7 @@ onUnload(() => {
                 <text class="sw-name">{{ s.userName }}</text>
                 <text class="sw-time">{{ formatRelative(s.lastMessageAt) }}</text>
               </view>
-              <text class="sw-last">{{ s.lastMessage }}</text>
+              <text class="sw-last">{{ s.lastMessage?.content || '暂无消息' }}</text>
             </view>
             <view v-if="s.unreadCount > 0" class="sw-badge">{{ s.unreadCount > 9 ? '9+' : s.unreadCount }}</view>
           </view>

@@ -8,9 +8,13 @@
  * - 卡片：券面值 + 满减门槛 + 有效期 + 状态标签
  * - "立即领取"按钮调 couponService.claim(id)
  *   - 后端 200 → 把该券标记为"已领取"
- *   - 后端 alreadyClaimed=true → 提示"已领过"
+ *   - 后端 4xx 携带"已领/重复"文案 → 当作幂等成功（仅 toast 提示）
  *   - 后端 404 / 500 → 兜底 toast，按钮恢复可点
  * - 已领取的券在本会话保留"已领取"视觉，避免重复点击
+ *
+ * 库存语义（与后端一致，必须严格遵守）：
+ *   `stock === 0` 表示「不限量发放」，不应展示「已领完」；
+ *   只有 `stock > 0 && received >= stock` 才是真已领完。
  */
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
@@ -61,16 +65,13 @@ async function claim(c: Coupon) {
   if (claiming.value[c.id]) return
   claiming.value[c.id] = true
   try {
-    const res = await couponService.claim(c.id)
+    await couponService.claim(c.id)
     claimedIds.value.add(c.id)
-    if (res?.alreadyClaimed) {
-      uni.showToast({ title: '该券已经领取过', icon: 'none', duration: 1500 })
-    } else {
-      uni.showToast({ title: `领取成功「${c.name}」`, icon: 'success', duration: 1500 })
-    }
+    uni.showToast({ title: `领取成功「${c.name}」`, icon: 'success', duration: 1500 })
   } catch (e: any) {
     const msg = e?.message || '领取失败'
-    if (/already|重复|已领/.test(msg)) {
+    // 后端「重复领取/超过限额」走 4xx 异常通道，前端按文案幂等吸收
+    if (/already|重复|已领|限额|领取过/.test(msg)) {
       claimedIds.value.add(c.id)
       uni.showToast({ title: '该券已经领取过', icon: 'none' })
     } else {
@@ -83,6 +84,7 @@ async function claim(c: Coupon) {
 
 function couponAmountText(c: Coupon): string {
   if (c.type === 'discount' && c.discountPercent != null) {
+    // discountPercent 0~1 区间小数（0.85 = 85 折），统一展示为 "8.5 折"
     return `${(c.discountPercent * 10).toFixed(1)}折`
   }
   return `¥${c.amount ?? 0}`
@@ -95,9 +97,14 @@ function couponThresholdText(c: Coupon): string {
   return '无门槛'
 }
 
+/** 是否已被领完：stock=0 表示不限量，绝不展示「已领完」 */
+function isSoldOut(c: Coupon): boolean {
+  return (c.stock ?? 0) > 0 && (c.received ?? 0) >= (c.stock ?? 0)
+}
+
 function couponStatusText(c: Coupon): string {
   if (claimedIds.value.has(c.id)) return '已领取'
-  if ((c.stock ?? 0) <= 0) return '已领完'
+  if (isSoldOut(c)) return '已领完'
   return '立即领取'
 }
 
@@ -157,7 +164,7 @@ onShow(load)
               :class="[
                 'claim-btn',
                 claimedIds.has(c.id) ? 'done' : '',
-                (c.stock ?? 0) <= 0 ? 'out' : '',
+                isSoldOut(c) ? 'out' : '',
               ]"
               @click="claim(c)"
             >

@@ -95,6 +95,10 @@ interface SpecGroup {
 interface SkuRow {
   /** specs[i] 对应 specGroups[i].values 中的某个 */
   specs: string[]
+  /** 后端 SKU 主键(新建时为空,编辑时来自 loadProduct;updateProduct 据此决定 update/create) */
+  id?: string
+  /** SKU 代表图(可选);用户端选规格弹层视觉规格组按此图展示 */
+  image?: string
   priceWholesale: number
   priceRetail: number
   priceMember: number
@@ -490,6 +494,28 @@ function batchFillStock() {
   })
 }
 
+/** 给 SKU 行选图并上传 —— 上传成功后用 https URL 回写 sku.image,失败保持原值 */
+async function chooseSkuImage(skuIndex: number) {
+  uni.chooseImage({
+    count: 1,
+    sourceType: ['album', 'camera'],
+    success: async (res) => {
+      const paths = (res as { tempFilePaths: string[] }).tempFilePaths || []
+      if (!paths[0]) return
+      try {
+        const [url] = await uploadImages([paths[0]])
+        if (url) skus.value[skuIndex].image = url
+      } catch (e: any) {
+        uni.showToast({ title: e?.message || 'SKU 图上传失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+function removeSkuImage(skuIndex: number) {
+  skus.value[skuIndex].image = undefined
+}
+
 /* ============ Pricing Mode (FX-5) ============ */
 
 function switchPricingMode(mode: PricingMode) {
@@ -559,6 +585,38 @@ async function loadProduct() {
       form.baseFee = ext.baseFee ?? 0
       form.sizeUnit = ext.sizeUnit ?? 'cm'
     }
+
+    // 还原 SKU 数据 —— 之前 loadProduct 漏掉这一步,导致编辑模式下商家看到的 SKU 为空,
+    // 提交又会变成新建一份替换原有 SKU。这是已知生产 bug,这次一并修。
+    const dbSkus = (data as unknown as { skus?: Array<Record<string, unknown>> }).skus ?? []
+    if (dbSkus.length > 0) {
+      // 按 SKU 中首次出现的 spec 顺序反推 specGroups(确保 SKU 矩阵列顺序与历史一致)
+      const groupOrder: string[] = []
+      const groupValues: Record<string, string[]> = {}
+      for (const sku of dbSkus) {
+        const specs = (sku.specs ?? {}) as Record<string, string>
+        for (const [k, v] of Object.entries(specs)) {
+          if (!groupOrder.includes(k)) groupOrder.push(k)
+          if (!groupValues[k]) groupValues[k] = []
+          if (!groupValues[k].includes(String(v))) groupValues[k].push(String(v))
+        }
+      }
+      specGroups.value = groupOrder.map((name) => ({ name, values: groupValues[name] }))
+
+      skus.value = dbSkus.map((sku) => {
+        const specsObj = (sku.specs ?? {}) as Record<string, string>
+        return {
+          id: String(sku.id ?? ''),
+          specs: groupOrder.map((g) => String(specsObj[g] ?? '')),
+          image: typeof sku.image === 'string' ? sku.image : undefined,
+          priceWholesale: Number(sku.priceWholesale ?? 0),
+          priceRetail: Number(sku.priceRetail ?? 0),
+          priceMember: Number(sku.priceMember ?? 0),
+          stock: Number(sku.stock ?? 0),
+          active: sku.active !== false,
+        }
+      })
+    }
   } catch {}
 }
 
@@ -568,17 +626,20 @@ async function submit(status: 'draft' | 'submit') {
   if (!form.name) return uni.showToast({ title: '请填写商品名称', icon: 'none' })
   if (!form.categoryId) return uni.showToast({ title: '请选择分类', icon: 'none' })
   if (form.images.length === 0) return uni.showToast({ title: '请上传至少一张主图', icon: 'none' })
-  // 防御：images 必须全部是 http(s) URL，否则后端拿到本地路径会落库脏数据
-  const badImage = form.images.find((u) => !/^https?:\/\//i.test(u))
-  if (badImage) {
+  // 防御:所有图片(主图/详情图/SKU 图)必须全是 http(s) URL,否则后端拿到本地 tempFilePath 会落库脏数据
+  const isHttpUrl = (u: string) => /^https?:\/\//i.test(u)
+  const badMain = form.images.find((u) => !isHttpUrl(u))
+  const badDetail = form.detailImages.find((u) => !isHttpUrl(u))
+  const badSku = skus.value.find((s) => s.image && !isHttpUrl(s.image))
+  if (badMain || badDetail || badSku) {
     return uni.showToast({
-      title: '存在未上传完成的图片，请稍候重试',
+      title: '存在未上传完成的图片,请稍候重试',
       icon: 'none',
       duration: 2000,
     })
   }
   if (uploading.value) {
-    return uni.showToast({ title: '图片仍在上传，请稍候', icon: 'none' })
+    return uni.showToast({ title: '图片仍在上传,请稍候', icon: 'none' })
   }
   if (form.pricingMode === 'by-size' && form.pricePerSqm <= 0) {
     return uni.showToast({ title: '请填写每平米单价', icon: 'none' })
@@ -595,8 +656,9 @@ async function submit(status: 'draft' | 'submit') {
       description: form.description,
       images: form.images,
       detailImages: form.detailImages,
-      // 商品标签已下架,空数组覆盖避免历史脏数据
-      tags: [],
+      // 商品标签页面已下架,但本端不再发送 tags 字段:
+      // 老商品的 tags 字段保留在数据库不动,避免破坏性升级清空商家既有数据。
+      // 新商品因 dto 不传 tags → Prisma 走 schema 默认 []。
       shipping: form.shipping,
       // 价格显示规则已迁到「店铺设置 - 价格规则」全局，单品不再单独配置
       skus: skus.value.map((s) => {
@@ -605,8 +667,11 @@ async function submit(status: 'draft' | 'submit') {
           if (s.specs[i] !== undefined) specsObj[g.name] = s.specs[i]
         })
         return {
+          // id 仅在编辑模式有值,后端 updateProduct 据此 update 现有行;为空则 create 新行
+          ...(s.id ? { id: s.id } : {}),
           specs: specsObj,
           specsLabel: s.specs.join(' · '),
+          image: s.image || undefined,
           priceWholesale: Number(s.priceWholesale),
           priceRetail: Number(s.priceRetail),
           priceMember: Number(s.priceMember),
@@ -623,6 +688,9 @@ async function submit(status: 'draft' | 'submit') {
       maxWidth: form.pricingMode === 'by-size' ? Number(form.maxWidth) : undefined,
       baseFee: form.pricingMode === 'by-size' ? Number(form.baseFee) : undefined,
       sizeUnit: form.pricingMode === 'by-size' ? form.sizeUnit : undefined,
+      // 显式传 status,否则后端 createProduct 一律落 'auditing'(参考 merchant.service.ts:309)
+      // 草稿:'draft'  提交审核:'auditing'  编辑模式由 productService.update 自行处理流程
+      status: status === 'draft' ? ('draft' as const) : ('auditing' as const),
     }
     if (isEdit.value) {
       await productService.update(productId.value, dto)
@@ -980,6 +1048,18 @@ onMounted(async () => {
         <view class="sku-list">
           <view v-for="(s, i) in skus" :key="i" class="sku-card">
             <view class="sku-head">
+              <!-- SKU 代表图(可选);点击上传/替换,长按删除 -->
+              <view
+                class="sku-thumb"
+                @click="chooseSkuImage(i)"
+                @longpress="s.image ? removeSkuImage(i) : null"
+              >
+                <image v-if="s.image" :src="s.image" class="sku-thumb-img" mode="aspectFill" />
+                <view v-else class="sku-thumb-empty">
+                  <Icon name="plus" :size="28" color="var(--text-tertiary)" />
+                  <text>SKU 图</text>
+                </view>
+              </view>
               <view class="sku-no">
                 <text class="sku-idx">#{{ i + 1 }}</text>
                 <view class="sku-spec-tags">
@@ -1579,8 +1659,38 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 8rpx;
+    gap: 12rpx;
     margin-bottom: 12rpx;
+  }
+  /* SKU 代表图缩略 —— 点击上传,长按删除 */
+  .sku-thumb {
+    flex-shrink: 0;
+    width: 100rpx;
+    height: 100rpx;
+    border-radius: 8rpx;
+    overflow: hidden;
+    background: var(--bg-card);
+    .sku-thumb-img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .sku-thumb-empty {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rpx;
+      border: 2rpx dashed var(--border-default);
+      border-radius: 8rpx;
+      box-sizing: border-box;
+      text {
+        font-size: 18rpx;
+        color: var(--text-tertiary);
+      }
+    }
   }
   .sku-no {
     flex: 1;

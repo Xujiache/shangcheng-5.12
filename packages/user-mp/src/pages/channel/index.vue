@@ -5,7 +5,8 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { productService } from '../../services'
+import { productService, couponService } from '../../services'
+import type { Coupon } from '../../services'
 import { useUserStore } from '../../store/user'
 import { useCartStore } from '../../store/cart'
 import type { Product } from '@jiujiu/shared/types'
@@ -80,31 +81,19 @@ const CONFIGS: Record<ChannelKey, ChannelConfig> = {
   },
 }
 
-/**
- * 默认推荐券（仅前端硬编码，用于活动频道顶部条做"视觉占位 + 引导跳转"）。
- *
- * 这里不调 couponService 实际领取，避免和真实券 id 冲突；
- * 用户点"领取"或"全部券"按钮统一跳 /pages/coupon/center 走真实数据 + 真实 claim。
- * 真实可领券列表请到 领券中心 看。
- */
-const COUPONS = [
-  { id: 'c-new', amount: 30, threshold: 200, name: '新人专享', tag: '满200用' },
-  { id: 'c-100', amount: 100, threshold: 1000, name: '大额满减', tag: '满1000用' },
-  { id: 'c-50', amount: 50, threshold: 500, name: '限时领取', tag: '满500用' },
-]
-
-const VIP_BENEFITS = [
-  { icon: 'badge-vip', label: '专属价', desc: '会员价低至 9 折' },
-  { icon: 'truck', label: '免运费', desc: '会员订单全免运' },
-  { icon: 'gift', label: '生日礼', desc: '生日月双倍权益' },
-  { icon: 'help', label: '优先客服', desc: '7×24 专属客服' },
-]
-
 const channelKey = ref<ChannelKey>('new')
 const products = ref<Product[]>([])
 const loading = ref(false)
 const userStore = useUserStore()
 const cartStore = useCartStore()
+
+/**
+ * 活动频道顶部券位 —— 走 couponService.list() 拉真实平台券，最多展示 6 张。
+ * 之前硬编码的 COUPONS 数组(满200/满1000/满500)是开发期占位，已删除：
+ *   - 与真实券池 id 不匹配，点"领取"也只能跳走，给用户造成"看到却领不到"困惑
+ *   - 推广员/运营调整券时前端要重新发版，违反"配置项不可硬编码"原则
+ */
+const channelCoupons = ref<Coupon[]>([])
 
 const config = computed(() => CONFIGS[channelKey.value])
 
@@ -145,6 +134,29 @@ async function load() {
   } finally {
     loading.value = false
   }
+  // 活动频道独立拉真实可领券池（失败时静默，留空态由模板处理）
+  if (config.value.feature === 'coupon') {
+    couponService
+      .list()
+      .then((r) => {
+        channelCoupons.value = (r?.list || []).slice(0, 6)
+      })
+      .catch(() => {
+        channelCoupons.value = []
+      })
+  }
+}
+
+/** 券面展示文案（折扣/满减/直减 三种类型统一） */
+function couponAmountText(c: Coupon): string {
+  if (c.type === 'discount' && c.discountPercent != null) {
+    return `${(c.discountPercent * 10).toFixed(1)}折`
+  }
+  return `¥${c.amount ?? 0}`
+}
+function couponThresholdText(c: Coupon): string {
+  if (c.threshold && c.threshold > 0) return `满 ${c.threshold} 可用`
+  return '无门槛'
 }
 
 function priceVisibleOf(p: Product): boolean {
@@ -192,8 +204,12 @@ async function onAddCart(p: Product) {
   }
 }
 
-/** 频道页券位是"展示款"——点击直接跳领券中心，让用户在真实可领券列表里挑 */
-function receiveCoupon(_c: (typeof COUPONS)[number]) {
+/**
+ * 频道页券位点击 —— 直接跳领券中心。
+ * 不在频道页做实际 claim 调用，避免重复实现：领取流程统一在 /pages/coupon/center 处理
+ * (那边有"已领过/库存不足/未登录"的完整异常分支与状态回显)。
+ */
+function receiveCoupon(_c: Coupon) {
   uni.navigateTo({ url: '/pages/coupon/center' })
 }
 
@@ -261,31 +277,38 @@ function imgHeightOf(i: number): number {
       </view>
 
       <!-- 频道专属区块 -->
-      <!-- 活动：优惠券领取 -->
+      <!-- 活动：优惠券领取（真实可领券池，空态时显示"暂无可领券"） -->
       <view v-if="config.feature === 'coupon'" class="coupon-strip">
         <view class="strip-head">
           <text class="strip-title">领券中心</text>
           <text class="strip-desc">下单立省，叠加更优惠</text>
           <text class="strip-more" @click="goCouponCenter">全部券 ›</text>
         </view>
-        <scroll-view scroll-x class="coupon-scroll" :show-scrollbar="false">
+        <scroll-view
+          v-if="channelCoupons.length > 0"
+          scroll-x
+          class="coupon-scroll"
+          :show-scrollbar="false"
+        >
           <view class="coupon-list">
-            <view v-for="c in COUPONS" :key="c.id" class="coupon">
+            <view v-for="c in channelCoupons" :key="c.id" class="coupon">
               <view class="coupon-amount">
-                <text class="cur">¥</text>
-                <text class="num">{{ c.amount }}</text>
+                <text v-if="c.type !== 'discount'" class="cur">¥</text>
+                <text class="num">{{ couponAmountText(c) }}</text>
               </view>
               <view class="coupon-info">
                 <text class="coupon-name">{{ c.name }}</text>
-                <text class="coupon-thresh">{{ c.tag }}</text>
+                <text class="coupon-thresh">{{ couponThresholdText(c) }}</text>
               </view>
               <view class="coupon-btn" @click="receiveCoupon(c)">领取</view>
             </view>
           </view>
         </scroll-view>
+        <view v-else class="coupon-empty">暂无可领券，去领券中心看看 ›</view>
       </view>
 
-      <!-- 会员：权益四宫格 + 开通按钮 -->
+      <!-- 会员入口：只保留开通入口，权益细节统一由商家 APP 端订阅页或客服解答；
+           不在用户端硬编码"专属价/免运费/生日礼/优先客服"等权益，避免和商家实际权益脱节 -->
       <view v-if="config.feature === 'member'" class="member-strip">
         <view class="member-head">
           <view class="member-info">
@@ -293,18 +316,9 @@ function imgHeightOf(i: number): number {
               <Icon name="crown" :size="32" color="#FFB300" />
               <text>经纬科技会员</text>
             </view>
-            <text class="member-desc">月费 ¥99 / 年费 ¥899 · 试用 30 天</text>
+            <text class="member-desc">查看会员专享商品，下单更优惠</text>
           </view>
-          <view class="member-btn" @click="openMember">立即开通</view>
-        </view>
-        <view class="benefit-grid">
-          <view v-for="b in VIP_BENEFITS" :key="b.label" class="benefit">
-            <view class="benefit-icon">
-              <Icon :name="b.icon" :size="36" color="#A855F7" />
-            </view>
-            <text class="benefit-label">{{ b.label }}</text>
-            <text class="benefit-desc">{{ b.desc }}</text>
-          </view>
+          <view class="member-btn" @click="openMember">了解会员</view>
         </view>
       </view>
 
@@ -526,6 +540,15 @@ function imgHeightOf(i: number): number {
 }
 .coupon-scroll {
   white-space: nowrap;
+}
+.coupon-empty {
+  padding: 32rpx 24rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  border-radius: 12rpx;
+  margin: 0 24rpx;
 }
 .coupon-list {
   display: inline-flex;

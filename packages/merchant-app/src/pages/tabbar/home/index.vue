@@ -9,6 +9,7 @@ import { ref, onMounted, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { dashboardService } from '../../../services/dashboard'
 import { profileService, type MerchantProfile } from '../../../services/profile'
+import { memberService, type MembershipView } from '../../../services/member'
 import { useFeatureFlagStore } from '../../../store'
 import { formatPrice, formatWan } from '@jiujiu/shared/utils'
 import type { MerchantDashboard } from '@jiujiu/shared/types'
@@ -27,6 +28,7 @@ const { heroPaddingTop } = useStatusBar(16)
 
 const dashboard = ref<MerchantDashboard | null>(null)
 const profile = ref<MerchantProfile | null>(null)
+const membership = ref<MembershipView | null>(null)
 // 三宫格当前高亮项（0=订单 / 1=新客户 / 2=销售额）默认高亮销售额
 const activeStat = ref<0 | 1 | 2>(2)
 const loading = ref(true)
@@ -35,12 +37,47 @@ const flagStore = useFeatureFlagStore()
 const brandName = computed(() => profile.value?.shopName || '经纬科技 · 商家版')
 const brandAvatar = computed(() => profile.value?.avatar || '')
 
+/**
+ * VIP 副标题
+ *
+ * 数据来源:memberService.myMembership() 真实订阅数据(member.ts:102)
+ *   - 试用中:    "VIP · 试用 · 剩余 N 天"
+ *   - 已开通:    "VIP · {套餐名} · 剩余 N 天"
+ *   - 已过期:    "会员已过期 · 点击续费"
+ *   - 已取消:    "会员已取消"
+ *   - 未开通:    "尚未开通 · 点击查看套餐"
+ *   - 接口异常:  返回空字符串(降级到模板 v-if 隐藏副标题)
+ */
+const membershipSub = computed(() => {
+  const m = membership.value
+  if (!m) return '尚未开通 · 点击查看套餐'
+  const planName = m.plan?.name || '会员套餐'
+  const remaining = Math.max(0, m.remainingDays)
+  if (m.status === 'expired') return '会员已过期 · 点击续费'
+  if (m.status === 'cancelled') return '会员已取消'
+  if (m.status === 'trial') return `VIP · 试用 · 剩余 ${remaining} 天`
+  return `VIP · ${planName} · 剩余 ${remaining} 天`
+})
+
 async function loadProfile() {
   try {
     profile.value = await profileService.get()
   } catch {
     // 失败时降级到默认文案
   }
+}
+
+async function loadMembership() {
+  try {
+    membership.value = await memberService.myMembership()
+  } catch {
+    // 接口异常时 membershipSub 已有默认文案,这里静默忽略
+    membership.value = null
+  }
+}
+
+function goMember() {
+  uni.navigateTo({ url: '/pages/member/index' })
 }
 
 /** 主入口（一行 5 个,共两行 → 一共 10 个槽位:7 核心 + 3 个扩展直接展开,不再用"更多") */
@@ -118,10 +155,6 @@ function goPlaza() {
   uni.navigateTo({ url: '/pages/plaza/index' })
 }
 
-function goNotif() {
-  uni.showToast({ title: '消息中心', icon: 'none' })
-}
-
 function goEntry(to: string) {
   if (to.startsWith('/pages/tabbar/')) {
     safeSwitchTab(to)
@@ -138,12 +171,14 @@ onMounted(() => {
   flagStore.fetchFlags()
   loadData()
   loadProfile()
+  loadMembership()
 })
 
 onShow(() => {
   loadData()
   // 每次回到首页都拉一次资料（保证 profile 编辑后立即更新头部）
   loadProfile()
+  loadMembership()
 })
 </script>
 
@@ -157,14 +192,10 @@ onShow(() => {
             <image v-if="brandAvatar" :src="brandAvatar" class="avatar-img" mode="aspectFill" />
             <text v-else>{{ brandName.slice(0, 1) }}</text>
           </view>
-          <view class="brand-info">
+          <view class="brand-info" @click="goMember">
             <text class="brand-name">{{ brandName }}</text>
-            <text class="brand-sub">VIP · 年费 · 剩余 287 天</text>
+            <text class="brand-sub">{{ membershipSub }}</text>
           </view>
-        </view>
-        <view class="notif" @click="goNotif">
-          <Icon name="bell" :size="36" color="#fff" />
-          <view v-if="totalTodos > 0" class="notif-badge">{{ totalTodos }}</view>
         </view>
       </view>
     </view>
@@ -336,36 +367,6 @@ onShow(() => {
       margin-top: 4rpx;
       font-size: 20rpx;
       color: rgba(255, 255, 255, 0.85);
-    }
-  }
-  .notif {
-    position: relative;
-    width: 64rpx;
-    height: 64rpx;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    .notif-icon {
-      font-size: 32rpx;
-    }
-    .notif-badge {
-      position: absolute;
-      top: -4rpx;
-      right: -4rpx;
-      min-width: 32rpx;
-      height: 32rpx;
-      padding: 0 8rpx;
-      border-radius: 999rpx;
-      background: var(--status-highlight);
-      color: var(--text-primary);
-      font-size: 20rpx;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2rpx solid #fff;
     }
   }
 }

@@ -39,6 +39,14 @@ const STATUS_LABEL: Record<
   ended: { text: '已结束', tone: 'default' },
 }
 
+/**
+ * 工具入口
+ *
+ * 当前只接入"优惠券"这一项可完整 CRUD 的工具(见下方 createCoupon/editCoupon 流程)。
+ * 限时购/团购虽然后端 overview 会返回总数,但商家端没有对应详情页 / 创建页 / 编辑页,
+ * 留卡片会产生"点击没反应"的死按钮,按修复要求 P1-13 整张卡删除,
+ * 不留架空 UI,等后端 + 页面齐套再加回来。
+ */
 const TOOLS = [
   {
     key: 'coupon',
@@ -46,23 +54,8 @@ const TOOLS = [
     label: '优惠券',
     desc: '满减/折扣/固定金额',
     accent: '#FF4D2D',
+    countLabel: '进行中',
     count: () => overview.value?.coupons.active ?? 0,
-  },
-  {
-    key: 'flash',
-    icon: 'lightning',
-    label: '限时购',
-    desc: '指定时段超低价',
-    accent: '#FF7A45',
-    count: () => overview.value?.flashSales.active ?? 0,
-  },
-  {
-    key: 'group',
-    icon: 'biz-customer',
-    label: '团购',
-    desc: '成团享更低价',
-    accent: '#FF9C6E',
-    count: () => overview.value?.groupBuys.active ?? 0,
   },
 ]
 
@@ -332,28 +325,24 @@ onMounted(() => {
         </view>
         <view class="tool-count">
           <text class="count-value">{{ t.count() }}</text>
-          <text class="count-label">进行中</text>
+          <text class="count-label">{{ t.countLabel }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 概览四宫格 -->
+    <!-- 概览三宫格 - 仅保留有可点击工具的优惠券统计 -->
     <view v-if="overview" class="stats">
       <view class="stat">
-        <text class="stat-value">{{ overview.coupons.totalReceived }}</text>
-        <text class="stat-label">优惠券领取</text>
+        <text class="stat-value">{{ overview.coupons.total }}</text>
+        <text class="stat-label">优惠券总数</text>
       </view>
       <view class="stat">
-        <text class="stat-value">{{ overview.coupons.totalUsed }}</text>
-        <text class="stat-label">已使用</text>
+        <text class="stat-value">{{ overview.coupons.active }}</text>
+        <text class="stat-label">进行中</text>
       </view>
       <view class="stat">
-        <text class="stat-value">{{ overview.flashSales.sold }}</text>
-        <text class="stat-label">限时购销量</text>
-      </view>
-      <view class="stat">
-        <text class="stat-value">{{ overview.groupBuys.totalGroups }}</text>
-        <text class="stat-label">已成团</text>
+        <text class="stat-value">{{ overview.coupons.received }}</text>
+        <text class="stat-label">已被领取</text>
       </view>
     </view>
 

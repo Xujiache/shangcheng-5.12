@@ -109,9 +109,31 @@ function removeCat(c: Category) {
   })
 }
 
-function moveUp(c: Category) {
+/**
+ * 持久化排序:本地交换两项 sort 后,把同级所有 ID 按新顺序提交给后端
+ *
+ * categoryService.sort(ids) → POST /api/v1/m/categories/sort 写入 sort 值,
+ * 保证刷新后顺序与拖拽结果一致(原实现只改本地内存,导致刷新就还原)
+ */
+async function persistSort(parentId: string | null) {
+  const siblings = merchantList.value
+    .filter((x) => x.parentId === parentId)
+    .sort((a, b) => a.sort - b.sort)
+  const ids = siblings.map((x) => x.id)
+  try {
+    await categoryService.sort(ids)
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '排序保存失败', icon: 'none' })
+    // 失败时重新拉取,避免本地与后端不一致
+    await load()
+  }
+}
+
+async function moveUp(c: Category) {
   if (tab.value === 'platform') return
-  const list = merchantList.value.filter((x) => x.parentId === c.parentId).sort((a, b) => a.sort - b.sort)
+  const list = merchantList.value
+    .filter((x) => x.parentId === c.parentId)
+    .sort((a, b) => a.sort - b.sort)
   const idx = list.findIndex((x) => x.id === c.id)
   if (idx <= 0) return
   const prev = list[idx - 1]
@@ -119,10 +141,13 @@ function moveUp(c: Category) {
   c.sort = prev.sort
   prev.sort = tmp
   merchantList.value = [...merchantList.value]
+  await persistSort(c.parentId)
 }
-function moveDown(c: Category) {
+async function moveDown(c: Category) {
   if (tab.value === 'platform') return
-  const list = merchantList.value.filter((x) => x.parentId === c.parentId).sort((a, b) => a.sort - b.sort)
+  const list = merchantList.value
+    .filter((x) => x.parentId === c.parentId)
+    .sort((a, b) => a.sort - b.sort)
   const idx = list.findIndex((x) => x.id === c.id)
   if (idx < 0 || idx === list.length - 1) return
   const next = list[idx + 1]
@@ -130,6 +155,7 @@ function moveDown(c: Category) {
   c.sort = next.sort
   next.sort = tmp
   merchantList.value = [...merchantList.value]
+  await persistSort(c.parentId)
 }
 
 onMounted(load)

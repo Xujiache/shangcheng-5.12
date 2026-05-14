@@ -144,6 +144,53 @@
       </div>
     </ElCard>
 
+    <!-- 发货对话框 · 必须填快递公司 + 运单号才能提交 -->
+    <ElDialog v-model="shipDialogOpen" :title="shipDialogTitle" width="480px" align-center>
+      <ElForm
+        ref="shipFormRef"
+        :model="shipForm"
+        :rules="shipRules"
+        label-width="92px"
+        label-position="right"
+      >
+        <ElFormItem label="快递公司" prop="company">
+          <ElSelect
+            v-model="shipForm.company"
+            placeholder="选择或输入快递公司"
+            filterable
+            allow-create
+            default-first-option
+            style="width: 100%"
+          >
+            <ElOption
+              v-for="opt in EXPRESS_COMPANIES"
+              :key="opt"
+              :label="opt"
+              :value="opt"
+            />
+          </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="运单号" prop="trackingNumber">
+          <ElInput
+            v-model="shipForm.trackingNumber"
+            placeholder="请输入物流公司单号"
+            maxlength="40"
+            clearable
+          />
+        </ElFormItem>
+        <ElFormItem v-if="shipBatchIds.length > 1">
+          <div class="text-xs text-g-500">
+            将对 <b>{{ shipBatchIds.length }}</b> 单使用同一快递公司与单号；
+            如需按单填写，请逐单点「发货」。
+          </div>
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="shipDialogOpen = false">取消</ElButton>
+        <ElButton type="primary" :loading="shipSubmitting" @click="confirmShip">确认发货</ElButton>
+      </template>
+    </ElDialog>
+
     <!-- 详情抽屉 -->
     <ElDrawer v-model="detailOpen" :size="540" :with-header="false">
       <div v-if="current" class="mp-detail">
@@ -218,10 +265,23 @@
   import { fetchMerchantOrders, shipOrders } from '@/api/merchant-business'
   import type { Order, OrderStatus } from '@jiujiu/shared/types'
   import { formatDateTime, formatRelative } from '@jiujiu/shared/utils'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
   import { Download, Refresh, Search, Van } from '@element-plus/icons-vue'
 
   defineOptions({ name: 'MerchantOrderList' })
+
+  // 常用快递公司供下拉，仍允许用户自定义输入
+  const EXPRESS_COMPANIES = [
+    '顺丰速运',
+    '京东物流',
+    '中通快递',
+    '圆通速递',
+    '韵达快递',
+    '申通快递',
+    '极兔速递',
+    '邮政 EMS',
+    '德邦快递'
+  ]
 
   const tabs: { label: string; value: OrderStatus | 'all' }[] = [
     { label: '全部', value: 'all' },
@@ -307,33 +367,89 @@
     detailOpen.value = true
   }
 
-  async function onShip(o: Order) {
-    await shipOrders([o.id])
-    o.status = 'shipped'
-    ElMessage.success('已发货')
-    detailOpen.value = false
+  /* ===== 发货对话框 =====
+   * 之前 onShip / onBatchShip 直接调 shipOrders([id])，底层会伪造
+   * `company: '默认快递' + trackingNumber: 'TR' + Date.now()`，
+   * 导致数据库里全是虚假运单号 → 物流单号无法对接快递公司接口。
+   *
+   * 改造：弹出对话框，要求用户必须填快递公司 + 真实运单号才能提交。
+   * 批量发货时，所有所选订单使用同一组 (company, trackingNumber)；
+   * 如需按单填写，运营自行点击「发货」逐单录入。
+   */
+  const shipDialogOpen = ref(false)
+  const shipBatchIds = ref<string[]>([])
+  const shipSubmitting = ref(false)
+  const shipFormRef = ref<FormInstance>()
+  const shipForm = reactive({ company: '', trackingNumber: '' })
+  const shipRules: FormRules = {
+    company: [{ required: true, message: '请选择或输入快递公司', trigger: 'change' }],
+    trackingNumber: [
+      { required: true, message: '请输入物流单号', trigger: 'blur' },
+      { min: 4, max: 40, message: '物流单号长度应在 4-40 之间', trigger: 'blur' }
+    ]
+  }
+  const shipDialogTitle = computed(() =>
+    shipBatchIds.value.length > 1 ? `批量发货 (${shipBatchIds.value.length} 单)` : '发货'
+  )
+
+  function openShipDialog(ids: string[]) {
+    if (!ids.length) {
+      ElMessage.warning('请先选择需要发货的订单')
+      return
+    }
+    shipBatchIds.value = [...ids]
+    shipForm.company = ''
+    shipForm.trackingNumber = ''
+    shipDialogOpen.value = true
+    nextTick(() => shipFormRef.value?.clearValidate())
   }
 
-  async function onBatchShip() {
+  function onShip(o: Order) {
+    openShipDialog([o.id])
+  }
+
+  function onBatchShip() {
+    openShipDialog(selectedIds.value)
+  }
+
+  async function confirmShip() {
+    if (!shipFormRef.value) return
+    const valid = await shipFormRef.value.validate().catch(() => false)
+    if (!valid) return
+    shipSubmitting.value = true
     try {
-      await ElMessageBox.confirm(`确定批量发货 ${selectedIds.value.length} 单？`, '提示', {
-        type: 'warning'
-      })
-      await shipOrders(selectedIds.value)
+      const items = shipBatchIds.value.map((id) => ({
+        id,
+        company: shipForm.company.trim(),
+        trackingNumber: shipForm.trackingNumber.trim()
+      }))
+      const r = await shipOrders(items)
+      // 同步前端列表状态，避免还需要 reload 一次
       list.value.forEach((o) => {
-        if (selectedIds.value.includes(o.id) && o.status === 'pending_shipment') {
+        if (shipBatchIds.value.includes(o.id) && o.status === 'pending_shipment') {
           o.status = 'shipped'
+          o.trackingNumber = shipForm.trackingNumber.trim()
+          ;(o as any).trackingCompany = shipForm.company.trim()
         }
       })
-      ElMessage.success(`已批量发货 ${selectedIds.value.length} 单`)
-      selectedIds.value = []
-    } catch {
-      /* cancel */
+      ElMessage.success(`已发货 ${r.shipped} 单`)
+      shipDialogOpen.value = false
+      detailOpen.value = false
+      selectedIds.value = selectedIds.value.filter((id) => !shipBatchIds.value.includes(id))
+      shipBatchIds.value = []
+    } catch (e: any) {
+      ElMessage.error(e?.message || '发货失败，请稍后重试')
+    } finally {
+      shipSubmitting.value = false
     }
   }
 
   function onTrack(o: Order) {
-    ElMessage.info(`物流单号：${o.trackingNumber || 'SF1234567890'}`)
+    if (o.trackingNumber) {
+      ElMessage.info(`${(o as any).trackingCompany || '物流'}：${o.trackingNumber}`)
+    } else {
+      ElMessage.warning('该订单暂无物流单号')
+    }
   }
 
   async function loadData() {

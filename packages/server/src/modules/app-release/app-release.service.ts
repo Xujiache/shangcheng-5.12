@@ -96,7 +96,13 @@ export class AppReleaseService {
     return { ok: true }
   }
 
-  /** 公开：APP 启动时调用，返回该平台最新发布 */
+  /**
+   * 公开：APP 启动时调用，返回该平台最新发布
+   *
+   * 零假数据 P0：之前没有记录时返回 `version: '0.0.0'` 占位 JSON，
+   * 会让客户端误以为线上有"0.0.0 版本"导致一直触发"有新版本可更新"逻辑。
+   * 现在直接抛 NOT_FOUND，前端按空态处理（按钮提示"暂无发布记录"）。
+   */
   async latest(platform?: string) {
     const p = this.assertPlatform(platform)
     const row = await this.prisma.appRelease.findFirst({
@@ -104,16 +110,7 @@ export class AppReleaseService {
       orderBy: { versionCode: 'desc' },
     })
     if (!row) {
-      // 没有发布时返回一个"占位"，让端上 UI 不至于崩
-      return {
-        version: '0.0.0',
-        versionCode: 0,
-        url: '',
-        size: 0,
-        changelog: '',
-        force: false,
-        publishedAt: new Date().toISOString(),
-      }
+      throw new BizException(BizCode.NOT_FOUND, '暂无发布记录')
     }
     return {
       version: row.version,

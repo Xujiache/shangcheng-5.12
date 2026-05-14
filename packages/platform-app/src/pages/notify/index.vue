@@ -2,17 +2,20 @@
 /**
  * PA · 消息中心
  *
- * 顶部铃铛入口（首页 hero.notify-btn）唯一去处。
+ * 顶部铃铛入口(首页 hero.notify-btn)唯一去处。
  *
- * 数据来源：
- *   优先 `GET /api/v1/p/notifications`（notifyService.list 已 silent catch）；
- *   接口不存在或失败 → 切换 mock 数据（标签 "演示数据"），保证 UI 永不空。
+ * 数据来源 (零假数据):
+ *   - 仅展示 `GET /api/v1/p/notifications` 真接口数据
+ *   - 接口失败或后端尚未实现 → 显示空态 + 重试按钮,不再降级到 mock
  *
- * 设计要点：
- *   - 4-Tab 过滤：全部 / 系统通知 / 待办提醒 / 业务提示
- *   - 每条：彩色 icon + 标题 + 摘要 + 相对时间 + 未读红点
- *   - 点击 → uni.showModal 显示全文（轻量,不再新建 detail 页）
- *   - "标记全部已读"：先尝试 `POST /p/notifications/read-all`,失败仅更新本地
+ * 已读状态:
+ *   - 点击单条 → `POST /api/v1/p/notifications/:id/read` 持久化
+ *   - 标记全部已读 → `POST /api/v1/p/notifications/read-all`,失败回滚 UI
+ *
+ * 设计要点:
+ *   - 4-Tab 过滤:全部 / 系统通知 / 待办提醒 / 业务提示
+ *   - 每条:彩色 icon + 标题 + 摘要 + 相对时间 + 未读红点
+ *   - 点击 → uni.showModal 显示全文(轻量,不再新建 detail 页)
  */
 import { ref, computed, onMounted } from 'vue'
 import { notifyService, type NotifyItem, type NotifyType } from '../../services'
@@ -53,63 +56,11 @@ const TYPE_META: Record<
   },
 }
 
-const MOCK_LIST: NotifyItem[] = [
-  {
-    id: 'm1',
-    type: 'system',
-    title: '平台公告 · 系统维护通知',
-    content:
-      '今日 22:00 - 24:00 平台进行例行维护升级,期间下单、提现接口将短暂不可用,请提前知会商家。',
-    unread: true,
-    createdAt: new Date(Date.now() - 30 * 60_000).toISOString(),
-  },
-  {
-    id: 'm2',
-    type: 'todo',
-    title: '有 5 个商户入驻待审核',
-    content: '其中 2 个为加盟商类型,资质文件齐备,建议优先处理。',
-    unread: true,
-    createdAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
-  },
-  {
-    id: 'm3',
-    type: 'business',
-    title: '今日 GMV 突破 10 万',
-    content: '截至 18:00,平台今日 GMV 已突破 10 万元,环比上周同期 +18.6%。',
-    unread: false,
-    createdAt: new Date(Date.now() - 6 * 3600_000).toISOString(),
-  },
-  {
-    id: 'm4',
-    type: 'todo',
-    title: '3 笔提现申请待审核',
-    content: '商家「优品鲜生」「方圆百货」等共 3 笔提现申请,合计 ¥8,650.00。',
-    unread: true,
-    createdAt: new Date(Date.now() - 12 * 3600_000).toISOString(),
-  },
-  {
-    id: 'm5',
-    type: 'system',
-    title: '版本发布 · merchant-app v1.4.2',
-    content: '商家端新版本已上架,新增订单批量发货 + 库存预警功能,建议商户尽快更新。',
-    unread: false,
-    createdAt: new Date(Date.now() - 25 * 3600_000).toISOString(),
-  },
-  {
-    id: 'm6',
-    type: 'business',
-    title: '本周热销商品 TOP10 已生成',
-    content: '本周热销榜单已聚合完毕,可在「数据」→「商品」中查看明细。',
-    unread: false,
-    createdAt: new Date(Date.now() - 2 * 86400_000).toISOString(),
-  },
-]
-
 const tab = ref<TabKey>('all')
 const list = ref<NotifyItem[]>([])
 const loading = ref(true)
-/** true = 后端接口缺失,本页用 mock 演示数据兜底 */
-const usingMock = ref(false)
+/** 后端接口失败时为 true,显示重试按钮(不再降级到演示数据) */
+const loadError = ref(false)
 
 const filteredList = computed(() => {
   if (tab.value === 'all') return list.value
@@ -120,14 +71,16 @@ const unreadCount = computed(() => list.value.filter((m) => m.unread).length)
 
 async function load() {
   loading.value = true
+  loadError.value = false
   try {
     const r = await notifyService.list()
     if (r && Array.isArray(r)) {
       list.value = r
-      usingMock.value = false
     } else {
-      list.value = [...MOCK_LIST]
-      usingMock.value = true
+      // notifyService.list 已 silent catch,返回 null 即代表后端未实现 / 异常,
+      // 严格按"零假数据"原则展示空态 + 重试,不填充任何演示数据。
+      list.value = []
+      loadError.value = true
     }
   } finally {
     loading.value = false
@@ -146,16 +99,25 @@ function relTime(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function openDetail(item: NotifyItem) {
-  if (item.unread) {
-    item.unread = false
-  }
+/**
+ * 单条点击:
+ *   1. 立即弹出详情(用户体验优先)
+ *   2. 若未读,后端调 `POST /p/notifications/:id/read` 持久化已读状态
+ *   3. 后端成功后才把本地 unread 翻为 false,失败则回滚 UI 状态保证一致性
+ */
+async function openDetail(item: NotifyItem) {
   uni.showModal({
     title: item.title,
     content: item.content,
     showCancel: false,
     confirmText: '我知道了',
   })
+  if (!item.unread) return
+  const ok = await notifyService.markRead(item.id)
+  if (ok) {
+    item.unread = false
+  }
+  // 后端 silent catch 失败 → 保留未读状态,下次进来仍会高亮,不出 toast 干扰阅读
 }
 
 async function markAllRead() {
@@ -163,13 +125,12 @@ async function markAllRead() {
     uni.showToast({ title: '已无未读消息', icon: 'none' })
     return
   }
-  if (!usingMock.value) {
-    uni.showLoading({ title: '处理中…' })
-    const ok = await notifyService.markAllRead()
-    uni.hideLoading()
-    if (!ok) {
-      uni.showToast({ title: '接口暂不可用,已本地标记', icon: 'none' })
-    }
+  uni.showLoading({ title: '处理中…' })
+  const ok = await notifyService.markAllRead()
+  uni.hideLoading()
+  if (!ok) {
+    uni.showToast({ title: '操作失败,请稍后重试', icon: 'none' })
+    return
   }
   list.value.forEach((m) => {
     m.unread = false
@@ -182,7 +143,7 @@ onMounted(load)
 
 <template>
   <view class="page">
-    <NavBar title="消息中心" :sub="usingMock ? '演示数据' : ''" />
+    <NavBar title="消息中心" />
 
     <!-- Tabs -->
     <view class="tabs">
@@ -203,7 +164,6 @@ onMounted(load)
         <Icon name="bell" :size="28" color="var(--brand-primary)" />
         <text v-if="unreadCount > 0" class="unread-tip">{{ unreadCount }} 条未读</text>
         <text v-else class="unread-tip empty">暂无未读</text>
-        <view v-if="usingMock" class="mock-badge">演示数据</view>
       </view>
       <view :class="['mark-btn', unreadCount === 0 ? 'disabled' : '']" @click="markAllRead">
         <Icon name="check" :size="24" :color="unreadCount === 0 ? '#C9CDD4' : '#FF4D2D'" />
@@ -214,6 +174,18 @@ onMounted(load)
     <scroll-view scroll-y class="scroll">
       <view v-if="loading" class="loading">
         <text>加载中…</text>
+      </view>
+
+      <view v-else-if="loadError" class="empty-wrap">
+        <EmptyState
+          icon="bell"
+          title="暂无通知"
+          desc="加载失败,可能是后端通知服务暂未启用"
+        />
+        <view class="retry-btn" @click="load">
+          <Icon name="refresh" :size="24" color="#FF4D2D" />
+          <text>点击重试</text>
+        </view>
       </view>
 
       <view v-else-if="filteredList.length === 0" class="empty-wrap">
@@ -317,15 +289,6 @@ onMounted(load)
       font-weight: 500;
     }
   }
-  .mock-badge {
-    margin-left: 8rpx;
-    padding: 2rpx 10rpx;
-    background: rgba(250, 173, 20, 0.12);
-    color: #faad14;
-    border-radius: 999rpx;
-    font-size: 18rpx;
-    font-weight: 700;
-  }
   .mark-btn {
     display: flex;
     align-items: center;
@@ -358,6 +321,22 @@ onMounted(load)
 }
 .empty-wrap {
   padding: 48rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+.retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 14rpx 32rpx;
+  background: rgba(255, 77, 45, 0.08);
+  border: 1rpx solid rgba(255, 77, 45, 0.3);
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: var(--brand-primary);
+  font-weight: 600;
 }
 .list {
   display: flex;

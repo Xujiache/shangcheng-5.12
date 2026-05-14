@@ -3,25 +3,40 @@
  * UM-11 · 推广分佣
  * 还原 原型图/user-mini.jsx::UM_Promote
  * - 顶部累计佣金大数据
- * - 3 宫格：推广人数 / 订单数 / 转化率
- * - 生成专属推广海报
+ * - 3 宫格：推广人数 / 订单数 / 转化率（后端无聚合 → 显示「—」）
+ * - 生成专属推广海报（走后端签名链接，本地不再凑假 URL）
  * - 佣金明细
+ *
+ * 零硬编码原则：
+ *   - 不写死客服微信号/电话（P1-14）
+ *   - 不写死推广规则百分比（P1-12）
+ *   - 不显示假的 0% 转化率（P0-8）
  */
-import { ref, onMounted } from 'vue'
-import { promoteService } from '../../services'
+import { ref, computed, onMounted } from 'vue'
+import { promoteService, systemService } from '../../services'
+import type { PromoteSummary } from '../../services'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
 
-const summary = ref<Awaited<ReturnType<typeof promoteService.summary>>>({
+const summary = ref<PromoteSummary>({
   total: 0,
   thisMonth: 0,
   pending: 0,
-  people: 0,
+  people: null,
   orderCount: 0,
-  conversion: 0,
+  conversion: null,
 })
 const orders = ref<{ id: string; orderNo: string; amount: number; createdAt: string }[]>([])
+
+/** 平台客服联系方式（由 systemService.settings 拉），空值=未配置 */
+const supportWechat = ref<string | null>(null)
+const supportPhone = ref<string | null>(null)
+const supportHours = ref<string | null>(null)
+
+/** 推广规则正文：由后端 SystemConfig.promote.rules 配置；为空时显示"详情请咨询客服" */
+const ruleBody = ref<string>('')
+const ruleUpdatedAt = ref<string>('')
 
 async function load() {
   try {
@@ -31,32 +46,69 @@ async function load() {
   } catch (e) {
     console.error(e)
   }
+  // 系统设置与推广规则可独立失败（老后端没该接口，不影响主流程）
+  systemService
+    .settings()
+    .then((cfg) => {
+      supportWechat.value = (cfg?.customerServiceWechat as string | null) ?? null
+      supportPhone.value = (cfg?.customerServicePhone as string | null) ?? null
+      supportHours.value = (cfg?.customerServiceHours as string | null) ?? null
+    })
+    .catch(() => {})
+  promoteService
+    .rules()
+    .then((r) => {
+      ruleBody.value = r?.body || ''
+      ruleUpdatedAt.value = r?.updatedAt || ''
+    })
+    .catch(() => {})
 }
 
-/** 客服微信号（如需变更可放进 SystemConfig） */
-const SUPPORT_WECHAT = 'jiujiu_kefu'
+/** 显示文案兜底：null/0 都视为"暂无数据"（避免造一个 0% 转化率误导用户） */
+function showCountOrEmpty(v: number | null | undefined): string {
+  if (v == null) return '—'
+  if (v === 0) return '—'
+  return String(v)
+}
+
+/** 转化率：null=无聚合源，显示「—」；否则展示百分比 */
+const conversionText = computed(() => {
+  const v = summary.value.conversion
+  if (v == null) return '—'
+  return `${v}%`
+})
+
+const peopleText = computed(() => showCountOrEmpty(summary.value.people))
+const orderCountText = computed(() => showCountOrEmpty(summary.value.orderCount))
 
 /**
- * 推广提现：后端目前没有 /u/promote/withdraw 接口，统一引导联系客服。
- * 之前 setTimeout 假成功容易让用户以为真到账，已改为复制客服微信号的诚实流程。
+ * 推广提现：平台目前未开通自助提现入口，统一引导联系客服。
+ *
+ * 关键：不写死任何客服微信号/电话；客服联系方式从 systemService.settings 拉，
+ * 后端未配置时直接显示"请联系平台客服"，绝不退化成硬编码常量。
  */
 function withdraw() {
+  const month = formatPrice(summary.value.thisMonth || 0)
+  const supportLines: string[] = []
+  if (supportWechat.value) supportLines.push(`客服微信：${supportWechat.value}`)
+  if (supportPhone.value) supportLines.push(`客服电话：${supportPhone.value}`)
+  if (supportHours.value) supportLines.push(`服务时间：${supportHours.value}`)
+  const supportText =
+    supportLines.length > 0 ? supportLines.join('\n') : '请通过平台官方渠道联系客服。'
+
   uni.showModal({
     title: '推广收益提现',
-    content: `本月待结算 ¥${summary.value.thisMonth || 0}。当前提现走人工审核，复制客服微信号后联系客服核对账户后到账，预计 1-3 个工作日。`,
-    confirmText: '复制客服微信',
-    cancelText: '我再想想',
+    content: `本月待结算 ¥${month}。\n\n暂未开通自助提现，请联系客服核对账户后人工到账。\n\n${supportText}`,
+    confirmText: supportWechat.value ? '复制客服微信' : '我知道了',
+    cancelText: supportWechat.value ? '我再想想' : '取消',
+    showCancel: !!supportWechat.value,
     success: (r) => {
-      if (r.confirm) {
+      if (r.confirm && supportWechat.value) {
         uni.setClipboardData({
-          data: SUPPORT_WECHAT,
+          data: supportWechat.value,
           success: () => uni.showToast({ title: '客服微信号已复制', icon: 'success' }),
           fail: () =>
-            uni.showToast({
-              title: '复制失败，请手动添加 ' + SUPPORT_WECHAT,
-              icon: 'none',
-              duration: 2500,
-            }),
+            uni.showToast({ title: '复制失败，请手动添加', icon: 'none', duration: 2000 }),
         })
       }
     },
@@ -64,38 +116,60 @@ function withdraw() {
 }
 
 /**
- * 生成专属推广海报（极简方案）：
- *  1. 把当前推广分享链接放入剪贴板
- *  2. 提示用户去通讯录 / 朋友圈粘贴；或长按主页二维码海报截图（后期接 canvas 真海报时替换）
+ * 生成专属推广海报。
  *
- * 之所以不走 canvas 是因为 mp-weixin 真渲染需要：
- *   - 二维码图片来源（带 token 的服务端签名 URL，后端暂未提供）
- *   - 头像跨域白名单
- *   - canvas 2d 性能 / 截图保存权限
- * 这些条件不齐全的情况下做半成品反而误导用户。
+ * 调后端 `GET /u/promote/share-link` 拿到带 user.id 追踪签名的 URL（以及可选 posterUrl）。
+ * - 接口正常 → 复制链接 / 海报地址，引导用户分享
+ * - 接口不存在/未上线 → 提示"请联系客服获取推广素材"
+ *
+ * 不再本地凑 `ewsn.top/?ref=invite` 的假链接：这种链接不带追踪，推广人无法获得佣金归属，
+ * 是典型的"假装能用"反模式。
  */
-function genPoster() {
-  const link = 'https://ewsn.top/?ref=' + (summary.value.people > 0 ? 'promoter' : 'invite')
-  uni.setClipboardData({
-    data: link,
-    success: () => {
-      uni.showModal({
-        title: '推广链接已复制',
-        content:
-          '可以粘贴到微信好友 / 朋友圈分享。\n\n如果需要带二维码的海报图，请联系客服获取专属海报模板。',
-        confirmText: '我知道了',
-        showCancel: false,
-      })
-    },
-    fail: () => uni.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
-  })
+async function genPoster() {
+  uni.showLoading({ title: '生成中…', mask: true })
+  try {
+    const data = await promoteService.shareLink()
+    uni.hideLoading()
+    const payload = data?.posterUrl || data?.url
+    if (!payload) {
+      uni.showToast({ title: '暂未生成推广素材，请联系客服', icon: 'none', duration: 2000 })
+      return
+    }
+    uni.setClipboardData({
+      data: payload,
+      success: () => {
+        uni.showModal({
+          title: data.posterUrl ? '推广海报链接已复制' : '推广链接已复制',
+          content: data.posterUrl
+            ? '可在浏览器打开下载，或将链接粘贴到微信好友/朋友圈直接分享。'
+            : '可粘贴到微信好友/朋友圈分享。该链接已带你的推广追踪标识。',
+          confirmText: '我知道了',
+          showCancel: false,
+        })
+      },
+      fail: () => uni.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
+    })
+  } catch (e: any) {
+    uni.hideLoading()
+    uni.showToast({
+      title: e?.message || '暂未开通推广海报，请联系客服',
+      icon: 'none',
+      duration: 2000,
+    })
+  }
 }
 
+/**
+ * 推广规则弹窗。
+ *
+ * 优先用后端 `GET /u/promote/rules` 返回的正文；为空时显示"详情请咨询客服"，
+ * 绝不写死"一级 8% / 二级 3%"这类百分比文案（业务可能随时调整）。
+ */
 function showHelp() {
+  const body = ruleBody.value || '推广分佣规则由平台不定期调整，详情请咨询平台客服。'
   uni.showModal({
     title: '推广分佣规则',
-    content:
-      '邀请好友通过你的专属链接下单，即可获得订单金额 8% 的一级佣金，二级佣金 3%。佣金次月结算。',
+    content: ruleUpdatedAt.value ? `${body}\n\n(更新于 ${ruleUpdatedAt.value})` : body,
     showCancel: false,
   })
 }
@@ -126,22 +200,22 @@ onMounted(load)
       </view>
     </view>
 
-    <!-- 3 宫格 -->
+    <!-- 3 宫格：null/0 一律显示「—」，禁止造假 0% -->
     <view class="grid">
       <view class="grid-item">
         <Icon name="user-add" :size="36" color="var(--brand-primary)" />
         <text class="grid-label">推广人数</text>
-        <text class="grid-value">{{ summary.people }}</text>
+        <text class="grid-value">{{ peopleText }}</text>
       </view>
       <view class="grid-item">
         <Icon name="package" :size="36" color="#FF7A45" />
         <text class="grid-label">订单数</text>
-        <text class="grid-value">{{ summary.orderCount }}</text>
+        <text class="grid-value">{{ orderCountText }}</text>
       </view>
       <view class="grid-item">
         <Icon name="thumb-up" :size="36" color="#A855F7" />
         <text class="grid-label">转化率</text>
-        <text class="grid-value">{{ summary.conversion }}%</text>
+        <text class="grid-value">{{ conversionText }}</text>
       </view>
     </view>
 

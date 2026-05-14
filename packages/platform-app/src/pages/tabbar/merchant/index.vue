@@ -6,7 +6,7 @@
  * - 顶部开关条（厂家&门店按钮图标显示开关）
  * - 商户卡：头像 + 名 + 类型 + 套餐 + 累计 GMV + 操作（详情/权限/停用）
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { merchantService } from '../../../services'
 import type { Merchant, MerchantType } from '@jiujiu/shared/types'
@@ -23,6 +23,9 @@ const keyword = ref('')
 const list = ref<Merchant[]>([])
 const loading = ref(false)
 const showBtnSwitch = ref(true)
+
+/** 概览四项徽章数:与列表分类解耦,首屏并行拉一次,操作后局部更新 */
+const stats = ref({ total: 0, factory: 0, store: 0, disabled: 0 })
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'all', label: '全部' },
@@ -42,27 +45,17 @@ const PLAN_LABEL: Record<string, string> = {
   trial: '试用',
 }
 
+/**
+ * 关键字本地过滤 —— type/status 已交给后端 (load 按 tab 拉对应分类),
+ * 这里只做商户名/联系人模糊搜索的客户端兜底,避免每输入一个字打一次接口。
+ */
 const filtered = computed(() => {
-  let res = list.value
-  if (tab.value === 'factory')
-    res = res.filter((m) => m.type === 'factory' && m.status !== 'disabled')
-  else if (tab.value === 'store')
-    res = res.filter((m) => m.type === 'store' && m.status !== 'disabled')
-  else if (tab.value === 'disabled') res = res.filter((m) => m.status === 'disabled')
-  else res = res.filter((m) => m.status !== 'pending')
-  if (keyword.value) {
-    const kw = keyword.value.toLowerCase()
-    res = res.filter((m) => m.name.toLowerCase().includes(kw) || m.contact.includes(keyword.value))
-  }
-  return res
+  if (!keyword.value) return list.value
+  const kw = keyword.value.toLowerCase()
+  return list.value.filter(
+    (m) => m.name.toLowerCase().includes(kw) || m.contact.includes(keyword.value),
+  )
 })
-
-const stats = computed(() => ({
-  total: list.value.length,
-  factory: list.value.filter((m) => m.type === 'factory' && m.status === 'active').length,
-  store: list.value.filter((m) => m.type === 'store' && m.status === 'active').length,
-  disabled: list.value.filter((m) => m.status === 'disabled').length,
-}))
 
 const statusBarHeight = computed(() => {
   try {
@@ -72,33 +65,74 @@ const statusBarHeight = computed(() => {
   }
 })
 
+/**
+ * 按当前 tab 转换为后端筛选参数:
+ *   - all      → 只排除 pending(等待入驻审核的不在该 tab 显示)
+ *   - factory  → type=factory & 排除 disabled
+ *   - store    → type=store   & 排除 disabled
+ *   - disabled → status=disabled
+ *
+ * 后端 `/p/merchants` 同时支持 type / status 单值查询,因此
+ * "factory 且非 disabled" 用 type=factory 拉取后端默认排除 pending/disabled 的列表。
+ */
+function buildListParams(t: TabKey): { type?: string; status?: string; pageSize: number } {
+  const base: { type?: string; status?: string; pageSize: number } = { pageSize: 50 }
+  if (t === 'factory') base.type = 'factory'
+  else if (t === 'store') base.type = 'store'
+  else if (t === 'disabled') base.status = 'disabled'
+  return base
+}
+
 async function load() {
   loading.value = true
   try {
-    const res = await merchantService.list({ pageSize: 50 })
+    const res = await merchantService.list(buildListParams(tab.value))
     list.value = res.list
   } finally {
     loading.value = false
   }
 }
 
+/**
+ * 并行拉 4 个状态的 total 作为概览徽章数。
+ * pageSize=1 减少传输负担,不依赖后端聚合接口,与商品审核 loadCounts 同模式。
+ */
+async function loadStats() {
+  try {
+    const [total, factory, store, disabled] = await Promise.all([
+      merchantService
+        .list({ pageSize: 1 })
+        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+      merchantService
+        .list({ type: 'factory', pageSize: 1 })
+        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+      merchantService
+        .list({ type: 'store', pageSize: 1 })
+        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+      merchantService
+        .list({ status: 'disabled', pageSize: 1 })
+        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+    ])
+    stats.value = {
+      total: total.total ?? 0,
+      factory: factory.total ?? 0,
+      store: store.total ?? 0,
+      disabled: disabled.total ?? 0,
+    }
+  } catch {
+    /* ignore — 徽章数失败不影响主列表 */
+  }
+}
+
+watch(tab, () => {
+  load()
+})
+
 function viewDetail(m: Merchant) {
   uni.showModal({
     title: m.name,
     content: `类型: ${TYPE_META[m.type].label}\n主体: ${m.legalName}\n联系人: ${m.contact} ${m.contactPhone}\n地区: ${m.region}\n累计 GMV: ¥${formatWan(m.totalGmv ?? 0)}\n信用: ${m.credit ?? 'B'}级`,
     showCancel: false,
-  })
-}
-
-function setPermission(m: Merchant) {
-  uni.showActionSheet({
-    itemList: ['授权所有权限', '仅基础权限', '仅查看', '自定义权限'],
-    success: (r) => {
-      uni.showToast({
-        title: '已设置：' + ['全部', '基础', '查看', '自定义'][r.tapIndex],
-        icon: 'none',
-      })
-    },
   })
 }
 
@@ -138,8 +172,14 @@ function avatarOf(m: Merchant): string {
   return m.name?.[0] ?? '?'
 }
 
-onMounted(load)
-onShow(load)
+onMounted(() => {
+  load()
+  loadStats()
+})
+onShow(() => {
+  load()
+  loadStats()
+})
 </script>
 
 <template>
@@ -241,7 +281,6 @@ onShow(load)
 
         <view class="actions">
           <view class="btn ghost" @click="viewDetail(m)">详情</view>
-          <view class="btn ghost" @click="setPermission(m)">权限</view>
           <view
             :class="['btn', m.status === 'disabled' ? 'primary' : 'dark']"
             @click="togglePause(m)"
