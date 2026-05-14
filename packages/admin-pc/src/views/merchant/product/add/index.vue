@@ -408,8 +408,14 @@
 
   async function loadCategories() {
     try {
-      const own = await fetchMerchantCategories()
-      const flat = own.length ? own : await fetchPlatformCategoriesForMerchant()
+      // 平台 + 商家自定义合并展示（之前是"有自定义就不显示平台"，导致商家漏选平台分类）
+      // 并行拉，任一失败用空数组兜底，保证另一份仍能用
+      const [platform, own] = await Promise.all([
+        fetchPlatformCategoriesForMerchant().catch(() => []),
+        fetchMerchantCategories().catch(() => []),
+      ])
+      // 合并：平台分类在前（"官方"），自定义在后
+      const flat = [...(platform as any[]), ...(own as any[])]
       categoryOptions.value = buildCascaderTree(flat)
     } catch {
       categoryOptions.value = []
@@ -885,6 +891,12 @@
       await loadProduct()
     }
     if (skuMatrix.value.length === 0) rebuildSku()
+  })
+
+  // 页面被 keep-alive 缓存时，从其他 tab（如 "分类管理"）切回来不会触发 onMounted；
+  // onActivated 才能让分类下拉感知到刚删除/新增的分类
+  onActivated(async () => {
+    await loadCategories()
   })
 </script>
 
