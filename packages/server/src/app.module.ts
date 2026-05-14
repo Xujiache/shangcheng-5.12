@@ -38,18 +38,20 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'] }),
+    // ⚠️ 单桶模式（不要再加额外桶名！）
+    //
+    // @nestjs/throttler v6 行为：注册多个桶 → 每个请求被所有桶逐个评估，
+    // 最严的桶会卡死所有端点（哪怕端点没 @Throttle 任何桶）。
+    // 实测：登录第 4 次 → sms 桶 3/min 触发 429（截图日期 2026-05-15）。
+    //
+    // 单桶 + 端点级 @Throttle({ default: { limit: X, ttl: 60_000 } }) 覆盖
+    // 是唯一可靠的姿势。需要 stricter / looser 的端点用本地 override：
+    //   - /auth/admin-login 等登录类   limit: 10
+    //   - /auth/sms-code              limit: 3
+    //   - /files/upload               limit: 60
+    //   - /payments/wechat/notify     limit: 200
     ThrottlerModule.forRoot([
-      // default 120/min:商品编辑(10 主图 + 20 详情图 + 元数据查询)一波 30+ 调用很常见,
-      // 60/min 在编辑器场景下会撞 ThrottlerException;120 仍能挡业务滥用。
-      // 上次 push 939ea4f 把这里调到 120 + 新增 upload 桶后,上游又改回 60 —— 现场用户
-      // 已经亲眼看到 toast "Too Many Requests"(2026-05-15 截图),所以再次扩容并保留 upload 桶。
       { name: 'default', ttl: 60_000, limit: 120 },
-      { name: 'auth', ttl: 60_000, limit: 10 },
-      { name: 'sms', ttl: 60_000, limit: 3 },
-      // upload 60/min:文件上传按文件大小防滥用(由 multer limits 控制),
-      // 不走业务 default 桶,避免上传图片把同账号的业务请求也卡住。
-      { name: 'upload', ttl: 60_000, limit: 60 },
-      { name: 'payment-notify', ttl: 60_000, limit: 200 },
     ]),
     ScheduleModule.forRoot(),
     PrismaModule,
