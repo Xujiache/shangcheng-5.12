@@ -15,9 +15,25 @@
  *   - save() 防抖批量上传，避免单 toggle 就触发请求。
  * 目前不动，保持轻量。
  */
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import Icon from '../../components/icon/icon.vue'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
+import AccountSecurity from '../../components/account-security/account-security.vue'
+import { useUserStore } from '../../store'
+
+const userStore = useUserStore()
+const currentPhone = computed(() => (userStore.user as any)?.phone || '')
+
+const securityOpen = ref(false)
+const securityMode = ref<'password' | 'phone'>('password')
+function openPasswordSheet() {
+  securityMode.value = 'password'
+  securityOpen.value = true
+}
+function openPhoneChangeSheet() {
+  securityMode.value = 'phone'
+  securityOpen.value = true
+}
 
 const KEY = 'merchant_settings_prefs'
 
@@ -197,6 +213,24 @@ onMounted(load)
     </view>
 
     <view class="card">
+      <view class="card-title">账号安全</view>
+      <view class="row" @click="openPasswordSheet">
+        <view class="row-info">
+          <text class="row-label">登录密码</text>
+          <text class="row-sub">修改账号登录密码</text>
+        </view>
+        <Icon name="forward" :size="24" color="var(--text-tertiary)" />
+      </view>
+      <view class="row" @click="openPhoneChangeSheet">
+        <view class="row-info">
+          <text class="row-label">{{ currentPhone ? '更换手机号' : '绑定手机号' }}</text>
+          <text class="row-sub">{{ currentPhone || '未绑定' }}</text>
+        </view>
+        <Icon name="forward" :size="24" color="var(--text-tertiary)" />
+      </view>
+    </view>
+
+    <view class="card">
       <view class="card-title">外观与语言</view>
       <view class="row" @click="toggleDark">
         <view class="row-info">
@@ -244,6 +278,13 @@ onMounted(load)
     </view>
 
     <view class="safe-bottom" />
+
+    <AccountSecurity
+      :open="securityOpen"
+      :mode="securityMode"
+      :current-phone="currentPhone"
+      @close="securityOpen = false"
+    />
   </view>
 </template>
 

@@ -23,3 +23,31 @@ export function fetchLogin(params: Api.Auth.LoginParams): Promise<Api.Auth.Login
 export function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
   return request.get<Api.Auth.UserInfo>({ url: '/api/v1/auth/user-info' })
 }
+
+/** 发送短信验证码（用于修改手机号） */
+export function sendSmsCode(phone: string) {
+  return request.post<{ ok: boolean }>({
+    url: '/api/v1/auth/sms-code',
+    data: { phone }
+  })
+}
+
+/** 修改密码 */
+export function changePassword(payload: { oldPassword: string; newPassword: string }) {
+  return request.post<{ ok: boolean }>({
+    url: '/api/v1/auth/change-password',
+    data: payload
+  })
+}
+
+/** 修改手机号（含原手机 + 新手机双码） */
+export function changePhone(payload: {
+  oldSmsCode?: string
+  newPhone: string
+  newSmsCode: string
+}) {
+  return request.post<{ ok: boolean; phone: string }>({
+    url: '/api/v1/auth/change-phone',
+    data: payload
+  })
+}

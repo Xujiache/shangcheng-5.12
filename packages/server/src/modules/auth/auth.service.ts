@@ -411,4 +411,102 @@ export class AuthService {
     }
     return { ok: true }
   }
+
+  /**
+   * 修改密码（任意已登录账号都可调）
+   *
+   * 规则：
+   *   - 必须验旧密码（argon2 verify），防止 token 被劫持后无感改密
+   *   - 新密码长度 ≥ 6（与 admin-login 校验一致）
+   *   - 改完立刻清 JwtGuard 用户缓存，让该用户在所有设备上下次请求重查 DB
+   *   - 不签发新 token；客户端如想"踢掉其它设备"应自行重新登录
+   */
+  async changePassword(userId: string, dto: { oldPassword: string; newPassword: string }) {
+    const oldPwd = String(dto?.oldPassword || '')
+    const newPwd = String(dto?.newPassword || '')
+    if (!oldPwd || !newPwd) {
+      throw new BizException(BizCode.INVALID_PARAMS, '请填写旧密码和新密码')
+    }
+    if (newPwd.length < 6) {
+      throw new BizException(BizCode.INVALID_PARAMS, '新密码至少 6 位')
+    }
+    if (oldPwd === newPwd) {
+      throw new BizException(BizCode.INVALID_PARAMS, '新密码不能与旧密码相同')
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+
+    // 未设置过密码（如纯微信登录的客户）→ 允许直接设置首次密码；otherwise 必须验旧
+    if (user.passwordHash) {
+      const ok = await argon2.verify(user.passwordHash, oldPwd)
+      if (!ok) throw new BizException(BizCode.INVALID_PARAMS, '旧密码不正确')
+    }
+
+    const newHash = await argon2.hash(newPwd)
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } })
+    try { _clearJwtUserCache(userId) } catch { /* ignore */ }
+    return { ok: true }
+  }
+
+  /**
+   * 修改手机号（先验旧手机号 SMS 码 + 验新手机号 SMS 码 二次确认）
+   *
+   * 安全考量：
+   *   - 只有当前账号已绑定手机号时，需要"旧手机号 + 新手机号"双码（防丢号被改）
+   *   - 当前账号没有手机号（如纯微信登录的客户首次绑定），仅需新手机号 SMS 码
+   *   - 新手机号不能被其他账号占用（同 user-mp bindPhone 的唯一性检查）
+   *   - 改完清 JwtGuard 缓存
+   */
+  async changePhone(
+    userId: string,
+    dto: { oldSmsCode?: string; newPhone: string; newSmsCode: string },
+  ) {
+    const newPhone = String(dto?.newPhone || '').trim()
+    const newCode = String(dto?.newSmsCode || '').trim()
+    if (!/^1[3-9]\d{9}$/.test(newPhone)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '新手机号格式不正确')
+    }
+    if (!/^\d{4,6}$/.test(newCode)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '新手机号验证码格式不正确')
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+
+    // 新手机号唯一性
+    const occupied = await this.prisma.user.findUnique({ where: { phone: newPhone } })
+    if (occupied && occupied.id !== userId) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '该手机号已被其他账号绑定')
+    }
+    if (user.phone === newPhone) {
+      throw new BizException(BizCode.INVALID_PARAMS, '新手机号与当前相同')
+    }
+
+    // 旧手机号验证码：仅当账号已绑定旧手机号时要求
+    if (user.phone) {
+      const oldCode = String(dto?.oldSmsCode || '').trim()
+      if (!/^\d{4,6}$/.test(oldCode)) {
+        throw new BizException(BizCode.INVALID_PARAMS, '请输入原手机号收到的验证码')
+      }
+      const oldRec = await this.prisma.smsCode.findFirst({
+        where: { phone: user.phone, code: oldCode, used: false, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (!oldRec) throw new BizException(BizCode.INVALID_PARAMS, '原手机号验证码错误或已过期')
+      await this.prisma.smsCode.update({ where: { id: oldRec.id }, data: { used: true } })
+    }
+
+    // 新手机号验证码
+    const newRec = await this.prisma.smsCode.findFirst({
+      where: { phone: newPhone, code: newCode, used: false, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (!newRec) throw new BizException(BizCode.INVALID_PARAMS, '新手机号验证码错误或已过期')
+    await this.prisma.smsCode.update({ where: { id: newRec.id }, data: { used: true } })
+
+    await this.prisma.user.update({ where: { id: userId }, data: { phone: newPhone } })
+    try { _clearJwtUserCache(userId) } catch { /* ignore */ }
+    return { ok: true, phone: newPhone }
+  }
 }

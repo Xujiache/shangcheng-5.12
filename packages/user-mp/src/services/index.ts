@@ -424,6 +424,12 @@ export const authService = {
   sendSmsCode(phone: string) {
     return http.post<{ ok: boolean }>('/api/v1/auth/sms-code', { phone })
   },
+  changePassword(payload: { oldPassword: string; newPassword: string }) {
+    return http.post<{ ok: boolean }>('/api/v1/auth/change-password', payload)
+  },
+  changePhone(payload: { oldSmsCode?: string; newPhone: string; newSmsCode: string }) {
+    return http.post<{ ok: boolean; phone: string }>('/api/v1/auth/change-phone', payload)
+  },
 }
 
 // ============ 系统设置（客服联系方式等） ============

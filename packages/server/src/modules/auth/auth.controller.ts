@@ -92,6 +92,32 @@ export class AuthController {
   }
 
   /**
+   * 修改密码（任意已登录用户调）
+   * body: { oldPassword, newPassword }
+   * 新密码 ≥ 6 位；旧密码必须正确（未设过密码的纯微信用户可省略 oldPassword）
+   */
+  @Post('change-password')
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: { oldPassword: string; newPassword: string },
+  ) {
+    return this.authService.changePassword(user.sub, dto)
+  }
+
+  /**
+   * 修改手机号（双码：原手机 + 新手机，分别发 /auth/sms-code 拿到）
+   * body: { oldSmsCode?, newPhone, newSmsCode }
+   * 当前账号没有手机号时（如微信登录用户首次绑），可省 oldSmsCode
+   */
+  @Post('change-phone')
+  changePhone(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: { oldSmsCode?: string; newPhone: string; newSmsCode: string },
+  ) {
+    return this.authService.changePhone(user.sub, dto)
+  }
+
+  /**
    * 动态菜单接口（修复 P1-23）
    *
    * 当前架构说明（重要！）：

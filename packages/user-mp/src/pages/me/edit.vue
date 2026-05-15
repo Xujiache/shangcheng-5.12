@@ -17,6 +17,24 @@ import { useUserStore } from '../../store/user'
 import { authService } from '../../services'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
+import AccountSecurity from '../../components/account-security/account-security.vue'
+
+/* ====== 账号安全（修改密码 / 修改手机号）====== */
+const securityOpen = ref(false)
+const securityMode = ref<'password' | 'phone'>('password')
+function openPasswordSheet() {
+  securityMode.value = 'password'
+  securityOpen.value = true
+}
+function openPhoneChangeSheet() {
+  securityMode.value = 'phone'
+  securityOpen.value = true
+}
+function onSecuritySuccess(mode: 'password' | 'phone') {
+  if (mode === 'phone') {
+    userStore.refreshFromServer().then(hydrateFromStore)
+  }
+}
 
 /**
  * 文件上传 BASE_URL 与 utils/request 同源（VITE_API_BASE_URL）。
@@ -331,10 +349,49 @@ async function bindWechat() {
       </view>
     </view>
 
+    <!-- 账号安全 -->
+    <view class="card">
+      <view class="card-head">
+        <text class="card-title">账号安全</text>
+        <text class="card-sub">修改密码 / 修改手机号</text>
+      </view>
+      <view class="bind-row" @click="openPasswordSheet">
+        <view class="bind-icon bind-icon-pwd">
+          <Icon name="lock" :size="30" color="#fff" />
+        </view>
+        <view class="bind-info">
+          <text class="bind-name">登录密码</text>
+          <text class="bind-sub">未设置请留空旧密码</text>
+        </view>
+        <view class="bind-tag">修改</view>
+        <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+      </view>
+      <view class="divider" />
+      <view class="bind-row" @click="openPhoneChangeSheet">
+        <view class="bind-icon bind-icon-phone">
+          <Icon name="phone" :size="30" color="#fff" />
+        </view>
+        <view class="bind-info">
+          <text class="bind-name">{{ boundPhone ? '更换手机号' : '绑定手机号' }}</text>
+          <text class="bind-sub">{{ boundPhone ? '需要原手机号 + 新手机号双验证' : '验证后即可作为登录方式' }}</text>
+        </view>
+        <view class="bind-tag">{{ boundPhone ? '更换' : '绑定' }}</view>
+        <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+      </view>
+    </view>
+
     <view class="hint">
       <Icon name="info" :size="24" color="var(--text-tertiary)" />
       <text>修改后在同账号的其他手机 / 微信小程序上会自动同步</text>
     </view>
+
+    <AccountSecurity
+      :open="securityOpen"
+      :mode="securityMode"
+      :current-phone="boundPhone"
+      @close="securityOpen = false"
+      @success="onSecuritySuccess"
+    />
 
     <view class="ft">
       <button
@@ -506,6 +563,9 @@ async function bindWechat() {
 }
 .bind-icon-wechat {
   background: linear-gradient(135deg, #09d365, #06ad55);
+}
+.bind-icon-pwd {
+  background: linear-gradient(135deg, #5b8def, #3370ff);
 }
 .bind-info {
   flex: 1;

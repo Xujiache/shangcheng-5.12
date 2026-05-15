@@ -6,6 +6,18 @@
  * - 退出登录
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import AccountSecurity from '../../../components/account-security/account-security.vue'
+
+const securityOpen = ref(false)
+const securityMode = ref<'password' | 'phone'>('password')
+function openPasswordSheet() {
+  securityMode.value = 'password'
+  securityOpen.value = true
+}
+function openPhoneChangeSheet() {
+  securityMode.value = 'phone'
+  securityOpen.value = true
+}
 import { useAdminStore } from '../../../store/admin'
 import { merchantService, productAuditService, ticketService, systemService } from '../../../services'
 import { platformAuthService } from '../../../services/auth'
@@ -461,6 +473,24 @@ function viewProfile() {
         </view>
       </view>
 
+      <!-- 账号安全 -->
+      <view class="card">
+        <view class="sys-row with-divider" @click="openPasswordSheet">
+          <view class="sys-icon">
+            <Icon name="lock" :size="32" color="#5b8def" />
+          </view>
+          <text class="sys-label">修改密码</text>
+          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+        </view>
+        <view class="sys-row" @click="openPhoneChangeSheet">
+          <view class="sys-icon">
+            <Icon name="phone" :size="32" color="#FF4D2D" />
+          </view>
+          <text class="sys-label">修改手机号</text>
+          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+        </view>
+      </view>
+
       <!-- 其他 -->
       <view class="card">
         <view class="sys-row with-divider" @click="openHelp">
@@ -488,6 +518,13 @@ function viewProfile() {
     </view>
 
     <TabBar current="me" />
+
+    <AccountSecurity
+      :open="securityOpen"
+      :mode="securityMode"
+      :current-phone="(userInfo as any)?.phone || ''"
+      @close="securityOpen = false"
+    />
   </view>
 </template>
 
