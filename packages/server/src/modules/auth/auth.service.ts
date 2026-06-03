@@ -75,6 +75,11 @@ export class AuthService {
       // 关联 AdminRole.name 平铺，便于前端直接展示角色显示名（admin-pc 用户中心 / 平台账号列表）
       // u.adminRole 在调用方使用 include: { adminRole: true } 时存在；缺失时为 null
       roleName: u.adminRole?.name ?? null,
+      // 首次登录判断：用户是否已设过密码。
+      // 商家端登录页拿到 false → 强制跳"设置密码"，避免后续 admin-pc 因无密码登不上。
+      // 注意：不能直接把 passwordHash 给前端（即便是 boolean 化，也只在登录响应里返回，
+      // /u/profile 等接口不应包含此字段）。
+      hasPassword: !!passwordHash,
     }
   }
 
@@ -279,8 +284,14 @@ export class AuthService {
     const username = dto.username || dto.userName
     if (!username) throw new BizException(BizCode.INVALID_PARAMS, '账号不能为空')
 
+    // 支持 3 种"账号"输入：username / email / phone（手机号）
+    // 商家入驻流程的用户最初只有手机号 + 首次设的密码 → 必须允许 phone 作为登录账号
+    const u = String(username).trim()
+    const looksLikePhone = /^1[3-9]\d{9}$/.test(u)
     const user = await this.prisma.user.findFirst({
-      where: { OR: [{ username }, { email: username }] },
+      where: looksLikePhone
+        ? { OR: [{ username: u }, { email: u }, { phone: u }] }
+        : { OR: [{ username: u }, { email: u }] },
       include: { adminRole: true },
     })
     if (!user || !user.passwordHash) {
@@ -424,27 +435,45 @@ export class AuthService {
   async changePassword(userId: string, dto: { oldPassword: string; newPassword: string }) {
     const oldPwd = String(dto?.oldPassword || '')
     const newPwd = String(dto?.newPassword || '')
-    if (!oldPwd || !newPwd) {
-      throw new BizException(BizCode.INVALID_PARAMS, '请填写旧密码和新密码')
+    if (!newPwd) {
+      throw new BizException(BizCode.INVALID_PARAMS, '请填写新密码')
     }
     if (newPwd.length < 6) {
       throw new BizException(BizCode.INVALID_PARAMS, '新密码至少 6 位')
     }
-    if (oldPwd === newPwd) {
-      throw new BizException(BizCode.INVALID_PARAMS, '新密码不能与旧密码相同')
-    }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+    // 首次设密码场景允许 oldPassword 为空；非首次必须填且与新密码不一致
+    if (user.passwordHash) {
+      if (!oldPwd) {
+        throw new BizException(BizCode.INVALID_PARAMS, '请填写旧密码')
+      }
+      if (oldPwd === newPwd) {
+        throw new BizException(BizCode.INVALID_PARAMS, '新密码不能与旧密码相同')
+      }
+    }
 
     // 未设置过密码（如纯微信登录的客户）→ 允许直接设置首次密码；otherwise 必须验旧
+    const isFirstSet = !user.passwordHash
     if (user.passwordHash) {
       const ok = await argon2.verify(user.passwordHash, oldPwd)
       if (!ok) throw new BizException(BizCode.INVALID_PARAMS, '旧密码不正确')
     }
 
     const newHash = await argon2.hash(newPwd)
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } })
+    // 首次设密码 + 无 username 的账号（手机号注册的商家）→ 同步把 username 设为手机号，
+    // 这样他们之后能用「手机号 + 密码」登录管理后台 admin-pc（admin-login 三段 OR 查询）。
+    // 已有 username 的不动；用户名冲突时不强行覆盖（罕见，用户不抱怨即可）。
+    const patch: any = { passwordHash: newHash }
+    if (isFirstSet && !user.username && user.phone) {
+      const dup = await this.prisma.user.findFirst({
+        where: { username: user.phone, id: { not: userId } },
+        select: { id: true },
+      })
+      if (!dup) patch.username = user.phone
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: patch })
     try { _clearJwtUserCache(userId) } catch { /* ignore */ }
     return { ok: true }
   }

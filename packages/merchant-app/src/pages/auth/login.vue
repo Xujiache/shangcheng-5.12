@@ -10,7 +10,7 @@
  *   - 密码可见性切换走 eye / eye-off 图标
  *   - 主色 #FF4D2D（暖橙），与商家端品牌一致
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services/auth'
 import { useStatusBar } from '../../composables/useStatusBar'
@@ -45,6 +45,36 @@ const sending = ref(false)
 const loading = ref(false)
 const agreed = ref(true)
 
+/**
+ * 入驻成功提示横幅：apply.vue 提交后写 storage 标志，登录页消费一次。
+ *   - justApplied 控制横幅显示
+ *   - 一旦显示就强制 Tab 切到「短信登录」（首次没有密码，账号登录无法成功）
+ *   - 自动回填刚验证过的手机号，省去用户重输
+ *   - 提示文案告知用户：登录后会立即跳转设密码页
+ */
+const justApplied = ref(false)
+onMounted(() => {
+  try {
+    if (uni.getStorageSync('merchant_just_applied')) {
+      justApplied.value = true
+      mode.value = 'phone'
+      const p = uni.getStorageSync('merchant_applied_phone')
+      if (p && typeof p === 'string') phone.value = p
+    }
+  } catch {
+    /* ignore */
+  }
+})
+function dismissApplyBanner() {
+  justApplied.value = false
+  try {
+    uni.removeStorageSync('merchant_just_applied')
+    uni.removeStorageSync('merchant_applied_phone')
+  } catch {
+    /* ignore */
+  }
+}
+
 const canSubmit = computed(() => {
   if (mode.value === 'account') return username.value.trim().length >= 3 && password.value.length >= 6
   return /^1[3-9]\d{9}$/.test(phone.value) && /^\d{4,6}$/.test(smsCode.value)
@@ -68,7 +98,16 @@ async function onLogin() {
     userStore.setSession(session as any)
 
     const role = (session as any).user?.role
+    const hasPassword = !!(session as any).user?.hasPassword
+    // 首次登录（无密码）→ 不管角色一律强制设密码（admin-pc 用密码登录的前置条件）
+    if (!hasPassword) {
+      dismissApplyBanner()
+      uni.showToast({ title: '登录成功，请设置密码', icon: 'none' })
+      setTimeout(() => uni.reLaunch({ url: '/pages/auth/set-password' }), 400)
+      return
+    }
     if (role === 'factory' || role === 'store' || role === 'super-admin') {
+      dismissApplyBanner()
       uni.showToast({ title: '登录成功', icon: 'success' })
       setTimeout(() => uni.reLaunch({ url: '/pages/tabbar/home/index' }), 500)
     } else {
@@ -157,11 +196,28 @@ function goApply() {
       </view>
     </view>
 
+    <!-- 入驻成功横幅 -->
+    <view v-if="justApplied" class="apply-banner">
+      <view class="apply-banner-icon">
+        <Icon name="check" :size="28" color="#fff" />
+      </view>
+      <view class="apply-banner-text">
+        <text class="apply-banner-title">入驻申请已提交</text>
+        <text class="apply-banner-sub">请使用 手机号 + 短信验证码 登录，登录后会引导你设置首次密码</text>
+      </view>
+      <view class="apply-banner-close" @click="dismissApplyBanner">
+        <Icon name="close" :size="24" color="#fff" />
+      </view>
+    </view>
+
     <!-- 登录卡片 -->
     <view class="card">
-      <!-- Tabs -->
+      <!-- Tabs：首次入驻后只允许短信登录（无密码），账号登录 Tab 暂停 -->
       <view class="tabs">
-        <view :class="['tab', mode === 'account' && 'active']" @click="mode = 'account'">
+        <view
+          :class="['tab', mode === 'account' && 'active', justApplied && 'tab-disabled']"
+          @click="!justApplied && (mode = 'account')"
+        >
           <text class="tab-label">账号登录</text>
           <view class="tab-underline" v-if="mode === 'account'" />
         </view>
@@ -284,6 +340,60 @@ function goApply() {
   padding-bottom: 48rpx;
   box-sizing: border-box;
   position: relative;
+}
+
+/* 入驻成功横幅（覆盖在 Hero 下方、登录卡片上方） */
+.apply-banner {
+  margin: -84rpx 32rpx 24rpx;
+  padding: 24rpx 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  background: linear-gradient(135deg, #1ABC9C 0%, #16A085 100%);
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 32rpx rgba(26, 188, 156, 0.32);
+  position: relative;
+  z-index: 2;
+}
+.apply-banner-icon {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.apply-banner-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.apply-banner-title {
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.apply-banner-sub {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 22rpx;
+  line-height: 1.4;
+}
+.apply-banner-close {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.tab-disabled {
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 /* ===== Hero ===== */

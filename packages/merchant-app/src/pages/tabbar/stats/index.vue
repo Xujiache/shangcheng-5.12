@@ -37,16 +37,16 @@ const TABS = [
   { key: 'year', label: '本年' },
 ]
 
-const totalSales = computed(() => stats.value?.salesTrend.reduce((s, x) => s + x.value, 0) ?? 0)
 /**
- * 注意:这里聚合的是 TOP 商品的销量之和,**不是**真实的订单笔数。
- *
- * 后端 stats 接口(/api/v1/m/dashboard/stats)目前没有按周期返回订单总数,
- * 用销量当订单数会让"客单价"=销售额/订单数 失真(销量包含同一订单多件),
- * 故 P1-14 修复:
- *   - 这里改名为 topProductsSales,语义诚实
- *   - 概览卡片删掉"订单数 / 客单价"两栏,等后端补真订单聚合再加
+ * 概览 KPI 全部来自后端 /m/stats 真实聚合（Wave5 已补 orderCount / totalSales / avgOrderValue）：
+ *   - totalSales: 周期内已支付订单 payAmount 之和（元）
+ *   - orderCount: 周期内的订单笔数（不是 SKU 销量）
+ *   - avgOrderValue: 客单价 = totalSales / orderCount（后端已四舍五入）
+ *   - topProductsSales: TOP 商品销量之和（保留作为参考指标，不等同于订单数）
  */
+const totalSales = computed(() => stats.value?.totalSales ?? 0)
+const orderCount = computed(() => stats.value?.orderCount ?? 0)
+const avgOrderValue = computed(() => stats.value?.avgOrderValue ?? 0)
 const topProductsSales = computed(
   () => stats.value?.topProducts.reduce((s, p) => s + p.sales, 0) ?? 0,
 )
@@ -185,9 +185,21 @@ const periodText = computed(() =>
           </view>
           <view class="ov-divider" />
           <view class="ov-item">
+            <text class="ov-label">订单数</text>
+            <text class="ov-value">{{ orderCount }}</text>
+            <view class="ov-bar success-bar" />
+          </view>
+          <view class="ov-divider" />
+          <view class="ov-item">
+            <text class="ov-label">客单价</text>
+            <text class="ov-value">{{ formatPrice(avgOrderValue) }}</text>
+            <view class="ov-bar warning-bar" />
+          </view>
+          <view class="ov-divider" />
+          <view class="ov-item">
             <text class="ov-label">TOP 商品销量</text>
             <text class="ov-value">{{ topProductsSales }}</text>
-            <view class="ov-bar success-bar" />
+            <view class="ov-bar info-bar" />
           </view>
         </view>
       </view>
@@ -437,6 +449,9 @@ const periodText = computed(() =>
     }
     &.success-bar {
       background: #52c41a;
+    }
+    &.warning-bar {
+      background: #faad14;
     }
     &.info-bar {
       background: #1296db;

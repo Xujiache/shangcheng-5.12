@@ -30,6 +30,12 @@ export interface MerchantDashboard {
 /** 商家统计 · 销售趋势 */
 export interface MerchantStats {
   period: 'today' | 'week' | 'month' | 'year'
+  /** 周期内的订单总数（真实 order 行数，不是 SKU 销量） */
+  orderCount: number
+  /** 周期内的销售总额（已支付订单 payAmount 之和） */
+  totalSales: number
+  /** 客单价 = totalSales / orderCount（0 单时为 0，前端无需再除） */
+  avgOrderValue: number
   salesTrend: { date: string; value: number }[]
   topProducts: { productId: ID; name: string; sales: number }[]
   customerAnalysis: { newRatio: number; oldRatio: number }

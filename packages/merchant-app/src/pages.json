@@ -2,6 +2,7 @@
   "pages": [
     { "path": "pages/auth/login", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
     { "path": "pages/auth/apply", "style": { "navigationBarTitleText": "商家入驻" } },
+    { "path": "pages/auth/set-password", "style": { "navigationBarTitleText": "设置密码", "navigationStyle": "custom" } },
     { "path": "pages/tabbar/home/index", "style": { "navigationBarTitleText": "经纬科技 · 商家版" } },
     { "path": "pages/tabbar/product/index", "style": { "navigationBarTitleText": "商品" } },
     { "path": "pages/tabbar/order/index", "style": { "navigationBarTitleText": "订单" } },

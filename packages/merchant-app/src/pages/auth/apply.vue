@@ -3,9 +3,17 @@
  * 商家入驻申请（v2 · 重构美化）
  *
  * 流程：
- *   1) 手机号 + 验证码（已登录跳过）
+ *   1) 手机号 + 验证码（**强制走，不再因"已登录"跳过**）
  *   2) 填写资料 → POST /api/v1/u/merchant-apply
  *   3) 等待平台审核（status=pending）
+ *
+ * 安全：不论是否已登录，都必须当场用短信验证申请所用手机号。
+ * 原因：
+ *   1. 历史 bug —— 旧逻辑用 `userStore.isLogin` 判断跳过手机步，
+ *      但 token 可能是上一会话残留 / 来自微信登录无手机的账号，
+ *      导致直接落到第二步，contactPhone 也没被自动填，体验和安全都坏；
+ *   2. 商家申请绑定的"主体手机号"必须经过本次设备短信验证，
+ *      避免用旧账号 token 冒名提交申请。
  *
  * 视觉：
  *   - Hero 渐变 + 可视化步进条（验证 → 信息 → 完成）
@@ -22,7 +30,7 @@ const { heroPaddingTop } = useStatusBar(40)
 
 const userStore = useUserStore()
 
-const step = ref<'phone' | 'form' | 'done'>(userStore.isLogin ? 'form' : 'phone')
+const step = ref<'phone' | 'form' | 'done'>('phone')
 
 // 第一步：手机号验证码
 const phone = ref('')
@@ -103,6 +111,17 @@ async function submit() {
   submitting.value = true
   try {
     await authService.merchantApply({ ...form })
+    // 入驻成功 → 立刻让登录页知道：① 显示横幅 ② 强制走手机+短信登录 ③ 自动回填刚验证过的手机号
+    try {
+      uni.setStorageSync('merchant_just_applied', '1')
+      if (form.contactPhone) {
+        uni.setStorageSync('merchant_applied_phone', form.contactPhone)
+      }
+    } catch {
+      /* ignore */
+    }
+    // 提交完成后用户已在"已登录"状态（apply 第一步即 phone-login），登出当前会话避免直接进入主页
+    try { userStore.logout() } catch { /* ignore */ }
     step.value = 'done'
   } catch (e: any) {
     uni.showToast({ title: e?.message || '提交失败', icon: 'none' })

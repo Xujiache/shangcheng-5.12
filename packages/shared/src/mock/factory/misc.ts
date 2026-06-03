@@ -300,8 +300,14 @@ export function genMerchantStats(period: MerchantStats['period'] = 'week'): Merc
   ]
   const cats = ['家具', '灯具', '布艺', '厨卫', '摆件', '建材', '家电']
   const newRatio = faker.number.float({ min: 0.25, max: 0.55, fractionDigits: 2 })
+  const orderCount = faker.number.int({ min: 20, max: 200 })
+  const totalSales = faker.number.int({ min: orderCount * 100, max: orderCount * 2500 })
+  const avgOrderValue = orderCount > 0 ? Math.round(totalSales / orderCount) : 0
   return {
     period,
+    orderCount,
+    totalSales,
+    avgOrderValue,
     salesTrend: Array.from({ length: len }).map((_, i) => ({
       date: labelFor(i),
       value: faker.number.int({ min: 30, max: 100 }),

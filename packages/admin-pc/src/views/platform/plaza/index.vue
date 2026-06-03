@@ -135,7 +135,7 @@
         </div>
         <ElAlert
           type="info"
-          :title="`即将推送 ${pushForm.productIds.length} 件商品`"
+          :title="`即将推送 ${pushForm.productIds?.length ?? 0} 件商品`"
           :closable="false"
           show-icon
         />

@@ -372,6 +372,19 @@ export const promoteService = {
   rules() {
     return http.get<PromoteRules>('/api/v1/u/promote/rules', undefined, { silent: true })
   },
+  /**
+   * 绑定上级邀请人（幂等：只对未绑定过的用户生效）。
+   *
+   * 触发时机：用户首次通过分享链接 ?ref=<inviterId> 进入并完成登录后调用一次。
+   * 后端 service 已实现自校验（自己不能绑自己 / 已绑定不重复 / 邀请人必须存在）。
+   */
+  bindInviter(inviterId: string) {
+    return http.post<{ ok: boolean }>(
+      '/api/v1/u/promote/bind-inviter',
+      { inviterId },
+      { silent: true },
+    )
+  },
 }
 
 // ============ 门店地图 ============

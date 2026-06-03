@@ -314,8 +314,16 @@ export class MerchantService {
       sales,
     }))
 
+    // 周期内的订单数 / 销售总额 / 客单价（前端 stats 页"订单数/客单价"卡片用）
+    const orderCount = orders.length
+    const totalSales = Math.round(orders.reduce((s, o) => s + Number(o.payAmount), 0))
+    const avgOrderValue = orderCount > 0 ? Math.round(totalSales / orderCount) : 0
+
     return {
       period,
+      orderCount,
+      totalSales,
+      avgOrderValue,
       salesTrend: buckets,
       topProducts,
       customerAnalysis: {

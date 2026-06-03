@@ -6,8 +6,12 @@ import { checkAppUpdate } from './composables/useAppUpdate'
 onLaunch(() => {
   const userStore = useUserStore()
   userStore.hydrate()
+  // uni.hideTabBar 在非 tabBar 页（如 onLaunch 落在 /pages/auth/login）会 reject
+  // 旧 try/catch 抓不到 promise 拒绝。这里同时提供 fail 回调 + catch 兜底，控制台不再有
+  // "hideTabBar:fail not TabBar page" 噪音。
   try {
-    uni.hideTabBar({ animation: false })
+    const ret: any = uni.hideTabBar({ animation: false, fail: () => {} })
+    if (ret && typeof ret.catch === 'function') ret.catch(() => {})
   } catch {
     /* ignore */
   }

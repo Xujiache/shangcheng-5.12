@@ -11,10 +11,21 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, UserSession } from '@jiujiu/shared/types'
 import { http } from '../utils/request'
+import { promoteService } from '../services'
+// cart store 仅单向被 user store 引用：cart.ts 已用 storage 直读避免回引 user store
+// （cart.ts 头部注释明确说明）。改静态 import 后 Vite 才能把它放进合理的 chunk，
+// 消除"dynamically imported by user.ts but also statically imported by ..." 的警告。
+import { useCartStore } from './cart'
 
 const STORAGE_KEY = 'jiujiu_user'
 const TOKEN_KEY = 'jiujiu_token'
 const REFRESH_KEY = 'jiujiu_refresh_token'
+/**
+ * 待绑定的邀请人 ID（App.vue 在 onLaunch 时从 ?ref=xxx 写入）。
+ * 登录成功后 setSession() 会消费一次并清除 —— 后端 bindInviter 是幂等的，
+ * 即便重复调也只第一次生效，但本地清除避免无谓请求。
+ */
+const PENDING_REF_KEY = 'jiujiu_pending_inviter'
 
 let chatSock: any = null // 单例 WebSocket，避免重复连接
 
@@ -51,18 +62,30 @@ export const useUserStore = defineStore('user', () => {
     accessToken.value = session.accessToken
     refreshToken.value = session.refreshToken
     persist()
-    // 登录成功 → 拉一次服务端购物车覆盖本地（动态 import 避免 user/cart store 循环依赖）
-    import('./cart')
-      .then(({ useCartStore }) => {
-        useCartStore()
-          .loadFromServer()
-          .catch(() => {
-            /* ignore */
+    // 登录成功 → 拉一次服务端购物车覆盖本地（cart.ts 用 storage 直读避免回引 user，不会循环）
+    try {
+      useCartStore()
+        .loadFromServer()
+        .catch(() => {
+          /* ignore */
+        })
+    } catch {
+      /* ignore: 极端时序下 cart store 还未初始化（如 SSR 边界），下次操作时再载入即可 */
+    }
+    // 登录成功 → 若存在 onLaunch 时写入的 ?ref=xxx，绑定上级（幂等，失败静默）
+    try {
+      const pending = uni.getStorageSync(PENDING_REF_KEY)
+      if (pending && typeof pending === 'string') {
+        uni.removeStorageSync(PENDING_REF_KEY)
+        if (pending !== session.user?.id) {
+          promoteService.bindInviter(pending).catch(() => {
+            /* ignore: 后端已校验幂等 & 异常 */
           })
-      })
-      .catch(() => {
-        /* ignore */
-      })
+        }
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   /** 合并部分字段更新（来自 PATCH 响应 / WS 推送） */

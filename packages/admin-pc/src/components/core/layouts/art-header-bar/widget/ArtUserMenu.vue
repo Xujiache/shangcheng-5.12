@@ -146,7 +146,7 @@
   import { useI18n } from 'vue-i18n'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useUserStore } from '@/store/modules/user'
-  import { changePassword, changePhone, sendSmsCode } from '@/api/auth'
+  import { changePassword, changePhone, sendSmsCode, fetchGetUserInfo } from '@/api/auth'
 
   defineOptions({ name: 'ArtUserMenu' })
 
@@ -280,8 +280,13 @@
       })
       ElMessage.success('手机号已修改')
       phoneDialogVisible.value = false
-      // 重拉一次 user-info，让顶栏 / 其它页拿到最新 phone
-      userStore.getUserInfo?.()
+      // 重拉一次 user-info，让顶栏 / 其它页拿到最新 phone（getUserInfo 是 computed，不可调；走 fetch + setUserInfo）
+      try {
+        const fresh = await fetchGetUserInfo()
+        userStore.setUserInfo(fresh)
+      } catch {
+        /* 拉新失败不阻塞主流程，下次进页面自然会重拉 */
+      }
     } catch (e: any) {
       ElMessage.error(e?.message || '修改失败')
     } finally {

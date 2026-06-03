@@ -2,8 +2,30 @@
 import { onLaunch } from '@dcloudio/uni-app'
 import { useUserStore } from './store/user'
 import { useCartStore } from './store/cart'
+import { promoteService } from './services'
 
-onLaunch(() => {
+const PENDING_REF_KEY = 'jiujiu_pending_inviter'
+
+/**
+ * 从启动参数中识别上级邀请人 ID（?ref=xxx）。
+ *   - H5: uni-app 把 location.search 解析到 options.query
+ *   - 小程序: 来自 scene / query / 二维码扫码参数
+ * 拿到后立即写 storage，等用户完成登录后由 store.setSession 消费一次并清除。
+ */
+function captureInviterRef(options: { query?: Record<string, any> } | undefined) {
+  const q = options?.query || {}
+  const ref = q.ref || q.inviter || q.invite
+  if (ref && typeof ref === 'string') {
+    try {
+      uni.setStorageSync(PENDING_REF_KEY, ref)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+onLaunch((options: any) => {
+  captureInviterRef(options)
   const userStore = useUserStore()
   const cartStore = useCartStore()
   userStore.hydrate()
@@ -20,6 +42,18 @@ onLaunch(() => {
     userStore.refreshFromServer()
     userStore.connectProfileSync()
     cartStore.loadFromServer()
+    // 已登录用户也可能新带 ?ref=xxx 进来 —— 立即消费并绑定（幂等）
+    try {
+      const pending = uni.getStorageSync(PENDING_REF_KEY)
+      if (pending && typeof pending === 'string') {
+        uni.removeStorageSync(PENDING_REF_KEY)
+        promoteService.bindInviter(pending).catch(() => {
+          /* ignore */
+        })
+      }
+    } catch {
+      /* ignore */
+    }
   }
   console.log('经纬科技 用户端 启动')
 })
