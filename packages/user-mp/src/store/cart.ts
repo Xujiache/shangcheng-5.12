@@ -31,6 +31,8 @@ export interface CartLine {
   price: number
   qty: number
   selected: boolean
+  /** 所属商户 id（用于按商户分组 / 阻止跨商户合并下单） */
+  merchantId?: string
   /** 按尺寸定价商品的定制尺寸（仅前端透传给下单接口，服务端据此重算成交价） */
   bySize?: { length: number; width: number; area?: number }
 }
@@ -75,6 +77,7 @@ function serverToLine(it: ServerCartItem): CartLine {
     image: it.product?.image ?? '',
     price: Number.isFinite(displayPrice) ? displayPrice : 0,
     qty: it.quantity,
+    merchantId: it.product?.merchantId ?? '',
     selected: true,
   }
 }
@@ -130,6 +133,7 @@ export const useCartStore = defineStore('cart', () => {
         image: line.image,
         price: line.price,
         qty: line.qty ?? 1,
+        merchantId: line.merchantId,
         bySize: line.bySize,
         selected: true,
       })
@@ -148,6 +152,7 @@ export const useCartStore = defineStore('cart', () => {
       image: line.image,
       price: line.price,
       qty: line.qty || 1,
+      merchantId: line.merchantId,
       bySize: line.bySize,
       selected: true,
     }

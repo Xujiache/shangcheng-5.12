@@ -131,8 +131,15 @@ function deleteSelected() {
 }
 
 function goCheckout() {
-  if (cartStore.selectedLines.length === 0) {
+  const selected = cartStore.selectedLines
+  if (selected.length === 0) {
     uni.showToast({ title: '请先勾选商品', icon: 'none' })
+    return
+  }
+  // 后端不支持跨商户合并下单：勾选了多个商户的商品就提前拦截，避免到确认页提交才整单失败
+  const merchantIds = new Set(selected.map((l) => l.merchantId).filter(Boolean))
+  if (merchantIds.size > 1) {
+    uni.showToast({ title: '同一笔订单只能结算一个商家的商品，请分开勾选结算', icon: 'none' })
     return
   }
   uni.navigateTo({ url: '/pages/order/confirm' })

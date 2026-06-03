@@ -102,14 +102,14 @@ export interface MarketingCouponDto {
  * 营销概览
  *
  * 字段以后端 marketing/overview(merchant.service.ts:1205) 返回为准:
- *   coupons    = { total, active, received }
- *   flashSales = number  (limit-time sale 总数)
- *   groupBuys  = number  (group-buy 总数)
+ *   coupons    = { total, active, totalReceived, totalUsed }
+ *   flashSales = { total, active, planned, sold }
+ *   groupBuys  = { total, active, planned, sold }
  */
 export interface MarketingOverview {
-  coupons: { total: number; active: number; received: number }
-  flashSales: number
-  groupBuys: number
+  coupons: { total: number; active: number; totalReceived: number; totalUsed: number }
+  flashSales: { total: number; active: number; planned: number; sold: number }
+  groupBuys: { total: number; active: number; planned: number; sold: number }
 }
 
 export const marketingService = {

@@ -533,6 +533,7 @@ async function confirmSku() {
     image: targetSku.image || product.value.images?.[0] || '',
     price: orderPrice,
     qty: qty.value,
+    merchantId: product.value.merchantId,
     // 按尺寸定价商品：透传定制尺寸，服务端据此重算成交价（避免显示价≠实付价、尺寸丢失）
     ...(isBySize.value
       ? {
@@ -761,14 +762,14 @@ onShareTimeline(() => ({
       <view
         class="cart-btn"
         :class="{ 'btn-disabled': !userStore.isLogin || !buyAllowedByPolicy }"
-        @click="userStore.isLogin && openSku('cart')"
+        @click="openSku('cart')"
       >
         {{ !userStore.isLogin || buyAllowedByPolicy ? '加入购物车' : '联系询价' }}
       </view>
       <view
         class="buy-btn"
         :class="{ 'btn-disabled': !userStore.isLogin || !buyAllowedByPolicy }"
-        @click="userStore.isLogin && openSku('buy')"
+        @click="openSku('buy')"
       >
         {{ !userStore.isLogin || buyAllowedByPolicy ? '立即购买' : '申请门店' }}
       </view>

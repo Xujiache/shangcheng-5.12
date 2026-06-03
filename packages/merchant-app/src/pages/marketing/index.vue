@@ -341,7 +341,7 @@ onMounted(() => {
         <text class="stat-label">进行中</text>
       </view>
       <view class="stat">
-        <text class="stat-value">{{ overview.coupons.received }}</text>
+        <text class="stat-value">{{ overview.coupons.totalReceived }}</text>
         <text class="stat-label">已被领取</text>
       </view>
     </view>

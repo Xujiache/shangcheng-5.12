@@ -630,6 +630,42 @@ export class UserMpService {
       return created
     })
 
+    // 标记该券为"已使用"（best-effort，失败不影响下单）：找到该用户这张券的一个未使用编号 no，
+    // 写 user_coupon_used:<userId>:<no> 流水，使「我的优惠券 · 已使用」tab 正确显示
+    // （之前只递增 Coupon.used，从不写 per-user 核销，导致已使用列表永远为空）。
+    if (couponId) {
+      try {
+        const recv = await this.prisma.systemConfig.findUnique({
+          where: { key: `user_coupon:${userId}:${couponId}` },
+        })
+        const ids: string[] = ((recv?.value as any)?.ids as string[]) || []
+        if (ids.length) {
+          const usedRows = await this.prisma.systemConfig.findMany({
+            where: { key: { in: ids.map((no) => `user_coupon_used:${userId}:${no}`) } },
+            select: { key: true },
+          })
+          const usedSet = new Set(usedRows.map((r) => r.key))
+          const freeNo = ids.find((no) => !usedSet.has(`user_coupon_used:${userId}:${no}`))
+          if (freeNo) {
+            await this.prisma.systemConfig.upsert({
+              where: { key: `user_coupon_used:${userId}:${freeNo}` },
+              update: {},
+              create: {
+                key: `user_coupon_used:${userId}:${freeNo}`,
+                value: {
+                  usedAt: new Date().toISOString(),
+                  orderId: order.id,
+                  orderNo: order.no,
+                } as any,
+              },
+            })
+          }
+        }
+      } catch {
+        // best-effort：核销流水写失败不影响下单主流程
+      }
+    }
+
     // fire-and-forget WS 推送：商家端 useMerchantNotifyStream 订阅 'order:new'
     // 推送失败绝不能影响订单创建主流程，所以裹一层 try/catch
     try {

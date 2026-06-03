@@ -5,8 +5,8 @@
  * - 顶部 5 个状态 Tab（全部/待付款/待发货/待收货/售后）
  * - 订单卡：订单号 + 状态色块 + 商品列表 + 合计 + 操作按钮
  */
-import { ref, computed, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { orderService, productService } from '../../services'
 import { useCartStore } from '../../store/cart'
 import type { Order } from '@jiujiu/shared/types'
@@ -53,7 +53,8 @@ onLoad((options) => {
   if (s && TABS.find((t) => t.key === s)) tab.value = s
 })
 
-onMounted(load)
+// 用 onShow（首次进入 + 每次从订单详情返回都会触发）拉取，确保取消/确认收货/申请售后后列表状态实时刷新
+onShow(load)
 
 async function load() {
   loading.value = true
@@ -145,7 +146,8 @@ async function reorder(o: Order) {
       try {
         // 拉商品详情确认上架 + SKU 还在
         const pDetail = await productService.detail(it.productId, { silent: true })
-        if (!pDetail || (pDetail as any).status === 'off') {
+        // 仅 active / auto_approved 可购；其余（offline/rejected/auditing/draft）一律视为不可下单跳过
+        if (!pDetail || !['active', 'auto_approved'].includes((pDetail as any).status)) {
           skippedNames.push(it.productName)
           continue
         }

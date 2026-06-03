@@ -81,6 +81,9 @@ export class AuthController {
    */
   // logout / user-info 不是爆破目标，跳过严格桶（auth/sms/payment-notify），只走 default(60/60s)
   // 否则 admin-pc 启动时并发拉 user-info > 3 次就被 sms 桶误杀
+  // @Public：登出必须在 access token 已过期时也能成功（否则 guard 先抛 TOKEN_EXPIRED，
+  // refresh token 永远无法被吊销）。callerSub 由 service 从 refreshToken 解析兜底。
+  @Public()
   @Post('logout')
   logout(@Body() dto: LogoutDto, @CurrentUser() user: AuthUser) {
     return this.authService.logout(dto?.refreshToken, user?.sub)

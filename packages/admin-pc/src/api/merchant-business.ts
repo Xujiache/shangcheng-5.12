@@ -784,7 +784,8 @@ export async function fetchChatSessions(): Promise<ChatSession[]> {
         customerId: s.userId || s.customerId || '',
         customerName: s.userName || s.customerName || '客户',
         customerAvatar: s.userAvatar || s.customerAvatar || '',
-        lastMessage: s.lastMessage || '',
+        // 后端返回的是对象 { content, type, sender, createdAt } 或 null（也兼容旧的字符串形态）
+        lastMessage: typeof s.lastMessage === 'string' ? s.lastMessage : s.lastMessage?.content || '',
         lastTime: s.lastMessageAt || s.lastTime || new Date().toISOString(),
         unread: s.unreadCount ?? s.unread ?? 0,
         online: s.status === 'online',

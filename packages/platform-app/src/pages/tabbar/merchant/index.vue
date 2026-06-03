@@ -108,16 +108,36 @@ async function loadStats() {
     const [total, factory, store, disabled] = await Promise.all([
       merchantService
         .list({ pageSize: 1 })
-        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+        .catch(
+        () =>
+          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+            ReturnType<typeof merchantService.list>
+          >,
+      ),
       merchantService
         .list({ type: 'factory', pageSize: 1 })
-        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+        .catch(
+        () =>
+          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+            ReturnType<typeof merchantService.list>
+          >,
+      ),
       merchantService
         .list({ type: 'store', pageSize: 1 })
-        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+        .catch(
+        () =>
+          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+            ReturnType<typeof merchantService.list>
+          >,
+      ),
       merchantService
         .list({ status: 'disabled', pageSize: 1 })
-        .catch(() => ({ total: 0, list: [] }) as Awaited<ReturnType<typeof merchantService.list>>),
+        .catch(
+        () =>
+          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+            ReturnType<typeof merchantService.list>
+          >,
+      ),
     ])
     stats.value = {
       total: total.total ?? 0,

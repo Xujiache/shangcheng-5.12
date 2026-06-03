@@ -59,15 +59,21 @@ const AUDIENCE_OPTS = [
 ]
 
 onLoad((options) => {
+  // 从厂家 tab 进入时带 subjectType=factory，对象类型与解析的 id 字段都要切到厂家
+  if (options?.subjectType === 'factory') subjectType.value = 'factory'
   const rawIds: string =
-    (options?.productIds as string | undefined) || (options?.productId as string | undefined) || ''
+    (options?.factoryIds as string | undefined) ||
+    (options?.productIds as string | undefined) ||
+    (options?.productId as string | undefined) ||
+    ''
   const ids = rawIds
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
   if (ids.length > 0) {
-    products.value = ids.map((id) => ({ id, name: `商品 ${id}` }))
-    uni.showToast({ title: `已选 ${ids.length} 件`, icon: 'none' })
+    const noun = subjectType.value === 'factory' ? '厂家' : '商品'
+    products.value = ids.map((id) => ({ id, name: `${noun} ${id}` }))
+    uni.showToast({ title: `已选 ${ids.length} 个`, icon: 'none' })
   } else if (options?.count) {
     uni.showToast({ title: `已选 ${options.count} 件`, icon: 'none' })
   }

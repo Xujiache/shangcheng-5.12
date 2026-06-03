@@ -182,7 +182,7 @@ function fillDraft(target: PlanDraft, src: Partial<PlanDraft>) {
   target.periodCount = src.periodCount ?? 1
   target.hot = !!src.hot
   target.rightsText = src.rightsText ?? ''
-  const c = src.constraints || {}
+  const c = (src.constraints || {}) as Record<string, number>
   target.constraints = {
     pushSlots: c.pushSlots ?? 0,
     weightLimit: c.weightLimit ?? 0,

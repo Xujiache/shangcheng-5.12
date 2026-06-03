@@ -604,14 +604,14 @@ export function sampleCheckProduct(id: string) {
  * 切换广场商品上下架状态
  *
  * 后端 `PATCH /p/plaza/products/:id/online` 接收 `{ online: boolean }`，
- * 返回 `{ ok, status }`。failed 时调用方 catch 后回滚 UI 状态，避免
+ * 返回 `{ ok, productId, online }`。failed 时调用方 catch 后回滚 UI 状态，避免
  * 列表显示已上架但 DB 还是 offline。
  *
  * 注意：之前传 `{ on }` 是字段名错误（后端按 `online` 解析），
  * 导致后端永远收不到目标状态、默认行为不可预期。
  */
 export function setPlazaProductOnline(id: string, online: boolean) {
-  return request.request<{ ok: boolean; status?: PlazaItem['status'] }>({
+  return request.request<{ ok: boolean; productId: string; online: boolean }>({
     url: `/api/v1/p/plaza/products/${encodeURIComponent(id)}/online`,
     method: 'PATCH',
     data: { online }

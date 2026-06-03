@@ -2157,7 +2157,9 @@ export class PlatformService {
       }),
       this.prisma.order.update({
         where: { id: r.orderId },
-        data: { status: 'refunded' },
+        // 仅全额退款才把整单标记为 refunded；部分退款（targetAmount < payAmount）保留原状态，
+        // 否则会把按行/单 SKU 的部分售后误判为整单已退，阻断其余商品的正常流转。
+        data: { status: targetAmount >= payAmount ? 'refunded' : r.order.status },
       }),
       this.prisma.auditRecord.create({
         data: {

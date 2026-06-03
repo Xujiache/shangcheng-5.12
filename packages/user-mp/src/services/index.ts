@@ -275,6 +275,8 @@ export const couponService = {
 
 export interface Coupon {
   id: string
+  /** 所属商户（平台级券可能为空）；结算页据此只展示当前订单商户的券 */
+  merchantId?: string
   name: string
   type: 'fullReduce' | 'discount' | 'fixed'
   amount?: number

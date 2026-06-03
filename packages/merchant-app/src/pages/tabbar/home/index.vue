@@ -39,6 +39,7 @@ const membership = ref<MembershipView | null>(null)
 // 三宫格当前高亮项（0=订单 / 1=新客户 / 2=销售额）默认高亮销售额
 const activeStat = ref<0 | 1 | 2>(2)
 const loading = ref(true)
+const loadError = ref(false)
 const flagStore = useFeatureFlagStore()
 
 const brandName = computed(() => profile.value?.shopName || '经纬科技 · 商家版')
@@ -117,8 +118,12 @@ const totalTodos = computed(() => {
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     dashboard.value = await dashboardService.getDashboard()
+  } catch {
+    // 拉取失败（网络/无权限等）→ 标记错误态，模板展示「加载失败 + 重试」，避免正文整块空白
+    if (!dashboard.value) loadError.value = true
   } finally {
     loading.value = false
   }
@@ -198,10 +203,9 @@ const todoItems = computed(() => {
 })
 
 onMounted(() => {
+  // 仅一次性初始化放这里；数据加载统一交给 onShow（首次进入也会触发），
+  // 避免 onMounted 与 onShow 在首帧重复拉取 dashboard/profile/membership。
   flagStore.fetchFlags()
-  loadData()
-  loadProfile()
-  loadMembership()
 })
 
 onShow(() => {
@@ -261,7 +265,7 @@ onShow(() => {
                 :size="16"
                 :color="dashboard.today.ordersDelta >= 0 ? '#00b578' : '#ff3b30'"
               />
-              <text>{{ Math.abs(dashboard.today.ordersDelta) }}%</text>
+              <text>{{ Math.abs(dashboard.today.ordersDelta) }}</text>
             </view>
           </view>
           <view class="kpi-divider" />
@@ -299,7 +303,7 @@ onShow(() => {
                 :size="16"
                 :color="dashboard.today.salesDelta >= 0 ? '#00b578' : '#ff3b30'"
               />
-              <text>{{ Math.abs(dashboard.today.salesDelta) }}%</text>
+              <text>¥{{ Math.abs(dashboard.today.salesDelta) }}</text>
             </view>
           </view>
         </view>
@@ -421,6 +425,21 @@ onShow(() => {
     </view>
     <view v-else-if="loading" class="loading">
       <text>加载中…</text>
+    </view>
+    <view v-else-if="loadError" class="loading">
+      <text style="color: var(--text-tertiary)">加载失败，请检查网络后重试</text>
+      <view
+        style="
+          margin-top: 16rpx;
+          padding: 12rpx 32rpx;
+          background: #ff4d2d;
+          color: #fff;
+          border-radius: 999rpx;
+          font-size: 26rpx;
+        "
+        @click="loadData"
+        >点击重试</view
+      >
     </view>
 
     <TabBar current="home" />

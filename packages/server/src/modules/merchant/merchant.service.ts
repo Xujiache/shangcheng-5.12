@@ -1090,23 +1090,25 @@ export class MerchantService {
   }
   async saveCommissionRules(merchantId: string, dto: any) {
     if (dto.default) {
-      await this.prisma.commissionRule
-        .upsert({
-          where: { merchantId_productId: { merchantId, productId: '' } },
-          update: dto.default,
-          create: { merchantId, productId: null, ...dto.default },
-        })
-        .catch(async () => {
-          // unique 约束在 (merchantId, productId)，productId 为 null 时单独处理
-          const exist = await this.prisma.commissionRule.findFirst({
-            where: { merchantId, productId: null },
-          })
-          if (exist) {
-            await this.prisma.commissionRule.update({ where: { id: exist.id }, data: dto.default })
-          } else {
-            await this.prisma.commissionRule.create({ data: { merchantId, ...dto.default } })
-          }
-        })
+      // 默认规则以 productId=null 落库。Postgres 下 NULL 在唯一键里互不冲突，且
+      // upsert(where productId:'') 永远匹配不到 null 行 → 之前每次保存都 INSERT 一条新默认规则。
+      // 这里直接 findFirst(null) + update/create，并只写真实存在的列。
+      const d: any = {
+        level1Percent: Number(dto.default.level1Percent) || 0,
+        level2Percent: Number(dto.default.level2Percent) || 0,
+      }
+      if (dto.default.visibleToPromoter !== undefined)
+        d.visibleToPromoter = !!dto.default.visibleToPromoter
+      if (dto.default.allowOffline !== undefined) d.allowOffline = !!dto.default.allowOffline
+      if (dto.default.enabled !== undefined) d.enabled = !!dto.default.enabled
+      const exist = await this.prisma.commissionRule.findFirst({
+        where: { merchantId, productId: null },
+      })
+      if (exist) {
+        await this.prisma.commissionRule.update({ where: { id: exist.id }, data: d })
+      } else {
+        await this.prisma.commissionRule.create({ data: { merchantId, productId: null, ...d } })
+      }
     }
     if (dto.productRules?.length) {
       for (const r of dto.productRules) {

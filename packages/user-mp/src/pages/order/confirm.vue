@@ -73,9 +73,17 @@ async function loadInitial() {
   } catch { /* ignore */ }
 }
 
+/** 当前订单所属商户（用于过滤掉其它商户的券，避免选了别家券下单被后端拒） */
+const orderMerchantId = computed(() => lines.value.find((l) => l.merchantId)?.merchantId || '')
+/** 仅保留属于本订单商户的券（无 merchantId 的平台级券也保留） */
+const merchantCoupons = computed(() =>
+  couponList.value.filter(
+    (c) => !c.merchantId || !orderMerchantId.value || c.merchantId === orderMerchantId.value,
+  ),
+)
 /** 当前可用券（满足门槛） */
 const availableCoupons = computed(() =>
-  couponList.value.filter((c) => !c.threshold || subtotal.value >= c.threshold),
+  merchantCoupons.value.filter((c) => !c.threshold || subtotal.value >= c.threshold),
 )
 /** 当前最优券：折扣最大的一张 */
 const bestCoupon = computed(() => {
@@ -119,7 +127,7 @@ function chooseShipping() {
 function chooseCoupon() {
   // 构造选项：可用券 + 不使用 + 未达门槛券（灰色提示）
   const usable = availableCoupons.value
-  const unavailable = couponList.value.filter((c) => c.threshold && subtotal.value < c.threshold)
+  const unavailable = merchantCoupons.value.filter((c) => c.threshold && subtotal.value < c.threshold)
   const items = [
     ...usable.map((c) => `${couponLabel(c)}  -¥${discountOf(c, subtotal.value)}`),
     ...unavailable.map((c) => `${couponLabel(c)}  ✗ 还差 ¥${c.threshold! - subtotal.value}`),

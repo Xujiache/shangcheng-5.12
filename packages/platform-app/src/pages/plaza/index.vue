@@ -176,13 +176,20 @@ function batchPush() {
     return
   }
   const ids = Array.from(selectedIds.value).join(',')
+  const isFactory = tab.value === 'factories'
+  const key = isFactory ? 'factoryIds' : 'productIds'
   uni.navigateTo({
-    url: `/pages/plaza/push?productIds=${encodeURIComponent(ids)}&count=${selectedIds.value.size}`,
+    url: `/pages/plaza/push?${key}=${encodeURIComponent(ids)}&subjectType=${isFactory ? 'factory' : 'product'}&count=${selectedIds.value.size}`,
   })
 }
 
 function pushOne(item: PlazaItem) {
-  uni.navigateTo({ url: `/pages/plaza/push?productIds=${encodeURIComponent(item.id)}` })
+  // 厂家 tab 推送时走 factoryIds + subjectType=factory，避免厂家 id 被当成 productIds
+  const isFactory = tab.value === 'factories'
+  const key = isFactory ? 'factoryIds' : 'productIds'
+  uni.navigateTo({
+    url: `/pages/plaza/push?${key}=${encodeURIComponent(item.id)}&subjectType=${isFactory ? 'factory' : 'product'}`,
+  })
 }
 
 /**

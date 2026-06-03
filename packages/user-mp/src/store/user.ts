@@ -96,6 +96,9 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function logout() {
+    // 先尽力通知后端吊销 refresh token（失败忽略，不阻塞本地登出）
+    const rt = refreshToken.value
+    if (rt) http.post('/api/v1/auth/logout', { refreshToken: rt }).catch(() => {})
     user.value = null
     accessToken.value = ''
     refreshToken.value = ''

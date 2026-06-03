@@ -14,10 +14,11 @@
           style="width: 220px"
           :prefix-icon="Search"
         />
-        <ElButton plain @click="batchMode = !batchMode">
+        <ElButton v-if="tab !== 'records'" plain @click="batchMode = !batchMode">
           {{ batchMode ? '退出批量' : '批量推送' }}
         </ElButton>
         <ElButton
+          v-if="tab !== 'records'"
           type="primary"
           :icon="Plus"
           :disabled="batchMode && selectedIds.size === 0"
@@ -356,16 +357,12 @@
         pushForm.factoryIds = []
       }
     } else {
-      const fallback = items.value.slice(0, 5).map((x) => x.id)
+      // 非批量模式：必须已有明确选择（来自商品/厂家卡片上的「推送」按钮）。
+      // 之前没有选择时会静默取列表前 5 条推送，极易误推 —— 改为提示并中止。
       const currentIds = isFactory ? pushForm.factoryIds : pushForm.productIds
       if (!currentIds || currentIds.length === 0) {
-        if (isFactory) {
-          pushForm.factoryIds = fallback
-          pushForm.productIds = []
-        } else {
-          pushForm.productIds = fallback
-          pushForm.factoryIds = []
-        }
+        ElMessage.warning(isFactory ? '请在厂家卡片上点「推送」选择对象' : '请在商品卡片上点「推送」选择对象')
+        return
       }
     }
     const today = new Date().toISOString().slice(0, 10)
@@ -400,7 +397,7 @@
     item.status = 'offline'
     try {
       const res = await setPlazaProductOnline(item.id, false)
-      if (res?.status) item.status = res.status
+      if (res) item.status = res.online ? 'pushing' : 'offline'
       ElMessage.success('已下架')
     } catch (e: any) {
       item.status = original
@@ -412,7 +409,7 @@
     item.status = 'pushing'
     try {
       const res = await setPlazaProductOnline(item.id, true)
-      if (res?.status) item.status = res.status
+      if (res) item.status = res.online ? 'pushing' : 'offline'
       ElMessage.success('已上线')
     } catch (e: any) {
       item.status = original

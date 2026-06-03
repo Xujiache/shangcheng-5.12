@@ -20,7 +20,10 @@ export const platformAuthService = {
     return http.get<unknown>('/api/v1/auth/user-info')
   },
   logout() {
-    return http.post<{ ok: boolean }>('/api/v1/auth/logout', {})
+    // 带上 refreshToken，后端据此把该 token 加入吊销名单（仅清本地不够：泄露的 refresh token 仍可换新 access）
+    return http.post<{ ok: boolean }>('/api/v1/auth/logout', {
+      refreshToken: uni.getStorageSync('jiujiu_admin_refresh_token') || '',
+    })
   },
   refresh(refreshToken: string) {
     return http.post<{ accessToken: string; refreshToken: string; expiresIn: number }>(
