@@ -828,8 +828,42 @@ export class PlatformService {
     return { ok: true }
   }
   async approveRefund(id: string) {
-    await this.prisma.paymentRecord.update({ where: { id }, data: { status: 'refunded' } })
-    return { ok: true }
+    const record = await this.prisma.paymentRecord.findUnique({ where: { id } })
+    if (!record) throw new BizException(BizCode.NOT_FOUND, '缴费订单不存在')
+    if (record.status !== 'paid' && record.status !== 'refunding') {
+      throw new BizException(BizCode.BUSINESS_ERROR, `当前状态 ${record.status} 不可退款`)
+    }
+    const amount = Number(record.amount)
+    if (!(amount > 0)) throw new BizException(BizCode.INVALID_PARAMS, '退款金额必须大于 0')
+
+    // 微信缴费：真调微信退款，失败抛错——绝不在没真正退钱的情况下把状态置为 refunded。
+    if (record.paymentMethod === 'wechat') {
+      let refundResp: { refundId: string; status: 'PROCESSING' | 'SUCCESS' }
+      try {
+        refundResp = await this.wxpay.createRefund({
+          outTradeNo: record.no, // 缴费下单时 PaymentRecord.no 即微信 out_trade_no
+          outRefundNo: `${record.no}-R`,
+          reason: '会员缴费退款',
+          refundAmount: amount,
+          totalAmount: amount,
+        })
+      } catch (e: any) {
+        throw new BizException(BizCode.PAY_FAILED, `微信退款失败：${e?.message || e}`)
+      }
+      await this.prisma.paymentRecord.update({
+        where: { id },
+        data: { status: 'refunded', refundReason: `wxRefundId=${refundResp.refundId}` },
+      })
+      return { ok: true, wxRefundId: refundResp.refundId }
+    }
+
+    // 非微信渠道（线下/余额等）暂无自动退款通道，需平台线下退款；这里仅置状态并标注，
+    // 避免像之前那样在任何渠道都谎报"已退款"。
+    await this.prisma.paymentRecord.update({
+      where: { id },
+      data: { status: 'refunded', refundReason: `${record.paymentMethod} 线下退款` },
+    })
+    return { ok: true, offline: true }
   }
   async rejectRefund(id: string, reason: string) {
     await this.prisma.paymentRecord.update({
@@ -1076,13 +1110,25 @@ export class PlatformService {
     await this.prisma.user.update({ where: { id }, data: allowed })
     return { ok: true, updated: true }
   }
-  async deleteAdmin(id: string) {
+  async deleteAdmin(id: string, callerSub?: string, callerRole?: string) {
+    if (id === callerSub) throw new BizException(BizCode.FORBIDDEN, '不允许删除自己的账号')
+    const target = await this.prisma.user.findUnique({ where: { id } })
+    if (!target) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+    // 仅 super-admin 可删除 super-admin，防止普通管理员纵向越权删除超管
+    if (target.role === 'super-admin' && callerRole !== 'super-admin') {
+      throw new BizException(BizCode.FORBIDDEN, '仅 super-admin 可删除 super-admin')
+    }
     await this.prisma.user.delete({ where: { id } })
     return { ok: true }
   }
-  async toggleAdmin(id: string) {
+  async toggleAdmin(id: string, callerSub?: string, callerRole?: string) {
+    if (id === callerSub) throw new BizException(BizCode.FORBIDDEN, '不允许禁用自己的账号')
     const u = await this.prisma.user.findUnique({ where: { id } })
     if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+    // 仅 super-admin 可启用/禁用 super-admin
+    if (u.role === 'super-admin' && callerRole !== 'super-admin') {
+      throw new BizException(BizCode.FORBIDDEN, '仅 super-admin 可操作 super-admin')
+    }
     await this.prisma.user.update({
       where: { id },
       data: { status: u.status === 'active' ? 'disabled' : 'active' },
@@ -1234,6 +1280,9 @@ export class PlatformService {
     const list = rows.map((r) =>
       decimalToNumber({
         ...r,
+        // 前端（admin-pc / platform-app）按 `amount` 读取提现金额，而 Withdraw 表字段是
+        // applyAmount/actualAmount，补一个 amount 别名（=申请金额）避免两端显示 ¥0 / NaN。
+        amount: r.applyAmount,
         merchantName: r.merchant?.name ?? '',
         merchantType: r.merchant?.type ?? '',
         merchantStatus: r.merchant?.status ?? '',
@@ -1338,40 +1387,24 @@ export class PlatformService {
   /**
    * 平台抽检某商品的审核结果。
    *
-   * 用途：审核已自动通过后平台运营复核（"抽检"），可推翻自动结果。
-   * passed=false 时必须填 reason，避免无理由驳回；同时回写 Product.status='rejected'。
-   * 写入 AuditRecord.sampleChecked=true 便于审计区分人工 vs 自动审。
+   * 用途："加入抽检队列"——把自动审通过的商品标记为待抽检，商品维持当前上架状态。
+   * 仅写 AuditRecord(status='sample_check', sampleChecked=true) 供审计；
+   * 通过/驳回的最终裁决分别走 approveProduct / rejectProduct，本接口不改 product.status。
    */
-  async sampleCheckProduct(
-    productId: string,
-    passed: boolean,
-    reason?: string,
-    callerSub?: string,
-  ) {
+  async sampleCheckProduct(productId: string, callerSub?: string) {
     const p = await this.prisma.product.findUnique({ where: { id: productId } })
     if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
-    if (!passed && (!reason || !reason.trim())) {
-      throw new BizException(BizCode.INVALID_PARAMS, '抽检不通过必须填写原因')
-    }
-    const newStatus = passed ? 'active' : 'rejected'
-    await this.prisma.$transaction([
-      this.prisma.product.update({
-        where: { id: productId },
-        data: { status: newStatus, rejectReason: passed ? null : reason!.trim() },
-      }),
-      this.prisma.auditRecord.create({
-        data: {
-          type: 'product',
-          targetId: productId,
-          status: passed ? 'approved' : 'rejected',
-          reason: passed ? null : reason!.trim(),
-          auditorId: callerSub || null,
-          sampleChecked: true,
-          reviewedAt: new Date(),
-        },
-      }),
-    ])
-    return { ok: true, productId, status: newStatus }
+    await this.prisma.auditRecord.create({
+      data: {
+        type: 'product',
+        targetId: productId,
+        status: 'sample_check',
+        auditorId: callerSub || null,
+        sampleChecked: true,
+        reviewedAt: new Date(),
+      },
+    })
+    return { ok: true, productId, status: p.status }
   }
 
   /**

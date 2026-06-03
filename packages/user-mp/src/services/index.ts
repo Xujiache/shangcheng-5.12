@@ -63,7 +63,12 @@ export const shopService = {
  */
 export interface OrderCreateDto {
   addressId: string
-  items: { skuId: string; productId?: string; quantity: number }[]
+  items: {
+    skuId: string
+    productId?: string
+    quantity: number
+    bySize?: { length: number; width: number; area?: number }
+  }[]
   couponId?: string
   shippingMethod?: 'factory' | 'local' | 'pickup'
   remark?: string

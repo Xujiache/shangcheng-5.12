@@ -359,6 +359,7 @@ export class UserMpService {
       skuId: it.skuId,
       productId: it.productId,
       quantity: Number(it.quantity ?? it.qty ?? 1),
+      bySize: it.bySize as { length?: number; width?: number; area?: number } | undefined,
     }))
     const shippingMethod = dto.shippingMethod || dto.shipping || 'factory'
     // 仅接受 couponId 字符串（指向 Coupon.id）；旧字段 dto.couponDiscount/dto.coupon 一律忽略——
@@ -436,13 +437,49 @@ export class UserMpService {
       const sku = skus.find((s) => s.id === it.skuId)!
       if (sku.stock < it.quantity)
         throw new BizException(BizCode.STOCK_INSUFFICIENT, `${sku.product.name} 库存不足`)
-      const unitPrice = pickUnitPrice(sku)
-      if (!(unitPrice > 0)) {
-        // 价格异常（如商家未填该 tier 的价格、价格为 0/NaN）一律拒单，绝不按 0 元成交
-        throw new BizException(
-          BizCode.BUSINESS_ERROR,
-          `${sku.product.name} 当前身份暂无可用价格，请联系商家`,
-        )
+
+      let unitPrice: number
+      let specsLabel = sku.specsLabel
+      if (sku.product.pricingMode === 'by-size') {
+        // 按尺寸定价：成交价一律服务端按"面积 × 单价 + 基础费"重算，绝不信前端金额；
+        // 同时把用户定制尺寸写进 specsLabel 持久化，避免下单后查不到要做多大。
+        const length = Number(it.bySize?.length)
+        const width = Number(it.bySize?.width)
+        if (!(length > 0) || !(width > 0)) {
+          throw new BizException(BizCode.INVALID_PARAMS, `${sku.product.name} 请填写定制尺寸`)
+        }
+        const p = sku.product
+        if (
+          (p.minLength != null && length < Number(p.minLength)) ||
+          (p.maxLength != null && length > Number(p.maxLength)) ||
+          (p.minWidth != null && width < Number(p.minWidth)) ||
+          (p.maxWidth != null && width > Number(p.maxWidth))
+        ) {
+          throw new BizException(
+            BizCode.INVALID_PARAMS,
+            `${sku.product.name} 定制尺寸超出可制作范围`,
+          )
+        }
+        const toM = p.sizeUnit === 'cm' ? 0.01 : 1 // 统一换算到米后算平方米
+        const areaSqm = length * toM * (width * toM)
+        unitPrice =
+          Math.round((areaSqm * Number(p.pricePerSqm || 0) + Number(p.baseFee || 0)) * 100) / 100
+        specsLabel = `定制 ${length}×${width}${p.sizeUnit || ''}（${areaSqm.toFixed(2)}㎡）`
+        if (!(unitPrice > 0)) {
+          throw new BizException(
+            BizCode.BUSINESS_ERROR,
+            `${sku.product.name} 定制价格计算异常，请联系商家`,
+          )
+        }
+      } else {
+        unitPrice = pickUnitPrice(sku)
+        if (!(unitPrice > 0)) {
+          // 价格异常（如商家未填该 tier 的价格、价格为 0/NaN）一律拒单，绝不按 0 元成交
+          throw new BizException(
+            BizCode.BUSINESS_ERROR,
+            `${sku.product.name} 当前身份暂无可用价格，请联系商家`,
+          )
+        }
       }
       totalAmount += unitPrice * it.quantity
       return {
@@ -450,7 +487,7 @@ export class UserMpService {
         skuId: sku.id,
         productName: sku.product.name,
         productImage: sku.product.images[0] || '',
-        specsLabel: sku.specsLabel,
+        specsLabel,
         unitPrice,
         quantity: it.quantity,
       }
@@ -1703,7 +1740,7 @@ export class UserMpService {
       // 整条是否仍可下单（前端给灰禁用 + 提示用）
       available:
         !!it.product &&
-        it.product.status === 'active' &&
+        ['active', 'auto_approved'].includes(it.product.status) &&
         !!it.sku &&
         it.sku.active &&
         it.sku.stock > 0,
@@ -1729,7 +1766,9 @@ export class UserMpService {
 
     const product = await this.prisma.product.findUnique({ where: { id: productId } })
     if (!product) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
-    if (product.status !== 'active') {
+    // auto_approved（自动免审上架）与 active 同属"在售可购"，与列表/详情可见性、立即购买保持一致，
+    // 否则会出现"能立即购买却不能加购物车"的自相矛盾。
+    if (!['active', 'auto_approved'].includes(product.status)) {
       throw new BizException(BizCode.PRODUCT_OFFLINE, '商品已下架')
     }
 

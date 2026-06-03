@@ -533,6 +533,16 @@ async function confirmSku() {
     image: targetSku.image || product.value.images?.[0] || '',
     price: orderPrice,
     qty: qty.value,
+    // 按尺寸定价商品：透传定制尺寸，服务端据此重算成交价（避免显示价≠实付价、尺寸丢失）
+    ...(isBySize.value
+      ? {
+          bySize: {
+            length: Number(customLength.value),
+            width: Number(customWidth.value),
+            area: Number(customArea.value),
+          },
+        }
+      : {}),
   }
 
   if (skuMode.value === 'cart') {

@@ -654,7 +654,11 @@ export class MerchantService {
         skip,
         take,
         orderBy: { createdAt: 'desc' },
-        include: { items: true, user: true },
+        include: {
+          items: true,
+          // 仅返回展示所需字段，绝不把 passwordHash/openid/unionid 等凭证/PII 带给商家端
+          user: { select: { id: true, nickname: true, avatar: true, phone: true } },
+        },
       }),
       this.prisma.order.count({ where }),
     ])
@@ -1106,13 +1110,25 @@ export class MerchantService {
     }
     if (dto.productRules?.length) {
       for (const r of dto.productRules) {
+        if (!r?.productId) continue
+        // 只写 CommissionRule 真实存在的列；剥离前端附带的 productName/productImage 等展示字段，
+        // 否则 Prisma 收到未知字段会抛 PrismaClientValidationError 导致整批佣金规则保存失败。
+        const data: any = {
+          level1Percent: Number(r.level1Percent) || 0,
+          level2Percent: Number(r.level2Percent) || 0,
+        }
+        if (r.visibleToPromoter !== undefined) data.visibleToPromoter = !!r.visibleToPromoter
+        if (r.allowOffline !== undefined) data.allowOffline = !!r.allowOffline
+        if (r.enabled !== undefined) data.enabled = !!r.enabled
         const exist = await this.prisma.commissionRule.findFirst({
           where: { merchantId, productId: r.productId },
         })
         if (exist) {
-          await this.prisma.commissionRule.update({ where: { id: exist.id }, data: r })
+          await this.prisma.commissionRule.update({ where: { id: exist.id }, data })
         } else {
-          await this.prisma.commissionRule.create({ data: { merchantId, ...r } })
+          await this.prisma.commissionRule.create({
+            data: { merchantId, productId: r.productId, ...data },
+          })
         }
       }
     }
@@ -1332,7 +1348,8 @@ export class MerchantService {
         skip,
         take,
         orderBy: { createdAt: 'desc' },
-        include: { user: true },
+        // 仅返回展示所需字段，绝不把 passwordHash/openid/unionid 等凭证/PII 带给商家端
+        include: { user: { select: { id: true, nickname: true, avatar: true, phone: true } } },
       }),
       this.prisma.withdraw.count({ where }),
     ])

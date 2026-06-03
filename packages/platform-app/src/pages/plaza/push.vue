@@ -227,24 +227,45 @@ function changeCommission() {
   })
 }
 
+// 把 '¥200~500' / '不限' 之类的展示文案解析成后端需要的数值区间
+function parseMarkup(s: string): { suggestMarkupMin?: number; suggestMarkupMax?: number } {
+  const nums = (s.match(/\d+/g) || []).map(Number)
+  if (nums.length >= 2) return { suggestMarkupMin: nums[0], suggestMarkupMax: nums[1] }
+  if (nums.length === 1) return { suggestMarkupMin: nums[0] }
+  return {}
+}
+
+/**
+ * 构造 /p/plaza/pushes 请求体，字段名严格对齐后端 PlazaPush 模型：
+ * targetType / productIds|factoryIds / scheduledStart / scheduledEnd /
+ * suggestMarkupMin|Max / suggestCommission。之前用 subjectType / scheduleStart /
+ * markupRange / commission 等错误字段名，会被 Prisma 当未知列拒绝而整单失败。
+ */
+function buildPushPayload(status: 'draft' | 'pending') {
+  const ids = products.value.map((p) => p.id)
+  const isFactory = subjectType.value === 'factory'
+  return {
+    targetType: subjectType.value,
+    productIds: isFactory ? [] : ids,
+    factoryIds: isFactory ? ids : [],
+    positions: positions.value,
+    tags: tags.value,
+    audience: audience.value,
+    scheduledStart: scheduleStart.value,
+    scheduledEnd: scheduleEnd.value,
+    weight: weight.value,
+    ...parseMarkup(markupRange.value),
+    suggestCommission: commission.value,
+    pushText: pushText.value,
+    status,
+  }
+}
+
 async function saveDraft() {
   if (saving.value) return
   saving.value = true
   try {
-    await plazaService.createPush({
-      subjectType: subjectType.value,
-      productIds: products.value.map((p) => p.id),
-      positions: positions.value,
-      tags: tags.value,
-      audience: audience.value,
-      scheduleStart: scheduleStart.value,
-      scheduleEnd: scheduleEnd.value,
-      weight: weight.value,
-      markupRange: markupRange.value,
-      commission: commission.value,
-      pushText: pushText.value,
-      status: 'draft',
-    })
+    await plazaService.createPush(buildPushPayload('draft'))
     uni.showToast({ title: '草稿已保存', icon: 'success' })
   } catch (e: any) {
     uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
@@ -268,20 +289,7 @@ async function submit() {
   }
   submitting.value = true
   try {
-    await plazaService.createPush({
-      subjectType: subjectType.value,
-      productIds: products.value.map((p) => p.id),
-      positions: positions.value,
-      tags: tags.value,
-      audience: audience.value,
-      scheduleStart: scheduleStart.value,
-      scheduleEnd: scheduleEnd.value,
-      weight: weight.value,
-      markupRange: markupRange.value,
-      commission: commission.value,
-      pushText: pushText.value,
-      status: 'pending',
-    })
+    await plazaService.createPush(buildPushPayload('pending'))
     uni.showToast({ title: '推送已发布', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 800)
   } catch (e: any) {

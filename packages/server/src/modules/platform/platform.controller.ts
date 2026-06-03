@@ -79,14 +79,13 @@ export class PlatformController {
   ) {
     return this.svc.rejectProduct(id, reason)
   }
-  // 抽检：自动审通过后,运营复核可推翻自动结果(passed=false 必填 reason)
+  // 抽检：把自动审通过的商品"加入抽检队列"（记录一条 sample_check 审计，商品维持上架）。
+  // 通过/驳回的最终裁决走 approve / reject 两个接口，这里不改 product.status。
   @Post('audit/products/:id/sample-check') sampleCheckProduct(
     @Param('id') id: string,
-    @Body('passed') passed: boolean,
-    @Body('reason') reason: string | undefined,
     @CurrentUser() u: AuthUser,
   ) {
-    return this.svc.sampleCheckProduct(id, !!passed, reason, u?.sub)
+    return this.svc.sampleCheckProduct(id, u?.sub)
   }
   // 平台维度控制商品在选品广场是否展示(不动 product.status,用 SystemConfig 覆盖)
   @Patch('plaza/products/:id/online') setPlazaProductOnline(
@@ -265,11 +264,11 @@ export class PlatformController {
   ) {
     return this.svc.updateAdmin(id, dto, u?.role, u?.sub)
   }
-  @Delete('admins/:id') deleteAdmin(@Param('id') id: string) {
-    return this.svc.deleteAdmin(id)
+  @Delete('admins/:id') deleteAdmin(@Param('id') id: string, @CurrentUser() u: AuthUser) {
+    return this.svc.deleteAdmin(id, u?.sub, u?.role)
   }
-  @Post('admins/:id/toggle') toggleAdmin(@Param('id') id: string) {
-    return this.svc.toggleAdmin(id)
+  @Post('admins/:id/toggle') toggleAdmin(@Param('id') id: string, @CurrentUser() u: AuthUser) {
+    return this.svc.toggleAdmin(id, u?.sub, u?.role)
   }
   // 超管重置管理员密码:仅 super-admin 可调,不允许重置自己/其他 super-admin/普通用户
   @Post('admins/:id/reset-password') resetAdminPwd(

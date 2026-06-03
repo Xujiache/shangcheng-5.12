@@ -18,6 +18,7 @@ import type {
   PlatformDashboard
 } from '@jiujiu/shared/types'
 import request from '@/utils/http'
+import { useUserStore } from '@/store/modules/user'
 import {
   getAllSubscriptions as msGetSubs,
   getSubscriptionsByPlan as msGetSubsByPlan,
@@ -119,10 +120,24 @@ export interface PlatformStats {
   trend: { date: string; value: number }[]
   categoryBars: { category: string; sales: number }[]
   memberPlanDist: { yearly: number; monthly: number; trial: number }
+  topMerchants?: { merchantId: string; name: string; type: string; region: string; sales: number }[]
 }
 
-export function fetchPlatformStats(period: StatsPeriod = 'week') {
-  return request.get<PlatformStats>({ url: '/api/v1/p/stats', params: { period } })
+export async function fetchPlatformStats(period: StatsPeriod = 'week'): Promise<PlatformStats> {
+  const raw = await request.get<any>({ url: '/api/v1/p/stats', params: { period } })
+  // 后端实际返回 { period, salesTrend, topMerchants }，与视图期望的 trend/categoryBars/memberPlanDist
+  // 字段名不一致；此处做契约适配并对缺失数据兜底，避免 data-center 页 `undefined.length` 崩溃。
+  return {
+    period: (raw?.period as StatsPeriod) ?? period,
+    trend: Array.isArray(raw?.trend)
+      ? raw.trend
+      : Array.isArray(raw?.salesTrend)
+        ? raw.salesTrend
+        : [],
+    categoryBars: Array.isArray(raw?.categoryBars) ? raw.categoryBars : [],
+    memberPlanDist: raw?.memberPlanDist ?? { yearly: 0, monthly: 0, trial: 0 },
+    topMerchants: Array.isArray(raw?.topMerchants) ? raw.topMerchants : []
+  }
 }
 
 /* ============ 5. 商户审核 ============ */
@@ -506,11 +521,12 @@ export async function fetchPlatformPlaza(
     }
   }
   try {
-    const raw = await request.get<any[]>({
+    const raw = await request.get<any>({
       url: '/api/v1/p/plaza/products',
       params: { tab }
     })
-    const list = Array.isArray(raw) ? raw : []
+    // 后端返回分页对象 { list, total, ... }，必须 unwrap；之前用 Array.isArray 判定恒 false 导致列表恒空。
+    const list = unwrapPage<any>(raw)
     return list.map(
       (r: any): PlazaItem => ({
         id: r.id || r.productId || '',
@@ -744,7 +760,7 @@ export async function fetchPlatformWithdraws(params?: {
           id: r.id,
           merchantId: r.merchantId || r.merchant?.id || '',
           merchantName: r.merchant?.name || r.merchantName,
-          amount: Number(r.amount ?? 0),
+          amount: Number(r.amount ?? r.applyAmount ?? 0),
           method: (r.method as PlatformWithdrawItem['method']) || 'wechat',
           account: r.account || '',
           status: (r.status as PlatformWithdrawItem['status']) || 'pending',
@@ -1017,7 +1033,8 @@ export async function uploadAppRelease(
 
   const env = (import.meta as any).env || {}
   const baseUrl = env.VITE_API_BASE_URL || env.VITE_API_URL || ''
-  const token = localStorage.getItem('accessToken') || ''
+  // token 由 Pinia（持久化）管理，不在裸 localStorage['accessToken'] 里；之前取错 key 恒为空 → 上传 401。
+  const token = useUserStore().accessToken || ''
   return await new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', baseUrl + '/api/v1/p/app-releases')

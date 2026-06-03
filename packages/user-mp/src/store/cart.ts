@@ -31,6 +31,8 @@ export interface CartLine {
   price: number
   qty: number
   selected: boolean
+  /** 按尺寸定价商品的定制尺寸（仅前端透传给下单接口，服务端据此重算成交价） */
+  bySize?: { length: number; width: number; area?: number }
 }
 
 const STORAGE_KEY = 'jiujiu_cart'
@@ -128,6 +130,7 @@ export const useCartStore = defineStore('cart', () => {
         image: line.image,
         price: line.price,
         qty: line.qty ?? 1,
+        bySize: line.bySize,
         selected: true,
       })
     }
@@ -145,6 +148,7 @@ export const useCartStore = defineStore('cart', () => {
       image: line.image,
       price: line.price,
       qty: line.qty || 1,
+      bySize: line.bySize,
       selected: true,
     }
     persistBuyNow()

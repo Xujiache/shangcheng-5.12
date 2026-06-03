@@ -175,7 +175,12 @@ async function submit() {
     // 前端 couponDiscount 仅用于本地预览合计，禁止发到后端污染计算。
     const dto: OrderCreateDto = {
       addressId: address.value.id,
-      items: lines.value.map((l) => ({ skuId: l.skuId, productId: l.productId, quantity: l.qty })),
+      items: lines.value.map((l) => ({
+        skuId: l.skuId,
+        productId: l.productId,
+        quantity: l.qty,
+        ...(l.bySize ? { bySize: l.bySize } : {}),
+      })),
       shippingMethod: shippingMethod.value,
       remark: remark.value,
     }
