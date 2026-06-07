@@ -1,0 +1,30 @@
+<view class="ce">
+  <lz-header title="{{editing ? '编辑客户' : '新增客户'}}" />
+
+  <view class="lz-page" style="padding-bottom: 120px;">
+    <view class="lz-card lz-card--flush">
+      <view class="ce__row">
+        <view class="ce__lbl">姓名</view>
+        <input class="ce__in" value="{{name}}" placeholder="客户姓名（必填）" placeholder-class="ph" bindinput="onName" />
+      </view>
+      <view class="ce__row">
+        <view class="ce__lbl">电话</view>
+        <input class="ce__in" type="number" value="{{phone}}" placeholder="联系电话（选填）" placeholder-class="ph" bindinput="onPhone" />
+      </view>
+      <view class="ce__row">
+        <view class="ce__lbl">地址</view>
+        <input class="ce__in" value="{{address}}" placeholder="安装地址（选填）" placeholder-class="ph" bindinput="onAddress" />
+      </view>
+      <view class="ce__row ce__row--last">
+        <view class="ce__lbl">备注</view>
+        <input class="ce__in" value="{{note}}" placeholder="备注（选填）" placeholder-class="ph" bindinput="onNote" />
+      </view>
+    </view>
+  </view>
+
+  <view class="lz-footer">
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="save">
+      {{editing ? '保存修改' : '保存客户'}}
+    </button>
+  </view>
+</view>

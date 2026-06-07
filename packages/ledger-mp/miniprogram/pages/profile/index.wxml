@@ -1,0 +1,42 @@
+<view class="prof">
+  <view style="height: calc(env(safe-area-inset-top) + 18px);"></view>
+
+  <view class="lz-page lz-page--pad-bottom">
+    <!-- 用户卡 -->
+    <view class="prof__user lz-card lz-card--glow">
+      <view class="lz-avatar prof__avatar">{{avatarChar}}</view>
+      <view class="lz-flex1" style="min-width: 0;">
+        <view class="prof__name">{{nickname}}</view>
+        <view class="prof__phone">{{phoneMask}}</view>
+      </view>
+      <view class="lz-btn lz-btn--soft lz-btn--sm" hover-class="tap-active" bindtap="toEdit">编辑资料</view>
+    </view>
+
+    <!-- 会员卡 -->
+    <view class="prof__member {{memberActive ? 'prof__member--on' : ''}}" hover-class="tap-active" bindtap="toMembership">
+      <view class="prof__m-icon"><lz-icon name="crown" size="20" color="#5A3E0B" stroke="2" /></view>
+      <view class="lz-flex1" style="min-width: 0;">
+        <view class="prof__m-t">{{memberText}}</view>
+        <view class="prof__m-s">{{memberSub}}</view>
+      </view>
+      <view class="prof__m-cta">{{memberActive ? '续费' : '开通'}}</view>
+      <lz-icon name="chevron" size="16" color="{{memberActive ? '#C9A24B' : 'faint'}}" />
+    </view>
+
+    <!-- 设置 -->
+    <view class="lz-section-label">设置</view>
+    <view class="lz-card lz-card--flush">
+      <view wx:for="{{rows}}" wx:key="page" class="lz-row" data-page="{{item.page}}" bindtap="toRow" hover-class="tap-active">
+        <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="18" color="accent" /></view>
+        <view class="lz-row__main"><view class="lz-row__label">{{item.label}}</view></view>
+        <lz-icon name="chevron" size="17" color="faint" />
+      </view>
+    </view>
+
+    <view style="height: 24px;"></view>
+    <view class="lz-btn lz-btn--ghost lz-btn--full" hover-class="tap-active" bindtap="onLogout">
+      <lz-icon name="logout" size="18" color="loss" />
+      <text style="color: var(--loss);">退出登录</text>
+    </view>
+  </view>
+</view>

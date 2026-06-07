@@ -1,0 +1,35 @@
+@import './styles/tokens.wxss';
+@import './styles/animations.wxss';
+@import './styles/components.wxss';
+
+/* 全局基础 */
+page {
+  background-image: var(--bg-grad);
+  height: 100%;
+}
+view, text, button, input, textarea, scroll-view {
+  box-sizing: border-box;
+}
+button::after {
+  border: none;
+}
+
+/* 点按反馈（配合 hover-class="tap-active"） */
+.tap-active {
+  transform: scale(0.975);
+  opacity: 0.92;
+}
+
+/* 隐藏滚动条 */
+.scroll-body {
+  -webkit-overflow-scrolling: touch;
+}
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* 通用动画类 */
+.screen-fwd { animation: slideInR 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.fade-in { animation: fadeIn 0.22s ease; }

@@ -1,0 +1,48 @@
+<view class="ca">
+  <lz-header title="成本分析" subtitle="{{ovYear}}年 · 成本构成" back="{{true}}" />
+
+  <view class="lz-page lz-page--pad-bottom">
+    <block wx:if="{{hasData}}">
+      <!-- 成本占比环图 -->
+      <view class="lz-card">
+        <view class="ca__card-t" style="margin-bottom: 14px;">成本构成</view>
+        <view class="ca__donut-wrap">
+          <lz-donut data="{{donut}}" size="160" thickness="22">
+            <view class="ca__dn-l">总成本</view>
+            <view class="ca__dn-v">{{totalCostText}}</view>
+          </lz-donut>
+        </view>
+        <view class="ca__legend">
+          <view wx:for="{{legend}}" wx:key="key" class="ca__leg">
+            <view class="lz-dot" style="background: var(--{{item.color}});"></view>
+            <text class="ca__leg-n">{{item.name}}</text>
+            <view class="lz-flex1"></view>
+            <text class="ca__leg-p">{{item.pct}}%</text>
+            <text class="ca__leg-v">{{item.valueText}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 分类月度趋势 -->
+      <view class="lz-section-label">分类月度趋势</view>
+      <view style="margin-bottom: var(--gap);">
+        <lz-segmented options="{{catOptions}}" value="{{cat}}" bindchange="onCat" />
+      </view>
+      <view class="lz-card">
+        <view class="lz-between" style="margin-bottom: 14px;">
+          <view class="ca__card-t">{{catName}} · {{ovYear}}年</view>
+          <view class="lz-money" style="font-size: 15px; color: var(--{{catColor}});">{{catTotalText}}</view>
+        </view>
+        <lz-bars wx:if="{{catHasMonthly}}" series="{{catBars}}" colors="{{[catColor]}}" height="150" />
+        <view wx:else class="ca__nomonthly">
+          <view class="ca__nm-v lz-money" style="color: var(--{{catColor}});">{{catTotalText}}</view>
+          <view class="ca__nm-l">该分类暂无逐月明细 · 仅统计全年合计</view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:else class="lz-card">
+      <view class="lz-empty">本年暂无成本数据，去记一笔吧</view>
+    </view>
+  </view>
+</view>

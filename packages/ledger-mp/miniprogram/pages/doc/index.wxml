@@ -1,0 +1,14 @@
+<view class="doc">
+  <lz-header title="{{title}}" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="doc__updated">最后更新日期：{{updated}}</view>
+
+    <view wx:for="{{sections}}" wx:key="h" class="doc__sec">
+      <view class="doc__h">{{item.h}}</view>
+      <view wx:for="{{item.p}}" wx:for-item="para" wx:key="*this" class="doc__p">{{para}}</view>
+    </view>
+
+    <view class="doc__foot">本文档为示例条款，最终解释权归门窗利账所有。</view>
+  </view>
+</view>

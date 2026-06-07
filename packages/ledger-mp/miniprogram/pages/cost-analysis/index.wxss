@@ -1,0 +1,73 @@
+.ca {
+  min-height: 100vh;
+  background-image: var(--bg-grad);
+}
+.ca .lz-card {
+  margin-bottom: var(--gap);
+}
+.ca__card-t {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ca__donut-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 18px;
+}
+.ca__dn-l {
+  font-size: 11px;
+  color: var(--muted);
+}
+.ca__dn-v {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.ca__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.ca__leg {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ca__leg-n {
+  font-size: 13px;
+  color: var(--muted);
+}
+.ca__leg-p {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-right: 10px;
+}
+.ca__leg-v {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.ca__nomonthly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 28px 0;
+}
+.ca__nm-v {
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ca__nm-l {
+  font-size: 12px;
+  color: var(--faint);
+  text-align: center;
+}

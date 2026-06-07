@@ -15,6 +15,7 @@ import { SmsModule } from './modules/sms/sms.module'
 import { PaymentModule } from './modules/payment/payment.module'
 import { LegalModule } from './modules/legal/legal.module'
 import { AppReleaseModule } from './modules/app-release/app-release.module'
+import { LedgerModule } from './modules/ledger/ledger.module'
 import { JwtAuthGuard } from './common/guards/jwt.guard'
 
 /**
@@ -50,9 +51,7 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
     //   - /auth/sms-code              limit: 3
     //   - /files/upload               limit: 60
     //   - /payments/wechat/notify     limit: 200
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60_000, limit: 120 },
-    ]),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
@@ -65,6 +64,7 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
     PaymentModule,
     LegalModule,
     AppReleaseModule,
+    LedgerModule,
   ],
   controllers: [HealthController],
   providers: [

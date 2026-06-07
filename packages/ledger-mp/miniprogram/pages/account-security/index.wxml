@@ -1,0 +1,38 @@
+<view class="as">
+  <lz-header title="账户安全" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">登录与账号</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row" hover-class="tap-active" bindtap="toPhone">
+        <view class="lz-row__icon"><lz-icon name="phone" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">手机号</view>
+          <view class="lz-row__sub">用于登录与找回密码</view>
+        </view>
+        <view class="lz-row__detail">{{maskedPhone}}</view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+
+      <view class="lz-row" hover-class="tap-active" bindtap="toPassword">
+        <view class="lz-row__icon"><lz-icon name="key" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">登录密码</view>
+          <view class="lz-row__sub">建议定期更换以保护账号</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+
+      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="toDelete">
+        <view class="lz-row__icon as__icon--danger"><lz-icon name="logout" size="17" color="loss" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label lz-row__label--danger">注销账户</view>
+          <view class="lz-row__sub">永久删除账号及全部数据</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+
+    <view class="as__note">门窗利账采用加密存储与云备份，妥善保管账号可有效保护经营数据安全。</view>
+  </view>
+</view>

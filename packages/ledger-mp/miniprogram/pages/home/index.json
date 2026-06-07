@@ -1,0 +1,11 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "lz-icon": "../../components/lz-icon/index",
+    "lz-segmented": "../../components/lz-segmented/index",
+    "lz-donut": "../../components/lz-donut/index",
+    "lz-bars": "../../components/lz-bars/index"
+  }
+}

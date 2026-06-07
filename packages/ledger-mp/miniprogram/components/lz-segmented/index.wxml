@@ -1,0 +1,10 @@
+<view class="seg">
+  <view class="seg__ind" style="left: calc(3px + {{idx}} * (100% - 6px) / {{count}}); width: calc((100% - 6px) / {{count}});"></view>
+  <view
+    wx:for="{{options}}"
+    wx:key="value"
+    class="seg__btn {{item.value === value ? 'seg__btn--on' : ''}}"
+    data-value="{{item.value}}"
+    bindtap="pick"
+  >{{item.label}}</view>
+</view>

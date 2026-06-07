@@ -1,0 +1,17 @@
+.donut {
+  position: relative;
+  flex-shrink: 0;
+}
+.donut__cv {
+  position: absolute;
+  inset: 0;
+}
+.donut__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}

@@ -1,0 +1,59 @@
+<view class="ord">
+  <view class="ord__hd" style="padding-top: calc(env(safe-area-inset-top) + 10px);">
+    <view class="ord__title">订单管理</view>
+    <view class="ord__cust-btn" bindtap="toCustomers" hover-class="tap-active">
+      <lz-icon name="user" size="17" color="accent" />
+      <text>客户</text>
+    </view>
+  </view>
+
+  <view class="lz-page lz-page--pad-bottom">
+    <!-- 汇总 -->
+    <view class="lz-card lz-card--glow ord__sum">
+      <view class="ord__sum-i">
+        <view class="ord__sum-v">{{summary.count}}</view>
+        <view class="ord__sum-l">总订单</view>
+      </view>
+      <view class="ord__sum-i">
+        <view class="ord__sum-v lz-money--accent">{{summary.profit}}</view>
+        <view class="ord__sum-l">总利润</view>
+      </view>
+      <view class="ord__sum-i">
+        <view class="ord__sum-v">{{summary.avg}}</view>
+        <view class="ord__sum-l">单均利润</view>
+      </view>
+    </view>
+
+    <!-- 工具栏 -->
+    <view class="ord__tools">
+      <view class="ord__search">
+        <lz-icon name="search" size="17" color="faint" />
+        <input class="ord__search-in" value="{{keyword}}" placeholder="搜索客户" placeholder-class="ph" bindinput="onSearch" />
+      </view>
+      <view style="width: 150px;">
+        <lz-segmented options="{{sorts}}" value="{{sort}}" bindchange="onSort" />
+      </view>
+    </view>
+
+    <!-- 列表 -->
+    <view wx:if="{{list.length}}">
+      <view wx:for="{{list}}" wx:key="id" class="lz-card ord__item" data-id="{{item.id}}" bindtap="toDetail" hover-class="tap-active">
+        <view class="lz-between">
+          <view class="ord__cust">{{item.customer}}</view>
+          <view class="lz-money lz-money--accent" style="font-size: 17px;">{{item.profitText}}</view>
+        </view>
+        <view class="ord__meta">
+          <text>{{item.date}}</text>
+          <text class="ord__dot">·</text>
+          <text>总价 {{item.totalText}}</text>
+          <text class="ord__dot">·</text>
+          <text>利润率 {{item.marginPct}}%</text>
+        </view>
+        <view class="ord__bar">
+          <view wx:for="{{item.segs}}" wx:for-item="seg" wx:key="k" class="ord__seg" style="width: {{seg.w}}%; background: var(--{{seg.color}});"></view>
+        </view>
+      </view>
+    </view>
+    <view wx:elif="{{!loading}}" class="lz-empty">暂无订单，点击底部 + 记一笔</view>
+  </view>
+</view>

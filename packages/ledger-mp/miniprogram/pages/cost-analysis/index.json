@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "lz-header": "../../components/lz-header/index",
+    "lz-segmented": "../../components/lz-segmented/index",
+    "lz-donut": "../../components/lz-donut/index",
+    "lz-bars": "../../components/lz-bars/index"
+  }
+}

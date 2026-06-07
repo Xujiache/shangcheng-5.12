@@ -1,0 +1,55 @@
+.da__warn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0 24px;
+}
+.da__warn-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(200, 68, 43, 0.1);
+}
+.da__warn-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--loss);
+  margin-top: 14px;
+}
+.da__warn-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.da__icon--danger {
+  background: rgba(200, 68, 43, 0.1);
+}
+.da__confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: var(--gap);
+  padding: 4px 6px;
+}
+.da__confirm text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.da__check {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.da__check.on {
+  background: var(--loss);
+  border-color: var(--loss);
+}

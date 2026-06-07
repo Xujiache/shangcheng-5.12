@@ -1,0 +1,31 @@
+<view class="mc">
+  <lz-header title="消息中心">
+    <view wx:if="{{hasUnread}}" slot="right" class="mc__readall" hover-class="tap-active" bindtap="onReadAll">全部已读</view>
+  </lz-header>
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view wx:if="{{list.length}}" class="mc__list">
+      <view
+        wx:for="{{list}}"
+        wx:key="id"
+        class="mc__item {{item.unread ? 'unread' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onRead"
+        hover-class="tap-active"
+      >
+        <view class="mc__icon" style="background: {{item.tint}};">
+          <lz-icon name="{{item.icon}}" size="18" color="{{item.color}}" />
+        </view>
+        <view class="mc__body">
+          <view class="mc__top">
+            <text class="mc__title">{{item.title}}</text>
+            <view wx:if="{{item.unread}}" class="mc__dot"></view>
+          </view>
+          <view class="mc__text">{{item.body}}</view>
+          <view class="mc__time">{{item.time}}</view>
+        </view>
+      </view>
+    </view>
+    <view wx:else class="lz-empty">暂无消息</view>
+  </view>
+</view>

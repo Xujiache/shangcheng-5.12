@@ -1,0 +1,33 @@
+/* 自定义开关（48x29 胶囊，开启时主色） */
+.tg {
+  width: 48px;
+  height: 29px;
+  border-radius: 999px;
+  background: var(--track);
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.2s ease;
+}
+.tg--on {
+  background: var(--accent);
+}
+.tg__knob {
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 40, 30, 0.25);
+  transition: transform 0.2s ease;
+}
+.tg--on .tg__knob {
+  transform: translateX(19px);
+}
+.pv__note {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.6;
+  padding: 14px 8px 4px;
+}

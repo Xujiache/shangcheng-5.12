@@ -1,0 +1,37 @@
+.pb__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0 24px;
+}
+.pb__hero-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+}
+.pb__hero-phone {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-top: 16px;
+}
+.pb__hero-tip {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.pb__info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pb__info text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}

@@ -1,0 +1,25 @@
+<view class="ctb">
+  <view class="ctb__bar">
+    <view class="ctb__tab" data-index="0" bindtap="switchTab" hover-class="tap-active">
+      <lz-icon name="home" size="23" color="{{selected===0?'accent':'muted'}}" stroke="{{selected===0?2.1:1.8}}" />
+      <text class="ctb__t {{selected===0?'ctb__t--on':''}}">首页</text>
+    </view>
+    <view class="ctb__tab" data-index="1" bindtap="switchTab" hover-class="tap-active">
+      <lz-icon name="orders" size="23" color="{{selected===1?'accent':'muted'}}" stroke="{{selected===1?2.1:1.8}}" />
+      <text class="ctb__t {{selected===1?'ctb__t--on':''}}">订单</text>
+    </view>
+
+    <view class="ctb__fab" bindtap="onAdd" hover-class="tap-active">
+      <lz-icon name="plus" size="27" color="white" stroke="2.3" />
+    </view>
+
+    <view class="ctb__tab" data-index="2" bindtap="switchTab" hover-class="tap-active">
+      <lz-icon name="trend" size="23" color="{{selected===2?'accent':'muted'}}" stroke="{{selected===2?2.1:1.8}}" />
+      <text class="ctb__t {{selected===2?'ctb__t--on':''}}">报表</text>
+    </view>
+    <view class="ctb__tab" data-index="3" bindtap="switchTab" hover-class="tap-active">
+      <lz-icon name="user" size="23" color="{{selected===3?'accent':'muted'}}" stroke="{{selected===3?2.1:1.8}}" />
+      <text class="ctb__t {{selected===3?'ctb__t--on':''}}">我的</text>
+    </view>
+  </view>
+</view>

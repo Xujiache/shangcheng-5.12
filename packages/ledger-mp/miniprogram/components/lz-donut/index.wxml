@@ -1,0 +1,6 @@
+<view class="donut" style="width: {{size}}px; height: {{size}}px;">
+  <canvas type="2d" id="dn" class="donut__cv" style="width: {{size}}px; height: {{size}}px;"></canvas>
+  <view class="donut__center">
+    <slot />
+  </view>
+</view>

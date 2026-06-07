@@ -1,0 +1,60 @@
+<view class="pw">
+  <lz-header title="修改登录密码" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">当前密码</view>
+    <view class="lz-field">
+      <lz-icon name="lock" size="19" color="faint" />
+      <input
+        class="lz-field__input"
+        value="{{oldPwd}}"
+        password="{{!showOld}}"
+        placeholder="请输入当前密码"
+        placeholder-class="ph"
+        maxlength="20"
+        bindinput="onOld"
+      />
+      <view hover-class="tap-active" bindtap="toggleOld" style="padding: 4px;">
+        <lz-icon name="{{showOld ? 'eye' : 'eyeoff'}}" size="19" color="faint" />
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">新密码</view>
+    <view class="lz-field">
+      <lz-icon name="key" size="19" color="faint" />
+      <input
+        class="lz-field__input"
+        value="{{newPwd}}"
+        password="{{!showNew}}"
+        placeholder="请输入新密码（至少 6 位）"
+        placeholder-class="ph"
+        maxlength="20"
+        bindinput="onNew"
+      />
+      <view hover-class="tap-active" bindtap="toggleNew" style="padding: 4px;">
+        <lz-icon name="{{showNew ? 'eye' : 'eyeoff'}}" size="19" color="faint" />
+      </view>
+    </view>
+
+    <view class="lz-field" style="margin-top: 14px;">
+      <lz-icon name="key" size="19" color="faint" />
+      <input
+        class="lz-field__input"
+        value="{{confirmPwd}}"
+        password="{{!showNew}}"
+        placeholder="请再次输入新密码"
+        placeholder-class="ph"
+        maxlength="20"
+        bindinput="onConfirm"
+      />
+    </view>
+
+    <view class="pw__note">为保障账号安全，密码至少 6 位，建议包含字母与数字。</view>
+  </view>
+
+  <view class="lz-footer">
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="onSave">
+      {{saving ? '提交中…' : '确认修改'}}
+    </button>
+  </view>
+</view>

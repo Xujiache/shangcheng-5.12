@@ -118,9 +118,24 @@ async function main() {
     data: {
       key: 'banners',
       value: [
-        { id: 'b1', image: 'https://picsum.photos/seed/jjbanner1/1200/500', title: '新春全场满 999-100', link: '' },
-        { id: 'b2', image: 'https://picsum.photos/seed/jjbanner2/1200/500', title: '定制家具特惠 7 折起', link: '' },
-        { id: 'b3', image: 'https://picsum.photos/seed/jjbanner3/1200/500', title: '会员日 · 享专属价', link: '' },
+        {
+          id: 'b1',
+          image: 'https://picsum.photos/seed/jjbanner1/1200/500',
+          title: '新春全场满 999-100',
+          link: '',
+        },
+        {
+          id: 'b2',
+          image: 'https://picsum.photos/seed/jjbanner2/1200/500',
+          title: '定制家具特惠 7 折起',
+          link: '',
+        },
+        {
+          id: 'b3',
+          image: 'https://picsum.photos/seed/jjbanner3/1200/500',
+          title: '会员日 · 享专属价',
+          link: '',
+        },
       ],
     },
   })
@@ -129,7 +144,11 @@ async function main() {
       key: 'system_settings',
       value: {
         site: { name: '经纬科技', logo: '', icp: '沪ICP备20260000号' },
-        payment: { wechat: { enabled: true }, alipay: { enabled: false }, balance: { enabled: true } },
+        payment: {
+          wechat: { enabled: true },
+          alipay: { enabled: false },
+          balance: { enabled: true },
+        },
         logistics: { providers: ['顺丰', '京东', '中通', '圆通', '韵达'], defaultFreight: 10 },
         service: { phone: '400-888-8888', email: 'support@jiujiu.com', workTime: '9:00-18:00' },
         security: { passwordPolicy: { minLength: 8, requireUppercase: false }, ipWhitelist: [] },
@@ -139,25 +158,79 @@ async function main() {
 
   // ============ 2. 角色 ============
   const rolePlatform = await prisma.adminRole.create({
-    data: { code: 'platform_ops', name: '平台运营', description: '运营平台业务', permissions: ['merchant.*', 'product.audit.*', 'ad.*', 'plaza.*', 'member.*'], isSystem: true },
+    data: {
+      code: 'platform_ops',
+      name: '平台运营',
+      description: '运营平台业务',
+      permissions: ['merchant.*', 'product.audit.*', 'ad.*', 'plaza.*', 'member.*'],
+      isSystem: true,
+    },
   })
   await prisma.adminRole.create({
-    data: { code: 'super', name: '超级管理员', description: '拥有全部权限', permissions: ['*'], isSystem: true },
+    data: {
+      code: 'super',
+      name: '超级管理员',
+      description: '拥有全部权限',
+      permissions: ['*'],
+      isSystem: true,
+    },
   })
   await prisma.adminRole.createMany({
     data: [
-      { code: 'auditor', name: '审核员', description: '审核商户和商品', permissions: ['audit.merchant', 'audit.product'], isSystem: false },
-      { code: 'cs', name: '客服', description: '处理订单和投诉', permissions: ['order.read', 'complaint.*'], isSystem: false },
-      { code: 'finance', name: '财务', description: '支付和佣金', permissions: ['pay.*', 'commission.*'], isSystem: false },
+      {
+        code: 'auditor',
+        name: '审核员',
+        description: '审核商户和商品',
+        permissions: ['audit.merchant', 'audit.product'],
+        isSystem: false,
+      },
+      {
+        code: 'cs',
+        name: '客服',
+        description: '处理订单和投诉',
+        permissions: ['order.read', 'complaint.*'],
+        isSystem: false,
+      },
+      {
+        code: 'finance',
+        name: '财务',
+        description: '支付和佣金',
+        permissions: ['pay.*', 'commission.*'],
+        isSystem: false,
+      },
     ],
   })
 
   // ============ 3. 平台 4 大分类 + 19 子分类 ============
   const cats = [
-    { id: 'cat-furniture', name: '家具', icon: '🛋️', sort: 1, children: ['沙发', '床垫', '餐桌椅', '书桌', '衣柜'] },
-    { id: 'cat-curtain', name: '窗帘布艺', icon: '🪟', sort: 2, children: ['窗帘', '抱枕', '地毯', '桌布'] },
-    { id: 'cat-lighting', name: '灯具', icon: '💡', sort: 3, children: ['吊灯', '台灯', '射灯', '落地灯'] },
-    { id: 'cat-deco', name: '装饰', icon: '🖼️', sort: 4, children: ['挂画', '花瓶', '香薰', '摆件', '壁纸', '镜子'] },
+    {
+      id: 'cat-furniture',
+      name: '家具',
+      icon: '🛋️',
+      sort: 1,
+      children: ['沙发', '床垫', '餐桌椅', '书桌', '衣柜'],
+    },
+    {
+      id: 'cat-curtain',
+      name: '窗帘布艺',
+      icon: '🪟',
+      sort: 2,
+      children: ['窗帘', '抱枕', '地毯', '桌布'],
+    },
+    {
+      id: 'cat-lighting',
+      name: '灯具',
+      icon: '💡',
+      sort: 3,
+      children: ['吊灯', '台灯', '射灯', '落地灯'],
+    },
+    {
+      id: 'cat-deco',
+      name: '装饰',
+      icon: '🖼️',
+      sort: 4,
+      children: ['挂画', '花瓶', '香薰', '摆件', '壁纸', '镜子'],
+    },
   ]
   for (const c of cats) {
     await prisma.category.create({
@@ -165,7 +238,13 @@ async function main() {
     })
     for (let i = 0; i < c.children.length; i++) {
       await prisma.category.create({
-        data: { id: `${c.id}-${i}`, name: c.children[i], parentId: c.id, sort: i, type: 'platform' },
+        data: {
+          id: `${c.id}-${i}`,
+          name: c.children[i],
+          parentId: c.id,
+          sort: i,
+          type: 'platform',
+        },
       })
     }
   }
@@ -240,20 +319,50 @@ async function main() {
 
   // 4.4 选品广场：2 个示意厂家（无登录账号，仅作为生态数据）
   const otherFactoriesSeed = [
-    { name: '舒馨家具厂', region: '广东省佛山市', cats: ['cat-furniture'], gmv: 380000, level: 'A', credit: 'A', logo: 'https://picsum.photos/seed/factory_shuxin/200/200', tags: ['工厂直供', '新品'], products: [
-      { name: '北欧布艺懒人沙发', cat: 'cat-furniture', retail: 1888, wholesale: 1188 },
-      { name: '原木双人床架', cat: 'cat-furniture', retail: 2299, wholesale: 1499 },
-      { name: '人体工学办公椅', cat: 'cat-furniture', retail: 999, wholesale: 599 },
-    ] },
-    { name: '云朵窗帘厂', region: '浙江省杭州市', cats: ['cat-curtain'], gmv: 220000, level: 'B', credit: 'A', logo: 'https://picsum.photos/seed/factory_yunduo/200/200', tags: ['爆款', '限时'], products: [
-      { name: '高遮光卧室窗帘', cat: 'cat-curtain', retail: 459, wholesale: 269 },
-      { name: '法式重工提花窗帘', cat: 'cat-curtain', retail: 899, wholesale: 569 },
-      { name: '北欧棉麻抱枕套', cat: 'cat-curtain', retail: 89, wholesale: 49 },
-    ] },
-    { name: '智享灯具厂', region: '广东省中山市', cats: ['cat-lighting'], gmv: 156000, level: 'B', credit: 'B', logo: 'https://picsum.photos/seed/factory_zhixiang/200/200', tags: ['高佣金'], products: [
-      { name: '智能感应客厅吸顶灯', cat: 'cat-lighting', retail: 1299, wholesale: 799 },
-      { name: 'LED 落地阅读灯', cat: 'cat-lighting', retail: 599, wholesale: 379 },
-    ] },
+    {
+      name: '舒馨家具厂',
+      region: '广东省佛山市',
+      cats: ['cat-furniture'],
+      gmv: 380000,
+      level: 'A',
+      credit: 'A',
+      logo: 'https://picsum.photos/seed/factory_shuxin/200/200',
+      tags: ['工厂直供', '新品'],
+      products: [
+        { name: '北欧布艺懒人沙发', cat: 'cat-furniture', retail: 1888, wholesale: 1188 },
+        { name: '原木双人床架', cat: 'cat-furniture', retail: 2299, wholesale: 1499 },
+        { name: '人体工学办公椅', cat: 'cat-furniture', retail: 999, wholesale: 599 },
+      ],
+    },
+    {
+      name: '云朵窗帘厂',
+      region: '浙江省杭州市',
+      cats: ['cat-curtain'],
+      gmv: 220000,
+      level: 'B',
+      credit: 'A',
+      logo: 'https://picsum.photos/seed/factory_yunduo/200/200',
+      tags: ['爆款', '限时'],
+      products: [
+        { name: '高遮光卧室窗帘', cat: 'cat-curtain', retail: 459, wholesale: 269 },
+        { name: '法式重工提花窗帘', cat: 'cat-curtain', retail: 899, wholesale: 569 },
+        { name: '北欧棉麻抱枕套', cat: 'cat-curtain', retail: 89, wholesale: 49 },
+      ],
+    },
+    {
+      name: '智享灯具厂',
+      region: '广东省中山市',
+      cats: ['cat-lighting'],
+      gmv: 156000,
+      level: 'B',
+      credit: 'B',
+      logo: 'https://picsum.photos/seed/factory_zhixiang/200/200',
+      tags: ['高佣金'],
+      products: [
+        { name: '智能感应客厅吸顶灯', cat: 'cat-lighting', retail: 1299, wholesale: 799 },
+        { name: 'LED 落地阅读灯', cat: 'cat-lighting', retail: 599, wholesale: 379 },
+      ],
+    },
   ]
   for (let f = 0; f < otherFactoriesSeed.length; f++) {
     const of = otherFactoriesSeed[f]
@@ -312,7 +421,12 @@ async function main() {
           totalStock: 150,
           sales: 30 + pi * 15,
           commentCount: 12 + pi * 5,
-          priceDisplayRules: { guestVisible: true, customerTier: 'retail', storeTier: 'wholesale', memberTier: 'member' },
+          priceDisplayRules: {
+            guestVisible: true,
+            customerTier: 'retail',
+            storeTier: 'wholesale',
+            memberTier: 'member',
+          },
         },
       })
       const colors = ['原木色', '深胡桃']
@@ -331,7 +445,9 @@ async function main() {
       }
     }
   }
-  console.log(`  ✓ ${otherFactoriesSeed.length} 选品广场示意厂家（共 ${otherFactoriesSeed.reduce((s, f) => s + f.products.length, 0)} 商品）`)
+  console.log(
+    `  ✓ ${otherFactoriesSeed.length} 选品广场示意厂家（共 ${otherFactoriesSeed.reduce((s, f) => s + f.products.length, 0)} 商品）`,
+  )
 
   // 4.4 客户地址（2 条）
   const addr1 = await prisma.address.create({
@@ -356,14 +472,70 @@ async function main() {
   })
 
   // ============ 5. merchant@demo 拥有的商品 ============
-  type ProdSeed = { name: string; cat: string; baseRetail: number; baseWholesale: number; baseMember: number; sales: number; comments: number }
+  type ProdSeed = {
+    name: string
+    cat: string
+    baseRetail: number
+    baseWholesale: number
+    baseMember: number
+    sales: number
+    comments: number
+  }
   const productsSeed: ProdSeed[] = [
-    { name: '北欧三人布艺沙发', cat: 'cat-furniture', baseRetail: 2999, baseWholesale: 2199, baseMember: 2599, sales: 128, comments: 56 },
-    { name: '实木餐桌椅四件套', cat: 'cat-furniture', baseRetail: 1599, baseWholesale: 1099, baseMember: 1299, sales: 89, comments: 38 },
-    { name: '现代简约客厅地毯', cat: 'cat-curtain', baseRetail: 599, baseWholesale: 399, baseMember: 499, sales: 234, comments: 102 },
-    { name: '北欧风遮光窗帘', cat: 'cat-curtain', baseRetail: 399, baseWholesale: 259, baseMember: 329, sales: 178, comments: 81 },
-    { name: 'LED 北欧吊灯', cat: 'cat-lighting', baseRetail: 899, baseWholesale: 599, baseMember: 749, sales: 67, comments: 28 },
-    { name: '可调光床头台灯', cat: 'cat-lighting', baseRetail: 199, baseWholesale: 129, baseMember: 169, sales: 312, comments: 145 },
+    {
+      name: '北欧三人布艺沙发',
+      cat: 'cat-furniture',
+      baseRetail: 2999,
+      baseWholesale: 2199,
+      baseMember: 2599,
+      sales: 128,
+      comments: 56,
+    },
+    {
+      name: '实木餐桌椅四件套',
+      cat: 'cat-furniture',
+      baseRetail: 1599,
+      baseWholesale: 1099,
+      baseMember: 1299,
+      sales: 89,
+      comments: 38,
+    },
+    {
+      name: '现代简约客厅地毯',
+      cat: 'cat-curtain',
+      baseRetail: 599,
+      baseWholesale: 399,
+      baseMember: 499,
+      sales: 234,
+      comments: 102,
+    },
+    {
+      name: '北欧风遮光窗帘',
+      cat: 'cat-curtain',
+      baseRetail: 399,
+      baseWholesale: 259,
+      baseMember: 329,
+      sales: 178,
+      comments: 81,
+    },
+    {
+      name: 'LED 北欧吊灯',
+      cat: 'cat-lighting',
+      baseRetail: 899,
+      baseWholesale: 599,
+      baseMember: 749,
+      sales: 67,
+      comments: 28,
+    },
+    {
+      name: '可调光床头台灯',
+      cat: 'cat-lighting',
+      baseRetail: 199,
+      baseWholesale: 129,
+      baseMember: 169,
+      sales: 312,
+      comments: 145,
+    },
   ]
 
   const productIds: string[] = []
@@ -418,7 +590,9 @@ async function main() {
       })
     }
   }
-  console.log(`  ✓ ${productsSeed.length} 商品 + ${productsSeed.length * 3} SKU（merchant@demo 持有）`)
+  console.log(
+    `  ✓ ${productsSeed.length} 商品 + ${productsSeed.length * 3} SKU（merchant@demo 持有）`,
+  )
 
   // ============ 6. merchant 周边业务数据 ============
   // 6.1 1 个门店
@@ -447,8 +621,22 @@ async function main() {
   // 6.2 2 个员工
   await prisma.staff.createMany({
     data: [
-      { merchantId: merchantBiz.id, name: '王晓琳', phone: '13900100001', role: 'sales', status: 'active', monthlyPerformance: 12800 },
-      { merchantId: merchantBiz.id, name: '陈志强', phone: '13900100002', role: 'cs', status: 'active', monthlyPerformance: 0 },
+      {
+        merchantId: merchantBiz.id,
+        name: '王晓琳',
+        phone: '13900100001',
+        role: 'sales',
+        status: 'active',
+        monthlyPerformance: 12800,
+      },
+      {
+        merchantId: merchantBiz.id,
+        name: '陈志强',
+        phone: '13900100002',
+        role: 'cs',
+        status: 'active',
+        monthlyPerformance: 0,
+      },
     ],
   })
 
@@ -507,20 +695,103 @@ async function main() {
   // 6.6 快捷回复
   await prisma.quickReply.createMany({
     data: [
-      { merchantId: merchantBiz.id, label: '欢迎语', content: '您好，欢迎光临经纬科技，请问需要什么帮助？', sort: 1 },
-      { merchantId: merchantBiz.id, label: '尺寸咨询', content: '我们可以根据您家空间定制尺寸，请告知长×宽×高（cm）', sort: 2 },
-      { merchantId: merchantBiz.id, label: '物流时效', content: '现货 24h 内发货，定制款 7-15 天交付', sort: 3 },
+      {
+        merchantId: merchantBiz.id,
+        label: '欢迎语',
+        content: '您好，欢迎光临经纬科技，请问需要什么帮助？',
+        sort: 1,
+      },
+      {
+        merchantId: merchantBiz.id,
+        label: '尺寸咨询',
+        content: '我们可以根据您家空间定制尺寸，请告知长×宽×高（cm）',
+        sort: 2,
+      },
+      {
+        merchantId: merchantBiz.id,
+        label: '物流时效',
+        content: '现货 24h 内发货，定制款 7-15 天交付',
+        sort: 3,
+      },
     ],
   })
 
   // ============ 7. 会员套餐 + merchant@demo 订阅 ============
   const plans = [
-    { type: 'basic', code: 'basic_monthly', name: '基础月会员', price: 99, originalPrice: 199, period: 'monthly', periodCount: 1, hot: false, rights: ['店铺装修', '基础数据', '客服'], constraints: { pushSlots: 5, bannerLimit: 2, impressionLimit: 5000 }, sort: 1 },
-    { type: 'basic', code: 'basic_yearly', name: '基础年会员', price: 999, originalPrice: 2388, period: 'yearly', periodCount: 1, hot: true, rights: ['店铺装修', '基础数据', '客服', '广告投放优先级'], constraints: { pushSlots: 60, bannerLimit: 24, impressionLimit: 60000 }, sort: 2 },
-    { type: 'ad', code: 'ad_basic', name: '广告基础', price: 299, originalPrice: 599, period: 'monthly', periodCount: 1, hot: false, rights: ['首页 Banner ×3', '推送 ×10'], constraints: { pushSlots: 10, bannerLimit: 3, impressionLimit: 10000 }, sort: 3 },
-    { type: 'ad', code: 'ad_pro', name: '广告专业', price: 999, originalPrice: 1999, period: 'monthly', periodCount: 1, hot: true, rights: ['首页 Banner ×10', '推送 ×30', '专属客服'], constraints: { pushSlots: 30, bannerLimit: 10, impressionLimit: 50000 }, sort: 4 },
-    { type: 'addon', code: 'addon_quota_push_50', name: '推送加包 50 次', price: 99, period: 'oneoff', periodCount: 1, rights: ['+50 次推送'], constraints: { pushSlots: 50 }, sort: 5 },
-    { type: 'addon', code: 'addon_quota_banner_5', name: 'Banner 加包 5 次', price: 79, period: 'oneoff', periodCount: 1, rights: ['+5 次 Banner'], constraints: { bannerLimit: 5 }, sort: 6 },
+    {
+      type: 'basic',
+      code: 'basic_monthly',
+      name: '基础月会员',
+      price: 99,
+      originalPrice: 199,
+      period: 'monthly',
+      periodCount: 1,
+      hot: false,
+      rights: ['店铺装修', '基础数据', '客服'],
+      constraints: { pushSlots: 5, bannerLimit: 2, impressionLimit: 5000 },
+      sort: 1,
+    },
+    {
+      type: 'basic',
+      code: 'basic_yearly',
+      name: '基础年会员',
+      price: 999,
+      originalPrice: 2388,
+      period: 'yearly',
+      periodCount: 1,
+      hot: true,
+      rights: ['店铺装修', '基础数据', '客服', '广告投放优先级'],
+      constraints: { pushSlots: 60, bannerLimit: 24, impressionLimit: 60000 },
+      sort: 2,
+    },
+    {
+      type: 'ad',
+      code: 'ad_basic',
+      name: '广告基础',
+      price: 299,
+      originalPrice: 599,
+      period: 'monthly',
+      periodCount: 1,
+      hot: false,
+      rights: ['首页 Banner ×3', '推送 ×10'],
+      constraints: { pushSlots: 10, bannerLimit: 3, impressionLimit: 10000 },
+      sort: 3,
+    },
+    {
+      type: 'ad',
+      code: 'ad_pro',
+      name: '广告专业',
+      price: 999,
+      originalPrice: 1999,
+      period: 'monthly',
+      periodCount: 1,
+      hot: true,
+      rights: ['首页 Banner ×10', '推送 ×30', '专属客服'],
+      constraints: { pushSlots: 30, bannerLimit: 10, impressionLimit: 50000 },
+      sort: 4,
+    },
+    {
+      type: 'addon',
+      code: 'addon_quota_push_50',
+      name: '推送加包 50 次',
+      price: 99,
+      period: 'oneoff',
+      periodCount: 1,
+      rights: ['+50 次推送'],
+      constraints: { pushSlots: 50 },
+      sort: 5,
+    },
+    {
+      type: 'addon',
+      code: 'addon_quota_banner_5',
+      name: 'Banner 加包 5 次',
+      price: 79,
+      period: 'oneoff',
+      periodCount: 1,
+      rights: ['+5 次 Banner'],
+      constraints: { bannerLimit: 5 },
+      sort: 6,
+    },
   ]
   for (const p of plans) {
     await prisma.memberPlan.create({
@@ -557,7 +828,9 @@ async function main() {
       },
     })
     // 使用配额
-    const periodStart = new Date(); periodStart.setDate(1); periodStart.setHours(0, 0, 0, 0)
+    const periodStart = new Date()
+    periodStart.setDate(1)
+    periodStart.setHours(0, 0, 0, 0)
     const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0)
     await prisma.usageQuota.create({
       data: {
@@ -566,9 +839,12 @@ async function main() {
         periodStart,
         periodEnd,
         data: { pushSlots: 30, bannerLimit: 10, impressionLimit: 50000 },
-        pushSlotsLimit: 30, pushSlotsUsed: 8,
-        bannerLimit: 10, bannerUsed: 3,
-        impressionLimit: 50000, impressionUsed: 12450,
+        pushSlotsLimit: 30,
+        pushSlotsUsed: 8,
+        bannerLimit: 10,
+        bannerUsed: 3,
+        impressionLimit: 50000,
+        impressionUsed: 12450,
       },
     })
   }
@@ -581,11 +857,56 @@ async function main() {
   })
 
   const orderSeeds = [
-    { status: 'pending_payment', skuIdx: 0, qty: 1, daysAgo: 0,   hoursAgo: 0.5,  expires: 30 * 60_000, label: '刚下单待付款' },
-    { status: 'pending_shipment', skuIdx: 2, qty: 2, daysAgo: 0,  hoursAgo: 4,    paid: true,           label: '已付款待发货' },
-    { status: 'shipped',          skuIdx: 5, qty: 1, daysAgo: 2,  hoursAgo: 0,    paid: true, shipped: true, label: '已发货' },
-    { status: 'completed',        skuIdx: 8, qty: 1, daysAgo: 14, hoursAgo: 0,    paid: true, shipped: true, completed: true, label: '已完成' },
-    { status: 'after_sale',       skuIdx: 11, qty: 1, daysAgo: 9, hoursAgo: 0,    paid: true, shipped: true, completed: true, label: '售后中' },
+    {
+      status: 'pending_payment',
+      skuIdx: 0,
+      qty: 1,
+      daysAgo: 0,
+      hoursAgo: 0.5,
+      expires: 30 * 60_000,
+      label: '刚下单待付款',
+    },
+    {
+      status: 'pending_shipment',
+      skuIdx: 2,
+      qty: 2,
+      daysAgo: 0,
+      hoursAgo: 4,
+      paid: true,
+      label: '已付款待发货',
+    },
+    {
+      status: 'shipped',
+      skuIdx: 5,
+      qty: 1,
+      daysAgo: 2,
+      hoursAgo: 0,
+      paid: true,
+      shipped: true,
+      label: '已发货',
+    },
+    {
+      status: 'completed',
+      skuIdx: 8,
+      qty: 1,
+      daysAgo: 14,
+      hoursAgo: 0,
+      paid: true,
+      shipped: true,
+      completed: true,
+      label: '已完成',
+    },
+    {
+      status: 'after_sale',
+      skuIdx: 11,
+      qty: 1,
+      daysAgo: 9,
+      hoursAgo: 0,
+      paid: true,
+      shipped: true,
+      completed: true,
+      label: '售后中',
+    },
   ]
 
   const orderIds: { id: string; status: string; itemId: string }[] = []
@@ -708,11 +1029,46 @@ async function main() {
   })
   await prisma.chatMessage.createMany({
     data: [
-      { sessionId: session.id, sender: 'user', type: 'text', content: '您好，请问北欧三人布艺沙发可以定制尺寸吗？', read: true, createdAt: new Date(Date.now() - 2 * 3600_000) },
-      { sessionId: session.id, sender: 'merchant', type: 'quick', content: '我们可以根据您家空间定制尺寸，请告知长×宽×高（cm）', read: true, createdAt: new Date(Date.now() - 2 * 3600_000 + 30_000) },
-      { sessionId: session.id, sender: 'user', type: 'text', content: '我的客厅是 320×220 cm，能做吗？', read: true, createdAt: new Date(Date.now() - 1.5 * 3600_000) },
-      { sessionId: session.id, sender: 'merchant', type: 'text', content: '可以的！标准款最大 320cm。我帮您留意一下材质和颜色偏好？', read: true, createdAt: new Date(Date.now() - 1.5 * 3600_000 + 60_000) },
-      { sessionId: session.id, sender: 'user', type: 'text', content: '想要原木色，但听说现货只有北欧白？', read: false, createdAt: new Date(Date.now() - 10 * 60_000) },
+      {
+        sessionId: session.id,
+        sender: 'user',
+        type: 'text',
+        content: '您好，请问北欧三人布艺沙发可以定制尺寸吗？',
+        read: true,
+        createdAt: new Date(Date.now() - 2 * 3600_000),
+      },
+      {
+        sessionId: session.id,
+        sender: 'merchant',
+        type: 'quick',
+        content: '我们可以根据您家空间定制尺寸，请告知长×宽×高（cm）',
+        read: true,
+        createdAt: new Date(Date.now() - 2 * 3600_000 + 30_000),
+      },
+      {
+        sessionId: session.id,
+        sender: 'user',
+        type: 'text',
+        content: '我的客厅是 320×220 cm，能做吗？',
+        read: true,
+        createdAt: new Date(Date.now() - 1.5 * 3600_000),
+      },
+      {
+        sessionId: session.id,
+        sender: 'merchant',
+        type: 'text',
+        content: '可以的！标准款最大 320cm。我帮您留意一下材质和颜色偏好？',
+        read: true,
+        createdAt: new Date(Date.now() - 1.5 * 3600_000 + 60_000),
+      },
+      {
+        sessionId: session.id,
+        sender: 'user',
+        type: 'text',
+        content: '想要原木色，但听说现货只有北欧白？',
+        read: false,
+        createdAt: new Date(Date.now() - 10 * 60_000),
+      },
     ],
   })
   console.log('  ✓ 1 客服会话 + 5 条消息（customer ↔ merchant，未读 1 条）')
@@ -740,9 +1096,29 @@ async function main() {
 
   // ============ 13. 广告位 ============
   const slots = [
-    { code: 'mp_home_banner', name: '小程序首页轮播', scene: '用户端首页', target: 'customer', position: 'top', size: '750x300', sort: 1 },
-    { code: 'merchant_home_card', name: '商家 APP 首页广告卡', scene: '商家端首页', target: 'factory', sort: 2 },
-    { code: 'mp_detail_top', name: '商品详情顶部', scene: '用户端详情', target: 'customer', sort: 3 },
+    {
+      code: 'mp_home_banner',
+      name: '小程序首页轮播',
+      scene: '用户端首页',
+      target: 'customer',
+      position: 'top',
+      size: '750x300',
+      sort: 1,
+    },
+    {
+      code: 'merchant_home_card',
+      name: '商家 APP 首页广告卡',
+      scene: '商家端首页',
+      target: 'factory',
+      sort: 2,
+    },
+    {
+      code: 'mp_detail_top',
+      name: '商品详情顶部',
+      scene: '用户端详情',
+      target: 'customer',
+      sort: 3,
+    },
     { code: 'mp_splash', name: '开屏广告', scene: '用户端启动', target: 'all', sort: 4 },
     { code: 'wheel_reward', name: '推广转盘', scene: '推广中心', target: 'customer', sort: 5 },
   ]
@@ -752,24 +1128,186 @@ async function main() {
 
   // ============ 14. 功能开关 ============
   const flags = [
-    { key: 'home.entry.orderManagement', label: '订单管理入口', group: 'home_entry', defaultEnabled: true, sort: 1 },
-    { key: 'home.entry.productManagement', label: '商品管理入口', group: 'home_entry', defaultEnabled: true, sort: 2 },
-    { key: 'home.entry.marketing', label: '营销入口', group: 'home_entry', defaultEnabled: true, sort: 3 },
-    { key: 'home.entry.plaza', label: '选品广场入口', group: 'home_entry', defaultEnabled: true, sort: 4 },
-    { key: 'role.button.exportData', label: '数据导出', group: 'role_button', defaultEnabled: true, sort: 1 },
-    { key: 'role.button.bulkAction', label: '批量操作', group: 'role_button', defaultEnabled: true, sort: 2 },
-    { key: 'side.menu.commission', label: '佣金菜单', group: 'side_menu', defaultEnabled: true, sort: 1 },
-    { key: 'side.menu.decorate', label: '装修菜单', group: 'side_menu', defaultEnabled: true, sort: 2 },
+    {
+      key: 'home.entry.orderManagement',
+      label: '订单管理入口',
+      group: 'home_entry',
+      defaultEnabled: true,
+      sort: 1,
+    },
+    {
+      key: 'home.entry.productManagement',
+      label: '商品管理入口',
+      group: 'home_entry',
+      defaultEnabled: true,
+      sort: 2,
+    },
+    {
+      key: 'home.entry.marketing',
+      label: '营销入口',
+      group: 'home_entry',
+      defaultEnabled: true,
+      sort: 3,
+    },
+    {
+      key: 'home.entry.plaza',
+      label: '选品广场入口',
+      group: 'home_entry',
+      defaultEnabled: true,
+      sort: 4,
+    },
+    {
+      key: 'role.button.exportData',
+      label: '数据导出',
+      group: 'role_button',
+      defaultEnabled: true,
+      sort: 1,
+    },
+    {
+      key: 'role.button.bulkAction',
+      label: '批量操作',
+      group: 'role_button',
+      defaultEnabled: true,
+      sort: 2,
+    },
+    {
+      key: 'side.menu.commission',
+      label: '佣金菜单',
+      group: 'side_menu',
+      defaultEnabled: true,
+      sort: 1,
+    },
+    {
+      key: 'side.menu.decorate',
+      label: '装修菜单',
+      group: 'side_menu',
+      defaultEnabled: true,
+      sort: 2,
+    },
   ]
   for (const f of flags) {
     await prisma.featureFlag.create({ data: f })
   }
 
+  // ============ 15. 门窗利账（ledger 记账新端）演示账号 ============
+  // 幂等：先按手机号级联删除旧数据（onDelete: Cascade 清掉会员/订单/客户/目标）
+  const ledgerPhone = '13800138000'
+  await prisma.ledgerUser.deleteMany({ where: { phone: ledgerPhone } })
+  const ledgerUser = await prisma.ledgerUser.create({
+    data: {
+      phone: ledgerPhone,
+      passwordHash: passHash,
+      nickname: '门窗张师傅',
+      // 月卡会员（30 天有效），登录后可直接进首页
+      membership: {
+        create: { expiresAt: new Date(Date.now() + 30 * 86400000), lastPlanKey: 'month' },
+      },
+      goal: { create: { monthly: 45000, yearly: 480000 } },
+    },
+  })
+  const lc = await Promise.all(
+    [
+      {
+        name: '赵强',
+        phone: '13860218830',
+        address: '朝阳区 · 望京西园 4 区',
+        note: '老客户，常介绍新单',
+      },
+      {
+        name: '王芳',
+        phone: '13911082245',
+        address: '海淀区 · 中关村南大街 18 号',
+        note: '注重密封性能',
+      },
+      { name: '李娜', phone: '13700135582', address: '西城区 · 月坛北街', note: '' },
+    ].map((c) => prisma.ledgerCustomer.create({ data: { userId: ledgerUser.id, ...c } })),
+  )
+  const mkLedgerOrder = (
+    customerName: string,
+    customerId: string,
+    date: string,
+    total: number,
+    costs: number[],
+    extras: { type: string; amount: number }[],
+    note: string,
+  ) =>
+    prisma.ledgerOrder.create({
+      data: {
+        userId: ledgerUser.id,
+        customerId,
+        customerName,
+        date: new Date(date),
+        total,
+        costProfile: costs[0],
+        costGlass: costs[1],
+        costHardware: costs[2],
+        costLabor: costs[3],
+        costScreen: costs[4],
+        extras,
+        note,
+      },
+    })
+  await mkLedgerOrder(
+    '赵强',
+    lc[0].id,
+    '2026-06-05',
+    58200,
+    [16800, 9200, 4100, 6800, 1900],
+    [
+      { type: '上门安装费', amount: 2200 },
+      { type: '运费', amount: 600 },
+    ],
+    '阳台断桥铝推拉门 + 封窗',
+  )
+  await mkLedgerOrder(
+    '王芳',
+    lc[1].id,
+    '2026-05-28',
+    41800,
+    [12200, 6800, 3000, 4400, 1500],
+    [{ type: '上门安装费', amount: 1600 }],
+    '客厅落地窗',
+  )
+  await mkLedgerOrder(
+    '李娜',
+    lc[2].id,
+    '2026-05-06',
+    18700,
+    [5400, 2900, 1300, 2400, 700],
+    [{ type: '油费', amount: 160 }],
+    '飘窗封窗',
+  )
+  await mkLedgerOrder(
+    '赵强',
+    lc[0].id,
+    '2026-04-19',
+    53100,
+    [15400, 8400, 3800, 5800, 1800],
+    [{ type: '上门安装费', amount: 2000 }],
+    '别墅一层门窗',
+  )
+  await mkLedgerOrder(
+    '王芳',
+    lc[1].id,
+    '2026-03-24',
+    44900,
+    [13100, 7100, 3200, 4700, 1600],
+    [{ type: '上门安装费', amount: 1700 }],
+    '客餐厅整面窗',
+  )
+
   console.log('\n✅ Seed 完成。关联关系总览：')
   console.log('   admin@demo  → 审核了 merchant@demo 入驻 + 1 件商品')
-  console.log('   merchant@demo → 6 商品 / 18 SKU / 1 门店 / 2 员工 / 装修 / 优惠券 / 佣金规则 / 广告专业套餐')
-  console.log('   customer@demo (13800000000) → 在 merchant@demo 下 5 单（待付/待发/已发/完成/售后）')
+  console.log(
+    '   merchant@demo → 6 商品 / 18 SKU / 1 门店 / 2 员工 / 装修 / 优惠券 / 佣金规则 / 广告专业套餐',
+  )
+  console.log(
+    '   customer@demo (13800000000) → 在 merchant@demo 下 5 单（待付/待发/已发/完成/售后）',
+  )
   console.log('                              → 收藏 3 商品 + 购物车 1 SKU + 客服 1 会话(5 消息)')
+  console.log(
+    '   门窗利账 13800138000 / <默认密码> → 月卡会员(30天) + 3 客户 + 5 订单（记账小程序登录用）',
+  )
 }
 
 main()

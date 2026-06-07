@@ -1,0 +1,24 @@
+<view class="cl">
+  <lz-header title="客户管理" subtitle="按累计利润排序">
+    <view slot="right" class="cl__add" bindtap="toAdd" hover-class="tap-active">
+      <lz-icon name="plus" size="16" color="accent" stroke="2.2" /><text>新增</text>
+    </view>
+  </lz-header>
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view wx:if="{{list.length}}" class="lz-card lz-card--flush">
+      <view wx:for="{{list}}" wx:key="name" class="lz-row" data-id="{{item.id}}" bindtap="toDetail" hover-class="tap-active">
+        <view class="lz-avatar cl__av">{{item.initial}}</view>
+        <view class="lz-row__main">
+          <view class="lz-row__label" style="font-weight: 600;">{{item.name}}</view>
+          <view class="lz-row__sub">{{item.sub}}</view>
+        </view>
+        <view style="text-align: right;">
+          <view class="lz-money lz-money--accent" style="font-size: 15px;">{{item.profitText}}</view>
+          <view class="lz-faint" style="font-size: 11px; margin-top: 2px;">累计利润</view>
+        </view>
+      </view>
+    </view>
+    <view wx:elif="{{!loading}}" class="lz-empty">还没有客户，点击右上角新增</view>
+  </view>
+</view>

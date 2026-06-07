@@ -1,0 +1,105 @@
+<view class="rp">
+  <lz-header title="经营报表" subtitle="{{ovYear}}年 · 全年统计" back="{{false}}" />
+
+  <view class="lz-page lz-page--pad-bottom">
+    <view style="margin-bottom: var(--gap);">
+      <lz-segmented options="{{tabs}}" value="{{tab}}" bindchange="onTab" />
+    </view>
+
+    <!-- ===== 利润统计 ===== -->
+    <block wx:if="{{tab === 'profit'}}">
+      <view class="lz-card lz-card--glow rp__hero">
+        <view class="rp__hero-label">{{ovYear}}年累计利润</view>
+        <view class="lz-money lz-money--accent" style="font-size: 36px; margin-top: 4px;">
+          <text class="lz-cur">¥</text>{{yearProfitBare}}
+        </view>
+        <view class="rp__metrics">
+          <view class="rp__metric">
+            <view class="rp__m-v">{{count}}</view>
+            <view class="rp__m-l">累计订单</view>
+          </view>
+          <view class="rp__metric">
+            <view class="rp__m-v">{{avgProfitText}}</view>
+            <view class="rp__m-l">单均利润</view>
+          </view>
+          <view class="rp__metric">
+            <view class="rp__m-v">{{bestMonthLabel}}</view>
+            <view class="rp__m-l">最佳月份</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="lz-card">
+        <view class="rp__card-t" style="margin-bottom: 14px;">月度利润 · {{ovYear}}年</view>
+        <lz-bars wx:if="{{hasData}}" series="{{profitBars}}" colors="{{['accent']}}" height="150" highlight="{{sel}}" bindselect="onSel" />
+        <view wx:else class="lz-empty">本年暂无数据</view>
+      </view>
+
+      <view class="lz-section-label">各月明细</view>
+      <view class="lz-card lz-card--flush">
+        <view wx:if="{{hasData}}">
+          <view wx:for="{{months}}" wx:key="month" class="lz-row" data-index="{{index}}" bindtap="onSel" hover-class="tap-active">
+            <view class="rp__mon {{sel === index ? 'rp__mon--on' : ''}}">{{item.label}}</view>
+            <view class="lz-row__main">
+              <view class="lz-row__label" style="font-size: 14.5px; font-weight: 600;">利润 {{item.profitText}}</view>
+              <view class="lz-row__sub">{{item.count}} 笔 · 营收 {{item.revenueText}}</view>
+            </view>
+            <view class="lz-money {{item.profit < 0 ? 'lz-money--loss' : 'lz-money--accent'}}" style="font-size: 15px;">{{item.profitText}}</view>
+          </view>
+        </view>
+        <view wx:else class="lz-empty">本年暂无订单，去记一笔吧</view>
+      </view>
+    </block>
+
+    <!-- ===== 人工统计 ===== -->
+    <block wx:else>
+      <view class="lz-card lz-card--glow rp__hero">
+        <view class="rp__hero-label">{{ovYear}}年累计人工成本</view>
+        <view class="lz-money" style="font-size: 36px; margin-top: 4px; color: var(--c4);">
+          <text class="lz-cur">¥</text>{{yearLaborBare}}
+        </view>
+        <view class="rp__metrics">
+          <view class="rp__metric">
+            <view class="rp__m-v">{{count}}</view>
+            <view class="rp__m-l">累计订单</view>
+          </view>
+          <view class="rp__metric">
+            <view class="rp__m-v">{{yearOtherText}}</view>
+            <view class="rp__m-l">其他成本</view>
+          </view>
+          <view class="rp__metric">
+            <view class="rp__m-v">{{avgLaborText}}</view>
+            <view class="rp__m-l">单均人工</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="lz-card">
+        <view class="lz-between" style="margin-bottom: 14px;">
+          <view class="rp__card-t">月度成本 · {{ovYear}}年</view>
+          <view class="rp__legend2">
+            <view class="rp__lg"><view class="lz-dot" style="background: var(--c4);"></view><text>人工</text></view>
+            <view class="rp__lg"><view class="lz-dot" style="background: var(--c6);"></view><text>其他</text></view>
+          </view>
+        </view>
+        <lz-bars wx:if="{{hasData}}" series="{{laborBars}}" colors="{{['c4','c6']}}" height="150" highlight="{{sel}}" bindselect="onSel" />
+        <view wx:else class="lz-empty">本年暂无数据</view>
+      </view>
+
+      <view class="lz-section-label">各月明细</view>
+      <view class="lz-card lz-card--flush">
+        <view wx:if="{{hasData}}">
+          <view wx:for="{{months}}" wx:key="month" class="lz-row" data-index="{{index}}" bindtap="onSel" hover-class="tap-active">
+            <view class="rp__mon {{sel === index ? 'rp__mon--on' : ''}}">{{item.label}}</view>
+            <view class="lz-row__main">
+              <view class="lz-row__label" style="font-size: 14.5px; font-weight: 600;">人工 {{item.laborText}}</view>
+              <view class="lz-row__sub">其他成本 {{item.otherText}}</view>
+            </view>
+            <view class="lz-money" style="font-size: 15px; color: var(--c4);">{{item.laborText}}</view>
+          </view>
+        </view>
+        <view wx:else class="lz-empty">本年暂无订单，去记一笔吧</view>
+      </view>
+    </block>
+  </view>
+</view>

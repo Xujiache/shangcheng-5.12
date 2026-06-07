@@ -1,0 +1,81 @@
+<view class="od">
+  <lz-header title="订单详情" subtitle="{{o.id}}">
+    <view slot="right" class="od__edit" bindtap="toEdit">编辑</view>
+  </lz-header>
+
+  <view wx:if="{{o}}" class="lz-page" style="padding-bottom: 110px;">
+    <!-- 核心 -->
+    <view class="lz-card lz-card--glow od__core">
+      <lz-donut data="{{donut}}" size="120" thickness="18">
+        <view style="font-size: 10.5px; color: var(--muted);">利润率</view>
+        <view style="font-size: 20px; font-weight: 800; color: var(--accent-text);">{{marginPct}}%</view>
+      </lz-donut>
+      <view class="od__core-r">
+        <view>
+          <view class="od__lbl">净利润</view>
+          <view class="lz-money lz-money--accent" style="font-size: 30px;"><text class="lz-cur">¥</text>{{profitBare}}</view>
+        </view>
+        <view class="od__core-row">
+          <view>
+            <view class="od__lbl">总价</view>
+            <view class="lz-money" style="font-size: 16px;">{{totalText}}</view>
+          </view>
+          <view>
+            <view class="od__lbl">总成本</view>
+            <view class="lz-money lz-money--muted" style="font-size: 16px;">{{costText}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 基本信息 -->
+    <view class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+      <view class="lz-row" bindtap="toCustomer" hover-class="tap-active">
+        <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">客户</view></view>
+        <view class="od__val od__val--link">{{o.customer}}</view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <view class="lz-row">
+        <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">下单日期</view></view>
+        <view class="od__val">{{o.date}}</view>
+      </view>
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">项目备注</view></view>
+        <view class="od__val">{{o.note || '—'}}</view>
+      </view>
+    </view>
+
+    <!-- 成本明细 -->
+    <view class="lz-card" style="margin-top: var(--gap);">
+      <view class="od__t">成本明细</view>
+      <view wx:for="{{costRows}}" wx:key="name" class="od__cost">
+        <view class="lz-dot" style="background: var(--{{item.color}});"></view>
+        <text class="od__c-name">{{item.name}}</text>
+        <view class="lz-track lz-flex1"><view class="lz-track__fill" style="width: {{item.w}}%; background: var(--{{item.color}});"></view></view>
+        <text class="od__c-pct">{{item.pct}}%</text>
+        <text class="od__c-val">{{item.value}}</text>
+      </view>
+    </view>
+
+    <!-- 其他开销 -->
+    <view class="lz-card" style="margin-top: var(--gap);">
+      <view class="lz-between" style="margin-bottom: 12px;">
+        <view class="od__t">其他开销</view>
+        <text class="lz-muted" style="font-size: 13px;">{{extrasTotalText}}</text>
+      </view>
+      <view wx:if="{{extras.length}}">
+        <view wx:for="{{extras}}" wx:key="type" class="lz-between od__ex">
+          <view class="lz-flex"><view class="lz-dot" style="background: var(--c6); margin-right: 10px;"></view><text class="lz-muted" style="font-size: 13.5px;">{{item.type}}</text></view>
+          <text style="font-size: 13.5px; font-weight: 600;">{{item.amountText}}</text>
+        </view>
+      </view>
+      <view wx:else class="lz-faint" style="font-size: 13px;">无其他开销</view>
+    </view>
+  </view>
+
+  <view wx:if="{{o}}" class="lz-footer">
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="toEdit">
+      <lz-icon name="pencil" size="18" color="white" /> 编辑此订单
+    </button>
+  </view>
+</view>

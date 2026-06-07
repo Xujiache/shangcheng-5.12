@@ -1,0 +1,46 @@
+<view class="nt">
+  <lz-header title="通知提醒" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">推送提醒</view>
+    <view class="lz-card lz-card--flush">
+      <view wx:for="{{items}}" wx:key="key" class="lz-row {{index === items.length - 1 ? 'lz-row--last' : ''}}">
+        <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">{{item.label}}</view>
+          <view class="lz-row__sub">{{item.sub}}</view>
+        </view>
+        <view
+          class="tg {{item.on ? 'tg--on' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onToggle"
+          hover-class="tap-active"
+        >
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">消息</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row" hover-class="tap-active" bindtap="toDnd">
+        <view class="lz-row__icon"><lz-icon name="clock" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">免打扰时段</view>
+          <view class="lz-row__sub">设置勿扰时间，期间不推送</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="toMsgCenter">
+        <view class="lz-row__icon"><lz-icon name="message" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">消息中心</view>
+          <view class="lz-row__sub">查看历史通知与系统消息</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+
+    <view class="nt__note">关闭后将不再收到对应类型的推送通知，应用内消息中心仍会保留记录。</view>
+  </view>
+</view>

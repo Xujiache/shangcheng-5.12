@@ -1,0 +1,136 @@
+.home {
+  min-height: 100vh;
+  background-image: var(--bg-grad);
+}
+.home__hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px 12px;
+}
+.home__title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.home__sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.home__bell {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+}
+.home__dot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--loss);
+  border: 1.5px solid var(--surface);
+}
+.home__hero {
+  margin-bottom: var(--gap);
+}
+.home__hero-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.home__metrics {
+  display: flex;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.home__metric {
+  flex: 1;
+  text-align: center;
+}
+.home__m-v {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.home__m-l {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 3px;
+}
+.home__goal {
+  margin-bottom: var(--gap);
+}
+.home__goal-t {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.home__goal-s {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 9px;
+}
+.home__card-t {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.home__cost {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.home__legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.home__leg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home__leg-n {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.home__leg-p {
+  font-size: 11px;
+  color: var(--faint);
+  margin-right: 8px;
+}
+.home__leg-v {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.home__rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.home .lz-card {
+  margin-bottom: var(--gap);
+}

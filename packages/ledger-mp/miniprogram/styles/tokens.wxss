@@ -1,0 +1,60 @@
+/* 门窗利账 · 设计 token（浅色为主 · teal #0E7C66 · soft 圆角 · regular 密度）
+   还原自 Claude Design theme.jsx。深色模式后置（P4）。 */
+page {
+  /* 背景 / 表面 */
+  --bg: #ebf0ed;
+  --bg-grad: radial-gradient(120% 80% at 50% -10%, #f4f8f5 0%, #e7eeea 65%);
+  --surface: #ffffff;
+  --surface-2: #f4f8f6;
+  --surface-up: #ffffff;
+
+  /* 文字 */
+  --text: #15201c;
+  --muted: #5c6b64;
+  --faint: #94a19a;
+
+  /* 线条 / 轨道 */
+  --border: rgba(20, 32, 28, 0.08);
+  --border-strong: rgba(20, 32, 28, 0.14);
+  --track: rgba(20, 32, 28, 0.06);
+
+  /* 主色 */
+  --accent: #0e7c66;
+  --accent-soft: #e0efe9;
+  --accent-text: #0e7c66;
+  --nav-bg: rgba(255, 255, 255, 0.9);
+
+  /* 盈亏 */
+  --profit: #0e7c66;
+  --loss: #c8442b;
+
+  /* 数据可视化 6 色 */
+  --c1: #0e7c66;
+  --c2: #4c9fbe;
+  --c3: #dfa03a;
+  --c4: #d2735a;
+  --c5: #84a06a;
+  --c6: #9488b8;
+
+  /* 阴影 */
+  --shadow: 0 1px 2px rgba(16, 40, 30, 0.05), 0 8px 24px rgba(16, 40, 30, 0.07);
+  --shadow-soft: 0 1px 2px rgba(16, 40, 30, 0.05);
+
+  /* 圆角（soft） */
+  --r-card: 16px;
+  --r-btn: 16px;
+  --r-chip: 999px;
+  --r-bar: 6px;
+
+  /* 间距 / 行高（regular） */
+  --pad: 18px;
+  --gap: 16px;
+  --row: 64px;
+
+  /* 字体 */
+  --font: -apple-system, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}

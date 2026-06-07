@@ -1,0 +1,140 @@
+<view class="oe">
+  <lz-header title="{{editing ? '编辑订单' : '新增订单'}}">
+    <view slot="right" class="oe__cancel" bindtap="onCancel">取消</view>
+  </lz-header>
+
+  <view class="lz-page" style="padding-bottom: 150px;">
+    <!-- 基本 -->
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row" bindtap="openPicker" hover-class="tap-active">
+        <view class="oe__lbl">客户</view>
+        <view class="lz-flex1"></view>
+        <view class="oe__pick {{customerName ? '' : 'oe__pick--ph'}}">{{customerName || '选择或新增客户'}}</view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <picker mode="date" value="{{date}}" bindchange="onDate">
+        <view class="lz-row">
+          <view class="oe__lbl">日期</view>
+          <view class="lz-flex1"></view>
+          <view class="oe__val">{{date}}</view>
+        </view>
+      </picker>
+      <view class="lz-row lz-row--last">
+        <view class="oe__lbl">订单总价</view>
+        <view class="lz-flex1"></view>
+        <view class="oe__amt">
+          <text class="oe__cur">¥</text>
+          <input class="oe__amt-in oe__amt-in--accent" type="digit" value="{{totalStr}}" placeholder="0" placeholder-class="ph" bindinput="onTotal" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 成本项（按需开启） -->
+    <view class="oe__sec">
+      <view class="lz-between" style="margin: 2px 6px 10px;">
+        <text class="oe__sec-t">成本明细</text>
+        <text class="lz-faint" style="font-size: 11.5px;">按需开启成本项</text>
+      </view>
+      <view class="oe__grid">
+        <view wx:for="{{activeCells}}" wx:key="key" class="oe__cell">
+          <view class="oe__cell-hd">
+            <view class="lz-dot" style="background: var(--{{item.color}});"></view>
+            <text class="oe__cell-n">{{item.name}}成本</text>
+            <view class="lz-flex1"></view>
+            <view class="oe__cell-x" data-key="{{item.key}}" bindtap="removeCat" hover-class="tap-active">
+              <lz-icon name="close" size="11" color="faint" stroke="2.4" />
+            </view>
+          </view>
+          <view class="oe__cell-amt">
+            <text class="oe__cur">¥</text>
+            <input class="oe__amt-in" type="digit" value="{{item.valueStr}}" placeholder="0" placeholder-class="ph" data-key="{{item.key}}" bindinput="onCost" />
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{removedCats.length}}" class="oe__add">
+        <text class="lz-faint" style="font-size: 12px; margin-right: 2px;">添加成本项</text>
+        <view wx:for="{{removedCats}}" wx:key="key" class="lz-chip" data-key="{{item.key}}" bindtap="addCat" hover-class="tap-active">
+          <view class="lz-dot" style="width: 8px; height: 8px; background: var(--{{item.color}});"></view>
+          <lz-icon name="plus" size="13" color="muted" stroke="2.2" />
+          <text>{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 其他开销 -->
+    <view class="oe__sec">
+      <view class="lz-between" style="margin: 2px 6px 8px;">
+        <text class="oe__sec-t">其他开销</text>
+        <view class="oe__addex" bindtap="addExtra" hover-class="tap-active">
+          <lz-icon name="plus" size="15" color="accent" stroke="2.2" /><text>添加</text>
+        </view>
+      </view>
+      <view class="lz-card lz-card--flush">
+        <view wx:if="{{extras.length}}">
+          <view wx:for="{{extras}}" wx:key="idx" class="lz-row {{index === extras.length - 1 ? 'lz-row--last' : ''}}">
+            <picker mode="selector" range="{{extraTypes}}" value="{{item.typeIdx}}" data-idx="{{index}}" bindchange="onExtraType">
+              <view class="oe__extype">{{item.type}}<lz-icon name="chevron" size="13" color="faint" /></view>
+            </picker>
+            <view class="lz-flex1"></view>
+            <text class="oe__cur">¥</text>
+            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onExtraAmt" />
+            <view class="oe__exdel" data-idx="{{index}}" bindtap="delExtra" hover-class="tap-active">
+              <lz-icon name="close" size="14" color="loss" stroke="2.2" />
+            </view>
+          </view>
+        </view>
+        <view wx:else class="lz-faint" style="font-size: 13px; text-align: center; padding: 12px 0;">暂无其他开销，点击右上角添加</view>
+      </view>
+    </view>
+
+    <!-- 备注 -->
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last">
+        <view class="oe__lbl">备注</view>
+        <input class="oe__note" value="{{note}}" placeholder="项目说明（选填）" placeholder-class="ph" bindinput="onNote" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部：预计利润 + 保存 -->
+  <view class="lz-footer">
+    <view class="lz-between" style="margin-bottom: 12px; padding: 0 4px;">
+      <view>
+        <view class="lz-faint" style="font-size: 12px;">预计利润</view>
+        <view class="lz-money {{profitNeg ? 'lz-money--loss' : 'lz-money--accent'}}" style="font-size: 26px;">{{profitText}}</view>
+      </view>
+      <view class="lz-pill {{profitNeg ? 'lz-pill--loss' : 'lz-pill--profit'}} lz-pill--md">利润率 {{marginPct}}%</view>
+    </view>
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="save">
+      <lz-icon name="check" size="20" color="white" /> {{editing ? '保存修改' : '保存订单'}}
+    </button>
+  </view>
+
+  <!-- 客户选择器 -->
+  <view wx:if="{{showPicker}}" class="oe__mask" bindtap="closePicker">
+    <view class="oe__sheet" catchtap="noop">
+      <view class="oe__sheet-hd">
+        <text class="oe__sheet-t">选择客户</text>
+        <view class="lz-flex1"></view>
+        <view class="oe__newc" bindtap="newCustomer" hover-class="tap-active">
+          <lz-icon name="plus" size="15" color="accent" stroke="2.2" /><text>新增客户</text>
+        </view>
+      </view>
+      <view class="oe__sheet-search">
+        <lz-icon name="search" size="17" color="faint" />
+        <input class="lz-flex1" value="{{pickerQ}}" placeholder="搜索客户姓名" placeholder-class="ph" bindinput="onPickerSearch" />
+      </view>
+      <scroll-view scroll-y class="oe__sheet-list">
+        <view wx:for="{{pickerList}}" wx:key="name" class="oe__pc" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="pickCustomer" hover-class="tap-active">
+          <view class="lz-avatar oe__pc-av">{{item.initial}}</view>
+          <view class="lz-flex1" style="min-width: 0;">
+            <view class="oe__pc-n">{{item.name}}</view>
+            <view class="oe__pc-s">{{item.sub}}</view>
+          </view>
+          <lz-icon wx:if="{{item.name === customerName}}" name="check" size="18" color="accent" stroke="2.4" />
+        </view>
+        <view wx:if="{{!pickerList.length}}" class="lz-empty">没有找到客户，点击右上角新增</view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

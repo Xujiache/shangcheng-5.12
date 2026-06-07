@@ -1,0 +1,9 @@
+.as__icon--danger {
+  background: rgba(200, 68, 43, 0.1);
+}
+.as__note {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.6;
+  padding: 14px 8px 4px;
+}

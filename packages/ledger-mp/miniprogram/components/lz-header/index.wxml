@@ -1,0 +1,12 @@
+<view class="lz-hd" style="padding-top: calc(env(safe-area-inset-top) + 8px);">
+  <view wx:if="{{back}}" class="lz-hd__back" hover-class="tap-active" bindtap="onBack">
+    <lz-icon name="back" size="20" color="text" />
+  </view>
+  <view class="lz-hd__titles">
+    <view class="lz-hd__title {{large ? 'lz-hd__title--lg' : ''}}">{{title}}</view>
+    <view wx:if="{{subtitle}}" class="lz-hd__sub">{{subtitle}}</view>
+  </view>
+  <view class="lz-hd__right">
+    <slot name="right" />
+  </view>
+</view>

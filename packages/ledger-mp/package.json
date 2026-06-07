@@ -1,0 +1,13 @@
+{
+  "name": "@jiujiu/ledger-mp",
+  "version": "0.0.1",
+  "private": true,
+  "description": "门窗利账 · 原生微信小程序（记账新端）",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^3.12.2",
+    "typescript": "~5.6.3"
+  }
+}

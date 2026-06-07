@@ -1,0 +1,23 @@
+.ce__row {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  border-bottom: 1px solid var(--border);
+}
+.ce__row--last {
+  border-bottom: none;
+}
+.ce__lbl {
+  width: 64px;
+  font-size: 14.5px;
+  color: var(--text);
+}
+.ce__in {
+  flex: 1;
+  text-align: right;
+  font-size: 15px;
+  color: var(--text);
+}
+.ph {
+  color: var(--faint);
+}

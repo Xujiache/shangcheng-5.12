@@ -1,0 +1,31 @@
+<view class="da">
+  <lz-header title="注销账户" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="da__warn">
+      <view class="da__warn-icon"><lz-icon name="info" size="26" color="loss" stroke="2" /></view>
+      <view class="da__warn-title">注销后将无法恢复</view>
+      <view class="da__warn-sub">请在操作前仔细阅读以下说明</view>
+    </view>
+
+    <view class="lz-card lz-card--flush">
+      <view wx:for="{{consequences}}" wx:key="*this" class="lz-row {{index === consequences.length - 1 ? 'lz-row--last' : ''}}">
+        <view class="lz-row__icon da__icon--danger"><lz-icon name="close" size="16" color="loss" stroke="2.2" /></view>
+        <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;">{{item}}</view></view>
+      </view>
+    </view>
+
+    <view class="da__confirm" bindtap="toggleAgree" hover-class="tap-active">
+      <view class="da__check {{agree ? 'on' : ''}}">
+        <lz-icon wx:if="{{agree}}" name="check" size="14" color="white" stroke="2.6" />
+      </view>
+      <text>我已知晓上述风险，确认注销账户及全部数据</text>
+    </view>
+  </view>
+
+  <view class="lz-footer">
+    <button class="lz-btn lz-btn--danger lz-btn--lg lz-btn--full {{agree ? '' : 'lz-btn--disabled'}}" bindtap="onDelete">
+      注销账户
+    </button>
+  </view>
+</view>

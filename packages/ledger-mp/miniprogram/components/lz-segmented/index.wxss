@@ -1,0 +1,32 @@
+.seg {
+  position: relative;
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--track);
+  border: 1px solid var(--border);
+}
+.seg__ind {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transition: left 0.22s cubic-bezier(0.3, 0.7, 0.4, 1);
+  z-index: 0;
+}
+.seg__btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.seg__btn--on {
+  color: var(--text);
+  font-weight: 600;
+}

@@ -1,0 +1,38 @@
+<view class="fb">
+  <lz-header title="意见反馈" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">问题与建议</view>
+    <view class="fb__textwrap">
+      <textarea
+        class="fb__textarea"
+        value="{{content}}"
+        placeholder="请描述您遇到的问题或建议，我们会认真对待每一条反馈…"
+        placeholder-class="ph"
+        maxlength="500"
+        bindinput="onContent"
+        auto-height
+      />
+      <view class="fb__count">{{content.length}}/500</view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">联系方式</view>
+    <view class="lz-field">
+      <lz-icon name="phone" size="19" color="faint" />
+      <input
+        class="lz-field__input"
+        value="{{contact}}"
+        placeholder="手机号 / 微信，便于我们回复"
+        placeholder-class="ph"
+        maxlength="40"
+        bindinput="onContact"
+      />
+    </view>
+
+    <view class="fb__note">感谢您的反馈，您的建议是门窗利账持续改进的动力。</view>
+  </view>
+
+  <view class="lz-footer">
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSubmit ? '' : 'lz-btn--disabled'}}" bindtap="onSubmit">提交反馈</button>
+  </view>
+</view>

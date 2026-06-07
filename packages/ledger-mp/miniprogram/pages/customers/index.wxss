@@ -1,0 +1,13 @@
+.cl__add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.cl__av {
+  width: 42px;
+  height: 42px;
+  font-size: 16px;
+}

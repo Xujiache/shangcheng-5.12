@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "lz-icon": "../lz-icon/index"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "lz-icon": "../../components/lz-icon/index",
+    "lz-segmented": "../../components/lz-segmented/index"
+  }
+}

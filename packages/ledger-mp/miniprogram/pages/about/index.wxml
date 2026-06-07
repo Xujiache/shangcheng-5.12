@@ -1,0 +1,38 @@
+<view class="ab">
+  <lz-header title="关于" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <!-- Logo + 版本 -->
+    <view class="ab__brand">
+      <view class="ab__logo"><lz-icon name="cube" size="40" color="white" stroke="2" /></view>
+      <view class="ab__name">门窗利账</view>
+      <view class="ab__ver">版本 v1.0.0</view>
+    </view>
+
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row" hover-class="tap-active" data-key="terms" bindtap="toDoc">
+        <view class="lz-row__icon"><lz-icon name="doc" size="17" color="accent" /></view>
+        <view class="lz-row__main"><view class="lz-row__label">用户协议</view></view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <view class="lz-row" hover-class="tap-active" data-key="privacy" bindtap="toDoc">
+        <view class="lz-row__icon"><lz-icon name="shield" size="17" color="accent" /></view>
+        <view class="lz-row__main"><view class="lz-row__label">隐私政策</view></view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <view class="lz-row" hover-class="tap-active" bindtap="toFeedback">
+        <view class="lz-row__icon"><lz-icon name="message" size="17" color="accent" /></view>
+        <view class="lz-row__main"><view class="lz-row__label">意见反馈</view></view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="onCheckUpdate">
+        <view class="lz-row__icon"><lz-icon name="refresh" size="17" color="accent" /></view>
+        <view class="lz-row__main"><view class="lz-row__label">检查更新</view></view>
+        <view class="lz-row__detail">v1.0.0</view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+
+    <view class="ab__copyright">经纬科技 · 门窗利账{{'\n'}}© 2026 保留所有权利</view>
+  </view>
+</view>

@@ -1,0 +1,41 @@
+<view class="dnd">
+  <lz-header title="免打扰" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">免打扰模式</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="bell" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">开启免打扰</view>
+          <view class="lz-row__sub">时间段内不推送任何通知</view>
+        </view>
+        <view class="tg {{enabled ? 'tg--on' : ''}}" bindtap="onToggle" hover-class="tap-active">
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{enabled}}" class="lz-section-label" style="margin-top: var(--gap);">时间段</view>
+    <view wx:if="{{enabled}}" class="lz-card lz-card--flush">
+      <picker mode="time" value="{{start}}" bindchange="onStart">
+        <view class="lz-row">
+          <view class="lz-row__icon"><lz-icon name="clock" size="17" color="accent" /></view>
+          <view class="lz-row__main"><view class="lz-row__label">开始时间</view></view>
+          <view class="lz-row__detail">{{start}}</view>
+          <lz-icon name="chevron" size="16" color="faint" />
+        </view>
+      </picker>
+      <picker mode="time" value="{{end}}" bindchange="onEnd">
+        <view class="lz-row lz-row--last">
+          <view class="lz-row__icon"><lz-icon name="clock" size="17" color="accent" /></view>
+          <view class="lz-row__main"><view class="lz-row__label">结束时间</view></view>
+          <view class="lz-row__detail">{{end}}</view>
+          <lz-icon name="chevron" size="16" color="faint" />
+        </view>
+      </picker>
+    </view>
+
+    <view class="dnd__note">免打扰期间，订单、报表与系统通知将不再提醒，期间消息仍会保留在消息中心。</view>
+  </view>
+</view>

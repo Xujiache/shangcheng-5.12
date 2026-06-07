@@ -1,0 +1,72 @@
+<view class="ms">
+  <lz-header
+    title="{{gate ? '开通会员' : '会员中心'}}"
+    subtitle="{{gate ? '会员制应用 · 开通后即可使用' : ''}}"
+    back="{{!gate}}"
+  >
+    <view wx:if="{{gate}}" slot="right" class="ms__logout" bindtap="onLogout">退出登录</view>
+  </lz-header>
+
+  <view class="lz-page ms__body">
+    <!-- Hero -->
+    <view class="ms__hero {{m.active ? 'ms__hero--on' : ''}}">
+      <view class="ms__hero-top">
+        <view class="ms__crown"><lz-icon name="crown" size="22" color="#5A3E0B" stroke="2" /></view>
+        <view style="flex:1; min-width:0;">
+          <view class="ms__plan">{{planLabel}}</view>
+          <view class="ms__status">{{statusText}}</view>
+        </view>
+        <view wx:if="{{m.active}}" class="ms__days">
+          <view class="ms__days-n">{{m.daysLeft}}</view>
+          <view class="ms__days-l">天后到期</view>
+        </view>
+      </view>
+      <view class="ms__hero-bot">
+        <text class="ms__valid">{{m.active ? ('有效期至 ' + expiresLabel) : (m.expired ? ('已于 ' + expiresLabel + ' 到期') : '开通后享全部功能')}}</text>
+        <view wx:if="{{m.expiringSoon}}" class="ms__badge ms__badge--soon">即将到期</view>
+        <view wx:elif="{{m.expired}}" class="ms__badge ms__badge--lock">功能已锁定</view>
+      </view>
+    </view>
+
+    <!-- gate notice -->
+    <view wx:if="{{gate && !m.active}}" class="ms__notice">
+      <lz-icon name="info" size="17" color="loss" />
+      <text>{{m.expired ? '您的会员已到期，续费后即可继续使用全部功能。' : '门窗利账为会员制应用，开通会员后即可开始记账。'}}</text>
+    </view>
+
+    <!-- plans (display only) -->
+    <view class="lz-section-label">{{m.active ? '套餐' : '可开通套餐'}}</view>
+    <view class="ms__plans">
+      <view wx:for="{{plans}}" wx:key="key" class="ms__plan-card {{item.key === m.lastPlanKey ? 'on' : ''}}">
+        <view class="ms__pc-label">{{item.label}}</view>
+        <view class="ms__pc-price">{{item.price}}</view>
+        <view class="ms__pc-days">{{item.days}} 天</view>
+      </view>
+    </view>
+
+    <!-- benefits -->
+    <view class="lz-section-label">会员权益</view>
+    <view class="lz-card lz-card--flush">
+      <view wx:for="{{benefits}}" wx:key="t" class="lz-row">
+        <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label" style="font-size:14px;font-weight:600;">{{item.t}}</view>
+          <view class="lz-row__sub">{{item.s}}</view>
+        </view>
+        <lz-icon name="check" size="17" color="accent" stroke="2.4" />
+      </view>
+    </view>
+
+    <view class="ms__foot-note">会员由管理员后台开通 · 到期后数据保留，续费即可恢复使用</view>
+  </view>
+
+  <!-- footer -->
+  <view class="lz-footer">
+    <button wx:if="{{gate && m.active}}" class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="enterApp">
+      <lz-icon name="check" size="20" color="white" /> 进入应用
+    </button>
+    <button wx:else class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="onRenew">
+      <lz-icon name="crown" size="20" color="white" /> {{m.active ? '续费会员' : '开通会员'}}
+    </button>
+  </view>
+</view>

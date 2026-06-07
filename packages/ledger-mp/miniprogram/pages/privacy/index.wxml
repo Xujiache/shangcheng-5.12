@@ -1,0 +1,47 @@
+<view class="pv">
+  <lz-header title="隐私设置" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">隐私保护</view>
+    <view class="lz-card lz-card--flush">
+      <view wx:for="{{items}}" wx:key="key" class="lz-row {{index === items.length - 1 ? 'lz-row--last' : ''}}">
+        <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">{{item.label}}</view>
+          <view class="lz-row__sub">{{item.sub}}</view>
+        </view>
+        <view
+          class="tg {{item.on ? 'tg--on' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onToggle"
+          hover-class="tap-active"
+        >
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">数据管理</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row" hover-class="tap-active" bindtap="onExport">
+        <view class="lz-row__icon"><lz-icon name="download" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">导出数据</view>
+          <view class="lz-row__sub">导出订单与客户数据备份</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="onClearCache">
+        <view class="lz-row__icon"><lz-icon name="trash" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">清除缓存</view>
+          <view class="lz-row__sub">清理本地临时数据，不影响云端</view>
+        </view>
+        <view class="lz-row__detail">{{cacheSize}}</view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+
+    <view class="pv__note">我们仅在本地与加密云端保存您的经营数据，绝不向第三方共享。</view>
+  </view>
+</view>

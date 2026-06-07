@@ -1,0 +1,59 @@
+<view class="ep">
+  <lz-header title="编辑资料" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <!-- 头像预览 -->
+    <view class="ep__avatar-wrap">
+      <view class="lz-avatar ep__avatar" style="background: {{hue.grad}};">{{initial}}</view>
+      <view class="ep__avatar-tip">头像取昵称首字 · 可换底色</view>
+    </view>
+
+    <!-- 底色选择 -->
+    <view class="lz-section-label">头像底色</view>
+    <view class="ep__swatches">
+      <view
+        wx:for="{{hues}}"
+        wx:key="key"
+        class="ep__swatch {{item.key === hueKey ? 'on' : ''}}"
+        style="background: {{item.grad}};"
+        data-key="{{item.key}}"
+        bindtap="onHue"
+        hover-class="tap-active"
+      >
+        <lz-icon wx:if="{{item.key === hueKey}}" name="check" size="18" color="white" stroke="2.4" />
+      </view>
+    </view>
+
+    <!-- 昵称 -->
+    <view class="lz-section-label">昵称</view>
+    <view class="lz-field">
+      <lz-icon name="user" size="19" color="faint" />
+      <input
+        class="lz-field__input"
+        value="{{nickname}}"
+        placeholder="请输入昵称"
+        placeholder-class="ph"
+        maxlength="20"
+        bindinput="onNickname"
+      />
+    </view>
+
+    <!-- 手机号（只读） -->
+    <view class="lz-section-label">登录手机号</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="phone" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">{{maskedPhone}}</view>
+          <view class="lz-row__sub">手机号不可在此修改</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="lz-footer">
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="onSave">
+      {{saving ? '保存中…' : '保存'}}
+    </button>
+  </view>
+</view>

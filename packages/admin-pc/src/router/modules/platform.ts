@@ -217,6 +217,42 @@ export const platformRoutes: AppRouteRecord = {
       ]
     },
 
+    // ============ 6.6 门窗利账 ============
+    // 门窗利账小程序的运营后台：平台运营创建 / 启停账号、重置密码、为账号充值
+    // 会员时长并查看变更记录。后端 /api/v1/p/ledger/* 走平台 / 超管鉴权。
+    {
+      path: 'ledger',
+      meta: {
+        title: 'menus.platform.groupLedger',
+        icon: 'ri:wallet-3-line',
+        ...ROLE_PLATFORM
+      },
+      children: [
+        {
+          path: '/platform/ledger/accounts',
+          name: 'PlatformLedgerAccounts',
+          component: '/platform/ledger/accounts',
+          meta: {
+            title: 'menus.platform.ledgerAccounts',
+            icon: 'ri:wallet-3-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
+        },
+        {
+          path: '/platform/ledger/membership',
+          name: 'PlatformLedgerMembership',
+          component: '/platform/ledger/membership',
+          meta: {
+            title: 'menus.platform.ledgerMembership',
+            icon: 'ri:vip-crown-2-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
+        }
+      ]
+    },
+
     // ============ 6.5 订单分享数据看板 ============
     // 与运营管理（订单列表）同维度，但聚焦"商家分享行为 + 浏览数据"的看板，
     // 不放进 ops 分组以免和"订单列表"语义混淆；后续若有"分享审核"等关联功能

@@ -1,0 +1,51 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/membership/index",
+    "pages/home/index",
+    "pages/orders/index",
+    "pages/reports/index",
+    "pages/profile/index",
+    "pages/order-detail/index",
+    "pages/order-edit/index",
+    "pages/customers/index",
+    "pages/customer-detail/index",
+    "pages/customer-edit/index",
+    "pages/cost-analysis/index",
+    "pages/goal/index",
+    "pages/message-center/index",
+    "pages/edit-profile/index",
+    "pages/account-security/index",
+    "pages/notifications/index",
+    "pages/privacy/index",
+    "pages/about/index",
+    "pages/dnd/index",
+    "pages/feedback/index",
+    "pages/phone-bind/index",
+    "pages/password/index",
+    "pages/delete-account/index",
+    "pages/doc/index"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#EBF0ED",
+    "backgroundTextStyle": "dark",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "门窗利账"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#5C6B64",
+    "selectedColor": "#0E7C66",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/home/index", "text": "首页" },
+      { "pagePath": "pages/orders/index", "text": "订单" },
+      { "pagePath": "pages/reports/index", "text": "报表" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}
