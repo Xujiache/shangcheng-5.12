@@ -1,7 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiConsumes, ApiTags } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { Public } from '../../common/decorators/public.decorator'
+import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { LedgerService } from './ledger.service'
+import { FilesService } from '../files/files.service'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-user.decorator'
 import {
@@ -19,11 +34,26 @@ import {
 @UseGuards(LedgerJwtGuard)
 @Controller('l')
 export class LedgerController {
-  constructor(private readonly svc: LedgerService) {}
+  constructor(
+    private readonly svc: LedgerService,
+    private readonly files: FilesService,
+  ) {}
 
   @Get('me')
   me(@CurrentLedgerUser() user: LedgerAuthUser) {
     return this.svc.me(user.id)
+  }
+
+  /** 上传头像图片到对象存储，返回公网 URL 并持久化到账号（多端同步）。 */
+  @Post('avatar')
+  @ApiConsumes('multipart/form-data')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(@CurrentLedgerUser() user: LedgerAuthUser, @UploadedFile() file: any) {
+    if (!file) throw new BizException(BizCode.INVALID_PARAMS, '请选择图片')
+    const { url } = await this.files.upload(file, 'avatar', user.id)
+    await this.svc.updateProfile(user.id, { avatar: url } as UpdateLedgerProfileDto)
+    return { url }
   }
 
   @Get('membership')

@@ -4,13 +4,32 @@
   <view class="lz-page" style="padding-bottom: 40px;">
     <!-- 头像预览 -->
     <view class="ep__avatar-wrap">
-      <view class="lz-avatar ep__avatar" style="background: {{hue.grad}};">{{initial}}</view>
-      <view class="ep__avatar-tip">头像取昵称首字 · 可换底色</view>
+      <image
+        wx:if="{{avatarUrl}}"
+        class="lz-avatar ep__avatar"
+        src="{{avatarUrl}}"
+        mode="aspectFill"
+      />
+      <view wx:else class="lz-avatar ep__avatar" style="background: {{hue.grad}};">{{initial}}</view>
+      <view class="ep__avatar-tip">{{avatarUrl ? '已设置自定义头像' : '头像取昵称首字 · 可换底色'}}</view>
+      <view style="display: flex; gap: 10px; margin-top: 12px;">
+        <view class="lz-btn lz-btn--soft lz-btn--sm" hover-class="tap-active" bindtap="onChangeAvatar">
+          {{uploading ? '上传中…' : (avatarUrl ? '更换图片' : '上传头像')}}
+        </view>
+        <view
+          wx:if="{{avatarUrl}}"
+          class="lz-btn lz-btn--ghost lz-btn--sm"
+          hover-class="tap-active"
+          bindtap="onUseLetter"
+        >
+          改回字母
+        </view>
+      </view>
     </view>
 
-    <!-- 底色选择 -->
-    <view class="lz-section-label">头像底色</view>
-    <view class="ep__swatches">
+    <!-- 底色选择（仅字母头像时可选） -->
+    <view wx:if="{{!avatarUrl}}" class="lz-section-label">头像底色</view>
+    <view wx:if="{{!avatarUrl}}" class="ep__swatches">
       <view
         wx:for="{{hues}}"
         wx:key="key"

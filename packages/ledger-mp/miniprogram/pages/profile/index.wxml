@@ -4,7 +4,13 @@
   <view class="lz-page lz-page--pad-bottom">
     <!-- 用户卡 -->
     <view class="prof__user lz-card lz-card--glow">
-      <view class="lz-avatar prof__avatar">{{avatarChar}}</view>
+      <image
+        wx:if="{{avatarUrl}}"
+        class="lz-avatar prof__avatar"
+        src="{{avatarUrl}}"
+        mode="aspectFill"
+      />
+      <view wx:else class="lz-avatar prof__avatar">{{avatarChar}}</view>
       <view class="lz-flex1" style="min-width: 0;">
         <view class="prof__name">{{nickname}}</view>
         <view class="prof__phone">{{phoneMask}}</view>

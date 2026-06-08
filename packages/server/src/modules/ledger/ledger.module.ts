@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { FilesModule } from '../files/files.module'
 import { LedgerAuthService } from './ledger-auth.service'
 import { LedgerService } from './ledger.service'
 import { LedgerAdminService } from './ledger-admin.service'
@@ -14,6 +15,7 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
  * 依赖项全部走全局：PrismaModule / JwtModule(global) / SmsModule(@Global)，无需 imports。
  */
 @Module({
+  imports: [FilesModule],
   controllers: [LedgerAuthController, LedgerController, LedgerBizController, LedgerAdminController],
   providers: [
     LedgerAuthService,

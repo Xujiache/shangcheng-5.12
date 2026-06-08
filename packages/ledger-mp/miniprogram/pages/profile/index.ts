@@ -8,6 +8,7 @@ Page({
     nickname: '门窗店主',
     phoneMask: '',
     avatarChar: '门',
+    avatarUrl: '', // 上传的头像图片 URL；有则显示图片，否则显示字母头像
     memberActive: false,
     memberText: '未开通会员',
     memberSub: '点击开通，解锁全部功能',
@@ -33,6 +34,7 @@ Page({
     this.setData({
       nickname: u.nickname || '门窗店主',
       avatarChar: (u.nickname || '门').slice(-1),
+      avatarUrl: u.avatar && /^https?:\/\//.test(u.avatar) ? u.avatar : '',
       phoneMask: phone.length === 11 ? phone.slice(0, 3) + ' **** ' + phone.slice(7) : phone,
       memberActive: !!m.active,
       memberText: m.active ? '门窗利账 会员' : m.expired ? '会员已过期' : '未开通会员',
