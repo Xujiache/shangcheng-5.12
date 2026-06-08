@@ -11,6 +11,7 @@ const SEG_DEF: Array<[string, string]> = [
 
 Page({
   data: {
+    hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     keyword: '',
     sort: 'date',
     sorts: [
@@ -27,6 +28,7 @@ Page({
   onShow() {
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 1 })
+    this.setData({ hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10 })
     this.load()
   },
   onPullDownRefresh() {

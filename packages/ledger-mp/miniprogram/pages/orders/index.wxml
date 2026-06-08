@@ -1,5 +1,5 @@
 <view class="ord">
-  <view class="ord__hd" style="padding-top: calc(env(safe-area-inset-top) + 10px);">
+  <view class="ord__hd" style="padding-top: {{hdPad}}px;">
     <view class="ord__title">订单管理</view>
     <view class="ord__cust-btn" bindtap="toCustomers" hover-class="tap-active">
       <lz-icon name="user" size="17" color="accent" />

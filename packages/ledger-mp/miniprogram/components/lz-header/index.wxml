@@ -1,4 +1,4 @@
-<view class="lz-hd" style="padding-top: calc(env(safe-area-inset-top) + 8px);">
+<view class="lz-hd" style="padding-top: {{topPad}}px;">
   <view wx:if="{{back}}" class="lz-hd__back" hover-class="tap-active" bindtap="onBack">
     <lz-icon name="back" size="20" color="text" />
   </view>

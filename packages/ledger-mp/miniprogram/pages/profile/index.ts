@@ -4,6 +4,7 @@ import { logout } from '../../utils/store'
 
 Page({
   data: {
+    topSpace: 38, // 顶部留白 = 状态栏高度 + 18
     nickname: '门窗店主',
     phoneMask: '',
     avatarChar: '门',
@@ -21,6 +22,7 @@ Page({
   onShow() {
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 3 })
+    this.setData({ topSpace: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18 })
     this.load()
   },
 

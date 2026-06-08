@@ -1,5 +1,5 @@
 <view class="prof">
-  <view style="height: calc(env(safe-area-inset-top) + 18px);"></view>
+  <view style="height: {{topSpace}}px;"></view>
 
   <view class="lz-page lz-page--pad-bottom">
     <!-- 用户卡 -->

@@ -1,5 +1,5 @@
 <view class="home">
-  <view class="home__hd" style="padding-top: calc(env(safe-area-inset-top) + 10px);">
+  <view class="home__hd" style="padding-top: {{hdPad}}px;">
     <view>
       <view class="home__title">利润中心</view>
       <view class="home__sub">门窗经营一目了然</view>

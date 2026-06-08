@@ -13,6 +13,7 @@ const PERIOD_LABEL: Record<string, string> = { month: '本月', quarter: '本季
 
 Page({
   data: {
+    hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     period: 'month',
     periods: [
       { value: 'month', label: '本月' },
@@ -40,6 +41,7 @@ Page({
   onShow() {
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 0 })
+    this.setData({ hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10 })
     this.load()
   },
   onPullDownRefresh() {
