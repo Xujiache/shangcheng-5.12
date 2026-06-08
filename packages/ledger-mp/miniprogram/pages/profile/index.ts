@@ -1,6 +1,6 @@
 import { meApi } from '../../api/index'
 import { fmtDate } from '../../utils/format'
-import { logout } from '../../utils/store'
+import { getUser, setUser, logout } from '../../utils/store'
 
 Page({
   data: {
@@ -26,25 +26,33 @@ Page({
     this.load()
   },
 
+  applyUser(u: any) {
+    if (!u) return
+    const phone = u.phone || ''
+    const m = u.membership || {}
+    this.setData({
+      nickname: u.nickname || '门窗店主',
+      avatarChar: (u.nickname || '门').slice(-1),
+      phoneMask: phone.length === 11 ? phone.slice(0, 3) + ' **** ' + phone.slice(7) : phone,
+      memberActive: !!m.active,
+      memberText: m.active ? '门窗利账 会员' : m.expired ? '会员已过期' : '未开通会员',
+      memberSub: m.active
+        ? `有效期至 ${fmtDate(m.expiresAt)} · 剩 ${m.daysLeft} 天`
+        : m.expired
+          ? '续费后恢复使用'
+          : '点击开通，解锁全部功能',
+    })
+  },
+
   async load() {
+    // 先用登录时缓存的真实用户立即渲染，避免 me() 未返回/失败时闪现"未开通"默认值
+    this.applyUser(getUser())
     try {
       const u: any = await meApi.me()
-      const phone = u.phone || ''
-      const m = u.membership || {}
-      this.setData({
-        nickname: u.nickname || '门窗店主',
-        avatarChar: (u.nickname || '门').slice(-1),
-        phoneMask: phone.length === 11 ? phone.slice(0, 3) + ' **** ' + phone.slice(7) : phone,
-        memberActive: !!m.active,
-        memberText: m.active ? '门窗利账 会员' : m.expired ? '会员已过期' : '未开通会员',
-        memberSub: m.active
-          ? `有效期至 ${fmtDate(m.expiresAt)} · 剩 ${m.daysLeft} 天`
-          : m.expired
-            ? '续费后恢复使用'
-            : '点击开通，解锁全部功能',
-      })
+      setUser(u)
+      this.applyUser(u)
     } catch (e) {
-      /* handled */
+      /* me() 失败则保留缓存兜底显示 */
     }
   },
 
