@@ -1,19 +1,19 @@
 import { AppRouteRecord } from '@/types/router'
 
 /**
- * 平台工作台路由（S5 · 共 13 屏 · 2 顶级 + 5 分组）
+ * 平台工作台路由（2 顶级入口 + 6 分组，顺序即左侧菜单顺序）
  *
- * meta.roles 只包含 'platform'。
- * 超管账号通过 currentWorkspace='platform' 派生出相同权限。
+ * meta.roles 只包含 'platform'。超管账号通过 currentWorkspace='platform' 派生相同权限。
  *
- * 分组结构：
- *   ├─ 驾驶舱（dashboard, 顶级）
- *   ├─ 数据中心（data-center, 顶级）
- *   ├─ 运营管理（merchant/list, order/list）
- *   ├─ 审核中心（audit/merchant, audit/product）
- *   ├─ 营销中心（ad, plaza）
- *   ├─ 会员与支付（member/plan, member/orders）
- *   └─ 系统配置（permission, system, feature-flag）
+ * 结构：
+ *   1. 驾驶舱（dashboard，顶级）
+ *   2. 数据中心（data-center，顶级）
+ *   3. 运营管理（merchant/list, order/list）
+ *   4. 审核中心（audit/merchant, audit/product, audit/records）
+ *   5. 营销中心（ad, plaza, order-share 订单分享看板）
+ *   6. 会员与支付（member/plan, member/orders, withdraws 提现审核）
+ *   7. 门窗利账（accounts → membership → invite → ads → config → feedback）
+ *   8. 系统配置（permission, system, feature-flag）
  */
 
 const ROLE_PLATFORM = { roles: ['platform'] as string[] }
@@ -165,6 +165,19 @@ export const platformRoutes: AppRouteRecord = {
             keepAlive: true,
             ...ROLE_PLATFORM
           }
+        },
+        {
+          // 订单分享数据看板：商家分享行为 + 浏览数据；归入营销中心（增长/分享同维度）。
+          // path 用绝对路径保持 URL 不变（/platform/order-share），仅改变菜单归属。
+          path: '/platform/order-share',
+          name: 'PlatformOrderShare',
+          component: '/platform/order-share',
+          meta: {
+            title: 'menus.platform.orderShare',
+            icon: 'ri:share-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
         }
       ]
     },
@@ -217,7 +230,7 @@ export const platformRoutes: AppRouteRecord = {
       ]
     },
 
-    // ============ 6.6 门窗利账 ============
+    // ============ 7. 门窗利账 ============
     // 门窗利账小程序的运营后台：平台运营创建 / 启停账号、重置密码、为账号充值
     // 会员时长并查看变更记录。后端 /api/v1/p/ledger/* 走平台 / 超管鉴权。
     {
@@ -302,23 +315,7 @@ export const platformRoutes: AppRouteRecord = {
       ]
     },
 
-    // ============ 6.5 订单分享数据看板 ============
-    // 与运营管理（订单列表）同维度，但聚焦"商家分享行为 + 浏览数据"的看板，
-    // 不放进 ops 分组以免和"订单列表"语义混淆；后续若有"分享审核"等关联功能
-    // 可以演化成独立 group。
-    {
-      path: 'order-share',
-      name: 'PlatformOrderShare',
-      component: '/platform/order-share',
-      meta: {
-        title: 'menus.platform.orderShare',
-        icon: 'ri:share-line',
-        keepAlive: true,
-        ...ROLE_PLATFORM
-      }
-    },
-
-    // ============ 7. 系统配置 ============
+    // ============ 8. 系统配置 ============
     {
       path: 'sys',
       meta: {
