@@ -13,7 +13,12 @@ import {
 } from './ledger.constants'
 import { CreateLedgerOrderDto, OrderQueryDto, UpdateLedgerOrderDto } from './dto/order.dto'
 import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer.dto'
-import { UpdateLedgerGoalDto, UpdateLedgerProfileDto } from './dto/misc.dto'
+import {
+  CreateLedgerFeedbackDto,
+  UpdateLedgerGoalDto,
+  UpdateLedgerProfileDto,
+  UpdateLedgerSettingDto,
+} from './dto/misc.dto'
 
 type OrderRow = {
   id: string
@@ -191,7 +196,15 @@ export class LedgerService {
         note: dto.note?.trim() || null,
       },
     })
-    return this.mapOrder(o as OrderRow)
+    const mapped = this.mapOrder(o as OrderRow)
+    // 录单成功 → 写入一条真实的应用内通知（消息中心由业务事件驱动，无假数据）
+    await this.pushNotification(
+      userId,
+      'order',
+      '订单已保存',
+      `客户「${mapped.customer}」的订单已录入，利润 ${this.money(mapped.profit)}。`,
+    )
+    return mapped
   }
 
   async updateOrder(userId: string, id: string, dto: UpdateLedgerOrderDto) {
@@ -495,6 +508,140 @@ export class LedgerService {
       },
     })
     return { monthly: g.monthly, yearly: g.yearly }
+  }
+
+  // ── 消息中心 ──────────────────────────────────────────────
+  /** 金额格式化（¥ + 千分位），用于自动生成的通知文案。 */
+  private money(n: number): string {
+    return (
+      '¥' +
+      Math.round(n || 0)
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    )
+  }
+
+  /** 写入一条应用内通知（best-effort，失败不影响主流程）。 */
+  async pushNotification(userId: string, type: string, title: string, body: string) {
+    try {
+      await this.prisma.ledgerNotification.create({ data: { userId, type, title, body } })
+    } catch {
+      /* 通知非关键路径，忽略写入失败 */
+    }
+  }
+
+  async listNotifications(userId: string) {
+    const rows = await this.prisma.ledgerNotification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+    return rows.map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      body: n.body,
+      unread: !n.read,
+      createdAt: n.createdAt.toISOString(),
+    }))
+  }
+
+  async unreadCount(userId: string) {
+    const count = await this.prisma.ledgerNotification.count({ where: { userId, read: false } })
+    return { count }
+  }
+
+  async markNotificationRead(userId: string, id: string) {
+    await this.prisma.ledgerNotification.updateMany({
+      where: { id, userId },
+      data: { read: true },
+    })
+    return this.unreadCount(userId)
+  }
+
+  async markAllNotificationsRead(userId: string) {
+    await this.prisma.ledgerNotification.updateMany({
+      where: { userId, read: false },
+      data: { read: true },
+    })
+    return { count: 0 }
+  }
+
+  // ── 偏好设置 ──────────────────────────────────────────────
+  private mapSetting(s: {
+    notifyOrder: boolean
+    notifyReport: boolean
+    notifyGoal: boolean
+    notifySystem: boolean
+    dndEnabled: boolean
+    dndStart: string
+    dndEnd: string
+    hideAmount: boolean
+    bioLock: boolean
+    encBackup: boolean
+  }) {
+    return {
+      notifyOrder: s.notifyOrder,
+      notifyReport: s.notifyReport,
+      notifyGoal: s.notifyGoal,
+      notifySystem: s.notifySystem,
+      dndEnabled: s.dndEnabled,
+      dndStart: s.dndStart,
+      dndEnd: s.dndEnd,
+      hideAmount: s.hideAmount,
+      bioLock: s.bioLock,
+      encBackup: s.encBackup,
+    }
+  }
+
+  /** 读取偏好（首次访问自动建默认行）。 */
+  async getSettings(userId: string) {
+    const s = await this.prisma.ledgerSetting.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    })
+    return this.mapSetting(s)
+  }
+
+  async updateSettings(userId: string, dto: UpdateLedgerSettingDto) {
+    const data: any = {}
+    const boolKeys = [
+      'notifyOrder',
+      'notifyReport',
+      'notifyGoal',
+      'notifySystem',
+      'dndEnabled',
+      'hideAmount',
+      'bioLock',
+      'encBackup',
+    ] as const
+    boolKeys.forEach((k) => {
+      if (dto[k] !== undefined) data[k] = dto[k]
+    })
+    if (dto.dndStart !== undefined) data.dndStart = dto.dndStart
+    if (dto.dndEnd !== undefined) data.dndEnd = dto.dndEnd
+    const s = await this.prisma.ledgerSetting.upsert({
+      where: { userId },
+      update: data,
+      create: { userId, ...data },
+    })
+    return this.mapSetting(s)
+  }
+
+  // ── 意见反馈 ──────────────────────────────────────────────
+  async createFeedback(userId: string, dto: CreateLedgerFeedbackDto) {
+    const content = String(dto.content || '').trim()
+    if (!content) throw new BizException(BizCode.INVALID_PARAMS, '请填写反馈内容')
+    const fb = await this.prisma.ledgerFeedback.create({
+      data: {
+        userId,
+        type: dto.type || 'general',
+        content: content.slice(0, 1000),
+        contact: dto.contact?.trim()?.slice(0, 40) || null,
+      },
+    })
+    return { id: fb.id, ok: true }
   }
 }
 

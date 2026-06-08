@@ -249,6 +249,17 @@ export const platformRoutes: AppRouteRecord = {
             keepAlive: true,
             ...ROLE_PLATFORM
           }
+        },
+        {
+          path: '/platform/ledger/feedback',
+          name: 'PlatformLedgerFeedback',
+          component: '/platform/ledger/feedback',
+          meta: {
+            title: 'menus.platform.ledgerFeedback',
+            icon: 'ri:feedback-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
         }
       ]
     },

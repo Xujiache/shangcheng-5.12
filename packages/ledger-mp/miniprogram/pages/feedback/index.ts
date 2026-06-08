@@ -1,8 +1,11 @@
+import { feedbackApi } from '../../api/index'
+
 Page({
   data: {
     content: '',
     contact: '',
     canSubmit: false,
+    submitting: false,
   },
 
   refreshCanSubmit() {
@@ -16,12 +19,24 @@ Page({
     this.setData({ contact: String(e.detail.value).slice(0, 40) })
   },
 
-  onSubmit() {
+  async onSubmit() {
     if (!this.data.content.trim()) {
       wx.showToast({ title: '请先填写反馈内容', icon: 'none' })
       return
     }
-    wx.showToast({ title: '已提交', icon: 'success' })
-    setTimeout(() => wx.navigateBack(), 600)
+    if (this.data.submitting) return
+    this.setData({ submitting: true })
+    try {
+      await feedbackApi.submit({
+        content: this.data.content.trim(),
+        contact: this.data.contact.trim() || undefined,
+      })
+      wx.showToast({ title: '已提交', icon: 'success' })
+      setTimeout(() => wx.navigateBack(), 600)
+    } catch (e) {
+      /* toast handled in request */
+    } finally {
+      this.setData({ submitting: false })
+    }
   },
 })

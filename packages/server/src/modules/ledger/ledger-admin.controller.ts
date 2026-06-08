@@ -4,7 +4,13 @@ import { LedgerAdminService } from './ledger-admin.service'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
-import { CreateLedgerUserDto, GrantMembershipDto, UpdateLedgerUserDto } from './dto/admin.dto'
+import {
+  CreateLedgerUserDto,
+  GrantMembershipDto,
+  PushNotificationDto,
+  UpdateLedgerFeedbackDto,
+  UpdateLedgerUserDto,
+} from './dto/admin.dto'
 
 /**
  * 门窗利账 · 后台管理（/api/v1/p/ledger/*）。
@@ -46,5 +52,22 @@ export class LedgerAdminController {
   @Get('users/:id/membership/logs')
   logs(@Param('id') id: string) {
     return this.admin.membershipLogs(id)
+  }
+
+  // ── 推送通知 ──
+  @Post('users/:id/notify')
+  notify(@Param('id') id: string, @Body() dto: PushNotificationDto) {
+    return this.admin.pushNotification(id, dto)
+  }
+
+  // ── 意见反馈 ──
+  @Get('feedback')
+  listFeedback(@Query() q: any) {
+    return this.admin.listFeedback(q)
+  }
+
+  @Patch('feedback/:id')
+  updateFeedback(@Param('id') id: string, @Body() dto: UpdateLedgerFeedbackDto) {
+    return this.admin.updateFeedback(id, dto)
   }
 }

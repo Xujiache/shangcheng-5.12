@@ -95,7 +95,7 @@
             <span>{{ formatDateTime(row.createdAt) }}</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="280" fixed="right">
+        <ElTableColumn label="操作" width="350" fixed="right">
           <template #default="{ row }">
             <ElButton link type="primary" @click="openEdit(row)">编辑</ElButton>
             <ElButton
@@ -107,6 +107,7 @@
             </ElButton>
             <ElButton link type="danger" @click="onResetPassword(row)">重置密码</ElButton>
             <ElButton link type="primary" @click="openGrant(row)">增加时长</ElButton>
+            <ElButton link type="primary" @click="openNotify(row)">发送通知</ElButton>
           </template>
         </ElTableColumn>
       </ElTable>
@@ -179,6 +180,43 @@
 
     <!-- 增加时长（共用组件） -->
     <GrantMembershipDialog v-model="grantOpen" :account="grantTarget" @success="onGrantSuccess" />
+
+    <!-- 发送应用内通知 -->
+    <ElDialog v-model="notifyOpen" title="发送通知" width="460px" align-center destroy-on-close>
+      <ElForm
+        ref="notifyFormRef"
+        :model="notifyForm"
+        :rules="notifyRules"
+        label-width="64px"
+        label-position="right"
+      >
+        <ElFormItem label="接收人">
+          <span class="pf-mono">{{ notifyTargetPhone }}</span>
+        </ElFormItem>
+        <ElFormItem label="标题" prop="title">
+          <ElInput
+            v-model="notifyForm.title"
+            placeholder="如：本月报表已生成"
+            maxlength="40"
+            show-word-limit
+          />
+        </ElFormItem>
+        <ElFormItem label="内容" prop="body">
+          <ElInput
+            v-model="notifyForm.body"
+            type="textarea"
+            :rows="3"
+            placeholder="通知正文，将出现在小程序消息中心"
+            maxlength="500"
+            show-word-limit
+          />
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="notifyOpen = false">取消</ElButton>
+        <ElButton type="primary" :loading="notifySubmitting" @click="submitNotify">发送</ElButton>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
@@ -191,6 +229,7 @@
     createLedgerAccount,
     updateLedgerAccount,
     resetLedgerPassword,
+    pushLedgerNotification,
     type LedgerAccount
   } from '@/api/ledger'
   import {
@@ -384,6 +423,48 @@
   function onGrantSuccess() {
     // 充值后刷新列表，使会员状态 / 到期日同步后端
     load()
+  }
+
+  // ====== 发送通知 ======
+  const notifyOpen = ref(false)
+  const notifySubmitting = ref(false)
+  const notifyTargetId = ref('')
+  const notifyTargetPhone = ref('')
+  const notifyFormRef = ref<FormInstance>()
+  const notifyForm = reactive<{ title: string; body: string }>({ title: '', body: '' })
+  const notifyRules: FormRules = {
+    title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+    body: [{ required: true, message: '请输入内容', trigger: 'blur' }]
+  }
+
+  function openNotify(row: LedgerAccount) {
+    notifyTargetId.value = row.id
+    notifyTargetPhone.value = row.phone
+    notifyForm.title = ''
+    notifyForm.body = ''
+    notifyOpen.value = true
+  }
+
+  async function submitNotify() {
+    if (!notifyFormRef.value) return
+    try {
+      await notifyFormRef.value.validate()
+    } catch {
+      return
+    }
+    notifySubmitting.value = true
+    try {
+      await pushLedgerNotification(notifyTargetId.value, {
+        title: notifyForm.title.trim(),
+        body: notifyForm.body.trim()
+      })
+      notifyOpen.value = false
+      ElMessage.success('通知已发送')
+    } catch (e: any) {
+      ElMessage.error(e?.message || '发送失败，请稍后重试')
+    } finally {
+      notifySubmitting.value = false
+    }
   }
 
   onMounted(load)

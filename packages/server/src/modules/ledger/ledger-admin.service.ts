@@ -4,7 +4,13 @@ import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { LEDGER_PLAN_DAYS, computeGrantExpiry, deriveMembership } from './ledger.constants'
-import { CreateLedgerUserDto, GrantMembershipDto, UpdateLedgerUserDto } from './dto/admin.dto'
+import {
+  CreateLedgerUserDto,
+  GrantMembershipDto,
+  PushNotificationDto,
+  UpdateLedgerFeedbackDto,
+  UpdateLedgerUserDto,
+} from './dto/admin.dto'
 
 // 初始/重置密码：去掉易混字符（0/O/1/l/I），8 位
 const genPassword = customAlphabet('23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ', 8)
@@ -140,10 +146,30 @@ export class LedgerAdminService {
         note: dto.note?.trim() || null,
       },
     })
-    return {
-      membership: deriveMembership(updated.expiresAt, updated.lastPlanKey),
-      deltaDays: days,
+    const status = deriveMembership(updated.expiresAt, updated.lastPlanKey)
+    // 给记账用户写一条真实的会员通知（消息中心可见）
+    await this.notify(
+      id,
+      'member',
+      days >= 0 ? '会员已开通 / 续费' : '会员时长已调整',
+      days >= 0
+        ? `已为您增加 ${days} 天会员时长，有效期至 ${this.ymd(after)}。`
+        : `会员时长调整 ${days} 天，当前有效期至 ${this.ymd(after)}。`,
+    )
+    return { membership: status, deltaDays: days }
+  }
+
+  /** 写入一条记账用户的应用内通知（best-effort）。 */
+  private async notify(userId: string, type: string, title: string, body: string) {
+    try {
+      await this.prisma.ledgerNotification.create({ data: { userId, type, title, body } })
+    } catch {
+      /* 非关键路径 */
     }
+  }
+
+  private ymd(d: Date): string {
+    return d.toISOString().slice(0, 10)
   }
 
   async membershipLogs(id: string) {
@@ -157,5 +183,65 @@ export class LedgerAdminService {
       orderBy: { createdAt: 'desc' },
       take: 50,
     })
+  }
+
+  // ── 意见反馈管理 ──────────────────────────────────────────
+  async listFeedback(q: any) {
+    const where: any = {}
+    if (q?.status === 'open' || q?.status === 'resolved') where.status = q.status
+    if (q?.type) where.type = q.type
+    const kw = String(q?.keyword || '').trim()
+    if (kw) where.content = { contains: kw }
+
+    const page = Math.max(1, Number(q?.page) || 1)
+    const pageSize = Math.min(200, Math.max(1, Number(q?.pageSize) || 50))
+    const [rows, total] = await Promise.all([
+      this.prisma.ledgerFeedback.findMany({
+        where,
+        include: { user: { select: { phone: true, nickname: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.ledgerFeedback.count({ where }),
+    ])
+    const list = rows.map((f) => ({
+      id: f.id,
+      userId: f.userId,
+      phone: f.user?.phone || '',
+      nickname: f.user?.nickname || '',
+      type: f.type,
+      content: f.content,
+      contact: f.contact,
+      status: f.status,
+      reply: f.reply,
+      createdAt: f.createdAt,
+    }))
+    return { list, total, page, pageSize }
+  }
+
+  async updateFeedback(id: string, dto: UpdateLedgerFeedbackDto) {
+    const exist = await this.prisma.ledgerFeedback.findUnique({ where: { id } })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '反馈不存在')
+    const data: any = {}
+    if (dto.status === 'open' || dto.status === 'resolved') data.status = dto.status
+    if (dto.reply !== undefined) data.reply = dto.reply.trim() || null
+    const f = await this.prisma.ledgerFeedback.update({ where: { id }, data })
+    return { id: f.id, status: f.status, reply: f.reply }
+  }
+
+  // ── 推送通知 ──────────────────────────────────────────────
+  async pushNotification(id: string, dto: PushNotificationDto) {
+    const user = await this.prisma.ledgerUser.findUnique({ where: { id }, select: { id: true } })
+    if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+    const n = await this.prisma.ledgerNotification.create({
+      data: {
+        userId: id,
+        type: dto.type?.trim() || 'system',
+        title: dto.title.trim(),
+        body: dto.body.trim(),
+      },
+    })
+    return { id: n.id, ok: true }
   }
 }

@@ -926,10 +926,13 @@ model LedgerUser {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  membership LedgerMembership?
-  goal       LedgerGoal?
-  orders     LedgerOrder[]
-  customers  LedgerCustomer[]
+  membership    LedgerMembership?
+  goal          LedgerGoal?
+  setting       LedgerSetting?
+  orders        LedgerOrder[]
+  customers     LedgerCustomer[]
+  notifications LedgerNotification[]
+  feedbacks     LedgerFeedback[]
 
   @@index([status])
 }
@@ -1007,4 +1010,54 @@ model LedgerGoal {
   monthly   Int        @default(0)
   yearly    Int        @default(0)
   updatedAt DateTime   @updatedAt
+}
+
+// 应用内消息中心。由下单/开通会员等业务事件 + 后台推送产生（无假数据）。
+model LedgerNotification {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String     @default("system") // order/report/goal/member/security/system/welcome
+  title     String
+  body      String
+  read      Boolean    @default(false)
+  createdAt DateTime   @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+// 用户意见反馈（含注销/换号申请），后台 admin-pc 可查看与处理。
+model LedgerFeedback {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String     @default("general") // general / delete_account / phone_change
+  content   String
+  contact   String?
+  status    String     @default("open") // open / resolved
+  reply     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([status, createdAt])
+}
+
+// 每账号一行偏好设置（通知开关 / 免打扰 / 隐私）。设备级偏好也落库，换机不丢。
+model LedgerSetting {
+  id           String     @id @default(cuid())
+  userId       String     @unique
+  user         LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifyOrder  Boolean    @default(true) // 订单提醒
+  notifyReport Boolean    @default(true) // 报表提醒
+  notifyGoal   Boolean    @default(true) // 目标提醒
+  notifySystem Boolean    @default(false) // 系统通知
+  dndEnabled   Boolean    @default(false) // 免打扰开关
+  dndStart     String     @default("22:00")
+  dndEnd       String     @default("08:00")
+  hideAmount   Boolean    @default(false) // 隐藏金额
+  bioLock      Boolean    @default(false) // 生物解锁
+  encBackup    Boolean    @default(true) // 加密备份
+  updatedAt    DateTime   @updatedAt
 }

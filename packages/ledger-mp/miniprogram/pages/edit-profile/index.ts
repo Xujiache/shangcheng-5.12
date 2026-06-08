@@ -28,15 +28,23 @@ Page({
   },
 
   _origNickname: '',
+  _origHue: 'teal',
 
   onLoad() {
     const u = getUser()
     const nickname = (u && u.nickname) || ''
     this._origNickname = nickname
+    // avatar 字段持久化所选头像色（hue key）；非 hue 值则回退默认
+    const stored = u && u.avatar ? u.avatar : ''
+    const hueKey = HUES.some((h) => h.key === stored) ? stored : 'teal'
+    this._origHue = hueKey
+    const hue = HUES.find((h) => h.key === hueKey) || HUES[0]
     this.setData({
       nickname,
       maskedPhone: mask(u ? u.phone : ''),
       initial: this.firstChar(nickname),
+      hueKey,
+      hue,
     })
     this.refreshCanSave()
   },
@@ -48,7 +56,8 @@ Page({
 
   refreshCanSave() {
     const trimmed = this.data.nickname.trim()
-    this.setData({ canSave: trimmed.length > 0 && trimmed !== this._origNickname.trim() })
+    const changed = trimmed !== this._origNickname.trim() || this.data.hueKey !== this._origHue
+    this.setData({ canSave: trimmed.length > 0 && changed })
   },
 
   onNickname(e: any) {
@@ -59,7 +68,7 @@ Page({
   onHue(e: any) {
     const key = e.currentTarget.dataset.key
     const hue = HUES.find((h) => h.key === key) || HUES[0]
-    this.setData({ hueKey: key, hue })
+    this.setData({ hueKey: key, hue }, () => this.refreshCanSave())
   },
 
   async onSave() {
@@ -67,10 +76,11 @@ Page({
     if (!nickname || this.data.saving) return
     this.setData({ saving: true })
     try {
-      await meApi.updateProfile({ nickname })
+      await meApi.updateProfile({ nickname, avatar: this.data.hueKey })
       const u = getUser()
       if (u) {
         u.nickname = nickname
+        u.avatar = this.data.hueKey
         setUser(u)
       }
       wx.showToast({ title: '已保存', icon: 'success' })

@@ -60,6 +60,38 @@ pnpm --filter @jiujiu/ledger-mp typecheck    # exit 0
 
 ## 未做端到端运行验证的说明（环境受限）
 
+> ⚠️ 本节为**首版交付时**的状态。**2026-06-08 增量已补做真实端到端冒烟（26/26 通过，见上「2026-06-08 增量 · 验证」）**，后端不再是"未运行验证"。仅小程序 UI 仍需微信开发者工具人工走查。
+
 - **本地无 PostgreSQL**（docker 未启动）→ 未实跑 `migrate deploy` / `seed` / 接口冒烟。迁移 SQL 已生成归档，DB 起来即可应用。
 - **小程序无法在此环境渲染**（需微信开发者工具）→ 以 `tsc` + 结构完整性 + 三路对抗审查替代运行验证。
 - 详见 [TODO](./TODO_门窗利账.md) 的落地步骤。
+
+---
+
+## 2026-06-08 增量 · 全量接入真实后端（消除所有假数据 / 本地占位）
+
+**目标**：小程序内所有"假数据 / 本地态"页面全部接入真实后端，零虚假数据。
+
+### 新增后端（与商城仍零耦合）
+
+- **3 张 Prisma 表**：`LedgerNotification`（消息中心）、`LedgerFeedback`（反馈 / 注销 / 换号申请）、`LedgerSetting`（通知 / 免打扰 / 隐私偏好，每账号一行）。
+- **迁移**：`prisma/migrations/20260608120000_ledger_notify_setting_feedback/migration.sql`（人工归档，与 init 同风格）。
+- **App 接口（`/l/*`，仅登录，不需会员）**：`GET notifications`、`GET notifications/unread-count`、`POST notifications/:id/read`、`POST notifications/read-all`、`GET/PUT settings`、`POST feedback`。
+- **后台接口（`/p/ledger/*`，平台/超管）**：`POST users/:id/notify`（推送通知）、`GET feedback`（列表）、`PATCH feedback/:id`（处理/回复）。
+- **真实事件驱动**：录单成功 → 自动写"订单已保存"通知；后台开通/续费会员 → 自动写会员通知。`seed` 为演示账号写入 4 条真实通知 + 默认设置。
+
+### 小程序改造（8 处占位 → 真后端）
+
+消息中心（SEED→真实列表+已读同步）、通知开关 / 免打扰 / 隐私偏好（→`/l/settings` 持久化）、意见反馈（→真入库）、首页未读红点（→真实未读数）、数据导出（→拉真实订单+客户到剪贴板）、清缓存（→读真实本地存储）、注销（→真实提交申请）、检查更新（→微信 `UpdateManager`）、头像色（→持久化 `avatar`）。
+
+### admin-pc 闭环
+
+新增「门窗利账 · 意见反馈」管理页（查看/筛选/处理/回复，路由 `PlatformLedgerFeedback` + zh/en i18n）；账号页加「发送通知」入口与弹窗。
+
+### 验证
+
+- 三端类型检查全绿：`server tsc`（src 干净）/ `admin-pc vue-tsc` exit 0 / `ledger-mp tsc` exit 0。
+- Prisma client 已 `prisma generate` 重新生成（含 3 新模型）。
+- 三路对抗审查：后端（路由无碰撞、隔离无 IDOR、迁移与 schema 一致、seed 合法）**clean**；小程序↔后端契约**clean**；admin-pc 发现并修复 1 个 P3（反馈「仅保存备注」误改状态 → 改为不传 status）。
+- **真实端到端冒烟（live，PostgreSQL）：26/26 全通过**。覆盖：登录+会员、通知列表/未读数/标记已读/全部已读、设置默认+更新+持久化+非法值校验拒绝(400)、头像持久化、反馈入库+空内容拒绝、录单自动生成「订单已保存」通知、利润计算(30000−18500=11500)、IDOR(乱 id 不崩)、后台 admin 推送通知→用户侧可见、后台反馈列表+标记已处理、跨域 mall token 访问 ledger App 被拒(2001)。
+  - 复现：起 `docker-compose.dev.yml` → `prisma db push` → `SEED_DEFAULT_PASSWORD=... prisma:seed` → `npm run start`（:3001）→ 对 `/api/v1/l/*` 与 `/api/v1/p/ledger/*` 跑接口断言。

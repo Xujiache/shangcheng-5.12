@@ -1,4 +1,14 @@
-import { IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator'
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator'
 
 /** 后台建号。password 缺省则系统生成随机初始密码并回传。 */
 export class CreateLedgerUserDto {
@@ -21,4 +31,17 @@ export class GrantMembershipDto {
   @IsOptional() @IsString() planKey?: string
   @IsOptional() @IsInt() @Min(-3650) @Max(3650) days?: number
   @IsOptional() @IsString() note?: string
+}
+
+/** 后台向某记账账号推送一条应用内通知。 */
+export class PushNotificationDto {
+  @IsString() @IsNotEmpty({ message: '请填写标题' }) @MaxLength(40) title!: string
+  @IsString() @IsNotEmpty({ message: '请填写内容' }) @MaxLength(500) body!: string
+  @IsOptional() @IsString() @MaxLength(20) type?: string
+}
+
+/** 后台处理反馈：标记状态 / 填写回复备注。 */
+export class UpdateLedgerFeedbackDto {
+  @IsOptional() @IsIn(['open', 'resolved']) status?: string
+  @IsOptional() @IsString() @MaxLength(500) reply?: string
 }

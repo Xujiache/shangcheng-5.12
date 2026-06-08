@@ -71,5 +71,8 @@ packages/server/prisma/migrations/
 # MinIO data
 deploy/data/
 
+# WeChat mini-program 私有配置（含本机编译/调试设置，勿提交）
+**/project.private.config.json
+
 # Misc
 *.local

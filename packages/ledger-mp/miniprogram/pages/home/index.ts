@@ -1,4 +1,4 @@
-import { statsApi } from '../../api/index'
+import { statsApi, notificationApi } from '../../api/index'
 import { yuan } from '../../utils/format'
 
 const COLORMAP: Record<string, string> = {
@@ -21,7 +21,7 @@ Page({
     ],
     periodLabel: '本月',
     loading: true,
-    unread: true,
+    unread: false,
     ovYear: new Date().getFullYear(),
     donut: [] as any[],
     legend: [] as any[],
@@ -91,6 +91,16 @@ Page({
       this.setData({ loading: false })
     } finally {
       if (done) done()
+    }
+    this.loadUnread()
+  },
+
+  async loadUnread() {
+    try {
+      const r: any = await notificationApi.unreadCount()
+      this.setData({ unread: (r?.count || 0) > 0 })
+    } catch (e) {
+      /* 静默：红点不是关键路径 */
     }
   },
 

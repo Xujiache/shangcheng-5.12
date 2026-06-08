@@ -179,3 +179,80 @@ export async function fetchLedgerMembershipLogs(id: string): Promise<LedgerMembe
     return []
   }
 }
+
+/** 向某账号推送一条应用内通知（落库后小程序消息中心可见） */
+export function pushLedgerNotification(
+  id: string,
+  payload: { title: string; body: string; type?: string }
+) {
+  return request.post<{ id: string; ok: boolean }>({
+    url: `/api/v1/p/ledger/users/${encodeURIComponent(id)}/notify`,
+    data: payload
+  })
+}
+
+/* ============ 意见反馈 ============ */
+
+/** 反馈类型 */
+export type LedgerFeedbackType = 'general' | 'delete_account' | 'phone_change'
+
+/** 意见反馈条目（后端联表带出提交人手机号 / 昵称） */
+export interface LedgerFeedback {
+  id: string
+  userId: string
+  phone: string
+  nickname: string
+  type: LedgerFeedbackType | string
+  content: string
+  contact: string | null
+  status: 'open' | 'resolved'
+  reply: string | null
+  createdAt: string
+}
+
+export interface LedgerFeedbackPage {
+  list: LedgerFeedback[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+/** 反馈列表（状态 / 类型 / 关键词过滤 + 分页） */
+export async function fetchLedgerFeedback(params?: {
+  status?: 'open' | 'resolved'
+  type?: string
+  keyword?: string
+  page?: number
+  pageSize?: number
+}): Promise<LedgerFeedbackPage> {
+  const query: Record<string, unknown> = {}
+  if (params?.status) query.status = params.status
+  if (params?.type) query.type = params.type
+  if (params?.keyword) query.keyword = params.keyword
+  query.page = params?.page ?? 1
+  query.pageSize = params?.pageSize ?? 20
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/ledger/feedback', params: query })
+    const rawList: any[] = Array.isArray(resp?.list) ? resp.list : Array.isArray(resp) ? resp : []
+    return {
+      list: rawList as LedgerFeedback[],
+      total: typeof resp?.total === 'number' ? resp.total : rawList.length,
+      page: typeof resp?.page === 'number' ? resp.page : (params?.page ?? 1),
+      pageSize: typeof resp?.pageSize === 'number' ? resp.pageSize : (params?.pageSize ?? 20)
+    }
+  } catch {
+    return { list: [], total: 0, page: params?.page ?? 1, pageSize: params?.pageSize ?? 20 }
+  }
+}
+
+/** 处理反馈（标记状态 / 回复备注） */
+export function updateLedgerFeedback(
+  id: string,
+  payload: { status?: 'open' | 'resolved'; reply?: string }
+) {
+  return request.request<{ id: string; status: string; reply: string | null }>({
+    url: `/api/v1/p/ledger/feedback/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    data: payload
+  })
+}

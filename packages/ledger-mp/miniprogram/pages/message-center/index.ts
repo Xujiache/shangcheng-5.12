@@ -1,100 +1,87 @@
-interface Msg {
-  id: number
-  icon: string
-  color: string
-  tint: string
-  title: string
-  body: string
-  time: string
-  unread: boolean
+import { notificationApi } from '../../api/index'
+
+// 消息类型 → 展示样式（图标 / 颜色 token / 底色）
+const PRESENT: Record<string, { icon: string; color: string; tint: string }> = {
+  order: { icon: 'orders', color: 'accent', tint: 'rgba(14,124,102,0.12)' },
+  report: { icon: 'trend', color: 'accent', tint: 'rgba(14,124,102,0.12)' },
+  goal: { icon: 'target', color: 'c3', tint: 'rgba(223,160,58,0.14)' },
+  member: { icon: 'crown', color: 'c3', tint: 'rgba(244,213,138,0.28)' },
+  security: { icon: 'shield', color: 'c2', tint: 'rgba(76,159,190,0.14)' },
+  welcome: { icon: 'info', color: 'muted', tint: 'var(--track)' },
+  system: { icon: 'bell', color: 'accent', tint: 'rgba(14,124,102,0.12)' },
 }
 
-const SEED: Msg[] = [
-  {
-    id: 1,
-    icon: 'orders',
-    color: 'accent',
-    tint: 'rgba(14,124,102,0.12)',
-    title: '订单已保存',
-    body: '客户「华庭别墅」的订单已成功录入，利润 ¥3,200。',
-    time: '今天 09:24',
-    unread: true,
-  },
-  {
-    id: 2,
-    icon: 'target',
-    color: 'c3',
-    tint: 'rgba(223,160,58,0.14)',
-    title: '本月目标进度',
-    body: '本月利润已完成 68%，距离目标还差 ¥9,600，继续加油。',
-    time: '今天 08:00',
-    unread: true,
-  },
-  {
-    id: 3,
-    icon: 'trend',
-    color: 'accent',
-    tint: 'rgba(14,124,102,0.12)',
-    title: '周报已生成',
-    body: '上周共 12 笔订单，净利润 ¥28,400，环比增长 14%。',
-    time: '昨天 18:30',
-    unread: true,
-  },
-  {
-    id: 4,
-    icon: 'crown',
-    color: 'c3',
-    tint: 'rgba(244,213,138,0.28)',
-    title: '会员即将到期',
-    body: '您的会员将于 7 天后到期，续费后可继续使用全部功能。',
-    time: '06-05 10:12',
-    unread: false,
-  },
-  {
-    id: 5,
-    icon: 'shield',
-    color: 'c2',
-    tint: 'rgba(76,159,190,0.14)',
-    title: '数据已云备份',
-    body: '您的经营数据已自动加密备份，换机也不会丢失。',
-    time: '06-04 02:00',
-    unread: false,
-  },
-  {
-    id: 6,
-    icon: 'info',
-    color: 'muted',
-    tint: 'var(--track)',
-    title: '欢迎使用门窗利账',
-    body: '感谢使用门窗利账，祝您生意兴隆，利润长虹。',
-    time: '06-01 12:00',
-    unread: false,
-  },
-]
+const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
+
+/** ISO 时间 → 今天 09:24 / 昨天 18:30 / 06-05 10:12 / 2025-12-30 */
+function fmtTime(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  const hm = pad(d.getHours()) + ':' + pad(d.getMinutes())
+  const yest = new Date(now.getTime() - 86400000)
+  if (d.toDateString() === now.toDateString()) return '今天 ' + hm
+  if (d.toDateString() === yest.toDateString()) return '昨天 ' + hm
+  if (d.getFullYear() === now.getFullYear())
+    return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + hm
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+}
 
 Page({
   data: {
-    list: SEED,
-    hasUnread: true,
+    list: [] as any[],
+    hasUnread: false,
+    loading: true,
   },
 
-  onLoad() {
-    this.refreshUnread()
+  onShow() {
+    this.load()
   },
 
-  refreshUnread() {
-    this.setData({ hasUnread: this.data.list.some((m) => m.unread) })
+  async load() {
+    try {
+      const rows: any[] = await notificationApi.list()
+      const list = (rows || []).map((n) => {
+        const p = PRESENT[n.type] || PRESENT.system
+        return {
+          id: n.id,
+          icon: p.icon,
+          color: p.color,
+          tint: p.tint,
+          title: n.title,
+          body: n.body,
+          time: fmtTime(n.createdAt),
+          unread: !!n.unread,
+        }
+      })
+      this.setData({ list, hasUnread: list.some((m) => m.unread), loading: false })
+    } catch (e) {
+      this.setData({ loading: false })
+    }
   },
 
-  onRead(e: any) {
-    const id = Number(e.currentTarget.dataset.id)
+  async onRead(e: any) {
+    const id = String(e.currentTarget.dataset.id)
+    const item = this.data.list.find((m) => m.id === id)
+    if (!item || !item.unread) return
     const list = this.data.list.map((m) => (m.id === id ? { ...m, unread: false } : m))
-    this.setData({ list }, () => this.refreshUnread())
+    this.setData({ list, hasUnread: list.some((m) => m.unread) })
+    try {
+      await notificationApi.read(id)
+    } catch (e) {
+      /* 已乐观更新，下次进入以服务端为准 */
+    }
   },
 
-  onReadAll() {
+  async onReadAll() {
+    if (!this.data.hasUnread) return
     const list = this.data.list.map((m) => ({ ...m, unread: false }))
     this.setData({ list, hasUnread: false })
-    wx.showToast({ title: '已全部标记为已读', icon: 'none' })
+    try {
+      await notificationApi.readAll()
+      wx.showToast({ title: '已全部标记为已读', icon: 'none' })
+    } catch (e) {
+      /* toast handled in request */
+    }
   },
 })

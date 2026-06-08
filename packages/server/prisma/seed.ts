@@ -1296,6 +1296,46 @@ async function main() {
     '客餐厅整面窗',
   )
 
+  // 偏好设置（默认值，换机不丢）+ 应用内消息（真实事件，非前端硬编码）
+  await prisma.ledgerSetting.create({ data: { userId: ledgerUser.id } })
+  const day = 86400000
+  await prisma.ledgerNotification.createMany({
+    data: [
+      {
+        userId: ledgerUser.id,
+        type: 'welcome',
+        title: '欢迎使用门窗利账',
+        body: '感谢使用门窗利账，祝您生意兴隆，利润长虹。',
+        read: true,
+        createdAt: new Date(Date.now() - 7 * day),
+      },
+      {
+        userId: ledgerUser.id,
+        type: 'member',
+        title: '会员已开通',
+        body: '已为您开通月卡会员（30 天），可使用全部记账与报表功能。',
+        read: true,
+        createdAt: new Date(Date.now() - 7 * day + 60000),
+      },
+      {
+        userId: ledgerUser.id,
+        type: 'order',
+        title: '订单已保存',
+        body: '客户「赵强」的订单已录入，利润 ¥18,600。',
+        read: false,
+        createdAt: new Date(Date.now() - 2 * day),
+      },
+      {
+        userId: ledgerUser.id,
+        type: 'goal',
+        title: '本月目标进度',
+        body: '本月利润已完成目标的 68%，继续加油。',
+        read: false,
+        createdAt: new Date(Date.now() - 3600000),
+      },
+    ],
+  })
+
   console.log('\n✅ Seed 完成。关联关系总览：')
   console.log('   admin@demo  → 审核了 merchant@demo 入驻 + 1 件商品')
   console.log(

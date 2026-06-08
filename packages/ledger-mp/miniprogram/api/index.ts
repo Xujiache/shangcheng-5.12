@@ -47,3 +47,23 @@ export const goalApi = {
   get: () => http.get('/l/goal'),
   set: (data: { monthly?: number; yearly?: number }) => http.put('/l/goal', data),
 }
+
+/** 消息中心（仅需登录） */
+export const notificationApi = {
+  list: () => http.get('/l/notifications'),
+  unreadCount: () => http.get<{ count: number }>('/l/notifications/unread-count'),
+  read: (id: string) => http.post('/l/notifications/' + id + '/read'),
+  readAll: () => http.post('/l/notifications/read-all'),
+}
+
+/** 偏好设置（仅需登录） */
+export const settingApi = {
+  get: () => http.get('/l/settings'),
+  update: (data: Record<string, any>) => http.put('/l/settings', data),
+}
+
+/** 意见反馈（仅需登录） */
+export const feedbackApi = {
+  submit: (data: { content: string; contact?: string; type?: string }) =>
+    http.post('/l/feedback', data),
+}
