@@ -30,8 +30,17 @@ import { BizCode, BizException } from '../../common/exceptions/biz.exception'
  *   - apk       Android 安装包（实际通过 uploadApk 通道走，此处兜底）
  *   - chat      在线客服图文消息附件
  *   - misc      其他临时素材
+ *   - ledger-ad 门窗利账广告位图片（admin-pc 后台「广告管理」直传）
  */
-const BIZ_TYPE_WHITELIST = new Set(['product', 'avatar', 'idcard', 'apk', 'chat', 'misc'])
+const BIZ_TYPE_WHITELIST = new Set([
+  'product',
+  'avatar',
+  'idcard',
+  'apk',
+  'chat',
+  'misc',
+  'ledger-ad',
+])
 
 function normalizeBizType(input: string | undefined): string {
   const v = (input || 'misc').toLowerCase().trim()
