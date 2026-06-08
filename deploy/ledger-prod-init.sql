@@ -152,6 +152,35 @@ ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "wxOpenid" TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerUser_wxOpenid_key" ON "LedgerUser"("wxOpenid");
 -- 老库补列：订单额外收入
 ALTER TABLE "LedgerOrder" ADD COLUMN IF NOT EXISTS "extraIncome" INTEGER NOT NULL DEFAULT 0;
+-- 老库补列：自定义成本项(#5) / 邀请(#10) / 优化下料试用(#9)
+ALTER TABLE "LedgerOrder" ADD COLUMN IF NOT EXISTS "customCosts" JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "inviteCode" TEXT;
+ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "invitedById" TEXT;
+ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "cutFirstUsedAt" TIMESTAMP(3);
+CREATE UNIQUE INDEX IF NOT EXISTS "LedgerUser_inviteCode_key" ON "LedgerUser"("inviteCode");
+
+-- 新表：首页广告(#2) / ledger 全局配置(优化下料/邀请 等后台可调)
+CREATE TABLE IF NOT EXISTS "LedgerAd" (
+    "id" TEXT NOT NULL,
+    "title" TEXT,
+    "image" TEXT NOT NULL,
+    "link" TEXT,
+    "sort" INTEGER NOT NULL DEFAULT 0,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "LedgerAd_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "LedgerAd_enabled_sort_idx" ON "LedgerAd"("enabled", "sort");
+
+CREATE TABLE IF NOT EXISTS "LedgerConfig" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "value" JSONB NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "LedgerConfig_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "LedgerConfig_key_key" ON "LedgerConfig"("key");
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerMembership_userId_key" ON "LedgerMembership"("userId");
 CREATE INDEX IF NOT EXISTS "LedgerMembershipLog_membershipId_idx" ON "LedgerMembershipLog"("membershipId");
 CREATE INDEX IF NOT EXISTS "LedgerCustomer_userId_idx" ON "LedgerCustomer"("userId");

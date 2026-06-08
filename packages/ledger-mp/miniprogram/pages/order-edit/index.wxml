@@ -69,6 +69,30 @@
       </view>
     </view>
 
+    <!-- 自定义成本项（#5）-->
+    <view class="oe__sec">
+      <view class="lz-between" style="margin: 2px 6px 8px;">
+        <text class="oe__sec-t">自定义成本</text>
+        <view class="oe__addex" bindtap="addCustomCost" hover-class="tap-active">
+          <lz-icon name="plus" size="15" color="accent" stroke="2.2" /><text>添加</text>
+        </view>
+      </view>
+      <view class="lz-card lz-card--flush">
+        <view wx:if="{{customCosts.length}}">
+          <view wx:for="{{customCosts}}" wx:key="idx" class="lz-row {{index === customCosts.length - 1 ? 'lz-row--last' : ''}}">
+            <input class="oe__note" style="flex: 0 0 100px;" value="{{item.name}}" placeholder="成本名目" placeholder-class="ph" maxlength="20" data-idx="{{index}}" bindinput="onCustomName" />
+            <view class="lz-flex1"></view>
+            <text class="oe__cur">¥</text>
+            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onCustomAmt" />
+            <view class="oe__exdel" data-idx="{{index}}" bindtap="delCustomCost" hover-class="tap-active">
+              <lz-icon name="close" size="14" color="loss" stroke="2.2" />
+            </view>
+          </view>
+        </view>
+        <view wx:else class="lz-faint" style="font-size: 13px; text-align: center; padding: 12px 0;">固定 5 类之外的成本，点右上角添加</view>
+      </view>
+    </view>
+
     <!-- 其他开销 -->
     <view class="oe__sec">
       <view class="lz-between" style="margin: 2px 6px 8px;">

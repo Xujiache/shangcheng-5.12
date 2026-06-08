@@ -919,8 +919,11 @@ model LedgerUser {
   passwordHash String // argon2
   nickname     String    @default("门窗店主")
   avatar       String? // 字母底色 hue key 或上传头像的公网 URL
-  wxOpenid     String?   @unique // 微信 openid（绑定后可微信一键登录）
-  status       String    @default("active") // active / disabled
+  wxOpenid       String?   @unique // 微信 openid（绑定后可微信一键登录）
+  inviteCode     String?   @unique // 邀请码（#10 分享注册）
+  invitedById    String? // 邀请人 LedgerUser.id
+  cutFirstUsedAt DateTime? // 优化下料首次使用时间（#9 试用计时）
+  status         String    @default("active") // active / disabled
   mustReset    Boolean   @default(false) // 首登强制改密（预留）
   createdById  String? // 操作管理员 User.id
   lastLoginAt  DateTime?
@@ -997,6 +1000,7 @@ model LedgerOrder {
   costLabor    Int             @default(0) // 人工
   costScreen   Int             @default(0) // 纱窗
   extras       Json            @default("[]") // [{type,amount}] 其他开销
+  customCosts  Json            @default("[]") // [{name,amount}] 自定义成本项（#5）
   note         String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
@@ -1062,4 +1066,26 @@ model LedgerSetting {
   bioLock      Boolean    @default(false) // 生物解锁
   encBackup    Boolean    @default(true) // 加密备份
   updatedAt    DateTime   @updatedAt
+}
+
+// 首页广告 banner（#2）。后台 admin-pc 维护，App 首页轮播。
+model LedgerAd {
+  id        String   @id @default(cuid())
+  title     String?
+  image     String // 公网图片 URL
+  link      String? // 可选跳转
+  sort      Int      @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled, sort])
+}
+
+// ledger 域全局配置（key-value）：优化下料试用天数 / 邀请奖励天数 / 自助注册开关 等。
+model LedgerConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
 }

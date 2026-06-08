@@ -26,12 +26,29 @@ export function extrasTotal(extras: any): number {
   return sanitizeExtras(extras).reduce((s, e) => s + e.amount, 0)
 }
 
+export interface CustomCost {
+  name: string
+  amount: number
+}
+export function sanitizeCustomCosts(raw: any): CustomCost[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((e) => ({
+      name: String(e?.name ?? '').trim(),
+      amount: Math.max(0, Math.round(Number(e?.amount) || 0)),
+    }))
+    .filter((e) => e.name && e.amount > 0)
+}
+export function customCostsTotal(raw: any): number {
+  return sanitizeCustomCosts(raw).reduce((s, e) => s + e.amount, 0)
+}
+
 export function fixedCost(c: Partial<OrderCosts>): number {
   return (c.profile || 0) + (c.glass || 0) + (c.hardware || 0) + (c.labor || 0) + (c.screen || 0)
 }
 
-export function totalCost(c: Partial<OrderCosts>, extras: any): number {
-  return fixedCost(c) + extrasTotal(extras)
+export function totalCost(c: Partial<OrderCosts>, extras: any, customCosts?: any): number {
+  return fixedCost(c) + extrasTotal(extras) + customCostsTotal(customCosts)
 }
 
 export function profitOf(
@@ -39,8 +56,9 @@ export function profitOf(
   c: Partial<OrderCosts>,
   extras: any,
   extraIncome = 0,
+  customCosts?: any,
 ): number {
-  return (total || 0) + (extraIncome || 0) - totalCost(c, extras)
+  return (total || 0) + (extraIncome || 0) - totalCost(c, extras, customCosts)
 }
 
 export function marginOf(
@@ -48,9 +66,10 @@ export function marginOf(
   c: Partial<OrderCosts>,
   extras: any,
   extraIncome = 0,
+  customCosts?: any,
 ): number {
   const revenue = (total || 0) + (extraIncome || 0)
-  return revenue ? profitOf(total, c, extras, extraIncome) / revenue : 0
+  return revenue ? profitOf(total, c, extras, extraIncome, customCosts) / revenue : 0
 }
 
 /** 成本分类元数据（与设计一致） */

@@ -15,6 +15,7 @@ Page({
     o: null as any,
     donut: [] as any[],
     costRows: [] as any[],
+    customCosts: [] as any[],
     extras: [] as any[],
     marginPct: 0,
     profitBare: '0',
@@ -54,10 +55,15 @@ Page({
         type: e.type,
         amountText: yuan(e.amount),
       }))
+      const customCosts = (o.customCosts || []).map((c: any) => ({
+        name: c.name,
+        amountText: yuan(c.amount),
+      }))
       this.setData({
         o,
         donut,
         costRows,
+        customCosts,
         extras,
         marginPct: Math.round((o.margin || 0) * 100),
         profitBare: yuan(o.profit, true),

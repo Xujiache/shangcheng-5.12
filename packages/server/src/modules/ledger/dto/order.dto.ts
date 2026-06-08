@@ -30,6 +30,7 @@ export class CreateLedgerOrderDto {
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costScreen?: number
 
   @IsOptional() @IsArray() extras?: { type: string; amount: number }[]
+  @IsOptional() @IsArray() customCosts?: { name: string; amount: number }[]
   @IsOptional() @IsString() @MaxLength(200) note?: string
 }
 
@@ -45,6 +46,7 @@ export class UpdateLedgerOrderDto {
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costLabor?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costScreen?: number
   @IsOptional() @IsArray() extras?: { type: string; amount: number }[]
+  @IsOptional() @IsArray() customCosts?: { name: string; amount: number }[]
   @IsOptional() @IsString() @MaxLength(200) note?: string
 }
 

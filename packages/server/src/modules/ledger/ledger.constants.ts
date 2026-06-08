@@ -114,6 +114,27 @@ export function extrasTotal(extras: unknown): number {
   return sanitizeExtras(extras).reduce((s, e) => s + e.amount, 0)
 }
 
+// ── 自定义成本项（#5）：成本明细里用户自定义名目 ──
+export interface CustomCost {
+  name: string
+  amount: number
+}
+export function sanitizeCustomCosts(raw: unknown): CustomCost[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .slice(0, 20)
+    .map((e: any) => ({
+      name: String(e?.name ?? '')
+        .trim()
+        .slice(0, 20),
+      amount: Math.max(0, Math.round(Number(e?.amount) || 0)),
+    }))
+    .filter((e) => e.name && e.amount > 0)
+}
+export function customCostsTotal(raw: unknown): number {
+  return sanitizeCustomCosts(raw).reduce((s, e) => s + e.amount, 0)
+}
+
 /** 固定 5 类成本之和 */
 export function fixedCost(o: {
   costProfile: number
@@ -138,8 +159,9 @@ export function totalCost(o: {
   costLabor: number
   costScreen: number
   extras: unknown
+  customCosts?: unknown
 }): number {
-  return fixedCost(o) + extrasTotal(o.extras)
+  return fixedCost(o) + extrasTotal(o.extras) + customCostsTotal(o.customCosts)
 }
 
 export function profitOf(o: {
@@ -151,6 +173,7 @@ export function profitOf(o: {
   costLabor: number
   costScreen: number
   extras: unknown
+  customCosts?: unknown
 }): number {
   return (o.total || 0) + (o.extraIncome || 0) - totalCost(o)
 }

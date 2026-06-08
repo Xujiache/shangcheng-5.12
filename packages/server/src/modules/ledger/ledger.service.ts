@@ -11,6 +11,8 @@ import {
   profitOf,
   marginOf,
   revenueOf,
+  sanitizeCustomCosts,
+  customCostsTotal,
 } from './ledger.constants'
 import { CreateLedgerOrderDto, OrderQueryDto, UpdateLedgerOrderDto } from './dto/order.dto'
 import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer.dto'
@@ -34,6 +36,7 @@ type OrderRow = {
   costLabor: number
   costScreen: number
   extras: unknown
+  customCosts: unknown
   note: string | null
 }
 
@@ -81,6 +84,7 @@ export class LedgerService {
   // ── 订单 ──────────────────────────────────────────────────
   private mapOrder(o: OrderRow) {
     const extras = sanitizeExtras(o.extras)
+    const customCosts = sanitizeCustomCosts(o.customCosts)
     const base = {
       total: o.total,
       extraIncome: o.extraIncome,
@@ -90,6 +94,7 @@ export class LedgerService {
       costLabor: o.costLabor,
       costScreen: o.costScreen,
       extras,
+      customCosts,
     }
     return {
       id: o.id,
@@ -107,9 +112,11 @@ export class LedgerService {
         screen: o.costScreen,
       },
       extras,
+      customCosts,
       note: o.note ?? '',
       fixedCost: fixedCost(base),
       extrasTotal: extrasTotal(extras),
+      customCostsTotal: customCostsTotal(customCosts),
       cost: totalCost(base),
       profit: profitOf(base),
       margin: marginOf(base),
@@ -200,6 +207,7 @@ export class LedgerService {
         costLabor: Math.max(0, Math.round(dto.costLabor || 0)),
         costScreen: Math.max(0, Math.round(dto.costScreen || 0)),
         extras: sanitizeExtras(dto.extras) as any,
+        customCosts: sanitizeCustomCosts(dto.customCosts) as any,
         note: dto.note?.trim() || null,
       },
     })
@@ -241,6 +249,8 @@ export class LedgerService {
     if (dto.costLabor !== undefined) data.costLabor = Math.max(0, Math.round(dto.costLabor))
     if (dto.costScreen !== undefined) data.costScreen = Math.max(0, Math.round(dto.costScreen))
     if (dto.extras !== undefined) data.extras = sanitizeExtras(dto.extras) as any
+    if (dto.customCosts !== undefined)
+      data.customCosts = sanitizeCustomCosts(dto.customCosts) as any
     if (dto.note !== undefined) data.note = dto.note?.trim() || null
     const o = await this.prisma.ledgerOrder.update({ where: { id }, data })
     return this.mapOrder(o as OrderRow)
@@ -415,7 +425,14 @@ export class LedgerService {
       { key: 'hardware', name: '配件', value: slice('hardware') },
       { key: 'labor', name: '人工', value: slice('labor') },
       { key: 'screen', name: '纱窗', value: slice('screen') },
-      { key: 'extras', name: '其他', value: list.reduce((s, o) => s + extrasTotal(o.extras), 0) },
+      {
+        key: 'extras',
+        name: '其他',
+        value: list.reduce(
+          (s, o) => s + extrasTotal(o.extras) + customCostsTotal(o.customCosts),
+          0,
+        ),
+      },
     ].filter((s) => s.value > 0)
 
     // 高利润订单排行 top5

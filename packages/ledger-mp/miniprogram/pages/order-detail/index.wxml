@@ -59,6 +59,12 @@
         <text class="od__c-pct">{{item.pct}}%</text>
         <text class="od__c-val">{{item.value}}</text>
       </view>
+      <view wx:for="{{customCosts}}" wx:key="name" class="od__cost">
+        <view class="lz-dot" style="background: var(--c6);"></view>
+        <text class="od__c-name">{{item.name}}</text>
+        <view class="lz-flex1"></view>
+        <text class="od__c-val">{{item.amountText}}</text>
+      </view>
     </view>
 
     <!-- 其他开销 -->

@@ -32,6 +32,7 @@ Page({
     activeCells: [] as any[],
     removedCats: [] as any[],
     extras: [] as any[],
+    customCosts: [] as any[],
     note: '',
     profitText: '¥0',
     profitNeg: false,
@@ -94,6 +95,11 @@ Page({
             amountStr: e.amount ? String(e.amount) : '',
             typeIdx: Math.max(0, EXTRA_TYPES.indexOf(e.type)),
           })),
+          customCosts: (o.customCosts || []).map((c: any) => ({
+            name: c.name,
+            amount: c.amount,
+            amountStr: c.amount ? String(c.amount) : '',
+          })),
           note: o.note || '',
         },
         () => this.refresh(),
@@ -104,7 +110,7 @@ Page({
   },
 
   refresh() {
-    const { costs, activeCats, extras, total, extraIncome } = this.data
+    const { costs, activeCats, extras, total, extraIncome, customCosts } = this.data
     const activeCells = COST_CATS.filter((c) => activeCats.includes(c.key)).map((c) => ({
       key: c.key,
       name: c.name,
@@ -116,8 +122,8 @@ Page({
       name: c.name,
       color: c.color,
     }))
-    const profit = profitOf(total, costs, extras, extraIncome)
-    const margin = marginOf(total, costs, extras, extraIncome)
+    const profit = profitOf(total, costs, extras, extraIncome, customCosts)
+    const margin = marginOf(total, costs, extras, extraIncome, customCosts)
     this.setData({
       activeCells,
       removedCats,
@@ -185,6 +191,33 @@ Page({
     )
   },
 
+  // ── 自定义成本项（#5）──
+  addCustomCost() {
+    this.setData({
+      customCosts: [...this.data.customCosts, { name: '', amount: 0, amountStr: '' }],
+    })
+  },
+  onCustomName(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const cc = [...this.data.customCosts]
+    cc[i] = { ...cc[i], name: String(e.detail.value).slice(0, 20) }
+    this.setData({ customCosts: cc })
+  },
+  onCustomAmt(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
+    const cc = [...this.data.customCosts]
+    cc[i] = { ...cc[i], amount: v, amountStr: e.detail.value }
+    this.setData({ customCosts: cc }, () => this.refresh())
+  },
+  delCustomCost(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    this.setData(
+      { customCosts: this.data.customCosts.filter((_: any, j: number) => j !== i) },
+      () => this.refresh(),
+    )
+  },
+
   async openPicker() {
     this.setData({ showPicker: true, pickerQ: '' })
     if (!this.data._allCustomers.length) {
@@ -249,6 +282,7 @@ Page({
       costs,
       activeCats,
       extras,
+      customCosts,
       note,
     } = this.data
     const payloadCosts: any = {
@@ -269,6 +303,7 @@ Page({
       extraIncome,
       ...payloadCosts,
       extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
+      customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),
       note,
     }
     try {
