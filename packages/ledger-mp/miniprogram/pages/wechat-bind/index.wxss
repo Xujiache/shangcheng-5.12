@@ -1,0 +1,17 @@
+.wb__note {
+  margin-top: 12px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.wb__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.wb__dot.on {
+  background: #07c160;
+}

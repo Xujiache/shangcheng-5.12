@@ -133,6 +133,10 @@ Page({
     this.setData({ avatarUrl: '' }, () => this.refreshCanSave())
   },
 
+  toWechat() {
+    wx.navigateTo({ url: '/pages/wechat-bind/index' })
+  },
+
   async onSave() {
     const nickname = this.data.nickname.trim()
     if (!nickname || this.data.saving) return

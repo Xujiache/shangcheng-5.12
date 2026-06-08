@@ -23,6 +23,15 @@
         <lz-icon name="chevron" size="16" color="faint" />
       </view>
 
+      <view class="lz-row" hover-class="tap-active" bindtap="toWechat">
+        <view class="lz-row__icon"><lz-icon name="wechat" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">微信登录</view>
+          <view class="lz-row__sub">绑定后可用微信一键登录</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+
       <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="toDelete">
         <view class="lz-row__icon as__icon--danger"><lz-icon name="logout" size="17" color="loss" /></view>
         <view class="lz-row__main">

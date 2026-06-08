@@ -16,6 +16,7 @@
     "pages/message-center/index",
     "pages/edit-profile/index",
     "pages/account-security/index",
+    "pages/wechat-bind/index",
     "pages/notifications/index",
     "pages/privacy/index",
     "pages/about/index",

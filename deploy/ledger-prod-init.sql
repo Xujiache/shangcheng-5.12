@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS "LedgerUser" (
     "passwordHash" TEXT NOT NULL,
     "nickname" TEXT NOT NULL DEFAULT '门窗店主',
     "avatar" TEXT,
+    "wxOpenid" TEXT,
     "status" TEXT NOT NULL DEFAULT 'active',
     "mustReset" BOOLEAN NOT NULL DEFAULT false,
     "createdById" TEXT,
@@ -145,6 +146,9 @@ CREATE TABLE IF NOT EXISTS "LedgerSetting" (
 -- ── 索引（全部 IF NOT EXISTS）────────────────────────────────
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerUser_phone_key" ON "LedgerUser"("phone");
 CREATE INDEX IF NOT EXISTS "LedgerUser_status_idx" ON "LedgerUser"("status");
+-- 老库补列：微信 openid（绑定后微信一键登录）
+ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "wxOpenid" TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS "LedgerUser_wxOpenid_key" ON "LedgerUser"("wxOpenid");
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerMembership_userId_key" ON "LedgerMembership"("userId");
 CREATE INDEX IF NOT EXISTS "LedgerMembershipLog_membershipId_idx" ON "LedgerMembershipLog"("membershipId");
 CREATE INDEX IF NOT EXISTS "LedgerCustomer_userId_idx" ON "LedgerCustomer"("userId");

@@ -68,6 +68,19 @@
         </view>
       </view>
     </view>
+
+    <!-- 微信登录 -->
+    <view class="lz-section-label">微信登录</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="toWechat">
+        <view class="lz-row__icon"><lz-icon name="wechat" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">绑定微信登录</view>
+          <view class="lz-row__sub">绑定后可用微信一键登录</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
   </view>
 
   <view class="lz-footer">

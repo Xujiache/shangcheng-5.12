@@ -1,0 +1,45 @@
+<view class="wb">
+  <lz-header title="微信登录" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">微信绑定</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="wechat" size="18" color="#07C160" stroke="1.9" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">{{bound ? '已绑定微信' : '未绑定微信'}}</view>
+          <view class="lz-row__sub">{{bound ? '可在登录页用微信一键登录' : '绑定后可在登录页用微信一键登录'}}</view>
+        </view>
+        <view class="wb__dot {{bound ? 'on' : ''}}"></view>
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">登录密码验证</view>
+    <view class="lz-field">
+      <lz-icon name="lock" size="19" color="faint" />
+      <input
+        class="lz-field__input"
+        value="{{password}}"
+        password
+        placeholder="输入登录密码以验证身份"
+        placeholder-class="ph"
+        maxlength="20"
+        bindinput="onPwd"
+      />
+    </view>
+    <view class="wb__note">为保障账号安全，{{bound ? '解绑' : '绑定'}}微信需验证当前登录密码。</view>
+  </view>
+
+  <view class="lz-footer">
+    <button
+      wx:if="{{!bound}}"
+      class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full"
+      bindtap="onBind"
+    >
+      {{submitting ? '处理中…' : '授权并绑定微信'}}
+    </button>
+    <button wx:else class="lz-btn lz-btn--ghost lz-btn--lg lz-btn--full" bindtap="onUnbind">
+      {{submitting ? '处理中…' : '解绑微信'}}
+    </button>
+  </view>
+</view>

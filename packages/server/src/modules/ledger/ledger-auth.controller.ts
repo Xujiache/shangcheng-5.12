@@ -10,6 +10,9 @@ import {
   LedgerSmsCodeDto,
   LedgerSmsLoginDto,
   LedgerChangePasswordDto,
+  WechatLoginDto,
+  WechatBindDto,
+  WechatUnbindDto,
 } from './dto/auth.dto'
 
 /** 门窗利账 App · 鉴权（/api/v1/l/auth/*）。整体 @Public 跳过商城全局守卫。 */
@@ -42,5 +45,25 @@ export class LedgerAuthController {
   @Post('change-password')
   changePassword(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: LedgerChangePasswordDto) {
     return this.auth.changePassword(user.id, dto)
+  }
+
+  // ── 微信一键登录（openid 须已绑定）──
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('wechat-login')
+  wechatLogin(@Body() dto: WechatLoginDto) {
+    return this.auth.wechatLogin(dto)
+  }
+
+  // ── 绑定 / 解绑微信（需 ledger 登录 + 密码确认）──
+  @UseGuards(LedgerJwtGuard)
+  @Post('wechat/bind')
+  bindWechat(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: WechatBindDto) {
+    return this.auth.bindWechat(user.id, dto)
+  }
+
+  @UseGuards(LedgerJwtGuard)
+  @Post('wechat/unbind')
+  unbindWechat(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: WechatUnbindDto) {
+    return this.auth.unbindWechat(user.id, dto)
   }
 }

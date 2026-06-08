@@ -918,7 +918,8 @@ model LedgerUser {
   phone        String    @unique // 登录名（唯一）
   passwordHash String // argon2
   nickname     String    @default("门窗店主")
-  avatar       String?
+  avatar       String? // 字母底色 hue key 或上传头像的公网 URL
+  wxOpenid     String?   @unique // 微信 openid（绑定后可微信一键登录）
   status       String    @default("active") // active / disabled
   mustReset    Boolean   @default(false) // 首登强制改密（预留）
   createdById  String? // 操作管理员 User.id

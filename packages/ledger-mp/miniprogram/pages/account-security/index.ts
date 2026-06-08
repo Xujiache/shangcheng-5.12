@@ -18,6 +18,9 @@ Page({
   toPhone() {
     wx.navigateTo({ url: '/pages/phone-bind/index' })
   },
+  toWechat() {
+    wx.navigateTo({ url: '/pages/wechat-bind/index' })
+  },
   toPassword() {
     wx.navigateTo({ url: '/pages/password/index' })
   },

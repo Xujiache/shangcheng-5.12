@@ -55,6 +55,7 @@ export class LedgerService {
       nickname: u.nickname,
       avatar: u.avatar,
       mustReset: u.mustReset,
+      wxBound: !!u.wxOpenid,
       membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey),
     }
   }

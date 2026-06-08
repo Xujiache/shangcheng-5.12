@@ -9,6 +9,13 @@ export const authApi = {
     http.post('/l/auth/sms-login', { phone, code }, { auth: false }),
   changePassword: (oldPassword: string | undefined, newPassword: string) =>
     http.post('/l/auth/change-password', { oldPassword, newPassword }),
+  // 微信一键登录（openid 须已绑定）；silent 让登录页自行处理"未绑定"提示
+  wechatLogin: (code: string) =>
+    http.post('/l/auth/wechat-login', { code }, { auth: false, silent: true }),
+  // 绑定/解绑微信（需登录 + 密码确认）
+  bindWechat: (code: string, password: string) =>
+    http.post('/l/auth/wechat/bind', { code, password }),
+  unbindWechat: (password: string) => http.post('/l/auth/wechat/unbind', { password }),
 }
 
 /** 账户 / 会员（仅需登录） */
