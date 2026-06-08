@@ -105,8 +105,8 @@
       </view>
       <view class="lz-pill {{profitNeg ? 'lz-pill--loss' : 'lz-pill--profit'}} lz-pill--md">利润率 {{marginPct}}%</view>
     </view>
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="save">
-      <lz-icon name="check" size="20" color="white" /> {{editing ? '保存修改' : '保存订单'}}
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave && !saving ? '' : 'lz-btn--disabled'}}" bindtap="save">
+      <lz-icon name="check" size="20" color="white" /> {{saving ? '保存中…' : (editing ? '保存修改' : '保存订单')}}
     </button>
   </view>
 

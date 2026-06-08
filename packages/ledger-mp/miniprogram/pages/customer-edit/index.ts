@@ -10,6 +10,7 @@ Page({
     address: '',
     note: '',
     canSave: false,
+    saving: false,
   },
 
   onLoad(opt: any) {
@@ -51,7 +52,8 @@ Page({
   },
 
   async save() {
-    if (!this.data.canSave) return
+    if (!this.data.canSave || this.data.saving) return
+    this.setData({ saving: true })
     const { editing, id, fromOrder, name, phone, address, note } = this.data
     const data = {
       name: name.trim(),
@@ -67,7 +69,7 @@ Page({
       wx.showToast({ title: editing ? '已保存' : '已新增', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 500)
     } catch (e) {
-      /* handled */
+      this.setData({ saving: false }) // 失败允许重试
     }
   },
 })

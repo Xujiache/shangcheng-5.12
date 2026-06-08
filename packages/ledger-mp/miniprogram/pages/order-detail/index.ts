@@ -71,6 +71,24 @@ Page({
   toEdit() {
     wx.navigateTo({ url: '/pages/order-edit/index?id=' + this.data.id })
   },
+  onDelete() {
+    wx.showModal({
+      title: '删除订单',
+      content: '删除后不可恢复，确定删除这笔订单？',
+      confirmText: '删除',
+      confirmColor: '#C8442B',
+      success: async (r) => {
+        if (!r.confirm) return
+        try {
+          await orderApi.remove(this.data.id)
+          wx.showToast({ title: '已删除', icon: 'success' })
+          setTimeout(() => wx.navigateBack(), 500)
+        } catch (e) {
+          /* toast handled in request */
+        }
+      },
+    })
+  },
   toCustomer() {
     const o = this.data.o
     if (o && o.customerId) wx.navigateTo({ url: '/pages/customer-detail/index?id=' + o.customerId })

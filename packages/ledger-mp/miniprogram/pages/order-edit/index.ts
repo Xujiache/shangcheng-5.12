@@ -35,6 +35,7 @@ Page({
     profitNeg: false,
     marginPct: '0.0',
     canSave: false,
+    saving: false,
     showPicker: false,
     pickerList: [] as any[],
     pickerQ: '',
@@ -227,7 +228,8 @@ Page({
     wx.navigateBack()
   },
   async save() {
-    if (!this.data.canSave) return
+    if (!this.data.canSave || this.data.saving) return
+    this.setData({ saving: true })
     const { editing, id, customerId, customerName, date, total, costs, activeCats, extras, note } =
       this.data
     const payloadCosts: any = {
@@ -253,9 +255,10 @@ Page({
       if (editing) await orderApi.update(id, payload)
       else await orderApi.create(payload)
       wx.showToast({ title: editing ? '已保存' : '已记账', icon: 'success' })
+      // 成功后不重置 saving，保持按钮禁用直到返回，避免重复提交
       setTimeout(() => wx.navigateBack(), 500)
     } catch (e) {
-      /* handled */
+      this.setData({ saving: false }) // 失败允许重试
     }
   },
 })

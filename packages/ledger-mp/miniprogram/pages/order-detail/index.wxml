@@ -73,8 +73,11 @@
     </view>
   </view>
 
-  <view wx:if="{{o}}" class="lz-footer">
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="toEdit">
+  <view wx:if="{{o}}" class="lz-footer" style="display: flex; gap: 10px;">
+    <button class="lz-btn lz-btn--ghost lz-btn--lg" style="flex: 0 0 104px;" bindtap="onDelete">
+      <lz-icon name="trash" size="18" color="loss" /> 删除
+    </button>
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-flex1" bindtap="toEdit">
       <lz-icon name="pencil" size="18" color="white" /> 编辑此订单
     </button>
   </view>

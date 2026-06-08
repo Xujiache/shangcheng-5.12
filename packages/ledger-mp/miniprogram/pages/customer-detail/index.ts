@@ -39,9 +39,13 @@ Page({
     }
   },
 
-  callPhone() {
+  copyPhone() {
     const phone = this.data.c && this.data.c.phone
-    if (phone) wx.makePhoneCall({ phoneNumber: phone })
+    if (!phone) return
+    wx.setClipboardData({
+      data: phone,
+      success: () => wx.showToast({ title: '号码已复制', icon: 'none' }),
+    })
   },
   toEdit() {
     wx.navigateTo({ url: '/pages/customer-edit/index?id=' + this.data.id })
