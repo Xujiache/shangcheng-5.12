@@ -11,6 +11,7 @@ interface LoginData {
   sent: number
   loading: boolean
   canLogin: boolean
+  checking: boolean
 }
 
 Page({
@@ -27,23 +28,28 @@ Page({
     sent: 0,
     loading: false,
     canLogin: false,
+    // 默认进入"校验中"占位：有 token 时静默登录期间不露出表单，避免每次启动闪登录页
+    checking: true,
   } as LoginData,
 
   _timer: 0 as any,
 
   onLoad() {
-    // 已登录则尝试静默进入：拉 me 判断会员状态并路由
-    if (getToken()) {
-      meApi
-        .me()
-        .then((u: any) => {
-          setUser(u)
-          this.routeAfterLogin(u.membership)
-        })
-        .catch(() => {
-          /* token 失效 → 停在登录页（request 层已清 token） */
-        })
+    if (!getToken()) {
+      // 未登录：直接显示登录表单
+      this.setData({ checking: false })
+      return
     }
+    // 已登录：显示"正在进入…"占位，静默拉 me 判断会员并路由；失败才回退到表单
+    meApi
+      .me()
+      .then((u: any) => {
+        setUser(u)
+        this.routeAfterLogin(u.membership)
+      })
+      .catch(() => {
+        this.setData({ checking: false })
+      })
   },
 
   refreshCanLogin() {

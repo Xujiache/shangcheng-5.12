@@ -40,7 +40,7 @@
   height: 56px;
   margin: 0 10px;
   flex-shrink: 0;
-  border-radius: 34%;
+  border-radius: 50%;
   border: 3px solid var(--surface);
   transform: translateY(-14px);
   display: flex;

@@ -10,8 +10,17 @@
     <view class="login__slogan">登录后管理订单与利润</view>
   </view>
 
+  <!-- 静默登录校验中：显示占位，不露出表单（避免每次启动闪登录页） -->
+  <view
+    wx:if="{{checking}}"
+    class="login__checking"
+    style="display: flex; justify-content: center; padding: 64px 0;"
+  >
+    <text style="color: var(--muted); font-size: 15px;">正在进入…</text>
+  </view>
+
   <!-- 表单 -->
-  <view class="login__form">
+  <view wx:else class="login__form">
     <view style="width: 200px;">
       <lz-segmented options="{{modes}}" value="{{mode}}" bindchange="onModeChange" />
     </view>
@@ -81,7 +90,7 @@
     </button>
   </view>
 
-  <view class="login__agreement">
+  <view wx:if="{{!checking}}" class="login__agreement">
     登录即代表同意
     <text class="login__link" data-key="terms" bindtap="onDoc">《用户协议》</text>
     与
