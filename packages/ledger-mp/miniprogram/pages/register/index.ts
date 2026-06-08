@@ -23,7 +23,10 @@ Page({
 
   refresh() {
     const d = this.data
-    this.setData({ canReg: d.phone.length === 11 && d.pwd.length >= 6 && d.pwd2.length >= 6 })
+    // 两次密码一致才允许提交，避免高亮按钮点击后才报错的误导
+    this.setData({
+      canReg: d.phone.length === 11 && d.pwd.length >= 6 && d.pwd2.length >= 6 && d.pwd === d.pwd2,
+    })
   },
   onPhone(e: any) {
     this.setData({ phone: String(e.detail.value).replace(/\D/g, '').slice(0, 11) }, () =>

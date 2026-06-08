@@ -26,6 +26,7 @@
             v-model="form.cutTrialDays"
             :min="0"
             :max="3650"
+            :value-on-clear="0"
             controls-position="right"
             :disabled="!form.cutRequireMembership"
           />
@@ -46,10 +47,23 @@
             v-model="form.inviteRewardDays"
             :min="0"
             :max="3650"
+            :value-on-clear="0"
             controls-position="right"
           />
           <span class="pf-cfg-hint"
             >好友凭邀请码注册成功后，赠送邀请人的会员天数；0 表示不奖励</span
+          >
+        </ElFormItem>
+        <ElFormItem label="每人最多奖励人数">
+          <ElInputNumber
+            v-model="form.inviteMaxRewarded"
+            :min="0"
+            :max="100000"
+            :value-on-clear="0"
+            controls-position="right"
+          />
+          <span class="pf-cfg-hint"
+            >单个邀请人最多奖励多少个被邀请人（反刷量上限）；0 表示不限</span
           >
         </ElFormItem>
       </ElForm>
@@ -74,6 +88,7 @@
   const form = reactive<LedgerConfig>({
     allowSelfRegister: true,
     inviteRewardDays: 7,
+    inviteMaxRewarded: 50,
     cutTrialDays: 7,
     cutRequireMembership: true
   })
@@ -84,6 +99,7 @@
       const cfg = await fetchLedgerConfig()
       form.allowSelfRegister = cfg.allowSelfRegister
       form.inviteRewardDays = cfg.inviteRewardDays
+      form.inviteMaxRewarded = cfg.inviteMaxRewarded
       form.cutTrialDays = cfg.cutTrialDays
       form.cutRequireMembership = cfg.cutRequireMembership
     } catch (e: any) {
@@ -99,6 +115,7 @@
       await updateLedgerConfig({
         allowSelfRegister: form.allowSelfRegister,
         inviteRewardDays: form.inviteRewardDays,
+        inviteMaxRewarded: form.inviteMaxRewarded,
         cutTrialDays: form.cutTrialDays,
         cutRequireMembership: form.cutRequireMembership
       })

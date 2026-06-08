@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
@@ -15,12 +14,9 @@ import {
   sanitizeCustomCosts,
   customCostsTotal,
   normalizeLedgerConfig,
+  genLedgerInviteCode,
   LedgerConfigShape,
 } from './ledger.constants'
-
-// 邀请码：去易混字符，8 位大写+数字
-const genInviteCode = customAlphabet('ACDEFGHJKLMNPQRSTUVWXYZ23456789', 8)
-const DAY_MS = 86_400_000
 import { CreateLedgerOrderDto, OrderQueryDto, UpdateLedgerOrderDto } from './dto/order.dto'
 import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer.dto'
 import {
@@ -29,6 +25,8 @@ import {
   UpdateLedgerProfileDto,
   UpdateLedgerSettingDto,
 } from './dto/misc.dto'
+
+const DAY_MS = 86_400_000
 
 type OrderRow = {
   id: string
@@ -169,7 +167,7 @@ export class LedgerService {
     if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
     if (u.inviteCode) return u.inviteCode
     for (let i = 0; i < 6; i++) {
-      const code = genInviteCode()
+      const code = genLedgerInviteCode()
       try {
         await this.prisma.ledgerUser.update({ where: { id: userId }, data: { inviteCode: code } })
         return code

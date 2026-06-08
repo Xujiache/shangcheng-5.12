@@ -138,8 +138,22 @@ Page({
   onAd(e: any) {
     const link = e.currentTarget.dataset.link
     // 仅支持站内页面跳转（外链需 webview 业务域名，暂不处理）
-    if (link && typeof link === 'string' && link.indexOf('/pages/') === 0) {
-      wx.navigateTo({ url: link })
+    if (!link || typeof link !== 'string' || link.indexOf('/pages/') !== 0) return
+    // tabBar 页只能用 switchTab；navigateTo 跳 tabBar 会静默失败
+    const TABS = [
+      '/pages/home/index',
+      '/pages/orders/index',
+      '/pages/reports/index',
+      '/pages/profile/index',
+    ]
+    const path = link.split('?')[0]
+    if (TABS.indexOf(path) >= 0) {
+      wx.switchTab({ url: path })
+    } else {
+      wx.navigateTo({
+        url: link,
+        fail: () => wx.showToast({ title: '无法打开该页面', icon: 'none' }),
+      })
     }
   },
   toCut() {

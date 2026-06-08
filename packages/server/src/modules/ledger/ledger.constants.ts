@@ -1,4 +1,8 @@
 // 门窗利账 · 领域常量 + 会员派生算法 + 利润计算（纯函数，无 DI，App/后台共用）
+import { customAlphabet } from 'nanoid'
+
+/** 邀请码生成器（去易混字符 B/I/O/0/1，8 位大写+数字）。App/后台统一来源，避免重复定义漂移。 */
+export const genLedgerInviteCode = customAlphabet('ACDEFGHJKLMNPQRSTUVWXYZ23456789', 8)
 
 /** 套餐 → 天数。custom 走自定义天数，不在此表。 */
 export const LEDGER_PLAN_DAYS: Record<string, number> = {
@@ -28,6 +32,8 @@ export const LEDGER_PLANS = [
 export const LEDGER_CONFIG_DEFAULTS = {
   allowSelfRegister: true,
   inviteRewardDays: 7,
+  /** 每个邀请人最多奖励多少个被邀请人（反刷量上限）；0=不限 */
+  inviteMaxRewarded: 50,
   cutTrialDays: 7,
   cutRequireMembership: true,
 }
@@ -44,6 +50,12 @@ export function normalizeLedgerConfig(raw: any): LedgerConfigShape {
   return {
     allowSelfRegister: bool(r.allowSelfRegister, LEDGER_CONFIG_DEFAULTS.allowSelfRegister),
     inviteRewardDays: num(r.inviteRewardDays, LEDGER_CONFIG_DEFAULTS.inviteRewardDays, 0, 3650),
+    inviteMaxRewarded: num(
+      r.inviteMaxRewarded,
+      LEDGER_CONFIG_DEFAULTS.inviteMaxRewarded,
+      0,
+      100000,
+    ),
     cutTrialDays: num(r.cutTrialDays, LEDGER_CONFIG_DEFAULTS.cutTrialDays, 0, 3650),
     cutRequireMembership: bool(r.cutRequireMembership, LEDGER_CONFIG_DEFAULTS.cutRequireMembership),
   }

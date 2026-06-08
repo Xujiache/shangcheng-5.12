@@ -34,7 +34,8 @@ export function optimizeCutting(stockLength: number, pieces: CutPiece[], kerf = 
     const qty = Math.max(0, Math.round(Number(p.qty) || 0))
     if (len <= 0 || qty <= 0) continue
     for (let i = 0; i < qty; i++) {
-      if (L > 0 && len > L) oversize.push(len)
+      // 料长非法(<=0) 或段长超过整根料长 → 无法下料，记入 oversize（避免产生负余料）
+      if (L <= 0 || len > L) oversize.push(len)
       else flat.push(len)
     }
   }

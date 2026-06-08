@@ -178,14 +178,16 @@
     }
     submitting.value = true
     try {
+      const isEdit = editing.value
       const payload = {
         image: form.image.trim(),
-        title: form.title.trim() || undefined,
-        link: form.link.trim() || undefined,
+        // 编辑态允许清空：传空串让后端写回 null；新建态空值省略走默认
+        title: isEdit ? form.title.trim() : form.title.trim() || undefined,
+        link: isEdit ? form.link.trim() : form.link.trim() || undefined,
         sort: form.sort,
         enabled: form.enabled
       }
-      if (editing.value) await updateLedgerAd(editingId.value, payload)
+      if (isEdit) await updateLedgerAd(editingId.value, payload)
       else await createLedgerAd(payload)
       ElMessage.success('已保存')
       dialogOpen.value = false

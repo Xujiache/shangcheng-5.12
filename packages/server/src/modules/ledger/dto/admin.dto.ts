@@ -68,6 +68,7 @@ export class UpdateLedgerAdDto {
 export class UpdateLedgerConfigDto {
   @IsOptional() @IsBoolean() allowSelfRegister?: boolean
   @IsOptional() @IsInt() @Min(0) @Max(3650) inviteRewardDays?: number
+  @IsOptional() @IsInt() @Min(0) @Max(100000) inviteMaxRewarded?: number
   @IsOptional() @IsInt() @Min(0) @Max(3650) cutTrialDays?: number
   @IsOptional() @IsBoolean() cutRequireMembership?: boolean
 }

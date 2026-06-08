@@ -939,6 +939,7 @@ model LedgerUser {
   feedbacks     LedgerFeedback[]
 
   @@index([status])
+  @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
 }
 
 model LedgerMembership {

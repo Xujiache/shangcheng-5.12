@@ -158,6 +158,7 @@ ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "inviteCode" TEXT;
 ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "invitedById" TEXT;
 ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "cutFirstUsedAt" TIMESTAMP(3);
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerUser_inviteCode_key" ON "LedgerUser"("inviteCode");
+CREATE INDEX IF NOT EXISTS "LedgerUser_invitedById_idx" ON "LedgerUser"("invitedById");
 
 -- 新表：首页广告(#2) / ledger 全局配置(优化下料/邀请 等后台可调)
 CREATE TABLE IF NOT EXISTS "LedgerAd" (

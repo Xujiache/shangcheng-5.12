@@ -3,6 +3,12 @@
   <view class="lz-page lz-page--pad-bottom">
     <view wx:if="{{checking}}" class="lz-empty">加载中…</view>
 
+    <!-- 加载失败（网络等）：带重试，不当作付费墙 -->
+    <view wx:elif="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+    </view>
+
     <!-- 闸门：试用结束需开通会员 -->
     <view wx:elif="{{!allowed}}" class="lz-card lz-card--glow" style="text-align: center;">
       <view style="font-size: 16px; font-weight: 800; margin-bottom: 8px;">优化下料需会员</view>

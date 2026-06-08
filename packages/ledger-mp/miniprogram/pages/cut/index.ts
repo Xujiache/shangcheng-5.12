@@ -4,6 +4,7 @@ import { optimizeCutting } from '../../utils/cutting'
 Page({
   data: {
     checking: true,
+    loadError: false, // 网络/加载失败：区别于"试用到期付费墙"
     allowed: false,
     mode: '', // free / member / trial / expired
     trialDaysLeft: 0,
@@ -25,14 +26,19 @@ Page({
       const a: any = await cutApi.access()
       this.setData({
         checking: false,
+        loadError: false,
         allowed: !!a.allowed,
         mode: a.mode || '',
         trialDaysLeft: a.trialDaysLeft || 0,
         gateReason: a.reason || '优化下料试用已结束，开通会员后继续使用',
       })
     } catch (e) {
-      this.setData({ checking: false, allowed: false, gateReason: '加载失败，请重试' })
+      // 加载失败单独成态（带重试），不复用付费墙，避免把网络抖动误导成"需付费"
+      this.setData({ checking: false, loadError: true })
     }
+  },
+  retry() {
+    this.setData({ checking: true, loadError: false }, () => this.checkAccess())
   },
 
   onStock(e: any) {
@@ -77,6 +83,12 @@ Page({
       .filter((p: any) => p.length > 0 && p.qty > 0)
     if (!pieces.length) {
       wx.showToast({ title: '请填写段长和数量', icon: 'none' })
+      return
+    }
+    // 防止误填超大数量导致主线程同步卡死（一维下料按件展开后是 O(n²) 级）
+    const totalSeg = pieces.reduce((s: number, p: any) => s + p.qty, 0)
+    if (totalSeg > 5000) {
+      wx.showToast({ title: '段数过多（上限 5000），请核对数量', icon: 'none' })
       return
     }
     const r = optimizeCutting(stock, pieces, kerf)

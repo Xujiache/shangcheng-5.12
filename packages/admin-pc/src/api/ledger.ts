@@ -317,6 +317,8 @@ export interface LedgerConfig {
   allowSelfRegister: boolean
   /** 邀请成功奖励邀请人的天数 */
   inviteRewardDays: number
+  /** 单个邀请人最多奖励多少个被邀请人（0=不限） */
+  inviteMaxRewarded: number
   /** 优化下料免费试用天数 */
   cutTrialDays: number
   /** 试用期后是否需会员才能用优化下料 */
@@ -326,6 +328,7 @@ export interface LedgerConfig {
 const DEFAULT_LEDGER_CONFIG: LedgerConfig = {
   allowSelfRegister: true,
   inviteRewardDays: 7,
+  inviteMaxRewarded: 50,
   cutTrialDays: 7,
   cutRequireMembership: true
 }
@@ -337,6 +340,7 @@ export async function fetchLedgerConfig(): Promise<LedgerConfig> {
     return {
       allowSelfRegister: resp.allowSelfRegister !== false,
       inviteRewardDays: Number(resp.inviteRewardDays ?? DEFAULT_LEDGER_CONFIG.inviteRewardDays),
+      inviteMaxRewarded: Number(resp.inviteMaxRewarded ?? DEFAULT_LEDGER_CONFIG.inviteMaxRewarded),
       cutTrialDays: Number(resp.cutTrialDays ?? DEFAULT_LEDGER_CONFIG.cutTrialDays),
       cutRequireMembership: resp.cutRequireMembership !== false
     }

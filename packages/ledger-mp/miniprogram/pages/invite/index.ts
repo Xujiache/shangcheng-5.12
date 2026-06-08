@@ -35,9 +35,12 @@ Page({
   },
 
   onShareAppMessage() {
+    const code = this.data.inviteCode
+    // 邀请码缺失（加载失败）时不带空 invite 参数，避免分享出无效邀请
+    const path = code ? `/pages/register/index?invite=${code}` : '/pages/register/index'
     return {
       title: `我在用「门窗利账」记账算利润，注册就送 ${this.data.rewardDays} 天会员`,
-      path: `/pages/register/index?invite=${this.data.inviteCode}`,
+      path,
     }
   },
 })

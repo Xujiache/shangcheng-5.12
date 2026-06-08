@@ -6,7 +6,12 @@ import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { SmsService } from '../sms/sms.service'
-import { computeGrantExpiry, deriveMembership, normalizeLedgerConfig } from './ledger.constants'
+import {
+  computeGrantExpiry,
+  deriveMembership,
+  normalizeLedgerConfig,
+  genLedgerInviteCode,
+} from './ledger.constants'
 import {
   LedgerLoginDto,
   LedgerRegisterDto,
@@ -19,7 +24,6 @@ import {
 } from './dto/auth.dto'
 
 const genJti = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 12)
-const genInviteCode = customAlphabet('ACDEFGHJKLMNPQRSTUVWXYZ23456789', 8)
 const maskPhone = (p: string) => (p.length === 11 ? p.slice(0, 3) + '****' + p.slice(7) : p)
 
 /**
@@ -116,9 +120,10 @@ export class LedgerAuthService {
     if (code) {
       const inviter = await this.prisma.ledgerUser.findUnique({
         where: { inviteCode: code },
-        select: { id: true },
+        select: { id: true, status: true },
       })
-      if (inviter) inviterId = inviter.id
+      // 禁用账号不计奖励，与 login/smsLogin 对 disabled 的处理一致
+      if (inviter && inviter.status !== 'disabled') inviterId = inviter.id
     }
 
     const passwordHash = await argon2.hash(dto.password)
@@ -130,7 +135,7 @@ export class LedgerAuthService {
             phone,
             passwordHash,
             nickname: dto.nickname?.trim() || '门窗店主',
-            inviteCode: genInviteCode(),
+            inviteCode: genLedgerInviteCode(),
             invitedById: inviterId,
             membership: { create: {} },
           },
@@ -150,9 +155,20 @@ export class LedgerAuthService {
       }
     }
 
-    // 邀请奖励
+    // 邀请奖励（best-effort：失败/超限都不影响"注册即登录返 token"；含反刷量上限）
     if (inviterId && cfg.inviteRewardDays > 0) {
-      await this.rewardInviter(inviterId, cfg.inviteRewardDays, phone)
+      try {
+        const cap = cfg.inviteMaxRewarded
+        // 已邀人数（含刚创建的新用户）；cap<=0 视为不限
+        const rewarded = await this.prisma.ledgerUser.count({ where: { invitedById: inviterId } })
+        if (cap <= 0 || rewarded <= cap) {
+          await this.rewardInviter(inviterId, cfg.inviteRewardDays, phone)
+        } else {
+          this.logger.warn(`invite reward capped: inviter=${inviterId} rewarded=${rewarded}>${cap}`)
+        }
+      } catch (e: any) {
+        this.logger.warn('invite reward failed: ' + (e?.message || e))
+      }
     }
 
     await this.prisma.ledgerUser.update({
