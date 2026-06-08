@@ -61,8 +61,8 @@
       </view>
       <view wx:if="{{donut.length}}" class="home__cost">
         <lz-donut data="{{donut}}" size="120" thickness="18">
-          <view style="font-size: 10.5px; color: var(--muted);">总成本</view>
-          <view style="font-size: 15px; font-weight: 800; color: var(--text);">{{costText}}</view>
+          <view style="font-size: 10.5px; color: var(--muted);">本月成本</view>
+          <view style="font-size: 15px; font-weight: 800; color: var(--text);">{{donutCostText}}</view>
         </lz-donut>
         <view class="home__legend">
           <view wx:for="{{legend}}" wx:key="name" class="home__leg">
@@ -77,10 +77,15 @@
       <view wx:else class="lz-empty">暂无成本数据</view>
     </view>
 
-    <!-- 利润趋势 -->
+    <!-- 利润 / 单量 趋势（随 日/月/年 切换） -->
     <view class="lz-card">
-      <view class="home__card-t" style="margin-bottom: 14px;">利润趋势 · {{ovYear}}年</view>
-      <lz-bars wx:if="{{trend.length}}" series="{{trend}}" colors="{{['accent']}}" height="120" />
+      <view class="home__card-t" style="margin-bottom: 14px;">利润 · {{seriesTitle}}</view>
+      <lz-bars wx:if="{{profitBars.length}}" series="{{profitBars}}" colors="{{['accent']}}" height="120" />
+      <view wx:else class="lz-empty">暂无数据</view>
+    </view>
+    <view class="lz-card">
+      <view class="home__card-t" style="margin-bottom: 14px;">单量 · {{seriesTitle}}</view>
+      <lz-bars wx:if="{{countBars.length}}" series="{{countBars}}" colors="{{['c2']}}" height="100" />
       <view wx:else class="lz-empty">暂无数据</view>
     </view>
 

@@ -47,6 +47,7 @@ export const customerApi = {
 export const statsApi = {
   overview: (period: string) => http.get('/l/stats/overview', { period }),
   monthly: (year?: number) => http.get('/l/stats/monthly', year ? { year } : {}),
+  series: (granularity: string) => http.get('/l/stats/series', { granularity }),
 }
 
 /** 经营目标（需会员） */

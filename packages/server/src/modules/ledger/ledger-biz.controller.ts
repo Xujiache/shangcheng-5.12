@@ -93,6 +93,11 @@ export class LedgerBizController {
     return this.svc.monthlySeries(u.id, year ? Number(year) : undefined)
   }
 
+  @Get('stats/series')
+  series(@CurrentLedgerUser() u: LedgerAuthUser, @Query('granularity') granularity?: string) {
+    return this.svc.series(u.id, granularity || 'month')
+  }
+
   // ── 经营目标 ──
   @Get('goal')
   getGoal(@CurrentLedgerUser() u: LedgerAuthUser) {

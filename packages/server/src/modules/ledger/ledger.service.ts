@@ -496,6 +496,78 @@ export class LedgerService {
     }
   }
 
+  /**
+   * 首页 日/月/年 单量+利润 序列（#1）。
+   * - day:   当月每天（1..月末）
+   * - month: 今年 12 个月
+   * - year:  近 5 年逐年
+   */
+  async series(userId: string, granularity = 'month') {
+    const all = await this.prisma.ledgerOrder.findMany({ where: { userId } })
+    const now = new Date()
+    const Y = now.getFullYear()
+    const bucket = (rows: typeof all, label: string) => ({
+      label,
+      count: rows.length,
+      revenue: rows.reduce((s, o) => s + o.total + o.extraIncome, 0),
+      cost: rows.reduce((s, o) => s + totalCost(o as any), 0),
+      profit: rows.reduce((s, o) => s + profitOf(o as any), 0),
+    })
+    const buckets: ReturnType<typeof bucket>[] = []
+    let unit = '月'
+    if (granularity === 'day') {
+      unit = '日'
+      const M = now.getMonth()
+      const days = new Date(Y, M + 1, 0).getDate()
+      const mo = all.filter((o) => o.date.getFullYear() === Y && o.date.getMonth() === M)
+      for (let d = 1; d <= days; d++) {
+        buckets.push(
+          bucket(
+            mo.filter((o) => o.date.getDate() === d),
+            String(d),
+          ),
+        )
+      }
+    } else if (granularity === 'year') {
+      unit = '年'
+      for (let y = Y - 4; y <= Y; y++) {
+        buckets.push(
+          bucket(
+            all.filter((o) => o.date.getFullYear() === y),
+            String(y),
+          ),
+        )
+      }
+    } else {
+      for (let m = 1; m <= 12; m++) {
+        buckets.push(
+          bucket(
+            all.filter((o) => o.date.getFullYear() === Y && o.date.getMonth() + 1 === m),
+            `${m}月`,
+          ),
+        )
+      }
+    }
+    const summary = buckets.reduce(
+      (s, b) => ({
+        count: s.count + b.count,
+        revenue: s.revenue + b.revenue,
+        cost: s.cost + b.cost,
+        profit: s.profit + b.profit,
+      }),
+      { count: 0, revenue: 0, cost: 0, profit: 0 },
+    )
+    return {
+      granularity,
+      unit,
+      buckets,
+      summary: {
+        ...summary,
+        avgProfit: summary.count ? Math.round(summary.profit / summary.count) : 0,
+      },
+    }
+  }
+
   // ── 经营目标 ─────────────────────────────────────────────
   async getGoal(userId: string) {
     const g = await this.prisma.ledgerGoal.findUnique({ where: { userId } })
