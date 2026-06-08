@@ -21,6 +21,7 @@ export class CreateLedgerOrderDto {
   /** ISO 日期字符串（YYYY-MM-DD 或完整 ISO） */
   @IsDateString() date!: string
   @IsInt() @Min(0) @Max(MONEY_MAX) total!: number
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) extraIncome?: number
 
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costProfile?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costGlass?: number
@@ -37,6 +38,7 @@ export class UpdateLedgerOrderDto {
   @IsOptional() @IsString() @MaxLength(40) customerName?: string
   @IsOptional() @IsDateString() date?: string
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) total?: number
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) extraIncome?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costProfile?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costGlass?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costHardware?: number

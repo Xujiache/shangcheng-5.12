@@ -21,6 +21,8 @@ Page({
     totalText: '¥0',
     costText: '¥0',
     extrasTotalText: '¥0',
+    extraIncomeText: '¥0',
+    hasExtraIncome: false,
   },
 
   onLoad(opt: any) {
@@ -62,6 +64,8 @@ Page({
         totalText: yuan(o.total),
         costText: yuan(o.cost),
         extrasTotalText: yuan(o.extrasTotal || 0),
+        extraIncomeText: yuan(o.extraIncome || 0),
+        hasExtraIncome: (o.extraIncome || 0) > 0,
       })
     } catch (e) {
       /* handled */

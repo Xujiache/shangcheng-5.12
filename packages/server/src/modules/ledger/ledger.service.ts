@@ -10,6 +10,7 @@ import {
   totalCost,
   profitOf,
   marginOf,
+  revenueOf,
 } from './ledger.constants'
 import { CreateLedgerOrderDto, OrderQueryDto, UpdateLedgerOrderDto } from './dto/order.dto'
 import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer.dto'
@@ -26,6 +27,7 @@ type OrderRow = {
   customerName: string
   date: Date
   total: number
+  extraIncome: number
   costProfile: number
   costGlass: number
   costHardware: number
@@ -81,6 +83,7 @@ export class LedgerService {
     const extras = sanitizeExtras(o.extras)
     const base = {
       total: o.total,
+      extraIncome: o.extraIncome,
       costProfile: o.costProfile,
       costGlass: o.costGlass,
       costHardware: o.costHardware,
@@ -94,6 +97,8 @@ export class LedgerService {
       customer: o.customerName,
       date: ymd(o.date),
       total: o.total,
+      extraIncome: o.extraIncome,
+      revenue: revenueOf(base),
       costs: {
         profile: o.costProfile,
         glass: o.costGlass,
@@ -139,7 +144,7 @@ export class LedgerService {
     const items = list.slice((page - 1) * pageSize, page * pageSize)
     const sums = list.reduce(
       (s, o) => ({
-        revenue: s.revenue + o.total,
+        revenue: s.revenue + o.total + (o.extraIncome || 0),
         profit: s.profit + o.profit,
         cost: s.cost + o.cost,
       }),
@@ -188,6 +193,7 @@ export class LedgerService {
         customerName,
         date,
         total: Math.round(dto.total),
+        extraIncome: Math.max(0, Math.round(dto.extraIncome || 0)),
         costProfile: Math.max(0, Math.round(dto.costProfile || 0)),
         costGlass: Math.max(0, Math.round(dto.costGlass || 0)),
         costHardware: Math.max(0, Math.round(dto.costHardware || 0)),
@@ -227,6 +233,7 @@ export class LedgerService {
       data.date = d
     }
     if (dto.total !== undefined) data.total = Math.max(0, Math.round(dto.total))
+    if (dto.extraIncome !== undefined) data.extraIncome = Math.max(0, Math.round(dto.extraIncome))
     if (dto.costProfile !== undefined) data.costProfile = Math.max(0, Math.round(dto.costProfile))
     if (dto.costGlass !== undefined) data.costGlass = Math.max(0, Math.round(dto.costGlass))
     if (dto.costHardware !== undefined)
@@ -286,7 +293,7 @@ export class LedgerService {
       const c = map.get(key)
       const p = profitOf(o as any)
       c.count++
-      c.revenue += o.total
+      c.revenue += o.total + o.extraIncome
       c.profit += p
       c.cost += totalCost(o as any)
       const d = ymd(o.date)
@@ -306,7 +313,7 @@ export class LedgerService {
       orderBy: { date: 'desc' },
     })
     const mapped = orders.map((o) => this.mapOrder(o as OrderRow))
-    const revenue = mapped.reduce((s, o) => s + o.total, 0)
+    const revenue = mapped.reduce((s, o) => s + o.total + (o.extraIncome || 0), 0)
     const profit = mapped.reduce((s, o) => s + o.profit, 0)
     return {
       id: c.id,
@@ -392,7 +399,7 @@ export class LedgerService {
 
     const agg = (rows: typeof all) => ({
       count: rows.length,
-      revenue: rows.reduce((s, o) => s + o.total, 0),
+      revenue: rows.reduce((s, o) => s + o.total + o.extraIncome, 0),
       cost: rows.reduce((s, o) => s + totalCost(o as any), 0),
       profit: rows.reduce((s, o) => s + profitOf(o as any), 0),
     })
@@ -473,7 +480,7 @@ export class LedgerService {
         month: m,
         label: `${m}月`,
         count: ml.length,
-        revenue: ml.reduce((s, o) => s + o.total, 0),
+        revenue: ml.reduce((s, o) => s + o.total + o.extraIncome, 0),
         cost: ml.reduce((s, o) => s + totalCost(o as any), 0),
         profit: ml.reduce((s, o) => s + profitOf(o as any), 0),
         labor,

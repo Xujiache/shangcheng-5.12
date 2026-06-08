@@ -990,6 +990,7 @@ model LedgerOrder {
   customerName String // 冗余客户名（兼容快速录入 / 客户删档）
   date         DateTime
   total        Int             @default(0) // 收款总价（元）
+  extraIncome  Int             @default(0) // 额外收入（元）
   costProfile  Int             @default(0) // 型材
   costGlass    Int             @default(0) // 玻璃
   costHardware Int             @default(0) // 配件

@@ -19,12 +19,20 @@
           <view class="oe__val">{{date}}</view>
         </view>
       </picker>
-      <view class="lz-row lz-row--last">
+      <view class="lz-row">
         <view class="oe__lbl">订单总价</view>
         <view class="lz-flex1"></view>
         <view class="oe__amt">
           <text class="oe__cur">¥</text>
           <input class="oe__amt-in oe__amt-in--accent" type="digit" value="{{totalStr}}" placeholder="0" placeholder-class="ph" bindinput="onTotal" />
+        </view>
+      </view>
+      <view class="lz-row lz-row--last">
+        <view class="oe__lbl">额外收入</view>
+        <view class="lz-flex1"></view>
+        <view class="oe__amt">
+          <text class="oe__cur">¥</text>
+          <input class="oe__amt-in" type="digit" value="{{extraIncomeStr}}" placeholder="0" placeholder-class="ph" bindinput="onExtraIncome" />
         </view>
       </view>
     </view>

@@ -39,6 +39,10 @@
         <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">下单日期</view></view>
         <view class="od__val">{{o.date}}</view>
       </view>
+      <view wx:if="{{hasExtraIncome}}" class="lz-row">
+        <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">额外收入</view></view>
+        <view class="od__val lz-money lz-money--accent">{{extraIncomeText}}</view>
+      </view>
       <view class="lz-row lz-row--last">
         <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">项目备注</view></view>
         <view class="od__val">{{o.note || '—'}}</view>

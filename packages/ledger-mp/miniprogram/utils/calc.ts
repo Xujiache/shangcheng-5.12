@@ -34,12 +34,23 @@ export function totalCost(c: Partial<OrderCosts>, extras: any): number {
   return fixedCost(c) + extrasTotal(extras)
 }
 
-export function profitOf(total: number, c: Partial<OrderCosts>, extras: any): number {
-  return (total || 0) - totalCost(c, extras)
+export function profitOf(
+  total: number,
+  c: Partial<OrderCosts>,
+  extras: any,
+  extraIncome = 0,
+): number {
+  return (total || 0) + (extraIncome || 0) - totalCost(c, extras)
 }
 
-export function marginOf(total: number, c: Partial<OrderCosts>, extras: any): number {
-  return total ? profitOf(total, c, extras) / total : 0
+export function marginOf(
+  total: number,
+  c: Partial<OrderCosts>,
+  extras: any,
+  extraIncome = 0,
+): number {
+  const revenue = (total || 0) + (extraIncome || 0)
+  return revenue ? profitOf(total, c, extras, extraIncome) / revenue : 0
 }
 
 /** 成本分类元数据（与设计一致） */

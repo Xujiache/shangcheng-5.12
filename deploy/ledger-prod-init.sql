@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS "LedgerOrder" (
     "customerName" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
     "total" INTEGER NOT NULL DEFAULT 0,
+    "extraIncome" INTEGER NOT NULL DEFAULT 0,
     "costProfile" INTEGER NOT NULL DEFAULT 0,
     "costGlass" INTEGER NOT NULL DEFAULT 0,
     "costHardware" INTEGER NOT NULL DEFAULT 0,
@@ -149,6 +150,8 @@ CREATE INDEX IF NOT EXISTS "LedgerUser_status_idx" ON "LedgerUser"("status");
 -- 老库补列：微信 openid（绑定后微信一键登录）
 ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "wxOpenid" TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerUser_wxOpenid_key" ON "LedgerUser"("wxOpenid");
+-- 老库补列：订单额外收入
+ALTER TABLE "LedgerOrder" ADD COLUMN IF NOT EXISTS "extraIncome" INTEGER NOT NULL DEFAULT 0;
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerMembership_userId_key" ON "LedgerMembership"("userId");
 CREATE INDEX IF NOT EXISTS "LedgerMembershipLog_membershipId_idx" ON "LedgerMembershipLog"("membershipId");
 CREATE INDEX IF NOT EXISTS "LedgerCustomer_userId_idx" ON "LedgerCustomer"("userId");

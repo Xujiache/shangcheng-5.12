@@ -25,6 +25,8 @@ Page({
     date: today(),
     total: 0,
     totalStr: '',
+    extraIncome: 0,
+    extraIncomeStr: '',
     costs: { profile: 0, glass: 0, hardware: 0, labor: 0, screen: 0 } as any,
     activeCats: [...CORE] as string[],
     activeCells: [] as any[],
@@ -76,6 +78,8 @@ Page({
           date: o.date,
           total: o.total,
           totalStr: o.total ? String(o.total) : '',
+          extraIncome: o.extraIncome || 0,
+          extraIncomeStr: o.extraIncome ? String(o.extraIncome) : '',
           costs: {
             profile: o.costs.profile,
             glass: o.costs.glass,
@@ -100,7 +104,7 @@ Page({
   },
 
   refresh() {
-    const { costs, activeCats, extras, total } = this.data
+    const { costs, activeCats, extras, total, extraIncome } = this.data
     const activeCells = COST_CATS.filter((c) => activeCats.includes(c.key)).map((c) => ({
       key: c.key,
       name: c.name,
@@ -112,8 +116,8 @@ Page({
       name: c.name,
       color: c.color,
     }))
-    const profit = profitOf(total, costs, extras)
-    const margin = marginOf(total, costs, extras)
+    const profit = profitOf(total, costs, extras, extraIncome)
+    const margin = marginOf(total, costs, extras, extraIncome)
     this.setData({
       activeCells,
       removedCats,
@@ -127,6 +131,10 @@ Page({
   onTotal(e: any) {
     const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
     this.setData({ total: v, totalStr: e.detail.value }, () => this.refresh())
+  },
+  onExtraIncome(e: any) {
+    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
+    this.setData({ extraIncome: v, extraIncomeStr: e.detail.value }, () => this.refresh())
   },
   onCost(e: any) {
     const k = e.currentTarget.dataset.key
@@ -230,8 +238,19 @@ Page({
   async save() {
     if (!this.data.canSave || this.data.saving) return
     this.setData({ saving: true })
-    const { editing, id, customerId, customerName, date, total, costs, activeCats, extras, note } =
-      this.data
+    const {
+      editing,
+      id,
+      customerId,
+      customerName,
+      date,
+      total,
+      extraIncome,
+      costs,
+      activeCats,
+      extras,
+      note,
+    } = this.data
     const payloadCosts: any = {
       costProfile: 0,
       costGlass: 0,
@@ -247,6 +266,7 @@ Page({
       customerName: String(customerName).trim(),
       date,
       total,
+      extraIncome,
       ...payloadCosts,
       extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
       note,
