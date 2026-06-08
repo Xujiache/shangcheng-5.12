@@ -45,12 +45,12 @@
     "test": "echo 'test: shared'"
   },
   "dependencies": {
-    "@faker-js/faker": "^9.0.3",
+    "@faker-js/faker": "^10.4.0",
     "dayjs": "^1.11.13",
     "nanoid": "^5.0.7"
   },
   "devDependencies": {
     "tsup": "^8.3.0",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   }
 }
