@@ -260,6 +260,39 @@ export const platformRoutes: AppRouteRecord = {
             keepAlive: true,
             ...ROLE_PLATFORM
           }
+        },
+        {
+          path: '/platform/ledger/ads',
+          name: 'PlatformLedgerAds',
+          component: '/platform/ledger/ads',
+          meta: {
+            title: 'menus.platform.ledgerAds',
+            icon: 'ri:image-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
+        },
+        {
+          path: '/platform/ledger/config',
+          name: 'PlatformLedgerConfig',
+          component: '/platform/ledger/config',
+          meta: {
+            title: 'menus.platform.ledgerConfig',
+            icon: 'ri:settings-3-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
+        },
+        {
+          path: '/platform/ledger/invite',
+          name: 'PlatformLedgerInvite',
+          component: '/platform/ledger/invite',
+          meta: {
+            title: 'menus.platform.ledgerInvite',
+            icon: 'ri:share-forward-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
         }
       ]
     },

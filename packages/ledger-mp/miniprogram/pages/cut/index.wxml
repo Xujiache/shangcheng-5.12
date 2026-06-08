@@ -1,0 +1,72 @@
+<view class="cut">
+  <lz-header title="优化下料" subtitle="型材一维切割" />
+  <view class="lz-page lz-page--pad-bottom">
+    <view wx:if="{{checking}}" class="lz-empty">加载中…</view>
+
+    <!-- 闸门：试用结束需开通会员 -->
+    <view wx:elif="{{!allowed}}" class="lz-card lz-card--glow" style="text-align: center;">
+      <view style="font-size: 16px; font-weight: 800; margin-bottom: 8px;">优化下料需会员</view>
+      <view class="lz-muted" style="font-size: 13.5px; margin-bottom: 16px;">{{gateReason}}</view>
+      <button class="lz-btn lz-btn--primary lz-btn--lg" bindtap="toMember">开通会员</button>
+    </view>
+
+    <block wx:else>
+      <view wx:if="{{mode === 'trial'}}" class="lz-card" style="margin-bottom: var(--gap);">
+        <text class="lz-muted" style="font-size: 13px;">试用中 · 剩 {{trialDaysLeft}} 天，到期后需开通会员</text>
+      </view>
+
+      <!-- 参数 -->
+      <view class="lz-card lz-card--flush">
+        <view class="lz-row">
+          <view class="cut__lbl">整根料长 (mm)</view>
+          <input class="cut__in" type="number" value="{{stockLengthStr}}" bindinput="onStock" placeholder="如 6000" placeholder-class="ph" />
+        </view>
+        <view class="lz-row lz-row--last">
+          <view class="cut__lbl">锯缝 (mm)</view>
+          <input class="cut__in" type="number" value="{{kerfStr}}" bindinput="onKerf" placeholder="如 5" placeholder-class="ph" />
+        </view>
+      </view>
+
+      <!-- 切割清单 -->
+      <view class="lz-between" style="margin: 14px 6px 8px;">
+        <text class="cut__sec-t">切割清单（段长 × 数量）</text>
+        <view class="cut__add" bindtap="addPiece" hover-class="tap-active">
+          <lz-icon name="plus" size="15" color="accent" stroke="2.2" /><text>添加</text>
+        </view>
+      </view>
+      <view class="lz-card lz-card--flush">
+        <view wx:for="{{pieces}}" wx:key="idx" class="lz-row {{index === pieces.length - 1 ? 'lz-row--last' : ''}}">
+          <input class="cut__in cut__in--seg" type="number" value="{{item.lengthStr}}" data-idx="{{index}}" bindinput="onLen" placeholder="段长 mm" placeholder-class="ph" />
+          <text class="lz-faint" style="margin: 0 8px;">×</text>
+          <input class="cut__in cut__in--qty" type="number" value="{{item.qtyStr}}" data-idx="{{index}}" bindinput="onQty" placeholder="数量" placeholder-class="ph" />
+          <view class="lz-flex1"></view>
+          <view class="cut__del" data-idx="{{index}}" bindtap="delPiece" hover-class="tap-active">
+            <lz-icon name="close" size="14" color="loss" stroke="2.2" />
+          </view>
+        </view>
+      </view>
+
+      <button class="lz-btn lz-btn--primary lz-btn--lg" style="margin-top: 16px;" bindtap="compute">开始优化</button>
+
+      <!-- 结果 -->
+      <block wx:if="{{summary}}">
+        <view class="lz-card lz-card--glow" style="margin-top: var(--gap);">
+          <view class="cut__metrics">
+            <view class="cut__m"><view class="cut__m-v">{{summary.barCount}}</view><view class="cut__m-l">用料(根)</view></view>
+            <view class="cut__m"><view class="cut__m-v">{{summary.util}}%</view><view class="cut__m-l">利用率</view></view>
+            <view class="cut__m"><view class="cut__m-v">{{summary.totalWaste}}</view><view class="cut__m-l">损耗(mm)</view></view>
+            <view class="cut__m"><view class="cut__m-v">{{summary.totalPieces}}</view><view class="cut__m-l">总段数</view></view>
+          </view>
+          <view wx:if="{{oversizeText}}" style="font-size: 12.5px; margin-top: 10px; color: var(--loss);">{{oversizeText}}</view>
+        </view>
+        <view class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+          <view class="cut__sec-t" style="padding: 14px 14px 4px;">切割方案</view>
+          <view wx:for="{{barsView}}" wx:key="idx" class="cut__bar">
+            <view class="cut__bar-h">第 {{item.idx}} 根 · {{item.count}} 段 · 余料 {{item.waste}}mm</view>
+            <view class="cut__bar-c">{{item.cutsText}}</view>
+          </view>
+        </view>
+      </block>
+    </block>
+  </view>
+</view>

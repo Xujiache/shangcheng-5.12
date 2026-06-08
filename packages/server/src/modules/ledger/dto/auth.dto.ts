@@ -1,8 +1,16 @@
-import { IsOptional, IsString, MinLength } from 'class-validator'
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator'
 
 export class LedgerLoginDto {
   @IsString() phone!: string
   @IsString() @MinLength(6) password!: string
+}
+
+/** App 自助注册（#10）。inviteCode 选填——带上则邀请人获赠会员天数。 */
+export class LedgerRegisterDto {
+  @IsString() phone!: string
+  @IsString() @MinLength(6) password!: string
+  @IsOptional() @IsString() @MaxLength(20) nickname?: string
+  @IsOptional() @IsString() @MaxLength(32) inviteCode?: string
 }
 
 export class LedgerSmsCodeDto {

@@ -18,6 +18,37 @@ export const LEDGER_PLANS = [
   { key: 'year', label: '年卡', days: 365, price: '¥268' },
 ]
 
+/**
+ * ledger 域全局配置默认值（存 LedgerConfig 单行 key=value，后台 admin-pc 可调）。
+ * - allowSelfRegister: 是否开放 App 自助注册（#10）
+ * - inviteRewardDays:  邀请成功奖励邀请人的天数（#10）
+ * - cutTrialDays:      优化下料免费试用天数（#9）
+ * - cutRequireMembership: 试用期后是否需要会员才能用优化下料（#9）
+ */
+export const LEDGER_CONFIG_DEFAULTS = {
+  allowSelfRegister: true,
+  inviteRewardDays: 7,
+  cutTrialDays: 7,
+  cutRequireMembership: true,
+}
+export type LedgerConfigShape = typeof LEDGER_CONFIG_DEFAULTS
+
+/** 合并默认值 + 持久化覆盖，做类型收口（数值取整、布尔强制）。 */
+export function normalizeLedgerConfig(raw: any): LedgerConfigShape {
+  const r = raw && typeof raw === 'object' ? raw : {}
+  const num = (v: any, d: number, min: number, max: number) => {
+    const n = Math.round(Number(v))
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : d
+  }
+  const bool = (v: any, d: boolean) => (typeof v === 'boolean' ? v : d)
+  return {
+    allowSelfRegister: bool(r.allowSelfRegister, LEDGER_CONFIG_DEFAULTS.allowSelfRegister),
+    inviteRewardDays: num(r.inviteRewardDays, LEDGER_CONFIG_DEFAULTS.inviteRewardDays, 0, 3650),
+    cutTrialDays: num(r.cutTrialDays, LEDGER_CONFIG_DEFAULTS.cutTrialDays, 0, 3650),
+    cutRequireMembership: bool(r.cutRequireMembership, LEDGER_CONFIG_DEFAULTS.cutRequireMembership),
+  }
+}
+
 export interface MembershipStatus {
   /** 有效（未过期且已开通） */
   active: boolean

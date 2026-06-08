@@ -1,0 +1,36 @@
+<view class="reg">
+  <lz-header title="注册账号" />
+  <view class="lz-page">
+    <view class="reg__hero">
+      <view class="reg__name">注册门窗利账</view>
+      <view class="reg__sub">手机号注册，立即开始记账</view>
+    </view>
+
+    <view class="reg__form">
+      <view class="lz-field">
+        <lz-icon name="phone" size="19" color="faint" />
+        <input class="lz-field__input" value="{{phone}}" type="number" placeholder="请输入手机号" placeholder-class="ph" bindinput="onPhone" />
+      </view>
+      <view class="lz-field">
+        <lz-icon name="lock" size="19" color="faint" />
+        <input class="lz-field__input" value="{{pwd}}" password="{{!showPwd}}" placeholder="设置密码（至少 6 位）" placeholder-class="ph" bindinput="onPwd" />
+        <view hover-class="tap-active" bindtap="togglePwd" style="padding: 4px;">
+          <lz-icon name="{{showPwd ? 'eye' : 'eyeoff'}}" size="19" color="faint" />
+        </view>
+      </view>
+      <view class="lz-field">
+        <lz-icon name="lock" size="19" color="faint" />
+        <input class="lz-field__input" value="{{pwd2}}" password="{{!showPwd}}" placeholder="再次输入密码" placeholder-class="ph" bindinput="onPwd2" />
+      </view>
+      <view class="lz-field">
+        <lz-icon name="gift" size="19" color="faint" />
+        <input class="lz-field__input" value="{{inviteCode}}" placeholder="邀请码（选填，填写后邀请人得会员）" placeholder-class="ph" bindinput="onInvite" />
+      </view>
+
+      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canReg ? '' : 'lz-btn--disabled'}}" bindtap="doRegister">
+        {{loading ? '注册中…' : '注册并登录'}}
+      </button>
+      <view class="reg__foot">已有账号？<text class="reg__link" bindtap="toLogin">返回登录</text></view>
+    </view>
+  </view>
+</view>

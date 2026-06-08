@@ -3,11 +3,19 @@ import * as argon2 from 'argon2'
 import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
-import { LEDGER_PLAN_DAYS, computeGrantExpiry, deriveMembership } from './ledger.constants'
 import {
+  LEDGER_PLAN_DAYS,
+  computeGrantExpiry,
+  deriveMembership,
+  normalizeLedgerConfig,
+} from './ledger.constants'
+import {
+  CreateLedgerAdDto,
   CreateLedgerUserDto,
   GrantMembershipDto,
   PushNotificationDto,
+  UpdateLedgerAdDto,
+  UpdateLedgerConfigDto,
   UpdateLedgerFeedbackDto,
   UpdateLedgerUserDto,
 } from './dto/admin.dto'
@@ -243,5 +251,91 @@ export class LedgerAdminService {
       },
     })
     return { id: n.id, ok: true }
+  }
+
+  // ── 首页广告管理（#2）────────────────────────────────────
+  async listAds() {
+    return this.prisma.ledgerAd.findMany({ orderBy: [{ sort: 'asc' }, { createdAt: 'desc' }] })
+  }
+
+  async createAd(dto: CreateLedgerAdDto) {
+    return this.prisma.ledgerAd.create({
+      data: {
+        image: dto.image.trim(),
+        title: dto.title?.trim() || null,
+        link: dto.link?.trim() || null,
+        sort: dto.sort ?? 0,
+        enabled: dto.enabled ?? true,
+      },
+    })
+  }
+
+  async updateAd(id: string, dto: UpdateLedgerAdDto) {
+    const exist = await this.prisma.ledgerAd.findUnique({ where: { id } })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '广告不存在')
+    const data: any = {}
+    if (dto.image !== undefined) data.image = dto.image.trim()
+    if (dto.title !== undefined) data.title = dto.title.trim() || null
+    if (dto.link !== undefined) data.link = dto.link.trim() || null
+    if (dto.sort !== undefined) data.sort = dto.sort
+    if (dto.enabled !== undefined) data.enabled = dto.enabled
+    return this.prisma.ledgerAd.update({ where: { id }, data })
+  }
+
+  async deleteAd(id: string) {
+    const exist = await this.prisma.ledgerAd.findUnique({ where: { id }, select: { id: true } })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '广告不存在')
+    await this.prisma.ledgerAd.delete({ where: { id } })
+    return { ok: true }
+  }
+
+  // ── 全局功能配置（#9 优化下料 / #10 邀请）────────────────
+  async getConfig() {
+    const row = await this.prisma.ledgerConfig.findUnique({ where: { key: 'global' } })
+    return normalizeLedgerConfig(row?.value)
+  }
+
+  async updateConfig(dto: UpdateLedgerConfigDto) {
+    const current = await this.getConfig()
+    const merged = normalizeLedgerConfig({ ...current, ...dto })
+    await this.prisma.ledgerConfig.upsert({
+      where: { key: 'global' },
+      create: { key: 'global', value: merged as any },
+      update: { value: merged as any },
+    })
+    return merged
+  }
+
+  // ── 邀请统计（#10）────────────────────────────────────────
+  async inviteStats() {
+    const [totalUsers, invitedUsers] = await Promise.all([
+      this.prisma.ledgerUser.count(),
+      this.prisma.ledgerUser.count({ where: { invitedById: { not: null } } }),
+    ])
+    const grouped = await this.prisma.ledgerUser.groupBy({
+      by: ['invitedById'],
+      where: { invitedById: { not: null } },
+      _count: { _all: true },
+    })
+    const sorted = grouped
+      .map((g) => ({ inviterId: g.invitedById as string, count: g._count._all }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 100)
+    const inviters = await this.prisma.ledgerUser.findMany({
+      where: { id: { in: sorted.map((s) => s.inviterId) } },
+      select: { id: true, phone: true, nickname: true, inviteCode: true },
+    })
+    const map = new Map(inviters.map((u) => [u.id, u]))
+    const list = sorted.map((s) => {
+      const u = map.get(s.inviterId)
+      return {
+        inviterId: s.inviterId,
+        phone: u?.phone || '',
+        nickname: u?.nickname || '',
+        inviteCode: u?.inviteCode || '',
+        invitedCount: s.count,
+      }
+    })
+    return { totalUsers, invitedUsers, list }
   }
 }

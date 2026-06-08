@@ -13,6 +13,7 @@ Page({
     memberText: '未开通会员',
     memberSub: '点击开通，解锁全部功能',
     rows: [
+      { icon: 'gift', label: '邀请好友得会员', page: '/pages/invite/index' },
       { icon: 'shield', label: '账户安全', page: '/pages/account-security/index' },
       { icon: 'bell', label: '通知提醒', page: '/pages/notifications/index' },
       { icon: 'lock', label: '隐私设置', page: '/pages/privacy/index' },

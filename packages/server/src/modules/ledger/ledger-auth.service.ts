@@ -6,9 +6,10 @@ import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { SmsService } from '../sms/sms.service'
-import { deriveMembership } from './ledger.constants'
+import { computeGrantExpiry, deriveMembership, normalizeLedgerConfig } from './ledger.constants'
 import {
   LedgerLoginDto,
+  LedgerRegisterDto,
   LedgerSmsCodeDto,
   LedgerSmsLoginDto,
   LedgerChangePasswordDto,
@@ -18,6 +19,8 @@ import {
 } from './dto/auth.dto'
 
 const genJti = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 12)
+const genInviteCode = customAlphabet('ACDEFGHJKLMNPQRSTUVWXYZ23456789', 8)
+const maskPhone = (p: string) => (p.length === 11 ? p.slice(0, 3) + '****' + p.slice(7) : p)
 
 /**
  * 门窗利账 App 鉴权服务。
@@ -78,6 +81,129 @@ export class LedgerAuthService {
     const token = await this.signToken(user.id)
     const pub = this.publicUser(user)
     return { token, user: pub, membership: pub.membership }
+  }
+
+  private async readConfig() {
+    const row = await this.prisma.ledgerConfig.findUnique({ where: { key: 'global' } })
+    return normalizeLedgerConfig(row?.value)
+  }
+
+  /**
+   * App 自助注册（#10）。开关由 LedgerConfig.allowSelfRegister 控制。
+   * 带有效邀请码 → 邀请人获赠 inviteRewardDays 天会员（叠加 + 记录 + 通知）。
+   * 注册即登录，返回 token。
+   */
+  async register(dto: LedgerRegisterDto) {
+    const cfg = await this.readConfig()
+    if (!cfg.allowSelfRegister) {
+      throw new BizException(BizCode.FORBIDDEN, '当前未开放自助注册，请联系管理员开通')
+    }
+    const phone = String(dto.phone || '').trim()
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '手机号格式不正确')
+    }
+    if (String(dto.password || '').length < 6) {
+      throw new BizException(BizCode.INVALID_PARAMS, '密码至少 6 位')
+    }
+    const dup = await this.prisma.ledgerUser.findUnique({ where: { phone }, select: { id: true } })
+    if (dup) throw new BizException(BizCode.CONFLICT, '该手机号已注册，请直接登录')
+
+    // 解析邀请人（邀请码无效不阻断注册，仅不发奖励）
+    let inviterId: string | null = null
+    const code = String(dto.inviteCode || '')
+      .trim()
+      .toUpperCase()
+    if (code) {
+      const inviter = await this.prisma.ledgerUser.findUnique({
+        where: { inviteCode: code },
+        select: { id: true },
+      })
+      if (inviter) inviterId = inviter.id
+    }
+
+    const passwordHash = await argon2.hash(dto.password)
+    let user: any = null
+    for (let i = 0; i < 6; i++) {
+      try {
+        user = await this.prisma.ledgerUser.create({
+          data: {
+            phone,
+            passwordHash,
+            nickname: dto.nickname?.trim() || '门窗店主',
+            inviteCode: genInviteCode(),
+            invitedById: inviterId,
+            membership: { create: {} },
+          },
+          include: { membership: true },
+        })
+        break
+      } catch (e: any) {
+        if (e?.code === 'P2002') {
+          const target = String(e?.meta?.target || '')
+          if (target.includes('phone')) {
+            throw new BizException(BizCode.CONFLICT, '该手机号已注册，请直接登录')
+          }
+          if (i === 5) throw new BizException(BizCode.BUSINESS_ERROR, '注册失败，请重试')
+          continue // 邀请码碰撞，重试
+        }
+        throw e
+      }
+    }
+
+    // 邀请奖励
+    if (inviterId && cfg.inviteRewardDays > 0) {
+      await this.rewardInviter(inviterId, cfg.inviteRewardDays, phone)
+    }
+
+    await this.prisma.ledgerUser.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    })
+    const token = await this.signToken(user.id)
+    const pub = this.publicUser(user)
+    return { token, user: pub, membership: pub.membership }
+  }
+
+  /** 给邀请人叠加会员天数 + 写变更记录 + 应用内通知。 */
+  private async rewardInviter(inviterId: string, days: number, newUserPhone: string) {
+    const inviter = await this.prisma.ledgerUser.findUnique({
+      where: { id: inviterId },
+      include: { membership: true },
+    })
+    if (!inviter) return
+    let membership = inviter.membership
+    if (!membership) {
+      membership = await this.prisma.ledgerMembership.create({ data: { userId: inviterId } })
+    }
+    const before = membership.expiresAt
+    const after = computeGrantExpiry(before, days)
+    await this.prisma.ledgerMembership.update({
+      where: { id: membership.id },
+      data: { expiresAt: after, lastPlanKey: membership.lastPlanKey || 'invite' },
+    })
+    await this.prisma.ledgerMembershipLog.create({
+      data: {
+        membershipId: membership.id,
+        deltaDays: days,
+        planKey: 'invite',
+        beforeAt: before,
+        afterAt: after,
+        operatorId: null,
+        note: `邀请新用户 ${maskPhone(newUserPhone)} 注册奖励`,
+      },
+    })
+    await this.prisma.ledgerNotification
+      .create({
+        data: {
+          userId: inviterId,
+          type: 'member',
+          title: '邀请奖励到账',
+          body: `您邀请的好友 ${maskPhone(newUserPhone)} 已注册，赠送 ${days} 天会员，有效期至 ${after
+            .toISOString()
+            .slice(0, 10)}。`,
+        },
+      })
+      .catch(() => {})
   }
 
   /** 发送短信验证码（辅登录方式）。账号须已由后台创建。 */

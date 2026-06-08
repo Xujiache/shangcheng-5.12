@@ -7,6 +7,7 @@ import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-user.decorator'
 import {
   LedgerLoginDto,
+  LedgerRegisterDto,
   LedgerSmsCodeDto,
   LedgerSmsLoginDto,
   LedgerChangePasswordDto,
@@ -26,6 +27,13 @@ export class LedgerAuthController {
   @Post('login')
   login(@Body() dto: LedgerLoginDto) {
     return this.auth.login(dto)
+  }
+
+  // 自助注册（#10）：开关由后台配置控制，带邀请码则奖励邀请人
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('register')
+  register(@Body() dto: LedgerRegisterDto) {
+    return this.auth.register(dto)
   }
 
   @Throttle({ default: { limit: 3, ttl: 60_000 } })

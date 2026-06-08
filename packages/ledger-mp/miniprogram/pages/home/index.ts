@@ -1,4 +1,4 @@
-import { statsApi, notificationApi } from '../../api/index'
+import { statsApi, notificationApi, adApi } from '../../api/index'
 import { yuan } from '../../utils/format'
 
 const COLORMAP: Record<string, string> = {
@@ -40,6 +40,7 @@ Page({
     monthProfitText: '¥0',
     goalTargetText: '未设',
     goalPct: 0,
+    ads: [] as any[],
   },
 
   onShow() {
@@ -47,6 +48,7 @@ Page({
     if (tb) tb.setData({ selected: 0 })
     this.setData({ hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10 })
     this.load()
+    this.loadAds()
   },
   onPullDownRefresh() {
     this.load(() => wx.stopPullDownRefresh())
@@ -123,6 +125,25 @@ Page({
     } catch (e) {
       /* 静默：红点不是关键路径 */
     }
+  },
+
+  async loadAds() {
+    try {
+      const ads: any = await adApi.list()
+      this.setData({ ads: Array.isArray(ads) ? ads : [] })
+    } catch (e) {
+      /* 静默：广告非关键路径 */
+    }
+  },
+  onAd(e: any) {
+    const link = e.currentTarget.dataset.link
+    // 仅支持站内页面跳转（外链需 webview 业务域名，暂不处理）
+    if (link && typeof link === 'string' && link.indexOf('/pages/') === 0) {
+      wx.navigateTo({ url: link })
+    }
+  },
+  toCut() {
+    wx.navigateTo({ url: '/pages/cut/index' })
   },
 
   toCost() {

@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -44,4 +45,29 @@ export class PushNotificationDto {
 export class UpdateLedgerFeedbackDto {
   @IsOptional() @IsIn(['open', 'resolved']) status?: string
   @IsOptional() @IsString() @MaxLength(500) reply?: string
+}
+
+/** 首页广告 banner（#2）。image 为公网图片 URL。 */
+export class CreateLedgerAdDto {
+  @IsString() @IsNotEmpty({ message: '请填写图片地址' }) @MaxLength(500) image!: string
+  @IsOptional() @IsString() @MaxLength(40) title?: string
+  @IsOptional() @IsString() @MaxLength(500) link?: string
+  @IsOptional() @IsInt() @Min(0) @Max(9999) sort?: number
+  @IsOptional() @IsBoolean() enabled?: boolean
+}
+
+export class UpdateLedgerAdDto {
+  @IsOptional() @IsString() @MaxLength(500) image?: string
+  @IsOptional() @IsString() @MaxLength(40) title?: string
+  @IsOptional() @IsString() @MaxLength(500) link?: string
+  @IsOptional() @IsInt() @Min(0) @Max(9999) sort?: number
+  @IsOptional() @IsBoolean() enabled?: boolean
+}
+
+/** ledger 全局功能配置（优化下料试用 / 邀请奖励 / 自助注册开关）。 */
+export class UpdateLedgerConfigDto {
+  @IsOptional() @IsBoolean() allowSelfRegister?: boolean
+  @IsOptional() @IsInt() @Min(0) @Max(3650) inviteRewardDays?: number
+  @IsOptional() @IsInt() @Min(0) @Max(3650) cutTrialDays?: number
+  @IsOptional() @IsBoolean() cutRequireMembership?: boolean
 }

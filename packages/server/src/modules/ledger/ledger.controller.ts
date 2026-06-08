@@ -99,4 +99,22 @@ export class LedgerController {
   feedback(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerFeedbackDto) {
     return this.svc.createFeedback(u.id, dto)
   }
+
+  // ── 首页广告（#2）：取启用中的轮播 ──
+  @Get('ads')
+  ads() {
+    return this.svc.listAds()
+  }
+
+  // ── 优化下料闸门（#9）：试用 / 会员校验 ──
+  @Get('cut/access')
+  cutAccess(@CurrentLedgerUser() u: LedgerAuthUser) {
+    return this.svc.cutAccess(u.id)
+  }
+
+  // ── 邀请（#10）：邀请码 + 已邀人数 + 奖励天数 ──
+  @Get('invite')
+  invite(@CurrentLedgerUser() u: LedgerAuthUser) {
+    return this.svc.getInvite(u.id)
+  }
 }

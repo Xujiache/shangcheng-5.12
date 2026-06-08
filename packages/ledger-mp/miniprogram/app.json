@@ -1,8 +1,11 @@
 {
   "pages": [
     "pages/login/index",
+    "pages/register/index",
     "pages/membership/index",
     "pages/home/index",
+    "pages/cut/index",
+    "pages/invite/index",
     "pages/orders/index",
     "pages/reports/index",
     "pages/profile/index",

@@ -15,6 +15,13 @@
       <lz-segmented options="{{periods}}" value="{{period}}" bindchange="onPeriod" />
     </view>
 
+    <!-- 广告轮播（#2）-->
+    <swiper wx:if="{{ads.length}}" class="home__ads" indicator-dots="{{ads.length > 1}}" autoplay circular interval="4000" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
+      <swiper-item wx:for="{{ads}}" wx:key="id" data-link="{{item.link}}" bindtap="onAd">
+        <image class="home__ad-img" src="{{item.image}}" mode="aspectFill" />
+      </swiper-item>
+    </swiper>
+
     <!-- 核心利润 -->
     <view class="lz-card lz-card--glow home__hero">
       <view class="home__hero-label">{{periodLabel}}净利润</view>
@@ -51,6 +58,16 @@
         <view class="lz-track__fill" style="width: {{goalPct}}%;"></view>
       </view>
       <view class="home__goal-s">本月已实现利润 {{monthProfitText}}</view>
+    </view>
+
+    <!-- 实用工具：型材优化下料（#9）-->
+    <view class="lz-card home__tool" hover-class="tap-active" bindtap="toCut">
+      <view class="home__tool-icon"><lz-icon name="cube" size="20" color="accent" /></view>
+      <view class="lz-flex1">
+        <view class="home__tool-t">型材优化下料</view>
+        <view class="home__tool-s">一维切割排版 · 省料省成本</view>
+      </view>
+      <lz-icon name="chevron" size="16" color="faint" />
     </view>
 
     <!-- 成本占比 -->

@@ -1,0 +1,65 @@
+.inv__hero {
+  text-align: center;
+  padding: 24px 18px;
+}
+.inv__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(150deg, #3ba58c, #0e7c66);
+}
+.inv__title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+}
+.inv__desc {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.6;
+}
+.inv__hl {
+  color: var(--accent-text);
+  font-weight: 800;
+}
+.inv__code-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 18px auto 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(14, 124, 102, 0.08);
+  width: fit-content;
+}
+.inv__code {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--accent-text);
+}
+.inv__copy {
+  font-size: 13px;
+  color: #fff;
+  background: var(--accent);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+.inv__stat {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.inv__tip {
+  font-size: 12px;
+  color: var(--faint, #9aa39e);
+  text-align: center;
+  margin-top: 14px;
+  line-height: 1.6;
+}

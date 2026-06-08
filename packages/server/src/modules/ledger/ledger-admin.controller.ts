@@ -1,13 +1,27 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { LedgerAdminService } from './ledger-admin.service'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import {
+  CreateLedgerAdDto,
   CreateLedgerUserDto,
   GrantMembershipDto,
   PushNotificationDto,
+  UpdateLedgerAdDto,
+  UpdateLedgerConfigDto,
   UpdateLedgerFeedbackDto,
   UpdateLedgerUserDto,
 } from './dto/admin.dto'
@@ -69,5 +83,43 @@ export class LedgerAdminController {
   @Patch('feedback/:id')
   updateFeedback(@Param('id') id: string, @Body() dto: UpdateLedgerFeedbackDto) {
     return this.admin.updateFeedback(id, dto)
+  }
+
+  // ── 首页广告（#2）──
+  @Get('ads')
+  listAds() {
+    return this.admin.listAds()
+  }
+
+  @Post('ads')
+  createAd(@Body() dto: CreateLedgerAdDto) {
+    return this.admin.createAd(dto)
+  }
+
+  @Patch('ads/:id')
+  updateAd(@Param('id') id: string, @Body() dto: UpdateLedgerAdDto) {
+    return this.admin.updateAd(id, dto)
+  }
+
+  @Delete('ads/:id')
+  deleteAd(@Param('id') id: string) {
+    return this.admin.deleteAd(id)
+  }
+
+  // ── 功能配置（#9 优化下料 / #10 邀请）──
+  @Get('config')
+  getConfig() {
+    return this.admin.getConfig()
+  }
+
+  @Put('config')
+  updateConfig(@Body() dto: UpdateLedgerConfigDto) {
+    return this.admin.updateConfig(dto)
+  }
+
+  // ── 邀请统计（#10）──
+  @Get('invite-stats')
+  inviteStats() {
+    return this.admin.inviteStats()
   }
 }

@@ -119,6 +119,9 @@ Page({
     const key = e.currentTarget.dataset.key
     wx.navigateTo({ url: '/pages/doc/index?key=' + key })
   },
+  toRegister() {
+    wx.navigateTo({ url: '/pages/register/index' })
+  },
 
   async getCode() {
     if (this.data.phone.length !== 11) {

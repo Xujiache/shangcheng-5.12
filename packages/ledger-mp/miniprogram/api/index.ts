@@ -4,6 +4,8 @@ import { http } from '../utils/request'
 export const authApi = {
   login: (phone: string, password: string) =>
     http.post('/l/auth/login', { phone, password }, { auth: false }),
+  register: (data: { phone: string; password: string; nickname?: string; inviteCode?: string }) =>
+    http.post('/l/auth/register', data, { auth: false }),
   smsCode: (phone: string) => http.post('/l/auth/sms-code', { phone }, { auth: false }),
   smsLogin: (phone: string, code: string) =>
     http.post('/l/auth/sms-login', { phone, code }, { auth: false }),
@@ -74,4 +76,25 @@ export const settingApi = {
 export const feedbackApi = {
   submit: (data: { content: string; contact?: string; type?: string }) =>
     http.post('/l/feedback', data),
+}
+
+/** 首页广告（仅需登录） */
+export const adApi = {
+  list: () => http.get<Array<{ id: string; image: string; link: string; title: string }>>('/l/ads'),
+}
+
+/** 优化下料试用/会员闸门（仅需登录） */
+export const cutApi = {
+  access: () => http.get('/l/cut/access'),
+}
+
+/** 邀请（仅需登录） */
+export const inviteApi = {
+  get: () =>
+    http.get<{
+      inviteCode: string
+      invitedCount: number
+      rewardDays: number
+      allowSelfRegister: boolean
+    }>('/l/invite'),
 }

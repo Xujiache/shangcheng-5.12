@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
@@ -13,7 +14,13 @@ import {
   revenueOf,
   sanitizeCustomCosts,
   customCostsTotal,
+  normalizeLedgerConfig,
+  LedgerConfigShape,
 } from './ledger.constants'
+
+// 邀请码：去易混字符，8 位大写+数字
+const genInviteCode = customAlphabet('ACDEFGHJKLMNPQRSTUVWXYZ23456789', 8)
+const DAY_MS = 86_400_000
 import { CreateLedgerOrderDto, OrderQueryDto, UpdateLedgerOrderDto } from './dto/order.dto'
 import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer.dto'
 import {
@@ -79,6 +86,110 @@ export class LedgerService {
     if (typeof dto.avatar === 'string') data.avatar = dto.avatar
     const u = await this.prisma.ledgerUser.update({ where: { id: userId }, data })
     return { id: u.id, nickname: u.nickname, avatar: u.avatar }
+  }
+
+  // ── 全局配置（单行 key='global'）───────────────────────────
+  private async readConfig(): Promise<LedgerConfigShape> {
+    const row = await this.prisma.ledgerConfig.findUnique({ where: { key: 'global' } })
+    return normalizeLedgerConfig(row?.value)
+  }
+
+  // ── 首页广告（#2）：App 取启用中的轮播 ─────────────────────
+  async listAds() {
+    const rows = await this.prisma.ledgerAd.findMany({
+      where: { enabled: true },
+      orderBy: [{ sort: 'asc' }, { createdAt: 'desc' }],
+      take: 20,
+    })
+    return rows.map((a) => ({ id: a.id, image: a.image, link: a.link || '', title: a.title || '' }))
+  }
+
+  // ── 优化下料（#9）：试用 / 会员闸门 ────────────────────────
+  /**
+   * 返回是否可用优化下料。规则：
+   * - 配置不要求会员 → 永久可用
+   * - 会员有效 → 可用
+   * - 否则进入试用：首次使用时间起 cutTrialDays 天内可用，过期需开通会员
+   * 首次调用会惰性写入 cutFirstUsedAt 作为试用计时起点。
+   */
+  async cutAccess(userId: string) {
+    const cfg = await this.readConfig()
+    if (!cfg.cutRequireMembership) {
+      return { allowed: true, mode: 'free' as const, trialDays: cfg.cutTrialDays }
+    }
+    const u = await this.prisma.ledgerUser.findUnique({
+      where: { id: userId },
+      include: { membership: true },
+    })
+    if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+    const mem = deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey)
+    if (mem.active) {
+      return {
+        allowed: true,
+        mode: 'member' as const,
+        membership: mem,
+        trialDays: cfg.cutTrialDays,
+      }
+    }
+    let firstUsed = u.cutFirstUsedAt
+    if (!firstUsed) {
+      firstUsed = new Date()
+      await this.prisma.ledgerUser.update({
+        where: { id: userId },
+        data: { cutFirstUsedAt: firstUsed },
+      })
+    }
+    const trialEnds = new Date(firstUsed.getTime() + cfg.cutTrialDays * DAY_MS)
+    const now = new Date()
+    if (now.getTime() < trialEnds.getTime()) {
+      return {
+        allowed: true,
+        mode: 'trial' as const,
+        trialDays: cfg.cutTrialDays,
+        trialDaysLeft: Math.ceil((trialEnds.getTime() - now.getTime()) / DAY_MS),
+        trialEndsAt: trialEnds.toISOString(),
+      }
+    }
+    return {
+      allowed: false,
+      mode: 'expired' as const,
+      trialDays: cfg.cutTrialDays,
+      trialEndsAt: trialEnds.toISOString(),
+      reason: '优化下料试用已结束，开通会员后继续使用',
+    }
+  }
+
+  // ── 邀请（#10）：自助注册分享 ──────────────────────────────
+  /** 取（必要时生成）当前账号的邀请码。 */
+  async ensureInviteCode(userId: string): Promise<string> {
+    const u = await this.prisma.ledgerUser.findUnique({
+      where: { id: userId },
+      select: { inviteCode: true },
+    })
+    if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+    if (u.inviteCode) return u.inviteCode
+    for (let i = 0; i < 6; i++) {
+      const code = genInviteCode()
+      try {
+        await this.prisma.ledgerUser.update({ where: { id: userId }, data: { inviteCode: code } })
+        return code
+      } catch {
+        /* 唯一冲突，重试 */
+      }
+    }
+    throw new BizException(BizCode.BUSINESS_ERROR, '邀请码生成失败，请重试')
+  }
+
+  async getInvite(userId: string) {
+    const code = await this.ensureInviteCode(userId)
+    const cfg = await this.readConfig()
+    const invitedCount = await this.prisma.ledgerUser.count({ where: { invitedById: userId } })
+    return {
+      inviteCode: code,
+      invitedCount,
+      rewardDays: cfg.inviteRewardDays,
+      allowSelfRegister: cfg.allowSelfRegister,
+    }
   }
 
   // ── 订单 ──────────────────────────────────────────────────

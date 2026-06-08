@@ -1,0 +1,29 @@
+.reg__hero {
+  text-align: center;
+  padding: 6px 0 22px;
+}
+.reg__name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+.reg__sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.reg__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.reg__foot {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.reg__link {
+  color: var(--accent);
+  margin-left: 2px;
+}

@@ -256,3 +256,128 @@ export function updateLedgerFeedback(
     data: payload
   })
 }
+
+/* ============ 首页广告（#2）============ */
+
+/** 首页广告 banner */
+export interface LedgerAd {
+  id: string
+  title: string | null
+  image: string
+  link: string | null
+  sort: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** 广告列表（后台返回全部，含未启用） */
+export async function fetchLedgerAds(): Promise<LedgerAd[]> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/ledger/ads' })
+    return Array.isArray(resp) ? (resp as LedgerAd[]) : []
+  } catch {
+    return []
+  }
+}
+
+export function createLedgerAd(payload: {
+  image: string
+  title?: string
+  link?: string
+  sort?: number
+  enabled?: boolean
+}) {
+  return request.post<LedgerAd>({ url: '/api/v1/p/ledger/ads', data: payload })
+}
+
+export function updateLedgerAd(
+  id: string,
+  payload: Partial<{ image: string; title: string; link: string; sort: number; enabled: boolean }>
+) {
+  return request.request<LedgerAd>({
+    url: `/api/v1/p/ledger/ads/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    data: payload
+  })
+}
+
+export function deleteLedgerAd(id: string) {
+  return request.request<{ ok: boolean }>({
+    url: `/api/v1/p/ledger/ads/${encodeURIComponent(id)}`,
+    method: 'DELETE'
+  })
+}
+
+/* ============ 功能配置（#9 优化下料 / #10 邀请）============ */
+
+/** ledger 全局功能配置 */
+export interface LedgerConfig {
+  /** 是否开放 App 自助注册 */
+  allowSelfRegister: boolean
+  /** 邀请成功奖励邀请人的天数 */
+  inviteRewardDays: number
+  /** 优化下料免费试用天数 */
+  cutTrialDays: number
+  /** 试用期后是否需会员才能用优化下料 */
+  cutRequireMembership: boolean
+}
+
+const DEFAULT_LEDGER_CONFIG: LedgerConfig = {
+  allowSelfRegister: true,
+  inviteRewardDays: 7,
+  cutTrialDays: 7,
+  cutRequireMembership: true
+}
+
+export async function fetchLedgerConfig(): Promise<LedgerConfig> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/ledger/config' })
+    if (!resp || typeof resp !== 'object') return { ...DEFAULT_LEDGER_CONFIG }
+    return {
+      allowSelfRegister: resp.allowSelfRegister !== false,
+      inviteRewardDays: Number(resp.inviteRewardDays ?? DEFAULT_LEDGER_CONFIG.inviteRewardDays),
+      cutTrialDays: Number(resp.cutTrialDays ?? DEFAULT_LEDGER_CONFIG.cutTrialDays),
+      cutRequireMembership: resp.cutRequireMembership !== false
+    }
+  } catch {
+    return { ...DEFAULT_LEDGER_CONFIG }
+  }
+}
+
+export function updateLedgerConfig(payload: Partial<LedgerConfig>) {
+  return request.request<LedgerConfig>({
+    url: '/api/v1/p/ledger/config',
+    method: 'PUT',
+    data: payload
+  })
+}
+
+/* ============ 邀请统计（#10）============ */
+
+export interface LedgerInviteRow {
+  inviterId: string
+  phone: string
+  nickname: string
+  inviteCode: string
+  invitedCount: number
+}
+
+export interface LedgerInviteStats {
+  totalUsers: number
+  invitedUsers: number
+  list: LedgerInviteRow[]
+}
+
+export async function fetchLedgerInviteStats(): Promise<LedgerInviteStats> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/ledger/invite-stats' })
+    return {
+      totalUsers: Number(resp?.totalUsers || 0),
+      invitedUsers: Number(resp?.invitedUsers || 0),
+      list: Array.isArray(resp?.list) ? (resp.list as LedgerInviteRow[]) : []
+    }
+  } catch {
+    return { totalUsers: 0, invitedUsers: 0, list: [] }
+  }
+}
