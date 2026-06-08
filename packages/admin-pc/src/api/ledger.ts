@@ -309,6 +309,17 @@ export function deleteLedgerAd(id: string) {
   })
 }
 
+/**
+ * 上传广告图片到对象存储，返回公网 URL（复用通用 /api/v1/files/upload，走 MinIO）。
+ * FormData 由浏览器自动设边界，http 拦截器对 FormData 短路不会误塞 application/json。
+ */
+export async function uploadLedgerImage(file: File): Promise<{ url: string; key: string }> {
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('bizType', 'ledger-ad')
+  return request.post<{ url: string; key: string }>({ url: '/api/v1/files/upload', data: fd })
+}
+
 /* ============ 功能配置（#9 优化下料 / #10 邀请）============ */
 
 /** ledger 全局功能配置 */

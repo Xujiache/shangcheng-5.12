@@ -76,12 +76,25 @@
       destroy-on-close
     >
       <ElForm :model="form" label-position="top">
-        <ElFormItem label="图片地址（公网 URL）" required>
-          <ElInput v-model="form.image" placeholder="如 https://cdn.example.com/banner.png" />
+        <ElFormItem label="广告图片" required>
+          <ElUpload
+            :show-file-list="false"
+            accept="image/png,image/jpeg,image/gif,image/webp"
+            :before-upload="beforeImageUpload"
+            :http-request="doImageUpload"
+          >
+            <div class="pf-ad-uploader" v-loading="imageUploading">
+              <ElImage v-if="form.image" :src="form.image" fit="cover" class="pf-ad-uploader-img" />
+              <div v-else class="pf-ad-uploader-empty">
+                <ElIcon :size="26"><Plus /></ElIcon>
+                <span>点击上传图片</span>
+              </div>
+            </div>
+          </ElUpload>
+          <div v-if="form.image" class="pf-ad-uploader-tip">
+            已上传，点击图片可替换 · 建议尺寸 750×300，≤5MB
+          </div>
         </ElFormItem>
-        <div v-if="form.image" class="pf-ad-preview">
-          <ElImage :src="form.image" fit="cover" class="pf-ad-preview-img" />
-        </div>
         <ElFormItem label="标题（选填）">
           <ElInput
             v-model="form.title"
@@ -119,6 +132,7 @@
     createLedgerAd,
     updateLedgerAd,
     deleteLedgerAd,
+    uploadLedgerImage,
     type LedgerAd
   } from '@/api/ledger'
 
@@ -126,6 +140,37 @@
 
   const list = ref<LedgerAd[]>([])
   const loading = ref(false)
+
+  // ====== 图片上传（文件直传 MinIO，非粘贴 URL）======
+  const imageUploading = ref(false)
+  function beforeImageUpload(file: File) {
+    const okType = /^image\/(png|jpe?g|gif|webp)$/.test(file.type)
+    if (!okType) {
+      ElMessage.warning('请选择 png/jpg/gif/webp 图片')
+      return false
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      ElMessage.warning('图片大小不能超过 5MB')
+      return false
+    }
+    return true
+  }
+  async function doImageUpload(opt: { file: File }) {
+    imageUploading.value = true
+    try {
+      const r = await uploadLedgerImage(opt.file)
+      if (r?.url) {
+        form.image = r.url
+        ElMessage.success('图片已上传')
+      } else {
+        ElMessage.error('上传失败：未返回地址')
+      }
+    } catch (e: any) {
+      ElMessage.error(e?.message || '图片上传失败，请重试')
+    } finally {
+      imageUploading.value = false
+    }
+  }
 
   async function load() {
     loading.value = true
@@ -269,15 +314,42 @@
     border-radius: 6px;
   }
 
-  .pf-ad-preview {
-    margin: -4px 0 12px;
+  .pf-ad-uploader {
+    width: 320px;
+    height: 130px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px dashed var(--el-border-color, #d9d9d9);
+    border-radius: 8px;
+    transition: border-color 0.2s;
   }
 
-  .pf-ad-preview-img {
-    width: 100%;
+  .pf-ad-uploader:hover {
+    border-color: var(--el-color-primary, #409eff);
+  }
+
+  .pf-ad-uploader-img {
+    display: block;
+    width: 320px;
     height: 130px;
-    background: #f3f4f6;
-    border-radius: 8px;
+  }
+
+  .pf-ad-uploader-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
+  .pf-ad-uploader-tip {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #9ca3af;
   }
 
   .pf-form-row {

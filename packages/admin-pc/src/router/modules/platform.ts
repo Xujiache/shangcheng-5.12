@@ -227,7 +227,9 @@ export const platformRoutes: AppRouteRecord = {
         icon: 'ri:wallet-3-line',
         ...ROLE_PLATFORM
       },
+      // 按使用频次与业务语义排序：运营(账号/会员/邀请) → 营销(广告) → 配置 → 支持(反馈)
       children: [
+        // —— 运营 ——
         {
           path: '/platform/ledger/accounts',
           name: 'PlatformLedgerAccounts',
@@ -251,16 +253,17 @@ export const platformRoutes: AppRouteRecord = {
           }
         },
         {
-          path: '/platform/ledger/feedback',
-          name: 'PlatformLedgerFeedback',
-          component: '/platform/ledger/feedback',
+          path: '/platform/ledger/invite',
+          name: 'PlatformLedgerInvite',
+          component: '/platform/ledger/invite',
           meta: {
-            title: 'menus.platform.ledgerFeedback',
-            icon: 'ri:feedback-line',
+            title: 'menus.platform.ledgerInvite',
+            icon: 'ri:share-forward-line',
             keepAlive: true,
             ...ROLE_PLATFORM
           }
         },
+        // —— 营销 ——
         {
           path: '/platform/ledger/ads',
           name: 'PlatformLedgerAds',
@@ -272,6 +275,7 @@ export const platformRoutes: AppRouteRecord = {
             ...ROLE_PLATFORM
           }
         },
+        // —— 配置 ——
         {
           path: '/platform/ledger/config',
           name: 'PlatformLedgerConfig',
@@ -283,13 +287,14 @@ export const platformRoutes: AppRouteRecord = {
             ...ROLE_PLATFORM
           }
         },
+        // —— 支持 ——
         {
-          path: '/platform/ledger/invite',
-          name: 'PlatformLedgerInvite',
-          component: '/platform/ledger/invite',
+          path: '/platform/ledger/feedback',
+          name: 'PlatformLedgerFeedback',
+          component: '/platform/ledger/feedback',
           meta: {
-            title: 'menus.platform.ledgerInvite',
-            icon: 'ri:share-forward-line',
+            title: 'menus.platform.ledgerFeedback',
+            icon: 'ri:feedback-line',
             keepAlive: true,
             ...ROLE_PLATFORM
           }

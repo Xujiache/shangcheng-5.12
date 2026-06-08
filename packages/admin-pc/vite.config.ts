@@ -65,6 +65,8 @@ export default ({ mode }: { mode: string }) => {
       target: 'es2015',
       outDir: 'dist',
       chunkSizeWarningLimit: 2000,
+      // 跳过 gzip 体积统计，加快生产构建（压缩本身仍由 viteCompression 完成）
+      reportCompressedSize: false,
       minify: 'terser',
       terserOptions: {
         compress: {
@@ -72,6 +74,27 @@ export default ({ mode }: { mode: string }) => {
           drop_console: true,
           // 生产环境去除 debugger
           drop_debugger: true
+        }
+      },
+      rollupOptions: {
+        output: {
+          // 大型三方库拆为独立 chunk：提升浏览器缓存命中（业务代码改动不再使整包失效）
+          // 与并行加载。echarts/xlsx/xgplayer 仅被懒加载路由引用，对应 chunk 仍按需加载。
+          manualChunks(id: string) {
+            if (!id.includes('node_modules')) return
+            if (id.includes('element-plus') || id.includes('@element-plus')) return 'element-plus'
+            if (id.includes('echarts') || id.includes('zrender')) return 'echarts'
+            if (id.includes('xlsx')) return 'xlsx'
+            if (id.includes('xgplayer')) return 'xgplayer'
+            if (
+              id.includes('/@vue/') ||
+              id.includes('/vue-router/') ||
+              id.includes('/pinia/') ||
+              id.includes('/@vueuse/')
+            )
+              return 'vue-vendor'
+            return 'vendor'
+          }
         }
       },
       dynamicImportVarsOptions: {
