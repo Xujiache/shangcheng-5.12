@@ -20,28 +20,21 @@
           <view class="oe__val">{{date}}</view>
         </view>
       </picker>
-      <!-- 金额区：仅左「订单编辑」按钮可点 → 整页录入；右侧总价/额外收入纯展示 -->
+      <!-- 金额区：上排 总价/额外收入 并排展示（纯展示）+ 下方整宽「编辑订单金额」按钮 -->
       <view class="oe__amtarea">
-        <view class="oe__editbtn" bindtap="toAmount" hover-class="oe__editbtn--tap">
-          <view class="oe__editbtn-ic"><lz-icon name="pencil" size="22" color="white" /></view>
-          <text class="oe__editbtn-t">订单编辑</text>
-          <text class="oe__editbtn-s">填写金额</text>
+        <view class="oe__amttiles">
+          <view class="oe__amttile oe__amttile--main">
+            <text class="oe__amttile-l">订单总价</text>
+            <view class="oe__amttile-v"><text class="oe__amttile-cur">¥</text>{{total || 0}}</view>
+          </view>
+          <view class="oe__amttile">
+            <text class="oe__amttile-l">额外收入</text>
+            <view class="oe__amttile-v"><text class="oe__amttile-cur">¥</text>{{extraIncome || 0}}</view>
+          </view>
         </view>
-        <view class="oe__amtcol">
-          <view class="oe__amtbox">
-            <text class="oe__amtbox-lbl">订单总价</text>
-            <view class="oe__amtbox-r">
-              <text class="oe__cur oe__cur--accent">¥</text>
-              <text class="oe__amtbox-v oe__amtbox-v--accent">{{total || 0}}</text>
-            </view>
-          </view>
-          <view class="oe__amtbox">
-            <text class="oe__amtbox-lbl">额外收入</text>
-            <view class="oe__amtbox-r">
-              <text class="oe__cur">¥</text>
-              <text class="oe__amtbox-v">{{extraIncome || 0}}</text>
-            </view>
-          </view>
+        <view class="oe__editbtn" bindtap="toAmount" hover-class="oe__editbtn--tap">
+          <lz-icon name="pencil" size="17" color="white" />
+          <text class="oe__editbtn-t">编辑订单金额</text>
         </view>
       </view>
     </view>
