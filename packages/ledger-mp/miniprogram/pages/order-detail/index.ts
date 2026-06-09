@@ -101,6 +101,7 @@ Page({
   },
   toCustomer() {
     const o = this.data.o
-    if (o && o.customerId) wx.navigateTo({ url: '/pages/customer-detail/index?id=' + o.customerId })
+    // 点击客户直接进编辑客户信息页（返回后 onShow 会重新拉取订单，名字自动刷新）
+    if (o && o.customerId) wx.navigateTo({ url: '/pages/customer-edit/index?id=' + o.customerId })
   },
 })

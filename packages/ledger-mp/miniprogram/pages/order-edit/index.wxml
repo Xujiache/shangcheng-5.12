@@ -6,9 +6,10 @@
   <view class="lz-page" style="padding-bottom: 150px;">
     <!-- 基本 -->
     <view class="lz-card lz-card--flush">
-      <view class="lz-row" bindtap="openPicker" hover-class="tap-active">
+      <view class="lz-row" bindtap="onCustomerTap" hover-class="tap-active">
         <view class="oe__lbl">客户</view>
         <view class="lz-flex1"></view>
+        <view wx:if="{{customerName}}" class="oe__change" catchtap="openPicker">更换</view>
         <view class="oe__pick {{customerName ? '' : 'oe__pick--ph'}}">{{customerName || '选择或新增客户'}}</view>
         <lz-icon name="chevron" size="16" color="faint" />
       </view>

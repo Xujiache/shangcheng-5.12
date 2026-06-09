@@ -218,6 +218,17 @@ Page({
     )
   },
 
+  // 点击客户行：已选客户 → 编辑其信息（fromOrder=1 让保存后名字同步回订单）；未选 → 打开选择器
+  onCustomerTap() {
+    if (this.data.customerId) {
+      wx.navigateTo({
+        url: '/pages/customer-edit/index?id=' + this.data.customerId + '&fromOrder=1',
+      })
+    } else {
+      this.openPicker()
+    }
+  },
+
   async openPicker() {
     this.setData({ showPicker: true, pickerQ: '' })
     if (!this.data._allCustomers.length) {
