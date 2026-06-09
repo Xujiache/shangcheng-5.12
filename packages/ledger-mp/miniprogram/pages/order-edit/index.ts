@@ -64,6 +64,33 @@ Page({
         this.refresh(),
       )
     }
+    // 从「订单金额」整页录入页返回，回填总价 + 额外收入
+    const a = wx.getStorageSync('ledger_pending_amount')
+    if (a) {
+      wx.removeStorageSync('ledger_pending_amount')
+      const total = Math.max(0, Math.round(Number(a.total) || 0))
+      const extraIncome = Math.max(0, Math.round(Number(a.extraIncome) || 0))
+      this.setData(
+        {
+          total,
+          totalStr: total ? String(total) : '',
+          extraIncome,
+          extraIncomeStr: extraIncome ? String(extraIncome) : '',
+        },
+        () => this.refresh(),
+      )
+    }
+  },
+
+  // 点击总价 / 额外收入 → 整页金额录入（大输入框），返回后由 onShow 回填
+  toAmount() {
+    wx.navigateTo({
+      url:
+        '/pages/order-amount/index?total=' +
+        (this.data.total || 0) +
+        '&extra=' +
+        (this.data.extraIncome || 0),
+    })
   },
 
   async loadOrder() {

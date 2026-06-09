@@ -1,0 +1,34 @@
+.oa__card {
+  margin-bottom: var(--gap);
+  padding: 20px 18px;
+}
+.oa__lbl {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.oa__inwrap {
+  display: flex;
+  align-items: baseline;
+}
+.oa__cur {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-right: 8px;
+}
+.oa__in {
+  flex: 1;
+  height: 48px;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text);
+}
+.oa__in--accent {
+  color: var(--accent-text);
+}
+.oa__hint {
+  margin: 6px 6px 0;
+  font-size: 13px;
+  color: var(--muted);
+}

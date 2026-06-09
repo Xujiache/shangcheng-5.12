@@ -20,21 +20,23 @@
           <view class="oe__val">{{date}}</view>
         </view>
       </picker>
-      <view class="lz-row">
+      <view class="lz-row" bindtap="toAmount" hover-class="tap-active">
         <view class="oe__lbl">订单总价</view>
         <view class="lz-flex1"></view>
         <view class="oe__amt">
           <text class="oe__cur">¥</text>
-          <input class="oe__amt-in oe__amt-in--accent" type="digit" value="{{totalStr}}" placeholder="0" placeholder-class="ph" bindinput="onTotal" />
+          <text class="oe__amt-v oe__amt-v--accent {{total ? '' : 'oe__amt-v--ph'}}">{{total || 0}}</text>
         </view>
+        <lz-icon name="chevron" size="16" color="faint" />
       </view>
-      <view class="lz-row lz-row--last">
+      <view class="lz-row lz-row--last" bindtap="toAmount" hover-class="tap-active">
         <view class="oe__lbl">额外收入</view>
         <view class="lz-flex1"></view>
         <view class="oe__amt">
           <text class="oe__cur">¥</text>
-          <input class="oe__amt-in" type="digit" value="{{extraIncomeStr}}" placeholder="0" placeholder-class="ph" bindinput="onExtraIncome" />
+          <text class="oe__amt-v {{extraIncome ? '' : 'oe__amt-v--ph'}}">{{extraIncome || 0}}</text>
         </view>
+        <lz-icon name="chevron" size="16" color="faint" />
       </view>
     </view>
 

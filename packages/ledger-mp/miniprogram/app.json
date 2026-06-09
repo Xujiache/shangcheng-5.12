@@ -11,6 +11,7 @@
     "pages/profile/index",
     "pages/order-detail/index",
     "pages/order-edit/index",
+    "pages/order-amount/index",
     "pages/customers/index",
     "pages/customer-detail/index",
     "pages/customer-edit/index",
