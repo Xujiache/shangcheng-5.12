@@ -178,6 +178,74 @@ export function customCostsTotal(raw: unknown): number {
   return sanitizeCustomCosts(raw).reduce((s, e) => s + e.amount, 0)
 }
 
+// ── 门窗报价明细（订单编辑器）：产品项 + 尺寸 → 面积 → 小计 → 金额 → 总价 ──
+export interface OrderSize {
+  w: number // 宽 mm
+  h: number // 高 mm
+  note: string
+}
+export interface OrderItem {
+  name: string
+  note: string
+  baseArea: number // 起算面积 ㎡（单条尺寸面积不足时按此计）
+  unitPrice: number // 单价 元
+  qty: number // 无尺寸时的数量/面积（手填）
+  sizes: OrderSize[]
+}
+export function sanitizeOrderItems(raw: unknown): OrderItem[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .slice(0, 100)
+    .map((it: any) => {
+      const sizes: OrderSize[] = Array.isArray(it?.sizes)
+        ? it.sizes
+            .slice(0, 100)
+            .map((s: any) => ({
+              w: Math.max(0, Math.round(Number(s?.w) || 0)),
+              h: Math.max(0, Math.round(Number(s?.h) || 0)),
+              note: String(s?.note ?? '')
+                .trim()
+                .slice(0, 30),
+            }))
+            .filter((s: OrderSize) => s.w > 0 && s.h > 0)
+        : []
+      return {
+        name: String(it?.name ?? '')
+          .trim()
+          .slice(0, 40),
+        note: String(it?.note ?? '')
+          .trim()
+          .slice(0, 30),
+        baseArea: Math.max(0, Number(it?.baseArea) || 0),
+        unitPrice: Math.max(0, Math.round(Number(it?.unitPrice) || 0)),
+        qty: Math.max(0, Number(it?.qty) || 0),
+        sizes,
+      }
+    })
+    .filter((it) => it.name)
+}
+function sizeArea(s: OrderSize, baseArea: number): number {
+  return Math.max((s.w * s.h) / 1_000_000, baseArea || 0)
+}
+/** 计费量：有尺寸=各尺寸面积之和(按起算兜底)；无尺寸=手填数量 */
+export function itemBillingQty(it: OrderItem): number {
+  if (it.sizes && it.sizes.length) {
+    return it.sizes.reduce((sum, s) => sum + sizeArea(s, it.baseArea), 0)
+  }
+  return it.qty || 0
+}
+export function itemSubtotal(it: OrderItem): number {
+  return Math.round(itemBillingQty(it) * (it.unitPrice || 0))
+}
+/** 金额 = Σ各项小计 */
+export function orderItemsAmount(items: unknown): number {
+  return sanitizeOrderItems(items).reduce((s, it) => s + itemSubtotal(it), 0)
+}
+/** 总价 = 金额 − 优惠（≥0） */
+export function orderTotalFromItems(items: unknown, discount: number): number {
+  return Math.max(0, orderItemsAmount(items) - Math.max(0, Math.round(discount || 0)))
+}
+
 /** 固定 5 类成本之和 */
 export function fixedCost(o: {
   costProfile: number

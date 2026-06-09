@@ -20,7 +20,8 @@ export class CreateLedgerOrderDto {
   @IsString() @MaxLength(40) customerName!: string
   /** ISO 日期字符串（YYYY-MM-DD 或完整 ISO） */
   @IsDateString() date!: string
-  @IsInt() @Min(0) @Max(MONEY_MAX) total!: number
+  /** 有明细(items)时由服务端按 金额−优惠 计算；无明细时必填 */
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) total?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) extraIncome?: number
 
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costProfile?: number
@@ -31,6 +32,9 @@ export class CreateLedgerOrderDto {
 
   @IsOptional() @IsArray() extras?: { type: string; amount: number }[]
   @IsOptional() @IsArray() customCosts?: { name: string; amount: number }[]
+  @IsOptional() @IsArray() items?: any[]
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) discount?: number
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) deposit?: number
   @IsOptional() @IsString() @MaxLength(200) note?: string
 }
 
@@ -47,6 +51,9 @@ export class UpdateLedgerOrderDto {
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costScreen?: number
   @IsOptional() @IsArray() extras?: { type: string; amount: number }[]
   @IsOptional() @IsArray() customCosts?: { name: string; amount: number }[]
+  @IsOptional() @IsArray() items?: any[]
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) discount?: number
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) deposit?: number
   @IsOptional() @IsString() @MaxLength(200) note?: string
 }
 

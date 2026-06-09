@@ -33,6 +33,9 @@ Page({
     removedCats: [] as any[],
     extras: [] as any[],
     customCosts: [] as any[],
+    items: [] as any[],
+    discount: 0,
+    deposit: 0,
     note: '',
     profitText: '¥0',
     profitNeg: false,
@@ -64,33 +67,38 @@ Page({
         this.refresh(),
       )
     }
-    // 从「订单金额」整页录入页返回，回填总价 + 额外收入
-    const a = wx.getStorageSync('ledger_pending_amount')
-    if (a) {
-      wx.removeStorageSync('ledger_pending_amount')
-      const total = Math.max(0, Math.round(Number(a.total) || 0))
-      const extraIncome = Math.max(0, Math.round(Number(a.extraIncome) || 0))
+    // 从「订单编辑」明细页返回，回填 明细/总价/优惠/定金/额外收入/备注
+    const m = wx.getStorageSync('ledger_order_money_out')
+    if (m) {
+      wx.removeStorageSync('ledger_order_money_out')
+      const total = Math.max(0, Math.round(Number(m.total) || 0))
+      const extraIncome = Math.max(0, Math.round(Number(m.extraIncome) || 0))
       this.setData(
         {
+          items: m.items || [],
+          discount: Math.max(0, Math.round(Number(m.discount) || 0)),
+          deposit: Math.max(0, Math.round(Number(m.deposit) || 0)),
           total,
           totalStr: total ? String(total) : '',
           extraIncome,
           extraIncomeStr: extraIncome ? String(extraIncome) : '',
+          note: m.note !== undefined ? m.note : this.data.note,
         },
         () => this.refresh(),
       )
     }
   },
 
-  // 点击总价 / 额外收入 → 整页金额录入（大输入框），返回后由 onShow 回填
+  // 点击「订单编辑」→ 门窗报价明细编辑器；带入当前明细/金额，返回由 onShow 回填
   toAmount() {
-    wx.navigateTo({
-      url:
-        '/pages/order-amount/index?total=' +
-        (this.data.total || 0) +
-        '&extra=' +
-        (this.data.extraIncome || 0),
+    wx.setStorageSync('ledger_order_money_in', {
+      items: this.data.items,
+      discount: this.data.discount,
+      deposit: this.data.deposit,
+      extraIncome: this.data.extraIncome,
+      note: this.data.note,
     })
+    wx.navigateTo({ url: '/pages/order-items/index' })
   },
 
   async loadOrder() {
@@ -127,6 +135,9 @@ Page({
             amount: c.amount,
             amountStr: c.amount ? String(c.amount) : '',
           })),
+          items: o.items || [],
+          discount: o.discount || 0,
+          deposit: o.deposit || 0,
           note: o.note || '',
         },
         () => this.refresh(),
@@ -321,6 +332,9 @@ Page({
       activeCats,
       extras,
       customCosts,
+      items,
+      discount,
+      deposit,
       note,
     } = this.data
     const payloadCosts: any = {
@@ -342,6 +356,9 @@ Page({
       ...payloadCosts,
       extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
       customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),
+      items,
+      discount,
+      deposit,
       note,
     }
     try {

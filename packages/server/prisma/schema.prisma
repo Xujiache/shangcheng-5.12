@@ -1002,6 +1002,9 @@ model LedgerOrder {
   costScreen   Int             @default(0) // 纱窗
   extras       Json            @default("[]") // [{type,amount}] 其他开销
   customCosts  Json            @default("[]") // [{name,amount}] 自定义成本项（#5）
+  items        Json            @default("[]") // 门窗报价明细 [{name,note,baseArea,unitPrice,qty,sizes:[{w,h,note}]}]
+  discount     Int             @default(0) // 优惠（元）
+  deposit      Int             @default(0) // 定金（元）
   note         String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
