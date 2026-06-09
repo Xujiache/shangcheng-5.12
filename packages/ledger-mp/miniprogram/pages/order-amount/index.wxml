@@ -1,15 +1,15 @@
 <view class="oa">
-  <lz-header title="订单金额" subtitle="总价 + 额外收入" />
-  <view class="lz-page">
-    <view class="lz-card oa__card">
+  <lz-header title="编辑订单金额" />
+  <view class="oa__body">
+    <view class="oa__field">
       <view class="oa__lbl">订单总价</view>
       <view class="oa__inwrap">
         <text class="oa__cur">¥</text>
-        <input class="oa__in oa__in--accent" type="digit" focus value="{{totalStr}}" placeholder="0" placeholder-class="ph" bindinput="onTotal" />
+        <input class="oa__in oa__in--main" type="digit" focus value="{{totalStr}}" placeholder="0" placeholder-class="ph" bindinput="onTotal" />
       </view>
     </view>
 
-    <view class="lz-card oa__card">
+    <view class="oa__field">
       <view class="oa__lbl">额外收入</view>
       <view class="oa__inwrap">
         <text class="oa__cur">¥</text>
@@ -20,7 +20,7 @@
     <view class="oa__hint">营收合计 {{revenueText}}（订单总价 + 额外收入）</view>
   </view>
 
-  <view class="lz-footer">
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="confirm">确定</button>
+  <view class="oa__bar">
+    <button class="oa__confirm" bindtap="confirm">确定</button>
   </view>
 </view>
