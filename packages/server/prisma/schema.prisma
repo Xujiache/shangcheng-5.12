@@ -908,6 +908,29 @@ model AppRelease {
   @@index([platform])
 }
 
+// 订单分享正式表（替代 SystemConfig key=`order_share:<shareCode>` 兜底）
+//
+// 之前分享数据塞在 SystemConfig 里，列表查询要按前缀扫且被 take:500 截断；
+// 改为独立表后 shareCode 直接 findUnique（O(1)），列表/撤销按 orderId/merchantId
+// 走索引，不再有截断问题。shareCode = 外部生成的 12 位 nanoid，直接作主键。
+model OrderShare {
+  shareCode     String    @id
+  orderId       String
+  merchantId    String
+  visibleFields String[]  @default([])
+  expiresAt     DateTime?
+  intro         String?
+  viewCount     Int       @default(0)
+  revoked       Boolean   @default(false)
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([merchantId])
+  @@index([revoked])
+}
+
 // ============================================================
 // 门窗利账（ledger · 记账小程序新端）
 // 独立域，与商城（User/Product/Order）零耦合：账号由 admin-pc 后台创建，

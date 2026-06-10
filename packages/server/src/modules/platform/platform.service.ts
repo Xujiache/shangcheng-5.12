@@ -4,7 +4,6 @@ import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
 import { MerchantService } from '../merchant/merchant.service'
-import type { OrderShareConfig } from '../merchant/order-share.service'
 import { UpdateAdminDto } from './dto/update-admin.dto'
 import { WxPayService } from '../payment/wxpay.service'
 import * as argon2 from 'argon2'
@@ -1501,55 +1500,45 @@ export class PlatformService {
   /**
    * 订单分享列表
    *
-   * 业务背景：商家通过 OrderShareService 创建的订单分享存在 SystemConfig
-   * key=`order_share:<shareCode>` 兜底存储，没有正式表。这里给平台后台
-   * 提供一个统一查询入口，方便运营回溯「谁在分享什么订单 / 浏览数多少」。
+   * 业务背景：商家通过 OrderShareService 创建的订单分享存在正式表 OrderShare。
+   * 这里给平台后台提供一个统一查询入口，方便运营回溯「谁在分享什么订单 /
+   * 浏览数多少」。
    *
    * 实现策略：
-   *   1. 直接读 SystemConfig（不注入 OrderShareService，避免 platform → merchant
-   *      模块循环依赖；merchantModule 已 forwardRef 引入）
-   *   2. 内存按 merchantId / revoked / 时间范围过滤
-   *   3. 分页 + 拼商家名 / 订单号 / 分享 URL 摘要
-   *
-   * 注意：take=500 是硬上限保护，避免单次扫全表压垮内存。
-   *      若未来分享数 > 1w，应按 OrderShareService 注释把存储迁到正式表。
+   *   1. 直接查 OrderShare 表（只是一张表，不存在模块循环依赖，无需注入
+   *      OrderShareService）
+   *   2. where 走索引按 merchantId / revoked / createdAt 时间范围过滤
+   *   3. 真分页（skip / take）+ count + 拼商家名 / 订单号 / 分享 URL 摘要
    */
   async orderShares(query: any = {}) {
-    const { page, pageSize } = parsePage(query)
+    const { skip, take, page, pageSize } = parsePage(query)
 
-    const rows = await this.prisma.systemConfig.findMany({
-      where: { key: { startsWith: 'order_share:' } },
-      orderBy: { updatedAt: 'desc' },
-      take: 500,
-    })
-
-    let revokedFilter: boolean | null = null
-    if (query.revoked === true || query.revoked === 'true') revokedFilter = true
-    else if (query.revoked === false || query.revoked === 'false') revokedFilter = false
-
-    const startAt = query.startDate ? new Date(String(query.startDate)).getTime() : null
-    const endAt = query.endDate ? new Date(String(query.endDate)).getTime() : null
+    const where: any = {}
+    if (query.merchantId) where.merchantId = query.merchantId
+    if (query.revoked === true || query.revoked === 'true') where.revoked = true
+    else if (query.revoked === false || query.revoked === 'false') where.revoked = false
+    const startAt = query.startDate ? new Date(String(query.startDate)) : null
+    const endAt = query.endDate ? new Date(String(query.endDate)) : null
+    if (startAt || endAt) {
+      where.createdAt = {}
+      if (startAt) where.createdAt.gte = startAt
+      if (endAt) where.createdAt.lte = endAt
+    }
     const now = Date.now()
 
-    const matched: { shareCode: string; cfg: OrderShareConfig }[] = []
-    for (const r of rows) {
-      const cfg = r.value as unknown as OrderShareConfig
-      if (!cfg) continue
-      if (query.merchantId && cfg.merchantId !== query.merchantId) continue
-      if (revokedFilter !== null && !!cfg.revoked !== revokedFilter) continue
-      const createdTs = cfg.createdAt ? new Date(cfg.createdAt).getTime() : 0
-      if (startAt !== null && createdTs < startAt) continue
-      if (endAt !== null && createdTs > endAt) continue
-      matched.push({ shareCode: r.key.replace('order_share:', ''), cfg })
-    }
-
-    const total = matched.length
-    const start = (page - 1) * pageSize
-    const slice = matched.slice(start, start + pageSize)
+    const [rows, total] = await Promise.all([
+      this.prisma.orderShare.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.orderShare.count({ where }),
+    ])
 
     // 批量取商家名 / 订单号摘要，避免 N+1
-    const merchantIds = Array.from(new Set(slice.map((m) => m.cfg.merchantId).filter(Boolean)))
-    const orderIds = Array.from(new Set(slice.map((m) => m.cfg.orderId).filter(Boolean)))
+    const merchantIds = Array.from(new Set(rows.map((r) => r.merchantId).filter(Boolean)))
+    const orderIds = Array.from(new Set(rows.map((r) => r.orderId).filter(Boolean)))
     const [merchants, orders] = await Promise.all([
       merchantIds.length
         ? this.prisma.merchant.findMany({
@@ -1575,20 +1564,20 @@ export class PlatformService {
       'https://ewsn.top'
     ).replace(/\/$/, '')
 
-    const list = slice.map(({ shareCode, cfg }) => ({
-      shareCode,
-      orderId: cfg.orderId,
-      orderNo: orderMap.get(cfg.orderId) || null,
-      merchantId: cfg.merchantId,
-      merchantName: merchantMap.get(cfg.merchantId) || '未知商家',
-      visibleFields: cfg.visibleFields || [],
-      expiresAt: cfg.expiresAt,
-      intro: cfg.intro || '',
-      viewCount: cfg.viewCount || 0,
-      revoked: !!cfg.revoked,
-      expired: !!(cfg.expiresAt && new Date(cfg.expiresAt).getTime() < now),
-      createdAt: cfg.createdAt,
-      shareUrl: `${shareBase}/share?code=${shareCode}`,
+    const list = rows.map((r) => ({
+      shareCode: r.shareCode,
+      orderId: r.orderId,
+      orderNo: orderMap.get(r.orderId) || null,
+      merchantId: r.merchantId,
+      merchantName: merchantMap.get(r.merchantId) || '未知商家',
+      visibleFields: r.visibleFields || [],
+      expiresAt: r.expiresAt ? r.expiresAt.toISOString() : null,
+      intro: r.intro || '',
+      viewCount: r.viewCount || 0,
+      revoked: !!r.revoked,
+      expired: !!(r.expiresAt && r.expiresAt.getTime() < now),
+      createdAt: r.createdAt.toISOString(),
+      shareUrl: `${shareBase}/share?code=${r.shareCode}`,
     }))
 
     return buildPage(list, total, page, pageSize)
@@ -1603,76 +1592,69 @@ export class PlatformService {
    *   - 近 7 日新增分享趋势（按 createdAt 日期分桶，本地日期，含今天）
    *   - TOP 10 商户（按分享数 + 浏览数综合排序）
    *
-   * 实现注意：分享数据较稀疏（不像订单）, take=500 兜底足够当前规模，
-   *           未来如需要更准确数据应迁到正式 OrderShare 表 + GroupBy 聚合。
+   * 实现策略：直接走 OrderShare 表的 count / aggregate / groupBy 聚合；
+   *   7 日趋势只取最近 7 天的 createdAt + viewCount 行在内存分桶（有界）。
    */
   async orderSharesStats() {
-    const rows = await this.prisma.systemConfig.findMany({
-      where: { key: { startsWith: 'order_share:' } },
-      orderBy: { updatedAt: 'desc' },
-      take: 500,
-    })
-
     const now = Date.now()
-    const configs: OrderShareConfig[] = rows
-      .map((r) => r.value as unknown as OrderShareConfig)
-      .filter((c) => !!c)
+    const day0 = new Date()
+    day0.setHours(0, 0, 0, 0)
+    const trendSince = new Date(day0.getTime() - 6 * 86400_000)
 
-    const totalShares = configs.length
-    let totalViews = 0
-    let active = 0
-    let revoked = 0
-    let expired = 0
-    for (const c of configs) {
-      totalViews += Number(c.viewCount || 0)
-      const isExpired = !!(c.expiresAt && new Date(c.expiresAt).getTime() < now)
-      if (c.revoked) revoked++
-      else if (isExpired) expired++
-      else active++
-    }
+    const [totalShares, viewsAgg, revoked, expired, trendRows, merchantGroups] = await Promise.all([
+      this.prisma.orderShare.count(),
+      this.prisma.orderShare.aggregate({ _sum: { viewCount: true } }),
+      this.prisma.orderShare.count({ where: { revoked: true } }),
+      // 已过期：未撤销 + expiresAt 已过
+      this.prisma.orderShare.count({
+        where: { revoked: false, expiresAt: { lt: new Date(now) } },
+      }),
+      // 近 7 日（含今天）新增分享，仅取 createdAt 分桶用，行数有界
+      this.prisma.orderShare.findMany({
+        where: { createdAt: { gte: trendSince } },
+        select: { createdAt: true },
+      }),
+      // TopN 商户：按 merchantId 分组聚合分享数 + 浏览数
+      this.prisma.orderShare.groupBy({
+        by: ['merchantId'],
+        _count: { _all: true },
+        _sum: { viewCount: true },
+        orderBy: [{ _count: { merchantId: 'desc' } }, { _sum: { viewCount: 'desc' } }],
+        take: 10,
+      }),
+    ])
+
+    const totalViews = Number(viewsAgg._sum.viewCount || 0)
+    // 活跃 = 总数 - 已撤销 - 已过期（已撤销与已过期互斥：expired 限定 revoked=false）
+    const active = totalShares - revoked - expired
 
     // 近 7 日趋势（含今天，按本地日期 yyyy-MM-dd 标签）
     const trend: { date: string; count: number }[] = []
-    const day0 = new Date()
-    day0.setHours(0, 0, 0, 0)
     for (let i = 6; i >= 0; i--) {
       const d = new Date(day0.getTime() - i * 86400_000)
       const next = new Date(d.getTime() + 86400_000)
       const label = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const count = configs.filter((c) => {
-        if (!c.createdAt) return false
-        const ts = new Date(c.createdAt).getTime()
+      const count = trendRows.filter((r) => {
+        const ts = r.createdAt.getTime()
         return ts >= d.getTime() && ts < next.getTime()
       }).length
       trend.push({ date: label, count })
     }
 
-    // TopN 商户
-    const byMerchant = new Map<string, { shareCount: number; viewCount: number }>()
-    for (const c of configs) {
-      if (!c.merchantId) continue
-      const cur = byMerchant.get(c.merchantId) || { shareCount: 0, viewCount: 0 }
-      cur.shareCount += 1
-      cur.viewCount += Number(c.viewCount || 0)
-      byMerchant.set(c.merchantId, cur)
-    }
-    const sortedMerchantIds = Array.from(byMerchant.entries())
-      // 综合排序：先按分享数，再按浏览数
-      .sort((a, b) => b[1].shareCount - a[1].shareCount || b[1].viewCount - a[1].viewCount)
-      .slice(0, 10)
-
-    const merchantInfo = sortedMerchantIds.length
+    // TopN 商户名拼接
+    const merchantIds = merchantGroups.map((g) => g.merchantId).filter(Boolean)
+    const merchantInfo = merchantIds.length
       ? await this.prisma.merchant.findMany({
-          where: { id: { in: sortedMerchantIds.map(([id]) => id) } },
+          where: { id: { in: merchantIds } },
           select: { id: true, name: true },
         })
       : []
     const nameMap = new Map(merchantInfo.map((m) => [m.id, m.name]))
-    const topMerchants = sortedMerchantIds.map(([id, agg]) => ({
-      merchantId: id,
-      name: nameMap.get(id) || '未知商家',
-      shareCount: agg.shareCount,
-      viewCount: agg.viewCount,
+    const topMerchants = merchantGroups.map((g) => ({
+      merchantId: g.merchantId,
+      name: nameMap.get(g.merchantId) || '未知商家',
+      shareCount: g._count._all,
+      viewCount: Number(g._sum.viewCount || 0),
     }))
 
     return {

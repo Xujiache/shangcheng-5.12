@@ -13,25 +13,12 @@
  *   - extra    附加信息(备注 / 物流 / 量房 / 合同等定制字段)
  *
  * 存储策略：
- *   不新建 Prisma 表,用 SystemConfig key=`order_share:<shareCode>` 兜底。
- *   shareCode 用 nanoid 12 位(避免暴力枚举),value 含 orderId + visibleFields +
- *   expiresAt + intro + viewCount + createdAt。
- *   公开访问通过 shareCode 直接 findUnique,O(1) 查询无索引压力。
+ *   正式表 OrderShare,shareCode 用 nanoid 12 位作主键(避免暴力枚举),
+ *   公开访问通过 shareCode 直接 findUnique,O(1) 查询。
+ *   列表 / 撤销按 orderId / merchantId 走索引,不再有截断问题。
  *
- *   后续若上量(>10w 分享/月),建议迁移到正式表 OrderShare:
- *     model OrderShare {
- *       shareCode  String @id
- *       orderId    String
- *       merchantId String
- *       visibleFields Json
- *       expiresAt  DateTime?
- *       intro      String?
- *       viewCount  Int @default(0)
- *       revoked    Boolean @default(false)
- *       createdAt  DateTime @default(now())
- *       @@index([orderId])
- *       @@index([merchantId])
- *     }
+ *   注意表存储 expiresAt / createdAt 为 DateTime,对外契约统一转 ISO string,
+ *   visibleFields 存为 String[],对外按 ShareField[] 使用。
  */
 import { Injectable } from '@nestjs/common'
 import { customAlphabet } from 'nanoid'
@@ -103,26 +90,24 @@ export class OrderShareService {
 
     // 4. 过期时间
     const days = Math.max(0, Math.min(365, Number(params.expiresInDays) || 0))
-    const expiresAt = days > 0 ? new Date(Date.now() + days * 86400_000).toISOString() : null
+    const expiresAtDate = days > 0 ? new Date(Date.now() + days * 86400_000) : null
+    const expiresAt = expiresAtDate ? expiresAtDate.toISOString() : null
 
     // 5. 撤销该订单已有的分享(同一订单同时只有一份生效)
     await this.revokePreviousByOrder(params.orderId)
 
     // 6. 生成新分享
     const shareCode = genShareCode()
-    const config: OrderShareConfig = {
-      orderId: params.orderId,
-      merchantId: params.merchantId,
-      visibleFields,
-      expiresAt,
-      intro: intro || undefined,
-      viewCount: 0,
-      revoked: false,
-      createdAt: new Date().toISOString(),
-      createdBy: params.callerSub,
-    }
-    await this.prisma.systemConfig.create({
-      data: { key: `order_share:${shareCode}`, value: config as any },
+    await this.prisma.orderShare.create({
+      data: {
+        shareCode,
+        orderId: params.orderId,
+        merchantId: params.merchantId,
+        visibleFields,
+        expiresAt: expiresAtDate,
+        intro: intro || null,
+        createdBy: params.callerSub,
+      },
     })
 
     return {
@@ -144,19 +129,12 @@ export class OrderShareService {
     shareCode: string
     config: OrderShareConfig
   } | null> {
-    // 反查只能 startsWith 扫,但同一商家分享数有限,可接受
-    const rows = await this.prisma.systemConfig.findMany({
-      where: { key: { startsWith: 'order_share:' } },
+    const row = await this.prisma.orderShare.findFirst({
+      where: { orderId, merchantId, revoked: false },
       orderBy: { updatedAt: 'desc' },
-      take: 200,
     })
-    for (const r of rows) {
-      const cfg = r.value as unknown as OrderShareConfig
-      if (cfg?.orderId === orderId && cfg?.merchantId === merchantId && !cfg.revoked) {
-        return { shareCode: r.key.replace('order_share:', ''), config: cfg }
-      }
-    }
-    return null
+    if (!row) return null
+    return { shareCode: row.shareCode, config: this.toConfig(row) }
   }
 
   /**
@@ -165,10 +143,9 @@ export class OrderShareService {
   async revokeByOrder(orderId: string, merchantId: string) {
     const current = await this.getCurrentByOrder(orderId, merchantId)
     if (!current) return { ok: true, revoked: false }
-    const updated: OrderShareConfig = { ...current.config, revoked: true }
-    await this.prisma.systemConfig.update({
-      where: { key: `order_share:${current.shareCode}` },
-      data: { value: updated as any },
+    await this.prisma.orderShare.update({
+      where: { shareCode: current.shareCode },
+      data: { revoked: true },
     })
     return { ok: true, revoked: true, shareCode: current.shareCode }
   }
@@ -178,18 +155,37 @@ export class OrderShareService {
    * 避免一个订单有多个并存的 shareCode 互相干扰
    */
   private async revokePreviousByOrder(orderId: string) {
-    const rows = await this.prisma.systemConfig.findMany({
-      where: { key: { startsWith: 'order_share:' } },
-      take: 200,
+    await this.prisma.orderShare.updateMany({
+      where: { orderId, revoked: false },
+      data: { revoked: true },
     })
-    for (const r of rows) {
-      const cfg = r.value as unknown as OrderShareConfig
-      if (cfg?.orderId === orderId && !cfg.revoked) {
-        const updated: OrderShareConfig = { ...cfg, revoked: true }
-        await this.prisma.systemConfig
-          .update({ where: { key: r.key }, data: { value: updated as any } })
-          .catch(() => {})
-      }
+  }
+
+  /**
+   * 把 OrderShare 行映射成对外的 OrderShareConfig 契约形状
+   * （DateTime → ISO string，String[] → ShareField[]）
+   */
+  private toConfig(row: {
+    orderId: string
+    merchantId: string
+    visibleFields: string[]
+    expiresAt: Date | null
+    intro: string | null
+    viewCount: number
+    revoked: boolean
+    createdAt: Date
+    createdBy: string | null
+  }): OrderShareConfig {
+    return {
+      orderId: row.orderId,
+      merchantId: row.merchantId,
+      visibleFields: (row.visibleFields || []) as ShareField[],
+      expiresAt: row.expiresAt ? row.expiresAt.toISOString() : null,
+      intro: row.intro || undefined,
+      viewCount: row.viewCount || 0,
+      revoked: !!row.revoked,
+      createdAt: row.createdAt.toISOString(),
+      createdBy: row.createdBy || undefined,
     }
   }
 
@@ -208,11 +204,11 @@ export class OrderShareService {
     if (!shareCode || shareCode.length < 6) {
       throw new BizException(BizCode.NOT_FOUND, '分享不存在')
     }
-    const row = await this.prisma.systemConfig.findUnique({
-      where: { key: `order_share:${shareCode}` },
+    const row = await this.prisma.orderShare.findUnique({
+      where: { shareCode },
     })
     if (!row) throw new BizException(BizCode.NOT_FOUND, '分享不存在或已撤销')
-    const cfg = row.value as unknown as OrderShareConfig
+    const cfg = this.toConfig(row)
     if (cfg.revoked) throw new BizException(BizCode.FORBIDDEN, '该分享已被商家撤销')
     if (cfg.expiresAt && new Date(cfg.expiresAt).getTime() < Date.now()) {
       throw new BizException(BizCode.FORBIDDEN, '该分享链接已过期')
@@ -296,25 +292,18 @@ export class OrderShareService {
     }
 
     // 异步累加浏览数,不阻塞响应
-    this.incViewCount(shareCode, cfg).catch(() => {})
+    this.prisma.orderShare
+      .update({ where: { shareCode }, data: { viewCount: { increment: 1 } } })
+      .catch(() => {})
 
     return result
-  }
-
-  private async incViewCount(shareCode: string, cfg: OrderShareConfig) {
-    const updated: OrderShareConfig = { ...cfg, viewCount: (cfg.viewCount || 0) + 1 }
-    await this.prisma.systemConfig.update({
-      where: { key: `order_share:${shareCode}` },
-      data: { value: updated as any },
-    })
   }
 
   /**
    * 商家维度分享历史（merchant-app「我的分享」/ admin-pc 兜底用）
    *
-   * 查询策略与 platform 维度一致：SystemConfig key 前缀扫描 → 内存按 merchantId 过滤 →
-   * 内存排序 + 分页。同一商家分享数有限（通常 < 千级），扫 500 行可接受；如果未来
-   * 出现单商家 > 500 分享的极端场景，应按 schema 注释迁移到 OrderShare 正式表。
+   * 直接走 OrderShare 表索引（merchantId / revoked），真分页（skip / take）+ count，
+   * 不再扫描内存切片。
    *
    * 过滤维度：
    *   - revoked: true/false（不传不过滤）
@@ -332,33 +321,26 @@ export class OrderShareService {
       orderId?: string
     } = {},
   ) {
-    const { page, pageSize } = parsePage(query)
-    const rows = await this.prisma.systemConfig.findMany({
-      where: { key: { startsWith: 'order_share:' } },
-      orderBy: { updatedAt: 'desc' },
-      take: 500,
-    })
+    const { skip, take, page, pageSize } = parsePage(query)
 
     // 解析 revoked 过滤值：query string 'true'/'false' 也兼容
-    let revokedFilter: boolean | null = null
-    if (query.revoked === true || query.revoked === 'true') revokedFilter = true
-    else if (query.revoked === false || query.revoked === 'false') revokedFilter = false
+    const where: any = { merchantId }
+    if (query.revoked === true || query.revoked === 'true') where.revoked = true
+    else if (query.revoked === false || query.revoked === 'false') where.revoked = false
+    if (query.orderId) where.orderId = query.orderId
 
-    const matched: { shareCode: string; cfg: OrderShareConfig }[] = []
-    for (const r of rows) {
-      const cfg = r.value as unknown as OrderShareConfig
-      if (!cfg || cfg.merchantId !== merchantId) continue
-      if (revokedFilter !== null && !!cfg.revoked !== revokedFilter) continue
-      if (query.orderId && cfg.orderId !== query.orderId) continue
-      matched.push({ shareCode: r.key.replace('order_share:', ''), cfg })
-    }
-
-    const total = matched.length
-    const start = (page - 1) * pageSize
-    const slice = matched.slice(start, start + pageSize)
+    const [rows, total] = await Promise.all([
+      this.prisma.orderShare.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.orderShare.count({ where }),
+    ])
 
     // 批量取订单号摘要
-    const orderIds = Array.from(new Set(slice.map((m) => m.cfg.orderId)))
+    const orderIds = Array.from(new Set(rows.map((r) => r.orderId)))
     const orderMap = new Map<string, string>()
     if (orderIds.length) {
       const orders = await this.prisma.order.findMany({
@@ -369,18 +351,18 @@ export class OrderShareService {
     }
 
     const now = Date.now()
-    const list = slice.map(({ shareCode, cfg }) => ({
-      shareCode,
-      orderId: cfg.orderId,
-      orderNo: orderMap.get(cfg.orderId) || null,
-      merchantId: cfg.merchantId,
-      visibleFields: cfg.visibleFields || [],
-      expiresAt: cfg.expiresAt,
-      intro: cfg.intro || '',
-      viewCount: cfg.viewCount || 0,
-      revoked: !!cfg.revoked,
-      expired: !!(cfg.expiresAt && new Date(cfg.expiresAt).getTime() < now),
-      createdAt: cfg.createdAt,
+    const list = rows.map((r) => ({
+      shareCode: r.shareCode,
+      orderId: r.orderId,
+      orderNo: orderMap.get(r.orderId) || null,
+      merchantId: r.merchantId,
+      visibleFields: r.visibleFields || [],
+      expiresAt: r.expiresAt ? r.expiresAt.toISOString() : null,
+      intro: r.intro || '',
+      viewCount: r.viewCount || 0,
+      revoked: !!r.revoked,
+      expired: !!(r.expiresAt && r.expiresAt.getTime() < now),
+      createdAt: r.createdAt.toISOString(),
     }))
 
     return buildPage(list, total, page, pageSize)
