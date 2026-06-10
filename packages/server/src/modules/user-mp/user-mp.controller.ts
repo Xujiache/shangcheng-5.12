@@ -5,6 +5,10 @@ import { UserMpService } from './user-mp.service'
 import { OrderShareService } from '../merchant/order-share.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { Public } from '../../common/decorators/public.decorator'
+import { BindPhoneDto, BindWechatDto } from './dto/bind.dto'
+import { SubmitBookingDto } from './dto/booking.dto'
+import { RefundOrderDto } from './dto/refund.dto'
+import { AddressDto } from './dto/address.dto'
 
 @ApiTags('用户端 user-mp')
 @Controller('u')
@@ -85,14 +89,7 @@ export class UserMpController {
   @Post('orders/:id/refund') refundOrder(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
-    @Body() dto: {
-      reason: string
-      amount?: number
-      orderItemId?: string
-      description?: string
-      evidence?: string[]
-      type?: 'refund_only' | 'refund_with_return'
-    },
+    @Body() dto: RefundOrderDto,
   ) {
     return this.svc.refundOrder(u.sub, id, dto)
   }
@@ -114,13 +111,13 @@ export class UserMpController {
   @Get('addresses/default') defaultAddress(@CurrentUser() u: AuthUser) {
     return this.svc.defaultAddress(u.sub)
   }
-  @Post('addresses') addAddress(@CurrentUser() u: AuthUser, @Body() dto: any) {
+  @Post('addresses') addAddress(@CurrentUser() u: AuthUser, @Body() dto: AddressDto) {
     return this.svc.createAddress(u.sub, dto)
   }
   @Put('addresses/:id') updateAddress(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: AddressDto,
   ) {
     return this.svc.updateAddress(u.sub, id, dto)
   }
@@ -173,7 +170,7 @@ export class UserMpController {
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('booking')
-  booking(@CurrentUser() u: AuthUser, @Body() dto: any) {
+  booking(@CurrentUser() u: AuthUser, @Body() dto: SubmitBookingDto) {
     return this.svc.submitBooking(u?.sub || null, dto)
   }
 
@@ -235,13 +232,10 @@ export class UserMpController {
   }
 
   // 账号绑定
-  @Post('bind-phone') bindPhone(
-    @CurrentUser() u: AuthUser,
-    @Body() dto: { phone: string; code: string },
-  ) {
+  @Post('bind-phone') bindPhone(@CurrentUser() u: AuthUser, @Body() dto: BindPhoneDto) {
     return this.svc.bindPhone(u.sub, dto)
   }
-  @Post('bind-wechat') bindWechat(@CurrentUser() u: AuthUser, @Body() dto: { code: string }) {
+  @Post('bind-wechat') bindWechat(@CurrentUser() u: AuthUser, @Body() dto: BindWechatDto) {
     return this.svc.bindWechat(u.sub, dto)
   }
 

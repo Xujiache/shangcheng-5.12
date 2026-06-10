@@ -15,6 +15,8 @@ import { PlatformService } from './platform.service'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { UpdateAdminDto } from './dto/update-admin.dto'
+import { CreateAdminDto } from './dto/create-admin.dto'
+import { CreateAdSlotDto, UpdateAdSlotDto } from './dto/ad-slot.dto'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 
 @ApiTags('平台端')
@@ -99,10 +101,10 @@ export class PlatformController {
   @Get('ads/slots') adSlots() {
     return this.svc.adSlots()
   }
-  @Post('ads/slots') createAdSlot(@Body() dto: any) {
+  @Post('ads/slots') createAdSlot(@Body() dto: CreateAdSlotDto) {
     return this.svc.createAdSlot(dto)
   }
-  @Put('ads/slots/:id') updateAdSlot(@Param('id') id: string, @Body() dto: any) {
+  @Put('ads/slots/:id') updateAdSlot(@Param('id') id: string, @Body() dto: UpdateAdSlotDto) {
     return this.svc.updateAdSlot(id, dto)
   }
   @Delete('ads/slots/:id') deleteAdSlot(@Param('id') id: string) {
@@ -254,7 +256,7 @@ export class PlatformController {
   @Get('admins') admins(@Query() q: any) {
     return this.svc.admins(q)
   }
-  @Post('admins') createAdmin(@Body() dto: any, @CurrentUser() u: AuthUser) {
+  @Post('admins') createAdmin(@Body() dto: CreateAdminDto, @CurrentUser() u: AuthUser) {
     return this.svc.createAdmin(dto, u?.role)
   }
   @Put('admins/:id') updateAdmin(

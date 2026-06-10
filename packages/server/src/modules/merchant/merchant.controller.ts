@@ -16,6 +16,9 @@ import { OrderShareService, ShareField } from './order-share.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
+import { CreateWithdrawDto } from './dto/create-withdraw.dto'
+import { CreateCouponDto, UpdateCouponDto } from './dto/coupon.dto'
+import { SaveCommissionRulesDto } from './dto/save-commission-rules.dto'
 
 @ApiTags('商家端')
 @UseGuards(RolesGuard)
@@ -291,7 +294,7 @@ export class MerchantController {
   }
   @Post('commission/rules') async saveCommissionRules(
     @CurrentUser() u: AuthUser,
-    @Body() dto: any,
+    @Body() dto: SaveCommissionRulesDto,
   ) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.saveCommissionRules(mid, dto)
@@ -302,7 +305,7 @@ export class MerchantController {
   }
   @Put('commission-rule') async saveCommissionRuleAlias(
     @CurrentUser() u: AuthUser,
-    @Body() dto: any,
+    @Body() dto: SaveCommissionRulesDto,
   ) {
     return this.saveCommissionRules(u, dto)
   }
@@ -341,7 +344,10 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.listWithdraws(mid, q)
   }
-  @Post('withdraws') async createWithdraw(@CurrentUser() u: AuthUser, @Body() dto: any) {
+  @Post('withdraws') async createWithdraw(
+    @CurrentUser() u: AuthUser,
+    @Body() dto: CreateWithdrawDto,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.createWithdraw(u.sub, mid, dto)
   }
@@ -451,14 +457,17 @@ export class MerchantController {
     return this.svc.marketingCoupons(mid, q)
   }
   // 优惠券 CRUD（admin-pc 营销中心 + merchant-app marketing 共用）
-  @Post('marketing/coupons') async createCoupon(@CurrentUser() u: AuthUser, @Body() dto: any) {
+  @Post('marketing/coupons') async createCoupon(
+    @CurrentUser() u: AuthUser,
+    @Body() dto: CreateCouponDto,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.createCoupon(mid, dto)
   }
   @Put('marketing/coupons/:id') async updateCouponApi(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: UpdateCouponDto,
   ) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.updateCoupon(mid, id, dto)
