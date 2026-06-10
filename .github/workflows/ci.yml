@@ -63,6 +63,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Unit tests (server)
-        # ⚠️ 暂用 || true 软失败：server/test/ 当前为 describe.skip 模板，
-        # 等真正补全可跑用例后，把这里改成 `pnpm test:server`（去掉 || true）
-        run: pnpm test:server || true
+        # 硬门禁：server/test/ 已补齐 13 套真实用例（234 个），覆盖资金安全核心
+        # （微信回调幂等/验签/refresh rotation/价格分级计价/优惠券重算/会员闸门/
+        # WS 鉴权）。测试失败必须红灯阻断，不再 || true 软放过。
+        run: pnpm test:server
