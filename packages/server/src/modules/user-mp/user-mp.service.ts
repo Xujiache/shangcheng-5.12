@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
@@ -774,7 +775,14 @@ export class UserMpService {
   async refundOrder(
     userId: string,
     id: string,
-    dto: { reason: string; amount?: number; orderItemId?: string; description?: string; evidence?: string[]; type?: 'refund_only' | 'refund_with_return' },
+    dto: {
+      reason: string
+      amount?: number
+      orderItemId?: string
+      description?: string
+      evidence?: string[]
+      type?: 'refund_only' | 'refund_with_return'
+    },
   ) {
     const reason = String(dto?.reason || '').trim()
     if (!reason) throw new BizException(BizCode.INVALID_PARAMS, '请填写售后原因')
@@ -805,9 +813,7 @@ export class UserMpService {
 
     const payAmount = Number(o.payAmount)
     const applyAmount =
-      typeof dto?.amount === 'number' && !Number.isNaN(dto.amount)
-        ? Number(dto.amount)
-        : payAmount
+      typeof dto?.amount === 'number' && !Number.isNaN(dto.amount) ? Number(dto.amount) : payAmount
     if (!(applyAmount > 0)) {
       throw new BizException(BizCode.INVALID_PARAMS, '退款金额必须大于 0')
     }
@@ -1119,6 +1125,9 @@ export class UserMpService {
   async claimCoupon(userId: string, couponId: string) {
     if (!userId) throw new BizException(BizCode.UNAUTHORIZED, '未登录')
     const now = new Date()
+
+    // 不会竞态的廉价前置校验（券存在 / active / 有效期内 / 全局库存）留在事务外，
+    // 这些字段并不依赖"本用户已领数量"，提前拦截可避免无谓开事务。
     const c = await this.prisma.coupon.findUnique({ where: { id: couponId } })
     if (!c) throw new BizException(BizCode.NOT_FOUND, '优惠券不存在')
     if (c.status !== 'active') {
@@ -1130,35 +1139,71 @@ export class UserMpService {
     if (c.stock > 0 && c.received >= c.stock) {
       throw new BizException(BizCode.BUSINESS_ERROR, '优惠券已被领完')
     }
+
     const cfgKey = `user_coupon:${userId}:${couponId}`
-    const exist = await this.prisma.systemConfig.findUnique({ where: { key: cfgKey } })
-    const claimed = (exist?.value as any)?.count || 0
     const limit = c.perUserLimit > 0 ? c.perUserLimit : 1
-    if (claimed >= limit) {
-      throw new BizException(BizCode.BUSINESS_ERROR, `每人最多领 ${limit} 张,已达上限`)
+
+    // 并发安全核心：把「读本用户已领数量 → 校验 perUserLimit → 写 received+1 / count+1」
+    // 全部放进同一个 Serializable 交互式事务。两次并发领取会被串行化，
+    // 第二次能观察到第一次的写入，从而正确触发"已达上限"。
+    // 旧实现把 count 读在事务外，两个请求都读到 count=0 → 双双通过 → 超领。
+    const claimOnce = () =>
+      this.prisma.$transaction(
+        async (tx) => {
+          // 生成本张券的唯一编号(后续核销时用),格式 'UC' + base36 时间戳 + 随机 6 位
+          const ucNo = `UC${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+          const exist = await tx.systemConfig.findUnique({ where: { key: cfgKey } })
+          const claimed = (exist?.value as any)?.count || 0
+          if (claimed >= limit) {
+            throw new BizException(BizCode.BUSINESS_ERROR, `每人最多领 ${limit} 张,已达上限`)
+          }
+          const nextIds = [...((exist?.value as any)?.ids || []), ucNo]
+          // 原子更新 Coupon.received 防超领
+          await tx.coupon.update({
+            where: { id: couponId },
+            data: { received: { increment: 1 } },
+          })
+          await tx.systemConfig.upsert({
+            where: { key: cfgKey },
+            update: {
+              value: {
+                count: claimed + 1,
+                ids: nextIds,
+                claimedAt: now.toISOString(),
+              } as any,
+            },
+            create: {
+              key: cfgKey,
+              value: { count: 1, ids: [ucNo], claimedAt: now.toISOString() } as any,
+            },
+          })
+          return { ok: true as const, no: ucNo, count: claimed + 1 }
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+
+    // P2034 = Serializable 写冲突（并发事务相互依赖被回滚）。重试一次即可让
+    // 落败方重新串行执行，重读最新 count 并正确判定上限；仍冲突则提示稍后再试。
+    // 真实业务异常（BizException，如已达上限）直接上抛，绝不重试。
+    const isWriteConflict = (e: any) =>
+      e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034'
+    try {
+      return await claimOnce()
+    } catch (e) {
+      if (e instanceof BizException) throw e
+      if (isWriteConflict(e)) {
+        try {
+          return await claimOnce()
+        } catch (e2) {
+          if (e2 instanceof BizException) throw e2
+          if (isWriteConflict(e2)) {
+            throw new BizException(BizCode.BUSINESS_ERROR, '领取太频繁，请稍后再试')
+          }
+          throw e2
+        }
+      }
+      throw e
     }
-    // 生成本张券的唯一编号(后续核销时用),格式 'UC' + base36 时间戳 + 随机 6 位
-    const ucNo = `UC${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
-    const nextIds = [...((exist?.value as any)?.ids || []), ucNo]
-    // 原子更新 Coupon.received 防超领
-    await this.prisma.$transaction([
-      this.prisma.coupon.update({ where: { id: couponId }, data: { received: { increment: 1 } } }),
-      this.prisma.systemConfig.upsert({
-        where: { key: cfgKey },
-        update: {
-          value: {
-            count: claimed + 1,
-            ids: nextIds,
-            claimedAt: now.toISOString(),
-          } as any,
-        },
-        create: {
-          key: cfgKey,
-          value: { count: 1, ids: [ucNo], claimedAt: now.toISOString() } as any,
-        },
-      }),
-    ])
-    return { ok: true, no: ucNo, count: claimed + 1 }
   }
 
   /**
@@ -1462,9 +1507,7 @@ export class UserMpService {
       updatedAt = typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined
     }
     if (!body) return null
-    return updatedAt
-      ? { body, updatedAt }
-      : { body, updatedAt: cfg.updatedAt.toISOString() }
+    return updatedAt ? { body, updatedAt } : { body, updatedAt: cfg.updatedAt.toISOString() }
   }
 
   /**
@@ -1489,9 +1532,11 @@ export class UserMpService {
     const service = (raw.service as any) || {}
     const site = (raw.site as any) || {}
     // 多 key 兜底：旧数据可能把客服信息直接挂在顶层，新数据规范挂在 service.* 下
-    const wechat = service.customerServiceWechat ?? service.wechat ?? raw.customerServiceWechat ?? null
+    const wechat =
+      service.customerServiceWechat ?? service.wechat ?? raw.customerServiceWechat ?? null
     const phone = service.customerServicePhone ?? service.phone ?? raw.customerServicePhone ?? null
-    const hours = service.customerServiceHours ?? service.workTime ?? raw.customerServiceHours ?? null
+    const hours =
+      service.customerServiceHours ?? service.workTime ?? raw.customerServiceHours ?? null
     const email = service.customerServiceEmail ?? service.email ?? raw.customerServiceEmail ?? null
     const icp = site.icp ?? raw.icp ?? null
     return {

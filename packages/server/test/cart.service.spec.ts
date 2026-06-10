@@ -30,7 +30,7 @@ import { UserMpService } from '../src/modules/user-mp/user-mp.service'
 //   - cancelOrder：状态机 + 库存回滚契约（每条 item 归还库存）
 //   - confirmOrder：状态机（仅已发货可确认收货）+ WS 推送
 //   - bindPhone  ：验证码 / 手机号占用 / 当前账号已绑别号
-//   - claimCoupon：领取校验链 + 数组形式 $transaction
+//   - claimCoupon：领取校验链 + 交互式 Serializable $transaction（per-user 限领并发安全）
 // ----------------------------------------------------------------------------
 
 /** 断言抛出的 BizException 业务码 */
@@ -397,7 +397,7 @@ describe('UserMpService.bindPhone 手机号绑定防御', () => {
 })
 
 // ============================================================================
-// claimCoupon — 领取校验链 + 数组形式 $transaction
+// claimCoupon — 领取校验链 + 交互式 Serializable $transaction（per-user 限领并发安全）
 // ============================================================================
 describe('UserMpService.claimCoupon 领券校验链', () => {
   const now = Date.now()
@@ -416,25 +416,38 @@ describe('UserMpService.claimCoupon 领券校验链', () => {
 
   /**
    * @param coupon       coupon.findUnique 返回（null 表示券不存在）
-   * @param userClaimed  已领数量（systemConfig.findUnique value.count）
+   * @param userClaimed  已领数量（tx.systemConfig.findUnique value.count）
+   *
+   * 新实现用「交互式 Serializable 事务」：claimCoupon 调
+   * prisma.$transaction(async (cb) => cb(tx), { isolationLevel })。
+   * 每人限领数量（count）必须在 **tx 客户端** 上读 —— 这是并发安全的关键，
+   * 因此 txMock 暴露 systemConfig.{findUnique,upsert} 与 coupon.update。
+   * 基座 prisma.systemConfig.findUnique 仅作哨兵：断言它不会被用于读 count。
    */
   function makeSvc(opts: { coupon: any; userClaimed?: number }) {
     const chat = makeChatMock()
     const couponUpdate = jest.fn(async () => ({}))
     const sysUpsert = jest.fn(async () => ({}))
+    const txFindUnique = jest.fn(async () =>
+      opts.userClaimed != null ? { value: { count: opts.userClaimed, ids: [] } } : null,
+    )
+    // tx 客户端：事务回调内的全部读写都打在它身上
+    const txMock = {
+      coupon: { update: couponUpdate },
+      systemConfig: { findUnique: txFindUnique, upsert: sysUpsert },
+    }
+    // 基座 systemConfig.findUnique —— 哨兵，断言 count 不从这里读
+    const baseSysFindUnique = jest.fn(async () => {
+      throw new Error('base prisma.systemConfig.findUnique 不应被用于读 per-user count')
+    })
     const prisma = {
       coupon: { findUnique: jest.fn(async () => opts.coupon), update: couponUpdate },
-      systemConfig: {
-        findUnique: jest.fn(async () =>
-          opts.userClaimed != null ? { value: { count: opts.userClaimed, ids: [] } } : null,
-        ),
-        upsert: sysUpsert,
-      },
-      // 数组形式：claimCoupon 传入 [update, upsert]，Promise.all 求值
-      $transaction: jest.fn(async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg({}))),
+      systemConfig: { findUnique: baseSysFindUnique, upsert: sysUpsert },
+      // 回调形式：claimCoupon 传入 (cb, opts)，把 txMock 喂给回调
+      $transaction: jest.fn(async (cb: any, _opts?: any) => cb(txMock)),
     }
     const svc = new UserMpService(prisma as any, makeWxpayMock() as any, chat as any)
-    return { svc, prisma, couponUpdate, sysUpsert }
+    return { svc, prisma, txMock, couponUpdate, sysUpsert, txFindUnique, baseSysFindUnique }
   }
 
   it('券不存在 → NOT_FOUND(1002)', async () => {
@@ -459,19 +472,34 @@ describe('UserMpService.claimCoupon 领券校验链', () => {
     await expectBizCode(() => svc.claimCoupon('u1', 'cp1'), 1000)
   })
 
-  it('超出每人限领(perUserLimit) → BUSINESS_ERROR(1000)', async () => {
-    const { svc } = makeSvc({ coupon: activeCoupon({ perUserLimit: 1 }), userClaimed: 1 })
+  it('超出每人限领(perUserLimit) → BUSINESS_ERROR(1000)，且 count 读在 tx 客户端上', async () => {
+    const { svc, txFindUnique, baseSysFindUnique, couponUpdate } = makeSvc({
+      coupon: activeCoupon({ perUserLimit: 1 }),
+      userClaimed: 1,
+    })
     await expectBizCode(() => svc.claimCoupon('u1', 'cp1'), 1000)
+    // per-user count 必须在事务客户端读（并发安全核心），不能读基座 prisma
+    expect(txFindUnique).toHaveBeenCalledTimes(1)
+    expect(baseSysFindUnique).not.toHaveBeenCalled()
+    // 超限路径绝不写库存（事务回滚），received 不应被 +1
+    expect(couponUpdate).not.toHaveBeenCalled()
   })
 
-  it('正常领取：数组形式 $transaction 被调用，返回 {ok:true, no}', async () => {
-    const { svc, prisma, couponUpdate, sysUpsert } = makeSvc({ coupon: activeCoupon() })
+  it('正常领取：回调形式 $transaction(Serializable) 被调用，tx 内读 count + 写，返回 {ok:true, no}', async () => {
+    const { svc, prisma, txMock, couponUpdate, sysUpsert, txFindUnique, baseSysFindUnique } =
+      makeSvc({ coupon: activeCoupon() })
     const r: any = await svc.claimCoupon('u1', 'cp1')
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1)
-    // 传入的是数组
-    expect(Array.isArray(prisma.$transaction.mock.calls[0][0])).toBe(true)
-    // received +1 + per-user 流水 upsert 均求值
+    // 回调形式：第一个参数是函数，第二个参数带 Serializable 隔离级别
+    expect(typeof prisma.$transaction.mock.calls[0][0]).toBe('function')
+    const txOpts: any = prisma.$transaction.mock.calls[0][1]
+    expect(txOpts?.isolationLevel).toBe('Serializable')
+    // per-user count 读在 tx 客户端，而非基座 prisma
+    expect(txFindUnique).toHaveBeenCalledTimes(1)
+    expect(baseSysFindUnique).not.toHaveBeenCalled()
+    // received +1 + per-user 流水 upsert 均在 tx 客户端求值
+    expect(txMock.coupon.update).toBe(couponUpdate)
     expect(couponUpdate).toHaveBeenCalledTimes(1)
     expect(sysUpsert).toHaveBeenCalledTimes(1)
     expect(r.ok).toBe(true)
