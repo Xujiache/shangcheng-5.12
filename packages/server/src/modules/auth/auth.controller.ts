@@ -28,7 +28,9 @@ class LogoutDto {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // P1-25：登录类接口走 'auth' 桶（10/min/IP），防爆破
+  // wechat-login 走宽松桶（60/min/IP）：wx.login 的 code 是微信下发的一次性凭证，
+  // 服务端拿它去微信换 openid，攻击者无法靠枚举伪造（没有「字典/爆破价值」）；
+  // 且小程序冷启动会自动登录，属高频正常流量，60/min 是有意为之，不能收紧到 10。
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post('wechat-login')
@@ -36,8 +38,9 @@ export class AuthController {
     return this.authService.wechatLogin(dto)
   }
 
+  // P1-25：手机号+短信验证码登录走 'auth' 桶（10/min/IP），收窄短信验证码爆破面
   @Public()
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('phone-login')
   phoneLogin(@Body() dto: PhoneLoginDto) {
     return this.authService.phoneLogin(dto)
@@ -51,15 +54,16 @@ export class AuthController {
     return this.authService.sendSmsCode(dto)
   }
 
-  // P1-25：后台登录走 'auth' 桶（10/min/IP），防字典攻击
+  // P1-25：后台登录走 'auth' 桶（10/min/IP），防密码字典爆破（必须收紧）
   @Public()
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('admin-login')
   adminLogin(@Body() dto: AdminLoginDto) {
     return this.authService.adminLogin(dto)
   }
 
-  // P1-25：refresh 走 'auth' 桶（同登录），防 token 频繁刷
+  // refresh 走宽松桶（60/min/IP）：必须携带有效 refreshToken 才能换发 access token，
+  // 没有合法 refreshToken 一律拒绝，因此不存在「字典/爆破价值」，无需收紧到 10。
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post('refresh')

@@ -15,6 +15,10 @@ import { setTimeout as wait } from 'node:timers/promises'
 // 本地调试时:SMOKE_BASE=http://localhost:3001 pnpm smoke
 const BASE = process.env.SMOKE_BASE || 'https://ewsn.top'
 
+// 登录密码：与 seed 一致，必须显式设置（无默认值，且 seed 要求 >= 8 位）。
+// 优先 SMOKE_PASSWORD，回退 SEED_DEFAULT_PASSWORD；都缺失则在 main() 中报错退出。
+const SMOKE_PASSWORD = process.env.SMOKE_PASSWORD || process.env.SEED_DEFAULT_PASSWORD || ''
+
 interface Case {
   name: string
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -52,10 +56,17 @@ async function login(username: string, password: string) {
 async function main() {
   console.log(`▶  Smoke test against ${BASE}\n`)
 
+  if (!SMOKE_PASSWORD) {
+    console.error(
+      '✗ 未设置登录密码：请设置 SMOKE_PASSWORD 或 SEED_DEFAULT_PASSWORD 环境变量（与 seed 一致，>= 8 位）后再跑 smoke。',
+    )
+    process.exit(2)
+  }
+
   // 登录
-  tokens.merchant = await login('merchant@demo', '123456')
-  tokens.admin = await login('admin@demo', '123456')
-  tokens.super = await login('super@demo', '123456')
+  tokens.merchant = await login('merchant@demo', SMOKE_PASSWORD)
+  tokens.admin = await login('admin@demo', SMOKE_PASSWORD)
+  tokens.super = await login('super@demo', SMOKE_PASSWORD)
   console.log('  ✓ 3 seed accounts logged in\n')
 
   const cases: Case[] = [

@@ -404,14 +404,16 @@ export class MerchantService {
 
     // 自动通过的商品也写一条 AuditRecord，方便审核日志页能查到
     if (initialStatus === 'auto_approved' || initialStatus === 'active') {
-      await this.prisma.auditRecord.create({
-        data: {
-          type: 'product',
-          targetId: created.id,
-          status: 'approved',
-          remark: initialStatus === 'auto_approved' ? '自动通过（满足审核免检条件）' : null,
-        } as any,
-      }).catch(() => {})
+      await this.prisma.auditRecord
+        .create({
+          data: {
+            type: 'product',
+            targetId: created.id,
+            status: 'approved',
+            remark: initialStatus === 'auto_approved' ? '自动通过（满足审核免检条件）' : null,
+          } as any,
+        })
+        .catch(() => {})
     }
     return decimalToNumber(created)
   }
@@ -1798,17 +1800,17 @@ export class MerchantService {
     if (sessions.length === 0) return []
 
     const sessionIds = sessions.map((s) => s.id)
-    // 一次性把每个会话的最后一条消息拿回来，避免 N+1
-    // 用 (sessionId desc, createdAt desc) groupBy 在 prisma 里不优雅；直接全量 findMany 后内存分桶
-    // 单商家通常不会超过 100 个开启会话 × 单聊话量 → 数据量可控
+    // 一次性把每个会话的最后一条消息拿回来，避免 N+1。
+    // 用 Prisma distinct：按 (sessionId asc, createdAt desc) 排序后对 sessionId 去重，
+    // 每个会话只保留 createdAt 最新的那一行，不再依赖 take 配额（避免高频会话挤占名额漏取）。
     const recentMsgs = await this.prisma.chatMessage.findMany({
       where: { sessionId: { in: sessionIds } },
-      orderBy: { createdAt: 'desc' },
-      take: sessions.length * 5, // 留一些余量保证每个会话至少能取到一条
+      orderBy: [{ sessionId: 'asc' }, { createdAt: 'desc' }],
+      distinct: ['sessionId'],
     })
     const lastBySession = new Map<string, (typeof recentMsgs)[number]>()
     for (const m of recentMsgs) {
-      if (!lastBySession.has(m.sessionId)) lastBySession.set(m.sessionId, m)
+      lastBySession.set(m.sessionId, m)
     }
 
     // 在线判断：依赖 ChatGateway socket 房间。用户加入 'user:<userId>' 房间，

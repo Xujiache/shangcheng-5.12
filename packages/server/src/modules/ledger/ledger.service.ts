@@ -534,7 +534,25 @@ export class LedgerService {
     const now = new Date()
     const Y = now.getFullYear()
     const M = now.getMonth() + 1
-    const all = await this.prisma.ledgerOrder.findMany({ where: { userId } })
+    const all = await this.prisma.ledgerOrder.findMany({
+      where: { userId },
+      // 仅取本方法消费到的列：id/customerName/date（展示）+ total/extraIncome（营收）
+      // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf/CAT_FIELD 用）。
+      select: {
+        id: true,
+        customerName: true,
+        date: true,
+        total: true,
+        extraIncome: true,
+        costProfile: true,
+        costGlass: true,
+        costHardware: true,
+        costLabor: true,
+        costScreen: true,
+        extras: true,
+        customCosts: true,
+      },
+    })
     const yearOrders = all.filter((o) => o.date.getFullYear() === Y)
 
     const inPeriod = (o: { date: Date }) => {
@@ -626,7 +644,23 @@ export class LedgerService {
 
   async monthlySeries(userId: string, year?: number) {
     const Y = year || new Date().getFullYear()
-    const all = await this.prisma.ledgerOrder.findMany({ where: { userId } })
+    // 仅取消费到的列：date（分桶）+ total/extraIncome（营收）
+    // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 及 costLabor 直接用）。
+    const all = await this.prisma.ledgerOrder.findMany({
+      where: { userId },
+      select: {
+        date: true,
+        total: true,
+        extraIncome: true,
+        costProfile: true,
+        costGlass: true,
+        costHardware: true,
+        costLabor: true,
+        costScreen: true,
+        extras: true,
+        customCosts: true,
+      },
+    })
     const yl = all.filter((o) => o.date.getFullYear() === Y)
     const series: any[] = []
     for (let m = 1; m <= 12; m++) {
@@ -659,7 +693,23 @@ export class LedgerService {
    * - year:  近 5 年逐年
    */
   async series(userId: string, granularity = 'month') {
-    const all = await this.prisma.ledgerOrder.findMany({ where: { userId } })
+    // 仅取消费到的列：date（分桶）+ total/extraIncome（营收）
+    // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 用）。
+    const all = await this.prisma.ledgerOrder.findMany({
+      where: { userId },
+      select: {
+        date: true,
+        total: true,
+        extraIncome: true,
+        costProfile: true,
+        costGlass: true,
+        costHardware: true,
+        costLabor: true,
+        costScreen: true,
+        extras: true,
+        customCosts: true,
+      },
+    })
     const now = new Date()
     const Y = now.getFullYear()
     const bucket = (rows: typeof all, label: string) => ({

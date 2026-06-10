@@ -5,22 +5,7 @@ import { AuthService } from './auth.service'
 import { AdminPcCompatController } from './admin-pc-compat.controller'
 import { PlatformModule } from '../platform/platform.module'
 import { RefreshTokenBlacklistService } from './refresh-token-blacklist.service'
-
-/**
- * JWT 密钥解析。
- *
- * - 生产环境：必须显式设置 JWT_SECRET，否则直接抛错让进程启动失败，
- *   避免使用占位字符串签发 Token（任何人都能伪造）。
- * - 非生产环境：允许临时使用占位密钥，方便本地启动。
- */
-function resolveJwtSecret(): string {
-  const v = process.env.JWT_SECRET
-  if (v && v.length >= 16) return v
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('[security] 生产环境必须设置 JWT_SECRET (≥16 字符)，缺失或过短一律拒绝启动')
-  }
-  return v || 'dev-only-please-change-me-in-production'
-}
+import { resolveJwtSecret } from '../../common/utils/jwt-secret.util'
 
 @Module({
   imports: [

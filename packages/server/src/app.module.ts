@@ -30,11 +30,14 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
  * 在 handler 上覆盖（这是 throttler v6 唯一可靠的 per-handler 覆盖姿势）。
  *
  * 当前端点限速：
- *   - 默认所有端点                  120 / 60s
- *   - /auth/admin-login + 登录类     10 / 60s   防爆破
- *   - /auth/sms-code                  3 / 60s   防短信轰炸
- *   - /files/upload                  60 / 60s   商品编辑批量上传需要
- *   - /payments/wechat/notify        200 / 60s 微信回调高频重试
+ *   - 默认所有端点                       120 / 60s
+ *   - /auth/admin-login                  10 / 60s   防密码字典爆破
+ *   - /auth/phone-login                  10 / 60s   防短信验证码爆破
+ *   - /auth/wechat-login                 60 / 60s   一次性 code 无爆破价值 + 冷启动高频
+ *   - /auth/refresh                      60 / 60s   须带有效 refreshToken，无爆破面
+ *   - /auth/sms-code                      3 / 60s   防短信轰炸
+ *   - /files/upload                      60 / 60s   商品编辑批量上传需要
+ *   - /payments/wechat/notify           200 / 60s   微信回调高频重试
  */
 @Module({
   imports: [
@@ -47,7 +50,10 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
     //
     // 单桶 + 端点级 @Throttle({ default: { limit: X, ttl: 60_000 } }) 覆盖
     // 是唯一可靠的姿势。需要 stricter / looser 的端点用本地 override：
-    //   - /auth/admin-login 等登录类   limit: 10
+    //   - /auth/admin-login           limit: 10
+    //   - /auth/phone-login           limit: 10
+    //   - /auth/wechat-login          limit: 60
+    //   - /auth/refresh               limit: 60
     //   - /auth/sms-code              limit: 3
     //   - /files/upload               limit: 60
     //   - /payments/wechat/notify     limit: 200

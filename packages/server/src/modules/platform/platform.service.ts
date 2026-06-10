@@ -94,18 +94,27 @@ export class PlatformService {
     const ydayGmv = Number(ydayOrderAgg._sum.payAmount || 0)
     const gmvDelta = ydayGmv > 0 ? Math.round(((todayGmv - ydayGmv) / ydayGmv) * 100) : 0
 
-    // 近 7 日注册趋势
-    const registrationTrend: { date: string; value: number }[] = []
-    for (let i = 6; i >= 0; i--) {
+    // 近 7 日注册趋势：先构造 7 个 {label, gte, lt} 时间窗（最早→最晚），
+    // 再 Promise.all 并发统计，避免逐天串行 await 累加 7 次往返延迟。
+    const trendWindows = Array.from({ length: 7 }, (_, idx) => {
+      const i = 6 - idx
       const d = new Date(Date.now() - i * 86400_000)
       d.setHours(0, 0, 0, 0)
-      const end = new Date(d.getTime() + 86400_000)
-      const count = await this.prisma.user.count({ where: { createdAt: { gte: d, lt: end } } })
-      registrationTrend.push({
-        date: `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-        value: count,
-      })
-    }
+      return {
+        label: `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+        gte: d,
+        lt: new Date(d.getTime() + 86400_000),
+      }
+    })
+    const trendCounts = await Promise.all(
+      trendWindows.map((w) =>
+        this.prisma.user.count({ where: { createdAt: { gte: w.gte, lt: w.lt } } }),
+      ),
+    )
+    const registrationTrend: { date: string; value: number }[] = trendWindows.map((w, idx) => ({
+      date: w.label,
+      value: trendCounts[idx],
+    }))
 
     // 分类销量（取近 30 天订单聚合）
     const orderItems = await this.prisma.orderItem.findMany({
@@ -406,7 +415,10 @@ export class PlatformService {
         merchant: p.merchant?.name || '',
         merchantId: d.merchantId,
         price: Number(d.priceRetailMin ?? d.priceWholesaleMin ?? 0),
-        submittedAt: (d.createdAt instanceof Date ? d.createdAt : new Date(d.createdAt)).toISOString(),
+        submittedAt: (d.createdAt instanceof Date
+          ? d.createdAt
+          : new Date(d.createdAt)
+        ).toISOString(),
         status: d.status === 'auditing' ? 'pending' : d.status,
         rejectReason: d.rejectReason || undefined,
       }
@@ -434,11 +446,14 @@ export class PlatformService {
     }
     const stored = (v?.value as any) || {}
     return {
-      autoApprove: typeof stored.autoApprove === 'boolean' ? stored.autoApprove : defaults.autoApprove,
-      conditions: Array.isArray(stored.conditions) && stored.conditions.length > 0
-        ? stored.conditions
-        : defaults.conditions,
-      samplingRate: typeof stored.samplingRate === 'number' ? stored.samplingRate : defaults.samplingRate,
+      autoApprove:
+        typeof stored.autoApprove === 'boolean' ? stored.autoApprove : defaults.autoApprove,
+      conditions:
+        Array.isArray(stored.conditions) && stored.conditions.length > 0
+          ? stored.conditions
+          : defaults.conditions,
+      samplingRate:
+        typeof stored.samplingRate === 'number' ? stored.samplingRate : defaults.samplingRate,
     }
   }
   async saveAuditConfig(dto: any) {
@@ -2116,10 +2131,7 @@ export class PlatformService {
     // 找一条已成功的支付记录作为退款来源
     const paidPayment = r.order.payments.find((p) => p.status === 'success')
     if (!paidPayment) {
-      throw new BizException(
-        BizCode.BUSINESS_ERROR,
-        '该订单暂无已成功的支付记录，无法发起真退款',
-      )
+      throw new BizException(BizCode.BUSINESS_ERROR, '该订单暂无已成功的支付记录，无法发起真退款')
     }
 
     // 真调微信退款 —— 失败抛 BizException 让前端展示
