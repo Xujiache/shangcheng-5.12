@@ -50,26 +50,26 @@ packages/shared/src/mock/faker.ts   # 修复 typecheck 错误（faker 类型）
 
 ### 接口实现统计
 
-| 模块 | 接口数 | 文件 |
-|---|---|---|
-| Auth | 7 + 4 admin-pc 别名 | `modules/auth/*` |
-| Files | 3 (MinIO 真实接入) | `modules/files/*` |
-| User-MP | 24 | `modules/user-mp/*` |
-| Merchant | 60+（含 batch-status / aftersales / commission-rule / staff / chat-messages 等 admin-pc 别名）| `modules/merchant/*` |
-| Platform | 45+ | `modules/platform/*` |
-| **合计** | **130+** | |
+| 模块     | 接口数                                                                                         | 文件                 |
+| -------- | ---------------------------------------------------------------------------------------------- | -------------------- |
+| Auth     | 7 + 4 admin-pc 别名                                                                            | `modules/auth/*`     |
+| Files    | 3 (MinIO 真实接入)                                                                             | `modules/files/*`    |
+| User-MP  | 24                                                                                             | `modules/user-mp/*`  |
+| Merchant | 60+（含 batch-status / aftersales / commission-rule / staff / chat-messages 等 admin-pc 别名） | `modules/merchant/*` |
+| Platform | 45+                                                                                            | `modules/platform/*` |
+| **合计** | **130+**                                                                                       |                      |
 
 ### 验收结果
 
-| 检查项 | 结果 |
-|---|---|
-| `pnpm --filter @jiujiu/shared typecheck` | ✅ 通过 |
-| `pnpm --filter @jiujiu/server typecheck` | ✅ 通过 |
-| `pnpm --filter @jiujiu/server build` | ✅ 通过 |
-| `prisma generate` | ✅ 通过（5.22.0） |
-| `prisma migrate` | ⏳ 需启动 PostgreSQL 后执行 |
-| `prisma seed` | ⏳ 需 migrate 后执行 |
-| Smoke 测试（50+ 接口） | ⏳ 需后端启动后执行 |
+| 检查项                                   | 结果                        |
+| ---------------------------------------- | --------------------------- |
+| `pnpm --filter @jiujiu/shared typecheck` | ✅ 通过                     |
+| `pnpm --filter @jiujiu/server typecheck` | ✅ 通过                     |
+| `pnpm --filter @jiujiu/server build`     | ✅ 通过                     |
+| `prisma generate`                        | ✅ 通过（5.22.0）           |
+| `prisma migrate`                         | ⏳ 需启动 PostgreSQL 后执行 |
+| `prisma seed`                            | ⏳ 需 migrate 后执行        |
+| Smoke 测试（50+ 接口）                   | ⏳ 需后端启动后执行         |
 
 ## 接口覆盖报告
 
@@ -81,27 +81,29 @@ packages/shared/src/mock/faker.ts   # 修复 typecheck 错误（faker 类型）
 
 ## 响应兼容方案
 
-| 维度 | 方案 | 文件 |
-|---|---|---|
-| **响应字段** | 同时返回 `message` 和 `msg`（同值），前者给 uni-app，后者给 admin-pc | `response.interceptor.ts` |
-| **响应 code** | 后端固定返回 `code: 0`；admin-pc 拦截器升级为 `code === 0 \|\| code === 200` 均算成功 | `admin-pc/utils/http/index.ts` |
-| **HTTP 状态** | 业务异常返回 200（前端通过 code 判断），鉴权类返回 401/403 | `biz.exception.ts` |
-| **Authorization** | 同时支持 `Bearer xxx`（uni-app）和裸 `xxx`（admin-pc）| `jwt.guard.ts` |
+| 维度              | 方案                                                                                  | 文件                           |
+| ----------------- | ------------------------------------------------------------------------------------- | ------------------------------ |
+| **响应字段**      | 同时返回 `message` 和 `msg`（同值），前者给 uni-app，后者给 admin-pc                  | `response.interceptor.ts`      |
+| **响应 code**     | 后端固定返回 `code: 0`；admin-pc 拦截器升级为 `code === 0 \|\| code === 200` 均算成功 | `admin-pc/utils/http/index.ts` |
+| **HTTP 状态**     | 业务异常返回 200（前端通过 code 判断），鉴权类返回 401/403                            | `biz.exception.ts`             |
+| **Authorization** | 同时支持 `Bearer xxx`（uni-app）和裸 `xxx`（admin-pc）                                | `jwt.guard.ts`                 |
 
 ## 双前缀修复
 
-| 端 | 修改前 | 修改后 |
-|---|---|---|
-| uni-app `.env.example` | `VITE_API_BASE_URL=http://localhost:3000/api/v1` | `VITE_API_BASE_URL=http://localhost:3000`（service URL 已含 `/api/v1`）|
-| admin-pc `.env.development` | `VITE_API_URL=/`（代理）| 不变（开发走代理，生产填完整后端地址）|
+| 端                          | 修改前                                           | 修改后                                                                  |
+| --------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| uni-app `.env.example`      | `VITE_API_BASE_URL=http://localhost:3000/api/v1` | `VITE_API_BASE_URL=http://localhost:3000`（service URL 已含 `/api/v1`） |
+| admin-pc `.env.development` | `VITE_API_URL=/`（代理）                         | 不变（开发走代理，生产填完整后端地址）                                  |
 
 ## 种子账号
 
-| 账号 | 密码 | 角色 | UserInfo.roles | 工作台 |
-|---|---|---|---|---|
-| `merchant@demo` | `123456` | factory | `['factory']` | 商家 |
-| `admin@demo` | `123456` | platform | `['platform']` | 平台 |
-| `super@demo` | `123456` | super-admin | `['super-admin']` | 双切换 |
+| 账号            | 密码                     | 角色        | UserInfo.roles    | 工作台 |
+| --------------- | ------------------------ | ----------- | ----------------- | ------ |
+| `merchant@demo` | `$SEED_DEFAULT_PASSWORD` | factory     | `['factory']`     | 商家   |
+| `admin@demo`    | `$SEED_DEFAULT_PASSWORD` | platform    | `['platform']`    | 平台   |
+| `super@demo`    | `$SEED_DEFAULT_PASSWORD` | super-admin | `['super-admin']` | 双切换 |
+
+> 密码取 seed 时设置的 `SEED_DEFAULT_PASSWORD`（至少 8 位，无默认值）。
 
 ## 启动 4 步
 
@@ -122,15 +124,15 @@ pnpm --filter @jiujiu/server start:dev
 
 ## 已知限制（生产前需替换）
 
-| 模块 | 当前实现 | 生产建议 |
-|---|---|---|
-| **微信登录** | 任意 code 创建用户 | 接入 jscode2session |
-| **手机验证码** | dev 接受 0000 | 接入阿里云/腾讯云 SMS |
-| **微信支付** | mock 直接成功 | 接入微信支付 SDK + 回调 |
-| **聊天 IM** | HTTP 短轮询 | 加 `@nestjs/websockets` Gateway |
-| **物流追踪** | 仅存单号 | 接入快递鸟/顺丰开放平台 |
-| **CDN/OSS** | MinIO 本地 | 生产换阿里云 OSS / 七牛 |
-| **业务测试** | 0 单测/e2e | 补 jest 单测 |
+| 模块           | 当前实现           | 生产建议                        |
+| -------------- | ------------------ | ------------------------------- |
+| **微信登录**   | 任意 code 创建用户 | 接入 jscode2session             |
+| **手机验证码** | dev 接受 0000      | 接入阿里云/腾讯云 SMS           |
+| **微信支付**   | mock 直接成功      | 接入微信支付 SDK + 回调         |
+| **聊天 IM**    | HTTP 短轮询        | 加 `@nestjs/websockets` Gateway |
+| **物流追踪**   | 仅存单号           | 接入快递鸟/顺丰开放平台         |
+| **CDN/OSS**    | MinIO 本地         | 生产换阿里云 OSS / 七牛         |
+| **业务测试**   | 0 单测/e2e         | 补 jest 单测                    |
 
 ## 下一步建议
 

@@ -42,7 +42,7 @@ pnpm build
 ## 默认账号
 
 - 用户名：Super
-- 密码：123456
+- 密码：见后端 `SEED_DEFAULT_PASSWORD`（seed 时显式设置，至少 8 位，无默认值）
 
 ## License
 

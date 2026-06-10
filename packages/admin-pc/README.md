@@ -42,7 +42,7 @@ pnpm build
 ## Default Account
 
 - Username: Super
-- Password: 123456
+- Password: see backend `SEED_DEFAULT_PASSWORD` (set explicitly at seed time, min 8 chars, no default)
 
 ## License
 

@@ -7,8 +7,7 @@
  * - 立即支付：严格走微信 invoke + 回调，绝不本地"假装支付成功"
  *
  * 关键修复：
- *   - P0-9：删除 mockPaid 直接当成功的兜底分支（开发态后端若仍返 mockPaid 由后端自身负责
- *           推订单状态，前端永远等真实微信支付回调）
+ *   - P0-9：前端永远等真实微信支付回调，绝不本地兜底直接把订单当支付成功
  *   - P1-18：倒计时改用 order.expiresAt / expiresIn（后端真实剩余时间），不再硬编码 15 分钟
  *   - P1-19：用户协议跳转改为 AgreementSheet 真协议（拉 /api/v1/u/agreements）
  */
@@ -119,7 +118,7 @@ const METHODS = [
  *   2. uni.requestPayment(miniPay) 调起微信支付
  *   3. 微信回调 /api/v1/payments/wechat/notify 真正标订单已付
  *
- * 严禁任何"前端识别到 mockPaid 直接当支付成功"的逻辑（P0-9）：
+ * 严禁任何"前端本地直接当支付成功"的逻辑（P0-9）：
  *   订单状态必须由后端基于真实支付/真实回调推进，
  *   前端唯一可信的"成功"信号是 uni.requestPayment 的 success 回调。
  */
@@ -150,10 +149,7 @@ async function pay() {
       paySign: mp.paySign,
       success: () => {
         uni.showToast({ title: '支付成功', icon: 'success' })
-        setTimeout(
-          () => uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' }),
-          1200,
-        )
+        setTimeout(() => uni.redirectTo({ url: '/pages/order/list?status=pending_shipment' }), 1200)
       },
       fail: (err: any) => {
         const msg = err?.errMsg?.includes('cancel') ? '已取消支付' : '支付失败'

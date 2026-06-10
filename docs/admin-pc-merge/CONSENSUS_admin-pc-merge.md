@@ -105,13 +105,13 @@ interface LoginResponse {
 }
 
 // menu response (按 role 区分)
-type MenuResponse = AppRouteRecord[]   // 走 art-lnb 现有动态路由结构
+type MenuResponse = AppRouteRecord[] // 走 art-lnb 现有动态路由结构
 
 // 工作台映射
 const ROLE_HOME_MAP = {
   merchant: '/merchant/dashboard',
   platform: '/platform/dashboard',
-  'super-admin': '/platform/dashboard',  // 超管默认平台
+  'super-admin': '/platform/dashboard', // 超管默认平台
 } as const
 
 // 超管切换
@@ -140,7 +140,7 @@ const WORKSPACE_KEY = 'admin_pc_workspace'
 async function switchWorkspace(target: Workspace) {
   localStorage.setItem(WORKSPACE_KEY, target)
   userStore.setCurrentWorkspace(target)
-  await menuStore.refetch(target)         // 重拉菜单 + 替换动态路由
+  await menuStore.refetch(target) // 重拉菜单 + 替换动态路由
   router.replace(ROLE_HOME_MAP[target])
 }
 ```
@@ -162,59 +162,59 @@ if (to.path.startsWith('/platform/') && userStore.role === 'merchant') {
 
 ## 4. 技术约束
 
-| 约束 | 说明 |
-|---|---|
-| 不改框架版本 | 沿用 art-lnb 的 Vue 3.5 / Element Plus 2.11 / Pinia 3 / Vue Router 4 / Vite 7 |
-| 复用 art-lnb 资产 | login 页 / 守卫 / store / nprogress / worktab 全部保留，只做**增量改造** |
-| Mock 在 `@jiujiu/shared/mock` | 不在 admin-pc 本地写 mock，避免散落 |
-| 端口 5173 | 避开移动端 8080–8088 |
-| hash 路由 | 部署免 nginx 改配 |
-| 主题色 | `#FF4D2D` 覆盖 Element Plus `--el-color-primary`，仅改 SCSS 变量 |
+| 约束                          | 说明                                                                          |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| 不改框架版本                  | 沿用 art-lnb 的 Vue 3.5 / Element Plus 2.11 / Pinia 3 / Vue Router 4 / Vite 7 |
+| 复用 art-lnb 资产             | login 页 / 守卫 / store / nprogress / worktab 全部保留，只做**增量改造**      |
+| Mock 在 `@jiujiu/shared/mock` | 不在 admin-pc 本地写 mock，避免散落                                           |
+| 端口 5173                     | 避开移动端 8080–8088                                                          |
+| hash 路由                     | 部署免 nginx 改配                                                             |
+| 主题色                        | `#FF4D2D` 覆盖 Element Plus `--el-color-primary`，仅改 SCSS 变量              |
 
 ---
 
 ## 5. 集成方案
 
-| 集成点 | 方式 |
-|---|---|
-| `@jiujiu/shared` | `pnpm add @jiujiu/shared --workspace` |
-| Mock 拦截 | art-lnb 已有 mock 拦截器（`src/mock/`），替换为 `registerMockRoutes(mockRoutes)` |
-| Token 持久化 | `pinia-plugin-persistedstate` 已配，无需动 |
-| 国际化 | 沿用 vue-i18n，仅 login 页加几行中文文案 |
+| 集成点           | 方式                                                                             |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `@jiujiu/shared` | `pnpm add @jiujiu/shared --workspace`                                            |
+| Mock 拦截        | art-lnb 已有 mock 拦截器（`src/mock/`），替换为 `registerMockRoutes(mockRoutes)` |
+| Token 持久化     | `pinia-plugin-persistedstate` 已配，无需动                                       |
+| 国际化           | 沿用 vue-i18n，仅 login 页加几行中文文案                                         |
 
 ---
 
 ## 6. 验收标准（与 ALIGNMENT §6 一致，固化）
 
-| # | 验收项 | 判定 |
-|---|---|---|
-| AC-01 | `pnpm dev:admin-pc` 启动成功，访问首页 200 | curl |
-| AC-02 | 登录页字段：username + password + remember + 测试账号面板 | 视觉 |
-| AC-03 | `merchant@demo/123456` 登录 → `/merchant/dashboard`，菜单仅商家 | 手测 |
-| AC-04 | `admin@demo/123456` 登录 → `/platform/dashboard`，菜单仅平台 | 手测 |
-| AC-05 | `super@demo/123456` 登录 → 顶部下拉，能切换工作台 | 手测 |
-| AC-06 | 商家访问 `/platform/*` → 403 | 改 URL |
-| AC-07 | 登出后所有状态清空 | 手测 |
-| AC-08 | `packages/merchant-pc` `packages/platform-pc` `art-lnb-master` 全部删除 | ls |
-| AC-09 | 主题色橙、Logo "经纬科技" | 视觉 |
-| AC-10 | 商家 9 屏 + 平台 11 屏 = 20 屏路由可达，无 404 | 路由扫描 |
+| #     | 验收项                                                                              | 判定     |
+| ----- | ----------------------------------------------------------------------------------- | -------- |
+| AC-01 | `pnpm dev:admin-pc` 启动成功，访问首页 200                                          | curl     |
+| AC-02 | 登录页字段：username + password + remember + 测试账号面板                           | 视觉     |
+| AC-03 | `merchant@demo` + `$SEED_DEFAULT_PASSWORD` 登录 → `/merchant/dashboard`，菜单仅商家 | 手测     |
+| AC-04 | `admin@demo` + `$SEED_DEFAULT_PASSWORD` 登录 → `/platform/dashboard`，菜单仅平台    | 手测     |
+| AC-05 | `super@demo` + `$SEED_DEFAULT_PASSWORD` 登录 → 顶部下拉，能切换工作台               | 手测     |
+| AC-06 | 商家访问 `/platform/*` → 403                                                        | 改 URL   |
+| AC-07 | 登出后所有状态清空                                                                  | 手测     |
+| AC-08 | `packages/merchant-pc` `packages/platform-pc` `art-lnb-master` 全部删除             | ls       |
+| AC-09 | 主题色橙、Logo "经纬科技"                                                           | 视觉     |
+| AC-10 | 商家 9 屏 + 平台 11 屏 = 20 屏路由可达，无 404                                      | 路由扫描 |
 
 ---
 
 ## 7. 所有疑问已闭环
 
-| 来源 | 疑问 | 答复 |
-|---|---|---|
-| Q1 | 包名 | `admin-pc` |
-| Q2 | 迁移方式 | 重命名移动 |
-| Q3 | 删旧包 | 物理删除 |
-| Q4 | 切换器形态 | 下拉 |
-| Q5 | 超管落地 | 上次用的，首次平台 |
-| Q6 | demo 账号面板 | 加 |
-| Q7 | i18n | 保留 |
-| Q8 | 路由模式 | hash |
-| Q9 | 业务页面 | 本期仅骨架 |
-| Q10 | NavBar 图标 | 全部保留 |
+| 来源 | 疑问          | 答复               |
+| ---- | ------------- | ------------------ |
+| Q1   | 包名          | `admin-pc`         |
+| Q2   | 迁移方式      | 重命名移动         |
+| Q3   | 删旧包        | 物理删除           |
+| Q4   | 切换器形态    | 下拉               |
+| Q5   | 超管落地      | 上次用的，首次平台 |
+| Q6   | demo 账号面板 | 加                 |
+| Q7   | i18n          | 保留               |
+| Q8   | 路由模式      | hash               |
+| Q9   | 业务页面      | 本期仅骨架         |
+| Q10  | NavBar 图标   | 全部保留           |
 
 ---
 

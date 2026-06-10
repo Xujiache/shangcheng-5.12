@@ -91,13 +91,10 @@ export const orderService = {
    * 发起支付。
    *
    * - 生产：后端永远返回 `miniPay`，由 `uni.requestPayment` 调起微信支付
-   * - 联调态（后端商户号未配齐）：后端可能返回 `mockPaid:true` 直接把订单标为已付
-   *   仅作开发兼容字段，生产环境永远 false / 不存在；前端对此分支做防御性处理。
    */
   pay(id: string, method: string) {
     return http.post<{
       ok: boolean
-      mockPaid?: boolean
       miniPay?: {
         appId: string
         timeStamp: string

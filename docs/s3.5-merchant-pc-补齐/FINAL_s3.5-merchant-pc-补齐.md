@@ -9,22 +9,22 @@
 ## 验证
 
 ```
-http://localhost:5173 → merchant@demo / 123456
+http://localhost:5173 → merchant@demo / $SEED_DEFAULT_PASSWORD
 ```
 
 侧边菜单从 9 项 → **18 项**：
 
-| 旧 9 项 | 新增 9 项 |
-|---|---|
-| 数据概览 | 数据中心 |
-| 在售商品 | 选品广场 |
-| 添加商品 | 在线客服 |
-| 分类管理 | 门店管理 |
-| 代理商品 | 员工管理 |
-| 订单管理 | 店铺装修 |
-| 售后处理 | 佣金设置 |
-| 客户管理 | 提现处理 |
-| 营销中心 | 会员开通 |
+| 旧 9 项  | 新增 9 项 |
+| -------- | --------- |
+| 数据概览 | 数据中心  |
+| 在售商品 | 选品广场  |
+| 添加商品 | 在线客服  |
+| 分类管理 | 门店管理  |
+| 代理商品 | 员工管理  |
+| 订单管理 | 店铺装修  |
+| 售后处理 | 佣金设置  |
+| 客户管理 | 提现处理  |
+| 营销中心 | 会员开通  |
 
 ## 代码地图
 
@@ -49,16 +49,16 @@ packages/admin-pc/src/
 
 ## 关键技术点
 
-| 点 | 实现 |
-|---|---|
-| 网格商品卡 | grid auto-fill minmax(220px, 1fr)，hover 抬升 |
-| 厂家 Drawer | fetchFactoryDetail(factoryId) 取主营商品 + 资质 |
-| 三栏布局（decorate/chat） | grid-template-columns 320 + 1fr + 280/300 |
-| 手机壳预览 | CSS 12px border + 38px border-radius + 内部 phone-body 滚动 |
-| IM 消息流 | self class 翻转布局 + 自动 scrollToBottom |
-| 步进调整 | 0.5% 间隔 + 30% 警告条 |
-| 余额 Hero | linear-gradient + 白色透明按钮 |
-| 套餐对比 | 3 卡 grid + HOT 卡 transform: translateY(-6px) + 阴影 |
+| 点                        | 实现                                                        |
+| ------------------------- | ----------------------------------------------------------- |
+| 网格商品卡                | grid auto-fill minmax(220px, 1fr)，hover 抬升               |
+| 厂家 Drawer               | fetchFactoryDetail(factoryId) 取主营商品 + 资质             |
+| 三栏布局（decorate/chat） | grid-template-columns 320 + 1fr + 280/300                   |
+| 手机壳预览                | CSS 12px border + 38px border-radius + 内部 phone-body 滚动 |
+| IM 消息流                 | self class 翻转布局 + 自动 scrollToBottom                   |
+| 步进调整                  | 0.5% 间隔 + 30% 警告条                                      |
+| 余额 Hero                 | linear-gradient + 白色透明按钮                              |
+| 套餐对比                  | 3 卡 grid + HOT 卡 transform: translateY(-6px) + 阴影       |
 
 ## 决策回顾
 

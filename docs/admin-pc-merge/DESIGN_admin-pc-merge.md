@@ -48,13 +48,13 @@ graph TB
 
 ### 关键设计点
 
-| 点 | 选择 | 理由 |
-|---|---|---|
-| 路由模式 | hash | 部署免后端配 try_files |
-| 角色感知 | 后端下发菜单 + 前端守卫双保险 | menu 解决菜单显示，守卫解决越权访问 |
-| 工作台切换 | localStorage + menuStore.refetch + router.replace | 不刷整页，体验顺滑 |
-| 主题覆盖 | 仅改 SCSS 主色变量 + tokens.css | 不动整体灰阶布局 |
-| 持久化 | pinia-plugin-persistedstate（已配）| 框架开箱即用 |
+| 点         | 选择                                              | 理由                                |
+| ---------- | ------------------------------------------------- | ----------------------------------- |
+| 路由模式   | hash                                              | 部署免后端配 try_files              |
+| 角色感知   | 后端下发菜单 + 前端守卫双保险                     | menu 解决菜单显示，守卫解决越权访问 |
+| 工作台切换 | localStorage + menuStore.refetch + router.replace | 不刷整页，体验顺滑                  |
+| 主题覆盖   | 仅改 SCSS 主色变量 + tokens.css                   | 不动整体灰阶布局                    |
+| 持久化     | pinia-plugin-persistedstate（已配）               | 框架开箱即用                        |
 
 ---
 
@@ -148,7 +148,7 @@ graph TD
 POST /api/auth/login
 Content-Type: application/json
 
-{ "username": "merchant@demo", "password": "123456" }
+{ "username": "merchant@demo", "password": "<SEED_DEFAULT_PASSWORD>" }
 ```
 
 **响应**
@@ -223,26 +223,26 @@ sequenceDiagram
 
 ## 6. 异常处理策略
 
-| 异常 | 处理 | 提示 |
-|---|---|---|
-| 用户名/密码错 | mock 返回 401 | ElNotification 提示"账号或密码错误" |
-| token 过期（mock 暂不触发） | 401 触发 logOut → 跳 `/login?redirect=...` | 全局 axios 错误拦截器已有 |
-| 跨角色访问 | beforeEach 拦截 → `/exception/403` | art-lnb 自带 403 页 |
-| 路由不存在 | router 兜底 → `/exception/404` | 已有 |
-| 菜单接口失败 | 重试一次，仍败则 logOut | 防止半残登录态 |
-| 超管切换工作台失败 | 不切换，恢复原 currentWorkspace，弹错误 | UX 一致性 |
+| 异常                        | 处理                                       | 提示                                |
+| --------------------------- | ------------------------------------------ | ----------------------------------- |
+| 用户名/密码错               | mock 返回 401                              | ElNotification 提示"账号或密码错误" |
+| token 过期（mock 暂不触发） | 401 触发 logOut → 跳 `/login?redirect=...` | 全局 axios 错误拦截器已有           |
+| 跨角色访问                  | beforeEach 拦截 → `/exception/403`         | art-lnb 自带 403 页                 |
+| 路由不存在                  | router 兜底 → `/exception/404`             | 已有                                |
+| 菜单接口失败                | 重试一次，仍败则 logOut                    | 防止半残登录态                      |
+| 超管切换工作台失败          | 不切换，恢复原 currentWorkspace，弹错误    | UX 一致性                           |
 
 ---
 
 ## 7. 视觉与品牌
 
-| 项 | 值 | 落点 |
-|---|---|---|
-| 主题色 | `#FF4D2D`（5.0 商城品牌橙） | `assets/styles/variables.scss` 覆盖 `$el-color-primary` |
-| Logo 文字 | "经纬科技" | `src/config/index.ts` 中 `systemInfo.name` |
-| 浏览器标题 | "经纬科技" | `index.html` + `setPageTitle` |
-| Favicon | 暂沿用 art-lnb 默认 | `public/favicon.svg` |
-| 登录页副标题 | "商家 / 平台一体化管理控制台" | i18n 中文键 |
+| 项           | 值                            | 落点                                                    |
+| ------------ | ----------------------------- | ------------------------------------------------------- |
+| 主题色       | `#FF4D2D`（5.0 商城品牌橙）   | `assets/styles/variables.scss` 覆盖 `$el-color-primary` |
+| Logo 文字    | "经纬科技"                    | `src/config/index.ts` 中 `systemInfo.name`              |
+| 浏览器标题   | "经纬科技"                    | `index.html` + `setPageTitle`                           |
+| Favicon      | 暂沿用 art-lnb 默认           | `public/favicon.svg`                                    |
+| 登录页副标题 | "商家 / 平台一体化管理控制台" | i18n 中文键                                             |
 
 ---
 
@@ -258,9 +258,9 @@ sequenceDiagram
 
 ## 9. 风险与降级
 
-| 风险 | 降级 |
-|---|---|
-| menuStore.refetch + 动态 addRoute 在 hash 模式下可能有缓存 | 失败时强制 `location.reload()` 兜底 |
-| 接 `@jiujiu/shared` 后 Pinia v3 与 v2 共存可能 hooks 冲突 | admin-pc 独立 node_modules，已隔离 |
-| 删旧包后根 package.json 脚本失效 | 同步删 `dev:merchant-pc` / `dev:platform-pc` 脚本 |
-| art-lnb 删 _examples 后某些路由模块仍 import | 全文搜 import + 同步删 router/modules/_examples |
+| 风险                                                       | 降级                                              |
+| ---------------------------------------------------------- | ------------------------------------------------- |
+| menuStore.refetch + 动态 addRoute 在 hash 模式下可能有缓存 | 失败时强制 `location.reload()` 兜底               |
+| 接 `@jiujiu/shared` 后 Pinia v3 与 v2 共存可能 hooks 冲突  | admin-pc 独立 node_modules，已隔离                |
+| 删旧包后根 package.json 脚本失效                           | 同步删 `dev:merchant-pc` / `dev:platform-pc` 脚本 |
+| art-lnb 删 \_examples 后某些路由模块仍 import              | 全文搜 import + 同步删 router/modules/\_examples  |

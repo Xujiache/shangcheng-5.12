@@ -10,6 +10,7 @@ Fetch details: get_observations([IDs]) | Search: mem-search skill
 Stats: 50 obs (18,211t read) | 122,536t work | 85% savings
 
 ### May 14, 2026
+
 S182 Push to GitHub and review all work completed: comprehensive full-stack production hardening batch covering 9 commits across server, admin-pc, and mobile packages. (May 14, 2:19 PM)
 S183 Code review and readiness assessment: evaluate the 9-commit production hardening batch (C+ to A− progress) and identify remaining gaps before production deployment. (May 14, 2:40 PM)
 S184 Production readiness score assessment: evaluate current state (87/100) versus starting baseline (65/100) and identify specific blockers to 90+ readiness. (May 14, 2:42 PM)
@@ -30,7 +31,7 @@ S191 Diagnosed and resolved frontend login failures for monorepo e-commerce plat
 1363 " 🔵 Platform-app auth service and admin store manage login state and tokens
 1364 3:47p 🔵 Backend auth controller provides admin-login and token refresh endpoints
 1366 " 🔵 Backend adminLogin service validates credentials and returns tokens with user session
-1367 " 🔵 Database seed creates admin@demo test user with platform role and 123456 password
+1367 " 🔵 Database seed creates admin@demo test user with platform role; password from SEED_DEFAULT_PASSWORD env (min 8 chars, no default)
 1369 3:48p 🔵 Backend server at localhost:3001 not responding to HTTP requests
 1372 3:52p 🔵 Backend API verified operational with monorepo frontend apps configured
 1373 " 🔵 Frontend production environments configured for https://ewsn.top backend with Tencent Map integration
@@ -77,7 +78,6 @@ S209 Package the user mini-program client for WeChat mini-program release (May 1
 **Completed**: Built @jiujiu/shared package (ESM + DTS, 4.2s total, no errors). Built @jiujiu/user-mp for WeChat mini-program (mp-weixin), output generated to packages/user-mp/dist/build/mp-weixin/ (759 KB total). Verified build package contains correct AppID configuration, ES6 compilation, minification, and big package support enabled. Backend configured to https://ewsn.top in production mode
 
 **Next Steps**: User is ready to upload build to WeChat developer tools. Pending steps: (1) Import dist/build/mp-weixin directory in WeChat Developer Tools, (2) Upload with version number, (3) Submit for review on mp.weixin.qq.com, (4) Once approved, publish to production. Pre-launch verification needed: ensure request/socket domain whitelist includes ewsn.top in WeChat backend settings
-
 
 Access 123k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

@@ -4,6 +4,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, UserSession } from '@jiujiu/shared/types'
+import { http } from '../utils/request'
 
 const STORAGE_KEY = 'jiujiu_user'
 const TOKEN_KEY = 'jiujiu_token'
@@ -42,6 +43,31 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /**
+   * 主动从服务器拉一次最新资料（设密码 / 进入个人中心时调）。
+   *
+   * 商家端没有 /u/profile（命名空间隔离），用共享认证接口 /api/v1/auth/user-info。
+   * 返回的部分字段浅合并进 user.value（为空则直接赋值），并持久化到 storage。
+   */
+  async function refreshFromServer(): Promise<void> {
+    if (!accessToken.value) return
+    try {
+      const fresh = await http.get<Partial<User>>('/api/v1/auth/user-info', undefined, {
+        silent: true,
+      })
+      if (fresh) {
+        user.value = user.value ? { ...user.value, ...fresh } : (fresh as User)
+        try {
+          uni.setStorageSync(STORAGE_KEY, JSON.stringify(user.value))
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // 401 等 http 拦截器已处理；其它错误静默
+    }
+  }
+
   /** 登出 */
   function logout() {
     user.value = null
@@ -73,6 +99,7 @@ export const useUserStore = defineStore('user', () => {
     merchantId,
     hydrate,
     setSession,
+    refreshFromServer,
     logout,
   }
 })

@@ -68,7 +68,6 @@ function pickPlan(code: 'monthly' | 'yearly') {
  *
  * 流程：
  *   1. 后端 subscribe() 创建 PaymentRecord(pending) + 返回 miniPay 参数
- *      （非生产 + wxpay 未配齐：mockPaid=true，已直接激活，跳过 step 2~4）
  *   2. 前端 uni.requestPayment(miniPay) 调起微信支付
  *   3. 微信回调 /payments/wechat/notify → 后端 activateMembership(recordId)
  *   4. 前端轮询 paymentStatus 直到 status='paid' 才算成功
@@ -147,13 +146,6 @@ async function doRealPay(plan: MemberPlan, actionLabel: string) {
 
     if (!res.ok) {
       uni.showToast({ title: actionLabel + '失败，请稍后重试', icon: 'none' })
-      return
-    }
-
-    // 非生产兜底：已直接激活
-    if (res.mockPaid) {
-      uni.showToast({ title: actionLabel + '成功', icon: 'success' })
-      await load()
       return
     }
 
@@ -252,7 +244,10 @@ onMounted(load)
 
     <view class="body">
       <!-- 当前订阅状态卡 -->
-      <view v-if="currentMembership" :class="['membership-card', currentMembership.expiringSoon && 'warning']">
+      <view
+        v-if="currentMembership"
+        :class="['membership-card', currentMembership.expiringSoon && 'warning']"
+      >
         <view class="mc-head">
           <view class="mc-tag">
             <text>{{ currentMembership.status === 'trial' ? '试用中' : '已开通' }}</text>
@@ -299,7 +294,9 @@ onMounted(load)
             <text class="price-value">{{ p.price }}</text>
             <text class="price-unit">/{{ p.period === 'monthly' ? '月' : '年' }}</text>
           </view>
-          <text class="plan-tip">{{ p.code === 'yearly' ? '日均不到 2.5 元' : '7 天无理由可退' }}</text>
+          <text class="plan-tip">{{
+            p.code === 'yearly' ? '日均不到 2.5 元' : '7 天无理由可退'
+          }}</text>
           <view class="radio">
             <text>{{ selectedCode === p.code ? '●' : '○' }}</text>
           </view>
@@ -375,7 +372,9 @@ onMounted(load)
       <view class="footer-meta">
         <text class="f-price">{{ formatPrice(selected.price) }}</text>
         <text class="f-unit">/{{ selected.period === 'monthly' ? '月' : '年' }}</text>
-        <text v-if="selected.originalPrice" class="f-original">原价 ¥{{ selected.originalPrice }}</text>
+        <text v-if="selected.originalPrice" class="f-original"
+          >原价 ¥{{ selected.originalPrice }}</text
+        >
       </view>
       <view class="footer-btn" @click="subscribe">
         <text>立即开通</text>
@@ -392,15 +391,15 @@ onMounted(load)
 }
 .nav-on-dark :deep(.title),
 .nav-on-dark :deep(.back-icon) {
-  color: #FFD89B !important;
+  color: #ffd89b !important;
 }
 .nav-on-dark {
   border-bottom: none !important;
 }
 .header {
   padding: 32rpx 32rpx 80rpx;
-  background: linear-gradient(135deg, #5C2A00, #2A1100);
-  color: #FFD89B;
+  background: linear-gradient(135deg, #5c2a00, #2a1100);
+  color: #ffd89b;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
@@ -423,11 +422,11 @@ onMounted(load)
 
 /* 当前订阅状态卡 */
 .membership-card {
-  background: linear-gradient(135deg, #FFFCEB, #FFF7DD);
+  background: linear-gradient(135deg, #fffceb, #fff7dd);
   border: 2rpx solid rgba(255, 195, 0, 0.35);
   border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 8rpx 24rpx rgba(255, 153, 0, 0.10);
+  box-shadow: 0 8rpx 24rpx rgba(255, 153, 0, 0.1);
   position: relative;
   overflow: hidden;
   &::before {
@@ -439,7 +438,7 @@ onMounted(load)
     background: radial-gradient(circle, rgba(255, 195, 0, 0.18), transparent 70%);
   }
   &.warning {
-    background: linear-gradient(135deg, #FFF1EC, #FFE4D9);
+    background: linear-gradient(135deg, #fff1ec, #ffe4d9);
     border-color: rgba(255, 77, 45, 0.4);
   }
 }
@@ -452,7 +451,7 @@ onMounted(load)
 }
 .mc-tag {
   padding: 4rpx 14rpx;
-  background: linear-gradient(135deg, #FFB300, #FF6B45);
+  background: linear-gradient(135deg, #ffb300, #ff6b45);
   color: #fff;
   font-size: 20rpx;
   font-weight: 700;
@@ -461,7 +460,7 @@ onMounted(load)
 .mc-name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #4A2200;
+  color: #4a2200;
 }
 .mc-days {
   margin-top: 12rpx;
@@ -473,19 +472,19 @@ onMounted(load)
   .mc-num {
     font-size: 72rpx;
     font-weight: 800;
-    color: #C2410C;
+    color: #c2410c;
     line-height: 1;
     font-family: var(--font-family-base);
   }
   .mc-unit {
     font-size: 28rpx;
     font-weight: 700;
-    color: #C2410C;
+    color: #c2410c;
   }
   .mc-label {
     margin-left: 12rpx;
     font-size: 22rpx;
-    color: #8C6500;
+    color: #8c6500;
   }
 }
 .mc-progress {
@@ -498,7 +497,7 @@ onMounted(load)
   z-index: 1;
   .mc-bar {
     height: 100%;
-    background: linear-gradient(90deg, #FFB300, #FF6B45);
+    background: linear-gradient(90deg, #ffb300, #ff6b45);
     border-radius: 999rpx;
     transition: width 0.3s ease;
   }
@@ -508,7 +507,7 @@ onMounted(load)
   display: flex;
   justify-content: space-between;
   font-size: 20rpx;
-  color: #8C6500;
+  color: #8c6500;
   font-family: var(--font-family-base);
   position: relative;
   z-index: 1;
@@ -516,10 +515,10 @@ onMounted(load)
 .mc-warning {
   margin-top: 12rpx;
   padding: 8rpx 16rpx;
-  background: rgba(255, 77, 45, 0.10);
+  background: rgba(255, 77, 45, 0.1);
   border-radius: 10rpx;
   font-size: 22rpx;
-  color: #C2410C;
+  color: #c2410c;
   font-weight: 600;
   position: relative;
   z-index: 1;
@@ -530,13 +529,13 @@ onMounted(load)
   justify-content: space-between;
   gap: 12rpx;
   padding: 16rpx 20rpx;
-  background: linear-gradient(135deg, #FFF7E6, #FFE7BA);
-  border: 2rpx solid #FFB91A;
+  background: linear-gradient(135deg, #fff7e6, #ffe7ba);
+  border: 2rpx solid #ffb91a;
   border-radius: 16rpx;
   .pay-refresh-tip {
     flex: 1;
     font-size: 24rpx;
-    color: #C2410C;
+    color: #c2410c;
     font-weight: 600;
   }
   .pay-refresh-btn {
@@ -546,7 +545,7 @@ onMounted(load)
     border-radius: 999rpx;
     font-size: 24rpx;
     font-weight: 700;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .plans {
@@ -563,8 +562,8 @@ onMounted(load)
   box-shadow: var(--shadow-sm);
   &.active {
     border-color: var(--brand-primary);
-    background: linear-gradient(135deg, #FFF7F4, #fff);
-    box-shadow: 0 8rpx 24rpx rgba(255,77,45,0.18);
+    background: linear-gradient(135deg, #fff7f4, #fff);
+    box-shadow: 0 8rpx 24rpx rgba(255, 77, 45, 0.18);
   }
   &.hot::before {
     content: '';
@@ -572,7 +571,7 @@ onMounted(load)
     inset: 0;
     border-radius: 20rpx;
     pointer-events: none;
-    border: 2rpx solid rgba(255,77,45,0.3);
+    border: 2rpx solid rgba(255, 77, 45, 0.3);
   }
   .hot-badge {
     position: absolute;
@@ -588,17 +587,37 @@ onMounted(load)
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    .plan-name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-    .plan-original { font-size: 22rpx; color: var(--text-tertiary); text-decoration: line-through; }
+    .plan-name {
+      font-size: 28rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .plan-original {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+      text-decoration: line-through;
+    }
   }
   .plan-price {
     margin-top: 16rpx;
     display: flex;
     align-items: baseline;
     color: var(--brand-primary);
-    .price-symbol { font-size: 24rpx; font-weight: 600; }
-    .price-value { font-size: 56rpx; font-weight: 700; line-height: 1; font-family: var(--font-family-base); }
-    .price-unit { font-size: 22rpx; color: var(--text-tertiary); margin-left: 4rpx; }
+    .price-symbol {
+      font-size: 24rpx;
+      font-weight: 600;
+    }
+    .price-value {
+      font-size: 56rpx;
+      font-weight: 700;
+      line-height: 1;
+      font-family: var(--font-family-base);
+    }
+    .price-unit {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+      margin-left: 4rpx;
+    }
   }
   .plan-tip {
     margin-top: 8rpx;
@@ -633,7 +652,10 @@ onMounted(load)
     flex-direction: column;
     gap: 4rpx;
     margin-bottom: 16rpx;
-    .section-sub { font-size: 22rpx; color: var(--text-tertiary); }
+    .section-sub {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .compare-table {
@@ -647,19 +669,34 @@ onMounted(load)
   align-items: center;
   padding: 16rpx 24rpx;
   border-bottom: 1rpx solid var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   &.compare-head {
     background: var(--bg-hover);
-    .col-name { font-weight: 700; color: var(--text-primary); }
-    .col-cell { font-weight: 700; color: var(--text-primary); }
+    .col-name {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .col-cell {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
   }
-  .col-name { flex: 1; font-size: 24rpx; color: var(--text-secondary); }
+  .col-name {
+    flex: 1;
+    font-size: 24rpx;
+    color: var(--text-secondary);
+  }
   .col-cell {
     width: 120rpx;
     text-align: center;
     font-size: 26rpx;
     color: var(--text-tertiary);
-    &.highlight { color: var(--brand-primary); font-weight: 700; }
+    &.highlight {
+      color: var(--brand-primary);
+      font-weight: 700;
+    }
   }
 }
 .ad-grid {
@@ -668,12 +705,14 @@ onMounted(load)
   gap: 16rpx;
 }
 .ad-card {
-  background: linear-gradient(135deg, #FFF7F4, #fff);
+  background: linear-gradient(135deg, #fff7f4, #fff);
   border: 2rpx solid var(--brand-primary-ghost);
   border-radius: 16rpx;
   padding: 20rpx;
   position: relative;
-  &.hot { border-color: var(--brand-primary); }
+  &.hot {
+    border-color: var(--brand-primary);
+  }
   .ad-hot {
     position: absolute;
     top: 12rpx;
@@ -694,16 +733,30 @@ onMounted(load)
     display: flex;
     align-items: baseline;
     color: var(--brand-primary);
-    .ad-symbol { font-size: 22rpx; }
-    .ad-value { font-size: 40rpx; font-weight: 700; line-height: 1; font-family: var(--font-family-base); }
-    .ad-unit { margin-left: 4rpx; font-size: 20rpx; color: var(--text-tertiary); }
+    .ad-symbol {
+      font-size: 22rpx;
+    }
+    .ad-value {
+      font-size: 40rpx;
+      font-weight: 700;
+      line-height: 1;
+      font-family: var(--font-family-base);
+    }
+    .ad-unit {
+      margin-left: 4rpx;
+      font-size: 20rpx;
+      color: var(--text-tertiary);
+    }
   }
   .ad-rights {
     margin-top: 12rpx;
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .ad-right { font-size: 20rpx; color: var(--text-secondary); }
+    .ad-right {
+      font-size: 20rpx;
+      color: var(--text-secondary);
+    }
   }
 }
 .addon-list {
@@ -716,20 +769,33 @@ onMounted(load)
   align-items: center;
   padding: 20rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .addon-info {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .addon-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); }
-    .addon-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .addon-name {
+      font-size: 26rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .addon-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
   .addon-action {
     display: flex;
     align-items: center;
     gap: 12rpx;
-    .addon-price { font-size: 28rpx; font-weight: 700; color: var(--brand-primary); }
+    .addon-price {
+      font-size: 28rpx;
+      font-weight: 700;
+      color: var(--brand-primary);
+    }
   }
 }
 .footer {
@@ -741,7 +807,7 @@ onMounted(load)
   align-items: center;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   background: var(--bg-card);
-  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
   gap: 16rpx;
   .footer-meta {
     flex: 1;
@@ -754,7 +820,10 @@ onMounted(load)
       color: var(--brand-primary);
       font-family: var(--font-family-base);
     }
-    .f-unit { font-size: 22rpx; color: var(--text-tertiary); }
+    .f-unit {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
     .f-original {
       margin-left: 12rpx;
       font-size: 22rpx;
@@ -772,8 +841,10 @@ onMounted(load)
     font-weight: 700;
     text-align: center;
     line-height: 88rpx;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.4);
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.4);
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

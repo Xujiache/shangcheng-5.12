@@ -66,13 +66,11 @@ export interface PaymentRecord {
 /** subscribe() 返回值 —— 真实下单链路 */
 export interface SubscribeResult {
   ok: boolean
-  /** 非生产 + wxpay 未配齐 → mockPaid=true 已直接激活；否则需要走真实支付 */
-  mockPaid?: boolean
   /** 支付单号（用于轮询状态） */
   paymentNo: string
   /** PaymentRecord id */
   recordId: string
-  /** 微信小程序 uni.requestPayment 所需的全部字段（mockPaid=true 时不返回） */
+  /** 微信小程序 uni.requestPayment 所需的全部字段 */
   miniPay?: {
     appId: string
     timeStamp: string
