@@ -61,13 +61,25 @@ async function loadQuick() {
 async function pickSession(s: ChatSessionItem) {
   // 切会话前先离开旧 room（避免继续收旧会话推送）
   if (currentSessionId.value && currentSessionId.value !== s.id) {
-    try { sock.leave(currentSessionId.value) } catch { /* ignore */ }
+    try {
+      sock.leave(currentSessionId.value)
+    } catch {
+      /* ignore */
+    }
   }
   currentSessionId.value = s.id
   s.unreadCount = 0
   showSwitcher.value = false
-  try { sock.join(s.id) } catch { /* ignore */ }
-  try { sock.markRead(s.id) } catch { /* ignore */ }
+  try {
+    sock.join(s.id)
+  } catch {
+    /* ignore */
+  }
+  try {
+    sock.markRead(s.id)
+  } catch {
+    /* ignore */
+  }
   const data = await chatService.messages(s.id)
   messages.value = data
   await nextTick()
@@ -116,7 +128,13 @@ async function send() {
     read: true,
   }
   messages.value = [...messages.value, newMsg]
-  if (current.value) current.value.lastMessage = text
+  if (current.value)
+    current.value.lastMessage = {
+      content: text,
+      type: 'text',
+      sender: 'merchant',
+      createdAt: newMsg.createdAt,
+    }
   await nextTick()
   scrollToBottom()
   try {
@@ -202,7 +220,13 @@ async function sendImage() {
         if (idx >= 0) {
           messages.value.splice(idx, 1, { ...sent, type: 'image', content: uploadRes.url })
         }
-        if (current.value) current.value.lastMessage = '[图片]'
+        if (current.value)
+          current.value.lastMessage = {
+            content: '[图片]',
+            type: 'image',
+            sender: 'merchant',
+            createdAt: sent.createdAt,
+          }
         uni.hideLoading()
       } catch (e: any) {
         uni.hideLoading()
@@ -243,9 +267,9 @@ function handleIncomingMessage(payload: any) {
   if (sessionId !== currentSessionId.value) return
 
   if (msg.sender === 'merchant') {
-    const idx = [...messages.value].reverse().findIndex(
-      (m) => m.id?.toString().startsWith('tmp-') && m.content === msg.content,
-    )
+    const idx = [...messages.value]
+      .reverse()
+      .findIndex((m) => m.id?.toString().startsWith('tmp-') && m.content === msg.content)
     if (idx >= 0) {
       const realIdx = messages.value.length - 1 - idx
       messages.value.splice(realIdx, 1, { ...messages.value[realIdx], ...msg })
@@ -274,9 +298,17 @@ onMounted(async () => {
 
 onUnload(() => {
   // 离页：取消监听 + 离开当前 room；不 disconnect（保留单例供订单推送复用）
-  try { sock.offMessage(handleIncomingMessage) } catch { /* ignore */ }
+  try {
+    sock.offMessage(handleIncomingMessage)
+  } catch {
+    /* ignore */
+  }
   if (currentSessionId.value) {
-    try { sock.leave(currentSessionId.value) } catch { /* ignore */ }
+    try {
+      sock.leave(currentSessionId.value)
+    } catch {
+      /* ignore */
+    }
   }
 })
 </script>
@@ -334,12 +366,7 @@ onUnload(() => {
             <text class="quick-close" @click="showQuick = false">收起</text>
           </view>
           <view class="quick-list">
-            <view
-              v-for="q in quickReplies"
-              :key="q.id"
-              class="quick-item"
-              @click="applyQuick(q)"
-            >
+            <view v-for="q in quickReplies" :key="q.id" class="quick-item" @click="applyQuick(q)">
               <text class="ql">{{ q.label }}</text>
               <text class="qc">{{ q.content }}</text>
             </view>
@@ -350,7 +377,13 @@ onUnload(() => {
 
     <!-- 底部输入栏 -->
     <view class="input-bar">
-      <view class="ia-btn" @click="showActions = !showActions; showQuick = false">
+      <view
+        class="ia-btn"
+        @click="
+          showActions = !showActions
+          showQuick = false
+        "
+      >
         <Icon :name="showActions ? 'close' : 'plus'" :size="44" color="var(--text-secondary)" />
       </view>
       <view class="input-wrap">
@@ -360,11 +393,24 @@ onUnload(() => {
           placeholder="输入消息…"
           confirm-type="send"
           @confirm="send"
-          @focus="showActions = false; showQuick = false"
+          @focus="
+            showActions = false
+            showQuick = false
+          "
         />
       </view>
-      <view class="ia-btn" @click="showQuick = !showQuick; showActions = false">
-        <Icon name="lightning" :size="40" :color="showQuick ? 'var(--brand-primary)' : 'var(--text-secondary)'" />
+      <view
+        class="ia-btn"
+        @click="
+          showQuick = !showQuick
+          showActions = false
+        "
+      >
+        <Icon
+          name="lightning"
+          :size="40"
+          :color="showQuick ? 'var(--brand-primary)' : 'var(--text-secondary)'"
+        />
       </view>
       <view :class="['send-btn', { active: inputText.trim() }]" @click="send">发送</view>
     </view>
@@ -375,16 +421,40 @@ onUnload(() => {
         <view class="ap-icon"><Icon name="image-plus" :size="44" color="#fff" /></view>
         <text class="ap-label">图片</text>
       </view>
-      <view class="ap-item" @click="uni.showToast({ title: '商品已发送', icon: 'success' }); showActions = false">
-        <view class="ap-icon" style="background:#3B82F6"><Icon name="biz-product" :size="44" color="#fff" /></view>
+      <view
+        class="ap-item"
+        @click="
+          uni.showToast({ title: '商品已发送', icon: 'success' })
+          showActions = false
+        "
+      >
+        <view class="ap-icon" style="background: #3b82f6"
+          ><Icon name="biz-product" :size="44" color="#fff"
+        /></view>
         <text class="ap-label">商品</text>
       </view>
-      <view class="ap-item" @click="uni.showToast({ title: '订单已发送', icon: 'success' }); showActions = false">
-        <view class="ap-icon" style="background:#10B981"><Icon name="biz-order" :size="44" color="#fff" /></view>
+      <view
+        class="ap-item"
+        @click="
+          uni.showToast({ title: '订单已发送', icon: 'success' })
+          showActions = false
+        "
+      >
+        <view class="ap-icon" style="background: #10b981"
+          ><Icon name="biz-order" :size="44" color="#fff"
+        /></view>
         <text class="ap-label">订单</text>
       </view>
-      <view class="ap-item" @click="uni.showToast({ title: '优惠券已发送', icon: 'success' }); showActions = false">
-        <view class="ap-icon" style="background:#F59E0B"><Icon name="tag" :size="44" color="#fff" /></view>
+      <view
+        class="ap-item"
+        @click="
+          uni.showToast({ title: '优惠券已发送', icon: 'success' })
+          showActions = false
+        "
+      >
+        <view class="ap-icon" style="background: #f59e0b"
+          ><Icon name="tag" :size="44" color="#fff"
+        /></view>
         <text class="ap-label">优惠券</text>
       </view>
     </view>
@@ -414,7 +484,9 @@ onUnload(() => {
               </view>
               <text class="sw-last">{{ s.lastMessage?.content || '暂无消息' }}</text>
             </view>
-            <view v-if="s.unreadCount > 0" class="sw-badge">{{ s.unreadCount > 9 ? '9+' : s.unreadCount }}</view>
+            <view v-if="s.unreadCount > 0" class="sw-badge">{{
+              s.unreadCount > 9 ? '9+' : s.unreadCount
+            }}</view>
           </view>
         </scroll-view>
       </view>
@@ -425,7 +497,7 @@ onUnload(() => {
 <style lang="scss" scoped>
 .page {
   height: 100vh;
-  background: #ECEDF1;
+  background: #ecedf1;
   display: flex;
   flex-direction: column;
 }
@@ -444,7 +516,7 @@ onUnload(() => {
   font-size: 20rpx;
   color: var(--text-tertiary);
   padding: 4rpx 12rpx;
-  background: rgba(0,0,0,0.06);
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 999rpx;
   margin-top: 8rpx;
 }
@@ -470,7 +542,7 @@ onUnload(() => {
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: #B0BEC5;
+  background: #b0bec5;
   color: #fff;
   text-align: center;
   line-height: 64rpx;
@@ -488,7 +560,7 @@ onUnload(() => {
   padding: 16rpx 20rpx;
   font-size: 26rpx;
   line-height: 1.5;
-  box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.04);
   word-break: break-all;
   &.type-image {
     padding: 0;
@@ -509,7 +581,7 @@ onUnload(() => {
   border-radius: 16rpx;
   padding: 16rpx 16rpx 8rpx;
   margin-top: 16rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
   .quick-head {
     display: flex;
     align-items: center;
@@ -538,8 +610,13 @@ onUnload(() => {
     gap: 12rpx;
     padding: 12rpx 8rpx;
     border-bottom: 1rpx dashed var(--border-light);
-    &:last-child { border-bottom: none; }
-    &:active { background: var(--bg-page); border-radius: 8rpx; }
+    &:last-child {
+      border-bottom: none;
+    }
+    &:active {
+      background: var(--bg-page);
+      border-radius: 8rpx;
+    }
     .ql {
       flex-shrink: 0;
       padding: 2rpx 8rpx;
@@ -601,7 +678,7 @@ onUnload(() => {
   &.active {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 .actions-panel {
@@ -636,7 +713,7 @@ onUnload(() => {
 .switcher-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
   display: flex;
   align-items: flex-end;
@@ -654,8 +731,15 @@ onUnload(() => {
     justify-content: space-between;
     padding: 24rpx;
     border-bottom: 1rpx solid var(--border-light);
-    .switcher-title { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-    .switcher-close { font-size: 26rpx; color: var(--brand-primary); }
+    .switcher-title {
+      font-size: 30rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .switcher-close {
+      font-size: 26rpx;
+      color: var(--brand-primary);
+    }
   }
   .switcher-scroll {
     flex: 1;
@@ -669,7 +753,9 @@ onUnload(() => {
   padding: 20rpx 24rpx;
   border-bottom: 1rpx solid var(--border-light);
   position: relative;
-  &.active { background: var(--brand-primary-ghost); }
+  &.active {
+    background: var(--brand-primary-ghost);
+  }
 }
 .sw-avatar-wrap {
   position: relative;
@@ -681,7 +767,7 @@ onUnload(() => {
   width: 80rpx;
   height: 80rpx;
   border-radius: 50%;
-  background: #B0BEC5;
+  background: #b0bec5;
   color: #fff;
   text-align: center;
   line-height: 80rpx;

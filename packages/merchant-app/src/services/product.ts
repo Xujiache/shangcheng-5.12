@@ -4,8 +4,8 @@
 import { http } from '../utils/request'
 import type { Product, Category, ProductCreateDto, Pagination } from '@jiujiu/shared/types'
 
-export type MerchantProductPayload = Omit<ProductCreateDto, 'priceDisplayRules'> &
-  Partial<Pick<ProductCreateDto, 'priceDisplayRules'>> & {
+export type MerchantProductPayload = Omit<ProductCreateDto, 'priceDisplayRules' | 'tags'> &
+  Partial<Pick<ProductCreateDto, 'priceDisplayRules' | 'tags'>> & {
     pricingMode?: 'standard' | 'by-size'
     pricePerSqm?: number
     minLength?: number
