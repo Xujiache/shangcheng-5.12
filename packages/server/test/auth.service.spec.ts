@@ -16,6 +16,9 @@ jest.mock('nanoid', () => ({
 import { AuthService } from '../src/modules/auth/auth.service'
 import { RefreshTokenBlacklistService } from '../src/modules/auth/refresh-token-blacklist.service'
 
+// 单测环境绝不连 Redis：黑名单服务在构造时快照 REDIS_URL，这里先清掉确保走纯内存路径
+delete process.env.REDIS_URL
+
 // ----------------------------------------------------------------------------
 // AuthService — 鉴权核心（真实测试）
 //
@@ -69,6 +72,8 @@ describe('RefreshTokenBlacklistService 黑名单核心', () => {
   let blacklist: RefreshTokenBlacklistService
 
   beforeEach(() => {
+    // 单测不设 REDIS_URL → 纯内存路径（与旧版行为完全一致，只是 API 变为 async）
+    delete process.env.REDIS_URL
     blacklist = new RefreshTokenBlacklistService()
   })
 
@@ -76,23 +81,23 @@ describe('RefreshTokenBlacklistService 黑名单核心', () => {
     jest.useRealTimers()
   })
 
-  it('revoke 后 isRevoked 返回 true', () => {
-    blacklist.revoke('jti-a', 3600)
-    expect(blacklist.isRevoked('jti-a')).toBe(true)
+  it('revoke 后 isRevoked 返回 true', async () => {
+    await blacklist.revoke('jti-a', 3600)
+    expect(await blacklist.isRevoked('jti-a')).toBe(true)
   })
 
-  it('未被吊销的 jti → isRevoked 返回 false', () => {
-    expect(blacklist.isRevoked('never-revoked')).toBe(false)
+  it('未被吊销的 jti → isRevoked 返回 false', async () => {
+    expect(await blacklist.isRevoked('never-revoked')).toBe(false)
   })
 
-  it('懒过期：TTL 到点后 isRevoked 返回 false', () => {
+  it('懒过期：TTL 到点后 isRevoked 返回 false', async () => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-06-11T00:00:00Z'))
-    blacklist.revoke('jti-short', 1)
-    expect(blacklist.isRevoked('jti-short')).toBe(true)
+    await blacklist.revoke('jti-short', 1)
+    expect(await blacklist.isRevoked('jti-short')).toBe(true)
     // 推进 2 秒，超过 1 秒 TTL → 懒过期清除
     jest.setSystemTime(Date.now() + 2000)
-    expect(blacklist.isRevoked('jti-short')).toBe(false)
+    expect(await blacklist.isRevoked('jti-short')).toBe(false)
   })
 })
 
@@ -129,7 +134,7 @@ describe('AuthService.refresh —— rotation / 重放 / 错误语义', () => {
     expect(result).toHaveProperty('accessToken')
     expect(result).toHaveProperty('refreshToken')
     expect(result).toHaveProperty('expiresIn')
-    expect(blacklist.isRevoked('old-jti')).toBe(true)
+    expect(await blacklist.isRevoked('old-jti')).toBe(true)
   })
 
   // C. 重放：同一 token 第二次 refresh
@@ -317,7 +322,7 @@ describe('AuthService.logout', () => {
 
     const res = await service.logout('rt-valid')
     expect(res).toEqual({ ok: true })
-    expect(blacklist.isRevoked('logout-jti')).toBe(true)
+    expect(await blacklist.isRevoked('logout-jti')).toBe(true)
   })
 
   it('F：垃圾 token（verify 抛错）仍幂等返回 {ok:true}', async () => {

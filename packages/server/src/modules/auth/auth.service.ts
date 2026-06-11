@@ -233,10 +233,7 @@ export class AuthService {
     const provider = (process.env.SMS_PROVIDER || 'none').toLowerCase()
     const isProd = process.env.NODE_ENV === 'production'
     if (isProd && provider === 'none') {
-      throw new BizException(
-        BizCode.BUSINESS_ERROR,
-        '短信服务未配置，请联系运维配置 SMS_PROVIDER',
-      )
+      throw new BizException(BizCode.BUSINESS_ERROR, '短信服务未配置，请联系运维配置 SMS_PROVIDER')
     }
     const useRealSms = provider !== 'none' && isProd
     // 用 crypto.randomInt 替代 Math.random，避免可预测的伪随机序列被穷举
@@ -350,7 +347,7 @@ export class AuthService {
     }
 
     const oldJti: string | undefined = payload.jti
-    if (oldJti && this.refreshBlacklist.isRevoked(oldJti)) {
+    if (oldJti && (await this.refreshBlacklist.isRevoked(oldJti))) {
       // 已被 rotation 吊销过的 refresh token 再次出现 = 强烈的重放/泄露信号
       throw new BizException(BizCode.UNAUTHORIZED, 'refresh token revoked')
     }
@@ -365,7 +362,7 @@ export class AuthService {
     // 兼容旧客户端：老 refresh token 不带 jti，跳过吊销但仍返回新 token（平滑升级）
     if (oldJti && typeof payload.exp === 'number') {
       const remainSec = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
-      this.refreshBlacklist.revoke(oldJti, remainSec)
+      await this.refreshBlacklist.revoke(oldJti, remainSec)
     }
 
     return tokens
@@ -403,7 +400,7 @@ export class AuthService {
         const jti: string | undefined = payload?.jti
         if (jti && typeof payload?.exp === 'number') {
           const remainSec = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
-          this.refreshBlacklist.revoke(jti, remainSec)
+          await this.refreshBlacklist.revoke(jti, remainSec)
         }
         if (!callerSub && payload?.sub) callerSub = payload.sub
       } catch (e: any) {
@@ -474,7 +471,11 @@ export class AuthService {
       if (!dup) patch.username = user.phone
     }
     await this.prisma.user.update({ where: { id: userId }, data: patch })
-    try { _clearJwtUserCache(userId) } catch { /* ignore */ }
+    try {
+      _clearJwtUserCache(userId)
+    } catch {
+      /* ignore */
+    }
     return { ok: true }
   }
 
@@ -535,7 +536,11 @@ export class AuthService {
     await this.prisma.smsCode.update({ where: { id: newRec.id }, data: { used: true } })
 
     await this.prisma.user.update({ where: { id: userId }, data: { phone: newPhone } })
-    try { _clearJwtUserCache(userId) } catch { /* ignore */ }
+    try {
+      _clearJwtUserCache(userId)
+    } catch {
+      /* ignore */
+    }
     return { ok: true, phone: newPhone }
   }
 }
