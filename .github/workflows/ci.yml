@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# CI: 静态检查 + 类型检查 + 单元测试（PR 与 main 分支必跑）
+# CI: 静态检查 + 类型检查 + 单元测试 + 集成测试（PR 与 main 分支必跑）
 #
 # 设计原则：
 #   - 全部硬门禁：lint / typecheck / test 任一失败 → 红灯阻断
@@ -32,6 +32,32 @@ jobs:
       fail-fast: false
       matrix:
         node: ['20']
+    # 集成测试依赖的服务容器：随 job 启动、随 job 销毁（每次 run 全新实例）。
+    # 因此对该库执行 prisma db push 是安全的——它只是一次性测试库，没有任何
+    # 持久数据，无需 migrate 历史。健康检查确保服务就绪后才开始跑 steps。
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,6 +82,12 @@ jobs:
         # 后续 typecheck/lint 需要它的 dist + 类型产物
         run: pnpm --filter @jiujiu/shared build
 
+      - name: Generate Prisma client
+        # typecheck / jest 都引用 @prisma/client 的生成类型。pnpm install 的
+        # postinstall 通常会自动 generate，但显式跑一次成本极低且消除不确定性
+        # （与 build.yml 的 Build server 前置步骤保持一致）。
+        run: pnpm --filter @jiujiu/server exec prisma generate
+
       - name: Lint
         run: pnpm lint
 
@@ -67,3 +99,18 @@ jobs:
         # （微信回调幂等/验签/refresh rotation/价格分级计价/优惠券重算/会员闸门/
         # WS 鉴权）。测试失败必须红灯阻断，不再 || true 软放过。
         run: pnpm test:server
+
+      - name: Push schema to test DB
+        # db push（非 migrate）直接按 schema.prisma 建表：服务容器里的库是
+        # 每次 run 的一次性实例，无历史数据，push 安全且最快。硬门禁。
+        run: pnpm --filter @jiujiu/server db:push:test
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test?schema=public
+
+      - name: Integration tests (server)
+        # 硬门禁：跑 jest.integration.config.js（--runInBand），连真实
+        # Postgres + Redis 服务容器验证仓储/事务/缓存行为。
+        run: pnpm --filter @jiujiu/server test:integration
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test?schema=public
+          REDIS_URL: redis://localhost:6379
