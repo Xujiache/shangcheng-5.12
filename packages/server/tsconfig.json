@@ -19,6 +19,6 @@
       "@modules/*": ["src/modules/*"]
     }
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts", "test-integration/**/*.ts", "prisma/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
