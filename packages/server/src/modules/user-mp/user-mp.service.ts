@@ -631,36 +631,21 @@ export class UserMpService {
       return created
     })
 
-    // 标记该券为"已使用"（best-effort，失败不影响下单）：找到该用户这张券的一个未使用编号 no，
-    // 写 user_coupon_used:<userId>:<no> 流水，使「我的优惠券 · 已使用」tab 正确显示
+    // 标记该券为"已使用"（best-effort，失败不影响下单）：取该用户这张券最早领取的
+    // 一条未使用 UserCoupon 行，按主键 no 核销（status='used' + usedAt/orderId/orderNo），
+    // 使「我的优惠券 · 已使用」tab 正确显示
     // （之前只递增 Coupon.used，从不写 per-user 核销，导致已使用列表永远为空）。
     if (couponId) {
       try {
-        const recv = await this.prisma.systemConfig.findUnique({
-          where: { key: `user_coupon:${userId}:${couponId}` },
+        const free = await this.prisma.userCoupon.findFirst({
+          where: { userId, couponId, status: 'unused' },
+          orderBy: { claimedAt: 'asc' },
         })
-        const ids: string[] = ((recv?.value as any)?.ids as string[]) || []
-        if (ids.length) {
-          const usedRows = await this.prisma.systemConfig.findMany({
-            where: { key: { in: ids.map((no) => `user_coupon_used:${userId}:${no}`) } },
-            select: { key: true },
+        if (free) {
+          await this.prisma.userCoupon.update({
+            where: { no: free.no },
+            data: { status: 'used', usedAt: new Date(), orderId: order.id, orderNo: order.no },
           })
-          const usedSet = new Set(usedRows.map((r) => r.key))
-          const freeNo = ids.find((no) => !usedSet.has(`user_coupon_used:${userId}:${no}`))
-          if (freeNo) {
-            await this.prisma.systemConfig.upsert({
-              where: { key: `user_coupon_used:${userId}:${freeNo}` },
-              update: {},
-              create: {
-                key: `user_coupon_used:${userId}:${freeNo}`,
-                value: {
-                  usedAt: new Date().toISOString(),
-                  orderId: order.id,
-                  orderNo: order.no,
-                } as any,
-              },
-            })
-          }
         }
       } catch {
         // best-effort：核销流水写失败不影响下单主流程
@@ -1108,19 +1093,15 @@ export class UserMpService {
   /**
    * 用户领取优惠券
    *
-   * 由于当前 Prisma schema 没有独立 UserCoupon 中间表(详见 README 数据模型设计),
-   * 这里用 SystemConfig 作为最小可用方案兜底:
-   *   - key 形如 `user_coupon:<userId>:<couponId>` → value: { count, ids: [], claimedAt }
-   *     ids 记录每张券的唯一编号(便于后续核销),count 用于查"已领几张"做 perUserLimit 检查
+   * 持券落正式 UserCoupon 表（一券一行，主键 no）。历史上曾用 SystemConfig
+   * key=`user_coupon:<userId>:<couponId>` 的 JSON { count, ids[], claimedAt } 兜底，
+   * 已通过 deploy/user-coupon-init.sql 迁移到本表，对外返回形状不变。
    *
    * 业务校验:
    *   1. 券存在 + 状态 active + 在有效期内
    *   2. 总库存(stock=0 即不限)还剩余
-   *   3. 用户已领数量 < perUserLimit(同样 0 视为不限,但保底视为至少 1)
+   *   3. 用户已领数量(tx 内 count UserCoupon) < perUserLimit(0 视为不限,但保底视为至少 1)
    *   4. Coupon.received 原子 +1(用 update 的 increment,避免并发超领)
-   *
-   * 后续升级路径:把 SystemConfig 兼容层迁到正式 UserCoupon 表(userId + couponId + status + usedAt)
-   * 即可获得完整核销追踪能力,且本接口对外形状不变。
    */
   async claimCoupon(userId: string, couponId: string) {
     if (!userId) throw new BizException(BizCode.UNAUTHORIZED, '未登录')
@@ -1140,10 +1121,9 @@ export class UserMpService {
       throw new BizException(BizCode.BUSINESS_ERROR, '优惠券已被领完')
     }
 
-    const cfgKey = `user_coupon:${userId}:${couponId}`
     const limit = c.perUserLimit > 0 ? c.perUserLimit : 1
 
-    // 并发安全核心：把「读本用户已领数量 → 校验 perUserLimit → 写 received+1 / count+1」
+    // 并发安全核心：把「读本用户已领数量 → 校验 perUserLimit → 写 received+1 / 落持券行」
     // 全部放进同一个 Serializable 交互式事务。两次并发领取会被串行化，
     // 第二次能观察到第一次的写入，从而正确触发"已达上限"。
     // 旧实现把 count 读在事务外，两个请求都读到 count=0 → 双双通过 → 超领。
@@ -1152,31 +1132,16 @@ export class UserMpService {
         async (tx) => {
           // 生成本张券的唯一编号(后续核销时用),格式 'UC' + base36 时间戳 + 随机 6 位
           const ucNo = `UC${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
-          const exist = await tx.systemConfig.findUnique({ where: { key: cfgKey } })
-          const claimed = (exist?.value as any)?.count || 0
+          const claimed = await tx.userCoupon.count({ where: { userId, couponId } })
           if (claimed >= limit) {
             throw new BizException(BizCode.BUSINESS_ERROR, `每人最多领 ${limit} 张,已达上限`)
           }
-          const nextIds = [...((exist?.value as any)?.ids || []), ucNo]
           // 原子更新 Coupon.received 防超领
           await tx.coupon.update({
             where: { id: couponId },
             data: { received: { increment: 1 } },
           })
-          await tx.systemConfig.upsert({
-            where: { key: cfgKey },
-            update: {
-              value: {
-                count: claimed + 1,
-                ids: nextIds,
-                claimedAt: now.toISOString(),
-              } as any,
-            },
-            create: {
-              key: cfgKey,
-              value: { count: 1, ids: [ucNo], claimedAt: now.toISOString() } as any,
-            },
-          })
+          await tx.userCoupon.create({ data: { no: ucNo, userId, couponId } })
           return { ok: true as const, no: ucNo, count: claimed + 1 }
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -1214,16 +1179,13 @@ export class UserMpService {
    * `usedAt?` + `claimedAt`。前端 pages/coupon/my.vue 按 tab 三态过滤显示。
    *
    * 实现策略：
-   *   - 拿 SystemConfig 里 key 形如 `user_coupon:<userId>:%` 的所有条目
-   *   - 一个 SystemConfig 行可能包含同一 couponId 的多张券（ids[]），全部展开成多条记录
-   *   - 同时读 `user_coupon_used:<userId>:<no>` 已使用流水（claimCoupon 与未来核销逻辑写入），
-   *     缺失则视为未使用
-   *   - 过期判定：validTo < now → expired（即便 status='used' 也视为 expired，UI 优先展示已使用更友好，
-   *     这里以"已使用 > 已过期"为优先级返回 status）
+   *   - 查 UserCoupon 单表（一券一行，claimedAt desc），再按去重 couponId 批量补券基础信息
+   *   - 状态判定优先级与 SystemConfig 旧实现完全一致："已使用 > 已过期 > 未使用"：
+   *     行已核销（status='used' 或 usedAt 非空）→ used；否则 validTo < now → expired；否则 unused
    *   - 支持 query.status 过滤：'unused' | 'used' | 'expired'
    *
-   * 后续若迁到 UserCoupon 表，本方法只需把"读 SystemConfig 多条"改成"查 UserCoupon 单表"，
-   * 对外类型不变，前端 0 改动。
+   * 历史 SystemConfig 兜底已由 deploy/user-coupon-init.sql 迁入本表。旧实现里
+   * "ids 缺失按 count 生成 LEGACY_ 占位 no" 的兜底分支随之删除——表里每行都有真实 no。
    */
   async myCoupons(
     userId: string,
@@ -1247,28 +1209,20 @@ export class UserMpService {
     }>
   > {
     if (!userId) return []
-    const prefix = `user_coupon:${userId}:`
-    const usedPrefix = `user_coupon_used:${userId}:`
-    const [rows, usedRows] = await Promise.all([
-      this.prisma.systemConfig.findMany({ where: { key: { startsWith: prefix } }, take: 200 }),
-      this.prisma.systemConfig.findMany({ where: { key: { startsWith: usedPrefix } }, take: 500 }),
-    ])
+    // claimedAt desc（最近领到的排前面）由数据库排序保证
+    const rows = await this.prisma.userCoupon.findMany({
+      where: { userId },
+      orderBy: { claimedAt: 'desc' },
+      take: 500,
+    })
     if (!rows.length) return []
 
-    const couponIds = rows.map((r) => r.key.slice(prefix.length))
+    const couponIds = Array.from(new Set(rows.map((r) => r.couponId)))
     const coupons = await this.prisma.coupon.findMany({
       where: { id: { in: couponIds } },
       include: { merchant: { select: { id: true, name: true } } },
     })
     const cmap = new Map(coupons.map((c) => [c.id, c]))
-
-    // 已使用映射：key = no(用户券编号) → { usedAt }
-    const usedMap = new Map<string, { usedAt: string | null }>()
-    for (const u of usedRows) {
-      const no = u.key.slice(usedPrefix.length)
-      const v = (u.value as any) || {}
-      usedMap.set(no, { usedAt: v.usedAt || null })
-    }
 
     const now = new Date()
     const list: Array<{
@@ -1288,54 +1242,36 @@ export class UserMpService {
       claimedAt: string | null
     }> = []
     for (const r of rows) {
-      const couponId = r.key.slice(prefix.length)
-      const c = cmap.get(couponId)
+      const c = cmap.get(r.couponId)
       if (!c) continue
-      const claimed = (r.value as any) || {}
-      const ids: string[] = Array.isArray(claimed.ids) ? claimed.ids : []
-      // 历史数据兜底：ids 缺失但 count > 0 时，至少生成 count 条占位 no（防该用户的券完全丢失）
-      const fallbackCount = Number(claimed.count) || 0
-      const noList: string[] =
-        ids.length > 0
-          ? ids
-          : Array.from({ length: fallbackCount }, (_, i) => `LEGACY_${couponId}_${i + 1}`)
-
-      for (const no of noList) {
-        const usedInfo = usedMap.get(no)
-        const expired = c.validTo < now
-        let status: 'unused' | 'used' | 'expired'
-        if (usedInfo) status = 'used'
-        else if (expired) status = 'expired'
-        else status = 'unused'
-        list.push({
-          no,
-          couponId: c.id,
-          name: c.name,
-          type: c.type,
-          amount: c.amount != null ? Number(c.amount) : null,
-          discountPercent: c.discountPercent,
-          threshold: c.threshold != null ? Number(c.threshold) : null,
-          merchantId: c.merchantId,
-          merchantName: c.merchant?.name || '',
-          validFrom: c.validFrom,
-          validTo: c.validTo,
-          status,
-          usedAt: usedInfo?.usedAt || null,
-          claimedAt: claimed.claimedAt || null,
-        })
-      }
+      // "已使用 > 已过期 > 未使用" 优先级，与旧 SystemConfig 实现一致
+      const used = r.status === 'used' || r.usedAt != null
+      const expired = c.validTo < now
+      let status: 'unused' | 'used' | 'expired'
+      if (used) status = 'used'
+      else if (expired) status = 'expired'
+      else status = 'unused'
+      list.push({
+        no: r.no,
+        couponId: c.id,
+        name: c.name,
+        type: c.type,
+        amount: c.amount != null ? Number(c.amount) : null,
+        discountPercent: c.discountPercent,
+        threshold: c.threshold != null ? Number(c.threshold) : null,
+        merchantId: c.merchantId,
+        merchantName: c.merchant?.name || '',
+        validFrom: c.validFrom,
+        validTo: c.validTo,
+        status,
+        usedAt: r.usedAt ? r.usedAt.toISOString() : null,
+        claimedAt: r.claimedAt ? r.claimedAt.toISOString() : null,
+      })
     }
 
     // status 过滤
     const want = query?.status
-    const filtered = want ? list.filter((x) => x.status === want) : list
-    // claimedAt desc（最近领到的排前面）
-    filtered.sort((a, b) => {
-      const ta = a.claimedAt ? new Date(a.claimedAt).getTime() : 0
-      const tb = b.claimedAt ? new Date(b.claimedAt).getTime() : 0
-      return tb - ta
-    })
-    return filtered
+    return want ? list.filter((x) => x.status === want) : list
   }
 
   // ========== 预约量尺 ==========

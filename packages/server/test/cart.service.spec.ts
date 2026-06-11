@@ -31,6 +31,7 @@ import { UserMpService } from '../src/modules/user-mp/user-mp.service'
 //   - confirmOrder：状态机（仅已发货可确认收货）+ WS 推送
 //   - bindPhone  ：验证码 / 手机号占用 / 当前账号已绑别号
 //   - claimCoupon：领取校验链 + 交互式 Serializable $transaction（per-user 限领并发安全）
+//   - myCoupons  ：UserCoupon 单表读取 + used>expired>unused 三态映射 + status 过滤
 // ----------------------------------------------------------------------------
 
 /** 断言抛出的 BizException 业务码 */
@@ -416,38 +417,36 @@ describe('UserMpService.claimCoupon 领券校验链', () => {
 
   /**
    * @param coupon       coupon.findUnique 返回（null 表示券不存在）
-   * @param userClaimed  已领数量（tx.systemConfig.findUnique value.count）
+   * @param userClaimed  已领数量（tx.userCoupon.count 返回值）
    *
-   * 新实现用「交互式 Serializable 事务」：claimCoupon 调
+   * 新实现用「交互式 Serializable 事务」+ 正式 UserCoupon 表：claimCoupon 调
    * prisma.$transaction(async (cb) => cb(tx), { isolationLevel })。
    * 每人限领数量（count）必须在 **tx 客户端** 上读 —— 这是并发安全的关键，
-   * 因此 txMock 暴露 systemConfig.{findUnique,upsert} 与 coupon.update。
-   * 基座 prisma.systemConfig.findUnique 仅作哨兵：断言它不会被用于读 count。
+   * 因此 txMock 暴露 userCoupon.{count,create} 与 coupon.update。
+   * 基座 prisma.userCoupon.count 仅作哨兵：断言它不会被用于读 count。
    */
   function makeSvc(opts: { coupon: any; userClaimed?: number }) {
     const chat = makeChatMock()
     const couponUpdate = jest.fn(async () => ({}))
-    const sysUpsert = jest.fn(async () => ({}))
-    const txFindUnique = jest.fn(async () =>
-      opts.userClaimed != null ? { value: { count: opts.userClaimed, ids: [] } } : null,
-    )
+    const ucCreate = jest.fn(async (_arg: any) => ({}))
+    const txUcCount = jest.fn(async (_arg: any) => opts.userClaimed ?? 0)
     // tx 客户端：事务回调内的全部读写都打在它身上
     const txMock = {
       coupon: { update: couponUpdate },
-      systemConfig: { findUnique: txFindUnique, upsert: sysUpsert },
+      userCoupon: { count: txUcCount, create: ucCreate },
     }
-    // 基座 systemConfig.findUnique —— 哨兵，断言 count 不从这里读
-    const baseSysFindUnique = jest.fn(async () => {
-      throw new Error('base prisma.systemConfig.findUnique 不应被用于读 per-user count')
+    // 基座 userCoupon.count —— 哨兵，断言 count 不从这里读
+    const baseUcCount = jest.fn(async () => {
+      throw new Error('base prisma.userCoupon.count 不应被用于读 per-user count')
     })
     const prisma = {
       coupon: { findUnique: jest.fn(async () => opts.coupon), update: couponUpdate },
-      systemConfig: { findUnique: baseSysFindUnique, upsert: sysUpsert },
+      userCoupon: { count: baseUcCount, create: ucCreate },
       // 回调形式：claimCoupon 传入 (cb, opts)，把 txMock 喂给回调
       $transaction: jest.fn(async (cb: any, _opts?: any) => cb(txMock)),
     }
     const svc = new UserMpService(prisma as any, makeWxpayMock() as any, chat as any)
-    return { svc, prisma, txMock, couponUpdate, sysUpsert, txFindUnique, baseSysFindUnique }
+    return { svc, prisma, txMock, couponUpdate, ucCreate, txUcCount, baseUcCount }
   }
 
   it('券不存在 → NOT_FOUND(1002)', async () => {
@@ -473,21 +472,24 @@ describe('UserMpService.claimCoupon 领券校验链', () => {
   })
 
   it('超出每人限领(perUserLimit) → BUSINESS_ERROR(1000)，且 count 读在 tx 客户端上', async () => {
-    const { svc, txFindUnique, baseSysFindUnique, couponUpdate } = makeSvc({
+    const { svc, txUcCount, baseUcCount, couponUpdate, ucCreate } = makeSvc({
       coupon: activeCoupon({ perUserLimit: 1 }),
       userClaimed: 1,
     })
     await expectBizCode(() => svc.claimCoupon('u1', 'cp1'), 1000)
     // per-user count 必须在事务客户端读（并发安全核心），不能读基座 prisma
-    expect(txFindUnique).toHaveBeenCalledTimes(1)
-    expect(baseSysFindUnique).not.toHaveBeenCalled()
-    // 超限路径绝不写库存（事务回滚），received 不应被 +1
+    expect(txUcCount).toHaveBeenCalledTimes(1)
+    expect(txUcCount).toHaveBeenCalledWith({ where: { userId: 'u1', couponId: 'cp1' } })
+    expect(baseUcCount).not.toHaveBeenCalled()
+    // 超限路径绝不写库存（事务回滚），received 不应被 +1，持券行也不应落表
     expect(couponUpdate).not.toHaveBeenCalled()
+    expect(ucCreate).not.toHaveBeenCalled()
   })
 
-  it('正常领取：回调形式 $transaction(Serializable) 被调用，tx 内读 count + 写，返回 {ok:true, no}', async () => {
-    const { svc, prisma, txMock, couponUpdate, sysUpsert, txFindUnique, baseSysFindUnique } =
-      makeSvc({ coupon: activeCoupon() })
+  it('正常领取：回调形式 $transaction(Serializable) 被调用，tx 内读 count + 写，返回 {ok:true, no, count}', async () => {
+    const { svc, prisma, txMock, couponUpdate, ucCreate, txUcCount, baseUcCount } = makeSvc({
+      coupon: activeCoupon(),
+    })
     const r: any = await svc.claimCoupon('u1', 'cp1')
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1)
@@ -495,15 +497,121 @@ describe('UserMpService.claimCoupon 领券校验链', () => {
     expect(typeof prisma.$transaction.mock.calls[0][0]).toBe('function')
     const txOpts: any = prisma.$transaction.mock.calls[0][1]
     expect(txOpts?.isolationLevel).toBe('Serializable')
-    // per-user count 读在 tx 客户端，而非基座 prisma
-    expect(txFindUnique).toHaveBeenCalledTimes(1)
-    expect(baseSysFindUnique).not.toHaveBeenCalled()
-    // received +1 + per-user 流水 upsert 均在 tx 客户端求值
+    // per-user count 读在 tx 客户端（tx.userCoupon.count），而非基座 prisma
+    expect(txUcCount).toHaveBeenCalledTimes(1)
+    expect(txUcCount).toHaveBeenCalledWith({ where: { userId: 'u1', couponId: 'cp1' } })
+    expect(baseUcCount).not.toHaveBeenCalled()
+    // received +1 + 持券行 create 均在 tx 客户端求值
     expect(txMock.coupon.update).toBe(couponUpdate)
     expect(couponUpdate).toHaveBeenCalledTimes(1)
-    expect(sysUpsert).toHaveBeenCalledTimes(1)
+    expect(ucCreate).toHaveBeenCalledTimes(1)
+    const createArg: any = ucCreate.mock.calls[0][0]
+    expect(createArg.data.userId).toBe('u1')
+    expect(createArg.data.couponId).toBe('cp1')
+    expect(createArg.data.no).toBe(r.no)
     expect(r.ok).toBe(true)
     expect(typeof r.no).toBe('string')
     expect(r.no.length).toBeGreaterThan(0)
+    expect(r.count).toBe(1)
+  })
+})
+
+// ============================================================================
+// myCoupons — UserCoupon 单表读取 + 三态映射（used > expired > unused）+ status 过滤
+// ============================================================================
+describe('UserMpService.myCoupons 我的优惠券', () => {
+  const now = Date.now()
+
+  /** 券基础信息（coupon.findMany 返回，含 merchant 名称） */
+  function coupon(id: string, over: any = {}) {
+    return {
+      id,
+      name: `券${id}`,
+      type: 'fullReduce',
+      amount: 50,
+      discountPercent: null,
+      threshold: 100,
+      merchantId: 'm1',
+      merchant: { id: 'm1', name: '商家一号' },
+      validFrom: new Date(now - 86400_000),
+      validTo: new Date(now + 86400_000),
+      ...over,
+    }
+  }
+
+  /** UserCoupon 持券行（userCoupon.findMany 返回） */
+  function ucRow(no: string, couponId: string, over: any = {}) {
+    return {
+      no,
+      userId: 'u1',
+      couponId,
+      status: 'unused',
+      usedAt: null,
+      orderId: null,
+      orderNo: null,
+      claimedAt: new Date(now - 3600_000),
+      ...over,
+    }
+  }
+
+  function makeSvc(rows: any[], coupons: any[]) {
+    const ucFindMany = jest.fn(async (_arg: any) => rows)
+    const cpFindMany = jest.fn(async (_arg: any) => coupons)
+    const prisma = {
+      userCoupon: { findMany: ucFindMany },
+      coupon: { findMany: cpFindMany },
+    }
+    const svc = new UserMpService(prisma as any, makeWxpayMock() as any, makeChatMock() as any)
+    return { svc, ucFindMany, cpFindMany }
+  }
+
+  it('三态映射：已核销→used（即便券已过期，used 优先于 expired），过期未用→expired，其余→unused', async () => {
+    const usedAt = new Date(now - 1800_000)
+    const rows = [
+      // 已核销 + 券已过期 → 仍 used（与旧 SystemConfig 实现的优先级一致）
+      ucRow('UC_used_expired', 'cpExpired', { status: 'used', usedAt }),
+      // 未核销 + 券已过期 → expired
+      ucRow('UC_expired', 'cpExpired'),
+      // 未核销 + 在有效期 → unused
+      ucRow('UC_unused', 'cpActive'),
+    ]
+    const coupons = [coupon('cpExpired', { validTo: new Date(now - 1000) }), coupon('cpActive')]
+    const { svc, ucFindMany } = makeSvc(rows, coupons)
+    const list: any[] = await svc.myCoupons('u1')
+
+    // 单表查询：where userId + claimedAt desc + take 500
+    const arg: any = ucFindMany.mock.calls[0][0]
+    expect(arg.where).toEqual({ userId: 'u1' })
+    expect(arg.orderBy).toEqual({ claimedAt: 'desc' })
+    expect(arg.take).toBe(500)
+
+    expect(list).toHaveLength(3)
+    const byNo = new Map(list.map((x) => [x.no, x]))
+    expect(byNo.get('UC_used_expired').status).toBe('used')
+    expect(byNo.get('UC_used_expired').usedAt).toBe(usedAt.toISOString())
+    expect(byNo.get('UC_expired').status).toBe('expired')
+    expect(byNo.get('UC_expired').usedAt).toBeNull()
+    expect(byNo.get('UC_unused').status).toBe('unused')
+    // 行形状契约（前端 MyCoupon）：claimedAt 为 ISO 字符串，金额扁平为 number，带商家名
+    const u = byNo.get('UC_unused')
+    expect(u.claimedAt).toBe(rows[2].claimedAt.toISOString())
+    expect(u.amount).toBe(50)
+    expect(u.threshold).toBe(100)
+    expect(u.merchantName).toBe('商家一号')
+    expect(u.couponId).toBe('cpActive')
+  })
+
+  it('query.status 过滤：只返回指定状态（used），未知 couponId 的持券行被跳过', async () => {
+    const rows = [
+      ucRow('UC_used', 'cpActive', { status: 'used', usedAt: new Date(now - 60_000) }),
+      ucRow('UC_unused', 'cpActive'),
+      // 券已被删/查不到 → 行直接跳过，不进结果
+      ucRow('UC_orphan', 'cpGone', { status: 'used', usedAt: new Date(now - 60_000) }),
+    ]
+    const { svc } = makeSvc(rows, [coupon('cpActive')])
+    const list: any[] = await svc.myCoupons('u1', { status: 'used' })
+    expect(list).toHaveLength(1)
+    expect(list[0].no).toBe('UC_used')
+    expect(list[0].status).toBe('used')
   })
 })

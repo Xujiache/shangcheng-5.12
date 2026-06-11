@@ -152,7 +152,7 @@ export class UserMpController {
   /**
    * 我的优惠券列表（已领，包含未用 / 已用 / 已过期）
    *
-   * 必须登录（防匿名扫探 user-mp 端的 user_coupon SystemConfig key）。
+   * 必须登录（防匿名扫探 user-mp 端的 UserCoupon 持券数据）。
    * Query: status='unused' | 'used' | 'expired'（可选；缺省返回全部）
    * Response: MyCoupon[]（**数组** 不是分页对象，前端 couponService.my() 直接消费）
    */

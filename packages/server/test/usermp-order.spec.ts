@@ -170,8 +170,11 @@ function makePrisma(
       findUnique: jest.fn(async (arg: any) =>
         arg.where.key in configMap ? { key: arg.where.key, value: configMap[arg.where.key] } : null,
       ),
-      findMany: jest.fn(async () => []),
-      upsert: jest.fn(async () => ({})),
+    },
+    // createOrder 下单后 best-effort 核销：findFirst 取最早一条未使用持券行 → update 标记已用
+    userCoupon: {
+      findFirst: jest.fn(async (_arg: any) => null),
+      update: jest.fn(async (_arg: any) => ({})),
     },
     $transaction: jest.fn(async (cb: any) => cb(tx)),
     __tx: tx,
@@ -543,6 +546,13 @@ describe('UserMpService createOrder happy path', () => {
     const couponArg = prisma.__tx.coupon.update.mock.calls[0][0] as any
     expect(couponArg.data.used.increment).toBe(1)
 
+    // 事务外 best-effort 核销：取最早一条未使用 UserCoupon（本例 mock 无持券行 → 不 update）
+    expect(prisma.userCoupon.findFirst).toHaveBeenCalledWith({
+      where: { userId: 'u1', couponId: 'c1', status: 'unused' },
+      orderBy: { claimedAt: 'asc' },
+    })
+    expect(prisma.userCoupon.update).not.toHaveBeenCalled()
+
     // 商家端推送
     expect(chat.emitOrderNew).toHaveBeenCalledTimes(1)
 
@@ -553,12 +563,50 @@ describe('UserMpService createOrder happy path', () => {
     expect(res.payAmount).toBe(150)
   })
 
-  it('无券下单：不调用 tx.coupon.update', async () => {
+  it('无券下单：不调用 tx.coupon.update，也不触发 UserCoupon 核销', async () => {
     const skus = [makeSku('s1', 'p1', 10, 100, 80, 60, '规格A', {})]
     const prisma = makePrisma({ skus })
     const { svc } = makeService(prisma)
     await svc.createOrder('u1', orderDto())
     expect(prisma.__tx.coupon.update).not.toHaveBeenCalled()
+    expect(prisma.userCoupon.findFirst).not.toHaveBeenCalled()
+    expect(prisma.userCoupon.update).not.toHaveBeenCalled()
+  })
+
+  it('用券下单且有未使用持券行：按主键 no 核销（status=used + usedAt/orderId/orderNo）', async () => {
+    const skus = [makeSku('s1', 'p1', 10, 100, 80, 60, '规格A', {})]
+    const now = Date.now()
+    const coupon = {
+      id: 'c1',
+      status: 'active',
+      validFrom: new Date(now - 86400_000),
+      validTo: new Date(now + 86400_000),
+      merchantId: 'm1',
+      threshold: null,
+      perUserLimit: null,
+      scope: 'all',
+      scopeIds: [],
+      type: 'fullReduce',
+      amount: 50,
+      discountPercent: null,
+    }
+    const prisma = makePrisma({ skus, coupon })
+    prisma.userCoupon.findFirst = jest.fn(async (_arg: any) => ({
+      no: 'UC1',
+      userId: 'u1',
+      couponId: 'c1',
+      status: 'unused',
+    }))
+    const { svc } = makeService(prisma)
+    await svc.createOrder('u1', orderDto({ couponId: 'c1' }))
+
+    expect(prisma.userCoupon.update).toHaveBeenCalledTimes(1)
+    const arg = prisma.userCoupon.update.mock.calls[0][0] as any
+    expect(arg.where).toEqual({ no: 'UC1' })
+    expect(arg.data.status).toBe('used')
+    expect(arg.data.usedAt).toBeInstanceOf(Date)
+    expect(arg.data.orderId).toBe('o1')
+    expect(arg.data.orderNo).toBeTruthy()
   })
 })
 

@@ -531,6 +531,26 @@ model Coupon {
   @@index([merchantId, status])
 }
 
+// 用户持券正式表（替代 SystemConfig key=`user_coupon:<userId>:<couponId>` 领取记录
+// 与 `user_coupon_used:<userId>:<no>` 核销流水的 KV 兜底）。
+//
+// 之前每用户每券一行 JSON { count, ids[], claimedAt }，核销再散落一堆 used 流水 key，
+// 列表查询要按前缀扫 + 应用层拼装；改为一券一行后 perUserLimit 直接 count()，
+// 核销直接按主键 no update，状态/时间全部走索引查询。
+model UserCoupon {
+  no        String    @id // 用户券唯一编号（claimCoupon 生成的 UCxxx）
+  userId    String
+  couponId  String
+  status    String    @default("unused") // unused / used
+  usedAt    DateTime?
+  orderId   String?
+  orderNo   String?
+  claimedAt DateTime  @default(now())
+
+  @@index([userId, couponId])
+  @@index([userId, status])
+}
+
 model FlashSale {
   id         String   @id @default(cuid())
   merchantId String
