@@ -2,8 +2,8 @@
 # CI: 静态检查 + 类型检查 + 单元测试（PR 与 main 分支必跑）
 #
 # 设计原则：
-#   - 不阻塞主分支：lint / typecheck 失败 → 红灯；test 暂用 || true 软失败，
-#     等 packages/server/test/ 模板补全为真正可跑用例后再去掉 || true。
+#   - 全部硬门禁：lint / typecheck / test 任一失败 → 红灯阻断
+#     （server/test/ 已是真实用例，详见 Unit tests 步骤注释）。
 #   - 单 Node 版本（20.x）：仓库 engines.node 已锁 >=20.19.0；引入 matrix
 #     会让 pnpm 缓存命中率下降、且暂无多版本验证需求。
 #   - pnpm 通过 packageManager 字段（package.json）自动启用 corepack。

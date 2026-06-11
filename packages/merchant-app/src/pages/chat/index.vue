@@ -257,7 +257,14 @@ function handleIncomingMessage(payload: any) {
 
   const target = sessions.value.find((s) => s.id === sessionId)
   if (target) {
-    target.lastMessage = msg.content || target.lastMessage
+    if (msg.content) {
+      target.lastMessage = {
+        content: msg.type === 'image' ? '[图片]' : String(msg.content),
+        type: msg.type || 'text',
+        sender: msg.sender === 'merchant' ? 'merchant' : 'user',
+        createdAt: msg.createdAt || new Date().toISOString(),
+      }
+    }
     target.lastMessageAt = msg.createdAt || target.lastMessageAt
     if (sessionId !== currentSessionId.value) {
       target.unreadCount = (target.unreadCount || 0) + 1

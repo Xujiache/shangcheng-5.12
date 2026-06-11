@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator'
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator'
 
 /**
  * 平台管理员创建 DTO —— 字段白名单
@@ -38,9 +38,14 @@ export class CreateAdminDto {
   @MaxLength(64)
   nickname?: string
 
+  // 注意：不能用 @IsIn(['admin','platform','super-admin']) 强枚举 ——
+  // admin-pc 权限页（views/platform/permission/index.vue）历史上把 /p/roles 的
+  // 角色「显示名」（客服/审核员/财务/平台运营/超级管理员）直接当 role 发上来。
+  // service.createAdmin() 自己会把不在 ALLOWED_NORMAL_ROLES 的值兜底成 'platform'，
+  // 且 super-admin 提权有 callerRole 守卫，这里强枚举只会把原本可用的创建流程打成 400。
   @IsOptional()
   @IsString()
-  @IsIn(['admin', 'platform', 'super-admin'])
+  @MaxLength(64)
   role?: string
 
   // 关联 adminRoleId（service: data.adminRoleId = dto.roleId）
