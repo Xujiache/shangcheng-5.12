@@ -43,3 +43,8 @@ export function fmtDate(iso: string | null): string {
 export function pct(n: number, digits = 0): string {
   return (n * 100).toFixed(digits) + '%'
 }
+
+/** 隐藏金额模式下的统一掩码（与设置页「隐藏金额」联动） */
+export function maskMoney(v: number | string): string {
+  return '****'
+}

@@ -89,7 +89,7 @@
       <text>微信登录</text>
     </button>
 
-    <view class="login__register" bindtap="toRegister">
+    <view wx:if="{{allowRegister}}" class="login__register" bindtap="toRegister">
       还没有账号？<text class="login__link">立即注册</text>
     </view>
   </view>

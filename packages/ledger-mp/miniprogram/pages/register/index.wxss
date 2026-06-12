@@ -17,6 +17,12 @@
   flex-direction: column;
   gap: 14px;
 }
+.reg__closed {
+  text-align: center;
+  font-size: 13px;
+  color: var(--loss);
+  padding: 2px 0;
+}
 .reg__foot {
   text-align: center;
   margin-top: 16px;

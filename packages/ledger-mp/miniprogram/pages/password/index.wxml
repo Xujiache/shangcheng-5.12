@@ -1,25 +1,27 @@
 <view class="pw">
-  <lz-header title="修改登录密码" />
+  <lz-header title="{{reset ? '设置新密码' : '修改登录密码'}}" back="{{!reset}}" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
-    <view class="lz-section-label">当前密码</view>
-    <view class="lz-field">
-      <lz-icon name="lock" size="19" color="faint" />
-      <input
-        class="lz-field__input"
-        value="{{oldPwd}}"
-        password="{{!showOld}}"
-        placeholder="请输入当前密码"
-        placeholder-class="ph"
-        maxlength="20"
-        bindinput="onOld"
-      />
-      <view hover-class="tap-active" bindtap="toggleOld" style="padding: 4px;">
-        <lz-icon name="{{showOld ? 'eye' : 'eyeoff'}}" size="19" color="faint" />
+    <block wx:if="{{!reset}}">
+      <view class="lz-section-label">当前密码</view>
+      <view class="lz-field">
+        <lz-icon name="lock" size="19" color="faint" />
+        <input
+          class="lz-field__input"
+          value="{{oldPwd}}"
+          password="{{!showOld}}"
+          placeholder="请输入当前密码"
+          placeholder-class="ph"
+          maxlength="20"
+          bindinput="onOld"
+        />
+        <view hover-class="tap-active" bindtap="toggleOld" style="padding: 4px;">
+          <lz-icon name="{{showOld ? 'eye' : 'eyeoff'}}" size="19" color="faint" />
+        </view>
       </view>
-    </view>
+    </block>
 
-    <view class="lz-section-label" style="margin-top: var(--gap);">新密码</view>
+    <view class="lz-section-label" style="margin-top: {{reset ? '0' : 'var(--gap)'}};">新密码</view>
     <view class="lz-field">
       <lz-icon name="key" size="19" color="faint" />
       <input
@@ -49,12 +51,12 @@
       />
     </view>
 
-    <view class="pw__note">为保障账号安全，密码至少 6 位，建议包含字母与数字。</view>
+    <view class="pw__note">{{reset ? '管理员已重置您的密码，请设置新密码后继续使用。' : '为保障账号安全，密码至少 6 位，建议包含字母与数字。'}}</view>
   </view>
 
   <view class="lz-footer">
     <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="onSave">
-      {{saving ? '提交中…' : '确认修改'}}
+      {{saving ? '提交中…' : reset ? '确认设置' : '确认修改'}}
     </button>
   </view>
 </view>

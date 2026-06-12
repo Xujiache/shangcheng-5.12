@@ -27,7 +27,8 @@
         <input class="lz-field__input" value="{{inviteCode}}" placeholder="邀请码（选填，填写后邀请人得会员）" placeholder-class="ph" bindinput="onInvite" />
       </view>
 
-      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canReg ? '' : 'lz-btn--disabled'}}" bindtap="doRegister">
+      <view wx:if="{{!allowRegister}}" class="reg__closed">当前未开放自助注册</view>
+      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canReg && allowRegister ? '' : 'lz-btn--disabled'}}" bindtap="doRegister">
         {{loading ? '注册中…' : '注册并登录'}}
       </button>
       <view class="reg__foot">已有账号？<text class="reg__link" bindtap="toLogin">返回登录</text></view>

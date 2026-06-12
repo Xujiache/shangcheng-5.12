@@ -1,5 +1,5 @@
 import { authApi, meApi } from '../../api/index'
-import { setAuth, setUser, getToken } from '../../utils/store'
+import { setAuth, setUser, getUser, getToken, getBioLock, getBioVerified } from '../../utils/store'
 
 interface LoginData {
   mode: string
@@ -12,6 +12,7 @@ interface LoginData {
   loading: boolean
   canLogin: boolean
   checking: boolean
+  allowRegister: boolean
 }
 
 Page({
@@ -30,11 +31,17 @@ Page({
     canLogin: false,
     // 默认进入"校验中"占位：有 token 时静默登录期间不露出表单，避免每次启动闪登录页
     checking: true,
+    allowRegister: true,
   } as LoginData,
 
   _timer: 0 as any,
 
   onLoad() {
+    // 管理端关闭自助注册时隐藏「立即注册」入口（接口失败按开放兜底）
+    authApi
+      .config()
+      .then((c: any) => this.setData({ allowRegister: !c || c.allowSelfRegister !== false }))
+      .catch(() => {})
     if (!getToken()) {
       // 未登录：直接显示登录表单
       this.setData({ checking: false })
@@ -95,9 +102,11 @@ Page({
           .wechatLogin(r.code)
           .then((res: any) => {
             setAuth(res.token, res.user)
+            // 成功后不重置 loading：跳转前防重复点击
             this.routeAfterLogin(res.membership || (res.user && res.user.membership))
           })
           .catch((e: any) => {
+            this.setData({ loading: false })
             wx.showModal({
               title: '微信未绑定',
               content:
@@ -107,7 +116,6 @@ Page({
               confirmText: '我知道了',
             })
           })
-          .finally(() => this.setData({ loading: false }))
       },
       fail: () => {
         this.setData({ loading: false })
@@ -159,14 +167,28 @@ Page({
           ? await authApi.login(this.data.phone, this.data.pwd)
           : await authApi.smsLogin(this.data.phone, this.data.code)
       setAuth(res.token, res.user)
+      // 成功后不重置 loading：跳转前防重复点击
       this.routeAfterLogin(res.membership || (res.user && res.user.membership))
     } catch (e) {
-      /* toast handled */
-    } finally {
       this.setData({ loading: false })
     }
   },
   routeAfterLogin(m: MembershipStatus | null) {
+    // 管理员重置过密码：先强制设置新密码，再走会员路由
+    const u = getUser()
+    if (u && u.mustReset) {
+      wx.reLaunch({ url: '/pages/password/index?reset=1' })
+      return
+    }
+    // 静默路径未提交过凭证（setAuth 未走），开了生物锁则先过锁屏，解锁后回首页。
+    // 新登录在 setAuth 里已置 bioVerified，不会进此分支。
+    if (getBioLock() && !getBioVerified()) {
+      const cur = getCurrentPages().pop()
+      if (!cur || cur.route !== 'pages/lock/index') {
+        wx.reLaunch({ url: '/pages/lock/index' })
+      }
+      return
+    }
     if (!m || !m.active) {
       wx.reLaunch({ url: '/pages/membership/index?gate=1' })
       return

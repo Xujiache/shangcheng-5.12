@@ -10,6 +10,7 @@ Page({
     showPwd: false,
     loading: false,
     canReg: false,
+    allowRegister: true,
   },
 
   onLoad(opt: any) {
@@ -19,6 +20,11 @@ Page({
         inviteCode: String(opt.invite).toUpperCase().replace(/\s/g, '').slice(0, 20),
       })
     }
+    // 管理端关闭自助注册时给出提示并禁用提交（接口失败按开放兜底）
+    authApi
+      .config()
+      .then((c: any) => this.setData({ allowRegister: !c || c.allowSelfRegister !== false }))
+      .catch(() => {})
   },
 
   refresh() {
@@ -49,7 +55,7 @@ Page({
   },
 
   async doRegister() {
-    if (!this.data.canReg || this.data.loading) return
+    if (!this.data.canReg || this.data.loading || !this.data.allowRegister) return
     if (this.data.pwd !== this.data.pwd2) {
       wx.showToast({ title: '两次密码不一致', icon: 'none' })
       return
@@ -68,9 +74,8 @@ Page({
         if (m && m.active) wx.switchTab({ url: '/pages/home/index' })
         else wx.reLaunch({ url: '/pages/membership/index?gate=1' })
       }, 600)
+      // 成功后不重置 loading：跳转前防重复提交
     } catch (e) {
-      /* toast handled in request */
-    } finally {
       this.setData({ loading: false })
     }
   },

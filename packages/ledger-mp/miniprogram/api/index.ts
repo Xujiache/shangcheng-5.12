@@ -2,6 +2,12 @@ import { http } from '../utils/request'
 
 /** 鉴权（登录类 auth:false 不带 token） */
 export const authApi = {
+  // 公开配置（是否开放自助注册等）；silent 让页面自行兜底默认值
+  config: () =>
+    http.get<{ allowSelfRegister: boolean }>('/l/auth/config', undefined, {
+      auth: false,
+      silent: true,
+    }),
   login: (phone: string, password: string) =>
     http.post('/l/auth/login', { phone, password }, { auth: false }),
   register: (data: { phone: string; password: string; nickname?: string; inviteCode?: string }) =>

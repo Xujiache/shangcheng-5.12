@@ -1,5 +1,6 @@
 import { meApi } from '../../api/index'
 import { API_BASE } from '../../config'
+import { handleUnauthorized } from '../../utils/request'
 import { getUser, setUser, getToken } from '../../utils/store'
 
 const HUES = [
@@ -110,6 +111,12 @@ Page({
                   setUser(u)
                 }
                 wx.showToast({ title: '头像已更新', icon: 'success' })
+              } else if (
+                up.statusCode === 401 ||
+                (body && (body.code === 2001 || body.code === 2002))
+              ) {
+                // uploadFile 不走 request 层，登录失效需手动走统一登出
+                handleUnauthorized()
               } else {
                 const msg = body && body.message
                 wx.showToast({

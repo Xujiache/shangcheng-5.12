@@ -25,7 +25,7 @@ function buildQuery(params?: Record<string, any>): string {
 }
 
 let unauthHandling = false
-function handleUnauthorized() {
+export function handleUnauthorized() {
   if (unauthHandling) return
   unauthHandling = true
   const app = getApp<IAppOption>()
@@ -74,6 +74,13 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
           }
           if (body.code === 2001 || body.code === 2002 || res.statusCode === 401) {
             handleUnauthorized()
+            reject(err)
+            return
+          }
+          // 2003 也用于登录前场景（如注册关闭），仅「账号被禁用」才强制登出
+          if (body.code === 2003 && err.message.indexOf('禁用') >= 0) {
+            handleUnauthorized()
+            wx.showToast({ title: '账号已被禁用', icon: 'none' })
             reject(err)
             return
           }

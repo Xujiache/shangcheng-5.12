@@ -33,9 +33,8 @@ Page({
       })
       wx.showToast({ title: '已提交', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 600)
+      // 成功后不重置 submitting：返回前防重复提交
     } catch (e) {
-      /* toast handled in request */
-    } finally {
       this.setData({ submitting: false })
     }
   },

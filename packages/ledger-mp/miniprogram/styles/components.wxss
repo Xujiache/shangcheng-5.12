@@ -177,6 +177,7 @@
 .lz-faint { color: var(--faint); }
 .lz-bold { font-weight: 700; }
 .lz-nowrap { white-space: nowrap; }
+.lz-ellipsis { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
 .lz-flex { display: flex; align-items: center; }
 .lz-flex1 { flex: 1; }
 .lz-between { display: flex; align-items: center; justify-content: space-between; }

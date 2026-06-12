@@ -1,0 +1,11 @@
+<view class="lk">
+  <view class="lk__card">
+    <view class="lk__icon"><lz-icon name="finger" size="36" color="accent" stroke="1.6" /></view>
+    <view class="lk__title">门窗利账已锁定</view>
+    <view class="lk__sub">已开启生物解锁，请验证指纹 / 面容后继续</view>
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="onRetry">
+      {{verifying ? '验证中…' : '点击验证'}}
+    </button>
+    <view class="lk__logout" hover-class="tap-active" bindtap="onLogout">退出登录</view>
+  </view>
+</view>
