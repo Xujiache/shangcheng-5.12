@@ -13,15 +13,27 @@ function fmtArea(n: number): string {
   if (Number.isInteger(v)) return String(v)
   return v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
 }
+// 列表行 wx:key 用的页内唯一键（仅前端用，writeBack 重建对象时不带出）
+let seq = 0
+const uid = () => 'k' + ++seq
 function blankSize() {
-  return { wStr: '', hStr: '', note: '', areaText: '' }
+  return { _k: uid(), wStr: '', hStr: '', note: '', areaText: '' }
 }
 function blankItem() {
-  return { name: '', note: '', baseAreaStr: '', unitPriceStr: '', qtyStr: '', sizes: [] as any[] }
+  return {
+    _k: uid(),
+    name: '',
+    note: '',
+    baseAreaStr: '',
+    unitPriceStr: '',
+    qtyStr: '',
+    sizes: [] as any[],
+  }
 }
 // 从后端 item 形态 → 页面编辑态
 function normIn(it: any) {
   return {
+    _k: uid(),
     name: it.name || '',
     note: it.note || '',
     baseAreaStr: it.baseArea ? String(it.baseArea) : '',
@@ -29,6 +41,7 @@ function normIn(it: any) {
     qtyStr: it.qty ? String(it.qty) : '',
     sizes: Array.isArray(it.sizes)
       ? it.sizes.map((s: any) => ({
+          _k: uid(),
           wStr: s.w ? String(s.w) : '',
           hStr: s.h ? String(s.h) : '',
           note: s.note || '',
@@ -36,6 +49,11 @@ function normIn(it: any) {
         }))
       : [],
   }
+}
+// 整数元输入失焦归一：非空 → 取整后的字符串，空串保持为空
+function normMoneyStr(v: any): string {
+  const s = String(v == null ? '' : v).trim()
+  return s ? String(Math.round(num(s))) : ''
 }
 
 Page({
@@ -49,7 +67,12 @@ Page({
     totalText: '¥0',
     unpaidText: '¥0',
     revenueText: '¥0',
+    unnamedCount: 0,
+    depositOver: false,
   },
+  // 进入时的订单总价：无具名明细时沿用此值（对齐后端「无 items 则取 dto.total」），防止清零
+  _manualTotal: 0,
+  _navigating: false,
 
   onLoad() {
     const inp: any = wx.getStorageSync(IN_KEY) || {}
@@ -58,6 +81,7 @@ Page({
     } catch (e) {
       /* ignore */
     }
+    this._manualTotal = Math.max(0, Math.round(Number(inp.total) || 0))
     const items = Array.isArray(inp.items) ? inp.items.map(normIn) : []
     this.setData(
       {
@@ -78,6 +102,11 @@ Page({
 
   // ── 产品项 ──
   addItem() {
+    // 后端 sanitizeOrderItems 截断 100 条，前端同口径拦截
+    if (this.data.items.length >= 100) {
+      wx.showToast({ title: '最多 100 项明细', icon: 'none' })
+      return
+    }
     this.setData({ items: [blankItem(), ...this.data.items] }, () => this.recalc())
   },
   delItem(e: any) {
@@ -98,6 +127,11 @@ Page({
   addSize(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const items = this.data.items.slice()
+    // 后端每项尺寸截断 100 条，前端同口径拦截
+    if (items[i].sizes.length >= 100) {
+      wx.showToast({ title: '最多 100 条尺寸', icon: 'none' })
+      return
+    }
     items[i] = { ...items[i], sizes: [...items[i].sizes, blankSize()] }
     this.setData({ items }, () => this.recalc())
   },
@@ -128,6 +162,18 @@ Page({
   onExtra(e: any) {
     this.setData({ extraIncomeStr: e.detail.value }, () => this.recalc())
   },
+  // 整数元字段（优惠/定金/额外收入）失焦归一显示，输入中不回写避免光标跳动
+  onMoneyBlur(e: any) {
+    const field = e.currentTarget.dataset.field
+    this.setData({ [field]: normMoneyStr(e.detail.value) })
+  },
+  // 单价为整数元，失焦归一；数量/起算面积允许小数，不归一
+  onPriceBlur(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const items = this.data.items.slice()
+    items[i] = { ...items[i], unitPriceStr: normMoneyStr(e.detail.value) }
+    this.setData({ items })
+  },
   onNote(e: any) {
     this.setData({ note: e.detail.value })
   },
@@ -135,6 +181,8 @@ Page({
   // ── 实时重算 ──
   recalc() {
     let amount = 0
+    let namedCount = 0
+    let unnamedCount = 0 // 未填名称但已有金额的行（保存会被丢弃，需提示）
     const items = this.data.items.map((it: any) => {
       const baseArea = num(it.baseAreaStr)
       const unitPrice = Math.round(num(it.unitPriceStr))
@@ -154,7 +202,13 @@ Page({
           )
         : num(it.qtyStr)
       const subtotal = Math.round(billQty * unitPrice)
-      amount += subtotal
+      // 与 writeBack/后端同口径：未填名称的行不计入金额
+      if (String(it.name || '').trim()) {
+        namedCount++
+        amount += subtotal
+      } else if (subtotal > 0) {
+        unnamedCount++
+      }
       return {
         ...it,
         sizes,
@@ -166,10 +220,13 @@ Page({
     const discount = Math.round(num(this.data.discountStr))
     const deposit = Math.round(num(this.data.depositStr))
     const extra = Math.round(num(this.data.extraIncomeStr))
-    const total = Math.max(0, amount - discount)
+    // 与后端一致：有具名明细时 总价=金额−优惠；无明细则沿用进入时的总价
+    const total = namedCount > 0 ? Math.max(0, amount - discount) : this._manualTotal
     const unpaid = Math.max(0, total - deposit)
     this.setData({
       items,
+      unnamedCount,
+      depositOver: deposit > total,
       amountText: yuan(amount),
       totalText: yuan(total),
       unpaidText: yuan(unpaid),
@@ -208,7 +265,8 @@ Page({
     const discount = Math.round(num(this.data.discountStr))
     const deposit = Math.round(num(this.data.depositStr))
     const extraIncome = Math.round(num(this.data.extraIncomeStr))
-    const total = Math.max(0, amount - discount)
+    // 与后端一致：有明细才用 金额−优惠，否则原样保留进入时的总价（防止误清零）
+    const total = items.length ? Math.max(0, amount - discount) : this._manualTotal
     wx.setStorageSync(OUT_KEY, {
       items,
       discount,
@@ -220,6 +278,8 @@ Page({
   },
 
   save() {
+    if (this._navigating) return // 防快速连点触发两次 navigateBack
+    this._navigating = true
     this.writeBack()
     wx.navigateBack()
   },

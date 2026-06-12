@@ -70,7 +70,7 @@
           </view>
           <view class="oe__costcard-amt">
             <text class="oe__cur">¥</text>
-            <input class="oe__amt-in oe__amt-in--lg" type="digit" value="{{item.valueStr}}" placeholder="0" placeholder-class="ph" data-key="{{item.key}}" bindinput="onCost" />
+            <input class="oe__amt-in oe__amt-in--lg" type="digit" value="{{item.valueStr}}" placeholder="0" placeholder-class="ph" data-key="{{item.key}}" bindinput="onCost" bindblur="onCostBlur" />
           </view>
         </view>
       </view>
@@ -94,11 +94,11 @@
       </view>
       <view class="oe__card">
         <block wx:if="{{customCosts.length}}">
-          <view wx:for="{{customCosts}}" wx:key="idx" class="oe__listrow {{index === customCosts.length - 1 ? 'oe__listrow--last' : ''}}">
+          <view wx:for="{{customCosts}}" wx:key="_k" class="oe__listrow {{index === customCosts.length - 1 ? 'oe__listrow--last' : ''}}">
             <input class="oe__listname" value="{{item.name}}" placeholder="成本名目" placeholder-class="ph" maxlength="20" data-idx="{{index}}" bindinput="onCustomName" />
             <view class="lz-flex1"></view>
             <text class="oe__cur">¥</text>
-            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onCustomAmt" />
+            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onCustomAmt" bindblur="onCustomAmtBlur" />
             <view class="oe__listdel" data-idx="{{index}}" bindtap="delCustomCost" hover-class="oe__tap">
               <lz-icon name="trash" size="15" color="#9bab9f" />
             </view>
@@ -118,13 +118,13 @@
       </view>
       <view class="oe__card">
         <block wx:if="{{extras.length}}">
-          <view wx:for="{{extras}}" wx:key="idx" class="oe__listrow {{index === extras.length - 1 ? 'oe__listrow--last' : ''}}">
+          <view wx:for="{{extras}}" wx:key="_k" class="oe__listrow {{index === extras.length - 1 ? 'oe__listrow--last' : ''}}">
             <picker mode="selector" range="{{extraTypes}}" value="{{item.typeIdx}}" data-idx="{{index}}" bindchange="onExtraType">
               <view class="oe__extype">{{item.type}}<lz-icon name="chevron" size="13" color="#9bab9f" /></view>
             </picker>
             <view class="lz-flex1"></view>
             <text class="oe__cur">¥</text>
-            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onExtraAmt" />
+            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onExtraAmt" bindblur="onExtraAmtBlur" />
             <view class="oe__listdel" data-idx="{{index}}" bindtap="delExtra" hover-class="oe__tap">
               <lz-icon name="trash" size="15" color="#9bab9f" />
             </view>
@@ -138,7 +138,7 @@
     <view class="oe__card">
       <view class="oe__noterow">
         <text class="oe__row-l">备注</text>
-        <input class="oe__noteinput" value="{{note}}" placeholder="项目说明（选填）" placeholder-class="ph" bindinput="onNote" />
+        <input class="oe__noteinput" value="{{note}}" placeholder="项目说明（选填）" placeholder-class="ph" maxlength="200" bindinput="onNote" />
       </view>
     </view>
 

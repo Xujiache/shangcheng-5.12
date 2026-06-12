@@ -16,6 +16,10 @@ function today(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// 列表行 wx:key 用的页内唯一键（仅前端用，不进 API 载荷）
+let seq = 0
+const uid = () => 'k' + ++seq
+
 Page({
   data: {
     editing: false,
@@ -24,10 +28,10 @@ Page({
     customerName: '',
     date: today(),
     total: 0,
-    totalStr: '',
     extraIncome: 0,
-    extraIncomeStr: '',
     costs: { profile: 0, glass: 0, hardware: 0, labor: 0, screen: 0 } as any,
+    // 成本输入框的原始字符串（输入中不回写，失焦才归一，避免光标跳动）
+    costStrs: { profile: '', glass: '', hardware: '', labor: '', screen: '' } as any,
     activeCats: [...CORE] as string[],
     activeCells: [] as any[],
     removedCats: [] as any[],
@@ -49,7 +53,16 @@ Page({
     _allCustomers: [] as any[],
   },
 
+  _openingItems: false, // toAmount 防双击锁，onShow 返回时解除
+
   onLoad(opt: any) {
+    // 强制 reLaunch（401/登出）可能残留上次会话的中转 key，先清掉避免污染本次编辑
+    try {
+      wx.removeStorageSync('ledger_order_money_out')
+      wx.removeStorageSync('ledger_pending_customer')
+    } catch (e) {
+      /* ignore */
+    }
     if (opt.id) {
       this.setData({ editing: true, id: opt.id })
       this.loadOrder()
@@ -60,6 +73,7 @@ Page({
     }
   },
   onShow() {
+    this._openingItems = false // 从明细页/客户页返回，解除 toAmount 防双击锁
     const p = wx.getStorageSync('ledger_pending_customer')
     if (p && p.name) {
       wx.removeStorageSync('ledger_pending_customer')
@@ -79,9 +93,7 @@ Page({
           discount: Math.max(0, Math.round(Number(m.discount) || 0)),
           deposit: Math.max(0, Math.round(Number(m.deposit) || 0)),
           total,
-          totalStr: total ? String(total) : '',
           extraIncome,
-          extraIncomeStr: extraIncome ? String(extraIncome) : '',
           note: m.note !== undefined ? m.note : this.data.note,
         },
         () => this.refresh(),
@@ -91,8 +103,12 @@ Page({
 
   // 点击「订单编辑」→ 门窗报价明细编辑器；带入当前明细/金额，返回由 onShow 回填
   toAmount() {
+    // 防双击连开两个明细页：第二个实例读不到已被消费的 IN 键会以空数据覆盖
+    if (this._openingItems) return
+    this._openingItems = true
     wx.setStorageSync('ledger_order_money_in', {
       items: this.data.items,
+      total: this.data.total, // 无明细订单依赖此值兜底，明细页不得凭空清零
       discount: this.data.discount,
       deposit: this.data.deposit,
       extraIncome: this.data.extraIncome,
@@ -113,9 +129,7 @@ Page({
           customerName: o.customer,
           date: o.date,
           total: o.total,
-          totalStr: o.total ? String(o.total) : '',
           extraIncome: o.extraIncome || 0,
-          extraIncomeStr: o.extraIncome ? String(o.extraIncome) : '',
           costs: {
             profile: o.costs.profile,
             glass: o.costs.glass,
@@ -123,14 +137,23 @@ Page({
             labor: o.costs.labor,
             screen: o.costs.screen,
           },
+          costStrs: {
+            profile: o.costs.profile ? String(o.costs.profile) : '',
+            glass: o.costs.glass ? String(o.costs.glass) : '',
+            hardware: o.costs.hardware ? String(o.costs.hardware) : '',
+            labor: o.costs.labor ? String(o.costs.labor) : '',
+            screen: o.costs.screen ? String(o.costs.screen) : '',
+          },
           activeCats: active.length ? active : [...CORE],
           extras: (o.extras || []).map((e: any) => ({
+            _k: uid(),
             type: e.type,
             amount: e.amount,
             amountStr: e.amount ? String(e.amount) : '',
             typeIdx: Math.max(0, EXTRA_TYPES.indexOf(e.type)),
           })),
           customCosts: (o.customCosts || []).map((c: any) => ({
+            _k: uid(),
             name: c.name,
             amount: c.amount,
             amountStr: c.amount ? String(c.amount) : '',
@@ -148,12 +171,12 @@ Page({
   },
 
   refresh() {
-    const { costs, activeCats, extras, total, extraIncome, customCosts } = this.data
+    const { costs, costStrs, activeCats, extras, total, extraIncome, customCosts } = this.data
     const activeCells = COST_CATS.filter((c) => activeCats.includes(c.key)).map((c) => ({
       key: c.key,
       name: c.name,
       color: c.color,
-      valueStr: costs[c.key] ? String(costs[c.key]) : '',
+      valueStr: costStrs[c.key] || '',
     }))
     const removedCats = COST_CATS.filter((c) => !activeCats.includes(c.key)).map((c) => ({
       key: c.key,
@@ -172,18 +195,17 @@ Page({
     })
   },
 
-  onTotal(e: any) {
-    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
-    this.setData({ total: v, totalStr: e.detail.value }, () => this.refresh())
-  },
-  onExtraIncome(e: any) {
-    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
-    this.setData({ extraIncome: v, extraIncomeStr: e.detail.value }, () => this.refresh())
-  },
   onCost(e: any) {
     const k = e.currentTarget.dataset.key
     const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
-    this.setData({ ['costs.' + k]: v }, () => this.refresh())
+    this.setData({ ['costs.' + k]: v, ['costStrs.' + k]: e.detail.value }, () => this.refresh())
+  },
+  onCostBlur(e: any) {
+    const k = e.currentTarget.dataset.key
+    const s = String(e.detail.value || '').trim()
+    this.setData({ ['costStrs.' + k]: s ? String(this.data.costs[k] || 0) : '' }, () =>
+      this.refresh(),
+    )
   },
   onDate(e: any) {
     this.setData({ date: e.detail.value })
@@ -199,13 +221,25 @@ Page({
   removeCat(e: any) {
     const k = e.currentTarget.dataset.key
     this.setData(
-      { activeCats: this.data.activeCats.filter((x) => x !== k), ['costs.' + k]: 0 },
+      {
+        activeCats: this.data.activeCats.filter((x) => x !== k),
+        ['costs.' + k]: 0,
+        ['costStrs.' + k]: '',
+      },
       () => this.refresh(),
     )
   },
   addExtra() {
+    // 后端 sanitizeExtras 截断 50 条，前端同口径拦截
+    if (this.data.extras.length >= 50) {
+      wx.showToast({ title: '最多 50 项开销', icon: 'none' })
+      return
+    }
     this.setData({
-      extras: [...this.data.extras, { type: '运费', amount: 0, amountStr: '', typeIdx: 0 }],
+      extras: [
+        ...this.data.extras,
+        { _k: uid(), type: '运费', amount: 0, amountStr: '', typeIdx: 0 },
+      ],
     })
   },
   onExtraType(e: any) {
@@ -222,6 +256,13 @@ Page({
     ex[i] = { ...ex[i], amount: v, amountStr: e.detail.value }
     this.setData({ extras: ex }, () => this.refresh())
   },
+  onExtraAmtBlur(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const s = String(e.detail.value || '').trim()
+    const ex = [...this.data.extras]
+    ex[i] = { ...ex[i], amountStr: s ? String(ex[i].amount || 0) : '' }
+    this.setData({ extras: ex })
+  },
   delExtra(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     this.setData({ extras: this.data.extras.filter((_: any, j: number) => j !== i) }, () =>
@@ -231,8 +272,13 @@ Page({
 
   // ── 自定义成本项（#5）──
   addCustomCost() {
+    // 后端 sanitizeCustomCosts 截断 20 条，前端同口径拦截
+    if (this.data.customCosts.length >= 20) {
+      wx.showToast({ title: '最多 20 项自定义成本', icon: 'none' })
+      return
+    }
     this.setData({
-      customCosts: [...this.data.customCosts, { name: '', amount: 0, amountStr: '' }],
+      customCosts: [...this.data.customCosts, { _k: uid(), name: '', amount: 0, amountStr: '' }],
     })
   },
   onCustomName(e: any) {
@@ -247,6 +293,13 @@ Page({
     const cc = [...this.data.customCosts]
     cc[i] = { ...cc[i], amount: v, amountStr: e.detail.value }
     this.setData({ customCosts: cc }, () => this.refresh())
+  },
+  onCustomAmtBlur(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const s = String(e.detail.value || '').trim()
+    const cc = [...this.data.customCosts]
+    cc[i] = { ...cc[i], amountStr: s ? String(cc[i].amount || 0) : '' }
+    this.setData({ customCosts: cc })
   },
   delCustomCost(e: any) {
     const i = Number(e.currentTarget.dataset.idx)

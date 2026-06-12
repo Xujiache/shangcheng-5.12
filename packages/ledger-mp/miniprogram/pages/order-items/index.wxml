@@ -8,7 +8,7 @@
     </view>
 
     <!-- 产品项 -->
-    <view wx:for="{{items}}" wx:key="index" class="oi__item">
+    <view wx:for="{{items}}" wx:key="_k" class="oi__item">
       <view class="oi__item-hd">
         <input class="oi__name" value="{{item.name}}" placeholder="名称（如 德曼尼80系统窗）" placeholder-class="ph" maxlength="40" data-idx="{{index}}" data-field="name" bindinput="onItemInput" />
         <view class="oi__item-del" data-idx="{{index}}" bindtap="delItem" hover-class="oi__tap">
@@ -29,7 +29,7 @@
       </view>
 
       <!-- 尺寸 -->
-      <view wx:for="{{item.sizes}}" wx:for-item="sz" wx:for-index="sidx" wx:key="sidx" class="oi__size">
+      <view wx:for="{{item.sizes}}" wx:for-item="sz" wx:for-index="sidx" wx:key="_k" class="oi__size">
         <input class="oi__size-in" type="number" value="{{sz.wStr}}" placeholder="宽" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="wStr" bindinput="onSizeInput" />
         <text class="oi__size-op">×</text>
         <input class="oi__size-in" type="number" value="{{sz.hStr}}" placeholder="高" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="hStr" bindinput="onSizeInput" />
@@ -49,7 +49,7 @@
         <text wx:if="{{item.hasSizes}}" class="oi__qty-auto">{{item.qtyAutoText}}</text>
         <input wx:else class="oi__qty-in" type="digit" value="{{item.qtyStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="qtyStr" bindinput="onItemInput" />
         <text class="oi__qty-op">× 单价</text>
-        <input class="oi__price-in" type="digit" value="{{item.unitPriceStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="unitPriceStr" bindinput="onItemInput" />
+        <input class="oi__price-in" type="digit" value="{{item.unitPriceStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="unitPriceStr" bindinput="onItemInput" bindblur="onPriceBlur" />
         <text class="oi__qty-op">=</text>
         <text class="oi__subtotal">{{item.subtotalText}}</text>
       </view>
@@ -63,9 +63,10 @@
         <text class="oi__t-l">金额</text>
         <text class="oi__t-v">{{amountText}}</text>
       </view>
+      <view wx:if="{{unnamedCount}}" class="oi__t-hint">{{unnamedCount}} 项未填名称，不计入金额</view>
       <view class="oi__t-row">
         <text class="oi__t-l">优惠</text>
-        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{discountStr}}" placeholder="0" placeholder-class="ph" bindinput="onDiscount" /></view>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{discountStr}}" placeholder="0" placeholder-class="ph" data-field="discountStr" bindinput="onDiscount" bindblur="onMoneyBlur" /></view>
       </view>
       <view class="oi__t-row oi__t-row--main">
         <text class="oi__t-l">总价</text>
@@ -73,16 +74,17 @@
       </view>
       <view class="oi__t-row">
         <text class="oi__t-l">额外收入</text>
-        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{extraIncomeStr}}" placeholder="0" placeholder-class="ph" bindinput="onExtra" /></view>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{extraIncomeStr}}" placeholder="0" placeholder-class="ph" data-field="extraIncomeStr" bindinput="onExtra" bindblur="onMoneyBlur" /></view>
       </view>
       <view class="oi__t-row">
         <text class="oi__t-l">定金</text>
-        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{depositStr}}" placeholder="0" placeholder-class="ph" bindinput="onDeposit" /></view>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{depositStr}}" placeholder="0" placeholder-class="ph" data-field="depositStr" bindinput="onDeposit" bindblur="onMoneyBlur" /></view>
       </view>
       <view class="oi__t-row oi__t-row--last">
         <text class="oi__t-l">未收</text>
         <text class="oi__t-v">{{unpaidText}}</text>
       </view>
+      <view wx:if="{{depositOver}}" class="oi__t-warn">定金已超过总价</view>
     </view>
 
     <!-- 订单备注 -->
