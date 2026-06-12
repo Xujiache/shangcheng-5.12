@@ -52,6 +52,7 @@ export class LedgerAuthService {
     phone: string
     nickname: string
     avatar: string | null
+    mustReset: boolean
     membership?: { expiresAt: Date | null; lastPlanKey: string | null } | null
   }) {
     return {
@@ -59,6 +60,8 @@ export class LedgerAuthService {
       phone: u.phone,
       nickname: u.nickname,
       avatar: u.avatar,
+      // 登录响应必须带上：前端 routeAfterLogin 据此强制首登改密（否则只有冷启动静默路径生效）
+      mustReset: u.mustReset,
       membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey),
     }
   }
@@ -90,6 +93,12 @@ export class LedgerAuthService {
   private async readConfig() {
     const row = await this.prisma.ledgerConfig.findUnique({ where: { key: 'global' } })
     return normalizeLedgerConfig(row?.value)
+  }
+
+  /** 公开配置（登录页据此显隐「注册」入口）。与 register 的校验读同一份 LedgerConfig。 */
+  async getPublicConfig() {
+    const cfg = await this.readConfig()
+    return { allowSelfRegister: cfg.allowSelfRegister }
   }
 
   /**

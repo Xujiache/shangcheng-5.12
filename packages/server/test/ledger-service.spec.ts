@@ -35,6 +35,10 @@ function buildPrisma() {
     ledgerNotification: {
       create: jest.fn(async (..._a: any[]) => ({}) as any),
     },
+    ledgerSetting: {
+      // 默认无设置行 → pushNotification 按 schema 默认值（order/report/goal 开、system 关）
+      findUnique: jest.fn(async (..._a: any[]) => null as any),
+    },
     ledgerGoal: {
       findUnique: jest.fn(async (..._a: any[]) => null as any),
       upsert: jest.fn(async (..._a: any[]) => ({}) as any),
@@ -361,6 +365,65 @@ describe('LedgerService.updateOrder（明细驱动 total 重算）', () => {
 
     const updateArg = prisma.ledgerOrder.update.mock.calls[0][0] as any
     expect(updateArg.data.total).toBe(1700)
+  })
+})
+
+describe('LedgerService.pushNotification（偏好开关过滤）', () => {
+  let prisma: ReturnType<typeof buildPrisma>
+  let service: LedgerService
+
+  // 设置行工厂：默认全部与 schema @default 一致，按需覆写
+  function settingRow(over: Partial<any> = {}): any {
+    return {
+      notifyOrder: true,
+      notifyReport: true,
+      notifyGoal: true,
+      notifySystem: false,
+      dndEnabled: false,
+      dndStart: '22:00',
+      dndEnd: '08:00',
+      ...over,
+    }
+  }
+
+  beforeEach(() => {
+    prisma = buildPrisma()
+    service = new LedgerService(prisma as any)
+  })
+
+  it('用例8a：notifyOrder 关闭 → order 通知被抑制（不写库）', async () => {
+    prisma.ledgerSetting.findUnique.mockResolvedValueOnce(settingRow({ notifyOrder: false }))
+    await service.pushNotification('u1', 'order', '订单已保存', 'x')
+    expect(prisma.ledgerNotification.create).not.toHaveBeenCalled()
+  })
+
+  it('用例8b：notifyOrder 开启 → order 通知正常写库', async () => {
+    prisma.ledgerSetting.findUnique.mockResolvedValueOnce(settingRow({ notifyOrder: true }))
+    await service.pushNotification('u1', 'order', '订单已保存', 'x')
+    expect(prisma.ledgerNotification.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('用例8c：无设置行 → 按默认值（goal 默认开 → 写库；system 默认关 → 抑制）', async () => {
+    // buildPrisma 默认 findUnique → null（无设置行）
+    await service.pushNotification('u1', 'goal', '目标达成', 'x')
+    expect(prisma.ledgerNotification.create).toHaveBeenCalledTimes(1)
+
+    await service.pushNotification('u1', 'system', '系统通知', 'x')
+    expect(prisma.ledgerNotification.create).toHaveBeenCalledTimes(1) // 未新增
+  })
+
+  it('用例8d：member 类型走 notifySystem 开关', async () => {
+    prisma.ledgerSetting.findUnique.mockResolvedValueOnce(settingRow({ notifySystem: true }))
+    await service.pushNotification('u1', 'member', '邀请奖励到账', 'x')
+    expect(prisma.ledgerNotification.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('用例8e：写库/查偏好抛错均不外抛（fire-and-forget 语义不变）', async () => {
+    prisma.ledgerSetting.findUnique.mockRejectedValueOnce(new Error('db down') as never)
+    await expect(service.pushNotification('u1', 'order', 't', 'b')).resolves.toBeUndefined()
+
+    prisma.ledgerNotification.create.mockRejectedValueOnce(new Error('db down') as never)
+    await expect(service.pushNotification('u1', 'goal', 't', 'b')).resolves.toBeUndefined()
   })
 })
 

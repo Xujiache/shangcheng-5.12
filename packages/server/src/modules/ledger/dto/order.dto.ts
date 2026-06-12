@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsDateString,
   IsInt,
@@ -30,9 +31,10 @@ export class CreateLedgerOrderDto {
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costLabor?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costScreen?: number
 
-  @IsOptional() @IsArray() extras?: { type: string; amount: number }[]
-  @IsOptional() @IsArray() customCosts?: { name: string; amount: number }[]
-  @IsOptional() @IsArray() items?: any[]
+  // 数组上限与服务端 sanitize* 截断一致（超限直接 400，截断仅作兜底）
+  @IsOptional() @IsArray() @ArrayMaxSize(50) extras?: { type: string; amount: number }[]
+  @IsOptional() @IsArray() @ArrayMaxSize(20) customCosts?: { name: string; amount: number }[]
+  @IsOptional() @IsArray() @ArrayMaxSize(100) items?: any[]
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) discount?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) deposit?: number
   @IsOptional() @IsString() @MaxLength(200) note?: string
@@ -49,9 +51,9 @@ export class UpdateLedgerOrderDto {
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costHardware?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costLabor?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costScreen?: number
-  @IsOptional() @IsArray() extras?: { type: string; amount: number }[]
-  @IsOptional() @IsArray() customCosts?: { name: string; amount: number }[]
-  @IsOptional() @IsArray() items?: any[]
+  @IsOptional() @IsArray() @ArrayMaxSize(50) extras?: { type: string; amount: number }[]
+  @IsOptional() @IsArray() @ArrayMaxSize(20) customCosts?: { name: string; amount: number }[]
+  @IsOptional() @IsArray() @ArrayMaxSize(100) items?: any[]
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) discount?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) deposit?: number
   @IsOptional() @IsString() @MaxLength(200) note?: string

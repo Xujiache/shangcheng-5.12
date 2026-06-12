@@ -53,6 +53,27 @@ type OrderRow = {
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10)
 
+// ── 通知偏好 ──────────────────────────────────────────────
+/** 通知类型 → LedgerSetting 开关字段（未列出的类型不受偏好约束，始终投递）。 */
+const NOTIFY_SETTING_KEY: Record<
+  string,
+  'notifyOrder' | 'notifyReport' | 'notifyGoal' | 'notifySystem'
+> = {
+  order: 'notifyOrder',
+  report: 'notifyReport',
+  goal: 'notifyGoal',
+  member: 'notifySystem',
+  system: 'notifySystem',
+}
+
+/** 无设置行时的默认值，须与 prisma schema LedgerSetting 各列 @default 一致。 */
+const NOTIFY_SETTING_DEFAULTS = {
+  notifyOrder: true,
+  notifyReport: true,
+  notifyGoal: true,
+  notifySystem: false,
+} as const
+
 /** 门窗利账 App 业务服务。所有读写强制按 userId 隔离（DTO 不接受 userId 入参）。 */
 @Injectable()
 export class LedgerService {
@@ -807,9 +828,19 @@ export class LedgerService {
     )
   }
 
-  /** 写入一条应用内通知（best-effort，失败不影响主流程）。 */
+  /**
+   * 写入一条应用内通知（best-effort，失败不影响主流程）。
+   * 先查目标用户的通知偏好，对应类型关闭则不投递；无设置行按默认值。
+   * 注意：免打扰（dnd）只约束未来的推送渠道，不拦应用内收件箱。
+   */
   async pushNotification(userId: string, type: string, title: string, body: string) {
     try {
+      const key = NOTIFY_SETTING_KEY[type]
+      if (key) {
+        const s = await this.prisma.ledgerSetting.findUnique({ where: { userId } })
+        const enabled = s ? s[key] : NOTIFY_SETTING_DEFAULTS[key]
+        if (!enabled) return
+      }
       await this.prisma.ledgerNotification.create({ data: { userId, type, title, body } })
     } catch {
       /* 通知非关键路径，忽略写入失败 */

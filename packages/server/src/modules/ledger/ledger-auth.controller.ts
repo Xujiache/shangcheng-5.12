@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import { Public } from '../../common/decorators/public.decorator'
@@ -22,6 +22,13 @@ import {
 @Controller('l/auth')
 export class LedgerAuthController {
   constructor(private readonly auth: LedgerAuthService) {}
+
+  // 公开配置：登录页登录前据此显隐「注册」入口（#10 自助注册开关）
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Get('config')
+  config() {
+    return this.auth.getPublicConfig()
+  }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
