@@ -2,68 +2,76 @@
   <lz-header title="经营目标" subtitle="设定月度 / 年度利润目标" back="{{true}}" />
 
   <view class="lz-page lz-page--pad-bottom">
-    <!-- 当前进度 -->
-    <view class="lz-section-label">当前进度 · {{ovYear}}年</view>
-    <view class="lz-card gl__prog">
-      <view class="gl__prog-row">
-        <view class="lz-between">
-          <view class="gl__prog-t">本月利润目标</view>
-          <view class="lz-pill {{monthPct >= 100 ? 'lz-pill--gold' : 'lz-pill--profit'}}">{{monthPct}}%</view>
-        </view>
-        <view class="lz-track" style="margin-top: 11px;">
-          <view class="lz-track__fill" style="width: {{monthPct}}%;"></view>
-        </view>
-        <view class="gl__prog-s">已实现 {{monthProfitText}} / 目标 {{monthlyText}}</view>
-      </view>
-      <view class="gl__divider"></view>
-      <view class="gl__prog-row">
-        <view class="lz-between">
-          <view class="gl__prog-t">全年利润目标</view>
-          <view class="lz-pill {{yearPct >= 100 ? 'lz-pill--gold' : 'lz-pill--profit'}}">{{yearPct}}%</view>
-        </view>
-        <view class="lz-track" style="margin-top: 11px;">
-          <view class="lz-track__fill" style="width: {{yearPct}}%;"></view>
-        </view>
-        <view class="gl__prog-s">已实现 {{yearProfitText}} / 目标 {{yearlyText}}</view>
-      </view>
+    <!-- 加载失败（网络等）：带重试，隐藏表单避免误保存覆盖现有目标 -->
+    <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
 
-    <!-- 设定目标 -->
-    <view class="lz-section-label">设定目标金额</view>
-    <view class="gl__fields">
-      <view class="lz-field">
-        <view class="gl__field-icon"><lz-icon name="target" size="18" color="accent" /></view>
-        <view class="gl__field-label">月度目标</view>
-        <text class="gl__cur">¥</text>
-        <input
-          class="lz-field__input gl__input"
-          type="digit"
-          value="{{monthlyInput}}"
-          placeholder="0"
-          placeholder-class="gl__ph"
-          bindinput="onMonthly"
-        />
+    <block wx:else>
+      <!-- 当前进度 -->
+      <view class="lz-section-label">当前进度 · {{ovYear}}年</view>
+      <view class="lz-card gl__prog">
+        <view class="gl__prog-row">
+          <view class="lz-between">
+            <view class="gl__prog-t">本月利润目标</view>
+            <view class="lz-pill {{monthPct >= 100 ? 'lz-pill--gold' : 'lz-pill--profit'}}">{{monthPct}}%</view>
+          </view>
+          <view class="lz-track" style="margin-top: 11px;">
+            <view class="lz-track__fill" style="width: {{monthPct}}%;"></view>
+          </view>
+          <view class="gl__prog-s">已实现 {{monthProfitText}} / 目标 {{monthlyText}}</view>
+        </view>
+        <view class="gl__divider"></view>
+        <view class="gl__prog-row">
+          <view class="lz-between">
+            <view class="gl__prog-t">全年利润目标</view>
+            <view class="lz-pill {{yearPct >= 100 ? 'lz-pill--gold' : 'lz-pill--profit'}}">{{yearPct}}%</view>
+          </view>
+          <view class="lz-track" style="margin-top: 11px;">
+            <view class="lz-track__fill" style="width: {{yearPct}}%;"></view>
+          </view>
+          <view class="gl__prog-s">已实现 {{yearProfitText}} / 目标 {{yearlyText}}</view>
+        </view>
       </view>
-      <view class="lz-field">
-        <view class="gl__field-icon"><lz-icon name="trend" size="18" color="accent" /></view>
-        <view class="gl__field-label">年度目标</view>
-        <text class="gl__cur">¥</text>
-        <input
-          class="lz-field__input gl__input"
-          type="digit"
-          value="{{yearlyInput}}"
-          placeholder="0"
-          placeholder-class="gl__ph"
-          bindinput="onYearly"
-        />
-      </view>
-    </view>
 
-    <view class="gl__note">目标用于首页与报表的进度跟踪 · 留空或填 0 表示不设目标</view>
+      <!-- 设定目标 -->
+      <view class="lz-section-label">设定目标金额</view>
+      <view class="gl__fields">
+        <view class="lz-field">
+          <view class="gl__field-icon"><lz-icon name="target" size="18" color="accent" /></view>
+          <view class="gl__field-label">月度目标</view>
+          <text class="gl__cur">¥</text>
+          <input
+            class="lz-field__input gl__input"
+            type="digit"
+            value="{{monthlyInput}}"
+            placeholder="0"
+            placeholder-class="gl__ph"
+            bindinput="onMonthly"
+          />
+        </view>
+        <view class="lz-field">
+          <view class="gl__field-icon"><lz-icon name="trend" size="18" color="accent" /></view>
+          <view class="gl__field-label">年度目标</view>
+          <text class="gl__cur">¥</text>
+          <input
+            class="lz-field__input gl__input"
+            type="digit"
+            value="{{yearlyInput}}"
+            placeholder="0"
+            placeholder-class="gl__ph"
+            bindinput="onYearly"
+          />
+        </view>
+      </view>
+
+      <view class="gl__note">目标用于首页与报表的进度跟踪 · 留空或填 0 表示不设目标</view>
+    </block>
   </view>
 
   <!-- footer -->
-  <view class="lz-footer">
+  <view wx:if="{{!loadError}}" class="lz-footer">
     <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{saving ? 'lz-btn--disabled' : ''}}" bindtap="onSave">
       <lz-icon name="check" size="20" color="white" /> {{saving ? '保存中…' : '保存目标'}}
     </button>

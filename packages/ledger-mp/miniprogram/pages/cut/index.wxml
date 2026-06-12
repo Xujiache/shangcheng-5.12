@@ -41,7 +41,7 @@
         </view>
       </view>
       <view class="lz-card lz-card--flush">
-        <view wx:for="{{pieces}}" wx:key="idx" class="lz-row {{index === pieces.length - 1 ? 'lz-row--last' : ''}}">
+        <view wx:for="{{pieces}}" wx:key="_k" class="lz-row {{index === pieces.length - 1 ? 'lz-row--last' : ''}}">
           <input class="cut__in cut__in--seg" type="number" value="{{item.lengthStr}}" data-idx="{{index}}" bindinput="onLen" placeholder="段长 mm" placeholder-class="ph" />
           <text class="lz-faint" style="margin: 0 8px;">×</text>
           <input class="cut__in cut__in--qty" type="number" value="{{item.qtyStr}}" data-idx="{{index}}" bindinput="onQty" placeholder="数量" placeholder-class="ph" />

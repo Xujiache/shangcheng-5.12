@@ -1,5 +1,6 @@
 import { statsApi, notificationApi, adApi } from '../../api/index'
-import { yuan } from '../../utils/format'
+import { yuan, maskMoney } from '../../utils/format'
+import { getHideAmount } from '../../utils/store'
 
 const COLORMAP: Record<string, string> = {
   profile: 'c1',
@@ -24,6 +25,7 @@ Page({
     periodLabel: '本年',
     seriesTitle: '各月',
     loading: true,
+    loadError: false, // 网络/加载失败：区别于"暂无数据"空态
     unread: false,
     ovYear: new Date().getFullYear(),
     donut: [] as any[],
@@ -58,13 +60,18 @@ Page({
   },
 
   async load(done?: () => void) {
+    // 序号守卫：日/月/年 可被快速连点，慢的旧响应不允许覆盖新数据
+    const seq = ((this as any)._seq = (((this as any)._seq as number) || 0) + 1)
     const period = this.data.period
+    const hide = getHideAmount()
+    const money = (v: number) => (hide ? maskMoney(v) : yuan(v))
     try {
       // series → KPI 汇总 + 单量/利润图表；overview(本月) → 成本环图 + 目标 + 高利润
       const [sr, ov]: any[] = await Promise.all([
         statsApi.series(period),
         statsApi.overview('month'),
       ])
+      if (seq !== (this as any)._seq) return
       const sm = sr.summary || {}
       const buckets = sr.buckets || []
       const profitBars = buckets.map((b: any) => ({ label: b.label, value: b.profit }))
@@ -76,14 +83,14 @@ Page({
       const legend = slices.map((s: any) => ({
         name: s.name,
         color: COLORMAP[s.key] || 'c6',
-        value: yuan(s.value),
+        value: money(s.value),
         pct: Math.round((s.value / totalCost) * 100),
       }))
       const tops = (ov.topOrders || []).map((o: any) => ({
         id: o.id,
         customer: o.customer,
         date: o.date,
-        profit: yuan(o.profit),
+        profit: money(o.profit),
         margin: Math.round((o.margin || 0) * 100),
       }))
       const gp = ov.goalProgress ? ov.goalProgress.monthly : 0
@@ -99,23 +106,29 @@ Page({
         donut,
         legend,
         tops,
-        profitBare: yuan(sm.profit || 0, true),
-        revenueText: yuan(sm.revenue || 0),
-        costText: yuan(sm.cost || 0),
-        donutCostText: yuan(ov.cost || 0),
+        profitBare: hide ? maskMoney(sm.profit || 0) : yuan(sm.profit || 0, true),
+        revenueText: money(sm.revenue || 0),
+        costText: money(sm.cost || 0),
+        donutCostText: money(ov.cost || 0),
         count: sm.count || 0,
-        avgText: yuan(sm.avgProfit || 0),
-        monthProfitText: yuan(ov.monthProfit || 0),
-        goalTargetText: ov.goal && ov.goal.monthly ? yuan(ov.goal.monthly) : '未设',
+        avgText: money(sm.avgProfit || 0),
+        monthProfitText: money(ov.monthProfit || 0),
+        goalTargetText: ov.goal && ov.goal.monthly ? money(ov.goal.monthly) : '未设',
         goalPct: Math.min(100, Math.round((gp || 0) * 100)),
         loading: false,
+        loadError: false,
       })
     } catch (e) {
-      this.setData({ loading: false })
+      if (seq !== (this as any)._seq) return
+      // 加载失败单独成态（带重试），不渲染"暂无…"空态，避免误导成没有数据
+      this.setData({ loading: false, loadError: true })
     } finally {
       if (done) done()
     }
     this.loadUnread()
+  },
+  retry() {
+    this.load()
   },
 
   async loadUnread() {

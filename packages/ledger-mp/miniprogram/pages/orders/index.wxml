@@ -39,8 +39,8 @@
     <view wx:if="{{list.length}}">
       <view wx:for="{{list}}" wx:key="id" class="lz-card ord__item" data-id="{{item.id}}" bindtap="toDetail" hover-class="tap-active">
         <view class="lz-between">
-          <view class="ord__cust">{{item.customer}}</view>
-          <view class="lz-money lz-money--accent" style="font-size: 17px;">{{item.profitText}}</view>
+          <view class="ord__cust lz-ellipsis">{{item.customer}}</view>
+          <view class="lz-money lz-money--accent" style="font-size: 17px; flex-shrink: 0;">{{item.profitText}}</view>
         </view>
         <view class="ord__meta">
           <text>{{item.date}}</text>
@@ -53,6 +53,17 @@
           <view wx:for="{{item.segs}}" wx:for-item="seg" wx:key="k" class="ord__seg" style="width: {{seg.w}}%; background: var(--{{seg.color}});"></view>
         </view>
       </view>
+      <view class="ord__foot">
+        <text wx:if="{{loadingMore}}">加载中…</text>
+        <text wx:elif="{{hasMore}}">已显示 {{list.length}} 条 / 共 {{summary.count}} 条</text>
+        <text wx:else>已全部加载</text>
+      </view>
+    </view>
+
+    <!-- 加载失败（网络等）：带重试，不与"暂无订单"空态混淆 -->
+    <view wx:elif="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
     <view wx:elif="{{!loading}}" class="lz-empty">暂无订单，点击底部 + 记一笔</view>
   </view>

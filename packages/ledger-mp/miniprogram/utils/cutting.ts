@@ -18,7 +18,7 @@ export interface CutPlanResult {
   totalPieces: number // 段数合计
   totalCutLength: number // 有效切割长度合计
   totalStock: number // 用料总长 = barCount × stockLength
-  totalWaste: number // 损耗合计
+  totalWaste: number // 损耗合计 = 用料总长 − 有效切割长度（各根余料 + 锯缝锯末）
   utilization: number // 利用率 0..1 = 有效长度 / 用料总长
   oversize: number[] // 超过整根料长、无法下料的段
 }
@@ -63,7 +63,8 @@ export function optimizeCutting(stockLength: number, pieces: CutPiece[], kerf = 
   })
   const totalCutLength = flat.reduce((s, l) => s + l, 0)
   const totalStock = planBars.length * L
-  const totalWaste = planBars.reduce((s, b) => s + b.waste, 0)
+  // 损耗含锯缝消耗（仅各根余料之和会漏掉锯末），保证 利用率 + 损耗/用料总长 = 1
+  const totalWaste = totalStock - totalCutLength
   return {
     bars: planBars,
     barCount: planBars.length,

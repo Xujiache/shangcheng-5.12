@@ -1,6 +1,10 @@
 import { cutApi } from '../../api/index'
 import { optimizeCutting } from '../../utils/cutting'
 
+// 切割清单行的稳定 key：删除中间行时避免 wx:key 失配导致输入框内容串行
+let pieceUid = 0
+const newPiece = () => ({ _k: ++pieceUid, lengthStr: '', qtyStr: '' })
+
 Page({
   data: {
     checking: true,
@@ -11,7 +15,7 @@ Page({
     gateReason: '优化下料试用已结束，开通会员后继续使用',
     stockLengthStr: '6000',
     kerfStr: '5',
-    pieces: [{ lengthStr: '', qtyStr: '' }] as any[],
+    pieces: [newPiece()] as any[],
     summary: null as any,
     barsView: [] as any[],
     oversizeText: '',
@@ -60,12 +64,12 @@ Page({
     this.setData({ pieces: p })
   },
   addPiece() {
-    this.setData({ pieces: [...this.data.pieces, { lengthStr: '', qtyStr: '' }] })
+    this.setData({ pieces: [...this.data.pieces, newPiece()] })
   },
   delPiece(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = this.data.pieces.filter((_: any, j: number) => j !== i)
-    this.setData({ pieces: p.length ? p : [{ lengthStr: '', qtyStr: '' }] })
+    this.setData({ pieces: p.length ? p : [newPiece()] })
   },
 
   compute() {

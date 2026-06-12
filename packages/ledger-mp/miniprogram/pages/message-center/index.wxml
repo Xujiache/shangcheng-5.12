@@ -4,7 +4,12 @@
   </lz-header>
 
   <view class="lz-page" style="padding-bottom: 40px;">
-    <view wx:if="{{list.length}}" class="mc__list">
+    <!-- 加载失败（网络等）：带重试，不与"暂无消息"空态混淆 -->
+    <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+    </view>
+    <view wx:elif="{{list.length}}" class="mc__list">
       <view
         wx:for="{{list}}"
         wx:key="id"
@@ -26,6 +31,6 @@
         </view>
       </view>
     </view>
-    <view wx:else class="lz-empty">暂无消息</view>
+    <view wx:elif="{{!loading}}" class="lz-empty">暂无消息</view>
   </view>
 </view>

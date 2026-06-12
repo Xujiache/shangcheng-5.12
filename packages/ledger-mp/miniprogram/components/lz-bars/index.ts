@@ -8,7 +8,7 @@ Component({
     highlight: { type: Number, value: -1 },
   },
   data: {
-    bars: [] as Array<{ h: number; h2: number; label: string }>,
+    bars: [] as Array<{ idx: number; h: number; h2: number; label: string }>,
     grouped: false,
     c1: 'var(--accent)',
     c2: 'var(--c4)',
@@ -21,7 +21,8 @@ Component({
         max = Math.max(max, Number(s.value) || 0, grouped ? Number(s.value2) || 0 : 0)
       })
       const safeMax = max || 1
-      const bars = (series || []).map((s) => ({
+      const bars = (series || []).map((s, idx) => ({
+        idx,
         label: s.label,
         h: Math.max(s.value > 0 ? 2 : 0, ((Number(s.value) || 0) / safeMax) * height),
         h2: grouped

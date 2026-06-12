@@ -1,7 +1,7 @@
 <view class="bars" style="height: {{height + 22}}px;">
   <view
     wx:for="{{bars}}"
-    wx:key="i"
+    wx:key="idx"
     class="bars__col"
     style="opacity: {{highlight < 0 || highlight === index ? 1 : 0.42}};"
     data-index="{{index}}"

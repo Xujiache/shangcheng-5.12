@@ -9,14 +9,24 @@ const CATS: Array<[string, string, string]> = [
   ['screen', '纱窗', 'c5'],
 ]
 
+// ㎡/数量显示：最多 2 位小数，去尾零（与报价明细页 fmtArea 同口径）
+function fmtArea(n: number): string {
+  const v = Math.round((Number(n) || 0) * 100) / 100
+  if (Number.isInteger(v)) return String(v)
+  return v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+}
+
 Page({
   data: {
     id: '',
     o: null as any,
+    loadError: false,
     donut: [] as any[],
     costRows: [] as any[],
     customCosts: [] as any[],
     extras: [] as any[],
+    items: [] as any[],
+    quoteRows: [] as any[],
     marginPct: 0,
     profitBare: '0',
     totalText: '¥0',
@@ -25,6 +35,7 @@ Page({
     extraIncomeText: '¥0',
     hasExtraIncome: false,
   },
+  _seq: 0,
 
   onLoad(opt: any) {
     this.setData({ id: opt.id || '' })
@@ -34,8 +45,13 @@ Page({
   },
 
   async load() {
+    // 序号守卫：onShow 可连续触发，丢弃过期响应避免旧数据覆盖
+    this._seq = (this._seq || 0) + 1
+    const seq = this._seq
+    if (this.data.loadError) this.setData({ loadError: false })
     try {
       const o: any = await orderApi.get(this.data.id)
+      if (seq !== this._seq) return
       const cost = o.cost || 1
       const costRows = CATS.map(([k, name, color]) => {
         const v = o.costs ? o.costs[k] || 0 : 0
@@ -47,24 +63,63 @@ Page({
           w: Math.round((v / cost) * 100),
         }
       })
+      // c6 含 其他开销 + 自定义成本，使环图比例与中心「总成本」口径一致
+      const customCostsSum =
+        o.customCostsTotal != null
+          ? o.customCostsTotal
+          : (o.customCosts || []).reduce((s: number, c: any) => s + (c.amount || 0), 0)
       const donut = [
         ...CATS.map(([k, , color]) => ({ value: o.costs ? o.costs[k] || 0 : 0, color })),
-        { value: o.extrasTotal || 0, color: 'c6' },
+        { value: (o.extrasTotal || 0) + customCostsSum, color: 'c6' },
       ].filter((d) => d.value > 0)
-      const extras = (o.extras || []).map((e: any) => ({
+      const extras = (o.extras || []).map((e: any, idx: number) => ({
+        idx,
         type: e.type,
         amountText: yuan(e.amount),
       }))
-      const customCosts = (o.customCosts || []).map((c: any) => ({
+      const customCosts = (o.customCosts || []).map((c: any, idx: number) => ({
+        idx,
         name: c.name,
         amountText: yuan(c.amount),
       }))
+      // 门窗报价明细（只读展示）：计费量/小计与后端 itemBillingQty/itemSubtotal 同口径
+      const items = (o.items || []).map((it: any, idx: number) => {
+        const sizes = it.sizes || []
+        const billingQty = sizes.length
+          ? sizes.reduce(
+              (sum: number, s: any) =>
+                sum + Math.max(((s.w || 0) * (s.h || 0)) / 1_000_000, it.baseArea || 0),
+              0,
+            )
+          : it.qty || 0
+        const subtotal = Math.round(billingQty * (it.unitPrice || 0))
+        return {
+          idx,
+          name: it.name,
+          spec: sizes.length
+            ? `${sizes.length} 尺寸 · ${fmtArea(billingQty)}㎡`
+            : `数量 ${fmtArea(it.qty || 0)}`,
+          subtotalText: yuan(subtotal),
+        }
+      })
+      // 报价金额行：金额(有明细) / 优惠 / 定金+未收(有定金)
+      const quoteRows: Array<{ label: string; value: string }> = []
+      if (items.length) quoteRows.push({ label: '金额（明细合计）', value: yuan(o.amount || 0) })
+      // 优惠仅在有明细时参与计价（后端 orderTotalFromItems 才会减它），无明细不展示以免误读
+      if (items.length && (o.discount || 0) > 0)
+        quoteRows.push({ label: '优惠', value: '-' + yuan(o.discount) })
+      if ((o.deposit || 0) > 0) {
+        quoteRows.push({ label: '定金', value: yuan(o.deposit) })
+        quoteRows.push({ label: '未收', value: yuan(o.unpaid || 0) })
+      }
       this.setData({
         o,
         donut,
         costRows,
         customCosts,
         extras,
+        items,
+        quoteRows,
         marginPct: Math.round((o.margin || 0) * 100),
         profitBare: yuan(o.profit, true),
         totalText: yuan(o.total),
@@ -74,7 +129,9 @@ Page({
         hasExtraIncome: (o.extraIncome || 0) > 0,
       })
     } catch (e) {
-      /* handled */
+      if (seq !== this._seq) return
+      // 加载失败单独成态（带重试），避免停留在空白页
+      this.setData({ loadError: true })
     }
   },
 

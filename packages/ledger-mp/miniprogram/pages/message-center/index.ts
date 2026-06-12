@@ -32,15 +32,21 @@ Page({
     list: [] as any[],
     hasUnread: false,
     loading: true,
+    loadError: false, // 网络/加载失败：区别于"暂无消息"空态
   },
+
+  _seq: 0,
 
   onShow() {
     this.load()
   },
 
   async load() {
+    // 序号守卫：onShow 可能并发触发，旧响应不得覆盖新数据
+    const seq = (this._seq = (this._seq || 0) + 1)
     try {
       const rows: any[] = await notificationApi.list()
+      if (seq !== this._seq) return
       const list = (rows || []).map((n) => {
         const p = PRESENT[n.type] || PRESENT.system
         return {
@@ -54,10 +60,20 @@ Page({
           unread: !!n.unread,
         }
       })
-      this.setData({ list, hasUnread: list.some((m) => m.unread), loading: false })
+      this.setData({
+        list,
+        hasUnread: list.some((m) => m.unread),
+        loading: false,
+        loadError: false,
+      })
     } catch (e) {
-      this.setData({ loading: false })
+      if (seq !== this._seq) return
+      // 加载失败单独成态（带重试），避免把网络抖动误展示成"暂无消息"
+      this.setData({ loading: false, loadError: true })
     }
+  },
+  retry() {
+    this.setData({ loading: true, loadError: false }, () => this.load())
   },
 
   async onRead(e: any) {

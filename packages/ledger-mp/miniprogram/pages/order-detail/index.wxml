@@ -28,6 +28,14 @@
       </view>
     </view>
 
+    <!-- 报价金额：金额(明细合计)/优惠/定金/未收 -->
+    <view wx:if="{{quoteRows.length}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+      <view wx:for="{{quoteRows}}" wx:key="label" class="lz-row">
+        <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">{{item.label}}</view></view>
+        <view class="od__val lz-money">{{item.value}}</view>
+      </view>
+    </view>
+
     <!-- 基本信息 -->
     <view class="lz-card lz-card--flush" style="margin-top: var(--gap);">
       <view class="lz-row" bindtap="toCustomer" hover-class="tap-active">
@@ -43,9 +51,21 @@
         <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">额外收入</view></view>
         <view class="od__val lz-money lz-money--accent">{{extraIncomeText}}</view>
       </view>
-      <view class="lz-row lz-row--last">
-        <view class="lz-row__main"><view class="lz-row__label" style="font-size:14px;color:var(--muted);">项目备注</view></view>
-        <view class="od__val">{{o.note || '—'}}</view>
+      <view class="od__note">
+        <view class="lz-row__label" style="font-size:14px;color:var(--muted);">项目备注</view>
+        <view class="od__note-val">{{o.note || '—'}}</view>
+      </view>
+    </view>
+
+    <!-- 报价明细（只读，小计与后端同口径） -->
+    <view wx:if="{{items.length}}" class="lz-card" style="margin-top: var(--gap);">
+      <view class="od__t">明细</view>
+      <view wx:for="{{items}}" wx:key="idx" class="od__item">
+        <view class="od__item-main">
+          <view class="od__item-name lz-ellipsis">{{item.name}}</view>
+          <view class="od__item-spec">{{item.spec}}</view>
+        </view>
+        <text class="od__item-val">{{item.subtotalText}}</text>
       </view>
     </view>
 
@@ -59,7 +79,7 @@
         <text class="od__c-pct">{{item.pct}}%</text>
         <text class="od__c-val">{{item.value}}</text>
       </view>
-      <view wx:for="{{customCosts}}" wx:key="name" class="od__cost">
+      <view wx:for="{{customCosts}}" wx:key="idx" class="od__cost">
         <view class="lz-dot" style="background: var(--c6);"></view>
         <text class="od__c-name">{{item.name}}</text>
         <view class="lz-flex1"></view>
@@ -74,12 +94,19 @@
         <text class="lz-muted" style="font-size: 13px;">{{extrasTotalText}}</text>
       </view>
       <view wx:if="{{extras.length}}">
-        <view wx:for="{{extras}}" wx:key="type" class="lz-between od__ex">
+        <view wx:for="{{extras}}" wx:key="idx" class="lz-between od__ex">
           <view class="lz-flex"><view class="lz-dot" style="background: var(--c6); margin-right: 10px;"></view><text class="lz-muted" style="font-size: 13.5px;">{{item.type}}</text></view>
           <text style="font-size: 13.5px; font-weight: 600;">{{item.amountText}}</text>
         </view>
       </view>
       <view wx:else class="lz-faint" style="font-size: 13px;">无其他开销</view>
+    </view>
+  </view>
+  <!-- 加载失败（网络等）：带重试，避免空白页 -->
+  <view wx:elif="{{loadError}}" class="lz-page">
+    <view class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="load">重试</button>
     </view>
   </view>
 

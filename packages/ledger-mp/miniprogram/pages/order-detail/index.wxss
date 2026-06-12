@@ -65,3 +65,45 @@
 .od__ex {
   min-height: 38px;
 }
+/* 备注独立成块：标签在上、内容整行换行，长备注不挤压标签 */
+.od__note {
+  padding: 14px 0;
+}
+.od__note-val {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 6px;
+  line-height: 1.6;
+  word-break: break-all;
+}
+/* 报价明细行 */
+.od__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+.od__item:last-child {
+  margin-bottom: 0;
+}
+.od__item-main {
+  flex: 1;
+  min-width: 0;
+}
+.od__item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.od__item-spec {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 2px;
+}
+.od__item-val {
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}

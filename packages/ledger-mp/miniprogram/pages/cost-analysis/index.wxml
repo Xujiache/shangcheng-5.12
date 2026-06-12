@@ -2,7 +2,13 @@
   <lz-header title="成本分析" subtitle="{{ovYear}}年 · 成本构成" back="{{true}}" />
 
   <view class="lz-page lz-page--pad-bottom">
-    <block wx:if="{{hasData}}">
+    <!-- 加载失败（网络等）：带重试，不与"暂无成本数据"空态混淆 -->
+    <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+    </view>
+
+    <block wx:elif="{{hasData}}">
       <!-- 成本占比环图 -->
       <view class="lz-card">
         <view class="ca__card-t" style="margin-bottom: 14px;">成本构成</view>
@@ -41,7 +47,7 @@
       </view>
     </block>
 
-    <view wx:else class="lz-card">
+    <view wx:elif="{{!loading}}" class="lz-card">
       <view class="lz-empty">本年暂无成本数据，去记一笔吧</view>
     </view>
   </view>

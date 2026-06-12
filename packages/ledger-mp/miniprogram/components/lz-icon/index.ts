@@ -11,13 +11,20 @@ Component({
   data: { src: '' },
   observers: {
     'name, color, size, stroke'(name: string, color: string, size: number, stroke: number) {
-      this.setData({ src: svgIcon(name, color, size, stroke) })
+      this.applySrc(name, color, size, stroke)
     },
   },
   lifetimes: {
+    // 兜底：属性全为默认值时多字段观察器不会触发；已与观察器结果一致时跳过 setData
     attached() {
       const { name, color, size, stroke } = this.properties
-      this.setData({ src: svgIcon(name, color as string, size, stroke) })
+      this.applySrc(name as string, color as string, size as number, stroke as number)
+    },
+  },
+  methods: {
+    applySrc(name: string, color: string, size: number, stroke: number) {
+      const src = svgIcon(name, color, size, stroke)
+      if (src !== this.data.src) this.setData({ src })
     },
   },
 })

@@ -1,5 +1,6 @@
 import { statsApi } from '../../api/index'
-import { yuan } from '../../utils/format'
+import { yuan, maskMoney } from '../../utils/format'
+import { getHideAmount } from '../../utils/store'
 
 interface MonthRow {
   month: number
@@ -20,6 +21,7 @@ Page({
       { value: 'labor', label: '人工统计' },
     ],
     loading: true,
+    loadError: false, // 网络/加载失败：区别于"暂无数据"空态
     sel: -1,
     ovYear: new Date().getFullYear(),
     hasData: false,
@@ -39,6 +41,8 @@ Page({
     avgLaborText: '¥0',
   },
 
+  _seq: 0,
+
   onShow() {
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 2 })
@@ -56,20 +60,26 @@ Page({
   },
 
   async load(done?: () => void) {
+    // 序号守卫：onShow/下拉可能并发触发，旧响应不得覆盖新数据
+    const seq = (this._seq = (this._seq || 0) + 1)
     try {
       const res: any = await statsApi.monthly(this.data.ovYear)
+      if (seq !== this._seq) return
       const series: MonthRow[] = res.series || []
       const hasData = series.some((s) => s.count > 0)
+      // 隐藏金额模式：仅掩码文本金额，图表保持相对比例
+      const hide = getHideAmount()
+      const fmt = (n: number) => (hide ? maskMoney(n) : yuan(n))
 
       const months = series.map((s) => ({
         month: s.month,
         label: s.label,
         count: s.count,
         profit: s.profit,
-        profitText: yuan(s.profit),
-        revenueText: yuan(s.revenue),
-        laborText: yuan(s.labor),
-        otherText: yuan(s.otherCost),
+        profitText: fmt(s.profit),
+        revenueText: fmt(s.revenue),
+        laborText: fmt(s.labor),
+        otherText: fmt(s.otherCost),
       }))
       const profitBars = series.map((s) => ({ label: s.label, value: s.profit }))
       const laborBars = series.map((s) => ({ label: s.label, value: s.labor, value2: s.otherCost }))
@@ -94,19 +104,25 @@ Page({
         months,
         profitBars,
         laborBars,
-        yearProfitBare: yuan(yearProfit, true),
+        yearProfitBare: hide ? maskMoney(yearProfit) : yuan(yearProfit, true),
         count,
-        avgProfitText: count ? yuan(Math.round(yearProfit / count)) : '¥0',
+        avgProfitText: fmt(count ? Math.round(yearProfit / count) : 0),
         bestMonthLabel: best > 0 ? best + '月' : '—',
-        yearLaborBare: yuan(yearLabor, true),
-        yearOtherText: yuan(yearOther),
-        avgLaborText: count ? yuan(Math.round(yearLabor / count)) : '¥0',
+        yearLaborBare: hide ? maskMoney(yearLabor) : yuan(yearLabor, true),
+        yearOtherText: fmt(yearOther),
+        avgLaborText: fmt(count ? Math.round(yearLabor / count) : 0),
         loading: false,
+        loadError: false,
       })
     } catch (e) {
-      this.setData({ loading: false })
+      if (seq !== this._seq) return
+      // 加载失败单独成态（带重试），避免把网络抖动误展示成"暂无数据"
+      this.setData({ loading: false, loadError: true })
     } finally {
       if (done) done()
     }
+  },
+  retry() {
+    this.setData({ loading: true, loadError: false }, () => this.load())
   },
 })

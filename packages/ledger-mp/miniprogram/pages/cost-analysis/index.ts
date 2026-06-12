@@ -1,5 +1,6 @@
 import { statsApi } from '../../api/index'
-import { yuan } from '../../utils/format'
+import { yuan, maskMoney } from '../../utils/format'
+import { getHideAmount } from '../../utils/store'
 
 // 成本分类 → 配色 token（与首页 / COST_CATS 同口径；extras=其他→c6）
 const COLORMAP: Record<string, string> = {
@@ -25,6 +26,7 @@ interface Slice {
 Page({
   data: {
     loading: true,
+    loadError: false, // 网络/加载失败：区别于"暂无成本数据"空态
     ovYear: new Date().getFullYear(),
     hasData: false,
     donut: [] as any[],
@@ -43,31 +45,39 @@ Page({
     _series: [] as any[],
   },
 
-  onLoad() {
+  _seq: 0,
+
+  onShow() {
+    // onShow 重新拉取：从隐私设置返回时同步「隐藏金额」开关
     this.load()
   },
 
   async load() {
+    // 序号守卫：onShow 可能并发触发，旧响应不得覆盖新数据
+    const seq = (this._seq = (this._seq || 0) + 1)
     try {
       const [ov, mon] = await Promise.all([
         statsApi.overview('year') as Promise<any>,
         statsApi.monthly(this.data.ovYear) as Promise<any>,
       ])
+      if (seq !== this._seq) return
       const slices: Slice[] = (ov && ov.costSlices) || []
       const series: any[] = (mon && mon.series) || []
       const total = slices.reduce((s, x) => s + (x.value || 0), 0)
 
       if (!slices.length || total <= 0) {
-        this.setData({ hasData: false, loading: false })
+        this.setData({ hasData: false, loading: false, loadError: false })
         return
       }
 
+      // 隐藏金额模式：仅掩码文本金额，环图/占比保持相对比例
+      const hide = getHideAmount()
       const donut = slices.map((s) => ({ value: s.value, color: COLORMAP[s.key] || 'c6' }))
       const legend = slices.map((s) => ({
         key: s.key,
         name: s.name,
         color: COLORMAP[s.key] || 'c6',
-        valueText: yuan(s.value),
+        valueText: hide ? maskMoney(s.value) : yuan(s.value),
         pct: Math.round((s.value / total) * 100),
       }))
       const catOptions = slices.map((s) => ({ value: s.key, label: s.name }))
@@ -77,18 +87,24 @@ Page({
           hasData: true,
           donut,
           legend,
-          totalCostText: yuan(total),
+          totalCostText: hide ? maskMoney(total) : yuan(total),
           catOptions,
           cat: slices[0].key,
           _slices: slices,
           _series: series,
           loading: false,
+          loadError: false,
         },
         () => this.applyCat(slices[0].key),
       )
     } catch (e) {
-      this.setData({ loading: false })
+      if (seq !== this._seq) return
+      // 加载失败单独成态（带重试），避免把网络抖动误展示成"暂无成本数据"
+      this.setData({ loading: false, loadError: true })
     }
+  },
+  retry() {
+    this.setData({ loading: true, loadError: false }, () => this.load())
   },
 
   onCat(e: any) {
@@ -108,10 +124,11 @@ Page({
       catBars = series.map((s: any) => ({ label: s.label, value: s[field] || 0 }))
       catHasMonthly = catBars.some((b) => b.value > 0)
     }
+    const catTotal = slice ? slice.value : 0
     this.setData({
       catName: slice ? slice.name : '',
       catColor: color,
-      catTotalText: yuan(slice ? slice.value : 0),
+      catTotalText: getHideAmount() ? maskMoney(catTotal) : yuan(catTotal),
       catBars,
       catHasMonthly,
     })

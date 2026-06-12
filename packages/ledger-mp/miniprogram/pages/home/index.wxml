@@ -18,108 +18,116 @@
     <!-- 广告轮播（#2）-->
     <swiper wx:if="{{ads.length}}" class="home__ads" indicator-dots="{{ads.length > 1}}" autoplay circular interval="4000" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
       <swiper-item wx:for="{{ads}}" wx:key="id" data-link="{{item.link}}" bindtap="onAd">
-        <image class="home__ad-img" src="{{item.image}}" mode="aspectFill" />
+        <image class="home__ad-img" src="{{item.image}}" mode="aspectFill" lazy-load />
       </swiper-item>
     </swiper>
 
-    <!-- 核心利润 -->
-    <view class="lz-card lz-card--glow home__hero">
-      <view class="home__hero-label">{{periodLabel}}净利润</view>
-      <view class="lz-money lz-money--accent" style="font-size: 38px; margin-top: 4px;">
-        <text class="lz-cur">¥</text>{{profitBare}}
-      </view>
-      <view class="home__metrics">
-        <view class="home__metric">
-          <view class="home__m-v">{{revenueText}}</view>
-          <view class="home__m-l">营收</view>
-        </view>
-        <view class="home__metric">
-          <view class="home__m-v">{{costText}}</view>
-          <view class="home__m-l">成本</view>
-        </view>
-        <view class="home__metric">
-          <view class="home__m-v">{{count}}</view>
-          <view class="home__m-l">订单数</view>
-        </view>
-        <view class="home__metric">
-          <view class="home__m-v">{{avgText}}</view>
-          <view class="home__m-l">单均利润</view>
-        </view>
-      </view>
+    <!-- 加载失败（网络等）：带重试，不渲染"暂无…"空态 -->
+    <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
 
-    <!-- 目标进度 -->
-    <view class="lz-card home__goal" hover-class="tap-active" bindtap="toGoal">
-      <view class="lz-between">
-        <view class="home__goal-t">本月目标 {{goalTargetText}}</view>
-        <view class="lz-pill lz-pill--profit">{{goalPct}}%</view>
+    <block wx:else>
+      <!-- 核心利润 -->
+      <view class="lz-card lz-card--glow home__hero">
+        <view class="home__hero-label">{{periodLabel}}净利润</view>
+        <view class="lz-money lz-money--accent" style="font-size: 38px; margin-top: 4px;">
+          <text class="lz-cur">¥</text>{{profitBare}}
+        </view>
+        <view class="home__metrics">
+          <view class="home__metric">
+            <view class="home__m-v">{{revenueText}}</view>
+            <view class="home__m-l">营收</view>
+          </view>
+          <view class="home__metric">
+            <view class="home__m-v">{{costText}}</view>
+            <view class="home__m-l">成本</view>
+          </view>
+          <view class="home__metric">
+            <view class="home__m-v">{{count}}</view>
+            <view class="home__m-l">订单数</view>
+          </view>
+          <view class="home__metric">
+            <view class="home__m-v">{{avgText}}</view>
+            <view class="home__m-l">单均利润</view>
+          </view>
+        </view>
       </view>
-      <view class="lz-track" style="margin-top: 12px;">
-        <view class="lz-track__fill" style="width: {{goalPct}}%;"></view>
-      </view>
-      <view class="home__goal-s">本月已实现利润 {{monthProfitText}}</view>
-    </view>
 
-    <!-- 实用工具：型材优化下料（#9）-->
-    <view class="lz-card home__tool" hover-class="tap-active" bindtap="toCut">
-      <view class="home__tool-icon"><lz-icon name="cube" size="20" color="accent" /></view>
-      <view class="lz-flex1">
-        <view class="home__tool-t">型材优化下料</view>
-        <view class="home__tool-s">一维切割排版 · 省料省成本</view>
+      <!-- 目标进度 -->
+      <view class="lz-card home__goal" hover-class="tap-active" bindtap="toGoal">
+        <view class="lz-between">
+          <view class="home__goal-t">本月目标 {{goalTargetText}}</view>
+          <view class="lz-pill lz-pill--profit">{{goalPct}}%</view>
+        </view>
+        <view class="lz-track" style="margin-top: 12px;">
+          <view class="lz-track__fill" style="width: {{goalPct}}%;"></view>
+        </view>
+        <view class="home__goal-s">本月已实现利润 {{monthProfitText}}</view>
       </view>
-      <lz-icon name="chevron" size="16" color="faint" />
-    </view>
 
-    <!-- 成本占比 -->
-    <view class="lz-card" hover-class="tap-active" bindtap="toCost">
-      <view class="lz-between" style="margin-bottom: 14px;">
-        <view class="home__card-t">成本构成</view>
+      <!-- 实用工具：型材优化下料（#9）-->
+      <view class="lz-card home__tool" hover-class="tap-active" bindtap="toCut">
+        <view class="home__tool-icon"><lz-icon name="cube" size="20" color="accent" /></view>
+        <view class="lz-flex1">
+          <view class="home__tool-t">型材优化下料</view>
+          <view class="home__tool-s">一维切割排版 · 省料省成本</view>
+        </view>
         <lz-icon name="chevron" size="16" color="faint" />
       </view>
-      <view wx:if="{{donut.length}}" class="home__cost">
-        <lz-donut data="{{donut}}" size="120" thickness="18">
-          <view style="font-size: 10.5px; color: var(--muted);">本月成本</view>
-          <view style="font-size: 15px; font-weight: 800; color: var(--text);">{{donutCostText}}</view>
-        </lz-donut>
-        <view class="home__legend">
-          <view wx:for="{{legend}}" wx:key="name" class="home__leg">
-            <view class="lz-dot" style="background: var(--{{item.color}});"></view>
-            <text class="home__leg-n">{{item.name}}</text>
-            <view class="lz-flex1"></view>
-            <text class="home__leg-p">{{item.pct}}%</text>
-            <text class="home__leg-v">{{item.value}}</text>
+
+      <!-- 成本占比 -->
+      <view class="lz-card" hover-class="tap-active" bindtap="toCost">
+        <view class="lz-between" style="margin-bottom: 14px;">
+          <view class="home__card-t">成本构成</view>
+          <lz-icon name="chevron" size="16" color="faint" />
+        </view>
+        <view wx:if="{{donut.length}}" class="home__cost">
+          <lz-donut data="{{donut}}" size="120" thickness="18">
+            <view style="font-size: 10.5px; color: var(--muted);">本月成本</view>
+            <view style="font-size: 15px; font-weight: 800; color: var(--text);">{{donutCostText}}</view>
+          </lz-donut>
+          <view class="home__legend">
+            <view wx:for="{{legend}}" wx:key="name" class="home__leg">
+              <view class="lz-dot" style="background: var(--{{item.color}});"></view>
+              <text class="home__leg-n">{{item.name}}</text>
+              <view class="lz-flex1"></view>
+              <text class="home__leg-p">{{item.pct}}%</text>
+              <text class="home__leg-v">{{item.value}}</text>
+            </view>
           </view>
         </view>
+        <view wx:else class="lz-empty">暂无成本数据</view>
       </view>
-      <view wx:else class="lz-empty">暂无成本数据</view>
-    </view>
 
-    <!-- 利润 / 单量 趋势（随 日/月/年 切换） -->
-    <view class="lz-card">
-      <view class="home__card-t" style="margin-bottom: 14px;">利润 · {{seriesTitle}}</view>
-      <lz-bars wx:if="{{profitBars.length}}" series="{{profitBars}}" colors="{{['accent']}}" height="120" />
-      <view wx:else class="lz-empty">暂无数据</view>
-    </view>
-    <view class="lz-card">
-      <view class="home__card-t" style="margin-bottom: 14px;">单量 · {{seriesTitle}}</view>
-      <lz-bars wx:if="{{countBars.length}}" series="{{countBars}}" colors="{{['c2']}}" height="100" />
-      <view wx:else class="lz-empty">暂无数据</view>
-    </view>
+      <!-- 利润 / 单量 趋势（随 日/月/年 切换） -->
+      <view class="lz-card">
+        <view class="home__card-t" style="margin-bottom: 14px;">利润 · {{seriesTitle}}</view>
+        <lz-bars wx:if="{{profitBars.length}}" series="{{profitBars}}" colors="{{['accent']}}" height="120" />
+        <view wx:else class="lz-empty">暂无数据</view>
+      </view>
+      <view class="lz-card">
+        <view class="home__card-t" style="margin-bottom: 14px;">单量 · {{seriesTitle}}</view>
+        <lz-bars wx:if="{{countBars.length}}" series="{{countBars}}" colors="{{['c2']}}" height="100" />
+        <view wx:else class="lz-empty">暂无数据</view>
+      </view>
 
-    <!-- 高利润订单 -->
-    <view class="lz-card lz-card--flush">
-      <view class="home__card-t" style="padding: 14px 0 8px;">高利润订单</view>
-      <view wx:if="{{tops.length}}">
-        <view wx:for="{{tops}}" wx:key="id" class="lz-row" data-id="{{item.id}}" bindtap="toOrder" hover-class="tap-active">
-          <view class="home__rank">{{index + 1}}</view>
-          <view class="lz-row__main">
-            <view class="lz-row__label" style="font-size: 14.5px; font-weight: 600;">{{item.customer}}</view>
-            <view class="lz-row__sub">{{item.date}} · 利润率 {{item.margin}}%</view>
+      <!-- 高利润订单 -->
+      <view class="lz-card lz-card--flush">
+        <view class="home__card-t" style="padding: 14px 0 8px;">高利润订单</view>
+        <view wx:if="{{tops.length}}">
+          <view wx:for="{{tops}}" wx:key="id" class="lz-row" data-id="{{item.id}}" bindtap="toOrder" hover-class="tap-active">
+            <view class="home__rank">{{index + 1}}</view>
+            <view class="lz-row__main">
+              <view class="lz-row__label" style="font-size: 14.5px; font-weight: 600;">{{item.customer}}</view>
+              <view class="lz-row__sub">{{item.date}} · 利润率 {{item.margin}}%</view>
+            </view>
+            <view class="lz-money lz-money--accent" style="font-size: 15px;">{{item.profit}}</view>
           </view>
-          <view class="lz-money lz-money--accent" style="font-size: 15px;">{{item.profit}}</view>
         </view>
+        <view wx:else class="lz-empty">本期暂无订单，点击底部 + 记一笔</view>
       </view>
-      <view wx:else class="lz-empty">本期暂无订单，点击底部 + 记一笔</view>
-    </view>
+    </block>
   </view>
 </view>

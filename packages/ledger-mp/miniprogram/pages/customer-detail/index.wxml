@@ -8,7 +8,7 @@
     <view class="lz-card lz-card--glow cd__contact">
       <view class="lz-avatar cd__av">{{initial}}</view>
       <view class="lz-flex1" style="min-width: 0;">
-        <view class="cd__name">{{c.name}}</view>
+        <view class="cd__name lz-ellipsis">{{c.name}}</view>
         <view wx:if="{{c.phone}}" class="cd__phone" bindtap="copyPhone">
           <lz-icon name="phone" size="13" color="accent" /><text>{{c.phone}}</text>
         </view>
@@ -49,6 +49,14 @@
       </view>
     </view>
     <view wx:else class="lz-empty">暂无订单</view>
+  </view>
+
+  <!-- 加载失败（网络等）：带重试，避免 c 为空时整页空白 -->
+  <view wx:elif="{{loadError}}" class="lz-page">
+    <view class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+    </view>
   </view>
 
   <view wx:if="{{c}}" class="lz-footer" style="display: flex; gap: 10px;">

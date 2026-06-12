@@ -6,18 +6,23 @@
       <view class="lz-card lz-card--glow inv__hero">
         <view class="inv__icon"><lz-icon name="gift" size="34" color="white" stroke="1.8" /></view>
         <view class="inv__title">邀请好友注册</view>
-        <view class="inv__desc">好友用你的邀请码注册成功，你将获得 <text class="inv__hl">{{rewardDays}}</text> 天会员</view>
-        <view class="inv__code-box">
-          <text class="inv__code">{{inviteCode}}</text>
-          <view class="inv__copy" bindtap="copyCode" hover-class="tap-active">复制</view>
-        </view>
+        <block wx:if="{{allowSelfRegister}}">
+          <view class="inv__desc">好友用你的邀请码注册成功，你将获得 <text class="inv__hl">{{rewardDays}}</text> 天会员</view>
+          <view class="inv__code-box">
+            <text class="inv__code">{{inviteCode}}</text>
+            <view class="inv__copy" bindtap="copyCode" hover-class="tap-active">复制</view>
+          </view>
+        </block>
+        <view wx:else class="inv__desc">管理员暂未开放自助注册，邀请功能暂不可用</view>
         <view class="inv__stat">已成功邀请 <text class="inv__hl">{{invitedCount}}</text> 人</view>
       </view>
 
-      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" open-type="share" style="margin-top: 18px;">
-        <lz-icon name="gift" size="18" color="white" /> 分享给好友
-      </button>
-      <view class="inv__tip">分享卡片 → 好友点击打开 → 邀请码已自动带上 → 注册成功你得会员</view>
+      <block wx:if="{{allowSelfRegister}}">
+        <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" open-type="share" style="margin-top: 18px;">
+          <lz-icon name="gift" size="18" color="white" /> 分享给好友
+        </button>
+        <view class="inv__tip">分享卡片 → 好友点击打开 → 邀请码已自动带上 → 注册成功你得会员</view>
+      </block>
     </block>
   </view>
 </view>

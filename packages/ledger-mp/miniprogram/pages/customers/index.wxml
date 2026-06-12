@@ -7,10 +7,10 @@
 
   <view class="lz-page" style="padding-bottom: 40px;">
     <view wx:if="{{list.length}}" class="lz-card lz-card--flush">
-      <view wx:for="{{list}}" wx:key="name" class="lz-row" data-id="{{item.id}}" bindtap="toDetail" hover-class="tap-active">
+      <view wx:for="{{list}}" wx:key="_k" class="lz-row" data-id="{{item.id}}" bindtap="toDetail" hover-class="tap-active">
         <view class="lz-avatar cl__av">{{item.initial}}</view>
         <view class="lz-row__main">
-          <view class="lz-row__label" style="font-weight: 600;">{{item.name}}</view>
+          <view class="lz-row__label lz-ellipsis" style="font-weight: 600;">{{item.name}}</view>
           <view class="lz-row__sub">{{item.sub}}</view>
         </view>
         <view style="text-align: right;">
@@ -18,6 +18,11 @@
           <view class="lz-faint" style="font-size: 11px; margin-top: 2px;">累计利润</view>
         </view>
       </view>
+    </view>
+    <!-- 加载失败（网络等）：带重试，不展示"暂无"空态 -->
+    <view wx:elif="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
     <view wx:elif="{{!loading}}" class="lz-empty">还没有客户，点击右上角新增</view>
   </view>
