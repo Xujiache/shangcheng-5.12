@@ -3,6 +3,7 @@ import { inviteApi } from '../../api/index'
 Page({
   data: {
     loading: true,
+    loadError: false,
     inviteCode: '',
     invitedCount: 0,
     rewardDays: 7,
@@ -18,21 +19,29 @@ Page({
       const r: any = await inviteApi.get()
       this.setData({
         loading: false,
+        loadError: false,
         inviteCode: r.inviteCode || '',
         invitedCount: r.invitedCount || 0,
         rewardDays: r.rewardDays || 7,
         allowSelfRegister: r.allowSelfRegister !== false,
       })
     } catch (e) {
-      this.setData({ loading: false })
+      // 加载失败单独成态（带重试）：空邀请码下"复制/分享"看似可用实际无效，必须挡住
+      this.setData({ loading: false, loadError: true })
     }
+  },
+  retry() {
+    this.setData({ loading: true, loadError: false }, () => this.load())
   },
 
   copyCode() {
-    if (!this.data.inviteCode) return
+    if (!this.data.inviteCode) {
+      wx.showToast({ title: '邀请码加载失败，请重试', icon: 'none' })
+      return
+    }
     wx.setClipboardData({
       data: this.data.inviteCode,
-      success: () => wx.showToast({ title: '邀请码已复制', icon: 'none' }),
+      success: () => wx.showToast({ title: '邀请码已复制', icon: 'success' }),
     })
   },
 

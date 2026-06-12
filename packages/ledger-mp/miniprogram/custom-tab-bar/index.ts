@@ -1,3 +1,6 @@
+// FAB 防连点：双击会叠开两个空白「新增订单」页，保存返回时落在第二个空表单上易重复记账
+let adding = false
+
 Component({
   data: {
     selected: 0,
@@ -15,7 +18,12 @@ Component({
       wx.switchTab({ url })
     },
     onAdd() {
-      wx.navigateTo({ url: '/pages/order-edit/index' })
+      if (adding) return
+      adding = true
+      wx.navigateTo({
+        url: '/pages/order-edit/index',
+        complete: () => setTimeout(() => (adding = false), 600),
+      })
     },
   },
 })

@@ -46,6 +46,8 @@ Page({
     marginPct: '0.0',
     canSave: false,
     saving: false,
+    loadError: false,
+    unpaid: 0,
     showPicker: false,
     pickerList: [] as any[],
     pickerQ: '',
@@ -77,11 +79,13 @@ Page({
     const p = wx.getStorageSync('ledger_pending_customer')
     if (p && p.name) {
       wx.removeStorageSync('ledger_pending_customer')
-      this.setData({ customerId: p.id || null, customerName: p.name, showPicker: false }, () =>
-        this.refresh(),
+      // 清空选择器缓存：刚新增的客户要能在下次打开选择器时出现
+      this.setData(
+        { customerId: p.id || null, customerName: p.name, showPicker: false, _allCustomers: [] },
+        () => this.refresh(),
       )
     }
-    // 从「订单编辑」明细页返回，回填 明细/总价/优惠/定金/额外收入/备注
+    // 从「报价明细」页返回，回填 明细/总价/优惠/定金/额外收入/备注
     const m = wx.getStorageSync('ledger_order_money_out')
     if (m) {
       wx.removeStorageSync('ledger_order_money_out')
@@ -101,7 +105,7 @@ Page({
     }
   },
 
-  // 点击「订单编辑」→ 门窗报价明细编辑器；带入当前明细/金额，返回由 onShow 回填
+  // 点击「报价明细」→ 门窗报价明细编辑器；带入当前明细/金额，返回由 onShow 回填
   toAmount() {
     // 防双击连开两个明细页：第二个实例读不到已被消费的 IN 键会以空数据覆盖
     if (this._openingItems) return
@@ -166,12 +170,18 @@ Page({
         () => this.refresh(),
       )
     } catch (e) {
-      /* handled */
+      // 编辑态加载失败不能渲染空表单：保存空表单会把真实订单清零，改为展示重试卡
+      this.setData({ loadError: true })
     }
+  },
+  retryLoad() {
+    this.setData({ loadError: false })
+    this.loadOrder()
   },
 
   refresh() {
-    const { costs, costStrs, activeCats, extras, total, extraIncome, customCosts } = this.data
+    const { costs, costStrs, activeCats, extras, total, extraIncome, customCosts, deposit } =
+      this.data
     const activeCells = COST_CATS.filter((c) => activeCats.includes(c.key)).map((c) => ({
       key: c.key,
       name: c.name,
@@ -188,6 +198,7 @@ Page({
     this.setData({
       activeCells,
       removedCats,
+      unpaid: Math.max(0, total - deposit), // 与明细页/后端同口径：未收 = 总价 − 定金
       profitText: yuan(profit),
       profitNeg: profit < 0,
       marginPct: (margin * 100).toFixed(1),
@@ -260,6 +271,7 @@ Page({
     const i = Number(e.currentTarget.dataset.idx)
     const s = String(e.detail.value || '').trim()
     const ex = [...this.data.extras]
+    if (!ex[i]) return // 行已删除后迟到的 blur，忽略
     ex[i] = { ...ex[i], amountStr: s ? String(ex[i].amount || 0) : '' }
     this.setData({ extras: ex })
   },
@@ -298,6 +310,7 @@ Page({
     const i = Number(e.currentTarget.dataset.idx)
     const s = String(e.detail.value || '').trim()
     const cc = [...this.data.customCosts]
+    if (!cc[i]) return // 行已删除后迟到的 blur，忽略
     cc[i] = { ...cc[i], amountStr: s ? String(cc[i].amount || 0) : '' }
     this.setData({ customCosts: cc })
   },
@@ -368,10 +381,20 @@ Page({
   },
 
   onCancel() {
+    if (this.data.saving) return // 保存成功后的延时返回期间再点取消会连退两页
     wx.navigateBack()
   },
   async save() {
-    if (!this.data.canSave || this.data.saving) return
+    if (this.data.saving) return
+    if (!this.data.canSave) {
+      // 缺必填项时给出具体指引，避免点保存毫无反应
+      if (!String(this.data.customerName).trim()) {
+        wx.showToast({ title: '请先选择客户', icon: 'none' })
+      } else {
+        wx.showToast({ title: '请点「报价明细」录入明细或总价', icon: 'none' })
+      }
+      return
+    }
     this.setData({ saving: true })
     const {
       editing,

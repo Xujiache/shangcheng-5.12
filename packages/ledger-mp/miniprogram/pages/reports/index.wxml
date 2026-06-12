@@ -53,7 +53,7 @@
             <view class="lz-money {{item.profit < 0 ? 'lz-money--loss' : 'lz-money--accent'}}" style="font-size: 15px;">{{item.profitText}}</view>
           </view>
         </view>
-        <view wx:else class="lz-empty">本年暂无订单，去记一笔吧</view>
+        <view wx:else class="lz-empty">本年暂无订单，点击底部 + 记一笔</view>
       </view>
     </block>
 
@@ -104,7 +104,7 @@
             <view class="lz-money" style="font-size: 15px; color: var(--c4);">{{item.laborText}}</view>
           </view>
         </view>
-        <view wx:else class="lz-empty">本年暂无订单，去记一笔吧</view>
+        <view wx:else class="lz-empty">本年暂无订单，点击底部 + 记一笔</view>
       </view>
     </block>
   </view>

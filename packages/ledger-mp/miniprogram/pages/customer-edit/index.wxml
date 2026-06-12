@@ -2,7 +2,12 @@
   <lz-header title="{{editing ? '编辑客户' : '新增客户'}}" />
 
   <view class="lz-page" style="padding-bottom: 120px;">
-    <view class="lz-card lz-card--flush">
+    <!-- 编辑模式加载失败：带重试并隐藏表单，避免空表单覆盖客户资料 -->
+    <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+    </view>
+    <view wx:else class="lz-card lz-card--flush">
       <view class="ce__row">
         <view class="ce__lbl">姓名</view>
         <input class="ce__in" value="{{name}}" placeholder="客户姓名（必填）" placeholder-class="ph" bindinput="onName" />
@@ -22,7 +27,7 @@
     </view>
   </view>
 
-  <view class="lz-footer">
+  <view wx:if="{{!loadError}}" class="lz-footer">
     <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="save">
       {{editing ? '保存修改' : '保存客户'}}
     </button>

@@ -24,6 +24,6 @@
       <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
-    <view wx:elif="{{!loading}}" class="lz-empty">还没有客户，点击右上角新增</view>
+    <view wx:elif="{{!loading}}" class="lz-empty">暂无客户，点击右上角新增</view>
   </view>
 </view>

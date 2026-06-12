@@ -63,7 +63,7 @@ Page({
     if (!phone) return
     wx.setClipboardData({
       data: phone,
-      success: () => wx.showToast({ title: '号码已复制', icon: 'none' }),
+      success: () => wx.showToast({ title: '号码已复制', icon: 'success' }),
     })
   },
   toEdit() {

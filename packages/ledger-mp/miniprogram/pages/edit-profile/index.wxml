@@ -84,7 +84,7 @@
   </view>
 
   <view class="lz-footer">
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave ? '' : 'lz-btn--disabled'}}" bindtap="onSave">
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave && !saving ? '' : 'lz-btn--disabled'}}" bindtap="onSave">
       {{saving ? '保存中…' : '保存'}}
     </button>
   </view>

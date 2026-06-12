@@ -118,17 +118,19 @@ Page({
         loading: false,
         loadError: false,
       })
+      ;(this as any)._loaded = true
     } catch (e) {
       if (seq !== (this as any)._seq) return
-      // 加载失败单独成态（带重试），不渲染"暂无…"空态，避免误导成没有数据
-      this.setData({ loading: false, loadError: true })
+      // 屏上已有数据时刷新失败只 toast（request 层已弹），不把整屏换成重试卡；
+      // 首次加载失败才进错误态（带重试），不渲染"暂无…"空态，避免误导成没有数据
+      this.setData({ loading: false, loadError: !(this as any)._loaded })
     } finally {
       if (done) done()
     }
     this.loadUnread()
   },
   retry() {
-    this.load()
+    this.setData({ loading: true, loadError: false }, () => this.load())
   },
 
   async loadUnread() {

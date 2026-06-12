@@ -64,16 +64,18 @@ Page({
 
   async onToggle(e: any) {
     const key = e.currentTarget.dataset.key
-    const items = this.data.items.map((it) => (it.key === key ? { ...it, on: !it.on } : it))
-    this.setData({ items })
-    const item = items.find((it) => it.key === key)
-    if (!item) return
+    const cur = this.data.items.find((it) => it.key === key)
+    if (!cur) return
+    const prev = cur.on
+    this.setData({
+      items: this.data.items.map((it) => (it.key === key ? { ...it, on: !prev } : it)),
+    })
     try {
-      await settingApi.update({ [item.settingKey]: item.on })
+      await settingApi.update({ [cur.settingKey]: !prev })
     } catch (e) {
-      // 失败回滚
+      // 失败回滚到快照值（直接取反会在快速连点时与服务端错位）
       this.setData({
-        items: this.data.items.map((it) => (it.key === key ? { ...it, on: !it.on } : it)),
+        items: this.data.items.map((it) => (it.key === key ? { ...it, on: prev } : it)),
       })
     }
   },

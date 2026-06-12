@@ -5,6 +5,9 @@ import { optimizeCutting } from '../../utils/cutting'
 let pieceUid = 0
 const newPiece = () => ({ _k: ++pieceUid, lengthStr: '', qtyStr: '' })
 
+// 任一输入变更立即作废上次结果：陈旧的下料方案比没有方案更危险（照旧切会切错料）
+const RESET_RESULT = { summary: null as any, barsView: [] as any[], oversizeText: '' }
+
 Page({
   data: {
     checking: true,
@@ -46,30 +49,30 @@ Page({
   },
 
   onStock(e: any) {
-    this.setData({ stockLengthStr: e.detail.value })
+    this.setData({ stockLengthStr: e.detail.value, ...RESET_RESULT })
   },
   onKerf(e: any) {
-    this.setData({ kerfStr: e.detail.value })
+    this.setData({ kerfStr: e.detail.value, ...RESET_RESULT })
   },
   onLen(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = [...this.data.pieces]
     p[i] = { ...p[i], lengthStr: e.detail.value }
-    this.setData({ pieces: p })
+    this.setData({ pieces: p, ...RESET_RESULT })
   },
   onQty(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = [...this.data.pieces]
     p[i] = { ...p[i], qtyStr: e.detail.value }
-    this.setData({ pieces: p })
+    this.setData({ pieces: p, ...RESET_RESULT })
   },
   addPiece() {
-    this.setData({ pieces: [...this.data.pieces, newPiece()] })
+    this.setData({ pieces: [...this.data.pieces, newPiece()], ...RESET_RESULT })
   },
   delPiece(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = this.data.pieces.filter((_: any, j: number) => j !== i)
-    this.setData({ pieces: p.length ? p : [newPiece()] })
+    this.setData({ pieces: p.length ? p : [newPiece()], ...RESET_RESULT })
   },
 
   compute() {

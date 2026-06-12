@@ -68,6 +68,14 @@
   font-size: 14.5px;
   color: var(--text);
 }
+/* 清空按钮：图标小、热区大（户外/戴手套也好点） */
+.ord__search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 6px 12px 12px;
+  margin-right: -6px;
+}
 .ph {
   color: var(--faint);
 }

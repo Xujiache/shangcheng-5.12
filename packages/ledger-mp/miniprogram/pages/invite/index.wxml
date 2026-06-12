@@ -2,6 +2,11 @@
   <lz-header title="邀请好友" subtitle="一人注册，得会员" />
   <view class="lz-page">
     <view wx:if="{{loading}}" class="lz-empty">加载中…</view>
+    <!-- 加载失败（网络等）：带重试，不渲染空邀请码的复制/分享 -->
+    <view wx:elif="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+    </view>
     <block wx:else>
       <view class="lz-card lz-card--glow inv__hero">
         <view class="inv__icon"><lz-icon name="gift" size="34" color="white" stroke="1.8" /></view>

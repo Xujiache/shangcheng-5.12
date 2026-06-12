@@ -99,8 +99,8 @@ Page({
       )
     } catch (e) {
       if (seq !== this._seq) return
-      // 加载失败单独成态（带重试），避免把网络抖动误展示成"暂无成本数据"
-      this.setData({ loading: false, loadError: true })
+      // 已有数据在屏时不切错误卡（request 层已 toast），仅首载失败才显示重试，同订单页口径
+      this.setData({ loading: false, loadError: !this.data.hasData })
     }
   },
   retry() {

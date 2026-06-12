@@ -1,5 +1,6 @@
 import { orderApi } from '../../api/index'
-import { yuan } from '../../utils/format'
+import { yuan, maskMoney } from '../../utils/format'
+import { getHideAmount } from '../../utils/store'
 
 const CATS: Array<[string, string, string]> = [
   ['profile', '型材', 'c1'],
@@ -52,13 +53,16 @@ Page({
     try {
       const o: any = await orderApi.get(this.data.id)
       if (seq !== this._seq) return
+      // 隐藏金额模式：与客户详情同口径打码金额，比例类（利润率/成本占比/环图）不打码
+      const hide = getHideAmount()
+      const money = (v: number) => (hide ? maskMoney(v) : yuan(v))
       const cost = o.cost || 1
       const costRows = CATS.map(([k, name, color]) => {
         const v = o.costs ? o.costs[k] || 0 : 0
         return {
           name,
           color,
-          value: yuan(v),
+          value: money(v),
           pct: Math.round((v / cost) * 100),
           w: Math.round((v / cost) * 100),
         }
@@ -75,12 +79,12 @@ Page({
       const extras = (o.extras || []).map((e: any, idx: number) => ({
         idx,
         type: e.type,
-        amountText: yuan(e.amount),
+        amountText: money(e.amount),
       }))
       const customCosts = (o.customCosts || []).map((c: any, idx: number) => ({
         idx,
         name: c.name,
-        amountText: yuan(c.amount),
+        amountText: money(c.amount),
       }))
       // 门窗报价明细（只读展示）：计费量/小计与后端 itemBillingQty/itemSubtotal 同口径
       const items = (o.items || []).map((it: any, idx: number) => {
@@ -99,18 +103,21 @@ Page({
           spec: sizes.length
             ? `${sizes.length} 尺寸 · ${fmtArea(billingQty)}㎡`
             : `数量 ${fmtArea(it.qty || 0)}`,
-          subtotalText: yuan(subtotal),
+          subtotalText: money(subtotal),
         }
       })
       // 报价金额行：金额(有明细) / 优惠 / 定金+未收(有定金)
       const quoteRows: Array<{ label: string; value: string }> = []
-      if (items.length) quoteRows.push({ label: '金额（明细合计）', value: yuan(o.amount || 0) })
+      if (items.length) quoteRows.push({ label: '金额（明细合计）', value: money(o.amount || 0) })
       // 优惠仅在有明细时参与计价（后端 orderTotalFromItems 才会减它），无明细不展示以免误读
       if (items.length && (o.discount || 0) > 0)
-        quoteRows.push({ label: '优惠', value: '-' + yuan(o.discount) })
+        quoteRows.push({
+          label: '优惠',
+          value: hide ? maskMoney(o.discount) : '-' + yuan(o.discount),
+        })
       if ((o.deposit || 0) > 0) {
-        quoteRows.push({ label: '定金', value: yuan(o.deposit) })
-        quoteRows.push({ label: '未收', value: yuan(o.unpaid || 0) })
+        quoteRows.push({ label: '定金', value: money(o.deposit) })
+        quoteRows.push({ label: '未收', value: money(o.unpaid || 0) })
       }
       this.setData({
         o,
@@ -121,11 +128,11 @@ Page({
         items,
         quoteRows,
         marginPct: Math.round((o.margin || 0) * 100),
-        profitBare: yuan(o.profit, true),
-        totalText: yuan(o.total),
-        costText: yuan(o.cost),
-        extrasTotalText: yuan(o.extrasTotal || 0),
-        extraIncomeText: yuan(o.extraIncome || 0),
+        profitBare: hide ? maskMoney(o.profit) : yuan(o.profit, true),
+        totalText: money(o.total),
+        costText: money(o.cost),
+        extrasTotalText: money(o.extrasTotal || 0),
+        extraIncomeText: money(o.extraIncome || 0),
         hasExtraIncome: (o.extraIncome || 0) > 0,
       })
     } catch (e) {
@@ -135,10 +142,14 @@ Page({
     }
   },
 
+  _deleted: false, // 删除成功后的 500ms 延时返回窗口内，拦住 编辑/再删 误点
+
   toEdit() {
+    if (this._deleted) return
     wx.navigateTo({ url: '/pages/order-edit/index?id=' + this.data.id })
   },
   onDelete() {
+    if (this._deleted) return
     wx.showModal({
       title: '删除订单',
       content: '删除后不可恢复，确定删除这笔订单？',
@@ -148,6 +159,7 @@ Page({
         if (!r.confirm) return
         try {
           await orderApi.remove(this.data.id)
+          this._deleted = true
           wx.showToast({ title: '已删除', icon: 'success' })
           setTimeout(() => wx.navigateBack(), 500)
         } catch (e) {

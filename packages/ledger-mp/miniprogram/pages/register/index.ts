@@ -55,9 +55,18 @@ Page({
   },
 
   async doRegister() {
-    if (!this.data.canReg || this.data.loading || !this.data.allowRegister) return
-    if (this.data.pwd !== this.data.pwd2) {
-      wx.showToast({ title: '两次密码不一致', icon: 'none' })
+    if (this.data.loading) return
+    if (!this.data.allowRegister) {
+      wx.showToast({ title: '当前未开放自助注册', icon: 'none' })
+      return
+    }
+    if (!this.data.canReg) {
+      // 按钮置灰但可点：提示第一项未满足的条件，而不是无声无息
+      const d = this.data
+      if (d.phone.length !== 11) wx.showToast({ title: '请输入 11 位手机号', icon: 'none' })
+      else if (d.pwd.length < 6) wx.showToast({ title: '密码至少 6 位', icon: 'none' })
+      else if (d.pwd2.length < 6) wx.showToast({ title: '请再次输入密码', icon: 'none' })
+      else wx.showToast({ title: '两次密码不一致', icon: 'none' })
       return
     }
     this.setData({ loading: true })

@@ -28,6 +28,9 @@
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
 
+    <!-- 首次加载：占位，避免把初始 ¥0 当成真利润 -->
+    <view wx:elif="{{loading}}" class="lz-empty">加载中…</view>
+
     <block wx:else>
       <!-- 核心利润 -->
       <view class="lz-card lz-card--glow home__hero">

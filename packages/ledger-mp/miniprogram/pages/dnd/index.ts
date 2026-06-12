@@ -24,23 +24,26 @@ Page({
     }
   },
 
-  save(patch: Record<string, any>) {
+  save(patch: Record<string, any>, rollback: () => void) {
     settingApi.update(patch).catch(() => {
-      /* toast handled in request */
+      // 失败回滚（request 层已 toast），避免页面与服务端不一致
+      rollback()
     })
   },
 
   onToggle() {
-    const enabled = !this.data.enabled
-    this.setData({ enabled })
-    this.save({ dndEnabled: enabled })
+    const prev = this.data.enabled
+    this.setData({ enabled: !prev })
+    this.save({ dndEnabled: !prev }, () => this.setData({ enabled: prev }))
   },
   onStart(e: any) {
+    const prev = this.data.start
     this.setData({ start: e.detail.value })
-    this.save({ dndStart: e.detail.value })
+    this.save({ dndStart: e.detail.value }, () => this.setData({ start: prev }))
   },
   onEnd(e: any) {
+    const prev = this.data.end
     this.setData({ end: e.detail.value })
-    this.save({ dndEnd: e.detail.value })
+    this.save({ dndEnd: e.detail.value }, () => this.setData({ end: prev }))
   },
 })

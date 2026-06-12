@@ -68,8 +68,8 @@ Page({
       })
     } catch (e) {
       if (seq !== this._seq) return
-      // 加载失败单独成态（带重试），避免把网络抖动误展示成"暂无消息"
-      this.setData({ loading: false, loadError: true })
+      // 已有消息在屏时不切错误卡（request 层已 toast），仅首载失败才显示重试，同订单页口径
+      this.setData({ loading: false, loadError: !this.data.list.length })
     }
   },
   retry() {
@@ -95,7 +95,7 @@ Page({
     this.setData({ list, hasUnread: false })
     try {
       await notificationApi.readAll()
-      wx.showToast({ title: '已全部标记为已读', icon: 'none' })
+      wx.showToast({ title: '已全部标记为已读', icon: 'success' })
     } catch (e) {
       /* toast handled in request */
     }

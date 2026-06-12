@@ -3,7 +3,7 @@
     <view slot="right" class="oe__cancel" bindtap="onCancel">取消</view>
   </lz-header>
 
-  <view class="oe__body">
+  <view wx:if="{{!loadError}}" class="oe__body">
     <!-- 基本信息 + 金额（一张白卡）-->
     <view class="oe__card">
       <view class="oe__row" bindtap="onCustomerTap" hover-class="oe__tap">
@@ -25,11 +25,11 @@
         </view>
       </picker>
 
-      <!-- 金额区：左 订单编辑 软按钮 + 右 总价/额外收入 -->
+      <!-- 金额区：左 报价明细 软按钮 + 右 总价/额外收入/未收 -->
       <view class="oe__amtarea">
         <view class="oe__editbtn" bindtap="toAmount" hover-class="oe__editbtn--tap">
           <lz-icon name="pencil" size="22" color="#1F7D5E" />
-          <text class="oe__editbtn-t">订单编辑</text>
+          <text class="oe__editbtn-t">报价明细</text>
         </view>
         <view class="oe__amtcol">
           <view class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
@@ -45,6 +45,14 @@
             <view class="oe__amtbox-r">
               <text class="oe__amtbox-cur">¥</text>
               <text class="oe__amtbox-v">{{extraIncome || 0}}</text>
+              <lz-icon name="chevron" size="14" color="#9bab9f" />
+            </view>
+          </view>
+          <view class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
+            <text class="oe__amtbox-l">未收</text>
+            <view class="oe__amtbox-r">
+              <text class="oe__amtbox-cur">¥</text>
+              <text class="oe__amtbox-v">{{unpaid || 0}}</text>
               <lz-icon name="chevron" size="14" color="#9bab9f" />
             </view>
           </view>
@@ -104,7 +112,7 @@
             </view>
           </view>
         </block>
-        <view wx:else class="oe__empty">固定 5 类之外的成本，点右上角添加</view>
+        <view wx:else class="oe__empty">固定 5 类之外的成本，点击右上角添加</view>
       </view>
     </view>
 
@@ -155,8 +163,16 @@
     </view>
   </view>
 
+  <!-- 编辑态加载失败：带重试，避免在空表单上保存把真实订单清零 -->
+  <view wx:else class="oe__body">
+    <view class="oe__card" style="padding: 26px 18px; text-align: center;">
+      <view style="font-size: 14px; color: #6c7d75; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retryLoad">重试</button>
+    </view>
+  </view>
+
   <!-- 底部保存栏（固定）-->
-  <view class="oe__bar">
+  <view wx:if="{{!loadError}}" class="oe__bar">
     <button class="oe__save {{canSave && !saving ? '' : 'oe__save--disabled'}}" bindtap="save">
       <lz-icon name="check" size="20" color="white" /> {{saving ? '保存中…' : (editing ? '保存修改' : '保存订单')}}
     </button>

@@ -171,6 +171,7 @@ Page({
   onPriceBlur(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const items = this.data.items.slice()
+    if (!items[i]) return // 行已删除后迟到的 blur，忽略，避免造出幽灵行
     items[i] = { ...items[i], unitPriceStr: normMoneyStr(e.detail.value) }
     this.setData({ items })
   },
@@ -189,8 +190,11 @@ Page({
       const sizes = it.sizes.map((s: any) => {
         const w = num(s.wStr)
         const h = num(s.hStr)
-        const area = w > 0 && h > 0 ? Math.max((w * h) / 1_000_000, baseArea) : 0
-        return { ...s, areaText: w > 0 && h > 0 ? fmtArea(area) : '' }
+        const filled = w > 0 && h > 0
+        const raw = filled ? (w * h) / 1_000_000 : 0
+        const area = filled ? Math.max(raw, baseArea) : 0
+        // 实量面积小于起算面积时按起算计，行内标记「(起算)」说明显示值与宽×高不一致的原因
+        return { ...s, areaText: filled ? fmtArea(area) : '', clamped: filled && raw < baseArea }
       })
       const valid = sizes.filter((s: any) => num(s.wStr) > 0 && num(s.hStr) > 0)
       const hasSizes = valid.length > 0

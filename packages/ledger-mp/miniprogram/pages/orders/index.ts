@@ -53,6 +53,15 @@ Page({
     clearTimeout(this._t)
     this._t = setTimeout(() => this.load(), 300)
   },
+  onSearchConfirm() {
+    // 键盘「搜索」键：跳过防抖立即查
+    clearTimeout(this._t)
+    this.load()
+  },
+  clearSearch() {
+    clearTimeout(this._t)
+    this.setData({ keyword: '' }, () => this.load())
+  },
   onSort(e: any) {
     this.setData({ sort: e.detail.value }, () => this.load())
   },
@@ -84,7 +93,8 @@ Page({
     this._seq = (this._seq || 0) + 1
     const seq = this._seq
     this._page = 1
-    this.setData({ loadError: false })
+    // 屏上无内容时恢复加载态：避免上次失败后 onShow 重查期间误显「暂无订单」
+    this.setData({ loadError: false, loading: !this.data.list.length })
     try {
       const res: any = await orderApi.list({
         customer: this.data.keyword,

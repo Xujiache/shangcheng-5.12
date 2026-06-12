@@ -145,8 +145,12 @@ Page({
   },
 
   async onSave() {
+    if (this.data.saving) return
     const nickname = this.data.nickname.trim()
-    if (!nickname || this.data.saving) return
+    if (!nickname) {
+      wx.showToast({ title: '请输入昵称', icon: 'none' })
+      return
+    }
     this.setData({ saving: true })
     try {
       // 有上传图片则存 URL，否则存所选底色 hue key
@@ -160,9 +164,9 @@ Page({
       }
       wx.showToast({ title: '已保存', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 600)
+      // 成功后不重置 saving：返回前防重复提交
     } catch (e) {
       /* toast handled in request */
-    } finally {
       this.setData({ saving: false })
     }
   },

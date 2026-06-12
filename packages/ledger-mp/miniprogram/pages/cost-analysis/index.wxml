@@ -47,8 +47,9 @@
       </view>
     </block>
 
-    <view wx:elif="{{!loading}}" class="lz-card">
-      <view class="lz-empty">本年暂无成本数据，去记一笔吧</view>
+    <view wx:elif="{{loading}}" class="lz-empty">加载中…</view>
+    <view wx:else class="lz-card">
+      <view class="lz-empty">本年暂无成本数据，记一笔订单后自动统计</view>
     </view>
   </view>
 </view>

@@ -11,6 +11,7 @@ Page({
     note: '',
     canSave: false,
     saving: false,
+    loadError: false, // 编辑模式加载失败：隐藏表单，避免把空表单保存覆盖客户资料
   },
 
   onLoad(opt: any) {
@@ -27,12 +28,22 @@ Page({
     try {
       const c: any = await customerApi.get(this.data.id)
       this.setData(
-        { name: c.name || '', phone: c.phone || '', address: c.address || '', note: c.note || '' },
+        {
+          name: c.name || '',
+          phone: c.phone || '',
+          address: c.address || '',
+          note: c.note || '',
+          loadError: false,
+        },
         () => this.refresh(),
       )
     } catch (e) {
-      /* handled */
+      // 加载失败必须挡住表单：空表单一旦保存会把客户资料覆盖为空（同目标页口径）
+      this.setData({ loadError: true })
     }
+  },
+  retry() {
+    this.setData({ loadError: false }, () => this.load())
   },
 
   onName(e: any) {
@@ -52,7 +63,12 @@ Page({
   },
 
   async save() {
-    if (!this.data.canSave || this.data.saving) return
+    if (this.data.saving) return
+    if (!this.data.canSave) {
+      // 与登录/订单页同模式：禁用态点按给出缺什么的提示，而非静默无反馈
+      wx.showToast({ title: '请填写客户姓名', icon: 'none' })
+      return
+    }
     this.setData({ saving: true })
     const { editing, id, fromOrder, name, phone, address, note } = this.data
     const data = {

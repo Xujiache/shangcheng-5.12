@@ -1,5 +1,5 @@
 <view class="oi">
-  <lz-header title="订单编辑" subtitle="门窗报价明细" />
+  <lz-header title="报价明细" subtitle="产品 · 尺寸 · 金额" />
 
   <view class="oi__body">
     <!-- 新增名称（新项目置顶）-->
@@ -30,10 +30,10 @@
 
       <!-- 尺寸 -->
       <view wx:for="{{item.sizes}}" wx:for-item="sz" wx:for-index="sidx" wx:key="_k" class="oi__size">
-        <input class="oi__size-in" type="number" value="{{sz.wStr}}" placeholder="宽" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="wStr" bindinput="onSizeInput" />
+        <input class="oi__size-in" type="number" value="{{sz.wStr}}" placeholder="宽mm" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="wStr" bindinput="onSizeInput" />
         <text class="oi__size-op">×</text>
-        <input class="oi__size-in" type="number" value="{{sz.hStr}}" placeholder="高" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="hStr" bindinput="onSizeInput" />
-        <text class="oi__size-eq">={{sz.areaText || '0'}}㎡</text>
+        <input class="oi__size-in" type="number" value="{{sz.hStr}}" placeholder="高mm" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="hStr" bindinput="onSizeInput" />
+        <text class="oi__size-eq">={{sz.areaText || '0'}}㎡{{sz.clamped ? '(起算)' : ''}}</text>
         <input class="oi__size-note" value="{{sz.note}}" placeholder="备注" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="note" bindinput="onSizeInput" />
         <view class="oi__size-del" data-idx="{{index}}" data-sidx="{{sidx}}" bindtap="delSize" hover-class="oi__tap">
           <lz-icon name="close" size="13" color="#9bab9f" stroke="2.2" />
@@ -45,11 +45,12 @@
 
       <!-- 数量/面积 × 单价 = 小计 -->
       <view class="oi__qtyrow">
-        <text class="oi__qty-l">数量/面积</text>
+        <text class="oi__qty-l">{{item.hasSizes ? '面积' : '数量'}}</text>
         <text wx:if="{{item.hasSizes}}" class="oi__qty-auto">{{item.qtyAutoText}}</text>
         <input wx:else class="oi__qty-in" type="digit" value="{{item.qtyStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="qtyStr" bindinput="onItemInput" />
         <text class="oi__qty-op">× 单价</text>
         <input class="oi__price-in" type="digit" value="{{item.unitPriceStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="unitPriceStr" bindinput="onItemInput" bindblur="onPriceBlur" />
+        <text class="oi__unit">{{item.hasSizes ? '元/㎡' : '元/件'}}</text>
         <text class="oi__qty-op">=</text>
         <text class="oi__subtotal">{{item.subtotalText}}</text>
       </view>

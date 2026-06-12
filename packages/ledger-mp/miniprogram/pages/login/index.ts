@@ -159,7 +159,15 @@ Page({
   },
 
   async doLogin() {
-    if (!this.data.canLogin || this.data.loading) return
+    if (this.data.loading) return
+    if (!this.data.canLogin) {
+      // 按钮置灰但可点：提示第一项未满足的条件，而不是无声无息
+      const d = this.data
+      if (d.phone.length !== 11) wx.showToast({ title: '请输入 11 位手机号', icon: 'none' })
+      else if (d.mode === 'password') wx.showToast({ title: '密码至少 6 位', icon: 'none' })
+      else wx.showToast({ title: '请输入 6 位验证码', icon: 'none' })
+      return
+    }
     this.setData({ loading: true })
     try {
       const res =
@@ -183,7 +191,9 @@ Page({
     // 静默路径未提交过凭证（setAuth 未走），开了生物锁则先过锁屏，解锁后回首页。
     // 新登录在 setAuth 里已置 bioVerified，不会进此分支。
     if (getBioLock() && !getBioVerified()) {
-      const cur = getCurrentPages().pop()
+      // 只读栈顶，不可 pop()：修改 getCurrentPages() 返回的数组会破坏路由状态
+      const pages = getCurrentPages()
+      const cur = pages[pages.length - 1]
       if (!cur || cur.route !== 'pages/lock/index') {
         wx.reLaunch({ url: '/pages/lock/index' })
       }

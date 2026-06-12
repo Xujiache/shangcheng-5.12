@@ -23,6 +23,7 @@ Page({
   data: {
     gate: false,
     loading: true,
+    loadError: false, // 首次加载失败：换重试卡，避免把默认值「尚未开通会员」当真相展示
     m: {
       active: false,
       expired: false,
@@ -35,9 +36,11 @@ Page({
     plans: PLAN_FALLBACK,
     benefits: BENEFITS,
     planLabel: '门窗利账 会员',
-    statusText: '尚未开通会员',
+    statusText: '加载中…',
     expiresLabel: '—',
   },
+
+  _loaded: false, // 是否成功加载过：刷新失败时保留已展示内容，不退回重试卡
 
   onLoad(opt: any) {
     this.setData({ gate: opt.gate === '1' })
@@ -55,6 +58,7 @@ Page({
       const plan = plans.find((p: any) => p.key === m.lastPlanKey)
       const planLabel = m.never ? '门窗利账 会员' : plan ? plan.label : '门窗利账 会员'
       const statusText = m.active ? '会员有效' : m.expired ? '会员已过期' : '尚未开通会员'
+      this._loaded = true
       this.setData({
         m,
         plans,
@@ -62,18 +66,26 @@ Page({
         statusText,
         expiresLabel: fmtDate(m.expiresAt),
         loading: false,
+        loadError: false,
       })
     } catch (e) {
-      this.setData({ loading: false })
+      // 首次失败显示重试卡；刷新失败保留已有内容（request 层已 toast）
+      this.setData({ loading: false, loadError: !this._loaded })
     }
+  },
+  retry() {
+    this.setData({ loading: true, loadError: false }, () => this.load())
   },
 
   onRenew() {
     wx.showModal({
       title: '会员开通',
-      content: '会员由管理员后台开通/续费，请联系管理员为您的账号增加会员时长。',
-      showCancel: false,
-      confirmText: '我知道了',
+      content: '会员由管理员后台开通/续费，可在「意见反馈」中留下手机号，管理员会与您联系。',
+      confirmText: '去留言',
+      cancelText: '我知道了',
+      success: (r) => {
+        if (r.confirm) wx.navigateTo({ url: '/pages/feedback/index' })
+      },
       // 弹窗期间管理员可能已开通，关闭后刷新状态
       complete: () => this.load(),
     })

@@ -11,15 +11,15 @@
     <!-- 汇总 -->
     <view class="lz-card lz-card--glow ord__sum">
       <view class="ord__sum-i">
-        <view class="ord__sum-v">{{summary.count}}</view>
+        <view class="ord__sum-v">{{loading ? '—' : summary.count}}</view>
         <view class="ord__sum-l">总订单</view>
       </view>
       <view class="ord__sum-i">
-        <view class="ord__sum-v lz-money--accent">{{summary.profit}}</view>
+        <view class="ord__sum-v lz-money--accent">{{loading ? '—' : summary.profit}}</view>
         <view class="ord__sum-l">总利润</view>
       </view>
       <view class="ord__sum-i">
-        <view class="ord__sum-v">{{summary.avg}}</view>
+        <view class="ord__sum-v">{{loading ? '—' : summary.avg}}</view>
         <view class="ord__sum-l">单均利润</view>
       </view>
     </view>
@@ -28,7 +28,10 @@
     <view class="ord__tools">
       <view class="ord__search">
         <lz-icon name="search" size="17" color="faint" />
-        <input class="ord__search-in" value="{{keyword}}" placeholder="搜索客户" placeholder-class="ph" bindinput="onSearch" />
+        <input class="ord__search-in" value="{{keyword}}" placeholder="搜索客户" placeholder-class="ph" confirm-type="search" bindinput="onSearch" bindconfirm="onSearchConfirm" />
+        <view wx:if="{{keyword}}" class="ord__search-clear" hover-class="tap-active" bindtap="clearSearch">
+          <lz-icon name="close" size="14" color="faint" />
+        </view>
       </view>
       <view style="width: 150px;">
         <lz-segmented options="{{sorts}}" value="{{sort}}" bindchange="onSort" />
@@ -66,5 +69,6 @@
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
     <view wx:elif="{{!loading}}" class="lz-empty">暂无订单，点击底部 + 记一笔</view>
+    <view wx:else class="lz-empty">加载中…</view>
   </view>
 </view>

@@ -8,6 +8,13 @@
   </lz-header>
 
   <view class="lz-page ms__body">
+    <!-- 加载失败（网络等）：带重试，避免把默认值「尚未开通会员」当真相展示 -->
+    <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
+      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+    </view>
+
+    <block wx:else>
     <!-- Hero -->
     <view class="ms__hero {{m.active ? 'ms__hero--on' : ''}}">
       <view class="ms__hero-top">
@@ -58,10 +65,11 @@
     </view>
 
     <view class="ms__foot-note">会员由管理员后台开通 · 到期后数据保留，续费即可恢复使用</view>
+    </block>
   </view>
 
   <!-- footer -->
-  <view class="lz-footer">
+  <view wx:if="{{!loadError}}" class="lz-footer">
     <button wx:if="{{gate && m.active}}" class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="enterApp">
       <lz-icon name="check" size="20" color="white" /> 进入应用
     </button>

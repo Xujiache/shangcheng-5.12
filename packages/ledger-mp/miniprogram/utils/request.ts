@@ -38,8 +38,17 @@ let gateHandling = false
 function handleMemberExpired() {
   if (gateHandling) return
   gateHandling = true
-  wx.reLaunch({ url: '/pages/membership/index?gate=1' })
-  setTimeout(() => (gateHandling = false), 1500)
+  // reLaunch 会清空页面栈（正在录入的内容会丢失），先用阻断式弹窗说明再跳闸门页
+  wx.showModal({
+    title: '会员已到期',
+    content: '会员已到期，请联系管理员续费后再继续使用；当前未保存的内容请先截图留存。',
+    showCancel: false,
+    confirmText: '我知道了',
+    complete: () => {
+      wx.reLaunch({ url: '/pages/membership/index?gate=1' })
+      setTimeout(() => (gateHandling = false), 1500)
+    },
+  })
 }
 
 export function request<T = any>(opts: RequestOptions): Promise<T> {
@@ -92,9 +101,15 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
           resolve(body as any)
           return
         }
+        // 状态码留在 Error 内供上层/console 用，toast 只说人话
         const e: any = new Error('网络错误 (' + res.statusCode + ')')
+        e.statusCode = res.statusCode
         if (res.statusCode === 401) handleUnauthorized()
-        if (!opts.silent) wx.showToast({ title: e.message, icon: 'none' })
+        if (!opts.silent)
+          wx.showToast({
+            title: res.statusCode >= 500 ? '服务器开小差了，请稍后重试' : '网络异常，请重试',
+            icon: 'none',
+          })
         reject(e)
       },
       fail: (e) => {
