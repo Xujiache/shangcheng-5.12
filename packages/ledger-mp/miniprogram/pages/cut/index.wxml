@@ -1,5 +1,9 @@
 <view class="cut">
-  <lz-header title="优化下料" subtitle="型材一维切割" />
+  <lz-header title="优化下料" subtitle="型材一维 / 玻璃·板材二维套料">
+    <view slot="right" wx:if="{{allowed && !loadError && !checking}}" class="cut__hist" bindtap="openHistory" hover-class="tap-active">
+      <lz-icon name="clock" size="16" color="accent" />历史
+    </view>
+  </lz-header>
   <view class="lz-page lz-page--pad-bottom">
     <view wx:if="{{checking}}" class="lz-empty">加载中…</view>
 
@@ -21,35 +25,71 @@
         <text class="lz-muted" style="font-size: 13px;">试用中 · 剩 {{trialDaysLeft}} 天，到期后需开通会员</text>
       </view>
 
+      <!-- 材料切换：型材一维 / 玻璃·板材二维 -->
+      <lz-segmented options="{{materialOptions}}" value="{{material}}" bind:change="onMaterial" />
+
       <!-- 参数 -->
-      <view class="lz-card lz-card--flush">
-        <view class="lz-row">
-          <view class="cut__lbl">整根料长 (mm)</view>
-          <input class="cut__in" type="number" value="{{stockLengthStr}}" bindinput="onStock" placeholder="如 6000" placeholder-class="ph" />
-        </view>
-        <view class="lz-row lz-row--last">
-          <view class="cut__lbl">锯缝 (mm)</view>
-          <input class="cut__in" type="number" value="{{kerfStr}}" bindinput="onKerf" placeholder="如 5" placeholder-class="ph" />
-        </view>
+      <view class="lz-card lz-card--flush" style="margin-top: 12px;">
+        <block wx:if="{{is2d}}">
+          <view class="lz-row">
+            <view class="cut__lbl">整板宽 (mm)</view>
+            <input class="cut__in" type="number" value="{{sheetWStr}}" bindinput="onSheetW" placeholder="如 2440" placeholder-class="ph" />
+          </view>
+          <view class="lz-row">
+            <view class="cut__lbl">整板高 (mm)</view>
+            <input class="cut__in" type="number" value="{{sheetHStr}}" bindinput="onSheetH" placeholder="如 1220" placeholder-class="ph" />
+          </view>
+          <view class="lz-row lz-row--last">
+            <view class="cut__lbl">锯缝 (mm)</view>
+            <input class="cut__in" type="number" value="{{kerf2Str}}" bindinput="onKerf2" placeholder="如 5" placeholder-class="ph" />
+          </view>
+        </block>
+        <block wx:else>
+          <view class="lz-row">
+            <view class="cut__lbl">整根料长 (mm)</view>
+            <input class="cut__in" type="number" value="{{stockLengthStr}}" bindinput="onStock" placeholder="如 6000" placeholder-class="ph" />
+          </view>
+          <view class="lz-row lz-row--last">
+            <view class="cut__lbl">锯缝 (mm)</view>
+            <input class="cut__in" type="number" value="{{kerfStr}}" bindinput="onKerf" placeholder="如 5" placeholder-class="ph" />
+          </view>
+        </block>
       </view>
 
       <!-- 切割清单 -->
       <view class="lz-between" style="margin: 14px 6px 8px;">
-        <text class="cut__sec-t">切割清单（段长 × 数量）</text>
+        <text class="cut__sec-t">{{is2d ? '切割清单（宽 × 高 × 数量）' : '切割清单（段长 × 数量）'}}</text>
         <view class="cut__add" bindtap="addPiece" hover-class="tap-active">
           <lz-icon name="plus" size="15" color="accent" stroke="2.2" /><text>添加</text>
         </view>
       </view>
       <view class="lz-card lz-card--flush">
-        <view wx:for="{{pieces}}" wx:key="_k" class="lz-row {{index === pieces.length - 1 ? 'lz-row--last' : ''}}">
-          <input class="cut__in cut__in--seg" type="number" value="{{item.lengthStr}}" data-idx="{{index}}" bindinput="onLen" placeholder="段长 mm" placeholder-class="ph" />
-          <text class="lz-faint" style="margin: 0 8px;">×</text>
-          <input class="cut__in cut__in--qty" type="number" value="{{item.qtyStr}}" data-idx="{{index}}" bindinput="onQty" placeholder="数量" placeholder-class="ph" />
-          <view class="lz-flex1"></view>
-          <view class="cut__del" data-idx="{{index}}" bindtap="delPiece" hover-class="tap-active">
-            <lz-icon name="close" size="14" color="loss" stroke="2.2" />
+        <!-- 二维：宽 × 高 × 数量 -->
+        <block wx:if="{{is2d}}">
+          <view wx:for="{{pieces}}" wx:key="_k" class="lz-row {{index === pieces.length - 1 ? 'lz-row--last' : ''}}">
+            <input class="cut__in cut__in--dim" type="number" value="{{item.wStr}}" data-idx="{{index}}" bindinput="onW" placeholder="宽 mm" placeholder-class="ph" />
+            <text class="lz-faint" style="margin: 0 6px;">×</text>
+            <input class="cut__in cut__in--dim" type="number" value="{{item.hStr}}" data-idx="{{index}}" bindinput="onH" placeholder="高 mm" placeholder-class="ph" />
+            <text class="lz-faint" style="margin: 0 6px;">×</text>
+            <input class="cut__in cut__in--qty2" type="number" value="{{item.qtyStr}}" data-idx="{{index}}" bindinput="onQty" placeholder="数量" placeholder-class="ph" />
+            <view class="lz-flex1"></view>
+            <view class="cut__del" data-idx="{{index}}" bindtap="delPiece" hover-class="tap-active">
+              <lz-icon name="close" size="14" color="loss" stroke="2.2" />
+            </view>
           </view>
-        </view>
+        </block>
+        <!-- 一维：段长 × 数量 -->
+        <block wx:else>
+          <view wx:for="{{pieces}}" wx:key="_k" class="lz-row {{index === pieces.length - 1 ? 'lz-row--last' : ''}}">
+            <input class="cut__in cut__in--seg" type="number" value="{{item.lengthStr}}" data-idx="{{index}}" bindinput="onLen" placeholder="段长 mm" placeholder-class="ph" />
+            <text class="lz-faint" style="margin: 0 8px;">×</text>
+            <input class="cut__in cut__in--qty" type="number" value="{{item.qtyStr}}" data-idx="{{index}}" bindinput="onQty" placeholder="数量" placeholder-class="ph" />
+            <view class="lz-flex1"></view>
+            <view class="cut__del" data-idx="{{index}}" bindtap="delPiece" hover-class="tap-active">
+              <lz-icon name="close" size="14" color="loss" stroke="2.2" />
+            </view>
+          </view>
+        </block>
       </view>
 
       <button class="lz-btn lz-btn--primary lz-btn--lg" style="margin-top: 16px;" bindtap="compute">开始优化</button>
@@ -58,21 +98,93 @@
       <block wx:if="{{summary}}">
         <view class="lz-card lz-card--glow" style="margin-top: var(--gap);">
           <view class="cut__metrics">
-            <view class="cut__m"><view class="cut__m-v">{{summary.barCount}}</view><view class="cut__m-l">用料(根)</view></view>
-            <view class="cut__m"><view class="cut__m-v">{{summary.util}}%</view><view class="cut__m-l">利用率</view></view>
-            <view class="cut__m"><view class="cut__m-v">{{summary.totalWaste}}</view><view class="cut__m-l">损耗(mm)</view></view>
-            <view class="cut__m"><view class="cut__m-v">{{summary.totalPieces}}</view><view class="cut__m-l">总段数</view></view>
+            <view class="cut__m">
+              <view class="cut__m-v">{{summary.count}}</view>
+              <view class="cut__m-l">{{is2d ? '用料(块)' : '用料(根)'}}</view>
+            </view>
+            <view class="cut__m">
+              <view class="cut__m-v">{{summary.util}}%</view>
+              <view class="cut__m-l">利用率</view>
+            </view>
+            <view class="cut__m">
+              <view class="cut__m-v">{{summary.extra}}</view>
+              <view class="cut__m-l">{{is2d ? '超尺寸(件)' : '损耗(mm)'}}</view>
+            </view>
+            <view class="cut__m">
+              <view class="cut__m-v">{{summary.totalPieces}}</view>
+              <view class="cut__m-l">{{is2d ? '已排(件)' : '总段数'}}</view>
+            </view>
           </view>
           <view wx:if="{{oversizeText}}" style="font-size: 12.5px; margin-top: 10px; color: var(--loss);">{{oversizeText}}</view>
         </view>
+
+        <!-- 排料图（二维：各原片排料；一维：各根料条形）-->
         <view class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+          <view class="cut__sec-t" style="padding: 14px 14px 4px;">{{is2d ? '排料图' : '切割图'}}</view>
+          <view class="cut__cvwrap">
+            <canvas type="2d" id="cutcv" class="cut__cv" style="height: {{canvasH}}px;"></canvas>
+          </view>
+        </view>
+
+        <!-- 二维：各原片排料概览 -->
+        <view wx:if="{{is2d && sheetsView.length}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+          <view class="cut__sec-t" style="padding: 14px 14px 4px;">原片明细</view>
+          <view wx:for="{{sheetsView}}" wx:key="idx" class="cut__bar">
+            <view class="cut__bar-h">原片 {{item.idx}} · {{item.count}} 块 · 利用率 {{item.util}}%</view>
+          </view>
+        </view>
+
+        <!-- 一维：切割方案明细 -->
+        <view wx:if="{{!is2d && barsView.length}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
           <view class="cut__sec-t" style="padding: 14px 14px 4px;">切割方案</view>
           <view wx:for="{{barsView}}" wx:key="idx" class="cut__bar">
             <view class="cut__bar-h">第 {{item.idx}} 根 · {{item.count}} 段 · 余料 {{item.waste}}mm</view>
             <view class="cut__bar-c">{{item.cutsText}}</view>
           </view>
         </view>
+
+        <!-- 导出 / 保存方案 -->
+        <view class="cut__acts">
+          <button class="lz-btn lz-btn--ghost lz-btn--lg cut__act" bindtap="saveImage" disabled="{{saving2img || !canvasReady}}">
+            <lz-icon name="download" size="17" color="accent" />{{saving2img ? '保存中…' : '保存为图片'}}
+          </button>
+          <button class="lz-btn lz-btn--primary lz-btn--lg cut__act" bindtap="savePlan" disabled="{{savingPlan}}">
+            <lz-icon name="check" size="17" color="white" />{{savingPlan ? '保存中…' : '保存方案'}}
+          </button>
+        </view>
       </block>
     </block>
+  </view>
+
+  <!-- 云端历史（底部面板，镜像 order-edit 客户选择器）-->
+  <view wx:if="{{showHistory}}" class="oe__mask" bindtap="closeHistory">
+    <view class="oe__sheet" catchtap="noop">
+      <view class="oe__sheet-handle"></view>
+      <view class="oe__sheet-hd">
+        <text class="oe__sheet-t">历史方案</text>
+        <view class="lz-flex1"></view>
+        <view class="cut__hclose" bindtap="closeHistory" hover-class="tap-active">关闭</view>
+      </view>
+      <scroll-view scroll-y class="oe__sheet-list">
+        <view wx:if="{{historyLoading}}" class="oe__empty">加载中…</view>
+        <view wx:elif="{{historyError}}" class="cut__herr">
+          <text>加载失败，请重试</text>
+          <view class="cut__hretry" bindtap="retryHistory" hover-class="tap-active">重新加载</view>
+        </view>
+        <block wx:elif="{{historyList.length}}">
+          <view wx:for="{{historyList}}" wx:key="id" class="cut__hrow">
+            <view class="lz-flex1" style="min-width: 0;" data-id="{{item.id}}" bindtap="loadPlan" hover-class="tap-active">
+              <view class="cut__hrow-t">{{item.title}}</view>
+              <view class="cut__hrow-s">{{item.desc}}</view>
+              <view class="cut__hrow-d">{{item.date}}</view>
+            </view>
+            <view class="cut__hdel" data-id="{{item.id}}" catchtap="delPlan" hover-class="tap-active">
+              <lz-icon name="trash" size="16" color="loss" />
+            </view>
+          </view>
+        </block>
+        <view wx:else class="oe__empty">暂无历史方案，优化后点「保存方案」即可云端留存</view>
+      </scroll-view>
+    </view>
   </view>
 </view>

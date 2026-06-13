@@ -94,6 +94,16 @@ export const cutApi = {
   access: () => http.get('/l/cut/access'),
 }
 
+/** 下料方案云端历史（需会员，userId 维度，服务端从不信任客户端传 userId） */
+export const cutPlanApi = {
+  list: () => http.get('/l/cut/plans'),
+  create: (data: { title: string; material: string; input: any; summary: any }) =>
+    http.post('/l/cut/plans', data),
+  update: (id: string, data: { title?: string; material?: string; input?: any; summary?: any }) =>
+    http.put('/l/cut/plans/' + id, data),
+  remove: (id: string) => http.del('/l/cut/plans/' + id),
+}
+
 /** 邀请（仅需登录） */
 export const inviteApi = {
   get: () =>

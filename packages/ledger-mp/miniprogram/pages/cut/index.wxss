@@ -16,6 +16,22 @@
   flex: 0 0 90px;
   text-align: left;
 }
+.cut__in--dim {
+  flex: 0 0 86px;
+  text-align: left;
+}
+.cut__in--qty2 {
+  flex: 0 0 72px;
+  text-align: left;
+}
+.cut__hist {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent);
+}
 .cut__sec-t {
   font-size: 13px;
   color: var(--muted);
@@ -61,4 +77,119 @@
   font-size: 14px;
   color: var(--text);
   font-weight: 600;
+}
+
+/* 排料图画布 */
+.cut__cvwrap {
+  padding: 6px 8px 12px;
+}
+.cut__cv {
+  width: 100%;
+  display: block;
+}
+
+/* 导出 / 保存方案按钮组 */
+.cut__acts {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+.cut__act {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ── 历史方案底部面板（镜像 order-edit 客户选择器）── */
+.oe__mask {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(20, 30, 25, 0.32);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.oe__sheet {
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 8px 18px calc(20px + env(safe-area-inset-bottom));
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+}
+.oe__sheet-handle {
+  width: 38px;
+  height: 4.5px;
+  border-radius: 999px;
+  background: rgba(31, 107, 92, 0.12);
+  margin: 0 auto 14px;
+}
+.oe__sheet-hd {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.oe__sheet-t {
+  font-size: 17px;
+  font-weight: 800;
+  color: #19271f;
+}
+.oe__sheet-list {
+  max-height: 60vh;
+}
+.oe__empty {
+  text-align: center;
+  font-size: 13px;
+  color: #9bab9f;
+  padding: 28px 0;
+}
+.cut__hclose {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.cut__hrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 107, 92, 0.1);
+}
+.cut__hrow-t {
+  font-size: 15px;
+  font-weight: 700;
+  color: #19271f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cut__hrow-s {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.cut__hrow-d {
+  font-size: 11.5px;
+  color: #9bab9f;
+  margin-top: 2px;
+}
+.cut__hdel {
+  flex: 0 0 auto;
+  padding: 6px;
+}
+.cut__herr {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 24px 0;
+}
+.cut__hretry {
+  margin-top: 10px;
+  display: inline-block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent);
 }
