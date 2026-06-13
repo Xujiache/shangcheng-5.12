@@ -98,7 +98,7 @@
   </view>
 
   <view class="oi__bar">
-    <button class="oi__save" bindtap="save">保存</button>
-    <text class="oi__bar-hint">已编辑内容退出自动保存</text>
+    <button class="oi__save" bindtap="save">完成</button>
+    <text class="oi__bar-hint">明细已带回订单 · 回订单页点「保存订单」才真正入账</text>
   </view>
 </view>
