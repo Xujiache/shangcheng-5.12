@@ -26,6 +26,8 @@ interface IAppOption {
     membership: MembershipStatus | null
     /** 系统状态栏高度(px)。安卓 env(safe-area-inset-top)=0，必须用它做顶部留白 */
     statusBarHeight: number
+    /** 网络在线态（请求层离线兜底/页面提示用） */
+    online: boolean
   }
   setToken?: (token: string) => void
   clearAuth?: () => void

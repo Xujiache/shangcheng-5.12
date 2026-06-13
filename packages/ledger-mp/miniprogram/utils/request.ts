@@ -1,4 +1,5 @@
 import { API_BASE, TOKEN_KEY } from '../config'
+import { readCache, writeCache } from './cache'
 
 interface ApiShell<T> {
   code: number
@@ -14,6 +15,8 @@ export interface RequestOptions {
   params?: Record<string, any>
   auth?: boolean // 默认 true
   silent?: boolean // 不弹错误 toast
+  cache?: boolean // 读接口本地缓存：成功写入；无网/5xx/超时回退上次数据（仅 GET 生效）
+  cacheKey?: string // 自定义缓存键（默认 路径+查询串）
 }
 
 function buildQuery(params?: Record<string, any>): string {
@@ -51,24 +54,53 @@ function handleMemberExpired() {
   })
 }
 
+// 离线/失败回退缓存时的统一提示（节流；silent 时只置标记不弹）
+let lastOfflineToast = 0
+function markOffline(silent?: boolean) {
+  const app = getApp<IAppOption>()
+  if (app?.globalData) app.globalData.online = false
+  if (silent) return
+  const now = Date.now()
+  if (now - lastOfflineToast > 8000) {
+    lastOfflineToast = now
+    wx.showToast({ title: '当前离线 · 显示上次数据', icon: 'none' })
+  }
+}
+
 export function request<T = any>(opts: RequestOptions): Promise<T> {
   const app = getApp<IAppOption>()
   const token = app?.globalData?.token || wx.getStorageSync(TOKEN_KEY) || ''
   const header: Record<string, string> = { 'content-type': 'application/json' }
   if (opts.auth !== false && token) header['Authorization'] = 'Bearer ' + token
   const url = API_BASE + '/api/v1' + opts.url + buildQuery(opts.params)
+  // 读缓存：仅 GET 生效；键默认取 路径+查询串
+  const method = opts.method || 'GET'
+  const useCache = method === 'GET' && !!opts.cache
+  const cacheKey = opts.cacheKey || opts.url + buildQuery(opts.params)
 
   return new Promise<T>((resolve, reject) => {
+    // 已知离线且有缓存：直接回退，省去等待网络超时
+    if (useCache && app?.globalData?.online === false) {
+      const c = readCache<T>(cacheKey)
+      if (c) {
+        markOffline(opts.silent)
+        resolve(c.data)
+        return
+      }
+    }
     wx.request({
       url,
-      method: (opts.method || 'GET') as any,
+      method: method as any,
       data: opts.data,
       header,
+      timeout: 15000,
       success: (res) => {
         const body = res.data as ApiShell<T>
         const httpOk = res.statusCode >= 200 && res.statusCode < 300
         if (body && typeof body === 'object' && 'code' in body) {
           if (body.code === 0) {
+            if (app?.globalData) app.globalData.online = true
+            if (useCache) writeCache(cacheKey, body.data)
             resolve(body.data)
             return
           }
@@ -98,6 +130,8 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
           return
         }
         if (httpOk) {
+          if (app?.globalData) app.globalData.online = true
+          if (useCache) writeCache(cacheKey, body as any)
           resolve(body as any)
           return
         }
@@ -105,6 +139,15 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
         const e: any = new Error('网络错误 (' + res.statusCode + ')')
         e.statusCode = res.statusCode
         if (res.statusCode === 401) handleUnauthorized()
+        // 服务器 5xx（非鉴权）：有缓存则回退上次数据，避免整屏失败
+        if (useCache && res.statusCode >= 500) {
+          const c = readCache<T>(cacheKey)
+          if (c) {
+            markOffline(opts.silent)
+            resolve(c.data)
+            return
+          }
+        }
         if (!opts.silent)
           wx.showToast({
             title: res.statusCode >= 500 ? '服务器开小差了，请稍后重试' : '网络异常，请重试',
@@ -113,6 +156,16 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
         reject(e)
       },
       fail: (e) => {
+        // 网络连接失败（无网/超时）：有缓存则回退上次数据
+        if (useCache) {
+          const c = readCache<T>(cacheKey)
+          if (c) {
+            markOffline(opts.silent)
+            resolve(c.data)
+            return
+          }
+        }
+        markOffline(true)
         if (!opts.silent) wx.showToast({ title: '网络连接失败', icon: 'none' })
         reject(e)
       },

@@ -1,4 +1,5 @@
 import { http } from '../utils/request'
+import { invalidateCache } from '../utils/cache'
 
 /** 鉴权（登录类 auth:false 不带 token） */
 export const authApi = {
@@ -28,54 +29,101 @@ export const authApi = {
 
 /** 账户 / 会员（仅需登录） */
 export const meApi = {
-  me: () => http.get('/l/me'),
-  membership: () => http.get('/l/membership'),
-  updateProfile: (data: { nickname?: string; avatar?: string }) => http.patch('/l/profile', data),
+  me: () => http.get('/l/me', undefined, { cache: true }),
+  membership: () => http.get('/l/membership', undefined, { cache: true }),
+  updateProfile: (data: { nickname?: string; avatar?: string }) =>
+    http.patch('/l/profile', data).then((r) => {
+      invalidateCache(['/l/me', '/l/membership'])
+      return r
+    }),
 }
 
 /** 订单（需会员） */
+// 订单改动会牵动列表/统计/客户聚合，统一失效
+const invalidateOrders = () => invalidateCache(['/l/orders', '/l/stats', '/l/customers'])
 export const orderApi = {
-  list: (params: Record<string, any> = {}) => http.get('/l/orders', params),
-  create: (data: any) => http.post('/l/orders', data),
-  get: (id: string) => http.get('/l/orders/' + id),
-  update: (id: string, data: any) => http.patch('/l/orders/' + id, data),
-  remove: (id: string) => http.del('/l/orders/' + id),
+  list: (params: Record<string, any> = {}) => http.get('/l/orders', params, { cache: true }),
+  create: (data: any) =>
+    http.post('/l/orders', data).then((r) => {
+      invalidateOrders()
+      return r
+    }),
+  get: (id: string) => http.get('/l/orders/' + id, undefined, { cache: true }),
+  update: (id: string, data: any) =>
+    http.patch('/l/orders/' + id, data).then((r) => {
+      invalidateOrders()
+      return r
+    }),
+  remove: (id: string) =>
+    http.del('/l/orders/' + id).then((r) => {
+      invalidateOrders()
+      return r
+    }),
 }
 
 /** 客户（需会员） */
+const invalidateCustomers = () => invalidateCache(['/l/customers', '/l/orders'])
 export const customerApi = {
-  list: () => http.get('/l/customers'),
-  get: (id: string) => http.get('/l/customers/' + id),
-  create: (data: any) => http.post('/l/customers', data),
-  update: (id: string, data: any) => http.patch('/l/customers/' + id, data),
-  remove: (id: string) => http.del('/l/customers/' + id),
+  list: () => http.get('/l/customers', undefined, { cache: true }),
+  get: (id: string) => http.get('/l/customers/' + id, undefined, { cache: true }),
+  create: (data: any) =>
+    http.post('/l/customers', data).then((r) => {
+      invalidateCustomers()
+      return r
+    }),
+  update: (id: string, data: any) =>
+    http.patch('/l/customers/' + id, data).then((r) => {
+      invalidateCustomers()
+      return r
+    }),
+  remove: (id: string) =>
+    http.del('/l/customers/' + id).then((r) => {
+      invalidateCustomers()
+      return r
+    }),
 }
 
 /** 统计（需会员） */
 export const statsApi = {
-  overview: (period: string) => http.get('/l/stats/overview', { period }),
-  monthly: (year?: number) => http.get('/l/stats/monthly', year ? { year } : {}),
-  series: (granularity: string) => http.get('/l/stats/series', { granularity }),
+  overview: (period: string) => http.get('/l/stats/overview', { period }, { cache: true }),
+  monthly: (year?: number) => http.get('/l/stats/monthly', year ? { year } : {}, { cache: true }),
+  series: (granularity: string) => http.get('/l/stats/series', { granularity }, { cache: true }),
 }
 
 /** 经营目标（需会员） */
 export const goalApi = {
-  get: () => http.get('/l/goal'),
-  set: (data: { monthly?: number; yearly?: number }) => http.put('/l/goal', data),
+  get: () => http.get('/l/goal', undefined, { cache: true }),
+  set: (data: { monthly?: number; yearly?: number }) =>
+    http.put('/l/goal', data).then((r) => {
+      invalidateCache(['/l/goal', '/l/stats'])
+      return r
+    }),
 }
 
 /** 消息中心（仅需登录） */
 export const notificationApi = {
-  list: () => http.get('/l/notifications'),
+  list: () => http.get('/l/notifications', undefined, { cache: true }),
   unreadCount: () => http.get<{ count: number }>('/l/notifications/unread-count'),
-  read: (id: string) => http.post('/l/notifications/' + id + '/read'),
-  readAll: () => http.post('/l/notifications/read-all'),
+  read: (id: string) =>
+    http.post('/l/notifications/' + id + '/read').then((r) => {
+      invalidateCache('/l/notifications')
+      return r
+    }),
+  readAll: () =>
+    http.post('/l/notifications/read-all').then((r) => {
+      invalidateCache('/l/notifications')
+      return r
+    }),
 }
 
 /** 偏好设置（仅需登录） */
 export const settingApi = {
-  get: () => http.get('/l/settings'),
-  update: (data: Record<string, any>) => http.put('/l/settings', data),
+  get: () => http.get('/l/settings', undefined, { cache: true }),
+  update: (data: Record<string, any>) =>
+    http.put('/l/settings', data).then((r) => {
+      invalidateCache('/l/settings')
+      return r
+    }),
 }
 
 /** 意见反馈（仅需登录） */
@@ -96,12 +144,22 @@ export const cutApi = {
 
 /** 下料方案云端历史（需会员，userId 维度，服务端从不信任客户端传 userId） */
 export const cutPlanApi = {
-  list: () => http.get('/l/cut/plans'),
+  list: () => http.get('/l/cut/plans', undefined, { cache: true }),
   create: (data: { title: string; material: string; input: any; summary: any }) =>
-    http.post('/l/cut/plans', data),
+    http.post('/l/cut/plans', data).then((r) => {
+      invalidateCache('/l/cut/plans')
+      return r
+    }),
   update: (id: string, data: { title?: string; material?: string; input?: any; summary?: any }) =>
-    http.put('/l/cut/plans/' + id, data),
-  remove: (id: string) => http.del('/l/cut/plans/' + id),
+    http.put('/l/cut/plans/' + id, data).then((r) => {
+      invalidateCache('/l/cut/plans')
+      return r
+    }),
+  remove: (id: string) =>
+    http.del('/l/cut/plans/' + id).then((r) => {
+      invalidateCache('/l/cut/plans')
+      return r
+    }),
 }
 
 /** 邀请（仅需登录） */
@@ -112,5 +170,5 @@ export const inviteApi = {
       invitedCount: number
       rewardDays: number
       allowSelfRegister: boolean
-    }>('/l/invite'),
+    }>('/l/invite', undefined, { cache: true }),
 }

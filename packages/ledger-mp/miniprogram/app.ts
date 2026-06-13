@@ -1,5 +1,6 @@
 import { TOKEN_KEY } from './config'
 import { getBioLock, getBioVerified } from './utils/store'
+import { clearAllCache } from './utils/cache'
 
 App<IAppOption>({
   globalData: {
@@ -7,6 +8,7 @@ App<IAppOption>({
     user: null,
     membership: null,
     statusBarHeight: 20,
+    online: true, // 网络在线态（onNetworkStatusChange 维护；请求失败也会置 false）
   },
   onLaunch() {
     this.globalData.token = wx.getStorageSync(TOKEN_KEY) || ''
@@ -16,6 +18,9 @@ App<IAppOption>({
     } catch (e) {
       /* 极旧基础库兜底用默认 20 */
     }
+    // 网络状态：初始查询 + 监听变化，供请求层离线兜底/页面提示
+    wx.getNetworkType({ success: (r) => (this.globalData.online = r.networkType !== 'none') })
+    wx.onNetworkStatusChange((r) => (this.globalData.online = r.isConnected))
   },
   onShow() {
     // 生物解锁闸门：每次冷启动校验一次（解锁后 bioVerified 置位不再拦）。
@@ -36,5 +41,6 @@ App<IAppOption>({
     this.globalData.user = null
     this.globalData.membership = null
     wx.removeStorageSync(TOKEN_KEY)
+    clearAllCache() // 退出登录/换账号：清空本端读缓存，避免跨账号脏读
   },
 })
