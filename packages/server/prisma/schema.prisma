@@ -1036,8 +1036,9 @@ model LedgerOrder {
   customer     LedgerCustomer? @relation(fields: [customerId], references: [id])
   customerName String // 冗余客户名（兼容快速录入 / 客户删档）
   date         DateTime
-  total        Int             @default(0) // 收款总价（元）
-  extraIncome  Int             @default(0) // 额外收入（元）
+  total        Int             @default(0) // 订单总价（元）
+  extraIncome  Int             @default(0) // [废弃] 旧版额外收入，已不计入利润/营收；保留列避免历史数据丢失
+  received     Int             @default(0) // 收款（元）：定金之外后续已收金额；未收 = 总价 − 定金 − 收款
   costProfile  Int             @default(0) // 型材
   costGlass    Int             @default(0) // 玻璃
   costHardware Int             @default(0) // 配件

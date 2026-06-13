@@ -51,25 +51,24 @@ export function totalCost(c: Partial<OrderCosts>, extras: any, customCosts?: any
   return fixedCost(c) + extrasTotal(extras) + customCostsTotal(customCosts)
 }
 
+// 利润 = 总价 − 总成本（收款属收付跟踪，不进利润；额外收入已废弃）
 export function profitOf(
   total: number,
   c: Partial<OrderCosts>,
   extras: any,
-  extraIncome = 0,
   customCosts?: any,
 ): number {
-  return (total || 0) + (extraIncome || 0) - totalCost(c, extras, customCosts)
+  return (total || 0) - totalCost(c, extras, customCosts)
 }
 
 export function marginOf(
   total: number,
   c: Partial<OrderCosts>,
   extras: any,
-  extraIncome = 0,
   customCosts?: any,
 ): number {
-  const revenue = (total || 0) + (extraIncome || 0)
-  return revenue ? profitOf(total, c, extras, extraIncome, customCosts) / revenue : 0
+  const revenue = total || 0
+  return revenue ? profitOf(total, c, extras, customCosts) / revenue : 0
 }
 
 /** 成本分类元数据（与设计一致） */

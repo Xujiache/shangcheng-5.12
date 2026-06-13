@@ -23,7 +23,8 @@ export class CreateLedgerOrderDto {
   @IsDateString() date!: string
   /** 有明细(items)时由服务端按 金额−优惠 计算；无明细时必填 */
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) total?: number
-  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) extraIncome?: number
+  /** 收款（元）：定金之外后续已收金额，仅影响未收，不计入利润 */
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) received?: number
 
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costProfile?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costGlass?: number
@@ -45,7 +46,7 @@ export class UpdateLedgerOrderDto {
   @IsOptional() @IsString() @MaxLength(40) customerName?: string
   @IsOptional() @IsDateString() date?: string
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) total?: number
-  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) extraIncome?: number
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) received?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costProfile?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costGlass?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) costHardware?: number

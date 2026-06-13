@@ -277,7 +277,6 @@ export function totalCost(o: {
 
 export function profitOf(o: {
   total: number
-  extraIncome?: number
   costProfile: number
   costGlass: number
   costHardware: number
@@ -286,12 +285,13 @@ export function profitOf(o: {
   extras: unknown
   customCosts?: unknown
 }): number {
-  return (o.total || 0) + (o.extraIncome || 0) - totalCost(o)
+  // 利润 = 总价 − 总成本（收款/定金属收付跟踪，不进利润；额外收入已废弃）
+  return (o.total || 0) - totalCost(o)
 }
 
-/** 营收 = 总价 + 额外收入 */
-export function revenueOf(o: { total: number; extraIncome?: number }): number {
-  return (o.total || 0) + (o.extraIncome || 0)
+/** 营收 = 总价 */
+export function revenueOf(o: { total: number }): number {
+  return o.total || 0
 }
 
 export function marginOf(o: Parameters<typeof profitOf>[0]): number {

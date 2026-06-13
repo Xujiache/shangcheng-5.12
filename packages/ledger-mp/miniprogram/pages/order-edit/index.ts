@@ -28,7 +28,7 @@ Page({
     customerName: '',
     date: today(),
     total: 0,
-    extraIncome: 0,
+    received: 0,
     costs: { profile: 0, glass: 0, hardware: 0, labor: 0, screen: 0 } as any,
     // 成本输入框的原始字符串（输入中不回写，失焦才归一，避免光标跳动）
     costStrs: { profile: '', glass: '', hardware: '', labor: '', screen: '' } as any,
@@ -85,19 +85,19 @@ Page({
         () => this.refresh(),
       )
     }
-    // 从「报价明细」页返回，回填 明细/总价/优惠/定金/额外收入/备注
+    // 从「报价明细」页返回，回填 明细/总价/优惠/定金/收款/备注
     const m = wx.getStorageSync('ledger_order_money_out')
     if (m) {
       wx.removeStorageSync('ledger_order_money_out')
       const total = Math.max(0, Math.round(Number(m.total) || 0))
-      const extraIncome = Math.max(0, Math.round(Number(m.extraIncome) || 0))
+      const received = Math.max(0, Math.round(Number(m.received) || 0))
       this.setData(
         {
           items: m.items || [],
           discount: Math.max(0, Math.round(Number(m.discount) || 0)),
           deposit: Math.max(0, Math.round(Number(m.deposit) || 0)),
           total,
-          extraIncome,
+          received,
           note: m.note !== undefined ? m.note : this.data.note,
         },
         () => this.refresh(),
@@ -115,7 +115,7 @@ Page({
       total: this.data.total, // 无明细订单依赖此值兜底，明细页不得凭空清零
       discount: this.data.discount,
       deposit: this.data.deposit,
-      extraIncome: this.data.extraIncome,
+      received: this.data.received,
       note: this.data.note,
     })
     wx.navigateTo({ url: '/pages/order-items/index' })
@@ -133,7 +133,6 @@ Page({
           customerName: o.customer,
           date: o.date,
           total: o.total,
-          extraIncome: o.extraIncome || 0,
           costs: {
             profile: o.costs.profile,
             glass: o.costs.glass,
@@ -165,6 +164,7 @@ Page({
           items: o.items || [],
           discount: o.discount || 0,
           deposit: o.deposit || 0,
+          received: o.received || 0,
           note: o.note || '',
         },
         () => this.refresh(),
@@ -180,8 +180,7 @@ Page({
   },
 
   refresh() {
-    const { costs, costStrs, activeCats, extras, total, extraIncome, customCosts, deposit } =
-      this.data
+    const { costs, costStrs, activeCats, extras, total, received, customCosts, deposit } = this.data
     const activeCells = COST_CATS.filter((c) => activeCats.includes(c.key)).map((c) => ({
       key: c.key,
       name: c.name,
@@ -193,12 +192,12 @@ Page({
       name: c.name,
       color: c.color,
     }))
-    const profit = profitOf(total, costs, extras, extraIncome, customCosts)
-    const margin = marginOf(total, costs, extras, extraIncome, customCosts)
+    const profit = profitOf(total, costs, extras, customCosts)
+    const margin = marginOf(total, costs, extras, customCosts)
     this.setData({
       activeCells,
       removedCats,
-      unpaid: Math.max(0, total - deposit), // 与明细页/后端同口径：未收 = 总价 − 定金
+      unpaid: Math.max(0, total - deposit - received), // 与明细页/后端同口径：未收 = 总价 − 定金 − 收款
       profitText: yuan(profit),
       profitNeg: profit < 0,
       marginPct: (margin * 100).toFixed(1),
@@ -403,7 +402,7 @@ Page({
       customerName,
       date,
       total,
-      extraIncome,
+      received,
       costs,
       activeCats,
       extras,
@@ -428,7 +427,7 @@ Page({
       customerName: String(customerName).trim(),
       date,
       total,
-      extraIncome,
+      received,
       ...payloadCosts,
       extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
       customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),

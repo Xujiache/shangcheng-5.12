@@ -60,7 +60,7 @@ function orderRow(over: Partial<any> = {}): any {
     customerName: '张三',
     date: new Date('2026-06-01T00:00:00.000Z'),
     total: 0,
-    extraIncome: 0,
+    received: 0,
     costProfile: 0,
     costGlass: 0,
     costHardware: 0,
@@ -110,7 +110,7 @@ describe('LedgerService.getOrder（映射 + 计算口径）', () => {
     prisma.ledgerOrder.findFirst.mockResolvedValueOnce(
       orderRow({
         total: 58200,
-        extraIncome: 2000,
+        received: 2000,
         costProfile: 16800,
         costGlass: 9200,
         costHardware: 4100,
@@ -126,13 +126,15 @@ describe('LedgerService.getOrder（映射 + 计算口径）', () => {
     const res = await service.getOrder('u1', 'o1')
 
     expect(res.cost).toBe(39800)
-    expect(res.profit).toBe(20400)
-    expect(res.revenue).toBe(60200)
-    expect(res.margin).toBeCloseTo(20400 / 60200, 6)
+    // 利润 = 总价 − 总成本（收款不进利润）= 58200 − 39800 = 18400
+    expect(res.profit).toBe(18400)
+    // 营收 = 总价（额外收入已废弃）
+    expect(res.revenue).toBe(58200)
+    expect(res.margin).toBeCloseTo(18400 / 58200, 6)
     // 金额 = Σ各项小计 = 900 + 1200 = 2100
     expect(res.amount).toBe(2100)
-    // 未收 = max(0, total − deposit) = 58200 − 20000 = 38200
-    expect(res.unpaid).toBe(38200)
+    // 未收 = max(0, total − deposit − received) = 58200 − 20000 − 2000 = 36200
+    expect(res.unpaid).toBe(36200)
     // 派生明细汇总
     expect(res.fixedCost).toBe(38800)
     expect(res.extrasTotal).toBe(600)
@@ -164,7 +166,7 @@ describe('LedgerService.listOrders（内存过滤/排序/分页/汇总）', () =
   })
 
   it('用例3：profit 区间内存过滤 + profit 降序 + 分页切片 + 汇总覆盖全集', async () => {
-    // 三笔订单，利润分别为 1000 / 3000 / 5000（无成本时 profit = total + extraIncome）
+    // 三笔订单，利润分别为 1000 / 3000 / 5000（无成本时 profit = total）
     const rows = [
       orderRow({ id: 'a', total: 1000 }),
       orderRow({ id: 'b', total: 3000 }),

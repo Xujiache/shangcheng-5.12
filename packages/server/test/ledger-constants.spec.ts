@@ -291,7 +291,6 @@ describe('itemSubtotal / orderItemsAmount / orderTotalFromItems 金额口径', (
 describe('成本 / 利润 / 营收 / 毛利率 全链路', () => {
   const base = {
     total: 1000,
-    extraIncome: 200,
     costProfile: 100,
     costGlass: 50,
     costHardware: 30,
@@ -309,17 +308,17 @@ describe('成本 / 利润 / 营收 / 毛利率 全链路', () => {
     expect(totalCost(base)).toBe(210 + 40 + 60)
   })
 
-  it('revenueOf = 总价 + 额外收入', () => {
-    expect(revenueOf(base)).toBe(1200)
+  it('revenueOf = 总价（额外收入已废弃）', () => {
+    expect(revenueOf(base)).toBe(1000)
   })
 
-  it('profitOf = 营收 − 总成本（含 extraIncome）', () => {
-    // 1200 - 310 = 890
-    expect(profitOf(base)).toBe(890)
+  it('profitOf = 总价 − 总成本', () => {
+    // 1000 - 310 = 690
+    expect(profitOf(base)).toBe(690)
   })
 
   it('marginOf = 利润 / 营收', () => {
-    expect(marginOf(base)).toBeCloseTo(890 / 1200, 6)
+    expect(marginOf(base)).toBeCloseTo(690 / 1000, 6)
   })
 
   it('营收为 0 → marginOf 返回 0（避免除零）', () => {

@@ -43,15 +43,17 @@
         <lz-icon name="plus" size="13" color="#2E9E78" stroke="2.2" /><text>新增尺寸</text>
       </view>
 
-      <!-- 数量/面积 × 单价 = 小计 -->
+      <!-- 数量/面积 × 单价（小计单独一行，避免挤在一行被截断）-->
       <view class="oi__qtyrow">
         <text class="oi__qty-l">{{item.hasSizes ? '面积' : '数量'}}</text>
-        <text wx:if="{{item.hasSizes}}" class="oi__qty-auto">{{item.qtyAutoText}}</text>
+        <text wx:if="{{item.hasSizes}}" class="oi__qty-auto">{{item.qtyAutoText}}㎡</text>
         <input wx:else class="oi__qty-in" type="digit" value="{{item.qtyStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="qtyStr" bindinput="onItemInput" />
         <text class="oi__qty-op">× 单价</text>
         <input class="oi__price-in" type="digit" value="{{item.unitPriceStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="unitPriceStr" bindinput="onItemInput" bindblur="onPriceBlur" />
         <text class="oi__unit">{{item.hasSizes ? '元/㎡' : '元/件'}}</text>
-        <text class="oi__qty-op">=</text>
+      </view>
+      <view class="oi__subrow2">
+        <text class="oi__sub2-l">小计</text>
         <text class="oi__subtotal">{{item.subtotalText}}</text>
       </view>
     </view>
@@ -74,18 +76,18 @@
         <text class="oi__t-v oi__t-v--main">{{totalText}}</text>
       </view>
       <view class="oi__t-row">
-        <text class="oi__t-l">额外收入</text>
-        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{extraIncomeStr}}" placeholder="0" placeholder-class="ph" data-field="extraIncomeStr" bindinput="onExtra" bindblur="onMoneyBlur" /></view>
-      </view>
-      <view class="oi__t-row">
         <text class="oi__t-l">定金</text>
         <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{depositStr}}" placeholder="0" placeholder-class="ph" data-field="depositStr" bindinput="onDeposit" bindblur="onMoneyBlur" /></view>
+      </view>
+      <view class="oi__t-row">
+        <text class="oi__t-l">收款</text>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{receivedStr}}" placeholder="0" placeholder-class="ph" data-field="receivedStr" bindinput="onReceived" bindblur="onMoneyBlur" /></view>
       </view>
       <view class="oi__t-row oi__t-row--last">
         <text class="oi__t-l">未收</text>
         <text class="oi__t-v">{{unpaidText}}</text>
       </view>
-      <view wx:if="{{depositOver}}" class="oi__t-warn">定金已超过总价</view>
+      <view wx:if="{{depositOver}}" class="oi__t-warn">定金 + 收款已超过总价</view>
     </view>
 
     <!-- 订单备注 -->

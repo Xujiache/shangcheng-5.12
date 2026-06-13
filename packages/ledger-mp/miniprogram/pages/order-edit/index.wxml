@@ -25,7 +25,7 @@
         </view>
       </picker>
 
-      <!-- 金额区：左 报价明细 软按钮 + 右 总价/额外收入/未收 -->
+      <!-- 金额区：左 报价明细 软按钮 + 右 总价/收款/未收（点任一格进报价明细页改）-->
       <view class="oe__amtarea">
         <view class="oe__editbtn" bindtap="toAmount" hover-class="oe__editbtn--tap">
           <lz-icon name="pencil" size="22" color="#1F7D5E" />
@@ -41,10 +41,10 @@
             </view>
           </view>
           <view class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
-            <text class="oe__amtbox-l">额外收入</text>
+            <text class="oe__amtbox-l">收款</text>
             <view class="oe__amtbox-r">
               <text class="oe__amtbox-cur">¥</text>
-              <text class="oe__amtbox-v">{{extraIncome || 0}}</text>
+              <text class="oe__amtbox-v">{{received || 0}}</text>
               <lz-icon name="chevron" size="14" color="#9bab9f" />
             </view>
           </view>

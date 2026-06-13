@@ -33,8 +33,6 @@ Page({
     totalText: '¥0',
     costText: '¥0',
     extrasTotalText: '¥0',
-    extraIncomeText: '¥0',
-    hasExtraIncome: false,
   },
   _seq: 0,
 
@@ -106,7 +104,7 @@ Page({
           subtotalText: money(subtotal),
         }
       })
-      // 报价金额行：金额(有明细) / 优惠 / 定金+未收(有定金)
+      // 报价金额行：金额(有明细) / 优惠 / 定金 / 收款 / 未收
       const quoteRows: Array<{ label: string; value: string }> = []
       if (items.length) quoteRows.push({ label: '金额（明细合计）', value: money(o.amount || 0) })
       // 优惠仅在有明细时参与计价（后端 orderTotalFromItems 才会减它），无明细不展示以免误读
@@ -115,8 +113,10 @@ Page({
           label: '优惠',
           value: hide ? maskMoney(o.discount) : '-' + yuan(o.discount),
         })
-      if ((o.deposit || 0) > 0) {
-        quoteRows.push({ label: '定金', value: money(o.deposit) })
+      // 收付：定金/收款任一非空即展示这组（未收 = 总价 − 定金 − 收款，由后端给出）
+      if ((o.deposit || 0) > 0 || (o.received || 0) > 0) {
+        if ((o.deposit || 0) > 0) quoteRows.push({ label: '定金', value: money(o.deposit) })
+        if ((o.received || 0) > 0) quoteRows.push({ label: '收款', value: money(o.received) })
         quoteRows.push({ label: '未收', value: money(o.unpaid || 0) })
       }
       this.setData({
@@ -132,8 +132,6 @@ Page({
         totalText: money(o.total),
         costText: money(o.cost),
         extrasTotalText: money(o.extrasTotal || 0),
-        extraIncomeText: money(o.extraIncome || 0),
-        hasExtraIncome: (o.extraIncome || 0) > 0,
       })
     } catch (e) {
       if (seq !== this._seq) return

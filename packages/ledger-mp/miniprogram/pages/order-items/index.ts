@@ -61,12 +61,11 @@ Page({
     items: [] as any[],
     discountStr: '',
     depositStr: '',
-    extraIncomeStr: '',
+    receivedStr: '',
     note: '',
     amountText: '¥0',
     totalText: '¥0',
     unpaidText: '¥0',
-    revenueText: '¥0',
     unnamedCount: 0,
     depositOver: false,
   },
@@ -88,7 +87,7 @@ Page({
         items,
         discountStr: inp.discount ? String(inp.discount) : '',
         depositStr: inp.deposit ? String(inp.deposit) : '',
-        extraIncomeStr: inp.extraIncome ? String(inp.extraIncome) : '',
+        receivedStr: inp.received ? String(inp.received) : '',
         note: inp.note || '',
       },
       () => this.recalc(),
@@ -159,10 +158,10 @@ Page({
   onDeposit(e: any) {
     this.setData({ depositStr: e.detail.value }, () => this.recalc())
   },
-  onExtra(e: any) {
-    this.setData({ extraIncomeStr: e.detail.value }, () => this.recalc())
+  onReceived(e: any) {
+    this.setData({ receivedStr: e.detail.value }, () => this.recalc())
   },
-  // 整数元字段（优惠/定金/额外收入）失焦归一显示，输入中不回写避免光标跳动
+  // 整数元字段（优惠/定金/收款）失焦归一显示，输入中不回写避免光标跳动
   onMoneyBlur(e: any) {
     const field = e.currentTarget.dataset.field
     this.setData({ [field]: normMoneyStr(e.detail.value) })
@@ -223,18 +222,18 @@ Page({
     })
     const discount = Math.round(num(this.data.discountStr))
     const deposit = Math.round(num(this.data.depositStr))
-    const extra = Math.round(num(this.data.extraIncomeStr))
+    const received = Math.round(num(this.data.receivedStr))
     // 与后端一致：有具名明细时 总价=金额−优惠；无明细则沿用进入时的总价
     const total = namedCount > 0 ? Math.max(0, amount - discount) : this._manualTotal
-    const unpaid = Math.max(0, total - deposit)
+    // 未收 = 总价 − 定金 − 收款（与后端 mapOrder 同口径）
+    const unpaid = Math.max(0, total - deposit - received)
     this.setData({
       items,
       unnamedCount,
-      depositOver: deposit > total,
+      depositOver: deposit + received > total,
       amountText: yuan(amount),
       totalText: yuan(total),
       unpaidText: yuan(unpaid),
-      revenueText: yuan(total + extra),
     })
   },
 
@@ -268,14 +267,14 @@ Page({
     })
     const discount = Math.round(num(this.data.discountStr))
     const deposit = Math.round(num(this.data.depositStr))
-    const extraIncome = Math.round(num(this.data.extraIncomeStr))
+    const received = Math.round(num(this.data.receivedStr))
     // 与后端一致：有明细才用 金额−优惠，否则原样保留进入时的总价（防止误清零）
     const total = items.length ? Math.max(0, amount - discount) : this._manualTotal
     wx.setStorageSync(OUT_KEY, {
       items,
       discount,
       deposit,
-      extraIncome,
+      received,
       total,
       note: this.data.note,
     })

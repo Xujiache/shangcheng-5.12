@@ -37,7 +37,7 @@ type OrderRow = {
   customerName: string
   date: Date
   total: number
-  extraIncome: number
+  received: number
   costProfile: number
   costGlass: number
   costHardware: number
@@ -223,7 +223,6 @@ export class LedgerService {
     const customCosts = sanitizeCustomCosts(o.customCosts)
     const base = {
       total: o.total,
-      extraIncome: o.extraIncome,
       costProfile: o.costProfile,
       costGlass: o.costGlass,
       costHardware: o.costHardware,
@@ -239,7 +238,7 @@ export class LedgerService {
       customer: o.customerName,
       date: ymd(o.date),
       total: o.total,
-      extraIncome: o.extraIncome,
+      received: o.received || 0,
       revenue: revenueOf(base),
       costs: {
         profile: o.costProfile,
@@ -255,7 +254,7 @@ export class LedgerService {
       discount: o.discount || 0,
       deposit: o.deposit || 0,
       amount: orderItemsAmount(items), // 金额 = Σ小计
-      unpaid: Math.max(0, (o.total || 0) - (o.deposit || 0)), // 未收 = 总价 − 定金
+      unpaid: Math.max(0, (o.total || 0) - (o.deposit || 0) - (o.received || 0)), // 未收 = 总价 − 定金 − 收款
       note: o.note ?? '',
       fixedCost: fixedCost(base),
       extrasTotal: extrasTotal(extras),
@@ -294,7 +293,7 @@ export class LedgerService {
     const items = list.slice((page - 1) * pageSize, page * pageSize)
     const sums = list.reduce(
       (s, o) => ({
-        revenue: s.revenue + o.total + (o.extraIncome || 0),
+        revenue: s.revenue + o.total,
         profit: s.profit + o.profit,
         cost: s.cost + o.cost,
       }),
@@ -348,7 +347,7 @@ export class LedgerService {
         customerName,
         date,
         total,
-        extraIncome: Math.max(0, Math.round(dto.extraIncome || 0)),
+        received: Math.max(0, Math.round(dto.received || 0)),
         costProfile: Math.max(0, Math.round(dto.costProfile || 0)),
         costGlass: Math.max(0, Math.round(dto.costGlass || 0)),
         costHardware: Math.max(0, Math.round(dto.costHardware || 0)),
@@ -392,7 +391,7 @@ export class LedgerService {
       data.date = d
     }
     if (dto.total !== undefined) data.total = Math.max(0, Math.round(dto.total))
-    if (dto.extraIncome !== undefined) data.extraIncome = Math.max(0, Math.round(dto.extraIncome))
+    if (dto.received !== undefined) data.received = Math.max(0, Math.round(dto.received))
     if (dto.costProfile !== undefined) data.costProfile = Math.max(0, Math.round(dto.costProfile))
     if (dto.costGlass !== undefined) data.costGlass = Math.max(0, Math.round(dto.costGlass))
     if (dto.costHardware !== undefined)
@@ -463,7 +462,7 @@ export class LedgerService {
       const c = map.get(key)
       const p = profitOf(o as any)
       c.count++
-      c.revenue += o.total + o.extraIncome
+      c.revenue += o.total
       c.profit += p
       c.cost += totalCost(o as any)
       const d = ymd(o.date)
@@ -483,7 +482,7 @@ export class LedgerService {
       orderBy: { date: 'desc' },
     })
     const mapped = orders.map((o) => this.mapOrder(o as OrderRow))
-    const revenue = mapped.reduce((s, o) => s + o.total + (o.extraIncome || 0), 0)
+    const revenue = mapped.reduce((s, o) => s + o.total, 0)
     const profit = mapped.reduce((s, o) => s + o.profit, 0)
     return {
       id: c.id,
@@ -557,14 +556,13 @@ export class LedgerService {
     const M = now.getMonth() + 1
     const all = await this.prisma.ledgerOrder.findMany({
       where: { userId },
-      // 仅取本方法消费到的列：id/customerName/date（展示）+ total/extraIncome（营收）
+      // 仅取本方法消费到的列：id/customerName/date（展示）+ total（营收）
       // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf/CAT_FIELD 用）。
       select: {
         id: true,
         customerName: true,
         date: true,
         total: true,
-        extraIncome: true,
         costProfile: true,
         costGlass: true,
         costHardware: true,
@@ -587,7 +585,7 @@ export class LedgerService {
 
     const agg = (rows: typeof all) => ({
       count: rows.length,
-      revenue: rows.reduce((s, o) => s + o.total + o.extraIncome, 0),
+      revenue: rows.reduce((s, o) => s + o.total, 0),
       cost: rows.reduce((s, o) => s + totalCost(o as any), 0),
       profit: rows.reduce((s, o) => s + profitOf(o as any), 0),
     })
@@ -665,14 +663,13 @@ export class LedgerService {
 
   async monthlySeries(userId: string, year?: number) {
     const Y = year || new Date().getFullYear()
-    // 仅取消费到的列：date（分桶）+ total/extraIncome（营收）
+    // 仅取消费到的列：date（分桶）+ total（营收）
     // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 及 costLabor 直接用）。
     const all = await this.prisma.ledgerOrder.findMany({
       where: { userId },
       select: {
         date: true,
         total: true,
-        extraIncome: true,
         costProfile: true,
         costGlass: true,
         costHardware: true,
@@ -691,7 +688,7 @@ export class LedgerService {
         month: m,
         label: `${m}月`,
         count: ml.length,
-        revenue: ml.reduce((s, o) => s + o.total + o.extraIncome, 0),
+        revenue: ml.reduce((s, o) => s + o.total, 0),
         cost: ml.reduce((s, o) => s + totalCost(o as any), 0),
         profit: ml.reduce((s, o) => s + profitOf(o as any), 0),
         labor,
@@ -714,14 +711,13 @@ export class LedgerService {
    * - year:  近 5 年逐年
    */
   async series(userId: string, granularity = 'month') {
-    // 仅取消费到的列：date（分桶）+ total/extraIncome（营收）
+    // 仅取消费到的列：date（分桶）+ total（营收）
     // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 用）。
     const all = await this.prisma.ledgerOrder.findMany({
       where: { userId },
       select: {
         date: true,
         total: true,
-        extraIncome: true,
         costProfile: true,
         costGlass: true,
         costHardware: true,
@@ -736,7 +732,7 @@ export class LedgerService {
     const bucket = (rows: typeof all, label: string) => ({
       label,
       count: rows.length,
-      revenue: rows.reduce((s, o) => s + o.total + o.extraIncome, 0),
+      revenue: rows.reduce((s, o) => s + o.total, 0),
       cost: rows.reduce((s, o) => s + totalCost(o as any), 0),
       profit: rows.reduce((s, o) => s + profitOf(o as any), 0),
     })
