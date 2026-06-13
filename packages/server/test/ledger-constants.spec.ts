@@ -202,15 +202,28 @@ describe('sanitizeOrderItems 门窗报价明细清洗', () => {
     expect(sanitizeOrderItems(raw)).toHaveLength(100)
   })
 
-  it('无 name 的项被丢弃；name 做 trim + slice(0,40)', () => {
+  it('纯空行被丢弃；name 做 trim + slice(0,40)', () => {
     const out = sanitizeOrderItems([
-      { name: '  ' },
+      { name: '  ' }, // 纯空（无名称/尺寸/数量/单价）→ 丢弃
       { name: '  断桥铝  ' },
       { name: 'X'.repeat(50) },
     ])
     expect(out).toHaveLength(2)
     expect(out[0].name).toBe('断桥铝')
     expect(out[1].name).toBe('X'.repeat(40))
+  })
+
+  it('名称非强制：无名称但有 尺寸/数量/单价 任一的项被保留', () => {
+    const out = sanitizeOrderItems([
+      { name: '', sizes: [{ w: 800, h: 1200, note: '' }] }, // 有尺寸 → 保留
+      { name: '', qty: 3, unitPrice: 100 }, // 有数量+单价 → 保留
+      { name: '', unitPrice: 50 }, // 仅单价 → 保留
+      { name: '', baseArea: 0, qty: 0, unitPrice: 0, sizes: [] }, // 纯空 → 丢弃
+    ])
+    expect(out).toHaveLength(3)
+    expect(out[0].sizes).toHaveLength(1)
+    expect(out[1].qty).toBe(3)
+    expect(out[2].unitPrice).toBe(50)
   })
 
   it('sizes 截断到 100，w/h ≤ 0 的尺寸被过滤，note 截断到 30', () => {

@@ -227,35 +227,39 @@ export interface OrderItem {
 }
 export function sanitizeOrderItems(raw: unknown): OrderItem[] {
   if (!Array.isArray(raw)) return []
-  return raw
-    .slice(0, 100)
-    .map((it: any) => {
-      const sizes: OrderSize[] = Array.isArray(it?.sizes)
-        ? it.sizes
-            .slice(0, 100)
-            .map((s: any) => ({
-              w: Math.max(0, Math.round(Number(s?.w) || 0)),
-              h: Math.max(0, Math.round(Number(s?.h) || 0)),
-              note: String(s?.note ?? '')
-                .trim()
-                .slice(0, 30),
-            }))
-            .filter((s: OrderSize) => s.w > 0 && s.h > 0)
-        : []
-      return {
-        name: String(it?.name ?? '')
-          .trim()
-          .slice(0, 40),
-        note: String(it?.note ?? '')
-          .trim()
-          .slice(0, 30),
-        baseArea: Math.max(0, Number(it?.baseArea) || 0),
-        unitPrice: Math.max(0, Math.round(Number(it?.unitPrice) || 0)),
-        qty: Math.max(0, Number(it?.qty) || 0),
-        sizes,
-      }
-    })
-    .filter((it) => it.name)
+  return (
+    raw
+      .slice(0, 100)
+      .map((it: any) => {
+        const sizes: OrderSize[] = Array.isArray(it?.sizes)
+          ? it.sizes
+              .slice(0, 100)
+              .map((s: any) => ({
+                w: Math.max(0, Math.round(Number(s?.w) || 0)),
+                h: Math.max(0, Math.round(Number(s?.h) || 0)),
+                note: String(s?.note ?? '')
+                  .trim()
+                  .slice(0, 30),
+              }))
+              .filter((s: OrderSize) => s.w > 0 && s.h > 0)
+          : []
+        return {
+          name: String(it?.name ?? '')
+            .trim()
+            .slice(0, 40),
+          note: String(it?.note ?? '')
+            .trim()
+            .slice(0, 30),
+          baseArea: Math.max(0, Number(it?.baseArea) || 0),
+          unitPrice: Math.max(0, Math.round(Number(it?.unitPrice) || 0)),
+          qty: Math.max(0, Number(it?.qty) || 0),
+          sizes,
+        }
+      })
+      // 名称非强制：只要填了 名称/尺寸/数量/单价 任一就视为有效明细（仅丢真正的空行）。
+      // 门窗下单常只填尺寸+单价不起名，强制名称会导致漏算金额 + 退出丢数据。
+      .filter((it) => it.name || it.sizes.length > 0 || it.qty > 0 || it.unitPrice > 0)
+  )
 }
 function sizeArea(s: OrderSize, baseArea: number): number {
   return Math.max((s.w * s.h) / 1_000_000, baseArea || 0)
