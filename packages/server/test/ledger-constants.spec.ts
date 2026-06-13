@@ -31,8 +31,10 @@ import {
   revenueOf,
   marginOf,
   normalizeLedgerConfig,
+  normalizeLedgerPlans,
   genLedgerInviteCode,
   LEDGER_CONFIG_DEFAULTS,
+  LEDGER_PLANS,
 } from '../src/modules/ledger/ledger.constants'
 
 // ----------------------------------------------------------------------------
@@ -363,6 +365,51 @@ describe('normalizeLedgerConfig 配置收口', () => {
     const out = normalizeLedgerConfig({ allowSelfRegister: 'yes', cutRequireMembership: false })
     expect(out.allowSelfRegister).toBe(LEDGER_CONFIG_DEFAULTS.allowSelfRegister)
     expect(out.cutRequireMembership).toBe(false)
+  })
+
+  it('plans 缺省 / 非数组 → 回落默认套餐', () => {
+    expect(normalizeLedgerConfig({}).plans).toEqual(LEDGER_PLANS)
+    expect(normalizeLedgerConfig({ plans: 'x' }).plans).toEqual(LEDGER_PLANS)
+  })
+})
+
+describe('normalizeLedgerPlans 套餐收口', () => {
+  it('合法套餐被采用，天数取整、价格 trim', () => {
+    const out = normalizeLedgerPlans([
+      { key: 'month', label: '月卡', days: 30.4, price: ' ¥29 ' },
+      { key: 'year', label: '年卡', days: 365, price: '¥268' },
+    ])
+    expect(out).toEqual([
+      { key: 'month', label: '月卡', days: 30, price: '¥29' },
+      { key: 'year', label: '年卡', days: 365, price: '¥268' },
+    ])
+  })
+
+  it('天数越界钳到 [1,3650]；缺名称/缺标识的行被丢弃', () => {
+    const out = normalizeLedgerPlans([
+      { key: 'big', label: '超大', days: 99999, price: '' }, // 钳到 3650
+      { key: 'zero', label: '零天', days: 0, price: '' }, // 钳到 1
+      { key: '', label: '无标识', days: 10, price: '' }, // 缺 key → 丢弃
+      { key: 'noname', label: '', days: 10, price: '' }, // 缺 label → 丢弃
+    ])
+    expect(out).toEqual([
+      { key: 'big', label: '超大', days: 3650, price: '' },
+      { key: 'zero', label: '零天', days: 1, price: '' },
+    ])
+  })
+
+  it('key 重复仅保留首条', () => {
+    const out = normalizeLedgerPlans([
+      { key: 'm', label: '月卡A', days: 30, price: '' },
+      { key: 'm', label: '月卡B', days: 60, price: '' },
+    ])
+    expect(out).toEqual([{ key: 'm', label: '月卡A', days: 30, price: '' }])
+  })
+
+  it('全部非法 / 空数组 → 回落默认套餐', () => {
+    expect(normalizeLedgerPlans([])).toEqual(LEDGER_PLANS)
+    expect(normalizeLedgerPlans([{ key: '', label: '', days: 0, price: '' }])).toEqual(LEDGER_PLANS)
+    expect(normalizeLedgerPlans(null)).toEqual(LEDGER_PLANS)
   })
 })
 

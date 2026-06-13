@@ -323,6 +323,22 @@ export async function uploadLedgerImage(file: File): Promise<{ url: string; key:
 /* ============ 功能配置（#9 优化下料 / #10 邀请）============ */
 
 /** ledger 全局功能配置 */
+/** 会员套餐（price 仅展示，App 内无支付） */
+export interface LedgerPlan {
+  key: string
+  label: string
+  days: number
+  price: string
+}
+
+const DEFAULT_LEDGER_PLANS: LedgerPlan[] = [
+  { key: 'day', label: '体验卡', days: 1, price: '¥1' },
+  { key: 'week', label: '周卡', days: 7, price: '¥9' },
+  { key: 'month', label: '月卡', days: 30, price: '¥29' },
+  { key: 'quarter', label: '季卡', days: 90, price: '¥79' },
+  { key: 'year', label: '年卡', days: 365, price: '¥268' }
+]
+
 export interface LedgerConfig {
   /** 是否开放 App 自助注册 */
   allowSelfRegister: boolean
@@ -334,6 +350,8 @@ export interface LedgerConfig {
   cutTrialDays: number
   /** 试用期后是否需会员才能用优化下料 */
   cutRequireMembership: boolean
+  /** 会员套餐（后台可编辑） */
+  plans: LedgerPlan[]
 }
 
 const DEFAULT_LEDGER_CONFIG: LedgerConfig = {
@@ -341,7 +359,8 @@ const DEFAULT_LEDGER_CONFIG: LedgerConfig = {
   inviteRewardDays: 7,
   inviteMaxRewarded: 50,
   cutTrialDays: 7,
-  cutRequireMembership: true
+  cutRequireMembership: true,
+  plans: DEFAULT_LEDGER_PLANS
 }
 
 export async function fetchLedgerConfig(): Promise<LedgerConfig> {
@@ -353,7 +372,8 @@ export async function fetchLedgerConfig(): Promise<LedgerConfig> {
       inviteRewardDays: Number(resp.inviteRewardDays ?? DEFAULT_LEDGER_CONFIG.inviteRewardDays),
       inviteMaxRewarded: Number(resp.inviteMaxRewarded ?? DEFAULT_LEDGER_CONFIG.inviteMaxRewarded),
       cutTrialDays: Number(resp.cutTrialDays ?? DEFAULT_LEDGER_CONFIG.cutTrialDays),
-      cutRequireMembership: resp.cutRequireMembership !== false
+      cutRequireMembership: resp.cutRequireMembership !== false,
+      plans: Array.isArray(resp.plans) && resp.plans.length ? resp.plans : DEFAULT_LEDGER_PLANS
     }
   } catch {
     return { ...DEFAULT_LEDGER_CONFIG }

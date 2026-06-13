@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
-  LEDGER_PLANS,
   deriveMembership,
   sanitizeExtras,
   fixedCost,
@@ -99,9 +98,10 @@ export class LedgerService {
 
   async membership(userId: string) {
     const m = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
+    const cfg = await this.readConfig()
     return {
       ...deriveMembership(m?.expiresAt ?? null, m?.lastPlanKey),
-      plans: LEDGER_PLANS,
+      plans: cfg.plans, // 套餐由后台配置驱动（默认 LEDGER_PLANS）
     }
   }
 

@@ -124,7 +124,12 @@ export class LedgerAdminService {
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
     let days = dto.days
-    if ((days === undefined || days === null) && dto.planKey) days = LEDGER_PLAN_DAYS[dto.planKey]
+    // 按套餐授予时，天数以后台配置的套餐为准（兼容旧 key 回落 LEDGER_PLAN_DAYS）
+    if ((days === undefined || days === null) && dto.planKey) {
+      const cfg = await this.getConfig()
+      const plan = cfg.plans.find((p) => p.key === dto.planKey)
+      days = plan ? plan.days : LEDGER_PLAN_DAYS[dto.planKey]
+    }
     if (days === undefined || days === null || days === 0) {
       throw new BizException(BizCode.INVALID_PARAMS, '请选择套餐或填写有效天数')
     }

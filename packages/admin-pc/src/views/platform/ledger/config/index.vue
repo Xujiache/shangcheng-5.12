@@ -68,6 +68,48 @@
         </ElFormItem>
       </ElForm>
 
+      <ElDivider />
+
+      <h3 class="pf-cfg-title">会员套餐</h3>
+      <p class="pf-cfg-sub">
+        App 会员中心展示的套餐卡片，并作为后台「按套餐授予」的天数来源（价格仅展示，App 内无支付）。
+      </p>
+      <ElTable :data="form.plans" size="small" border class="pf-plans">
+        <ElTableColumn label="标识 key" width="140">
+          <template #default="{ row }">
+            <ElInput v-model="row.key" placeholder="如 month" maxlength="20" />
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="名称" width="150">
+          <template #default="{ row }">
+            <ElInput v-model="row.label" placeholder="如 月卡" maxlength="20" />
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="天数" width="140">
+          <template #default="{ row }">
+            <ElInputNumber
+              v-model="row.days"
+              :min="1"
+              :max="3650"
+              :value-on-clear="1"
+              controls-position="right"
+              size="small"
+            />
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="价格（展示）" width="130">
+          <template #default="{ row }">
+            <ElInput v-model="row.price" placeholder="如 ¥29" maxlength="20" />
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="操作" width="72">
+          <template #default="{ $index }">
+            <ElButton type="danger" link @click="removePlan($index)">删除</ElButton>
+          </template>
+        </ElTableColumn>
+      </ElTable>
+      <ElButton class="mt-2" :icon="Plus" plain size="small" @click="addPlan">新增套餐</ElButton>
+
       <div class="pf-cfg-actions">
         <ElButton type="primary" :loading="saving" @click="save">保存配置</ElButton>
       </div>
@@ -78,8 +120,13 @@
 <script setup lang="ts">
   import { reactive, ref, onMounted } from 'vue'
   import { ElMessage } from 'element-plus'
-  import { Refresh } from '@element-plus/icons-vue'
-  import { fetchLedgerConfig, updateLedgerConfig, type LedgerConfig } from '@/api/ledger'
+  import { Refresh, Plus } from '@element-plus/icons-vue'
+  import {
+    fetchLedgerConfig,
+    updateLedgerConfig,
+    type LedgerConfig,
+    type LedgerPlan
+  } from '@/api/ledger'
 
   defineOptions({ name: 'PlatformLedgerConfig' })
 
@@ -90,8 +137,16 @@
     inviteRewardDays: 7,
     inviteMaxRewarded: 50,
     cutTrialDays: 7,
-    cutRequireMembership: true
+    cutRequireMembership: true,
+    plans: []
   })
+
+  function addPlan() {
+    form.plans.push({ key: '', label: '', days: 30, price: '' })
+  }
+  function removePlan(i: number) {
+    form.plans.splice(i, 1)
+  }
 
   async function load() {
     loading.value = true
@@ -102,6 +157,8 @@
       form.inviteMaxRewarded = cfg.inviteMaxRewarded
       form.cutTrialDays = cfg.cutTrialDays
       form.cutRequireMembership = cfg.cutRequireMembership
+      // 拷贝一份，避免直接引用接口返回对象
+      form.plans = cfg.plans.map((p) => ({ ...p }))
     } catch (e: any) {
       ElMessage.error(e?.message || '加载配置失败')
     } finally {
@@ -109,7 +166,40 @@
     }
   }
 
+  /** 套餐前置校验：标识/名称非空 + key 唯一 + 至少一条；返回清洗后的数组或 null。 */
+  function validatePlans(): LedgerPlan[] | null {
+    const plans = form.plans.map((p) => ({
+      key: String(p.key || '').trim(),
+      label: String(p.label || '').trim(),
+      days: Math.round(Number(p.days) || 0),
+      price: String(p.price || '').trim()
+    }))
+    if (!plans.length) {
+      ElMessage.warning('至少保留一个套餐')
+      return null
+    }
+    const keys = new Set<string>()
+    for (const p of plans) {
+      if (!p.key || !p.label) {
+        ElMessage.warning('每个套餐的「标识」和「名称」都要填写')
+        return null
+      }
+      if (!(p.days > 0)) {
+        ElMessage.warning(`套餐「${p.label}」的天数需大于 0`)
+        return null
+      }
+      if (keys.has(p.key)) {
+        ElMessage.warning(`套餐标识「${p.key}」重复，请改为唯一值`)
+        return null
+      }
+      keys.add(p.key)
+    }
+    return plans
+  }
+
   async function save() {
+    const plans = validatePlans()
+    if (!plans) return
     saving.value = true
     try {
       await updateLedgerConfig({
@@ -117,7 +207,8 @@
         inviteRewardDays: form.inviteRewardDays,
         inviteMaxRewarded: form.inviteMaxRewarded,
         cutTrialDays: form.cutTrialDays,
-        cutRequireMembership: form.cutRequireMembership
+        cutRequireMembership: form.cutRequireMembership,
+        plans
       })
       ElMessage.success('配置已保存')
       await load()
@@ -166,6 +257,20 @@
     margin-left: 12px;
     font-size: 12.5px;
     color: #9ca3af;
+  }
+
+  .pf-cfg-sub {
+    margin: -8px 0 14px;
+    font-size: 12.5px;
+    color: #9ca3af;
+  }
+
+  .pf-plans {
+    width: 100%;
+  }
+
+  .mt-2 {
+    margin-top: 10px;
   }
 
   .pf-cfg-actions {

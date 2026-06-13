@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsIn,
   IsInt,
@@ -71,4 +72,6 @@ export class UpdateLedgerConfigDto {
   @IsOptional() @IsInt() @Min(0) @Max(100000) inviteMaxRewarded?: number
   @IsOptional() @IsInt() @Min(0) @Max(3650) cutTrialDays?: number
   @IsOptional() @IsBoolean() cutRequireMembership?: boolean
+  // 会员套餐数组 [{key,label,days,price}]；服务端 normalizeLedgerPlans 逐项收口 + 去重
+  @IsOptional() @IsArray() plans?: { key: string; label: string; days: number; price: string }[]
 }

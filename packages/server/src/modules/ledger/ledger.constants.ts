@@ -13,14 +13,44 @@ export const LEDGER_PLAN_DAYS: Record<string, number> = {
   year: 365,
 }
 
-/** 套餐展示元数据（与设计 MEMBER_PLANS 对齐；价格仅展示，App 内无支付）。 */
-export const LEDGER_PLANS = [
+/** 会员套餐（key 唯一标识；price 仅展示，App 内无支付）。后台可在配置中改。 */
+export interface LedgerPlan {
+  key: string
+  label: string
+  days: number
+  price: string
+}
+
+/** 套餐展示元数据默认值（后台未改时用这套；与设计 MEMBER_PLANS 对齐）。 */
+export const LEDGER_PLANS: LedgerPlan[] = [
   { key: 'day', label: '体验卡', days: 1, price: '¥1' },
   { key: 'week', label: '周卡', days: 7, price: '¥9' },
   { key: 'month', label: '月卡', days: 30, price: '¥29' },
   { key: 'quarter', label: '季卡', days: 90, price: '¥79' },
   { key: 'year', label: '年卡', days: 365, price: '¥268' },
 ]
+
+/** 清洗后台传入的套餐数组：逐项收口 + 去重 key + 上限 20；非法/空则回落默认。 */
+export function normalizeLedgerPlans(raw: any): LedgerPlan[] {
+  if (!Array.isArray(raw)) return LEDGER_PLANS
+  const seen = new Set<string>()
+  const cleaned = raw
+    .slice(0, 20)
+    .map((p: any) => ({
+      key: String(p?.key ?? '')
+        .trim()
+        .slice(0, 20),
+      label: String(p?.label ?? '')
+        .trim()
+        .slice(0, 20),
+      days: Math.min(3650, Math.max(1, Math.round(Number(p?.days) || 0))),
+      price: String(p?.price ?? '')
+        .trim()
+        .slice(0, 20),
+    }))
+    .filter((p) => p.key && p.label && p.days > 0 && !seen.has(p.key) && seen.add(p.key))
+  return cleaned.length ? cleaned : LEDGER_PLANS
+}
 
 /**
  * ledger 域全局配置默认值（存 LedgerConfig 单行 key=value，后台 admin-pc 可调）。
@@ -36,6 +66,8 @@ export const LEDGER_CONFIG_DEFAULTS = {
   inviteMaxRewarded: 50,
   cutTrialDays: 7,
   cutRequireMembership: true,
+  /** 会员套餐（后台可编辑；App /l/membership 与后台授予按此天数）*/
+  plans: LEDGER_PLANS as LedgerPlan[],
 }
 export type LedgerConfigShape = typeof LEDGER_CONFIG_DEFAULTS
 
@@ -58,6 +90,7 @@ export function normalizeLedgerConfig(raw: any): LedgerConfigShape {
     ),
     cutTrialDays: num(r.cutTrialDays, LEDGER_CONFIG_DEFAULTS.cutTrialDays, 0, 3650),
     cutRequireMembership: bool(r.cutRequireMembership, LEDGER_CONFIG_DEFAULTS.cutRequireMembership),
+    plans: normalizeLedgerPlans(r.plans),
   }
 }
 
