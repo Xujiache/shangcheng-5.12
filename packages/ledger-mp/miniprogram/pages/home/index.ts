@@ -10,8 +10,8 @@ const COLORMAP: Record<string, string> = {
   screen: 'c5',
   extras: 'c6',
 }
-// 选中维度对应的 KPI 汇总口径文案
-const PERIOD_LABEL: Record<string, string> = { day: '本月', month: '本年', year: '近 5 年' }
+// 头部大数对应的「当前周期」文案：日=今日 / 月=本月 / 年=本年（与所选单位一致）
+const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', year: '本年' }
 
 Page({
   data: {
@@ -72,10 +72,21 @@ Page({
         statsApi.overview('month'),
       ])
       if (seq !== (this as any)._seq) return
-      const sm = sr.summary || {}
       const buckets = sr.buckets || []
       const profitBars = buckets.map((b: any) => ({ label: b.label, value: b.profit }))
       const countBars = buckets.map((b: any) => ({ label: b.label, value: b.count }))
+      // 头部大数取「当前周期」那一个桶（今日/本月/本年），而非所有桶求和——
+      // 否则选日显示整月、选月显示整年、选年显示近5年，与所选单位不符。
+      // 趋势柱仍展示完整序列（本月每日 / 本年各月 / 近5年）作为背景对比。
+      const now = new Date()
+      const curIdx =
+        period === 'day'
+          ? now.getDate() - 1 // 当月第 N 天
+          : period === 'year'
+            ? buckets.length - 1 // 近5年的最后一个 = 今年
+            : now.getMonth() // 今年第 N 月（0 起）
+      const cur: any = buckets[curIdx] || { profit: 0, revenue: 0, cost: 0, count: 0 }
+      const curAvg = cur.count ? Math.round(cur.profit / cur.count) : 0
 
       const slices = ov.costSlices || []
       const totalCost = slices.reduce((s: number, x: any) => s + x.value, 0) || 1
@@ -106,12 +117,12 @@ Page({
         donut,
         legend,
         tops,
-        profitBare: hide ? maskMoney(sm.profit || 0) : yuan(sm.profit || 0, true),
-        revenueText: money(sm.revenue || 0),
-        costText: money(sm.cost || 0),
+        profitBare: hide ? maskMoney(cur.profit || 0) : yuan(cur.profit || 0, true),
+        revenueText: money(cur.revenue || 0),
+        costText: money(cur.cost || 0),
         donutCostText: money(ov.cost || 0),
-        count: sm.count || 0,
-        avgText: money(sm.avgProfit || 0),
+        count: cur.count || 0,
+        avgText: money(curAvg),
         monthProfitText: money(ov.monthProfit || 0),
         goalTargetText: ov.goal && ov.goal.monthly ? money(ov.goal.monthly) : '未设',
         goalPct: Math.min(100, Math.round((gp || 0) * 100)),
