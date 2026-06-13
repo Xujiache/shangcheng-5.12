@@ -66,7 +66,6 @@ Page({
     amountText: '¥0',
     totalText: '¥0',
     unpaidText: '¥0',
-    unnamedCount: 0,
     depositOver: false,
   },
   // 进入时的订单总价：无具名明细时沿用此值（对齐后端「无 items 则取 dto.total」），防止清零
@@ -181,8 +180,7 @@ Page({
   // ── 实时重算 ──
   recalc() {
     let amount = 0
-    let namedCount = 0
-    let unnamedCount = 0 // 未填名称但已有金额的行（保存会被丢弃，需提示）
+    let contentCount = 0 // 有内容的行（名称/尺寸/数量/单价任一）
     const items = this.data.items.map((it: any) => {
       const baseArea = num(it.baseAreaStr)
       const unitPrice = Math.round(num(it.unitPriceStr))
@@ -205,13 +203,11 @@ Page({
           )
         : num(it.qtyStr)
       const subtotal = Math.round(billQty * unitPrice)
-      // 与 writeBack/后端同口径：未填名称的行不计入金额
-      if (String(it.name || '').trim()) {
-        namedCount++
-        amount += subtotal
-      } else if (subtotal > 0) {
-        unnamedCount++
-      }
+      // 名称非强制：有 名称/尺寸/数量/单价 任一即为有效明细，小计一律计入金额（与 writeBack/后端同口径）
+      const hasContent =
+        !!String(it.name || '').trim() || hasSizes || num(it.qtyStr) > 0 || unitPrice > 0
+      if (hasContent) contentCount++
+      amount += subtotal
       return {
         ...it,
         sizes,
@@ -223,13 +219,12 @@ Page({
     const discount = Math.round(num(this.data.discountStr))
     const deposit = Math.round(num(this.data.depositStr))
     const received = Math.round(num(this.data.receivedStr))
-    // 与后端一致：有具名明细时 总价=金额−优惠；无明细则沿用进入时的总价
-    const total = namedCount > 0 ? Math.max(0, amount - discount) : this._manualTotal
+    // 与后端一致：有明细时 总价=金额−优惠；无明细则沿用进入时的总价
+    const total = contentCount > 0 ? Math.max(0, amount - discount) : this._manualTotal
     // 未收 = 总价 − 定金 − 收款（与后端 mapOrder 同口径）
     const unpaid = Math.max(0, total - deposit - received)
     this.setData({
       items,
-      unnamedCount,
       depositOver: deposit + received > total,
       amountText: yuan(amount),
       totalText: yuan(total),
@@ -254,7 +249,8 @@ Page({
           }))
           .filter((s: any) => s.w > 0 && s.h > 0),
       }))
-      .filter((it: any) => it.name)
+      // 名称非强制：保留有 名称/尺寸/数量/单价 任一的明细（仅丢纯空行），与 recalc/后端同口径
+      .filter((it: any) => it.name || it.sizes.length > 0 || it.qty > 0 || it.unitPrice > 0)
     let amount = 0
     items.forEach((it: any) => {
       const bq = it.sizes.length

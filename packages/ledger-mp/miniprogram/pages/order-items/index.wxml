@@ -2,15 +2,15 @@
   <lz-header title="报价明细" subtitle="产品 · 尺寸 · 金额" />
 
   <view class="oi__body">
-    <!-- 新增名称（新项目置顶）-->
+    <!-- 新增产品（新项目置顶）-->
     <view class="oi__additem" bindtap="addItem" hover-class="oi__tap">
-      <lz-icon name="plus" size="18" color="white" /><text>新增名称</text>
+      <lz-icon name="plus" size="18" color="white" /><text>新增产品</text>
     </view>
 
     <!-- 产品项 -->
     <view wx:for="{{items}}" wx:key="_k" class="oi__item">
       <view class="oi__item-hd">
-        <input class="oi__name" value="{{item.name}}" placeholder="名称（如 德曼尼80系统窗）" placeholder-class="ph" maxlength="40" data-idx="{{index}}" data-field="name" bindinput="onItemInput" />
+        <input class="oi__name" value="{{item.name}}" placeholder="名称（选填，如 推拉窗）" placeholder-class="ph" maxlength="40" data-idx="{{index}}" data-field="name" bindinput="onItemInput" />
         <view class="oi__item-del" data-idx="{{index}}" bindtap="delItem" hover-class="oi__tap">
           <lz-icon name="trash" size="16" color="#9bab9f" />
         </view>
@@ -58,7 +58,7 @@
       </view>
     </view>
 
-    <view wx:if="{{!items.length}}" class="oi__empty">点上方「新增名称」开始录入门窗明细</view>
+    <view wx:if="{{!items.length}}" class="oi__empty">点上方「新增产品」开始录入门窗明细</view>
 
     <!-- 金额汇总 -->
     <view class="oi__card oi__totals">
@@ -66,7 +66,6 @@
         <text class="oi__t-l">金额</text>
         <text class="oi__t-v">{{amountText}}</text>
       </view>
-      <view wx:if="{{unnamedCount}}" class="oi__t-hint">{{unnamedCount}} 项未填名称，不计入金额</view>
       <view class="oi__t-row">
         <text class="oi__t-l">优惠</text>
         <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{discountStr}}" placeholder="0" placeholder-class="ph" data-field="discountStr" bindinput="onDiscount" bindblur="onMoneyBlur" /></view>
