@@ -387,7 +387,7 @@ onUnload(() => {
       <view
         class="ia-btn"
         @click="
-          showActions = !showActions
+          showActions = !showActions;
           showQuick = false
         "
       >
@@ -401,7 +401,7 @@ onUnload(() => {
           confirm-type="send"
           @confirm="send"
           @focus="
-            showActions = false
+            showActions = false;
             showQuick = false
           "
         />
@@ -409,7 +409,7 @@ onUnload(() => {
       <view
         class="ia-btn"
         @click="
-          showQuick = !showQuick
+          showQuick = !showQuick;
           showActions = false
         "
       >
@@ -431,7 +431,7 @@ onUnload(() => {
       <view
         class="ap-item"
         @click="
-          uni.showToast({ title: '商品已发送', icon: 'success' })
+          uni.showToast({ title: '商品已发送', icon: 'success' });
           showActions = false
         "
       >
@@ -443,7 +443,7 @@ onUnload(() => {
       <view
         class="ap-item"
         @click="
-          uni.showToast({ title: '订单已发送', icon: 'success' })
+          uni.showToast({ title: '订单已发送', icon: 'success' });
           showActions = false
         "
       >
@@ -455,7 +455,7 @@ onUnload(() => {
       <view
         class="ap-item"
         @click="
-          uni.showToast({ title: '优惠券已发送', icon: 'success' })
+          uni.showToast({ title: '优惠券已发送', icon: 'success' });
           showActions = false
         "
       >
