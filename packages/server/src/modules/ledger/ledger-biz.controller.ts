@@ -19,6 +19,7 @@ import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-u
 import { CreateLedgerOrderDto, OrderQueryDto, UpdateLedgerOrderDto } from './dto/order.dto'
 import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer.dto'
 import { UpdateLedgerGoalDto } from './dto/misc.dto'
+import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
 
 /**
  * 门窗利账 App · 业务（/api/v1/l/*，需登录 + 会员有效）。
@@ -106,5 +107,27 @@ export class LedgerBizController {
   @Put('goal')
   setGoal(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: UpdateLedgerGoalDto) {
     return this.svc.setGoal(u.id, dto)
+  }
+
+  // ── 优化下料·云端历史方案（按 userId 隔离）──
+  @Get('cut/plans')
+  listCutPlans(@CurrentLedgerUser() u: LedgerAuthUser) {
+    return this.svc.listCutPlans(u.id)
+  }
+  @Post('cut/plans')
+  createCutPlan(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateCutPlanDto) {
+    return this.svc.createCutPlan(u.id, dto)
+  }
+  @Put('cut/plans/:id')
+  updateCutPlan(
+    @CurrentLedgerUser() u: LedgerAuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateCutPlanDto,
+  ) {
+    return this.svc.updateCutPlan(u.id, id, dto)
+  }
+  @Delete('cut/plans/:id')
+  deleteCutPlan(@CurrentLedgerUser() u: LedgerAuthUser, @Param('id') id: string) {
+    return this.svc.deleteCutPlan(u.id, id)
   }
 }

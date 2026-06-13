@@ -980,6 +980,7 @@ model LedgerUser {
   customers     LedgerCustomer[]
   notifications LedgerNotification[]
   feedbacks     LedgerFeedback[]
+  cutPlans      LedgerCutPlan[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
@@ -1114,6 +1115,23 @@ model LedgerSetting {
   bioLock      Boolean    @default(false) // 生物解锁
   encBackup    Boolean    @default(true) // 加密备份
   updatedAt    DateTime   @updatedAt
+}
+
+// 优化下料·云端历史方案。每账号多行，按 userId 隔离，列表 updatedAt 倒序。
+// input = 可重算的完整入参（1D:{stockLength,kerf,pieces} / 2D:{sheetW,sheetH,kerf,pieces}）。
+// summary = 列表展示小快照 {material,count,util,units}。两者均做 JSON 体积上限保护。
+model LedgerCutPlan {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  material  String // profile / glass / board
+  input     Json // 完整可编辑入参，供继续编辑时重算
+  summary   Json // 列表展示快照 {material,count,util,units}
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId, updatedAt])
 }
 
 // 首页广告 banner（#2）。后台 admin-pc 维护，App 首页轮播。

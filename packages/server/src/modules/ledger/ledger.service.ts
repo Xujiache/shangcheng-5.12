@@ -27,8 +27,12 @@ import {
   UpdateLedgerProfileDto,
   UpdateLedgerSettingDto,
 } from './dto/misc.dto'
+import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
 
 const DAY_MS = 86_400_000
+
+/** input/summary JSON 序列化后体积上限（字节），超出拒绝，防滥用。 */
+const CUT_JSON_MAX = 20_000
 
 type OrderRow = {
   id: string
@@ -542,6 +546,94 @@ export class LedgerService {
       data: { customerId: null },
     })
     await this.prisma.ledgerCustomer.delete({ where: { id } })
+    return { ok: true }
+  }
+
+  // ── 优化下料·云端历史（按 userId 隔离）────────────────────
+  /** JSON 体积上限校验（input/summary 防滥用）。超限 → 1001。 */
+  private assertCutJsonSize(obj: unknown, field: string) {
+    let size = 0
+    try {
+      size = JSON.stringify(obj ?? null).length
+    } catch {
+      throw new BizException(BizCode.INVALID_PARAMS, `${field} 数据无法序列化`)
+    }
+    if (size > CUT_JSON_MAX) throw new BizException(BizCode.INVALID_PARAMS, `${field} 数据过大`)
+  }
+
+  /** 列表行映射（仅暴露契约字段，按需精简）。 */
+  private mapCutPlan(p: {
+    id: string
+    title: string
+    material: string
+    input: unknown
+    summary: unknown
+    updatedAt: Date
+  }) {
+    return {
+      id: p.id,
+      title: p.title,
+      material: p.material,
+      input: p.input,
+      summary: p.summary,
+      updatedAt: p.updatedAt.toISOString(),
+    }
+  }
+
+  /** 方案列表，最新在前，最多 100 条，强制按 userId 隔离。 */
+  async listCutPlans(userId: string) {
+    const rows = await this.prisma.ledgerCutPlan.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    })
+    return rows.map((r) => this.mapCutPlan(r))
+  }
+
+  async createCutPlan(userId: string, dto: CreateCutPlanDto) {
+    const title = String(dto.title || '').trim()
+    if (!title) throw new BizException(BizCode.INVALID_PARAMS, '请填写方案名称')
+    this.assertCutJsonSize(dto.input, 'input')
+    this.assertCutJsonSize(dto.summary, 'summary')
+    const p = await this.prisma.ledgerCutPlan.create({
+      data: {
+        userId,
+        title: title.slice(0, 40),
+        material: dto.material,
+        input: dto.input as any,
+        summary: dto.summary as any,
+      },
+    })
+    return this.mapCutPlan(p)
+  }
+
+  async updateCutPlan(userId: string, id: string, dto: UpdateCutPlanDto) {
+    // 永不信任客户端的归属：先按 userId 命中，命不中即 404（含他人方案）
+    const exist = await this.prisma.ledgerCutPlan.findFirst({ where: { id, userId } })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '方案不存在')
+    const data: any = {}
+    if (dto.title !== undefined) {
+      const t = String(dto.title).trim()
+      if (!t) throw new BizException(BizCode.INVALID_PARAMS, '请填写方案名称')
+      data.title = t.slice(0, 40)
+    }
+    if (dto.material !== undefined) data.material = dto.material
+    if (dto.input !== undefined) {
+      this.assertCutJsonSize(dto.input, 'input')
+      data.input = dto.input as any
+    }
+    if (dto.summary !== undefined) {
+      this.assertCutJsonSize(dto.summary, 'summary')
+      data.summary = dto.summary as any
+    }
+    const p = await this.prisma.ledgerCutPlan.update({ where: { id }, data })
+    return this.mapCutPlan(p)
+  }
+
+  async deleteCutPlan(userId: string, id: string) {
+    const exist = await this.prisma.ledgerCutPlan.findFirst({ where: { id, userId } })
+    if (!exist) throw new BizException(BizCode.NOT_FOUND, '方案不存在')
+    await this.prisma.ledgerCutPlan.delete({ where: { id } })
     return { ok: true }
   }
 
