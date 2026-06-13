@@ -16,8 +16,11 @@ function fmtArea(n: number): string {
 // 列表行 wx:key 用的页内唯一键（仅前端用，writeBack 重建对象时不带出）
 let seq = 0
 const uid = () => 'k' + ++seq
+function blankNote() {
+  return { _k: uid(), text: '' }
+}
 function blankSize() {
-  return { _k: uid(), wStr: '', hStr: '', note: '', areaText: '' }
+  return { _k: uid(), wStr: '', hStr: '', notes: [] as any[], areaText: '' }
 }
 function blankItem() {
   return {
@@ -27,8 +30,17 @@ function blankItem() {
     baseAreaStr: '',
     unitPriceStr: '',
     qtyStr: '',
+    subtotalStr: '', // 手动改写的小计（空 = 按 计费量×单价 自动算）
     sizes: [] as any[],
   }
+}
+// 尺寸备注 后端形态（notes 数组 / 旧单 note 单串）→ 页面编辑态 [{_k,text}]
+function normSizeNotes(s: any): any[] {
+  const raw = Array.isArray(s?.notes) ? s.notes : s?.note ? [s.note] : []
+  return raw
+    .map((t: any) => String(t || '').trim())
+    .filter((t: string) => t)
+    .map((t: string) => ({ _k: uid(), text: t }))
 }
 // 从后端 item 形态 → 页面编辑态
 function normIn(it: any) {
@@ -39,12 +51,14 @@ function normIn(it: any) {
     baseAreaStr: it.baseArea ? String(it.baseArea) : '',
     unitPriceStr: it.unitPrice ? String(it.unitPrice) : '',
     qtyStr: it.qty ? String(it.qty) : '',
+    // 小计改写：后端回传 number|null，非空即视为手动改写（含 0）
+    subtotalStr: it.subtotal !== null && it.subtotal !== undefined ? String(it.subtotal) : '',
     sizes: Array.isArray(it.sizes)
       ? it.sizes.map((s: any) => ({
           _k: uid(),
           wStr: s.w ? String(s.w) : '',
           hStr: s.h ? String(s.h) : '',
-          note: s.note || '',
+          notes: normSizeNotes(s),
           areaText: '',
         }))
       : [],
@@ -66,7 +80,6 @@ Page({
     amountText: '¥0',
     totalText: '¥0',
     unpaidText: '¥0',
-    unnamedCount: 0,
     depositOver: false,
   },
   // 进入时的订单总价：无具名明细时沿用此值（对齐后端「无 items 则取 dto.total」），防止清零
@@ -152,6 +165,47 @@ Page({
     this.setData({ items }, () => this.recalc())
   },
 
+  // ── 尺寸备注（每条独立、可删、可加任意多条；备注不参与计价，不触发 recalc）──
+  addNote(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const si = Number(e.currentTarget.dataset.sidx)
+    const items = this.data.items.slice()
+    const sizes = items[i].sizes.slice()
+    // 备注无业务上限，仅设 50 条防误触膨胀（与后端 sanitizeSizeNotes 同口径）
+    if ((sizes[si].notes || []).length >= 50) {
+      wx.showToast({ title: '最多 50 条备注', icon: 'none' })
+      return
+    }
+    sizes[si] = { ...sizes[si], notes: [...(sizes[si].notes || []), blankNote()] }
+    items[i] = { ...items[i], sizes }
+    this.setData({ items })
+  },
+  delNote(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const si = Number(e.currentTarget.dataset.sidx)
+    const ni = Number(e.currentTarget.dataset.nidx)
+    const items = this.data.items.slice()
+    const sizes = items[i].sizes.slice()
+    sizes[si] = {
+      ...sizes[si],
+      notes: (sizes[si].notes || []).filter((_: any, j: number) => j !== ni),
+    }
+    items[i] = { ...items[i], sizes }
+    this.setData({ items })
+  },
+  onNoteInput(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const si = Number(e.currentTarget.dataset.sidx)
+    const ni = Number(e.currentTarget.dataset.nidx)
+    const items = this.data.items.slice()
+    const sizes = items[i].sizes.slice()
+    const notes = (sizes[si].notes || []).slice()
+    notes[ni] = { ...notes[ni], text: e.detail.value }
+    sizes[si] = { ...sizes[si], notes }
+    items[i] = { ...items[i], sizes }
+    this.setData({ items })
+  },
+
   onDiscount(e: any) {
     this.setData({ discountStr: e.detail.value }, () => this.recalc())
   },
@@ -174,6 +228,14 @@ Page({
     items[i] = { ...items[i], unitPriceStr: normMoneyStr(e.detail.value) }
     this.setData({ items })
   },
+  // 小计为整数元，失焦归一显示（空保持空=回落自动算）；recalc 同步金额/总价
+  onSubtotalBlur(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const items = this.data.items.slice()
+    if (!items[i]) return
+    items[i] = { ...items[i], subtotalStr: normMoneyStr(e.detail.value) }
+    this.setData({ items }, () => this.recalc())
+  },
   onNote(e: any) {
     this.setData({ note: e.detail.value })
   },
@@ -181,8 +243,7 @@ Page({
   // ── 实时重算 ──
   recalc() {
     let amount = 0
-    let namedCount = 0
-    let unnamedCount = 0 // 未填名称但已有金额的行（保存会被丢弃，需提示）
+    let contentCount = 0 // 有内容的行（名称/尺寸/数量/单价任一）
     const items = this.data.items.map((it: any) => {
       const baseArea = num(it.baseAreaStr)
       const unitPrice = Math.round(num(it.unitPriceStr))
@@ -204,32 +265,41 @@ Page({
             0,
           )
         : num(it.qtyStr)
-      const subtotal = Math.round(billQty * unitPrice)
-      // 与 writeBack/后端同口径：未填名称的行不计入金额
-      if (String(it.name || '').trim()) {
-        namedCount++
-        amount += subtotal
-      } else if (subtotal > 0) {
-        unnamedCount++
-      }
+      const autoSubtotal = Math.round(billQty * unitPrice)
+      // 小计手动改写：subtotalStr 非空即覆盖自动值（含 0）；空则用 计费量×单价
+      const hasOverride = String(it.subtotalStr || '').trim() !== ''
+      const subtotal = hasOverride ? Math.max(0, Math.round(num(it.subtotalStr))) : autoSubtotal
+      // 名称非强制：有 名称/尺寸/数量/单价/小计 任一即为有效明细，小计一律计入金额（与 writeBack/后端同口径）
+      const hasContent =
+        !!String(it.name || '').trim() ||
+        hasSizes ||
+        num(it.qtyStr) > 0 ||
+        unitPrice > 0 ||
+        hasOverride
+      if (hasContent) contentCount++
+      amount += subtotal
       return {
         ...it,
         sizes,
         hasSizes,
         qtyAutoText: fmtArea(billQty),
-        subtotalText: yuan(subtotal),
+        // 占位显示自动算的小计；改写后若与自动值不同且自动值>0，给「自动 ¥X」对照提示
+        subtotalAuto: String(autoSubtotal),
+        subtotalHint:
+          hasOverride && autoSubtotal > 0 && subtotal !== autoSubtotal
+            ? '自动 ' + yuan(autoSubtotal)
+            : '',
       }
     })
     const discount = Math.round(num(this.data.discountStr))
     const deposit = Math.round(num(this.data.depositStr))
     const received = Math.round(num(this.data.receivedStr))
-    // 与后端一致：有具名明细时 总价=金额−优惠；无明细则沿用进入时的总价
-    const total = namedCount > 0 ? Math.max(0, amount - discount) : this._manualTotal
+    // 与后端一致：有明细时 总价=金额−优惠；无明细则沿用进入时的总价
+    const total = contentCount > 0 ? Math.max(0, amount - discount) : this._manualTotal
     // 未收 = 总价 − 定金 − 收款（与后端 mapOrder 同口径）
     const unpaid = Math.max(0, total - deposit - received)
     this.setData({
       items,
-      unnamedCount,
       depositOver: deposit + received > total,
       amountText: yuan(amount),
       totalText: yuan(total),
@@ -246,17 +316,32 @@ Page({
         baseArea: num(it.baseAreaStr),
         unitPrice: Math.round(num(it.unitPriceStr)),
         qty: num(it.qtyStr),
+        // 小计改写：非空回传整数（含 0），空回传 null（后端据此决定是否覆盖）
+        subtotal: String(it.subtotalStr || '').trim()
+          ? Math.max(0, Math.round(num(it.subtotalStr)))
+          : null,
         sizes: it.sizes
           .map((s: any) => ({
             w: Math.round(num(s.wStr)),
             h: Math.round(num(s.hStr)),
-            note: String(s.note || '').trim(),
+            notes: (s.notes || [])
+              .map((n: any) => String(n.text || '').trim())
+              .filter((t: string) => t),
           }))
           .filter((s: any) => s.w > 0 && s.h > 0),
       }))
-      .filter((it: any) => it.name)
+      // 名称非强制：保留有 名称/尺寸/数量/单价/小计 任一的明细（仅丢纯空行），与 recalc/后端同口径
+      .filter(
+        (it: any) =>
+          it.name || it.sizes.length > 0 || it.qty > 0 || it.unitPrice > 0 || it.subtotal != null,
+      )
     let amount = 0
     items.forEach((it: any) => {
+      // 小计改写优先（与后端 itemSubtotal 同口径）
+      if (it.subtotal != null) {
+        amount += it.subtotal
+        return
+      }
       const bq = it.sizes.length
         ? it.sizes.reduce(
             (sum: number, s: any) => sum + Math.max((s.w * s.h) / 1_000_000, it.baseArea),

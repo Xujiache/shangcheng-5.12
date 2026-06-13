@@ -215,7 +215,9 @@ export function customCostsTotal(raw: unknown): number {
 export interface OrderSize {
   w: number // 宽 mm
   h: number // 高 mm
-  note: string
+  notes?: string[] // 多条备注（清洗后必为数组；每条 ≤30 字、≤50 条）
+  /** @deprecated 旧单单条备注；读取时并入 notes，不再写入 */
+  note?: string
 }
 export interface OrderItem {
   name: string
@@ -224,38 +226,64 @@ export interface OrderItem {
   unitPrice: number // 单价 元
   qty: number // 无尺寸时的数量/面积（手填）
   sizes: OrderSize[]
+  subtotal?: number | null // 手动改写的小计（元）；null/缺省 = 按 计费量×单价 自动算
+}
+/** 尺寸备注清洗：兼容新 notes 数组与旧单 note 单串；逐条 trim+≤30 字、丢空、≤50 条 */
+function sanitizeSizeNotes(s: any): string[] {
+  const raw = Array.isArray(s?.notes)
+    ? s.notes
+    : s?.note !== undefined && s?.note !== null && s?.note !== ''
+      ? [s.note]
+      : []
+  return raw
+    .slice(0, 50)
+    .map((t: any) =>
+      String(t ?? '')
+        .trim()
+        .slice(0, 30),
+    )
+    .filter((t: string) => t.length > 0)
 }
 export function sanitizeOrderItems(raw: unknown): OrderItem[] {
   if (!Array.isArray(raw)) return []
-  return raw
-    .slice(0, 100)
-    .map((it: any) => {
-      const sizes: OrderSize[] = Array.isArray(it?.sizes)
-        ? it.sizes
-            .slice(0, 100)
-            .map((s: any) => ({
-              w: Math.max(0, Math.round(Number(s?.w) || 0)),
-              h: Math.max(0, Math.round(Number(s?.h) || 0)),
-              note: String(s?.note ?? '')
-                .trim()
-                .slice(0, 30),
-            }))
-            .filter((s: OrderSize) => s.w > 0 && s.h > 0)
-        : []
-      return {
-        name: String(it?.name ?? '')
-          .trim()
-          .slice(0, 40),
-        note: String(it?.note ?? '')
-          .trim()
-          .slice(0, 30),
-        baseArea: Math.max(0, Number(it?.baseArea) || 0),
-        unitPrice: Math.max(0, Math.round(Number(it?.unitPrice) || 0)),
-        qty: Math.max(0, Number(it?.qty) || 0),
-        sizes,
-      }
-    })
-    .filter((it) => it.name)
+  return (
+    raw
+      .slice(0, 100)
+      .map((it: any) => {
+        const sizes: OrderSize[] = Array.isArray(it?.sizes)
+          ? it.sizes
+              .slice(0, 100)
+              .map((s: any) => ({
+                w: Math.max(0, Math.round(Number(s?.w) || 0)),
+                h: Math.max(0, Math.round(Number(s?.h) || 0)),
+                notes: sanitizeSizeNotes(s),
+              }))
+              .filter((s: OrderSize) => s.w > 0 && s.h > 0)
+          : []
+        // 小计手动改写：传了 subtotal（数字）即覆盖「计费量×单价」；null/空 = 自动算
+        const hasSub = it?.subtotal !== null && it?.subtotal !== undefined && it?.subtotal !== ''
+        const subtotal = hasSub ? Math.max(0, Math.round(Number(it?.subtotal) || 0)) : null
+        return {
+          name: String(it?.name ?? '')
+            .trim()
+            .slice(0, 40),
+          note: String(it?.note ?? '')
+            .trim()
+            .slice(0, 30),
+          baseArea: Math.max(0, Number(it?.baseArea) || 0),
+          unitPrice: Math.max(0, Math.round(Number(it?.unitPrice) || 0)),
+          qty: Math.max(0, Number(it?.qty) || 0),
+          sizes,
+          subtotal,
+        }
+      })
+      // 名称非强制：只要填了 名称/尺寸/数量/单价/小计 任一就视为有效明细（仅丢真正的空行）。
+      // 门窗下单常只填尺寸+单价不起名，强制名称会导致漏算金额 + 退出丢数据。
+      .filter(
+        (it) =>
+          it.name || it.sizes.length > 0 || it.qty > 0 || it.unitPrice > 0 || it.subtotal != null,
+      )
+  )
 }
 function sizeArea(s: OrderSize, baseArea: number): number {
   return Math.max((s.w * s.h) / 1_000_000, baseArea || 0)
@@ -268,6 +296,8 @@ export function itemBillingQty(it: OrderItem): number {
   return it.qty || 0
 }
 export function itemSubtotal(it: OrderItem): number {
+  // 手动改写的小计优先（门窗常按整窗议价/抹零，与 计费量×单价 解耦）
+  if (it.subtotal != null) return Math.max(0, Math.round(it.subtotal))
   return Math.round(itemBillingQty(it) * (it.unitPrice || 0))
 }
 /** 金额 = Σ各项小计 */

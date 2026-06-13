@@ -80,6 +80,7 @@ page {
   align-items: center;
   gap: 6px;
   background: #f3f8f5;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 8px 12px;
 }
@@ -104,59 +105,115 @@ page {
   flex: 0 0 auto;
 }
 
-/* 尺寸行 */
+/* 尺寸块（每条尺寸可挂任意多条备注，浅底分组）*/
 .oi__size {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #f5faf7;
+  border: 1px solid rgba(31, 107, 92, 0.08);
+}
+.oi__size-main {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 10px;
 }
 .oi__size-in {
   flex: 0 0 auto;
-  width: 58px;
+  width: 62px;
+  box-sizing: border-box;
+  height: 38px;
+  line-height: 1.4;
   text-align: center;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: #19271f;
-  background: #f3f8f5;
+  background: #fff;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 7px 0;
+  padding: 0;
 }
 .oi__size-op {
   font-size: 13px;
   color: #9bab9f;
   flex: 0 0 auto;
 }
-.oi__size-eq {
+.oi__size-mm {
+  font-size: 11.5px;
+  color: #9bab9f;
   flex: 0 0 auto;
-  font-size: 13px;
-  font-weight: 700;
-  color: #2e9e78;
-  min-width: 56px;
 }
-.oi__size-note {
+.oi__size-eq {
   flex: 1;
   min-width: 0;
   font-size: 13px;
-  color: #19271f;
-  background: #f3f8f5;
-  border-radius: 10px;
-  padding: 7px 10px;
+  font-weight: 700;
+  color: #2e9e78;
 }
 .oi__size-del {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+/* 尺寸下挂的备注行（独立小框 + 可删，下方「+ 备注」继续加任意多条）*/
+.oi__noterow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.oi__noterow-l {
+  font-size: 11px;
+  color: #9bab9f;
+  flex: 0 0 auto;
+  width: 26px;
+}
+.oi__noterow-in {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 36px;
+  line-height: 1.4;
+  font-size: 13px;
+  color: #19271f;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0 10px;
+}
+.oi__noterow-del {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.oi__addnote {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+  margin-left: 2px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(46, 158, 120, 0.07);
+  font-size: 12px;
+  font-weight: 700;
+  color: #2e9e78;
+}
 .oi__addsize {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-top: 10px;
-  font-size: 12.5px;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 7px 13px;
+  border-radius: 11px;
+  background: rgba(46, 158, 120, 0.09);
+  font-size: 13px;
   font-weight: 700;
   color: #2e9e78;
 }
@@ -184,7 +241,7 @@ page {
 /* 小计：单独一行，与上一行解耦，金额不再被挤出截断 */
 .oi__subrow2 {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   margin-top: 8px;
 }
@@ -193,13 +250,17 @@ page {
   color: #6c7d75;
 }
 .oi__qty-in {
-  width: 50px;
+  width: 56px;
+  box-sizing: border-box;
+  height: 40px;
+  line-height: 1.4;
   font-size: 15px;
   font-weight: 700;
   color: #19271f;
   background: #f3f8f5;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 5px 8px;
+  padding: 0 8px;
   text-align: center;
 }
 .oi__qty-op {
@@ -208,21 +269,49 @@ page {
   flex: 0 0 auto;
 }
 .oi__price-in {
-  width: 64px;
+  width: 68px;
+  box-sizing: border-box;
+  height: 40px;
+  line-height: 1.4;
   font-size: 15px;
   font-weight: 700;
   color: #19271f;
   background: #f3f8f5;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 5px 8px;
+  padding: 0 8px;
   text-align: center;
 }
-.oi__subtotal {
-  flex: 1;
+/* 小计：可手动改写的输入框（占位显示自动算的值，清空即回落自动） */
+.oi__sub2-box {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #f3f8f5;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 12px;
+}
+.oi__sub2-box .oi__cur {
+  font-size: 15px;
+  font-weight: 800;
+  color: #2e9e78;
+}
+.oi__sub2-in {
+  width: 100px;
+  box-sizing: border-box;
+  height: 40px;
+  line-height: 1.4;
   text-align: right;
   font-size: 17px;
   font-weight: 800;
   color: #2e9e78;
+}
+.oi__sub2-hint {
+  margin-top: 6px;
+  text-align: right;
+  font-size: 11px;
+  color: #9bab9f;
 }
 
 .oi__empty {
@@ -272,10 +361,15 @@ page {
   font-weight: 800;
   color: #2e9e78;
 }
+/* 优惠/定金/收款：做成可见的输入框（浅底+圆角+足够高），与明细输入框统一观感 */
 .oi__t-input {
   display: flex;
-  align-items: baseline;
-  gap: 3px;
+  align-items: center;
+  gap: 2px;
+  background: #f3f8f5;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
 }
 .oi__cur {
   font-size: 13px;
@@ -283,18 +377,11 @@ page {
   color: #6c7d75;
 }
 .oi__t-input input {
-  width: 110px;
+  width: 96px;
   text-align: right;
   font-size: 16px;
   font-weight: 700;
   color: #19271f;
-}
-/* 汇总卡内的小提示（未填名称不计入金额）*/
-.oi__t-hint {
-  padding: 8px 0 2px;
-  font-size: 11.5px;
-  color: #9bab9f;
-  text-align: right;
 }
 /* 定金超过总价的弱警示 */
 .oi__t-warn {
