@@ -32,7 +32,8 @@
           <text class="oe__editbtn-t">报价明细</text>
         </view>
         <view class="oe__amtcol">
-          <view class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
+          <!-- 订单总价：无明细可在本页直接输入；有明细则由报价明细自动算，点击进明细页改 -->
+          <view wx:if="{{items.length}}" class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
             <text class="oe__amtbox-l">订单总价</text>
             <view class="oe__amtbox-r">
               <text class="oe__amtbox-cur">¥</text>
@@ -40,14 +41,22 @@
               <lz-icon name="chevron" size="14" color="#9bab9f" />
             </view>
           </view>
-          <view class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
+          <view wx:else class="oe__amtbox oe__amtbox--edit">
+            <text class="oe__amtbox-l">订单总价</text>
+            <view class="oe__amtbox-r">
+              <text class="oe__amtbox-cur">¥</text>
+              <input class="oe__amtbox-in oe__amtbox-in--main" type="digit" value="{{totalStr}}" placeholder="0" placeholder-class="ph" bindinput="onTotalInput" bindblur="onTotalBlur" />
+            </view>
+          </view>
+          <!-- 收款：本页直接输入 -->
+          <view class="oe__amtbox oe__amtbox--edit">
             <text class="oe__amtbox-l">收款</text>
             <view class="oe__amtbox-r">
               <text class="oe__amtbox-cur">¥</text>
-              <text class="oe__amtbox-v">{{received || 0}}</text>
-              <lz-icon name="chevron" size="14" color="#9bab9f" />
+              <input class="oe__amtbox-in" type="digit" value="{{receivedStr}}" placeholder="0" placeholder-class="ph" bindinput="onReceivedInput" bindblur="onReceivedBlur" />
             </view>
           </view>
+          <!-- 未收：自动算（点击进报价明细可设定金/明细）-->
           <view class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
             <text class="oe__amtbox-l">未收</text>
             <view class="oe__amtbox-r">

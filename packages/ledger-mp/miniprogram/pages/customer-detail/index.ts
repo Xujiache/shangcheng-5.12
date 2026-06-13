@@ -71,7 +71,14 @@ Page({
   },
   reorder() {
     const name = this.data.c ? this.data.c.name : ''
-    wx.navigateTo({ url: '/pages/order-edit/index?prefillCustomer=' + encodeURIComponent(name) })
+    // 必须带上客户 id，否则新订单只按名字兜底、未真正关联到该客户（客户页/统计会对不上）
+    wx.navigateTo({
+      url:
+        '/pages/order-edit/index?prefillCustomerId=' +
+        this.data.id +
+        '&prefillCustomer=' +
+        encodeURIComponent(name),
+    })
   },
   toOrder(e: any) {
     wx.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })

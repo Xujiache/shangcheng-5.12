@@ -29,6 +29,9 @@ Page({
     date: today(),
     total: 0,
     received: 0,
+    // 总价/收款的原始输入串（无明细时可在本页直接编辑；输入中不回写、失焦归一防光标跳）
+    totalStr: '',
+    receivedStr: '',
     costs: { profile: 0, glass: 0, hardware: 0, labor: 0, screen: 0 } as any,
     // 成本输入框的原始字符串（输入中不回写，失焦才归一，避免光标跳动）
     costStrs: { profile: '', glass: '', hardware: '', labor: '', screen: '' } as any,
@@ -69,8 +72,12 @@ Page({
       this.setData({ editing: true, id: opt.id })
       this.loadOrder()
     } else {
+      // 从客户页「再来一单」带入：id + 名字一起，真正关联到该客户（仅传名字会变成游离订单）
       if (opt.prefillCustomer)
-        this.setData({ customerName: decodeURIComponent(opt.prefillCustomer) })
+        this.setData({
+          customerId: opt.prefillCustomerId || null,
+          customerName: decodeURIComponent(opt.prefillCustomer),
+        })
       this.refresh()
     }
   },
@@ -98,6 +105,8 @@ Page({
           deposit: Math.max(0, Math.round(Number(m.deposit) || 0)),
           total,
           received,
+          totalStr: total ? String(total) : '',
+          receivedStr: received ? String(received) : '',
           note: m.note !== undefined ? m.note : this.data.note,
         },
         () => this.refresh(),
@@ -165,6 +174,8 @@ Page({
           discount: o.discount || 0,
           deposit: o.deposit || 0,
           received: o.received || 0,
+          totalStr: o.total ? String(o.total) : '',
+          receivedStr: o.received ? String(o.received) : '',
           note: o.note || '',
         },
         () => this.refresh(),
@@ -219,6 +230,24 @@ Page({
   },
   onDate(e: any) {
     this.setData({ date: e.detail.value })
+  },
+  // 无明细订单：总价在本页直接输入（有明细时此输入框不渲染，总价由明细算）
+  onTotalInput(e: any) {
+    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
+    this.setData({ total: v, totalStr: e.detail.value }, () => this.refresh())
+  },
+  onTotalBlur(e: any) {
+    const s = String(e.detail.value || '').trim()
+    this.setData({ totalStr: s ? String(this.data.total) : '' })
+  },
+  // 收款：本页直接输入，仅影响未收（未收 = 总价 − 定金 − 收款）
+  onReceivedInput(e: any) {
+    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
+    this.setData({ received: v, receivedStr: e.detail.value }, () => this.refresh())
+  },
+  onReceivedBlur(e: any) {
+    const s = String(e.detail.value || '').trim()
+    this.setData({ receivedStr: s ? String(this.data.received) : '' })
   },
   onNote(e: any) {
     this.setData({ note: e.detail.value })

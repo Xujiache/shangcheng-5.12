@@ -144,6 +144,22 @@ page {
 .oe__amtbox-v--main {
   color: #2e9e78;
 }
+/* 可直接输入的金额格：白底 + 浅描边凸显「这里能填」 */
+.oe__amtbox--edit {
+  background: #fff;
+  border: 1px solid rgba(46, 158, 120, 0.35);
+}
+.oe__amtbox-in {
+  min-width: 0;
+  width: 130px;
+  text-align: right;
+  font-size: 19px;
+  font-weight: 800;
+  color: #19271f;
+}
+.oe__amtbox-in--main {
+  color: #2e9e78;
+}
 
 /* 区块标题 */
 .oe__sec {
