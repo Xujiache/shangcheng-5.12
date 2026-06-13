@@ -117,6 +117,7 @@ function makePrisma(
     coupon?: any
     orderCount?: number
     categoryProducts?: any[]
+    stockUpdateCount?: number // 模拟原子条件扣减结果：0 = 并发失败方（库存被抢光）
   } = {},
 ) {
   const configMap = opts.configMap || {}
@@ -139,7 +140,8 @@ function makePrisma(
         createdAt: new Date(),
       })),
     },
-    sku: { update: jest.fn(async () => ({})) },
+    // 库存改为原子条件扣减 updateMany（WHERE stock>=N），count===0 即并发失败方
+    sku: { updateMany: jest.fn(async () => ({ count: opts.stockUpdateCount ?? 1 })) },
     coupon: { update: jest.fn(async () => ({})) },
   }
 
@@ -312,6 +314,17 @@ describe('UserMpService createOrder 准入校验', () => {
     const { svc } = makeService(prisma)
     // 下单 2 件 > 库存 1
     await expectBizCode(() => svc.createOrder('u1', orderDto()), 3002)
+  })
+
+  it('并发超卖防护：事务外预检通过但原子扣减命中 0 行 → STOCK_INSUFFICIENT(3002)', async () => {
+    // 库存 5 ≥ 下单 2，事务外预检(第439行)放行；但并发对手已抢光，
+    // 事务内 updateMany(WHERE stock>=N) 命中 0 行 → 失败方抛错，整个事务（含已建订单）回滚。
+    const skus = [makeSku('s1', 'p1', 5, 100, 80, 60, '规格A', {})]
+    const prisma = makePrisma({ skus, stockUpdateCount: 0 })
+    const { svc } = makeService(prisma)
+    await expectBizCode(() => svc.createOrder('u1', orderDto()), 3002)
+    // 原子条件扣减确实被调用（守门发生在这条写而非事务外预检）
+    expect(prisma.__tx.sku.updateMany).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -535,10 +548,11 @@ describe('UserMpService createOrder happy path', () => {
     const { svc, chat } = makeService(prisma)
     const res = await svc.createOrder('u1', orderDto({ couponId: 'c1' }))
 
-    // 每个订单项扣一次库存（decrement）
-    expect(prisma.__tx.sku.update).toHaveBeenCalledTimes(1)
-    const skuArg = prisma.__tx.sku.update.mock.calls[0][0] as any
+    // 每个订单项原子条件扣一次库存（updateMany + WHERE stock>=N）
+    expect(prisma.__tx.sku.updateMany).toHaveBeenCalledTimes(1)
+    const skuArg = prisma.__tx.sku.updateMany.mock.calls[0][0] as any
     expect(skuArg.where.id).toBe('s1')
+    expect(skuArg.where.stock.gte).toBe(2) // 条件扣减守门：库存须 ≥ 下单量
     expect(skuArg.data.stock.decrement).toBe(2)
 
     // 用券 → 事务内递增 used

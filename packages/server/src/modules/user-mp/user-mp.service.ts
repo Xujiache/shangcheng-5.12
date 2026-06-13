@@ -617,10 +617,21 @@ export class UserMpService {
         },
       })
       for (const it of normItems) {
-        await tx.sku.update({
-          where: { id: it.skuId },
+        // 原子条件扣减：UPDATE ... SET stock = stock - N WHERE id=? AND stock >= N。
+        // 并发下单的失败方拿到 count===0 → 抛错回滚整个事务（含已建订单），
+        // 杜绝两单都过事务外预检(第 439 行)后把库存扣成负数的超卖。
+        // 事务外的预检只是快路径错误提示，真正的库存守门在这条原子写。
+        const dec = await tx.sku.updateMany({
+          where: { id: it.skuId, stock: { gte: it.quantity } },
           data: { stock: { decrement: it.quantity } },
         })
+        if (dec.count === 0) {
+          const cur = skus.find((s) => s.id === it.skuId)
+          throw new BizException(
+            BizCode.STOCK_INSUFFICIENT,
+            `${cur?.product?.name ?? '商品'} 库存不足`,
+          )
+        }
       }
       if (couponId) {
         await tx.coupon.update({
