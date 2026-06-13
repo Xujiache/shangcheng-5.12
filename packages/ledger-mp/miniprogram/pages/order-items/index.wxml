@@ -54,8 +54,12 @@
       </view>
       <view class="oi__subrow2">
         <text class="oi__sub2-l">小计</text>
-        <text class="oi__subtotal">{{item.subtotalText}}</text>
+        <view class="oi__sub2-box">
+          <text class="oi__cur">¥</text>
+          <input class="oi__sub2-in" type="digit" value="{{item.subtotalStr}}" placeholder="{{item.subtotalAuto}}" placeholder-class="ph" data-idx="{{index}}" data-field="subtotalStr" bindinput="onItemInput" bindblur="onSubtotalBlur" />
+        </view>
       </view>
+      <view wx:if="{{item.subtotalHint}}" class="oi__sub2-hint">{{item.subtotalHint}} · 清空可恢复自动</view>
     </view>
 
     <view wx:if="{{!items.length}}" class="oi__empty">点上方「新增产品」开始录入门窗明细</view>

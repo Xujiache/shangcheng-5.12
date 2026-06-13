@@ -226,6 +226,19 @@ describe('sanitizeOrderItems 门窗报价明细清洗', () => {
     expect(out[2].unitPrice).toBe(50)
   })
 
+  it('小计手动改写：保留 subtotal（含仅有小计的项），无 subtotal 落 null', () => {
+    const out = sanitizeOrderItems([
+      { name: '', baseArea: 0, qty: 0, unitPrice: 0, sizes: [], subtotal: 500 }, // 仅小计 → 保留
+      { name: '窗', unitPrice: 100, qty: 2, subtotal: 0 }, // 改写 0 → 保留且 subtotal=0
+      { name: '门', unitPrice: 50, qty: 1 }, // 无 subtotal → null
+      { name: '', baseArea: 0, qty: 0, unitPrice: 0, sizes: [], subtotal: '' }, // 纯空 → 丢弃
+    ])
+    expect(out).toHaveLength(3)
+    expect(out[0].subtotal).toBe(500)
+    expect(out[1].subtotal).toBe(0)
+    expect(out[2].subtotal).toBeNull()
+  })
+
   it('sizes 截断到 100，w/h ≤ 0 的尺寸被过滤，note 截断到 30', () => {
     const sizes = [
       { w: 800, h: 1250, note: 'N'.repeat(40) },
@@ -277,6 +290,23 @@ describe('itemSubtotal / orderItemsAmount / orderTotalFromItems 金额口径', (
   it('itemSubtotal = round(计费量 × 单价)', () => {
     const it = { name: '门', note: '', baseArea: 0, unitPrice: 199, qty: 2, sizes: [] }
     expect(itemSubtotal(it)).toBe(398)
+  })
+
+  it('itemSubtotal 手动改写优先：subtotal 非空即覆盖 计费量×单价（含 0）', () => {
+    // 改写 250 覆盖 2×100=200
+    expect(itemSubtotal({ unitPrice: 100, qty: 2, sizes: [], subtotal: 250 } as any)).toBe(250)
+    // 改写 0（免单）覆盖 5×80=400
+    expect(itemSubtotal({ unitPrice: 80, qty: 5, sizes: [], subtotal: 0 } as any)).toBe(0)
+    // subtotal=null → 回落自动算
+    expect(itemSubtotal({ unitPrice: 100, qty: 2, sizes: [], subtotal: null } as any)).toBe(200)
+  })
+
+  it('orderTotalFromItems 尊重手动小计：以改写值入金额', () => {
+    const items = [
+      { unitPrice: 100, qty: 2, sizes: [], subtotal: 1500 }, // 改写 1500（非 200）
+      { unitPrice: 50, qty: 3, sizes: [] }, // 自动 150
+    ]
+    expect(orderTotalFromItems(items, 0)).toBe(1650)
   })
 
   it('orderItemsAmount = Σ各项小计', () => {

@@ -224,6 +224,7 @@ export interface OrderItem {
   unitPrice: number // 单价 元
   qty: number // 无尺寸时的数量/面积（手填）
   sizes: OrderSize[]
+  subtotal?: number | null // 手动改写的小计（元）；null/缺省 = 按 计费量×单价 自动算
 }
 export function sanitizeOrderItems(raw: unknown): OrderItem[] {
   if (!Array.isArray(raw)) return []
@@ -243,6 +244,9 @@ export function sanitizeOrderItems(raw: unknown): OrderItem[] {
               }))
               .filter((s: OrderSize) => s.w > 0 && s.h > 0)
           : []
+        // 小计手动改写：传了 subtotal（数字）即覆盖「计费量×单价」；null/空 = 自动算
+        const hasSub = it?.subtotal !== null && it?.subtotal !== undefined && it?.subtotal !== ''
+        const subtotal = hasSub ? Math.max(0, Math.round(Number(it?.subtotal) || 0)) : null
         return {
           name: String(it?.name ?? '')
             .trim()
@@ -254,11 +258,15 @@ export function sanitizeOrderItems(raw: unknown): OrderItem[] {
           unitPrice: Math.max(0, Math.round(Number(it?.unitPrice) || 0)),
           qty: Math.max(0, Number(it?.qty) || 0),
           sizes,
+          subtotal,
         }
       })
-      // 名称非强制：只要填了 名称/尺寸/数量/单价 任一就视为有效明细（仅丢真正的空行）。
+      // 名称非强制：只要填了 名称/尺寸/数量/单价/小计 任一就视为有效明细（仅丢真正的空行）。
       // 门窗下单常只填尺寸+单价不起名，强制名称会导致漏算金额 + 退出丢数据。
-      .filter((it) => it.name || it.sizes.length > 0 || it.qty > 0 || it.unitPrice > 0)
+      .filter(
+        (it) =>
+          it.name || it.sizes.length > 0 || it.qty > 0 || it.unitPrice > 0 || it.subtotal != null,
+      )
   )
 }
 function sizeArea(s: OrderSize, baseArea: number): number {
@@ -272,6 +280,8 @@ export function itemBillingQty(it: OrderItem): number {
   return it.qty || 0
 }
 export function itemSubtotal(it: OrderItem): number {
+  // 手动改写的小计优先（门窗常按整窗议价/抹零，与 计费量×单价 解耦）
+  if (it.subtotal != null) return Math.max(0, Math.round(it.subtotal))
   return Math.round(itemBillingQty(it) * (it.unitPrice || 0))
 }
 /** 金额 = Σ各项小计 */
