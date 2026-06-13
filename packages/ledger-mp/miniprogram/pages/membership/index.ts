@@ -38,6 +38,8 @@ Page({
     planLabel: '门窗利账 会员',
     statusText: '加载中…',
     expiresLabel: '—',
+    selectedKey: '', // 用户点选的套餐（仅本页选择态；付费由管理员后台开通）
+    ctaText: '开通会员',
   },
 
   _loaded: false, // 是否成功加载过：刷新失败时保留已展示内容，不退回重试卡
@@ -65,6 +67,11 @@ Page({
         planLabel,
         statusText,
         expiresLabel: fmtDate(m.expiresAt),
+        ctaText: this.data.selectedKey
+          ? this.ctaForKey(this.data.selectedKey, m, plans)
+          : m.active
+            ? '续费会员'
+            : '开通会员',
         loading: false,
         loadError: false,
       })
@@ -77,10 +84,34 @@ Page({
     this.setData({ loading: true, loadError: false }, () => this.load())
   },
 
+  // 点选套餐：触感反馈 + 选中态 + 同步底部按钮（付费仍由后台开通，选择会带入留言）
+  onPickPlan(e: any) {
+    const key = e.currentTarget.dataset.key
+    if (key === this.data.selectedKey) return
+    // 触感反馈（低版本基础库忽略 type，加 fail 兜底避免报错）
+    wx.vibrateShort({ type: 'light', fail: () => {} })
+    this.setData({ selectedKey: key, ctaText: this.ctaForKey(key, this.data.m, this.data.plans) })
+  },
+  ctaForKey(key: string, m: any, plans: any[]) {
+    const plan = (plans || this.data.plans).find((p: any) => p.key === key)
+    if (!plan) return m && m.active ? '续费会员' : '开通会员'
+    return (m && m.active ? '续费 ' : '开通 ') + plan.label + ' ' + plan.price
+  },
+
   onRenew() {
+    const plan = this.data.plans.find((p: any) => p.key === this.data.selectedKey)
+    const content = plan
+      ? '您选择了「' +
+        plan.label +
+        '」（' +
+        plan.price +
+        ' · ' +
+        plan.days +
+        ' 天）。会员由管理员后台开通/续费，可在「意见反馈」留下手机号与想开通的套餐，管理员会与您联系。'
+      : '会员由管理员后台开通/续费，可在「意见反馈」中留下手机号，管理员会与您联系。'
     wx.showModal({
       title: '会员开通',
-      content: '会员由管理员后台开通/续费，可在「意见反馈」中留下手机号，管理员会与您联系。',
+      content,
       confirmText: '去留言',
       cancelText: '我知道了',
       success: (r) => {

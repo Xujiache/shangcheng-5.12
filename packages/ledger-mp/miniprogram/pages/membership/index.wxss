@@ -104,6 +104,7 @@
   gap: 10px;
 }
 .ms__plan-card {
+  position: relative;
   flex: 1;
   min-width: 28%;
   border: 1.5px solid var(--border);
@@ -115,10 +116,39 @@
   align-items: center;
   gap: 3px;
   box-shadow: var(--shadow-soft);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.14s ease,
+    border-color 0.14s ease,
+    background 0.14s ease;
 }
 .ms__plan-card.on {
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+/* 点选选中：强调环 + 柔光（与「on=当前套餐」叠加时靠右上角对勾区分）*/
+.ms__plan-card.sel {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 6px 18px rgba(46, 158, 120, 0.22);
+}
+/* 按压反馈（配合 wx.vibrateShort 触感）*/
+.ms__plan-card--press {
+  transform: scale(0.96);
+}
+/* 选中右上角对勾角标 */
+.ms__pc-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(46, 158, 120, 0.3);
 }
 .ms__pc-label {
   font-size: 14px;

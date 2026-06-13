@@ -44,7 +44,8 @@
     <!-- plans (display only) -->
     <view class="lz-section-label">{{m.active ? '套餐' : '可开通套餐'}}</view>
     <view class="ms__plans">
-      <view wx:for="{{plans}}" wx:key="key" class="ms__plan-card {{item.key === m.lastPlanKey ? 'on' : ''}}">
+      <view wx:for="{{plans}}" wx:key="key" class="ms__plan-card {{item.key === m.lastPlanKey ? 'on' : ''}} {{item.key === selectedKey ? 'sel' : ''}}" data-key="{{item.key}}" bindtap="onPickPlan" hover-class="ms__plan-card--press" hover-stay-time="90">
+        <view wx:if="{{item.key === selectedKey}}" class="ms__pc-check"><lz-icon name="check" size="12" color="white" stroke="2.6" /></view>
         <view class="ms__pc-label">{{item.label}}</view>
         <view class="ms__pc-price">{{item.price}}</view>
         <view class="ms__pc-days">{{item.days}} 天</view>
@@ -74,7 +75,7 @@
       <lz-icon name="check" size="20" color="white" /> 进入应用
     </button>
     <button wx:else class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="onRenew">
-      <lz-icon name="crown" size="20" color="white" /> {{m.active ? '续费会员' : '开通会员'}}
+      <lz-icon name="crown" size="20" color="white" /> {{ctaText}}
     </button>
   </view>
 </view>
