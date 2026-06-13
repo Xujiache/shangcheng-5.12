@@ -1,5 +1,56 @@
 import { API_BASE, TOKEN_KEY } from '../config'
-import { readCache, writeCache } from './cache'
+// ── 读接口本地缓存（原 utils/cache 内联进来：避免新增文件被 DevTools 增量编译漏掉）──
+const CACHE_PREFIX = 'lc:' // ledger read-cache 命名空间
+const CACHE_VERSION = 1 // 缓存结构版本；改结构时 +1，旧缓存自动作废
+const CACHE_MAX_BYTES = 256 * 1024 // 单条上限（wx 单 key 上限 1MB，留足余量）
+interface CacheEntry<T> {
+  v: number
+  t: number
+  data: T
+}
+function readCache<T = any>(key: string): { t: number; data: T } | null {
+  try {
+    const raw = wx.getStorageSync(CACHE_PREFIX + key) as CacheEntry<T>
+    if (!raw || typeof raw !== 'object' || raw.v !== CACHE_VERSION) return null
+    return { t: raw.t, data: raw.data }
+  } catch (e) {
+    return null
+  }
+}
+function writeCache<T = any>(key: string, data: T): void {
+  try {
+    const entry: CacheEntry<T> = { v: CACHE_VERSION, t: Date.now(), data }
+    if (JSON.stringify(entry).length > CACHE_MAX_BYTES) return
+    wx.setStorageSync(CACHE_PREFIX + key, entry)
+  } catch (e) {
+    /* 存储满/序列化失败：静默放弃，不影响主流程 */
+  }
+}
+/** 按前缀失效相关缓存（写接口成功后调用） */
+export function invalidateCache(prefixes: string | string[]): void {
+  const list = Array.isArray(prefixes) ? prefixes : [prefixes]
+  try {
+    const keys = (wx.getStorageInfoSync().keys || []) as string[]
+    keys.forEach((k) => {
+      if (k.indexOf(CACHE_PREFIX) !== 0) return
+      const sub = k.slice(CACHE_PREFIX.length)
+      if (list.some((p) => sub.indexOf(p) === 0)) wx.removeStorageSync(k)
+    })
+  } catch (e) {
+    /* ignore */
+  }
+}
+/** 清空本端全部读缓存（退出登录/换账号时调用） */
+export function clearAllCache(): void {
+  try {
+    const keys = (wx.getStorageInfoSync().keys || []) as string[]
+    keys.forEach((k) => {
+      if (k.indexOf(CACHE_PREFIX) === 0) wx.removeStorageSync(k)
+    })
+  } catch (e) {
+    /* ignore */
+  }
+}
 
 interface ApiShell<T> {
   code: number

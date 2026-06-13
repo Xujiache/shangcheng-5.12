@@ -1,6 +1,6 @@
 import { TOKEN_KEY } from './config'
 import { getBioLock, getBioVerified } from './utils/store'
-import { clearAllCache } from './utils/cache'
+import { clearAllCache } from './utils/request'
 
 App<IAppOption>({
   globalData: {

@@ -1,5 +1,5 @@
 import { http } from '../utils/request'
-import { invalidateCache } from '../utils/cache'
+import { invalidateCache } from '../utils/request'
 
 /** 鉴权（登录类 auth:false 不带 token） */
 export const authApi = {
