@@ -94,7 +94,11 @@ Page({
               0,
             )
           : it.qty || 0
-        const subtotal = Math.round(billingQty * (it.unitPrice || 0))
+        // 小计改写优先（与后端 itemSubtotal 同口径），否则 计费量×单价
+        const subtotal =
+          it.subtotal != null
+            ? Math.max(0, Math.round(it.subtotal))
+            : Math.round(billingQty * (it.unitPrice || 0))
         return {
           idx,
           name: it.name || `产品${idx + 1}`, // 名称非强制，未填则按序号占位，避免空行

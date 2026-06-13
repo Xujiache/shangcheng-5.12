@@ -16,8 +16,11 @@ function fmtArea(n: number): string {
 // 列表行 wx:key 用的页内唯一键（仅前端用，writeBack 重建对象时不带出）
 let seq = 0
 const uid = () => 'k' + ++seq
+function blankNote() {
+  return { _k: uid(), text: '' }
+}
 function blankSize() {
-  return { _k: uid(), wStr: '', hStr: '', note: '', areaText: '' }
+  return { _k: uid(), wStr: '', hStr: '', notes: [] as any[], areaText: '' }
 }
 function blankItem() {
   return {
@@ -30,6 +33,14 @@ function blankItem() {
     subtotalStr: '', // 手动改写的小计（空 = 按 计费量×单价 自动算）
     sizes: [] as any[],
   }
+}
+// 尺寸备注 后端形态（notes 数组 / 旧单 note 单串）→ 页面编辑态 [{_k,text}]
+function normSizeNotes(s: any): any[] {
+  const raw = Array.isArray(s?.notes) ? s.notes : s?.note ? [s.note] : []
+  return raw
+    .map((t: any) => String(t || '').trim())
+    .filter((t: string) => t)
+    .map((t: string) => ({ _k: uid(), text: t }))
 }
 // 从后端 item 形态 → 页面编辑态
 function normIn(it: any) {
@@ -47,7 +58,7 @@ function normIn(it: any) {
           _k: uid(),
           wStr: s.w ? String(s.w) : '',
           hStr: s.h ? String(s.h) : '',
-          note: s.note || '',
+          notes: normSizeNotes(s),
           areaText: '',
         }))
       : [],
@@ -152,6 +163,47 @@ Page({
     sizes[si] = { ...sizes[si], [field]: e.detail.value }
     items[i] = { ...items[i], sizes }
     this.setData({ items }, () => this.recalc())
+  },
+
+  // ── 尺寸备注（每条独立、可删、可加任意多条；备注不参与计价，不触发 recalc）──
+  addNote(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const si = Number(e.currentTarget.dataset.sidx)
+    const items = this.data.items.slice()
+    const sizes = items[i].sizes.slice()
+    // 备注无业务上限，仅设 50 条防误触膨胀（与后端 sanitizeSizeNotes 同口径）
+    if ((sizes[si].notes || []).length >= 50) {
+      wx.showToast({ title: '最多 50 条备注', icon: 'none' })
+      return
+    }
+    sizes[si] = { ...sizes[si], notes: [...(sizes[si].notes || []), blankNote()] }
+    items[i] = { ...items[i], sizes }
+    this.setData({ items })
+  },
+  delNote(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const si = Number(e.currentTarget.dataset.sidx)
+    const ni = Number(e.currentTarget.dataset.nidx)
+    const items = this.data.items.slice()
+    const sizes = items[i].sizes.slice()
+    sizes[si] = {
+      ...sizes[si],
+      notes: (sizes[si].notes || []).filter((_: any, j: number) => j !== ni),
+    }
+    items[i] = { ...items[i], sizes }
+    this.setData({ items })
+  },
+  onNoteInput(e: any) {
+    const i = Number(e.currentTarget.dataset.idx)
+    const si = Number(e.currentTarget.dataset.sidx)
+    const ni = Number(e.currentTarget.dataset.nidx)
+    const items = this.data.items.slice()
+    const sizes = items[i].sizes.slice()
+    const notes = (sizes[si].notes || []).slice()
+    notes[ni] = { ...notes[ni], text: e.detail.value }
+    sizes[si] = { ...sizes[si], notes }
+    items[i] = { ...items[i], sizes }
+    this.setData({ items })
   },
 
   onDiscount(e: any) {
@@ -272,7 +324,9 @@ Page({
           .map((s: any) => ({
             w: Math.round(num(s.wStr)),
             h: Math.round(num(s.hStr)),
-            note: String(s.note || '').trim(),
+            notes: (s.notes || [])
+              .map((n: any) => String(n.text || '').trim())
+              .filter((t: string) => t),
           }))
           .filter((s: any) => s.w > 0 && s.h > 0),
       }))

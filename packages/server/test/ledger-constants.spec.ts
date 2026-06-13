@@ -239,7 +239,7 @@ describe('sanitizeOrderItems 门窗报价明细清洗', () => {
     expect(out[2].subtotal).toBeNull()
   })
 
-  it('sizes 截断到 100，w/h ≤ 0 的尺寸被过滤，note 截断到 30', () => {
+  it('sizes 截断到 100，w/h ≤ 0 的尺寸被过滤，每条备注截断到 30', () => {
     const sizes = [
       { w: 800, h: 1250, note: 'N'.repeat(40) },
       { w: 0, h: 1000, note: '无宽' },
@@ -248,7 +248,18 @@ describe('sanitizeOrderItems 门窗报价明细清洗', () => {
     ]
     const out = sanitizeOrderItems([{ name: '窗', sizes }])
     expect(out[0].sizes).toHaveLength(1)
-    expect(out[0].sizes[0]).toEqual({ w: 800, h: 1250, note: 'N'.repeat(30) })
+    // 旧单单条 note 兼容迁移为 notes 数组，逐条仍截断到 30
+    expect(out[0].sizes[0]).toEqual({ w: 800, h: 1250, notes: ['N'.repeat(30)] })
+  })
+
+  it('尺寸多条备注：notes 数组逐条 trim/≤30、丢空、≤50 条', () => {
+    const out = sanitizeOrderItems([
+      { name: '窗', sizes: [{ w: 800, h: 1200, notes: ['  灰色  ', '', '钢化', 'N'.repeat(40)] }] },
+    ])
+    expect(out[0].sizes[0].notes).toEqual(['灰色', '钢化', 'N'.repeat(30)])
+    const many = Array.from({ length: 60 }, (_, i) => 'n' + i)
+    const out2 = sanitizeOrderItems([{ name: '窗', sizes: [{ w: 100, h: 100, notes: many }] }])
+    expect(out2[0].sizes[0].notes).toHaveLength(50)
   })
 
   it('baseArea/unitPrice/qty 清洗：负数归 0，unitPrice 四舍五入', () => {

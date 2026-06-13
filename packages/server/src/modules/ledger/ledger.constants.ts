@@ -215,7 +215,9 @@ export function customCostsTotal(raw: unknown): number {
 export interface OrderSize {
   w: number // 宽 mm
   h: number // 高 mm
-  note: string
+  notes?: string[] // 多条备注（清洗后必为数组；每条 ≤30 字、≤50 条）
+  /** @deprecated 旧单单条备注；读取时并入 notes，不再写入 */
+  note?: string
 }
 export interface OrderItem {
   name: string
@@ -225,6 +227,22 @@ export interface OrderItem {
   qty: number // 无尺寸时的数量/面积（手填）
   sizes: OrderSize[]
   subtotal?: number | null // 手动改写的小计（元）；null/缺省 = 按 计费量×单价 自动算
+}
+/** 尺寸备注清洗：兼容新 notes 数组与旧单 note 单串；逐条 trim+≤30 字、丢空、≤50 条 */
+function sanitizeSizeNotes(s: any): string[] {
+  const raw = Array.isArray(s?.notes)
+    ? s.notes
+    : s?.note !== undefined && s?.note !== null && s?.note !== ''
+      ? [s.note]
+      : []
+  return raw
+    .slice(0, 50)
+    .map((t: any) =>
+      String(t ?? '')
+        .trim()
+        .slice(0, 30),
+    )
+    .filter((t: string) => t.length > 0)
 }
 export function sanitizeOrderItems(raw: unknown): OrderItem[] {
   if (!Array.isArray(raw)) return []
@@ -238,9 +256,7 @@ export function sanitizeOrderItems(raw: unknown): OrderItem[] {
               .map((s: any) => ({
                 w: Math.max(0, Math.round(Number(s?.w) || 0)),
                 h: Math.max(0, Math.round(Number(s?.h) || 0)),
-                note: String(s?.note ?? '')
-                  .trim()
-                  .slice(0, 30),
+                notes: sanitizeSizeNotes(s),
               }))
               .filter((s: OrderSize) => s.w > 0 && s.h > 0)
           : []
