@@ -4,35 +4,47 @@ import { optimizeNesting, NestResult } from '../../utils/nesting'
 
 // 切割清单行的稳定 key：删除中间行时避免 wx:key 失配导致输入框内容串行
 let pieceUid = 0
-// 一维行：段长 × 数量；二维行：宽 × 高 × 数量（共用 _k，按 material 取用对应字段）
 const newPiece = () => ({ _k: ++pieceUid, lengthStr: '', qtyStr: '', wStr: '', hStr: '' })
 
 // 任一输入变更立即作废上次结果：陈旧的下料方案比没有方案更危险（照旧切会切错料）
 const RESET_RESULT = {
   summary: null as any,
-  barsView: [] as any[], // 一维：切割方案行
-  sheetsView: [] as any[], // 二维：各原片排料（含 placements 供画布绘制）
+  barsView: [] as any[],
+  sheetsView: [] as any[],
   oversizeText: '',
-  canvasReady: false, // 结果画布是否已绘制（控制「保存为图片」可用）
+  canvasReady: false,
 }
 
-// 材料元信息：标签 + 计量单位（用于摘要展示与方案标题）
-const MATERIALS: Record<string, { name: string; unit: string; is2d: boolean }> = {
-  profile: { name: '型材', unit: '段', is2d: false },
-  glass: { name: '玻璃', unit: '块', is2d: true },
-  board: { name: '板材', unit: '块', is2d: true },
+// 材料元信息：is2d 维度；noKerf=玻璃不留锯缝；hasImage=仅二维出排料图（型材只给方案）
+const MATERIALS: Record<
+  string,
+  { name: string; unit: string; is2d: boolean; noKerf: boolean; hasImage: boolean }
+> = {
+  profile: { name: '型材', unit: '段', is2d: false, noKerf: false, hasImage: false },
+  glass: { name: '玻璃', unit: '块', is2d: true, noKerf: true, hasImage: true },
+  board: { name: '板材', unit: '块', is2d: true, noKerf: false, hasImage: true },
 }
+
+// 各材料默认参数（玻璃 2100×1650 不留锯缝；板材 2440×1220 留 5；型材 6000 留 5）
+function defaultDraft(material: string): any {
+  if (material === 'glass')
+    return { sheetWStr: '2100', sheetHStr: '1650', kerf2Str: '0', pieces: [newPiece()] }
+  if (material === 'board')
+    return { sheetWStr: '2440', sheetHStr: '1220', kerf2Str: '5', pieces: [newPiece()] }
+  return { stockLengthStr: '6000', kerfStr: '5', pieces: [newPiece()] }
+}
+
+const DRAFT_KEY = 'ledger_cut_draft_v1' // 输入自动保存（按材料分别留存，切换/离开页面不丢）
 
 Page({
   data: {
     checking: true,
-    loadError: false, // 网络/加载失败：区别于"试用到期付费墙"
+    loadError: false,
     allowed: false,
-    mode: '', // free / member / trial / expired
+    mode: '',
     trialDaysLeft: 0,
     gateReason: '优化下料试用已结束，开通会员后继续使用',
 
-    // 材料切换：型材=一维，玻璃/板材=二维
     material: 'profile',
     materialOptions: [
       { value: 'profile', label: '型材' },
@@ -41,40 +53,136 @@ Page({
     ],
     is2d: false,
     unit: '段',
+    noKerf: false, // 玻璃：不留锯缝（隐藏锯缝输入）
+    hasImage: false, // 二维才出排料图 / 可保存图片
 
-    // 一维参数
     stockLengthStr: '6000',
     kerfStr: '5',
-    // 二维参数
     sheetWStr: '2440',
     sheetHStr: '1220',
     kerf2Str: '5',
 
     pieces: [newPiece()] as any[],
 
-    // 结果
     summary: null as any,
     barsView: [] as any[],
     sheetsView: [] as any[],
     oversizeText: '',
     canvasReady: false,
-    canvasH: 200, // 结果画布 CSS 高度（按内容动态算出后回写）
-    saving2img: false, // 导出图片中（防抖）
+    canvasH: 200,
+    saving2img: false,
+    saveProgress: '',
 
-    // 云端历史
     showHistory: false,
     historyLoading: false,
     historyError: false,
     historyList: [] as any[],
-    savingPlan: false, // 保存方案中（防抖）
+    savingPlan: false,
+
+    editingTitle: '', // 非空=正在继续编辑这个历史方案（保存即更新，不产生重复）
   },
 
-  // 当前结果缓存（用于画布绘制与保存方案重算入参，不进 data 避免 setData 冗余）
   _nest: null as NestResult | null,
-  _cut: null as any,
+  _drafts: {} as Record<string, any>, // 各材料输入草稿（内存镜像，配合 storage 自动保存）
+  _editingPlanId: '', // 从历史载入的方案 id：保存时更新该方案而非新建
+  _saveTimer: null as any,
 
   onLoad() {
+    this.restoreDrafts()
     this.checkAccess()
+  },
+  onHide() {
+    this.flushDrafts() // 离开页面立刻落盘，防丢
+  },
+  onUnload() {
+    this.flushDrafts()
+  },
+
+  // ── 输入自动保存（按材料）────────────────────────────────────────────────
+  restoreDrafts() {
+    let saved: any = {}
+    try {
+      saved = wx.getStorageSync(DRAFT_KEY) || {}
+    } catch (e) {
+      saved = {}
+    }
+    const drafts = (saved && saved.drafts) || {}
+    this._drafts = {
+      profile: drafts.profile || defaultDraft('profile'),
+      glass: drafts.glass || defaultDraft('glass'),
+      board: drafts.board || defaultDraft('board'),
+    }
+    const material = saved && MATERIALS[saved.material] ? saved.material : 'profile'
+    const meta = MATERIALS[material]
+    const set: any = {
+      material,
+      is2d: meta.is2d,
+      unit: meta.unit,
+      noKerf: meta.noKerf,
+      hasImage: meta.hasImage,
+    }
+    Object.assign(set, this.draftToFields(material, this._drafts[material]))
+    this.setData(set)
+  },
+  // 草稿对象 → data 字段
+  draftToFields(material: string, draft: any): any {
+    const meta = MATERIALS[material]
+    const pieces =
+      Array.isArray(draft.pieces) && draft.pieces.length
+        ? draft.pieces.map((p: any) => ({
+            _k: ++pieceUid,
+            lengthStr: p.lengthStr || '',
+            qtyStr: p.qtyStr || '',
+            wStr: p.wStr || '',
+            hStr: p.hStr || '',
+          }))
+        : [newPiece()]
+    if (meta.is2d) {
+      return {
+        sheetWStr: draft.sheetWStr || '',
+        sheetHStr: draft.sheetHStr || '',
+        kerf2Str: draft.kerf2Str != null ? String(draft.kerf2Str) : '',
+        pieces,
+      }
+    }
+    return { stockLengthStr: draft.stockLengthStr || '', kerfStr: draft.kerfStr || '', pieces }
+  },
+  // 当前 data 里该材料的输入 → 草稿对象
+  snapshot(material: string): any {
+    const meta = MATERIALS[material]
+    const pieces = this.data.pieces.map((p: any) => ({
+      lengthStr: p.lengthStr,
+      qtyStr: p.qtyStr,
+      wStr: p.wStr,
+      hStr: p.hStr,
+    }))
+    if (meta.is2d) {
+      return {
+        sheetWStr: this.data.sheetWStr,
+        sheetHStr: this.data.sheetHStr,
+        kerf2Str: this.data.kerf2Str,
+        pieces,
+      }
+    }
+    return { stockLengthStr: this.data.stockLengthStr, kerfStr: this.data.kerfStr, pieces }
+  },
+  // 输入变更后调用：更新内存草稿 + 防抖落盘
+  autosave() {
+    this._drafts[this.data.material] = this.snapshot(this.data.material)
+    if (this._saveTimer) clearTimeout(this._saveTimer)
+    this._saveTimer = setTimeout(() => this.flushDrafts(), 500)
+  },
+  flushDrafts() {
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer)
+      this._saveTimer = null
+    }
+    this._drafts[this.data.material] = this.snapshot(this.data.material)
+    try {
+      wx.setStorageSync(DRAFT_KEY, { material: this.data.material, drafts: this._drafts })
+    } catch (e) {
+      /* ignore */
+    }
   },
 
   async checkAccess() {
@@ -89,7 +197,6 @@ Page({
         gateReason: a.reason || '优化下料试用已结束，开通会员后继续使用',
       })
     } catch (e) {
-      // 加载失败单独成态（带重试），不复用付费墙，避免把网络抖动误导成"需付费"
       this.setData({ checking: false, loadError: true })
     }
   },
@@ -97,76 +204,82 @@ Page({
     this.setData({ checking: true, loadError: false }, () => this.checkAccess())
   },
 
-  // ── 材料切换 ────────────────────────────────────────────────────────────────
+  // ── 材料切换：存当前草稿 → 取目标草稿（含各材料默认），输入不丢 ──
   onMaterial(e: any) {
     const material = e.detail.value
     if (material === this.data.material) return
+    this._drafts[this.data.material] = this.snapshot(this.data.material) // 先存旧材料
     const meta = MATERIALS[material] || MATERIALS.profile
+    const draft = this._drafts[material] || defaultDraft(material)
     this._nest = null
-    this._cut = null
-    // 切材料即作废陈旧结果，并把清单重置为一行（一维/二维字段不通用，避免脏数据误算）
-    this.setData({
+    this._editingPlanId = ''
+    const set: any = {
       material,
       is2d: meta.is2d,
       unit: meta.unit,
-      pieces: [newPiece()],
+      noKerf: meta.noKerf,
+      hasImage: meta.hasImage,
+      editingTitle: '',
       ...RESET_RESULT,
-    })
+    }
+    Object.assign(set, this.draftToFields(material, draft))
+    this.setData(set, () => this.flushDrafts())
   },
 
-  // ── 一维参数 ────────────────────────────────────────────────────────────────
+  // ── 参数输入（变更即作废结果 + 自动保存）──
   onStock(e: any) {
-    this.setData({ stockLengthStr: e.detail.value, ...RESET_RESULT })
+    this.setData({ stockLengthStr: e.detail.value, ...RESET_RESULT }, () => this.autosave())
   },
   onKerf(e: any) {
-    this.setData({ kerfStr: e.detail.value, ...RESET_RESULT })
+    this.setData({ kerfStr: e.detail.value, ...RESET_RESULT }, () => this.autosave())
   },
-  // ── 二维参数 ────────────────────────────────────────────────────────────────
   onSheetW(e: any) {
-    this.setData({ sheetWStr: e.detail.value, ...RESET_RESULT })
+    this.setData({ sheetWStr: e.detail.value, ...RESET_RESULT }, () => this.autosave())
   },
   onSheetH(e: any) {
-    this.setData({ sheetHStr: e.detail.value, ...RESET_RESULT })
+    this.setData({ sheetHStr: e.detail.value, ...RESET_RESULT }, () => this.autosave())
   },
   onKerf2(e: any) {
-    this.setData({ kerf2Str: e.detail.value, ...RESET_RESULT })
+    this.setData({ kerf2Str: e.detail.value, ...RESET_RESULT }, () => this.autosave())
   },
 
-  // ── 清单行（一维 段长/数量；二维 宽/高/数量）─────────────────────────────────
+  // ── 清单行（一维 段长/数量；二维 宽/高/数量）──
   onLen(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = [...this.data.pieces]
     p[i] = { ...p[i], lengthStr: e.detail.value }
-    this.setData({ pieces: p, ...RESET_RESULT })
+    this.setData({ pieces: p, ...RESET_RESULT }, () => this.autosave())
   },
   onQty(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = [...this.data.pieces]
     p[i] = { ...p[i], qtyStr: e.detail.value }
-    this.setData({ pieces: p, ...RESET_RESULT })
+    this.setData({ pieces: p, ...RESET_RESULT }, () => this.autosave())
   },
   onW(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = [...this.data.pieces]
     p[i] = { ...p[i], wStr: e.detail.value }
-    this.setData({ pieces: p, ...RESET_RESULT })
+    this.setData({ pieces: p, ...RESET_RESULT }, () => this.autosave())
   },
   onH(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = [...this.data.pieces]
     p[i] = { ...p[i], hStr: e.detail.value }
-    this.setData({ pieces: p, ...RESET_RESULT })
+    this.setData({ pieces: p, ...RESET_RESULT }, () => this.autosave())
   },
   addPiece() {
-    this.setData({ pieces: [...this.data.pieces, newPiece()], ...RESET_RESULT })
+    this.setData({ pieces: [...this.data.pieces, newPiece()], ...RESET_RESULT }, () =>
+      this.autosave(),
+    )
   },
   delPiece(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = this.data.pieces.filter((_: any, j: number) => j !== i)
-    this.setData({ pieces: p.length ? p : [newPiece()], ...RESET_RESULT })
+    this.setData({ pieces: p.length ? p : [newPiece()], ...RESET_RESULT }, () => this.autosave())
   },
 
-  // ── 计算（按 material 分流）─────────────────────────────────────────────────
+  // ── 计算 ──
   compute() {
     if (this.data.is2d) this.compute2d()
     else this.compute1d()
@@ -189,14 +302,12 @@ Page({
       wx.showToast({ title: '请填写段长和数量', icon: 'none' })
       return
     }
-    // 防止误填超大数量导致主线程同步卡死（一维下料按件展开后是 O(n²) 级）
     const totalSeg = pieces.reduce((s: number, p: any) => s + p.qty, 0)
     if (totalSeg > 5000) {
       wx.showToast({ title: '段数过多（上限 5000），请核对数量', icon: 'none' })
       return
     }
     const r = optimizeCutting(stock, pieces, kerf)
-    this._cut = r
     this._nest = null
     const barsView = r.bars.map((b, i) => ({
       idx: i + 1,
@@ -204,27 +315,26 @@ Page({
       count: b.cuts.length,
       waste: b.waste,
     }))
-    this.setData(
-      {
-        summary: {
-          count: r.barCount, // 用料根数
-          util: (r.utilization * 100).toFixed(1),
-          extra: r.totalWaste, // 损耗 mm
-          totalPieces: r.totalPieces,
-        },
-        barsView,
-        sheetsView: [],
-        oversizeText: r.oversize.length ? `${r.oversize.length} 段超过整根料长，已忽略` : '',
-        canvasReady: false,
+    // 型材只给文字方案，不画排料图（canvasReady 恒 false）
+    this.setData({
+      summary: {
+        count: r.barCount,
+        util: (r.utilization * 100).toFixed(1),
+        extra: r.totalWaste,
+        totalPieces: r.totalPieces,
       },
-      () => this.drawResult(),
-    )
+      barsView,
+      sheetsView: [],
+      oversizeText: r.oversize.length ? `${r.oversize.length} 段超过整根料长，已忽略` : '',
+      canvasReady: false,
+    })
   },
 
   compute2d() {
     const sheetW = Math.round(Number(this.data.sheetWStr) || 0)
     const sheetH = Math.round(Number(this.data.sheetHStr) || 0)
-    const kerf = Math.max(0, Math.round(Number(this.data.kerf2Str) || 0))
+    // 玻璃不留锯缝：noKerf 时强制 0（输入框已隐藏）
+    const kerf = this.data.noKerf ? 0 : Math.max(0, Math.round(Number(this.data.kerf2Str) || 0))
     if (sheetW <= 0 || sheetH <= 0) {
       wx.showToast({ title: '请填写整板宽和高', icon: 'none' })
       return
@@ -240,7 +350,6 @@ Page({
       wx.showToast({ title: '请填写宽、高和数量', icon: 'none' })
       return
     }
-    // 与算法 MAX_PLACED 对齐：超 2000 件直接拒算，避免主线程套料卡死
     const totalQty = pieces.reduce((s: number, p: any) => s + p.qty, 0)
     if (totalQty > 2000) {
       wx.showToast({ title: '总块数过多（上限 2000），请核对数量', icon: 'none' })
@@ -248,9 +357,7 @@ Page({
     }
     const r = optimizeNesting(sheetW, sheetH, pieces, kerf)
     this._nest = r
-    this._cut = null
     const oversizeCount = r.oversize.reduce((s, o) => s + o.qty, 0)
-    // sheetsView 仅承载展示用的轻量信息，placements 留给画布绘制（不进列表渲染）
     const sheetsView = r.sheets.map((s, i) => ({
       idx: i + 1,
       count: s.placements.length,
@@ -259,9 +366,9 @@ Page({
     this.setData(
       {
         summary: {
-          count: r.sheetCount, // 用料块数
+          count: r.sheetCount,
           util: (r.utilization * 100).toFixed(1),
-          extra: oversizeCount, // 超尺寸件数
+          extra: oversizeCount,
           totalPieces: r.totalPieces,
         },
         barsView: [],
@@ -273,9 +380,9 @@ Page({
     )
   },
 
-  // ── 结果画布绘制（type="2d" + dpr，沿用 lz-donut 取节点写法）──────────────────
-  // 二维：每张原片画矩形排料图（含锯路、尺寸标签）；一维：把各根料画成水平条形。
+  // ── 排料图（仅二维；型材不画）──
   drawResult() {
+    if (!this._nest) return
     const q = this.createSelectorQuery()
     q.select('#cutcv')
       .fields({ node: true, size: true })
@@ -294,39 +401,28 @@ Page({
         } catch (e) {
           dpr = 2
         }
-        // 画布 CSS 高度按内容算出后回写 data，再绘制（避免内容被裁切）
-        const cssH = this._nest ? this.measureNestHeight(cssW) : this.measureBarsHeight(cssW)
+        const cssH = this.measureNestHeight(cssW)
         this.setData({ canvasH: cssH }, () => {
           canvas.width = Math.round(cssW * dpr)
           canvas.height = Math.round(cssH * dpr)
           ctx.scale(dpr, dpr)
           ctx.clearRect(0, 0, cssW, cssH)
-          if (this._nest) this.paintNest(ctx, cssW)
-          else if (this._cut) this.paintBars(ctx, cssW)
+          this.paintNest(ctx, cssW)
           this.setData({ canvasReady: true })
         })
       })
   },
 
-  // 二维：估算画布总高 = 每张原片按比例缩放后高度 + 标题/间距累加。
   measureNestHeight(cssW: number): number {
     const r = this._nest!
     const pad = 12
     const inner = cssW - pad * 2
     const scale = r.sheetW > 0 ? inner / r.sheetW : 1
     const sheetDrawH = Math.max(40, Math.round(r.sheetH * scale))
-    const perSheet = 22 /*标题*/ + sheetDrawH + 14 /*间距*/
+    const perSheet = 22 + sheetDrawH + 14
     return pad * 2 + r.sheets.length * perSheet
   },
-  // 一维：每根料一条，固定行高累加。
-  measureBarsHeight(cssW: number): number {
-    const r = this._cut
-    const pad = 12
-    const rowH = 46 // 条形 28 + 标题/间距 18
-    return pad * 2 + (r.bars.length || 1) * rowH
-  },
 
-  // 二维排料图：每张原片画外框 + 各 Placement 矩形（薄荷绿填充 + 尺寸标签）。
   paintNest(ctx: any, cssW: number) {
     const r = this._nest!
     const pad = 12
@@ -335,7 +431,6 @@ Page({
     const sheetDrawH = Math.max(40, Math.round(r.sheetH * scale))
     let y = pad
     r.sheets.forEach((sheet, si) => {
-      // 标题
       ctx.fillStyle = '#5C6B64'
       ctx.font = '12px sans-serif'
       ctx.textBaseline = 'top'
@@ -343,13 +438,11 @@ Page({
       y += 22
       const ox = pad
       const oy = y
-      // 原片外框
       ctx.fillStyle = '#F3F8F5'
       ctx.fillRect(ox, oy, inner, sheetDrawH)
       ctx.strokeStyle = '#C5D6CD'
       ctx.lineWidth = 1
       ctx.strokeRect(ox, oy, inner, sheetDrawH)
-      // 各工件
       sheet.placements.forEach((p) => {
         const px = ox + p.x * scale
         const py = oy + p.y * scale
@@ -360,7 +453,6 @@ Page({
         ctx.strokeStyle = '#0E7C66'
         ctx.lineWidth = 1
         ctx.strokeRect(px, py, pw, ph)
-        // 尺寸标签：仅在矩形够大时绘制，避免文字溢出重叠
         if (pw > 34 && ph > 16) {
           ctx.fillStyle = '#0E7C66'
           ctx.font = '10px sans-serif'
@@ -373,140 +465,181 @@ Page({
     })
   },
 
-  // 一维条形图：每根料一条，按 stockLength 等比缩放，依次画各段（含锯缝间隙）。
-  paintBars(ctx: any, cssW: number) {
-    const r = this._cut
-    const pad = 12
-    const inner = cssW - pad * 2
-    const L = r.stockLength || 1
-    const scale = inner / L
-    const barH = 28
-    const rowH = 46
-    let y = pad
-    r.bars.forEach((bar: any, bi: number) => {
-      ctx.fillStyle = '#5C6B64'
-      ctx.font = '12px sans-serif'
-      ctx.textBaseline = 'top'
-      ctx.fillText(`第 ${bi + 1} 根 · 余料 ${bar.waste}mm`, pad, y)
-      y += 16
-      // 整根底框
-      ctx.fillStyle = '#F3F8F5'
-      ctx.fillRect(pad, y, inner, barH)
-      ctx.strokeStyle = '#C5D6CD'
-      ctx.lineWidth = 1
-      ctx.strokeRect(pad, y, inner, barH)
-      // 各段
-      let cx = pad
-      bar.cuts.forEach((len: number, ci: number) => {
-        if (ci > 0) cx += r.kerf * scale // 锯缝间隙
-        const w = Math.max(1, len * scale)
-        ctx.fillStyle = 'rgba(14,124,102,0.16)'
-        ctx.fillRect(cx, y, w, barH)
-        ctx.strokeStyle = '#0E7C66'
-        ctx.lineWidth = 1
-        ctx.strokeRect(cx, y, w, barH)
-        if (w > 28) {
-          ctx.fillStyle = '#0E7C66'
-          ctx.font = '10px sans-serif'
-          ctx.textBaseline = 'middle'
-          ctx.fillText(`${len}`, cx + 3, y + barH / 2)
-          ctx.textBaseline = 'top'
-        }
-        cx += w
-      })
-      y = pad + (bi + 1) * rowH
-    })
-  },
-
-  // ── 导出图片：canvasToTempFilePath → 相册（处理授权）──────────────────────────
-  saveImage() {
-    if (this.data.saving2img || !this.data.canvasReady) return
-    this.setData({ saving2img: true })
-    const q = this.createSelectorQuery()
-    q.select('#cutcv')
-      .fields({ node: true })
-      .exec((res) => {
-        if (!res || !res[0] || !res[0].node) {
-          this.setData({ saving2img: false })
-          wx.showToast({ title: '画布未就绪', icon: 'none' })
-          return
-        }
-        wx.canvasToTempFilePath({
-          canvas: res[0].node,
-          success: (r) => this.persistImage(r.tempFilePath),
-          fail: () => {
-            this.setData({ saving2img: false })
-            wx.showToast({ title: '生成图片失败', icon: 'none' })
-          },
-        })
-      })
-  },
-  // 落盘到相册：先查授权，缺权限走 authorize / 拒绝引导去设置页。
-  persistImage(filePath: string) {
-    const doSave = () => {
-      wx.saveImageToPhotosAlbum({
-        filePath,
-        success: () => {
-          this.setData({ saving2img: false })
-          wx.showToast({ title: '已保存到相册', icon: 'success' })
-        },
-        fail: () => {
-          this.setData({ saving2img: false })
-          wx.showToast({ title: '保存失败', icon: 'none' })
-        },
-      })
+  // ── 导出图片：每张原片单独一张，逐张存相册（不再拼长图）──
+  saveImages() {
+    if (this.data.saving2img) return
+    if (!this._nest || !this._nest.sheets.length) {
+      wx.showToast({ title: '请先优化出结果', icon: 'none' })
+      return
     }
+    this.ensureAlbumPerm(() => this.exportSheetsSeq())
+  },
+  // 相册权限：已授权直接回调；拒绝过引导设置页；从未授权拉起授权弹窗
+  ensureAlbumPerm(onOk: () => void) {
     wx.getSetting({
       success: (s) => {
         if (s.authSetting['scope.writePhotosAlbum']) {
-          doSave()
+          onOk()
         } else if (s.authSetting['scope.writePhotosAlbum'] === false) {
-          // 之前拒绝过：authorize 不再弹窗，引导去设置页打开
           wx.showModal({
             title: '需要相册权限',
             content: '保存图片需开启相册权限，请在设置中打开后重试',
             confirmText: '去设置',
             success: (m) => {
               if (m.confirm) wx.openSetting({})
-              this.setData({ saving2img: false })
             },
-            fail: () => this.setData({ saving2img: false }),
           })
         } else {
-          // 从未授权：拉起授权弹窗
           wx.authorize({
             scope: 'scope.writePhotosAlbum',
-            success: doSave,
-            fail: () => {
-              this.setData({ saving2img: false })
-              wx.showToast({ title: '未授权相册', icon: 'none' })
-            },
+            success: onOk,
+            fail: () => wx.showToast({ title: '未授权相册', icon: 'none' }),
           })
         }
       },
-      fail: () => {
-        this.setData({ saving2img: false })
-        wx.showToast({ title: '保存失败', icon: 'none' })
-      },
+      fail: () => wx.showToast({ title: '保存失败', icon: 'none' }),
+    })
+  },
+  // 逐张导出：用屏幕外 on-tree 画布 #cutexport 逐张原片绘制 → 存相册（不影响上方预览、无闪烁）
+  exportSheetsSeq() {
+    const total = this._nest!.sheets.length
+    this.setData({ saving2img: true, saveProgress: `1/${total}` })
+    const q = this.createSelectorQuery()
+    q.select('#cutexport')
+      .fields({ node: true })
+      .exec((res) => {
+        if (!res || !res[0] || !res[0].node) {
+          this.setData({ saving2img: false, saveProgress: '' })
+          wx.showToast({ title: '画布未就绪', icon: 'none' })
+          return
+        }
+        const canvas = res[0].node
+        const ctx = canvas.getContext('2d')
+        let i = 0
+        let ok = 0
+        const next = () => {
+          if (i >= total) {
+            this.setData({ saving2img: false, saveProgress: '' })
+            wx.showToast({
+              title: ok === total ? `已保存 ${total} 张到相册` : `已保存 ${ok}/${total}`,
+              icon: ok ? 'success' : 'none',
+            })
+            return
+          }
+          this.setData({ saveProgress: `${i + 1}/${total}` })
+          this.paintExportSheet(canvas, ctx, i)
+          wx.canvasToTempFilePath({
+            canvas,
+            success: (rr) =>
+              wx.saveImageToPhotosAlbum({
+                filePath: rr.tempFilePath,
+                success: () => {
+                  ok++
+                  i++
+                  next()
+                },
+                fail: () => {
+                  i++
+                  next()
+                },
+              }),
+            fail: () => {
+              i++
+              next()
+            },
+          })
+        }
+        next()
+      })
+  },
+  // 把第 idx 张原片单独画满 #cutexport（导出分辨率 1000 宽）
+  paintExportSheet(canvas: any, ctx: any, idx: number) {
+    const r = this._nest!
+    const sheet = r.sheets[idx]
+    const W = 1000
+    const margin = 24
+    const titleH = 40
+    const inner = W - margin * 2
+    const scale = r.sheetW > 0 ? inner / r.sheetW : 1
+    const drawH = Math.max(60, Math.round(r.sheetH * scale))
+    const H = margin * 2 + titleH + drawH
+    canvas.width = W
+    canvas.height = H
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, W, H)
+    ctx.fillStyle = '#19271F'
+    ctx.font = 'bold 22px sans-serif'
+    ctx.textBaseline = 'top'
+    const util = ((sheet.usedArea / (r.sheetW * r.sheetH)) * 100).toFixed(1)
+    ctx.fillText(
+      `原片 ${idx + 1}/${r.sheets.length}   ${r.sheetW}×${r.sheetH}   利用率 ${util}%`,
+      margin,
+      margin,
+    )
+    const ox = margin
+    const oy = margin + titleH
+    ctx.fillStyle = '#F3F8F5'
+    ctx.fillRect(ox, oy, inner, drawH)
+    ctx.strokeStyle = '#C5D6CD'
+    ctx.lineWidth = 2
+    ctx.strokeRect(ox, oy, inner, drawH)
+    sheet.placements.forEach((p) => {
+      const px = ox + p.x * scale
+      const py = oy + p.y * scale
+      const pw = Math.max(1, p.w * scale)
+      const ph = Math.max(1, p.h * scale)
+      ctx.fillStyle = 'rgba(14,124,102,0.16)'
+      ctx.fillRect(px, py, pw, ph)
+      ctx.strokeStyle = '#0E7C66'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(px, py, pw, ph)
+      if (pw > 52 && ph > 24) {
+        ctx.fillStyle = '#0E7C66'
+        ctx.font = '16px sans-serif'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(`${p.w}×${p.h}`, px + 5, py + ph / 2)
+        ctx.textBaseline = 'top'
+      }
     })
   },
 
-  // ── 云端历史：保存当前方案 ───────────────────────────────────────────────────
+  // ── 保存方案：弹窗起名 + 继续编辑则更新、否则新建 ──
   savePlan() {
     if (this.data.savingPlan) return
     if (!this.data.summary) {
       wx.showToast({ title: '请先优化出结果再保存', icon: 'none' })
       return
     }
+    const meta = MATERIALS[this.data.material] || MATERIALS.profile
+    const s = this.data.summary
+    const d = new Date()
+    const mm = `${d.getMonth() + 1}`.padStart(2, '0')
+    const dd = `${d.getDate()}`.padStart(2, '0')
+    const def = this.data.editingTitle || `${meta.name}${mm}${dd} · ${s.totalPieces}${meta.unit}`
+    wx.showModal({
+      title: this._editingPlanId ? '更新方案' : '保存方案',
+      editable: true,
+      placeholderText: '给方案起个名字',
+      content: def,
+      confirmText: '保存',
+      success: (m) => {
+        if (!m.confirm) return
+        const title = String(m.content || '')
+          .trim()
+          .slice(0, 40)
+        this.doSavePlan(title || def)
+      },
+    })
+  },
+  doSavePlan(title: string) {
     const material = this.data.material
     const meta = MATERIALS[material] || MATERIALS.profile
-    // input：可重算的完整入参（一维/二维结构不同），与后端 contract 对齐
     let input: any
     if (this.data.is2d) {
       input = {
         sheetW: Math.round(Number(this.data.sheetWStr) || 0),
         sheetH: Math.round(Number(this.data.sheetHStr) || 0),
-        kerf: Math.max(0, Math.round(Number(this.data.kerf2Str) || 0)),
+        kerf: this.data.noKerf ? 0 : Math.max(0, Math.round(Number(this.data.kerf2Str) || 0)),
         pieces: this.data.pieces
           .map((p: any) => ({
             w: Math.round(Number(p.wStr) || 0),
@@ -530,36 +663,34 @@ Page({
     const s = this.data.summary
     const summary = {
       material,
-      count: s.totalPieces, // 件数（展示用）
-      util: Number((Number(s.util) / 100).toFixed(4)), // 0..1（s.util 为百分比字符串）
+      count: s.totalPieces,
+      util: Number((Number(s.util) / 100).toFixed(4)),
       units: meta.unit,
     }
-    // 自动标题：材料 + 日期 + 件数（用方案标识，无需用户手填）
-    const d = new Date()
-    const mm = `${d.getMonth() + 1}`.padStart(2, '0')
-    const dd = `${d.getDate()}`.padStart(2, '0')
-    const title = `${meta.name}${mm}${dd} · ${s.totalPieces}${meta.unit}`.slice(0, 40)
-
+    const editing = this._editingPlanId
     this.setData({ savingPlan: true })
-    cutPlanApi
-      .create({ title, material, input, summary })
-      .then(() => {
-        this.setData({ savingPlan: false })
-        wx.showToast({ title: '已保存', icon: 'success' })
-        // 若历史面板开着，刷新一下
+    const req = editing
+      ? cutPlanApi.update(editing, { title, material, input, summary })
+      : cutPlanApi.create({ title, material, input, summary })
+    req
+      .then((res: any) => {
+        // 新建成功后转为「编辑该方案」，再次保存即更新，避免重复堆历史
+        if (!editing && res && res.id) this._editingPlanId = res.id
+        this.setData({ savingPlan: false, editingTitle: title })
+        wx.showToast({ title: editing ? '已更新' : '已保存', icon: 'success' })
         if (this.data.showHistory) this.fetchHistory()
       })
-      .catch(() => {
-        this.setData({ savingPlan: false })
-        // 错误 toast 由 request() 统一弹出
-      })
+      .catch(() => this.setData({ savingPlan: false }))
+  },
+  // 退出「继续编辑」：下次保存按新建处理
+  clearEditing() {
+    this._editingPlanId = ''
+    this.setData({ editingTitle: '' })
   },
 
-  // ── 云端历史：底部面板 ──────────────────────────────────────────────────────
+  // ── 云端历史 ──
   openHistory() {
     this.setData({ showHistory: true })
-    // 每次打开都拉最新：保存方案在面板关闭时进行，仅靠"列表为空才拉"会看到旧快照。
-    // fetchHistory 只置 loading、不清空 historyList，旧列表在加载期间仍可见，无闪烁。
     this.fetchHistory()
   },
   closeHistory() {
@@ -596,11 +727,12 @@ Page({
     this.fetchHistory()
   },
 
-  // 载入历史方案：回填 material + 入参，关闭面板后自动重算。
+  // 载入历史方案：先存当前草稿，再回填 material + 入参，关闭面板后自动重算
   loadPlan(e: any) {
     const id = e.currentTarget.dataset.id
     const row = this.data.historyList.find((r: any) => r.id === id)
     if (!row) return
+    this._drafts[this.data.material] = this.snapshot(this.data.material)
     const material = row.material
     const meta = MATERIALS[material] || MATERIALS.profile
     const input = row.input || {}
@@ -608,13 +740,16 @@ Page({
       material,
       is2d: meta.is2d,
       unit: meta.unit,
+      noKerf: meta.noKerf,
+      hasImage: meta.hasImage,
       showHistory: false,
+      editingTitle: row.title || '',
       ...RESET_RESULT,
     }
     if (meta.is2d) {
       set.sheetWStr = String(input.sheetW || '')
       set.sheetHStr = String(input.sheetH || '')
-      set.kerf2Str = String(input.kerf != null ? input.kerf : '')
+      set.kerf2Str = String(input.kerf != null ? input.kerf : meta.noKerf ? 0 : '')
       const ps = Array.isArray(input.pieces) ? input.pieces : []
       set.pieces = ps.length
         ? ps.map((p: any) => ({
@@ -640,11 +775,13 @@ Page({
         : [newPiece()]
     }
     this._nest = null
-    this._cut = null
-    this.setData(set, () => this.compute())
+    this._editingPlanId = id
+    this.setData(set, () => {
+      this.compute()
+      this.flushDrafts()
+    })
   },
 
-  // 删除历史方案：二次确认 → remove → 重新拉取列表。
   delPlan(e: any) {
     const id = e.currentTarget.dataset.id
     wx.showModal({
@@ -656,17 +793,16 @@ Page({
         cutPlanApi
           .remove(id)
           .then(() => {
+            // 删的正是当前在编辑的方案 → 退出编辑态
+            if (this._editingPlanId === id) this.clearEditing()
             wx.showToast({ title: '已删除', icon: 'success' })
             this.fetchHistory()
           })
-          .catch(() => {
-            // 错误 toast 由 request() 统一弹出
-          })
+          .catch(() => {})
       },
     })
   },
 
-  // 摘要日期：ISO → M月D日（列表展示用）
   fmtDate(iso?: string): string {
     if (!iso) return ''
     const d = new Date(iso)

@@ -9,20 +9,29 @@
   color: var(--text);
 }
 .cut__in--seg {
-  flex: 0 0 120px;
+  flex: 1 1 0;
+  min-width: 0;
   text-align: left;
 }
 .cut__in--qty {
-  flex: 0 0 90px;
+  flex: 0 1 80px;
+  min-width: 0;
   text-align: left;
 }
 .cut__in--dim {
-  flex: 0 0 86px;
+  flex: 1 1 0;
+  min-width: 0;
   text-align: left;
 }
 .cut__in--qty2 {
-  flex: 0 0 72px;
+  flex: 0 1 58px;
+  min-width: 0;
   text-align: left;
+}
+/* 清单行 × 分隔符（不挤压、不换行）*/
+.cut__x {
+  flex: 0 0 auto;
+  margin: 0 6px;
 }
 .cut__hist {
   display: inline-flex;
@@ -45,7 +54,9 @@
   font-size: 13px;
 }
 .cut__del {
-  padding: 4px;
+  flex: 0 0 auto;
+  padding: 4px 2px;
+  margin-left: 2px;
 }
 .cut__metrics {
   display: flex;
@@ -78,6 +89,29 @@
   color: var(--text);
   font-weight: 600;
 }
+/* 继续编辑提示条 */
+.cut__editing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: var(--gap);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(46, 158, 120, 0.08);
+}
+.cut__editing-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.cut__editing-new {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
 
 /* 排料图画布 */
 .cut__cvwrap {
@@ -86,6 +120,14 @@
 .cut__cv {
   width: 100%;
   display: block;
+}
+/* 导出专用画布：移出可视区但仍渲染（display:none 会导致截图空白）*/
+.cut__cv-export {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 500px;
+  height: 400px;
 }
 
 /* 导出 / 保存方案按钮组 */
