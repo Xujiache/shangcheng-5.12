@@ -128,7 +128,23 @@ page {
 }
 .oi__size-in {
   flex: 0 0 auto;
-  width: 56px;
+  width: 52px;
+  box-sizing: border-box;
+  height: 38px;
+  line-height: 1.4;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #19271f;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0;
+}
+/* 尺寸件数输入框（窄）：宽×高×件数 */
+.oi__size-cnt {
+  flex: 0 0 auto;
+  width: 46px;
   box-sizing: border-box;
   height: 38px;
   line-height: 1.4;

@@ -215,6 +215,7 @@ export function customCostsTotal(raw: unknown): number {
 export interface OrderSize {
   w: number // 宽 mm
   h: number // 高 mm
+  count?: number // 该尺寸件数（默认 1）：面积 = 宽×高×件数
   notes?: string[] // 多条备注（清洗后必为数组；每条 ≤30 字、≤50 条）
   /** @deprecated 旧单单条备注；读取时并入 notes，不再写入 */
   note?: string
@@ -256,6 +257,7 @@ export function sanitizeOrderItems(raw: unknown): OrderItem[] {
               .map((s: any) => ({
                 w: Math.max(0, Math.round(Number(s?.w) || 0)),
                 h: Math.max(0, Math.round(Number(s?.h) || 0)),
+                count: Math.max(1, Math.round(Number(s?.count) || 1)),
                 notes: sanitizeSizeNotes(s),
               }))
               .filter((s: OrderSize) => s.w > 0 && s.h > 0)
@@ -286,7 +288,9 @@ export function sanitizeOrderItems(raw: unknown): OrderItem[] {
   )
 }
 function sizeArea(s: OrderSize, baseArea: number): number {
-  return Math.max((s.w * s.h) / 1_000_000, baseArea || 0)
+  // 单件面积按起算兜底，再乘以件数（宽×高×件数）
+  const count = Math.max(1, Math.round(Number(s.count) || 1))
+  return Math.max((s.w * s.h) / 1_000_000, baseArea || 0) * count
 }
 /** 计费量：有尺寸=各尺寸面积之和(按起算兜底)；无尺寸=手填数量 */
 export function itemBillingQty(it: OrderItem): number {

@@ -20,7 +20,7 @@ function blankNote() {
   return { _k: uid(), text: '' }
 }
 function blankSize() {
-  return { _k: uid(), wStr: '', hStr: '', notes: [] as any[], areaText: '' }
+  return { _k: uid(), wStr: '', hStr: '', countStr: '', notes: [] as any[], areaText: '' }
 }
 function blankItem() {
   return {
@@ -58,6 +58,7 @@ function normIn(it: any) {
           _k: uid(),
           wStr: s.w ? String(s.w) : '',
           hStr: s.h ? String(s.h) : '',
+          countStr: s.count && s.count > 1 ? String(s.count) : '',
           notes: normSizeNotes(s),
           areaText: '',
         }))
@@ -251,8 +252,10 @@ Page({
         const w = num(s.wStr)
         const h = num(s.hStr)
         const filled = w > 0 && h > 0
+        const cnt = Math.max(1, Math.round(num(s.countStr) || 0)) // 件数默认 1
         const raw = filled ? (w * h) / 1_000_000 : 0
-        const area = filled ? Math.max(raw, baseArea) : 0
+        // 单件面积按起算兜底，再乘件数；行内 =X㎡ 显示该尺寸合计（含件数）
+        const area = filled ? Math.max(raw, baseArea) * cnt : 0
         // 实量面积小于起算面积时按起算计，行内标记「(起算)」说明显示值与宽×高不一致的原因
         return { ...s, areaText: filled ? fmtArea(area) : '', clamped: filled && raw < baseArea }
       })
@@ -261,7 +264,9 @@ Page({
       const billQty = hasSizes
         ? valid.reduce(
             (sum: number, s: any) =>
-              sum + Math.max((num(s.wStr) * num(s.hStr)) / 1_000_000, baseArea),
+              sum +
+              Math.max((num(s.wStr) * num(s.hStr)) / 1_000_000, baseArea) *
+                Math.max(1, Math.round(num(s.countStr) || 0)),
             0,
           )
         : num(it.qtyStr)
@@ -324,6 +329,7 @@ Page({
           .map((s: any) => ({
             w: Math.round(num(s.wStr)),
             h: Math.round(num(s.hStr)),
+            count: Math.max(1, Math.round(num(s.countStr) || 0)),
             notes: (s.notes || [])
               .map((n: any) => String(n.text || '').trim())
               .filter((t: string) => t),

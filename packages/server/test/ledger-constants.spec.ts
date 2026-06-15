@@ -249,7 +249,7 @@ describe('sanitizeOrderItems 门窗报价明细清洗', () => {
     const out = sanitizeOrderItems([{ name: '窗', sizes }])
     expect(out[0].sizes).toHaveLength(1)
     // 旧单单条 note 兼容迁移为 notes 数组，逐条仍截断到 30
-    expect(out[0].sizes[0]).toEqual({ w: 800, h: 1250, notes: ['N'.repeat(30)] })
+    expect(out[0].sizes[0]).toEqual({ w: 800, h: 1250, count: 1, notes: ['N'.repeat(30)] })
   })
 
   it('尺寸多条备注：notes 数组逐条 trim/≤30、丢空、≤50 条', () => {
@@ -294,6 +294,31 @@ describe('itemBillingQty 计费量', () => {
   it('无尺寸 = 手填数量 qty', () => {
     const it = { name: '门', note: '', baseArea: 0, unitPrice: 0, qty: 3.5, sizes: [] }
     expect(itemBillingQty(it)).toBe(3.5)
+  })
+
+  it('尺寸件数：宽×高×件数（1000×2000×3 = 6㎡，单价100 → 小计600）', () => {
+    const it = {
+      name: '窗',
+      baseArea: 0,
+      unitPrice: 100,
+      qty: 0,
+      sizes: [{ w: 1000, h: 2000, count: 3 }],
+    }
+    expect(itemBillingQty(it as any)).toBeCloseTo(6, 6)
+    expect(itemSubtotal(it as any)).toBe(600)
+  })
+
+  it('件数缺省/非法 → 按 1 计', () => {
+    const a = { name: '窗', baseArea: 0, unitPrice: 0, qty: 0, sizes: [{ w: 1000, h: 1000 }] }
+    const b = {
+      name: '窗',
+      baseArea: 0,
+      unitPrice: 0,
+      qty: 0,
+      sizes: [{ w: 1000, h: 1000, count: 0 }],
+    }
+    expect(itemBillingQty(a as any)).toBeCloseTo(1, 6)
+    expect(itemBillingQty(b as any)).toBeCloseTo(1, 6)
   })
 })
 

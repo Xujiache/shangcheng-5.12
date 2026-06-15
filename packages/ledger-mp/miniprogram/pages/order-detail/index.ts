@@ -90,7 +90,9 @@ Page({
         const billingQty = sizes.length
           ? sizes.reduce(
               (sum: number, s: any) =>
-                sum + Math.max(((s.w || 0) * (s.h || 0)) / 1_000_000, it.baseArea || 0),
+                sum +
+                Math.max(((s.w || 0) * (s.h || 0)) / 1_000_000, it.baseArea || 0) *
+                  Math.max(1, Math.round(Number(s.count) || 1)),
               0,
             )
           : it.qty || 0
