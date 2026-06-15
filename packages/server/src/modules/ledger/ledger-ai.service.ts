@@ -1,6 +1,31 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { BizException, BizCode } from '../../common/exceptions/biz.exception'
 import { FilesService } from '../files/files.service'
+import { lookup } from 'node:dns/promises'
+
+const MAX_ADOPT_BYTES = 10 * 1024 * 1024 // 10MB 上限
+
+// SSRF 防护：拒绝环回/内网/链路本地地址（含解析后的 IP）
+function isPrivateAddr(addr: string, family: number): boolean {
+  const a = (addr || '').toLowerCase()
+  if (family === 6) {
+    return (
+      a === '::1' ||
+      a.startsWith('fe80') ||
+      a.startsWith('fc') ||
+      a.startsWith('fd') ||
+      a.startsWith('::ffff:')
+    )
+  }
+  const p = a.split('.').map((x) => Number(x))
+  if (p.length !== 4 || p.some((x) => Number.isNaN(x))) return true
+  const [b0, b1] = p
+  if (b0 === 0 || b0 === 127 || b0 === 10) return true
+  if (b0 === 169 && b1 === 254) return true
+  if (b0 === 172 && b1 >= 16 && b1 <= 31) return true
+  if (b0 === 192 && b1 === 168) return true
+  return false
+}
 
 /**
  * 后台 AI 生图（聚鑫科技 GPT Image 2，BASE_URL=api.lk888.ai）。

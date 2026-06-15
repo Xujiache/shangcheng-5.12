@@ -534,7 +534,7 @@ export class LedgerService {
     if (dto.phone !== undefined) data.phone = dto.phone?.trim() || null
     if (dto.address !== undefined) data.address = dto.address?.trim() || null
     if (dto.note !== undefined) data.note = dto.note?.trim() || null
-    const c = await this.prisma.ledgerCustomer.update({ where: { id }, data })
+    const c = await this.prisma.ledgerCustomer.update({ where: { id, userId }, data })
     // 改名时同步历史订单的冗余客户名，保持一致
     if (data.name && data.name !== exist.name) {
       await this.prisma.ledgerOrder.updateMany({
@@ -553,7 +553,7 @@ export class LedgerService {
       where: { userId, customerId: id },
       data: { customerId: null },
     })
-    await this.prisma.ledgerCustomer.delete({ where: { id } })
+    await this.prisma.ledgerCustomer.delete({ where: { id, userId } })
     return { ok: true }
   }
 
@@ -1044,7 +1044,7 @@ export class LedgerService {
     const content = String(dto.content || '').trim()
     if (!content) throw new BizException(BizCode.INVALID_PARAMS, '请填写反馈内容')
     const images = Array.isArray(dto.images)
-      ? dto.images.filter((u) => typeof u === 'string' && u).slice(0, 9)
+      ? dto.images.filter((u) => typeof u === 'string' && /^https?:\/\//.test(u)).slice(0, 9)
       : []
     const fb = await this.prisma.ledgerFeedback.create({
       data: {
