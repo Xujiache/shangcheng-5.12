@@ -10,24 +10,51 @@
     </view>
     <block wx:else>
       <view class="lz-card lz-card--glow inv__hero">
-        <view class="inv__icon"><lz-icon name="gift" size="34" color="white" stroke="1.8" /></view>
+        <view class="inv__glow"></view>
+        <view class="inv__icon"><lz-icon name="gift" size="38" color="white" stroke="1.8" /></view>
         <view class="inv__title">邀请好友注册</view>
         <block wx:if="{{allowSelfRegister}}">
           <view class="inv__desc">好友用你的邀请码注册成功，你将获得 <text class="inv__hl">{{rewardDays}}</text> 天会员</view>
-          <view class="inv__code-box">
+          <view class="inv__code-box" bindtap="copyCode" hover-class="tap-active">
             <text class="inv__code">{{inviteCode}}</text>
-            <view class="inv__copy" bindtap="copyCode" hover-class="tap-active">复制</view>
+            <view class="inv__copy">复制</view>
+          </view>
+          <view class="inv__metrics">
+            <view class="inv__metric">
+              <view class="inv__metric-v">{{invitedCount}}</view>
+              <view class="inv__metric-l">已邀请(人)</view>
+            </view>
+            <view class="inv__metric-divider"></view>
+            <view class="inv__metric">
+              <view class="inv__metric-v">{{rewardDays}}</view>
+              <view class="inv__metric-l">每人得(天)</view>
+            </view>
           </view>
         </block>
         <view wx:else class="inv__desc">管理员暂未开放自助注册，邀请功能暂不可用</view>
-        <view class="inv__stat">已成功邀请 <text class="inv__hl">{{invitedCount}}</text> 人</view>
       </view>
 
       <block wx:if="{{allowSelfRegister}}">
-        <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" open-type="share" style="margin-top: 18px;">
+        <view class="inv__steps">
+          <view class="inv__step">
+            <view class="inv__step-n">1</view>
+            <view class="inv__step-t">分享给好友</view>
+          </view>
+          <view class="inv__step-line"></view>
+          <view class="inv__step">
+            <view class="inv__step-n">2</view>
+            <view class="inv__step-t">好友注册</view>
+          </view>
+          <view class="inv__step-line"></view>
+          <view class="inv__step">
+            <view class="inv__step-n">3</view>
+            <view class="inv__step-t">你得会员</view>
+          </view>
+        </view>
+        <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full inv__share" open-type="share">
           <lz-icon name="gift" size="18" color="white" /> 分享给好友
         </button>
-        <view class="inv__tip">分享卡片 → 好友点击打开 → 邀请码已自动带上 → 注册成功你得会员</view>
+        <view class="inv__tip">邀请码已自动带上，好友注册成功即刻到账</view>
       </block>
     </block>
   </view>
