@@ -19,3 +19,14 @@
   from { transform: scaleY(0); }
   to { transform: scaleY(1); }
 }
+
+/* 沉浸光感 · 常驻呼吸流光（仅动 opacity，合成层，低端机不掉帧）*/
+@keyframes luminBreath {
+  0%,
+  100% {
+    opacity: 0.32;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}

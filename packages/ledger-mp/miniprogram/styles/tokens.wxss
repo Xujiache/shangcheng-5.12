@@ -40,13 +40,16 @@ page {
   --shadow: 0 1px 2px rgba(16, 40, 30, 0.05), 0 8px 24px rgba(16, 40, 30, 0.07);
   --shadow-soft: 0 1px 2px rgba(16, 40, 30, 0.05);
 
-  /* 液态玻璃（鸿蒙 6/7 风：高透明 + 强模糊 + 亮边，透出流动背景）*/
-  --glass-card-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.42) 100%);
-  --glass-nav-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.3) 100%);
-  --glass-blur: blur(36px) saturate(185%);
-  --glass-blur-strong: blur(44px) saturate(195%);
-  --glass-border: rgba(255, 255, 255, 0.6);
-  --glass-rim: rgba(255, 255, 255, 0.92);
+  /* 沉浸光感（鸿蒙 7 满配：20px 高斯磨砂 + 发光亮边 + 呼吸流光 + 3D 悬浮）*/
+  --glass-card-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.56) 0%, rgba(255, 255, 255, 0.36) 100%);
+  --glass-nav-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.26) 100%);
+  --glass-blur: blur(20px) saturate(165%);
+  --glass-blur-strong: blur(24px) saturate(175%);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-rim: rgba(255, 255, 255, 0.95);
+  /* 发光边框/光晕色（随主色，后续 Phase2 可由背景自动提取覆盖）*/
+  --lumin-glow: rgba(46, 180, 150, 0.5);
+  --lumin-glow-soft: rgba(46, 180, 150, 0.22);
 
   /* 圆角（soft） */
   --r-card: 16px;
