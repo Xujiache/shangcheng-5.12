@@ -16,6 +16,12 @@
   transition: left 0.22s cubic-bezier(0.3, 0.7, 0.4, 1);
   z-index: 0;
 }
+/* 拖拽中：指示器更跟手 + 轻微高起，强化"丝滑拖动"的触感 */
+.seg--drag .seg__ind {
+  transition: left 0.12s cubic-bezier(0.33, 1, 0.68, 1);
+  transform: scale(1.03);
+  box-shadow: var(--shadow);
+}
 .seg__btn {
   position: relative;
   z-index: 1;
