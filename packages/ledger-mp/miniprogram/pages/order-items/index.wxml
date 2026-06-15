@@ -30,25 +30,27 @@
 
       <!-- 尺寸（每条尺寸可挂任意多条备注）-->
       <view wx:for="{{item.sizes}}" wx:for-item="sz" wx:for-index="sidx" wx:key="_k" class="oi__size">
-        <view class="oi__size-main">
-          <input class="oi__size-in" type="number" value="{{sz.wStr}}" placeholder="宽" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="wStr" bindinput="onSizeInput" />
-          <text class="oi__size-op">×</text>
-          <input class="oi__size-in" type="number" value="{{sz.hStr}}" placeholder="高" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="hStr" bindinput="onSizeInput" />
-          <text class="oi__size-mm">mm</text>
-          <text class="oi__size-eq">= {{sz.areaText || '0'}}㎡{{sz.clamped ? ' 起算' : ''}}</text>
+        <view class="oi__size-row">
+          <view class="oi__size-fields">
+            <input class="oi__size-in" type="number" value="{{sz.wStr}}" placeholder="宽" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="wStr" bindinput="onSizeInput" />
+            <text class="oi__size-op">×</text>
+            <input class="oi__size-in" type="number" value="{{sz.hStr}}" placeholder="高" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="hStr" bindinput="onSizeInput" />
+            <text class="oi__size-mm">mm</text>
+            <text class="oi__size-eq">= {{sz.areaText || '0'}}㎡{{sz.clamped ? ' 起算' : ''}}</text>
+            <!-- 备注：紧跟在「=面积」后方，多条横向排列、超出自动换行 -->
+            <view wx:for="{{sz.notes}}" wx:for-item="nt" wx:for-index="nidx" wx:key="_k" class="oi__notechip">
+              <input class="oi__notechip-in" value="{{nt.text}}" placeholder="备注" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-nidx="{{nidx}}" bindinput="onNoteInput" />
+              <view class="oi__notechip-del" data-idx="{{index}}" data-sidx="{{sidx}}" data-nidx="{{nidx}}" bindtap="delNote" hover-class="oi__tap">
+                <lz-icon name="close" size="11" color="#9bab9f" stroke="2.2" />
+              </view>
+            </view>
+            <view class="oi__addnote" data-idx="{{index}}" data-sidx="{{sidx}}" bindtap="addNote" hover-class="oi__tap">
+              <lz-icon name="plus" size="11" color="#2E9E78" stroke="2.2" /><text>备注</text>
+            </view>
+          </view>
           <view class="oi__size-del" data-idx="{{index}}" data-sidx="{{sidx}}" bindtap="delSize" hover-class="oi__tap">
             <lz-icon name="trash" size="15" color="#c0ccc4" />
           </view>
-        </view>
-        <view wx:for="{{sz.notes}}" wx:for-item="nt" wx:for-index="nidx" wx:key="_k" class="oi__noterow">
-          <text class="oi__noterow-l">备注</text>
-          <input class="oi__noterow-in" value="{{nt.text}}" placeholder="如 灰色 / 钢化 / 5+9A+5" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-nidx="{{nidx}}" bindinput="onNoteInput" />
-          <view class="oi__noterow-del" data-idx="{{index}}" data-sidx="{{sidx}}" data-nidx="{{nidx}}" bindtap="delNote" hover-class="oi__tap">
-            <lz-icon name="close" size="12" color="#9bab9f" stroke="2.2" />
-          </view>
-        </view>
-        <view class="oi__addnote" data-idx="{{index}}" data-sidx="{{sidx}}" bindtap="addNote" hover-class="oi__tap">
-          <lz-icon name="plus" size="12" color="#2E9E78" stroke="2.2" /><text>备注</text>
         </view>
       </view>
       <view class="oi__addsize" data-idx="{{index}}" bindtap="addSize" hover-class="oi__tap">

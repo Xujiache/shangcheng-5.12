@@ -14,12 +14,18 @@
   height: 66px;
   padding: 0 6px;
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 10px 34px rgba(8, 24, 18, 0.2), 0 2px 6px rgba(8, 24, 18, 0.08);
+  /* 液态玻璃：顶亮底暗的半透明渐变镜面（光线在玻璃上的折射感）*/
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.42) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  /* 外阴影做悬浮 + 内嵌高光做"被光照亮的玻璃边缘"(edge lensing) */
+  box-shadow:
+    0 14px 44px rgba(8, 24, 18, 0.24),
+    0 2px 8px rgba(8, 24, 18, 0.1),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 6px rgba(255, 255, 255, 0.4);
   /* iOS WKWebView 必须带 -webkit- 前缀，否则毛玻璃不生效 */
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  backdrop-filter: blur(30px) saturate(200%);
 }
 /* 关闭玻璃质感：实色不透明、无模糊 */
 .ctb__bar--solid {
@@ -58,5 +64,8 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(150deg, #3ba58c, #0e7c66);
-  box-shadow: 0 8px 20px rgba(14, 124, 102, 0.42);
+  box-shadow:
+    0 8px 20px rgba(14, 124, 102, 0.42),
+    inset 0 2px 3px rgba(255, 255, 255, 0.45),
+    inset 0 -3px 6px rgba(0, 56, 42, 0.28);
 }

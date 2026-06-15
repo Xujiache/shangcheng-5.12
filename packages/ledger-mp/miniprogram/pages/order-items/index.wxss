@@ -113,14 +113,22 @@ page {
   background: #f5faf7;
   border: 1px solid rgba(31, 107, 92, 0.08);
 }
-.oi__size-main {
+.oi__size-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
+}
+.oi__size-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 6px;
 }
 .oi__size-in {
   flex: 0 0 auto;
-  width: 62px;
+  width: 60px;
   box-sizing: border-box;
   height: 38px;
   line-height: 1.4;
@@ -144,8 +152,7 @@ page {
   flex: 0 0 auto;
 }
 .oi__size-eq {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
   font-size: 13px;
   font-weight: 700;
   color: #2e9e78;
@@ -158,36 +165,24 @@ page {
   align-items: center;
   justify-content: center;
 }
-/* 尺寸下挂的备注行（独立小框 + 可删，下方「+ 备注」继续加任意多条）*/
-.oi__noterow {
-  display: flex;
+/* 备注：紧跟「=面积」之后的内联小框（可删），多条自动换行；「+备注」同排 */
+.oi__notechip {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-}
-.oi__noterow-l {
-  font-size: 11px;
-  color: #9bab9f;
-  flex: 0 0 auto;
-  width: 26px;
-}
-.oi__noterow-in {
-  flex: 1;
-  min-width: 0;
-  box-sizing: border-box;
-  height: 36px;
-  line-height: 1.4;
-  font-size: 13px;
-  color: #19271f;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 9px;
-  padding: 0 10px;
+  padding-left: 8px;
+  height: 32px;
 }
-.oi__noterow-del {
-  width: 26px;
-  height: 26px;
-  flex: 0 0 auto;
+.oi__notechip-in {
+  width: 66px;
+  font-size: 13px;
+  color: #19271f;
+}
+.oi__notechip-del {
+  width: 22px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,11 +191,9 @@ page {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  margin-top: 8px;
-  margin-left: 2px;
-  padding: 5px 10px;
+  padding: 7px 9px;
   border-radius: 8px;
-  background: rgba(46, 158, 120, 0.07);
+  background: rgba(46, 158, 120, 0.08);
   font-size: 12px;
   font-weight: 700;
   color: #2e9e78;
