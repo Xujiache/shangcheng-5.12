@@ -77,4 +77,15 @@ Page({
       },
     })
   },
+  // 开启「转发给朋友」：分享到注册页（带邀请奖励文案），落地引导新用户注册
+  onShareAppMessage() {
+    return {
+      title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
+      path: '/pages/register/index',
+    }
+  },
+  // 开启「分享到朋友圈」
+  onShareTimeline() {
+    return { title: '门窗利账 · 门窗人的记账利器' }
+  },
 })
