@@ -16,11 +16,8 @@ function fmtArea(n: number): string {
 // 列表行 wx:key 用的页内唯一键（仅前端用，writeBack 重建对象时不带出）
 let seq = 0
 const uid = () => 'k' + ++seq
-function blankNote() {
-  return { _k: uid(), text: '' }
-}
 function blankSize() {
-  return { _k: uid(), wStr: '', hStr: '', countStr: '', notes: [] as any[], areaText: '' }
+  return { _k: uid(), wStr: '', hStr: '', countStr: '', noteStr: '', _open: false, areaText: '' }
 }
 function blankItem() {
   return {
@@ -34,13 +31,10 @@ function blankItem() {
     sizes: [] as any[],
   }
 }
-// 尺寸备注 后端形态（notes 数组 / 旧单 note 单串）→ 页面编辑态 [{_k,text}]
-function normSizeNotes(s: any): any[] {
-  const raw = Array.isArray(s?.notes) ? s.notes : s?.note ? [s.note] : []
-  return raw
-    .map((t: any) => String(t || '').trim())
-    .filter((t: string) => t)
-    .map((t: string) => ({ _k: uid(), text: t }))
+// 尺寸备注：取后端 notes 首条 / 旧单 note（现每尺寸只留一条备注）
+function normSizeNote(s: any): string {
+  if (Array.isArray(s?.notes) && s.notes.length) return String(s.notes[0] || '').trim()
+  return String(s?.note || '').trim()
 }
 // 从后端 item 形态 → 页面编辑态
 function normIn(it: any) {
@@ -59,7 +53,8 @@ function normIn(it: any) {
           wStr: s.w ? String(s.w) : '',
           hStr: s.h ? String(s.h) : '',
           countStr: s.count && s.count > 1 ? String(s.count) : '',
-          notes: normSizeNotes(s),
+          noteStr: normSizeNote(s),
+          _open: false,
           areaText: '',
         }))
       : [],
@@ -86,6 +81,7 @@ Page({
   // 进入时的订单总价：无具名明细时沿用此值（对齐后端「无 items 则取 dto.total」），防止清零
   _manualTotal: 0,
   _navigating: false,
+  _swipeX: 0, // 滑动删除：touchstart 起点 X
 
   onLoad() {
     const inp: any = wx.getStorageSync(IN_KEY) || {}
@@ -166,43 +162,19 @@ Page({
     this.setData({ items }, () => this.recalc())
   },
 
-  // ── 尺寸备注（每条独立、可删、可加任意多条；备注不参与计价，不触发 recalc）──
-  addNote(e: any) {
-    const i = Number(e.currentTarget.dataset.idx)
-    const si = Number(e.currentTarget.dataset.sidx)
-    const items = this.data.items.slice()
-    const sizes = items[i].sizes.slice()
-    // 备注无业务上限，仅设 50 条防误触膨胀（与后端 sanitizeSizeNotes 同口径）
-    if ((sizes[si].notes || []).length >= 50) {
-      wx.showToast({ title: '最多 50 条备注', icon: 'none' })
-      return
-    }
-    sizes[si] = { ...sizes[si], notes: [...(sizes[si].notes || []), blankNote()] }
-    items[i] = { ...items[i], sizes }
-    this.setData({ items })
+  // ── 尺寸滑动删除（左滑露出「删除」→ 点删除移除该尺寸；两步操作防误删）──
+  onSwipeStart(e: any) {
+    this._swipeX = e.touches && e.touches[0] ? e.touches[0].clientX : 0
   },
-  delNote(e: any) {
+  onSwipeEnd(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const si = Number(e.currentTarget.dataset.sidx)
-    const ni = Number(e.currentTarget.dataset.nidx)
+    const endX = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0
+    const dx = endX - (this._swipeX || 0)
+    if (dx > -36 && dx < 36) return // 视为点击/竖向滚动，不处理
+    const open = dx <= -36 // 左滑露出删除；右滑收起。同一项同时只开一行
     const items = this.data.items.slice()
-    const sizes = items[i].sizes.slice()
-    sizes[si] = {
-      ...sizes[si],
-      notes: (sizes[si].notes || []).filter((_: any, j: number) => j !== ni),
-    }
-    items[i] = { ...items[i], sizes }
-    this.setData({ items })
-  },
-  onNoteInput(e: any) {
-    const i = Number(e.currentTarget.dataset.idx)
-    const si = Number(e.currentTarget.dataset.sidx)
-    const ni = Number(e.currentTarget.dataset.nidx)
-    const items = this.data.items.slice()
-    const sizes = items[i].sizes.slice()
-    const notes = (sizes[si].notes || []).slice()
-    notes[ni] = { ...notes[ni], text: e.detail.value }
-    sizes[si] = { ...sizes[si], notes }
+    const sizes = items[i].sizes.map((s: any, j: number) => ({ ...s, _open: open && j === si }))
     items[i] = { ...items[i], sizes }
     this.setData({ items })
   },
@@ -326,14 +298,15 @@ Page({
           ? Math.max(0, Math.round(num(it.subtotalStr)))
           : null,
         sizes: it.sizes
-          .map((s: any) => ({
-            w: Math.round(num(s.wStr)),
-            h: Math.round(num(s.hStr)),
-            count: Math.max(1, Math.round(num(s.countStr) || 0)),
-            notes: (s.notes || [])
-              .map((n: any) => String(n.text || '').trim())
-              .filter((t: string) => t),
-          }))
+          .map((s: any) => {
+            const note = String(s.noteStr || '').trim()
+            return {
+              w: Math.round(num(s.wStr)),
+              h: Math.round(num(s.hStr)),
+              count: Math.max(1, Math.round(num(s.countStr) || 0)),
+              notes: note ? [note] : [],
+            }
+          })
           .filter((s: any) => s.w > 0 && s.h > 0),
       }))
       // 名称非强制：保留有 名称/尺寸/数量/单价/小计 任一的明细（仅丢纯空行），与 recalc/后端同口径
