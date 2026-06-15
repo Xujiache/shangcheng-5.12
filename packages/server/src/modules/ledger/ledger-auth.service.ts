@@ -98,7 +98,15 @@ export class LedgerAuthService {
   /** 公开配置（登录页据此显隐「注册」入口）。与 register 的校验读同一份 LedgerConfig。 */
   async getPublicConfig() {
     const cfg = await this.readConfig()
-    return { allowSelfRegister: cfg.allowSelfRegister }
+    // 站点 LOGO：来自平台「系统设置」site.logo（管理后台可上传/填写），缺失则空串（端上回退本地图标）
+    let logoUrl = ''
+    try {
+      const row = await this.prisma.systemConfig.findUnique({ where: { key: 'system_settings' } })
+      logoUrl = ((row?.value as any)?.site?.logo as string) || ''
+    } catch (e) {
+      /* 配置缺失忽略 */
+    }
+    return { allowSelfRegister: cfg.allowSelfRegister, logoUrl }
   }
 
   /**

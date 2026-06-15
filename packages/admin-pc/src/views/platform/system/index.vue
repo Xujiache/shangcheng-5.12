@@ -18,7 +18,28 @@
       </template>
       <ElForm :model="s.site" label-width="160px">
         <ElFormItem label="平台名称"><ElInput v-model="s.site.name" /></ElFormItem>
-        <ElFormItem label="Logo URL"><ElInput v-model="s.site.logo" /></ElFormItem>
+        <ElFormItem label="平台 LOGO">
+          <div class="pf-logo">
+            <ElUpload
+              class="pf-logo-up"
+              :show-file-list="false"
+              :before-upload="beforeLogoUpload"
+              :http-request="doLogoUpload"
+            >
+              <div class="pf-logo-box" v-loading="logoUploading">
+                <ElImage v-if="s.site.logo" :src="s.site.logo" fit="contain" class="pf-logo-img" />
+                <div v-else class="pf-logo-empty">点击上传</div>
+              </div>
+            </ElUpload>
+            <div class="pf-logo-side">
+              <ElInput v-model="s.site.logo" placeholder="或直接填写图片 URL" />
+              <div class="pf-logo-tip"
+                >建议 1:1 正方形 PNG，≤
+                2MB；上传后点「保存全部」生效，小程序登录/关于页自动同步</div
+              >
+            </div>
+          </div>
+        </ElFormItem>
         <ElFormItem label="ICP 备案号"><ElInput v-model="s.site.icp" /></ElFormItem>
       </ElForm>
       <ElDivider />
@@ -188,11 +209,43 @@
     type SystemSettings
   } from '@/api/platform-business'
   import { ElMessage } from 'element-plus'
+  import { uploadLedgerImage } from '@/api/ledger'
 
   defineOptions({ name: 'PlatformSystem' })
 
   const s = ref<SystemSettings>()
   const saving = ref(false)
+  const logoUploading = ref(false)
+
+  function beforeLogoUpload(file: File) {
+    const okType = /^image\/(png|jpe?g|gif|webp|svg\+xml)$/.test(file.type)
+    if (!okType) {
+      ElMessage.warning('请选择 png/jpg/svg/webp 图片')
+      return false
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      ElMessage.warning('LOGO 不能超过 2MB')
+      return false
+    }
+    return true
+  }
+  async function doLogoUpload(opt: { file: File }) {
+    if (!s.value) return
+    logoUploading.value = true
+    try {
+      const r = await uploadLedgerImage(opt.file)
+      if (r?.url) {
+        s.value.site.logo = r.url
+        ElMessage.success('LOGO 已上传，记得点「保存全部」')
+      } else {
+        ElMessage.error('上传失败：未返回地址')
+      }
+    } catch (e: any) {
+      ElMessage.error(e?.message || 'LOGO 上传失败，请重试')
+    } finally {
+      logoUploading.value = false
+    }
+  }
 
   /**
    * 兜底补全所有嵌套字段，避免后端缺字段时 v-model="s.payment.wechat.enabled"
@@ -331,5 +384,52 @@
     height: 40px;
     font-size: 22px;
     border-radius: 12px;
+  }
+
+  .pf-logo {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .pf-logo-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 88px;
+    height: 88px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #fafbfc;
+    border: 1px dashed #d9dde3;
+    border-radius: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .pf-logo-box:hover {
+    border-color: var(--el-color-primary, #409eff);
+  }
+
+  .pf-logo-img {
+    width: 100%;
+    height: 100%;
+  }
+
+  .pf-logo-empty {
+    font-size: 12px;
+    color: #9aa0a6;
+  }
+
+  .pf-logo-side {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .pf-logo-tip {
+    font-size: 12px;
+    color: #6b7280;
   }
 </style>

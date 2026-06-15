@@ -5,7 +5,8 @@
   <!-- 品牌 -->
   <view class="login__brand">
     <view class="login__logo">
-      <lz-icon name="cube" size="40" color="white" stroke="2" />
+      <image wx:if="{{logoUrl}}" class="login__logo-img" src="{{logoUrl}}" mode="aspectFit" />
+      <lz-icon wx:else name="cube" size="40" color="white" stroke="2" />
     </view>
     <view class="login__name">门窗利账</view>
     <view class="login__slogan">登录后管理订单与利润</view>

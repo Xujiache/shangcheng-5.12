@@ -10,6 +10,11 @@
   flex-direction: column;
   align-items: flex-start;
 }
+.login__logo-img {
+  width: 64%;
+  height: 64%;
+  border-radius: 14px;
+}
 .login__logo {
   width: 76px;
   height: 76px;

@@ -5,7 +5,7 @@ import { invalidateCache } from '../utils/request'
 export const authApi = {
   // 公开配置（是否开放自助注册等）；silent 让页面自行兜底默认值
   config: () =>
-    http.get<{ allowSelfRegister: boolean }>('/l/auth/config', undefined, {
+    http.get<{ allowSelfRegister: boolean; logoUrl?: string }>('/l/auth/config', undefined, {
       auth: false,
       silent: true,
     }),

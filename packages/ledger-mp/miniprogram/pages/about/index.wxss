@@ -4,6 +4,11 @@
   align-items: center;
   padding: 24px 0 28px;
 }
+.ab__logo-img {
+  width: 64%;
+  height: 64%;
+  border-radius: 14px;
+}
 .ab__logo {
   width: 76px;
   height: 76px;

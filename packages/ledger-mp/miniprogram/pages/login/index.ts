@@ -1,5 +1,14 @@
 import { authApi, meApi } from '../../api/index'
-import { setAuth, setUser, getUser, getToken, getBioLock, getBioVerified } from '../../utils/store'
+import {
+  setAuth,
+  setUser,
+  getUser,
+  getToken,
+  getBioLock,
+  getBioVerified,
+  getLogo,
+  setLogo,
+} from '../../utils/store'
 
 interface LoginData {
   mode: string
@@ -14,6 +23,7 @@ interface LoginData {
   checking: boolean
   allowRegister: boolean
   agreed: boolean
+  logoUrl: string
 }
 
 Page({
@@ -33,6 +43,7 @@ Page({
     // 默认进入"校验中"占位：有 token 时静默登录期间不露出表单，避免每次启动闪登录页
     checking: true,
     allowRegister: true,
+    logoUrl: getLogo(),
     // 隐私合规：默认不勾选，用户须自行阅读后勾选同意才能登录（不得默认同意）
     agreed: false,
   } as LoginData,
@@ -43,7 +54,13 @@ Page({
     // 管理端关闭自助注册时隐藏「立即注册」入口（接口失败按开放兜底）
     authApi
       .config()
-      .then((c: any) => this.setData({ allowRegister: !c || c.allowSelfRegister !== false }))
+      .then((c: any) => {
+        this.setData({
+          allowRegister: !c || c.allowSelfRegister !== false,
+          logoUrl: (c && c.logoUrl) || '',
+        })
+        setLogo((c && c.logoUrl) || '')
+      })
       .catch(() => {})
     if (!getToken()) {
       // 未登录：直接显示登录表单

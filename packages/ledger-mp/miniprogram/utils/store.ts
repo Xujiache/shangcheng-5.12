@@ -77,6 +77,15 @@ export function setGlass(v: boolean) {
   wx.setStorageSync(GLASS_KEY, v)
 }
 
+/* ---- 小程序 LOGO（管理后台 system_settings.site.logo 下发，登录/关于页展示，本地缓存兜底） ---- */
+const LOGO_KEY = 'ledger_logo'
+export function getLogo(): string {
+  return wx.getStorageSync(LOGO_KEY) || ''
+}
+export function setLogo(v: string) {
+  wx.setStorageSync(LOGO_KEY, v || '')
+}
+
 // 本次冷启动是否已通过生物验证（仅内存，每次冷启动重置 → 重新要求解锁）
 let bioVerified = false
 

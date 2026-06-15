@@ -5,7 +5,10 @@
   <view class="lz-page" style="padding-bottom: 40px;">
     <!-- Logo + 版本 -->
     <view class="ab__brand">
-      <view class="ab__logo"><lz-icon name="cube" size="40" color="white" stroke="2" /></view>
+      <view class="ab__logo">
+        <image wx:if="{{logoUrl}}" class="ab__logo-img" src="{{logoUrl}}" mode="aspectFit" />
+        <lz-icon wx:else name="cube" size="40" color="white" stroke="2" />
+      </view>
       <view class="ab__name">门窗利账</view>
       <view class="ab__ver">版本 v{{appVersion}}</view>
     </view>

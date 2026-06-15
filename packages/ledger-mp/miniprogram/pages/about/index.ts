@@ -1,3 +1,6 @@
+import { authApi } from '../../api/index'
+import { getLogo, setLogo } from '../../utils/store'
+
 const FALLBACK_VERSION = '1.0.2'
 
 // 实时版本：优先 app.globalData.version（onLaunch 已取平台真实版本），再退 getAccountInfoSync，最后兜底常量
@@ -14,9 +17,21 @@ function readVersion(): string {
 Page({
   data: {
     appVersion: FALLBACK_VERSION,
+    logoUrl: getLogo(),
   },
   onLoad() {
-    this.setData({ appVersion: readVersion() })
+    this.setData({ appVersion: readVersion(), logoUrl: getLogo() })
+    // 拉取最新 LOGO（管理后台可配），成功则更新并缓存
+    authApi
+      .config()
+      .then((c: any) => {
+        const url = (c && c.logoUrl) || ''
+        if (url) {
+          this.setData({ logoUrl: url })
+          setLogo(url)
+        }
+      })
+      .catch(() => {})
   },
   toDoc(e: any) {
     const key = e.currentTarget.dataset.key
