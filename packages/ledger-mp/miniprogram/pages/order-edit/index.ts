@@ -42,6 +42,7 @@ Page({
     customCosts: [] as any[],
     items: [] as any[],
     discount: 0,
+    recycle: 0,
     deposit: 0,
     note: '',
     profitText: '¥0',
@@ -102,6 +103,7 @@ Page({
         {
           items: m.items || [],
           discount: Math.max(0, Math.round(Number(m.discount) || 0)),
+          recycle: Math.max(0, Math.round(Number(m.recycle) || 0)),
           deposit: Math.max(0, Math.round(Number(m.deposit) || 0)),
           total,
           received,
@@ -123,6 +125,7 @@ Page({
       items: this.data.items,
       total: this.data.total, // 无明细订单依赖此值兜底，明细页不得凭空清零
       discount: this.data.discount,
+      recycle: this.data.recycle,
       deposit: this.data.deposit,
       received: this.data.received,
       note: this.data.note,
@@ -172,6 +175,7 @@ Page({
           })),
           items: o.items || [],
           discount: o.discount || 0,
+          recycle: o.recycle || 0,
           deposit: o.deposit || 0,
           received: o.received || 0,
           totalStr: o.total ? String(o.total) : '',
@@ -438,6 +442,7 @@ Page({
       customCosts,
       items,
       discount,
+      recycle,
       deposit,
       note,
     } = this.data
@@ -462,6 +467,7 @@ Page({
       customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),
       items,
       discount,
+      recycle,
       deposit,
       note,
     }

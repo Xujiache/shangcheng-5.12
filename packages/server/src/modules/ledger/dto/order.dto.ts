@@ -37,6 +37,7 @@ export class CreateLedgerOrderDto {
   @IsOptional() @IsArray() @ArrayMaxSize(20) customCosts?: { name: string; amount: number }[]
   @IsOptional() @IsArray() @ArrayMaxSize(100) items?: any[]
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) discount?: number
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) recycle?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) deposit?: number
   @IsOptional() @IsString() @MaxLength(200) note?: string
 }
@@ -56,6 +57,7 @@ export class UpdateLedgerOrderDto {
   @IsOptional() @IsArray() @ArrayMaxSize(20) customCosts?: { name: string; amount: number }[]
   @IsOptional() @IsArray() @ArrayMaxSize(100) items?: any[]
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) discount?: number
+  @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) recycle?: number
   @IsOptional() @IsInt() @Min(0) @Max(MONEY_MAX) deposit?: number
   @IsOptional() @IsString() @MaxLength(200) note?: string
 }

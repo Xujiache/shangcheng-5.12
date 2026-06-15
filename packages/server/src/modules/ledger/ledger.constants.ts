@@ -308,9 +308,14 @@ export function itemSubtotal(it: OrderItem): number {
 export function orderItemsAmount(items: unknown): number {
   return sanitizeOrderItems(items).reduce((s, it) => s + itemSubtotal(it), 0)
 }
-/** 总价 = 金额 − 优惠（≥0） */
-export function orderTotalFromItems(items: unknown, discount: number): number {
-  return Math.max(0, orderItemsAmount(items) - Math.max(0, Math.round(discount || 0)))
+/** 总价 = 金额 − 优惠 − 回收（≥0；回收=拆旧窗折抵） */
+export function orderTotalFromItems(items: unknown, discount: number, recycle = 0): number {
+  return Math.max(
+    0,
+    orderItemsAmount(items) -
+      Math.max(0, Math.round(discount || 0)) -
+      Math.max(0, Math.round(recycle || 0)),
+  )
 }
 
 /** 固定 5 类成本之和 */

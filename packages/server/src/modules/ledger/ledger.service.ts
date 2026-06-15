@@ -50,6 +50,7 @@ type OrderRow = {
   customCosts: unknown
   items: unknown
   discount: number
+  recycle: number
   deposit: number
   note: string | null
 }
@@ -256,6 +257,7 @@ export class LedgerService {
       // 门窗报价明细
       items,
       discount: o.discount || 0,
+      recycle: o.recycle || 0,
       deposit: o.deposit || 0,
       amount: orderItemsAmount(items), // 金额 = Σ小计
       unpaid: Math.max(0, (o.total || 0) - (o.deposit || 0) - (o.received || 0)), // 未收 = 总价 − 定金 − 收款
@@ -339,8 +341,11 @@ export class LedgerService {
     // 有明细时 总价 = 金额 − 优惠（以明细为准）；无明细时取传入 total
     const items = sanitizeOrderItems(dto.items)
     const discount = Math.max(0, Math.round(dto.discount || 0))
+    const recycle = Math.max(0, Math.round(dto.recycle || 0))
     const deposit = Math.max(0, Math.round(dto.deposit || 0))
-    const total = items.length ? orderTotalFromItems(items, discount) : Math.round(dto.total || 0)
+    const total = items.length
+      ? orderTotalFromItems(items, discount, recycle)
+      : Math.round(dto.total || 0)
     if (!(total > 0)) throw new BizException(BizCode.INVALID_PARAMS, '订单总价需大于 0')
     const date = new Date(dto.date)
     if (isNaN(date.getTime())) throw new BizException(BizCode.INVALID_PARAMS, '日期格式不正确')
@@ -361,6 +366,7 @@ export class LedgerService {
         customCosts: sanitizeCustomCosts(dto.customCosts) as any,
         items: items as any,
         discount,
+        recycle,
         deposit,
         note: dto.note?.trim() || null,
       },
@@ -407,13 +413,15 @@ export class LedgerService {
       data.customCosts = sanitizeCustomCosts(dto.customCosts) as any
     if (dto.items !== undefined) data.items = sanitizeOrderItems(dto.items) as any
     if (dto.discount !== undefined) data.discount = Math.max(0, Math.round(dto.discount))
+    if (dto.recycle !== undefined) data.recycle = Math.max(0, Math.round(dto.recycle))
     if (dto.deposit !== undefined) data.deposit = Math.max(0, Math.round(dto.deposit))
     if (dto.note !== undefined) data.note = dto.note?.trim() || null
     // 有明细时，总价以「金额 − 优惠」为准（覆盖传入 total）
     const finalItems = data.items !== undefined ? data.items : sanitizeOrderItems(exist.items)
     if (finalItems.length) {
       const disc = data.discount !== undefined ? data.discount : exist.discount
-      data.total = orderTotalFromItems(finalItems, disc)
+      const rec = data.recycle !== undefined ? data.recycle : exist.recycle
+      data.total = orderTotalFromItems(finalItems, disc, rec)
     }
     const o = await this.prisma.ledgerOrder.update({ where: { id }, data })
     return this.mapOrder(o as OrderRow)

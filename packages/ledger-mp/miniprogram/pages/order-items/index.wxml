@@ -83,6 +83,10 @@
         <text class="oi__t-l">优惠</text>
         <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{discountStr}}" placeholder="0" placeholder-class="ph" data-field="discountStr" bindinput="onDiscount" bindblur="onMoneyBlur" /></view>
       </view>
+      <view class="oi__t-row">
+        <text class="oi__t-l">回收</text>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{recycleStr}}" placeholder="0" placeholder-class="ph" data-field="recycleStr" bindinput="onRecycle" bindblur="onMoneyBlur" /></view>
+      </view>
       <view class="oi__t-row oi__t-row--main">
         <text class="oi__t-l">总价</text>
         <text class="oi__t-v oi__t-v--main">{{totalText}}</text>

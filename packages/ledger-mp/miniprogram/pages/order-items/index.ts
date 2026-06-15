@@ -70,6 +70,7 @@ Page({
   data: {
     items: [] as any[],
     discountStr: '',
+    recycleStr: '',
     depositStr: '',
     receivedStr: '',
     note: '',
@@ -96,6 +97,7 @@ Page({
       {
         items,
         discountStr: inp.discount ? String(inp.discount) : '',
+        recycleStr: inp.recycle ? String(inp.recycle) : '',
         depositStr: inp.deposit ? String(inp.deposit) : '',
         receivedStr: inp.received ? String(inp.received) : '',
         note: inp.note || '',
@@ -181,6 +183,9 @@ Page({
 
   onDiscount(e: any) {
     this.setData({ discountStr: e.detail.value }, () => this.recalc())
+  },
+  onRecycle(e: any) {
+    this.setData({ recycleStr: e.detail.value }, () => this.recalc())
   },
   onDeposit(e: any) {
     this.setData({ depositStr: e.detail.value }, () => this.recalc())
@@ -269,10 +274,11 @@ Page({
       }
     })
     const discount = Math.round(num(this.data.discountStr))
+    const recycle = Math.round(num(this.data.recycleStr))
     const deposit = Math.round(num(this.data.depositStr))
     const received = Math.round(num(this.data.receivedStr))
-    // 与后端一致：有明细时 总价=金额−优惠；无明细则沿用进入时的总价
-    const total = contentCount > 0 ? Math.max(0, amount - discount) : this._manualTotal
+    // 与后端一致：有明细时 总价=金额−优惠−回收；无明细则沿用进入时的总价
+    const total = contentCount > 0 ? Math.max(0, amount - discount - recycle) : this._manualTotal
     // 未收 = 总价 − 定金 − 收款（与后端 mapOrder 同口径）
     const unpaid = Math.max(0, total - deposit - received)
     this.setData({
@@ -330,13 +336,15 @@ Page({
       amount += Math.round(bq * it.unitPrice)
     })
     const discount = Math.round(num(this.data.discountStr))
+    const recycle = Math.round(num(this.data.recycleStr))
     const deposit = Math.round(num(this.data.depositStr))
     const received = Math.round(num(this.data.receivedStr))
-    // 与后端一致：有明细才用 金额−优惠，否则原样保留进入时的总价（防止误清零）
-    const total = items.length ? Math.max(0, amount - discount) : this._manualTotal
+    // 与后端一致：有明细才用 金额−优惠−回收，否则原样保留进入时的总价（防止误清零）
+    const total = items.length ? Math.max(0, amount - discount - recycle) : this._manualTotal
     wx.setStorageSync(OUT_KEY, {
       items,
       discount,
+      recycle,
       deposit,
       received,
       total,

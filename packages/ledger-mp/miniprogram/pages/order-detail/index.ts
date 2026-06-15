@@ -119,6 +119,11 @@ Page({
           label: '优惠',
           value: hide ? maskMoney(o.discount) : '-' + yuan(o.discount),
         })
+      if (items.length && (o.recycle || 0) > 0)
+        quoteRows.push({
+          label: '回收',
+          value: hide ? maskMoney(o.recycle) : '-' + yuan(o.recycle),
+        })
       // 收付：定金/收款任一非空即展示这组（未收 = 总价 − 定金 − 收款，由后端给出）
       if ((o.deposit || 0) > 0 || (o.received || 0) > 0) {
         if ((o.deposit || 0) > 0) quoteRows.push({ label: '定金', value: money(o.deposit) })

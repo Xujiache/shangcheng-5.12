@@ -358,6 +358,13 @@ describe('itemSubtotal / orderItemsAmount / orderTotalFromItems 金额口径', (
     expect(orderTotalFromItems(items, 200)).toBe(800)
   })
 
+  it('总价 = max(0, 金额 − 优惠 − 回收)', () => {
+    const items = [{ name: 'a', unitPrice: 100, qty: 10, sizes: [] }] // 1000
+    expect(orderTotalFromItems(items, 200, 100)).toBe(700)
+    expect(orderTotalFromItems(items, 0, 1200)).toBe(0) // 回收超额也归 0
+    expect(orderTotalFromItems(items, 0)).toBe(1000) // 回收缺省=0，向后兼容
+  })
+
   it('优惠为负 → 视为 0（不增加总价）', () => {
     const items = [{ name: 'a', unitPrice: 100, qty: 10, sizes: [] }] // 1000
     expect(orderTotalFromItems(items, -300)).toBe(1000)
