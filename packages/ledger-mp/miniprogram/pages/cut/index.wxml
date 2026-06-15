@@ -93,6 +93,21 @@
 
       <button class="lz-btn lz-btn--primary lz-btn--lg" style="margin-top: 16px;" bindtap="compute">开始优化</button>
 
+      <!-- 当前材料历史方案：点选直接复用、可删；保存方案后即出现在此 -->
+      <view wx:if="{{matHistory.length}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+        <view class="cut__sec-t" style="padding: 14px 14px 6px;">历史方案 · 点选复用</view>
+        <view wx:for="{{matHistory}}" wx:key="id" class="cut__hrow" style="padding: 10px 14px;">
+          <view class="lz-flex1" style="min-width: 0;" data-id="{{item.id}}" bindtap="loadPlan" hover-class="tap-active">
+            <view class="cut__hrow-t">{{item.title}}</view>
+            <view class="cut__hrow-s">{{item.desc}}</view>
+            <view class="cut__hrow-d">{{item.date}}</view>
+          </view>
+          <view class="cut__hdel" data-id="{{item.id}}" catchtap="delPlan" hover-class="tap-active">
+            <lz-icon name="trash" size="16" color="loss" />
+          </view>
+        </view>
+      </view>
+
       <!-- 结果 -->
       <block wx:if="{{summary}}">
         <view class="lz-card lz-card--glow" style="margin-top: var(--gap);">

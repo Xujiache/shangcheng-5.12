@@ -77,6 +77,7 @@ Page({
     historyLoading: false,
     historyError: false,
     historyList: [] as any[],
+    matHistory: [] as any[], // 当前材料的历史方案（内联展示用）
     savingPlan: false,
 
     editingTitle: '', // 非空=正在继续编辑这个历史方案（保存即更新，不产生重复）
@@ -196,6 +197,7 @@ Page({
         trialDaysLeft: a.trialDaysLeft || 0,
         gateReason: a.reason || '优化下料试用已结束，开通会员后继续使用',
       })
+      if (a.allowed) this.fetchHistory() // 拉历史填充内联「历史方案」
     } catch (e) {
       this.setData({ checking: false, loadError: true })
     }
@@ -223,6 +225,7 @@ Page({
       ...RESET_RESULT,
     }
     Object.assign(set, this.draftToFields(material, draft))
+    set.matHistory = this.data.historyList.filter((r: any) => r.material === material)
     this.setData(set, () => this.flushDrafts())
   },
 
@@ -678,7 +681,7 @@ Page({
         if (!editing && res && res.id) this._editingPlanId = res.id
         this.setData({ savingPlan: false, editingTitle: title })
         wx.showToast({ title: editing ? '已更新' : '已保存', icon: 'success' })
-        if (this.data.showHistory) this.fetchHistory()
+        this.fetchHistory()
       })
       .catch(() => this.setData({ savingPlan: false }))
   },
@@ -717,7 +720,11 @@ Page({
             date: this.fmtDate(r.updatedAt),
           }
         })
-        this.setData({ historyLoading: false, historyList: list })
+        this.setData({
+          historyLoading: false,
+          historyList: list,
+          matHistory: list.filter((r: any) => r.material === this.data.material),
+        })
       })
       .catch(() => {
         this.setData({ historyLoading: false, historyError: true })
@@ -776,6 +783,7 @@ Page({
     }
     this._nest = null
     this._editingPlanId = id
+    set.matHistory = this.data.historyList.filter((r: any) => r.material === material)
     this.setData(set, () => {
       this.compute()
       this.flushDrafts()
