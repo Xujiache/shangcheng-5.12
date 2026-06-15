@@ -1,4 +1,4 @@
-import { settingApi, orderApi, customerApi } from '../../api/index'
+import { settingApi, dataApi } from '../../api/index'
 import { TOKEN_KEY } from '../../config'
 import {
   setBioLock,
@@ -60,6 +60,12 @@ Page({
       { value: 'max', label: '性能模式' },
     ],
     cacheSize: '0 KB',
+    exportShow: false,
+    importShow: false,
+    allowShare: false,
+    importText: '',
+    exporting: false,
+    importing: false,
   },
 
   onLoad() {
@@ -132,50 +138,70 @@ Page({
     }
   },
 
-  /** 导出真实数据（订单 + 客户）到剪贴板，方便备份 / 转存。 */
-  async onExport() {
-    wx.showLoading({ title: '导出中…', mask: true })
-    const pageSize = 200
-    const maxPages = 25 // 安全上限（5000 条），防异常 total 死循环
-    let rows: any[] = []
-    let total = 0
-    let truncated = false
-    let customers: any[] = []
-    try {
-      // 逐页拉全量订单，避免只导出第一页就静默截断
-      for (let page = 1; page <= maxPages; page++) {
-        const orders: any = await orderApi.list({ page, pageSize })
-        const list = orders?.list || []
-        total = orders?.total ?? 0
-        rows = rows.concat(list)
-        if (rows.length >= total || !list.length) break
-        if (page === maxPages) truncated = true
-      }
-      customers = ((await customerApi.list()) as any[]) || []
-    } catch (e) {
-      if (!rows.length) {
-        wx.hideLoading()
-        return /* 第一页都没拿到：网络错误已由 request 层提示 */
-      }
-      truncated = true // 中途失败：导出已取到的部分并注明
-    }
-    const lines: string[] = ['门窗利账 · 数据导出', '导出时间: ' + new Date().toLocaleString(), '']
-    lines.push('== 订单 (' + total + ') ==')
-    rows.forEach((o: any) => {
-      lines.push(`${o.date}  ${o.customer}  总价¥${o.total}  成本¥${o.cost}  利润¥${o.profit}`)
-    })
-    lines.push('', '== 客户 (' + (customers?.length ?? 0) + ') ==')
-    ;(customers || []).forEach((c: any) => {
-      lines.push(`${c.name}  ${c.phone || ''}  单数${c.count}  利润¥${c.profit}`)
-    })
-    if (truncated) lines.push('', `（仅导出前 ${rows.length} 条，共 ${total} 条）`)
-    wx.hideLoading()
-    wx.setClipboardData({
-      data: lines.join('\n'),
-      success: () => wx.showToast({ title: '已复制到剪贴板', icon: 'success' }),
-      fail: () => wx.showToast({ title: '导出失败', icon: 'none' }),
-    })
+  // ── 数据加密导出 / 导入 ──
+  openExport() {
+    this.setData({ exportShow: true })
   },
+  closeExport() {
+    this.setData({ exportShow: false })
+  },
+  toggleAllowShare() {
+    this.setData({ allowShare: !this.data.allowShare })
+  },
+  async doExport() {
+    if (this.data.exporting) return
+    this.setData({ exporting: true })
+    try {
+      const r: any = await dataApi.exportData(this.data.allowShare)
+      if (r && r.package) {
+        const allow = this.data.allowShare
+        wx.setClipboardData({
+          data: r.package,
+          success: () =>
+            wx.showModal({
+              title: '导出成功',
+              content: `已生成加密数据包（${r.orders} 单 / ${r.customers} 客户）并复制到剪贴板。${allow ? '已允许他人导入。' : '仅本人可导入。'}`,
+              showCancel: false,
+              confirmText: '我知道了',
+            }),
+          fail: () => wx.showToast({ title: '复制失败', icon: 'none' }),
+        })
+        this.setData({ exportShow: false })
+      }
+    } catch (e) {
+      /* request 层已提示 */
+    } finally {
+      this.setData({ exporting: false })
+    }
+  },
+  openImport() {
+    this.setData({ importShow: true, importText: '' })
+  },
+  closeImport() {
+    this.setData({ importShow: false })
+  },
+  onImportInput(e: any) {
+    this.setData({ importText: String(e.detail.value || '') })
+  },
+  async doImport() {
+    const pkg = this.data.importText.trim()
+    if (!pkg) {
+      wx.showToast({ title: '请粘贴数据包', icon: 'none' })
+      return
+    }
+    if (this.data.importing) return
+    this.setData({ importing: true })
+    try {
+      const r: any = await dataApi.importData(pkg)
+      this.setData({ importShow: false })
+      wx.showToast({ title: `已导入 ${r.orders} 单 / ${r.customers} 客户`, icon: 'none' })
+    } catch (e) {
+      /* request 层已提示（不允许导入 / 已篡改 等） */
+    } finally {
+      this.setData({ importing: false })
+    }
+  },
+  noopMask() {},
 
   onClearCache() {
     wx.showModal({
