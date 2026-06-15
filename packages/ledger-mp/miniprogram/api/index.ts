@@ -132,6 +132,29 @@ export const feedbackApi = {
     http.post('/l/feedback', data),
 }
 
+/** 更新日志（仅需登录） */
+export const changelogApi = {
+  list: () =>
+    http.get<Array<{ version: string; title: string; content: string; date: string }>>(
+      '/l/changelogs',
+    ),
+  byVersion: (version: string) =>
+    http.get<{ version: string; title: string; content: string } | null>('/l/changelog', {
+      version,
+    }),
+}
+
+/** 数据加密导出 / 导入（仅需登录） */
+export const dataApi = {
+  exportData: (allowShare: boolean) =>
+    http.post<{ package: string; orders: number; customers: number; allowShare: boolean }>(
+      '/l/data/export',
+      { allowShare },
+    ),
+  importData: (pkg: string) =>
+    http.post<{ ok: boolean; orders: number; customers: number }>('/l/data/import', { pkg }),
+}
+
 /** 首页广告（仅需登录） */
 export const adApi = {
   list: () => http.get<Array<{ id: string; image: string; link: string; title: string }>>('/l/ads'),

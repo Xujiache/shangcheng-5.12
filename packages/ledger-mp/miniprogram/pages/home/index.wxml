@@ -132,5 +132,16 @@
       </view>
     </block>
   </view>
+  <view wx:if="{{clogShow}}" class="clog-mask" bindtap="closeChangelog">
+    <view class="clog-pop" catchtap="noopClog">
+      <view class="clog-pop__ver">v{{clog.version}}</view>
+      <view class="clog-pop__title">{{clog.title}}</view>
+      <view class="clog-pop__sub">本次更新内容</view>
+      <scroll-view scroll-y class="clog-pop__body">
+        <view wx:for="{{clog.lines}}" wx:key="*this" class="clog-pop__line">{{item}}</view>
+      </scroll-view>
+      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="closeChangelog">我知道了</button>
+    </view>
+  </view>
   <canvas type="2d" id="shareCover" class="share-cover-cv"></canvas>
 </view>

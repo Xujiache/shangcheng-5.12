@@ -7,6 +7,7 @@
     "pages/home/index",
     "pages/cut/index",
     "pages/cut-result/index",
+    "pages/changelog/index",
     "pages/invite/index",
     "pages/orders/index",
     "pages/reports/index",

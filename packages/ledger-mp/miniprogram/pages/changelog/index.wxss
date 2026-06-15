@@ -1,0 +1,28 @@
+.clog__item {
+  margin-bottom: var(--gap);
+}
+.clog__hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.clog__ver {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  padding: 3px 11px;
+  border-radius: 999px;
+}
+.clog__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.clog__line {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.9;
+}

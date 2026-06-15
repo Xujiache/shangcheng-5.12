@@ -1,0 +1,15 @@
+<lz-bg />
+<view class="clog">
+  <lz-header title="更新日志" subtitle="门窗利账历次更新" />
+  <view class="lz-page lz-page--pad-bottom">
+    <view wx:if="{{loading}}" class="lz-empty">加载中…</view>
+    <view wx:elif="{{!list.length}}" class="lz-empty">暂无更新日志</view>
+    <view wx:for="{{list}}" wx:key="version" class="lz-card clog__item">
+      <view class="clog__hd">
+        <view class="clog__ver">v{{item.version}}</view>
+        <view class="clog__title">{{item.title}}</view>
+      </view>
+      <view wx:for="{{item.lines}}" wx:for-item="ln" wx:key="*this" class="clog__line">{{ln}}</view>
+    </view>
+  </view>
+</view>

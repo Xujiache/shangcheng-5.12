@@ -1,4 +1,4 @@
-import { statsApi, notificationApi, adApi } from '../../api/index'
+import { statsApi, notificationApi, adApi, changelogApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount, getFxMode } from '../../utils/store'
 import { makeShareCover } from '../../utils/share-cover'
@@ -50,6 +50,8 @@ Page({
     goalTargetText: '未设',
     goalPct: 0,
     ads: [] as any[],
+    clogShow: false,
+    clog: null as any,
   },
 
   onReady() {
@@ -78,7 +80,44 @@ Page({
     this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max' })
     this.load()
     this.loadAds()
+    this.maybeShowChangelog()
   },
+  // 新版本首开弹更新日志：按当前版本定向，每版本只弹一次
+  maybeShowChangelog() {
+    if ((this as any)._clogChecked) return
+    ;(this as any)._clogChecked = true
+    let v = ''
+    try {
+      v = wx.getAccountInfoSync().miniProgram.version || ''
+    } catch (e) {
+      /* dev/无版本号则不弹 */
+    }
+    if (!v) return
+    const key = 'ledger_clog_seen_' + v
+    if (wx.getStorageSync(key)) return
+    changelogApi
+      .byVersion(v)
+      .then((c: any) => {
+        if (c && c.version) {
+          this.setData({
+            clog: {
+              version: c.version,
+              title: c.title,
+              lines: String(c.content || '')
+                .split('\n')
+                .filter((x: string) => x.trim()),
+            },
+            clogShow: true,
+          })
+          wx.setStorageSync(key, 1)
+        }
+      })
+      .catch(() => {})
+  },
+  closeChangelog() {
+    this.setData({ clogShow: false })
+  },
+  noopClog() {},
   // 性能模式触摸流光：光晕跟随手指（仅 max；每帧 setData）
   onHeroTouchStart(e: any) {
     if (!this.data.fxMax) return

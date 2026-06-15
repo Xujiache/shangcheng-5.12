@@ -19,6 +19,7 @@ Page({
       { icon: 'shield', label: '账户安全', page: '/pages/account-security/index' },
       { icon: 'bell', label: '通知提醒', page: '/pages/notifications/index' },
       { icon: 'lock', label: '隐私设置', page: '/pages/privacy/index' },
+      { icon: 'doc', label: '更新日志', page: '/pages/changelog/index' },
       { icon: 'info', label: '关于门窗利账', page: '/pages/about/index' },
     ],
   },
