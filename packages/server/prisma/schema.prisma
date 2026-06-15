@@ -1150,6 +1150,19 @@ model LedgerAd {
   @@index([enabled, sort])
 }
 
+// 版本更新日志：按 version 定向推送（客户端只拉自己版本那条做弹窗）。后台可增删改。
+model LedgerChangelog {
+  id        String   @id @default(cuid())
+  version   String   @unique
+  title     String
+  content   String   // 多行文本，每行一条更新项
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, version])
+}
+
 // ledger 域全局配置（key-value）：优化下料试用天数 / 邀请奖励天数 / 自助注册开关 等。
 model LedgerConfig {
   id        String   @id @default(cuid())

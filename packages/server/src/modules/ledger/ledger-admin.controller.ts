@@ -13,6 +13,7 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 import { LedgerAdminService } from './ledger-admin.service'
 import { LedgerAiService } from './ledger-ai.service'
+import { LedgerExtraService } from './ledger-extra.service'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
@@ -26,6 +27,8 @@ import {
   UpdateLedgerFeedbackDto,
   UpdateLedgerUserDto,
   GenAiImageDto,
+  ChangelogCreateDto,
+  ChangelogUpdateDto,
 } from './dto/admin.dto'
 
 /**
@@ -41,6 +44,7 @@ export class LedgerAdminController {
   constructor(
     private readonly admin: LedgerAdminService,
     private readonly ai: LedgerAiService,
+    private readonly extra: LedgerExtraService,
   ) {}
 
   @Get('users')
@@ -140,5 +144,23 @@ export class LedgerAdminController {
   @Post('ai/image/adopt')
   adoptAiImage(@CurrentUser() u: AuthUser, @Body() dto: { url: string }) {
     return this.ai.adopt(dto.url, u?.sub)
+  }
+
+  // ── 更新日志管理 ──
+  @Get('changelogs')
+  changelogs() {
+    return this.extra.changelogAll()
+  }
+  @Post('changelogs')
+  createChangelog(@Body() dto: ChangelogCreateDto) {
+    return this.extra.changelogCreate(dto)
+  }
+  @Patch('changelogs/:id')
+  updateChangelog(@Param('id') id: string, @Body() dto: ChangelogUpdateDto) {
+    return this.extra.changelogUpdate(id, dto)
+  }
+  @Delete('changelogs/:id')
+  removeChangelog(@Param('id') id: string) {
+    return this.extra.changelogRemove(id)
   }
 }

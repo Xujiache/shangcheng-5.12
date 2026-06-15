@@ -53,3 +53,12 @@ export class CreateLedgerFeedbackDto {
   @MaxLength(300, { each: true })
   images?: string[]
 }
+
+/** 数据导出：allowShare 决定他人能否导入。 */
+export class ExportDataDto {
+  @IsOptional() @IsBoolean() allowShare?: boolean
+}
+/** 数据导入：pkg 为加密数据包字符串。 */
+export class ImportDataDto {
+  @IsString() @IsNotEmpty({ message: '请粘贴数据包' }) @MaxLength(5_000_000) pkg!: string
+}

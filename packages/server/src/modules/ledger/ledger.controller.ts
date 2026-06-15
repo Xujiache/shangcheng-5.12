@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -17,12 +18,15 @@ import { Public } from '../../common/decorators/public.decorator'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { LedgerService } from './ledger.service'
 import { FilesService } from '../files/files.service'
+import { LedgerExtraService } from './ledger-extra.service'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-user.decorator'
 import {
   CreateLedgerFeedbackDto,
   UpdateLedgerProfileDto,
   UpdateLedgerSettingDto,
+  ExportDataDto,
+  ImportDataDto,
 } from './dto/misc.dto'
 
 /**
@@ -37,6 +41,7 @@ export class LedgerController {
   constructor(
     private readonly svc: LedgerService,
     private readonly files: FilesService,
+    private readonly extra: LedgerExtraService,
   ) {}
 
   @Get('me')
@@ -127,5 +132,27 @@ export class LedgerController {
   @Get('invite')
   invite(@CurrentLedgerUser() u: LedgerAuthUser) {
     return this.svc.getInvite(u.id)
+  }
+
+  // ── 更新日志（按版本定向：客户端拉自己版本那条做首开弹窗）──
+  @Get('changelogs')
+  changelogs() {
+    return this.extra.changelogList()
+  }
+  @Get('changelog')
+  changelog(@Query('version') version: string) {
+    return this.extra.changelogByVersion(version)
+  }
+
+  // ── 数据导出 / 导入（加密数据包）──
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('data/export')
+  exportData(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: ExportDataDto) {
+    return this.extra.exportData(u.id, dto.allowShare === true)
+  }
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('data/import')
+  importData(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: ImportDataDto) {
+    return this.extra.importData(u.id, dto.pkg)
   }
 }

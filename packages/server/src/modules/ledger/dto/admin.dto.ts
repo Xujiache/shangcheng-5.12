@@ -94,3 +94,18 @@ export class GenAiImageDto {
   size?: string
   @IsOptional() @IsIn(['auto', 'high', 'medium', 'low']) quality?: string
 }
+
+/** 后台·更新日志新增 */
+export class ChangelogCreateDto {
+  @IsString() @IsNotEmpty({ message: '请填写版本号' }) @MaxLength(20) version!: string
+  @IsString() @IsNotEmpty({ message: '请填写标题' }) @MaxLength(60) title!: string
+  @IsString() @MaxLength(4000) content!: string
+  @IsOptional() @IsBoolean() published?: boolean
+}
+/** 后台·更新日志编辑 */
+export class ChangelogUpdateDto {
+  @IsOptional() @IsString() @MaxLength(20) version?: string
+  @IsOptional() @IsString() @MaxLength(60) title?: string
+  @IsOptional() @IsString() @MaxLength(4000) content?: string
+  @IsOptional() @IsBoolean() published?: boolean
+}
