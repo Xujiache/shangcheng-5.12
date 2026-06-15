@@ -208,11 +208,21 @@ page {
   border-radius: 9px;
   padding: 0 10px;
 }
+/* 新增尺寸 + 左滑删除提示 同排 */
+.oi__sizebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.oi__swipe-hint {
+  font-size: 11.5px;
+  color: #9bab9f;
+}
 .oi__addsize {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 12px;
   padding: 7px 13px;
   border-radius: 11px;
   background: rgba(46, 158, 120, 0.09);

@@ -40,13 +40,16 @@
               <text class="oi__size-op">×</text>
               <input class="oi__size-cnt" type="number" value="{{sz.countStr}}" placeholder="樘" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="countStr" bindinput="onSizeInput" />
               <text class="oi__size-eq">= {{sz.areaText || '0'}}㎡{{sz.clamped ? ' 起算' : ''}}</text>
-              <input class="oi__size-note" value="{{sz.noteStr}}" placeholder="备注" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="noteStr" bindinput="onSizeInput" />
+              <input class="oi__size-note" value="{{sz.noteStr}}" placeholder="位置" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="noteStr" bindinput="onSizeInput" />
             </view>
           </view>
         </view>
       </view>
-      <view class="oi__addsize" data-idx="{{index}}" bindtap="addSize" hover-class="oi__tap">
-        <lz-icon name="plus" size="14" color="#2E9E78" stroke="2.2" /><text>新增尺寸</text>
+      <view class="oi__sizebar">
+        <view class="oi__addsize" data-idx="{{index}}" bindtap="addSize" hover-class="oi__tap">
+          <lz-icon name="plus" size="14" color="#2E9E78" stroke="2.2" /><text>新增尺寸</text>
+        </view>
+        <text wx:if="{{item.sizes.length}}" class="oi__swipe-hint">← 左滑删除尺寸</text>
       </view>
 
       <!-- 数量/面积 × 单价（小计单独一行，避免挤在一行被截断）-->
