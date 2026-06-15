@@ -36,6 +36,21 @@
     0 2px 4px rgba(8, 24, 18, 0.06),
     0 26px 56px -18px rgba(8, 24, 18, 0.3);
 }
+/* hero 卡常驻流体流光：斜向高光缓缓掠过表面 */
+.lz-card--glow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.2) 50%, transparent 62%);
+  background-size: 240% 100%;
+  background-repeat: no-repeat;
+  animation: luminSweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
 .lz-card--glow::after {
   content: '';
   position: absolute;
@@ -73,9 +88,28 @@
 .lz-btn--sm { height: 38px; font-size: 14px; padding: 0 14px; }
 .lz-btn--full { width: 100%; }
 .lz-btn--primary {
+  position: relative;
+  overflow: hidden;
   background: var(--accent);
   color: #fff;
   box-shadow: 0 8px 22px rgba(14, 124, 102, 0.32);
+}
+/* 点击消散光：触点扩散的高光环 */
+.lz-btn--primary::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  opacity: 0;
+  pointer-events: none;
+}
+.lz-btn--primary:active::after {
+  animation: luminBurst 0.5s ease-out;
 }
 .lz-btn--soft { background: var(--accent-soft); color: var(--accent-text); }
 .lz-btn--ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow-soft); }

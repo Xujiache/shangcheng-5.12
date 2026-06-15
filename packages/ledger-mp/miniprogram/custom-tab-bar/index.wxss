@@ -54,6 +54,8 @@
   font-weight: 700;
 }
 .ctb__fab {
+  position: relative;
+  overflow: hidden;
   width: 56px;
   height: 56px;
   margin: 0 10px;
@@ -69,4 +71,26 @@
     0 8px 20px rgba(14, 124, 102, 0.42),
     inset 0 2px 3px rgba(255, 255, 255, 0.45),
     inset 0 -3px 6px rgba(0, 56, 42, 0.28);
+}
+
+/* FAB 点击消散光（tabBar 独立上下文，关键帧本地定义）*/
+.ctb__fab::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+  opacity: 0;
+  pointer-events: none;
+}
+.ctb__fab:active::after {
+  animation: ctbBurst 0.55s ease-out;
+}
+@keyframes ctbBurst {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.75; }
+  100% { transform: translate(-50%, -50%) scale(20); opacity: 0; }
 }
