@@ -75,3 +75,22 @@ export class UpdateLedgerConfigDto {
   // 会员套餐数组 [{key,label,days,price}]；服务端 normalizeLedgerPlans 逐项收口 + 去重
   @IsOptional() @IsArray() plans?: { key: string; label: string; days: number; price: string }[]
 }
+
+/** 后台 AI 生图（gpt-image-2）。size/quality 见聚鑫科技文档枚举。 */
+export class GenAiImageDto {
+  @IsString() @IsNotEmpty({ message: '请填写提示词' }) @MaxLength(2000) prompt!: string
+  @IsOptional()
+  @IsIn([
+    'auto',
+    '1024x1024',
+    '1536x1024',
+    '1024x1536',
+    '1920x1088',
+    '1088x1920',
+    '1280x960',
+    '960x1280',
+    '2048x2048',
+  ])
+  size?: string
+  @IsOptional() @IsIn(['auto', 'high', 'medium', 'low']) quality?: string
+}

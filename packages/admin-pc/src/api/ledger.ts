@@ -313,6 +313,33 @@ export function deleteLedgerAd(id: string) {
  * 上传广告图片到对象存储，返回公网 URL（复用通用 /api/v1/files/upload，走 MinIO）。
  * FormData 由浏览器自动设边界，http 拦截器对 FormData 短路不会误塞 application/json。
  */
+/* ============ AI 生图（#7 后台生成广告图，gpt-image-2）============ */
+export function generateLedgerAiImage(payload: {
+  prompt: string
+  size?: string
+  quality?: string
+}) {
+  return request.post<{ done: boolean; url: string | null; taskId: string | null }>({
+    url: '/api/v1/p/ledger/ai/image',
+    data: payload
+  })
+}
+export function ledgerAiImageStatus(taskId: string) {
+  return request.get<{
+    done: boolean
+    state: string
+    progress: string
+    url: string
+    error: string
+  }>({
+    url: '/api/v1/p/ledger/ai/image/status',
+    params: { taskId }
+  })
+}
+export function adoptLedgerAiImage(url: string) {
+  return request.post<{ url: string }>({ url: '/api/v1/p/ledger/ai/image/adopt', data: { url } })
+}
+
 export async function uploadLedgerImage(file: File): Promise<{ url: string; key: string }> {
   const fd = new FormData()
   fd.append('file', file)

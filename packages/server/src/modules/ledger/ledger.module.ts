@@ -3,6 +3,7 @@ import { FilesModule } from '../files/files.module'
 import { LedgerAuthService } from './ledger-auth.service'
 import { LedgerService } from './ledger.service'
 import { LedgerAdminService } from './ledger-admin.service'
+import { LedgerAiService } from './ledger-ai.service'
 import { LedgerAuthController } from './ledger-auth.controller'
 import { LedgerController } from './ledger.controller'
 import { LedgerBizController } from './ledger-biz.controller'
@@ -21,6 +22,7 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
     LedgerAuthService,
     LedgerService,
     LedgerAdminService,
+    LedgerAiService,
     LedgerJwtGuard,
     LedgerMembershipGuard,
   ],
