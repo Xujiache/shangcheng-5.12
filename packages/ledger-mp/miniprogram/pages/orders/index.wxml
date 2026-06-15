@@ -42,16 +42,26 @@
     <!-- 列表 -->
     <view wx:if="{{list.length}}">
       <view wx:for="{{list}}" wx:key="id" class="lz-card ord__item" data-id="{{item.id}}" bindtap="toDetail" hover-class="tap-active">
-        <view class="lz-between">
-          <view class="ord__cust lz-ellipsis">{{item.customer}}</view>
-          <view class="lz-money lz-money--accent" style="font-size: 17px; flex-shrink: 0;">{{item.profitText}}</view>
+        <view class="ord__row">
+          <view class="ord__avatar">{{item.initial}}</view>
+          <view class="lz-flex1" style="min-width: 0;">
+            <view class="ord__cust lz-ellipsis">{{item.customer}}</view>
+            <view class="ord__date">{{item.date}}</view>
+          </view>
+          <view class="ord__profit">
+            <view class="ord__profit-l">利润</view>
+            <view class="lz-money lz-money--accent ord__profit-v">{{item.profitText}}</view>
+          </view>
         </view>
-        <view class="ord__meta">
-          <text>{{item.date}}</text>
-          <text class="ord__dot">·</text>
-          <text>总价 {{item.totalText}}</text>
-          <text class="ord__dot">·</text>
-          <text>利润率 {{item.marginPct}}%</text>
+        <view class="ord__stats">
+          <view class="ord__stat">
+            <text class="ord__stat-l">总价</text>
+            <text class="ord__stat-v">{{item.totalText}}</text>
+          </view>
+          <view class="ord__stat">
+            <text class="ord__stat-l">利润率</text>
+            <text class="ord__stat-v ord__rate">{{item.marginPct}}%</text>
+          </view>
         </view>
         <view class="ord__bar">
           <view wx:for="{{item.segs}}" wx:for-item="seg" wx:key="k" class="ord__seg" style="width: {{seg.w}}%; background: var(--{{seg.color}});"></view>

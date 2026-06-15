@@ -80,6 +80,10 @@ Page({
       return {
         id: o.id,
         customer: o.customer,
+        initial:
+          String(o.customer || '客')
+            .trim()
+            .charAt(0) || '客',
         date: o.date,
         profitText: hide ? maskMoney(o.profit) : yuan(o.profit),
         totalText: hide ? maskMoney(o.total) : yuan(o.total),
