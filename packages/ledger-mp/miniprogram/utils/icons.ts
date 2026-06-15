@@ -77,13 +77,43 @@ export function resolveColor(c?: string): string {
   return TOKEN_HEX[c] || c
 }
 
-/** 生成图标 data-URI（供 <image src> 使用） */
+// 闭合轮廓类图标：在描边下叠一层低透明同色填充，形成"双色调"层次（容器/实物类才填，线性箭头类不填以免糊）
+const DUOTONE = new Set([
+  'shield',
+  'cube',
+  'gift',
+  'card',
+  'lock',
+  'doc',
+  'bell',
+  'message',
+  'calendar',
+  'tag',
+  'star',
+  'heart',
+  'crown',
+  'wallet',
+  'clock',
+  'eye',
+  'target',
+  'device',
+  'camera',
+  'key',
+  'info',
+  'orders',
+])
+
+/** 生成图标 data-URI（供 <image src> 使用）。闭合图标叠加 13% 同色填充增强层次感。 */
 export function svgIcon(name: string, color = '#15201C', size = 24, stroke = 1.8): string {
   const d = ICONS[name] || ''
   const c = resolveColor(color)
+  const tint = DUOTONE.has(name)
+    ? `<path d="${d}" fill="${c}" fill-opacity="0.13" stroke="none"/>`
+    : ''
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24"` +
     ` fill="none" stroke="${c}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">` +
+    tint +
     `<path d="${d}"/></svg>`
   return 'data:image/svg+xml,' + encodeURIComponent(svg)
 }
