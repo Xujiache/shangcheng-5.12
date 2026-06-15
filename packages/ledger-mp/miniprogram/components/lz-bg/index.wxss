@@ -70,3 +70,8 @@
     transform: translate(5vw, -6vh) scale(1.16);
   }
 }
+
+/* 性能模式：冻结漂浮动画（保留静态光斑与渐变，省持续合成）*/
+.lz-bg--still .lz-bg__blob {
+  animation: none;
+}

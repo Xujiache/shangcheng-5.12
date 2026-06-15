@@ -86,6 +86,15 @@ export function setLogo(v: string) {
   wx.setStorageSync(LOGO_KEY, v || '')
 }
 
+/* ---- 性能模式（老旧手机关闭流动背景等动效；默认关 = 全特效） ---- */
+const PERF_KEY = 'ledger_perf'
+export function getPerf(): boolean {
+  return !!wx.getStorageSync(PERF_KEY)
+}
+export function setPerf(v: boolean) {
+  wx.setStorageSync(PERF_KEY, v)
+}
+
 // 本次冷启动是否已通过生物验证（仅内存，每次冷启动重置 → 重新要求解锁）
 let bioVerified = false
 

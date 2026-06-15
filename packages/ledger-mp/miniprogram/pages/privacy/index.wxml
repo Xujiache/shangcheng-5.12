@@ -3,15 +3,25 @@
   <lz-header title="隐私设置" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
-    <view class="lz-section-label">外观</view>
+    <view class="lz-section-label">外观与性能</view>
     <view class="lz-card lz-card--flush">
-      <view class="lz-row lz-row--last">
+      <view class="lz-row">
         <view class="lz-row__icon"><lz-icon name="cube" size="17" color="accent" /></view>
         <view class="lz-row__main">
-          <view class="lz-row__label">玻璃质感</view>
-          <view class="lz-row__sub">iOS 风格毛玻璃导航栏 · 关闭更清晰省电</view>
+          <view class="lz-row__label">沉浸光感</view>
+          <view class="lz-row__sub">鸿蒙风磨砂发光质感 · 关闭更清晰省电</view>
         </view>
         <view class="tg {{glassOn ? 'tg--on' : ''}}" bindtap="onToggleGlass" hover-class="tap-active">
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="device" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">性能模式</view>
+          <view class="lz-row__sub">关闭流动背景等动效，老旧手机更流畅</view>
+        </view>
+        <view class="tg {{perfOn ? 'tg--on' : ''}}" bindtap="onTogglePerf" hover-class="tap-active">
           <view class="tg__knob"></view>
         </view>
       </view>

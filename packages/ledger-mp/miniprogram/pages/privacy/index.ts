@@ -7,6 +7,8 @@ import {
   getHideAmount,
   getGlass,
   setGlass,
+  getPerf,
+  setPerf,
 } from '../../utils/store'
 
 interface ToggleItem {
@@ -52,11 +54,12 @@ Page({
   data: {
     items: DEFS.map((it) => ({ ...it })),
     glassOn: true,
+    perfOn: false,
     cacheSize: '0 KB',
   },
 
   onLoad() {
-    this.setData({ cacheSize: calcCache(), glassOn: getGlass() })
+    this.setData({ cacheSize: calcCache(), glassOn: getGlass(), perfOn: getPerf() })
     this.load()
   },
 
@@ -65,7 +68,15 @@ Page({
     const next = !this.data.glassOn
     setGlass(next)
     this.setData({ glassOn: next })
-    wx.showToast({ title: next ? '已开启玻璃质感' : '已关闭玻璃质感', icon: 'none' })
+    wx.showToast({ title: next ? '已开启沉浸光感' : '已关闭沉浸光感', icon: 'none' })
+  },
+
+  // 性能模式：本地偏好；各页 lz-bg 在 pageLifetimes.show 读取即生效
+  onTogglePerf() {
+    const next = !this.data.perfOn
+    setPerf(next)
+    this.setData({ perfOn: next })
+    wx.showToast({ title: next ? '已开启性能模式' : '已关闭性能模式', icon: 'none' })
   },
 
   async load() {

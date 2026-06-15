@@ -1,4 +1,4 @@
-<view class="lz-bg">
+<view class="lz-bg {{still ? 'lz-bg--still' : ''}}">
   <view class="lz-bg__blob lz-bg__b1"></view>
   <view class="lz-bg__blob lz-bg__b2"></view>
   <view class="lz-bg__blob lz-bg__b3"></view>
