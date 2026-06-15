@@ -179,3 +179,27 @@
   color: var(--muted);
   margin-top: 2px;
 }
+
+/* 经营概览面板：周期控件 + 目标行 + 分析分组标题 */
+.home__period {
+  margin-bottom: 18px;
+}
+.home__goalrow {
+  display: flex;
+  align-items: center;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.home__section {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin: 2px 2px 12px;
+}
+.home__subdiv {
+  height: 1px;
+  margin-top: 16px;
+  background: var(--border);
+}
