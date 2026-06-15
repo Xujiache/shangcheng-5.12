@@ -329,7 +329,11 @@ Page({
       }
       const bq = it.sizes.length
         ? it.sizes.reduce(
-            (sum: number, s: any) => sum + Math.max((s.w * s.h) / 1_000_000, it.baseArea),
+            // 与 recalc()/后端 sizeArea 同口径：面积 × 件数(count)，否则樘数>1 时金额漏算
+            (sum: number, s: any) =>
+              sum +
+              Math.max((s.w * s.h) / 1_000_000, it.baseArea) *
+                Math.max(1, Math.round(Number(s.count) || 0)),
             0,
           )
         : it.qty
