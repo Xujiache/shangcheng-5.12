@@ -8,7 +8,9 @@
     bindtap="onSel"
   >
     <view class="bars__stack" style="height: {{height}}px;">
-      <view class="bars__bar" style="height: {{item.h}}px; background: {{c1}};"></view>
+      <view class="bars__bar" style="height: {{item.h}}px; background: {{c1}};">
+        <text wx:if="{{item.vt}}" class="bars__val">{{item.vt}}</text>
+      </view>
       <view wx:if="{{grouped}}" class="bars__bar bars__bar--2" style="height: {{item.h2}}px; background: {{c2}};"></view>
     </view>
     <text class="bars__label {{highlight === index ? 'on' : ''}}">{{item.label}}</text>

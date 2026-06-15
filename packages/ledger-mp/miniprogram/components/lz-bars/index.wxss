@@ -19,10 +19,23 @@
   width: 100%;
 }
 .bars__bar {
+  position: relative;
   width: 62%;
   max-width: 22px;
   border-radius: var(--r-bar) var(--r-bar) 2px 2px;
   transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* 条顶数字标签 */
+.bars__val {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
 }
 .bars__bar--2 {
   width: 38%;

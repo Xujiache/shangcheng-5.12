@@ -22,6 +22,16 @@
       </swiper-item>
     </swiper>
 
+    <!-- 实用工具：型材优化下料（#9）：放在广告下方做快捷入口 -->
+    <view class="lz-card home__tool" hover-class="tap-active" bindtap="toCut">
+      <view class="home__tool-icon"><lz-icon name="cube" size="20" color="accent" /></view>
+      <view class="lz-flex1">
+        <view class="home__tool-t">型材优化下料</view>
+        <view class="home__tool-s">一维切割排版 · 省料省成本</view>
+      </view>
+      <lz-icon name="chevron" size="16" color="faint" />
+    </view>
+
     <!-- 加载失败（网络等）：带重试，不渲染"暂无…"空态 -->
     <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
       <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
@@ -68,16 +78,6 @@
           <view class="lz-track__fill" style="width: {{goalPct}}%;"></view>
         </view>
         <view class="home__goal-s">本月已实现利润 {{monthProfitText}}</view>
-      </view>
-
-      <!-- 实用工具：型材优化下料（#9）-->
-      <view class="lz-card home__tool" hover-class="tap-active" bindtap="toCut">
-        <view class="home__tool-icon"><lz-icon name="cube" size="20" color="accent" /></view>
-        <view class="lz-flex1">
-          <view class="home__tool-t">型材优化下料</view>
-          <view class="home__tool-s">一维切割排版 · 省料省成本</view>
-        </view>
-        <lz-icon name="chevron" size="16" color="faint" />
       </view>
 
       <!-- 成本占比 -->
