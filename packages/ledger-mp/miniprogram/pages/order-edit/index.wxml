@@ -203,13 +203,16 @@
         <input class="lz-flex1" value="{{pickerQ}}" placeholder="搜索客户姓名" placeholder-class="ph" bindinput="onPickerSearch" />
       </view>
       <scroll-view scroll-y class="oe__sheet-list">
-        <view wx:for="{{pickerList}}" wx:key="name" class="oe__pc" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="pickCustomer" hover-class="oe__tap">
+        <view wx:for="{{pickerList}}" wx:key="id" class="oe__pc" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="pickCustomer" hover-class="oe__tap">
           <view class="oe__pc-av">{{item.initial}}</view>
           <view class="lz-flex1" style="min-width: 0;">
             <view class="oe__pc-n">{{item.name}}</view>
             <view class="oe__pc-s">{{item.sub}}</view>
           </view>
           <lz-icon wx:if="{{item.name === customerName}}" name="check" size="18" color="#2E9E78" stroke="2.4" />
+          <view class="oe__pc-del" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="delCustomer" hover-class="oe__tap">
+            <lz-icon name="trash" size="16" color="#c0ccc4" />
+          </view>
         </view>
         <view wx:if="{{!pickerList.length}}" class="oe__empty">没有找到客户，点击右上角新增</view>
       </scroll-view>

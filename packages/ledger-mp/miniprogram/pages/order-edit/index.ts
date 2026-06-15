@@ -403,6 +403,38 @@ Page({
       this.refresh(),
     )
   },
+  // 删除客户：后端会先解绑历史订单（保留客户名快照）再删档；删的是已选客户则清空选择
+  delCustomer(e: any) {
+    const id = e.currentTarget.dataset.id
+    const name = e.currentTarget.dataset.name
+    wx.showModal({
+      title: '删除客户',
+      content: '确定删除客户「' + name + '」？历史订单会保留（仅解绑该客户），此操作不可恢复。',
+      confirmColor: '#C8442B',
+      success: (m) => {
+        if (!m.confirm) return
+        customerApi
+          .remove(id)
+          .then(() => {
+            const set: any = {
+              _allCustomers: this.data._allCustomers.filter((c: any) => c.id !== id),
+            }
+            if (this.data.customerId === id) {
+              set.customerId = null
+              set.customerName = ''
+            }
+            this.setData(set, () => {
+              this.filterPicker()
+              this.refresh()
+            })
+            wx.showToast({ title: '已删除', icon: 'success' })
+          })
+          .catch(() => {
+            /* 错误 toast 由 request 层统一弹 */
+          })
+      },
+    })
+  },
   newCustomer() {
     this.setData({ showPicker: false })
     wx.navigateTo({
