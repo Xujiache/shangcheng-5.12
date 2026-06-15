@@ -56,9 +56,11 @@ export class LedgerAiService {
         response_format: 'url',
       },
     })
-    const url = res?.data?.[0]?.url
+    const url = res?.data?.[0]?.url ?? res?.data?.url
     if (url) return { done: true, url, taskId: null as string | null }
-    const taskId = res?.task_id ?? res?.taskId ?? res?.id
+    // lk888 异步返回：task_id 嵌在 data.task_id（数字）。兼容多种位置/命名。
+    const taskId =
+      res?.data?.task_id ?? res?.data?.taskId ?? res?.task_id ?? res?.taskId ?? res?.id
     if (taskId) return { done: false, url: null as string | null, taskId: String(taskId) }
     throw new BizException(BizCode.BUSINESS_ERROR, 'AI 生图返回异常，请重试')
   }
