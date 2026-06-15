@@ -1,6 +1,6 @@
 .rp {
   min-height: 100vh;
-  background-image: var(--bg-grad);
+  background: transparent;
 }
 .rp .lz-card {
   margin-bottom: var(--gap);

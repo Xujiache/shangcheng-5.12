@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="wb">
   <lz-header title="微信登录" />
 

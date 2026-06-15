@@ -1,6 +1,6 @@
 .ord {
   min-height: 100vh;
-  background-image: var(--bg-grad);
+  background: transparent;
 }
 .ord__hd {
   display: flex;

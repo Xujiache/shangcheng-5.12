@@ -5,6 +5,7 @@
   "usingComponents": {
     "lz-header": "../../components/lz-header/index",
     "lz-segmented": "../../components/lz-segmented/index",
-    "lz-bars": "../../components/lz-bars/index"
+    "lz-bars": "../../components/lz-bars/index",
+    "lz-bg": "/components/lz-bg/index"
   }
 }

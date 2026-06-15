@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="home">
   <view class="home__hd" style="padding-top: {{hdPad}}px; padding-right: {{hdRight}}px;">
     <view>

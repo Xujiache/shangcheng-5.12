@@ -3,6 +3,7 @@
   "usingComponents": {
     "lz-header": "../../components/lz-header/index",
     "lz-icon": "../../components/lz-icon/index",
-    "lz-donut": "../../components/lz-donut/index"
+    "lz-donut": "../../components/lz-donut/index",
+    "lz-bg": "/components/lz-bg/index"
   }
 }

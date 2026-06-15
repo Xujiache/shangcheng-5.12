@@ -1,6 +1,7 @@
 {
   "usingComponents": {
     "lz-header": "/components/lz-header/index",
-    "lz-icon": "/components/lz-icon/index"
+    "lz-icon": "/components/lz-icon/index",
+    "lz-bg": "/components/lz-bg/index"
   }
 }

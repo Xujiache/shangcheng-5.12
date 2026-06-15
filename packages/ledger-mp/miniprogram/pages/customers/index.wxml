@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="cl">
   <lz-header title="客户管理" subtitle="按累计利润排序">
     <view slot="right" class="cl__add" bindtap="toAdd" hover-class="tap-active">

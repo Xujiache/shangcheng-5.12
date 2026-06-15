@@ -1,6 +1,6 @@
 .gl {
   min-height: 100vh;
-  background-image: var(--bg-grad);
+  background: transparent;
 }
 .gl__prog {
   margin-bottom: 2px;

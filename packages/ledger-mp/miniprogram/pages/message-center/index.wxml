@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="mc">
   <lz-header title="消息中心">
     <view wx:if="{{hasUnread}}" slot="right" class="mc__readall" hover-class="tap-active" bindtap="onReadAll">全部已读</view>

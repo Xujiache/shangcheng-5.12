@@ -1,6 +1,6 @@
 .prof {
   min-height: 100vh;
-  background-image: var(--bg-grad);
+  background: transparent;
 }
 .prof__user {
   display: flex;

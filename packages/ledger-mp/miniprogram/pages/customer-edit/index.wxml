@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="ce">
   <lz-header title="{{editing ? '编辑客户' : '新增客户'}}" />
 

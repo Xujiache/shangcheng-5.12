@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="cut">
   <lz-header title="下料结果" subtitle="{{subt}}" />
   <view class="lz-page lz-page--pad-bottom">

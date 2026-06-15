@@ -1,6 +1,7 @@
 {
   "navigationStyle": "custom",
   "usingComponents": {
-    "lz-header": "../../components/lz-header/index"
+    "lz-header": "../../components/lz-header/index",
+    "lz-bg": "/components/lz-bg/index"
   }
 }

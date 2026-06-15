@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="dnd">
   <lz-header title="免打扰" />
 

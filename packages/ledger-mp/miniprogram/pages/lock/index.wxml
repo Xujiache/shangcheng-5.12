@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="lk">
   <view class="lk__card">
     <view class="lk__icon"><lz-icon name="finger" size="36" color="accent" stroke="1.6" /></view>

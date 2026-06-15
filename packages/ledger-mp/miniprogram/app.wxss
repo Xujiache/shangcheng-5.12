@@ -4,7 +4,7 @@
 
 /* 全局基础 */
 page {
-  background-image: var(--bg-grad);
+  background: var(--bg); /* 兜底色；流动背景由各页 <lz-bg /> 提供 */
   height: 100%;
 }
 view, text, button, input, textarea, scroll-view {

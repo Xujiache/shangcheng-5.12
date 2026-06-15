@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="reg">
   <lz-header title="注册账号" />
   <view class="lz-page">

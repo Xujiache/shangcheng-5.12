@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="gl">
   <lz-header title="经营目标" subtitle="设定月度 / 年度利润目标" back="{{true}}" />
 

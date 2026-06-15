@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="login">
   <view style="height: calc(env(safe-area-inset-top) + 50px);"></view>
 

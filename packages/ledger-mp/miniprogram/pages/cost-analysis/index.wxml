@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="ca">
   <lz-header title="成本分析" subtitle="{{ovYear}}年 · 成本构成" back="{{true}}" />
 

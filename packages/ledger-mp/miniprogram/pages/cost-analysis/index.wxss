@@ -1,6 +1,6 @@
 .ca {
   min-height: 100vh;
-  background-image: var(--bg-grad);
+  background: transparent;
 }
 .ca .lz-card {
   margin-bottom: var(--gap);

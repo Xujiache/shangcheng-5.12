@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="pw">
   <lz-header title="{{reset ? '设置新密码' : '修改登录密码'}}" back="{{!reset}}" />
 

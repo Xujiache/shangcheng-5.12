@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="oi">
   <lz-header title="报价明细" subtitle="产品 · 尺寸 · 金额" />
 

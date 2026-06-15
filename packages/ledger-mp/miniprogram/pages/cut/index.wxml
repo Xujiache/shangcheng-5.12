@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="cut">
   <lz-header title="优化下料" subtitle="型材一维 / 玻璃·板材二维套料">
     <view slot="right" wx:if="{{allowed && !loadError && !checking}}" class="cut__hist" bindtap="openHistory" hover-class="tap-active">

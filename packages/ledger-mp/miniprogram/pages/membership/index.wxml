@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="ms">
   <lz-header
     title="{{gate ? '开通会员' : '会员中心'}}"

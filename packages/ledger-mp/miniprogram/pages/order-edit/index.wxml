@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="oe">
   <lz-header title="{{editing ? '编辑订单' : '新增订单'}}">
     <view slot="right" class="oe__cancel" bindtap="onCancel">取消</view>

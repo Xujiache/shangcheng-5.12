@@ -1,0 +1,72 @@
+/* 全局动态背景：固定铺满、置于内容之下（z-index:-1），由各页面引入。
+   毛玻璃卡片(backdrop-filter)会采样到这一层，形成"玻璃透出流动光晕"的鸿蒙观感。 */
+.lz-bg {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background: radial-gradient(120% 80% at 50% -10%, #f4f8f5 0%, #e7eeea 65%);
+}
+
+/* 漂浮光斑：radial-gradient 自带柔边，仅做 transform 动画（GPU 友好，低端机不掉帧） */
+.lz-bg__blob {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.lz-bg__b1 {
+  width: 70vw;
+  height: 70vw;
+  left: -18vw;
+  top: -8vh;
+  background: radial-gradient(circle, rgba(14, 124, 102, 0.28) 0%, rgba(14, 124, 102, 0) 70%);
+  animation: lzBgFloat1 24s ease-in-out infinite;
+}
+.lz-bg__b2 {
+  width: 64vw;
+  height: 64vw;
+  right: -20vw;
+  top: 16vh;
+  background: radial-gradient(circle, rgba(76, 159, 190, 0.22) 0%, rgba(76, 159, 190, 0) 70%);
+  animation: lzBgFloat2 30s ease-in-out infinite;
+}
+.lz-bg__b3 {
+  width: 60vw;
+  height: 60vw;
+  left: 8vw;
+  bottom: -16vh;
+  background: radial-gradient(circle, rgba(132, 160, 106, 0.2) 0%, rgba(132, 160, 106, 0) 70%);
+  animation: lzBgFloat3 36s ease-in-out infinite;
+}
+
+@keyframes lzBgFloat1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(7vw, 5vh) scale(1.14);
+  }
+}
+@keyframes lzBgFloat2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-6vw, 7vh) scale(1.1);
+  }
+}
+@keyframes lzBgFloat3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(5vw, -6vh) scale(1.16);
+  }
+}

@@ -1,3 +1,4 @@
+<lz-bg />
 <view class="od">
   <lz-header title="订单详情" subtitle="{{o.id}}">
     <view slot="right" class="od__edit" bindtap="toEdit">编辑</view>
