@@ -66,6 +66,17 @@ export function setBioLock(v: boolean) {
   wx.setStorageSync(BIO_LOCK_KEY, v)
 }
 
+/* ---- 玻璃质感（iOS 毛玻璃导航/标题栏）本地开关，默认开启 ---- */
+const GLASS_KEY = 'ledger_glass'
+export function getGlass(): boolean {
+  const v = wx.getStorageSync(GLASS_KEY)
+  // 未设置过（空串/undefined）视为默认开启
+  return v === '' || v === undefined || v === null ? true : !!v
+}
+export function setGlass(v: boolean) {
+  wx.setStorageSync(GLASS_KEY, v)
+}
+
 // 本次冷启动是否已通过生物验证（仅内存，每次冷启动重置 → 重新要求解锁）
 let bioVerified = false
 

@@ -2,7 +2,21 @@
   <lz-header title="隐私设置" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
-    <view class="lz-section-label">隐私保护</view>
+    <view class="lz-section-label">外观</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="cube" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">玻璃质感</view>
+          <view class="lz-row__sub">iOS 风格毛玻璃导航栏 · 关闭更清晰省电</view>
+        </view>
+        <view class="tg {{glassOn ? 'tg--on' : ''}}" bindtap="onToggleGlass" hover-class="tap-active">
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">隐私保护</view>
     <view class="lz-card lz-card--flush">
       <view wx:for="{{items}}" wx:key="key" class="lz-row {{index === items.length - 1 ? 'lz-row--last' : ''}}">
         <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="17" color="accent" /></view>

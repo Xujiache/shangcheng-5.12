@@ -1,6 +1,13 @@
 import { settingApi, orderApi, customerApi } from '../../api/index'
 import { TOKEN_KEY } from '../../config'
-import { setBioLock, setHideAmount, getBioLock, getHideAmount } from '../../utils/store'
+import {
+  setBioLock,
+  setHideAmount,
+  getBioLock,
+  getHideAmount,
+  getGlass,
+  setGlass,
+} from '../../utils/store'
 
 interface ToggleItem {
   key: string
@@ -44,12 +51,21 @@ function calcCache(): string {
 Page({
   data: {
     items: DEFS.map((it) => ({ ...it })),
+    glassOn: true,
     cacheSize: '0 KB',
   },
 
   onLoad() {
-    this.setData({ cacheSize: calcCache() })
+    this.setData({ cacheSize: calcCache(), glassOn: getGlass() })
     this.load()
+  },
+
+  // 玻璃质感：纯本地 UI 偏好（不入服务端）；切回各页 pageLifetimes.show 即生效
+  onToggleGlass() {
+    const next = !this.data.glassOn
+    setGlass(next)
+    this.setData({ glassOn: next })
+    wx.showToast({ title: next ? '已开启玻璃质感' : '已关闭玻璃质感', icon: 'none' })
   },
 
   async load() {
