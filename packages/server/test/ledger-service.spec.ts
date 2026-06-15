@@ -125,12 +125,12 @@ describe('LedgerService.getOrder（映射 + 计算口径）', () => {
 
     const res = await service.getOrder('u1', 'o1')
 
-    expect(res.cost).toBe(39800)
-    // 利润 = 总价 − 总成本（收款不进利润）= 58200 − 39800 = 18400
-    expect(res.profit).toBe(18400)
-    // 营收 = 总价（额外收入已废弃）
-    expect(res.revenue).toBe(58200)
-    expect(res.margin).toBeCloseTo(18400 / 58200, 6)
+    expect(res.cost).toBe(39200) // 成本 = 固定38800 + 自定义400（卖旧门窗600 是收入不计成本）
+    // 利润 = 营收(总价58200 + 卖旧门窗600) − 成本39200 = 19600
+    expect(res.profit).toBe(19600)
+    // 营收 = 总价 + 卖旧门窗收入 = 58200 + 600
+    expect(res.revenue).toBe(58800)
+    expect(res.margin).toBeCloseTo(19600 / 58800, 6)
     // 金额 = Σ各项小计 = 900 + 1200 = 2100
     expect(res.amount).toBe(2100)
     // 未收 = max(0, total − deposit − received) = 58200 − 20000 − 2000 = 36200

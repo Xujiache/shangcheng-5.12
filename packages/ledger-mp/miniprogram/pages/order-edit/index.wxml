@@ -128,7 +128,7 @@
     <!-- 其他开销 -->
     <view class="oe__sec">
       <view class="oe__sechead">
-        <text class="oe__sec-t">其他开销</text>
+        <text class="oe__sec-t">卖旧门窗（加利润）</text>
         <view class="oe__addbtn" bindtap="addExtra" hover-class="oe__tap">
           <lz-icon name="plus" size="15" color="#2E9E78" stroke="2.2" /><text>添加</text>
         </view>
@@ -147,7 +147,7 @@
             </view>
           </view>
         </block>
-        <view wx:else class="oe__empty">暂无其他开销，点击右上角添加</view>
+        <view wx:else class="oe__empty">暂无卖旧门窗，点击右上角添加</view>
       </view>
     </view>
 

@@ -281,7 +281,7 @@ Page({
     this.setData({
       extras: [
         ...this.data.extras,
-        { _k: uid(), type: '运费', amount: 0, amountStr: '', typeIdx: 0 },
+        { _k: uid(), type: '卖旧门窗', amount: 0, amountStr: '', typeIdx: 0 },
       ],
     })
   },

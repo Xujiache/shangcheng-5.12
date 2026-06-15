@@ -344,7 +344,8 @@ export function totalCost(o: {
   extras: unknown
   customCosts?: unknown
 }): number {
-  return fixedCost(o) + extrasTotal(o.extras) + customCostsTotal(o.customCosts)
+  // 卖旧门窗(extras)是收入不是成本，不计入；成本 = 固定5类 + 自定义成本
+  return fixedCost(o) + customCostsTotal(o.customCosts)
 }
 
 export function profitOf(o: {
@@ -357,13 +358,14 @@ export function profitOf(o: {
   extras: unknown
   customCosts?: unknown
 }): number {
-  // 利润 = 总价 − 总成本（收款/定金属收付跟踪，不进利润；额外收入已废弃）
-  return (o.total || 0) - totalCost(o)
+  // 利润 = 营收(总价 + 卖旧门窗收入) − 成本(固定5类 + 自定义)
+  return revenueOf(o) - totalCost(o)
 }
 
 /** 营收 = 总价 */
-export function revenueOf(o: { total: number }): number {
-  return o.total || 0
+export function revenueOf(o: { total: number; extras?: unknown }): number {
+  // 营收 = 订单总价 + 卖旧门窗收入（extras 由「其他开销」改为收入）
+  return (o.total || 0) + extrasTotal(o.extras)
 }
 
 export function marginOf(o: Parameters<typeof profitOf>[0]): number {

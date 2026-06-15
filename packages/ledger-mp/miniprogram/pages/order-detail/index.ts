@@ -65,14 +65,14 @@ Page({
           w: Math.round((v / cost) * 100),
         }
       })
-      // c6 含 其他开销 + 自定义成本，使环图比例与中心「总成本」口径一致
+      // c6 = 自定义成本（卖旧门窗已改为收入、不计成本）
       const customCostsSum =
         o.customCostsTotal != null
           ? o.customCostsTotal
           : (o.customCosts || []).reduce((s: number, c: any) => s + (c.amount || 0), 0)
       const donut = [
         ...CATS.map(([k, , color]) => ({ value: o.costs ? o.costs[k] || 0 : 0, color })),
-        { value: (o.extrasTotal || 0) + customCostsSum, color: 'c6' },
+        { value: customCostsSum, color: 'c6' },
       ].filter((d) => d.value > 0)
       const extras = (o.extras || []).map((e: any, idx: number) => ({
         idx,

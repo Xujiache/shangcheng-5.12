@@ -48,17 +48,18 @@ export function fixedCost(c: Partial<OrderCosts>): number {
 }
 
 export function totalCost(c: Partial<OrderCosts>, extras: any, customCosts?: any): number {
-  return fixedCost(c) + extrasTotal(extras) + customCostsTotal(customCosts)
+  // 卖旧门窗(extras)是收入不计入成本
+  return fixedCost(c) + customCostsTotal(customCosts)
 }
 
-// 利润 = 总价 − 总成本（收款属收付跟踪，不进利润；额外收入已废弃）
+// 利润 = 营收(总价 + 卖旧门窗收入) − 成本（收款属收付跟踪，不进利润）
 export function profitOf(
   total: number,
   c: Partial<OrderCosts>,
   extras: any,
   customCosts?: any,
 ): number {
-  return (total || 0) - totalCost(c, extras, customCosts)
+  return (total || 0) + extrasTotal(extras) - totalCost(c, extras, customCosts)
 }
 
 export function marginOf(
@@ -67,7 +68,7 @@ export function marginOf(
   extras: any,
   customCosts?: any,
 ): number {
-  const revenue = total || 0
+  const revenue = (total || 0) + extrasTotal(extras)
   return revenue ? profitOf(total, c, extras, customCosts) / revenue : 0
 }
 
@@ -80,4 +81,4 @@ export const COST_CATS = [
   { key: 'screen', name: '纱窗', color: 'c5' },
 ] as const
 
-export const EXTRA_TYPES = ['运费', '上门安装费', '油费', '测量费', '其他']
+export const EXTRA_TYPES = ['卖旧门窗', '卖废铝', '卖废料', '其他收入']

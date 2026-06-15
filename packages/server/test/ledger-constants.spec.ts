@@ -392,21 +392,21 @@ describe('成本 / 利润 / 营收 / 毛利率 全链路', () => {
     expect(fixedCost(base)).toBe(210)
   })
 
-  it('totalCost = 固定成本 + extras + customCosts', () => {
-    expect(totalCost(base)).toBe(210 + 40 + 60)
+  it('totalCost = 固定成本 + customCosts（卖旧门窗是收入不计成本）', () => {
+    expect(totalCost(base)).toBe(210 + 60)
   })
 
-  it('revenueOf = 总价（额外收入已废弃）', () => {
-    expect(revenueOf(base)).toBe(1000)
+  it('revenueOf = 总价 + 卖旧门窗收入', () => {
+    expect(revenueOf(base)).toBe(1000 + 40)
   })
 
-  it('profitOf = 总价 − 总成本', () => {
-    // 1000 - 310 = 690
-    expect(profitOf(base)).toBe(690)
+  it('profitOf = 营收 − 成本（卖旧门窗加进利润）', () => {
+    // (1000 + 40) − (210 + 60) = 770
+    expect(profitOf(base)).toBe(770)
   })
 
   it('marginOf = 利润 / 营收', () => {
-    expect(marginOf(base)).toBeCloseTo(690 / 1000, 6)
+    expect(marginOf(base)).toBeCloseTo(770 / 1040, 6)
   })
 
   it('营收为 0 → marginOf 返回 0（避免除零）', () => {

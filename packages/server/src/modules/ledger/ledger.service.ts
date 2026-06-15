@@ -703,11 +703,8 @@ export class LedgerService {
       { key: 'screen', name: '纱窗', value: slice('screen') },
       {
         key: 'extras',
-        name: '其他',
-        value: list.reduce(
-          (s, o) => s + extrasTotal(o.extras) + customCostsTotal(o.customCosts),
-          0,
-        ),
+        name: '自定义',
+        value: list.reduce((s, o) => s + customCostsTotal(o.customCosts), 0),
       },
     ].filter((s) => s.value > 0)
 
