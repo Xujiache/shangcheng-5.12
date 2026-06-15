@@ -190,3 +190,12 @@
 .lz-flex { display: flex; align-items: center; }
 .lz-flex1 { flex: 1; }
 .lz-between { display: flex; align-items: center; justify-content: space-between; }
+
+/* 分享封面离屏画布：移出可视区，仅用于 canvasToTempFilePath 生成分享卡片 */
+.share-cover-cv {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 375px;
+  height: 300px;
+}

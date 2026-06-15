@@ -1,8 +1,10 @@
 import { meApi } from '../../api/index'
+import { makeShareCover } from '../../utils/share-cover'
 import { fmtDate } from '../../utils/format'
 import { getUser, setUser, logout } from '../../utils/store'
 
 Page({
+  _cover: '',
   data: {
     topSpace: 38, // 顶部留白 = 状态栏高度 + 18
     nickname: '门窗店主',
@@ -21,6 +23,16 @@ Page({
     ],
   },
 
+  onReady() {
+    this.genCover()
+  },
+  genCover() {
+    if (this._cover) return
+    makeShareCover(this, '#shareCover', {
+      title: '门窗人的记账利器',
+      subtitle: '记账 · 算利润 · 优化下料',
+    }).then((p) => (this._cover = p))
+  },
   onShow() {
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 3 })
@@ -82,10 +94,11 @@ Page({
     return {
       title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
       path: '/pages/register/index',
+      imageUrl: this._cover || undefined,
     }
   },
   // 开启「分享到朋友圈」
   onShareTimeline() {
-    return { title: '门窗利账 · 门窗人的记账利器' }
+    return { title: '门窗利账 · 门窗人的记账利器', imageUrl: this._cover || undefined }
   },
 })

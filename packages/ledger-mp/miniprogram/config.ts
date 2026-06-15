@@ -10,3 +10,10 @@ export const API_BASE = 'https://ewsn.top'
 
 /** access token 在本地存储的键名 */
 export const TOKEN_KEY = 'ledger_token'
+
+/**
+ * 应用版本号（与发版号同步）
+ * - release/trial 环境优先用 wx.getAccountInfoSync().miniProgram.version
+ * - develop 环境该值为空，回退到此常量
+ */
+export const VERSION = '1.0.2'

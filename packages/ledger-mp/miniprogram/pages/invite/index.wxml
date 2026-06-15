@@ -30,4 +30,5 @@
       </block>
     </block>
   </view>
+  <canvas type="2d" id="shareCover" class="share-cover-cv"></canvas>
 </view>

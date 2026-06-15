@@ -1,6 +1,7 @@
 import { statsApi, notificationApi, adApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
+import { makeShareCover } from '../../utils/share-cover'
 
 const COLORMAP: Record<string, string> = {
   profile: 'c1',
@@ -14,8 +15,10 @@ const COLORMAP: Record<string, string> = {
 const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', year: '本年' }
 
 Page({
+  _cover: '',
   data: {
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
+    hdRight: 18, // 右侧留白：动态避让微信原生胶囊（onShow 计算）
     period: 'month',
     periods: [
       { value: 'day', label: '日' },
@@ -45,10 +48,30 @@ Page({
     ads: [] as any[],
   },
 
+  onReady() {
+    this.genCover()
+  },
+  genCover() {
+    if (this._cover) return
+    makeShareCover(this, '#shareCover', {
+      title: '门窗人的记账利器',
+      subtitle: '记账 · 算利润 · 优化下料',
+    }).then((p) => (this._cover = p))
+  },
   onShow() {
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 0 })
-    this.setData({ hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10 })
+    const sb = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
+    let hdRight = 18
+    try {
+      // 让右上角铃铛避让到原生胶囊（··· ⊙）左侧，避免被遮挡
+      const cap = wx.getMenuButtonBoundingClientRect()
+      const ww = wx.getWindowInfo().windowWidth
+      hdRight = Math.max(18, ww - cap.left + 8)
+    } catch (e) {
+      /* 旧基础库兜底用默认 18 */
+    }
+    this.setData({ hdPad: sb + 10, hdRight })
     this.load()
     this.loadAds()
   },
@@ -203,9 +226,10 @@ Page({
     return {
       title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
       path: '/pages/register/index',
+      imageUrl: this._cover || undefined,
     }
   },
   onShareTimeline() {
-    return { title: '门窗利账 · 门窗人的记账利器' }
+    return { title: '门窗利账 · 门窗人的记账利器', imageUrl: this._cover || undefined }
   },
 })

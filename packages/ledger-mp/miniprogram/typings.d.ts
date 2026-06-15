@@ -28,6 +28,8 @@ interface IAppOption {
     statusBarHeight: number
     /** 网络在线态（请求层离线兜底/页面提示用） */
     online: boolean
+    /** 应用版本号（onLaunch 写入：release/trial 取真实版本，develop 兜底 VERSION） */
+    version: string
   }
   setToken?: (token: string) => void
   clearAuth?: () => void

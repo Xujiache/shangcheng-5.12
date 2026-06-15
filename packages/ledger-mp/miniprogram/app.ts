@@ -1,4 +1,4 @@
-import { TOKEN_KEY } from './config'
+import { TOKEN_KEY, VERSION } from './config'
 import { getBioLock, getBioVerified } from './utils/store'
 import { clearAllCache } from './utils/request'
 
@@ -9,6 +9,7 @@ App<IAppOption>({
     membership: null,
     statusBarHeight: 20,
     online: true, // 网络在线态（onNetworkStatusChange 维护；请求失败也会置 false）
+    version: VERSION, // 应用版本号（onLaunch 用平台真实版本覆盖）
   },
   onLaunch() {
     this.globalData.token = wx.getStorageSync(TOKEN_KEY) || ''
@@ -17,6 +18,12 @@ App<IAppOption>({
       this.globalData.statusBarHeight = wx.getWindowInfo().statusBarHeight || 20
     } catch (e) {
       /* 极旧基础库兜底用默认 20 */
+    }
+    // 版本号：release/trial 用平台真实版本，develop 为空时回退构建常量
+    try {
+      this.globalData.version = wx.getAccountInfoSync().miniProgram.version || VERSION
+    } catch (e) {
+      this.globalData.version = VERSION
     }
     // 网络状态：初始查询 + 监听变化，供请求层离线兜底/页面提示
     wx.getNetworkType({ success: (r) => (this.globalData.online = r.networkType !== 'none') })
