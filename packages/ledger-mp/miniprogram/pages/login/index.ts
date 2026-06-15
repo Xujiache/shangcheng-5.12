@@ -13,6 +13,7 @@ interface LoginData {
   canLogin: boolean
   checking: boolean
   allowRegister: boolean
+  agreed: boolean
 }
 
 Page({
@@ -32,6 +33,8 @@ Page({
     // 默认进入"校验中"占位：有 token 时静默登录期间不露出表单，避免每次启动闪登录页
     checking: true,
     allowRegister: true,
+    // 隐私合规：默认不勾选，用户须自行阅读后勾选同意才能登录（不得默认同意）
+    agreed: false,
   } as LoginData,
 
   _timer: 0 as any,
@@ -85,11 +88,21 @@ Page({
   togglePwd() {
     this.setData({ showPwd: !this.data.showPwd })
   },
+  toggleAgree() {
+    this.setData({ agreed: !this.data.agreed })
+  },
+  // 登录前置：未勾选同意协议则拦截并提示，不得默认同意
+  ensureAgreed(): boolean {
+    if (this.data.agreed) return true
+    wx.showToast({ title: '请先阅读并勾选同意《用户协议》与《隐私政策》', icon: 'none' })
+    return false
+  },
   onForgot() {
     wx.showToast({ title: '请用验证码登录后重置，或联系管理员', icon: 'none' })
   },
   onWechat() {
     if (this.data.loading) return
+    if (!this.ensureAgreed()) return
     this.setData({ loading: true })
     wx.login({
       success: (r) => {
@@ -160,6 +173,7 @@ Page({
 
   async doLogin() {
     if (this.data.loading) return
+    if (!this.ensureAgreed()) return
     if (!this.data.canLogin) {
       // 按钮置灰但可点：提示第一项未满足的条件，而不是无声无息
       const d = this.data

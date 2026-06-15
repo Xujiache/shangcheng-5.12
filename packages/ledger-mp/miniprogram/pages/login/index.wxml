@@ -94,10 +94,15 @@
     </view>
   </view>
 
-  <view wx:if="{{!checking}}" class="login__agreement">
-    登录即代表同意
-    <text class="login__link" data-key="terms" bindtap="onDoc">《用户协议》</text>
-    与
-    <text class="login__link" data-key="privacy" bindtap="onDoc">《隐私政策》</text>
+  <view wx:if="{{!checking}}" class="login__agreement" bindtap="toggleAgree">
+    <view class="login__agreebox {{agreed ? 'on' : ''}}">
+      <lz-icon wx:if="{{agreed}}" name="check" size="12" color="white" stroke="2.5" />
+    </view>
+    <view class="login__agreetxt">
+      已阅读并同意
+      <text class="login__link" catchtap="onDoc" data-key="terms">《用户协议》</text>
+      与
+      <text class="login__link" catchtap="onDoc" data-key="privacy">《隐私政策》</text>
+    </view>
   </view>
 </view>
