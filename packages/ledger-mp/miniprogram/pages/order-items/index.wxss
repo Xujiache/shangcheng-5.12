@@ -124,11 +124,11 @@ page {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 6px;
+  gap: 7px 5px;
 }
 .oi__size-in {
   flex: 0 0 auto;
-  width: 60px;
+  width: 56px;
   box-sizing: border-box;
   height: 38px;
   line-height: 1.4;
@@ -167,7 +167,10 @@ page {
 }
 /* 备注：紧跟「=面积」之后的内联小框（可删），多条自动换行；「+备注」同排 */
 .oi__notechip {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 64px;
+  min-width: 56px;
+  max-width: 150px;
   align-items: center;
   background: #fff;
   border: 1px solid var(--border);
@@ -176,7 +179,8 @@ page {
   height: 32px;
 }
 .oi__notechip-in {
-  width: 66px;
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   color: #19271f;
 }
