@@ -45,14 +45,15 @@
       <view class="lz-section-label">各月明细</view>
       <view class="lz-card lz-card--flush">
         <view wx:if="{{hasData}}">
-          <view wx:for="{{months}}" wx:key="month" class="lz-row" data-index="{{index}}" bindtap="onSel" hover-class="tap-active">
-            <view class="rp__mon {{sel === index ? 'rp__mon--on' : ''}}">{{item.label}}</view>
+          <view wx:for="{{monthsView}}" wx:key="month" class="lz-row {{item.isCur ? 'rp__row--cur' : ''}}" data-index="{{item.mi}}" bindtap="onSel" hover-class="tap-active">
+            <view class="rp__mon {{sel === item.mi ? 'rp__mon--on' : ''}}">{{item.label}}</view>
             <view class="lz-row__main">
               <view class="lz-row__label" style="font-size: 14.5px; font-weight: 600;">利润 {{item.profitText}}</view>
               <view class="lz-row__sub">{{item.count}} 笔 · 营收 {{item.revenueText}}</view>
             </view>
             <view class="lz-money {{item.profit < 0 ? 'lz-money--loss' : 'lz-money--accent'}}" style="font-size: 15px;">{{item.profitText}}</view>
           </view>
+          <view wx:if="{{hiddenCount > 0}}" class="rp__more" bindtap="toggleMonths" hover-class="tap-active">{{expandMonths ? '收起' : '展开全部 ' + hiddenCount + ' 个月'}}</view>
         </view>
         <view wx:else class="lz-empty">本年暂无订单，点击底部 + 记一笔</view>
       </view>
@@ -96,14 +97,15 @@
       <view class="lz-section-label">各月明细</view>
       <view class="lz-card lz-card--flush">
         <view wx:if="{{hasData}}">
-          <view wx:for="{{months}}" wx:key="month" class="lz-row" data-index="{{index}}" bindtap="onSel" hover-class="tap-active">
-            <view class="rp__mon {{sel === index ? 'rp__mon--on' : ''}}">{{item.label}}</view>
+          <view wx:for="{{monthsView}}" wx:key="month" class="lz-row {{item.isCur ? 'rp__row--cur' : ''}}" data-index="{{item.mi}}" bindtap="onSel" hover-class="tap-active">
+            <view class="rp__mon {{sel === item.mi ? 'rp__mon--on' : ''}}">{{item.label}}</view>
             <view class="lz-row__main">
               <view class="lz-row__label" style="font-size: 14.5px; font-weight: 600;">人工 {{item.laborText}}</view>
               <view class="lz-row__sub">其他成本 {{item.otherText}}</view>
             </view>
             <view class="lz-money" style="font-size: 15px; color: var(--c4);">{{item.laborText}}</view>
           </view>
+          <view wx:if="{{hiddenCount > 0}}" class="rp__more" bindtap="toggleMonths" hover-class="tap-active">{{expandMonths ? '收起' : '展开全部 ' + hiddenCount + ' 个月'}}</view>
         </view>
         <view wx:else class="lz-empty">本年暂无订单，点击底部 + 记一笔</view>
       </view>

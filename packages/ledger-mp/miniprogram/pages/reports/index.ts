@@ -39,6 +39,10 @@ Page({
     yearLaborBare: '0',
     yearOtherText: '¥0',
     avgLaborText: '¥0',
+    // 各月明细：默认只显示有数据的月份 + 当前月，可展开全部 12 个月
+    monthsView: [] as any[],
+    expandMonths: false,
+    hiddenCount: 0,
   },
 
   _seq: 0,
@@ -71,8 +75,12 @@ Page({
       const hide = getHideAmount()
       const fmt = (n: number) => (hide ? maskMoney(n) : yuan(n))
 
-      const months = series.map((s) => ({
+      const thisY = new Date().getFullYear()
+      const curMi = this.data.ovYear === thisY ? new Date().getMonth() : -1
+      const months = series.map((s, i) => ({
         month: s.month,
+        mi: i,
+        isCur: i === curMi,
         label: s.label,
         count: s.count,
         profit: s.profit,
@@ -81,6 +89,7 @@ Page({
         laborText: fmt(s.labor),
         otherText: fmt(s.otherCost),
       }))
+      const view = this.buildView(months, this.data.expandMonths, curMi)
       const profitBars = series.map((s) => ({ label: s.label, value: s.profit }))
       const laborBars = series.map((s) => ({ label: s.label, value: s.labor, value2: s.otherCost }))
 
@@ -102,6 +111,8 @@ Page({
       this.setData({
         hasData,
         months,
+        monthsView: view.list,
+        hiddenCount: view.hidden,
         profitBars,
         laborBars,
         yearProfitBare: hide ? maskMoney(yearProfit) : yuan(yearProfit, true),
@@ -121,6 +132,17 @@ Page({
     } finally {
       if (done) done()
     }
+  },
+  buildView(months: any[], expand: boolean, curMi: number) {
+    const collapsed = months.filter((m: any) => m.count > 0 || m.mi === curMi)
+    return { list: expand ? months : collapsed, hidden: months.length - collapsed.length }
+  },
+  toggleMonths() {
+    const expand = !this.data.expandMonths
+    const thisY = new Date().getFullYear()
+    const curMi = this.data.ovYear === thisY ? new Date().getMonth() : -1
+    const v = this.buildView(this.data.months, expand, curMi)
+    this.setData({ expandMonths: expand, monthsView: v.list, hiddenCount: v.hidden })
   },
   retry() {
     this.setData({ loading: true, loadError: false }, () => this.load())

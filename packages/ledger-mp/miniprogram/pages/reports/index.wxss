@@ -68,3 +68,15 @@
   background: var(--accent);
   color: #fff;
 }
+
+/* 当月行高亮 + 展开/收起 */
+.rp__row--cur {
+  background: rgba(14, 124, 102, 0.06);
+}
+.rp__more {
+  text-align: center;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
