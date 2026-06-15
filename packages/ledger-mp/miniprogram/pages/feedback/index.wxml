@@ -1,10 +1,10 @@
 <lz-bg />
 <view class="fb">
-  <lz-header title="意见反馈" />
+  <lz-header title="意见反馈" subtitle="你的建议帮助门窗利账更好用" />
 
-  <view class="lz-page" style="padding-bottom: 40px;">
+  <view class="lz-page lz-page--pad-bottom">
     <view class="lz-section-label">问题与建议</view>
-    <view class="fb__textwrap">
+    <view class="lz-card fb__textwrap">
       <textarea
         class="fb__textarea"
         value="{{content}}"
@@ -17,7 +17,23 @@
       <view class="fb__count">{{content.length}}/500</view>
     </view>
 
-    <view class="lz-section-label" style="margin-top: var(--gap);">联系方式</view>
+    <view class="lz-section-label" style="margin-top: var(--gap);">图片（选填，最多 9 张）</view>
+    <view class="lz-card">
+      <view class="fb__grid">
+        <view wx:for="{{images}}" wx:key="*this" class="fb__thumb">
+          <image src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="previewImage" />
+          <view class="fb__thumb-del" data-index="{{index}}" catchtap="removeImage">
+            <lz-icon name="close" size="11" color="white" />
+          </view>
+        </view>
+        <view wx:if="{{images.length < 9}}" class="fb__add" hover-class="tap-active" bindtap="chooseMedia">
+          <lz-icon name="camera" size="22" color="faint" />
+          <text class="fb__add-t">{{uploading ? '上传中…' : '添加'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">联系方式（选填）</view>
     <view class="lz-field">
       <lz-icon name="phone" size="19" color="faint" />
       <input
@@ -34,6 +50,6 @@
   </view>
 
   <view class="lz-footer">
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSubmit ? '' : 'lz-btn--disabled'}}" bindtap="onSubmit">提交反馈</button>
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSubmit && !uploading ? '' : 'lz-btn--disabled'}}" bindtap="onSubmit">{{submitting ? '提交中…' : '提交反馈'}}</button>
   </view>
 </view>

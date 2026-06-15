@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsIn,
   IsInt,
@@ -44,4 +46,10 @@ export class CreateLedgerFeedbackDto {
   @IsString() @IsNotEmpty({ message: '请填写反馈内容' }) @MaxLength(1000) content!: string
   @IsOptional() @IsString() @MaxLength(40) contact?: string
   @IsOptional() @IsIn(['general', 'delete_account', 'phone_change']) type?: string
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(9)
+  @IsString({ each: true })
+  @MaxLength(300, { each: true })
+  images?: string[]
 }

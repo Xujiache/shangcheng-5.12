@@ -128,7 +128,7 @@ export const settingApi = {
 
 /** 意见反馈（仅需登录） */
 export const feedbackApi = {
-  submit: (data: { content: string; contact?: string; type?: string }) =>
+  submit: (data: { content: string; contact?: string; type?: string; images?: string[] }) =>
     http.post('/l/feedback', data),
 }
 

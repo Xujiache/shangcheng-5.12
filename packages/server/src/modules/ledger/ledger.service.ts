@@ -1043,12 +1043,16 @@ export class LedgerService {
   async createFeedback(userId: string, dto: CreateLedgerFeedbackDto) {
     const content = String(dto.content || '').trim()
     if (!content) throw new BizException(BizCode.INVALID_PARAMS, '请填写反馈内容')
+    const images = Array.isArray(dto.images)
+      ? dto.images.filter((u) => typeof u === 'string' && u).slice(0, 9)
+      : []
     const fb = await this.prisma.ledgerFeedback.create({
       data: {
         userId,
         type: dto.type || 'general',
         content: content.slice(0, 1000),
         contact: dto.contact?.trim()?.slice(0, 40) || null,
+        images: images.length ? (images as any) : undefined,
       },
     })
     return { id: fb.id, ok: true }

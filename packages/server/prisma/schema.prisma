@@ -1091,6 +1091,7 @@ model LedgerFeedback {
   type      String     @default("general") // general / delete_account / phone_change
   content   String
   contact   String?
+  images    Json?      // 反馈附图 URL 数组(最多 9 张)
   status    String     @default("open") // open / resolved
   reply     String?
   createdAt DateTime   @default(now())

@@ -40,6 +40,7 @@ const BIZ_TYPE_WHITELIST = new Set([
   'chat',
   'misc',
   'ledger-ad',
+  'feedback',
 ])
 
 function normalizeBizType(input: string | undefined): string {

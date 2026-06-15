@@ -95,6 +95,17 @@ export class LedgerController {
   }
 
   // ── 意见反馈 ──
+  /** 反馈附图上传（多端通用，复用对象存储），返回公网 URL。 */
+  @Post('feedback-media')
+  @ApiConsumes('multipart/form-data')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFeedbackMedia(@CurrentLedgerUser() user: LedgerAuthUser, @UploadedFile() file: any) {
+    if (!file) throw new BizException(BizCode.INVALID_PARAMS, '请选择图片')
+    const { url } = await this.files.upload(file, 'feedback', user.id)
+    return { url }
+  }
+
   @Post('feedback')
   feedback(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerFeedbackDto) {
     return this.svc.createFeedback(u.id, dto)
