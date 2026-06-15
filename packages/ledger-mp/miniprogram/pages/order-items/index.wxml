@@ -36,7 +36,7 @@
             <text class="oi__size-op">×</text>
             <input class="oi__size-in" type="number" value="{{sz.hStr}}" placeholder="高mm" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="hStr" bindinput="onSizeInput" />
             <text class="oi__size-op">×</text>
-            <input class="oi__size-cnt" type="number" value="{{sz.countStr}}" placeholder="个数" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="countStr" bindinput="onSizeInput" />
+            <input class="oi__size-cnt" type="number" value="{{sz.countStr}}" placeholder="樘" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="countStr" bindinput="onSizeInput" />
             <text class="oi__size-eq">= {{sz.areaText || '0'}}㎡{{sz.clamped ? ' 起算' : ''}}</text>
             <!-- 备注：紧跟在「=面积」后方，多条横向排列、超出自动换行 -->
             <view wx:for="{{sz.notes}}" wx:for-item="nt" wx:for-index="nidx" wx:key="_k" class="oi__notechip">
