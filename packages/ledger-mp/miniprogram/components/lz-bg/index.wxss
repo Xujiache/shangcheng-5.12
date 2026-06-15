@@ -71,7 +71,7 @@
   }
 }
 
-/* 性能模式：冻结漂浮动画（保留静态光斑与渐变，省持续合成）*/
-.lz-bg--still .lz-bg__blob {
-  animation: none;
+/* 性能模式(max)：背景更鲜亮通透 */
+.lz-bg--max {
+  filter: saturate(1.16) brightness(1.02);
 }

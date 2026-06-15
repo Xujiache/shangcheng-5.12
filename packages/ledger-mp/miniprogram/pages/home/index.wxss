@@ -47,6 +47,19 @@
 }
 .home__hero {
   margin-bottom: var(--gap);
+  overflow: hidden;
+}
+/* 性能模式：跟随手指的流体光晕 */
+.home__touch {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  margin-left: -120px;
+  margin-top: -120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(46, 180, 150, 0.4) 0%, rgba(46, 180, 150, 0) 70%);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 }
 .home__hero-label {
   font-size: 13px;

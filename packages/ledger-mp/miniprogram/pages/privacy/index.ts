@@ -7,8 +7,8 @@ import {
   getHideAmount,
   getGlass,
   setGlass,
-  getPerf,
-  setPerf,
+  getFxMode,
+  setFxMode,
 } from '../../utils/store'
 
 interface ToggleItem {
@@ -54,12 +54,16 @@ Page({
   data: {
     items: DEFS.map((it) => ({ ...it })),
     glassOn: true,
-    perfOn: false,
+    fxMode: 'normal' as 'normal' | 'max',
+    fxOptions: [
+      { value: 'normal', label: '普通模式' },
+      { value: 'max', label: '性能模式' },
+    ],
     cacheSize: '0 KB',
   },
 
   onLoad() {
-    this.setData({ cacheSize: calcCache(), glassOn: getGlass(), perfOn: getPerf() })
+    this.setData({ cacheSize: calcCache(), glassOn: getGlass(), fxMode: getFxMode() })
     this.load()
   },
 
@@ -72,11 +76,14 @@ Page({
   },
 
   // 性能模式：本地偏好；各页 lz-bg 在 pageLifetimes.show 读取即生效
-  onTogglePerf() {
-    const next = !this.data.perfOn
-    setPerf(next)
-    this.setData({ perfOn: next })
-    wx.showToast({ title: next ? '已开启性能模式' : '已关闭性能模式', icon: 'none' })
+  onFxMode(e: any) {
+    const m = e.detail.value === 'max' ? 'max' : 'normal'
+    setFxMode(m)
+    this.setData({ fxMode: m })
+    wx.showToast({
+      title: m === 'max' ? '已切到性能模式 · 全特效' : '已切到普通模式',
+      icon: 'none',
+    })
   },
 
   async load() {

@@ -1,6 +1,6 @@
 import { statsApi, notificationApi, adApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
-import { getHideAmount } from '../../utils/store'
+import { getHideAmount, getFxMode } from '../../utils/store'
 import { makeShareCover } from '../../utils/share-cover'
 
 const COLORMAP: Record<string, string> = {
@@ -19,6 +19,10 @@ Page({
   data: {
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     hdRight: 18, // 右侧留白：动态避让微信原生胶囊（onShow 计算）
+    fxMax: false, // 性能模式：开启 hero 触摸流光（每帧 setData，默认关）
+    tlx: 0,
+    tly: 0,
+    tlShow: false,
     period: 'month',
     periods: [
       { value: 'day', label: '日' },
@@ -71,9 +75,34 @@ Page({
     } catch (e) {
       /* 旧基础库兜底用默认 18 */
     }
-    this.setData({ hdPad: sb + 10, hdRight })
+    this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max' })
     this.load()
     this.loadAds()
+  },
+  // 性能模式触摸流光：光晕跟随手指（仅 max；每帧 setData）
+  onHeroTouchStart(e: any) {
+    if (!this.data.fxMax) return
+    this.createSelectorQuery()
+      .select('.home__hero')
+      .boundingClientRect((r: any) => {
+        if (!r) return
+        ;(this as any)._heroRect = r
+        this.moveLight(e)
+        this.setData({ tlShow: true })
+      })
+      .exec()
+  },
+  onHeroTouchMove(e: any) {
+    if (this.data.fxMax) this.moveLight(e)
+  },
+  onHeroTouchEnd() {
+    if (this.data.tlShow) this.setData({ tlShow: false })
+  },
+  moveLight(e: any) {
+    const r = (this as any)._heroRect
+    const t = e.touches && e.touches[0]
+    if (!r || !t) return
+    this.setData({ tlx: t.clientX - r.left, tly: t.clientY - r.top })
   },
   onPullDownRefresh() {
     this.load(() => wx.stopPullDownRefresh())

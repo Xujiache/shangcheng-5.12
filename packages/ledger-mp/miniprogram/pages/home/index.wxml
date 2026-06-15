@@ -40,7 +40,8 @@
 
     <block wx:else>
       <!-- 经营概览：周期 + 净利润 + KPI + 目标，合并为一张主面板（信息聚合、层次清晰）-->
-      <view class="lz-card lz-card--glow home__hero">
+      <view class="lz-card lz-card--glow home__hero" bindtouchstart="onHeroTouchStart" bindtouchmove="onHeroTouchMove" bindtouchend="onHeroTouchEnd" bindtouchcancel="onHeroTouchEnd">
+        <view wx:if="{{fxMax}}" class="home__touch" style="left: {{tlx}}px; top: {{tly}}px; opacity: {{tlShow ? 1 : 0}};"></view>
         <view class="home__period">
           <lz-segmented options="{{periods}}" value="{{period}}" bindchange="onPeriod" />
         </view>

@@ -1,9 +1,8 @@
-// 全局动态背景层（样式驱动）。默认常驻流动动效；
-// 性能模式(store.getPerf)下冻结动画(lz-bg--still)，老旧手机不再持续合成全屏模糊。
+// 全局动态背景层（样式驱动）。两种模式都常驻流动；性能模式(max)更鲜亮(lz-bg--max)。
 // 用 .js 免编译：微信开发者工具不会即时编译会话中新增的 .ts 组件。
 const store = require('../../utils/store')
 Component({
-  data: { still: false },
+  data: { max: false },
   lifetimes: {
     attached() {
       this.sync()
@@ -17,8 +16,8 @@ Component({
   methods: {
     sync() {
       try {
-        const still = !!(store.getPerf && store.getPerf())
-        if (still !== this.data.still) this.setData({ still: still })
+        const max = (store.getFxMode && store.getFxMode()) === 'max'
+        if (max !== this.data.max) this.setData({ max: max })
       } catch (e) {
         /* 忽略 */
       }

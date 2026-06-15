@@ -86,13 +86,13 @@ export function setLogo(v: string) {
   wx.setStorageSync(LOGO_KEY, v || '')
 }
 
-/* ---- 性能模式（老旧手机关闭流动背景等动效；默认关 = 全特效） ---- */
-const PERF_KEY = 'ledger_perf'
-export function getPerf(): boolean {
-  return !!wx.getStorageSync(PERF_KEY)
+/* ---- 特效模式：normal=常规特效(默认) / max=性能模式全开(含触摸流光，每帧 setData，老机更耗电) ---- */
+const FX_KEY = 'ledger_fxmode'
+export function getFxMode(): 'normal' | 'max' {
+  return wx.getStorageSync(FX_KEY) === 'max' ? 'max' : 'normal'
 }
-export function setPerf(v: boolean) {
-  wx.setStorageSync(PERF_KEY, v)
+export function setFxMode(m: 'normal' | 'max') {
+  wx.setStorageSync(FX_KEY, m === 'max' ? 'max' : 'normal')
 }
 
 // 本次冷启动是否已通过生物验证（仅内存，每次冷启动重置 → 重新要求解锁）

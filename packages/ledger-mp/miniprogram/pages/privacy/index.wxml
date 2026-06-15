@@ -18,12 +18,12 @@
       <view class="lz-row lz-row--last">
         <view class="lz-row__icon"><lz-icon name="device" size="17" color="accent" /></view>
         <view class="lz-row__main">
-          <view class="lz-row__label">性能模式</view>
-          <view class="lz-row__sub">关闭流动背景等动效，老旧手机更流畅</view>
+          <view class="lz-row__label">特效模式</view>
+          <view class="lz-row__sub">{{fxMode === 'max' ? '性能模式：全特效全开(含触摸流光)，更炫但更耗电' : '普通模式：常规光感特效，省电流畅'}}</view>
         </view>
-        <view class="tg {{perfOn ? 'tg--on' : ''}}" bindtap="onTogglePerf" hover-class="tap-active">
-          <view class="tg__knob"></view>
-        </view>
+      </view>
+      <view style="padding: 2px 14px 12px;">
+        <lz-segmented options="{{fxOptions}}" value="{{fxMode}}" bindchange="onFxMode" />
       </view>
     </view>
 
