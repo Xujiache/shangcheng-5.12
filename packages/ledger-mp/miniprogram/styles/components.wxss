@@ -13,13 +13,22 @@
 
 /* 卡片 */
 .lz-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* 液态玻璃：半透明渐变镜面 + 毛玻璃模糊 + 顶部高光边（被光照亮的玻璃边缘）*/
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.6) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--r-card);
   padding: var(--pad);
-  box-shadow: var(--shadow-soft);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    var(--shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
-.lz-card--glow { box-shadow: var(--shadow); }
+.lz-card--glow {
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
 .lz-card--flush { padding: 2px 16px; }
 
 .lz-gap { height: var(--gap); }
