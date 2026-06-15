@@ -228,6 +228,7 @@ export class LedgerAdminService {
       contact: f.contact,
       status: f.status,
       reply: f.reply,
+      images: (f.images as any) || [],
       createdAt: f.createdAt,
     }))
     return { list, total, page, pageSize }

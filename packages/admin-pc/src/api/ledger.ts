@@ -207,6 +207,7 @@ export interface LedgerFeedback {
   contact: string | null
   status: 'open' | 'resolved'
   reply: string | null
+  images?: string[]
   createdAt: string
 }
 

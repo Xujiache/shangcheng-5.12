@@ -76,6 +76,9 @@
         <ElTableColumn label="内容" min-width="260">
           <template #default="{ row }">
             <div class="pf-fb-content">{{ row.content }}</div>
+            <div v-if="row.images && row.images.length" class="pf-fb-imghint">
+              📷 {{ row.images.length }} 张图片
+            </div>
           </template>
         </ElTableColumn>
         <ElTableColumn label="联系方式" width="150">
@@ -139,6 +142,21 @@
         <div class="pf-fb-block">
           <span class="pf-fb-key">内容</span>
           <div class="pf-fb-text">{{ handleTarget?.content }}</div>
+        </div>
+        <div class="pf-fb-block" v-if="handleTarget?.images && handleTarget.images.length">
+          <span class="pf-fb-key">图片</span>
+          <div class="pf-fb-imgs">
+            <ElImage
+              v-for="(img, i) in handleTarget.images"
+              :key="i"
+              :src="img"
+              fit="cover"
+              class="pf-fb-img"
+              :preview-src-list="handleTarget.images"
+              :initial-index="i"
+              preview-teleported
+            />
+          </div>
         </div>
         <ElForm :model="handleForm" label-position="top">
           <ElFormItem label="处理备注 / 回复">
@@ -299,6 +317,26 @@
     font-family: SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
     font-size: 13px;
     color: var(--art-gray-700, #374151);
+  }
+
+  .pf-fb-imghint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--el-color-primary, #409eff);
+  }
+
+  .pf-fb-imgs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .pf-fb-img {
+    width: 88px;
+    height: 88px;
+    cursor: pointer;
+    border-radius: 8px;
   }
 
   .pf-fb-content {
