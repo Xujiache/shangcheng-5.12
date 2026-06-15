@@ -288,6 +288,17 @@ export const platformRoutes: AppRouteRecord = {
             ...ROLE_PLATFORM
           }
         },
+        {
+          path: '/platform/ledger/changelogs',
+          name: 'PlatformLedgerChangelogs',
+          component: '/platform/ledger/changelogs',
+          meta: {
+            title: 'menus.platform.ledgerChangelogs',
+            icon: 'ri:file-list-3-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
+        },
         // —— 配置 ——
         {
           path: '/platform/ledger/config',

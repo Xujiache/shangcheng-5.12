@@ -443,3 +443,46 @@ export async function fetchLedgerInviteStats(): Promise<LedgerInviteStats> {
     return { totalUsers: 0, invitedUsers: 0, list: [] }
   }
 }
+
+/* ============ 更新日志（版本日志）============ */
+export interface LedgerChangelog {
+  id: string
+  version: string
+  title: string
+  content: string
+  published: boolean
+  createdAt: string
+  updatedAt: string
+}
+export async function fetchLedgerChangelogs(): Promise<LedgerChangelog[]> {
+  try {
+    const resp = await request.get<any>({ url: '/api/v1/p/ledger/changelogs' })
+    return Array.isArray(resp) ? resp : []
+  } catch {
+    return []
+  }
+}
+export function createLedgerChangelog(payload: {
+  version: string
+  title: string
+  content: string
+  published?: boolean
+}) {
+  return request.post<LedgerChangelog>({ url: '/api/v1/p/ledger/changelogs', data: payload })
+}
+export function updateLedgerChangelog(
+  id: string,
+  payload: Partial<{ version: string; title: string; content: string; published: boolean }>
+) {
+  return request.request<LedgerChangelog>({
+    url: `/api/v1/p/ledger/changelogs/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    data: payload
+  })
+}
+export function deleteLedgerChangelog(id: string) {
+  return request.request<{ ok: boolean }>({
+    url: `/api/v1/p/ledger/changelogs/${encodeURIComponent(id)}`,
+    method: 'DELETE'
+  })
+}
