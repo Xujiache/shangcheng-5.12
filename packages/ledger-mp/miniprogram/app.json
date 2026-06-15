@@ -6,6 +6,7 @@
     "pages/membership/index",
     "pages/home/index",
     "pages/cut/index",
+    "pages/cut-result/index",
     "pages/invite/index",
     "pages/orders/index",
     "pages/reports/index",

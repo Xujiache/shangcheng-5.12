@@ -1,0 +1,75 @@
+<view class="cut">
+  <lz-header title="下料结果" subtitle="{{subt}}" />
+  <view class="lz-page lz-page--pad-bottom">
+    <block wx:if="{{summary}}">
+      <!-- 汇总 -->
+      <view class="lz-card lz-card--glow">
+        <view class="cut__metrics">
+          <view class="cut__m">
+            <view class="cut__m-v">{{summary.count}}</view>
+            <view class="cut__m-l">{{is2d ? '用料(块)' : '用料(根)'}}</view>
+          </view>
+          <view class="cut__m">
+            <view class="cut__m-v">{{summary.util}}%</view>
+            <view class="cut__m-l">利用率</view>
+          </view>
+          <view class="cut__m">
+            <view class="cut__m-v">{{summary.extra}}</view>
+            <view class="cut__m-l">{{is2d ? '超尺寸(件)' : '损耗(mm)'}}</view>
+          </view>
+          <view class="cut__m">
+            <view class="cut__m-v">{{summary.totalPieces}}</view>
+            <view class="cut__m-l">{{is2d ? '已排(件)' : '总段数'}}</view>
+          </view>
+        </view>
+        <view wx:if="{{oversizeText}}" style="font-size: 12.5px; margin-top: 10px; color: var(--loss);">{{oversizeText}}</view>
+      </view>
+
+      <!-- 排料图（仅玻璃/板材二维）-->
+      <view wx:if="{{is2d}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+        <view class="cut__sec-t" style="padding: 14px 14px 4px;">排料图</view>
+        <view class="cut__cvwrap">
+          <canvas type="2d" id="cutcv" class="cut__cv" style="height: {{canvasH}}px;"></canvas>
+        </view>
+        <canvas type="2d" id="cutexport" class="cut__cv-export"></canvas>
+      </view>
+
+      <!-- 二维：各原片排料概览 -->
+      <view wx:if="{{is2d && sheetsView.length}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+        <view class="cut__sec-t" style="padding: 14px 14px 4px;">原片明细</view>
+        <view wx:for="{{sheetsView}}" wx:key="idx" class="cut__bar">
+          <view class="cut__bar-h">原片 {{item.idx}} · {{item.count}} 块 · 利用率 {{item.util}}%</view>
+        </view>
+      </view>
+
+      <!-- 一维：切割方案明细 -->
+      <view wx:if="{{!is2d && barsView.length}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
+        <view class="cut__sec-t" style="padding: 14px 14px 4px;">切割方案</view>
+        <view wx:for="{{barsView}}" wx:key="idx" class="cut__bar">
+          <view class="cut__bar-h">第 {{item.idx}} 根 · {{item.count}} 段 · 余料 {{item.waste}}mm</view>
+          <view class="cut__bar-c">{{item.cutsText}}</view>
+        </view>
+      </view>
+
+      <!-- 继续编辑提示 -->
+      <view wx:if="{{editingTitle}}" class="cut__editing">
+        <text class="cut__editing-t">正在编辑「{{editingTitle}}」· 保存将更新此方案</text>
+        <text class="cut__editing-new" catchtap="clearEditing">改为新建</text>
+      </view>
+
+      <!-- 导出 / 保存方案 -->
+      <view class="cut__acts">
+        <button wx:if="{{is2d}}" class="lz-btn lz-btn--ghost lz-btn--lg cut__act" bindtap="saveImages" disabled="{{saving2img || !canvasReady}}">
+          <lz-icon name="download" size="17" color="accent" />{{saving2img ? ('保存中 ' + saveProgress) : '保存排料图'}}
+        </button>
+        <button class="lz-btn lz-btn--primary lz-btn--lg cut__act" bindtap="savePlan" disabled="{{savingPlan}}">
+          <lz-icon name="check" size="17" color="white" />{{savingPlan ? '保存中…' : (editingTitle ? '更新方案' : '保存方案')}}
+        </button>
+      </view>
+
+      <view class="cut__backhint" bindtap="back" hover-class="tap-active">← 返回修改参数</view>
+    </block>
+
+    <view wx:else class="lz-empty">计算中…</view>
+  </view>
+</view>

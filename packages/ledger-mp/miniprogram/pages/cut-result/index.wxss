@@ -1,0 +1,92 @@
+.cut__sec-t {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.cut__metrics {
+  display: flex;
+}
+.cut__m {
+  flex: 1;
+  text-align: center;
+}
+.cut__m-v {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-text);
+}
+.cut__m-l {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.cut__bar {
+  padding: 10px 14px;
+  border-top: 1rpx solid rgba(20, 32, 28, 0.06);
+}
+.cut__bar-h {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.cut__bar-c {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+.cut__cvwrap {
+  padding: 6px 8px 12px;
+}
+.cut__cv {
+  width: 100%;
+  display: block;
+}
+/* 导出专用画布：移出可视区但仍渲染 */
+.cut__cv-export {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 500px;
+  height: 400px;
+}
+.cut__editing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: var(--gap);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(46, 158, 120, 0.08);
+}
+.cut__editing-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.cut__editing-new {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.cut__acts {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+.cut__act {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.cut__backhint {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}

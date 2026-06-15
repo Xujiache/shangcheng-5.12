@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "admin-pc (管理后台 Vue3 + Vite)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev:admin-pc"],
+      "port": 5173
+    },
+    {
+      "name": "merchant-app (商家端 uni-app H5)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev:merchant-app"],
+      "port": 8080
+    },
+    {
+      "name": "user-mp (用户端 uni-app H5)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@jiujiu/user-mp", "dev:h5"],
+      "port": 8081
+    },
+    {
+      "name": "platform-app (平台端 uni-app H5)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev:platform-app"],
+      "port": 8082
+    },
+    {
+      "name": "server (NestJS 后端)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev:server"],
+      "port": 3000
+    }
+  ]
+}
