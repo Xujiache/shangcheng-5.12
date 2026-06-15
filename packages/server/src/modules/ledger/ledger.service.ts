@@ -423,14 +423,14 @@ export class LedgerService {
       const rec = data.recycle !== undefined ? data.recycle : exist.recycle
       data.total = orderTotalFromItems(finalItems, disc, rec)
     }
-    const o = await this.prisma.ledgerOrder.update({ where: { id }, data })
+    const o = await this.prisma.ledgerOrder.update({ where: { id, userId }, data })
     return this.mapOrder(o as OrderRow)
   }
 
   async deleteOrder(userId: string, id: string) {
     const exist = await this.prisma.ledgerOrder.findFirst({ where: { id, userId } })
     if (!exist) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
-    await this.prisma.ledgerOrder.delete({ where: { id } })
+    await this.prisma.ledgerOrder.delete({ where: { id, userId } })
     return { ok: true }
   }
 
@@ -634,14 +634,14 @@ export class LedgerService {
       this.assertCutJsonSize(dto.summary, 'summary')
       data.summary = dto.summary as any
     }
-    const p = await this.prisma.ledgerCutPlan.update({ where: { id }, data })
+    const p = await this.prisma.ledgerCutPlan.update({ where: { id, userId }, data })
     return this.mapCutPlan(p)
   }
 
   async deleteCutPlan(userId: string, id: string) {
     const exist = await this.prisma.ledgerCutPlan.findFirst({ where: { id, userId } })
     if (!exist) throw new BizException(BizCode.NOT_FOUND, '方案不存在')
-    await this.prisma.ledgerCutPlan.delete({ where: { id } })
+    await this.prisma.ledgerCutPlan.delete({ where: { id, userId } })
     return { ok: true }
   }
 

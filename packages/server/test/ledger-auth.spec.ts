@@ -134,7 +134,7 @@ describe('LedgerAuthService.getPublicConfig（登录页公开配置）', () => {
   it('用例5：无配置行 → 走 LEDGER_CONFIG_DEFAULTS（allowSelfRegister 默认 true）', async () => {
     prisma.ledgerConfig.findUnique.mockResolvedValueOnce(null as any)
     const res = await service.getPublicConfig()
-    expect(res).toEqual({ allowSelfRegister: true })
+    expect(res).toEqual({ allowSelfRegister: true, logoUrl: '' })
   })
 
   it('用例6：后台关闭自助注册 → 返回 false（与 register 校验同一数据源）', async () => {
@@ -143,7 +143,7 @@ describe('LedgerAuthService.getPublicConfig（登录页公开配置）', () => {
       value: { allowSelfRegister: false },
     } as any)
     const res = await service.getPublicConfig()
-    expect(res).toEqual({ allowSelfRegister: false })
+    expect(res).toEqual({ allowSelfRegister: false, logoUrl: '' })
     // 读的就是 register 用的那行 LedgerConfig(key='global')
     const arg = prisma.ledgerConfig.findUnique.mock.calls[0][0] as any
     expect(arg.where.key).toBe('global')

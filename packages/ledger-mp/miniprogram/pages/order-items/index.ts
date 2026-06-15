@@ -358,6 +358,11 @@ Page({
 
   save() {
     if (this._navigating) return // 防快速连点触发两次 navigateBack
+    // 定金+收款>总价（depositOver）拦截保存，避免落库出现"已收超过应收"的异常单
+    if (this.data.depositOver) {
+      wx.showToast({ title: '定金+收款不能大于总价', icon: 'none' })
+      return
+    }
     this._navigating = true
     this.writeBack()
     wx.navigateBack()

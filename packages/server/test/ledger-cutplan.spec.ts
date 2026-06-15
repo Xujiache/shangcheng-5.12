@@ -163,7 +163,7 @@ describe('LedgerService.updateCutPlan（归属隔离 + 字段增量）', () => {
     expect(findArg.where).toEqual({ id: 'p1', userId: 'u1' })
 
     const updateArg = prisma.ledgerCutPlan.update.mock.calls[0][0] as any
-    expect(updateArg.where).toEqual({ id: 'p1' })
+    expect(updateArg.where).toEqual({ id: 'p1', userId: 'u1' })
     expect(updateArg.data.title).toBe('新名')
     expect(updateArg.data.input).toEqual({ sheetW: 3000, sheetH: 2000, kerf: 4, pieces: [] })
     // 未传字段不出现在 data 中
@@ -213,7 +213,7 @@ describe('LedgerService.deleteCutPlan（归属隔离）', () => {
 
     expect(res).toEqual({ ok: true })
     const delArg = prisma.ledgerCutPlan.delete.mock.calls[0][0] as any
-    expect(delArg.where).toEqual({ id: 'p1' })
+    expect(delArg.where).toEqual({ id: 'p1', userId: 'u1' })
   })
 
   it('用例9：他人方案 → 1002 NOT_FOUND，且不 delete', async () => {
