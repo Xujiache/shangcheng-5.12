@@ -32,8 +32,10 @@
         <view class="cut__cvwrap">
           <canvas type="2d" id="cutcv" class="cut__cv" style="height: {{canvasH}}px;"></canvas>
         </view>
-        <canvas type="2d" id="cutexport" class="cut__cv-export"></canvas>
       </view>
+
+      <!-- 导出专用画布（型材切割图 / 玻璃·板材排料图通用，离屏渲染）-->
+      <canvas type="2d" id="cutexport" class="cut__cv-export"></canvas>
 
       <!-- 二维：各原片排料概览 -->
       <view wx:if="{{is2d && sheetsView.length}}" class="lz-card lz-card--flush" style="margin-top: var(--gap);">
@@ -60,8 +62,8 @@
 
       <!-- 导出 / 保存方案 -->
       <view class="cut__acts">
-        <button wx:if="{{is2d}}" class="lz-btn lz-btn--ghost lz-btn--lg cut__act" bindtap="saveImages" disabled="{{saving2img || !canvasReady}}">
-          <lz-icon name="download" size="17" color="accent" />{{saving2img ? ('保存中 ' + saveProgress) : '保存排料图'}}
+        <button class="lz-btn lz-btn--ghost lz-btn--lg cut__act" bindtap="saveImages" disabled="{{saving2img}}">
+          <lz-icon name="download" size="17" color="accent" />{{saving2img ? '保存中…' : (is2d ? '保存排料图' : '保存切割图')}}
         </button>
         <button class="lz-btn lz-btn--primary lz-btn--lg cut__act" bindtap="savePlan" disabled="{{savingPlan}}">
           <lz-icon name="check" size="17" color="white" />{{savingPlan ? '保存中…' : (editingTitle ? '更新方案' : '保存方案')}}
