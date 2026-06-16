@@ -35,6 +35,8 @@ export interface PrepayParams {
   totalFen: number // 单位：分
   openid: string // 用户 openid（必填）
   attach?: string // 附加数据
+  appid?: string // 覆盖默认小程序 AppID（多小程序共用同一商户号时必传，如门窗利账独立 appid）
+  notifyUrl?: string // 覆盖默认回调地址（不同业务走各自回调路由）
 }
 
 /** 小程序端 uni.requestPayment 需要的字段 */
@@ -69,9 +71,9 @@ export class WxPayService {
       throw new Error('微信支付未配置（缺商户号/API V3 密钥/证书），暂不可下单')
     }
 
-    const appid = process.env.WX_MINIAPP_APPID!
+    const appid = args.appid || process.env.WX_MINIAPP_APPID!
     const mchid = process.env.WX_PAY_MCH_ID!
-    const notifyUrl = process.env.WX_PAY_NOTIFY_URL!
+    const notifyUrl = args.notifyUrl || process.env.WX_PAY_NOTIFY_URL!
     const keyPath = process.env.WX_PAY_KEY_PATH!
 
     const body = {

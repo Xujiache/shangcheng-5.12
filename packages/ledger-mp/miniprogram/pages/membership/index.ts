@@ -38,8 +38,10 @@ Page({
     planLabel: '门窗利账 会员',
     statusText: '加载中…',
     expiresLabel: '—',
-    selectedKey: '', // 用户点选的套餐（仅本页选择态；付费由管理员后台开通）
+    selectedKey: '', // 用户点选的套餐
     ctaText: '开通会员',
+    payEnabled: false, // 服务端微信支付就绪：true=直接付款开通；false=回退留言找管理员
+    paying: false,
   },
 
   _loaded: false, // 是否成功加载过：刷新失败时保留已展示内容，不退回重试卡
@@ -52,33 +54,37 @@ Page({
     if (!this.data.loading) this.load()
   },
 
-  async load() {
+  async load(fresh = false) {
     try {
-      const res: any = await meApi.membership()
-      const m: MembershipStatus = res
-      const plans = res.plans && res.plans.length ? res.plans : PLAN_FALLBACK
-      const plan = plans.find((p: any) => p.key === m.lastPlanKey)
-      const planLabel = m.never ? '门窗利账 会员' : plan ? plan.label : '门窗利账 会员'
-      const statusText = m.active ? '会员有效' : m.expired ? '会员已过期' : '尚未开通会员'
-      this._loaded = true
-      this.setData({
-        m,
-        plans,
-        planLabel,
-        statusText,
-        expiresLabel: fmtDate(m.expiresAt),
-        ctaText: this.data.selectedKey
-          ? this.ctaForKey(this.data.selectedKey, m, plans)
-          : m.active
-            ? '续费会员'
-            : '开通会员',
-        loading: false,
-        loadError: false,
-      })
+      const res: any = fresh ? await meApi.refreshMembership() : await meApi.membership()
+      this.applyMembership(res)
     } catch (e) {
       // 首次失败显示重试卡；刷新失败保留已有内容（request 层已 toast）
       this.setData({ loading: false, loadError: !this._loaded })
     }
+  },
+  applyMembership(res: any) {
+    const m: MembershipStatus = res
+    const plans = res.plans && res.plans.length ? res.plans : PLAN_FALLBACK
+    const plan = plans.find((p: any) => p.key === m.lastPlanKey)
+    const planLabel = m.never ? '门窗利账 会员' : plan ? plan.label : '门窗利账 会员'
+    const statusText = m.active ? '会员有效' : m.expired ? '会员已过期' : '尚未开通会员'
+    this._loaded = true
+    this.setData({
+      m,
+      plans,
+      planLabel,
+      statusText,
+      payEnabled: !!res.payEnabled,
+      expiresLabel: fmtDate(m.expiresAt),
+      ctaText: this.data.selectedKey
+        ? this.ctaForKey(this.data.selectedKey, m, plans)
+        : m.active
+          ? '续费会员'
+          : '开通会员',
+      loading: false,
+      loadError: false,
+    })
   },
   retry() {
     this.setData({ loading: true, loadError: false }, () => this.load())
@@ -99,6 +105,12 @@ Page({
   },
 
   onRenew() {
+    // 微信支付就绪 → 用户直接付款全自动开通
+    if (this.data.payEnabled) {
+      this.payNow()
+      return
+    }
+    // 回退：微信支付未配置 → 留言找管理员（原逻辑）
     const plan = this.data.plans.find((p: any) => p.key === this.data.selectedKey)
     const content = plan
       ? '您选择了「' +
@@ -120,6 +132,81 @@ Page({
       // 弹窗期间管理员可能已开通，关闭后刷新状态
       complete: () => this.load(),
     })
+  },
+
+  // ── 在线支付开通（payEnabled）：选套餐 → 微信支付 → 回调自动开通 ──
+  async payNow() {
+    const key = this.data.selectedKey
+    const plan = this.data.plans.find((p: any) => p.key === key)
+    if (!plan) {
+      wx.showToast({ title: '请先选择套餐', icon: 'none' })
+      return
+    }
+    if (this.data.paying) return
+    this.setData({ paying: true })
+    let payParams: any
+    try {
+      // 拿 wx.login code（未绑定微信的用户用它换 openid；已绑定的服务端忽略）
+      const code = await this.wxLogin()
+      wx.showLoading({ title: '发起支付…', mask: true })
+      payParams = await meApi.createMembershipPay(key, code)
+      wx.hideLoading()
+    } catch (e) {
+      wx.hideLoading()
+      this.setData({ paying: false })
+      return // 下单失败：wx.login 失败 / request 层已 toast
+    }
+    try {
+      await this.requestPayment(payParams)
+    } catch (e: any) {
+      this.setData({ paying: false })
+      // 用户主动取消不提示，其余提示支付未完成
+      if (!(e && e.errMsg && /cancel/i.test(e.errMsg))) {
+        wx.showToast({ title: '支付未完成', icon: 'none' })
+      }
+      return
+    }
+    // 支付成功 → 会员由微信回调异步开通，轮询刷新状态
+    wx.showLoading({ title: '开通中…', mask: true })
+    await this.pollMembership()
+    wx.hideLoading()
+    this.setData({ paying: false })
+    if (this.data.m && this.data.m.active) {
+      wx.showToast({ title: '会员已开通', icon: 'success' })
+    } else {
+      wx.showToast({ title: '支付成功，开通处理中', icon: 'none' })
+    }
+  },
+  wxLogin(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      wx.login({ success: (r) => resolve(r.code || ''), fail: reject })
+    })
+  },
+  requestPayment(p: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      wx.requestPayment({
+        timeStamp: p.timeStamp,
+        nonceStr: p.nonceStr,
+        package: p.package,
+        signType: p.signType || 'RSA',
+        paySign: p.paySign,
+        success: () => resolve(),
+        fail: reject,
+      } as any)
+    })
+  },
+  // 微信回调异步开通：轮询会员状态，命中 active 即停（最多 ~6s）
+  async pollMembership() {
+    for (let i = 0; i < 6; i++) {
+      await new Promise((r) => setTimeout(r, 1000))
+      try {
+        const res: any = await meApi.refreshMembership()
+        this.applyMembership(res)
+        if (res && res.active) return
+      } catch (e) {
+        /* 继续重试 */
+      }
+    }
   },
   enterApp() {
     wx.switchTab({ url: '/pages/home/index' })

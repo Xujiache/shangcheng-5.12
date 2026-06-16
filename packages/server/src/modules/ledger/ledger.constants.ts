@@ -53,6 +53,17 @@ export function normalizeLedgerPlans(raw: any): LedgerPlan[] {
 }
 
 /**
+ * 套餐展示价（如 "¥29" / "29" / "29.9 元"）→ 实付分。
+ * 服务端权威金额来源：下单与回调金额一律以此为准，绝不信任前端传值。
+ * 非法 / 非正 → 返回 0（调用方据此判定该套餐不支持在线支付）。
+ */
+export function ledgerPlanPriceFen(price: string | number | null | undefined): number {
+  const n = Number(String(price ?? '').replace(/[^\d.]/g, ''))
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.round(n * 100)
+}
+
+/**
  * ledger 域全局配置默认值（存 LedgerConfig 单行 key=value，后台 admin-pc 可调）。
  * - allowSelfRegister: 是否开放 App 自助注册（#10）
  * - inviteRewardDays:  邀请成功奖励邀请人的天数（#10）

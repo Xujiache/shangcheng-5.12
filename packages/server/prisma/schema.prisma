@@ -981,6 +981,7 @@ model LedgerUser {
   notifications LedgerNotification[]
   feedbacks     LedgerFeedback[]
   cutPlans      LedgerCutPlan[]
+  payments      LedgerPaymentOrder[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
@@ -1006,11 +1007,33 @@ model LedgerMembershipLog {
   planKey      String?
   beforeAt     DateTime?
   afterAt      DateTime?
-  operatorId   String? // 管理员 User.id
+  operatorId   String? // 管理员 User.id（在线支付自动开通时为 null）
   note         String?
   createdAt    DateTime         @default(now())
 
   @@index([membershipId])
+}
+
+/// 会员在线支付订单（用户直接付款 → 微信回调自动开通会员）。
+/// 资金安全：amountFen / days 在下单时按后台套餐锁定，回调以本表为准，绝不信前端。
+/// 幂等：outTradeNo 唯一；回调按 status 拦重复发放。
+model LedgerPaymentOrder {
+  id            String     @id @default(cuid())
+  outTradeNo    String     @unique // 商户订单号（LMEM 前缀）
+  userId        String
+  user          LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planKey       String // 套餐 key（day/week/month/quarter/year）
+  days          Int // 下单时锁定的会员天数
+  amountFen     Int // 下单时锁定的实付金额（分）
+  status        String     @default("pending") // pending / paid / failed
+  transactionId String? // 微信支付交易号
+  paidAt        DateTime? // 回调入账时间
+  grantedAt     DateTime? // 已发放会员的时间（幂等标记）
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model LedgerCustomer {

@@ -19,6 +19,7 @@ import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { LedgerService } from './ledger.service'
 import { FilesService } from '../files/files.service'
 import { LedgerExtraService } from './ledger-extra.service'
+import { LedgerPayService } from './ledger-pay.service'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-user.decorator'
 import {
@@ -42,6 +43,7 @@ export class LedgerController {
     private readonly svc: LedgerService,
     private readonly files: FilesService,
     private readonly extra: LedgerExtraService,
+    private readonly pay: LedgerPayService,
   ) {}
 
   @Get('me')
@@ -62,8 +64,10 @@ export class LedgerController {
   }
 
   @Get('membership')
-  membership(@CurrentLedgerUser() user: LedgerAuthUser) {
-    return this.svc.membership(user.id)
+  async membership(@CurrentLedgerUser() user: LedgerAuthUser) {
+    const m = await this.svc.membership(user.id)
+    // payEnabled=true 时 App 走在线支付直接开通；否则回退到「留言找管理员」
+    return { ...m, payEnabled: this.pay.payEnabled() }
   }
 
   @Patch('profile')

@@ -5,10 +5,12 @@ import { LedgerService } from './ledger.service'
 import { LedgerAdminService } from './ledger-admin.service'
 import { LedgerAiService } from './ledger-ai.service'
 import { LedgerExtraService } from './ledger-extra.service'
+import { LedgerPayService } from './ledger-pay.service'
 import { LedgerAuthController } from './ledger-auth.controller'
 import { LedgerController } from './ledger.controller'
 import { LedgerBizController } from './ledger-biz.controller'
 import { LedgerAdminController } from './ledger-admin.controller'
+import { LedgerPayController } from './ledger-pay.controller'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
 
@@ -18,13 +20,20 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
  */
 @Module({
   imports: [FilesModule],
-  controllers: [LedgerAuthController, LedgerController, LedgerBizController, LedgerAdminController],
+  controllers: [
+    LedgerAuthController,
+    LedgerController,
+    LedgerBizController,
+    LedgerAdminController,
+    LedgerPayController,
+  ],
   providers: [
     LedgerAuthService,
     LedgerService,
     LedgerAdminService,
     LedgerAiService,
     LedgerExtraService,
+    LedgerPayService,
     LedgerJwtGuard,
     LedgerMembershipGuard,
   ],

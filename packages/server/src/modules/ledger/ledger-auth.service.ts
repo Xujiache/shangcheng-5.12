@@ -361,6 +361,11 @@ export class LedgerAuthService {
     return data.openid as string
   }
 
+  /** 公开包装：用 wx.login 的 code 换 openid（支付下单复用，appid 与 ledger 小程序一致）。 */
+  async codeToOpenid(code: string): Promise<string> {
+    return this.jscode2session(code)
+  }
+
   /** 微信一键登录：openid 须已绑定账号，否则提示先用手机号登录绑定。 */
   async wechatLogin(dto: WechatLoginDto) {
     const openid = await this.jscode2session(dto.code)

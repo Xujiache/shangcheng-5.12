@@ -62,3 +62,9 @@ export class ExportDataDto {
 export class ImportDataDto {
   @IsString() @IsNotEmpty({ message: '请粘贴数据包' }) @MaxLength(5_000_000) pkg!: string
 }
+
+/** 会员在线支付下单：planKey 必填；code 为 wx.login 临时码（未绑定微信的用户用它换 openid）。 */
+export class CreateLedgerPayDto {
+  @IsString() @IsNotEmpty({ message: '请选择套餐' }) @MaxLength(20) planKey!: string
+  @IsOptional() @IsString() @MaxLength(120) code?: string
+}

@@ -31,6 +31,14 @@ export const authApi = {
 export const meApi = {
   me: () => http.get('/l/me', undefined, { cache: true }),
   membership: () => http.get('/l/membership', undefined, { cache: true }),
+  // 强制拉最新会员状态（绕过缓存）：在线支付成功后轮询用
+  refreshMembership: () => {
+    invalidateCache(['/l/me', '/l/membership'])
+    return http.get('/l/membership')
+  },
+  // 会员在线支付下单 → 返回小程序 wx.requestPayment 所需参数
+  createMembershipPay: (planKey: string, code?: string) =>
+    http.post('/l/membership/pay', { planKey, code }),
   updateProfile: (data: { nickname?: string; avatar?: string }) =>
     http.patch('/l/profile', data).then((r) => {
       invalidateCache(['/l/me', '/l/membership'])

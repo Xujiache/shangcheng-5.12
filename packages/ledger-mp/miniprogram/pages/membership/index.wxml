@@ -66,7 +66,7 @@
       </view>
     </view>
 
-    <view class="ms__foot-note">会员由管理员后台开通 · 到期后数据保留，续费即可恢复使用</view>
+    <view class="ms__foot-note">{{payEnabled ? '选择套餐 · 微信支付秒开通 · 到期数据保留，续费即恢复' : '会员由管理员后台开通 · 到期后数据保留，续费即可恢复使用'}}</view>
     </block>
   </view>
 
