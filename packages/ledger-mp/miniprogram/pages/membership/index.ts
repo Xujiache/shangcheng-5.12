@@ -65,10 +65,25 @@ Page({
   },
   applyMembership(res: any) {
     const m: MembershipStatus = res
-    const plans = res.plans && res.plans.length ? res.plans : PLAN_FALLBACK
+    const rawPlans = res.plans && res.plans.length ? res.plans : PLAN_FALLBACK
+    const plans = rawPlans.map((p: any) => {
+      const isFree = (Number(String(p.price).replace(/[^\d.]/g, '')) || 0) <= 0
+      return {
+        ...p,
+        durLabel: p.perpetual ? '永久' : p.days + ' 天',
+        isFree,
+        claimed: isFree && !!m.trialClaimed, // 体验卡：已领过则置「已领取」
+      }
+    })
     const plan = plans.find((p: any) => p.key === m.lastPlanKey)
     const planLabel = m.never ? '门窗利账 会员' : plan ? plan.label : '门窗利账 会员'
-    const statusText = m.active ? '会员有效' : m.expired ? '会员已过期' : '尚未开通会员'
+    const statusText = m.perpetual
+      ? '永久会员'
+      : m.active
+        ? '会员有效'
+        : m.expired
+          ? '会员已过期'
+          : '尚未开通会员'
     this._loaded = true
     this.setData({
       m,
@@ -79,9 +94,11 @@ Page({
       expiresLabel: fmtDate(m.expiresAt),
       ctaText: this.data.selectedKey
         ? this.ctaForKey(this.data.selectedKey, m, plans)
-        : m.active
-          ? '续费会员'
-          : '开通会员',
+        : m.perpetual
+          ? '永久会员 · 已开通'
+          : m.active
+            ? '续费会员'
+            : '开通会员',
       loading: false,
       loadError: false,
     })
@@ -101,10 +118,44 @@ Page({
   ctaForKey(key: string, m: any, plans: any[]) {
     const plan = (plans || this.data.plans).find((p: any) => p.key === key)
     if (!plan) return m && m.active ? '续费会员' : '开通会员'
+    if (plan.isFree) return m && m.trialClaimed ? '体验卡已领取' : '免费领取 ' + plan.label
     return (m && m.active ? '续费 ' : '开通 ') + plan.label + ' ' + plan.price
   },
 
+  // 领取体验卡（一次性，免费套餐专用，不走支付）
+  async claimTrial() {
+    if (this.data.m && this.data.m.trialClaimed) {
+      wx.showToast({ title: '体验卡仅限领取一次', icon: 'none' })
+      return
+    }
+    if (this.data.paying) return
+    this.setData({ paying: true })
+    wx.showLoading({ title: '领取中…', mask: true })
+    try {
+      const res: any = await meApi.claimTrial()
+      wx.hideLoading()
+      this.applyMembership(res)
+      wx.showToast({ title: '体验卡已领取', icon: 'success' })
+    } catch (e) {
+      wx.hideLoading()
+      // request 层已 toast 具体原因（已领过 / 已永久 / 未配置）
+    } finally {
+      this.setData({ paying: false })
+    }
+  },
+
   onRenew() {
+    const sel = this.data.plans.find((p: any) => p.key === this.data.selectedKey)
+    // 已是永久会员：无需再开通
+    if (this.data.m && this.data.m.perpetual) {
+      wx.showToast({ title: '您已是永久会员', icon: 'none' })
+      return
+    }
+    // 免费体验卡 → 一次性领取（不走支付）
+    if (sel && (sel as any).isFree) {
+      this.claimTrial()
+      return
+    }
     // 微信支付就绪 → 用户直接付款全自动开通
     if (this.data.payEnabled) {
       this.payNow()

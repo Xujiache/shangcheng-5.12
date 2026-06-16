@@ -57,6 +57,11 @@ export class LedgerJwtGuard implements CanActivate {
       membership: deriveMembership(
         user.membership?.expiresAt ?? null,
         user.membership?.lastPlanKey,
+        new Date(),
+        {
+          perpetual: user.membership?.perpetual,
+          trialClaimedAt: user.membership?.trialClaimedAt,
+        },
       ),
     }
     return true

@@ -25,12 +25,17 @@
           <view class="ms__status">{{statusText}}</view>
         </view>
         <view wx:if="{{m.active}}" class="ms__days">
-          <view class="ms__days-n">{{m.daysLeft}}</view>
-          <view class="ms__days-l">天后到期</view>
+          <block wx:if="{{m.perpetual}}">
+            <view class="ms__days-n" style="font-size: 30px;">永久</view>
+          </block>
+          <block wx:else>
+            <view class="ms__days-n">{{m.daysLeft}}</view>
+            <view class="ms__days-l">天后到期</view>
+          </block>
         </view>
       </view>
       <view class="ms__hero-bot">
-        <text class="ms__valid">{{m.active ? ('有效期至 ' + expiresLabel) : (m.expired ? ('已于 ' + expiresLabel + ' 到期') : '开通后享全部功能')}}</text>
+        <text class="ms__valid">{{m.perpetual ? '永久有效 · 无到期日' : (m.active ? ('有效期至 ' + expiresLabel) : (m.expired ? ('已于 ' + expiresLabel + ' 到期') : '开通后享全部功能'))}}</text>
         <view wx:if="{{m.expiringSoon}}" class="ms__badge ms__badge--soon">即将到期</view>
         <view wx:elif="{{m.expired}}" class="ms__badge ms__badge--lock">功能已锁定</view>
       </view>
@@ -49,7 +54,7 @@
         <view wx:if="{{item.key === selectedKey}}" class="ms__pc-check"><lz-icon name="check" size="12" color="white" stroke="2.6" /></view>
         <view class="ms__pc-label">{{item.label}}</view>
         <view class="ms__pc-price">{{item.price}}</view>
-        <view class="ms__pc-days">{{item.days}} 天</view>
+        <view class="ms__pc-days">{{item.claimed ? '已领取' : item.durLabel}}</view>
       </view>
     </view>
 

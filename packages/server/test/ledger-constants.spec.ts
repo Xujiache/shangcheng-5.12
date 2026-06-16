@@ -90,6 +90,20 @@ describe('deriveMembership 会员状态派生', () => {
     expect(s.daysLeft).toBeLessThan(0)
     expect(s.expiringSoon).toBe(false)
   })
+
+  it('perpetual=true → 永久有效（active=true，不看 expiresAt）', () => {
+    const s = deriveMembership(null, 'permanent', NOW, { perpetual: true })
+    expect(s.perpetual).toBe(true)
+    expect(s.active).toBe(true)
+    expect(s.expired).toBe(false)
+    expect(s.never).toBe(false)
+  })
+
+  it('trialClaimedAt 非空 → trialClaimed=true', () => {
+    const s = deriveMembership(null, null, NOW, { trialClaimedAt: NOW })
+    expect(s.trialClaimed).toBe(true)
+    expect(s.never).toBe(true)
+  })
 })
 
 describe('computeGrantExpiry 增加会员时长（叠加）', () => {

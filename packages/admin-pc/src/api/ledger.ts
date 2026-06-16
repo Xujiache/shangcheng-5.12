@@ -357,6 +357,8 @@ export interface LedgerPlan {
   label: string
   days: number
   price: string
+  /** true=永久会员（开通后不过期；days 仅展示） */
+  perpetual?: boolean
 }
 
 const DEFAULT_LEDGER_PLANS: LedgerPlan[] = [
