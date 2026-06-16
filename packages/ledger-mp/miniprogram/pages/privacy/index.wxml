@@ -81,19 +81,32 @@
   <!-- 导出弹窗 -->
   <view wx:if="{{exportShow}}" class="dm-mask" bindtap="closeExport">
     <view class="dm-pop" catchtap="noopMask">
-      <view class="dm-pop__t">导出加密数据包</view>
-      <view class="dm-pop__d">订单与客户将打包为加密数据包（他人无法查看 / 篡改），复制到剪贴板备份。</view>
-      <view class="dm-row">
-        <view class="lz-flex1" style="min-width: 0;">
-          <view class="dm-row__t">允许他人导入</view>
-          <view class="dm-row__s">开启后他人也可用此包导入；关闭则仅本人可导入</view>
+      <!-- 第一步：设置并生成 -->
+      <block wx:if="{{!exportResult}}">
+        <view class="dm-pop__t">导出加密数据包</view>
+        <view class="dm-pop__d">订单与客户将打包为加密数据包（他人无法查看 / 篡改）。</view>
+        <view class="dm-row">
+          <view class="lz-flex1" style="min-width: 0;">
+            <view class="dm-row__t">允许他人导入</view>
+            <view class="dm-row__s">开启后他人也可用此包导入；关闭则仅本人可导入</view>
+          </view>
+          <view class="tg {{allowShare ? 'tg--on' : ''}}" bindtap="toggleAllowShare" hover-class="tap-active"><view class="tg__knob"></view></view>
         </view>
-        <view class="tg {{allowShare ? 'tg--on' : ''}}" bindtap="toggleAllowShare" hover-class="tap-active"><view class="tg__knob"></view></view>
-      </view>
-      <view class="dm-acts">
-        <button class="lz-btn lz-btn--ghost lz-btn--lg dm-act" bindtap="closeExport">取消</button>
-        <button class="lz-btn lz-btn--primary lz-btn--lg dm-act" bindtap="doExport" disabled="{{exporting}}">{{exporting ? '导出中…' : '导出并复制'}}</button>
-      </view>
+        <view class="dm-acts">
+          <button class="lz-btn lz-btn--ghost lz-btn--lg dm-act" bindtap="closeExport">取消</button>
+          <button class="lz-btn lz-btn--primary lz-btn--lg dm-act" bindtap="doExport" disabled="{{exporting}}">{{exporting ? '生成中…' : '生成数据包'}}</button>
+        </view>
+      </block>
+      <!-- 第二步：展示数据包，明确告知怎么用 -->
+      <block wx:else>
+        <view class="dm-pop__t">数据包已生成</view>
+        <view class="dm-pop__d">{{exportInfo}}。<text class="dm-strong">这串文字就是你的数据包，请「复制」后粘贴到微信聊天 / 备忘录等处保存或发给他人；</text>对方在「导入数据」里粘贴即可恢复。</view>
+        <textarea class="dm-ta dm-ta--ro" value="{{exportResult}}" disabled />
+        <view class="dm-acts">
+          <button class="lz-btn lz-btn--ghost lz-btn--lg dm-act" bindtap="closeExport">完成</button>
+          <button class="lz-btn lz-btn--primary lz-btn--lg dm-act" bindtap="copyExport">复制数据包</button>
+        </view>
+      </block>
     </view>
   </view>
 

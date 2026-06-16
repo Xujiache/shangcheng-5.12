@@ -66,6 +66,8 @@ Page({
     importText: '',
     exporting: false,
     importing: false,
+    exportResult: '', // 非空=已生成，弹窗内展示数据包供查看/复制
+    exportInfo: '', // 数据包摘要（X 单 / Y 客户 · 是否允许他人导入）
   },
 
   onLoad() {
@@ -140,10 +142,10 @@ Page({
 
   // ── 数据加密导出 / 导入 ──
   openExport() {
-    this.setData({ exportShow: true })
+    this.setData({ exportShow: true, exportResult: '', exportInfo: '' })
   },
   closeExport() {
-    this.setData({ exportShow: false })
+    this.setData({ exportShow: false, exportResult: '', exportInfo: '' })
   },
   toggleAllowShare() {
     this.setData({ allowShare: !this.data.allowShare })
@@ -155,24 +157,30 @@ Page({
       const r: any = await dataApi.exportData(this.data.allowShare)
       if (r && r.package) {
         const allow = this.data.allowShare
+        const info = `${r.orders} 单 / ${r.customers} 客户 · ${allow ? '已允许他人导入' : '仅本人可导入'}`
+        // 生成后停留在弹窗内展示数据包：用户看得见、能手动复制，不再用「已在剪贴板」这种含糊提示
+        this.setData({ exportResult: r.package, exportInfo: info })
+        // 顺手自动复制一次（便捷），展示区+复制按钮才是可靠路径
         wx.setClipboardData({
           data: r.package,
-          success: () =>
-            wx.showModal({
-              title: '导出成功',
-              content: `已生成加密数据包（${r.orders} 单 / ${r.customers} 客户）并复制到剪贴板。${allow ? '已允许他人导入。' : '仅本人可导入。'}`,
-              showCancel: false,
-              confirmText: '我知道了',
-            }),
-          fail: () => wx.showToast({ title: '复制失败', icon: 'none' }),
+          success: () => wx.showToast({ title: '已复制到剪贴板', icon: 'none' }),
+          fail: () => {},
         })
-        this.setData({ exportShow: false })
       }
     } catch (e) {
       /* request 层已提示 */
     } finally {
       this.setData({ exporting: false })
     }
+  },
+  copyExport() {
+    const pkg = this.data.exportResult
+    if (!pkg) return
+    wx.setClipboardData({
+      data: pkg,
+      success: () => wx.showToast({ title: '已复制，去粘贴保存', icon: 'none' }),
+      fail: () => wx.showToast({ title: '复制失败', icon: 'none' }),
+    })
   },
   openImport() {
     this.setData({ importShow: true, importText: '' })
