@@ -46,6 +46,18 @@
   color: var(--muted);
   font-weight: 700;
 }
+.cut__hd-acts {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.cut__clear {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
 .cut__add {
   display: flex;
   align-items: center;

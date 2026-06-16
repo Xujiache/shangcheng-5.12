@@ -61,8 +61,13 @@
       <!-- 切割清单 -->
       <view class="lz-between" style="margin: 14px 6px 8px;">
         <text class="cut__sec-t">{{is2d ? '切割清单（宽 × 高 × 数量）' : '切割清单（段长 × 数量）'}}</text>
-        <view class="cut__add" bindtap="addPiece" hover-class="tap-active">
-          <lz-icon name="plus" size="15" color="accent" stroke="2.2" /><text>添加</text>
+        <view class="cut__hd-acts">
+          <view class="cut__clear" bindtap="clearPieces" hover-class="tap-active">
+            <lz-icon name="trash" size="14" color="muted" /><text>清空</text>
+          </view>
+          <view class="cut__add" bindtap="addPiece" hover-class="tap-active">
+            <lz-icon name="plus" size="15" color="accent" stroke="2.2" /><text>添加</text>
+          </view>
         </view>
       </view>
       <view class="lz-card lz-card--flush">

@@ -249,6 +249,27 @@ Page({
   addPiece() {
     this.setData({ pieces: [...this.data.pieces, newPiece()] }, () => this.autosave())
   },
+  // 一键清空切割清单（保留整板/料长等参数）；空清单时直接提示，不弹确认
+  clearPieces() {
+    const hasData =
+      this.data.pieces.length > 1 ||
+      this.data.pieces.some((p: any) => p.lengthStr || p.qtyStr || p.wStr || p.hStr)
+    if (!hasData) {
+      wx.showToast({ title: '清单已是空的', icon: 'none' })
+      return
+    }
+    wx.showModal({
+      title: '清空切割清单',
+      content: '将清空当前已填入的全部清单行，整板 / 料长等参数保留。',
+      confirmColor: '#C8442B',
+      success: (m) => {
+        if (!m.confirm) return
+        this._editingPlanId = ''
+        this.setData({ pieces: [newPiece()], editingTitle: '' }, () => this.autosave())
+        wx.showToast({ title: '已清空', icon: 'success' })
+      },
+    })
+  },
   delPiece(e: any) {
     const i = Number(e.currentTarget.dataset.idx)
     const p = this.data.pieces.filter((_: any, j: number) => j !== i)
