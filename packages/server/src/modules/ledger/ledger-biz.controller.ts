@@ -67,6 +67,11 @@ export class LedgerBizController {
   createCustomer(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerCustomerDto) {
     return this.svc.createCustomer(u.id, dto)
   }
+  // 无档客户（订单自动生成）点击进入时：按姓名幂等建档 + 关联同名历史订单
+  @Post('customers/ensure')
+  ensureCustomer(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerCustomerDto) {
+    return this.svc.ensureCustomerByName(u.id, dto.name)
+  }
   @Get('customers/:id')
   getCustomer(@CurrentLedgerUser() u: LedgerAuthUser, @Param('id') id: string) {
     return this.svc.getCustomer(u.id, id)
