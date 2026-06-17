@@ -4,6 +4,31 @@
 
 ---
 
+## 本轮执行进度（2026-06-17 · feat/ledger-mp · 阶段 0+1+3+5）
+
+已落地 9 个提交，最终 `pnpm lint` / `pnpm typecheck` 退出 0、server 280 测试全过：
+
+| 阶段       | 内容                                                                                                | 清单项                                                   | 提交      |
+| ---------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------- |
+| 0 解封 CI  | admin-pc 325 lint error 清零 + `^_` 约定 + 删 6 处死代码                                            | #1 #2                                                    | `7e34c22` |
+| 0 解封 CI  | server lint 改 prettier --check + lint-staged 接 admin-pc eslint + husky v10                        | #40（+发现并修 server lint 一直缺 eslint 依赖/配置而红） | `51f3027` |
+| 1 行为修复 | merchant/platform-app vue-tsc 假绿灯（删失效插件 + CI 守卫）                                        | #4                                                       | `9b2a565` |
+| 1 行为修复 | ledger 前端清洗上限对齐后端 + 澄清 DND 设计边界                                                     | #22 #5（重判：非缺陷，DND 仅约束未来推送渠道）           | `fa4813a` |
+| 1 行为修复 | user-mp 订单列表补「已退款」标签                                                                    | #23                                                      | `caaa555` |
+| 3 契约治理 | shared ApiResult 补 msg/timestamp + admin-pc BaseResponse 对齐                                      | #6                                                       | `a1b8d9b` |
+| 3 契约治理 | BizCode 复用约束说明（不做运行时 re-export，详见提交） + v-roles 示例改真实角色                     | #26（重判：re-export 不安全，改注释） #27                | `15d4ecc` |
+| 5 文档整理 | README 7 包/建表步骤/链接 + AGENTS 重写 + .env 补全 + deploy/docs/server README + api-coverage 注记 | #14 #15 #16 #17 #31 #32 #33(server) #34 #35 #36          | `ab8b7f4` |
+| 5 文档整理 | ledger 协议页示例条款字样 + platform-app refund 过期注释                                            | #28 #29                                                  | `0491ea2` |
+
+未落地（留作后续，按原范围未选 / 风险或工作量另议）：
+
+- 阶段 2 测试补强：#3（订单状态机单测）#11 #12（前端/ledger 纯函数测试）#9 #10 #13（前端真实 lint / admin-pc typecheck 脚本 / ledger-mp 入 CI）
+- 阶段 4 死代码与悬空接口清理：#7 #8 #19 #20 #21 #24 #25 #37 #38 #39
+- 阶段 5 余项：#33 的 3 个 uni-app 端 README、#31 的 ledger 接口完整补录、#30 上线前替换 project.config.json appid
+- 阶段 6 上线/运维：#18（轮换 LK_IMAGE_API_KEY + 生产 .env 权限）、生产装 helmet、生产 JWT_SECRET 强随机
+
+---
+
 ## 🔴 P0（无）
 
 本轮所有维度实跑后**无 P0**。安全六维（库存超卖 / 微信回调 / JWT / WS / 限流 / CORS-helmet-Swagger）逐项核验均为「已修复」，下单原子扣减、支付回调五要素、JWT `_r` 闭环、WS 越权校验全部成立。最接近的资金/状态机风险（订单生命周期零测试）因系统已有 CI 硬门禁，属回归风险而非现网在炸，归 P1。
