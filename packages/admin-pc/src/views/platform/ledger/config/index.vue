@@ -107,6 +107,11 @@
             <ElSwitch v-model="row.perpetual" />
           </template>
         </ElTableColumn>
+        <ElTableColumn label="限领1次" width="84" align="center">
+          <template #default="{ row }">
+            <ElSwitch v-model="row.trial" />
+          </template>
+        </ElTableColumn>
         <ElTableColumn label="操作" width="72">
           <template #default="{ $index }">
             <ElButton type="danger" link @click="removePlan($index)">删除</ElButton>
@@ -147,7 +152,7 @@
   })
 
   function addPlan() {
-    form.plans.push({ key: '', label: '', days: 30, price: '', perpetual: false })
+    form.plans.push({ key: '', label: '', days: 30, price: '', perpetual: false, trial: false })
   }
   function removePlan(i: number) {
     form.plans.splice(i, 1)
@@ -178,7 +183,8 @@
       label: String(p.label || '').trim(),
       days: Math.round(Number(p.days) || 0),
       price: String(p.price || '').trim(),
-      perpetual: !!p.perpetual
+      perpetual: !!p.perpetual,
+      trial: !!p.trial
     }))
     if (!plans.length) {
       ElMessage.warning('至少保留一个套餐')

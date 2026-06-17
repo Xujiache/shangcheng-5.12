@@ -129,8 +129,8 @@ export class LedgerService {
    */
   async claimTrial(userId: string) {
     const cfg = await this.readConfig()
-    const trial = cfg.plans.find((p) => ledgerPlanPriceFen(p.price) === 0 && !p.perpetual)
-    if (!trial) throw new BizException(BizCode.BUSINESS_ERROR, '体验卡未配置')
+    const trial = cfg.plans.find((p) => p.trial && ledgerPlanPriceFen(p.price) === 0)
+    if (!trial) throw new BizException(BizCode.BUSINESS_ERROR, '免费体验卡未配置（付费体验卡请走支付）')
     const now = new Date()
     const existing = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
     if (existing?.perpetual) {

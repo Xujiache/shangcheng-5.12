@@ -54,6 +54,13 @@ export class LedgerPayService {
     if (amountFen <= 0) {
       throw new BizException(BizCode.BUSINESS_ERROR, '该套餐暂不支持在线支付，请联系管理员')
     }
+    // 体验卡限购一次：已领/已购买过 → 拒绝下单（防止反复低价刷体验卡）
+    if (plan.trial) {
+      const mem = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
+      if (mem?.trialClaimedAt) {
+        throw new BizException(BizCode.BUSINESS_ERROR, '体验卡仅限购买一次，您已购买过')
+      }
+    }
 
     const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
@@ -125,7 +132,9 @@ export class LedgerPayService {
     const now = new Date()
     // 永久套餐：回调发放时置 perpetual=true（天数仍按订单锁定值记录，但永久态以本标记为准）
     const cfgForGrant = await this.readConfig()
-    const isPerpetual = !!cfgForGrant.plans.find((p) => p.key === order.planKey)?.perpetual
+    const planForGrant = cfgForGrant.plans.find((p) => p.key === order.planKey)
+    const isPerpetual = !!planForGrant?.perpetual
+    const isTrial = !!planForGrant?.trial
     let granted: { after: Date; days: number } | null = null
     await this.prisma.$transaction(async (tx) => {
       // 行级幂等：仅当仍 pending 才入账（拦并发重复回调）
@@ -147,6 +156,7 @@ export class LedgerPayService {
           expiresAt: after,
           lastPlanKey: order.planKey,
           ...(isPerpetual ? { perpetual: true } : {}),
+          ...(isTrial ? { trialClaimedAt: now } : {}),
         },
       })
       await tx.ledgerMembershipLog.create({

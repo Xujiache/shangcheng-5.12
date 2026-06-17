@@ -72,7 +72,7 @@ Page({
         ...p,
         durLabel: p.perpetual ? '永久' : p.days + ' 天',
         isFree,
-        claimed: isFree && !!m.trialClaimed, // 体验卡：已领过则置「已领取」
+        claimed: !!p.trial && !!m.trialClaimed, // 体验卡(限领1次)：已领过则置「已领取」
       }
     })
     const plan = plans.find((p: any) => p.key === m.lastPlanKey)
@@ -118,7 +118,8 @@ Page({
   ctaForKey(key: string, m: any, plans: any[]) {
     const plan = (plans || this.data.plans).find((p: any) => p.key === key)
     if (!plan) return m && m.active ? '续费会员' : '开通会员'
-    if (plan.isFree) return m && m.trialClaimed ? '体验卡已领取' : '免费领取 ' + plan.label
+    if (plan.trial && m && m.trialClaimed) return '体验卡已领取'
+    if (plan.isFree) return '免费领取 ' + plan.label
     return (m && m.active ? '续费 ' : '开通 ') + plan.label + ' ' + plan.price
   },
 
@@ -151,7 +152,12 @@ Page({
       wx.showToast({ title: '您已是永久会员', icon: 'none' })
       return
     }
-    // 免费体验卡 → 一次性领取（不走支付）
+    // 体验卡限领1次：已领过 → 拦截（后端也会拒，这里提前提示）
+    if (sel && (sel as any).trial && this.data.m && this.data.m.trialClaimed) {
+      wx.showToast({ title: '体验卡仅限一次，您已领取', icon: 'none' })
+      return
+    }
+    // 免费体验卡 → 一次性领取（不走支付）；付费体验卡走支付（后端拦一次性）
     if (sel && (sel as any).isFree) {
       this.claimTrial()
       return
