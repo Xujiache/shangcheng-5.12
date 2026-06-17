@@ -66,14 +66,25 @@
             <span class="mp-module__title">{{ m.title }}</span>
             <div class="mp-module__ops" @click.stop>
               <ElButton text :icon="Top" size="small" :disabled="i === 0" @click="move(i, -1)" />
-              <ElButton text :icon="Bottom" size="small" :disabled="i === modules.length - 1" @click="move(i, 1)" />
+              <ElButton
+                text
+                :icon="Bottom"
+                size="small"
+                :disabled="i === modules.length - 1"
+                @click="move(i, 1)"
+              />
               <ElSwitch v-model="m.visible" size="small" />
             </div>
           </div>
         </div>
         <ElDivider />
         <div class="mp-add-module">
-          <ElSelect v-model="addType" placeholder="添加模块" style="width: 100%" @change="addModule">
+          <ElSelect
+            v-model="addType"
+            placeholder="添加模块"
+            style="width: 100%"
+            @change="addModule"
+          >
             <ElOption v-for="t in MODULE_TYPES" :key="t.value" :value="t.value" :label="t.label">
               <ArtSvgIcon :icon="t.icon" /> {{ t.label }}
             </ElOption>
@@ -83,10 +94,18 @@
 
       <!-- 中：预览 -->
       <div class="mp-decorate__preview">
-        <div class="mp-phone" :style="phoneStyleVars" :class="[`font-${style.fontFamily}`, `corner-${style.cornerStyle}`]">
+        <div
+          class="mp-phone"
+          :style="phoneStyleVars"
+          :class="[`font-${style.fontFamily}`, `corner-${style.cornerStyle}`]"
+        >
           <div class="mp-phone__head">
             <div class="mp-phone__name">经纬科技</div>
-            <ArtSvgIcon icon="ri:search-line" class="text-base" :style="{ color: style.themeColor }" />
+            <ArtSvgIcon
+              icon="ri:search-line"
+              class="text-base"
+              :style="{ color: style.themeColor }"
+            />
           </div>
           <div class="mp-phone__body">
             <div v-for="m in visibleModules" :key="m.id" class="mp-preview-block">
@@ -110,7 +129,9 @@
                   <div class="placeholder-coupon">领券中心 · 满 99-20 / 满 299-50</div>
                 </template>
                 <!-- Hot / New / Product-list -->
-                <template v-else-if="m.type === 'hot' || m.type === 'new' || m.type === 'product-list'">
+                <template
+                  v-else-if="m.type === 'hot' || m.type === 'new' || m.type === 'product-list'"
+                >
                   <div class="placeholder-grid">
                     <div v-for="i in 4" :key="i" class="placeholder-card">商品{{ i }}</div>
                   </div>
@@ -149,7 +170,12 @@
               <ElSwitch v-model="selected.visible" />
             </ElFormItem>
             <ElFormItem v-if="selected.type === 'banner'" label="Banner 高度">
-              <ElInputNumber v-model="(selected.config as any).height" :min="200" :max="600" :step="20" />
+              <ElInputNumber
+                v-model="(selected.config as any).height"
+                :min="200"
+                :max="600"
+                :step="20"
+              />
             </ElFormItem>
             <ElFormItem v-if="selected.type === 'category'" label="分类列数">
               <ElInputNumber v-model="(selected.config as any).columns" :min="3" :max="6" />
@@ -158,10 +184,20 @@
               v-if="['hot', 'new', 'product-list'].includes(selected.type)"
               label="商品数量"
             >
-              <ElInputNumber v-model="(selected.config as any).limit" :min="2" :max="12" :step="2" />
+              <ElInputNumber
+                v-model="(selected.config as any).limit"
+                :min="2"
+                :max="12"
+                :step="2"
+              />
             </ElFormItem>
             <ElDivider />
-            <ElButton text type="danger" @click="removeModule(selected)" :disabled="modules.length <= 1">
+            <ElButton
+              text
+              type="danger"
+              @click="removeModule(selected)"
+              :disabled="modules.length <= 1"
+            >
               删除该模块
             </ElButton>
           </ElForm>
@@ -184,13 +220,28 @@
 
   defineOptions({ name: 'MerchantDecorate' })
 
-  const MODULE_TYPES: { value: DecorateModule['type']; label: string; icon: string; defaultConfig: Record<string, unknown> }[] = [
+  const MODULE_TYPES: {
+    value: DecorateModule['type']
+    label: string
+    icon: string
+    defaultConfig: Record<string, unknown>
+  }[] = [
     { value: 'banner', label: '轮播图', icon: 'ri:image-line', defaultConfig: { height: 360 } },
     { value: 'category', label: '分类导航', icon: 'ri:apps-2-line', defaultConfig: { columns: 5 } },
-    { value: 'coupon', label: '优惠券', icon: 'ri:coupon-3-line', defaultConfig: { autoLoad: true } },
+    {
+      value: 'coupon',
+      label: '优惠券',
+      icon: 'ri:coupon-3-line',
+      defaultConfig: { autoLoad: true }
+    },
     { value: 'hot', label: '热销爆款', icon: 'ri:fire-line', defaultConfig: { limit: 6 } },
     { value: 'new', label: '新品上架', icon: 'ri:newspaper-line', defaultConfig: { limit: 6 } },
-    { value: 'product-list', label: '商品列表', icon: 'ri:list-check-2', defaultConfig: { limit: 8 } },
+    {
+      value: 'product-list',
+      label: '商品列表',
+      icon: 'ri:list-check-2',
+      defaultConfig: { limit: 8 }
+    },
     { value: 'video', label: '视频', icon: 'ri:play-circle-line', defaultConfig: {} },
     { value: 'rich-text', label: '富文本', icon: 'ri:font-color', defaultConfig: {} }
   ]
@@ -258,7 +309,9 @@
     addType.value = undefined
     if (t === 'banner') {
       const q = bannerRes?.quota
-      ElMessage.success(`已添加 Banner ${q ? `· 已用 ${q.used.bannerLimit}/${q.limits.bannerLimit}` : ''}`)
+      ElMessage.success(
+        `已添加 Banner ${q ? `· 已用 ${q.used.bannerLimit}/${q.limits.bannerLimit}` : ''}`
+      )
     }
   }
 
@@ -322,36 +375,36 @@
 
 <style scoped lang="scss">
   .mp-decorate {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: calc(100vh - 100px);
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-decorate__layout {
-    flex: 1;
     display: grid;
+    flex: 1;
     grid-template-columns: 320px 1fr 300px;
     gap: 14px;
     min-height: 0;
 
-    @media (max-width: 1280px) {
+    @media (width <= 1280px) {
       grid-template-columns: 280px 1fr 280px;
     }
   }
 
   .mp-decorate__left,
   .mp-decorate__right {
-    border-radius: 12px;
     height: 100%;
     overflow: hidden;
+    border-radius: 12px;
 
     :deep(.el-card__body) {
       max-height: calc(100% - 60px);
@@ -367,11 +420,11 @@
 
   .mp-module {
     display: flex;
-    align-items: center;
     gap: 10px;
+    align-items: center;
     padding: 8px 10px;
-    border-radius: 8px;
     cursor: pointer;
+    border-radius: 8px;
     transition: background 0.15s;
 
     &:hover {
@@ -379,8 +432,8 @@
     }
 
     &.active {
-      background: rgba(255, 77, 45, 0.08);
       color: var(--el-color-primary, #ff4d2d);
+      background: rgb(255 77 45 / 8%);
     }
   }
 
@@ -413,24 +466,28 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    overflow-y: auto;
     padding: 12px 0;
+    overflow-y: auto;
   }
 
   .mp-phone {
+    display: flex;
+    flex-direction: column;
     width: 375px;
     min-height: 700px;
+    overflow: hidden;
     background: #fff;
     border: 12px solid #1f2937;
     border-radius: 38px;
-    box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.18);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    box-shadow: 0 12px 36px -8px rgb(0 0 0 / 18%);
     transition: all 0.25s ease;
 
     &.font-rounded {
-      font-family: 'PingFang SC', 'HarmonyOS Sans', -apple-system, sans-serif;
+      font-family:
+        'PingFang SC',
+        'HarmonyOS Sans',
+        -apple-system,
+        sans-serif;
       letter-spacing: 0.3px;
     }
 
@@ -441,24 +498,26 @@
     &.corner-sharp .mp-preview-block {
       border-radius: 0 !important;
     }
+
     &.corner-soft .mp-preview-block {
       border-radius: 8px;
     }
+
     &.corner-round .mp-preview-block {
       border-radius: 18px;
     }
   }
 
   .mp-phone__head {
-    height: 44px;
-    background: var(--mp-theme, #ff4d2d);
-    color: #fff;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    height: 44px;
     padding: 0 14px;
     font-size: 14px;
     font-weight: 500;
+    color: #fff;
+    background: var(--mp-theme, #ff4d2d);
   }
 
   /* 全局样式条 */
@@ -479,14 +538,14 @@
 
   .mp-style-group {
     display: flex;
-    align-items: center;
     gap: 10px;
+    align-items: center;
   }
 
   .mp-style-label {
     font-size: 13px;
-    color: var(--art-gray-700, #374151);
     font-weight: 500;
+    color: var(--art-gray-700, #374151);
   }
 
   .mp-color-list {
@@ -497,9 +556,9 @@
   .mp-color {
     width: 26px;
     height: 26px;
-    border-radius: 50%;
     cursor: pointer;
     border: 2px solid #fff;
+    border-radius: 50%;
     box-shadow: 0 0 0 1px var(--art-border-color, #e5e7eb);
     transition: all 0.15s;
 
@@ -516,39 +575,39 @@
 
   .mp-phone__body {
     flex: 1;
-    overflow-y: auto;
     padding: 8px;
+    overflow-y: auto;
     background: #f7f8fa;
   }
 
   .mp-phone__tabbar {
-    height: 50px;
-    background: #fff;
-    border-top: 1px solid #e5e7eb;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    text-align: center;
-    line-height: 50px;
+    height: 50px;
     font-size: 12px;
+    line-height: 50px;
     color: #6b7280;
+    text-align: center;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
   }
 
   .mp-preview-block {
+    margin-bottom: 8px;
+    overflow: hidden;
     background: #fff;
     border: 1px dashed #e5e7eb;
     border-radius: 6px;
-    margin-bottom: 8px;
-    overflow: hidden;
   }
 
   .mp-preview-block__head {
+    display: flex;
+    gap: 4px;
+    align-items: center;
     padding: 6px 10px;
     font-size: 11px;
     color: #9ca3af;
     background: #fafbfc;
-    display: flex;
-    align-items: center;
-    gap: 4px;
   }
 
   .mp-preview-block__body {
@@ -556,23 +615,23 @@
   }
 
   .placeholder-banner {
-    height: 100px;
-    background: linear-gradient(135deg, #ff7a45, #ff4d2d);
-    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    height: 100px;
     font-size: 13px;
+    color: #fff;
+    background: linear-gradient(135deg, #ff7a45, #ff4d2d);
+    border-radius: 6px;
   }
 
   .placeholder-cat {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 4px;
-    text-align: center;
     font-size: 10px;
     color: #6b7280;
+    text-align: center;
 
     & > div {
       padding: 6px 0;
@@ -583,11 +642,11 @@
 
   .placeholder-coupon {
     padding: 10px;
-    background: linear-gradient(90deg, #fef2f2, #fff7ed);
-    border-radius: 6px;
     font-size: 11px;
     color: #ff4d2d;
     text-align: center;
+    background: linear-gradient(90deg, #fef2f2, #fff7ed);
+    border-radius: 6px;
   }
 
   .placeholder-grid {
@@ -597,26 +656,26 @@
   }
 
   .placeholder-card {
-    background: #fafbfc;
-    border-radius: 6px;
-    aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    aspect-ratio: 1;
     font-size: 11px;
     color: #9ca3af;
+    background: #fafbfc;
+    border-radius: 6px;
   }
 
   .placeholder-video,
   .placeholder-rich {
-    height: 70px;
-    background: #f1f5f9;
-    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
+    height: 70px;
     font-size: 12px;
+    color: #6b7280;
+    background: #f1f5f9;
+    border-radius: 6px;
   }
 
   .mp-empty {

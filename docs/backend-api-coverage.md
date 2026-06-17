@@ -1,6 +1,11 @@
 # 后端接口覆盖矩阵（SSOT）
 
 > 自动生成自四端 SSOT 审计。状态：✅ 已实现 / 🟡 进行中 / ⏳ 待实现
+>
+> ⚠️ 覆盖范围：本矩阵仅覆盖商城主域（`/api/v1/{u,m,p}/*` + auth/files）。
+> **门窗利账 ledger 域（`/api/v1/l/*` 与 admin-pc 的 `/p/ledger/*`）尚未纳入本文档**，
+> 其接口请直接参考 `packages/server/src/modules/ledger/*.controller.ts` 与
+> `docs/门窗利账/` 下的 6A 文档。
 
 ## 0. 全局约定
 

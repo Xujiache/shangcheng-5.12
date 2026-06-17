@@ -7,7 +7,9 @@
         <p class="mt-1 text-sm text-g-500">角色与管理员账号</p>
       </div>
       <div class="flex gap-2">
-        <ElButton type="primary" :icon="Plus" @click="openCreate">新建{{ tab === 'roles' ? '角色' : '管理员' }}</ElButton>
+        <ElButton type="primary" :icon="Plus" @click="openCreate"
+          >新建{{ tab === 'roles' ? '角色' : '管理员' }}</ElButton
+        >
         <ElButton :icon="Refresh" plain @click="load">刷新</ElButton>
       </div>
     </div>
@@ -24,7 +26,10 @@
       <ElCard v-for="r in roles" :key="r.id" shadow="hover" class="pf-role">
         <div class="pf-role__head">
           <div class="flex items-center gap-2">
-            <div class="pf-role__icon" :style="{ background: roleColorOf(r.name) + '18', color: roleColorOf(r.name) }">
+            <div
+              class="pf-role__icon"
+              :style="{ background: roleColorOf(r.name) + '18', color: roleColorOf(r.name) }"
+            >
               <ArtSvgIcon icon="ri:shield-user-line" />
             </div>
             <div>
@@ -39,8 +44,16 @@
             成员 <b>{{ memberCountOf(r.name) }}</b> 人 · 权限 <b>{{ r.permissions.length }}</b> 项
           </div>
           <div class="pf-role__perms">
-            <ElTag v-for="(p, i) in r.permissions.slice(0, 6)" :key="i" size="small" effect="plain">{{ p }}</ElTag>
-            <span v-if="r.permissions.length > 6" class="text-xs text-g-500">+{{ r.permissions.length - 6 }}</span>
+            <ElTag
+              v-for="(p, i) in r.permissions.slice(0, 6)"
+              :key="i"
+              size="small"
+              effect="plain"
+              >{{ p }}</ElTag
+            >
+            <span v-if="r.permissions.length > 6" class="text-xs text-g-500"
+              >+{{ r.permissions.length - 6 }}</span
+            >
           </div>
         </div>
         <div class="pf-role__actions">
@@ -61,7 +74,11 @@
 
     <!-- 管理员 -->
     <ElCard v-else shadow="never">
-      <ElTable :data="admins" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="admins"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="管理员" min-width="260">
           <template #default="{ row }">
             <div class="flex items-center gap-2">
@@ -75,7 +92,9 @@
         </ElTableColumn>
         <ElTableColumn label="角色" width="160">
           <template #default="{ row }">
-            <ElTag :type="row.role === '超级管理员' ? 'danger' : 'primary'" size="small">{{ row.role }}</ElTag>
+            <ElTag :type="row.role === '超级管理员' ? 'danger' : 'primary'" size="small">{{
+              row.role
+            }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="状态" width="100" align="center">
@@ -86,13 +105,19 @@
           </template>
         </ElTableColumn>
         <ElTableColumn label="最近登录" width="170">
-          <template #default="{ row }">{{ row.lastLoginAt ? formatDateTime(row.lastLoginAt) : '—' }}</template>
+          <template #default="{ row }">{{
+            row.lastLoginAt ? formatDateTime(row.lastLoginAt) : '—'
+          }}</template>
         </ElTableColumn>
         <ElTableColumn label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <ElButton link type="primary" @click="onEditAdmin(row)">改角色</ElButton>
             <ElButton link @click="onReset(row)">重置密码</ElButton>
-            <ElButton link :type="row.status === 'active' ? 'warning' : 'success'" @click="onToggleAdmin(row)">
+            <ElButton
+              link
+              :type="row.status === 'active' ? 'warning' : 'success'"
+              @click="onToggleAdmin(row)"
+            >
               {{ row.status === 'active' ? '停用' : '恢复' }}
             </ElButton>
             <ElPopconfirm title="确认删除？" @confirm="onRemoveAdmin(row)">
@@ -130,13 +155,17 @@
         </ElForm>
         <ElForm v-else :model="adminForm" label-position="top">
           <ElFormItem label="昵称"><ElInput v-model="adminForm.nickname" /></ElFormItem>
-          <ElFormItem label="用户名"><ElInput v-model="adminForm.username" placeholder="登录账号" /></ElFormItem>
+          <ElFormItem label="用户名"
+            ><ElInput v-model="adminForm.username" placeholder="登录账号"
+          /></ElFormItem>
           <ElFormItem label="角色">
             <ElSelect v-model="adminForm.role" style="width: 100%">
               <ElOption v-for="r in roles" :key="r.id" :value="r.name" :label="r.name" />
             </ElSelect>
           </ElFormItem>
-          <ElFormItem label="初始密码"><ElInput v-model="adminForm.password" type="password" show-password /></ElFormItem>
+          <ElFormItem label="初始密码"
+            ><ElInput v-model="adminForm.password" type="password" show-password
+          /></ElFormItem>
         </ElForm>
         <div class="pf-drawer__footer">
           <ElButton @click="drawerOpen = false">取消</ElButton>
@@ -178,7 +207,12 @@
     desc: '',
     permissions: []
   })
-  const adminForm = reactive<{ nickname: string; username: string; role: string; password: string }>({
+  const adminForm = reactive<{
+    nickname: string
+    username: string
+    role: string
+    password: string
+  }>({
     nickname: '',
     username: '',
     role: '客服',
@@ -187,13 +221,15 @@
 
   function roleColorOf(name: string) {
     return (
-      ({
-        超级管理员: '#FF4D2D',
-        运营经理: '#A855F7',
-        审核员: '#3B82F6',
-        客服: '#10B981',
-        财务: '#FAAD14'
-      } as Record<string, string>)[name] || '#86909C'
+      (
+        {
+          超级管理员: '#FF4D2D',
+          运营经理: '#A855F7',
+          审核员: '#3B82F6',
+          客服: '#10B981',
+          财务: '#FAAD14'
+        } as Record<string, string>
+      )[name] || '#86909C'
     )
   }
 
@@ -219,7 +255,12 @@
   function onEditAdmin(a: AdminUser) {
     editingId.value = a.id
     drawerMode.value = 'admin'
-    Object.assign(adminForm, { nickname: a.nickname, username: a.username, role: a.role, password: '' })
+    Object.assign(adminForm, {
+      nickname: a.nickname,
+      username: a.username,
+      role: a.role,
+      password: ''
+    })
     drawerOpen.value = true
   }
 
@@ -306,16 +347,16 @@
 
 <style scoped lang="scss">
   .pf-perm {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-g-500 {
@@ -340,36 +381,36 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      padding: 18px;
     }
   }
 
   .pf-role__head {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
+    justify-content: space-between;
   }
 
   .pf-role__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
     font-size: 20px;
-    flex-shrink: 0;
+    border-radius: 12px;
   }
 
   .pf-role__body {
-    border-top: 1px dashed var(--art-border-color, #e5e7eb);
-    padding-top: 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--art-border-color, #e5e7eb);
   }
 
   .pf-role__perms {
@@ -380,24 +421,24 @@
 
   .pf-role__actions {
     display: flex;
-    justify-content: flex-end;
     gap: 6px;
-    border-top: 1px dashed var(--art-border-color, #e5e7eb);
+    justify-content: flex-end;
     padding-top: 12px;
+    border-top: 1px dashed var(--art-border-color, #e5e7eb);
   }
 
   .pf-drawer {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: 100%;
+    padding: 22px;
   }
 
   .pf-drawer__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     margin-top: auto;
   }
 </style>

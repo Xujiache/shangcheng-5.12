@@ -16,11 +16,15 @@
           <div class="text-sm opacity-80">可提现余额</div>
           <div class="mp-hero__amount">¥{{ balance.available.toLocaleString() }}</div>
           <div class="text-xs opacity-70 mt-1">
-            待结算 ¥{{ balance.pending.toLocaleString() }} · 累计提现 ¥{{ balance.totalWithdrawn.toLocaleString() }}
+            待结算 ¥{{ balance.pending.toLocaleString() }} · 累计提现 ¥{{
+              balance.totalWithdrawn.toLocaleString()
+            }}
           </div>
         </div>
         <div>
-          <ElButton type="primary" size="large" @click="openApply" :icon="Wallet">申请提现</ElButton>
+          <ElButton type="primary" size="large" @click="openApply" :icon="Wallet"
+            >申请提现</ElButton
+          >
         </div>
       </div>
     </ElCard>
@@ -38,7 +42,11 @@
     </ElCard>
 
     <ElCard shadow="never">
-      <ElTable :data="filteredList" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filteredList"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="申请单号" width="180" prop="no" />
         <ElTableColumn label="申请金额" width="140" align="right">
           <template #default="{ row }">
@@ -87,7 +95,9 @@
               controls-position="right"
               style="width: 100%"
             />
-            <div class="text-xs text-g-500 mt-1">每次最低 ¥100 · 单次最多 ¥{{ balance.available }}</div>
+            <div class="text-xs text-g-500 mt-1"
+              >每次最低 ¥100 · 单次最多 ¥{{ balance.available }}</div
+            >
           </ElFormItem>
           <ElFormItem label="提现方式" prop="method">
             <ElRadioGroup v-model="form.method">
@@ -145,8 +155,8 @@
     account: ''
   })
 
-  const accountPlaceholder = computed(() =>
-    ({ wechat: '微信号 / openid', alipay: '支付宝账号', bank: '请输入银行卡号' })[form.method]
+  const accountPlaceholder = computed(
+    () => ({ wechat: '微信号 / openid', alipay: '支付宝账号', bank: '请输入银行卡号' })[form.method]
   )
 
   const rules = computed<FormRules>(() => ({
@@ -232,16 +242,16 @@
 
 <style scoped lang="scss">
   .mp-withdraw {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
@@ -249,10 +259,10 @@
   }
 
   .mp-hero {
-    border-radius: 12px;
-    background: linear-gradient(135deg, #ff7a45, #ff4d2d 80%);
     color: #fff;
+    background: linear-gradient(135deg, #ff7a45, #ff4d2d 80%);
     border: none;
+    border-radius: 12px;
 
     :deep(.el-card__body) {
       padding: 24px 28px;
@@ -261,24 +271,24 @@
 
   .mp-hero__inner {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-hero__amount {
+    margin: 6px 0;
     font-size: 36px;
     font-weight: 700;
-    margin: 6px 0;
   }
 
   .mp-hero :deep(.el-button) {
-    background: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.32);
     color: #fff;
+    background: rgb(255 255 255 / 18%);
+    border-color: rgb(255 255 255 / 32%);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.28);
-      border-color: rgba(255, 255, 255, 0.48);
+      background: rgb(255 255 255 / 28%);
+      border-color: rgb(255 255 255 / 48%);
     }
   }
 
@@ -291,17 +301,17 @@
   }
 
   .mp-apply {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: 100%;
+    padding: 22px;
   }
 
   .mp-apply__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     margin-top: auto;
   }
 </style>

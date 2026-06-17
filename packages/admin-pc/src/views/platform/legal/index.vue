@@ -10,8 +10,7 @@
       <div>
         <h2 class="m-0 text-xl font-semibold">协议管理</h2>
         <p class="mt-1 text-sm text-g-500">
-          维护用户协议、隐私政策、信息收集清单 ·
-          三端登录页 / 设置页弹层均读取此处
+          维护用户协议、隐私政策、信息收集清单 · 三端登录页 / 设置页弹层均读取此处
         </p>
       </div>
       <div class="flex gap-2">
@@ -21,12 +20,7 @@
     </div>
 
     <ElTabs v-model="active" class="pf-tabs">
-      <ElTabPane
-        v-for="k in KINDS"
-        :key="k.key"
-        :label="k.label"
-        :name="k.key"
-      >
+      <ElTabPane v-for="k in KINDS" :key="k.key" :label="k.label" :name="k.key">
         <ElCard shadow="never" class="pf-card">
           <ElForm :model="data[k.key]" label-width="120px" label-position="top">
             <ElFormItem label="文档标题">
@@ -34,7 +28,9 @@
             </ElFormItem>
             <ElFormItem label="更新时间">
               <ElInput v-model="data[k.key].updatedAt" placeholder="2026-05-13（保存时自动刷新）" />
-              <div class="text-xs text-g-500 mt-1">保存时会自动更新为今日日期；如需自定义可手动填写。</div>
+              <div class="text-xs text-g-500 mt-1"
+                >保存时会自动更新为今日日期；如需自定义可手动填写。</div
+              >
             </ElFormItem>
             <ElFormItem label="正文内容（Markdown-lite）">
               <ElInput
@@ -47,9 +43,15 @@
               />
               <div class="text-xs text-g-500 mt-2 leading-relaxed">
                 <div>语法说明：</div>
-                <div><code># 一级标题</code> · <code>## 二级标题（带左侧色条）</code> · <code>### 三级标题</code></div>
+                <div
+                  ><code># 一级标题</code> · <code>## 二级标题（带左侧色条）</code> ·
+                  <code>### 三级标题</code></div
+                >
                 <div><code>- 列表项</code> · <code>&gt; 引用块</code></div>
-                <div><code>| 表头 | 表头 |</code> 下一行 <code>| --- | --- |</code> 再下一行 <code>| 内容 | 内容 |</code> 即可渲染表格</div>
+                <div
+                  ><code>| 表头 | 表头 |</code> 下一行 <code>| --- | --- |</code> 再下一行
+                  <code>| 内容 | 内容 |</code> 即可渲染表格</div
+                >
               </div>
             </ElFormItem>
           </ElForm>
@@ -75,7 +77,9 @@
                 <h1 v-if="b.kind === 'h1'">{{ b.text }}</h1>
                 <h2 v-else-if="b.kind === 'h2'">{{ b.text }}</h2>
                 <h3 v-else-if="b.kind === 'h3'">{{ b.text }}</h3>
-                <ul v-else-if="b.kind === 'li'"><li>{{ b.text }}</li></ul>
+                <ul v-else-if="b.kind === 'li'"
+                  ><li>{{ b.text }}</li></ul
+                >
                 <blockquote v-else-if="b.kind === 'quote'">{{ b.text }}</blockquote>
                 <table v-else-if="b.kind === 'tableHeader'" class="preview-table">
                   <thead>
@@ -102,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, computed } from 'vue'
+  import { ref, onMounted } from 'vue'
   import { ElMessage } from 'element-plus'
   import {
     fetchLegalAgreements,
@@ -148,9 +152,7 @@
   }
 
   function onPreview() {
-    ElMessage.info(
-      '滚动至右侧"弹层预览"卡片查看渲染效果；客户端打开时会看到这个底部弹层。'
-    )
+    ElMessage.info('滚动至右侧"弹层预览"卡片查看渲染效果；客户端打开时会看到这个底部弹层。')
   }
 
   interface Block {
@@ -161,36 +163,29 @@
   function parseBlocks(body: string): Block[] {
     const lines = (body || '').split(/\r?\n/)
     const out: Block[] = []
-    let lastWasRow = false
     for (const line of lines) {
       const t = line.trim()
       if (!t) {
-        lastWasRow = false
         continue
       }
       if (t.startsWith('# ')) {
         out.push({ kind: 'h1', text: t.slice(2) })
-        lastWasRow = false
         continue
       }
       if (t.startsWith('## ')) {
         out.push({ kind: 'h2', text: t.slice(3) })
-        lastWasRow = false
         continue
       }
       if (t.startsWith('### ')) {
         out.push({ kind: 'h3', text: t.slice(4) })
-        lastWasRow = false
         continue
       }
       if (t.startsWith('- ')) {
         out.push({ kind: 'li', text: t.slice(2) })
-        lastWasRow = false
         continue
       }
       if (t.startsWith('> ')) {
         out.push({ kind: 'quote', text: t.slice(2) })
-        lastWasRow = false
         continue
       }
       if (t.startsWith('|') && t.endsWith('|')) {
@@ -210,11 +205,9 @@
           continue
         }
         out.push({ kind: 'tableRow', text: t, cells })
-        lastWasRow = true
         continue
       }
       out.push({ kind: 'p', text: t })
-      lastWasRow = false
     }
     return out
   }
@@ -225,21 +218,25 @@
 <style lang="scss" scoped>
   .pf-legal {
     padding: 16px 0;
+
     .pf-page-header {
       display: flex;
-      justify-content: space-between;
       align-items: flex-end;
+      justify-content: space-between;
       padding: 0 4px 12px;
     }
+
     .pf-tabs {
       :deep(.el-tabs__nav) {
         font-weight: 600;
       }
     }
+
     .pf-card {
       margin: 16px 0;
       border-radius: 12px;
     }
+
     .legal-textarea :deep(.el-textarea__inner) {
       font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
       font-size: 13px;
@@ -249,107 +246,123 @@
 
   /* ===== 弹层预览 ===== */
   .preview-card {
-    background: linear-gradient(180deg, #fff8f5 0%, #ffffff 100%);
+    background: linear-gradient(180deg, #fff8f5 0%, #fff 100%);
     border: 1px solid #ffd9c9;
   }
+
   .preview-frame {
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid #f0f2f5;
-    padding: 24px 28px;
     max-height: 640px;
+    padding: 24px 28px;
     overflow-y: auto;
-    box-shadow: inset 0 0 0 1px rgba(255, 77, 45, 0.04);
+    background: #fff;
+    border: 1px solid #f0f2f5;
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 1px rgb(255 77 45 / 4%);
   }
+
   .preview-head {
-    border-bottom: 1px solid #f2f3f5;
     padding-bottom: 12px;
     margin-bottom: 8px;
+    border-bottom: 1px solid #f2f3f5;
+
     .preview-title {
       font-size: 18px;
       font-weight: 800;
       color: #1d2129;
     }
   }
+
   .preview-updated {
+    margin-bottom: 16px;
     font-size: 12px;
     color: #86909c;
-    margin-bottom: 16px;
   }
+
   .preview-body {
     color: #4e5969;
+
     h1 {
+      margin: 16px 0 10px;
       font-size: 22px;
       font-weight: 900;
       color: #1d2129;
-      margin: 16px 0 10px;
     }
+
     h2 {
+      padding-left: 10px;
+      margin: 18px 0 8px;
       font-size: 18px;
       font-weight: 800;
       color: #ff4d2d;
-      margin: 18px 0 8px;
-      padding-left: 10px;
       border-left: 4px solid #ff4d2d;
     }
+
     h3 {
+      margin: 14px 0 6px;
       font-size: 15px;
       font-weight: 700;
       color: #1d2129;
-      margin: 14px 0 6px;
     }
+
     p {
+      margin: 8px 0;
       font-size: 14px;
       line-height: 1.85;
-      margin: 8px 0;
     }
+
     ul {
-      list-style: none;
       padding-left: 0;
       margin: 6px 0;
+      list-style: none;
+
       li {
         position: relative;
         padding-left: 16px;
         font-size: 14px;
         line-height: 1.8;
+
         &::before {
-          content: '';
           position: absolute;
-          left: 0;
           top: 12px;
+          left: 0;
           width: 6px;
           height: 6px;
-          border-radius: 50%;
+          content: '';
           background: #ff4d2d;
+          border-radius: 50%;
         }
       }
     }
+
     blockquote {
-      margin: 12px 0;
       padding: 10px 14px;
+      margin: 12px 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #86909c;
       background: #fff8f5;
       border-left: 4px solid #ff4d2d;
       border-radius: 0 8px 8px 0;
-      font-size: 13px;
-      color: #86909c;
-      line-height: 1.7;
     }
+
     .preview-table {
       width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
       margin: 6px 0;
+      font-size: 13px;
+      border-collapse: collapse;
+
       th,
       td {
-        border-bottom: 1px solid #f2f3f5;
         padding: 8px 10px;
-        text-align: left;
         color: #4e5969;
+        text-align: left;
+        border-bottom: 1px solid #f2f3f5;
       }
+
       th {
-        background: #fafbfc;
         font-weight: 700;
         color: #1d2129;
+        background: #fafbfc;
       }
     }
   }

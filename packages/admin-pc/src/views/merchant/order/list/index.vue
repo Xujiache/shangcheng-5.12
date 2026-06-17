@@ -12,12 +12,7 @@
       <div class="flex gap-2">
         <ElButton :icon="Refresh" @click="loadData" plain>刷新</ElButton>
         <ElButton :icon="Download" plain>导出</ElButton>
-        <ElButton
-          type="primary"
-          :icon="Van"
-          :disabled="!selectedIds.length"
-          @click="onBatchShip"
-        >
+        <ElButton type="primary" :icon="Van" :disabled="!selectedIds.length" @click="onBatchShip">
           批量发货 ({{ selectedIds.length }})
         </ElButton>
       </div>
@@ -59,7 +54,11 @@
         stripe
         :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
       >
-        <ElTableColumn type="selection" width="48" :selectable="(row) => row.status === 'pending_shipment'" />
+        <ElTableColumn
+          type="selection"
+          width="48"
+          :selectable="(row) => row.status === 'pending_shipment'"
+        />
         <ElTableColumn label="订单号" width="180">
           <template #default="{ row }">
             <div class="font-medium">{{ row.no }}</div>
@@ -162,12 +161,7 @@
             default-first-option
             style="width: 100%"
           >
-            <ElOption
-              v-for="opt in EXPRESS_COMPANIES"
-              :key="opt"
-              :label="opt"
-              :value="opt"
-            />
+            <ElOption v-for="opt in EXPRESS_COMPANIES" :key="opt" :label="opt" :value="opt" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="运单号" prop="trackingNumber">
@@ -197,7 +191,9 @@
         <div class="mp-detail__head">
           <div>
             <div class="text-lg font-semibold">{{ current.no }}</div>
-            <div class="text-xs text-g-500 mt-1">下单于 {{ formatDateTime(current.createdAt) }}</div>
+            <div class="text-xs text-g-500 mt-1"
+              >下单于 {{ formatDateTime(current.createdAt) }}</div
+            >
           </div>
           <ElTag :type="statusTypeOf(current.status)">{{ statusLabelOf(current.status) }}</ElTag>
         </div>
@@ -215,7 +211,11 @@
         <ElCard shadow="never" class="mp-detail__card">
           <h4 class="m-0 mb-3 text-sm text-g-700">商品清单</h4>
           <div v-for="item in current.items || []" :key="item.id" class="mp-detail-item">
-            <ElImage :src="item.productImage" fit="cover" style="width: 56px; height: 56px; border-radius: 6px" />
+            <ElImage
+              :src="item.productImage"
+              fit="cover"
+              style="width: 56px; height: 56px; border-radius: 6px"
+            />
             <div class="flex-1 min-w-0">
               <div class="line-clamp-1">{{ item.productName }}</div>
               <div class="text-xs text-g-500 mt-1">{{ item.specsLabel }}</div>
@@ -229,9 +229,15 @@
 
         <ElCard shadow="never" class="mp-detail__card">
           <h4 class="m-0 mb-3 text-sm text-g-700">金额</h4>
-          <div class="mp-money-row"><span>商品总额</span><span>¥{{ current.totalAmount }}</span></div>
-          <div class="mp-money-row"><span>优惠</span><span>−¥{{ current.discountAmount }}</span></div>
-          <div class="mp-money-row"><span>运费</span><span>¥{{ current.shippingFee }}</span></div>
+          <div class="mp-money-row"
+            ><span>商品总额</span><span>¥{{ current.totalAmount }}</span></div
+          >
+          <div class="mp-money-row"
+            ><span>优惠</span><span>−¥{{ current.discountAmount }}</span></div
+          >
+          <div class="mp-money-row"
+            ><span>运费</span><span>¥{{ current.shippingFee }}</span></div
+          >
           <ElDivider />
           <div class="mp-money-row mp-money-row--total">
             <span>实付</span>
@@ -466,16 +472,16 @@
 
 <style scoped lang="scss">
   .mp-order {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
@@ -511,21 +517,21 @@
   /* === 抽屉 === */
 
   .mp-detail {
-    padding: 18px 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 18px 22px;
   }
 
   .mp-detail__head {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
+    justify-content: space-between;
   }
 
   .mp-detail__card {
-    border-radius: 10px;
     background: #fafbfc;
+    border-radius: 10px;
 
     :deep(.el-card__body) {
       padding: 14px 16px;
@@ -534,8 +540,8 @@
 
   .mp-detail-item {
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
     padding: 6px 0;
 
     & + & {
@@ -558,8 +564,8 @@
 
   .mp-detail__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     padding-top: 6px;
   }
 </style>

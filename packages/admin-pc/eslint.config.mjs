@@ -57,7 +57,14 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off', // 禁用 any 检查
       'vue/multi-word-component-names': 'off', // 禁用对 Vue 组件名称的多词要求检查
       'no-multiple-empty-lines': ['warn', { max: 1 }], // 不允许多个空行
-      'no-unexpected-multiline': 'error' // 禁止空余的多行
+      'no-unexpected-multiline': 'error', // 禁止空余的多行
+      // 未用变量：以 _ 前缀的形参/变量/catch 视为有意忽略
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+      ],
+      'vue/no-unused-vars': ['error', { ignorePattern: '^_' }]
     }
   },
   // vue 规则

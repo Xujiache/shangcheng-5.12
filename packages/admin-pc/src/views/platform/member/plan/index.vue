@@ -22,7 +22,12 @@
             <div class="text-xs text-g-500 mt-1">新注册商家可免费体验所有功能</div>
           </div>
         </div>
-        <ElSelect v-model="trialDays" style="width: 160px" :loading="trialSaving" @change="onTrialChange">
+        <ElSelect
+          v-model="trialDays"
+          style="width: 160px"
+          :loading="trialSaving"
+          @change="onTrialChange"
+        >
           <ElOption :value="7" label="7 天" />
           <ElOption :value="15" label="15 天" />
           <ElOption :value="30" label="30 天" />
@@ -50,26 +55,42 @@
 
     <!-- 套餐网格 -->
     <div v-if="tab !== 'orders' && tab !== 'subs'" class="pf-plans">
-      <ElCard v-for="p in filteredPlans" :key="p.id" shadow="hover" class="pf-plan" :class="{ hot: p.hot }">
+      <ElCard
+        v-for="p in filteredPlans"
+        :key="p.id"
+        shadow="hover"
+        class="pf-plan"
+        :class="{ hot: p.hot }"
+      >
         <div v-if="p.hot" class="pf-plan__hot">HOT</div>
         <div class="pf-plan__head">
           <div class="pf-plan__name">{{ p.name }}</div>
-          <ElTag :type="p.status === 'active' ? 'success' : 'info'" size="small">{{ p.status === 'active' ? '上架中' : '已停用' }}</ElTag>
+          <ElTag :type="p.status === 'active' ? 'success' : 'info'" size="small">{{
+            p.status === 'active' ? '上架中' : '已停用'
+          }}</ElTag>
         </div>
         <div class="pf-plan__price">
           <span class="cur">¥</span>{{ p.price }}
           <small>/ {{ periodLabelOf(p.period) }}</small>
         </div>
-        <div v-if="p.originalPrice" class="pf-plan__org">原价 <s>¥{{ p.originalPrice }}</s></div>
+        <div v-if="p.originalPrice" class="pf-plan__org"
+          >原价 <s>¥{{ p.originalPrice }}</s></div
+        >
         <ul class="pf-plan__rights">
           <li v-for="(r, i) in p.rights" :key="i">
             <ArtSvgIcon icon="ri:check-line" class="text-success" /> {{ r }}
           </li>
         </ul>
         <div v-if="p.constraints" class="pf-plan__constraints">
-          <ElTag v-if="p.constraints.pushSlots !== undefined" size="small" effect="plain">{{ p.constraints.pushSlots > 99 ? '推送位不限' : `${p.constraints.pushSlots} 个推送位` }}</ElTag>
-          <ElTag v-if="p.constraints.weightLimit !== undefined" size="small" effect="plain">权重 ≤ {{ p.constraints.weightLimit }}</ElTag>
-          <ElTag v-if="p.constraints.bannerLimit !== undefined" size="small" effect="plain">Banner {{ p.constraints.bannerLimit > 99 ? '不限' : p.constraints.bannerLimit }}</ElTag>
+          <ElTag v-if="p.constraints.pushSlots !== undefined" size="small" effect="plain">{{
+            p.constraints.pushSlots > 99 ? '推送位不限' : `${p.constraints.pushSlots} 个推送位`
+          }}</ElTag>
+          <ElTag v-if="p.constraints.weightLimit !== undefined" size="small" effect="plain"
+            >权重 ≤ {{ p.constraints.weightLimit }}</ElTag
+          >
+          <ElTag v-if="p.constraints.bannerLimit !== undefined" size="small" effect="plain"
+            >Banner {{ p.constraints.bannerLimit > 99 ? '不限' : p.constraints.bannerLimit }}</ElTag
+          >
         </div>
         <!--
           订阅商家数:之前用 subsByPlanId(p.id).length 读 subscriptions[],
@@ -84,13 +105,19 @@
         </div>
         <div class="pf-plan__actions">
           <ElDropdown trigger="click" @command="(cmd) => onEdit(p, cmd)">
-            <ElButton type="primary" plain class="w-full">编辑 <ArtSvgIcon icon="ri:arrow-down-s-line" /></ElButton>
+            <ElButton type="primary" plain class="w-full"
+              >编辑 <ArtSvgIcon icon="ri:arrow-down-s-line"
+            /></ElButton>
             <template #dropdown>
               <ElDropdownMenu>
                 <ElDropdownItem command="price">修改价格</ElDropdownItem>
                 <ElDropdownItem command="rights">修改权益</ElDropdownItem>
-                <ElDropdownItem command="constraints" :disabled="!p.constraints">修改限制</ElDropdownItem>
-                <ElDropdownItem command="toggle">{{ p.status === 'active' ? '下架' : '上架' }}</ElDropdownItem>
+                <ElDropdownItem command="constraints" :disabled="!p.constraints"
+                  >修改限制</ElDropdownItem
+                >
+                <ElDropdownItem command="toggle">{{
+                  p.status === 'active' ? '下架' : '上架'
+                }}</ElDropdownItem>
               </ElDropdownMenu>
             </template>
           </ElDropdown>
@@ -126,12 +153,21 @@
     <!-- 套餐编辑 Drawer -->
     <ElDrawer v-model="editOpen" :size="540" :with-header="false">
       <div class="pf-drawer">
-        <h3 class="m-0">{{ editTitleOf() }} <span v-if="editForm.id" class="text-sm text-g-500 font-normal">· {{ editForm.name }}</span></h3>
+        <h3 class="m-0"
+          >{{ editTitleOf() }}
+          <span v-if="editForm.id" class="text-sm text-g-500 font-normal"
+            >· {{ editForm.name }}</span
+          ></h3
+        >
         <ElForm :model="editForm" label-position="top">
           <template v-if="editMode === 'create' || editMode === 'price'">
             <div class="grid grid-cols-2 gap-3">
               <ElFormItem label="套餐类型">
-                <ElSelect v-model="editForm.type" :disabled="editMode !== 'create'" style="width: 100%">
+                <ElSelect
+                  v-model="editForm.type"
+                  :disabled="editMode !== 'create'"
+                  style="width: 100%"
+                >
                   <ElOption value="basic" label="会员套餐" />
                   <ElOption value="ad" label="推广套餐" />
                   <ElOption value="addon" label="增值单项" />
@@ -148,22 +184,43 @@
               </ElFormItem>
             </div>
             <ElFormItem label="套餐名称">
-              <ElInput v-model="editForm.name" :disabled="editMode !== 'create'" placeholder="如：年费会员" />
+              <ElInput
+                v-model="editForm.name"
+                :disabled="editMode !== 'create'"
+                placeholder="如：年费会员"
+              />
             </ElFormItem>
             <ElFormItem v-if="editMode === 'create'" label="套餐 Code">
               <ElInput v-model="editForm.code" placeholder="英文标识，如 yearly_pro" />
             </ElFormItem>
             <div class="grid grid-cols-2 gap-3">
               <ElFormItem label="售价（元）">
-                <ElInputNumber v-model="editForm.price" :min="0" :max="999999" :step="10" style="width: 100%" />
+                <ElInputNumber
+                  v-model="editForm.price"
+                  :min="0"
+                  :max="999999"
+                  :step="10"
+                  style="width: 100%"
+                />
               </ElFormItem>
               <ElFormItem label="原价（删除线）">
-                <ElInputNumber v-model="editForm.originalPrice" :min="0" :max="999999" :step="10" style="width: 100%" />
+                <ElInputNumber
+                  v-model="editForm.originalPrice"
+                  :min="0"
+                  :max="999999"
+                  :step="10"
+                  style="width: 100%"
+                />
               </ElFormItem>
             </div>
             <div v-if="editMode === 'create'" class="grid grid-cols-2 gap-3">
               <ElFormItem label="试用天数（basic）">
-                <ElInputNumber v-model="editForm.trialDays" :min="0" :max="365" style="width: 100%" />
+                <ElInputNumber
+                  v-model="editForm.trialDays"
+                  :min="0"
+                  :max="365"
+                  style="width: 100%"
+                />
               </ElFormItem>
               <ElFormItem label="HOT 标记">
                 <ElSwitch v-model="editForm.hot" />
@@ -193,25 +250,52 @@
                 >
                   {{ r }}
                 </ElTag>
-                <span v-if="editForm.rights.length === 0" class="text-xs text-g-500">尚未添加任何权益</span>
+                <span v-if="editForm.rights.length === 0" class="text-xs text-g-500"
+                  >尚未添加任何权益</span
+                >
               </div>
             </ElFormItem>
           </template>
 
-          <template v-if="(editMode === 'create' && editForm.type !== 'basic') || editMode === 'constraints'">
+          <template
+            v-if="
+              (editMode === 'create' && editForm.type !== 'basic') || editMode === 'constraints'
+            "
+          >
             <ElDivider>投放限制（推广 / 增值套餐专用）</ElDivider>
             <div class="grid grid-cols-2 gap-3">
               <ElFormItem label="推送位数">
-                <ElInputNumber v-model="editForm.constraints.pushSlots" :min="0" :max="99999" style="width: 100%" />
+                <ElInputNumber
+                  v-model="editForm.constraints.pushSlots"
+                  :min="0"
+                  :max="99999"
+                  style="width: 100%"
+                />
               </ElFormItem>
               <ElFormItem label="权重上限">
-                <ElInputNumber v-model="editForm.constraints.weightLimit" :min="0" :max="100" style="width: 100%" />
+                <ElInputNumber
+                  v-model="editForm.constraints.weightLimit"
+                  :min="0"
+                  :max="100"
+                  style="width: 100%"
+                />
               </ElFormItem>
               <ElFormItem label="首屏 Banner 数">
-                <ElInputNumber v-model="editForm.constraints.bannerLimit" :min="0" :max="99999" style="width: 100%" />
+                <ElInputNumber
+                  v-model="editForm.constraints.bannerLimit"
+                  :min="0"
+                  :max="99999"
+                  style="width: 100%"
+                />
               </ElFormItem>
               <ElFormItem label="月曝光上限">
-                <ElInputNumber v-model="editForm.constraints.impressionLimit" :min="0" :max="99999999" :step="10000" style="width: 100%" />
+                <ElInputNumber
+                  v-model="editForm.constraints.impressionLimit"
+                  :min="0"
+                  :max="99999999"
+                  :step="10000"
+                  style="width: 100%"
+                />
               </ElFormItem>
             </div>
           </template>
@@ -265,7 +349,20 @@
   }
 
   function periodLabelOf(p: MemberPlan['period']) {
-    return ({ monthly: '月', yearly: '年', weekly: '周', daily: '天', oneoff: '次', month: '月', year: '年', day: '天' } as Record<string, string>)[p] || p
+    return (
+      (
+        {
+          monthly: '月',
+          yearly: '年',
+          weekly: '周',
+          daily: '天',
+          oneoff: '次',
+          month: '月',
+          year: '年',
+          day: '天'
+        } as Record<string, string>
+      )[p] || p
+    )
   }
 
   // ====== 编辑 Drawer 通用 ======
@@ -370,7 +467,10 @@
       ElMessage.warning('请填写套餐 code')
       return
     }
-    if ((editMode.value === 'create' || editMode.value === 'rights') && editForm.rights.length === 0) {
+    if (
+      (editMode.value === 'create' || editMode.value === 'rights') &&
+      editForm.rights.length === 0
+    ) {
       ElMessage.warning('请至少添加 1 项权益')
       return
     }
@@ -428,47 +528,48 @@
 
 <style scoped lang="scss">
   .pf-mp {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-success {
     color: #10b981;
   }
+
   .text-g-500 {
     color: #6b7280;
   }
 
   .pf-trial {
+    background: linear-gradient(135deg, rgb(255 156 110 / 10%), rgb(255 77 45 / 4%));
+    border: 1px solid rgb(255 156 110 / 30%);
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(255, 156, 110, 0.1), rgba(255, 77, 45, 0.04));
-    border: 1px solid rgba(255, 156, 110, 0.3);
   }
 
   .pf-trial__row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .pf-trial__icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: rgba(255, 77, 45, 0.16);
-    color: var(--el-color-primary, #ff4d2d);
-    font-size: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
+    color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 77 45 / 16%);
+    border-radius: 12px;
   }
 
   .pf-toolbar {
@@ -487,21 +588,21 @@
 
   .pf-plan {
     position: relative;
-    border-radius: 14px;
     border: 2px solid var(--art-border-color, #e5e7eb);
+    border-radius: 14px;
     transition: all 0.2s;
 
     :deep(.el-card__body) {
-      padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 8px;
       height: 100%;
+      padding: 20px;
     }
 
     &.hot {
       border-color: var(--el-color-primary, #ff4d2d);
-      box-shadow: 0 8px 24px -10px rgba(255, 77, 45, 0.3);
+      box-shadow: 0 8px 24px -10px rgb(255 77 45 / 30%);
     }
   }
 
@@ -509,19 +610,19 @@
     position: absolute;
     top: -10px;
     right: 16px;
+    z-index: 1;
     padding: 3px 10px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
-    color: #fff;
     font-size: 11px;
     font-weight: 600;
-    z-index: 1;
+    color: #fff;
+    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
+    border-radius: 8px;
   }
 
   .pf-plan__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .pf-plan__name {
@@ -530,19 +631,20 @@
   }
 
   .pf-plan__price {
+    margin-top: 4px;
     font-size: 30px;
     font-weight: 700;
     color: var(--el-color-primary, #ff4d2d);
-    margin-top: 4px;
 
     .cur {
-      font-size: 18px;
       margin-right: 2px;
+      font-size: 18px;
     }
+
     small {
       font-size: 13px;
-      color: #6b7280;
       font-weight: 400;
+      color: #6b7280;
     }
   }
 
@@ -552,16 +654,16 @@
   }
 
   .pf-plan__rights {
-    list-style: none;
+    flex: 1;
     padding: 0;
     margin: 8px 0 0;
-    flex: 1;
+    list-style: none;
 
     li {
-      padding: 4px 0;
-      font-size: 13px;
       display: flex;
       gap: 6px;
+      padding: 4px 0;
+      font-size: 13px;
       color: var(--art-gray-700, #374151);
     }
   }
@@ -576,20 +678,16 @@
 
   .pf-plan__subs {
     display: flex;
-    align-items: center;
     gap: 6px;
-    font-size: 12px;
+    align-items: center;
     padding-top: 8px;
+    font-size: 12px;
     border-top: 1px dashed var(--art-border-color, #e5e7eb);
   }
 
   .pf-plan__actions {
-    margin-top: auto;
     padding-top: 10px;
-  }
-
-  .text-g-500 {
-    color: #6b7280;
+    margin-top: auto;
   }
 
   .w-full {
@@ -598,26 +696,28 @@
 
   /* Drawer */
   .pf-drawer {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: 100%;
+    padding: 22px;
   }
 
   .pf-drawer__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     margin-top: auto;
   }
 
   .grid {
     display: grid;
   }
+
   .grid-cols-2 {
     grid-template-columns: 1fr 1fr;
   }
+
   .gap-3 {
     gap: 12px;
   }

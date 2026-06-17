@@ -16,24 +16,38 @@ import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator'
  *   - adminRoleId（权限敏感，按业务流程通过专门接口设置）
  */
 export class UpdateAdminDto {
-  @IsOptional() @IsString() @MaxLength(64)
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
   username?: string
 
-  @IsOptional() @IsString() @MaxLength(20)
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
   phone?: string
 
-  @IsOptional() @IsString() @MaxLength(128)
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
   email?: string
 
-  @IsOptional() @IsString() @MaxLength(64)
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
   nickname?: string
 
-  @IsOptional() @IsString() @MaxLength(512)
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
   avatar?: string
 
-  @IsOptional() @IsString() @IsIn(['admin', 'platform', 'super-admin'])
+  @IsOptional()
+  @IsString()
+  @IsIn(['admin', 'platform', 'super-admin'])
   role?: string
 
-  @IsOptional() @IsString() @IsIn(['active', 'disabled'])
+  @IsOptional()
+  @IsString()
+  @IsIn(['active', 'disabled'])
   status?: string
 }

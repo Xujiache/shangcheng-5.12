@@ -12,7 +12,9 @@
           {{ workspace === 'merchant' ? '商家工作台' : '平台工作台' }}
         </div>
         <h2 class="hero-title">{{ title }}</h2>
-        <p class="hero-desc">{{ description || '该页面属于本期骨架范围，详细业务将在后续 6A 阶段迭代实施。' }}</p>
+        <p class="hero-desc">{{
+          description || '该页面属于本期骨架范围，详细业务将在后续 6A 阶段迭代实施。'
+        }}</p>
       </div>
     </div>
 
@@ -79,10 +81,10 @@
   .ws-placeholder__hero {
     position: relative;
     padding: 28px 30px;
-    border-radius: 14px;
-    color: #fff;
-    overflow: hidden;
     margin-bottom: 18px;
+    overflow: hidden;
+    color: #fff;
+    border-radius: 14px;
 
     &.hero-merchant {
       background: linear-gradient(135deg, #ff7a45, #ff4d2d 80%);
@@ -93,14 +95,14 @@
     }
 
     &::after {
-      content: '';
       position: absolute;
       right: -30px;
       bottom: -30px;
       width: 180px;
       height: 180px;
+      content: '';
+      background: rgb(255 255 255 / 8%);
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.08);
     }
   }
 
@@ -112,10 +114,10 @@
   .hero-tag {
     display: inline-block;
     padding: 4px 10px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.18);
-    font-size: 12px;
     margin-bottom: 12px;
+    font-size: 12px;
+    background: rgb(255 255 255 / 18%);
+    border-radius: 12px;
   }
 
   .hero-title {
@@ -136,8 +138,8 @@
 
   .card-row {
     display: flex;
-    align-items: flex-start;
     gap: 14px;
+    align-items: flex-start;
   }
 
   .card-icon {
@@ -148,25 +150,25 @@
   }
 
   .card-text__title {
+    margin-bottom: 4px;
     font-size: 15px;
     font-weight: 600;
-    margin-bottom: 4px;
     color: var(--art-gray-800, #1f2937);
   }
 
   .card-text__desc {
     font-size: 13px;
-    color: var(--art-gray-600, #6b7280);
     line-height: 1.6;
+    color: var(--art-gray-600, #6b7280);
   }
 
   .path {
     padding: 1px 6px;
-    border-radius: 4px;
-    background: rgba(255, 77, 45, 0.08);
-    color: var(--el-color-primary, #ff4d2d);
     font-family: monospace;
     font-size: 12.5px;
+    color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 77 45 / 8%);
+    border-radius: 4px;
   }
 
   .todo-list {
@@ -177,8 +179,8 @@
 
   .todo-item {
     display: flex;
-    align-items: center;
     gap: 8px;
+    align-items: center;
     font-size: 13px;
     color: var(--art-gray-700, #374151);
   }

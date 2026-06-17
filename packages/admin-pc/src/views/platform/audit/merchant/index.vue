@@ -11,7 +11,12 @@
 
     <ElCard shadow="never" class="pf-toolbar">
       <ElTabs v-model="tab">
-        <ElTabPane v-for="t in tabs" :key="t.value" :label="`${t.label} (${countOf(t.value)})`" :name="t.value" />
+        <ElTabPane
+          v-for="t in tabs"
+          :key="t.value"
+          :label="`${t.label} (${countOf(t.value)})`"
+          :name="t.value"
+        />
       </ElTabs>
     </ElCard>
 
@@ -30,7 +35,10 @@
         <div class="pf-card__meta">
           <div><ArtSvgIcon icon="ri:user-3-line" /> {{ m.contact }} · {{ m.contactPhone }}</div>
           <div><ArtSvgIcon icon="ri:map-pin-line" /> {{ m.region }}</div>
-          <div><ArtSvgIcon icon="ri:price-tag-3-line" /> {{ m.categories.slice(0, 4).join('、') }}</div>
+          <div
+            ><ArtSvgIcon icon="ri:price-tag-3-line" />
+            {{ m.categories.slice(0, 4).join('、') }}</div
+          >
         </div>
 
         <div class="pf-card__qual">
@@ -42,7 +50,9 @@
             fit="cover"
             class="pf-qual"
           />
-          <span v-if="m.qualifications.length > 3" class="pf-qual-more">+{{ m.qualifications.length - 3 }}</span>
+          <span v-if="m.qualifications.length > 3" class="pf-qual-more"
+            >+{{ m.qualifications.length - 3 }}</span
+          >
         </div>
 
         <div v-if="m.status === 'rejected' && (m as any).rejectReason" class="pf-reject">
@@ -74,14 +84,23 @@
           <ElDescriptionsItem label="主体公司">{{ current.legalName }}</ElDescriptionsItem>
           <ElDescriptionsItem label="法人">{{ current.legalRep }}</ElDescriptionsItem>
           <ElDescriptionsItem label="信用代码">{{ current.creditCode }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="联系人">{{ current.contact }} · {{ current.contactPhone }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="联系人"
+            >{{ current.contact }} · {{ current.contactPhone }}</ElDescriptionsItem
+          >
           <ElDescriptionsItem label="地区">{{ current.region }}</ElDescriptionsItem>
           <ElDescriptionsItem label="地址">{{ current.address }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="经营品类">{{ current.categories.join('、') }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="经营品类">{{
+            current.categories.join('、')
+          }}</ElDescriptionsItem>
         </ElDescriptions>
         <div class="mt-3 font-semibold text-sm">营业执照与资质</div>
         <div class="pf-qual-grid">
-          <ElImage :src="current.businessLicense" :preview-src-list="[current.businessLicense, ...current.qualifications]" fit="cover" class="pf-qual-big" />
+          <ElImage
+            :src="current.businessLicense"
+            :preview-src-list="[current.businessLicense, ...current.qualifications]"
+            fit="cover"
+            class="pf-qual-big"
+          />
           <ElImage
             v-for="(q, i) in current.qualifications"
             :key="i"
@@ -98,11 +117,7 @@
 </template>
 
 <script setup lang="ts">
-  import {
-    fetchMerchantAudits,
-    approveMerchant,
-    rejectMerchant
-  } from '@/api/platform-business'
+  import { fetchMerchantAudits, approveMerchant, rejectMerchant } from '@/api/platform-business'
   import type { Merchant } from '@jiujiu/shared/types'
   import { formatDateTime } from '@jiujiu/shared/utils'
   import { ElMessage, ElMessageBox } from 'element-plus'
@@ -174,16 +189,16 @@
 
 <style scoped lang="scss">
   .pf-mc-audit {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-g-500 {
@@ -208,17 +223,17 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      padding: 18px;
     }
   }
 
   .pf-card__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .pf-card__meta {
@@ -230,23 +245,23 @@
 
     > div {
       display: flex;
-      align-items: center;
       gap: 6px;
+      align-items: center;
     }
   }
 
   .pf-card__qual {
     display: flex;
-    align-items: center;
     gap: 8px;
+    align-items: center;
   }
 
   .pf-qual {
     width: 70px;
     height: 70px;
-    border-radius: 8px;
-    border: 1px solid var(--art-border-color, #e5e7eb);
     overflow: hidden;
+    border: 1px solid var(--art-border-color, #e5e7eb);
+    border-radius: 8px;
   }
 
   .pf-qual-more {
@@ -255,35 +270,35 @@
   }
 
   .pf-reject {
-    background: rgba(245, 108, 108, 0.08);
-    border-radius: 8px;
-    padding: 8px 12px;
-    color: #f56c6c;
-    font-size: 13px;
     display: flex;
-    align-items: center;
     gap: 6px;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #f56c6c;
+    background: rgb(245 108 108 / 8%);
+    border-radius: 8px;
   }
 
   .pf-card__actions {
     display: flex;
-    justify-content: flex-end;
     gap: 8px;
-    border-top: 1px dashed var(--art-border-color, #e5e7eb);
+    justify-content: flex-end;
     padding-top: 12px;
+    border-top: 1px dashed var(--art-border-color, #e5e7eb);
   }
 
   .pf-detail {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 22px;
   }
 
   .pf-detail__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .pf-qual-grid {
@@ -295,8 +310,8 @@
   .pf-qual-big {
     width: 100%;
     aspect-ratio: 3 / 4;
-    border-radius: 10px;
-    border: 1px solid var(--art-border-color, #e5e7eb);
     overflow: hidden;
+    border: 1px solid var(--art-border-color, #e5e7eb);
+    border-radius: 10px;
   }
 </style>

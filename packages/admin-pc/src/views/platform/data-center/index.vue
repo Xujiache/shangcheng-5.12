@@ -48,7 +48,9 @@
 
     <div class="pf-grid-2">
       <ElCard shadow="hover" class="pf-card">
-        <template #header><div class="pf-card__title"><span>类目销售柱状</span></div></template>
+        <template #header
+          ><div class="pf-card__title"><span>类目销售柱状</span></div></template
+        >
         <ArtBarChart
           v-if="stats?.categoryBars.length"
           height="320px"
@@ -57,22 +59,24 @@
         />
       </ElCard>
       <ElCard shadow="hover" class="pf-card">
-        <template #header><div class="pf-card__title"><span>会员套餐分布</span></div></template>
-        <ArtRingChart
-          v-if="memberData.length"
-          height="320px"
-          :data="memberData"
-        />
+        <template #header
+          ><div class="pf-card__title"><span>会员套餐分布</span></div></template
+        >
+        <ArtRingChart v-if="memberData.length" height="320px" :data="memberData" />
       </ElCard>
     </div>
 
     <div class="pf-grid-2">
       <ElCard shadow="hover" class="pf-card">
-        <template #header><div class="pf-card__title"><span>商户类型分布</span></div></template>
+        <template #header
+          ><div class="pf-card__title"><span>商户类型分布</span></div></template
+        >
         <ArtRingChart v-if="merchantTypeData.length" height="280px" :data="merchantTypeData" />
       </ElCard>
       <ElCard shadow="hover" class="pf-card">
-        <template #header><div class="pf-card__title"><span>类目销售占比</span></div></template>
+        <template #header
+          ><div class="pf-card__title"><span>类目销售占比</span></div></template
+        >
         <ArtRingChart v-if="catRingData.length" height="280px" :data="catRingData" />
       </ElCard>
     </div>
@@ -99,15 +103,42 @@
   const kpis = computed(() => {
     const o = dash.value?.overview
     return [
-      { title: '商户总数', count: o?.merchants ?? 0, desc: `+${o?.merchantsDelta ?? 0}`, icon: 'ri:store-2-line', iconStyle: { color: '#FF4D2D', backgroundColor: '#FF4D2D18' } },
-      { title: '订单总数', count: o?.orders ?? 0, desc: `+${o?.ordersDelta ?? 0}`, icon: 'ri:bill-line', iconStyle: { color: '#FF7A45', backgroundColor: '#FF7A4518' } },
-      { title: '平台 GMV', count: o?.gmv ?? 0, desc: `+${o?.gmvDelta ?? 0}%`, icon: 'ri:money-cny-circle-line', iconStyle: { color: '#10B981', backgroundColor: '#10B98118' } },
-      { title: '用户总数', count: o?.users ?? 0, desc: `+${o?.usersDelta ?? 0}`, icon: 'ri:user-3-line', iconStyle: { color: '#A855F7', backgroundColor: '#A855F718' } }
+      {
+        title: '商户总数',
+        count: o?.merchants ?? 0,
+        desc: `+${o?.merchantsDelta ?? 0}`,
+        icon: 'ri:store-2-line',
+        iconStyle: { color: '#FF4D2D', backgroundColor: '#FF4D2D18' }
+      },
+      {
+        title: '订单总数',
+        count: o?.orders ?? 0,
+        desc: `+${o?.ordersDelta ?? 0}`,
+        icon: 'ri:bill-line',
+        iconStyle: { color: '#FF7A45', backgroundColor: '#FF7A4518' }
+      },
+      {
+        title: '平台 GMV',
+        count: o?.gmv ?? 0,
+        desc: `+${o?.gmvDelta ?? 0}%`,
+        icon: 'ri:money-cny-circle-line',
+        iconStyle: { color: '#10B981', backgroundColor: '#10B98118' }
+      },
+      {
+        title: '用户总数',
+        count: o?.users ?? 0,
+        desc: `+${o?.usersDelta ?? 0}`,
+        icon: 'ri:user-3-line',
+        iconStyle: { color: '#A855F7', backgroundColor: '#A855F718' }
+      }
     ]
   })
 
-  const periodLabel = computed(() =>
-    ({ today: '今日 24 小时', week: '本周', month: '本月 30 天', year: '本年 12 月' })[period.value]
+  const periodLabel = computed(
+    () =>
+      ({ today: '今日 24 小时', week: '本周', month: '本月 30 天', year: '本年 12 月' })[
+        period.value
+      ]
   )
 
   const memberData = computed(() => {
@@ -156,7 +187,9 @@
     rows.push([])
     rows.push(['类目销售', '销量'])
     stats.value.categoryBars.forEach((c) => rows.push([c.category, String(c.sales)]))
-    const csv = '﻿' + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
+    const csv =
+      '﻿' +
+      rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -177,18 +210,18 @@
 
 <style scoped lang="scss">
   .pf-data {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     flex-wrap: wrap;
     gap: 12px;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .pf-kpi-row {
@@ -196,7 +229,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -207,8 +240,8 @@
 
   .pf-card__title {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     font-weight: 600;
   }
 
@@ -217,7 +250,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: 1fr;
     }
   }

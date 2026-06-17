@@ -9,21 +9,14 @@
     <div class="pf-page-header">
       <div>
         <h2 class="m-0 text-xl font-semibold">提现审核</h2>
-        <p class="mt-1 text-sm text-g-500">
-          商家提交的提现申请 · 通过 → 财务打款 → 标记已支付
-        </p>
+        <p class="mt-1 text-sm text-g-500"> 商家提交的提现申请 · 通过 → 财务打款 → 标记已支付 </p>
       </div>
       <ElButton :icon="Refresh" plain @click="load">刷新</ElButton>
     </div>
 
     <!-- KPI -->
     <div class="pf-kpi-row">
-      <ElCard
-        v-for="k in kpiCards"
-        :key="k.key"
-        shadow="hover"
-        class="pf-kpi"
-      >
+      <ElCard v-for="k in kpiCards" :key="k.key" shadow="hover" class="pf-kpi">
         <div class="pf-kpi__icon" :style="{ background: k.color + '18', color: k.color }">
           <ArtSvgIcon :icon="k.icon" />
         </div>
@@ -36,12 +29,7 @@
 
     <ElCard shadow="never" class="pf-toolbar">
       <ElTabs v-model="tab" @tab-change="onTabChange">
-        <ElTabPane
-          v-for="t in tabs"
-          :key="t.value"
-          :label="t.label"
-          :name="t.value"
-        />
+        <ElTabPane v-for="t in tabs" :key="t.value" :label="t.label" :name="t.value" />
       </ElTabs>
     </ElCard>
 

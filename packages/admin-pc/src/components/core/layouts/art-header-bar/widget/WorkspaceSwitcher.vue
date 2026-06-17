@@ -41,7 +41,6 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/store/modules/user'
-  import { useMenuStore } from '@/store/modules/menu'
   import { resetRouterState } from '@/router/guards/beforeEach'
   import { ElMessage } from 'element-plus'
   import { ArrowDown, Check, OfficeBuilding, Shop } from '@element-plus/icons-vue'
@@ -49,7 +48,6 @@
   defineOptions({ name: 'WorkspaceSwitcher' })
 
   const userStore = useUserStore()
-  const menuStore = useMenuStore()
   const router = useRouter()
 
   const isSuperAdmin = computed(() => userStore.role === 'super-admin')
@@ -90,21 +88,21 @@
 
     .ws-trigger {
       display: inline-flex;
-      align-items: center;
       gap: 6px;
+      align-items: center;
       height: 32px;
       padding: 0 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      background: rgba(255, 77, 45, 0.08);
-      color: var(--el-color-primary, #ff4d2d);
       font-size: 13px;
       font-weight: 500;
+      color: var(--el-color-primary, #ff4d2d);
+      cursor: pointer;
+      background: rgb(255 77 45 / 8%);
+      border-radius: 8px;
       transition: all 0.18s ease;
 
       &:hover,
       &.active {
-        background: rgba(255, 77, 45, 0.16);
+        background: rgb(255 77 45 / 16%);
       }
     }
 
@@ -127,7 +125,7 @@
   }
 
   .workspace-switcher__menu .el-dropdown-menu__item.is-selected {
-    color: var(--el-color-primary, #ff4d2d);
     font-weight: 600;
+    color: var(--el-color-primary, #ff4d2d);
   }
 </style>

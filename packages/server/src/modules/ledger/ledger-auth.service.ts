@@ -67,10 +67,15 @@ export class LedgerAuthService {
       avatar: u.avatar,
       // 登录响应必须带上：前端 routeAfterLogin 据此强制首登改密（否则只有冷启动静默路径生效）
       mustReset: u.mustReset,
-      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
-        perpetual: u.membership?.perpetual,
-        trialClaimedAt: u.membership?.trialClaimedAt,
-      }),
+      membership: deriveMembership(
+        u.membership?.expiresAt ?? null,
+        u.membership?.lastPlanKey,
+        new Date(),
+        {
+          perpetual: u.membership?.perpetual,
+          trialClaimedAt: u.membership?.trialClaimedAt,
+        },
+      ),
     }
   }
 

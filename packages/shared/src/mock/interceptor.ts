@@ -55,10 +55,13 @@ export function clearMockRoutes(): void {
 function parseUrl(rawUrl: string): { path: string; query: Record<string, string> } {
   const [path, queryString = ''] = rawUrl.split('?')
   const query: Record<string, string> = {}
-  queryString.split('&').filter(Boolean).forEach((kv) => {
-    const [k, v] = kv.split('=')
-    query[decodeURIComponent(k)] = decodeURIComponent(v ?? '')
-  })
+  queryString
+    .split('&')
+    .filter(Boolean)
+    .forEach((kv) => {
+      const [k, v] = kv.split('=')
+      query[decodeURIComponent(k)] = decodeURIComponent(v ?? '')
+    })
   return { path, query }
 }
 
@@ -104,16 +107,20 @@ export async function mockMatch<T = unknown>(req: MockRequest): Promise<ApiResul
         code: 0,
         data: data as T,
         message: 'ok',
+        msg: 'ok',
         traceId: 'mock-' + Date.now().toString(36),
         timestamp: Date.now(),
       }
     }
   }
+  const notFoundMsg = `Mock route not found: ${req.method} ${path}`
   return {
     code: 1002,
     data: null,
-    message: `Mock route not found: ${req.method} ${path}`,
+    message: notFoundMsg,
+    msg: notFoundMsg,
     traceId: 'mock-' + Date.now().toString(36),
+    timestamp: Date.now(),
   }
 }
 

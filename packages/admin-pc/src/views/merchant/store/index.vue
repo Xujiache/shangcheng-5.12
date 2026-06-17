@@ -5,7 +5,8 @@
       <div>
         <h2 class="m-0 text-xl font-semibold">门店管理</h2>
         <p class="mt-1 text-sm text-g-500">
-          共 {{ stores.length }} 家门店 · 在线 <b class="text-success">{{ countOf('online') }}</b> · 离线 {{ countOf('offline') }}
+          共 {{ stores.length }} 家门店 · 在线 <b class="text-success">{{ countOf('online') }}</b> ·
+          离线 {{ countOf('offline') }}
         </p>
       </div>
       <div class="flex gap-2">
@@ -23,7 +24,11 @@
 
     <!-- 门店列表 -->
     <ElCard shadow="never" v-if="tab === 'stores'" v-loading="loading">
-      <ElTable :data="stores" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="stores"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="门店" min-width="320">
           <template #default="{ row }">
             <div>
@@ -73,9 +78,13 @@
         <div class="flex justify-between items-center">
           <div>
             <span class="font-semibold">门店授权配置</span>
-            <span class="ml-2 text-xs text-g-500">门店等级 · 可见价格 · 分类权限 · 加价规则 · 有效期</span>
+            <span class="ml-2 text-xs text-g-500"
+              >门店等级 · 可见价格 · 分类权限 · 加价规则 · 有效期</span
+            >
           </div>
-          <ElButton type="primary" size="small" :icon="Plus" @click="openCreateAuth">新增授权</ElButton>
+          <ElButton type="primary" size="small" :icon="Plus" @click="openCreateAuth"
+            >新增授权</ElButton
+          >
         </div>
       </template>
       <ElTable :data="authConfigs" stripe>
@@ -100,8 +109,17 @@
         <ElTableColumn label="分类权限" min-width="180">
           <template #default="{ row }">
             <span v-if="row.categories.length === 0" class="text-g-400">全部分类</span>
-            <ElTag v-for="c in row.categories.slice(0, 3)" :key="c" size="small" effect="plain" class="mr-1">{{ c }}</ElTag>
-            <span v-if="row.categories.length > 3" class="text-xs text-g-500">+{{ row.categories.length - 3 }}</span>
+            <ElTag
+              v-for="c in row.categories.slice(0, 3)"
+              :key="c"
+              size="small"
+              effect="plain"
+              class="mr-1"
+              >{{ c }}</ElTag
+            >
+            <span v-if="row.categories.length > 3" class="text-xs text-g-500"
+              >+{{ row.categories.length - 3 }}</span
+            >
           </template>
         </ElTableColumn>
         <ElTableColumn label="加价率" width="100" align="center">
@@ -111,19 +129,27 @@
         </ElTableColumn>
         <ElTableColumn label="有效期至" width="120" align="center">
           <template #default="{ row }">
-            <span :class="{ 'text-danger': isExpiringSoon(row.expiresAt) }">{{ row.expiresAt }}</span>
+            <span :class="{ 'text-danger': isExpiringSoon(row.expiresAt) }">{{
+              row.expiresAt
+            }}</span>
           </template>
         </ElTableColumn>
         <ElTableColumn label="状态" width="100" align="center">
           <template #default="{ row }">
-            <ElTag :type="row.enabled ? 'success' : 'info'" size="small">{{ row.enabled ? '生效中' : '已停用' }}</ElTag>
+            <ElTag :type="row.enabled ? 'success' : 'info'" size="small">{{
+              row.enabled ? '生效中' : '已停用'
+            }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="操作" width="180" align="center" fixed="right">
           <template #default="{ row, $index }">
             <ElButton link type="primary" @click="editAuthConfig(row, $index)">配置</ElButton>
             <ElDivider direction="vertical" />
-            <ElButton link :type="row.enabled ? 'warning' : 'success'" @click="toggleAuthConfig(row)">
+            <ElButton
+              link
+              :type="row.enabled ? 'warning' : 'success'"
+              @click="toggleAuthConfig(row)"
+            >
               {{ row.enabled ? '停用' : '启用' }}
             </ElButton>
             <ElDivider direction="vertical" />
@@ -137,11 +163,22 @@
     <ElDrawer v-model="authDrawerOpen" :size="520" :with-header="false">
       <div class="mp-drawer">
         <div class="mp-drawer__head">
-          <h3 class="m-0">门店授权配置 <span v-if="authForm.storeName" class="text-sm text-g-500 font-normal">· {{ authForm.storeName }}</span></h3>
+          <h3 class="m-0"
+            >门店授权配置
+            <span v-if="authForm.storeName" class="text-sm text-g-500 font-normal"
+              >· {{ authForm.storeName }}</span
+            ></h3
+          >
         </div>
         <ElForm :model="authForm" label-position="top">
           <ElFormItem label="门店">
-            <ElSelect v-model="authForm.storeId" filterable placeholder="选择门店" style="width: 100%" :disabled="authForm.isEditing">
+            <ElSelect
+              v-model="authForm.storeId"
+              filterable
+              placeholder="选择门店"
+              style="width: 100%"
+              :disabled="authForm.isEditing"
+            >
               <ElOption v-for="s in stores" :key="s.id" :value="s.id" :label="s.name" />
             </ElSelect>
           </ElFormItem>
@@ -176,7 +213,13 @@
           </ElFormItem>
           <div class="grid grid-cols-2 gap-3">
             <ElFormItem label="加价率 %">
-              <ElInputNumber v-model="authForm.markupRatio" :min="0" :max="500" :step="5" style="width: 100%" />
+              <ElInputNumber
+                v-model="authForm.markupRatio"
+                :min="0"
+                :max="500"
+                :step="5"
+                style="width: 100%"
+              />
             </ElFormItem>
             <ElFormItem label="有效期至">
               <ElDatePicker
@@ -279,7 +322,18 @@
    * 若商家未创建任何分类则回退到平台分类）。
    * 默认值仅在后端尚未返回 / 调用失败时作为兜底，避免 ElSelect 选项为空。
    */
-  const DEFAULT_CATEGORIES = ['沙发', '茶几', '电视柜', '餐桌', '餐椅', '床', '衣柜', '灯具', '床垫', '地毯']
+  const DEFAULT_CATEGORIES = [
+    '沙发',
+    '茶几',
+    '电视柜',
+    '餐桌',
+    '餐椅',
+    '床',
+    '衣柜',
+    '灯具',
+    '床垫',
+    '地毯'
+  ]
   const availableCategories = ref<string[]>([...DEFAULT_CATEGORIES])
   const availableCategoriesLoading = ref(false)
 
@@ -363,11 +417,13 @@
   function removeAuthConfig(idx: number) {
     ElMessageBox.confirm('撤销该门店授权？该门店将无法继续代理你的商品', '撤销授权', {
       type: 'warning'
-    }).then(() => {
-      authConfigs.value.splice(idx, 1)
-      persistAuthConfigs()
-      ElMessage.success('已撤销')
-    }).catch(() => {})
+    })
+      .then(() => {
+        authConfigs.value.splice(idx, 1)
+        persistAuthConfigs()
+        ElMessage.success('已撤销')
+      })
+      .catch(() => {})
   }
 
   function openCreateAuth() {
@@ -441,10 +497,6 @@
   function authLabelOf(s: StoreItem['authStatus']) {
     return ({ authorized: '已授权', expired: '即将过期', unauthorized: '未授权' } as const)[s]
   }
-  function roleLabelOf(r: StaffItem['role']) {
-    return ({ manager: '店长', cashier: '收银员', sales: '导购', admin: '管理员' } as const)[r]
-  }
-
   function openCreate() {
     Object.assign(form, {
       id: '',
@@ -514,16 +566,16 @@
 
 <style scoped lang="scss">
   .mp-store {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-success {
@@ -539,11 +591,11 @@
   }
 
   .mp-drawer {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 12px;
     height: 100%;
+    padding: 22px;
   }
 
   .mp-drawer__head h3 {
@@ -552,8 +604,8 @@
 
   .mp-drawer__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     margin-top: auto;
   }
 </style>

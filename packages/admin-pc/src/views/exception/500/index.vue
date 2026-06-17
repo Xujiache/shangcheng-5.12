@@ -8,7 +8,9 @@
     <div class="flex-cc max-md:!block max-md:text-center" style="gap: 60px">
       <ThemeSvg :src="imgUrl" size="100%" class="!w-100" />
       <div class="w-100 max-md:mx-auto max-md:mt-10 max-md:w-full max-md:text-center">
-        <p class="text-2xl font-bold mb-2 max-md:text-xl" style="color: #ff4d2d">抱歉，服务器出错了</p>
+        <p class="text-2xl font-bold mb-2 max-md:text-xl" style="color: #ff4d2d"
+          >抱歉，服务器出错了</p
+        >
         <p class="text-sm leading-6 text-g-500 mb-4">
           管理后台在初始化路由或拉取菜单时遇到错误，可以选择以下任一方式恢复：
         </p>
@@ -92,56 +94,63 @@
 
 <style scoped>
   .err-card {
-    margin-top: 12px;
     padding: 12px 16px;
-    background: rgba(255, 77, 45, 0.06);
-    border: 1px solid rgba(255, 77, 45, 0.2);
-    border-radius: 12px;
+    margin-top: 12px;
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    background: rgb(255 77 45 / 6%);
+    border: 1px solid rgb(255 77 45 / 20%);
+    border-radius: 12px;
   }
+
   .err-head {
     display: flex;
-    align-items: center;
     gap: 8px;
+    align-items: center;
     cursor: pointer;
     user-select: none;
   }
+
   .err-icon {
-    color: #ff4d2d;
-    font-size: 18px;
     flex-shrink: 0;
+    font-size: 18px;
+    color: #ff4d2d;
   }
+
   .err-title {
     flex: 1;
     font-size: 13px;
-    color: #cc3300;
+    color: #c30;
     word-break: break-word;
   }
+
   .err-code {
+    padding: 2px 8px;
     font-size: 11px;
     color: #999;
-    padding: 2px 8px;
-    background: rgba(0, 0, 0, 0.04);
+    background: rgb(0 0 0 / 4%);
     border-radius: 4px;
   }
+
   .err-toggle {
-    transition: transform 0.2s ease;
-    color: #999;
     flex-shrink: 0;
+    color: #999;
+    transition: transform 0.2s ease;
   }
+
   .err-toggle.open {
     transform: rotate(180deg);
   }
+
   .err-stack {
-    margin-top: 8px;
-    padding: 8px;
     max-height: 200px;
+    padding: 8px;
+    margin-top: 8px;
     overflow: auto;
     font-size: 11px;
     color: #666;
+    word-break: break-all;
+    white-space: pre-wrap;
     background: #fff;
     border-radius: 8px;
-    white-space: pre-wrap;
-    word-break: break-all;
   }
 </style>

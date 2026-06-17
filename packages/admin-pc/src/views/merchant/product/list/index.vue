@@ -5,7 +5,9 @@
     <div class="mp-page-header">
       <div>
         <h2 class="m-0 text-xl font-semibold">商品管理</h2>
-        <p class="mt-1 text-sm text-g-500">共 {{ filteredProducts.length }} 件商品 · 销售总额 ¥{{ totalSales.toLocaleString() }}</p>
+        <p class="mt-1 text-sm text-g-500"
+          >共 {{ filteredProducts.length }} 件商品 · 销售总额 ¥{{ totalSales.toLocaleString() }}</p
+        >
       </div>
       <div class="flex gap-2">
         <ElButton @click="loadData" :icon="Refresh" plain>刷新</ElButton>
@@ -37,7 +39,11 @@
         <!-- 未登录访客 -->
         <div class="mp-rule-row">
           <div class="mp-rule-row__main">
-            <ArtSvgIcon icon="ri:user-line" class="mp-rule-row__icon" :style="{ color: '#9CA3AF' }" />
+            <ArtSvgIcon
+              icon="ri:user-line"
+              class="mp-rule-row__icon"
+              :style="{ color: '#9CA3AF' }"
+            />
             <div>
               <div class="mp-rule-row__label">未登录访客</div>
               <div class="mp-rule-row__hint">未授权小程序的访客</div>
@@ -58,7 +64,11 @@
         <!-- 普通客户 -->
         <div class="mp-rule-row">
           <div class="mp-rule-row__main">
-            <ArtSvgIcon icon="ri:user-3-line" class="mp-rule-row__icon" :style="{ color: '#3B82F6' }" />
+            <ArtSvgIcon
+              icon="ri:user-3-line"
+              class="mp-rule-row__icon"
+              :style="{ color: '#3B82F6' }"
+            />
             <div>
               <div class="mp-rule-row__label">普通客户</div>
               <div class="mp-rule-row__hint">已登录但未授权门店</div>
@@ -79,7 +89,11 @@
         <!-- 授权门店 -->
         <div class="mp-rule-row">
           <div class="mp-rule-row__main">
-            <ArtSvgIcon icon="ri:store-3-line" class="mp-rule-row__icon" :style="{ color: '#FF4D2D' }" />
+            <ArtSvgIcon
+              icon="ri:store-3-line"
+              class="mp-rule-row__icon"
+              :style="{ color: '#FF4D2D' }"
+            />
             <div>
               <div class="mp-rule-row__label">授权门店</div>
               <div class="mp-rule-row__hint">已申请代理 / 加盟门店</div>
@@ -100,7 +114,11 @@
         <!-- 会员客户 -->
         <div class="mp-rule-row">
           <div class="mp-rule-row__main">
-            <ArtSvgIcon icon="ri:vip-crown-2-line" class="mp-rule-row__icon" :style="{ color: '#A855F7' }" />
+            <ArtSvgIcon
+              icon="ri:vip-crown-2-line"
+              class="mp-rule-row__icon"
+              :style="{ color: '#A855F7' }"
+            />
             <div>
               <div class="mp-rule-row__label">会员客户</div>
               <div class="mp-rule-row__hint">付费 / 邀请制会员</div>
@@ -148,20 +166,19 @@
           :loading="categoriesLoading"
           @change="loadData"
         >
-          <ElOption
-            v-for="c in categoryOptions"
-            :key="c.id"
-            :label="c.name"
-            :value="c.id"
-          />
+          <ElOption v-for="c in categoryOptions" :key="c.id" :label="c.name" :value="c.id" />
         </ElSelect>
         <div class="flex-1"></div>
         <transition name="el-fade-in-linear">
           <div v-if="selectedIds.length" class="mp-batch-bar">
             已选 <b>{{ selectedIds.length }}</b> 项 ·
-            <ElButton text type="primary" size="small" @click="batchUpdate('active')">批量上架</ElButton>
+            <ElButton text type="primary" size="small" @click="batchUpdate('active')"
+              >批量上架</ElButton
+            >
             <ElDivider direction="vertical" />
-            <ElButton text type="primary" size="small" @click="batchUpdate('offline')">批量下架</ElButton>
+            <ElButton text type="primary" size="small" @click="batchUpdate('offline')"
+              >批量下架</ElButton
+            >
             <ElDivider direction="vertical" />
             <ElButton text type="danger" size="small" @click="batchRemove">批量删除</ElButton>
           </div>
@@ -248,18 +265,14 @@
             >
               上架
             </ElButton>
-            <ElButton
-              text
-              type="warning"
-              size="small"
-              v-else
-              @click="toggleStatus(row, 'offline')"
-            >
+            <ElButton text type="warning" size="small" v-else @click="toggleStatus(row, 'offline')">
               下架
             </ElButton>
             <ElDivider direction="vertical" />
             <ElDropdown trigger="click" @command="(c: string) => onMoreAction(c, row)">
-              <ElButton text type="info" size="small">更多 <ElIcon><ArrowDown /></ElIcon></ElButton>
+              <ElButton text type="info" size="small"
+                >更多 <ElIcon><ArrowDown /></ElIcon
+              ></ElButton>
               <template #dropdown>
                 <ElDropdownMenu>
                   <ElDropdownItem command="copy">复制链接</ElDropdownItem>
@@ -299,13 +312,7 @@
   import { useShopPriceVisibility } from '@/composables/useShopPriceVisibility'
   import type { Category, Product } from '@jiujiu/shared/types'
   import { ElMessage, ElMessageBox } from 'element-plus'
-  import {
-    ArrowDown,
-    Download,
-    Plus,
-    Refresh,
-    Search
-  } from '@element-plus/icons-vue'
+  import { ArrowDown, Download, Plus, Refresh, Search } from '@element-plus/icons-vue'
 
   /** 店铺级价格显示规则（localStorage 持久化） */
   const { state: priceRule, reset: resetPriceRuleStore } = useShopPriceVisibility()
@@ -330,7 +337,7 @@
     { label: '草稿', value: 'draft' as const }
   ]
 
-  const status = ref<typeof statusTabs[number]['value']>('all')
+  const status = ref<(typeof statusTabs)[number]['value']>('all')
   const keyword = ref('')
   const categoryId = ref('')
   const page = ref(1)
@@ -378,33 +385,37 @@
     filteredProducts.value.reduce((acc, p) => acc + (p.sales || 0) * (p.priceRetailMin || 0), 0)
   )
 
-  function countOf(s: typeof statusTabs[number]['value']) {
+  function countOf(s: (typeof statusTabs)[number]['value']) {
     if (s === 'all') return allProducts.value.length
     return allProducts.value.filter((p) => p.status === s).length
   }
 
   function statusTypeOf(s: string) {
     return (
-      {
-        active: 'success',
-        'sold-out': 'info',
-        pending: 'warning',
-        rejected: 'danger',
-        draft: 'info'
-      } as Record<string, 'success' | 'info' | 'warning' | 'danger'>
-    )[s] || 'info'
+      (
+        {
+          active: 'success',
+          'sold-out': 'info',
+          pending: 'warning',
+          rejected: 'danger',
+          draft: 'info'
+        } as Record<string, 'success' | 'info' | 'warning' | 'danger'>
+      )[s] || 'info'
+    )
   }
 
   function statusLabelOf(s: string) {
     return (
-      {
-        active: '在售',
-        'sold-out': '已售罄',
-        pending: '待审核',
-        rejected: '已驳回',
-        draft: '草稿'
-      } as Record<string, string>
-    )[s] || s
+      (
+        {
+          active: '在售',
+          'sold-out': '已售罄',
+          pending: '待审核',
+          rejected: '已驳回',
+          draft: '草稿'
+        } as Record<string, string>
+      )[s] || s
+    )
   }
 
   function onSelectionChange(rows: Product[]) {
@@ -430,7 +441,9 @@
     allProducts.value.forEach((p) => {
       if (selectedIds.value.includes(p.id)) p.status = target
     })
-    ElMessage.success(`已批量${target === 'active' ? '上架' : '下架'} ${selectedIds.value.length} 件`)
+    ElMessage.success(
+      `已批量${target === 'active' ? '上架' : '下架'} ${selectedIds.value.length} 件`
+    )
     selectedIds.value = []
   }
 
@@ -490,16 +503,16 @@
 
 <style scoped lang="scss">
   .mp-product-list {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 4px 4px 0;
   }
 
@@ -513,40 +526,40 @@
 
   /* ============ 店铺价格显示规则 ============ */
   .mp-price-rule {
-    border-radius: 14px;
-    border: 1px solid #fde6df;
     background: linear-gradient(135deg, #fff8f5 0%, #fffbf3 100%);
+    border: 1px solid #fde6df;
+    border-radius: 14px;
   }
 
   .mp-price-rule__head {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 14px;
-    border-bottom: 1px dashed #f5d8cd;
-    margin-bottom: 4px;
     gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    margin-bottom: 4px;
+    border-bottom: 1px dashed #f5d8cd;
   }
 
   .mp-price-rule__title {
     display: inline-flex;
-    align-items: center;
     gap: 8px;
+    align-items: center;
     font-size: 16px;
     font-weight: 600;
     color: #303133;
   }
 
   .mp-price-rule__title-icon {
-    color: var(--el-color-primary, #ff4d2d);
     font-size: 20px;
+    color: var(--el-color-primary, #ff4d2d);
   }
 
   .mp-price-rule__sub {
-    font-size: 12px;
-    color: #909399;
     margin-top: 6px;
+    font-size: 12px;
     line-height: 1.6;
+    color: #909399;
   }
 
   .mp-price-rule__list {
@@ -554,16 +567,16 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 6px 24px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: 1fr;
     }
   }
 
   .mp-rule-row {
     display: flex;
+    gap: 12px;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
     padding: 14px 8px;
     border-bottom: 1px dashed #f5d8cd;
 
@@ -574,15 +587,15 @@
 
   .mp-rule-row__main {
     display: flex;
-    align-items: center;
-    gap: 12px;
     flex: 1;
+    gap: 12px;
+    align-items: center;
     min-width: 0;
   }
 
   .mp-rule-row__icon {
-    font-size: 22px;
     flex-shrink: 0;
+    font-size: 22px;
   }
 
   .mp-rule-row__label {
@@ -592,9 +605,9 @@
   }
 
   .mp-rule-row__hint {
+    margin-top: 2px;
     font-size: 12px;
     color: #909399;
-    margin-top: 2px;
   }
 
   .mp-rule-row__action {
@@ -617,25 +630,25 @@
 
   .mp-toolbar__filters {
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
     padding: 4px 0 0;
   }
 
   .mp-batch-bar {
     display: flex;
-    align-items: center;
     gap: 4px;
+    align-items: center;
     padding: 6px 12px;
-    background: rgba(255, 77, 45, 0.08);
-    color: var(--art-gray-700, #374151);
-    border-radius: 8px;
     font-size: 13px;
+    color: var(--art-gray-700, #374151);
+    background: rgb(255 77 45 / 8%);
+    border-radius: 8px;
   }
 
   .mp-table-card {
-    border-radius: 12px;
     flex: 1;
+    border-radius: 12px;
 
     :deep(.el-card__body) {
       padding: 0;
@@ -644,20 +657,20 @@
 
   .mp-product-cell {
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
   }
 
   .image-fallback {
-    width: 56px;
-    height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+    color: #c0c4cc;
     background: #f4f6f8;
     border-radius: 8px;
-    color: #c0c4cc;
-    font-size: 22px;
   }
 
   .mp-product-cell__text {
@@ -666,40 +679,40 @@
   }
 
   .mp-product-cell__name {
+    margin-bottom: 4px;
     font-size: 14px;
     color: var(--art-gray-800, #1f2937);
-    margin-bottom: 4px;
   }
 
   .mp-product-cell__tags {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     align-items: center;
-    flex-wrap: wrap;
   }
 
   .badge-bysize {
     padding: 1px 8px;
-    border-radius: 4px;
     font-size: 11px;
-    background: rgba(255, 77, 45, 0.1);
     color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 77 45 / 10%);
+    border-radius: 4px;
   }
 
   .price {
-    color: var(--el-color-primary, #ff4d2d);
-    font-weight: 600;
     font-size: 14px;
+    font-weight: 600;
+    color: var(--el-color-primary, #ff4d2d);
   }
 
   .price-range {
-    color: var(--art-gray-500, #9ca3af);
     font-size: 12px;
+    color: var(--art-gray-500, #9ca3af);
   }
 
   .low {
-    color: #f56c6c;
     font-weight: 600;
+    color: #f56c6c;
   }
 
   .mp-pagination {

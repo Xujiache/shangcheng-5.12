@@ -1,7 +1,9 @@
 # 经纬科技 5.0
 
-> 多端电商平台：用户小程序 + 商家 APP / PC + 平台 APP / PC
-> 基于 [`原型图/经纬科技原型.html`](./原型图/经纬科技原型.html) 1:1 还原 + 企业级实现
+> 多端电商平台：用户小程序 + 商家 APP / PC + 平台 APP / PC + 门窗利账记账端
+> 基于 [`原型图/九九多端商城原型.html`](./原型图/九九多端商城原型.html) 1:1 还原 + 企业级实现
+>
+> 说明：项目品牌为「经纬科技」（早期代号「九九/Jiujiu」）；原型文件与 `@jiujiu/*` 包名、docker bucket 沿用旧名，刻意保留以免 workspace 链接 / token / bucket 失效。
 
 ## 项目结构
 
@@ -13,7 +15,8 @@
 │   ├── merchant-app/    # 商家 APP（uni-app → Android+iOS）
 │   ├── platform-app/    # 平台 APP（uni-app → Android+iOS）
 │   ├── admin-pc/        # 管理后台（商家 / 平台 / 超管 一体化 · 智能登录）
-│   └── server/          # NestJS 后端
+│   ├── server/          # NestJS 后端
+│   └── ledger-mp/       # 门窗利账 · 原生微信小程序（记账新端，独立 AppID，不依赖 shared）
 ├── docs/                # 6A 流程文档
 ├── deploy/              # Docker Compose / Nginx 配置
 ├── 原型图/              # 原型源文件
@@ -25,14 +28,15 @@
 
 ## 技术栈
 
-| 端                   | 技术                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| 用户端               | uni-app + Vue3 + TS + uview-plus → 微信小程序                                                     |
-| 商家 APP / 平台 APP  | uni-app + Vue3 + TS + uview-plus → Android+iOS                                                    |
-| 管理后台（admin-pc） | Vue3 + Vite + TS + Element Plus + Tailwind CSS（基于 art-lnb，商家 / 平台 / 超管 智能登录三合一） |
-| 共享层               | TS 类型 + Mock 生成器（faker） + Design Tokens                                                    |
-| 后端                 | NestJS + Prisma + PostgreSQL + Redis + MinIO                                                      |
-| 部署                 | Docker Compose（本地一键起全栈）                                                                  |
+| 端                    | 技术                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| 用户端                | uni-app + Vue3 + TS + uview-plus → 微信小程序                                                     |
+| 商家 APP / 平台 APP   | uni-app + Vue3 + TS + uview-plus → Android+iOS                                                    |
+| 管理后台（admin-pc）  | Vue3 + Vite + TS + Element Plus + Tailwind CSS（基于 art-lnb，商家 / 平台 / 超管 智能登录三合一） |
+| 门窗利账（ledger-mp） | 原生微信小程序（TS + Canvas）→ 记账 App，独立 AppID，不依赖共享层                                 |
+| 共享层                | TS 类型 + Mock 生成器（faker） + Design Tokens                                                    |
+| 后端                  | NestJS + Prisma + PostgreSQL + Redis + MinIO                                                      |
+| 部署                  | Docker Compose（本地一键起全栈）                                                                  |
 
 ## 快速开始
 
@@ -62,6 +66,12 @@ cp .env.example .env
 # 启动后端依赖（postgres + redis + minio）
 docker compose -f deploy/docker-compose.yml up -d
 
+# 初始化数据库表：prisma/migrations 已被 .gitignore，直接按 schema 建表
+pnpm --filter @jiujiu/server exec prisma db push
+# 可选：灌入种子数据（需先在 .env 设 SEED_DEFAULT_PASSWORD，≥8 位）
+pnpm --filter @jiujiu/server prisma:seed
+# 增量补表 / ledger 相关表的执行顺序见 deploy/README.md
+
 # 跑后端
 pnpm dev:server
 
@@ -83,12 +93,16 @@ echo "VITE_API_BASE_URL=http://localhost:3001" > packages/platform-app/.env.loca
 
 ## 文档目录
 
-| 文档                                                     | 说明                                   |
-| -------------------------------------------------------- | -------------------------------------- |
-| [ALIGNMENT](./docs/商城5.0还原/ALIGNMENT_商城5.0还原.md) | 需求对齐                               |
-| [CONSENSUS](./docs/商城5.0还原/CONSENSUS_商城5.0还原.md) | 技术共识                               |
-| [DESIGN](./docs/商城5.0还原/DESIGN_商城5.0还原.md)       | 架构设计（架构图 / ER / API / 数据流） |
-| [TASK](./docs/商城5.0还原/TASK_商城5.0还原.md)           | 原子任务拆分（131 个）                 |
+| 文档                                                     | 说明                                     |
+| -------------------------------------------------------- | ---------------------------------------- |
+| [ALIGNMENT](./docs/商城5.0还原/ALIGNMENT_商城5.0还原.md) | 需求对齐                                 |
+| [CONSENSUS](./docs/商城5.0还原/CONSENSUS_商城5.0还原.md) | 技术共识                                 |
+| [DESIGN](./docs/商城5.0还原/DESIGN_商城5.0还原.md)       | 架构设计（架构图 / ER / API / 数据流）   |
+| [TASK](./docs/商城5.0还原/TASK_商城5.0还原.md)           | 原子任务拆分（131 个）                   |
+| [门窗利账](./docs/门窗利账/)                             | ledger-mp 端 6A 全流程文档               |
+| [docs 索引](./docs/README.md)                            | 全部任务文档总览（含历史归档与操作手册） |
+
+> 部署与建表说明见 [deploy/README.md](./deploy/README.md)。
 
 ## License
 

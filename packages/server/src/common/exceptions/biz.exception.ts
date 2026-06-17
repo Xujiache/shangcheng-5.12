@@ -1,6 +1,14 @@
 import { HttpException, HttpStatus } from '@nestjs/common'
 
-/** 业务错误码（与 @jiujiu/shared ErrorCode 对齐） */
+/**
+ * 业务错误码。成员名与数值必须与 @jiujiu/shared 的 ErrorCode 逐项一致
+ * （已核验：SUCCESS=0 / BUSINESS_ERROR=1000 / … / MEMBER_EXPIRED=6001，完全相同）。
+ *
+ * 为什么是手抄而非 `export const BizCode = ErrorCode` 复用：@jiujiu/shared 的 exports
+ * 指向 src/*.ts（面向 Vite/类型检查），后端目前对 shared 零运行时依赖；直接复用会让
+ * 后端运行时 require 一个 .ts 入口（node 无法解析）。待 shared 改为 dist 解析后再统一。
+ * 在此之前，改动本枚举请同步 packages/shared/src/types/common.ts。
+ */
 export enum BizCode {
   SUCCESS = 0,
   BUSINESS_ERROR = 1000,
@@ -28,7 +36,8 @@ export class BizException extends HttpException {
 }
 
 function mapHttpStatus(code: number): HttpStatus {
-  if (code === BizCode.UNAUTHORIZED || code === BizCode.TOKEN_EXPIRED) return HttpStatus.UNAUTHORIZED
+  if (code === BizCode.UNAUTHORIZED || code === BizCode.TOKEN_EXPIRED)
+    return HttpStatus.UNAUTHORIZED
   if (code === BizCode.FORBIDDEN) return HttpStatus.FORBIDDEN
   if (code === BizCode.NOT_FOUND) return HttpStatus.NOT_FOUND
   if (code === BizCode.INVALID_PARAMS) return HttpStatus.BAD_REQUEST

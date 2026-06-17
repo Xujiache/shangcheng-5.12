@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiConsumes, ApiTags } from '@nestjs/swagger'
 import { AppReleaseService } from './app-release.service'
@@ -18,18 +29,18 @@ export class AppReleaseController {
   @Post('p/app-releases')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  create(
-    @UploadedFile() file: any,
-    @Body() body: any,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.svc.create(file, {
-      platform: body.platform,
-      version: body.version,
-      versionCode: Number(body.versionCode),
-      changelog: body.changelog,
-      force: body.force === true || body.force === 'true',
-    }, user?.sub)
+  create(@UploadedFile() file: any, @Body() body: any, @CurrentUser() user: AuthUser) {
+    return this.svc.create(
+      file,
+      {
+        platform: body.platform,
+        version: body.version,
+        versionCode: Number(body.versionCode),
+        changelog: body.changelog,
+        force: body.force === true || body.force === 'true',
+      },
+      user?.sub,
+    )
   }
 
   @UseGuards(RolesGuard)

@@ -5,8 +5,9 @@
       <div>
         <h2 class="m-0 text-xl font-semibold">代理厂家</h2>
         <p class="mt-1 text-sm text-g-500">
-          已代理 {{ factoryStats.length }} 家厂家 · 共 {{ list.length }} 件代理商品 · 加价收益
-          ¥{{ totalMarkup.toLocaleString() }}
+          已代理 {{ factoryStats.length }} 家厂家 · 共 {{ list.length }} 件代理商品 · 加价收益 ¥{{
+            totalMarkup.toLocaleString()
+          }}
         </p>
       </div>
       <div class="flex gap-2">
@@ -87,7 +88,9 @@
             <ElAvatar :src="f.logo" :size="48" />
             <div class="flex-1 min-w-0">
               <div class="font-semibold truncate">{{ f.factoryName }}</div>
-              <div class="text-xs text-g-500 mt-1">最近代理：{{ formatRelative(f.lastAppliedAt) }}</div>
+              <div class="text-xs text-g-500 mt-1"
+                >最近代理：{{ formatRelative(f.lastAppliedAt) }}</div
+              >
             </div>
             <ArtSvgIcon icon="ri:arrow-right-s-line" class="mp-factory-card__arrow" />
           </div>
@@ -230,18 +233,14 @@
           <ElTableColumn label="操作" width="160" fixed="right" align="center">
             <template #default="{ row }">
               <template v-if="!row.status">
-                <ElButton text type="primary" size="small" @click="onListOne(row)">
-                  上架
-                </ElButton>
+                <ElButton text type="primary" size="small" @click="onListOne(row)"> 上架 </ElButton>
               </template>
               <template v-else-if="row.status === 'approved'">
                 <ElButton text type="primary" size="small" @click="onAdjustMarkup(row)">
                   改价
                 </ElButton>
                 <ElDivider direction="vertical" />
-                <ElButton text type="warning" size="small" @click="onOffline(row)">
-                  下架
-                </ElButton>
+                <ElButton text type="warning" size="small" @click="onOffline(row)"> 下架 </ElButton>
               </template>
               <template v-else-if="row.status === 'offline'">
                 <ElButton text type="primary" size="small" @click="onReup(row)">重新上架</ElButton>
@@ -271,9 +270,7 @@
         <div class="mp-price-field">
           <label class="mp-price-field__label">
             加价
-            <span class="mp-price-field__sub">
-              （任意正数 · 后面下拉选 % 或 ¥）
-            </span>
+            <span class="mp-price-field__sub"> （任意正数 · 后面下拉选 % 或 ¥） </span>
           </label>
           <ElInput
             v-model="priceDialog.valueStr"
@@ -328,9 +325,7 @@
         <div v-else-if="priceDialog.batchCount > 0" class="mp-price-batch">
           将影响 <b class="text-primary">{{ priceDialog.batchCount }}</b> 件商品；逐件按当前出厂价
           {{
-            priceDialog.mode === 'ratio'
-              ? `× (1 + ${parsedPriceValue}%)`
-              : `+ ¥${parsedPriceValue}`
+            priceDialog.mode === 'ratio' ? `× (1 + ${parsedPriceValue}%)` : `+ ¥${parsedPriceValue}`
           }}
           重算零售价。
         </div>
@@ -539,20 +534,24 @@
 
   /* ====== 单行操作 ====== */
   function statusTypeOf(s: AgencyApplication['status']) {
-    return ({
-      pending: 'warning',
-      approved: 'success',
-      rejected: 'danger',
-      offline: 'info'
-    } as const)[s]
+    return (
+      {
+        pending: 'warning',
+        approved: 'success',
+        rejected: 'danger',
+        offline: 'info'
+      } as const
+    )[s]
   }
   function statusLabelOf(s: AgencyApplication['status']) {
-    return ({
-      pending: '待审核',
-      approved: '已通过',
-      rejected: '已驳回',
-      offline: '已下架'
-    } as const)[s]
+    return (
+      {
+        pending: '待审核',
+        approved: '已通过',
+        rejected: '已驳回',
+        offline: '已下架'
+      } as const
+    )[s]
   }
 
   /** 根据出厂价 + 模式 + 数值，统一算新零售价 */
@@ -808,7 +807,11 @@
     for (const row of selectedRows.value) {
       const target = list.value.find((a) => a.id === row.id)
       if (target && target.status === 'approved') {
-        const { myRetailPrice, markupRatio } = computeRetail(target.factoryPrice, res.mode, res.value)
+        const { myRetailPrice, markupRatio } = computeRetail(
+          target.factoryPrice,
+          res.mode,
+          res.value
+        )
         target.markupRatio = markupRatio
         target.myRetailPrice = myRetailPrice
         silentPatch(target.id, { markupRatio, myRetailPrice })
@@ -880,22 +883,22 @@
 
 <style scoped lang="scss">
   .mp-agency {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-sync-bar {
+    background: linear-gradient(135deg, rgb(255 77 45 / 4%), rgb(255 156 110 / 2%));
+    border: 1px solid rgb(255 77 45 / 20%);
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(255, 77, 45, 0.04), rgba(255, 156, 110, 0.02));
-    border: 1px solid rgba(255, 77, 45, 0.2);
 
     :deep(.el-card__body) {
       padding: 14px 18px;
@@ -904,22 +907,22 @@
 
   .mp-sync-bar__row {
     display: flex;
-    align-items: center;
-    gap: 16px;
     flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
   }
 
   .mp-sync-bar__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: rgba(255, 77, 45, 0.12);
-    color: var(--el-color-primary, #ff4d2d);
-    font-size: 22px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+    color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 77 45 / 12%);
+    border-radius: 12px;
   }
 
   .mp-factory-grid {
@@ -929,32 +932,32 @@
   }
 
   .mp-factory-card {
-    border: 1px solid #ebeef5;
-    border-radius: 12px;
     padding: 16px;
     cursor: pointer;
-    transition: all 0.18s ease;
     background: #fff;
+    border: 1px solid #ebeef5;
+    border-radius: 12px;
+    transition: all 0.18s ease;
 
     &:hover {
       border-color: var(--el-color-primary, #ff4d2d);
-      box-shadow: 0 4px 16px rgba(255, 77, 45, 0.12);
+      box-shadow: 0 4px 16px rgb(255 77 45 / 12%);
       transform: translateY(-2px);
     }
   }
 
   .mp-factory-card__head {
     display: flex;
-    align-items: center;
     gap: 12px;
+    align-items: center;
     padding-bottom: 12px;
     border-bottom: 1px dashed #f0f0f0;
   }
 
   .mp-factory-card__arrow {
-    color: #c0c4cc;
-    font-size: 20px;
     flex-shrink: 0;
+    font-size: 20px;
+    color: #c0c4cc;
   }
 
   .mp-factory-card__stats {
@@ -975,17 +978,19 @@
   }
 
   .mp-stat__label {
+    margin-top: 2px;
     font-size: 11px;
     color: #909399;
-    margin-top: 2px;
   }
 
   .text-success {
     color: var(--el-color-success, #67c23a);
   }
+
   .text-warning {
     color: var(--el-color-warning, #e6a23c);
   }
+
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
@@ -1001,17 +1006,17 @@
   }
 
   .mp-factory-detail {
-    padding: 20px;
-    height: 100%;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    height: 100%;
+    padding: 20px;
   }
 
   .mp-factory-detail__head {
     display: flex;
-    align-items: center;
     gap: 14px;
+    align-items: center;
     padding-bottom: 14px;
     border-bottom: 1px solid #ebeef5;
   }
@@ -1028,7 +1033,7 @@
     justify-content: space-between;
     padding: 10px 14px;
     background: #fef6f4;
-    border: 1px solid rgba(255, 77, 45, 0.3);
+    border: 1px solid rgb(255 77 45 / 30%);
     border-radius: 8px;
   }
 
@@ -1060,17 +1065,17 @@
 
   .mp-price-field__label {
     display: block;
-    font-size: 13px;
-    color: #303133;
-    font-weight: 500;
     margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #303133;
   }
 
   .mp-price-field__sub {
-    font-size: 12px;
-    color: #909399;
-    font-weight: 400;
     margin-left: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    color: #909399;
   }
 
   .mp-price-field__hint {
@@ -1080,19 +1085,19 @@
   }
 
   .mp-price-preview {
-    background: #fafbfc;
-    border: 1px dashed #ebeef5;
-    border-radius: 10px;
-    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 14px 16px;
+    background: #fafbfc;
+    border: 1px dashed #ebeef5;
+    border-radius: 10px;
   }
 
   .mp-price-preview__row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     font-size: 13px;
 
     &--accent {
@@ -1107,18 +1112,18 @@
   }
 
   .mp-price-preview__arrow {
-    text-align: center;
-    color: #c0c4cc;
     font-size: 16px;
     line-height: 1;
+    color: #c0c4cc;
+    text-align: center;
   }
 
   .mp-price-batch {
-    background: #fef6f4;
-    border: 1px solid rgba(255, 77, 45, 0.2);
-    border-radius: 8px;
     padding: 12px 14px;
     font-size: 13px;
     color: #606266;
+    background: #fef6f4;
+    border: 1px solid rgb(255 77 45 / 20%);
+    border-radius: 8px;
   }
 </style>

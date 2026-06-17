@@ -35,12 +35,21 @@
     <!-- Tab + 表 -->
     <ElCard shadow="never" class="pf-toolbar">
       <ElTabs v-model="tab" @tab-change="reload">
-        <ElTabPane v-for="t in tabs" :key="t.value" :label="`${t.label} (${countOf(t.value)})`" :name="t.value" />
+        <ElTabPane
+          v-for="t in tabs"
+          :key="t.value"
+          :label="`${t.label} (${countOf(t.value)})`"
+          :name="t.value"
+        />
       </ElTabs>
     </ElCard>
 
     <ElCard shadow="never">
-      <ElTable :data="filtered" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filtered"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="商户" min-width="240">
           <template #default="{ row }">
             <div class="flex items-center gap-2">
@@ -54,7 +63,11 @@
         </ElTableColumn>
         <ElTableColumn label="类型" width="80" align="center">
           <template #default="{ row }">
-            <ElTag :type="row.type === 'factory' ? 'danger' : 'warning'" size="small" effect="plain">
+            <ElTag
+              :type="row.type === 'factory' ? 'danger' : 'warning'"
+              size="small"
+              effect="plain"
+            >
               {{ row.type === 'factory' ? '厂家' : '门店' }}
             </ElTag>
           </template>
@@ -127,11 +140,17 @@
         <ElDescriptions :column="1" border>
           <ElDescriptionsItem label="法人">{{ current.legalRep }}</ElDescriptionsItem>
           <ElDescriptionsItem label="信用代码">{{ current.creditCode }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="联系人">{{ current.contact }} · {{ current.contactPhone }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="联系人"
+            >{{ current.contact }} · {{ current.contactPhone }}</ElDescriptionsItem
+          >
           <ElDescriptionsItem label="地区">{{ current.region }}</ElDescriptionsItem>
           <ElDescriptionsItem label="地址">{{ current.address }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="经营品类">{{ current.categories.join('、') }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="累计 GMV">¥{{ formatWan(current.totalGmv || 0) }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="经营品类">{{
+            current.categories.join('、')
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="累计 GMV"
+            >¥{{ formatWan(current.totalGmv || 0) }}</ElDescriptionsItem
+          >
           <ElDescriptionsItem label="信用等级">{{ current.credit || 'B' }} 级</ElDescriptionsItem>
           <ElDescriptionsItem label="驳回率">{{ current.rejectRate ?? 0 }}%</ElDescriptionsItem>
         </ElDescriptions>
@@ -152,11 +171,7 @@
 </template>
 
 <script setup lang="ts">
-  import {
-    fetchPlatformMerchants,
-    pauseMerchant,
-    resumeMerchant
-  } from '@/api/platform-business'
+  import { fetchPlatformMerchants, pauseMerchant, resumeMerchant } from '@/api/platform-business'
   import type { Merchant } from '@jiujiu/shared/types'
   import { formatWan } from '@jiujiu/shared/utils'
   import { ElMessage, ElMessageBox } from 'element-plus'
@@ -182,18 +197,44 @@
   const filtered = computed(() => all.value)
 
   const statsCards = computed(() => [
-    { key: 'total', icon: 'ri:store-2-line', label: '商户总数', value: rawAll.value.length, color: '#FF4D2D' },
-    { key: 'factory', icon: 'ri:building-line', label: '厂家', value: rawAll.value.filter((m) => m.type === 'factory' && m.status === 'active').length, color: '#FF7A45' },
-    { key: 'store', icon: 'ri:store-3-line', label: '门店', value: rawAll.value.filter((m) => m.type === 'store' && m.status === 'active').length, color: '#FAAD14' },
-    { key: 'disabled', icon: 'ri:forbid-line', label: '已停用', value: rawAll.value.filter((m) => m.status === 'disabled').length, color: '#86909C' }
+    {
+      key: 'total',
+      icon: 'ri:store-2-line',
+      label: '商户总数',
+      value: rawAll.value.length,
+      color: '#FF4D2D'
+    },
+    {
+      key: 'factory',
+      icon: 'ri:building-line',
+      label: '厂家',
+      value: rawAll.value.filter((m) => m.type === 'factory' && m.status === 'active').length,
+      color: '#FF7A45'
+    },
+    {
+      key: 'store',
+      icon: 'ri:store-3-line',
+      label: '门店',
+      value: rawAll.value.filter((m) => m.type === 'store' && m.status === 'active').length,
+      color: '#FAAD14'
+    },
+    {
+      key: 'disabled',
+      icon: 'ri:forbid-line',
+      label: '已停用',
+      value: rawAll.value.filter((m) => m.status === 'disabled').length,
+      color: '#86909C'
+    }
   ])
 
   const rawAll = ref<Merchant[]>([])
 
   function countOf(t: TabKey) {
     if (t === 'all') return rawAll.value.filter((m) => m.status !== 'pending').length
-    if (t === 'factory') return rawAll.value.filter((m) => m.type === 'factory' && m.status === 'active').length
-    if (t === 'store') return rawAll.value.filter((m) => m.type === 'store' && m.status === 'active').length
+    if (t === 'factory')
+      return rawAll.value.filter((m) => m.type === 'factory' && m.status === 'active').length
+    if (t === 'store')
+      return rawAll.value.filter((m) => m.type === 'store' && m.status === 'active').length
     return rawAll.value.filter((m) => m.status === 'disabled').length
   }
 
@@ -207,7 +248,9 @@
   }
 
   async function onPerm(_m: Merchant, cmd: string) {
-    ElMessage.success(`已设置：${({ all: '授权全部', base: '仅基础', view: '仅查看', custom: '自定义' } as Record<string, string>)[cmd]}`)
+    ElMessage.success(
+      `已设置：${({ all: '授权全部', base: '仅基础', view: '仅查看', custom: '自定义' } as Record<string, string>)[cmd]}`
+    )
   }
 
   async function onToggle(m: Merchant) {
@@ -240,23 +283,24 @@
 
 <style scoped lang="scss">
   .pf-merchant {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     flex-wrap: wrap;
     gap: 12px;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
+
   .text-g-500 {
     color: #6b7280;
   }
@@ -266,7 +310,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -275,35 +319,35 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 16px 18px;
       display: flex;
-      align-items: center;
       gap: 14px;
+      align-items: center;
+      padding: 16px 18px;
     }
   }
 
   .pf-kpi__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    height: 44px;
     font-size: 22px;
-    flex-shrink: 0;
+    border-radius: 12px;
   }
 
   .pf-kpi__num {
     font-size: 26px;
     font-weight: 700;
-    color: var(--art-gray-800, #1f2937);
     line-height: 1;
+    color: var(--art-gray-800, #1f2937);
   }
 
   .pf-kpi__label {
+    margin-top: 4px;
     font-size: 12px;
     color: var(--art-gray-500, #6b7280);
-    margin-top: 4px;
   }
 
   .pf-toolbar {
@@ -315,16 +359,16 @@
   }
 
   .pf-detail {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 22px;
   }
 
   .pf-detail__head {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
+    justify-content: space-between;
   }
 
   .pf-qual-grid {
@@ -337,8 +381,8 @@
   .pf-qual {
     width: 100%;
     aspect-ratio: 3 / 4;
-    border-radius: 8px;
-    border: 1px solid var(--art-border-color, #e5e7eb);
     overflow: hidden;
+    border: 1px solid var(--art-border-color, #e5e7eb);
+    border-radius: 8px;
   }
 </style>
