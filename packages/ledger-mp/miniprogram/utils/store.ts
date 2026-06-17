@@ -77,6 +77,33 @@ export function setGlass(v: boolean) {
   wx.setStorageSync(GLASS_KEY, v)
 }
 
+/* ---- 玻璃通透度（0-100，越大越通透/越透出背景光，越小越磨砂厚实），默认 50 ≈ 现状 ---- */
+const GLASS_OPACITY_KEY = 'ledger_glass_opacity'
+export function getGlassOpacity(): number {
+  const v = wx.getStorageSync(GLASS_OPACITY_KEY)
+  if (v === '' || v === undefined || v === null) return 50
+  const n = Number(v)
+  return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : 50
+}
+export function setGlassOpacity(t: number) {
+  wx.setStorageSync(GLASS_OPACITY_KEY, Math.min(100, Math.max(0, Math.round(t))))
+}
+/** 由通透度生成「顶亮底暗」半透明镜面渐变：t 越大填充越淡(越通透)。topMax=t最小(最实)时上沿不透明度，ratio=下沿/上沿。 */
+function glassGradient(t: number, topMax: number, ratio: number): string {
+  const f = 1 - Math.min(100, Math.max(0, t)) / 100 // 填充强度：t=0 最实, t=100 最透
+  const top = +(0.14 + f * (topMax - 0.14)).toFixed(3)
+  const bot = +(top * ratio).toFixed(3)
+  return `linear-gradient(180deg, rgba(255,255,255,${top}) 0%, rgba(255,255,255,${bot}) 100%)`
+}
+/** 导航/标题栏玻璃背景（默认 t=50 ≈ 现状 0.5/0.26）。 */
+export function glassNavBg(t: number = getGlassOpacity()): string {
+  return glassGradient(t, 0.88, 0.52)
+}
+/** 底部 tabBar 玻璃背景（默认 t=50 ≈ 现状 0.55/0.32）。 */
+export function glassTabBg(t: number = getGlassOpacity()): string {
+  return glassGradient(t, 0.96, 0.58)
+}
+
 /* ---- 小程序 LOGO（管理后台 system_settings.site.logo 下发，登录/关于页展示，本地缓存兜底） ---- */
 const LOGO_KEY = 'ledger_logo'
 export function getLogo(): string {

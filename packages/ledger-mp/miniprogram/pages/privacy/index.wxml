@@ -15,6 +15,27 @@
           <view class="tg__knob"></view>
         </view>
       </view>
+      <view class="lz-row">
+        <view class="lz-row__icon"><lz-icon name="cube" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">玻璃通透度</view>
+          <view class="lz-row__sub">{{glassOn ? '向右更通透 · 透出背景光；向左更磨砂厚实' : '需先开启沉浸光感'}}</view>
+        </view>
+      </view>
+      <view wx:if="{{glassOn}}" style="padding: 0 14px 12px;">
+        <slider
+          min="0"
+          max="100"
+          step="5"
+          value="{{glassOpacity}}"
+          activeColor="#0e7c66"
+          backgroundColor="#d6e3dd"
+          block-size="20"
+          show-value
+          bindchanging="onOpacityChanging"
+          bindchange="onOpacityChange"
+        />
+      </view>
       <view class="lz-row lz-row--last">
         <view class="lz-row__icon"><lz-icon name="device" size="17" color="accent" /></view>
         <view class="lz-row__main">

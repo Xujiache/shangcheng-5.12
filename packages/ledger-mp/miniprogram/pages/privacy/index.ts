@@ -9,6 +9,8 @@ import {
   setGlass,
   getFxMode,
   setFxMode,
+  getGlassOpacity,
+  setGlassOpacity,
 } from '../../utils/store'
 
 interface ToggleItem {
@@ -54,6 +56,7 @@ Page({
   data: {
     items: DEFS.map((it) => ({ ...it })),
     glassOn: true,
+    glassOpacity: 50, // 玻璃通透度 0-100（越大越通透）
     fxMode: 'normal' as 'normal' | 'max',
     fxOptions: [
       { value: 'normal', label: '普通模式' },
@@ -71,7 +74,12 @@ Page({
   },
 
   onLoad() {
-    this.setData({ cacheSize: calcCache(), glassOn: getGlass(), fxMode: getFxMode() })
+    this.setData({
+      cacheSize: calcCache(),
+      glassOn: getGlass(),
+      glassOpacity: getGlassOpacity(),
+      fxMode: getFxMode(),
+    })
     this.load()
   },
 
@@ -81,6 +89,17 @@ Page({
     setGlass(next)
     this.setData({ glassOn: next })
     wx.showToast({ title: next ? '已开启沉浸光感' : '已关闭沉浸光感', icon: 'none' })
+  },
+
+  // 玻璃通透度：拖动时实时回显，松手落定写本地；切回各页 lz-header/tabBar 的 show 读取生效
+  onOpacityChanging(e: any) {
+    this.setData({ glassOpacity: e.detail.value })
+  },
+  onOpacityChange(e: any) {
+    const v = e.detail.value
+    setGlassOpacity(v)
+    this.setData({ glassOpacity: v })
+    wx.showToast({ title: '玻璃通透度已调整', icon: 'none' })
   },
 
   // 性能模式：本地偏好；各页 lz-bg 在 pageLifetimes.show 读取即生效
