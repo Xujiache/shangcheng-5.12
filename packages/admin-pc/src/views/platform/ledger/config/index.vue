@@ -112,7 +112,7 @@
             <ElSwitch v-model="row.trial" />
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="72">
+        <ElTableColumn label="操作" min-width="72">
           <template #default="{ $index }">
             <ElButton type="danger" link @click="removePlan($index)">删除</ElButton>
           </template>
@@ -255,7 +255,7 @@
   }
 
   .pf-cfg-card {
-    max-width: 720px;
+    max-width: 860px;
   }
 
   .pf-cfg-title {
