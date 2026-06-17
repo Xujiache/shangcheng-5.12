@@ -92,7 +92,15 @@ jobs:
         run: pnpm lint
 
       - name: Typecheck
-        run: pnpm typecheck
+        # 防 vue-tsc 插件路径失效导致 typecheck 静默降级为「假绿灯」：
+        # 一旦输出里出现 "Load plugin failed"，即便退出码为 0 也判失败。
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee typecheck.log
+          if grep -q "Load plugin failed" typecheck.log; then
+            echo "::error::vue-tsc 插件加载失败——typecheck 可能已降级为假绿灯，请修复 tsconfig"
+            exit 1
+          fi
 
       - name: Unit tests (server)
         # 硬门禁：server/test/ 已补齐 13 套真实用例（234 个），覆盖资金安全核心

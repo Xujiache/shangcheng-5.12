@@ -10,9 +10,6 @@
     "jsx": "preserve",
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "vueCompilerOptions": {
-    "plugins": ["@dcloudio/uni-cli-shared/lib/plugin/vue-tsc-plugin"]
-  },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.json"],
   "exclude": ["node_modules", "dist", "unpackage"]
 }
