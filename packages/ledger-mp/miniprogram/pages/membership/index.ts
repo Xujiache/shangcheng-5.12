@@ -152,9 +152,14 @@ Page({
       wx.showToast({ title: '您已是永久会员', icon: 'none' })
       return
     }
-    // 体验卡限领1次：已领过 → 拦截（后端也会拒，这里提前提示）
+    // 体验卡限领1次：已领过 → 弹窗拦截（后端也会拒，这里提前给出醒目提醒）
     if (sel && (sel as any).trial && this.data.m && this.data.m.trialClaimed) {
-      wx.showToast({ title: '体验卡仅限一次，您已领取', icon: 'none' })
+      wx.showModal({
+        title: '无法重复购买',
+        content: '体验卡每个账号仅限购买一次，您已购买过，无需重复下单。',
+        showCancel: false,
+        confirmText: '知道了',
+      })
       return
     }
     // 免费体验卡 → 一次性领取（不走支付）；付费体验卡走支付（后端拦一次性）
