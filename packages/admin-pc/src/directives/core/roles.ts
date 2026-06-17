@@ -13,17 +13,20 @@
  *
  * ## 使用示例
  *
+ * 注意：角色取值必须与 store/modules/user.ts 里 getUserInfo.roles 的真实值一致
+ * （本项目为 'super-admin' | 'platform' | 'merchant' 等，而非 R_SUPER/R_ADMIN 之类占位）。
+ *
  * ```vue
  * <template>
  *   <!-- 单个角色 - 只有超级管理员可见 -->
- *   <el-button v-roles="'R_SUPER'">超级管理员功能</el-button>
+ *   <el-button v-roles="'super-admin'">超级管理员功能</el-button>
  *
- *   <!-- 多个角色 - 超级管理员或普通管理员可见 -->
- *   <el-button v-roles="['R_SUPER', 'R_ADMIN']">管理员功能</el-button>
+ *   <!-- 多个角色 - 平台或超级管理员可见 -->
+ *   <el-button v-roles="['platform', 'super-admin']">平台管理功能</el-button>
  *
  *   <!-- 应用到任意元素 -->
- *   <div v-roles="['R_SUPER', 'R_ADMIN', 'R_USER']">
- *     所有登录用户可见的内容
+ *   <div v-roles="['merchant', 'platform', 'super-admin']">
+ *     商家或平台角色可见的内容
  *   </div>
  * </template>
  * ```
