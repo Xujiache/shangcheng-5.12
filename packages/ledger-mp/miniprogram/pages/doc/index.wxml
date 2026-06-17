@@ -10,6 +10,6 @@
       <view wx:for="{{item.p}}" wx:for-item="para" wx:key="*this" class="doc__p">{{para}}</view>
     </view>
 
-    <view class="doc__foot">本文档为示例条款，最终解释权归门窗利账所有。</view>
+    <view class="doc__foot">最终解释权归门窗利账运营方所有。</view>
   </view>
 </view>

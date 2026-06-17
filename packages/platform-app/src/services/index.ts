@@ -1081,14 +1081,13 @@ export const ticketService = {
 
 // ============ 售后/退款审核（平台维度) ============
 /**
- * 平台维度的售后/退款审核 —— 对应 prisma.Refund 表,后端预期暴露:
- *   GET    /api/v1/p/refunds?status=&merchantId=&page=&pageSize=
- *   POST   /api/v1/p/refunds/:id/agree      (refundAmount?)
- *   POST   /api/v1/p/refunds/:id/reject     (reason)
+ * 平台维度的售后/退款审核 —— 对应 prisma.Refund 表，后端已实现：
+ *   GET    /api/v1/p/refunds?status=&merchantId=&page=&pageSize=   (platform.controller refunds)
+ *   POST   /api/v1/p/refunds/:id/agree      (refundAmount?)        (agreeRefund)
+ *   POST   /api/v1/p/refunds/:id/reject     (reason)               (rejectRefundPlat)
  *
- * 该接口集合**当前后端未完整实现**(只有商家维度 `/m/refunds`),
- * 由 Agent E 在后端补 PlatformController.refunds() 路由后即可工作。
- * 调用方在接口未就绪期间应显示空态 + 重试,严禁渲染任何假数据。
+ * 同意全额退款会真调微信退款并把 Order.status 回写 refunded（见 platform.service）。
+ * 调用方仍应对空数据显示空态，严禁渲染任何假数据。
  */
 export type RefundStatus = 'pending' | 'agreed' | 'rejected' | 'in_progress' | 'completed'
 export interface RefundRow {
