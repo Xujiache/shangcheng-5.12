@@ -35,9 +35,9 @@ const TABS: { key: TabKey; label: string }[] = [
 /**
  * 订单状态展示元数据。
  *
- * 当前后端业务路径只把订单推进到 after_sale(售后中);"已退款"由商家端的 Refund 单独维护,
- * 不会回写到 Order.status='refunded'。所以本端**不展示** refunded 状态,避免列表出现
- * 永远不会出现的"已退款"标签误导用户(后续若后端增加退款完成回写,再补回来)。
+ * 平台端同意退款后，全额退款会把 Order.status 回写为 refunded
+ * （见 server platform.service.ts 的 approveRefund/退款链路），故本端需展示「已退款」，
+ * 否则真退款后列表会回退到英文 fallback。部分退款保留原状态，不置 refunded。
  */
 const STATUS_META: Record<string, { label: string; tint: string }> = {
   pending_payment: { label: '待付款', tint: '#FF4D2D' },
@@ -46,6 +46,7 @@ const STATUS_META: Record<string, { label: string; tint: string }> = {
   completed: { label: '已完成', tint: '#52C41A' },
   cancelled: { label: '已取消', tint: '#86909C' },
   after_sale: { label: '售后中', tint: '#FAAD14' },
+  refunded: { label: '已退款', tint: '#86909C' },
 }
 
 onLoad((options) => {
