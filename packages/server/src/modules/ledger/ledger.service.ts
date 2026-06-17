@@ -99,10 +99,15 @@ export class LedgerService {
       avatar: u.avatar,
       mustReset: u.mustReset,
       wxBound: !!u.wxOpenid,
-      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
-        perpetual: u.membership?.perpetual,
-        trialClaimedAt: u.membership?.trialClaimedAt,
-      }),
+      membership: deriveMembership(
+        u.membership?.expiresAt ?? null,
+        u.membership?.lastPlanKey,
+        new Date(),
+        {
+          perpetual: u.membership?.perpetual,
+          trialClaimedAt: u.membership?.trialClaimedAt,
+        },
+      ),
     }
   }
 
@@ -216,10 +221,15 @@ export class LedgerService {
       include: { membership: true },
     })
     if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
-    const mem = deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
-      perpetual: u.membership?.perpetual,
-      trialClaimedAt: u.membership?.trialClaimedAt,
-    })
+    const mem = deriveMembership(
+      u.membership?.expiresAt ?? null,
+      u.membership?.lastPlanKey,
+      new Date(),
+      {
+        perpetual: u.membership?.perpetual,
+        trialClaimedAt: u.membership?.trialClaimedAt,
+      },
+    )
     if (mem.active) {
       return {
         allowed: true,

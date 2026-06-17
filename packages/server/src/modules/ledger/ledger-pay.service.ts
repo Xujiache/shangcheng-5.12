@@ -143,7 +143,11 @@ export class LedgerPayService {
       const after = computeGrantExpiry(before, order.days, now)
       await tx.ledgerMembership.update({
         where: { id: membership.id },
-        data: { expiresAt: after, lastPlanKey: order.planKey, ...(isPerpetual ? { perpetual: true } : {}) },
+        data: {
+          expiresAt: after,
+          lastPlanKey: order.planKey,
+          ...(isPerpetual ? { perpetual: true } : {}),
+        },
       })
       await tx.ledgerMembershipLog.create({
         data: {

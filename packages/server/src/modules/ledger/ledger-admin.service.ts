@@ -41,10 +41,15 @@ export class LedgerAdminService {
       mustReset: u.mustReset,
       lastLoginAt: u.lastLoginAt,
       createdAt: u.createdAt,
-      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
-        perpetual: u.membership?.perpetual,
-        trialClaimedAt: u.membership?.trialClaimedAt,
-      }),
+      membership: deriveMembership(
+        u.membership?.expiresAt ?? null,
+        u.membership?.lastPlanKey,
+        new Date(),
+        {
+          perpetual: u.membership?.perpetual,
+          trialClaimedAt: u.membership?.trialClaimedAt,
+        },
+      ),
     }
   }
 
