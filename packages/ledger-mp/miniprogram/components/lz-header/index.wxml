@@ -1,4 +1,4 @@
-<view class="lz-hd {{glass ? 'lz-hd--glass' : ''}}" style="padding-top: {{topPad}}px;{{glass ? ('--glass-nav-bg:' + navBg + ';') : ''}}">
+<view class="lz-hd {{glass ? 'lz-hd--glass' : ''}}" style="padding-top: {{topPad}}px;{{glass ? navStyle : ''}}">
   <view wx:if="{{back}}" class="lz-hd__back" hover-class="tap-active" bindtap="onBack">
     <lz-icon name="back" size="20" color="text" />
   </view>

@@ -1,6 +1,6 @@
 import { orderApi } from '../../api/index'
 import { maskMoney, yuan } from '../../utils/format'
-import { getHideAmount } from '../../utils/store'
+import { getHideAmount, glassCardStyle } from '../../utils/store'
 
 const PAGE_SIZE = 50
 
@@ -14,6 +14,7 @@ const SEG_DEF: Array<[string, string]> = [
 
 Page({
   data: {
+    glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     keyword: '',
     sort: 'date',
@@ -34,6 +35,7 @@ Page({
   _page: 1,
 
   onShow() {
+    this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 1 })
     this.setData({ hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10 })

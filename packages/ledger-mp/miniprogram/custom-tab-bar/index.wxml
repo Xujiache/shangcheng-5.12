@@ -1,5 +1,5 @@
 <view class="ctb">
-  <view class="ctb__bar {{glass ? '' : 'ctb__bar--solid'}}" style="{{glass ? ('background:' + barBg) : ''}}">
+  <view class="ctb__bar {{glass ? '' : 'ctb__bar--solid'}}" style="{{glass ? barStyle : ''}}">
     <view class="ctb__tab" data-index="0" bindtap="switchTab" hover-class="tap-active">
       <lz-icon name="home" size="23" color="{{selected===0?'accent':'muted'}}" stroke="{{selected===0?2.1:1.8}}" />
       <text class="ctb__t {{selected===0?'ctb__t--on':''}}">首页</text>

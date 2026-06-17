@@ -1,6 +1,6 @@
 import { statsApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
-import { getHideAmount } from '../../utils/store'
+import { getHideAmount, glassCardStyle } from '../../utils/store'
 
 interface MonthRow {
   month: number
@@ -15,6 +15,7 @@ interface MonthRow {
 
 Page({
   data: {
+    glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     tab: 'profit',
     tabs: [
       { value: 'profit', label: '利润统计' },
@@ -48,6 +49,7 @@ Page({
   _seq: 0,
 
   onShow() {
+    this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 2 })
     this.load()

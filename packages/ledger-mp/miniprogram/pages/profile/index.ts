@@ -1,11 +1,12 @@
 import { meApi } from '../../api/index'
 import { makeShareCover } from '../../utils/share-cover'
 import { fmtDate } from '../../utils/format'
-import { getUser, setUser, logout } from '../../utils/store'
+import { getUser, setUser, logout, glassCardStyle } from '../../utils/store'
 
 Page({
   _cover: '',
   data: {
+    glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     topSpace: 38, // 顶部留白 = 状态栏高度 + 18
     nickname: '门窗店主',
     phoneMask: '',
@@ -35,6 +36,7 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
+    this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.setData({ selected: 3 })
     this.setData({ topSpace: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18 })

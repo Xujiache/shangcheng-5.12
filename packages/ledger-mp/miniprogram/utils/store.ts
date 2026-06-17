@@ -88,20 +88,37 @@ export function getGlassOpacity(): number {
 export function setGlassOpacity(t: number) {
   wx.setStorageSync(GLASS_OPACITY_KEY, Math.min(100, Math.max(0, Math.round(t))))
 }
-/** 由通透度生成「顶亮底暗」半透明镜面渐变：t 越大填充越淡(越通透)。topMax=t最小(最实)时上沿不透明度，ratio=下沿/上沿。 */
-function glassGradient(t: number, topMax: number, ratio: number): string {
-  const f = 1 - Math.min(100, Math.max(0, t)) / 100 // 填充强度：t=0 最实, t=100 最透
-  const top = +(0.14 + f * (topMax - 0.14)).toFixed(3)
+/* 通透度 → 玻璃外观：t 越大越通透（填充更淡 + 模糊更弱、更清晰），t 越小越磨砂厚实
+   （填充更浓 + 模糊更强）。同时调「透明度 + 模糊」才看得出明显区别——白玻璃在浅色底上
+   只动透明度几乎无感，模糊强度变化最直观（尤其卡片浮在彩色光晕上）。默认 t=50 ≈ 现状。 */
+function lerp(a: number, b: number, f: number): number {
+  return a + (b - a) * f
+}
+/** 由通透度得出模糊滤镜与渐变上/下沿不透明度。f=0 最厚(30px) → f=1 最通透(4px)。 */
+function glassParts(t: number) {
+  const f = Math.min(100, Math.max(0, t)) / 100
+  return { f, blur: Math.round(lerp(30, 4, f)), sat: Math.round(lerp(185, 120, f)) }
+}
+function gradient(deg: number, topSolid: number, ratio: number, f: number): string {
+  const top = +lerp(topSolid, 0.1, f).toFixed(3) // f=0 最实(topSolid) → f=1 最透(0.1)
   const bot = +(top * ratio).toFixed(3)
-  return `linear-gradient(180deg, rgba(255,255,255,${top}) 0%, rgba(255,255,255,${bot}) 100%)`
+  return `linear-gradient(${deg}deg, rgba(255,255,255,${top}) 0%, rgba(255,255,255,${bot}) 100%)`
 }
-/** 导航/标题栏玻璃背景（默认 t=50 ≈ 现状 0.5/0.26）。 */
-export function glassNavBg(t: number = getGlassOpacity()): string {
-  return glassGradient(t, 0.88, 0.52)
+/** 卡片（.lz-card）玻璃：设在页面内容根节点上，级联覆盖该页所有卡片的 --glass-card-bg / --glass-blur。 */
+export function glassCardStyle(t: number = getGlassOpacity()): string {
+  const { f, blur, sat } = glassParts(t)
+  return `--glass-card-bg:${gradient(160, 0.92, 0.62, f)};--glass-blur:blur(${blur}px) saturate(${sat}%);`
 }
-/** 底部 tabBar 玻璃背景（默认 t=50 ≈ 现状 0.55/0.32）。 */
-export function glassTabBg(t: number = getGlassOpacity()): string {
-  return glassGradient(t, 0.96, 0.58)
+/** 导航/标题栏玻璃：覆盖 --glass-nav-bg 与 --glass-blur-strong（标题栏模糊略强）。 */
+export function glassNavStyle(t: number = getGlassOpacity()): string {
+  const { f, blur, sat } = glassParts(t)
+  return `--glass-nav-bg:${gradient(180, 0.9, 0.52, f)};--glass-blur-strong:blur(${blur + 4}px) saturate(${sat + 10}%);`
+}
+/** 底部 tabBar 玻璃（独立渲染上下文读不到 page 变量，直接给出 background + backdrop-filter 内联值）。 */
+export function glassTabStyle(t: number = getGlassOpacity()): string {
+  const { f, blur, sat } = glassParts(t)
+  const filter = `blur(${blur}px) saturate(${sat}%)`
+  return `background:${gradient(180, 0.92, 0.6, f)};-webkit-backdrop-filter:${filter};backdrop-filter:${filter};`
 }
 
 /* ---- 小程序 LOGO（管理后台 system_settings.site.logo 下发，登录/关于页展示，本地缓存兜底） ---- */

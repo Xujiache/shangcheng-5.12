@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="prof">
+<view class="prof" style="{{glassCard}}">
   <view style="height: {{topSpace}}px;"></view>
 
   <view class="lz-page lz-page--pad-bottom">
