@@ -21,6 +21,8 @@ export interface LedgerPlan {
   price: string
   /** true=永久会员（开通后不过期；days 仅作展示，发放时忽略） */
   perpetual?: boolean
+  /** true=体验卡：每账号限领/限购一次（免费走 claim-trial，付费走支付，均按 trialClaimedAt 拦一次） */
+  trial?: boolean
 }
 
 /** 套餐展示元数据默认值（后台未改时用这套；与设计 MEMBER_PLANS 对齐）。 */
@@ -50,6 +52,7 @@ export function normalizeLedgerPlans(raw: any): LedgerPlan[] {
         .trim()
         .slice(0, 20),
       perpetual: !!p?.perpetual,
+      trial: !!p?.trial,
     }))
     .filter((p) => p.key && p.label && p.days > 0 && !seen.has(p.key) && seen.add(p.key))
   return cleaned.length ? cleaned : LEDGER_PLANS
