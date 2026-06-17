@@ -480,8 +480,8 @@ describe('normalizeLedgerPlans 套餐收口', () => {
       { key: 'year', label: '年卡', days: 365, price: '¥268' },
     ])
     expect(out).toEqual([
-      { key: 'month', label: '月卡', days: 30, price: '¥29', perpetual: false },
-      { key: 'year', label: '年卡', days: 365, price: '¥268', perpetual: false },
+      { key: 'month', label: '月卡', days: 30, price: '¥29', perpetual: false, trial: false },
+      { key: 'year', label: '年卡', days: 365, price: '¥268', perpetual: false, trial: false },
     ])
   })
 
@@ -493,8 +493,8 @@ describe('normalizeLedgerPlans 套餐收口', () => {
       { key: 'noname', label: '', days: 10, price: '' }, // 缺 label → 丢弃
     ])
     expect(out).toEqual([
-      { key: 'big', label: '超大', days: 3650, price: '', perpetual: false },
-      { key: 'zero', label: '零天', days: 1, price: '', perpetual: false },
+      { key: 'big', label: '超大', days: 3650, price: '', perpetual: false, trial: false },
+      { key: 'zero', label: '零天', days: 1, price: '', perpetual: false, trial: false },
     ])
   })
 
@@ -503,7 +503,9 @@ describe('normalizeLedgerPlans 套餐收口', () => {
       { key: 'm', label: '月卡A', days: 30, price: '' },
       { key: 'm', label: '月卡B', days: 60, price: '' },
     ])
-    expect(out).toEqual([{ key: 'm', label: '月卡A', days: 30, price: '', perpetual: false }])
+    expect(out).toEqual([
+      { key: 'm', label: '月卡A', days: 30, price: '', perpetual: false, trial: false },
+    ])
   })
 
   it('全部非法 / 空数组 → 回落默认套餐', () => {

@@ -84,6 +84,12 @@ export const customerApi = {
       invalidateCustomers()
       return r
     }),
+  // 无档客户（订单自动生成）按姓名幂等建档 + 关联同名历史订单，返回正式档案
+  ensureByName: (name: string) =>
+    http.post('/l/customers/ensure', { name }).then((r) => {
+      invalidateCustomers()
+      return r
+    }),
   update: (id: string, data: any) =>
     http.patch('/l/customers/' + id, data).then((r) => {
       invalidateCustomers()

@@ -130,7 +130,8 @@ export class LedgerService {
   async claimTrial(userId: string) {
     const cfg = await this.readConfig()
     const trial = cfg.plans.find((p) => p.trial && ledgerPlanPriceFen(p.price) === 0)
-    if (!trial) throw new BizException(BizCode.BUSINESS_ERROR, '免费体验卡未配置（付费体验卡请走支付）')
+    if (!trial)
+      throw new BizException(BizCode.BUSINESS_ERROR, '免费体验卡未配置（付费体验卡请走支付）')
     const now = new Date()
     const existing = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
     if (existing?.perpetual) {
@@ -599,6 +600,26 @@ export class LedgerService {
         address: dto.address?.trim() || null,
         note: dto.note?.trim() || null,
       },
+    })
+    return c
+  }
+
+  /**
+   * 按姓名确保客户档案存在（幂等）：同名已建档则复用，否则新建；
+   * 并把同名、未关联档案的历史订单关联到该档案（与客户列表「按名归并」一致）。
+   * 供客户列表点击「订单自动生成的无档客户」时自动建档并进入详情。
+   */
+  async ensureCustomerByName(userId: string, rawName: string) {
+    const name = String(rawName || '').trim()
+    if (!name) throw new BizException(BizCode.INVALID_PARAMS, '请填写客户姓名')
+    let c = await this.prisma.ledgerCustomer.findFirst({ where: { userId, name } })
+    if (!c) {
+      c = await this.prisma.ledgerCustomer.create({ data: { userId, name } })
+    }
+    // 把同名、未关联档案的历史订单挂到该档案，使统计/再下单与档案一致
+    await this.prisma.ledgerOrder.updateMany({
+      where: { userId, customerName: name, customerId: null },
+      data: { customerId: c.id },
     })
     return c
   }
