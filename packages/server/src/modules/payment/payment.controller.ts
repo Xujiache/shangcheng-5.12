@@ -55,7 +55,9 @@ export class PaymentController {
   ) {
     const rawBuf = req.rawBody
     const raw = rawBuf
-      ? (Buffer.isBuffer(rawBuf) ? rawBuf.toString('utf8') : String(rawBuf))
+      ? Buffer.isBuffer(rawBuf)
+        ? rawBuf.toString('utf8')
+        : String(rawBuf)
       : JSON.stringify(body)
     const ok = await this.wxpay.verifyNotify(headers, raw)
     if (!ok) return { code: 'FAIL', message: '签名验证失败' }
@@ -83,7 +85,9 @@ export class PaymentController {
       // 1) 会员订阅缴费回调
       const isMembership = outTradeNo.startsWith('MEM') || attach.startsWith('membership:')
       if (isMembership) {
-        const recordIdFromAttach = attach.startsWith('membership:') ? attach.slice('membership:'.length) : null
+        const recordIdFromAttach = attach.startsWith('membership:')
+          ? attach.slice('membership:'.length)
+          : null
         let record = recordIdFromAttach
           ? await this.prisma.paymentRecord.findUnique({ where: { id: recordIdFromAttach } })
           : null
@@ -104,7 +108,9 @@ export class PaymentController {
           this.logger.log(`[wxpay notify] 会员激活成功 no=${outTradeNo} txid=${transactionId}`)
         } else {
           // refunding / refunded / failed 等不合法状态 → 仍当作 SUCCESS 让微信停止重试，由人工对账
-          this.logger.warn(`[wxpay notify] PaymentRecord 状态异常 no=${outTradeNo} status=${record.status}`)
+          this.logger.warn(
+            `[wxpay notify] PaymentRecord 状态异常 no=${outTradeNo} status=${record.status}`,
+          )
         }
         return { code: 'SUCCESS', message: 'OK' }
       }
@@ -167,7 +173,9 @@ export class PaymentController {
           updatedAt: paidAt,
         })
       } catch (e: any) {
-        this.logger.warn(`[wxpay notify] emit order:update 失败 orderId=${order.id}: ${e?.message || e}`)
+        this.logger.warn(
+          `[wxpay notify] emit order:update 失败 orderId=${order.id}: ${e?.message || e}`,
+        )
       }
       return { code: 'SUCCESS', message: 'OK' }
     } catch (e: any) {

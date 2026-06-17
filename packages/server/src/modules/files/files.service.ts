@@ -42,7 +42,10 @@ export class FilesService implements OnModuleInit {
     }
 
     try {
-      const endpoint = (process.env.S3_ENDPOINT || 'http://localhost:9000').replace(/^https?:\/\//, '')
+      const endpoint = (process.env.S3_ENDPOINT || 'http://localhost:9000').replace(
+        /^https?:\/\//,
+        '',
+      )
       const useSSL = (process.env.S3_ENDPOINT || '').startsWith('https')
       const [host, port] = endpoint.split(':')
       this.client = new Client({
@@ -86,11 +89,20 @@ export class FilesService implements OnModuleInit {
     const ext = (file.originalname.split('.').pop() || 'bin').toLowerCase()
     const d = new Date()
     const key = `${bizType}/${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${nano()}.${ext}`
-    await this.client.putObject(this.bucket, key, file.buffer, file.size, { 'Content-Type': file.mimetype })
+    await this.client.putObject(this.bucket, key, file.buffer, file.size, {
+      'Content-Type': file.mimetype,
+    })
     const url = `${this.publicUrl}/${key}`
 
     await this.prisma.uploadedFile.create({
-      data: { key, url, size: file.size, mimeType: file.mimetype, bizType, ownerId: ownerId || null },
+      data: {
+        key,
+        url,
+        size: file.size,
+        mimeType: file.mimetype,
+        bizType,
+        ownerId: ownerId || null,
+      },
     })
     return { url, key, size: file.size, mimeType: file.mimetype }
   }
@@ -116,8 +128,9 @@ export class FilesService implements OnModuleInit {
     if (ext !== 'apk') {
       throw new BizException(BizCode.INVALID_PARAMS, '仅支持 .apk 文件')
     }
-    const okMime = file.mimetype === 'application/vnd.android.package-archive'
-      || file.mimetype === 'application/octet-stream'
+    const okMime =
+      file.mimetype === 'application/vnd.android.package-archive' ||
+      file.mimetype === 'application/octet-stream'
     if (!okMime) {
       throw new BizException(BizCode.INVALID_PARAMS, `不支持的 APK mime：${file.mimetype}`)
     }
@@ -134,7 +147,14 @@ export class FilesService implements OnModuleInit {
     const url = `${this.publicUrl}/${key}`
 
     await this.prisma.uploadedFile.create({
-      data: { key, url, size: file.size, mimeType: 'application/vnd.android.package-archive', bizType: 'apk', ownerId: ownerId || null },
+      data: {
+        key,
+        url,
+        size: file.size,
+        mimeType: 'application/vnd.android.package-archive',
+        bizType: 'apk',
+        ownerId: ownerId || null,
+      },
     })
     return { url, key, size: file.size }
   }
@@ -148,10 +168,7 @@ export class FilesService implements OnModuleInit {
    * 若文件不存在或当前用户既不是 owner 也不是管理员，抛 FORBIDDEN，绝不静默成功，
    * 否则攻击者可以遍历文件 key 删别人的图片/视频。
    */
-  async remove(
-    key: string,
-    actor: { userId: string; role: string } | null,
-  ) {
+  async remove(key: string, actor: { userId: string; role: string } | null) {
     if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
     const file = await this.prisma.uploadedFile.findUnique({ where: { key } })
     if (!file) {

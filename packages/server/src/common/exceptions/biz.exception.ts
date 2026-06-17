@@ -28,7 +28,8 @@ export class BizException extends HttpException {
 }
 
 function mapHttpStatus(code: number): HttpStatus {
-  if (code === BizCode.UNAUTHORIZED || code === BizCode.TOKEN_EXPIRED) return HttpStatus.UNAUTHORIZED
+  if (code === BizCode.UNAUTHORIZED || code === BizCode.TOKEN_EXPIRED)
+    return HttpStatus.UNAUTHORIZED
   if (code === BizCode.FORBIDDEN) return HttpStatus.FORBIDDEN
   if (code === BizCode.NOT_FOUND) return HttpStatus.NOT_FOUND
   if (code === BizCode.INVALID_PARAMS) return HttpStatus.BAD_REQUEST

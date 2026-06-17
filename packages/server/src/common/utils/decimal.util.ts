@@ -8,7 +8,10 @@ export function decimalToNumber<T>(input: T): T {
   if (typeof input !== 'object') return input
   if ((input as any) instanceof Prisma.Decimal) return Number(input) as any
   // Prisma 5 没导出 Decimal class 兼容判断
-  if (typeof (input as any).toFixed === 'function' && (input as any).constructor?.name === 'Decimal') {
+  if (
+    typeof (input as any).toFixed === 'function' &&
+    (input as any).constructor?.name === 'Decimal'
+  ) {
     return Number(input as any) as any
   }
   const out: any = {}

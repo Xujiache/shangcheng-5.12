@@ -44,7 +44,10 @@ export class AppReleaseService {
       where: { platform_versionCode: { platform, versionCode } },
     })
     if (exists) {
-      throw new BizException(BizCode.BUSINESS_ERROR, `该平台已存在 versionCode=${versionCode} 的发布`)
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        `该平台已存在 versionCode=${versionCode} 的发布`,
+      )
     }
 
     const uploaded = await this.files.uploadApk(file, createdById)

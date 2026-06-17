@@ -7,7 +7,9 @@ export interface AuthUser {
   permissions?: string[]
 }
 
-export const CurrentUser = createParamDecorator((_, ctx: ExecutionContext): AuthUser | undefined => {
-  const req = ctx.switchToHttp().getRequest()
-  return req.user
-})
+export const CurrentUser = createParamDecorator(
+  (_, ctx: ExecutionContext): AuthUser | undefined => {
+    const req = ctx.switchToHttp().getRequest()
+    return req.user
+  },
+)
