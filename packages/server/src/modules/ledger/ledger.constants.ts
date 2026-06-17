@@ -19,6 +19,8 @@ export interface LedgerPlan {
   label: string
   days: number
   price: string
+  /** true=永久会员（开通后不过期；days 仅作展示，发放时忽略） */
+  perpetual?: boolean
 }
 
 /** 套餐展示元数据默认值（后台未改时用这套；与设计 MEMBER_PLANS 对齐）。 */
@@ -47,6 +49,7 @@ export function normalizeLedgerPlans(raw: any): LedgerPlan[] {
       price: String(p?.price ?? '')
         .trim()
         .slice(0, 20),
+      perpetual: !!p?.perpetual,
     }))
     .filter((p) => p.key && p.label && p.days > 0 && !seen.has(p.key) && seen.add(p.key))
   return cleaned.length ? cleaned : LEDGER_PLANS
@@ -118,16 +121,38 @@ export interface MembershipStatus {
   /** active 且剩余 ≤7 天 */
   expiringSoon: boolean
   lastPlanKey: string | null
+  /** 永久会员（开通后不过期；为 true 时 expiresAt=null、daysLeft 仅占位） */
+  perpetual: boolean
+  /** 是否已领取过体验卡（一次性，前端据此置灰体验卡） */
+  trialClaimed: boolean
 }
 
 const DAY_MS = 86_400_000
 
-/** 由到期时间派生会员状态。now 注入便于测试。 */
+/**
+ * 由到期时间派生会员状态。now 注入便于测试（保持第 3 位不变以兼容既有测试）。
+ * extra.perpetual=true → 永久有效（不看 expiresAt）；extra.trialClaimedAt → 已领体验卡。
+ */
 export function deriveMembership(
   expiresAt: Date | null | undefined,
   lastPlanKey?: string | null,
   now: Date = new Date(),
+  extra?: { perpetual?: boolean | null; trialClaimedAt?: Date | null },
 ): MembershipStatus {
+  const trialClaimed = !!extra?.trialClaimedAt
+  if (extra?.perpetual) {
+    return {
+      active: true,
+      expired: false,
+      never: false,
+      expiresAt: null,
+      daysLeft: 36500,
+      expiringSoon: false,
+      lastPlanKey: lastPlanKey ?? null,
+      perpetual: true,
+      trialClaimed,
+    }
+  }
   if (!expiresAt) {
     return {
       active: false,
@@ -137,6 +162,8 @@ export function deriveMembership(
       daysLeft: 0,
       expiringSoon: false,
       lastPlanKey: lastPlanKey ?? null,
+      perpetual: false,
+      trialClaimed,
     }
   }
   const diff = expiresAt.getTime() - now.getTime()
@@ -150,6 +177,8 @@ export function deriveMembership(
     daysLeft,
     expiringSoon: active && daysLeft <= 7,
     lastPlanKey: lastPlanKey ?? null,
+    perpetual: false,
+    trialClaimed,
   }
 }
 

@@ -41,7 +41,10 @@ export class LedgerAdminService {
       mustReset: u.mustReset,
       lastLoginAt: u.lastLoginAt,
       createdAt: u.createdAt,
-      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey),
+      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
+        perpetual: u.membership?.perpetual,
+        trialClaimedAt: u.membership?.trialClaimedAt,
+      }),
     }
   }
 
@@ -124,15 +127,20 @@ export class LedgerAdminService {
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
     let days = dto.days
-    // 按套餐授予时，天数以后台配置的套餐为准（兼容旧 key 回落 LEDGER_PLAN_DAYS）
-    if ((days === undefined || days === null) && dto.planKey) {
+    let isPerpetual = false
+    // 按套餐授予时，天数以后台配置的套餐为准（兼容旧 key 回落 LEDGER_PLAN_DAYS）；永久套餐置 perpetual
+    if (dto.planKey) {
       const cfg = await this.getConfig()
       const plan = cfg.plans.find((p) => p.key === dto.planKey)
-      days = plan ? plan.days : LEDGER_PLAN_DAYS[dto.planKey]
+      if (plan?.perpetual) isPerpetual = true
+      if (days === undefined || days === null) {
+        days = plan ? plan.days : LEDGER_PLAN_DAYS[dto.planKey]
+      }
     }
-    if (days === undefined || days === null || days === 0) {
+    if (!isPerpetual && (days === undefined || days === null || days === 0)) {
       throw new BizException(BizCode.INVALID_PARAMS, '请选择套餐或填写有效天数')
     }
+    days = days ?? 0
 
     let membership = user.membership
     if (!membership) {
@@ -146,6 +154,7 @@ export class LedgerAdminService {
         expiresAt: after,
         lastPlanKey: dto.planKey || 'custom',
         updatedById: operatorId || null,
+        ...(isPerpetual ? { perpetual: true } : {}),
       },
     })
     await this.prisma.ledgerMembershipLog.create({
@@ -159,7 +168,10 @@ export class LedgerAdminService {
         note: dto.note?.trim() || null,
       },
     })
-    const status = deriveMembership(updated.expiresAt, updated.lastPlanKey)
+    const status = deriveMembership(updated.expiresAt, updated.lastPlanKey, new Date(), {
+      perpetual: updated.perpetual,
+      trialClaimedAt: updated.trialClaimedAt,
+    })
     // 给记账用户写一条真实的会员通知（消息中心可见）
     await this.notify(
       id,

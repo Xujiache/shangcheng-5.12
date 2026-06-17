@@ -993,6 +993,8 @@ model LedgerMembership {
   user        LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt   DateTime? // null=从未开通；>now=有效；<=now=过期
   lastPlanKey String? // day/week/month/quarter/year/custom
+  perpetual   Boolean    @default(false) // true=永久会员（不看 expiresAt，永远有效）
+  trialClaimedAt DateTime? // 体验卡领取时间（非空=已领过，一次性）
   updatedById String?
   updatedAt   DateTime   @updatedAt
 

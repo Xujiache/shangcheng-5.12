@@ -3,6 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
   deriveMembership,
+  computeGrantExpiry,
+  ledgerPlanPriceFen,
   sanitizeExtras,
   fixedCost,
   extrasTotal,
@@ -97,7 +99,10 @@ export class LedgerService {
       avatar: u.avatar,
       mustReset: u.mustReset,
       wxBound: !!u.wxOpenid,
-      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey),
+      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
+        perpetual: u.membership?.perpetual,
+        trialClaimedAt: u.membership?.trialClaimedAt,
+      }),
     }
   }
 
@@ -105,8 +110,67 @@ export class LedgerService {
     const m = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
     const cfg = await this.readConfig()
     return {
-      ...deriveMembership(m?.expiresAt ?? null, m?.lastPlanKey),
+      ...deriveMembership(m?.expiresAt ?? null, m?.lastPlanKey, new Date(), {
+        perpetual: m?.perpetual,
+        trialClaimedAt: m?.trialClaimedAt,
+      }),
       plans: cfg.plans, // 套餐由后台配置驱动（默认 LEDGER_PLANS）
+    }
+  }
+
+  /**
+   * 领取体验卡（一次性）：仅免费套餐（实付分=0）可走此口，避免 0 元走微信支付失败。
+   * 拦截：已永久会员 / 已领过体验卡 → 拒绝。发放后记 trialClaimedAt 锁定一次性。
+   */
+  async claimTrial(userId: string) {
+    const cfg = await this.readConfig()
+    const trial = cfg.plans.find((p) => ledgerPlanPriceFen(p.price) === 0 && !p.perpetual)
+    if (!trial) throw new BizException(BizCode.BUSINESS_ERROR, '体验卡未配置')
+    const now = new Date()
+    const existing = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
+    if (existing?.perpetual) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '您已是永久会员，无需领取体验卡')
+    }
+    if (existing?.trialClaimedAt) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '体验卡仅限领取一次，您已领取过')
+    }
+    const before = existing?.expiresAt ?? null
+    const after = computeGrantExpiry(before, trial.days, now)
+    const m = existing
+      ? await this.prisma.ledgerMembership.update({
+          where: { id: existing.id },
+          data: { expiresAt: after, lastPlanKey: trial.key, trialClaimedAt: now },
+        })
+      : await this.prisma.ledgerMembership.create({
+          data: { userId, expiresAt: after, lastPlanKey: trial.key, trialClaimedAt: now },
+        })
+    await this.prisma.ledgerMembershipLog.create({
+      data: {
+        membershipId: m.id,
+        deltaDays: trial.days,
+        planKey: trial.key,
+        beforeAt: before,
+        afterAt: after,
+        operatorId: null,
+        note: `领取体验卡（${trial.days} 天，一次性）`,
+      },
+    })
+    await this.prisma.ledgerNotification
+      .create({
+        data: {
+          userId,
+          type: 'member',
+          title: '体验卡已领取',
+          body: `已为您开通 ${trial.days} 天体验会员，有效期至 ${after.toISOString().slice(0, 10)}。`,
+        },
+      })
+      .catch(() => {})
+    return {
+      ...deriveMembership(m.expiresAt, m.lastPlanKey, now, {
+        perpetual: m.perpetual,
+        trialClaimedAt: m.trialClaimedAt,
+      }),
+      plans: cfg.plans,
     }
   }
 
@@ -152,7 +216,10 @@ export class LedgerService {
       include: { membership: true },
     })
     if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
-    const mem = deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey)
+    const mem = deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
+      perpetual: u.membership?.perpetual,
+      trialClaimedAt: u.membership?.trialClaimedAt,
+    })
     if (mem.active) {
       return {
         allowed: true,

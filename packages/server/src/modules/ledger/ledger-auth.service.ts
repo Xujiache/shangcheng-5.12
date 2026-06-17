@@ -53,7 +53,12 @@ export class LedgerAuthService {
     nickname: string
     avatar: string | null
     mustReset: boolean
-    membership?: { expiresAt: Date | null; lastPlanKey: string | null } | null
+    membership?: {
+      expiresAt: Date | null
+      lastPlanKey: string | null
+      perpetual?: boolean
+      trialClaimedAt?: Date | null
+    } | null
   }) {
     return {
       id: u.id,
@@ -62,7 +67,10 @@ export class LedgerAuthService {
       avatar: u.avatar,
       // 登录响应必须带上：前端 routeAfterLogin 据此强制首登改密（否则只有冷启动静默路径生效）
       mustReset: u.mustReset,
-      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey),
+      membership: deriveMembership(u.membership?.expiresAt ?? null, u.membership?.lastPlanKey, new Date(), {
+        perpetual: u.membership?.perpetual,
+        trialClaimedAt: u.membership?.trialClaimedAt,
+      }),
     }
   }
 

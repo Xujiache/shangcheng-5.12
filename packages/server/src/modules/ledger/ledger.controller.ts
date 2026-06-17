@@ -70,6 +70,14 @@ export class LedgerController {
     return { ...m, payEnabled: this.pay.payEnabled() }
   }
 
+  /** 领取体验卡（一次性，免费套餐专用，不走支付）。已领/已永久 → 拒绝。 */
+  @Post('membership/claim-trial')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async claimTrial(@CurrentLedgerUser() user: LedgerAuthUser) {
+    const m = await this.svc.claimTrial(user.id)
+    return { ...m, payEnabled: this.pay.payEnabled() }
+  }
+
   @Patch('profile')
   updateProfile(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: UpdateLedgerProfileDto) {
     return this.svc.updateProfile(user.id, dto)

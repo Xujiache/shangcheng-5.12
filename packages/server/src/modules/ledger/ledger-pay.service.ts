@@ -123,6 +123,9 @@ export class LedgerPayService {
     }
 
     const now = new Date()
+    // 永久套餐：回调发放时置 perpetual=true（天数仍按订单锁定值记录，但永久态以本标记为准）
+    const cfgForGrant = await this.readConfig()
+    const isPerpetual = !!cfgForGrant.plans.find((p) => p.key === order.planKey)?.perpetual
     let granted: { after: Date; days: number } | null = null
     await this.prisma.$transaction(async (tx) => {
       // 行级幂等：仅当仍 pending 才入账（拦并发重复回调）
@@ -140,7 +143,7 @@ export class LedgerPayService {
       const after = computeGrantExpiry(before, order.days, now)
       await tx.ledgerMembership.update({
         where: { id: membership.id },
-        data: { expiresAt: after, lastPlanKey: order.planKey },
+        data: { expiresAt: after, lastPlanKey: order.planKey, ...(isPerpetual ? { perpetual: true } : {}) },
       })
       await tx.ledgerMembershipLog.create({
         data: {
