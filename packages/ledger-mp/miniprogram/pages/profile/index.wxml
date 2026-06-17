@@ -30,8 +30,29 @@
       <lz-icon name="chevron" size="16" color="{{memberActive ? '#C9A24B' : 'faint'}}" />
     </view>
 
+    <!-- 常用功能 -->
+    <view class="lz-section-label">常用功能</view>
+    <view class="lz-card lz-card--flush prof__grid">
+      <view class="prof__grid-cell" data-page="/pages/customers/index" bindtap="toRow" hover-class="tap-active">
+        <view class="prof__grid-ic"><lz-icon name="user" size="22" color="accent" stroke="1.9" /></view>
+        <view class="prof__grid-t">客户管理</view>
+      </view>
+      <view class="prof__grid-cell" data-page="/pages/cut/index" bindtap="toRow" hover-class="tap-active">
+        <view class="prof__grid-ic"><lz-icon name="cube" size="22" color="accent" stroke="1.9" /></view>
+        <view class="prof__grid-t">优化下料</view>
+      </view>
+      <view class="prof__grid-cell" data-page="/pages/goal/index" bindtap="toRow" hover-class="tap-active">
+        <view class="prof__grid-ic"><lz-icon name="target" size="22" color="accent" stroke="1.9" /></view>
+        <view class="prof__grid-t">经营目标</view>
+      </view>
+      <view class="prof__grid-cell" data-page="/pages/message-center/index" bindtap="toRow" hover-class="tap-active">
+        <view class="prof__grid-ic"><lz-icon name="bell" size="22" color="accent" stroke="1.9" /></view>
+        <view class="prof__grid-t">消息中心</view>
+      </view>
+    </view>
+
     <!-- 设置 -->
-    <view class="lz-section-label">设置</view>
+    <view class="lz-section-label" style="margin-top: var(--gap);">设置</view>
     <view class="lz-card lz-card--flush">
       <view wx:for="{{rows}}" wx:key="page" class="lz-row" data-page="{{item.page}}" bindtap="toRow" hover-class="tap-active">
         <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="18" color="accent" /></view>
