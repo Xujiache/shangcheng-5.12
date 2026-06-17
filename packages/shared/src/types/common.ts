@@ -2,13 +2,19 @@
  * 通用类型
  */
 
-/** 统一 API 响应 */
+/**
+ * 统一 API 响应。
+ * 与后端 response.interceptor 实际输出对齐：message 与 msg 双字段冗余
+ * （message 面向新前端、msg 兼容 admin-pc 等老前端），timestamp 必返。
+ */
 export interface ApiResult<T = unknown> {
   code: number
   data: T | null
   message: string
+  /** 与 message 同义的冗余字段，后端始终返回 */
+  msg: string
   traceId: string
-  timestamp?: number
+  timestamp: number
 }
 
 /** 分页请求 */
