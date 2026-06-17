@@ -1,0 +1,55 @@
+<lz-bg />
+<view class="ap">
+  <lz-header title="外观与个性化" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">沉浸光感</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row">
+        <view class="lz-row__icon"><lz-icon name="cube" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">沉浸光感</view>
+          <view class="lz-row__sub">鸿蒙风磨砂发光质感 · 关闭更清晰省电</view>
+        </view>
+        <view class="tg {{glassOn ? 'tg--on' : ''}}" bindtap="onToggleGlass" hover-class="tap-active">
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="cube" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">玻璃通透度</view>
+          <view class="lz-row__sub">{{glassOn ? '向右更通透 · 透出背景光；向左更磨砂厚实' : '需先开启沉浸光感'}}</view>
+        </view>
+      </view>
+      <view wx:if="{{glassOn}}" style="padding: 0 14px 12px;">
+        <slider
+          min="0"
+          max="100"
+          step="5"
+          value="{{glassOpacity}}"
+          activeColor="#0e7c66"
+          backgroundColor="#d6e3dd"
+          block-size="20"
+          show-value
+          bindchanging="onOpacityChanging"
+          bindchange="onOpacityChange"
+        />
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">特效模式</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="device" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">特效模式</view>
+          <view class="lz-row__sub">{{fxMode === 'max' ? '性能模式：全特效全开(含触摸流光)，更炫但更耗电' : '普通模式：常规光感特效，省电流畅'}}</view>
+        </view>
+      </view>
+      <view style="padding: 2px 14px 12px;">
+        <lz-segmented options="{{fxOptions}}" value="{{fxMode}}" bindchange="onFxMode" />
+      </view>
+    </view>
+  </view>
+</view>

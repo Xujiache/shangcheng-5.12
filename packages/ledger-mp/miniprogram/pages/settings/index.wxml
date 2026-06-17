@@ -1,0 +1,24 @@
+<lz-bg />
+<view class="st">
+  <lz-header title="设置" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-card lz-card--flush">
+      <view
+        wx:for="{{rows}}"
+        wx:key="page"
+        class="lz-row {{index === rows.length - 1 ? 'lz-row--last' : ''}}"
+        data-page="{{item.page}}"
+        bindtap="toRow"
+        hover-class="tap-active"
+      >
+        <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">{{item.label}}</view>
+          <view class="lz-row__sub">{{item.sub}}</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+  </view>
+</view>

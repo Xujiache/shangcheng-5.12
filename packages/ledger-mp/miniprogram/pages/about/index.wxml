@@ -29,6 +29,11 @@
         <view class="lz-row__main"><view class="lz-row__label">意见反馈</view></view>
         <lz-icon name="chevron" size="16" color="faint" />
       </view>
+      <view class="lz-row" hover-class="tap-active" bindtap="toChangelog">
+        <view class="lz-row__icon"><lz-icon name="clock" size="17" color="accent" /></view>
+        <view class="lz-row__main"><view class="lz-row__label">更新日志</view></view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
       <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="onCheckUpdate">
         <view class="lz-row__icon"><lz-icon name="refresh" size="17" color="accent" /></view>
         <view class="lz-row__main"><view class="lz-row__label">检查更新</view></view>

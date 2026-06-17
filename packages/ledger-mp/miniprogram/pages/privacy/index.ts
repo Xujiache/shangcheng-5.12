@@ -1,17 +1,5 @@
-import { settingApi, dataApi } from '../../api/index'
-import { TOKEN_KEY } from '../../config'
-import {
-  setBioLock,
-  setHideAmount,
-  getBioLock,
-  getHideAmount,
-  getGlass,
-  setGlass,
-  getFxMode,
-  setFxMode,
-  getGlassOpacity,
-  setGlassOpacity,
-} from '../../utils/store'
+import { settingApi } from '../../api/index'
+import { setBioLock, setHideAmount } from '../../utils/store'
 
 interface ToggleItem {
   key: string
@@ -41,76 +29,40 @@ const DEFS: ToggleItem[] = [
   },
 ]
 
-/** 读取本地存储真实占用，作为「缓存」展示。 */
-function calcCache(): string {
-  try {
-    const info = wx.getStorageInfoSync()
-    const kb = info.currentSize || 0
-    return kb < 1024 ? kb + ' KB' : (kb / 1024).toFixed(1) + ' MB'
-  } catch (e) {
-    return '0 KB'
-  }
-}
-
+// 隐私与安全：隐私开关（隐藏金额 / 生物解锁）+ 账户安全 / 协议 / 注销账户 入口
 Page({
   data: {
     items: DEFS.map((it) => ({ ...it })),
-    glassOn: true,
-    glassOpacity: 50, // 玻璃通透度 0-100（越大越通透）
-    fxMode: 'normal' as 'normal' | 'max',
-    fxOptions: [
-      { value: 'normal', label: '普通模式' },
-      { value: 'max', label: '性能模式' },
+    links: [
+      {
+        icon: 'shield',
+        label: '账户安全',
+        sub: '修改密码 · 换绑手机',
+        page: '/pages/account-security/index',
+      },
+      {
+        icon: 'doc',
+        label: '隐私政策',
+        sub: '我们如何收集与保护你的信息',
+        page: '/pages/doc/index?key=privacy',
+      },
+      {
+        icon: 'doc',
+        label: '用户协议',
+        sub: '服务条款与使用约定',
+        page: '/pages/doc/index?key=terms',
+      },
+      {
+        icon: 'trash',
+        label: '注销账户',
+        sub: '永久删除账号与全部数据',
+        page: '/pages/delete-account/index',
+      },
     ],
-    cacheSize: '0 KB',
-    exportShow: false,
-    importShow: false,
-    allowShare: false,
-    importText: '',
-    exporting: false,
-    importing: false,
-    exportResult: '', // 非空=已生成，弹窗内展示数据包供查看/复制
-    exportInfo: '', // 数据包摘要（X 单 / Y 客户 · 是否允许他人导入）
   },
 
   onLoad() {
-    this.setData({
-      cacheSize: calcCache(),
-      glassOn: getGlass(),
-      glassOpacity: getGlassOpacity(),
-      fxMode: getFxMode(),
-    })
     this.load()
-  },
-
-  // 玻璃质感：纯本地 UI 偏好（不入服务端）；切回各页 pageLifetimes.show 即生效
-  onToggleGlass() {
-    const next = !this.data.glassOn
-    setGlass(next)
-    this.setData({ glassOn: next })
-    wx.showToast({ title: next ? '已开启沉浸光感' : '已关闭沉浸光感', icon: 'none' })
-  },
-
-  // 玻璃通透度：拖动时实时回显，松手落定写本地；切回各页 lz-header/tabBar 的 show 读取生效
-  onOpacityChanging(e: any) {
-    this.setData({ glassOpacity: e.detail.value })
-  },
-  onOpacityChange(e: any) {
-    const v = e.detail.value
-    setGlassOpacity(v)
-    this.setData({ glassOpacity: v })
-    wx.showToast({ title: '玻璃通透度已调整', icon: 'none' })
-  },
-
-  // 性能模式：本地偏好；各页 lz-bg 在 pageLifetimes.show 读取即生效
-  onFxMode(e: any) {
-    const m = e.detail.value === 'max' ? 'max' : 'normal'
-    setFxMode(m)
-    this.setData({ fxMode: m })
-    wx.showToast({
-      title: m === 'max' ? '已切到性能模式 · 全特效' : '已切到普通模式',
-      icon: 'none',
-    })
   },
 
   async load() {
@@ -159,101 +111,7 @@ Page({
     }
   },
 
-  // ── 数据加密导出 / 导入 ──
-  openExport() {
-    this.setData({ exportShow: true, exportResult: '', exportInfo: '' })
-  },
-  closeExport() {
-    this.setData({ exportShow: false, exportResult: '', exportInfo: '' })
-  },
-  toggleAllowShare() {
-    this.setData({ allowShare: !this.data.allowShare })
-  },
-  async doExport() {
-    if (this.data.exporting) return
-    this.setData({ exporting: true })
-    try {
-      const r: any = await dataApi.exportData(this.data.allowShare)
-      if (r && r.package) {
-        const allow = this.data.allowShare
-        const info = `${r.orders} 单 / ${r.customers} 客户 · ${allow ? '已允许他人导入' : '仅本人可导入'}`
-        // 生成后停留在弹窗内展示数据包：用户看得见、能手动复制，不再用「已在剪贴板」这种含糊提示
-        this.setData({ exportResult: r.package, exportInfo: info })
-        // 顺手自动复制一次（便捷），展示区+复制按钮才是可靠路径
-        wx.setClipboardData({
-          data: r.package,
-          success: () => wx.showToast({ title: '已复制到剪贴板', icon: 'none' }),
-          fail: () => {},
-        })
-      }
-    } catch (e) {
-      /* request 层已提示 */
-    } finally {
-      this.setData({ exporting: false })
-    }
-  },
-  copyExport() {
-    const pkg = this.data.exportResult
-    if (!pkg) return
-    wx.setClipboardData({
-      data: pkg,
-      success: () => wx.showToast({ title: '已复制，去粘贴保存', icon: 'none' }),
-      fail: () => wx.showToast({ title: '复制失败', icon: 'none' }),
-    })
-  },
-  openImport() {
-    this.setData({ importShow: true, importText: '' })
-  },
-  closeImport() {
-    this.setData({ importShow: false })
-  },
-  onImportInput(e: any) {
-    this.setData({ importText: String(e.detail.value || '') })
-  },
-  async doImport() {
-    const pkg = this.data.importText.trim()
-    if (!pkg) {
-      wx.showToast({ title: '请粘贴数据包', icon: 'none' })
-      return
-    }
-    if (this.data.importing) return
-    this.setData({ importing: true })
-    try {
-      const r: any = await dataApi.importData(pkg)
-      this.setData({ importShow: false })
-      wx.showToast({ title: `已导入 ${r.orders} 单 / ${r.customers} 客户`, icon: 'none' })
-    } catch (e) {
-      /* request 层已提示（不允许导入 / 已篡改 等） */
-    } finally {
-      this.setData({ importing: false })
-    }
-  },
-  noopMask() {},
-
-  onClearCache() {
-    wx.showModal({
-      title: '清除缓存',
-      content: '将清理本地临时数据（' + this.data.cacheSize + '），云端数据不受影响。',
-      confirmText: '清除',
-      success: (r) => {
-        if (!r.confirm) return
-        try {
-          // 生物锁/隐藏金额的本地镜像不能被清掉：否则生物锁会静默失效（fail-open）
-          // 直到下次打开本页才从服务端回同步
-          const bio = getBioLock()
-          const hide = getHideAmount()
-          const info = wx.getStorageInfoSync()
-          ;(info.keys || []).forEach((k) => {
-            if (k !== TOKEN_KEY) wx.removeStorageSync(k)
-          })
-          setBioLock(bio)
-          setHideAmount(hide)
-        } catch (e) {
-          /* ignore */
-        }
-        this.setData({ cacheSize: calcCache() })
-        wx.showToast({ title: '已清除', icon: 'success' })
-      },
-    })
+  toLink(e: any) {
+    wx.navigateTo({ url: e.currentTarget.dataset.page })
   },
 })

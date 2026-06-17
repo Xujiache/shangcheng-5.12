@@ -25,9 +25,3 @@
 .tg--on .tg__knob {
   transform: translateX(19px);
 }
-.pv__note {
-  font-size: 12px;
-  color: var(--faint);
-  line-height: 1.6;
-  padding: 14px 8px 4px;
-}

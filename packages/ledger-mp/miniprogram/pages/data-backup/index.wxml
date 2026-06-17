@@ -1,0 +1,86 @@
+<lz-bg />
+<view class="dm">
+  <lz-header title="数据管理" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">备份与恢复</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row" hover-class="tap-active" bindtap="openExport">
+        <view class="lz-row__icon"><lz-icon name="download" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">导出数据</view>
+          <view class="lz-row__sub">加密数据包，可设置是否允许他人导入</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="openImport">
+        <view class="lz-row__icon"><lz-icon name="download" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">导入数据</view>
+          <view class="lz-row__sub">粘贴加密数据包，恢复订单与客户</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">本地缓存</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="onClearCache">
+        <view class="lz-row__icon"><lz-icon name="trash" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">清除缓存</view>
+          <view class="lz-row__sub">清理本地临时数据，不影响云端</view>
+        </view>
+        <view class="lz-row__detail">{{cacheSize}}</view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+
+    <view class="dm__note">我们仅在本地与加密云端保存您的经营数据，绝不向第三方共享。</view>
+  </view>
+
+  <!-- 导出弹窗 -->
+  <view wx:if="{{exportShow}}" class="dm-mask" bindtap="closeExport">
+    <view class="dm-pop" catchtap="noopMask">
+      <!-- 第一步：设置并生成 -->
+      <block wx:if="{{!exportResult}}">
+        <view class="dm-pop__t">导出加密数据包</view>
+        <view class="dm-pop__d">订单与客户将打包为加密数据包（他人无法查看 / 篡改）。</view>
+        <view class="dm-row">
+          <view class="lz-flex1" style="min-width: 0;">
+            <view class="dm-row__t">允许他人导入</view>
+            <view class="dm-row__s">开启后他人也可用此包导入；关闭则仅本人可导入</view>
+          </view>
+          <view class="tg {{allowShare ? 'tg--on' : ''}}" bindtap="toggleAllowShare" hover-class="tap-active"><view class="tg__knob"></view></view>
+        </view>
+        <view class="dm-acts">
+          <button class="lz-btn lz-btn--ghost lz-btn--lg dm-act" bindtap="closeExport">取消</button>
+          <button class="lz-btn lz-btn--primary lz-btn--lg dm-act" bindtap="doExport" disabled="{{exporting}}">{{exporting ? '生成中…' : '生成数据包'}}</button>
+        </view>
+      </block>
+      <!-- 第二步：展示数据包，明确告知怎么用 -->
+      <block wx:else>
+        <view class="dm-pop__t">数据包已生成</view>
+        <view class="dm-pop__d">{{exportInfo}}。<text class="dm-strong">这串文字就是你的数据包，请「复制」后粘贴到微信聊天 / 备忘录等处保存或发给他人；</text>对方在「导入数据」里粘贴即可恢复。</view>
+        <textarea class="dm-ta dm-ta--ro" value="{{exportResult}}" disabled />
+        <view class="dm-acts">
+          <button class="lz-btn lz-btn--ghost lz-btn--lg dm-act" bindtap="closeExport">完成</button>
+          <button class="lz-btn lz-btn--primary lz-btn--lg dm-act" bindtap="copyExport">复制数据包</button>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 导入弹窗 -->
+  <view wx:if="{{importShow}}" class="dm-mask" bindtap="closeImport">
+    <view class="dm-pop" catchtap="noopMask">
+      <view class="dm-pop__t">导入数据包</view>
+      <view class="dm-pop__d">粘贴加密数据包，将其中的订单与客户导入当前账号。</view>
+      <textarea class="dm-ta" value="{{importText}}" bindinput="onImportInput" placeholder="在此粘贴以 LJBK1. 开头的数据包" placeholder-class="ph" />
+      <view class="dm-acts">
+        <button class="lz-btn lz-btn--ghost lz-btn--lg dm-act" bindtap="closeImport">取消</button>
+        <button class="lz-btn lz-btn--primary lz-btn--lg dm-act" bindtap="doImport" disabled="{{importing}}">{{importing ? '导入中…' : '导入'}}</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -17,11 +17,7 @@ Page({
     memberSub: '点击开通，解锁全部功能',
     rows: [
       { icon: 'gift', label: '邀请好友得会员', page: '/pages/invite/index' },
-      { icon: 'shield', label: '账户安全', page: '/pages/account-security/index' },
-      { icon: 'bell', label: '通知提醒', page: '/pages/notifications/index' },
-      { icon: 'lock', label: '隐私设置', page: '/pages/privacy/index' },
-      { icon: 'doc', label: '更新日志', page: '/pages/changelog/index' },
-      { icon: 'info', label: '关于门窗利账', page: '/pages/about/index' },
+      { icon: 'device', label: '设置', page: '/pages/settings/index' },
     ],
   },
 
