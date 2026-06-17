@@ -14,9 +14,14 @@ export interface Extra {
 
 export function sanitizeExtras(raw: any): Extra[] {
   if (!Array.isArray(raw)) return []
+  // 与后端 ledger.constants.sanitizeExtras 同口径：条数 ≤50、type ≤20 字，
+  // 否则前端预估利润会把后端将截断/拒绝的项算进去，导致前后端金额对不上。
   return raw
+    .slice(0, 50)
     .map((e) => ({
-      type: String(e?.type ?? '').trim(),
+      type: String(e?.type ?? '')
+        .trim()
+        .slice(0, 20),
       amount: Math.max(0, Math.round(Number(e?.amount) || 0)),
     }))
     .filter((e) => e.type && e.amount > 0)
@@ -32,9 +37,13 @@ export interface CustomCost {
 }
 export function sanitizeCustomCosts(raw: any): CustomCost[] {
   if (!Array.isArray(raw)) return []
+  // 与后端 ledger.constants.sanitizeCustomCosts 同口径：条数 ≤20、name ≤20 字。
   return raw
+    .slice(0, 20)
     .map((e) => ({
-      name: String(e?.name ?? '').trim(),
+      name: String(e?.name ?? '')
+        .trim()
+        .slice(0, 20),
       amount: Math.max(0, Math.round(Number(e?.amount) || 0)),
     }))
     .filter((e) => e.name && e.amount > 0)

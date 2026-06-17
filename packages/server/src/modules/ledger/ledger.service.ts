@@ -924,7 +924,12 @@ export class LedgerService {
   /**
    * 写入一条应用内通知（best-effort，失败不影响主流程）。
    * 先查目标用户的通知偏好，对应类型关闭则不投递；无设置行按默认值。
-   * 注意：免打扰（dnd）只约束未来的推送渠道，不拦应用内收件箱。
+   *
+   * 免打扰（dndEnabled/dndStart/dndEnd）按设计只约束「推送渠道」（打扰类，
+   * 如微信订阅消息），不拦应用内收件箱——收件箱是拉取式，用户主动打开才看，
+   * 不构成打扰；DND 期间仍写入收件箱，避免静默丢消息。
+   * 当前尚无推送渠道接入，故 dnd* 字段为预留、暂无运行期消费方；
+   * 接入推送渠道时应在该渠道发送边界调用 dnd 时间窗判断（注意跨午夜）。
    */
   async pushNotification(userId: string, type: string, title: string, body: string) {
     try {
