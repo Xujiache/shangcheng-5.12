@@ -76,7 +76,9 @@
           <span class="font-semibold">商品自定义佣金</span>
           <div class="flex items-center gap-2">
             <span class="text-xs text-g-500">单品规则将覆盖全店默认值</span>
-            <ElButton type="primary" plain size="small" :icon="Plus" @click="openCustomRule">添加自定义</ElButton>
+            <ElButton type="primary" plain size="small" :icon="Plus" @click="openCustomRule"
+              >添加自定义</ElButton
+            >
           </div>
         </div>
       </template>
@@ -84,7 +86,11 @@
         <ElTableColumn label="商品" min-width="220">
           <template #default="{ row }">
             <div class="flex items-center gap-2">
-              <ElImage :src="row.image" fit="cover" style="width: 36px; height: 36px; border-radius: 6px" />
+              <ElImage
+                :src="row.image"
+                fit="cover"
+                style="width: 36px; height: 36px; border-radius: 6px"
+              />
               <span class="font-medium">{{ row.name }}</span>
             </div>
           </template>
@@ -136,10 +142,21 @@
     </ElCard>
 
     <!-- 自定义佣金 Dialog -->
-    <ElDialog v-model="customDialogOpen" :title="customForm.id ? '编辑自定义佣金' : '添加自定义佣金'" width="500px" align-center>
+    <ElDialog
+      v-model="customDialogOpen"
+      :title="customForm.id ? '编辑自定义佣金' : '添加自定义佣金'"
+      width="500px"
+      align-center
+    >
       <ElForm :model="customForm" label-position="top">
         <ElFormItem label="商品">
-          <ElSelect v-model="customForm.id" filterable placeholder="选择商品" style="width: 100%" :disabled="!!customForm.editing">
+          <ElSelect
+            v-model="customForm.id"
+            filterable
+            placeholder="选择商品"
+            style="width: 100%"
+            :disabled="!!customForm.editing"
+          >
             <ElOption
               v-for="p in productOptions"
               :key="p.id"
@@ -151,10 +168,22 @@
         </ElFormItem>
         <div class="grid grid-cols-2 gap-3">
           <ElFormItem label="一级佣金 %">
-            <ElInputNumber v-model="customForm.level1" :min="0" :max="50" :step="0.5" style="width: 100%" />
+            <ElInputNumber
+              v-model="customForm.level1"
+              :min="0"
+              :max="50"
+              :step="0.5"
+              style="width: 100%"
+            />
           </ElFormItem>
           <ElFormItem label="二级佣金 %">
-            <ElInputNumber v-model="customForm.level2" :min="0" :max="50" :step="0.5" style="width: 100%" />
+            <ElInputNumber
+              v-model="customForm.level2"
+              :min="0"
+              :max="50"
+              :step="0.5"
+              style="width: 100%"
+            />
           </ElFormItem>
         </div>
         <ElAlert
@@ -182,7 +211,9 @@
       <div class="mp-summary" v-if="summary">
         <div class="mp-summary__item">
           <div class="text-xs text-g-500">累计佣金</div>
-          <div class="mp-summary__val text-primary">¥{{ summary.totalCommission.toLocaleString() }}</div>
+          <div class="mp-summary__val text-primary"
+            >¥{{ summary.totalCommission.toLocaleString() }}</div
+          >
         </div>
         <div class="mp-summary__item">
           <div class="text-xs text-g-500">本月佣金</div>
@@ -336,8 +367,8 @@
     ElMessage.success('单品规则已保存')
   }
 
-  const totalPercent = computed(() =>
-    Math.round((config.level1Percent + config.level2Percent) * 10) / 10
+  const totalPercent = computed(
+    () => Math.round((config.level1Percent + config.level2Percent) * 10) / 10
   )
 
   function adjust(k: 'level1Percent' | 'level2Percent', d: number) {
@@ -376,16 +407,16 @@
 
 <style scoped lang="scss">
   .mp-commission {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
@@ -393,14 +424,14 @@
   }
 
   .mp-hero {
+    background: linear-gradient(135deg, rgb(255 77 45 / 5%), rgb(255 77 45 / 2%));
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(255, 77, 45, 0.05), rgba(255, 77, 45, 0.02));
   }
 
   .mp-hero__row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-rates {
@@ -414,8 +445,8 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    text-align: center;
     margin-bottom: 10px;
+    text-align: center;
   }
 
   .mp-rate__lbl {
@@ -425,21 +456,21 @@
 
   .mp-rate__row {
     display: flex;
+    gap: 14px;
     align-items: center;
     justify-content: center;
-    gap: 14px;
   }
 
   .mp-rate__num {
+    min-width: 90px;
     font-size: 36px;
     font-weight: 700;
     color: var(--el-color-primary, #ff4d2d);
-    min-width: 90px;
     text-align: center;
 
     small {
-      font-size: 18px;
       margin-left: 2px;
+      font-size: 18px;
     }
   }
 
@@ -457,8 +488,8 @@
 
   .mp-opt {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 10px 0;
 
     & + & {
@@ -480,8 +511,8 @@
   }
 
   .mp-summary__val {
+    margin-top: 4px;
     font-size: 20px;
     font-weight: 600;
-    margin-top: 4px;
   }
 </style>

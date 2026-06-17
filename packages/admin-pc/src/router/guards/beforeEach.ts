@@ -414,7 +414,7 @@ async function handleDynamicRoutes(
     lastRouteInitError = {
       message: err?.message || String(err) || '未知错误',
       code: isHttpError(err) ? err.code : undefined,
-      stack: err?.stack,
+      stack: err?.stack
     }
 
     // 输出详细错误信息，便于排查

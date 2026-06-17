@@ -31,16 +31,18 @@ function adaptPage<T = any>(
   return {
     records,
     total: typeof raw.total === 'number' ? raw.total : records.length,
-    current: typeof raw.page === 'number'
-      ? raw.page
-      : typeof raw.current === 'number'
-        ? raw.current
-        : fallbackCurrent,
-    size: typeof raw.pageSize === 'number'
-      ? raw.pageSize
-      : typeof raw.size === 'number'
-        ? raw.size
-        : fallbackSize
+    current:
+      typeof raw.page === 'number'
+        ? raw.page
+        : typeof raw.current === 'number'
+          ? raw.current
+          : fallbackCurrent,
+    size:
+      typeof raw.pageSize === 'number'
+        ? raw.pageSize
+        : typeof raw.size === 'number'
+          ? raw.size
+          : fallbackSize
   }
 }
 
@@ -93,7 +95,9 @@ export async function fetchGetRoleList(
 
 // 获取菜单列表（admin-pc 默认走静态菜单，无需后端动态返回）
 export function fetchGetMenuList() {
-  return request.get<AppRouteRecord[]>({
-    url: '/api/v1/auth/menus'
-  }).catch(() => [] as AppRouteRecord[])
+  return request
+    .get<AppRouteRecord[]>({
+      url: '/api/v1/auth/menus'
+    })
+    .catch(() => [] as AppRouteRecord[])
 }

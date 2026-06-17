@@ -34,13 +34,22 @@
     <!-- Tab -->
     <ElCard shadow="never" class="pf-toolbar">
       <ElTabs v-model="tab">
-        <ElTabPane v-for="t in tabs" :key="t.value" :label="`${t.label} (${countOf(t.value)})`" :name="t.value" />
+        <ElTabPane
+          v-for="t in tabs"
+          :key="t.value"
+          :label="`${t.label} (${countOf(t.value)})`"
+          :name="t.value"
+        />
       </ElTabs>
     </ElCard>
 
     <!-- 表 -->
     <ElCard shadow="never">
-      <ElTable :data="filtered" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filtered"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="订单号" prop="no" width="200" />
         <ElTableColumn label="收货人" width="160">
           <template #default="{ row }">
@@ -58,7 +67,9 @@
         </ElTableColumn>
         <ElTableColumn label="状态" width="120" align="center">
           <template #default="{ row }">
-            <ElTag :type="statusTypeOf(row.status) as any" size="small">{{ statusLabelOf(row.status) }}</ElTag>
+            <ElTag :type="statusTypeOf(row.status) as any" size="small">{{
+              statusLabelOf(row.status)
+            }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="支付时间" width="170">
@@ -83,19 +94,33 @@
             <h3 class="m-0">订单详情</h3>
             <div class="text-xs text-g-500 mt-1">{{ current.no }}</div>
           </div>
-          <ElTag :type="statusTypeOf(current.status) as any">{{ statusLabelOf(current.status) }}</ElTag>
+          <ElTag :type="statusTypeOf(current.status) as any">{{
+            statusLabelOf(current.status)
+          }}</ElTag>
         </div>
         <ElDescriptions :column="1" border>
-          <ElDescriptionsItem label="收货人">{{ current.address?.name }} · {{ current.address?.phone }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="收货人"
+            >{{ current.address?.name }} · {{ current.address?.phone }}</ElDescriptionsItem
+          >
           <ElDescriptionsItem label="收货地址">{{ current.address?.detail }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="商品总数">{{ current.items?.length || 0 }} 件</ElDescriptionsItem>
-          <ElDescriptionsItem label="商品金额">{{ formatPrice(current.totalAmount || 0) }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="运费">{{ formatPrice(current.shippingFee || 0) }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="商品总数"
+            >{{ current.items?.length || 0 }} 件</ElDescriptionsItem
+          >
+          <ElDescriptionsItem label="商品金额">{{
+            formatPrice(current.totalAmount || 0)
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="运费">{{
+            formatPrice(current.shippingFee || 0)
+          }}</ElDescriptionsItem>
           <ElDescriptionsItem label="实付">
             <span class="text-primary font-semibold">{{ formatPrice(current.payAmount) }}</span>
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="支付时间">{{ current.paidAt ? formatDateTime(current.paidAt) : '—' }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="发货时间">{{ current.shippedAt ? formatDateTime(current.shippedAt) : '—' }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="支付时间">{{
+            current.paidAt ? formatDateTime(current.paidAt) : '—'
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="发货时间">{{
+            current.shippedAt ? formatDateTime(current.shippedAt) : '—'
+          }}</ElDescriptionsItem>
         </ElDescriptions>
       </div>
     </ElDrawer>
@@ -133,9 +158,7 @@
     if (keyword.value) {
       const kw = keyword.value.toLowerCase()
       res = res.filter(
-        (o) =>
-          o.no.toLowerCase().includes(kw) ||
-          (o.address?.name || '').includes(keyword.value)
+        (o) => o.no.toLowerCase().includes(kw) || (o.address?.name || '').includes(keyword.value)
       )
     }
     return res
@@ -146,10 +169,34 @@
       .filter((o) => o.status === 'completed')
       .reduce((s, o) => s + o.payAmount, 0)
     return [
-      { key: 'total', icon: 'ri:bill-line', label: '订单总数', value: orders.value.length, color: '#FF4D2D' },
-      { key: 'gmv', icon: 'ri:money-cny-circle-line', label: '累计 GMV', value: `¥${formatWan(gmv)}`, color: '#10B981' },
-      { key: 'today', icon: 'ri:calendar-line', label: '今日订单', value: orders.value.length, color: '#3B82F6' },
-      { key: 'after', icon: 'ri:customer-service-2-line', label: '售后投诉', value: orders.value.filter((o) => o.status === 'after_sale').length, color: '#F56C6C' }
+      {
+        key: 'total',
+        icon: 'ri:bill-line',
+        label: '订单总数',
+        value: orders.value.length,
+        color: '#FF4D2D'
+      },
+      {
+        key: 'gmv',
+        icon: 'ri:money-cny-circle-line',
+        label: '累计 GMV',
+        value: `¥${formatWan(gmv)}`,
+        color: '#10B981'
+      },
+      {
+        key: 'today',
+        icon: 'ri:calendar-line',
+        label: '今日订单',
+        value: orders.value.length,
+        color: '#3B82F6'
+      },
+      {
+        key: 'after',
+        icon: 'ri:customer-service-2-line',
+        label: '售后投诉',
+        value: orders.value.filter((o) => o.status === 'after_sale').length,
+        color: '#F56C6C'
+      }
     ]
   })
 
@@ -197,26 +244,28 @@
 
 <style scoped lang="scss">
   .pf-order {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     flex-wrap: wrap;
     gap: 12px;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
+
   .text-g-500 {
     color: #6b7280;
   }
+
   .text-g-400 {
     color: #9ca3af;
   }
@@ -226,7 +275,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -235,35 +284,35 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 16px 18px;
       display: flex;
-      align-items: center;
       gap: 14px;
+      align-items: center;
+      padding: 16px 18px;
     }
   }
 
   .pf-kpi__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    height: 44px;
     font-size: 22px;
-    flex-shrink: 0;
+    border-radius: 12px;
   }
 
   .pf-kpi__num {
     font-size: 26px;
     font-weight: 700;
-    color: var(--art-gray-800, #1f2937);
     line-height: 1;
+    color: var(--art-gray-800, #1f2937);
   }
 
   .pf-kpi__label {
+    margin-top: 4px;
     font-size: 12px;
     color: var(--art-gray-500, #6b7280);
-    margin-top: 4px;
   }
 
   .pf-toolbar {
@@ -275,15 +324,15 @@
   }
 
   .pf-detail {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 22px;
   }
 
   .pf-detail__head {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
+    justify-content: space-between;
   }
 </style>

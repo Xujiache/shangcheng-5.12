@@ -38,7 +38,10 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   showSuccessMessage?: boolean
 }
 
-const { VITE_API_URL, VITE_API_BASE_URL, VITE_WITH_CREDENTIALS } = import.meta.env as Record<string, string | undefined>
+const { VITE_API_URL, VITE_API_BASE_URL, VITE_WITH_CREDENTIALS } = import.meta.env as Record<
+  string,
+  string | undefined
+>
 
 /**
  * baseURL 解析
@@ -78,9 +81,7 @@ axiosInstance.interceptors.request.use(
       // 统一加 Bearer 前缀（后端 jwt.guard 同时兼容裸 token 和 Bearer 形式；
       // 这里规范化以便日志可读、与其他端 user-mp/merchant-app 一致）。
       // 防御性检查：localStorage 中可能存的是已带前缀的旧值，避免重复拼接。
-      const tokenHeader = /^Bearer\s+/i.test(accessToken)
-        ? accessToken
-        : `Bearer ${accessToken}`
+      const tokenHeader = /^Bearer\s+/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`
       request.headers.set('Authorization', tokenHeader)
     }
 

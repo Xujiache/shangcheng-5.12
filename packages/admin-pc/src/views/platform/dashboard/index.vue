@@ -78,7 +78,10 @@
             :style="{ '--entry-tint': e.tint }"
             @click="go(e.to)"
           >
-            <div class="pf-entry__icon" :style="{ background: `linear-gradient(135deg, ${e.tint}, ${e.tint}cc)` }">
+            <div
+              class="pf-entry__icon"
+              :style="{ background: `linear-gradient(135deg, ${e.tint}, ${e.tint}cc)` }"
+            >
               <ArtSvgIcon :icon="e.icon" />
             </div>
             <span class="pf-entry__label">{{ e.label }}</span>
@@ -173,18 +176,90 @@
 
   /* ====== 快捷入口 ====== */
   const entries = [
-    { key: 'merchant', icon: 'ri:store-2-line', label: '商户管理', tint: '#FF4D2D', to: '/platform/merchant/list' },
-    { key: 'audit-merchant', icon: 'ri:checkbox-multiple-line', label: '商户审核', tint: '#F5365C', to: '/platform/audit/merchant' },
-    { key: 'audit-product', icon: 'ri:price-tag-2-line', label: '商品审核', tint: '#FF7A45', to: '/platform/audit/product' },
-    { key: 'order', icon: 'ri:file-list-3-line', label: '订单管理', tint: '#3B82F6', to: '/platform/order/list' },
-    { key: 'ad', icon: 'ri:advertisement-line', label: '广告管理', tint: '#FAAD14', to: '/platform/ad' },
-    { key: 'plaza', icon: 'ri:store-3-line', label: '选品广场', tint: '#10B981', to: '/platform/plaza' },
-    { key: 'member', icon: 'ri:vip-crown-2-line', label: '会员套餐', tint: '#A855F7', to: '/platform/member/plan' },
-    { key: 'pay-orders', icon: 'ri:secure-payment-line', label: '会员支付', tint: '#06B6D4', to: '/platform/member/orders' },
-    { key: 'flag', icon: 'ri:toggle-line', label: '功能开关', tint: '#8B5CF6', to: '/platform/feature-flag' },
-    { key: 'perm', icon: 'ri:shield-user-line', label: '权限管理', tint: '#86909C', to: '/platform/permission' },
-    { key: 'system', icon: 'ri:settings-3-line', label: '系统设置', tint: '#0EA5E9', to: '/platform/system' },
-    { key: 'data', icon: 'ri:bar-chart-2-line', label: '数据中心', tint: '#22C55E', to: '/platform/data-center' }
+    {
+      key: 'merchant',
+      icon: 'ri:store-2-line',
+      label: '商户管理',
+      tint: '#FF4D2D',
+      to: '/platform/merchant/list'
+    },
+    {
+      key: 'audit-merchant',
+      icon: 'ri:checkbox-multiple-line',
+      label: '商户审核',
+      tint: '#F5365C',
+      to: '/platform/audit/merchant'
+    },
+    {
+      key: 'audit-product',
+      icon: 'ri:price-tag-2-line',
+      label: '商品审核',
+      tint: '#FF7A45',
+      to: '/platform/audit/product'
+    },
+    {
+      key: 'order',
+      icon: 'ri:file-list-3-line',
+      label: '订单管理',
+      tint: '#3B82F6',
+      to: '/platform/order/list'
+    },
+    {
+      key: 'ad',
+      icon: 'ri:advertisement-line',
+      label: '广告管理',
+      tint: '#FAAD14',
+      to: '/platform/ad'
+    },
+    {
+      key: 'plaza',
+      icon: 'ri:store-3-line',
+      label: '选品广场',
+      tint: '#10B981',
+      to: '/platform/plaza'
+    },
+    {
+      key: 'member',
+      icon: 'ri:vip-crown-2-line',
+      label: '会员套餐',
+      tint: '#A855F7',
+      to: '/platform/member/plan'
+    },
+    {
+      key: 'pay-orders',
+      icon: 'ri:secure-payment-line',
+      label: '会员支付',
+      tint: '#06B6D4',
+      to: '/platform/member/orders'
+    },
+    {
+      key: 'flag',
+      icon: 'ri:toggle-line',
+      label: '功能开关',
+      tint: '#8B5CF6',
+      to: '/platform/feature-flag'
+    },
+    {
+      key: 'perm',
+      icon: 'ri:shield-user-line',
+      label: '权限管理',
+      tint: '#86909C',
+      to: '/platform/permission'
+    },
+    {
+      key: 'system',
+      icon: 'ri:settings-3-line',
+      label: '系统设置',
+      tint: '#0EA5E9',
+      to: '/platform/system'
+    },
+    {
+      key: 'data',
+      icon: 'ri:bar-chart-2-line',
+      label: '数据中心',
+      tint: '#22C55E',
+      to: '/platform/data-center'
+    }
   ]
 
   function onTodo(t: (typeof todoList.value)[number]) {
@@ -213,39 +288,39 @@
 
 <style scoped lang="scss">
   .pf-dashboard {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding: 16px;
   }
 
   /* ============ 顶部 hero 条 ============ */
   .pf-hero {
     position: relative;
-    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    min-height: 120px;
     overflow: hidden;
     color: #fff;
     background: linear-gradient(135deg, #ff4d2d 0%, #ff7a45 60%, #faad14 100%);
-    min-height: 120px;
-    display: flex;
-    align-items: center;
+    border-radius: 16px;
 
     &__bg {
       position: absolute;
       inset: 0;
       pointer-events: none;
       background:
-        radial-gradient(circle at 88% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 32%),
-        radial-gradient(circle at 12% 75%, rgba(255, 255, 255, 0.12) 0%, transparent 28%);
+        radial-gradient(circle at 88% 30%, rgb(255 255 255 / 18%) 0%, transparent 32%),
+        radial-gradient(circle at 12% 75%, rgb(255 255 255 / 12%) 0%, transparent 28%);
     }
 
     &__content {
       position: relative;
       z-index: 1;
-      width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      width: 100%;
       padding: 28px 32px;
     }
 
@@ -263,17 +338,17 @@
     }
 
     &__num {
+      margin: 0 4px;
       font-size: 16px;
       font-weight: 700;
-      margin: 0 4px;
     }
 
     &__link {
+      margin-left: 4px;
       color: #fff;
       text-decoration: underline;
       text-underline-offset: 3px;
       cursor: pointer;
-      margin-left: 4px;
 
       &:hover {
         opacity: 0.85;
@@ -281,8 +356,8 @@
     }
 
     &__date {
-      text-align: right;
       line-height: 1.1;
+      text-align: right;
     }
 
     &__weekday {
@@ -291,10 +366,10 @@
     }
 
     &__day {
+      margin: 2px 0;
       font-size: 42px;
       font-weight: 700;
       letter-spacing: -1px;
-      margin: 2px 0;
     }
 
     &__month {
@@ -305,8 +380,8 @@
 
   /* ============ Card 通用 ============ */
   .pf-card {
-    border-radius: 14px;
     border: 1px solid #f0f1f3;
+    border-radius: 14px;
 
     :deep(.el-card__header) {
       padding: 16px 20px 12px;
@@ -320,21 +395,21 @@
 
   .pf-card__title {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .pf-card__title-text {
     display: inline-flex;
-    align-items: center;
     gap: 8px;
-    font-weight: 600;
+    align-items: center;
     font-size: 15px;
+    font-weight: 600;
   }
 
   .pf-card__title-icon {
-    color: var(--el-color-primary, #ff4d2d);
     font-size: 18px;
+    color: var(--el-color-primary, #ff4d2d);
   }
 
   /* ============ 双栏 ============ */
@@ -343,7 +418,7 @@
     grid-template-columns: 1.05fr 1fr;
     gap: 16px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: 1fr;
     }
   }
@@ -357,20 +432,20 @@
 
   .pf-todo__row {
     display: flex;
-    align-items: center;
     gap: 14px;
+    align-items: center;
     padding: 14px 12px;
-    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
     border-bottom: 1px dashed #f0f0f0;
+    border-radius: 10px;
+    transition: all 0.2s;
 
     &:last-child {
       border-bottom: none;
     }
 
     &:hover {
-      background: linear-gradient(90deg, rgba(255, 77, 45, 0.06), transparent);
+      background: linear-gradient(90deg, rgb(255 77 45 / 6%), transparent);
       transform: translateX(2px);
     }
 
@@ -378,21 +453,21 @@
       opacity: 0.55;
 
       &:hover {
+        background: rgb(0 0 0 / 2%);
         transform: none;
-        background: rgba(0, 0, 0, 0.02);
       }
     }
   }
 
   .pf-todo__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
     font-size: 20px;
-    flex-shrink: 0;
+    border-radius: 12px;
   }
 
   .pf-todo__body {
@@ -407,15 +482,15 @@
   }
 
   .pf-todo__desc {
+    margin-top: 2px;
     font-size: 12px;
     color: #909399;
-    margin-top: 2px;
   }
 
   .pf-todo__count {
     min-width: 64px;
-    text-align: right;
     padding-right: 8px;
+    text-align: right;
   }
 
   .pf-todo__empty {
@@ -424,9 +499,9 @@
   }
 
   .pf-todo__arrow {
-    color: #c0c4cc;
-    font-size: 18px;
     flex-shrink: 0;
+    font-size: 18px;
+    color: #c0c4cc;
   }
 
   /* ============ 快捷入口 ============ */
@@ -436,20 +511,21 @@
     gap: 8px;
     padding: 8px 4px 4px;
 
-    @media (max-width: 700px) {
+    @media (width <= 700px) {
       grid-template-columns: repeat(3, 1fr);
     }
   }
 
   .pf-entry {
     --entry-tint: #ff4d2d;
+
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 10px;
+    align-items: center;
     padding: 18px 6px;
-    border-radius: 12px;
     cursor: pointer;
+    border-radius: 12px;
     transition: all 0.22s ease;
 
     &:hover {
@@ -457,29 +533,29 @@
       transform: translateY(-3px);
 
       .pf-entry__icon {
-        transform: scale(1.08) rotate(-3deg);
         box-shadow: 0 8px 18px color-mix(in srgb, var(--entry-tint) 35%, transparent);
+        transform: scale(1.08) rotate(-3deg);
       }
     }
   }
 
   .pf-entry__icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 52px;
+    height: 52px;
     font-size: 26px;
     color: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgb(0 0 0 / 8%);
     transition: all 0.25s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
   }
 
   .pf-entry__label {
     font-size: 13px;
-    color: #303133;
     font-weight: 500;
+    color: #303133;
   }
 
   .text-g-500 {

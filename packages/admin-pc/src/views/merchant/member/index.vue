@@ -13,17 +13,20 @@
     <ElCard shadow="never" class="mp-current" v-if="current?.subscribed">
       <div class="mp-current__head">
         <div>
-          <div class="mp-current__tag">
-            <ArtSvgIcon icon="ri:vip-crown-fill" /> 当前套餐
-          </div>
+          <div class="mp-current__tag"> <ArtSvgIcon icon="ri:vip-crown-fill" /> 当前套餐 </div>
           <div class="mp-current__name">
             {{ current.planName }}
-            <ElTag size="small" :type="current.status === 'active' ? 'success' : 'warning'" class="ml-2">
+            <ElTag
+              size="small"
+              :type="current.status === 'active' ? 'success' : 'warning'"
+              class="ml-2"
+            >
               {{ statusLabelOf(current.status!) }}
             </ElTag>
           </div>
           <div class="mp-current__date">
-            有效期至 <b>{{ current.expiresAt }}</b> · 剩 {{ current.daysRemaining }} / {{ current.totalDays }} 天
+            有效期至 <b>{{ current.expiresAt }}</b> · 剩 {{ current.daysRemaining }} /
+            {{ current.totalDays }} 天
           </div>
         </div>
         <div class="mp-current__actions">
@@ -51,14 +54,17 @@
     <ElCard shadow="never" class="mp-quota" v-if="quota">
       <template #header>
         <div class="mp-card-head">
-          <div>
-            <ArtSvgIcon icon="ri:line-chart-line" class="text-primary" /> 资源用量
-          </div>
+          <div> <ArtSvgIcon icon="ri:line-chart-line" class="text-primary" /> 资源用量 </div>
           <span class="text-xs text-g-500">月度曝光每月 1 日重置 · 推送位 / Banner 累计</span>
         </div>
       </template>
       <div class="mp-quota__grid">
-        <div v-for="q in quotaCards" :key="q.key" class="mp-quota__cell" :class="{ danger: q.ratio >= 1, warning: q.ratio >= 0.8 && q.ratio < 1 }">
+        <div
+          v-for="q in quotaCards"
+          :key="q.key"
+          class="mp-quota__cell"
+          :class="{ danger: q.ratio >= 1, warning: q.ratio >= 0.8 && q.ratio < 1 }"
+        >
           <div class="flex items-center justify-between">
             <span class="font-medium">{{ q.label }}</span>
             <ElTag v-if="q.ratio >= 1" type="danger" size="small">已用尽</ElTag>
@@ -67,7 +73,9 @@
           </div>
           <div class="mp-quota__num">
             <span class="used">{{ q.used.toLocaleString() }}</span>
-            <span class="text-g-500"> / {{ q.limit > 99999 ? '不限' : q.limit.toLocaleString() }}</span>
+            <span class="text-g-500">
+              / {{ q.limit > 99999 ? '不限' : q.limit.toLocaleString() }}</span
+            >
           </div>
           <ElProgress
             :percentage="Math.min(100, Math.round(q.ratio * 100))"
@@ -134,17 +142,16 @@
             Banner {{ p.constraints.bannerLimit > 99999 ? '不限' : p.constraints.bannerLimit }}
           </ElTag>
           <ElTag v-if="p.constraints.impressionLimit !== undefined" size="small" effect="plain">
-            月曝光 {{ p.constraints.impressionLimit > 99999999 ? '不限' : (p.constraints.impressionLimit / 10000).toFixed(0) + '万' }}
+            月曝光
+            {{
+              p.constraints.impressionLimit > 99999999
+                ? '不限'
+                : (p.constraints.impressionLimit / 10000).toFixed(0) + '万'
+            }}
           </ElTag>
         </div>
         <div class="mp-plan__cta">
-          <ElButton
-            v-if="current?.planId === p.id"
-            type="primary"
-            plain
-            disabled
-            class="w-full"
-          >
+          <ElButton v-if="current?.planId === p.id" type="primary" plain disabled class="w-full">
             <ArtSvgIcon icon="ri:check-double-line" class="mr-1" /> 当前订阅
           </ElButton>
           <ElButton
@@ -154,7 +161,13 @@
             :loading="subscribing === p.id"
             @click="onSubscribe(p)"
           >
-            {{ current?.subscribed ? (p.price > (current?.subscribedPrice || 0) ? '升级到此套餐' : '切换到此套餐') : '立即订阅' }}
+            {{
+              current?.subscribed
+                ? p.price > (current?.subscribedPrice || 0)
+                  ? '升级到此套餐'
+                  : '切换到此套餐'
+                : '立即订阅'
+            }}
           </ElButton>
         </div>
       </div>
@@ -183,11 +196,15 @@
         </ElTableColumn>
         <ElTableColumn label="状态" width="100" align="center">
           <template #default="{ row }">
-            <ElTag :type="payStatusTypeOf(row.status)" size="small">{{ payStatusLabelOf(row.status) }}</ElTag>
+            <ElTag :type="payStatusTypeOf(row.status)" size="small">{{
+              payStatusLabelOf(row.status)
+            }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="支付时间" width="170">
-          <template #default="{ row }">{{ row.paidAt ? formatDateTime(row.paidAt) : '—' }}</template>
+          <template #default="{ row }">{{
+            row.paidAt ? formatDateTime(row.paidAt) : '—'
+          }}</template>
         </ElTableColumn>
       </ElTable>
     </ElCard>
@@ -219,7 +236,9 @@
       </div>
       <template #footer>
         <ElButton @click="confirmOpen = false">取消</ElButton>
-        <ElButton type="primary" :loading="subscribing === confirmPlan?.id" @click="doSubscribe">确认支付</ElButton>
+        <ElButton type="primary" :loading="subscribing === confirmPlan?.id" @click="doSubscribe"
+          >确认支付</ElButton
+        >
       </template>
     </ElDialog>
   </div>
@@ -298,18 +317,31 @@
   })
 
   function periodLabelOf(p: MemberPlan['period']) {
-    return ({ monthly: '月', yearly: '年', weekly: '周', daily: '天', oneoff: '次' } as Record<string, string>)[p] || p
+    return (
+      (
+        { monthly: '月', yearly: '年', weekly: '周', daily: '天', oneoff: '次' } as Record<
+          string,
+          string
+        >
+      )[p] || p
+    )
   }
 
   function statusLabelOf(s: NonNullable<CurrentMembership['status']>) {
-    return ({ trial: '试用中', active: '生效中', expired: '已过期', cancelled: '已取消' } as const)[s]
+    return ({ trial: '试用中', active: '生效中', expired: '已过期', cancelled: '已取消' } as const)[
+      s
+    ]
   }
 
   function payStatusTypeOf(s: PaymentRecord['status']) {
-    return ({ paid: 'success', pending: 'warning', refunding: 'danger', refunded: 'info' } as const)[s]
+    return (
+      { paid: 'success', pending: 'warning', refunding: 'danger', refunded: 'info' } as const
+    )[s]
   }
   function payStatusLabelOf(s: PaymentRecord['status']) {
-    return ({ paid: '已支付', pending: '待支付', refunding: '退款中', refunded: '已退款' } as const)[s]
+    return (
+      { paid: '已支付', pending: '待支付', refunding: '退款中', refunded: '已退款' } as const
+    )[s]
   }
   function payMethodLabelOf(m: PaymentRecord['payMethod']) {
     return ({ wechat: '微信', alipay: '支付宝', balance: '余额' } as const)[m]
@@ -414,45 +446,47 @@
 
 <style scoped lang="scss">
   .mp-member {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
+
   .text-success {
     color: #10b981;
   }
+
   .text-g-500 {
     color: #6b7280;
   }
 
   .mp-card-head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     font-weight: 600;
 
     > div {
       display: inline-flex;
-      align-items: center;
       gap: 6px;
+      align-items: center;
     }
   }
 
   /* 当前套餐卡 */
   .mp-current {
+    background: linear-gradient(135deg, rgb(255 77 45 / 6%), rgb(255 77 45 / 2%));
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(255, 77, 45, 0.06), rgba(255, 77, 45, 0.02));
 
     &--empty {
       background: var(--art-bg-card, #fff);
@@ -468,20 +502,20 @@
 
   .mp-current__tag {
     display: inline-flex;
-    align-items: center;
     gap: 4px;
+    align-items: center;
     padding: 4px 10px;
-    border-radius: 10px;
-    background: rgba(255, 77, 45, 0.12);
-    color: var(--el-color-primary, #ff4d2d);
     font-size: 12px;
     font-weight: 600;
+    color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 77 45 / 12%);
+    border-radius: 10px;
   }
 
   .mp-current__name {
+    margin: 8px 0 4px;
     font-size: 22px;
     font-weight: 700;
-    margin: 8px 0 4px;
     color: var(--art-gray-800, #1f2937);
   }
 
@@ -504,25 +538,25 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 14px;
 
-    @media (max-width: 900px) {
+    @media (width <= 900px) {
       grid-template-columns: 1fr;
     }
   }
 
   .mp-quota__cell {
-    padding: 14px 16px;
-    background: #fafbfc;
-    border-radius: 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 14px 16px;
+    background: #fafbfc;
+    border-radius: 10px;
 
     &.warning {
-      background: rgba(230, 162, 60, 0.06);
+      background: rgb(230 162 60 / 6%);
     }
 
     &.danger {
-      background: rgba(245, 108, 108, 0.06);
+      background: rgb(245 108 108 / 6%);
     }
   }
 
@@ -551,22 +585,22 @@
 
   .mp-plan {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 22px 22px 20px;
     background: #fff;
     border: 2px solid var(--art-border-color, #e5e7eb);
     border-radius: 16px;
-    padding: 22px 22px 20px;
-    display: flex;
-    flex-direction: column;
     transition: all 0.2s;
 
     &.hot {
       border-color: var(--el-color-primary, #ff4d2d);
-      box-shadow: 0 12px 32px -16px rgba(255, 77, 45, 0.4);
+      box-shadow: 0 12px 32px -16px rgb(255 77 45 / 40%);
     }
 
     &.active {
+      background: linear-gradient(135deg, rgb(16 185 129 / 4%), #fff);
       border-color: #10b981;
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.04), #fff);
     }
   }
 
@@ -575,11 +609,11 @@
     top: -10px;
     right: 18px;
     padding: 3px 12px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
-    color: #fff;
     font-size: 11px;
     font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #ff4d2d, #ff7a45);
+    border-radius: 10px;
   }
 
   .mp-plan__current-tag {
@@ -587,11 +621,11 @@
     top: -10px;
     left: 18px;
     padding: 3px 12px;
-    border-radius: 10px;
-    background: #10b981;
-    color: #fff;
     font-size: 11px;
     font-weight: 600;
+    color: #fff;
+    background: #10b981;
+    border-radius: 10px;
   }
 
   .mp-plan__name {
@@ -600,19 +634,20 @@
   }
 
   .mp-plan__price {
+    margin: 6px 0 2px;
     font-size: 32px;
     font-weight: 700;
     color: var(--el-color-primary, #ff4d2d);
-    margin: 6px 0 2px;
 
     .currency {
-      font-size: 18px;
       margin-right: 2px;
+      font-size: 18px;
     }
+
     small {
       font-size: 13px;
-      color: #6b7280;
       font-weight: 400;
+      color: #6b7280;
     }
   }
 
@@ -623,22 +658,22 @@
 
   .mp-plan__trial {
     font-size: 12px;
-    color: #f59e0b;
     font-weight: 500;
+    color: #f59e0b;
   }
 
   .mp-plan__rights {
-    list-style: none;
+    flex: 1;
     padding: 0;
     margin: 14px 0 0;
-    flex: 1;
+    list-style: none;
 
     li {
+      display: flex;
+      gap: 6px;
+      align-items: center;
       padding: 5px 0;
       font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       color: var(--art-gray-700, #374151);
     }
   }
@@ -648,8 +683,8 @@
     flex-wrap: wrap;
     gap: 6px;
     padding-top: 10px;
-    border-top: 1px dashed var(--art-border-color, #e5e7eb);
     margin-top: 8px;
+    border-top: 1px dashed var(--art-border-color, #e5e7eb);
   }
 
   .mp-plan__cta {
@@ -659,12 +694,15 @@
   .w-full {
     width: 100%;
   }
+
   .mr-1 {
     margin-right: 4px;
   }
+
   .ml-2 {
     margin-left: 8px;
   }
+
   .mb-1 {
     margin-bottom: 4px;
   }
@@ -687,14 +725,14 @@
     color: var(--el-color-primary, #ff4d2d);
 
     .currency {
-      font-size: 16px;
       margin-right: 2px;
+      font-size: 16px;
     }
 
     small {
       font-size: 13px;
-      color: #6b7280;
       font-weight: 400;
+      color: #6b7280;
     }
   }
 </style>

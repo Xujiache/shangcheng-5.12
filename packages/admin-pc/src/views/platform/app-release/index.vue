@@ -13,9 +13,7 @@
           上传商家版 / 平台版 Android APK；端上启动时自动比对 versionCode 触发更新弹窗
         </p>
       </div>
-      <ElButton type="primary" :icon="UploadFilled" @click="openCreate">
-        新建发布
-      </ElButton>
+      <ElButton type="primary" :icon="UploadFilled" @click="openCreate"> 新建发布 </ElButton>
     </div>
 
     <ElTabs v-model="active" class="pf-tabs" @tab-change="reload">
@@ -88,9 +86,7 @@
         </ElFormItem>
         <ElFormItem label="强制更新">
           <ElSwitch v-model="form.force" />
-          <div class="text-xs text-g-500 ml-3 inline">
-            开启后端上无法跳过此版本
-          </div>
+          <div class="text-xs text-g-500 ml-3 inline"> 开启后端上无法跳过此版本 </div>
         </ElFormItem>
         <ElFormItem label="APK 文件" required>
           <ElUpload
@@ -128,7 +124,7 @@
 
 <script setup lang="ts">
   import { ref, computed, onMounted } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { UploadFilled } from '@element-plus/icons-vue'
   import {
     fetchAppReleases,
@@ -157,9 +153,7 @@
     force: false
   })
 
-  const maxVersionCode = computed(
-    () => list.value.reduce((m, r) => Math.max(m, r.versionCode), 0)
-  )
+  const maxVersionCode = computed(() => list.value.reduce((m, r) => Math.max(m, r.versionCode), 0))
 
   async function reload() {
     loading.value = true
@@ -266,19 +260,23 @@
   .pf-app-release {
     padding: 24px;
   }
+
   .pf-page-header {
     display: flex;
+    gap: 16px;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
     margin-bottom: 16px;
   }
+
   .pf-tabs {
     margin-bottom: 16px;
   }
+
   .pf-card {
     border-radius: 12px;
   }
+
   .text-g-500 {
     color: var(--art-text-gray-500);
   }

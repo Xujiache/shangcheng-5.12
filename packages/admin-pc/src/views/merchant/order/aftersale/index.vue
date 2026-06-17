@@ -23,7 +23,11 @@
     </ElCard>
 
     <ElCard shadow="never" v-loading="loading">
-      <ElTable :data="filteredList" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filteredList"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="售后单号" width="180">
           <template #default="{ row }">
             <div class="font-medium">{{ row.no }}</div>
@@ -87,7 +91,9 @@
               {{ current.type === 'refund_only' ? '仅退款' : '退货退款' }}
             </ElDescriptionsItem>
             <ElDescriptionsItem label="原因">{{ current.reason }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="详细描述">{{ current.description || '无' }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="详细描述">{{
+              current.description || '无'
+            }}</ElDescriptionsItem>
             <ElDescriptionsItem label="申请金额">
               <span class="text-primary font-semibold">¥{{ current.applyAmount }}</span>
             </ElDescriptionsItem>
@@ -259,16 +265,16 @@
 
 <style scoped lang="scss">
   .mp-aftersale {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
@@ -284,21 +290,21 @@
   }
 
   .mp-detail {
-    padding: 18px 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 18px 22px;
   }
 
   .mp-detail__head {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
+    justify-content: space-between;
   }
 
   .mp-detail__card {
-    border-radius: 10px;
     background: #fafbfc;
+    border-radius: 10px;
 
     :deep(.el-card__body) {
       padding: 14px 16px;
@@ -307,8 +313,8 @@
 
   .mp-detail__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     padding-top: 6px;
   }
 </style>

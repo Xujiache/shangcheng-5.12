@@ -361,7 +361,9 @@
       // 之前没有选择时会静默取列表前 5 条推送，极易误推 —— 改为提示并中止。
       const currentIds = isFactory ? pushForm.factoryIds : pushForm.productIds
       if (!currentIds || currentIds.length === 0) {
-        ElMessage.warning(isFactory ? '请在厂家卡片上点「推送」选择对象' : '请在商品卡片上点「推送」选择对象')
+        ElMessage.warning(
+          isFactory ? '请在厂家卡片上点「推送」选择对象' : '请在商品卡片上点「推送」选择对象'
+        )
         return
       }
     }

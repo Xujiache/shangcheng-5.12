@@ -26,12 +26,21 @@
 
     <ElCard shadow="never" class="pf-toolbar">
       <ElTabs v-model="tab">
-        <ElTabPane v-for="t in tabs" :key="t.value" :label="`${t.label} (${countOf(t.value)})`" :name="t.value" />
+        <ElTabPane
+          v-for="t in tabs"
+          :key="t.value"
+          :label="`${t.label} (${countOf(t.value)})`"
+          :name="t.value"
+        />
       </ElTabs>
     </ElCard>
 
     <ElCard shadow="never">
-      <ElTable :data="filtered" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filtered"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="订单号" prop="no" width="180" />
         <ElTableColumn label="商户" prop="merchantName" min-width="160" />
         <ElTableColumn label="套餐" prop="planName" min-width="160" />
@@ -49,7 +58,9 @@
         </ElTableColumn>
         <ElTableColumn label="状态" width="100" align="center">
           <template #default="{ row }">
-            <ElTag :type="statusTypeOf(row.status)" size="small">{{ statusLabelOf(row.status) }}</ElTag>
+            <ElTag :type="statusTypeOf(row.status)" size="small">{{
+              statusLabelOf(row.status)
+            }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="支付时间" width="170">
@@ -75,11 +86,17 @@
           <ElDescriptionsItem label="金额">
             <span class="text-primary font-semibold">¥{{ current.amount }}</span>
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="支付方式">{{ payMethodLabelOf(current.payMethod) }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="支付方式">{{
+            payMethodLabelOf(current.payMethod)
+          }}</ElDescriptionsItem>
           <ElDescriptionsItem label="状态">
-            <ElTag :type="statusTypeOf(current.status)" size="small">{{ statusLabelOf(current.status) }}</ElTag>
+            <ElTag :type="statusTypeOf(current.status)" size="small">{{
+              statusLabelOf(current.status)
+            }}</ElTag>
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="支付时间">{{ current.paidAt ? formatDateTime(current.paidAt) : '—' }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="支付时间">{{
+            current.paidAt ? formatDateTime(current.paidAt) : '—'
+          }}</ElDescriptionsItem>
         </ElDescriptions>
         <div v-if="current.status === 'refunding'" class="mt-3">
           <ElButton type="danger" @click="approveRefund(current)">通过退款</ElButton>
@@ -126,10 +143,34 @@
   const kpiCards = computed(() => {
     const paid = list.value.filter((x) => x.status === 'paid')
     return [
-      { key: 'income', icon: 'ri:money-cny-circle-line', label: '总收入', value: '¥' + paid.reduce((s, x) => s + x.amount, 0).toLocaleString(), color: '#10B981' },
-      { key: 'paid', icon: 'ri:check-double-line', label: '已支付', value: paid.length, color: '#FF4D2D' },
-      { key: 'pending', icon: 'ri:time-line', label: '待支付', value: list.value.filter((x) => x.status === 'pending').length, color: '#FAAD14' },
-      { key: 'refund', icon: 'ri:refund-2-line', label: '退款中', value: list.value.filter((x) => x.status === 'refunding').length, color: '#F56C6C' }
+      {
+        key: 'income',
+        icon: 'ri:money-cny-circle-line',
+        label: '总收入',
+        value: '¥' + paid.reduce((s, x) => s + x.amount, 0).toLocaleString(),
+        color: '#10B981'
+      },
+      {
+        key: 'paid',
+        icon: 'ri:check-double-line',
+        label: '已支付',
+        value: paid.length,
+        color: '#FF4D2D'
+      },
+      {
+        key: 'pending',
+        icon: 'ri:time-line',
+        label: '待支付',
+        value: list.value.filter((x) => x.status === 'pending').length,
+        color: '#FAAD14'
+      },
+      {
+        key: 'refund',
+        icon: 'ri:refund-2-line',
+        label: '退款中',
+        value: list.value.filter((x) => x.status === 'refunding').length,
+        color: '#F56C6C'
+      }
     ]
   })
 
@@ -139,10 +180,14 @@
   }
 
   function statusTypeOf(s: PayOrderItem['status']) {
-    return ({ paid: 'success', pending: 'warning', refunding: 'danger', refunded: 'info' } as const)[s]
+    return (
+      { paid: 'success', pending: 'warning', refunding: 'danger', refunded: 'info' } as const
+    )[s]
   }
   function statusLabelOf(s: PayOrderItem['status']) {
-    return ({ paid: '已支付', pending: '待支付', refunding: '退款中', refunded: '已退款' } as const)[s]
+    return (
+      { paid: '已支付', pending: '待支付', refunding: '退款中', refunded: '已退款' } as const
+    )[s]
   }
   function payMethodTypeOf(m: PayOrderItem['payMethod']) {
     return ({ wechat: 'success', alipay: 'primary', balance: 'warning' } as const)[m]
@@ -196,14 +241,18 @@
         o.no,
         o.merchantName,
         o.planName,
-        ({ basic: '会员套餐', ad: '推广套餐', addon: '增值单项' } as Record<string, string>)[o.planType] || o.planType,
+        ({ basic: '会员套餐', ad: '推广套餐', addon: '增值单项' } as Record<string, string>)[
+          o.planType
+        ] || o.planType,
         '¥' + o.amount,
         payMethodLabelOf(o.payMethod),
         statusLabelOf(o.status),
         o.paidAt ? formatDateTime(o.paidAt) : '—'
       ])
     })
-    const csv = '﻿' + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
+    const csv =
+      '﻿' +
+      rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -219,21 +268,22 @@
 
 <style scoped lang="scss">
   .pf-po {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
+
   .text-g-400 {
     color: #9ca3af;
   }
@@ -243,7 +293,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 
-    @media (max-width: 1100px) {
+    @media (width <= 1100px) {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -252,35 +302,35 @@
     border-radius: 12px;
 
     :deep(.el-card__body) {
-      padding: 16px 18px;
       display: flex;
-      align-items: center;
       gap: 14px;
+      align-items: center;
+      padding: 16px 18px;
     }
   }
 
   .pf-kpi__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    height: 44px;
     font-size: 22px;
-    flex-shrink: 0;
+    border-radius: 12px;
   }
 
   .pf-kpi__num {
     font-size: 22px;
     font-weight: 700;
-    color: var(--art-gray-800, #1f2937);
     line-height: 1;
+    color: var(--art-gray-800, #1f2937);
   }
 
   .pf-kpi__label {
+    margin-top: 4px;
     font-size: 12px;
     color: #6b7280;
-    margin-top: 4px;
   }
 
   .pf-toolbar {
@@ -292,9 +342,9 @@
   }
 
   .pf-detail {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 22px;
   }
 </style>

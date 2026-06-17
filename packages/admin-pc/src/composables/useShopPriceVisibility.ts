@@ -27,7 +27,7 @@ const DEFAULT: ShopPriceVisibility = {
   guestAllow: false,
   customerPrice: 'retail',
   agencyPrice: 'wholesale',
-  memberPrice: 'member',
+  memberPrice: 'member'
 }
 
 function readLocalCache(): ShopPriceVisibility {
@@ -54,7 +54,7 @@ let initialized = false
 async function fetchFromServer() {
   try {
     const data = await request.get<ShopPriceVisibility>({
-      url: '/api/v1/m/shop/price-rule',
+      url: '/api/v1/m/shop/price-rule'
     })
     if (data) {
       state.value = { ...DEFAULT, ...data }
@@ -72,7 +72,7 @@ function debouncedPush(v: ShopPriceVisibility) {
     try {
       await request.put({
         url: '/api/v1/m/shop/price-rule',
-        data: v,
+        data: v
       })
     } catch {
       // 后端失败也没关系，本地缓存保住

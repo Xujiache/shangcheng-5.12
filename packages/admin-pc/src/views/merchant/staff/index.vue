@@ -35,7 +35,11 @@
     </ElCard>
 
     <ElCard shadow="never" v-loading="loading">
-      <ElTable :data="filteredList" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filteredList"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="员工" min-width="200">
           <template #default="{ row }">
             <div class="flex items-center gap-2">
@@ -87,7 +91,9 @@
 
     <ElDrawer v-model="drawerOpen" :size="480" :with-header="false">
       <div class="mp-drawer">
-        <div class="mp-drawer__head"><h3 class="m-0">{{ form.id ? '编辑员工' : '添加员工' }}</h3></div>
+        <div class="mp-drawer__head"
+          ><h3 class="m-0">{{ form.id ? '编辑员工' : '添加员工' }}</h3></div
+        >
         <ElForm label-position="top">
           <ElFormItem label="姓名"><ElInput v-model="form.name" /></ElFormItem>
           <ElFormItem label="手机号"><ElInput v-model="form.phone" /></ElFormItem>
@@ -104,7 +110,13 @@
               <ElOption v-for="s in stores" :key="s.id" :value="s.id" :label="s.name" />
             </ElSelect>
           </ElFormItem>
-          <ElFormItem label="入职日期"><ElDatePicker v-model="form.joinedAt" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></ElFormItem>
+          <ElFormItem label="入职日期"
+            ><ElDatePicker
+              v-model="form.joinedAt"
+              type="date"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+          /></ElFormItem>
         </ElForm>
         <div class="mp-drawer__footer">
           <ElButton @click="drawerOpen = false">取消</ElButton>
@@ -175,7 +187,9 @@
     return staffList.value.filter((s) => s.role === r).length
   }
   function roleTypeOf(r: StaffRole) {
-    return ({ manager: 'success', cashier: 'primary', sales: 'warning', admin: 'danger' } as const)[r]
+    return ({ manager: 'success', cashier: 'primary', sales: 'warning', admin: 'danger' } as const)[
+      r
+    ]
   }
   function roleLabelOf(r: StaffRole) {
     return ({ manager: '店长', cashier: '收银员', sales: '导购', admin: '管理员' } as const)[r]
@@ -238,20 +252,25 @@
 
 <style scoped lang="scss">
   .mp-staff {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
-  .text-success { color: #10b981; }
-  .text-primary { color: var(--el-color-primary, #ff4d2d); }
+  .text-success {
+    color: #10b981;
+  }
+
+  .text-primary {
+    color: var(--el-color-primary, #ff4d2d);
+  }
 
   .mp-toolbar {
     border-radius: 12px;
@@ -268,17 +287,17 @@
   }
 
   .mp-drawer {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 12px;
     height: 100%;
+    padding: 22px;
   }
 
   .mp-drawer__footer {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
+    justify-content: flex-end;
     margin-top: auto;
   }
 </style>

@@ -82,7 +82,9 @@
       <template #header>
         <div class="pf-card__title">
           <span><ArtSvgIcon icon="ri:apps-line" /> 首页快捷入口</span>
-          <span class="text-xs text-g-500">{{ countOf('home_entry', true) }} / {{ countOf('home_entry') }}</span>
+          <span class="text-xs text-g-500"
+            >{{ countOf('home_entry', true) }} / {{ countOf('home_entry') }}</span
+          >
         </div>
       </template>
       <div class="pf-flag-grid">
@@ -105,7 +107,9 @@
       <template #header>
         <div class="pf-card__title">
           <span><ArtSvgIcon icon="ri:user-settings-line" /> 商户角色入口</span>
-          <span class="text-xs text-g-500">{{ countOf('role_button', true) }} / {{ countOf('role_button') }}</span>
+          <span class="text-xs text-g-500"
+            >{{ countOf('role_button', true) }} / {{ countOf('role_button') }}</span
+          >
         </div>
       </template>
       <div class="pf-flag-rows">
@@ -128,7 +132,9 @@
       <template #header>
         <div class="pf-card__title">
           <span><ArtSvgIcon icon="ri:menu-line" /> 侧边 / 二级菜单</span>
-          <span class="text-xs text-g-500">{{ countOf('side_menu', true) }} / {{ countOf('side_menu') }}</span>
+          <span class="text-xs text-g-500"
+            >{{ countOf('side_menu', true) }} / {{ countOf('side_menu') }}</span
+          >
         </div>
       </template>
       <div class="pf-flag-rows">
@@ -224,9 +230,7 @@
       grayWhitelist: Array.isArray(found.grayWhitelist) ? [...found.grayWhitelist] : [],
       scheduledAt: found.scheduledAt ?? null
     })
-    scheduledAtInput.value = found.scheduledAt
-      ? new Date(found.scheduledAt).toISOString()
-      : ''
+    scheduledAtInput.value = found.scheduledAt ? new Date(found.scheduledAt).toISOString() : ''
   }
 
   function onWhitelistInput(v: string | number) {
@@ -276,16 +280,16 @@
 
 <style scoped lang="scss">
   .pf-ff {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-g-500 {
@@ -298,14 +302,14 @@
 
   .pf-card__title {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     font-weight: 600;
 
     > span:first-child {
       display: inline-flex;
-      align-items: center;
       gap: 6px;
+      align-items: center;
     }
   }
 
@@ -317,19 +321,19 @@
 
   .pf-flag {
     display: flex;
+    gap: 8px;
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px;
     background: #fafbfc;
     border-radius: 10px;
-    gap: 8px;
   }
 
   .pf-flag__head {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 4px;
-    flex: 1;
   }
 
   .pf-flag-rows {
@@ -339,8 +343,8 @@
 
   .pf-flag-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 12px 4px;
     border-bottom: 1px dashed var(--art-border-color, #e5e7eb);
 
@@ -352,13 +356,15 @@
   .grid {
     display: grid;
   }
+
   .grid-cols-2 {
     grid-template-columns: 1fr 1fr;
 
-    @media (max-width: 900px) {
+    @media (width <= 900px) {
       grid-template-columns: 1fr;
     }
   }
+
   .gap-4 {
     gap: 16px;
   }

@@ -36,7 +36,8 @@
         <div class="pf-card__title">
           <span>免审条件（满足任一即可）</span>
           <span class="text-xs text-g-500">
-            {{ cfg.conditions.filter((c) => c.enabled).length }} / {{ cfg.conditions.length }} 已启用
+            {{ cfg.conditions.filter((c) => c.enabled).length }} /
+            {{ cfg.conditions.length }} 已启用
           </span>
         </div>
       </template>
@@ -67,13 +68,22 @@
     <!-- Tab -->
     <ElCard shadow="never" class="pf-toolbar">
       <ElTabs v-model="tab">
-        <ElTabPane v-for="t in tabs" :key="t.value" :label="`${t.label} (${countOf(t.value)})`" :name="t.value" />
+        <ElTabPane
+          v-for="t in tabs"
+          :key="t.value"
+          :label="`${t.label} (${countOf(t.value)})`"
+          :name="t.value"
+        />
       </ElTabs>
     </ElCard>
 
     <!-- 商品表 -->
     <ElCard shadow="never">
-      <ElTable :data="filtered" stripe :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }">
+      <ElTable
+        :data="filtered"
+        stripe
+        :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
+      >
         <ElTableColumn label="商品" min-width="320">
           <template #default="{ row }">
             <div class="flex items-center gap-3">
@@ -95,7 +105,9 @@
         </ElTableColumn>
         <ElTableColumn label="状态" width="120" align="center">
           <template #default="{ row }">
-            <ElTag :type="statusTypeOf(row.status)" size="small">{{ statusLabelOf(row.status) }}</ElTag>
+            <ElTag :type="statusTypeOf(row.status)" size="small">{{
+              statusLabelOf(row.status)
+            }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="操作" width="220" fixed="right">
@@ -117,7 +129,13 @@
                 </template>
               </ElDropdown>
             </template>
-            <ElButton v-else-if="row.status === 'auto_approved'" link type="warning" @click="onSpot(row)">抽检</ElButton>
+            <ElButton
+              v-else-if="row.status === 'auto_approved'"
+              link
+              type="warning"
+              @click="onSpot(row)"
+              >抽检</ElButton
+            >
             <ElButton link @click="openDetail(row)">详情</ElButton>
           </template>
         </ElTableColumn>
@@ -132,11 +150,17 @@
           <ElDescriptionsItem label="商户">{{ current.merchant }}</ElDescriptionsItem>
           <ElDescriptionsItem label="类目">{{ current.category }}</ElDescriptionsItem>
           <ElDescriptionsItem label="价格">¥{{ current.price }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="提交时间">{{ formatDateTime(current.submittedAt) }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="提交时间">{{
+            formatDateTime(current.submittedAt)
+          }}</ElDescriptionsItem>
           <ElDescriptionsItem label="状态">
-            <ElTag :type="statusTypeOf(current.status)" size="small">{{ statusLabelOf(current.status) }}</ElTag>
+            <ElTag :type="statusTypeOf(current.status)" size="small">{{
+              statusLabelOf(current.status)
+            }}</ElTag>
           </ElDescriptionsItem>
-          <ElDescriptionsItem v-if="current.rejectReason" label="驳回原因">{{ current.rejectReason }}</ElDescriptionsItem>
+          <ElDescriptionsItem v-if="current.rejectReason" label="驳回原因">{{
+            current.rejectReason
+          }}</ElDescriptionsItem>
         </ElDescriptions>
       </div>
     </ElDrawer>
@@ -248,29 +272,30 @@
 
 <style scoped lang="scss">
   .pf-pa {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 16px;
   }
 
   .pf-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .text-primary {
     color: var(--el-color-primary, #ff4d2d);
   }
+
   .text-g-500 {
     color: #6b7280;
   }
 
   .pf-auto {
+    background: linear-gradient(135deg, rgb(255 77 45 / 8%), rgb(255 156 110 / 4%));
+    border: 1px solid rgb(255 77 45 / 20%);
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(255, 77, 45, 0.08), rgba(255, 156, 110, 0.04));
-    border: 1px solid rgba(255, 77, 45, 0.2);
 
     :deep(.el-card__body) {
       padding: 18px 22px;
@@ -279,21 +304,21 @@
 
   .pf-auto__row {
     display: flex;
-    align-items: center;
     gap: 14px;
+    align-items: center;
   }
 
   .pf-auto__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: rgba(255, 77, 45, 0.16);
-    color: var(--el-color-primary, #ff4d2d);
-    font-size: 22px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    color: var(--el-color-primary, #ff4d2d);
+    background: rgb(255 77 45 / 16%);
+    border-radius: 12px;
   }
 
   .pf-cond {
@@ -302,8 +327,8 @@
 
   .pf-card__title {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     font-weight: 600;
   }
 
@@ -315,8 +340,8 @@
 
   .pf-cond__row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 8px 4px;
     border-bottom: 1px dashed var(--art-border-color, #e5e7eb);
 
@@ -326,12 +351,12 @@
   }
 
   .pf-cond__sample {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px dashed var(--art-border-color, #e5e7eb);
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    margin-top: 14px;
+    border-top: 1px dashed var(--art-border-color, #e5e7eb);
   }
 
   .pf-toolbar {
@@ -343,23 +368,23 @@
   }
 
   .pf-thumb {
+    flex-shrink: 0;
     width: 56px;
     height: 56px;
     border-radius: 8px;
-    flex-shrink: 0;
   }
 
   .pf-detail {
-    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    padding: 22px;
   }
 
   .pf-detail__img {
     width: 100%;
     aspect-ratio: 1;
-    border-radius: 12px;
     overflow: hidden;
+    border-radius: 12px;
   }
 </style>

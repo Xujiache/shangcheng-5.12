@@ -412,7 +412,7 @@
       // 并行拉，任一失败用空数组兜底，保证另一份仍能用
       const [platform, own] = await Promise.all([
         fetchPlatformCategoriesForMerchant().catch(() => []),
-        fetchMerchantCategories().catch(() => []),
+        fetchMerchantCategories().catch(() => [])
       ])
       // 合并：平台分类在前（"官方"），自定义在后
       const flat = [...(platform as any[]), ...(own as any[])]

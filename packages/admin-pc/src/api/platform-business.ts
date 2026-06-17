@@ -283,9 +283,7 @@ export async function fetchProductAudits(): Promise<AuditProduct[]> {
         image: p.image || (Array.isArray(p.images) ? p.images[0] : '') || '',
         category: p.category?.name || p.categoryName || '',
         merchant:
-          (typeof p.merchant === 'object' ? p.merchant?.name : p.merchant) ||
-          p.merchantName ||
-          '',
+          (typeof p.merchant === 'object' ? p.merchant?.name : p.merchant) || p.merchantName || '',
         price: Number(p.priceRetailMin ?? p.price ?? 0),
         submittedAt: p.submittedAt || p.createdAt || '',
         // 关键归一化:DB schema 用 'auditing',视图 TabKey 用 'pending'

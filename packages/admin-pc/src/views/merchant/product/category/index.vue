@@ -50,11 +50,8 @@
           @node-click="selectNode"
           @node-drop="onDrop"
         >
-          <template #default="{ node, data }">
-            <div
-              class="mp-tree-node"
-              :class="{ active: selectedNode?.id === data.id }"
-            >
+          <template #default="{ data }">
+            <div class="mp-tree-node" :class="{ active: selectedNode?.id === data.id }">
               <ArtSvgIcon
                 :icon="data.icon || (data.parentId ? 'ri:folder-line' : 'ri:folder-open-line')"
                 class="text-base text-g-500"
@@ -64,7 +61,13 @@
               <div class="mp-tree-node__ops">
                 <ElButton text size="small" :icon="Plus" @click.stop="addChild(data)" />
                 <ElButton text size="small" :icon="Edit" @click.stop="renameNode(data)" />
-                <ElButton text size="small" :icon="Delete" type="danger" @click.stop="removeNode(data)" />
+                <ElButton
+                  text
+                  size="small"
+                  :icon="Delete"
+                  type="danger"
+                  @click.stop="removeNode(data)"
+                />
               </div>
             </div>
           </template>
@@ -320,24 +323,24 @@
 
 <style scoped lang="scss">
   .mp-category {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     height: calc(100vh - 100px);
+    padding: 16px;
   }
 
   .mp-page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .mp-category__layout {
     display: grid;
+    flex: 1;
     grid-template-columns: 380px 1fr;
     gap: 14px;
-    flex: 1;
     min-height: 0;
   }
 
@@ -352,16 +355,16 @@
   }
 
   .mp-tree-node {
-    flex: 1;
     display: flex;
-    align-items: center;
+    flex: 1;
     gap: 8px;
+    align-items: center;
     padding: 4px 8px;
     border-radius: 6px;
 
     &.active {
-      background: rgba(255, 77, 45, 0.08);
       color: var(--el-color-primary, #ff4d2d);
+      background: rgb(255 77 45 / 8%);
     }
   }
 
@@ -371,11 +374,11 @@
   }
 
   .mp-tree-node__count {
-    font-size: 11px;
     padding: 1px 6px;
-    border-radius: 4px;
-    background: var(--art-bg-color, #fafbfc);
+    font-size: 11px;
     color: var(--art-gray-500, #6b7280);
+    background: var(--art-bg-color, #fafbfc);
+    border-radius: 4px;
   }
 
   .mp-tree-node__ops {

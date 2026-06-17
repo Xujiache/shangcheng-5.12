@@ -122,9 +122,7 @@ export function removePlan(id: string): Promise<{ ok: true }> {
 
 export function getCurrentSubscription(_merchantId?: string): Promise<Subscription | null> {
   // 商户端：当前登录商户的订阅（merchantId 由后端从 JWT 提取）
-  return request
-    .get<Subscription | null>({ url: '/api/v1/m/membership' })
-    .catch(() => null)
+  return request.get<Subscription | null>({ url: '/api/v1/m/membership' }).catch(() => null)
 }
 
 /**
@@ -230,9 +228,7 @@ export function setAutoRenew(_merchantId: string, autoRenew: boolean): Promise<{
 /* ============ 配额 ============ */
 
 export function getQuota(_merchantId?: string): Promise<UsageQuota | null> {
-  return request
-    .get<UsageQuota | null>({ url: '/api/v1/m/membership/quota' })
-    .catch(() => null)
+  return request.get<UsageQuota | null>({ url: '/api/v1/m/membership/quota' }).catch(() => null)
 }
 
 export type QuotaKey = 'pushSlots' | 'bannerLimit' | 'impressionLimit'
@@ -265,7 +261,9 @@ export function releaseQuota(
 }
 
 export function quotaLabelOf(k: QuotaKey): string {
-  return ({ pushSlots: '选品广场推送位', bannerLimit: '首屏 Banner', impressionLimit: '月曝光' } as const)[k]
+  return (
+    { pushSlots: '选品广场推送位', bannerLimit: '首屏 Banner', impressionLimit: '月曝光' } as const
+  )[k]
 }
 
 /* ============ 缴费记录 ============ */

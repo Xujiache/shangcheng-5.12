@@ -202,13 +202,11 @@
     oldCountdown: 0,
     newCountdown: 0,
     oldSending: false,
-    newSending: false,
+    newSending: false
   })
   const currentPhone = computed(() => (userInfo.value as any)?.phone || '')
   const maskedCurrent = computed(() =>
-    currentPhone.value
-      ? currentPhone.value.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
-      : '',
+    currentPhone.value ? currentPhone.value.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : ''
   )
   function resetPhone() {
     phoneForm.newPhone = ''
@@ -276,7 +274,7 @@
       await changePhone({
         oldSmsCode: currentPhone.value ? phoneForm.oldCode : undefined,
         newPhone: phoneForm.newPhone,
-        newSmsCode: phoneForm.newCode,
+        newSmsCode: phoneForm.newCode
       })
       ElMessage.success('手机号已修改')
       phoneDialogVisible.value = false

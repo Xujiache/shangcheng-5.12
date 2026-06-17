@@ -303,7 +303,6 @@ export function createAgencyApplication(dto: {
 
 // kept for backward-compat with views that still call save (now a no-op,
 // since each mutation goes through updateAgencyApplication individually)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function saveAgencyApplications(_list: AgencyApplication[]): void {
   // No-op — per-row save replaced this batch write.
 }
@@ -346,9 +345,7 @@ export async function shipOrders(items: ShipItem[]) {
   if (!items || items.length === 0) {
     throw new Error('请至少选择一单需要发货的订单')
   }
-  const invalid = items.find(
-    (it) => !it.id || !it.company?.trim() || !it.trackingNumber?.trim()
-  )
+  const invalid = items.find((it) => !it.id || !it.company?.trim() || !it.trackingNumber?.trim())
   if (invalid) {
     throw new Error('请填写完整的快递公司与运单号后再发货')
   }
@@ -785,7 +782,8 @@ export async function fetchChatSessions(): Promise<ChatSession[]> {
         customerName: s.userName || s.customerName || '客户',
         customerAvatar: s.userAvatar || s.customerAvatar || '',
         // 后端返回的是对象 { content, type, sender, createdAt } 或 null（也兼容旧的字符串形态）
-        lastMessage: typeof s.lastMessage === 'string' ? s.lastMessage : s.lastMessage?.content || '',
+        lastMessage:
+          typeof s.lastMessage === 'string' ? s.lastMessage : s.lastMessage?.content || '',
         lastTime: s.lastMessageAt || s.lastTime || new Date().toISOString(),
         unread: s.unreadCount ?? s.unread ?? 0,
         online: s.status === 'online',
