@@ -20,6 +20,7 @@ import { LedgerService } from './ledger.service'
 import { FilesService } from '../files/files.service'
 import { LedgerExtraService } from './ledger-extra.service'
 import { LedgerPayService } from './ledger-pay.service'
+import { LedgerXpayService } from './ledger-xpay.service'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-user.decorator'
 import {
@@ -44,6 +45,7 @@ export class LedgerController {
     private readonly files: FilesService,
     private readonly extra: LedgerExtraService,
     private readonly pay: LedgerPayService,
+    private readonly xpay: LedgerXpayService,
   ) {}
 
   @Get('me')
@@ -66,8 +68,9 @@ export class LedgerController {
   @Get('membership')
   async membership(@CurrentLedgerUser() user: LedgerAuthUser) {
     const m = await this.svc.membership(user.id)
-    // payEnabled=true 时 App 走在线支付直接开通；否则回退到「留言找管理员」
-    return { ...m, payEnabled: this.pay.payEnabled() }
+    // virtualPayEnabled=true 时小程序走「虚拟支付」内购（合规）；否则回退「留言找管理员」。
+    // payEnabled（普通微信支付）保留给非小程序端，小程序内购不再用它（虚拟商品合规要求）。
+    return { ...m, payEnabled: this.pay.payEnabled(), virtualPayEnabled: this.xpay.xpayEnabled() }
   }
 
   /** 领取体验卡（一次性，免费套餐专用，不走支付）。已领/已永久 → 拒绝。 */
@@ -75,7 +78,7 @@ export class LedgerController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async claimTrial(@CurrentLedgerUser() user: LedgerAuthUser) {
     const m = await this.svc.claimTrial(user.id)
-    return { ...m, payEnabled: this.pay.payEnabled() }
+    return { ...m, payEnabled: this.pay.payEnabled(), virtualPayEnabled: this.xpay.xpayEnabled() }
   }
 
   @Patch('profile')

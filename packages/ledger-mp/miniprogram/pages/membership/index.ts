@@ -40,7 +40,8 @@ Page({
     expiresLabel: '—',
     selectedKey: '', // 用户点选的套餐
     ctaText: '开通会员',
-    payEnabled: false, // 服务端微信支付就绪：true=直接付款开通；false=回退留言找管理员
+    payEnabled: false, // 普通微信支付就绪（保留给非小程序端；小程序内购不再用它）
+    virtualPayEnabled: false, // 小程序虚拟支付就绪：true=走 wx.requestVirtualPayment 合规内购；false=回退留言
     paying: false,
   },
 
@@ -91,6 +92,7 @@ Page({
       planLabel,
       statusText,
       payEnabled: !!res.payEnabled,
+      virtualPayEnabled: !!res.virtualPayEnabled,
       expiresLabel: fmtDate(m.expiresAt),
       ctaText: this.data.selectedKey
         ? this.ctaForKey(this.data.selectedKey, m, plans)
@@ -167,9 +169,9 @@ Page({
       this.claimTrial()
       return
     }
-    // 微信支付就绪 → 用户直接付款全自动开通
-    if (this.data.payEnabled) {
-      this.payNow()
+    // 虚拟支付就绪 → 合规内购（虚拟商品必须走虚拟支付，不能用普通微信支付）
+    if (this.data.virtualPayEnabled) {
+      this.payVirtual()
       return
     }
     // 回退：微信支付未配置 → 留言找管理员（原逻辑）
@@ -196,8 +198,8 @@ Page({
     })
   },
 
-  // ── 在线支付开通（payEnabled）：选套餐 → 微信支付 → 回调自动开通 ──
-  async payNow() {
+  // ── 虚拟支付开通：选套餐 → 后端下单(signData/paySig/signature) → wx.requestVirtualPayment → 发货回调发放 ──
+  async payVirtual() {
     const key = this.data.selectedKey
     const plan = this.data.plans.find((p: any) => p.key === key)
     if (!plan) {
@@ -206,12 +208,12 @@ Page({
     }
     if (this.data.paying) return
     this.setData({ paying: true })
-    let payParams: any
+    let params: any
     try {
-      // 拿 wx.login code（未绑定微信的用户用它换 openid；已绑定的服务端忽略）
+      // 拿 wx.login code（后端用它换 session_key 算用户态签名 signature）
       const code = await this.wxLogin()
       wx.showLoading({ title: '发起支付…', mask: true })
-      payParams = await meApi.createMembershipPay(key, code)
+      params = await meApi.createVirtualPay(key, code)
       wx.hideLoading()
     } catch (e) {
       wx.hideLoading()
@@ -219,7 +221,7 @@ Page({
       return // 下单失败：wx.login 失败 / request 层已 toast
     }
     try {
-      await this.requestPayment(payParams)
+      await this.requestVirtualPayment(params)
     } catch (e: any) {
       this.setData({ paying: false })
       // 用户主动取消不提示，其余提示支付未完成
@@ -228,7 +230,7 @@ Page({
       }
       return
     }
-    // 支付成功 → 会员由微信回调异步开通，轮询刷新状态
+    // 支付成功 → 会员由发货回调异步开通，轮询刷新状态
     wx.showLoading({ title: '开通中…', mask: true })
     await this.pollMembership()
     wx.hideLoading()
@@ -244,17 +246,23 @@ Page({
       wx.login({ success: (r) => resolve(r.code || ''), fail: reject })
     })
   },
-  requestPayment(p: any): Promise<void> {
+  // 虚拟支付调起：wx.requestVirtualPayment（旧基础库无此 API，用 any 调用 + 兜底提示）
+  requestVirtualPayment(p: any): Promise<void> {
     return new Promise((resolve, reject) => {
-      wx.requestPayment({
-        timeStamp: p.timeStamp,
-        nonceStr: p.nonceStr,
-        package: p.package,
-        signType: p.signType || 'RSA',
-        paySign: p.paySign,
+      const fn = (wx as any).requestVirtualPayment
+      if (typeof fn !== 'function') {
+        reject({ errMsg: '当前微信版本不支持虚拟支付，请升级微信后重试' })
+        return
+      }
+      fn({
+        signData: p.signData,
+        paySig: p.paySig,
+        signature: p.signature,
+        mode: p.mode || 'short_series_goods',
+        env: p.env || 0,
         success: () => resolve(),
         fail: reject,
-      } as any)
+      })
     })
   },
   // 微信回调异步开通：轮询会员状态，命中 active 即停（最多 ~6s）

@@ -6,6 +6,7 @@ import { LedgerAdminService } from './ledger-admin.service'
 import { LedgerAiService } from './ledger-ai.service'
 import { LedgerExtraService } from './ledger-extra.service'
 import { LedgerPayService } from './ledger-pay.service'
+import { LedgerXpayService } from './ledger-xpay.service'
 import { LedgerAuthController } from './ledger-auth.controller'
 import { LedgerController } from './ledger.controller'
 import { LedgerBizController } from './ledger-biz.controller'
@@ -34,6 +35,7 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
     LedgerAiService,
     LedgerExtraService,
     LedgerPayService,
+    LedgerXpayService,
     LedgerJwtGuard,
     LedgerMembershipGuard,
   ],

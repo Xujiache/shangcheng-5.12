@@ -379,6 +379,36 @@ export class LedgerAuthService {
     return this.jscode2session(code)
   }
 
+  /**
+   * 用 wx.login 的 code 换 { openid, sessionKey }。
+   * 虚拟支付的用户态签名 signature = HMAC_SHA256(session_key, signData)，故需拿 session_key。
+   */
+  async codeToSession(code: string): Promise<{ openid: string; sessionKey: string }> {
+    const appid = process.env.LEDGER_WX_APPID || ''
+    const secret = process.env.LEDGER_WX_SECRET || ''
+    if (!appid || !secret) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '微信登录未配置（缺少 AppID / AppSecret）')
+    }
+    const url =
+      'https://api.weixin.qq.com/sns/jscode2session' +
+      `?appid=${encodeURIComponent(appid)}&secret=${encodeURIComponent(secret)}` +
+      `&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`
+    let data: any
+    try {
+      const res = await (globalThis as any).fetch(url)
+      data = await res.json()
+    } catch (e) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '微信服务暂不可用，请稍后再试')
+    }
+    if (!data || !data.openid || !data.session_key) {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '微信授权失败：' + (data?.errmsg || '无效的 code'),
+      )
+    }
+    return { openid: data.openid as string, sessionKey: data.session_key as string }
+  }
+
   /** 微信一键登录：openid 须已绑定账号，否则提示先用手机号登录绑定。 */
   async wechatLogin(dto: WechatLoginDto) {
     const openid = await this.jscode2session(dto.code)
