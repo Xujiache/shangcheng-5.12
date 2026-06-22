@@ -22,15 +22,15 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5000820260508001",
     "@jiujiu/shared": "workspace:*",
     "@socket.io/component-emitter": "^3.1.2",
-    "dayjs": "^1.11.13",
-    "engine.io-client": "^6.6.4",
+    "dayjs": "^1.11.21",
+    "engine.io-client": "^6.6.6",
     "engine.io-parser": "^5.2.3",
     "pinia": "^2.2.4",
     "socket.io-client": "^4.8.3",
     "socket.io-parser": "^4.2.6",
-    "vue": "^3.5.21",
+    "vue": "^3.5.38",
     "vue-i18n": "^9.14.0",
-    "ws": "^8.20.0"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@dcloudio/types": "^3.4.15",
@@ -39,9 +39,9 @@
     "@dcloudio/uni-stacktracey": "3.0.0-alpha-5000820260508001",
     "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5000820260508001",
     "@types/node": "^24.0.5",
-    "@vitejs/plugin-vue": "^6.0.1",
-    "@vue/compiler-sfc": "^3.5.21",
-    "sass": "^1.81.0",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/compiler-sfc": "^3.5.38",
+    "sass": "^1.101.0",
     "typescript": "~5.6.3",
     "vite": "^7.1.5",
     "vue-tsc": "~2.1.6"
