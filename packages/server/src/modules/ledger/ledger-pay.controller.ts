@@ -117,6 +117,8 @@ export class LedgerPayController {
         ? rawBuf.toString('utf8')
         : String(rawBuf)
       : JSON.stringify(body)
+    // 联调期：打印回调原文 + 请求头，便于一次性核对发货回调字段名/签名头（联调通过后可降级或移除）
+    this.logger.log(`[ledger xpay deliver] headers=${JSON.stringify(headers)} body=${raw}`)
     const sig = headers['paysign'] || headers['pay-sig'] || body?.PaySig || ''
     // 未配置虚拟支付 或 验签不过 → 拒绝（微信会重试；线上未配置时该路由不应被调用）
     if (
