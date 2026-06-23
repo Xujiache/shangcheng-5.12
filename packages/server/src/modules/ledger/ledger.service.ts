@@ -4,7 +4,6 @@ import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
   deriveMembership,
   computeGrantExpiry,
-  ledgerPlanPriceFen,
   sanitizeExtras,
   fixedCost,
   extrasTotal,
@@ -129,9 +128,9 @@ export class LedgerService {
    */
   async claimTrial(userId: string) {
     const cfg = await this.readConfig()
-    const trial = cfg.plans.find((p) => p.trial && ledgerPlanPriceFen(p.price) === 0)
-    if (!trial)
-      throw new BizException(BizCode.BUSINESS_ERROR, '免费体验卡未配置（付费体验卡请走支付）')
+    // 体验卡一律免费直接领取（不论展示价），限领一次；付费套餐走虚拟支付
+    const trial = cfg.plans.find((p) => p.trial)
+    if (!trial) throw new BizException(BizCode.BUSINESS_ERROR, '体验卡未配置')
     const now = new Date()
     const existing = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
     if (existing?.perpetual) {

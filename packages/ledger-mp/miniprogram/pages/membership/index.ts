@@ -68,12 +68,15 @@ Page({
     const m: MembershipStatus = res
     const rawPlans = res.plans && res.plans.length ? res.plans : PLAN_FALLBACK
     const plans = rawPlans.map((p: any) => {
-      const isFree = (Number(String(p.price).replace(/[^\d.]/g, '')) || 0) <= 0
+      const trial = !!p.trial
+      // 体验卡一律免费直接领取：展示「免费」、isFree=true（走领取不走支付）
+      const isFree = trial || (Number(String(p.price).replace(/[^\d.]/g, '')) || 0) <= 0
       return {
         ...p,
+        price: trial ? '免费' : p.price,
         durLabel: p.perpetual ? '永久' : p.days + ' 天',
         isFree,
-        claimed: !!p.trial && !!m.trialClaimed, // 体验卡(限领1次)：已领过则置「已领取」
+        claimed: trial && !!m.trialClaimed, // 体验卡(限领1次)：已领过则置「已领取」
       }
     })
     const plan = plans.find((p: any) => p.key === m.lastPlanKey)
@@ -157,14 +160,14 @@ Page({
     // 体验卡限领1次：已领过 → 弹窗拦截（后端也会拒，这里提前给出醒目提醒）
     if (sel && (sel as any).trial && this.data.m && this.data.m.trialClaimed) {
       wx.showModal({
-        title: '无法重复购买',
-        content: '体验卡每个账号仅限购买一次，您已购买过，无需重复下单。',
+        title: '无法重复领取',
+        content: '体验卡每个账号仅限领取一次，您已领取过，无需重复领取。',
         showCancel: false,
         confirmText: '知道了',
       })
       return
     }
-    // 免费体验卡 → 一次性领取（不走支付）；付费体验卡走支付（后端拦一次性）
+    // 体验卡/免费套餐 → 直接领取，不走支付（体验卡已在上面拦了重复领取）
     if (sel && (sel as any).isFree) {
       this.claimTrial()
       return

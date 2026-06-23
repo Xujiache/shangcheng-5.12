@@ -54,12 +54,9 @@ export class LedgerPayService {
     if (amountFen <= 0) {
       throw new BizException(BizCode.BUSINESS_ERROR, '该套餐暂不支持在线支付，请联系管理员')
     }
-    // 体验卡限购一次：已领/已购买过 → 拒绝下单（防止反复低价刷体验卡）
+    // 体验卡免费直接领取，不允许走支付（应调用 /l/membership/claim-trial）
     if (plan.trial) {
-      const mem = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
-      if (mem?.trialClaimedAt) {
-        throw new BizException(BizCode.BUSINESS_ERROR, '体验卡仅限购买一次，您已购买过')
-      }
+      throw new BizException(BizCode.BUSINESS_ERROR, '体验卡免费领取，无需支付')
     }
 
     const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
