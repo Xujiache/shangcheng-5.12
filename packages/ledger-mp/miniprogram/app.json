@@ -48,7 +48,7 @@
     "custom": true,
     "color": "#5C6B64",
     "selectedColor": "#0E7C66",
-    "backgroundColor": "#FFFFFF",
+    "backgroundColor": "#EBF0ED",
     "list": [
       { "pagePath": "pages/home/index", "text": "首页" },
       { "pagePath": "pages/orders/index", "text": "订单" },
