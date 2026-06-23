@@ -94,12 +94,31 @@
   align-items: center;
   gap: 3px;
   padding: 2px 0;
+  /* tap-active(scale .975 + opacity .92) 平滑过渡，按压不再硬切 */
+  transition:
+    transform 0.16s ease,
+    opacity 0.16s ease;
+}
+/* 图标双层交叉淡入：选中色层 + 灰色层叠放，靠 opacity 过渡平滑切换（避免整张 SVG 硬换/闪烁）*/
+.ctb__ic {
+  position: relative;
+  width: 23px;
+  height: 23px;
+}
+.ctb__ic-l {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 23px;
+  height: 23px;
+  transition: opacity 0.28s ease;
 }
 .ctb__t {
   font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0.02em;
   color: #5c6b64;
+  transition: color 0.28s ease;
 }
 .ctb__t--on {
   color: #0e7c66;

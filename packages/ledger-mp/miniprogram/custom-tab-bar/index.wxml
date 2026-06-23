@@ -8,12 +8,28 @@
     bindtouchcancel="onTouchEnd"
   >
     <view wx:if="{{liquid}}" class="ctb__ind {{pressed ? 'ctb__ind--press' : ''}}" style="{{indStyle}}"></view>
+
     <view class="ctb__tab" data-index="0" bindtap="switchTab" hover-class="tap-active">
-      <lz-icon name="home" size="23" color="{{selected===0?'accent':'muted'}}" stroke="{{selected===0?2.1:1.8}}" />
+      <view class="ctb__ic">
+        <view class="ctb__ic-l" style="opacity:{{selected===0?1:0}}">
+          <lz-icon name="home" size="23" color="accent" stroke="2.1" />
+        </view>
+        <view class="ctb__ic-l" style="opacity:{{selected===0?0:1}}">
+          <lz-icon name="home" size="23" color="muted" stroke="1.8" />
+        </view>
+      </view>
       <text class="ctb__t {{selected===0?'ctb__t--on':''}}">首页</text>
     </view>
+
     <view class="ctb__tab" data-index="1" bindtap="switchTab" hover-class="tap-active">
-      <lz-icon name="orders" size="23" color="{{selected===1?'accent':'muted'}}" stroke="{{selected===1?2.1:1.8}}" />
+      <view class="ctb__ic">
+        <view class="ctb__ic-l" style="opacity:{{selected===1?1:0}}">
+          <lz-icon name="orders" size="23" color="accent" stroke="2.1" />
+        </view>
+        <view class="ctb__ic-l" style="opacity:{{selected===1?0:1}}">
+          <lz-icon name="orders" size="23" color="muted" stroke="1.8" />
+        </view>
+      </view>
       <text class="ctb__t {{selected===1?'ctb__t--on':''}}">订单</text>
     </view>
 
@@ -22,11 +38,26 @@
     </view>
 
     <view class="ctb__tab" data-index="2" bindtap="switchTab" hover-class="tap-active">
-      <lz-icon name="trend" size="23" color="{{selected===2?'accent':'muted'}}" stroke="{{selected===2?2.1:1.8}}" />
+      <view class="ctb__ic">
+        <view class="ctb__ic-l" style="opacity:{{selected===2?1:0}}">
+          <lz-icon name="trend" size="23" color="accent" stroke="2.1" />
+        </view>
+        <view class="ctb__ic-l" style="opacity:{{selected===2?0:1}}">
+          <lz-icon name="trend" size="23" color="muted" stroke="1.8" />
+        </view>
+      </view>
       <text class="ctb__t {{selected===2?'ctb__t--on':''}}">报表</text>
     </view>
+
     <view class="ctb__tab" data-index="3" bindtap="switchTab" hover-class="tap-active">
-      <lz-icon name="user" size="23" color="{{selected===3?'accent':'muted'}}" stroke="{{selected===3?2.1:1.8}}" />
+      <view class="ctb__ic">
+        <view class="ctb__ic-l" style="opacity:{{selected===3?1:0}}">
+          <lz-icon name="user" size="23" color="accent" stroke="2.1" />
+        </view>
+        <view class="ctb__ic-l" style="opacity:{{selected===3?0:1}}">
+          <lz-icon name="user" size="23" color="muted" stroke="1.8" />
+        </view>
+      </view>
       <text class="ctb__t {{selected===3?'ctb__t--on':''}}">我的</text>
     </view>
   </view>

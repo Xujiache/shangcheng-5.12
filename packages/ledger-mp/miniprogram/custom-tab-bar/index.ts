@@ -101,10 +101,12 @@ Component({
     // leftDurMs>0 时 left/opacity 带过渡（淡入滑动）；=0 为即时定位。transform(缩放)恒 0.2s 过渡。
     buildStyle(centerX: number, scale: number, leftDurMs: number, opacity: number): string {
       const left = (centerX - pillW / 2).toFixed(1)
+      // 常驻过渡：缩放 + 按压态阴影/亮边渐变（放大时 box-shadow/border 不再硬切）
+      const common = 'transform 0.2s ease,box-shadow 0.28s ease,border-color 0.28s ease'
       const tr =
         leftDurMs > 0
-          ? `transition:left ${leftDurMs}ms cubic-bezier(0.42,0,0.58,1),opacity ${leftDurMs}ms ease,transform 0.2s ease;`
-          : 'transition:transform 0.2s ease;'
+          ? `transition:left ${leftDurMs}ms cubic-bezier(0.42,0,0.58,1),opacity ${leftDurMs}ms ease,${common};`
+          : `transition:${common};`
       return `left:${left}px;width:${pillW}px;opacity:${opacity};transform:scale(${scale});${tr}`
     },
     // 隐藏地落到某 tab（入场/离场用，遮住瞬移）
