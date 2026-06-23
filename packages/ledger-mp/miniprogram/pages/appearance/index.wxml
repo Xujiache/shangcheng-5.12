@@ -38,6 +38,24 @@
       </view>
     </view>
 
+    <view class="lz-section-label" style="margin-top: var(--gap);">底部导航栏</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row lz-row--last">
+        <view class="lz-row__icon"><lz-icon name="home" size="17" color="accent" /></view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">液态导航栏</view>
+          <view class="lz-row__sub">点击底部 tab 时高亮块液态滑动伸缩 · 关闭则静态高亮</view>
+        </view>
+        <view
+          class="tg {{liquidTab ? 'tg--on' : ''}}"
+          bindtap="onToggleLiquid"
+          hover-class="tap-active"
+        >
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+    </view>
+
     <view class="lz-section-label" style="margin-top: var(--gap);">特效模式</view>
     <view class="lz-card lz-card--flush">
       <view class="lz-row lz-row--last">

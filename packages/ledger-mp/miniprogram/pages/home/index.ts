@@ -68,7 +68,7 @@ Page({
   onShow() {
     this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.setData({ selected: 0 })
+    if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
     const sb = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
     let hdRight = 18
     try {

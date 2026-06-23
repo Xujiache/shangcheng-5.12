@@ -139,6 +139,17 @@ export function setFxMode(m: 'normal' | 'max') {
   wx.setStorageSync(FX_KEY, m === 'max' ? 'max' : 'normal')
 }
 
+/* ---- 液态导航栏：底部 tab 选中高亮块随点击液态滑动 + 弹性拉伸回弹，默认开启 ---- */
+const LIQUID_TAB_KEY = 'ledger_liquid_tab'
+export function getLiquidTab(): boolean {
+  const v = wx.getStorageSync(LIQUID_TAB_KEY)
+  // 未设置过（空串/undefined）视为默认开启
+  return v === '' || v === undefined || v === null ? true : !!v
+}
+export function setLiquidTab(v: boolean) {
+  wx.setStorageSync(LIQUID_TAB_KEY, v)
+}
+
 // 本次冷启动是否已通过生物验证（仅内存，每次冷启动重置 → 重新要求解锁）
 let bioVerified = false
 

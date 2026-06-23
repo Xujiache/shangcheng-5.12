@@ -51,7 +51,7 @@ Page({
   onShow() {
     this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.setData({ selected: 2 })
+    if (tb) tb.selectTab ? tb.selectTab(2) : tb.setData({ selected: 2 })
     this.load()
   },
   onPullDownRefresh() {

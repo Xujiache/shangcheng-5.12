@@ -5,13 +5,16 @@ import {
   setGlassOpacity,
   getFxMode,
   setFxMode,
+  getLiquidTab,
+  setLiquidTab,
 } from '../../utils/store'
 
-// 外观与个性化：沉浸光感开关 + 玻璃通透度 + 特效模式（纯本地偏好，切回各页 onShow 即生效）
+// 外观与个性化：沉浸光感开关 + 玻璃通透度 + 液态导航栏 + 特效模式（纯本地偏好，切回各页 onShow 即生效）
 Page({
   data: {
     glassOn: true,
     glassOpacity: 50, // 玻璃通透度 0-100（越大越通透）
+    liquidTab: true, // 液态导航栏：底部 tab 高亮块随点击滑动 + 拉伸
     fxMode: 'normal' as 'normal' | 'max',
     fxOptions: [
       { value: 'normal', label: '普通模式' },
@@ -20,7 +23,19 @@ Page({
   },
 
   onLoad() {
-    this.setData({ glassOn: getGlass(), glassOpacity: getGlassOpacity(), fxMode: getFxMode() })
+    this.setData({
+      glassOn: getGlass(),
+      glassOpacity: getGlassOpacity(),
+      liquidTab: getLiquidTab(),
+      fxMode: getFxMode(),
+    })
+  },
+
+  onToggleLiquid() {
+    const next = !this.data.liquidTab
+    setLiquidTab(next)
+    this.setData({ liquidTab: next })
+    wx.showToast({ title: next ? '已开启液态导航栏' : '已关闭液态导航栏', icon: 'none' })
   },
 
   onToggleGlass() {
