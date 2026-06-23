@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { createHmac } from 'crypto'
+import { createHash, createHmac } from 'crypto'
 import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
@@ -144,6 +144,18 @@ export class LedgerXpayService {
   verifySig(uriPath: string, body: string, sig: string): boolean {
     if (!sig) return false
     return this.hmac(this.appKey(), uriPath + '&' + body) === sig
+  }
+
+  /**
+   * 微信「消息推送」签名校验（虚拟支付发货回调走此通道下发）。
+   * 明文模式：signature = sha1(sort([Token, timestamp, nonce]).join(''))。
+   * Token 取 LEDGER_WX_PUSH_TOKEN（与公众平台「消息推送」配置一致）。
+   */
+  verifyPushSignature(signature?: string, timestamp?: string, nonce?: string): boolean {
+    const token = process.env.LEDGER_WX_PUSH_TOKEN || ''
+    if (!token || !signature || !timestamp || !nonce) return false
+    const sha1 = createHash('sha1').update([token, timestamp, nonce].sort().join('')).digest('hex')
+    return sha1 === signature
   }
 
   /**
