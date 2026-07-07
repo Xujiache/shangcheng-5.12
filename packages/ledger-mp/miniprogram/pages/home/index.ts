@@ -278,6 +278,12 @@ Page({
   toCut() {
     wx.navigateTo({ url: '/pages/cut/index' })
   },
+  toTriangleTool() {
+    wx.navigateTo({ url: '/pages/triangle-tool/index' })
+  },
+  toArcTool() {
+    wx.navigateTo({ url: '/pages/arc-tool/index' })
+  },
 
   toCost() {
     wx.navigateTo({ url: '/pages/cost-analysis/index' })

@@ -1,0 +1,65 @@
+<lz-bg />
+<view class="arc">
+  <lz-header title="圆弧计算" />
+
+  <view class="lz-page lz-page--pad-bottom">
+    <view class="arc__sketch">
+      <view class="arc__curve"></view>
+      <view class="arc__chord"></view>
+      <view class="arc__height"></view>
+      <view class="arc__left"></view>
+      <view class="arc__right"></view>
+      <view class="arc__angle"></view>
+      <text class="arc__pt arc__pt--A">A</text>
+      <text class="arc__pt arc__pt--B">B</text>
+      <text class="arc__pt arc__pt--C">C</text>
+      <text class="arc__pt arc__pt--D">D</text>
+      <text class="arc__pt arc__pt--a">a</text>
+    </view>
+
+    <view class="arc__rule">
+      <view>计算规则：输入任意 2 个参数进行计算。</view>
+      <view>计算顺序：从上往下，按顺序取 2 个。</view>
+    </view>
+
+    <view class="arc__title">输入区</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row">
+        <view class="arc__label">半径</view>
+        <input class="arc__input" type="digit" value="{{values.r}}" data-key="r" placeholder="输入半径" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="arc__label">弦长 AC</view>
+        <input class="arc__input" type="digit" value="{{values.chord}}" data-key="chord" placeholder="输入弦长 AC" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="arc__label">弧长 ABC</view>
+        <input class="arc__input" type="digit" value="{{values.arc}}" data-key="arc" placeholder="输入弧长 ABC" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="arc__label">拱高 BD</view>
+        <input class="arc__input" type="digit" value="{{values.height}}" data-key="height" placeholder="输入拱高 BD" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row lz-row--last">
+        <view class="arc__label">角 a</view>
+        <input class="arc__input" type="digit" value="{{values.angle}}" data-key="angle" placeholder="输入角 a" placeholder-class="ph" bindinput="onInput" />
+      </view>
+    </view>
+
+    <view class="arc__title">结果区</view>
+    <view class="lz-card lz-card--flush">
+      <block wx:if="{{resultRows.length}}">
+        <view wx:for="{{resultRows}}" wx:key="label" class="lz-row {{index === resultRows.length - 1 ? 'lz-row--last' : ''}}">
+          <view class="arc__label">{{item.label}}</view>
+          <view class="arc__value">{{item.value}}</view>
+        </view>
+      </block>
+      <view wx:else class="arc__empty">输入 2 个参数后点击计算</view>
+    </view>
+
+    <view class="arc__actions">
+      <button class="arc__btn arc__btn--main" bindtap="calc">计算</button>
+      <button class="arc__btn" bindtap="clear">清空</button>
+    </view>
+  </view>
+</view>

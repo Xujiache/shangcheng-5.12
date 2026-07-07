@@ -19,14 +19,24 @@
       </swiper-item>
     </swiper>
 
-    <!-- 实用工具：型材优化下料（#9）：放在广告下方做快捷入口 -->
-    <view class="lz-card home__tool" hover-class="tap-active" bindtap="toCut">
-      <view class="home__tool-icon"><lz-icon name="cube" size="20" color="accent" /></view>
-      <view class="lz-flex1">
-        <view class="home__tool-t">型材优化下料</view>
-        <view class="home__tool-s">一维切割排版 · 省料省成本</view>
+    <!-- 实用工具栏 -->
+    <view class="home__tool-head">实用工具</view>
+    <view class="home__tools">
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toTriangleTool">
+        <view class="home__tool-icon"><lz-icon name="target" size="20" color="accent" /></view>
+        <view class="home__tool-t">三角计算</view>
+        <view class="home__tool-s">边角反算</view>
       </view>
-      <lz-icon name="chevron" size="16" color="faint" />
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toArcTool">
+        <view class="home__tool-icon home__tool-icon--c2"><lz-icon name="refresh" size="20" color="c2" /></view>
+        <view class="home__tool-t">圆弧计算</view>
+        <view class="home__tool-s">弦长拱高</view>
+      </view>
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toCut">
+        <view class="home__tool-icon home__tool-icon--c3"><lz-icon name="cube" size="20" color="c3" /></view>
+        <view class="home__tool-t">优化下料</view>
+        <view class="home__tool-s">省料排版</view>
+      </view>
     </view>
 
     <!-- 加载失败（网络等）：带重试，不渲染"暂无…"空态 -->

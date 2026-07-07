@@ -1,4 +1,4 @@
-import { orderApi, customerApi } from '../../api/index'
+import { orderApi } from '../../api/index'
 import { yuan } from '../../utils/format'
 import { COST_CATS, EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
 
@@ -52,11 +52,7 @@ Page({
     saving: false,
     loadError: false,
     unpaid: 0,
-    showPicker: false,
-    pickerList: [] as any[],
-    pickerQ: '',
     extraTypes: EXTRA_TYPES,
-    _allCustomers: [] as any[],
   },
 
   _openingItems: false, // toAmount 防双击锁，onShow 返回时解除
@@ -88,10 +84,7 @@ Page({
     if (p && p.name) {
       wx.removeStorageSync('ledger_pending_customer')
       // 清空选择器缓存：刚新增的客户要能在下次打开选择器时出现
-      this.setData(
-        { customerId: p.id || null, customerName: p.name, showPicker: false, _allCustomers: [] },
-        () => this.refresh(),
-      )
+      this.setData({ customerId: p.id || null, customerName: p.name }, () => this.refresh())
     }
     // 从「报价明细」页返回，回填 明细/总价/优惠/定金/收款/备注
     const m = wx.getStorageSync('ledger_order_money_out')
@@ -256,6 +249,12 @@ Page({
   onNote(e: any) {
     this.setData({ note: e.detail.value })
   },
+  onCustomerName(e: any) {
+    // 订单页现在按“客户名快照”直接录入；手动改名即解除客户档案绑定。
+    this.setData({ customerId: null, customerName: String(e.detail.value).slice(0, 40) }, () =>
+      this.refresh(),
+    )
+  },
   addCat(e: any) {
     const k = e.currentTarget.dataset.key
     if (!this.data.activeCats.includes(k))
@@ -354,96 +353,6 @@ Page({
     )
   },
 
-  // 点击客户行：已选客户 → 编辑其信息（fromOrder=1 让保存后名字同步回订单）；未选 → 打开选择器
-  onCustomerTap() {
-    if (this.data.customerId) {
-      wx.navigateTo({
-        url: '/pages/customer-edit/index?id=' + this.data.customerId + '&fromOrder=1',
-      })
-    } else {
-      this.openPicker()
-    }
-  },
-
-  async openPicker() {
-    this.setData({ showPicker: true, pickerQ: '' })
-    if (!this.data._allCustomers.length) {
-      try {
-        const list: any = await customerApi.list()
-        this.setData({ _allCustomers: list || [] })
-      } catch (e) {
-        /* handled */
-      }
-    }
-    this.filterPicker()
-  },
-  closePicker() {
-    this.setData({ showPicker: false })
-  },
-  noop() {},
-  onPickerSearch(e: any) {
-    this.setData({ pickerQ: e.detail.value })
-    this.filterPicker()
-  },
-  filterPicker() {
-    const q = String(this.data.pickerQ).trim()
-    const list = this.data._allCustomers
-      .filter((c: any) => !q || (c.name || '').includes(q))
-      .map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        initial: (c.name || '·').slice(-1),
-        sub: c.count > 0 ? `${c.count} 单 · 累计利润 ${yuan(c.profit)}` : c.phone || '新客户',
-      }))
-    this.setData({ pickerList: list })
-  },
-  pickCustomer(e: any) {
-    const { id, name } = e.currentTarget.dataset
-    this.setData({ customerId: id || null, customerName: name, showPicker: false }, () =>
-      this.refresh(),
-    )
-  },
-  // 删除客户：后端会先解绑历史订单（保留客户名快照）再删档；删的是已选客户则清空选择
-  delCustomer(e: any) {
-    const id = e.currentTarget.dataset.id
-    const name = e.currentTarget.dataset.name
-    wx.showModal({
-      title: '删除客户',
-      content: '确定删除客户「' + name + '」？历史订单会保留（仅解绑该客户），此操作不可恢复。',
-      confirmColor: '#C8442B',
-      success: (m) => {
-        if (!m.confirm) return
-        customerApi
-          .remove(id)
-          .then(() => {
-            const set: any = {
-              _allCustomers: this.data._allCustomers.filter((c: any) => c.id !== id),
-            }
-            if (this.data.customerId === id) {
-              set.customerId = null
-              set.customerName = ''
-            }
-            this.setData(set, () => {
-              this.filterPicker()
-              this.refresh()
-            })
-            wx.showToast({ title: '已删除', icon: 'success' })
-          })
-          .catch(() => {
-            /* 错误 toast 由 request 层统一弹 */
-          })
-      },
-    })
-  },
-  newCustomer() {
-    this.setData({ showPicker: false })
-    wx.navigateTo({
-      url:
-        '/pages/customer-edit/index?fromOrder=1&name=' +
-        encodeURIComponent(this.data.pickerQ || ''),
-    })
-  },
-
   onCancel() {
     if (this.data.saving) return // 保存成功后的延时返回期间再点取消会连退两页
     wx.navigateBack()
@@ -453,7 +362,7 @@ Page({
     if (!this.data.canSave) {
       // 缺必填项时给出具体指引，避免点保存毫无反应
       if (!String(this.data.customerName).trim()) {
-        wx.showToast({ title: '请先选择客户', icon: 'none' })
+        wx.showToast({ title: '请填写客户姓名', icon: 'none' })
       } else {
         wx.showToast({ title: '请点「报价明细」录入明细或总价', icon: 'none' })
       }

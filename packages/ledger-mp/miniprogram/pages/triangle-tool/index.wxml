@@ -1,0 +1,70 @@
+<lz-bg />
+<view class="geo">
+  <lz-header title="三角计算" />
+
+  <view class="lz-page lz-page--pad-bottom">
+    <view class="geo__sketch geo__sketch--tri">
+      <view class="tri__base"></view>
+      <view class="tri__left"></view>
+      <view class="tri__right"></view>
+      <view class="tri__height"></view>
+      <view class="tri__foot"></view>
+      <text class="tri__label tri__label--a">a</text>
+      <text class="tri__label tri__label--b">b</text>
+      <text class="tri__label tri__label--c">c</text>
+      <text class="tri__label tri__label--h">h</text>
+      <text class="tri__pt tri__pt--A">A</text>
+      <text class="tri__pt tri__pt--B">B</text>
+      <text class="tri__pt tri__pt--C">C</text>
+    </view>
+
+    <view class="geo__rule">
+      <view>计算规则：输入任意 3 个参数进行计算，全三角除外。</view>
+      <view>计算顺序：从上往下，按顺序取 3 个。</view>
+    </view>
+
+    <view class="geo__title">输入区</view>
+    <view class="lz-card lz-card--flush">
+      <view class="lz-row">
+        <view class="geo__label">a 边长</view>
+        <input class="geo__input" type="digit" value="{{values.a}}" data-key="a" placeholder="输入 a 边长" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">b 边长</view>
+        <input class="geo__input" type="digit" value="{{values.b}}" data-key="b" placeholder="输入 b 边长" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">c 边长</view>
+        <input class="geo__input" type="digit" value="{{values.c}}" data-key="c" placeholder="输入 c 边长" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">A 角度</view>
+        <input class="geo__input" type="digit" value="{{values.A}}" data-key="A" placeholder="输入 A 角度" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">B 角度</view>
+        <input class="geo__input" type="digit" value="{{values.B}}" data-key="B" placeholder="输入 B 角度" placeholder-class="ph" bindinput="onInput" />
+      </view>
+      <view class="lz-row lz-row--last">
+        <view class="geo__label">C 角度</view>
+        <input class="geo__input" type="digit" value="{{values.C}}" data-key="C" placeholder="输入 C 角度" placeholder-class="ph" bindinput="onInput" />
+      </view>
+    </view>
+
+    <view class="geo__title">结果区</view>
+    <view class="lz-card lz-card--flush">
+      <block wx:if="{{resultRows.length}}">
+        <view wx:for="{{resultRows}}" wx:key="label" class="lz-row {{index === resultRows.length - 1 ? 'lz-row--last' : ''}}">
+          <view class="geo__label">{{item.label}}</view>
+          <view class="geo__value">{{item.value}}</view>
+        </view>
+      </block>
+      <view wx:else class="geo__empty">输入 3 个参数后点击计算</view>
+    </view>
+
+    <view class="geo__actions">
+      <button class="geo__btn geo__btn--main" bindtap="calc">计算</button>
+      <button class="geo__btn" bindtap="clear">清空</button>
+    </view>
+  </view>
+</view>

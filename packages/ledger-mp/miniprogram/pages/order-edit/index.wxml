@@ -7,13 +7,10 @@
   <view wx:if="{{!loadError}}" class="oe__body">
     <!-- 基本信息 + 金额（一张白卡）-->
     <view class="oe__card">
-      <view class="oe__row" bindtap="onCustomerTap" hover-class="oe__tap">
+      <view class="oe__row">
         <text class="oe__row-l">客户</text>
         <view class="oe__row-r">
-          <view wx:if="{{customerName}}" class="oe__change" catchtap="openPicker">更换</view>
-          <text wx:if="{{customerName}}" class="oe__cust">{{customerName}}</text>
-          <text wx:else class="oe__cust oe__cust--ph">选择或新增客户</text>
-          <lz-icon name="chevron" size="16" color="#9bab9f" />
+          <input class="oe__cust-in" value="{{customerName}}" placeholder="填写客户姓名" placeholder-class="ph" maxlength="40" confirm-type="done" bindinput="onCustomerName" />
         </view>
       </view>
       <picker mode="date" value="{{date}}" bindchange="onDate">
@@ -186,37 +183,5 @@
     <button class="oe__save {{canSave && !saving ? '' : 'oe__save--disabled'}}" bindtap="save">
       <lz-icon name="check" size="20" color="white" /> {{saving ? '保存中…' : (editing ? '保存修改' : '保存订单')}}
     </button>
-  </view>
-
-  <!-- 客户选择器 -->
-  <view wx:if="{{showPicker}}" class="oe__mask" bindtap="closePicker">
-    <view class="oe__sheet" catchtap="noop">
-      <view class="oe__sheet-handle"></view>
-      <view class="oe__sheet-hd">
-        <text class="oe__sheet-t">选择客户</text>
-        <view class="lz-flex1"></view>
-        <view class="oe__newc" bindtap="newCustomer" hover-class="oe__tap">
-          <lz-icon name="plus" size="15" color="#2E9E78" stroke="2.2" /><text>新增客户</text>
-        </view>
-      </view>
-      <view class="oe__sheet-search">
-        <lz-icon name="search" size="17" color="#9bab9f" />
-        <input class="lz-flex1" value="{{pickerQ}}" placeholder="搜索客户姓名" placeholder-class="ph" bindinput="onPickerSearch" />
-      </view>
-      <scroll-view scroll-y class="oe__sheet-list">
-        <view wx:for="{{pickerList}}" wx:key="id" class="oe__pc" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="pickCustomer" hover-class="oe__tap">
-          <view class="oe__pc-av">{{item.initial}}</view>
-          <view class="lz-flex1" style="min-width: 0;">
-            <view class="oe__pc-n">{{item.name}}</view>
-            <view class="oe__pc-s">{{item.sub}}</view>
-          </view>
-          <lz-icon wx:if="{{item.name === customerName}}" name="check" size="18" color="#2E9E78" stroke="2.4" />
-          <view class="oe__pc-del" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="delCustomer" hover-class="oe__tap">
-            <lz-icon name="trash" size="16" color="#c0ccc4" />
-          </view>
-        </view>
-        <view wx:if="{{!pickerList.length}}" class="oe__empty">没有找到客户，点击右上角新增</view>
-      </scroll-view>
-    </view>
   </view>
 </view>
