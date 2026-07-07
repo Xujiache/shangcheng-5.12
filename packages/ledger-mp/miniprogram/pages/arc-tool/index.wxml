@@ -2,7 +2,7 @@
 <view class="arc">
   <lz-header title="圆弧计算" />
 
-  <view class="lz-page lz-page--pad-bottom">
+  <view class="lz-page lz-page--pad-bottom arc__page">
     <view class="arc__sketch">
       <view class="arc__curve"></view>
       <view class="arc__chord"></view>
@@ -57,9 +57,10 @@
       <view wx:else class="arc__empty">输入 2 个参数后点击计算</view>
     </view>
 
-    <view class="arc__actions">
-      <button class="arc__btn arc__btn--main" bindtap="calc">计算</button>
-      <button class="arc__btn" bindtap="clear">清空</button>
-    </view>
+  </view>
+
+  <view class="arc__actions">
+    <button class="arc__btn arc__btn--main" bindtap="calc">计算</button>
+    <button class="arc__btn" bindtap="clear">清空</button>
   </view>
 </view>

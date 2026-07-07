@@ -2,7 +2,7 @@
 <view class="geo">
   <lz-header title="三角计算" />
 
-  <view class="lz-page lz-page--pad-bottom">
+  <view class="lz-page lz-page--pad-bottom geo__page">
     <view class="geo__sketch geo__sketch--tri">
       <view class="tri__base"></view>
       <view class="tri__left"></view>
@@ -62,9 +62,10 @@
       <view wx:else class="geo__empty">输入 3 个参数后点击计算</view>
     </view>
 
-    <view class="geo__actions">
-      <button class="geo__btn geo__btn--main" bindtap="calc">计算</button>
-      <button class="geo__btn" bindtap="clear">清空</button>
-    </view>
+  </view>
+
+  <view class="geo__actions">
+    <button class="geo__btn geo__btn--main" bindtap="calc">计算</button>
+    <button class="geo__btn" bindtap="clear">清空</button>
   </view>
 </view>
