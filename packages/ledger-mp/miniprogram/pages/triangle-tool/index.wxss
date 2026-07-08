@@ -6,13 +6,17 @@
   padding-bottom: 118px;
 }
 .geo__sketch {
-  position: relative;
-  height: 210px;
+  height: 204px;
   margin-bottom: var(--gap);
   border-radius: 16px;
   background: var(--surface);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
+}
+.geo__demo {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .geo__rule {
   margin: 0 4px var(--gap);
@@ -79,87 +83,4 @@
 }
 .geo__btn::after {
   border: none;
-}
-
-.tri__base,
-.tri__left,
-.tri__right,
-.tri__height {
-  position: absolute;
-  height: 2px;
-  background: #1f2522;
-  transform-origin: left center;
-}
-.tri__base {
-  left: 54px;
-  bottom: 56px;
-  width: 250px;
-}
-.tri__left {
-  left: 54px;
-  bottom: 56px;
-  width: 238px;
-  transform: rotate(-32deg);
-}
-.tri__right {
-  left: 244px;
-  bottom: 164px;
-  width: 116px;
-  transform: rotate(74deg);
-}
-.tri__height {
-  left: 244px;
-  bottom: 56px;
-  width: 108px;
-  transform: rotate(-90deg);
-}
-.tri__foot {
-  position: absolute;
-  left: 233px;
-  bottom: 56px;
-  width: 16px;
-  height: 16px;
-  border-left: 2px solid #1f2522;
-  border-top: 2px solid #1f2522;
-}
-.tri__label,
-.tri__pt {
-  position: absolute;
-  font-weight: 800;
-  color: #1f2522;
-}
-.tri__label {
-  font-size: 15px;
-}
-.tri__pt {
-  font-size: 25px;
-  font-family: Georgia, serif;
-}
-.tri__label--a {
-  right: 54px;
-  top: 94px;
-}
-.tri__label--b {
-  left: 170px;
-  bottom: 32px;
-}
-.tri__label--c {
-  left: 138px;
-  top: 76px;
-}
-.tri__label--h {
-  left: 256px;
-  top: 92px;
-}
-.tri__pt--A {
-  left: 34px;
-  bottom: 42px;
-}
-.tri__pt--B {
-  left: 236px;
-  top: 22px;
-}
-.tri__pt--C {
-  right: 34px;
-  bottom: 42px;
 }

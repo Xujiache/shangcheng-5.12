@@ -4,18 +4,7 @@
 
   <view class="lz-page lz-page--pad-bottom geo__page">
     <view class="geo__sketch geo__sketch--tri">
-      <view class="tri__base"></view>
-      <view class="tri__left"></view>
-      <view class="tri__right"></view>
-      <view class="tri__height"></view>
-      <view class="tri__foot"></view>
-      <text class="tri__label tri__label--a">a</text>
-      <text class="tri__label tri__label--b">b</text>
-      <text class="tri__label tri__label--c">c</text>
-      <text class="tri__label tri__label--h">h</text>
-      <text class="tri__pt tri__pt--A">A</text>
-      <text class="tri__pt tri__pt--B">B</text>
-      <text class="tri__pt tri__pt--C">C</text>
+      <image class="geo__demo" src="/assets/tools/triangle-demo.jpg" mode="aspectFit" />
     </view>
 
     <view class="geo__rule">
