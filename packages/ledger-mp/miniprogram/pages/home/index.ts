@@ -301,7 +301,7 @@ Page({
   onShareAppMessage() {
     return {
       title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
-      path: '/pages/register/index',
+      path: '/pages/login/index',
       imageUrl: this._cover || undefined,
     }
   },

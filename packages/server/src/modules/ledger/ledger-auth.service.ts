@@ -19,6 +19,7 @@ import {
   LedgerSmsLoginDto,
   LedgerChangePasswordDto,
   WechatLoginDto,
+  WechatPhoneLoginDto,
   WechatBindDto,
   WechatUnbindDto,
 } from './dto/auth.dto'
@@ -29,12 +30,14 @@ const maskPhone = (p: string) => (p.length === 11 ? p.slice(0, 3) + '****' + p.s
 /**
  * 门窗利账 App 鉴权服务。
  *
- * 账号由 admin-pc 后台创建（无 App 自助注册）；以手机号+密码为主、短信验证码为辅。
+ * 账号由 admin-pc 后台创建（无 App 自助注册）；小程序端用微信官方手机号授权匹配账号。
  * token 带 scope:'ledger'，sub=LedgerUser.id，与商城 token 严格区分（见 LedgerJwtGuard）。
  */
 @Injectable()
 export class LedgerAuthService {
   private readonly logger = new Logger(LedgerAuthService.name)
+  private wxAccessToken = ''
+  private wxAccessTokenExpiresAt = 0
 
   constructor(
     private readonly prisma: PrismaService,
@@ -119,7 +122,11 @@ export class LedgerAuthService {
     } catch (e) {
       /* 配置缺失忽略 */
     }
-    return { allowSelfRegister: cfg.allowSelfRegister, logoUrl }
+    return {
+      allowSelfRegister:
+        process.env.LEDGER_SELF_REGISTER_ENABLED === 'true' && cfg.allowSelfRegister,
+      logoUrl,
+    }
   }
 
   /**
@@ -129,8 +136,8 @@ export class LedgerAuthService {
    */
   async register(dto: LedgerRegisterDto) {
     const cfg = await this.readConfig()
-    if (!cfg.allowSelfRegister) {
-      throw new BizException(BizCode.FORBIDDEN, '当前未开放自助注册，请联系管理员开通')
+    if (process.env.LEDGER_SELF_REGISTER_ENABLED !== 'true' || !cfg.allowSelfRegister) {
+      throw new BizException(BizCode.FORBIDDEN, '请使用微信手机号授权登录；账号需由管理员后台开通')
     }
     const phone = String(dto.phone || '').trim()
     if (!/^1[3-9]\d{9}$/.test(phone)) {
@@ -422,6 +429,106 @@ export class LedgerAuthService {
         '该微信未绑定账号，请先用手机号登录后在「账户安全」绑定微信',
       )
     }
+    if (user.status === 'disabled') {
+      throw new BizException(BizCode.FORBIDDEN, '账号已被禁用，请联系管理员')
+    }
+    await this.prisma.ledgerUser.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    })
+    const token = await this.signToken(user.id)
+    const pub = this.publicUser(user)
+    return { token, user: pub, membership: pub.membership }
+  }
+
+  private wxAppConfig() {
+    const appid = process.env.LEDGER_WX_APPID || ''
+    const secret = process.env.LEDGER_WX_SECRET || ''
+    if (!appid || !secret) {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '微信手机号登录未配置（缺少 AppID / AppSecret）',
+      )
+    }
+    return { appid, secret }
+  }
+
+  private async getWxAccessToken(forceRefresh = false): Promise<string> {
+    const now = Date.now()
+    if (!forceRefresh && this.wxAccessToken && this.wxAccessTokenExpiresAt > now) {
+      return this.wxAccessToken
+    }
+    const { appid, secret } = this.wxAppConfig()
+    const url =
+      'https://api.weixin.qq.com/cgi-bin/token' +
+      `?grant_type=client_credential&appid=${encodeURIComponent(appid)}` +
+      `&secret=${encodeURIComponent(secret)}`
+    let data: any
+    try {
+      const res = await (globalThis as any).fetch(url)
+      data = await res.json()
+    } catch (e) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '微信服务暂不可用，请稍后再试')
+    }
+    if (!data?.access_token) {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '微信 access_token 获取失败：' + (data?.errmsg || '未知错误'),
+      )
+    }
+    this.wxAccessToken = data.access_token
+    this.wxAccessTokenExpiresAt = now + Math.max(60, Number(data.expires_in || 7200) - 300) * 1000
+    return this.wxAccessToken
+  }
+
+  private async getPhoneByWechatCode(code: string, retry = true): Promise<string> {
+    const { appid } = this.wxAppConfig()
+    const accessToken = await this.getWxAccessToken(!retry)
+    const url =
+      'https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=' +
+      encodeURIComponent(accessToken)
+    let data: any
+    try {
+      const res = await (globalThis as any).fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      data = await res.json()
+    } catch (e) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '微信手机号授权失败，请稍后再试')
+    }
+    if (data?.errcode === 40001 || data?.errcode === 42001) {
+      if (retry) return this.getPhoneByWechatCode(code, false)
+    }
+    if (data?.errcode !== 0 || !data?.phone_info) {
+      throw new BizException(
+        BizCode.BUSINESS_ERROR,
+        '微信手机号授权失败：' + (data?.errmsg || '无效的手机号授权 code'),
+      )
+    }
+    if (data.phone_info.watermark?.appid && data.phone_info.watermark.appid !== appid) {
+      throw new BizException(BizCode.BUSINESS_ERROR, '微信手机号授权来源不匹配')
+    }
+    const phone = String(
+      data.phone_info.purePhoneNumber || data.phone_info.phoneNumber || '',
+    ).trim()
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '当前微信手机号暂不支持登录，请联系管理员')
+    }
+    return phone
+  }
+
+  /** 微信官方手机号授权登录：手机号只用于匹配后台已开通账号，不自动注册。 */
+  async wechatPhoneLogin(dto: WechatPhoneLoginDto) {
+    const code = String(dto.code || '').trim()
+    if (!code) throw new BizException(BizCode.INVALID_PARAMS, '缺少微信手机号授权 code')
+    const phone = await this.getPhoneByWechatCode(code)
+    const user = await this.prisma.ledgerUser.findUnique({
+      where: { phone },
+      include: { membership: true },
+    })
+    if (!user) throw new BizException(BizCode.NOT_FOUND, '该手机号未开通账号，请联系管理员开通')
     if (user.status === 'disabled') {
       throw new BizException(BizCode.FORBIDDEN, '账号已被禁用，请联系管理员')
     }

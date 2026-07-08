@@ -9,7 +9,7 @@
     <div class="pf-page-header">
       <div>
         <h2 class="m-0 text-xl font-semibold">功能配置</h2>
-        <p class="mt-1 text-sm text-g-500">优化下料试用规则 · 邀请奖励 · 自助注册开关</p>
+        <p class="mt-1 text-sm text-g-500">优化下料试用规则 · 邀请奖励 · 微信手机号登录</p>
       </div>
       <ElButton :icon="Refresh" plain @click="load">刷新</ElButton>
     </div>
@@ -36,11 +36,13 @@
 
       <ElDivider />
 
-      <h3 class="pf-cfg-title">邀请与注册（#10）</h3>
+      <h3 class="pf-cfg-title">邀请与登录（#10）</h3>
       <ElForm :model="form" label-width="180px" label-position="left">
         <ElFormItem label="开放自助注册">
-          <ElSwitch v-model="form.allowSelfRegister" />
-          <span class="pf-cfg-hint">关闭后 App 注册入口将提示"请联系管理员开通"</span>
+          <ElSwitch v-model="form.allowSelfRegister" disabled />
+          <span class="pf-cfg-hint"
+            >按微信规范已停用；小程序使用微信官方手机号授权匹配后台账号</span
+          >
         </ElFormItem>
         <ElFormItem label="邀请奖励天数">
           <ElInputNumber
@@ -143,7 +145,7 @@
   const loading = ref(false)
   const saving = ref(false)
   const form = reactive<LedgerConfig>({
-    allowSelfRegister: true,
+    allowSelfRegister: false,
     inviteRewardDays: 7,
     inviteMaxRewarded: 50,
     cutTrialDays: 7,
@@ -162,7 +164,7 @@
     loading.value = true
     try {
       const cfg = await fetchLedgerConfig()
-      form.allowSelfRegister = cfg.allowSelfRegister
+      form.allowSelfRegister = false
       form.inviteRewardDays = cfg.inviteRewardDays
       form.inviteMaxRewarded = cfg.inviteMaxRewarded
       form.cutTrialDays = cfg.cutTrialDays
@@ -215,7 +217,7 @@
     saving.value = true
     try {
       await updateLedgerConfig({
-        allowSelfRegister: form.allowSelfRegister,
+        allowSelfRegister: false,
         inviteRewardDays: form.inviteRewardDays,
         inviteMaxRewarded: form.inviteMaxRewarded,
         cutTrialDays: form.cutTrialDays,

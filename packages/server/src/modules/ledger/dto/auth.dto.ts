@@ -32,6 +32,11 @@ export class WechatLoginDto {
   @IsString() code!: string
 }
 
+/** 微信手机号授权登录：button open-type=getPhoneNumber 返回的动态 code */
+export class WechatPhoneLoginDto {
+  @IsString() code!: string
+}
+
 /** 绑定微信：wx.login 的 code + 登录密码确认身份 */
 export class WechatBindDto {
   @IsString() code!: string

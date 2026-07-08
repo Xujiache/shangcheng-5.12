@@ -387,7 +387,7 @@ export interface LedgerConfig {
 }
 
 const DEFAULT_LEDGER_CONFIG: LedgerConfig = {
-  allowSelfRegister: true,
+  allowSelfRegister: false,
   inviteRewardDays: 7,
   inviteMaxRewarded: 50,
   cutTrialDays: 7,
@@ -400,7 +400,7 @@ export async function fetchLedgerConfig(): Promise<LedgerConfig> {
     const resp = await request.get<any>({ url: '/api/v1/p/ledger/config' })
     if (!resp || typeof resp !== 'object') return { ...DEFAULT_LEDGER_CONFIG }
     return {
-      allowSelfRegister: resp.allowSelfRegister !== false,
+      allowSelfRegister: resp.allowSelfRegister === true,
       inviteRewardDays: Number(resp.inviteRewardDays ?? DEFAULT_LEDGER_CONFIG.inviteRewardDays),
       inviteMaxRewarded: Number(resp.inviteMaxRewarded ?? DEFAULT_LEDGER_CONFIG.inviteMaxRewarded),
       cutTrialDays: Number(resp.cutTrialDays ?? DEFAULT_LEDGER_CONFIG.cutTrialDays),

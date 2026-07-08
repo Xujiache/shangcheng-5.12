@@ -43,6 +43,31 @@
   flex-direction: column;
   gap: 14px;
 }
+.login__notice {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(31, 107, 92, 0.1);
+  box-shadow: 0 8px 24px rgba(31, 107, 92, 0.08);
+}
+.login__notice-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.login__notice-text {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.login__help {
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  padding: 0 12px;
+}
 .ph {
   color: var(--faint);
 }

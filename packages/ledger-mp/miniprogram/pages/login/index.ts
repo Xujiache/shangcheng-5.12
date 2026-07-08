@@ -11,54 +11,27 @@ import {
 } from '../../utils/store'
 
 interface LoginData {
-  mode: string
-  modes: Array<{ value: string; label: string }>
-  phone: string
-  pwd: string
-  code: string
-  showPwd: boolean
-  sent: number
   loading: boolean
-  canLogin: boolean
   checking: boolean
-  allowRegister: boolean
   agreed: boolean
   logoUrl: string
 }
 
 Page({
   data: {
-    mode: 'password',
-    modes: [
-      { value: 'password', label: '密码登录' },
-      { value: 'code', label: '验证码登录' },
-    ],
-    phone: '',
-    pwd: '',
-    code: '',
-    showPwd: false,
-    sent: 0,
     loading: false,
-    canLogin: false,
     // 默认进入"校验中"占位：有 token 时静默登录期间不露出表单，避免每次启动闪登录页
     checking: true,
-    allowRegister: true,
-    logoUrl: getLogo(),
     // 隐私合规：默认不勾选，用户须自行阅读后勾选同意才能登录（不得默认同意）
     agreed: false,
+    logoUrl: getLogo(),
   } as LoginData,
 
-  _timer: 0 as any,
-
   onLoad() {
-    // 管理端关闭自助注册时隐藏「立即注册」入口（接口失败按开放兜底）
     authApi
       .config()
       .then((c: any) => {
-        this.setData({
-          allowRegister: !c || c.allowSelfRegister !== false,
-          logoUrl: (c && c.logoUrl) || '',
-        })
+        this.setData({ logoUrl: (c && c.logoUrl) || '' })
         setLogo((c && c.logoUrl) || '')
       })
       .catch(() => {})
@@ -79,139 +52,39 @@ Page({
       })
   },
 
-  refreshCanLogin() {
-    const d = this.data
-    const phoneOk = d.phone.length === 11
-    const canLogin =
-      d.mode === 'password' ? phoneOk && d.pwd.length >= 6 : phoneOk && d.code.length === 6
-    this.setData({ canLogin })
-  },
-  onModeChange(e: any) {
-    this.setData({ mode: e.detail.value }, () => this.refreshCanLogin())
-  },
-  onPhone(e: any) {
-    this.setData({ phone: String(e.detail.value).replace(/[^\d]/g, '').slice(0, 11) }, () =>
-      this.refreshCanLogin(),
-    )
-  },
-  onPwd(e: any) {
-    this.setData({ pwd: String(e.detail.value).slice(0, 20) }, () => this.refreshCanLogin())
-  },
-  onCode(e: any) {
-    this.setData({ code: String(e.detail.value).replace(/\D/g, '').slice(0, 6) }, () =>
-      this.refreshCanLogin(),
-    )
-  },
-  togglePwd() {
-    this.setData({ showPwd: !this.data.showPwd })
-  },
   toggleAgree() {
     this.setData({ agreed: !this.data.agreed })
   },
-  // 登录前置：未勾选同意协议则拦截并提示，不得默认同意
-  ensureAgreed(): boolean {
-    if (this.data.agreed) return true
+  promptAgreement() {
     wx.showToast({ title: '请先阅读并勾选同意《用户协议》与《隐私政策》', icon: 'none' })
-    return false
-  },
-  onForgot() {
-    wx.showToast({ title: '请用验证码登录后重置，或联系管理员', icon: 'none' })
-  },
-  onWechat() {
-    if (this.data.loading) return
-    if (!this.ensureAgreed()) return
-    this.setData({ loading: true })
-    wx.login({
-      success: (r) => {
-        if (!r.code) {
-          this.setData({ loading: false })
-          wx.showToast({ title: '微信授权失败', icon: 'none' })
-          return
-        }
-        authApi
-          .wechatLogin(r.code)
-          .then((res: any) => {
-            setAuth(res.token, res.user)
-            // 成功后不重置 loading：跳转前防重复点击
-            this.routeAfterLogin(res.membership || (res.user && res.user.membership))
-          })
-          .catch((e: any) => {
-            this.setData({ loading: false })
-            wx.showModal({
-              title: '微信未绑定',
-              content:
-                (e && e.message) ||
-                '请先用手机号登录，在「我的 → 账户安全」绑定微信后再用微信登录。',
-              showCancel: false,
-              confirmText: '我知道了',
-            })
-          })
-      },
-      fail: () => {
-        this.setData({ loading: false })
-        wx.showToast({ title: '微信授权失败', icon: 'none' })
-      },
-    })
   },
   onDoc(e: any) {
     const key = e.currentTarget.dataset.key
     wx.navigateTo({ url: '/pages/doc/index?key=' + key })
   },
-  toRegister() {
-    wx.navigateTo({ url: '/pages/register/index' })
-  },
 
-  async getCode() {
-    if (this.data.phone.length !== 11) {
-      wx.showToast({ title: '请输入正确手机号', icon: 'none' })
+  async onPhoneLogin(e: any) {
+    if (this.data.loading) return
+    if (!this.data.agreed) {
+      this.promptAgreement()
       return
     }
-    if (this.data.sent > 0) return
-    try {
-      await authApi.smsCode(this.data.phone)
-      wx.showToast({ title: '验证码已发送', icon: 'none' })
-      this.startCountdown()
-    } catch (e) {
-      /* toast handled in request */
-    }
-  },
-  startCountdown() {
-    this.setData({ sent: 60 })
-    this._timer = setInterval(() => {
-      const s = this.data.sent - 1
-      if (s <= 0) {
-        clearInterval(this._timer)
-        this.setData({ sent: 0 })
-      } else {
-        this.setData({ sent: s })
-      }
-    }, 1000)
-  },
-
-  async doLogin() {
-    if (this.data.loading) return
-    if (!this.ensureAgreed()) return
-    if (!this.data.canLogin) {
-      // 按钮置灰但可点：提示第一项未满足的条件，而不是无声无息
-      const d = this.data
-      if (d.phone.length !== 11) wx.showToast({ title: '请输入 11 位手机号', icon: 'none' })
-      else if (d.mode === 'password') wx.showToast({ title: '密码至少 6 位', icon: 'none' })
-      else wx.showToast({ title: '请输入 6 位验证码', icon: 'none' })
+    const detail = e.detail || {}
+    if (detail.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
+      wx.showToast({ title: '需要授权手机号后才能登录', icon: 'none' })
       return
     }
     this.setData({ loading: true })
     try {
-      const res =
-        this.data.mode === 'password'
-          ? await authApi.login(this.data.phone, this.data.pwd)
-          : await authApi.smsLogin(this.data.phone, this.data.code)
+      const res = await authApi.wechatPhoneLogin(detail.code)
       setAuth(res.token, res.user)
       // 成功后不重置 loading：跳转前防重复点击
       this.routeAfterLogin(res.membership || (res.user && res.user.membership))
-    } catch (e) {
+    } catch (err) {
       this.setData({ loading: false })
     }
   },
+
   routeAfterLogin(m: MembershipStatus | null) {
     // 管理员重置过密码：先强制设置新密码，再走会员路由
     const u = getUser()
@@ -240,8 +113,5 @@ Page({
     } else {
       wx.switchTab({ url: '/pages/home/index' })
     }
-  },
-  onUnload() {
-    if (this._timer) clearInterval(this._timer)
   },
 })

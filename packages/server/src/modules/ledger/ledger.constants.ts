@@ -77,7 +77,7 @@ export function ledgerPlanPriceFen(price: string | number | null | undefined): n
  * - cutRequireMembership: 试用期后是否需要会员才能用优化下料（#9）
  */
 export const LEDGER_CONFIG_DEFAULTS = {
-  allowSelfRegister: true,
+  allowSelfRegister: false,
   inviteRewardDays: 7,
   /** 每个邀请人最多奖励多少个被邀请人（反刷量上限）；0=不限 */
   inviteMaxRewarded: 50,

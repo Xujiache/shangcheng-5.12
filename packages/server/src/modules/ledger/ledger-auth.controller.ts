@@ -12,6 +12,7 @@ import {
   LedgerSmsLoginDto,
   LedgerChangePasswordDto,
   WechatLoginDto,
+  WechatPhoneLoginDto,
   WechatBindDto,
   WechatUnbindDto,
 } from './dto/auth.dto'
@@ -67,6 +68,13 @@ export class LedgerAuthController {
   @Post('wechat-login')
   wechatLogin(@Body() dto: WechatLoginDto) {
     return this.auth.wechatLogin(dto)
+  }
+
+  // 微信官方手机号授权登录：按微信返回手机号匹配后台已开通账号
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('wechat-phone-login')
+  wechatPhoneLogin(@Body() dto: WechatPhoneLoginDto) {
+    return this.auth.wechatPhoneLogin(dto)
   }
 
   // ── 绑定 / 解绑微信（需 ledger 登录 + 密码确认）──
