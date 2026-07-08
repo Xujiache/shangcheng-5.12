@@ -80,7 +80,13 @@ Page({
     try {
       const c: any = editing ? await customerApi.update(id, data) : await customerApi.create(data)
       if (fromOrder) {
-        wx.setStorageSync('ledger_pending_customer', { id: c.id, name: c.name })
+        wx.setStorageSync('ledger_pending_customer', {
+          id: c.id,
+          name: c.name,
+          phone: c.phone || '',
+          address: c.address || '',
+          note: c.note || '',
+        })
       }
       wx.showToast({ title: editing ? '已保存' : '已新增', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 500)

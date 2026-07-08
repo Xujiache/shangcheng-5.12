@@ -8,9 +8,27 @@
     <!-- 基本信息 + 金额（一张白卡）-->
     <view class="oe__card">
       <view class="oe__row">
-        <text class="oe__row-l">客户</text>
+        <text class="oe__row-l">姓名</text>
         <view class="oe__row-r">
-          <input class="oe__cust-in" value="{{customerName}}" placeholder="填写客户姓名" placeholder-class="ph" maxlength="40" confirm-type="done" bindinput="onCustomerName" />
+          <input class="oe__cust-in" value="{{customerName}}" placeholder="客户姓名（必填）" placeholder-class="ph" maxlength="40" confirm-type="done" bindinput="onCustomerName" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">电话</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" type="number" value="{{customerPhone}}" placeholder="联系电话（选填）" placeholder-class="ph" maxlength="20" confirm-type="done" bindinput="onCustomerPhone" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">地址</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" value="{{customerAddress}}" placeholder="安装地址（选填）" placeholder-class="ph" maxlength="120" confirm-type="done" bindinput="onCustomerAddress" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">备注</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" value="{{customerNote}}" placeholder="客户备注（选填）" placeholder-class="ph" maxlength="200" confirm-type="done" bindinput="onCustomerNote" />
         </view>
       </view>
       <picker mode="date" value="{{date}}" bindchange="onDate">

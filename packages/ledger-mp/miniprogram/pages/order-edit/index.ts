@@ -1,4 +1,4 @@
-import { orderApi } from '../../api/index'
+import { customerApi, orderApi } from '../../api/index'
 import { yuan } from '../../utils/format'
 import { COST_CATS, EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
 
@@ -26,6 +26,9 @@ Page({
     id: '',
     customerId: null as string | null,
     customerName: '',
+    customerPhone: '',
+    customerAddress: '',
+    customerNote: '',
     date: today(),
     total: 0,
     received: 0,
@@ -70,12 +73,21 @@ Page({
       this.loadOrder()
     } else {
       // 从客户页「再来一单」带入：id + 名字一起，真正关联到该客户（仅传名字会变成游离订单）
-      if (opt.prefillCustomer)
-        this.setData({
-          customerId: opt.prefillCustomerId || null,
-          customerName: decodeURIComponent(opt.prefillCustomer),
-        })
-      this.refresh()
+      if (opt.prefillCustomer) {
+        const customerId = opt.prefillCustomerId || null
+        this.setData(
+          {
+            customerId,
+            customerName: decodeURIComponent(opt.prefillCustomer),
+          },
+          () => {
+            if (customerId) this.loadCustomerProfile(customerId)
+            this.refresh()
+          },
+        )
+      } else {
+        this.refresh()
+      }
     }
   },
   onShow() {
@@ -84,7 +96,20 @@ Page({
     if (p && p.name) {
       wx.removeStorageSync('ledger_pending_customer')
       // 清空选择器缓存：刚新增的客户要能在下次打开选择器时出现
-      this.setData({ customerId: p.id || null, customerName: p.name }, () => this.refresh())
+      this.setData(
+        {
+          customerId: p.id || null,
+          customerName: p.name,
+          customerPhone: p.phone || '',
+          customerAddress: p.address || '',
+          customerNote: p.note || '',
+        },
+        () => {
+          if (p.id && p.phone === undefined && p.address === undefined && p.note === undefined)
+            this.loadCustomerProfile(p.id)
+          this.refresh()
+        },
+      )
     }
     // 从「报价明细」页返回，回填 明细/总价/优惠/定金/收款/备注
     const m = wx.getStorageSync('ledger_order_money_out')
@@ -136,6 +161,9 @@ Page({
         {
           customerId: o.customerId || null,
           customerName: o.customer,
+          customerPhone: '',
+          customerAddress: '',
+          customerNote: '',
           date: o.date,
           total: o.total,
           costs: {
@@ -175,7 +203,10 @@ Page({
           receivedStr: o.received ? String(o.received) : '',
           note: o.note || '',
         },
-        () => this.refresh(),
+        () => {
+          this.refresh()
+          if (o.customerId) this.loadCustomerProfile(o.customerId)
+        },
       )
     } catch (e) {
       // 编辑态加载失败不能渲染空表单：保存空表单会把真实订单清零，改为展示重试卡
@@ -185,6 +216,23 @@ Page({
   retryLoad() {
     this.setData({ loadError: false })
     this.loadOrder()
+  },
+  async loadCustomerProfile(id: string) {
+    try {
+      const c: any = await customerApi.get(id)
+      if (this.data.customerId !== id) return
+      this.setData(
+        {
+          customerName: c.name || this.data.customerName,
+          customerPhone: c.phone || '',
+          customerAddress: c.address || '',
+          customerNote: c.note || '',
+        },
+        () => this.refresh(),
+      )
+    } catch (e) {
+      // 客户档案加载失败不阻断订单编辑，订单仍保留 customerName 快照。
+    }
   },
 
   refresh() {
@@ -250,10 +298,16 @@ Page({
     this.setData({ note: e.detail.value })
   },
   onCustomerName(e: any) {
-    // 订单页现在按“客户名快照”直接录入；手动改名即解除客户档案绑定。
-    this.setData({ customerId: null, customerName: String(e.detail.value).slice(0, 40) }, () =>
-      this.refresh(),
-    )
+    this.setData({ customerName: String(e.detail.value).slice(0, 40) }, () => this.refresh())
+  },
+  onCustomerPhone(e: any) {
+    this.setData({ customerPhone: String(e.detail.value).slice(0, 20) })
+  },
+  onCustomerAddress(e: any) {
+    this.setData({ customerAddress: String(e.detail.value).slice(0, 120) })
+  },
+  onCustomerNote(e: any) {
+    this.setData({ customerNote: String(e.detail.value).slice(0, 200) })
   },
   addCat(e: any) {
     const k = e.currentTarget.dataset.key
@@ -357,6 +411,27 @@ Page({
     if (this.data.saving) return // 保存成功后的延时返回期间再点取消会连退两页
     wx.navigateBack()
   },
+  async syncCustomerProfile() {
+    const name = String(this.data.customerName || '').trim()
+    const phone = String(this.data.customerPhone || '').trim()
+    const address = String(this.data.customerAddress || '').trim()
+    const note = String(this.data.customerNote || '').trim()
+    if (!name) return { customerId: null as string | null, customerName: '' }
+
+    const data = { name, phone, address, note }
+    if (this.data.customerId) {
+      const c: any = await customerApi.update(this.data.customerId, data)
+      return { customerId: c.id as string, customerName: c.name || name }
+    }
+
+    if (phone || address || note) {
+      const ensured: any = await customerApi.ensureByName(name)
+      const c: any = await customerApi.update(ensured.id, data)
+      return { customerId: c.id as string, customerName: c.name || name }
+    }
+
+    return { customerId: null as string | null, customerName: name }
+  },
   async save() {
     if (this.data.saving) return
     if (!this.data.canSave) {
@@ -372,8 +447,6 @@ Page({
     const {
       editing,
       id,
-      customerId,
-      customerName,
       date,
       total,
       received,
@@ -397,22 +470,27 @@ Page({
     activeCats.forEach((k) => {
       payloadCosts[KEYMAP[k]] = costs[k] || 0
     })
-    const payload = {
-      customerId: customerId || undefined,
-      customerName: String(customerName).trim(),
-      date,
-      total,
-      received,
-      ...payloadCosts,
-      extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
-      customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),
-      items,
-      discount,
-      recycle,
-      deposit,
-      note,
-    }
     try {
+      const syncedCustomer = await this.syncCustomerProfile()
+      this.setData({
+        customerId: syncedCustomer.customerId,
+        customerName: syncedCustomer.customerName,
+      })
+      const payload = {
+        customerId: syncedCustomer.customerId || undefined,
+        customerName: syncedCustomer.customerName,
+        date,
+        total,
+        received,
+        ...payloadCosts,
+        extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
+        customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),
+        items,
+        discount,
+        recycle,
+        deposit,
+        note,
+      }
       if (editing) await orderApi.update(id, payload)
       else await orderApi.create(payload)
       wx.showToast({ title: editing ? '已保存' : '已记账', icon: 'success' })
