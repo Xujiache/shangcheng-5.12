@@ -9,7 +9,7 @@
       <lz-icon wx:else name="cube" size="40" color="white" stroke="2" />
     </view>
     <view class="login__name">门窗利账</view>
-    <view class="login__slogan">使用微信手机号授权登录</view>
+    <view class="login__slogan">微信授权或账号密码登录</view>
   </view>
 
   <!-- 静默登录校验中：显示占位，不露出表单（避免每次启动闪登录页） -->
@@ -26,26 +26,61 @@
     <view class="login__notice">
       <view class="login__notice-title">管理员已开通账号后可登录</view>
       <view class="login__notice-text">
-        点击下方按钮后，微信会弹出手机号授权。手机号仅用于匹配管理员已开通的门窗利账账号，不会用于公开展示或营销。
+        推荐使用微信手机号授权快速匹配账号；如不便授权，也可以使用管理员开通的手机号和密码登录。
       </view>
     </view>
 
-    <button
-      wx:if="{{agreed}}"
-      class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full"
-      open-type="getPhoneNumber"
-      bindgetphonenumber="onPhoneLogin"
-      phone-number-no-quota-toast="手机号授权次数不足，请联系管理员"
-    >
-      {{loading ? '登录中…' : '微信手机号授权登录'}}
-    </button>
-    <button
-      wx:else
-      class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full lz-btn--disabled"
-      bindtap="promptAgreement"
-    >
-      微信手机号授权登录
-    </button>
+    <block wx:if="{{mode === 'wechat'}}">
+      <button
+        wx:if="{{agreed}}"
+        class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onPhoneLogin"
+        phone-number-no-quota-toast="手机号授权次数不足，请联系管理员"
+      >
+        {{loading ? '登录中…' : '微信手机号授权登录'}}
+      </button>
+      <button
+        wx:else
+        class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full lz-btn--disabled"
+        bindtap="promptAgreement"
+      >
+        微信手机号授权登录
+      </button>
+      <view class="login__switch" bindtap="switchToPassword">使用账号密码登录</view>
+    </block>
+
+    <block wx:else>
+      <view class="lz-field">
+        <lz-icon name="phone" size="19" color="faint" />
+        <input
+          class="lz-field__input"
+          value="{{phone}}"
+          type="number"
+          placeholder="管理员开通的手机号"
+          placeholder-class="ph"
+          bindinput="onPhone"
+        />
+      </view>
+      <view class="lz-field">
+        <lz-icon name="lock" size="19" color="faint" />
+        <input
+          class="lz-field__input"
+          value="{{pwd}}"
+          password="{{!showPwd}}"
+          placeholder="请输入密码（至少 6 位）"
+          placeholder-class="ph"
+          bindinput="onPwd"
+        />
+        <view hover-class="tap-active" bindtap="togglePwd" style="padding: 4px;">
+          <lz-icon name="{{showPwd ? 'eye' : 'eyeoff'}}" size="19" color="faint" />
+        </view>
+      </view>
+      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canPasswordLogin ? '' : 'lz-btn--disabled'}}" bindtap="onPasswordLogin">
+        {{loading ? '登录中…' : '账号密码登录'}}
+      </button>
+      <view class="login__switch" bindtap="switchToWechat">使用微信手机号授权登录</view>
+    </block>
 
     <view class="login__help">未开通账号或手机号不匹配，请联系管理员处理。</view>
   </view>

@@ -11,17 +11,27 @@ import {
 } from '../../utils/store'
 
 interface LoginData {
+  mode: 'wechat' | 'password'
+  phone: string
+  pwd: string
+  showPwd: boolean
   loading: boolean
   checking: boolean
+  canPasswordLogin: boolean
   agreed: boolean
   logoUrl: string
 }
 
 Page({
   data: {
+    mode: 'wechat',
+    phone: '',
+    pwd: '',
+    showPwd: false,
     loading: false,
     // 默认进入"校验中"占位：有 token 时静默登录期间不露出表单，避免每次启动闪登录页
     checking: true,
+    canPasswordLogin: false,
     // 隐私合规：默认不勾选，用户须自行阅读后勾选同意才能登录（不得默认同意）
     agreed: false,
     logoUrl: getLogo(),
@@ -62,6 +72,28 @@ Page({
     const key = e.currentTarget.dataset.key
     wx.navigateTo({ url: '/pages/doc/index?key=' + key })
   },
+  switchToPassword() {
+    this.setData({ mode: 'password' }, () => this.refreshPasswordLogin())
+  },
+  switchToWechat() {
+    this.setData({ mode: 'wechat' })
+  },
+  refreshPasswordLogin() {
+    this.setData({
+      canPasswordLogin: this.data.phone.length === 11 && this.data.pwd.length >= 6,
+    })
+  },
+  onPhone(e: any) {
+    this.setData({ phone: String(e.detail.value).replace(/[^\d]/g, '').slice(0, 11) }, () =>
+      this.refreshPasswordLogin(),
+    )
+  },
+  onPwd(e: any) {
+    this.setData({ pwd: String(e.detail.value).slice(0, 20) }, () => this.refreshPasswordLogin())
+  },
+  togglePwd() {
+    this.setData({ showPwd: !this.data.showPwd })
+  },
 
   async onPhoneLogin(e: any) {
     if (this.data.loading) return
@@ -71,7 +103,8 @@ Page({
     }
     const detail = e.detail || {}
     if (detail.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
-      wx.showToast({ title: '需要授权手机号后才能登录', icon: 'none' })
+      wx.showToast({ title: '已取消授权，可用账号密码登录', icon: 'none' })
+      this.switchToPassword()
       return
     }
     this.setData({ loading: true })
@@ -79,6 +112,26 @@ Page({
       const res = await authApi.wechatPhoneLogin(detail.code)
       setAuth(res.token, res.user)
       // 成功后不重置 loading：跳转前防重复点击
+      this.routeAfterLogin(res.membership || (res.user && res.user.membership))
+    } catch (err) {
+      this.setData({ loading: false })
+    }
+  },
+  async onPasswordLogin() {
+    if (this.data.loading) return
+    if (!this.data.agreed) {
+      this.promptAgreement()
+      return
+    }
+    if (!this.data.canPasswordLogin) {
+      if (this.data.phone.length !== 11) wx.showToast({ title: '请输入 11 位手机号', icon: 'none' })
+      else wx.showToast({ title: '密码至少 6 位', icon: 'none' })
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const res = await authApi.login(this.data.phone, this.data.pwd)
+      setAuth(res.token, res.user)
       this.routeAfterLogin(res.membership || (res.user && res.user.membership))
     } catch (err) {
       this.setData({ loading: false })
