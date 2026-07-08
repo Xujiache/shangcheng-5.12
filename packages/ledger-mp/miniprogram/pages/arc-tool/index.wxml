@@ -4,17 +4,7 @@
 
   <view class="lz-page lz-page--pad-bottom arc__page">
     <view class="arc__sketch">
-      <view class="arc__curve"></view>
-      <view class="arc__chord"></view>
-      <view class="arc__height"></view>
-      <view class="arc__left"></view>
-      <view class="arc__right"></view>
-      <view class="arc__angle"></view>
-      <text class="arc__pt arc__pt--A">A</text>
-      <text class="arc__pt arc__pt--B">B</text>
-      <text class="arc__pt arc__pt--C">C</text>
-      <text class="arc__pt arc__pt--D">D</text>
-      <text class="arc__pt arc__pt--a">a</text>
+      <image class="arc__demo" src="/assets/tools/arc-demo.jpg" mode="aspectFit" />
     </view>
 
     <view class="arc__rule">
