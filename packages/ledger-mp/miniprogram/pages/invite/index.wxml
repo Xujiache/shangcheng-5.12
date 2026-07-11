@@ -31,7 +31,7 @@
             </view>
           </view>
         </block>
-        <view wx:else class="inv__desc">自助注册已关闭。好友需要由管理员开通账号后，再使用手机号密码或短信验证码登录。</view>
+        <view wx:else class="inv__desc">自助注册已关闭。好友需要由管理员开通账号后，再使用微信手机号快捷登录、手机号密码或短信验证码登录。</view>
       </view>
 
       <block wx:if="{{allowSelfRegister}}">

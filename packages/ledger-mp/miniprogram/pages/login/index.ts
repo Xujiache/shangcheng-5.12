@@ -117,41 +117,23 @@ Page({
   onForgot() {
     wx.showToast({ title: '请用验证码登录后重置，或联系管理员', icon: 'none' })
   },
-  onWechat() {
+  async onPhoneLogin(e: any) {
     if (this.data.loading) return
     if (!this.ensureAgreed()) return
+    const detail = e.detail || {}
+    if (detail.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
+      wx.showToast({ title: '已取消授权，可继续使用密码或验证码登录', icon: 'none' })
+      return
+    }
     this.setData({ loading: true })
-    wx.login({
-      success: (r) => {
-        if (!r.code) {
-          this.setData({ loading: false })
-          wx.showToast({ title: '微信授权失败', icon: 'none' })
-          return
-        }
-        authApi
-          .wechatLogin(r.code)
-          .then((res: any) => {
-            setAuth(res.token, res.user)
-            // 成功后不重置 loading：跳转前防重复点击
-            this.routeAfterLogin(res.membership || (res.user && res.user.membership))
-          })
-          .catch((e: any) => {
-            this.setData({ loading: false })
-            wx.showModal({
-              title: '微信未绑定',
-              content:
-                (e && e.message) ||
-                '请先用手机号登录，在「我的 → 账户安全」绑定微信后再用微信登录。',
-              showCancel: false,
-              confirmText: '我知道了',
-            })
-          })
-      },
-      fail: () => {
-        this.setData({ loading: false })
-        wx.showToast({ title: '微信授权失败', icon: 'none' })
-      },
-    })
+    try {
+      const res = await authApi.wechatPhoneLogin(detail.code)
+      setAuth(res.token, res.user)
+      // 成功后不重置 loading：跳转前防重复点击
+      this.routeAfterLogin(res.membership || (res.user && res.user.membership))
+    } catch (e) {
+      this.setData({ loading: false })
+    }
   },
   onDoc(e: any) {
     const key = e.currentTarget.dataset.key

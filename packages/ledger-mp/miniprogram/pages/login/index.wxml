@@ -86,9 +86,19 @@
       <text>其他方式</text>
       <view class="login__line"></view>
     </view>
-    <button class="lz-btn lz-btn--ghost lz-btn--full" bindtap="onWechat">
+    <button
+      wx:if="{{agreed}}"
+      class="lz-btn lz-btn--ghost lz-btn--full"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onPhoneLogin"
+      phone-number-no-quota-toast="手机号快速验证次数不足，请使用密码或验证码登录"
+    >
       <lz-icon name="wechat" size="20" color="#07C160" stroke="1.9" />
-      <text>微信登录</text>
+      <text>{{loading ? '登录中…' : '微信手机号快捷登录'}}</text>
+    </button>
+    <button wx:else class="lz-btn lz-btn--ghost lz-btn--full" bindtap="ensureAgreed">
+      <lz-icon name="wechat" size="20" color="#07C160" stroke="1.9" />
+      <text>微信手机号快捷登录</text>
     </button>
 
     <view wx:if="{{allowRegister}}" class="login__register" bindtap="toRegister">
