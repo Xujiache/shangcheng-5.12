@@ -4,7 +4,7 @@
   <view class="lz-page">
     <view class="reg__hero">
       <view class="reg__name">请联系管理员开通账号</view>
-      <view class="reg__sub">门窗利账账号由管理员后台开通，开通后可使用微信手机号授权登录。</view>
+      <view class="reg__sub">门窗利账账号由管理员后台开通，开通后可使用手机号密码或短信验证码登录。</view>
     </view>
 
     <view class="reg__form">

@@ -11,8 +11,11 @@ export const authApi = {
     }),
   login: (phone: string, password: string) =>
     http.post('/l/auth/login', { phone, password }, { auth: false }),
-  wechatPhoneLogin: (code: string) =>
-    http.post('/l/auth/wechat-phone-login', { code }, { auth: false }),
+  register: (data: { phone: string; password: string; nickname?: string; inviteCode?: string }) =>
+    http.post('/l/auth/register', data, { auth: false }),
+  smsCode: (phone: string) => http.post('/l/auth/sms-code', { phone }, { auth: false }),
+  smsLogin: (phone: string, code: string) =>
+    http.post('/l/auth/sms-login', { phone, code }, { auth: false }),
   changePassword: (oldPassword: string | undefined, newPassword: string) =>
     http.post('/l/auth/change-password', { oldPassword, newPassword }),
   // 微信一键登录（openid 须已绑定）；silent 让登录页自行处理"未绑定"提示
