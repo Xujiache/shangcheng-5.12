@@ -160,15 +160,6 @@
   color: var(--accent-text);
   font-weight: 600;
 }
-.login__footnote {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  color: var(--faint);
-  font-size: 11px;
-}
 .login__sheet--checking {
   min-height: 250px;
   display: flex;
@@ -219,8 +210,5 @@
   }
   .login__agreement {
     margin-top: 13px;
-  }
-  .login__footnote {
-    margin-top: 8px;
   }
 }

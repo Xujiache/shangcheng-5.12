@@ -71,10 +71,6 @@
         </view>
       </view>
 
-      <view class="login__footnote">
-        <lz-icon name="shield" size="13" color="faint" stroke="1.7" />
-        <text>账号由管理员统一开通</text>
-      </view>
     </block>
   </view>
 </view>
