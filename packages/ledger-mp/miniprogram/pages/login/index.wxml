@@ -23,9 +23,11 @@
 
     <button
       wx:if="{{agreed}}"
+      id="privacy-phone-login"
       class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{loading ? 'lz-btn--disabled' : ''}}"
-      open-type="getPhoneNumber"
+      open-type="getPhoneNumber|agreePrivacyAuthorization"
       bindgetphonenumber="onPhoneLogin"
+      bindagreeprivacyauthorization="onPrivacyAuthorized"
       phone-number-no-quota-toast="手机号快速验证次数不足，请稍后重试或联系管理员"
     >
       <lz-icon name="phone" size="20" color="white" stroke="2" />
@@ -61,6 +63,8 @@
       <text class="login__link" catchtap="onDoc" data-key="terms">《用户协议》</text>
       与
       <text class="login__link" catchtap="onDoc" data-key="privacy">《隐私政策》</text>
+      与
+      <text class="login__link" catchtap="openPrivacyContract">{{privacyContractName}}</text>
     </view>
   </view>
 </view>

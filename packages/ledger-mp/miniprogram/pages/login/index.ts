@@ -15,6 +15,7 @@ interface LoginData {
   checking: boolean
   agreed: boolean
   logoUrl: string
+  privacyContractName: string
 }
 
 function getWechatLoginCode(): Promise<string> {
@@ -34,9 +35,11 @@ Page({
     // 隐私合规：必须由用户主动勾选，不得默认同意。
     agreed: false,
     logoUrl: getLogo(),
+    privacyContractName: '《小程序用户隐私保护指引》',
   } as LoginData,
 
   onLoad() {
+    this.loadPrivacySetting()
     authApi
       .config()
       .then((config: any) => {
@@ -58,6 +61,18 @@ Page({
       .catch(() => this.setData({ checking: false }))
   },
 
+  loadPrivacySetting() {
+    const getPrivacySetting = (wx as any).getPrivacySetting
+    if (typeof getPrivacySetting !== 'function') return
+    getPrivacySetting({
+      success: (res: any) => {
+        if (res && res.privacyContractName) {
+          this.setData({ privacyContractName: res.privacyContractName })
+        }
+      },
+    })
+  },
+
   toggleAgree() {
     this.setData({ agreed: !this.data.agreed })
   },
@@ -68,6 +83,19 @@ Page({
   },
   onDoc(e: any) {
     wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
+  },
+  onPrivacyAuthorized() {
+    this.setData({ agreed: true })
+  },
+  openPrivacyContract() {
+    const openPrivacyContract = (wx as any).openPrivacyContract
+    if (typeof openPrivacyContract !== 'function') {
+      wx.showToast({ title: '当前微信版本暂不支持查看，请升级微信', icon: 'none' })
+      return
+    }
+    openPrivacyContract({
+      fail: () => wx.showToast({ title: '隐私保护指引暂未配置，请联系管理员', icon: 'none' }),
+    })
   },
 
   async onPhoneLogin(e: any) {
