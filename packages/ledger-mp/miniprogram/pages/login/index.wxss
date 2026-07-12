@@ -25,6 +25,15 @@
   background: linear-gradient(180deg, rgba(7, 71, 94, 0.2) 0%, rgba(7, 71, 94, 0) 34%);
   pointer-events: none;
 }
+.login__hero-bridge {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 54px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 72%);
+  pointer-events: none;
+}
 .login__brand {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 14px);
@@ -52,12 +61,10 @@
   position: relative;
   z-index: 2;
   min-height: 330px;
-  margin-top: -24px;
-  padding: 28px 28px calc(14px + env(safe-area-inset-bottom));
+  margin-top: -2px;
+  padding: 18px 28px calc(14px + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  border-radius: 28px 28px 0 0;
   background: #fff;
-  box-shadow: 0 -12px 32px rgba(23, 62, 52, 0.08);
 }
 .login__heading {
   margin-bottom: 22px;
@@ -199,7 +206,7 @@
   }
   .login__sheet {
     min-height: 316px;
-    padding-top: 22px;
+    padding-top: 14px;
   }
   .login__heading {
     margin-bottom: 18px;

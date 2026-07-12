@@ -2,6 +2,7 @@
   <view class="login__hero">
     <image class="login__hero-image" src="/assets/login/login-hero.jpg" mode="aspectFill" />
     <view class="login__hero-shade"></view>
+    <view class="login__hero-bridge"></view>
     <view class="login__brand">
       <view class="login__brand-mark">
         <image wx:if="{{logoUrl}}" class="login__brand-logo" src="{{logoUrl}}" mode="aspectFit" />
