@@ -1,124 +1,103 @@
-/* 注意：自定义 tabBar 渲染在独立上下文，拿不到 page 作用域的 CSS 变量，
-   故此处颜色全部写死（取自 styles/tokens.wxss），不要用 var(--xxx)。 */
+/* 自定义 TabBar 在独立上下文渲染，颜色取自 styles/tokens.wxss 的固定值。 */
 .ctb {
   position: fixed;
-  left: 12px;
   right: 12px;
   bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 12px;
   z-index: 100;
 }
 .ctb__bar {
   position: relative;
-  display: flex;
-  align-items: center;
   height: 66px;
   padding: 0 6px;
-  border-radius: 30px;
-  /* 液态玻璃：顶亮底暗的半透明渐变镜面（光线在玻璃上的折射感）*/
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.32) 100%);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.6);
-  /* 外阴影做悬浮 + 内嵌高光做"被光照亮的玻璃边缘"(edge lensing) */
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.32) 100%);
+  -webkit-backdrop-filter: blur(20px) saturate(175%);
+  backdrop-filter: blur(20px) saturate(175%);
   box-shadow:
     0 16px 48px rgba(8, 24, 18, 0.26),
     0 2px 8px rgba(8, 24, 18, 0.1),
     0 0 26px -6px rgba(46, 180, 150, 0.35),
     inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
     inset 0 -2px 8px rgba(255, 255, 255, 0.45);
-  /* iOS WKWebView 必须带 -webkit- 前缀，否则毛玻璃不生效 */
-  -webkit-backdrop-filter: blur(20px) saturate(175%);
-  backdrop-filter: blur(20px) saturate(175%);
 }
-/* 关闭玻璃质感：实色不透明、无模糊 */
 .ctb__bar--solid {
-  background: #ffffff;
-  border: 1px solid rgba(20, 32, 28, 0.08);
+  border-color: rgba(20, 32, 28, 0.08);
+  background: #fff;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-}
-/* 液态玻璃指示块（按 Apple Liquid Glass 规范近似）：恒宽全圆角药丸，随选中 tab 平移、按下放大。
-   Apple 玻璃是「清澈」的——低模糊(blur~3px) + 高饱和(saturate~180%) + 微亮，本体几乎无色（白色微染），
-   颜色靠 saturate 把背后流光提鲜透出；选中色由图标/文字承担。边缘镜面亮边见 ::after。
-   注：真·折射/色散需 GPU/SVG-displacement-backdrop，WKWebView(小程序 iOS) 不支持，故用此纯 CSS 近似。 */
-.ctb__ind {
-  position: absolute;
-  top: 9px;
-  height: 48px;
-  z-index: 0;
-  width: 0;
-  opacity: 0;
-  border-radius: 24px; /* = 高度一半 → 全圆角胶囊 */
-  pointer-events: none;
-  transform-origin: center;
-  background: rgba(255, 255, 255, 0.16); /* 白色微染，非彩色块 */
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  /* 外投影=悬浮；内顶高光=被光照亮的玻璃；内底极淡 accent 透出 */
-  box-shadow:
-    0 6px 18px -4px rgba(8, 24, 18, 0.28),
-    inset 0 4px 12px rgba(255, 255, 255, 0.42),
-    inset 0 -3px 8px rgba(46, 180, 150, 0.1);
-  -webkit-backdrop-filter: blur(3px) saturate(180%) brightness(1.06);
-  backdrop-filter: blur(3px) saturate(180%) brightness(1.06);
-  will-change: left, transform, opacity;
-}
-/* 边缘镜面亮边：光在玻璃边缘折射形成的高光（右下 + 底 + 左上微反），即「边缘特殊处理」。 */
-.ctb__ind::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 24px;
-  pointer-events: none;
-  box-shadow:
-    inset -8px -6px 0 -9px rgba(255, 255, 255, 0.95),
-    inset 0 -7px 0 -6px rgba(255, 255, 255, 0.9),
-    inset 7px 5px 0 -9px rgba(255, 255, 255, 0.65);
-}
-/* 按下/拖动放大态：略大于胶囊（scale 在内联给）+ 更清澈更亮（饱和/亮度拉高）+ 更重悬浮投影。 */
-.ctb__ind--press {
-  border-color: rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 12px 28px -6px rgba(8, 24, 18, 0.36),
-    inset 0 5px 14px rgba(255, 255, 255, 0.55),
-    inset 0 -4px 10px rgba(46, 180, 150, 0.12);
-  -webkit-backdrop-filter: blur(4px) saturate(200%) brightness(1.1);
-  backdrop-filter: blur(4px) saturate(200%) brightness(1.1);
 }
 .ctb__tab {
   position: relative;
   z-index: 1;
-  flex: 1;
+  height: 54px;
+  min-width: 0;
+  padding: 2px 0;
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-  padding: 2px 0;
-  /* tap-active(scale .975 + opacity .92) 平滑过渡，按压不再硬切 */
+  box-sizing: border-box;
+  border-radius: 24px;
   transition:
     transform 0.16s ease,
     opacity 0.16s ease;
 }
-/* 图标双层交叉淡入：选中色层 + 灰色层叠放，靠 opacity 过渡平滑切换（避免整张 SVG 硬换/闪烁）*/
+.ctb__glass {
+  position: absolute;
+  z-index: 0;
+  top: 1px;
+  right: 5px;
+  bottom: 1px;
+  left: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 22px;
+  opacity: 0;
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.26);
+  -webkit-backdrop-filter: blur(8px) saturate(165%) brightness(1.04);
+  backdrop-filter: blur(8px) saturate(165%) brightness(1.04);
+  box-shadow:
+    0 5px 14px -5px rgba(8, 24, 18, 0.28),
+    inset 0 2px 8px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 6px rgba(46, 180, 150, 0.08);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ctb__glass--on {
+  opacity: 1;
+  transform: scale(1);
+}
 .ctb__ic {
   position: relative;
+  z-index: 1;
   width: 23px;
   height: 23px;
 }
 .ctb__ic-l {
   position: absolute;
-  left: 0;
   top: 0;
+  left: 0;
   width: 23px;
   height: 23px;
-  transition: opacity 0.28s ease;
+  transition: opacity 0.2s ease;
 }
 .ctb__t {
+  position: relative;
+  z-index: 1;
+  color: #5c6b64;
   font-size: 10.5px;
   font-weight: 500;
-  letter-spacing: 0.02em;
-  color: #5c6b64;
-  transition: color 0.28s ease;
+  letter-spacing: 0;
+  transition: color 0.2s ease;
 }
 .ctb__t--on {
   color: #0e7c66;
@@ -127,42 +106,59 @@
 .ctb__fab {
   position: relative;
   z-index: 2;
-  overflow: hidden;
   width: 56px;
   height: 56px;
   margin: 0 10px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 3px solid #ffffff;
-  transform: translateY(-14px);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  transform: translateY(-14px);
   background: linear-gradient(150deg, #3ba58c, #0e7c66);
   box-shadow:
     0 8px 20px rgba(14, 124, 102, 0.42),
     inset 0 2px 3px rgba(255, 255, 255, 0.45),
     inset 0 -3px 6px rgba(0, 56, 42, 0.28);
 }
-
-/* FAB 点击消散光（tabBar 独立上下文，关键帧本地定义）*/
 .ctb__fab::after {
-  content: '';
   position: absolute;
-  left: 50%;
   top: 50%;
+  left: 50%;
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  opacity: 0;
   transform: translate(-50%, -50%) scale(0);
   background: radial-gradient(circle, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
-  opacity: 0;
+  content: '';
   pointer-events: none;
 }
 .ctb__fab:active::after {
   animation: ctbBurst 0.55s ease-out;
 }
 @keyframes ctbBurst {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.75; }
-  100% { transform: translate(-50%, -50%) scale(20); opacity: 0; }
+  0% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(20);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctb__tab,
+  .ctb__glass,
+  .ctb__ic-l,
+  .ctb__t {
+    transition: none;
+  }
+  .ctb__fab:active::after {
+    animation: none;
+  }
 }

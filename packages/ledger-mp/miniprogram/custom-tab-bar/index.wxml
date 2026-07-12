@@ -1,15 +1,7 @@
 <view class="ctb">
-  <view
-    class="ctb__bar {{glass ? '' : 'ctb__bar--solid'}}"
-    style="{{glass ? barStyle : ''}}"
-    bindtouchstart="onTouchStart"
-    catchtouchmove="onTouchMove"
-    bindtouchend="onTouchEnd"
-    bindtouchcancel="onTouchEnd"
-  >
-    <view wx:if="{{liquid}}" class="ctb__ind {{pressed ? 'ctb__ind--press' : ''}}" style="{{indStyle}}"></view>
-
+  <view class="ctb__bar {{glass ? '' : 'ctb__bar--solid'}}" style="{{glass ? barStyle : ''}}">
     <view class="ctb__tab" data-index="0" bindtap="switchTab" hover-class="tap-active">
+      <view wx:if="{{liquid}}" class="ctb__glass {{selected===0?'ctb__glass--on':''}}"></view>
       <view class="ctb__ic">
         <view class="ctb__ic-l" style="opacity:{{selected===0?1:0}}">
           <lz-icon name="home" size="23" color="accent" stroke="2.1" />
@@ -22,6 +14,7 @@
     </view>
 
     <view class="ctb__tab" data-index="1" bindtap="switchTab" hover-class="tap-active">
+      <view wx:if="{{liquid}}" class="ctb__glass {{selected===1?'ctb__glass--on':''}}"></view>
       <view class="ctb__ic">
         <view class="ctb__ic-l" style="opacity:{{selected===1?1:0}}">
           <lz-icon name="orders" size="23" color="accent" stroke="2.1" />
@@ -38,6 +31,7 @@
     </view>
 
     <view class="ctb__tab" data-index="2" bindtap="switchTab" hover-class="tap-active">
+      <view wx:if="{{liquid}}" class="ctb__glass {{selected===2?'ctb__glass--on':''}}"></view>
       <view class="ctb__ic">
         <view class="ctb__ic-l" style="opacity:{{selected===2?1:0}}">
           <lz-icon name="trend" size="23" color="accent" stroke="2.1" />
@@ -50,6 +44,7 @@
     </view>
 
     <view class="ctb__tab" data-index="3" bindtap="switchTab" hover-class="tap-active">
+      <view wx:if="{{liquid}}" class="ctb__glass {{selected===3?'ctb__glass--on':''}}"></view>
       <view class="ctb__ic">
         <view class="ctb__ic-l" style="opacity:{{selected===3?1:0}}">
           <lz-icon name="user" size="23" color="accent" stroke="2.1" />

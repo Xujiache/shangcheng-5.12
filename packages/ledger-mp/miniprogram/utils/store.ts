@@ -139,7 +139,7 @@ export function setFxMode(m: 'normal' | 'max') {
   wx.setStorageSync(FX_KEY, m === 'max' ? 'max' : 'normal')
 }
 
-/* ---- 液态导航栏：底部 tab 选中高亮块随点击液态滑动 + 弹性拉伸回弹，默认开启 ---- */
+/* ---- 液态导航栏：底部 Tab 选中项显示柔和玻璃高亮，默认开启 ---- */
 const LIQUID_TAB_KEY = 'ledger_liquid_tab'
 export function getLiquidTab(): boolean {
   const v = wx.getStorageSync(LIQUID_TAB_KEY)

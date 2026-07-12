@@ -44,7 +44,7 @@
         <view class="lz-row__icon"><lz-icon name="home" size="17" color="accent" /></view>
         <view class="lz-row__main">
           <view class="lz-row__label">液态导航栏</view>
-          <view class="lz-row__sub">点击底部 tab 时高亮块液态滑动伸缩 · 关闭则静态高亮</view>
+          <view class="lz-row__sub">选中项显示柔和玻璃高亮 · 关闭则仅切换图标与文字颜色</view>
         </view>
         <view
           class="tg {{liquidTab ? 'tg--on' : ''}}"
