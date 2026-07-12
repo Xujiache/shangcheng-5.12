@@ -1,6 +1,6 @@
 <lz-bg />
 <view class="pw">
-  <lz-header title="{{reset ? '设置新密码' : '修改登录密码'}}" back="{{!reset}}" />
+  <lz-header title="{{reset ? '设置安全密码' : '修改安全密码'}}" back="{{!reset}}" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
     <block wx:if="{{!reset}}">
@@ -52,7 +52,7 @@
       />
     </view>
 
-    <view class="pw__note">{{reset ? '管理员已重置您的密码，请设置新密码后继续使用。' : '为保障账号安全，密码至少 6 位，建议包含字母与数字。'}}</view>
+    <view class="pw__note">{{reset ? '管理员已重置安全密码，请设置后继续使用。' : '安全密码用于敏感操作验证，至少 6 位，建议包含字母与数字。'}}</view>
   </view>
 
   <view class="lz-footer">

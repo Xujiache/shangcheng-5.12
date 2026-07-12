@@ -15,20 +15,20 @@
       </view>
     </view>
 
-    <view class="lz-section-label" style="margin-top: var(--gap);">登录密码验证</view>
+    <view class="lz-section-label" style="margin-top: var(--gap);">安全密码验证</view>
     <view class="lz-field">
       <lz-icon name="lock" size="19" color="faint" />
       <input
         class="lz-field__input"
         value="{{password}}"
         password
-        placeholder="输入登录密码以验证身份"
+        placeholder="输入安全密码以验证身份"
         placeholder-class="ph"
         maxlength="20"
         bindinput="onPwd"
       />
     </view>
-    <view class="wb__note">为保障账号安全，{{bound ? '解绑' : '绑定'}}微信需验证当前登录密码。</view>
+    <view class="wb__note">为保障账号安全，{{bound ? '解绑' : '绑定'}}微信需验证安全密码。</view>
   </view>
 
   <view class="lz-footer">

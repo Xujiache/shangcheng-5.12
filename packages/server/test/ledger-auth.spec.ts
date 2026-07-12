@@ -131,10 +131,10 @@ describe('LedgerAuthService.getPublicConfig（登录页公开配置）', () => {
     service = buildService(prisma)
   })
 
-  it('用例5：无配置行 → 走 LEDGER_CONFIG_DEFAULTS（allowSelfRegister 默认 true）', async () => {
+  it('用例5：无配置行 → 走 LEDGER_CONFIG_DEFAULTS（allowSelfRegister 默认 false）', async () => {
     prisma.ledgerConfig.findUnique.mockResolvedValueOnce(null as any)
     const res = await service.getPublicConfig()
-    expect(res).toEqual({ allowSelfRegister: true, logoUrl: '' })
+    expect(res).toEqual({ allowSelfRegister: false, logoUrl: '' })
   })
 
   it('用例6：后台关闭自助注册 → 返回 false（与 register 校验同一数据源）', async () => {
@@ -147,5 +147,92 @@ describe('LedgerAuthService.getPublicConfig（登录页公开配置）', () => {
     // 读的就是 register 用的那行 LedgerConfig(key='global')
     const arg = prisma.ledgerConfig.findUnique.mock.calls[0][0] as any
     expect(arg.where.key).toBe('global')
+  })
+})
+
+describe('LedgerAuthService.wechatPhoneLogin（手机号识别 + 微信自动绑定）', () => {
+  let prisma: ReturnType<typeof buildPrisma>
+  let service: LedgerAuthService
+  const user = {
+    id: 'u1',
+    phone: '13800138000',
+    nickname: '门窗店主',
+    avatar: null,
+    mustReset: false,
+    status: 'active',
+    wxOpenid: null,
+    membership: null,
+  }
+
+  beforeEach(() => {
+    prisma = buildPrisma()
+    service = buildService(prisma)
+    ;(service as any).getPhoneByWechatCode = jest.fn(async () => '13800138000')
+    ;(service as any).jscode2session = jest.fn(async () => 'openid-1')
+  })
+
+  it('用例7：手机号匹配账号后绑定当前 openid 并签发 token', async () => {
+    prisma.ledgerUser.findUnique
+      .mockResolvedValueOnce(user as any)
+      .mockResolvedValueOnce(null as any)
+
+    const res = await service.wechatPhoneLogin({
+      code: 'phone-code',
+      loginCode: 'login-code',
+    })
+
+    expect(res.token).toBe('tok')
+    expect(res.user.id).toBe('u1')
+    expect(prisma.ledgerUser.findUnique.mock.calls[1][0]).toEqual({
+      where: { wxOpenid: 'openid-1' },
+      select: { id: true },
+    })
+    expect(prisma.ledgerUser.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { lastLoginAt: expect.any(Date), wxOpenid: 'openid-1' },
+    })
+  })
+
+  it('用例8：当前 openid 已绑定其他账号时拒绝覆盖', async () => {
+    prisma.ledgerUser.findUnique
+      .mockResolvedValueOnce(user as any)
+      .mockResolvedValueOnce({ id: 'u2' } as any)
+
+    await expectBizCode(
+      () => service.wechatPhoneLogin({ code: 'phone-code', loginCode: 'login-code' }),
+      1003,
+    )
+    expect(prisma.ledgerUser.update).not.toHaveBeenCalled()
+  })
+
+  it('用例9：旧客户端未提交 loginCode 时保持手机号登录兼容', async () => {
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce(user as any)
+
+    const res = await service.wechatPhoneLogin({ code: 'phone-code' })
+
+    expect(res.token).toBe('tok')
+    expect((service as any).jscode2session).not.toHaveBeenCalled()
+    expect(prisma.ledgerUser.findUnique).toHaveBeenCalledTimes(1)
+    expect(prisma.ledgerUser.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { lastLoginAt: expect.any(Date) },
+    })
+  })
+
+  it('用例10：已自动绑定的 openid 可直接使用微信登录', async () => {
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ ...user, wxOpenid: 'openid-1' } as any)
+
+    const res = await service.wechatLogin({ code: 'login-code' })
+
+    expect(res.token).toBe('tok')
+    expect(res.user.id).toBe('u1')
+    expect(prisma.ledgerUser.findUnique).toHaveBeenCalledWith({
+      where: { wxOpenid: 'openid-1' },
+      include: { membership: true },
+    })
+    expect(prisma.ledgerUser.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { lastLoginAt: expect.any(Date) },
+    })
   })
 })

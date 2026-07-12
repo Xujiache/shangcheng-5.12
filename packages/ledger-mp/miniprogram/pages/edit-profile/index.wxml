@@ -77,7 +77,7 @@
         <view class="lz-row__icon"><lz-icon name="wechat" size="17" color="accent" /></view>
         <view class="lz-row__main">
           <view class="lz-row__label">绑定微信登录</view>
-          <view class="lz-row__sub">绑定后可用微信一键登录</view>
+          <view class="lz-row__sub">手机号快捷登录后自动绑定</view>
         </view>
         <lz-icon name="chevron" size="16" color="faint" />
       </view>

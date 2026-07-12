@@ -82,7 +82,7 @@ export class LedgerAuthService {
     }
   }
 
-  /** 手机号 + 密码登录（主） */
+  /** 手机号 + 密码登录（兼容旧版本客户端）。 */
   async login(dto: LedgerLoginDto) {
     const phone = String(dto.phone || '').trim()
     const user = await this.prisma.ledgerUser.findUnique({
@@ -416,7 +416,7 @@ export class LedgerAuthService {
     return { openid: data.openid as string, sessionKey: data.session_key as string }
   }
 
-  /** 微信一键登录：openid 须已绑定账号，否则提示先用手机号登录绑定。 */
+  /** 微信登录：openid 须已由手机号快捷登录或账户安全页绑定。 */
   async wechatLogin(dto: WechatLoginDto) {
     const openid = await this.jscode2session(dto.code)
     const user = await this.prisma.ledgerUser.findUnique({
@@ -424,10 +424,7 @@ export class LedgerAuthService {
       include: { membership: true },
     })
     if (!user) {
-      throw new BizException(
-        BizCode.NOT_FOUND,
-        '该微信未绑定账号，请先用手机号登录后在「账户安全」绑定微信',
-      )
+      throw new BizException(BizCode.NOT_FOUND, '该微信尚未绑定账号，请先使用微信手机号快捷登录')
     }
     if (user.status === 'disabled') {
       throw new BizException(BizCode.FORBIDDEN, '账号已被禁用，请联系管理员')
@@ -447,7 +444,7 @@ export class LedgerAuthService {
     if (!appid || !secret) {
       throw new BizException(
         BizCode.BUSINESS_ERROR,
-        '微信手机号登录未配置（缺少 AppID / AppSecret）',
+        '微信手机号快捷登录未配置（缺少 AppID / AppSecret）',
       )
     }
     return { appid, secret }
@@ -519,11 +516,18 @@ export class LedgerAuthService {
     return phone
   }
 
-  /** 微信官方手机号授权登录：手机号只用于匹配后台已开通账号，不自动注册。 */
+  /**
+   * 微信手机号快捷登录：手机号匹配后台账号，同时绑定当前微信 openid。
+   * loginCode 选填仅为兼容旧客户端；新客户端始终提交，确保后续可直接微信登录。
+   */
   async wechatPhoneLogin(dto: WechatPhoneLoginDto) {
     const code = String(dto.code || '').trim()
     if (!code) throw new BizException(BizCode.INVALID_PARAMS, '缺少微信手机号授权 code')
-    const phone = await this.getPhoneByWechatCode(code)
+    const loginCode = String(dto.loginCode || '').trim()
+    const [phone, openid] = await Promise.all([
+      this.getPhoneByWechatCode(code),
+      loginCode ? this.jscode2session(loginCode) : Promise.resolve(''),
+    ])
     const user = await this.prisma.ledgerUser.findUnique({
       where: { phone },
       include: { membership: true },
@@ -532,21 +536,37 @@ export class LedgerAuthService {
     if (user.status === 'disabled') {
       throw new BizException(BizCode.FORBIDDEN, '账号已被禁用，请联系管理员')
     }
-    await this.prisma.ledgerUser.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    })
+    if (openid) {
+      const bound = await this.prisma.ledgerUser.findUnique({
+        where: { wxOpenid: openid },
+        select: { id: true },
+      })
+      if (bound && bound.id !== user.id) {
+        throw new BizException(BizCode.CONFLICT, '当前微信已绑定其他账号，请联系管理员处理')
+      }
+    }
+    try {
+      await this.prisma.ledgerUser.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date(), ...(openid ? { wxOpenid: openid } : {}) },
+      })
+    } catch (e: any) {
+      if (openid && e?.code === 'P2002') {
+        throw new BizException(BizCode.CONFLICT, '当前微信已绑定其他账号，请联系管理员处理')
+      }
+      throw e
+    }
     const token = await this.signToken(user.id)
     const pub = this.publicUser(user)
     return { token, user: pub, membership: pub.membership }
   }
 
-  /** 绑定微信：验证登录密码 + code 换 openid，写入账号（openid 不可重复绑定）。 */
+  /** 绑定微信：验证安全密码 + code 换 openid，写入账号（openid 不可重复绑定）。 */
   async bindWechat(userId: string, dto: WechatBindDto) {
     const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
     const ok = await argon2.verify(user.passwordHash, dto.password)
-    if (!ok) throw new BizException(BizCode.INVALID_PARAMS, '登录密码不正确')
+    if (!ok) throw new BizException(BizCode.INVALID_PARAMS, '安全密码不正确')
     const openid = await this.jscode2session(dto.code)
     const other = await this.prisma.ledgerUser.findUnique({
       where: { wxOpenid: openid },
@@ -559,12 +579,12 @@ export class LedgerAuthService {
     return { ok: true, bound: true }
   }
 
-  /** 解绑微信：验证登录密码。 */
+  /** 解绑微信：验证安全密码。 */
   async unbindWechat(userId: string, dto: WechatUnbindDto) {
     const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
     const ok = await argon2.verify(user.passwordHash, dto.password)
-    if (!ok) throw new BizException(BizCode.INVALID_PARAMS, '登录密码不正确')
+    if (!ok) throw new BizException(BizCode.INVALID_PARAMS, '安全密码不正确')
     await this.prisma.ledgerUser.update({ where: { id: userId }, data: { wxOpenid: null } })
     return { ok: true, bound: false }
   }

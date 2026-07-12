@@ -32,18 +32,20 @@ export class WechatLoginDto {
   @IsString() code!: string
 }
 
-/** 微信手机号授权登录：button open-type=getPhoneNumber 返回的动态 code */
+/** 微信手机号快捷登录：手机号授权 code + wx.login code（用于自动绑定微信） */
 export class WechatPhoneLoginDto {
   @IsString() code!: string
+  // 兼容已发布的旧客户端；新客户端始终提交，用于建立后续微信登录闭环。
+  @IsOptional() @IsString() loginCode?: string
 }
 
-/** 绑定微信：wx.login 的 code + 登录密码确认身份 */
+/** 绑定微信：wx.login 的 code + 安全密码确认身份 */
 export class WechatBindDto {
   @IsString() code!: string
   @IsString() @MinLength(6) password!: string
 }
 
-/** 解绑微信：登录密码确认 */
+/** 解绑微信：安全密码确认 */
 export class WechatUnbindDto {
   @IsString() @MinLength(6) password!: string
 }

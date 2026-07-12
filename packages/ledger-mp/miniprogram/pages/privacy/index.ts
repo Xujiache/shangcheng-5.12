@@ -37,7 +37,7 @@ Page({
       {
         icon: 'shield',
         label: '账户安全',
-        sub: '修改密码 · 换绑手机',
+        sub: '安全密码 · 换绑手机',
         page: '/pages/account-security/index',
       },
       {

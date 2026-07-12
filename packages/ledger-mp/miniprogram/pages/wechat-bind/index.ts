@@ -23,7 +23,7 @@ Page({
   onBind() {
     const pwd = this.data.password.trim()
     if (pwd.length < 6) {
-      wx.showToast({ title: '请输入登录密码', icon: 'none' })
+      wx.showToast({ title: '请输入安全密码', icon: 'none' })
       return
     }
     if (this.data.submitting) return
@@ -56,7 +56,7 @@ Page({
   onUnbind() {
     const pwd = this.data.password.trim()
     if (pwd.length < 6) {
-      wx.showToast({ title: '请输入登录密码', icon: 'none' })
+      wx.showToast({ title: '请输入安全密码', icon: 'none' })
       return
     }
     if (this.data.submitting) return

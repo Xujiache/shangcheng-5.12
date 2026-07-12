@@ -2,84 +2,40 @@
 <view class="login">
   <view style="height: calc(env(safe-area-inset-top) + 50px);"></view>
 
-  <!-- 品牌 -->
   <view class="login__brand">
     <view class="login__logo">
       <image wx:if="{{logoUrl}}" class="login__logo-img" src="{{logoUrl}}" mode="aspectFit" />
       <lz-icon wx:else name="cube" size="40" color="white" stroke="2" />
     </view>
     <view class="login__name">门窗利账</view>
-    <view class="login__slogan">登录后管理订单与利润</view>
+    <view class="login__slogan">微信快捷登录，管理订单与利润</view>
   </view>
 
-  <!-- 静默登录校验中：显示占位，不露出表单（避免每次启动闪登录页） -->
-  <view
-    wx:if="{{checking}}"
-    class="login__checking"
-    style="display: flex; justify-content: center; padding: 64px 0;"
-  >
-    <text style="color: var(--muted); font-size: 15px;">正在进入…</text>
+  <view wx:if="{{checking}}" class="login__checking">
+    <text>正在进入…</text>
   </view>
 
-  <!-- 表单 -->
   <view wx:else class="login__form">
-    <view style="width: 200px;">
-      <lz-segmented options="{{modes}}" value="{{mode}}" bindchange="onModeChange" />
+    <view class="login__intro">
+      <view class="login__intro-title">微信手机号快捷登录</view>
+      <view class="login__intro-text">识别管理员已开通的手机号，并自动绑定当前微信</view>
     </view>
 
-    <view class="lz-field">
-      <lz-icon name="phone" size="19" color="faint" />
-      <input
-        class="lz-field__input"
-        value="{{phone}}"
-        type="number"
-        placeholder="请输入手机号"
-        placeholder-class="ph"
-        bindinput="onPhone"
-      />
-    </view>
-
-    <view wx:if="{{mode === 'password'}}" class="lz-field">
-      <lz-icon name="lock" size="19" color="faint" />
-      <input
-        class="lz-field__input"
-        value="{{pwd}}"
-        password="{{!showPwd}}"
-        placeholder="请输入密码（至少 6 位）"
-        placeholder-class="ph"
-        bindinput="onPwd"
-      />
-      <view hover-class="tap-active" bindtap="togglePwd" style="padding: 4px;">
-        <lz-icon name="{{showPwd ? 'eye' : 'eyeoff'}}" size="19" color="faint" />
-      </view>
-    </view>
-
-    <view wx:else class="lz-field">
-      <lz-icon name="message" size="19" color="faint" />
-      <input
-        class="lz-field__input"
-        value="{{code}}"
-        type="number"
-        placeholder="6 位短信验证码"
-        placeholder-class="ph"
-        bindinput="onCode"
-      />
-      <view class="login__getcode {{phone.length === 11 && sent === 0 ? 'on' : ''}}" bindtap="getCode">
-        {{sent > 0 ? sent + 's' : '获取验证码'}}
-      </view>
-    </view>
-
-    <view class="login__row">
-      <view class="login__remember">
-        <lz-icon name="check" size="13" color="accent" />
-        <text>记住登录</text>
-      </view>
-      <text class="login__forgot" bindtap="onForgot">忘记密码？</text>
-    </view>
-
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canLogin ? '' : 'lz-btn--disabled'}}" bindtap="doLogin">
-      {{loading ? '登录中…' : '登录'}}
+    <button
+      wx:if="{{agreed}}"
+      class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{loading ? 'lz-btn--disabled' : ''}}"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onPhoneLogin"
+      phone-number-no-quota-toast="手机号快速验证次数不足，请稍后重试或联系管理员"
+    >
+      <lz-icon name="phone" size="20" color="white" stroke="2" />
+      <text>{{loading ? '登录中…' : '微信手机号快捷登录'}}</text>
     </button>
+    <button wx:else class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full" bindtap="ensureAgreed">
+      <lz-icon name="phone" size="20" color="white" stroke="2" />
+      <text>微信手机号快捷登录</text>
+    </button>
+    <view class="login__privacy-tip">手机号仅用于匹配已开通账号和保障账号安全</view>
 
     <view class="login__divider">
       <view class="login__line"></view>
@@ -87,23 +43,13 @@
       <view class="login__line"></view>
     </view>
     <button
-      wx:if="{{agreed}}"
-      class="lz-btn lz-btn--ghost lz-btn--full"
-      open-type="getPhoneNumber"
-      bindgetphonenumber="onPhoneLogin"
-      phone-number-no-quota-toast="手机号快速验证次数不足，请使用密码或验证码登录"
+      class="lz-btn lz-btn--ghost lz-btn--full {{loading ? 'lz-btn--disabled' : ''}}"
+      bindtap="onWechatLogin"
     >
       <lz-icon name="wechat" size="20" color="#07C160" stroke="1.9" />
-      <text>{{loading ? '登录中…' : '微信手机号快捷登录'}}</text>
+      <text>微信登录</text>
     </button>
-    <button wx:else class="lz-btn lz-btn--ghost lz-btn--full" bindtap="ensureAgreed">
-      <lz-icon name="wechat" size="20" color="#07C160" stroke="1.9" />
-      <text>微信手机号快捷登录</text>
-    </button>
-
-    <view wx:if="{{allowRegister}}" class="login__register" bindtap="toRegister">
-      还没有账号？<text class="login__link">立即注册</text>
-    </view>
+    <view class="login__help">完成一次手机号快捷登录后，下次可直接使用微信登录</view>
   </view>
 
   <view wx:if="{{!checking}}" class="login__agreement" bindtap="toggleAgree">
