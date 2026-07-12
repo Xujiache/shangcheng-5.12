@@ -1,6 +1,6 @@
 import { meApi } from '../../api/index'
 import { fmtDate } from '../../utils/format'
-import { logout } from '../../utils/store'
+import { getUser, logout } from '../../utils/store'
 
 const BENEFITS = [
   { icon: 'orders', t: '无限订单录入', s: '不限笔数，随时增删改' },
@@ -282,6 +282,11 @@ Page({
     }
   },
   enterApp() {
+    const user = getUser()
+    if (user && user.mustReset) {
+      wx.reLaunch({ url: '/pages/password/index?reset=1' })
+      return
+    }
     wx.switchTab({ url: '/pages/home/index' })
   },
   onLogout() {

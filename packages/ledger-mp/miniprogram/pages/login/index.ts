@@ -122,6 +122,11 @@ Page({
   },
 
   routeAfterLogin(m: MembershipStatus | null) {
+    // 会员闸门优先：后台已建号但尚未授权会员的账号，登录后先进入会员开通页。
+    if (!m || !m.active) {
+      wx.reLaunch({ url: '/pages/membership/index?gate=1' })
+      return
+    }
     const user = getUser()
     if (user && user.mustReset) {
       wx.reLaunch({ url: '/pages/password/index?reset=1' })
@@ -133,10 +138,6 @@ Page({
       if (!current || current.route !== 'pages/lock/index') {
         wx.reLaunch({ url: '/pages/lock/index' })
       }
-      return
-    }
-    if (!m || !m.active) {
-      wx.reLaunch({ url: '/pages/membership/index?gate=1' })
       return
     }
     if (m.expiringSoon) {
