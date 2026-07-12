@@ -1,125 +1,243 @@
 .login {
   min-height: 100vh;
-  padding: 0 28px;
+  padding: 0 22px calc(18px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   background: transparent;
+}
+.login__safe {
+  height: calc(env(safe-area-inset-top) + 32px);
+  flex: 0 0 auto;
 }
 .login__brand {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-.login__logo-img {
-  width: 64%;
-  height: 64%;
-  border-radius: 14px;
+  align-items: center;
+  gap: 15px;
+  flex: 0 0 auto;
 }
 .login__logo {
-  width: 76px;
-  height: 76px;
-  border-radius: 24px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 20px;
   background: linear-gradient(145deg, #3ba58c, var(--accent));
-  box-shadow: 0 16px 36px rgba(14, 124, 102, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 14px 30px rgba(14, 124, 102, 0.24),
+    inset 0 1px 1px rgba(255, 255, 255, 0.38);
+}
+.login__logo-img {
+  width: 68%;
+  height: 68%;
+  border-radius: 12px;
+}
+.login__brand-copy {
+  min-width: 0;
 }
 .login__name {
-  margin-top: 22px;
   color: var(--text);
-  font-size: 30px;
+  font-size: 27px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  line-height: 1.16;
+  letter-spacing: 0;
 }
 .login__slogan {
-  margin-top: 8px;
+  margin-top: 7px;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 13.5px;
+  line-height: 1.4;
 }
-.login__checking {
+.login__main {
+  min-height: 0;
+  padding: 22px 0 16px;
   display: flex;
-  justify-content: center;
-  padding: 64px 0;
-  color: var(--muted);
-  font-size: 15px;
+  align-items: center;
+  flex: 1;
 }
-.login__form {
-  margin-top: 46px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.login__panel {
+  width: 100%;
+  padding: 24px 20px 20px;
+  box-sizing: border-box;
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  background: var(--glass-card-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--glass-rim),
+    0 18px 42px -20px rgba(8, 24, 18, 0.28);
 }
 .login__intro {
-  padding: 0 4px 8px;
+  margin-bottom: 18px;
 }
 .login__intro-title {
   color: var(--text);
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
+  line-height: 1.3;
 }
 .login__intro-text {
   margin-top: 7px;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.login__privacy-tip,
-.login__help {
-  padding: 0 8px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-  text-align: center;
-}
-.login__divider {
-  margin: 8px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.login__line {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-.login__divider text {
-  color: var(--faint);
-  font-size: 11.5px;
+  font-size: 13.5px;
+  line-height: 1.55;
 }
 .login__agreement {
-  margin-top: auto;
-  padding: 20px 24px 30px;
+  margin-bottom: 18px;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
-  gap: 6px;
-  color: var(--faint);
+  gap: 8px;
+  color: var(--muted);
   font-size: 11.5px;
-  line-height: 1.4;
+  line-height: 1.58;
 }
 .login__agreebox {
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin-top: 1px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   box-sizing: border-box;
-  border: 1.5px solid var(--line, #d2dad6);
+  border: 1.5px solid var(--border-strong);
   border-radius: 5px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.82);
 }
 .login__agreebox.on {
   border-color: var(--accent);
   background: var(--accent);
 }
 .login__agreetxt {
+  min-width: 0;
   flex: 1;
-  max-width: 280px;
-  text-align: left;
 }
 .login__link {
   color: var(--accent-text);
+  font-weight: 600;
+}
+.login__primary {
+  width: 100%;
+  min-width: 100%;
+  height: 56px;
+  margin-right: 0;
+  margin-left: 0;
+  box-sizing: border-box;
+  letter-spacing: 0;
+  box-shadow: 0 10px 24px rgba(14, 124, 102, 0.3);
+}
+.login__button-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.login__privacy-tip {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.login__divider {
+  margin: 17px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.login__line {
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+.login__divider-label {
+  color: var(--faint);
+  font-size: 11.5px;
+}
+.login__secondary {
+  width: 100%;
+  min-width: 100%;
+  height: 50px;
+  margin-right: 0;
+  margin-left: 0;
+  box-sizing: border-box;
+  letter-spacing: 0;
+  background: rgba(255, 255, 255, 0.84);
+}
+.login__help {
+  margin-top: 10px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+.login__footnote {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-size: 11.5px;
+}
+.login__panel--checking {
+  padding-top: 34px;
+  padding-bottom: 34px;
+  text-align: center;
+}
+.login__checking-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: var(--accent-soft);
+}
+.login__checking-title {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+.login__checking-text {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+@media (max-height: 700px) {
+  .login__safe {
+    height: calc(env(safe-area-inset-top) + 20px);
+  }
+  .login__logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 17px;
+  }
+  .login__name {
+    font-size: 24px;
+  }
+  .login__main {
+    padding: 14px 0 10px;
+  }
+  .login__panel {
+    padding: 18px 16px 16px;
+  }
+  .login__intro,
+  .login__agreement {
+    margin-bottom: 13px;
+  }
+  .login__divider {
+    margin: 13px 0 11px;
+  }
+  .login__help {
+    margin-top: 7px;
+  }
 }
