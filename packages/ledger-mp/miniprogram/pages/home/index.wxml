@@ -23,17 +23,23 @@
     <view class="home__tool-head">实用工具</view>
     <view class="home__tools">
       <view class="home__tool-card" hover-class="tap-active" bindtap="toTriangleTool">
-        <view class="home__tool-icon"><lz-icon name="target" size="20" color="accent" /></view>
+        <view class="home__tool-icon">
+          <image class="home__tool-image" src="/assets/tools/tool-triangle.png" mode="aspectFit" />
+        </view>
         <view class="home__tool-t">三角计算</view>
         <view class="home__tool-s">边角反算</view>
       </view>
       <view class="home__tool-card" hover-class="tap-active" bindtap="toArcTool">
-        <view class="home__tool-icon home__tool-icon--c2"><lz-icon name="refresh" size="20" color="c2" /></view>
+        <view class="home__tool-icon home__tool-icon--c2">
+          <image class="home__tool-image" src="/assets/tools/tool-arc.png" mode="aspectFit" />
+        </view>
         <view class="home__tool-t">圆弧计算</view>
         <view class="home__tool-s">弦长拱高</view>
       </view>
       <view class="home__tool-card" hover-class="tap-active" bindtap="toCut">
-        <view class="home__tool-icon home__tool-icon--c3"><lz-icon name="cube" size="20" color="c3" /></view>
+        <view class="home__tool-icon home__tool-icon--c3">
+          <image class="home__tool-image" src="/assets/tools/tool-cut.png" mode="aspectFit" />
+        </view>
         <view class="home__tool-t">优化下料</view>
         <view class="home__tool-s">省料排版</view>
       </view>
