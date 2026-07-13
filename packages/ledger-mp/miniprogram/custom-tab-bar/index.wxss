@@ -79,16 +79,18 @@
 .ctb__ic {
   position: relative;
   z-index: 1;
-  width: 23px;
-  height: 23px;
+  width: 26px;
+  height: 26px;
 }
-.ctb__ic-l {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 23px;
-  height: 23px;
+.ctb__icon-image {
+  display: block;
+  width: 26px;
+  height: 26px;
+  opacity: 0.7;
   transition: opacity 0.2s ease;
+}
+.ctb__icon-image--on {
+  opacity: 1;
 }
 .ctb__t {
   position: relative;
@@ -154,7 +156,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ctb__tab,
   .ctb__glass,
-  .ctb__ic-l,
+  .ctb__icon-image,
   .ctb__t {
     transition: none;
   }

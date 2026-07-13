@@ -19,7 +19,9 @@
     <!-- Hero -->
     <view class="ms__hero {{m.active ? 'ms__hero--on' : ''}}">
       <view class="ms__hero-top">
-        <view class="ms__crown"><lz-icon name="crown" size="22" color="#5A3E0B" stroke="2" /></view>
+        <view class="ms__crown">
+          <image class="ms__crown-image" src="/assets/profile/profile-member.png" mode="aspectFit" />
+        </view>
         <view style="flex:1; min-width:0;">
           <view class="ms__plan">{{planLabel}}</view>
           <view class="ms__status">{{statusText}}</view>

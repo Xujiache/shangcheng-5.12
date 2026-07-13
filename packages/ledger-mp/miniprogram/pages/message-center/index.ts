@@ -1,14 +1,14 @@
 import { notificationApi } from '../../api/index'
 
-// 消息类型 → 展示样式（图标 / 颜色 token / 底色）
-const PRESENT: Record<string, { icon: string; color: string; tint: string }> = {
-  order: { icon: 'orders', color: 'accent', tint: 'rgba(14,124,102,0.12)' },
-  report: { icon: 'trend', color: 'accent', tint: 'rgba(14,124,102,0.12)' },
-  goal: { icon: 'target', color: 'c3', tint: 'rgba(223,160,58,0.14)' },
-  member: { icon: 'crown', color: 'c3', tint: 'rgba(244,213,138,0.28)' },
-  security: { icon: 'shield', color: 'c2', tint: 'rgba(76,159,190,0.14)' },
-  welcome: { icon: 'info', color: 'muted', tint: 'var(--track)' },
-  system: { icon: 'bell', color: 'accent', tint: 'rgba(14,124,102,0.12)' },
+// 消息类型 → 生成图标 / 底色
+const PRESENT: Record<string, { iconSrc: string; tint: string }> = {
+  order: { iconSrc: '/assets/settings/notification-order.png', tint: 'rgba(14,124,102,0.08)' },
+  report: { iconSrc: '/assets/settings/notification-report.png', tint: 'rgba(14,124,102,0.08)' },
+  goal: { iconSrc: '/assets/profile/profile-goal.png', tint: 'rgba(223,160,58,0.1)' },
+  member: { iconSrc: '/assets/profile/profile-member.png', tint: 'rgba(244,213,138,0.18)' },
+  security: { iconSrc: '/assets/settings/settings-privacy.png', tint: 'rgba(76,159,190,0.1)' },
+  welcome: { iconSrc: '/assets/settings/settings-about.png', tint: 'var(--track)' },
+  system: { iconSrc: '/assets/profile/profile-message.png', tint: 'rgba(14,124,102,0.08)' },
 }
 
 const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
@@ -51,8 +51,7 @@ Page({
         const p = PRESENT[n.type] || PRESENT.system
         return {
           id: n.id,
-          icon: p.icon,
-          color: p.color,
+          iconSrc: p.iconSrc,
           tint: p.tint,
           title: n.title,
           body: n.body,

@@ -35,6 +35,11 @@
   justify-content: center;
   box-shadow: var(--shadow-soft);
 }
+.home__bell-image {
+  display: block;
+  width: 36px;
+  height: 36px;
+}
 .home__dot {
   position: absolute;
   top: 9px;

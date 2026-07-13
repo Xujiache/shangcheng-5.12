@@ -11,7 +11,9 @@
     <block wx:else>
       <view class="lz-card lz-card--glow inv__hero">
         <view class="inv__glow"></view>
-        <view class="inv__icon"><lz-icon name="gift" size="38" color="white" stroke="1.8" /></view>
+        <view class="inv__icon">
+          <image class="inv__icon-image" src="/assets/profile/profile-invite.png" mode="aspectFit" />
+        </view>
         <view class="inv__title">邀请好友注册</view>
         <block wx:if="{{allowSelfRegister}}">
           <view class="inv__desc">好友用你的邀请码注册成功，你将获得 <text class="inv__hl">{{rewardDays}}</text> 天会员</view>

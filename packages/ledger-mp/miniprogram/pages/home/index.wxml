@@ -6,7 +6,7 @@
       <view class="home__sub">门窗经营一目了然</view>
     </view>
     <view class="home__bell" hover-class="tap-active" bindtap="toMsg">
-      <lz-icon name="bell" size="22" color="text" />
+      <image class="home__bell-image" src="/assets/profile/profile-message.png" mode="aspectFit" />
       <view wx:if="{{unread}}" class="home__dot"></view>
     </view>
   </view>
