@@ -12,7 +12,9 @@
         bindtap="toRow"
         hover-class="tap-active"
       >
-        <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="17" color="accent" /></view>
+        <view class="lz-row__icon">
+          <image class="lz-row__icon-image" src="{{item.iconSrc}}" mode="aspectFit" />
+        </view>
         <view class="lz-row__main">
           <view class="lz-row__label">{{item.label}}</view>
           <view class="lz-row__sub">{{item.sub}}</view>
