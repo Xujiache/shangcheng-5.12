@@ -27,6 +27,19 @@ function getWechatLoginCode(): Promise<string> {
   })
 }
 
+function isPrivacyScopeMissing(detail: any): boolean {
+  const message = String((detail && detail.errMsg) || '')
+  return Number(detail && detail.errno) === 112 || message.includes('api scope is not declared')
+}
+
+function isPrivacyAuthorizationRejected(detail: any): boolean {
+  const message = String((detail && detail.errMsg) || '')
+  return (
+    Number(detail && detail.errno) === 104 ||
+    message.includes('privacy permission is not authorized')
+  )
+}
+
 Page({
   data: {
     loading: false,
@@ -102,6 +115,20 @@ Page({
     if (this.data.loading || !this.ensureAgreed()) return
     const detail = e.detail || {}
     if (detail.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
+      if (isPrivacyScopeMissing(detail)) {
+        wx.showModal({
+          title: '手机号登录暂未配置',
+          content:
+            '管理员需要在微信公众平台的“设置 - 服务内容声明 - 用户隐私保护指引”中声明收集手机号。配置生效前，请先使用下方微信登录。',
+          showCancel: false,
+          confirmText: '我知道了',
+        })
+        return
+      }
+      if (isPrivacyAuthorizationRejected(detail)) {
+        wx.showToast({ title: '请同意小程序隐私保护指引后再登录', icon: 'none' })
+        return
+      }
       wx.showToast({ title: '已取消手机号授权，也可以使用微信登录', icon: 'none' })
       return
     }
