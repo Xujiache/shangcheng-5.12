@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.0.3",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.21",
     "nanoid": "^5.0.7"
   },
   "devDependencies": {
