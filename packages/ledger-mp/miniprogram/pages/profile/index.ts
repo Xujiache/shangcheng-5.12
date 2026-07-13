@@ -16,8 +16,16 @@ Page({
     memberText: '未开通会员',
     memberSub: '点击开通，解锁全部功能',
     rows: [
-      { icon: 'gift', label: '邀请好友得会员', page: '/pages/invite/index' },
-      { icon: 'device', label: '设置', page: '/pages/settings/index' },
+      {
+        iconSrc: '/assets/profile/profile-invite.png',
+        label: '邀请好友得会员',
+        page: '/pages/invite/index',
+      },
+      {
+        iconSrc: '/assets/profile/profile-settings.png',
+        label: '设置',
+        page: '/pages/settings/index',
+      },
     ],
   },
 
