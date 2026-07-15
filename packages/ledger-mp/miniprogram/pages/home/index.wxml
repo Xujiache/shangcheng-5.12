@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="home" style="{{glassCard}}">
+<view class="home tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
   <view class="home__hd" style="padding-top: {{hdPad}}px; padding-right: {{hdRight}}px;">
     <view>
       <view class="home__title">利润中心</view>

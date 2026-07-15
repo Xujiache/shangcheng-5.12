@@ -64,7 +64,9 @@
     <view class="lz-section-label">会员权益</view>
     <view class="lz-card lz-card--flush">
       <view wx:for="{{benefits}}" wx:key="t" class="lz-row">
-        <view class="lz-row__icon"><lz-icon name="{{item.icon}}" size="17" color="accent" /></view>
+        <view class="lz-row__icon ms__benefit-icon">
+          <image class="ms__benefit-image" src="{{item.iconSrc}}" mode="aspectFit" />
+        </view>
         <view class="lz-row__main">
           <view class="lz-row__label" style="font-size:14px;font-weight:600;">{{item.t}}</view>
           <view class="lz-row__sub">{{item.s}}</view>

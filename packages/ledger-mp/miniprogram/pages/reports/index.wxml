@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="rp" style="{{glassCard}}">
+<view class="rp tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
   <lz-header title="经营报表" subtitle="{{ovYear}}年 · 全年统计" back="{{false}}" />
 
   <view class="lz-page lz-page--pad-bottom">

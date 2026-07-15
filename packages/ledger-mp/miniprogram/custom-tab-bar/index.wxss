@@ -2,19 +2,18 @@
 .ctb {
   position: fixed;
   right: 12px;
-  bottom: calc(14px + env(safe-area-inset-bottom));
+  bottom: calc(10px + env(safe-area-inset-bottom));
   left: 12px;
   z-index: 100;
 }
 .ctb__bar {
   position: relative;
-  height: 66px;
-  padding: 0 6px;
-  display: flex;
-  align-items: center;
+  height: 72px;
+  padding: 6px;
+  display: block;
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 30px;
+  border-radius: 28px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.32) 100%);
   -webkit-backdrop-filter: blur(20px) saturate(175%);
   backdrop-filter: blur(20px) saturate(175%);
@@ -31,6 +30,36 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+.ctb__tabs {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 58px minmax(0, 1fr) minmax(0, 1fr);
+}
+.ctb__slot {
+  pointer-events: none;
+}
+.ctb__indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc((100% - 58px) / 4);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.52);
+  -webkit-backdrop-filter: blur(10px) saturate(155%);
+  backdrop-filter: blur(10px) saturate(155%);
+  box-shadow:
+    0 5px 14px -7px rgba(8, 24, 18, 0.3),
+    inset 0 1.5px 4px rgba(255, 255, 255, 0.8),
+    inset 0 -2px 6px rgba(14, 124, 102, 0.08);
+  pointer-events: none;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
 .ctb__tab {
   position: relative;
   z-index: 1;
@@ -42,52 +71,38 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   box-sizing: border-box;
   border-radius: 24px;
   transition:
-    transform 0.16s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.16s ease;
-}
-.ctb__glass {
-  position: absolute;
-  z-index: 0;
-  top: 1px;
-  right: 5px;
-  bottom: 1px;
-  left: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.74);
-  border-radius: 22px;
-  opacity: 0;
-  transform: scale(0.94);
-  background: rgba(255, 255, 255, 0.26);
-  -webkit-backdrop-filter: blur(8px) saturate(165%) brightness(1.04);
-  backdrop-filter: blur(8px) saturate(165%) brightness(1.04);
-  box-shadow:
-    0 5px 14px -5px rgba(8, 24, 18, 0.28),
-    inset 0 2px 8px rgba(255, 255, 255, 0.5),
-    inset 0 -2px 6px rgba(46, 180, 150, 0.08);
-  pointer-events: none;
-  transition:
-    opacity 0.18s ease,
-    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ctb__glass--on {
-  opacity: 1;
-  transform: scale(1);
 }
 .ctb__ic {
   position: relative;
   z-index: 1;
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease,
+    filter 0.22s ease;
+  opacity: 0.68;
+  transform: scale(0.88);
+}
+.ctb__ic--on {
+  opacity: 1;
+  transform: translateY(-1px) scale(1.06);
+  filter: saturate(1.08);
 }
 .ctb__icon-image {
   display: block;
-  width: 26px;
-  height: 26px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
+  width: 31px;
+  height: 31px;
 }
 .ctb__icon-image--on {
   opacity: 1;
@@ -95,22 +110,25 @@
 .ctb__t {
   position: relative;
   z-index: 1;
-  color: #5c6b64;
-  font-size: 10.5px;
-  font-weight: 500;
+  color: #40534b;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0;
-  transition: color 0.2s ease;
+  transition:
+    color 0.18s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ctb__t--on {
   color: #0e7c66;
   font-weight: 700;
+  transform: translateY(-1px);
 }
 .ctb__fab {
-  position: relative;
-  z-index: 2;
-  width: 56px;
-  height: 56px;
-  margin: 0 10px;
+  position: absolute;
+  z-index: 3;
+  width: 58px;
+  height: 58px;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,12 +137,24 @@
   box-sizing: border-box;
   border: 3px solid #fff;
   border-radius: 50%;
-  transform: translateY(-14px);
+  transform: translate(-50%, -50%);
+  top: 50%;
+  left: 50%;
   background: linear-gradient(150deg, #3ba58c, #0e7c66);
   box-shadow:
     0 8px 20px rgba(14, 124, 102, 0.42),
     inset 0 2px 3px rgba(255, 255, 255, 0.45),
     inset 0 -3px 6px rgba(0, 56, 42, 0.28);
+  transition:
+    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.16s ease;
+}
+.ctb__fab.tap-active {
+  transform: translate(-50%, -50%) scale(0.92);
+  box-shadow:
+    0 4px 12px rgba(14, 124, 102, 0.32),
+    inset 0 2px 3px rgba(255, 255, 255, 0.36),
+    inset 0 -3px 6px rgba(0, 56, 42, 0.24);
 }
 .ctb__fab::after {
   position: absolute;
@@ -155,9 +185,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ctb__tab,
-  .ctb__glass,
+  .ctb__indicator,
+  .ctb__ic,
   .ctb__icon-image,
-  .ctb__t {
+  .ctb__t,
+  .ctb__fab {
     transition: none;
   }
   .ctb__fab:active::after {

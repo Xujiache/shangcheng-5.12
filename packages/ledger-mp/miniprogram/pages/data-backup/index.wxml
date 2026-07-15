@@ -6,7 +6,9 @@
     <view class="lz-section-label">备份与恢复</view>
     <view class="lz-card lz-card--flush">
       <view class="lz-row" hover-class="tap-active" bindtap="openExport">
-        <view class="lz-row__icon"><lz-icon name="download" size="17" color="accent" /></view>
+        <view class="lz-row__icon dm__row-icon">
+          <image class="dm__icon-image" src="/assets/settings/data-export.png" mode="aspectFit" />
+        </view>
         <view class="lz-row__main">
           <view class="lz-row__label">导出数据</view>
           <view class="lz-row__sub">加密数据包，可设置是否允许他人导入</view>
@@ -14,7 +16,9 @@
         <lz-icon name="chevron" size="16" color="faint" />
       </view>
       <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="openImport">
-        <view class="lz-row__icon"><lz-icon name="download" size="17" color="accent" /></view>
+        <view class="lz-row__icon dm__row-icon">
+          <image class="dm__icon-image" src="/assets/settings/data-import.png" mode="aspectFit" />
+        </view>
         <view class="lz-row__main">
           <view class="lz-row__label">导入数据</view>
           <view class="lz-row__sub">粘贴加密数据包，恢复订单与客户</view>
@@ -26,7 +30,9 @@
     <view class="lz-section-label" style="margin-top: var(--gap);">本地缓存</view>
     <view class="lz-card lz-card--flush">
       <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="onClearCache">
-        <view class="lz-row__icon"><lz-icon name="trash" size="17" color="accent" /></view>
+        <view class="lz-row__icon dm__row-icon">
+          <image class="dm__icon-image" src="/assets/settings/settings-delete.png" mode="aspectFit" />
+        </view>
         <view class="lz-row__main">
           <view class="lz-row__label">清除缓存</view>
           <view class="lz-row__sub">清理本地临时数据，不影响云端</view>

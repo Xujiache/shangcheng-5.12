@@ -3,12 +3,32 @@ import { fmtDate } from '../../utils/format'
 import { getUser, logout } from '../../utils/store'
 
 const BENEFITS = [
-  { icon: 'orders', t: '无限订单录入', s: '不限笔数，随时增删改' },
-  { icon: 'trend', t: '经营利润报表', s: '本月 / 本季 / 全年多维分析' },
-  { icon: 'user', t: '客户档案管理', s: '客户贡献榜与历史订单' },
-  { icon: 'shield', t: '数据云端备份', s: '换机不丢数据，安全无忧' },
-  { icon: 'target', t: '经营目标跟踪', s: '月度 / 年度利润目标提醒' },
-  { icon: 'heart', t: '专属客服支持', s: '使用问题优先响应' },
+  {
+    iconSrc: '/assets/settings/notification-order.png',
+    t: '无限订单录入',
+    s: '不限笔数，随时增删改',
+  },
+  {
+    iconSrc: '/assets/settings/notification-report.png',
+    t: '经营利润报表',
+    s: '本月 / 本季 / 全年多维分析',
+  },
+  {
+    iconSrc: '/assets/profile/profile-customers.png',
+    t: '客户档案管理',
+    s: '客户贡献榜与历史订单',
+  },
+  {
+    iconSrc: '/assets/settings/settings-privacy.png',
+    t: '数据云端备份',
+    s: '换机不丢数据，安全无忧',
+  },
+  { iconSrc: '/assets/profile/profile-goal.png', t: '经营目标跟踪', s: '月度 / 年度利润目标提醒' },
+  {
+    iconSrc: '/assets/settings/notification-message.png',
+    t: '专属客服支持',
+    s: '使用问题优先响应',
+  },
 ]
 
 const PLAN_FALLBACK = [

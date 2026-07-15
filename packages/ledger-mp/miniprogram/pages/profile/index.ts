@@ -7,6 +7,7 @@ Page({
   _cover: '',
   data: {
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
+    tabMotion: false,
     topSpace: 38, // 顶部留白 = 状态栏高度 + 18
     nickname: '门窗店主',
     phoneMask: '',
@@ -40,7 +41,7 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
-    this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
+    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(3) : tb.setData({ selected: 3 })
     this.setData({ topSpace: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18 })

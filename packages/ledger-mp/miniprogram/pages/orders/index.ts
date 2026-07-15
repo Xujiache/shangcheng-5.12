@@ -15,6 +15,7 @@ const SEG_DEF: Array<[string, string]> = [
 Page({
   data: {
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
+    tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     keyword: '',
     sort: 'date',
@@ -35,7 +36,7 @@ Page({
   _page: 1,
 
   onShow() {
-    this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
+    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(1) : tb.setData({ selected: 1 })
     this.setData({ hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10 })

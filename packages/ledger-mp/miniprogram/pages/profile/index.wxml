@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="prof" style="{{glassCard}}">
+<view class="prof tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
   <view style="height: {{topSpace}}px;"></view>
 
   <view class="lz-page lz-page--pad-bottom">

@@ -18,6 +18,7 @@ Page({
   _cover: '',
   data: {
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
+    tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     hdRight: 18, // 右侧留白：动态避让微信原生胶囊（onShow 计算）
     fxMax: false, // 性能模式：开启 hero 触摸流光（每帧 setData，默认关）
@@ -66,7 +67,7 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
-    this.setData({ glassCard: glassCardStyle() }) // 按「玻璃通透度」刷新卡片
+    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
     const sb = getApp<IAppOption>()?.globalData?.statusBarHeight || 20

@@ -4,7 +4,7 @@ import { setBioLock, setHideAmount } from '../../utils/store'
 interface ToggleItem {
   key: string
   settingKey: string
-  icon: string
+  iconSrc: string
   label: string
   sub: string
   on: boolean
@@ -14,7 +14,7 @@ const DEFS: ToggleItem[] = [
   {
     key: 'hideAmount',
     settingKey: 'hideAmount',
-    icon: 'eyeoff',
+    iconSrc: '/assets/settings/privacy-hidden.png',
     label: '隐藏金额',
     sub: '列表中以星号隐藏敏感金额',
     on: false,
@@ -22,7 +22,7 @@ const DEFS: ToggleItem[] = [
   {
     key: 'bio',
     settingKey: 'bioLock',
-    icon: 'finger',
+    iconSrc: '/assets/settings/privacy-biometric.png',
     label: '生物解锁',
     sub: '打开应用时需指纹 / 面容验证',
     on: false,
@@ -35,25 +35,25 @@ Page({
     items: DEFS.map((it) => ({ ...it })),
     links: [
       {
-        icon: 'shield',
+        iconSrc: '/assets/settings/settings-privacy.png',
         label: '账户安全',
         sub: '安全密码 · 换绑手机',
         page: '/pages/account-security/index',
       },
       {
-        icon: 'doc',
+        iconSrc: '/assets/settings/settings-about.png',
         label: '隐私政策',
         sub: '我们如何收集与保护你的信息',
         page: '/pages/doc/index?key=privacy',
       },
       {
-        icon: 'doc',
+        iconSrc: '/assets/settings/notification-order.png',
         label: '用户协议',
         sub: '服务条款与使用约定',
         page: '/pages/doc/index?key=terms',
       },
       {
-        icon: 'trash',
+        iconSrc: '/assets/settings/settings-delete.png',
         label: '注销账户',
         sub: '永久删除账号与全部数据',
         page: '/pages/delete-account/index',
