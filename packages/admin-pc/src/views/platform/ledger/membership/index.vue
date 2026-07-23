@@ -33,7 +33,7 @@
       <div class="pf-filters">
         <ElInput
           v-model="keyword"
-          placeholder="搜索手机号 / 昵称"
+          placeholder="搜索账号编号 / 昵称"
           clearable
           style="width: 240px"
           @keyup.enter="onSearch"
@@ -63,9 +63,9 @@
         :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
         empty-text="暂无会员账号"
       >
-        <ElTableColumn label="手机号" min-width="130">
+        <ElTableColumn label="账号编号" min-width="120">
           <template #default="{ row }">
-            <span class="pf-mono">{{ row.phone }}</span>
+            <span class="pf-mono">{{ row.accountCode }}</span>
           </template>
         </ElTableColumn>
         <ElTableColumn label="昵称" min-width="110">
@@ -135,7 +135,7 @@
         <h3 class="m-0">
           会员变更记录
           <span v-if="logsTarget" class="text-sm text-g-500 font-normal pf-mono">
-            · {{ logsTarget.phone }}</span
+            · {{ logsTarget.accountCode }}</span
           >
         </h3>
         <ElTimeline v-if="!logsLoading && logs.length" class="pf-logs__timeline">

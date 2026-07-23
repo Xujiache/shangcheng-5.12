@@ -18,11 +18,11 @@
    ```
 
    - **迁移说明**：本仓库 `.gitignore` 忽略 `prisma/migrations/`，**`schema.prisma` 是唯一 SSOT**。新环境直接 `prisma db push`（按 schema 同步，无需迁移历史）即可；本机若保留了迁移文件，`prisma migrate deploy` 亦可（已验证两条 ledger 迁移可正常应用）。
-   - **演示密码**：seed 强制要求环境变量 `SEED_DEFAULT_PASSWORD`(≥8 位)，所有演示账号（含门窗利账 `13800138000`）共用该密码。
+   - `SEED_DEFAULT_PASSWORD` 仍供商城其他演示域使用；门窗利账登录不使用该凭证。
 
 2. **冒烟自测**（Swagger `http://localhost:3001/api/docs` 或 curl，端口以 .env `SERVER_PORT` 为准）：
-   - `POST /api/v1/l/auth/login` 用 `13800138000` / 你设的 SEED 密码 → 返回 token + 月卡会员
-   - `POST /api/v1/p/ledger/users`（需平台/超管 token）建号 → `POST .../membership/grant` 加时长
+   - 微信开发者工具点击“微信登录” → 首次自动建号并返回 token
+   - admin-pc 按账号编号找到该用户 → `POST .../membership/grant` 加时长
 
 ## P1 · 小程序跑起来（需要微信开发者工具）
 
@@ -31,7 +31,7 @@
 5. **后端基址**：`miniprogram/config.ts` 的 `API_BASE`
    - 连本地后端：改 `http://localhost:3000` + 工具勾「不校验合法域名」
    - 连线上：把 ledger 后端部署到 `https://ewsn.top` 后保持默认
-6. 用演示账号或后台新建账号登录，走一遍：登录 → 闸门/首页 → 记一笔 → 报表 → 客户。
+6. 使用微信登录，走一遍：首次建号 → 闸门/首页 → 后台开通会员 → 记一笔 → 报表 → 客户。
 
 ## P2 · 上线前
 
@@ -50,8 +50,7 @@
 ## 可选增强（非阻塞，已知小限制）
 
 - 报表「成本分析」逐月明细：后端 `stats/monthly` 目前只给 `labor`/`otherCost`，型材/玻璃/配件/纱窗仅年度合计。如需逐月分类趋势，给 `monthlySeries` 补每类逐月字段即可（前端已预留降级展示）。
-- 短信验证码登录：`SMS_PROVIDER` 生产需配真实网关（复用商城同款 `SmsService`）；当前 dev 码进 SmsCode 表。
-- 微信一键登录：当前为占位（按需求以手机号+密码为主）；如需可接 `wx.login` + 后端绑定 openid。
+- 微信登录已完成真实 `wx.login` + 后端 openid 自动建号闭环。
 - 推送通知触达：`LedgerSetting` 的通知开关已持久化，但「真实微信订阅消息推送」尚未接入（消息中心内已全量记录）；如需端外推送，可接 `subscribeMessage` + 按 `notify*` 开关过滤。
 
 ## 需要你提供 / 决策的输入

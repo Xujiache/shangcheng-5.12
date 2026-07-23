@@ -22,7 +22,7 @@ flowchart LR
     C2 --> S
     S --> DB[(PostgreSQL\nLedger* 表)]
   end
-  MP -- 手机号+密码 / Bearer(scope=ledger) --> C1
+  MP -- wx.login / Bearer(scope=ledger) --> C1
   ADM -- 商城超管 token --> C2
 ```
 
@@ -53,15 +53,14 @@ packages/server/src/modules/ledger/
 ## 3. 数据模型（Prisma，新增 `Ledger*`，同 `schema.prisma`）
 
 ```prisma
-model LedgerUser {                      // 记账账号（后台创建）
+model LedgerUser {                      // 记账账号（首次微信登录自动创建）
   id           String   @id @default(cuid())
-  phone        String   @unique         // 登录名
-  passwordHash String
+  wxOpenid     String?  @unique         // 唯一登录身份；首次微信登录自动建号，旧账号迁移期间允许为空
   nickname     String   @default("门窗店主")
   avatar       String?
+  inviteCode   String?  @unique
+  invitedById  String?
   status       String   @default("active")   // active | disabled
-  mustReset    Boolean  @default(false)       // 首登强制改密（可选）
-  createdBy    String?                        // 操作管理员 User.id
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -147,32 +146,29 @@ model LedgerGoal {                       // 经营目标（1:1 账号）
 
 ### 4.1 App 接口 `/api/v1/l/*`（LedgerJwtGuard，按账号 scope）
 
-| 方法              | 路径                      | 说明                                                                                    |
-| ----------------- | ------------------------- | --------------------------------------------------------------------------------------- |
-| POST              | `/l/auth/login`           | 手机号+密码登录 `{phone,password}` → `{token, user, membership}`                        |
-| POST              | `/l/auth/sms-login`       | 验证码登录（辅，可后置）`{phone,code}`                                                  |
-| POST              | `/l/auth/change-password` | 改密 `{oldPwd,newPwd}`                                                                  |
-| GET               | `/l/me`                   | 当前账号 + 会员状态                                                                     |
-| GET               | `/l/membership`           | 会员状态（套餐/到期/剩余天数/状态）                                                     |
-| GET               | `/l/orders`               | 订单列表（筛选：客户/日期区间/利润区间、分页）                                          |
-| POST              | `/l/orders`               | 新增订单                                                                                |
-| GET               | `/l/orders/:id`           | 订单详情                                                                                |
-| PATCH             | `/l/orders/:id`           | 编辑订单                                                                                |
-| DELETE            | `/l/orders/:id`           | 删除订单                                                                                |
-| GET               | `/l/customers`            | 客户列表（含按订单聚合的统计）                                                          |
-| POST/PATCH/DELETE | `/l/customers[/:id]`      | 客户增删改                                                                              |
-| GET               | `/l/stats/overview`       | 首页看板（周期 month/quarter/year：利润/营收/成本/订单数/成本占比/高利润排行/利润趋势） |
-| GET               | `/l/stats/monthly`        | 月度利润 + 人工序列                                                                     |
-| GET/PUT           | `/l/goal`                 | 经营目标读/写                                                                           |
+| 方法              | 路径                   | 说明                                                                                    |
+| ----------------- | ---------------------- | --------------------------------------------------------------------------------------- |
+| GET               | `/l/auth/config`       | 登录前品牌配置                                                                          |
+| POST              | `/l/auth/wechat-login` | 唯一登录入口 `{code,inviteCode?}`；首次按 openid 自动建号 → `{token,user,membership}`   |
+| GET               | `/l/me`                | 当前账号 + 会员状态                                                                     |
+| GET               | `/l/membership`        | 会员状态（套餐/到期/剩余天数/状态）                                                     |
+| GET               | `/l/orders`            | 订单列表（筛选：客户/日期区间/利润区间、分页）                                          |
+| POST              | `/l/orders`            | 新增订单                                                                                |
+| GET               | `/l/orders/:id`        | 订单详情                                                                                |
+| PATCH             | `/l/orders/:id`        | 编辑订单                                                                                |
+| DELETE            | `/l/orders/:id`        | 删除订单                                                                                |
+| GET               | `/l/customers`         | 客户列表（含按订单聚合的统计）                                                          |
+| POST/PATCH/DELETE | `/l/customers[/:id]`   | 客户增删改                                                                              |
+| GET               | `/l/stats/overview`    | 首页看板（周期 month/quarter/year：利润/营收/成本/订单数/成本占比/高利润排行/利润趋势） |
+| GET               | `/l/stats/monthly`     | 月度利润 + 人工序列                                                                     |
+| GET/PUT           | `/l/goal`              | 经营目标读/写                                                                           |
 
 ### 4.2 后台接口 `/api/v1/p/ledger/*`（JwtAuthGuard + Roles('platform')）
 
 | 方法  | 路径                                   | 说明                                                             |
 | ----- | -------------------------------------- | ---------------------------------------------------------------- |
 | GET   | `/p/ledger/users`                      | 账号列表（含会员到期/剩余天数/状态，搜索分页）                   |
-| POST  | `/p/ledger/users`                      | 建号 `{phone, password?, nickname?}`（password 缺省则生成默认）  |
 | PATCH | `/p/ledger/users/:id`                  | 改资料/禁用启用 `{status?, nickname?}`                           |
-| POST  | `/p/ledger/users/:id/reset-password`   | 重置密码 → 返回新密码                                            |
 | POST  | `/p/ledger/users/:id/membership/grant` | **增加会员时长**：`{planKey? , days?, note?}` → 叠加，返回新到期 |
 | GET   | `/p/ledger/users/:id/membership/logs`  | 会员变更记录                                                     |
 

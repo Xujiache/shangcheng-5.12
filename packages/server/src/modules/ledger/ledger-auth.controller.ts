@@ -1,21 +1,9 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Post } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import { Public } from '../../common/decorators/public.decorator'
 import { LedgerAuthService } from './ledger-auth.service'
-import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
-import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-user.decorator'
-import {
-  LedgerLoginDto,
-  LedgerRegisterDto,
-  LedgerSmsCodeDto,
-  LedgerSmsLoginDto,
-  LedgerChangePasswordDto,
-  WechatLoginDto,
-  WechatPhoneLoginDto,
-  WechatBindDto,
-  WechatUnbindDto,
-} from './dto/auth.dto'
+import { WechatLoginDto } from './dto/auth.dto'
 
 /** 门窗利账 App · 鉴权（/api/v1/l/auth/*）。整体 @Public 跳过商城全局守卫。 */
 @ApiTags('门窗利账-鉴权')
@@ -24,69 +12,17 @@ import {
 export class LedgerAuthController {
   constructor(private readonly auth: LedgerAuthService) {}
 
-  // 公开配置：登录页登录前据此显隐「注册」入口（#10 自助注册开关）
+  // 公开配置：登录前加载品牌 LOGO。
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Get('config')
   config() {
     return this.auth.getPublicConfig()
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @Post('login')
-  login(@Body() dto: LedgerLoginDto) {
-    return this.auth.login(dto)
-  }
-
-  // 自助注册（#10）：开关由后台配置控制，带邀请码则奖励邀请人
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @Post('register')
-  register(@Body() dto: LedgerRegisterDto) {
-    return this.auth.register(dto)
-  }
-
-  @Throttle({ default: { limit: 3, ttl: 60_000 } })
-  @Post('sms-code')
-  smsCode(@Body() dto: LedgerSmsCodeDto) {
-    return this.auth.sendSmsCode(dto)
-  }
-
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @Post('sms-login')
-  smsLogin(@Body() dto: LedgerSmsLoginDto) {
-    return this.auth.smsLogin(dto)
-  }
-
-  // 已登录账号改密：本方法需 ledger 鉴权（类级 @Public 仅跳过商城全局守卫）
-  @UseGuards(LedgerJwtGuard)
-  @Post('change-password')
-  changePassword(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: LedgerChangePasswordDto) {
-    return this.auth.changePassword(user.id, dto)
-  }
-
-  // ── 微信一键登录（openid 须已绑定）──
+  // 唯一登录入口：首次登录按 openid 自动建号，后续复用同一微信账号。
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('wechat-login')
   wechatLogin(@Body() dto: WechatLoginDto) {
     return this.auth.wechatLogin(dto)
-  }
-
-  // 微信官方手机号授权登录：按微信返回手机号匹配后台已开通账号
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @Post('wechat-phone-login')
-  wechatPhoneLogin(@Body() dto: WechatPhoneLoginDto) {
-    return this.auth.wechatPhoneLogin(dto)
-  }
-
-  // ── 绑定 / 解绑微信（需 ledger 登录 + 密码确认）──
-  @UseGuards(LedgerJwtGuard)
-  @Post('wechat/bind')
-  bindWechat(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: WechatBindDto) {
-    return this.auth.bindWechat(user.id, dto)
-  }
-
-  @UseGuards(LedgerJwtGuard)
-  @Post('wechat/unbind')
-  unbindWechat(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: WechatUnbindDto) {
-    return this.auth.unbindWechat(user.id, dto)
   }
 }

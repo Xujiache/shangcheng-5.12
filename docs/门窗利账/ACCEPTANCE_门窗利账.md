@@ -7,7 +7,7 @@
 | 模块               | 内容                                                                                             | 状态 |
 | ------------------ | ------------------------------------------------------------------------------------------------ | ---- |
 | 后端 `ledger` 域   | Prisma 6 模型 + 迁移 SQL + 鉴权/会员算法 + App 接口(`/l/*`) + 后台接口(`/p/ledger/*`) + 演示种子 | ✅   |
-| admin-pc 管理      | 「门窗利账」菜单：账号管理（建号/改密/启停）+ 会员管理（增加时长/变更记录）                      | ✅   |
+| admin-pc 管理      | 「门窗利账」菜单：微信账号管理（查询/启停）+ 会员管理（增加时长/变更记录）                       | ✅   |
 | 小程序 `ledger-mp` | 原生微信小程序：25 页 + 6 组件 + 自定义 tabBar + 主题/请求/图表                                  | ✅   |
 | 文档               | ALIGNMENT/CONSENSUS/DESIGN/TASK/ACCEPTANCE/TODO + ledger-mp README                               | ✅   |
 
@@ -15,9 +15,9 @@
 
 **核心闭环（你最在意的）**
 
-- [x] admin-pc 新建记账账号（手机号 + 初始密码，可留空生成）
+- [x] 用户首次微信登录自动建号，并在 admin-pc 按账号编号/昵称可查
 - [x] admin-pc「增加会员时长」：选套餐或填天数，叠加算到期（`max(今天,当前到期)+N`，封顶 10 年）
-- [x] 小程序手机号+密码登录
+- [x] 小程序仅保留微信登录，同一 openid 稳定进入同一账号
 - [x] 未开通/过期 → 登录后进「开通会员」闸门页、功能锁死；后台加时长后重登进首页
 - [x] 剩 ≤7 天登录弹提示；个人中心 + 会员中心展示套餐/到期/剩余天数
 
@@ -74,7 +74,7 @@ pnpm --filter @jiujiu/ledger-mp typecheck    # exit 0
 
 ### 新增后端（与商城仍零耦合）
 
-- **3 张 Prisma 表**：`LedgerNotification`（消息中心）、`LedgerFeedback`（反馈 / 注销 / 换号申请）、`LedgerSetting`（通知 / 免打扰 / 隐私偏好，每账号一行）。
+- **3 张 Prisma 表**：`LedgerNotification`（消息中心）、`LedgerFeedback`（反馈 / 注销申请）、`LedgerSetting`（通知 / 免打扰 / 隐私偏好，每账号一行）。
 - **迁移**：`prisma/migrations/20260608120000_ledger_notify_setting_feedback/migration.sql`（人工归档，与 init 同风格）。
 - **App 接口（`/l/*`，仅登录，不需会员）**：`GET notifications`、`GET notifications/unread-count`、`POST notifications/:id/read`、`POST notifications/read-all`、`GET/PUT settings`、`POST feedback`。
 - **后台接口（`/p/ledger/*`，平台/超管）**：`POST users/:id/notify`（推送通知）、`GET feedback`（列表）、`PATCH feedback/:id`（处理/回复）。

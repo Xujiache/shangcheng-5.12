@@ -1,7 +1,16 @@
 import { statsApi, notificationApi, adApi, changelogApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
-import { getHideAmount, getFxMode, glassCardStyle } from '../../utils/store'
+import {
+  getHideAmount,
+  getFxMode,
+  glassCardStyle,
+  goToLogin,
+  isLoggedIn,
+  requireLogin,
+} from '../../utils/store'
 import { makeShareCover } from '../../utils/share-cover'
+
+const INITIAL_GUEST = !isLoggedIn()
 
 const COLORMAP: Record<string, string> = {
   profile: 'c1',
@@ -17,6 +26,7 @@ const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', y
 Page({
   _cover: '',
   data: {
+    isGuest: INITIAL_GUEST,
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
@@ -33,7 +43,7 @@ Page({
     ],
     periodLabel: '本年',
     seriesTitle: '各月',
-    loading: true,
+    loading: !INITIAL_GUEST,
     loadError: false, // 网络/加载失败：区别于"暂无数据"空态
     unread: false,
     ovYear: new Date().getFullYear(),
@@ -67,6 +77,8 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
+    const wasGuest = this.data.isGuest
+    const isGuest = !isLoggedIn()
     this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
@@ -80,10 +92,42 @@ Page({
     } catch (e) {
       /* 旧基础库兜底用默认 18 */
     }
-    this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max' })
+    this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max', isGuest })
+    if (isGuest) {
+      this.enterGuestMode()
+      return
+    }
+    if (wasGuest) this.setData({ loading: true, loadError: false })
     this.load()
     this.loadAds()
     this.maybeShowChangelog()
+  },
+  enterGuestMode() {
+    ;(this as any)._seq = (((this as any)._seq as number) || 0) + 1
+    ;(this as any)._loaded = false
+    this.setData({
+      isGuest: true,
+      loading: false,
+      loadError: false,
+      unread: false,
+      ads: [],
+      donut: [],
+      legend: [],
+      profitBars: [],
+      countBars: [],
+      tops: [],
+      profitBare: '0',
+      revenueText: '¥0',
+      costText: '¥0',
+      donutCostText: '¥0',
+      count: 0,
+      avgText: '¥0',
+      monthProfitText: '¥0',
+      goalTargetText: '未设',
+      goalPct: 0,
+      clogShow: false,
+      clog: null,
+    })
   },
   // 新版本首开弹更新日志：按当前版本定向，每版本只弹一次
   maybeShowChangelog() {
@@ -101,6 +145,7 @@ Page({
     changelogApi
       .byVersion(v)
       .then((c: any) => {
+        if (!isLoggedIn()) return
         if (c && c.version) {
           this.setData({
             clog: {
@@ -147,6 +192,10 @@ Page({
     this.setData({ tlx: t.clientX - r.left, tly: t.clientY - r.top })
   },
   onPullDownRefresh() {
+    if (!isLoggedIn()) {
+      wx.stopPullDownRefresh()
+      return
+    }
     this.load(() => wx.stopPullDownRefresh())
   },
   onPeriod(e: any) {
@@ -154,6 +203,10 @@ Page({
   },
 
   async load(done?: () => void) {
+    if (!isLoggedIn()) {
+      if (done) done()
+      return
+    }
     // 序号守卫：日/月/年 可被快速连点，慢的旧响应不允许覆盖新数据
     const seq = ((this as any)._seq = (((this as any)._seq as number) || 0) + 1)
     const period = this.data.period
@@ -239,8 +292,10 @@ Page({
   },
 
   async loadUnread() {
+    if (!isLoggedIn()) return
     try {
       const r: any = await notificationApi.unreadCount()
+      if (!isLoggedIn()) return
       this.setData({ unread: (r?.count || 0) > 0 })
     } catch (e) {
       /* 静默：红点不是关键路径 */
@@ -248,8 +303,10 @@ Page({
   },
 
   async loadAds() {
+    if (!isLoggedIn()) return
     try {
       const ads: any = await adApi.list()
+      if (!isLoggedIn()) return
       this.setData({ ads: Array.isArray(ads) ? ads : [] })
     } catch (e) {
       /* 静默：广告非关键路径 */
@@ -276,7 +333,17 @@ Page({
       })
     }
   },
+  toLogin() {
+    goToLogin()
+  },
+  toAbout() {
+    wx.navigateTo({ url: '/pages/about/index' })
+  },
+  toDoc(e: any) {
+    wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
+  },
   toCut() {
+    if (!requireLogin('登录并开通会员后可保存优化下料方案；计算工具页面可免登录浏览。')) return
     wx.navigateTo({ url: '/pages/cut/index' })
   },
   toTriangleTool() {
@@ -287,22 +354,26 @@ Page({
   },
 
   toCost() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/cost-analysis/index' })
   },
   toGoal() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/goal/index' })
   },
   toMsg() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/message-center/index' })
   },
   toOrder(e: any) {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
   },
   // 开启「转发给朋友」/「分享到朋友圈」
   onShareAppMessage() {
     return {
       title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
-      path: '/pages/login/index',
+      path: '/pages/home/index',
       imageUrl: this._cover || undefined,
     }
   },

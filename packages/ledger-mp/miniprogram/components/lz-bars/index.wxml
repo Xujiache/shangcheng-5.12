@@ -1,18 +1,29 @@
-<view class="bars" style="height: {{height + 22}}px;">
-  <view
-    wx:for="{{bars}}"
-    wx:key="idx"
-    class="bars__col"
-    style="opacity: {{highlight < 0 || highlight === index ? 1 : 0.42}};"
-    data-index="{{index}}"
-    bindtap="onSel"
-  >
-    <view class="bars__stack" style="height: {{height}}px;">
-      <view class="bars__bar" style="height: {{item.h}}px; background: {{c1}};">
-        <text wx:if="{{item.vt}}" class="bars__val">{{item.vt}}</text>
+<view class="bars" style="height: {{height + 23}}px;">
+  <view class="bars__plot" style="height: {{height}}px;">
+    <view
+      wx:for="{{bars}}"
+      wx:key="idx"
+      class="bars__col"
+      style="opacity: {{highlight < 0 || highlight === index ? 1 : 0.42}};"
+      data-index="{{index}}"
+      bindtap="onSel"
+    >
+      <view class="bars__stack" style="height: {{height}}px;">
+        <view class="bars__bar" style="height: {{item.h}}px; background: {{c1}};">
+          <text wx:if="{{item.vt}}" class="bars__val">{{item.vt}}</text>
+        </view>
+        <view wx:if="{{grouped}}" class="bars__bar bars__bar--2" style="height: {{item.h2}}px; background: {{c2}};"></view>
       </view>
-      <view wx:if="{{grouped}}" class="bars__bar bars__bar--2" style="height: {{item.h2}}px; background: {{c2}};"></view>
     </view>
-    <text class="bars__label {{highlight === index ? 'on' : ''}}">{{item.label}}</text>
+  </view>
+  <view class="bars__axis">
+    <text
+      wx:for="{{axisLabels}}"
+      wx:key="idx"
+      class="bars__axis-label bars__axis-label--{{item.edge}} {{highlight === item.idx ? 'on' : ''}}"
+      style="left: {{item.position}}%;"
+      data-index="{{item.idx}}"
+      bindtap="onSel"
+    >{{item.label}}</text>
   </view>
 </view>

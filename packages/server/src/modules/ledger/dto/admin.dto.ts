@@ -9,15 +9,7 @@ import {
   Max,
   MaxLength,
   Min,
-  MinLength,
 } from 'class-validator'
-
-/** 后台建号。password 缺省则系统生成随机初始密码并回传。 */
-export class CreateLedgerUserDto {
-  @IsString() phone!: string
-  @IsOptional() @IsString() @MinLength(6) @MaxLength(64) password?: string
-  @IsOptional() @IsString() @MaxLength(20) nickname?: string
-}
 
 export class UpdateLedgerUserDto {
   @IsOptional() @IsString() @MaxLength(20) nickname?: string
@@ -65,13 +57,10 @@ export class UpdateLedgerAdDto {
   @IsOptional() @IsBoolean() enabled?: boolean
 }
 
-/** ledger 全局功能配置（优化下料试用 / 邀请奖励 / 自助注册开关）。 */
+/** ledger 全局功能配置（微信邀请奖励 / 会员套餐）。 */
 export class UpdateLedgerConfigDto {
-  @IsOptional() @IsBoolean() allowSelfRegister?: boolean
   @IsOptional() @IsInt() @Min(0) @Max(3650) inviteRewardDays?: number
   @IsOptional() @IsInt() @Min(0) @Max(100000) inviteMaxRewarded?: number
-  @IsOptional() @IsInt() @Min(0) @Max(3650) cutTrialDays?: number
-  @IsOptional() @IsBoolean() cutRequireMembership?: boolean
   // 会员套餐数组 [{key,label,days,price}]；服务端 normalizeLedgerPlans 逐项收口 + 去重
   @IsOptional() @IsArray() plans?: { key: string; label: string; days: number; price: string }[]
 }

@@ -2,14 +2,14 @@
   平台 PC · 门窗利账 · 意见反馈
   ─────────────────────────────────────────────
   对接后端 /api/v1/p/ledger/feedback（列表 / 处理）。
-  运营在此查看小程序用户提交的反馈、注销申请、换号申请，并标记处理 / 回复备注。
+  运营在此查看小程序用户提交的反馈与注销申请，并标记处理 / 回复备注。
 -->
 <template>
   <div class="pf-ledger">
     <div class="pf-page-header">
       <div>
         <h2 class="m-0 text-xl font-semibold">意见反馈</h2>
-        <p class="mt-1 text-sm text-g-500">门窗利账用户提交的反馈 · 注销申请 · 换号申请</p>
+        <p class="mt-1 text-sm text-g-500">门窗利账用户提交的反馈 · 注销申请</p>
       </div>
       <ElButton :icon="Refresh" plain @click="load">刷新</ElButton>
     </div>
@@ -36,7 +36,6 @@
         >
           <ElOption label="一般反馈" value="general" />
           <ElOption label="注销申请" value="delete_account" />
-          <ElOption label="换号申请" value="phone_change" />
         </ElSelect>
         <ElSelect
           v-model="status"
@@ -62,7 +61,7 @@
       >
         <ElTableColumn label="提交人" min-width="150">
           <template #default="{ row }">
-            <div class="pf-mono">{{ row.phone }}</div>
+            <div class="pf-mono">{{ row.accountCode }}</div>
             <div class="text-xs text-g-500">{{ row.nickname || '—' }}</div>
           </template>
         </ElTableColumn>
@@ -126,7 +125,7 @@
         <div class="pf-fb-row">
           <span class="pf-fb-key">提交人</span>
           <span class="pf-mono"
-            >{{ handleTarget?.phone }}（{{ handleTarget?.nickname || '—' }}）</span
+            >{{ handleTarget?.accountCode }}（{{ handleTarget?.nickname || '—' }}）</span
           >
         </div>
         <div class="pf-fb-row">
@@ -193,15 +192,13 @@
 
   const TYPE_LABEL: Record<string, string> = {
     general: '一般反馈',
-    delete_account: '注销申请',
-    phone_change: '换号申请'
+    delete_account: '注销申请'
   }
   function typeLabel(t: string): string {
     return TYPE_LABEL[t] || '反馈'
   }
   function typeTagType(t: string): 'info' | 'danger' | 'warning' {
     if (t === 'delete_account') return 'danger'
-    if (t === 'phone_change') return 'warning'
     return 'info'
   }
 

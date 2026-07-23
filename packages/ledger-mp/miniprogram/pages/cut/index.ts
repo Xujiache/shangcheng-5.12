@@ -33,7 +33,7 @@ Page({
     allowed: false,
     mode: '',
     trialDaysLeft: 0,
-    gateReason: '优化下料试用已结束，开通会员后继续使用',
+    gateReason: '优化下料为会员功能，开通会员后即可使用',
 
     material: 'profile',
     materialOptions: [
@@ -174,8 +174,8 @@ Page({
         loadError: false,
         allowed: !!a.allowed,
         mode: a.mode || '',
-        trialDaysLeft: a.trialDaysLeft || 0,
-        gateReason: a.reason || '优化下料试用已结束，开通会员后继续使用',
+        trialDaysLeft: 0,
+        gateReason: a.reason || '优化下料为会员功能，开通会员后即可使用',
       })
       if (a.allowed) this.fetchHistory()
     } catch (e) {

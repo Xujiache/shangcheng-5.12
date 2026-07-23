@@ -2,12 +2,13 @@ import { authApi, meApi } from '../../api/index'
 import {
   setAuth,
   setUser,
-  getUser,
   getToken,
   getBioLock,
   getBioVerified,
   getLogo,
   setLogo,
+  getPendingInviteCode,
+  clearPendingInviteCode,
 } from '../../utils/store'
 
 interface LoginData {
@@ -27,24 +28,11 @@ function getWechatLoginCode(): Promise<string> {
   })
 }
 
-function isPrivacyScopeMissing(detail: any): boolean {
-  const message = String((detail && detail.errMsg) || '')
-  return Number(detail && detail.errno) === 112 || message.includes('api scope is not declared')
-}
-
-function isPrivacyAuthorizationRejected(detail: any): boolean {
-  const message = String((detail && detail.errMsg) || '')
-  return (
-    Number(detail && detail.errno) === 104 ||
-    message.includes('privacy permission is not authorized')
-  )
-}
-
 Page({
   data: {
     loading: false,
-    // 有 token 时静默校验，避免每次启动闪登录页。
-    checking: true,
+    // 仅已有 token 时显示静默校验；游客主动进入登录页时直接展示登录选项，避免闪屏。
+    checking: !!getToken(),
     // 隐私合规：必须由用户主动勾选，不得默认同意。
     agreed: false,
     logoUrl: getLogo(),
@@ -97,8 +85,8 @@ Page({
   onDoc(e: any) {
     wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
   },
-  onPrivacyAuthorized() {
-    this.setData({ agreed: true })
+  continueAsGuest() {
+    wx.switchTab({ url: '/pages/home/index' })
   },
   openPrivacyContract() {
     const openPrivacyContract = (wx as any).openPrivacyContract
@@ -109,45 +97,6 @@ Page({
     openPrivacyContract({
       fail: () => wx.showToast({ title: '隐私保护指引暂未配置，请联系管理员', icon: 'none' }),
     })
-  },
-
-  async onPhoneLogin(e: any) {
-    if (this.data.loading || !this.ensureAgreed()) return
-    const detail = e.detail || {}
-    if (detail.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
-      if (isPrivacyScopeMissing(detail)) {
-        wx.showModal({
-          title: '手机号登录暂未配置',
-          content:
-            '管理员需要在微信公众平台的“设置 - 服务内容声明 - 用户隐私保护指引”中声明收集手机号。配置生效前，请先使用下方微信登录。',
-          showCancel: false,
-          confirmText: '我知道了',
-        })
-        return
-      }
-      if (isPrivacyAuthorizationRejected(detail)) {
-        wx.showToast({ title: '请同意小程序隐私保护指引后再登录', icon: 'none' })
-        return
-      }
-      wx.showToast({ title: '已取消手机号授权，也可以使用微信登录', icon: 'none' })
-      return
-    }
-    this.setData({ loading: true })
-    let loginCode = ''
-    try {
-      loginCode = await getWechatLoginCode()
-    } catch (e) {
-      this.setData({ loading: false })
-      wx.showToast({ title: '微信登录初始化失败，请重试', icon: 'none' })
-      return
-    }
-    try {
-      const res = await authApi.wechatPhoneLogin(detail.code, loginCode)
-      setAuth(res.token, res.user)
-      this.routeAfterLogin(res.membership || (res.user && res.user.membership))
-    } catch (e) {
-      this.setData({ loading: false })
-    }
   },
 
   async onWechatLogin() {
@@ -162,29 +111,25 @@ Page({
       return
     }
     try {
-      const res = await authApi.wechatLogin(code)
+      const res = await authApi.wechatLogin(code, getPendingInviteCode() || undefined)
       setAuth(res.token, res.user)
-      this.routeAfterLogin(res.membership || (res.user && res.user.membership))
+      clearPendingInviteCode()
+      this.routeAfterLogin(res.membership || (res.user && res.user.membership), !!res.created)
     } catch (e: any) {
       this.setData({ loading: false })
       wx.showModal({
         title: '微信登录失败',
-        content: (e && e.message) || '请先使用上方“微信手机号快捷登录”，完成后即可直接微信登录。',
+        content: (e && e.message) || '微信服务暂不可用，请稍后重试。',
         showCancel: false,
         confirmText: '我知道了',
       })
     }
   },
 
-  routeAfterLogin(m: MembershipStatus | null) {
-    // 会员闸门优先：后台已建号但尚未授权会员的账号，登录后先进入会员开通页。
+  routeAfterLogin(m: MembershipStatus | null, created = false) {
+    // 新微信账号默认只有空会员档案；未开通时必须先进入会员开通页。
     if (!m || !m.active) {
-      wx.reLaunch({ url: '/pages/membership/index?gate=1' })
-      return
-    }
-    const user = getUser()
-    if (user && user.mustReset) {
-      wx.reLaunch({ url: '/pages/password/index?reset=1' })
+      wx.reLaunch({ url: '/pages/membership/index?gate=1' + (created ? '&new=1' : '') })
       return
     }
     if (getBioLock() && !getBioVerified()) {

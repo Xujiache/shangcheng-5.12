@@ -16,7 +16,7 @@
   >
     <div v-if="account" class="ledger-grant">
       <div class="ledger-grant__target">
-        <span class="ledger-grant__phone">{{ account.phone }}</span>
+        <span class="ledger-grant__account">{{ account.accountCode }}</span>
         <span v-if="account.nickname" class="ledger-grant__nick">（{{ account.nickname }}）</span>
         <ElTag :type="curTagType" size="small" class="ml-2">{{ curLabel }}</ElTag>
       </div>
@@ -207,7 +207,7 @@
     font-weight: 600;
   }
 
-  .ledger-grant__phone {
+  .ledger-grant__account {
     font-family: SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   }
 

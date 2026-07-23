@@ -71,18 +71,13 @@ export function ledgerPlanPriceFen(price: string | number | null | undefined): n
 
 /**
  * ledger 域全局配置默认值（存 LedgerConfig 单行 key=value，后台 admin-pc 可调）。
- * - allowSelfRegister: 是否开放 App 自助注册（#10）
  * - inviteRewardDays:  邀请成功奖励邀请人的天数（#10）
- * - cutTrialDays:      优化下料免费试用天数（#9）
- * - cutRequireMembership: 试用期后是否需要会员才能用优化下料（#9）
+ * 会员能力始终以 LedgerMembership 的有效状态为准；不提供按单功能的免会员绕过开关。
  */
 export const LEDGER_CONFIG_DEFAULTS = {
-  allowSelfRegister: false,
   inviteRewardDays: 7,
   /** 每个邀请人最多奖励多少个被邀请人（反刷量上限）；0=不限 */
   inviteMaxRewarded: 50,
-  cutTrialDays: 7,
-  cutRequireMembership: true,
   /** 会员套餐（后台可编辑；App /l/membership 与后台授予按此天数）*/
   plans: LEDGER_PLANS as LedgerPlan[],
 }
@@ -95,9 +90,7 @@ export function normalizeLedgerConfig(raw: any): LedgerConfigShape {
     const n = Math.round(Number(v))
     return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : d
   }
-  const bool = (v: any, d: boolean) => (typeof v === 'boolean' ? v : d)
   return {
-    allowSelfRegister: bool(r.allowSelfRegister, LEDGER_CONFIG_DEFAULTS.allowSelfRegister),
     inviteRewardDays: num(r.inviteRewardDays, LEDGER_CONFIG_DEFAULTS.inviteRewardDays, 0, 3650),
     inviteMaxRewarded: num(
       r.inviteMaxRewarded,
@@ -105,8 +98,6 @@ export function normalizeLedgerConfig(raw: any): LedgerConfigShape {
       0,
       100000,
     ),
-    cutTrialDays: num(r.cutTrialDays, LEDGER_CONFIG_DEFAULTS.cutTrialDays, 0, 3650),
-    cutRequireMembership: bool(r.cutRequireMembership, LEDGER_CONFIG_DEFAULTS.cutRequireMembership),
     plans: normalizeLedgerPlans(r.plans),
   }
 }

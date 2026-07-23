@@ -8,7 +8,7 @@ Page({
     consequences: [
       '订单、客户与利润数据将被永久删除',
       '会员权益与剩余时长将立即失效',
-      '账号注销后无法再通过该手机号或已绑定微信登录',
+      '账号注销后当前微信将无法再访问原账号数据',
       '所有云端备份将一并清除，无法找回',
     ],
   },
@@ -35,7 +35,7 @@ Page({
           const u = getUser()
           await feedbackApi.submit({
             type: 'delete_account',
-            content: '【账户注销申请】用户申请注销账号' + (u ? `（${u.phone}）` : ''),
+            content: '【账户注销申请】用户申请注销账号' + (u ? `（账号 ${u.accountCode}）` : ''),
           })
           wx.showModal({
             title: '申请已提交',

@@ -62,7 +62,7 @@ export class LedgerPayService {
     const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
-    // openid：优先已绑定的 wxOpenid（与 ledger appid 同源）；否则用本次 wx.login 的 code 兑换
+    // openid：优先使用登录账号身份；旧数据缺失时用本次 wx.login code 兑换。
     let openid = user.wxOpenid || ''
     if (!openid) {
       if (!code) throw new BizException(BizCode.INVALID_PARAMS, '缺少微信授权，请重试')

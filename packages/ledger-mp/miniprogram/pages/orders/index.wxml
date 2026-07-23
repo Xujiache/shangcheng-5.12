@@ -2,13 +2,26 @@
 <view class="ord tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
   <view class="ord__hd" style="padding-top: {{hdPad}}px;">
     <view class="ord__title">订单管理</view>
-    <view class="ord__cust-btn" bindtap="toCustomers" hover-class="tap-active">
+    <view wx:if="{{isGuest}}" class="ord__cust-btn" bindtap="toLogin" hover-class="tap-active">
+      <lz-icon name="user" size="17" color="accent" />
+      <text>登录</text>
+    </view>
+    <view wx:else class="ord__cust-btn" bindtap="toCustomers" hover-class="tap-active">
       <lz-icon name="user" size="17" color="accent" />
       <text>客户</text>
     </view>
   </view>
 
   <view class="lz-page lz-page--pad-bottom">
+    <view wx:if="{{isGuest}}" class="lz-card lz-card--glow ord__guest">
+      <view class="ord__guest-icon"><lz-icon name="orders" size="28" color="accent" /></view>
+      <view class="ord__guest-title">登录后查看你的订单</view>
+      <view class="ord__guest-copy">订单、客户和利润属于你的私有经营数据，仅在你主动登录后读取。无需登录可浏览计算工具页面，实际计算需有效会员。</view>
+      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full ord__guest-login" bindtap="toLogin">去登录</button>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg lz-btn--full ord__guest-home" bindtap="toHome">返回首页浏览工具</button>
+    </view>
+
+    <block wx:else>
     <!-- 汇总 -->
     <view class="lz-card lz-card--glow ord__sum">
       <view class="ord__sum-i">
@@ -81,5 +94,6 @@
     </view>
     <view wx:elif="{{!loading}}" class="lz-empty">暂无订单，点击底部 + 记一笔</view>
     <view wx:else class="lz-empty">加载中…</view>
+    </block>
   </view>
 </view>

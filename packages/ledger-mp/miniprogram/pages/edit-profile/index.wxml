@@ -58,30 +58,6 @@
       />
     </view>
 
-    <!-- 手机号（只读） -->
-    <view class="lz-section-label">登录手机号</view>
-    <view class="lz-card lz-card--flush">
-      <view class="lz-row lz-row--last">
-        <view class="lz-row__icon"><lz-icon name="phone" size="17" color="accent" /></view>
-        <view class="lz-row__main">
-          <view class="lz-row__label">{{maskedPhone}}</view>
-          <view class="lz-row__sub">手机号不可在此修改</view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 微信登录 -->
-    <view class="lz-section-label">微信登录</view>
-    <view class="lz-card lz-card--flush">
-      <view class="lz-row lz-row--last" hover-class="tap-active" bindtap="toWechat">
-        <view class="lz-row__icon"><lz-icon name="wechat" size="17" color="accent" /></view>
-        <view class="lz-row__main">
-          <view class="lz-row__label">绑定微信登录</view>
-          <view class="lz-row__sub">手机号快捷登录后自动绑定</view>
-        </view>
-        <lz-icon name="chevron" size="16" color="faint" />
-      </view>
-    </view>
   </view>
 
   <view class="lz-footer">

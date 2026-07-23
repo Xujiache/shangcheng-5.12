@@ -3,23 +3,15 @@ import { invalidateCache } from '../utils/request'
 
 /** 鉴权（登录类 auth:false 不带 token） */
 export const authApi = {
-  // 公开配置（是否开放自助注册等）；silent 让页面自行兜底默认值
+  // 登录页公开品牌配置；silent 让页面自行兜底默认值。
   config: () =>
-    http.get<{ allowSelfRegister: boolean; logoUrl?: string }>('/l/auth/config', undefined, {
+    http.get<{ logoUrl?: string }>('/l/auth/config', undefined, {
       auth: false,
       silent: true,
     }),
-  wechatPhoneLogin: (code: string, loginCode: string) =>
-    http.post('/l/auth/wechat-phone-login', { code, loginCode }, { auth: false }),
-  changePassword: (oldPassword: string | undefined, newPassword: string) =>
-    http.post('/l/auth/change-password', { oldPassword, newPassword }),
-  // 微信一键登录（openid 须已绑定）；silent 让登录页自行处理"未绑定"提示
-  wechatLogin: (code: string) =>
-    http.post('/l/auth/wechat-login', { code }, { auth: false, silent: true }),
-  // 绑定/解绑微信（需登录 + 密码确认）
-  bindWechat: (code: string, password: string) =>
-    http.post('/l/auth/wechat/bind', { code, password }),
-  unbindWechat: (password: string) => http.post('/l/auth/wechat/unbind', { password }),
+  // 唯一登录入口：首次使用 openid 自动建号，inviteCode 仅首次登录时消费。
+  wechatLogin: (code: string, inviteCode?: string) =>
+    http.post('/l/auth/wechat-login', { code, inviteCode }, { auth: false, silent: true }),
 }
 
 /** 账户 / 会员（仅需登录） */
@@ -177,7 +169,7 @@ export const adApi = {
   list: () => http.get<Array<{ id: string; image: string; link: string; title: string }>>('/l/ads'),
 }
 
-/** 优化下料试用/会员闸门（仅需登录） */
+/** 优化下料会员闸门（仅需登录，仅返回是否已开通） */
 export const cutApi = {
   access: () => http.get('/l/cut/access'),
 }
@@ -209,6 +201,5 @@ export const inviteApi = {
       inviteCode: string
       invitedCount: number
       rewardDays: number
-      allowSelfRegister: boolean
     }>('/l/invite', undefined, { cache: true }),
 }

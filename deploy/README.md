@@ -64,6 +64,7 @@ services：
 | 文件                            | 类型                           | 作用                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ledger-prod-init.sql`          | **新库必跑的初始化（合并版）** | ledger 域首次上线的总建表脚本：建 9 张核心 `Ledger*` 表（LedgerUser / Membership / MembershipLog / Customer / Order / Goal / Notification / Feedback / Setting），外加 `LedgerAd`、`LedgerConfig`，并对老库做一批 `ADD COLUMN IF NOT EXISTS`（wxOpenid、extraIncome、customCosts、items、discount、deposit、inviteCode、invitedById、cutFirstUsedAt 等）+ 索引 + 幂等外键。校验应返回 9 张 Ledger 表。 |
+| `ledger-wechat-only-auth.sql`   | 一次性兼容补丁 / 幂等          | 微信账号体系上线前执行：解除旧 `LedgerUser.phone` / `passwordHash` 的非空约束，补齐 `wxOpenid` 唯一索引，并为历史微信账号补建“未开通”的会员档案；不删除任何旧数据。                                                                                                                                                                                                                                    |
 | `ledger-payment-order-init.sql` | 一次性补表                     | 新建 `LedgerPaymentOrder`（会员在线支付订单，v1.0.3：用户直接付款 → 微信回调自动开通会员）+ 索引 + 指向 `LedgerUser` 的级联外键。                                                                                                                                                                                                                                                                      |
 | `ledger-cutplan-init.sql`       | 一次性补表 / 幂等              | 新建 `LedgerCutPlan`（优化下料「云端历史方案」）+ `(userId, updatedAt)` 索引 + `LedgerUser` 级联外键。                                                                                                                                                                                                                                                                                                 |
 | `ledger-changelog-init.sql`     | **init（建表）**               | 新建 `LedgerChangelog`（版本更新日志，v1.0.2）+ 索引。**必须先于 seed 执行。**                                                                                                                                                                                                                                                                                                                         |
@@ -79,20 +80,22 @@ services：
 唯一的硬性依赖是 **changelog：init 必须先于 seed**；ledger 的补列脚本都建立在 `LedgerOrder` / `LedgerFeedback` 已由 `ledger-prod-init.sql` 建好的前提上。建议顺序：
 
 1. `ledger-prod-init.sql` （ledger 9 张核心表 + Ad/Config + 补列，先建主表）
-2. `ledger-payment-order-init.sql`（依赖 `LedgerUser`）
-3. `ledger-cutplan-init.sql`（依赖 `LedgerUser`）
-4. `ledger-received-init.sql`（给 `LedgerOrder` 补列）
-5. `ledger-recycle-init.sql`（给 `LedgerOrder` 补列）
-6. `ledger-feedback-images.sql`（给 `LedgerFeedback` 补列）
-7. `ledger-changelog-init.sql`（建表）
-8. `ledger-changelog-seed.sql`（**必须在 changelog-init 之后**，写初始日志）
-9. `order-share-init.sql`（商城主域：建 `OrderShare` + 回填）
-10. `user-coupon-init.sql`（商城主域：建 `UserCoupon` + 回填）
+2. `ledger-wechat-only-auth.sql`（解除旧账号手机号/密码非空约束）
+3. `ledger-payment-order-init.sql`（依赖 `LedgerUser`）
+4. `ledger-cutplan-init.sql`（依赖 `LedgerUser`）
+5. `ledger-received-init.sql`（给 `LedgerOrder` 补列）
+6. `ledger-recycle-init.sql`（给 `LedgerOrder` 补列）
+7. `ledger-feedback-images.sql`（给 `LedgerFeedback` 补列）
+8. `ledger-changelog-init.sql`（建表）
+9. `ledger-changelog-seed.sql`（**必须在 changelog-init 之后**，写初始日志）
+10. `order-share-init.sql`（商城主域：建 `OrderShare` + 回填）
+11. `user-coupon-init.sql`（商城主域：建 `UserCoupon` + 回填）
 
 执行方式（任一种）：
 
 ```bash
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f deploy/ledger-prod-init.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f deploy/ledger-wechat-only-auth.sql
 # 或
 docker exec -i <pg容器> psql -U <user> -d <db> < deploy/ledger-prod-init.sql
 ```

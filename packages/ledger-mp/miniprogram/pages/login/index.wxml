@@ -23,40 +23,18 @@
     <block wx:else>
       <view class="login__heading">
         <view class="login__title">微信快捷登录</view>
-        <view class="login__subtitle">登录后同步订单、客户与利润数据</view>
+        <view class="login__subtitle">登录并开通会员后同步订单、客户与利润数据</view>
       </view>
 
       <view class="login__primary-wrap">
-        <view class="login__recommend">推荐使用</view>
         <button
-          wx:if="{{agreed}}"
-          id="privacy-phone-login"
           class="lz-btn lz-btn--primary lz-btn--full login__primary {{loading ? 'lz-btn--disabled' : ''}}"
-          open-type="getPhoneNumber|agreePrivacyAuthorization"
-          bindgetphonenumber="onPhoneLogin"
-          bindagreeprivacyauthorization="onPrivacyAuthorized"
-          phone-number-no-quota-toast="手机号快速验证次数不足，请稍后重试或联系管理员"
+          bindtap="onWechatLogin"
         >
-          <lz-icon name="phone" size="20" color="white" stroke="2" />
-          <text class="login__button-label">{{loading ? '登录中…' : '手机号快捷登录'}}</text>
-        </button>
-        <button
-          wx:else
-          class="lz-btn lz-btn--primary lz-btn--full login__primary"
-          bindtap="ensureAgreed"
-        >
-          <lz-icon name="phone" size="20" color="white" stroke="2" />
-          <text class="login__button-label">手机号快捷登录</text>
+          <lz-icon name="wechat" size="20" color="white" stroke="1.9" />
+          <text class="login__button-label">{{loading ? '登录中…' : '微信登录'}}</text>
         </button>
       </view>
-
-      <button
-        class="lz-btn lz-btn--ghost lz-btn--full login__secondary {{loading ? 'lz-btn--disabled' : ''}}"
-        bindtap="onWechatLogin"
-      >
-        <lz-icon name="wechat" size="20" color="#07C160" stroke="1.9" />
-        <text class="login__button-label">微信登录</text>
-      </button>
 
       <view class="login__agreement" bindtap="toggleAgree">
         <view class="login__agreebox {{agreed ? 'on' : ''}}">
@@ -69,6 +47,11 @@
           和
           <text class="login__link" catchtap="openPrivacyContract">{{privacyContractName}}</text>
         </view>
+      </view>
+
+      <view class="login__guest" hover-class="tap-active" bindtap="continueAsGuest">
+        <text>暂不登录，先浏览页面</text>
+        <lz-icon name="chevron" size="15" color="accent" />
       </view>
 
     </block>

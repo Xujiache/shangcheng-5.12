@@ -9,7 +9,6 @@ Page({
     inviteCode: '',
     invitedCount: 0,
     rewardDays: 7,
-    allowSelfRegister: false,
   },
 
   onLoad() {
@@ -25,7 +24,6 @@ Page({
         inviteCode: r.inviteCode || '',
         invitedCount: r.invitedCount || 0,
         rewardDays: r.rewardDays || 7,
-        allowSelfRegister: false,
       })
       this.genCover()
     } catch (e) {
@@ -59,7 +57,7 @@ Page({
   onShareAppMessage() {
     return {
       title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
-      path: '/pages/login/index',
+      path: `/pages/home/index?inviteCode=${encodeURIComponent(this.data.inviteCode || '')}`,
       imageUrl: this._cover || undefined,
     }
   },

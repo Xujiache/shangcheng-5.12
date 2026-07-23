@@ -18,10 +18,28 @@
   font-weight: 700;
   color: var(--text);
 }
-.prof__phone {
+.prof__account {
   font-size: 13px;
   color: var(--muted);
   margin-top: 3px;
+}
+.prof__guest-card {
+  margin-bottom: var(--gap);
+  padding: 20px;
+}
+.prof__guest-title {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+}
+.prof__guest-copy {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.prof__guest-login {
+  margin-top: 17px;
 }
 .prof__member {
   display: flex;

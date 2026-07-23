@@ -46,7 +46,10 @@
     <!-- gate notice -->
     <view wx:if="{{gate && !m.active}}" class="ms__notice">
       <lz-icon name="info" size="17" color="loss" />
-      <text>{{m.expired ? '您的会员已到期，续费后即可继续使用全部功能。' : '门窗利账为会员制应用，开通会员后即可开始记账。'}}</text>
+      <text>{{m.expired ? '您的会员已到期，续费后即可继续使用全部功能。' : (newWechatUser ? '微信账号已创建。开通会员后即可使用全部功能。' : '门窗利账为会员制应用，开通会员后即可开始记账。')}}</text>
+    </view>
+    <view wx:if="{{gate && !m.active && accountCode}}" class="ms__foot-note">
+      账号编号：{{accountCode}} · 联系管理员开通时请提供此编号
     </view>
 
     <!-- plans (display only) -->

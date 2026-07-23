@@ -17,7 +17,7 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
 
 /**
  * 门窗利账（ledger）模块 —— 记账小程序后端域，与商城零耦合。
- * 依赖项全部走全局：PrismaModule / JwtModule(global) / SmsModule(@Global)，无需 imports。
+ * 依赖项全部走全局：PrismaModule / JwtModule(global)，无需额外鉴权模块 imports。
  */
 @Module({
   imports: [FilesModule],

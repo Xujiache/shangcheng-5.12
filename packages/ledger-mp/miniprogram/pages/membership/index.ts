@@ -42,6 +42,8 @@ const PLAN_FALLBACK = [
 Page({
   data: {
     gate: false,
+    newWechatUser: false,
+    accountCode: '',
     loading: true,
     loadError: false, // 首次加载失败：换重试卡，避免把默认值「尚未开通会员」当真相展示
     m: {
@@ -68,7 +70,11 @@ Page({
   _loaded: false, // 是否成功加载过：刷新失败时保留已展示内容，不退回重试卡
 
   onLoad(opt: any) {
-    this.setData({ gate: opt.gate === '1' })
+    this.setData({
+      gate: opt.gate === '1',
+      newWechatUser: opt.new === '1',
+      accountCode: getUser()?.accountCode || '',
+    })
     this.load()
   },
   onShow() {
@@ -197,8 +203,11 @@ Page({
       this.payVirtual()
       return
     }
-    // 回退：微信支付未配置 → 留言找管理员（原逻辑）
+    // 回退：微信支付未配置 → 提供账号编号联系管理员开通
     const plan = this.data.plans.find((p: any) => p.key === this.data.selectedKey)
+    const accountHint = this.data.accountCode
+      ? '您的账号编号为 ' + this.data.accountCode + '。'
+      : '请在「我的」页面查看并提供账号编号。'
     const content = plan
       ? '您选择了「' +
         plan.label +
@@ -206,8 +215,10 @@ Page({
         plan.price +
         ' · ' +
         plan.days +
-        ' 天）。会员由管理员后台开通/续费，可在「意见反馈」留下手机号与想开通的套餐，管理员会与您联系。'
-      : '会员由管理员后台开通/续费，可在「意见反馈」中留下手机号，管理员会与您联系。'
+        ' 天）。会员由管理员后台开通/续费。' +
+        accountHint +
+        '可在「意见反馈」中说明想开通的套餐。'
+      : '会员由管理员后台开通/续费。' + accountHint + '可在「意见反馈」中说明开通需求。'
     wx.showModal({
       title: '会员开通',
       content,
@@ -302,11 +313,6 @@ Page({
     }
   },
   enterApp() {
-    const user = getUser()
-    if (user && user.mustReset) {
-      wx.reLaunch({ url: '/pages/password/index?reset=1' })
-      return
-    }
     wx.switchTab({ url: '/pages/home/index' })
   },
   onLogout() {

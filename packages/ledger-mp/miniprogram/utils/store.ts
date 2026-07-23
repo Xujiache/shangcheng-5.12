@@ -12,6 +12,33 @@ export function isLoggedIn(): boolean {
   return !!getToken()
 }
 
+export function goToLogin() {
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1]
+  if (current && current.route === 'pages/login/index') return
+  wx.navigateTo({ url: '/pages/login/index' })
+}
+
+let loginPrompting = false
+export function requireLogin(content = '登录后可使用订单、报表及云端数据。'): boolean {
+  if (isLoggedIn()) return true
+  if (loginPrompting) return false
+  loginPrompting = true
+  wx.showModal({
+    title: '登录后使用',
+    content,
+    confirmText: '去登录',
+    cancelText: '继续浏览',
+    success: (res) => {
+      if (res.confirm) goToLogin()
+    },
+    complete: () => {
+      loginPrompting = false
+    },
+  })
+  return false
+}
+
 export function setAuth(token: string, user?: LedgerUserInfo) {
   const a = app()
   if (!a) return
@@ -20,7 +47,7 @@ export function setAuth(token: string, user?: LedgerUserInfo) {
     a.globalData.user = user
     a.globalData.membership = user.membership
   }
-  // setAuth 仅在用户刚提交过凭证（密码/短信/微信授权）时调用，等同已完成身份验证：
+  // setAuth 仅在用户主动完成微信登录后调用，等同已完成身份验证：
   // 视作本次冷启动已解锁，避免登录后一切后台又被生物锁拦一次
   bioVerified = true
 }
@@ -40,9 +67,70 @@ export function getMembership(): MembershipStatus | null {
   return app()?.globalData?.membership || null
 }
 
+export function setMembership(membership: MembershipStatus) {
+  const a = app()
+  if (!a) return
+  a.globalData.membership = membership
+  if (a.globalData.user) a.globalData.user.membership = membership
+}
+
+export function hasActiveMembership(
+  membership: MembershipStatus | null = getMembership(),
+): boolean {
+  if (!isLoggedIn() || !membership || !membership.active) return false
+  if (membership.perpetual || !membership.expiresAt) return true
+  const expiresAt = Date.parse(membership.expiresAt)
+  return !Number.isFinite(expiresAt) || expiresAt > Date.now()
+}
+
+let membershipPrompting = false
+export function requireMembership(
+  content = '该功能仅限有效会员使用，开通或续费后即可解锁。',
+): boolean {
+  if (!isLoggedIn()) {
+    requireLogin('登录并开通有效会员后，才可使用软件内的计算与经营功能。')
+    return false
+  }
+  if (hasActiveMembership()) return true
+  if (membershipPrompting) return false
+  membershipPrompting = true
+  wx.showModal({
+    title: '会员功能',
+    content,
+    confirmText: '查看会员',
+    cancelText: '继续查看',
+    success: (res) => {
+      if (res.confirm) wx.navigateTo({ url: '/pages/membership/index' })
+    },
+    complete: () => {
+      membershipPrompting = false
+    },
+  })
+  return false
+}
+
 export function logout() {
   app()?.clearAuth?.()
-  wx.reLaunch({ url: '/pages/login/index' })
+  wx.reLaunch({ url: '/pages/home/index' })
+}
+
+/* ---- 邀请码：分享落地页先暂存，首次微信登录成功后清理 ---- */
+const PENDING_INVITE_KEY = 'ledger_pending_invite_code'
+
+export function captureInviteCode(value: unknown) {
+  const code = String(value || '')
+    .trim()
+    .toUpperCase()
+    .slice(0, 32)
+  if (code) wx.setStorageSync(PENDING_INVITE_KEY, code)
+}
+
+export function getPendingInviteCode(): string {
+  return String(wx.getStorageSync(PENDING_INVITE_KEY) || '')
+}
+
+export function clearPendingInviteCode() {
+  wx.removeStorageSync(PENDING_INVITE_KEY)
 }
 
 /* ---- 隐私设置本地镜像（设置页保存成功后写入，供各页同步读取） ---- */

@@ -12,16 +12,10 @@ const HUES = [
   { key: 'violet', grad: 'linear-gradient(140deg, #afa3cf 0%, #9488b8 100%)' },
 ]
 
-function mask(phone: string): string {
-  if (!phone || phone.length < 7) return phone || '—'
-  return phone.slice(0, 3) + '****' + phone.slice(-4)
-}
-
 Page({
   data: {
     nickname: '',
     initial: '账',
-    maskedPhone: '—',
     hues: HUES,
     hueKey: 'teal',
     hue: HUES[0],
@@ -48,7 +42,6 @@ Page({
     const hue = HUES.find((h) => h.key === hueKey) || HUES[0]
     this.setData({
       nickname,
-      maskedPhone: mask(u ? u.phone : ''),
       initial: this.firstChar(nickname),
       hueKey,
       hue,
@@ -138,10 +131,6 @@ Page({
   // 改回字母头像（移除已上传图片，下次保存生效）
   onUseLetter() {
     this.setData({ avatarUrl: '' }, () => this.refreshCanSave())
-  },
-
-  toWechat() {
-    wx.navigateTo({ url: '/pages/wechat-bind/index' })
   },
 
   async onSave() {

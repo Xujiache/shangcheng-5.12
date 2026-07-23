@@ -1,9 +1,17 @@
+import { hasActiveMembership, requireMembership } from '../../utils/store'
+import {
+  initialMembershipAccess,
+  membershipAccessView,
+  verifyMembershipAccess,
+} from '../../utils/membership-access'
+
 type Key = 'a' | 'b' | 'c' | 'A' | 'B' | 'C'
 type Values = Record<Key, string>
 type Tri = Partial<Record<Key, number>>
 
 const ORDER: Key[] = ['a', 'b', 'c', 'A', 'B', 'C']
 const EPS = 1e-8
+const emptyValues = (): Values => ({ a: '', b: '', c: '', A: '', B: '', C: '' })
 
 const toRad = (d: number) => (d * Math.PI) / 180
 const toDeg = (r: number) => (r * 180) / Math.PI
@@ -89,15 +97,58 @@ function solve(input: Tri): Tri & { h: number; area: number } {
 }
 
 Page({
+  _accessSeq: 0,
   data: {
-    values: { a: '', b: '', c: '', A: '', B: '', C: '' } as Values,
+    ...initialMembershipAccess(),
+    values: emptyValues(),
     resultRows: [] as Array<{ label: string; value: string }>,
   },
+  onShow() {
+    this.checkAccess()
+  },
+  async checkAccess() {
+    const seq = (this._accessSeq = (this._accessSeq || 0) + 1)
+    const initial = initialMembershipAccess()
+    this.setData(initial)
+    if (initial.accessState === 'guest') {
+      this.setData({ values: emptyValues(), resultRows: [] })
+      return
+    }
+    const state = await verifyMembershipAccess()
+    if (seq !== this._accessSeq) return
+    const patch: Record<string, any> = membershipAccessView(state)
+    if (state !== 'active') {
+      patch.values = emptyValues()
+      patch.resultRows = []
+    }
+    this.setData(patch)
+  },
+  openAccess() {
+    if (this.data.accessState === 'checking') {
+      wx.showToast({ title: '正在校验会员状态', icon: 'none' })
+      return
+    }
+    if (this.data.accessState === 'error') {
+      this.checkAccess()
+      return
+    }
+    requireMembership('三角计算仅限有效会员使用，开通或续费后即可输入参数并计算。')
+  },
+  ensureAccess(): boolean {
+    if (this.data.canUse && hasActiveMembership()) return true
+    if (this.data.accessState === 'active') {
+      this.setData({ ...membershipAccessView('locked'), values: emptyValues(), resultRows: [] })
+    }
+    this.openAccess()
+    return false
+  },
   onInput(e: any) {
+    if (!this.ensureAccess()) return
     const key = e.currentTarget.dataset.key as Key
     this.setData({ ['values.' + key]: e.detail.value })
   },
   calc() {
+    if (!this.ensureAccess()) return
     const vals = this.data.values as Values
     const selected = ORDER.filter((k) => String(vals[k]).trim()).slice(0, 3)
     if (selected.length < 3) {
@@ -136,8 +187,9 @@ Page({
     }
   },
   clear() {
+    if (!this.ensureAccess()) return
     this.setData({
-      values: { a: '', b: '', c: '', A: '', B: '', C: '' },
+      values: emptyValues(),
       resultRows: [],
     })
   },

@@ -1,4 +1,4 @@
-import { getGlass, getLiquidTab, glassTabStyle } from '../utils/store'
+import { getGlass, getLiquidTab, glassTabStyle, requireLogin } from '../utils/store'
 
 // FAB 防连点：避免连续打开多个新增订单页面。
 let adding = false
@@ -74,6 +74,7 @@ Component({
 
     onAdd() {
       if (adding) return
+      if (!requireLogin('登录并开通会员后可新增订单；公开页面可免登录浏览。')) return
       adding = true
       wx.navigateTo({
         url: '/pages/order-edit/index',

@@ -14,10 +14,9 @@ interface MembershipStatus {
 
 interface LedgerUserInfo {
   id: string
-  phone: string
+  accountCode: string
   nickname: string
   avatar: string | null
-  mustReset?: boolean
   membership: MembershipStatus
 }
 

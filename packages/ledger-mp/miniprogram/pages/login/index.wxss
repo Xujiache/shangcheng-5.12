@@ -86,22 +86,7 @@
 .login__primary-wrap {
   position: relative;
 }
-.login__recommend {
-  position: absolute;
-  top: -11px;
-  right: 16px;
-  z-index: 2;
-  padding: 4px 9px;
-  border-radius: 7px 7px 7px 2px;
-  color: #fff;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.2;
-  background: #17352d;
-  box-shadow: 0 5px 12px rgba(21, 32, 28, 0.18);
-}
-.login__primary,
-.login__secondary {
+.login__primary {
   width: 100%;
   min-width: 100%;
   margin-right: 0;
@@ -113,13 +98,6 @@
   height: 54px;
   border-radius: 15px;
   box-shadow: 0 10px 22px rgba(14, 124, 102, 0.25);
-}
-.login__secondary {
-  height: 46px;
-  margin-top: 11px;
-  border-radius: 15px;
-  background: #f6faf8;
-  box-shadow: none;
 }
 .login__button-label {
   flex: 0 0 auto;
@@ -159,6 +137,17 @@
 .login__link {
   color: var(--accent-text);
   font-weight: 600;
+}
+.login__guest {
+  min-height: 38px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 700;
 }
 .login__sheet--checking {
   min-height: 250px;

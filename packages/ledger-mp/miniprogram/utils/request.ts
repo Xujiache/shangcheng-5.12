@@ -84,7 +84,8 @@ export function handleUnauthorized() {
   unauthHandling = true
   const app = getApp<IAppOption>()
   app?.clearAuth?.()
-  wx.reLaunch({ url: '/pages/login/index' })
+  wx.showToast({ title: '登录已失效，已进入游客模式', icon: 'none' })
+  wx.reLaunch({ url: '/pages/home/index' })
   setTimeout(() => (unauthHandling = false), 1500)
 }
 

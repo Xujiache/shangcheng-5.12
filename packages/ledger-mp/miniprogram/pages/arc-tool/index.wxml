@@ -12,45 +12,54 @@
       <view>计算顺序：从上往下，按顺序取 2 个。</view>
     </view>
 
+    <view wx:if="{{!canUse}}" class="lz-card lz-card--glow arc__gate">
+      <view class="arc__gate-icon"><lz-icon name="crown" size="25" color="accent" /></view>
+      <view class="lz-flex1" style="min-width: 0;">
+        <view class="arc__gate-title">{{gateTitle}}</view>
+        <view class="arc__gate-text">{{gateText}}</view>
+      </view>
+      <view class="arc__gate-cta" bindtap="openAccess" hover-class="tap-active">{{gateButtonText}}</view>
+    </view>
+
     <view class="arc__title">输入区</view>
-    <view class="lz-card lz-card--flush">
+    <view class="lz-card lz-card--flush arc__form {{!canUse ? 'arc__form--locked' : ''}}">
       <view class="lz-row">
         <view class="arc__label">半径</view>
-        <input class="arc__input" type="digit" value="{{values.r}}" data-key="r" placeholder="输入半径" placeholder-class="ph" bindinput="onInput" />
+        <input class="arc__input" type="digit" value="{{values.r}}" data-key="r" placeholder="输入半径" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
       </view>
       <view class="lz-row">
         <view class="arc__label">弦长 AC</view>
-        <input class="arc__input" type="digit" value="{{values.chord}}" data-key="chord" placeholder="输入弦长 AC" placeholder-class="ph" bindinput="onInput" />
+        <input class="arc__input" type="digit" value="{{values.chord}}" data-key="chord" placeholder="输入弦长 AC" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
       </view>
       <view class="lz-row">
         <view class="arc__label">弧长 ABC</view>
-        <input class="arc__input" type="digit" value="{{values.arc}}" data-key="arc" placeholder="输入弧长 ABC" placeholder-class="ph" bindinput="onInput" />
+        <input class="arc__input" type="digit" value="{{values.arc}}" data-key="arc" placeholder="输入弧长 ABC" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
       </view>
       <view class="lz-row">
         <view class="arc__label">拱高 BD</view>
-        <input class="arc__input" type="digit" value="{{values.height}}" data-key="height" placeholder="输入拱高 BD" placeholder-class="ph" bindinput="onInput" />
+        <input class="arc__input" type="digit" value="{{values.height}}" data-key="height" placeholder="输入拱高 BD" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
       </view>
       <view class="lz-row lz-row--last">
         <view class="arc__label">角 a</view>
-        <input class="arc__input" type="digit" value="{{values.angle}}" data-key="angle" placeholder="输入角 a" placeholder-class="ph" bindinput="onInput" />
+        <input class="arc__input" type="digit" value="{{values.angle}}" data-key="angle" placeholder="输入角 a" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
       </view>
     </view>
 
     <view class="arc__title">结果区</view>
     <view class="lz-card lz-card--flush">
-      <block wx:if="{{resultRows.length}}">
+      <block wx:if="{{canUse && resultRows.length}}">
         <view wx:for="{{resultRows}}" wx:key="label" class="lz-row {{index === resultRows.length - 1 ? 'lz-row--last' : ''}}">
           <view class="arc__label">{{item.label}}</view>
           <view class="arc__value">{{item.value}}</view>
         </view>
       </block>
-      <view wx:else class="arc__empty">输入 2 个参数后点击计算</view>
+      <view wx:else class="arc__empty">{{canUse ? '输入 2 个参数后点击计算' : '会员解锁后可查看计算结果'}}</view>
     </view>
 
   </view>
 
   <view class="arc__actions">
-    <button class="arc__btn arc__btn--main" bindtap="calc">计算</button>
-    <button class="arc__btn" bindtap="clear">清空</button>
+    <button class="arc__btn arc__btn--main {{!canUse ? 'arc__btn--locked' : ''}}" bindtap="calc">{{actionText}}</button>
+    <button class="arc__btn" disabled="{{!canUse}}" bindtap="clear">清空</button>
   </view>
 </view>

@@ -448,12 +448,10 @@ describe('normalizeLedgerConfig 配置收口', () => {
   it('数值越上限被钳到 3650，越下限被钳到 0，并四舍五入', () => {
     const out = normalizeLedgerConfig({
       inviteRewardDays: 99999,
-      cutTrialDays: -10,
-      inviteMaxRewarded: 12.6,
+      inviteMaxRewarded: -10,
     })
     expect(out.inviteRewardDays).toBe(3650)
-    expect(out.cutTrialDays).toBe(0)
-    expect(out.inviteMaxRewarded).toBe(13)
+    expect(out.inviteMaxRewarded).toBe(0)
   })
 
   it('数值非法（NaN）→ 回落该字段默认值', () => {
@@ -461,10 +459,10 @@ describe('normalizeLedgerConfig 配置收口', () => {
     expect(out.inviteRewardDays).toBe(LEDGER_CONFIG_DEFAULTS.inviteRewardDays)
   })
 
-  it('布尔字段非布尔 → 回落默认值；合法布尔被采用', () => {
-    const out = normalizeLedgerConfig({ allowSelfRegister: 'yes', cutRequireMembership: false })
-    expect(out.allowSelfRegister).toBe(LEDGER_CONFIG_DEFAULTS.allowSelfRegister)
-    expect(out.cutRequireMembership).toBe(false)
+  it('历史试用字段被忽略，不能关闭会员闸门', () => {
+    const out = normalizeLedgerConfig({ cutRequireMembership: false, cutTrialDays: 3650 })
+    expect(out).not.toHaveProperty('cutRequireMembership')
+    expect(out).not.toHaveProperty('cutTrialDays')
   })
 
   it('plans 缺省 / 非数组 → 回落默认套餐', () => {

@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import * as argon2 from 'argon2'
-import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
@@ -11,7 +9,6 @@ import {
 } from './ledger.constants'
 import {
   CreateLedgerAdDto,
-  CreateLedgerUserDto,
   GrantMembershipDto,
   PushNotificationDto,
   UpdateLedgerAdDto,
@@ -20,12 +17,9 @@ import {
   UpdateLedgerUserDto,
 } from './dto/admin.dto'
 
-// 初始/重置密码：去掉易混字符（0/O/1/l/I），8 位
-const genPassword = customAlphabet('23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ', 8)
-
 /**
  * 门窗利账 · 后台管理服务（admin-pc 平台工作台调用）。
- * 管理记账账号的创建/禁用/改密，以及会员时长的叠加与审计。
+ * 微信账号由小程序首次登录自动创建；后台负责禁用、资料维护和会员时长审计。
  */
 @Injectable()
 export class LedgerAdminService {
@@ -34,11 +28,11 @@ export class LedgerAdminService {
   private mapUser(u: any) {
     return {
       id: u.id,
-      phone: u.phone,
+      accountCode: u.id.slice(-8).toUpperCase(),
+      wechatLinked: !!u.wxOpenid,
       nickname: u.nickname,
       avatar: u.avatar,
       status: u.status,
-      mustReset: u.mustReset,
       lastLoginAt: u.lastLoginAt,
       createdAt: u.createdAt,
       membership: deriveMembership(
@@ -56,7 +50,12 @@ export class LedgerAdminService {
   async listUsers(q: any) {
     const kw = String(q?.keyword || '').trim()
     const where: any = {}
-    if (kw) where.OR = [{ phone: { contains: kw } }, { nickname: { contains: kw } }]
+    if (kw) {
+      where.OR = [
+        { id: { contains: kw.toLowerCase() } },
+        { nickname: { contains: kw, mode: 'insensitive' } },
+      ]
+    }
     if (q?.status === 'active' || q?.status === 'disabled') where.status = q.status
 
     const page = Math.max(1, Number(q?.page) || 1)
@@ -74,30 +73,6 @@ export class LedgerAdminService {
     return { list: rows.map((u) => this.mapUser(u)), total, page, pageSize }
   }
 
-  async createUser(dto: CreateLedgerUserDto, operatorId?: string) {
-    const phone = String(dto.phone || '').trim()
-    if (!/^1[3-9]\d{9}$/.test(phone))
-      throw new BizException(BizCode.INVALID_PARAMS, '手机号格式不正确')
-    const dup = await this.prisma.ledgerUser.findUnique({ where: { phone }, select: { id: true } })
-    if (dup) throw new BizException(BizCode.CONFLICT, '该手机号已存在')
-
-    const generated = !dto.password
-    const plain = dto.password || genPassword()
-    const passwordHash = await argon2.hash(plain)
-    const u = await this.prisma.ledgerUser.create({
-      data: {
-        phone,
-        passwordHash,
-        nickname: dto.nickname?.trim() || '门窗店主',
-        createdById: operatorId || null,
-        mustReset: generated, // 系统生成的初始密码要求首登改密
-        membership: { create: {} }, // 1:1 空会员（expiresAt=null=未开通）
-      },
-      include: { membership: true },
-    })
-    return { ...this.mapUser(u), generatedPassword: generated ? plain : undefined }
-  }
-
   async updateUser(id: string, dto: UpdateLedgerUserDto) {
     const exist = await this.prisma.ledgerUser.findUnique({ where: { id } })
     if (!exist) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
@@ -110,17 +85,6 @@ export class LedgerAdminService {
       include: { membership: true },
     })
     return this.mapUser(u)
-  }
-
-  async resetPassword(id: string) {
-    const exist = await this.prisma.ledgerUser.findUnique({ where: { id }, select: { id: true } })
-    if (!exist) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
-    const plain = genPassword()
-    await this.prisma.ledgerUser.update({
-      where: { id },
-      data: { passwordHash: await argon2.hash(plain), mustReset: true },
-    })
-    return { password: plain }
   }
 
   /** 增加会员时长（叠加）。planKey 与 days 二选一，days 优先。 */
@@ -228,7 +192,7 @@ export class LedgerAdminService {
     const [rows, total] = await Promise.all([
       this.prisma.ledgerFeedback.findMany({
         where,
-        include: { user: { select: { phone: true, nickname: true } } },
+        include: { user: { select: { id: true, nickname: true } } },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -238,7 +202,7 @@ export class LedgerAdminService {
     const list = rows.map((f) => ({
       id: f.id,
       userId: f.userId,
-      phone: f.user?.phone || '',
+      accountCode: f.user?.id.slice(-8).toUpperCase() || '',
       nickname: f.user?.nickname || '',
       type: f.type,
       content: f.content,
@@ -346,14 +310,14 @@ export class LedgerAdminService {
       .slice(0, 100)
     const inviters = await this.prisma.ledgerUser.findMany({
       where: { id: { in: sorted.map((s) => s.inviterId) } },
-      select: { id: true, phone: true, nickname: true, inviteCode: true },
+      select: { id: true, nickname: true, inviteCode: true },
     })
     const map = new Map(inviters.map((u) => [u.id, u]))
     const list = sorted.map((s) => {
       const u = map.get(s.inviterId)
       return {
         inviterId: s.inviterId,
-        phone: u?.phone || '',
+        accountCode: u?.id.slice(-8).toUpperCase() || '',
         nickname: u?.nickname || '',
         inviteCode: u?.inviteCode || '',
         invitedCount: s.count,

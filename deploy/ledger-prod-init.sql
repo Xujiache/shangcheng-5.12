@@ -23,8 +23,8 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS "LedgerUser" (
     "id" TEXT NOT NULL,
-    "phone" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
+    "phone" TEXT,
+    "passwordHash" TEXT,
     "nickname" TEXT NOT NULL DEFAULT '门窗店主',
     "avatar" TEXT,
     "wxOpenid" TEXT,
@@ -152,7 +152,7 @@ ALTER TABLE "LedgerUser" ADD COLUMN IF NOT EXISTS "wxOpenid" TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerUser_wxOpenid_key" ON "LedgerUser"("wxOpenid");
 -- 老库补列：订单额外收入
 ALTER TABLE "LedgerOrder" ADD COLUMN IF NOT EXISTS "extraIncome" INTEGER NOT NULL DEFAULT 0;
--- 老库补列：自定义成本项(#5) / 邀请(#10) / 优化下料试用(#9)
+-- 老库补列：自定义成本项(#5) / 邀请(#10) / 历史下料试用留痕(#9，现不参与权限判断)
 ALTER TABLE "LedgerOrder" ADD COLUMN IF NOT EXISTS "customCosts" JSONB NOT NULL DEFAULT '[]';
 -- 门窗报价明细 / 优惠 / 定金
 ALTER TABLE "LedgerOrder" ADD COLUMN IF NOT EXISTS "items" JSONB NOT NULL DEFAULT '[]';

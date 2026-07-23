@@ -37,7 +37,7 @@ Page({
       {
         iconSrc: '/assets/settings/settings-privacy.png',
         label: '账户安全',
-        sub: '安全密码 · 换绑手机',
+        sub: '微信账号 · 账号编号',
         page: '/pages/account-security/index',
       },
       {

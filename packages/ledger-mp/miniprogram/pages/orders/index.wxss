@@ -27,6 +27,39 @@
   font-weight: 600;
   color: var(--accent-text);
 }
+.ord__guest {
+  margin-top: 10px;
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+.ord__guest-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  border-radius: 18px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ord__guest-title {
+  margin-top: 16px;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 800;
+}
+.ord__guest-copy {
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.ord__guest-login {
+  margin-top: 20px;
+}
+.ord__guest-home {
+  margin-top: 10px;
+}
 .ord__sum {
   display: flex;
   margin-bottom: var(--gap);

@@ -1,11 +1,10 @@
 {
   "__usePrivacyCheck__": true,
   "pages": [
+    "pages/home/index",
     "pages/login/index",
-    "pages/register/index",
     "pages/lock/index",
     "pages/membership/index",
-    "pages/home/index",
     "pages/cut/index",
     "pages/triangle-tool/index",
     "pages/arc-tool/index",
@@ -26,7 +25,6 @@
     "pages/message-center/index",
     "pages/edit-profile/index",
     "pages/account-security/index",
-    "pages/wechat-bind/index",
     "pages/notifications/index",
     "pages/settings/index",
     "pages/appearance/index",
@@ -35,8 +33,6 @@
     "pages/about/index",
     "pages/dnd/index",
     "pages/feedback/index",
-    "pages/phone-bind/index",
-    "pages/password/index",
     "pages/delete-account/index",
     "pages/doc/index"
   ],

@@ -1,16 +1,27 @@
 import { meApi } from '../../api/index'
 import { makeShareCover } from '../../utils/share-cover'
 import { fmtDate } from '../../utils/format'
-import { getUser, setUser, logout, glassCardStyle } from '../../utils/store'
+import {
+  getUser,
+  setUser,
+  logout,
+  glassCardStyle,
+  goToLogin,
+  isLoggedIn,
+  requireLogin,
+} from '../../utils/store'
+
+const INITIAL_GUEST = !isLoggedIn()
 
 Page({
   _cover: '',
   data: {
+    isGuest: INITIAL_GUEST,
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     tabMotion: false,
     topSpace: 38, // 顶部留白 = 状态栏高度 + 18
     nickname: '门窗店主',
-    phoneMask: '',
+    accountText: '',
     avatarChar: '门',
     avatarUrl: '', // 上传的头像图片 URL；有则显示图片，否则显示字母头像
     memberActive: false,
@@ -41,22 +52,41 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
+    const isGuest = !isLoggedIn()
     this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(3) : tb.setData({ selected: 3 })
-    this.setData({ topSpace: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18 })
+    this.setData({
+      topSpace: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18,
+      isGuest,
+    })
+    if (isGuest) {
+      this.enterGuestMode()
+      return
+    }
     this.load()
+  },
+  enterGuestMode() {
+    this.setData({
+      isGuest: true,
+      nickname: '游客模式',
+      accountText: '公开页面可直接浏览',
+      avatarChar: '访',
+      avatarUrl: '',
+      memberActive: false,
+      memberText: '未登录',
+      memberSub: '登录后查看账号与会员状态',
+    })
   },
 
   applyUser(u: any) {
     if (!u) return
-    const phone = u.phone || ''
     const m = u.membership || {}
     this.setData({
       nickname: u.nickname || '门窗店主',
       avatarChar: (u.nickname || '门').slice(-1),
       avatarUrl: u.avatar && /^https?:\/\//.test(u.avatar) ? u.avatar : '',
-      phoneMask: phone.length === 11 ? phone.slice(0, 3) + ' **** ' + phone.slice(7) : phone,
+      accountText: `微信账号 · ${(u.accountCode || u.id || '').slice(-8).toUpperCase()}`,
       memberActive: !!m.active,
       memberText: m.active ? '门窗利账 会员' : m.expired ? '会员已过期' : '未开通会员',
       memberSub: m.active
@@ -68,6 +98,7 @@ Page({
   },
 
   async load() {
+    if (!isLoggedIn()) return
     // 先用登录时缓存的真实用户立即渲染，避免 me() 未返回/失败时闪现"未开通"默认值
     this.applyUser(getUser())
     try {
@@ -80,12 +111,21 @@ Page({
   },
 
   toEdit() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/edit-profile/index' })
   },
   toMembership() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/membership/index' })
   },
   toRow(e: any) {
+    if (!requireLogin()) return
+    wx.navigateTo({ url: e.currentTarget.dataset.page })
+  },
+  toLogin() {
+    goToLogin()
+  },
+  toPublicPage(e: any) {
     wx.navigateTo({ url: e.currentTarget.dataset.page })
   },
   onLogout() {
@@ -97,11 +137,11 @@ Page({
       },
     })
   },
-  // 开启「转发给朋友」：分享到登录页，避免外部用户进入旧注册路径。
+  // 开启「转发给朋友」：分享游客首页，外部用户可先浏览公开页面。
   onShareAppMessage() {
     return {
       title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
-      path: '/pages/login/index',
+      path: '/pages/home/index',
       imageUrl: this._cover || undefined,
     }
   },

@@ -1,14 +1,24 @@
 .bars {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.bars__plot {
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: flex-end;
-  gap: 0;
 }
 .bars__col {
   flex: 1;
+  min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
   transition: opacity 0.2s;
 }
 .bars__stack {
@@ -41,12 +51,37 @@
   width: 38%;
   max-width: 16px;
 }
-.bars__label {
+.bars__axis {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  flex: none;
+  margin-top: 7px;
+}
+.bars__axis-label {
+  position: absolute;
+  top: 0;
+  display: block;
+  width: 28px;
+  height: 16px;
+  box-sizing: border-box;
   font-size: 11px;
   font-weight: 500;
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
   color: var(--faint);
+  transform: translateX(-50%);
 }
-.bars__label.on {
+.bars__axis-label--start {
+  text-align: left;
+  transform: none;
+}
+.bars__axis-label--end {
+  text-align: right;
+  transform: translateX(-100%);
+}
+.bars__axis-label.on {
   font-weight: 600;
   color: var(--text);
 }

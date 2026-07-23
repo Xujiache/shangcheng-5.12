@@ -19,7 +19,6 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import {
   CreateLedgerAdDto,
-  CreateLedgerUserDto,
   GrantMembershipDto,
   PushNotificationDto,
   UpdateLedgerAdDto,
@@ -52,19 +51,9 @@ export class LedgerAdminController {
     return this.admin.listUsers(q)
   }
 
-  @Post('users')
-  createUser(@Body() dto: CreateLedgerUserDto, @CurrentUser() op: AuthUser) {
-    return this.admin.createUser(dto, op?.sub)
-  }
-
   @Patch('users/:id')
   updateUser(@Param('id') id: string, @Body() dto: UpdateLedgerUserDto) {
     return this.admin.updateUser(id, dto)
-  }
-
-  @Post('users/:id/reset-password')
-  resetPassword(@Param('id') id: string) {
-    return this.admin.resetPassword(id)
   }
 
   @Post('users/:id/membership/grant')
