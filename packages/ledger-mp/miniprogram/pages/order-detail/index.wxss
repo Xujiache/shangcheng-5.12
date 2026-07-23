@@ -107,3 +107,14 @@
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
+.od__share {
+  flex: 0 0 110px;
+}
+/* 离屏报价画布：移出可视区但仍需保留渲染节点，供 canvasToTempFilePath 读取。 */
+.od__export-canvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 500px;
+  height: 400px;
+}

@@ -213,6 +213,13 @@ page {
   font-weight: 700;
   color: #19271f;
 }
+.oe__costcard-namein {
+  width: 92px;
+  height: 28px;
+  color: #19271f;
+  font-size: 13.5px;
+  font-weight: 700;
+}
 .oe__costcard-x {
   width: 22px;
   height: 22px;
@@ -252,6 +259,39 @@ page {
 }
 .oe__dot--c5 {
   background: #7ba653;
+}
+.oe__dot--c6 {
+  background: #9488b8;
+}
+.oe__cost-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.oe__managebtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #0e7c66;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(31, 107, 92, 0.07);
+}
+.oe__cost-empty {
+  display: flex;
+  height: 92px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1.5px dashed rgba(46, 158, 120, 0.3);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.52);
+  color: #2e9e78;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .oe__cur {

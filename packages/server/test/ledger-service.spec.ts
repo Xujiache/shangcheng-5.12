@@ -216,6 +216,60 @@ describe('LedgerService.listOrders（内存过滤/排序/分页/汇总）', () =
   })
 })
 
+describe('LedgerService 可配置成本统计', () => {
+  let prisma: ReturnType<typeof buildPrisma>
+  let service: LedgerService
+
+  beforeEach(() => {
+    prisma = buildPrisma()
+    service = new LedgerService(prisma as any)
+  })
+
+  it('overview 按自定义分类 id 分别聚合，不再全部归入“其他”', async () => {
+    const year = new Date().getFullYear()
+    prisma.ledgerOrder.findMany.mockResolvedValueOnce([
+      orderRow({
+        date: new Date(`${year}-02-01T00:00:00.000Z`),
+        total: 1000,
+        customCosts: [
+          { id: 'board', color: 'c2', name: '石膏板', amount: 120 },
+          { id: 'paint', color: 'c3', name: '刮大白', amount: 80 },
+        ],
+      }),
+    ])
+
+    const result = await service.overview('u1', 'year')
+
+    expect(result.costSlices).toEqual([
+      { key: 'board', name: '石膏板', color: 'c2', value: 120 },
+      { key: 'paint', name: '刮大白', color: 'c3', value: 80 },
+    ])
+  })
+
+  it('monthlySeries 同时兼容旧人工字段与新版 labor 分类，并生成各分类逐月数据', async () => {
+    const year = new Date().getFullYear()
+    prisma.ledgerOrder.findMany.mockResolvedValueOnce([
+      orderRow({
+        date: new Date(`${year}-03-01T00:00:00.000Z`),
+        total: 1000,
+        costLabor: 100,
+        customCosts: [
+          { id: 'labor', color: 'c4', name: '施工人工', amount: 50 },
+          { id: 'furniture', color: 'c5', name: '家具', amount: 200 },
+        ],
+      }),
+    ])
+
+    const result = await service.monthlySeries('u1', year)
+    const march = result.series[2]
+
+    expect(march.labor).toBe(150)
+    expect(march.categoryCosts).toMatchObject({ labor: 150, furniture: 200 })
+    expect(march.otherCost).toBe(200)
+    expect(result.yearLabor).toBe(150)
+  })
+})
+
 describe('LedgerService.createOrder（校验 + 明细优先 + 通知）', () => {
   let prisma: ReturnType<typeof buildPrisma>
   let service: LedgerService

@@ -1,0 +1,70 @@
+<lz-bg />
+<view class="cc">
+  <lz-header title="成本分类" />
+
+  <view class="cc__body">
+    <view class="cc__hero">
+      <view class="cc__eyebrow">ACCOUNT PRESET</view>
+      <view class="cc__title">把常用成本，调成你的行业</view>
+      <view class="cc__desc">名称和顺序会跟随微信账号。新增订单将按这里的顺序展示，旧订单已有金额不会被删除。</view>
+      <view class="cc__hero-actions">
+        <view class="cc__ghost" bindtap="resetDefault">恢复门窗默认</view>
+        <view class="cc__count">{{categories.length}} / 20 项</view>
+      </view>
+    </view>
+
+    <view class="cc__head">
+      <view>
+        <view class="cc__head-title">常用成本</view>
+        <view class="cc__head-sub">使用上下按钮调整在订单里的展示顺序</view>
+      </view>
+      <view class="cc__add" bindtap="addCategory" hover-class="cc__tap">
+        <lz-icon name="plus" size="15" color="#0E7C66" stroke="2.2" />
+        <text>新增</text>
+      </view>
+    </view>
+
+    <view class="cc__list">
+      <view wx:for="{{categories}}" wx:key="id" class="cc__item">
+        <view class="cc__rank">{{index + 1}}</view>
+        <view class="cc__dot cc__dot--{{item.color}}"></view>
+        <input
+          class="cc__input"
+          value="{{item.name}}"
+          placeholder="例如：石膏板、刮大白、家具"
+          placeholder-class="cc__placeholder"
+          maxlength="20"
+          data-index="{{index}}"
+          bindinput="onName"
+        />
+        <view class="cc__sort">
+          <view class="cc__icon {{index === 0 ? 'cc__icon--disabled' : ''}}" data-index="{{index}}" bindtap="moveUp">
+            <lz-icon name="up" size="16" color="{{index === 0 ? '#C7D1CC' : '#5C6B64'}}" />
+          </view>
+          <view class="cc__icon {{index === categories.length - 1 ? 'cc__icon--disabled' : ''}}" data-index="{{index}}" bindtap="moveDown">
+            <lz-icon name="down" size="16" color="{{index === categories.length - 1 ? '#C7D1CC' : '#5C6B64'}}" />
+          </view>
+          <view class="cc__icon cc__icon--delete" data-index="{{index}}" bindtap="removeCategory">
+            <lz-icon name="trash" size="15" color="#C8442B" />
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="cc__example">
+      <view class="cc__example-title">适用于任何经营场景</view>
+      <view class="cc__tags">
+        <text>装修：石膏板 · 刮大白 · 人工</text>
+        <text>家具：板材 · 五金 · 运费</text>
+        <text>门窗：型材 · 玻璃 · 配件</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="cc__bar">
+    <button class="cc__save {{saving ? 'cc__save--disabled' : ''}}" bindtap="save">
+      <lz-icon name="check" size="19" color="#FFFFFF" />
+      {{saving ? '保存中…' : '保存分类与排序'}}
+    </button>
+  </view>
+</view>

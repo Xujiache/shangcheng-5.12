@@ -13,6 +13,7 @@ import {
   revenueOf,
   sanitizeCustomCosts,
   customCostsTotal,
+  sanitizeCostCategories,
   sanitizeOrderItems,
   orderItemsAmount,
   orderTotalFromItems,
@@ -718,24 +719,30 @@ export class LedgerService {
     const now = new Date()
     const Y = now.getFullYear()
     const M = now.getMonth() + 1
-    const all = await this.prisma.ledgerOrder.findMany({
-      where: { userId },
-      // 仅取本方法消费到的列：id/customerName/date（展示）+ total（营收）
-      // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf/CAT_FIELD 用）。
-      select: {
-        id: true,
-        customerName: true,
-        date: true,
-        total: true,
-        costProfile: true,
-        costGlass: true,
-        costHardware: true,
-        costLabor: true,
-        costScreen: true,
-        extras: true,
-        customCosts: true,
-      },
-    })
+    const [all, setting] = await Promise.all([
+      this.prisma.ledgerOrder.findMany({
+        where: { userId },
+        // 仅取本方法消费到的列：id/customerName/date（展示）+ total（营收）
+        // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf 用）。
+        select: {
+          id: true,
+          customerName: true,
+          date: true,
+          total: true,
+          costProfile: true,
+          costGlass: true,
+          costHardware: true,
+          costLabor: true,
+          costScreen: true,
+          extras: true,
+          customCosts: true,
+        },
+      }),
+      this.prisma.ledgerSetting.findUnique({ where: { userId } }),
+    ])
+    const categoryMeta = new Map(
+      sanitizeCostCategories((setting as any)?.costCategories).map((item) => [item.id, item]),
+    )
     const yearOrders = all.filter((o) => o.date.getFullYear() === Y)
 
     const inPeriod = (o: { date: Date }) => {
@@ -756,21 +763,32 @@ export class LedgerService {
     const cur = agg(list)
     const yearProfit = yearOrders.reduce((s, o) => s + profitOf(o as any), 0)
 
-    // 成本占比（6 类）
-    const slice = (key: keyof typeof CAT_FIELD) =>
-      list.reduce((s, o) => s + (o as any)[CAT_FIELD[key]], 0)
-    const costSlices = [
-      { key: 'profile', name: '型材', value: slice('profile') },
-      { key: 'glass', name: '玻璃', value: slice('glass') },
-      { key: 'hardware', name: '配件', value: slice('hardware') },
-      { key: 'labor', name: '人工', value: slice('labor') },
-      { key: 'screen', name: '纱窗', value: slice('screen') },
-      {
-        key: 'extras',
-        name: '自定义',
-        value: list.reduce((s, o) => s + customCostsTotal(o.customCosts), 0),
-      },
-    ].filter((s) => s.value > 0)
+    // 成本占比：旧订单固定五类 + 新版可配置分类统一按分类 id 聚合。
+    const costSliceMap = new Map<
+      string,
+      { key: string; name: string; color: string; value: number }
+    >()
+    list.forEach((order) => {
+      orderCostBreakdown(order, categoryMeta).forEach((item) => {
+        const current = costSliceMap.get(item.key)
+        if (current) {
+          current.value += item.value
+          // 新版订单携带的是用户当前名称，优先于旧固定字段名称。
+          if (item.custom) {
+            current.name = item.name
+            current.color = item.color
+          }
+        } else {
+          costSliceMap.set(item.key, {
+            key: item.key,
+            name: item.name,
+            color: item.color,
+            value: item.value,
+          })
+        }
+      })
+    })
+    const costSlices = [...costSliceMap.values()].filter((item) => item.value > 0)
 
     // 高利润订单排行 top5
     const topOrders = list
@@ -844,23 +862,38 @@ export class LedgerService {
     const series: any[] = []
     for (let m = 1; m <= 12; m++) {
       const ml = yl.filter((o) => o.date.getMonth() + 1 === m)
-      const labor = ml.reduce((s, o) => s + o.costLabor, 0)
+      const categoryCosts: Record<string, number> = {}
+      ml.forEach((order) => {
+        orderCostBreakdown(order).forEach((item) => {
+          categoryCosts[item.key] = (categoryCosts[item.key] || 0) + item.value
+        })
+      })
+      const labor = categoryCosts.labor || 0
+      const monthCost = ml.reduce((s, o) => s + totalCost(o as any), 0)
       series.push({
         month: m,
         label: `${m}月`,
         count: ml.length,
         revenue: ml.reduce((s, o) => s + o.total, 0),
-        cost: ml.reduce((s, o) => s + totalCost(o as any), 0),
+        cost: monthCost,
         profit: ml.reduce((s, o) => s + profitOf(o as any), 0),
         labor,
-        otherCost: ml.reduce((s, o) => s + (totalCost(o as any) - o.costLabor), 0),
+        categoryCosts,
+        otherCost: Math.max(0, monthCost - labor),
       })
     }
     return {
       year: Y,
       series,
       yearProfit: yl.reduce((s, o) => s + profitOf(o as any), 0),
-      yearLabor: yl.reduce((s, o) => s + o.costLabor, 0),
+      yearLabor: yl.reduce(
+        (sum, order) =>
+          sum +
+          orderCostBreakdown(order)
+            .filter((item) => item.key === 'labor')
+            .reduce((itemSum, item) => itemSum + item.value, 0),
+        0,
+      ),
       count: yl.length,
     }
   }
@@ -1058,6 +1091,7 @@ export class LedgerService {
     hideAmount: boolean
     bioLock: boolean
     encBackup: boolean
+    costCategories?: unknown
   }) {
     return {
       notifyOrder: s.notifyOrder,
@@ -1070,6 +1104,7 @@ export class LedgerService {
       hideAmount: s.hideAmount,
       bioLock: s.bioLock,
       encBackup: s.encBackup,
+      costCategories: sanitizeCostCategories(s.costCategories),
     }
   }
 
@@ -1080,7 +1115,7 @@ export class LedgerService {
       update: {},
       create: { userId },
     })
-    return this.mapSetting(s)
+    return this.mapSetting(s as any)
   }
 
   async updateSettings(userId: string, dto: UpdateLedgerSettingDto) {
@@ -1100,12 +1135,14 @@ export class LedgerService {
     })
     if (dto.dndStart !== undefined) data.dndStart = dto.dndStart
     if (dto.dndEnd !== undefined) data.dndEnd = dto.dndEnd
+    if (dto.costCategories !== undefined)
+      data.costCategories = sanitizeCostCategories(dto.costCategories) as any
     const s = await this.prisma.ledgerSetting.upsert({
       where: { userId },
       update: data,
       create: { userId, ...data },
     })
-    return this.mapSetting(s)
+    return this.mapSetting(s as any)
   }
 
   // ── 意见反馈 ──────────────────────────────────────────────
@@ -1128,10 +1165,60 @@ export class LedgerService {
   }
 }
 
-const CAT_FIELD = {
-  profile: 'costProfile',
-  glass: 'costGlass',
-  hardware: 'costHardware',
-  labor: 'costLabor',
-  screen: 'costScreen',
-} as const
+const LEGACY_COST_META = [
+  { key: 'profile', field: 'costProfile', name: '型材', color: 'c1' },
+  { key: 'glass', field: 'costGlass', name: '玻璃', color: 'c2' },
+  { key: 'hardware', field: 'costHardware', name: '配件', color: 'c3' },
+  { key: 'labor', field: 'costLabor', name: '人工', color: 'c4' },
+  { key: 'screen', field: 'costScreen', name: '纱窗', color: 'c5' },
+] as const
+
+function orderCostBreakdown(
+  order: any,
+  categoryMeta?: Map<string, { name: string; color: string }>,
+): Array<{
+  key: string
+  name: string
+  color: string
+  value: number
+  custom: boolean
+}> {
+  const map = new Map<
+    string,
+    { key: string; name: string; color: string; value: number; custom: boolean }
+  >()
+  LEGACY_COST_META.forEach((meta) => {
+    const value = Math.max(0, Math.round(Number(order?.[meta.field]) || 0))
+    const configured = categoryMeta?.get(meta.key)
+    if (value > 0)
+      map.set(meta.key, {
+        ...meta,
+        name: configured?.name || meta.name,
+        color: configured?.color || meta.color,
+        value,
+        custom: false,
+      })
+  })
+  sanitizeCustomCosts(order?.customCosts).forEach((item, index) => {
+    const key = item.id || `custom-name-${encodeURIComponent(item.name)}`
+    const current = map.get(key)
+    const configured = categoryMeta?.get(key)
+    const name = configured?.name || item.name
+    const color = configured?.color || item.color || `c${(index % 6) + 1}`
+    if (current) {
+      current.value += item.amount
+      current.name = name
+      current.color = color
+      current.custom = true
+    } else {
+      map.set(key, {
+        key,
+        name,
+        color,
+        value: item.amount,
+        custom: true,
+      })
+    }
+  })
+  return [...map.values()]
+}

@@ -39,6 +39,11 @@ export class UpdateLedgerSettingDto {
   @IsOptional() @IsBoolean() hideAmount?: boolean
   @IsOptional() @IsBoolean() bioLock?: boolean
   @IsOptional() @IsBoolean() encBackup?: boolean
+  @IsOptional() @IsArray() @ArrayMaxSize(20) costCategories?: Array<{
+    id: string
+    name: string
+    color?: string
+  }>
 }
 
 /** 提交意见反馈（含注销申请）。 */

@@ -1,9 +1,22 @@
-import { customerApi, orderApi } from '../../api/index'
+import { customerApi, orderApi, settingApi } from '../../api/index'
 import { yuan } from '../../utils/format'
-import { COST_CATS, EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
+import { EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
+import {
+  CostCategory,
+  cacheCostCategories,
+  createCostCategoryId,
+  nextCostColor,
+  readCostCategories,
+} from '../../utils/cost-categories'
 
-const CORE = ['profile', 'glass', 'labor']
-const KEYMAP: Record<string, string> = {
+const LEGACY_COSTS = [
+  { key: 'profile', name: '型材' },
+  { key: 'glass', name: '玻璃' },
+  { key: 'hardware', name: '配件' },
+  { key: 'labor', name: '人工' },
+  { key: 'screen', name: '纱窗' },
+]
+const LEGACY_FIELD: Record<string, string> = {
   profile: 'costProfile',
   glass: 'costGlass',
   hardware: 'costHardware',
@@ -19,6 +32,84 @@ function today(): string {
 // 列表行 wx:key 用的页内唯一键（仅前端用，不进 API 载荷）
 let seq = 0
 const uid = () => 'k' + ++seq
+
+function mergeCostRows(categories: CostCategory[], raw: any, legacyCosts: any = {}) {
+  const source = Array.isArray(raw)
+    ? raw.map((item: any) => ({
+        ...item,
+        id: String(item?.id || ''),
+        name: String(item?.name || '').slice(0, 20),
+        amount: Math.max(0, Math.round(Number(item?.amount) || 0)),
+        amountStr:
+          item?.amountStr !== undefined
+            ? String(item.amountStr)
+            : item?.amount
+              ? String(Math.max(0, Math.round(Number(item.amount) || 0)))
+              : '',
+      }))
+    : []
+  const used = new Set<number>()
+  const configured = categories.map((category) => {
+    let found = source.findIndex((item: any, index: number) => {
+      if (used.has(index)) return false
+      return item.id === category.id
+    })
+    if (found < 0) {
+      found = source.findIndex((item: any, index: number) => {
+        if (used.has(index) || item.id) return false
+        return item.name === category.name
+      })
+    }
+    if (found >= 0) used.add(found)
+    const existing = found >= 0 ? source[found] : null
+    const legacy = Math.max(0, Math.round(Number(legacyCosts?.[category.id]) || 0))
+    const amount = (existing?.amount || 0) + legacy
+    return {
+      _k: existing?._k || uid(),
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      amount,
+      amountStr: amount ? String(amount) : '',
+      isTemplate: true,
+      legacyKey: LEGACY_FIELD[category.id] ? category.id : '',
+    }
+  })
+
+  const extras = source
+    .filter(
+      (item: any, index: number) =>
+        !used.has(index) && (!item.isTemplate || Math.max(0, Number(item.amount) || 0) > 0),
+    )
+    .map((item: any, index: number) => ({
+      _k: item._k || uid(),
+      id: item.id || createCostCategoryId(),
+      name: item.name,
+      color: item.color || nextCostColor(categories.length + index),
+      amount: item.amount,
+      amountStr: item.amountStr,
+      isTemplate: false,
+      legacyKey: item.legacyKey || '',
+    }))
+
+  // 当前模板中已删除的旧固定分类仍保留有金额的行，避免旧订单成本丢失。
+  LEGACY_COSTS.forEach((legacy, index) => {
+    if (categories.some((category) => category.id === legacy.key)) return
+    const amount = Math.max(0, Math.round(Number(legacyCosts?.[legacy.key]) || 0))
+    if (!amount) return
+    extras.push({
+      _k: uid(),
+      id: `legacy-${legacy.key}`,
+      name: legacy.name,
+      color: nextCostColor(categories.length + extras.length + index),
+      amount,
+      amountStr: String(amount),
+      isTemplate: false,
+      legacyKey: legacy.key,
+    })
+  })
+  return [...configured, ...extras].slice(0, 50)
+}
 
 Page({
   data: {
@@ -36,11 +127,7 @@ Page({
     totalStr: '',
     receivedStr: '',
     costs: { profile: 0, glass: 0, hardware: 0, labor: 0, screen: 0 } as any,
-    // 成本输入框的原始字符串（输入中不回写，失焦才归一，避免光标跳动）
-    costStrs: { profile: '', glass: '', hardware: '', labor: '', screen: '' } as any,
-    activeCats: [...CORE] as string[],
-    activeCells: [] as any[],
-    removedCats: [] as any[],
+    costCategories: readCostCategories() as CostCategory[],
     extras: [] as any[],
     customCosts: [] as any[],
     items: [] as any[],
@@ -72,6 +159,12 @@ Page({
       this.setData({ editing: true, id: opt.id })
       this.loadOrder()
     } else {
+      const categories = readCostCategories()
+      this.setData({
+        costCategories: categories,
+        customCosts: mergeCostRows(categories, []),
+      })
+      this.loadCostCategoryTemplates()
       // 从客户页「再来一单」带入：id + 名字一起，真正关联到该客户（仅传名字会变成游离订单）
       if (opt.prefillCustomer) {
         const customerId = opt.prefillCustomerId || null
@@ -92,6 +185,20 @@ Page({
   },
   onShow() {
     this._openingItems = false // 从明细页/客户页返回，解除 toAmount 防双击锁
+    const cachedCategories = readCostCategories()
+    const currentIds = this.data.costCategories.map(
+      (item: CostCategory) => `${item.id}:${item.name}`,
+    )
+    const cachedIds = cachedCategories.map((item) => `${item.id}:${item.name}`)
+    if (currentIds.join('|') !== cachedIds.join('|')) {
+      this.setData(
+        {
+          costCategories: cachedCategories,
+          customCosts: mergeCostRows(cachedCategories, this.data.customCosts),
+        },
+        () => this.refresh(),
+      )
+    }
     const p = wx.getStorageSync('ledger_pending_customer')
     if (p && p.name) {
       wx.removeStorageSync('ledger_pending_customer')
@@ -153,10 +260,10 @@ Page({
 
   async loadOrder() {
     try {
-      const o: any = await orderApi.get(this.data.id)
-      const active = COST_CATS.filter((c) => (o.costs ? o.costs[c.key] || 0 : 0) > 0).map(
-        (c) => c.key,
-      )
+      const [o, categories]: [any, CostCategory[]] = await Promise.all([
+        orderApi.get(this.data.id),
+        this.fetchCostCategories(),
+      ])
       this.setData(
         {
           customerId: o.customerId || null,
@@ -167,20 +274,13 @@ Page({
           date: o.date,
           total: o.total,
           costs: {
-            profile: o.costs.profile,
-            glass: o.costs.glass,
-            hardware: o.costs.hardware,
-            labor: o.costs.labor,
-            screen: o.costs.screen,
+            profile: 0,
+            glass: 0,
+            hardware: 0,
+            labor: 0,
+            screen: 0,
           },
-          costStrs: {
-            profile: o.costs.profile ? String(o.costs.profile) : '',
-            glass: o.costs.glass ? String(o.costs.glass) : '',
-            hardware: o.costs.hardware ? String(o.costs.hardware) : '',
-            labor: o.costs.labor ? String(o.costs.labor) : '',
-            screen: o.costs.screen ? String(o.costs.screen) : '',
-          },
-          activeCats: active.length ? active : [...CORE],
+          costCategories: categories,
           extras: (o.extras || []).map((e: any) => ({
             _k: uid(),
             type: e.type,
@@ -188,12 +288,7 @@ Page({
             amountStr: e.amount ? String(e.amount) : '',
             typeIdx: Math.max(0, EXTRA_TYPES.indexOf(e.type)),
           })),
-          customCosts: (o.customCosts || []).map((c: any) => ({
-            _k: uid(),
-            name: c.name,
-            amount: c.amount,
-            amountStr: c.amount ? String(c.amount) : '',
-          })),
+          customCosts: mergeCostRows(categories, o.customCosts || [], o.costs || {}),
           items: o.items || [],
           discount: o.discount || 0,
           recycle: o.recycle || 0,
@@ -212,6 +307,27 @@ Page({
       // 编辑态加载失败不能渲染空表单：保存空表单会把真实订单清零，改为展示重试卡
       this.setData({ loadError: true })
     }
+  },
+  async fetchCostCategories(): Promise<CostCategory[]> {
+    try {
+      const settings: any = await settingApi.get()
+      return cacheCostCategories(settings.costCategories)
+    } catch {
+      return readCostCategories()
+    }
+  },
+  async loadCostCategoryTemplates() {
+    const categories = await this.fetchCostCategories()
+    this.setData(
+      {
+        costCategories: categories,
+        customCosts: mergeCostRows(categories, this.data.customCosts),
+      },
+      () => this.refresh(),
+    )
+  },
+  manageCostCategories() {
+    wx.navigateTo({ url: '/pages/cost-categories/index' })
   },
   retryLoad() {
     this.setData({ loadError: false })
@@ -236,23 +352,10 @@ Page({
   },
 
   refresh() {
-    const { costs, costStrs, activeCats, extras, total, received, customCosts, deposit } = this.data
-    const activeCells = COST_CATS.filter((c) => activeCats.includes(c.key)).map((c) => ({
-      key: c.key,
-      name: c.name,
-      color: c.color,
-      valueStr: costStrs[c.key] || '',
-    }))
-    const removedCats = COST_CATS.filter((c) => !activeCats.includes(c.key)).map((c) => ({
-      key: c.key,
-      name: c.name,
-      color: c.color,
-    }))
+    const { costs, extras, total, received, customCosts, deposit } = this.data
     const profit = profitOf(total, costs, extras, customCosts)
     const margin = marginOf(total, costs, extras, customCosts)
     this.setData({
-      activeCells,
-      removedCats,
       unpaid: Math.max(0, total - deposit - received), // 与明细页/后端同口径：未收 = 总价 − 定金 − 收款
       profitText: yuan(profit),
       profitNeg: profit < 0,
@@ -261,18 +364,6 @@ Page({
     })
   },
 
-  onCost(e: any) {
-    const k = e.currentTarget.dataset.key
-    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
-    this.setData({ ['costs.' + k]: v, ['costStrs.' + k]: e.detail.value }, () => this.refresh())
-  },
-  onCostBlur(e: any) {
-    const k = e.currentTarget.dataset.key
-    const s = String(e.detail.value || '').trim()
-    this.setData({ ['costStrs.' + k]: s ? String(this.data.costs[k] || 0) : '' }, () =>
-      this.refresh(),
-    )
-  },
   onDate(e: any) {
     this.setData({ date: e.detail.value })
   },
@@ -308,22 +399,6 @@ Page({
   },
   onCustomerNote(e: any) {
     this.setData({ customerNote: String(e.detail.value).slice(0, 200) })
-  },
-  addCat(e: any) {
-    const k = e.currentTarget.dataset.key
-    if (!this.data.activeCats.includes(k))
-      this.setData({ activeCats: [...this.data.activeCats, k] }, () => this.refresh())
-  },
-  removeCat(e: any) {
-    const k = e.currentTarget.dataset.key
-    this.setData(
-      {
-        activeCats: this.data.activeCats.filter((x) => x !== k),
-        ['costs.' + k]: 0,
-        ['costStrs.' + k]: '',
-      },
-      () => this.refresh(),
-    )
   },
   addExtra() {
     // 后端 sanitizeExtras 截断 50 条，前端同口径拦截
@@ -367,15 +442,26 @@ Page({
     )
   },
 
-  // ── 自定义成本项（#5）──
+  // ── 通用成本项：常用分类来自账号设置，也允许本单临时添加 ──
   addCustomCost() {
     // 后端 sanitizeCustomCosts 截断 20 条，前端同口径拦截
-    if (this.data.customCosts.length >= 20) {
-      wx.showToast({ title: '最多 20 项自定义成本', icon: 'none' })
+    if (this.data.customCosts.length >= 50) {
+      wx.showToast({ title: '每个订单最多 50 项成本', icon: 'none' })
       return
     }
     this.setData({
-      customCosts: [...this.data.customCosts, { _k: uid(), name: '', amount: 0, amountStr: '' }],
+      customCosts: [
+        ...this.data.customCosts,
+        {
+          _k: uid(),
+          id: createCostCategoryId(),
+          name: '',
+          color: nextCostColor(this.data.customCosts.length),
+          amount: 0,
+          amountStr: '',
+          isTemplate: false,
+        },
+      ],
     })
   },
   onCustomName(e: any) {
@@ -450,8 +536,6 @@ Page({
       date,
       total,
       received,
-      costs,
-      activeCats,
       extras,
       customCosts,
       items,
@@ -467,8 +551,11 @@ Page({
       costLabor: 0,
       costScreen: 0,
     }
-    activeCats.forEach((k) => {
-      payloadCosts[KEYMAP[k]] = costs[k] || 0
+    customCosts.forEach((item: any) => {
+      if (!item.legacyKey || !LEGACY_FIELD[item.legacyKey]) return
+      payloadCosts[LEGACY_FIELD[item.legacyKey]] =
+        (payloadCosts[LEGACY_FIELD[item.legacyKey]] || 0) +
+        Math.max(0, Math.round(Number(item.amount) || 0))
     })
     try {
       const syncedCustomer = await this.syncCustomerProfile()
@@ -484,7 +571,14 @@ Page({
         received,
         ...payloadCosts,
         extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
-        customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),
+        customCosts: customCosts
+          .filter((c: any) => !c.legacyKey)
+          .map((c: any) => ({
+            id: c.id,
+            color: c.color,
+            name: c.name,
+            amount: c.amount,
+          })),
         items,
         discount,
         recycle,

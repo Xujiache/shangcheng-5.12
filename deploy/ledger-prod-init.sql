@@ -140,6 +140,7 @@ CREATE TABLE IF NOT EXISTS "LedgerSetting" (
     "hideAmount" BOOLEAN NOT NULL DEFAULT false,
     "bioLock" BOOLEAN NOT NULL DEFAULT false,
     "encBackup" BOOLEAN NOT NULL DEFAULT true,
+    "costCategories" JSONB NOT NULL DEFAULT '[]'::jsonb,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "LedgerSetting_pkey" PRIMARY KEY ("id")
 );
@@ -197,6 +198,10 @@ CREATE INDEX IF NOT EXISTS "LedgerNotification_userId_createdAt_idx" ON "LedgerN
 CREATE INDEX IF NOT EXISTS "LedgerFeedback_userId_idx" ON "LedgerFeedback"("userId");
 CREATE INDEX IF NOT EXISTS "LedgerFeedback_status_createdAt_idx" ON "LedgerFeedback"("status", "createdAt");
 CREATE UNIQUE INDEX IF NOT EXISTS "LedgerSetting_userId_key" ON "LedgerSetting"("userId");
+
+-- 老库补列：账号级常用成本分类，数组顺序即订单编辑页展示顺序。
+ALTER TABLE "LedgerSetting"
+  ADD COLUMN IF NOT EXISTS "costCategories" JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 -- ── 外键（存在性判断后再加，幂等）───────────────────────────
 DO $$

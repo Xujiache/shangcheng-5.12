@@ -1128,20 +1128,21 @@ model LedgerFeedback {
 
 // 每账号一行偏好设置（通知开关 / 免打扰 / 隐私）。设备级偏好也落库，换机不丢。
 model LedgerSetting {
-  id           String     @id @default(cuid())
-  userId       String     @unique
-  user         LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notifyOrder  Boolean    @default(true) // 订单提醒
-  notifyReport Boolean    @default(true) // 报表提醒
-  notifyGoal   Boolean    @default(true) // 目标提醒
-  notifySystem Boolean    @default(false) // 系统通知
-  dndEnabled   Boolean    @default(false) // 免打扰开关
-  dndStart     String     @default("22:00")
-  dndEnd       String     @default("08:00")
-  hideAmount   Boolean    @default(false) // 隐藏金额
-  bioLock      Boolean    @default(false) // 生物解锁
-  encBackup    Boolean    @default(true) // 加密备份
-  updatedAt    DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifyOrder    Boolean    @default(true) // 订单提醒
+  notifyReport   Boolean    @default(true) // 报表提醒
+  notifyGoal     Boolean    @default(true) // 目标提醒
+  notifySystem   Boolean    @default(false) // 系统通知
+  dndEnabled     Boolean    @default(false) // 免打扰开关
+  dndStart       String     @default("22:00")
+  dndEnd         String     @default("08:00")
+  hideAmount     Boolean    @default(false) // 隐藏金额
+  bioLock        Boolean    @default(false) // 生物解锁
+  encBackup      Boolean    @default(true) // 加密备份
+  costCategories Json       @default("[]") // 常用成本分类 [{id,name,color}]，数组顺序即展示顺序
+  updatedAt      DateTime   @updatedAt
 }
 
 // 优化下料·云端历史方案。每账号多行，按 userId 隔离，列表 updatedAt 倒序。

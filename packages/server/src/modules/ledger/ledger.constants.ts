@@ -39,7 +39,7 @@ export function normalizeLedgerPlans(raw: any): LedgerPlan[] {
   if (!Array.isArray(raw)) return LEDGER_PLANS
   const seen = new Set<string>()
   const cleaned = raw
-    .slice(0, 20)
+    .slice(0, 50)
     .map((p: any) => ({
       key: String(p?.key ?? '')
         .trim()
@@ -224,16 +224,73 @@ export function extrasTotal(extras: unknown): number {
   return sanitizeExtras(extras).reduce((s, e) => s + e.amount, 0)
 }
 
+// ── 常用成本分类：账号级模板，数组顺序即订单编辑页展示顺序 ──
+export interface CostCategory {
+  id: string
+  name: string
+  color: string
+}
+export const DEFAULT_COST_CATEGORIES: CostCategory[] = [
+  { id: 'profile', name: '型材', color: 'c1' },
+  { id: 'glass', name: '玻璃', color: 'c2' },
+  { id: 'hardware', name: '配件', color: 'c3' },
+  { id: 'labor', name: '人工', color: 'c4' },
+  { id: 'screen', name: '纱窗', color: 'c5' },
+]
+const COST_COLORS = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6']
+
+export function sanitizeCostCategories(raw: unknown): CostCategory[] {
+  if (!Array.isArray(raw) || raw.length === 0) return DEFAULT_COST_CATEGORIES.map((x) => ({ ...x }))
+  const seen = new Set<string>()
+  const list = raw
+    .slice(0, 20)
+    .map((item: any, index) => {
+      const fallbackId = `cost-${index + 1}`
+      const id =
+        String(item?.id ?? fallbackId)
+          .trim()
+          .replace(/[^a-zA-Z0-9_-]/g, '')
+          .slice(0, 40) || fallbackId
+      const name = String(item?.name ?? '')
+        .trim()
+        .slice(0, 20)
+      const color = COST_COLORS.includes(String(item?.color))
+        ? String(item.color)
+        : COST_COLORS[index % COST_COLORS.length]
+      return { id, name, color }
+    })
+    .filter((item) => {
+      if (!item.name || seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
+  return list.length ? list : DEFAULT_COST_CATEGORIES.map((x) => ({ ...x }))
+}
+
 // ── 自定义成本项（#5）：成本明细里用户自定义名目 ──
 export interface CustomCost {
+  id?: string
+  color?: string
   name: string
   amount: number
 }
 export function sanitizeCustomCosts(raw: unknown): CustomCost[] {
   if (!Array.isArray(raw)) return []
   return raw
-    .slice(0, 20)
+    .slice(0, 50)
     .map((e: any) => ({
+      ...(String(e?.id ?? '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 40)
+        ? {
+            id: String(e.id)
+              .trim()
+              .replace(/[^a-zA-Z0-9_-]/g, '')
+              .slice(0, 40),
+          }
+        : {}),
+      ...(COST_COLORS.includes(String(e?.color)) ? { color: String(e.color) } : {}),
       name: String(e?.name ?? '')
         .trim()
         .slice(0, 20),

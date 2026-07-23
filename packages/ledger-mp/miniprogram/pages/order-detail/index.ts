@@ -1,6 +1,14 @@
-import { orderApi } from '../../api/index'
+import { orderApi, settingApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
+import { normalizeCostCategories } from '../../utils/cost-categories'
+import {
+  createQuotePdf,
+  createQuoteSheet,
+  renderQuoteImages,
+  shareOrOpenFile,
+  showQuoteImageShare,
+} from '../../utils/quote-export'
 
 const CATS: Array<[string, string, string]> = [
   ['profile', '型材', 'c1'],
@@ -33,6 +41,7 @@ Page({
     totalText: '¥0',
     costText: '¥0',
     extrasTotalText: '¥0',
+    exporting: false,
   },
   _seq: 0,
 
@@ -49,40 +58,50 @@ Page({
     const seq = this._seq
     if (this.data.loadError) this.setData({ loadError: false })
     try {
-      const o: any = await orderApi.get(this.data.id)
+      const [o, settings]: [any, any] = await Promise.all([
+        orderApi.get(this.data.id),
+        settingApi.get().catch(() => null),
+      ])
       if (seq !== this._seq) return
       // 隐藏金额模式：与客户详情同口径打码金额，比例类（利润率/成本占比/环图）不打码
       const hide = getHideAmount()
       const money = (v: number) => (hide ? maskMoney(v) : yuan(v))
       const cost = o.cost || 1
-      const costRows = CATS.map(([k, name, color]) => {
+      const categoryMap = new Map(
+        normalizeCostCategories(settings?.costCategories).map((item) => [item.id, item]),
+      )
+      const legacyCostRows = CATS.map(([k, defaultName, defaultColor]) => {
         const v = o.costs ? o.costs[k] || 0 : 0
+        const configured = categoryMap.get(k)
         return {
-          name,
-          color,
+          name: configured?.name || defaultName,
+          color: configured?.color || defaultColor,
+          rawValue: v,
           value: money(v),
           pct: Math.round((v / cost) * 100),
           w: Math.round((v / cost) * 100),
         }
+      }).filter((row) => row.rawValue > 0)
+      const customCostRows = (o.customCosts || []).map((item: any, index: number) => {
+        const value = Math.max(0, Math.round(Number(item.amount) || 0))
+        const color = /^c[1-6]$/.test(String(item.color || '')) ? item.color : `c${(index % 6) + 1}`
+        return {
+          name: item.name,
+          color,
+          rawValue: value,
+          value: money(value),
+          pct: Math.round((value / cost) * 100),
+          w: Math.round((value / cost) * 100),
+        }
       })
-      // c6 = 自定义成本（卖旧门窗已改为收入、不计成本）
-      const customCostsSum =
-        o.customCostsTotal != null
-          ? o.customCostsTotal
-          : (o.customCosts || []).reduce((s: number, c: any) => s + (c.amount || 0), 0)
-      const donut = [
-        ...CATS.map(([k, , color]) => ({ value: o.costs ? o.costs[k] || 0 : 0, color })),
-        { value: customCostsSum, color: 'c6' },
-      ].filter((d) => d.value > 0)
+      const costRows = [...legacyCostRows, ...customCostRows]
+      const donut = costRows
+        .map((row) => ({ value: row.rawValue, color: row.color }))
+        .filter((item) => item.value > 0)
       const extras = (o.extras || []).map((e: any, idx: number) => ({
         idx,
         type: e.type,
         amountText: money(e.amount),
-      }))
-      const customCosts = (o.customCosts || []).map((c: any, idx: number) => ({
-        idx,
-        name: c.name,
-        amountText: money(c.amount),
       }))
       // 门窗报价明细（只读展示）：计费量/小计与后端 itemBillingQty/itemSubtotal 同口径
       const items = (o.items || []).map((it: any, idx: number) => {
@@ -134,7 +153,7 @@ Page({
         o,
         donut,
         costRows,
-        customCosts,
+        customCosts: [],
         extras,
         items,
         quoteRows,
@@ -181,5 +200,93 @@ Page({
     const o = this.data.o
     // 点击客户直接进编辑客户信息页（返回后 onShow 会重新拉取订单，名字自动刷新）
     if (o && o.customerId) wx.navigateTo({ url: '/pages/customer-edit/index?id=' + o.customerId })
+  },
+  onShareQuote() {
+    if (!this.data.o || this.data.exporting) return
+    wx.showActionSheet({
+      itemList: ['客户展示图片', '正式 PDF 报价', 'Excel 明细报价'],
+      success: (result) => this.exportQuote(result.tapIndex),
+    })
+  },
+  async exportQuote(type: number) {
+    if (!this.data.o || this.data.exporting) return
+    this.setData({ exporting: true })
+    const labels = ['生成客户展示图…', '生成正式 PDF…', '生成 Excel 工作簿…']
+    wx.showLoading({ title: labels[type] || '生成报价单…', mask: true })
+    let filePath = ''
+    let fileName = ''
+    try {
+      if (type === 0) {
+        const images = await renderQuoteImages(this, '#quoteExport', this.data.o)
+        if (images.length === 1) {
+          const shared = await showQuoteImageShare(images[0]).catch(() => false)
+          if (!shared) await this.saveQuoteImages(images)
+        } else {
+          await this.saveQuoteImages(images)
+          wx.showToast({ title: `明细较多，已保存 ${images.length} 张图片`, icon: 'none' })
+        }
+      } else if (type === 1) {
+        filePath = await createQuotePdf(this, '#quoteExport', this.data.o)
+        fileName = '正式报价单.pdf'
+      } else {
+        filePath = await createQuoteSheet(this.data.o)
+        fileName = '客户报价明细.xlsx'
+      }
+    } catch (e) {
+      wx.showToast({
+        title: type === 2 ? 'Excel 生成失败，请重试' : '报价单生成失败，请重试',
+        icon: 'none',
+      })
+    } finally {
+      wx.hideLoading()
+      this.setData({ exporting: false })
+    }
+    // 生成与分享拆开：文件已经生成时，开发者工具不支持分享也不再误报为“生成失败”。
+    if (!filePath) return
+    try {
+      await shareOrOpenFile(filePath, fileName)
+    } catch (e) {
+      wx.showModal({
+        title: '文件已生成',
+        content: '当前环境暂不支持直接分享。请使用真机打开后，从文件预览页右上角转发给客户。',
+        showCancel: false,
+        confirmText: '知道了',
+      })
+    }
+  },
+  saveQuoteImages(paths: string[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const save = async () => {
+        try {
+          for (const path of paths) {
+            await new Promise<void>((ok, fail) =>
+              wx.saveImageToPhotosAlbum({ filePath: path, success: () => ok(), fail }),
+            )
+          }
+          resolve()
+        } catch (e) {
+          reject(e)
+        }
+      }
+      wx.getSetting({
+        success: (setting) => {
+          if (setting.authSetting['scope.writePhotosAlbum']) return save()
+          if (setting.authSetting['scope.writePhotosAlbum'] === false) {
+            wx.showModal({
+              title: '需要相册权限',
+              content: '保存报价单图片需开启相册权限。',
+              confirmText: '去设置',
+              success: (result) => {
+                if (result.confirm) wx.openSetting({ success: () => save(), fail: reject })
+                else reject(new Error('album permission denied'))
+              },
+            })
+            return
+          }
+          wx.authorize({ scope: 'scope.writePhotosAlbum', success: save, fail: reject })
+        },
+        fail: reject,
+      })
+    })
   },
 })

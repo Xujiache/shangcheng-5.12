@@ -27,6 +27,7 @@
     "pages/account-security/index",
     "pages/notifications/index",
     "pages/settings/index",
+    "pages/cost-categories/index",
     "pages/appearance/index",
     "pages/privacy/index",
     "pages/data-backup/index",

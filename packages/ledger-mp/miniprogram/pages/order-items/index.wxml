@@ -116,6 +116,6 @@
 
   <view class="oi__bar">
     <button class="oi__save" bindtap="save">完成</button>
-    <text class="oi__bar-hint">明细已带回订单 · 回订单页点「保存订单」才真正入账</text>
+    <text class="oi__bar-hint">保存订单后，可在订单详情分享图片 / PDF / Excel 报价单</text>
   </view>
 </view>

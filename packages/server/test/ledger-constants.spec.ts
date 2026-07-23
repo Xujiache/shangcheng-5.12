@@ -20,6 +20,8 @@ import {
   extrasTotal,
   sanitizeCustomCosts,
   customCostsTotal,
+  sanitizeCostCategories,
+  DEFAULT_COST_CATEGORIES,
   sanitizeOrderItems,
   itemBillingQty,
   itemSubtotal,
@@ -181,9 +183,9 @@ describe('sanitizeCustomCosts / customCostsTotal 自定义成本项', () => {
     expect(sanitizeCustomCosts(undefined)).toEqual([])
   })
 
-  it('截断超过 20 条', () => {
-    const raw = Array.from({ length: 30 }, () => ({ name: '杂费', amount: 3 }))
-    expect(sanitizeCustomCosts(raw)).toHaveLength(20)
+  it('截断超过 50 条', () => {
+    const raw = Array.from({ length: 60 }, () => ({ name: '杂费', amount: 3 }))
+    expect(sanitizeCustomCosts(raw)).toHaveLength(50)
   })
 
   it('name 截断到 20 字符；无名 / 0 金额项被丢弃', () => {
@@ -206,6 +208,31 @@ describe('sanitizeCustomCosts / customCostsTotal 自定义成本项', () => {
         { name: 'b', amount: 15 },
       ]),
     ).toBe(20)
+  })
+
+  it('保留合法分类 id，非法字符会被清洗', () => {
+    expect(sanitizeCustomCosts([{ id: ' cost:board/1 ', name: '板材', amount: 80 }])).toEqual([
+      { id: 'costboard1', name: '板材', amount: 80 },
+    ])
+  })
+})
+
+describe('sanitizeCostCategories 常用成本分类', () => {
+  it('空配置回退到门窗默认五类', () => {
+    expect(sanitizeCostCategories([])).toEqual(DEFAULT_COST_CATEGORIES)
+  })
+
+  it('保留用户排序、清理重复 id 并补齐合法颜色', () => {
+    expect(
+      sanitizeCostCategories([
+        { id: 'board', name: '石膏板', color: 'c4' },
+        { id: 'paint', name: '刮大白', color: 'bad' },
+        { id: 'board', name: '重复项', color: 'c1' },
+      ]),
+    ).toEqual([
+      { id: 'board', name: '石膏板', color: 'c4' },
+      { id: 'paint', name: '刮大白', color: 'c2' },
+    ])
   })
 })
 

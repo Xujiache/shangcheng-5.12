@@ -1,7 +1,7 @@
 <lz-bg />
 <view class="od">
   <lz-header title="订单详情" subtitle="{{o.id}}">
-    <view slot="right" class="od__edit" bindtap="toEdit">编辑</view>
+    <view slot="right" class="od__edit" bindtap="onShareQuote">分享</view>
   </lz-header>
 
   <view wx:if="{{o}}" class="lz-page" style="padding-bottom: 110px;">
@@ -76,12 +76,7 @@
         <text class="od__c-pct">{{item.pct}}%</text>
         <text class="od__c-val">{{item.value}}</text>
       </view>
-      <view wx:for="{{customCosts}}" wx:key="idx" class="od__cost">
-        <view class="lz-dot" style="background: var(--c6);"></view>
-        <text class="od__c-name">{{item.name}}</text>
-        <view class="lz-flex1"></view>
-        <text class="od__c-val">{{item.amountText}}</text>
-      </view>
+      <view wx:if="{{!costRows.length}}" class="lz-faint" style="font-size: 13px;">暂无成本明细</view>
     </view>
 
     <!-- 其他开销 -->
@@ -111,8 +106,13 @@
     <button class="lz-btn lz-btn--ghost lz-btn--lg" style="flex: 0 0 104px;" bindtap="onDelete">
       <lz-icon name="trash" size="18" color="loss" /> 删除
     </button>
+    <button class="lz-btn lz-btn--ghost lz-btn--lg od__share" bindtap="onShareQuote" loading="{{exporting}}">
+      <lz-icon name="share" size="18" color="accent" /> 报价单
+    </button>
     <button class="lz-btn lz-btn--primary lz-btn--lg lz-flex1" bindtap="toEdit">
       <lz-icon name="pencil" size="18" color="white" /> 编辑此订单
     </button>
   </view>
+  <!-- 离屏报价画布：仅用于生成图片/PDF，不能 display:none。 -->
+  <canvas type="2d" id="quoteExport" class="od__export-canvas"></canvas>
 </view>

@@ -1,0 +1,213 @@
+.cc {
+  min-height: 100vh;
+  color: #15201c;
+}
+.cc__body {
+  padding: 10px 16px 124px;
+}
+.cc__hero {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 20px 18px;
+  border: 1px solid rgba(14, 124, 102, 0.12);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(67, 193, 154, 0.2), transparent 38%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(237, 248, 243, 0.94));
+  box-shadow: 0 14px 38px rgba(29, 92, 74, 0.11);
+}
+.cc__eyebrow {
+  margin-bottom: 8px;
+  color: #2e9e78;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+.cc__title {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.cc__desc {
+  max-width: 310px;
+  margin-top: 8px;
+  color: #6c7d75;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.cc__hero-actions,
+.cc__head,
+.cc__item,
+.cc__sort,
+.cc__add,
+.cc__save {
+  display: flex;
+  align-items: center;
+}
+.cc__hero-actions {
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.cc__ghost {
+  padding: 8px 12px;
+  border: 1px solid rgba(14, 124, 102, 0.17);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  color: #0e7c66;
+  font-size: 12px;
+  font-weight: 700;
+}
+.cc__count {
+  color: #8a9992;
+  font-size: 12px;
+  font-weight: 700;
+}
+.cc__head {
+  justify-content: space-between;
+  margin: 24px 4px 12px;
+}
+.cc__head-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+.cc__head-sub {
+  margin-top: 4px;
+  color: #8a9992;
+  font-size: 11.5px;
+}
+.cc__add {
+  gap: 4px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #0e7c66;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 5px 15px rgba(31, 107, 92, 0.09);
+}
+.cc__list {
+  overflow: hidden;
+  border: 1px solid rgba(14, 124, 102, 0.09);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 34px rgba(31, 107, 92, 0.09);
+}
+.cc__item {
+  min-height: 66px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(31, 107, 92, 0.08);
+}
+.cc__item:last-child {
+  border-bottom: 0;
+}
+.cc__rank {
+  width: 26px;
+  color: #a0ada7;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+.cc__dot {
+  width: 9px;
+  height: 9px;
+  margin: 0 11px 0 3px;
+  border-radius: 50%;
+}
+.cc__dot--c1 {
+  background: #0e7c66;
+}
+.cc__dot--c2 {
+  background: #4c9fbe;
+}
+.cc__dot--c3 {
+  background: #dfa03a;
+}
+.cc__dot--c4 {
+  background: #d2735a;
+}
+.cc__dot--c5 {
+  background: #84a06a;
+}
+.cc__dot--c6 {
+  background: #9488b8;
+}
+.cc__input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  color: #15201c;
+  font-size: 15px;
+  font-weight: 700;
+}
+.cc__placeholder {
+  color: #b0bbb5;
+  font-weight: 500;
+}
+.cc__sort {
+  gap: 3px;
+  margin-left: 6px;
+}
+.cc__icon {
+  display: flex;
+  width: 30px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #f5f8f6;
+}
+.cc__icon--disabled {
+  opacity: 0.55;
+}
+.cc__icon--delete {
+  margin-left: 2px;
+  background: #fff3f0;
+}
+.cc__example {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+}
+.cc__example-title {
+  color: #5c6b64;
+  font-size: 12px;
+  font-weight: 800;
+}
+.cc__tags {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+  color: #8a9992;
+  font-size: 12px;
+}
+.cc__bar {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 11px 18px calc(11px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(31, 107, 92, 0.08);
+  background: rgba(241, 249, 245, 0.94);
+  backdrop-filter: blur(18px);
+}
+.cc__save {
+  height: 54px;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #2e9e78, #0e7c66);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 12px 28px rgba(14, 124, 102, 0.25);
+}
+.cc__save--disabled {
+  opacity: 0.65;
+}
+.cc__tap {
+  transform: scale(0.96);
+  opacity: 0.88;
+}

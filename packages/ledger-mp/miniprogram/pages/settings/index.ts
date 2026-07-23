@@ -3,6 +3,12 @@ Page({
   data: {
     rows: [
       {
+        iconSrc: '/assets/settings/settings-data.png',
+        label: '成本分类',
+        sub: '自定义名称 · 常用项 · 展示排序',
+        page: '/pages/cost-categories/index',
+      },
+      {
         iconSrc: '/assets/settings/settings-appearance.png',
         label: '外观与个性化',
         sub: '沉浸光感 · 玻璃通透度 · 特效模式',
