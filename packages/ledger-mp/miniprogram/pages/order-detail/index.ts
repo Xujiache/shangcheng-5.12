@@ -2,13 +2,7 @@ import { orderApi, settingApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
 import { normalizeCostCategories } from '../../utils/cost-categories'
-import {
-  createQuotePdf,
-  createQuoteSheet,
-  renderQuoteImages,
-  shareOrOpenFile,
-  showQuoteImageShare,
-} from '../../utils/quote-export'
+import { createQuotePdf, renderQuoteImages, shareOrOpenFile } from '../../utils/quote-export'
 
 const CATS: Array<[string, string, string]> = [
   ['profile', '型材', 'c1'],
@@ -204,37 +198,33 @@ Page({
   onShareQuote() {
     if (!this.data.o || this.data.exporting) return
     wx.showActionSheet({
-      itemList: ['客户展示图片', '正式 PDF 报价', 'Excel 明细报价'],
+      itemList: ['客户展示图片', '正式 PDF 报价'],
       success: (result) => this.exportQuote(result.tapIndex),
     })
   },
   async exportQuote(type: number) {
     if (!this.data.o || this.data.exporting) return
     this.setData({ exporting: true })
-    const labels = ['生成客户展示图…', '生成正式 PDF…', '生成 Excel 工作簿…']
+    const labels = ['生成图片…', '生成 PDF…']
     wx.showLoading({ title: labels[type] || '生成报价单…', mask: true })
     let filePath = ''
     let fileName = ''
     try {
       if (type === 0) {
         const images = await renderQuoteImages(this, '#quoteExport', this.data.o)
-        if (images.length === 1) {
-          const shared = await showQuoteImageShare(images[0]).catch(() => false)
-          if (!shared) await this.saveQuoteImages(images)
-        } else {
-          await this.saveQuoteImages(images)
-          wx.showToast({ title: `明细较多，已保存 ${images.length} 张图片`, icon: 'none' })
-        }
+        await this.saveQuoteImages(images)
+        wx.showToast({
+          title: images.length > 1 ? `已保存 ${images.length} 张图片` : '图片已保存',
+          icon: 'success',
+        })
       } else if (type === 1) {
         filePath = await createQuotePdf(this, '#quoteExport', this.data.o)
         fileName = '正式报价单.pdf'
-      } else {
-        filePath = await createQuoteSheet(this.data.o)
-        fileName = '客户报价明细.xlsx'
       }
     } catch (e) {
+      console.error('[quote-export]', e)
       wx.showToast({
-        title: type === 2 ? 'Excel 生成失败，请重试' : '报价单生成失败，请重试',
+        title: type === 0 ? '图片生成失败，请重试' : 'PDF 生成失败，请重试',
         icon: 'none',
       })
     } finally {

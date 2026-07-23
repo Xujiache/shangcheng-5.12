@@ -116,6 +116,6 @@
 
   <view class="oi__bar">
     <button class="oi__save" bindtap="save">完成</button>
-    <text class="oi__bar-hint">保存订单后，可在订单详情分享图片 / PDF / Excel 报价单</text>
+    <text class="oi__bar-hint">保存订单后，可在订单详情分享图片 / PDF 报价单</text>
   </view>
 </view>

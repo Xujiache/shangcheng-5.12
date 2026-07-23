@@ -2,11 +2,7 @@
  * 报价单导出（纯小程序本地实现）：
  * - 图片：客户展示型分享卡，突出客户、报价合计与产品摘要。
  * - PDF：正式多页报价文件，完整保留尺寸、单价和小计。
- * - 表格：真实 XLSX 工作簿，含报价概览、产品明细、报价说明三张工作表。
  */
-// 原生小程序不会自动解析 pnpm workspace 的裸 npm 模块；这里固定使用随源码发布的浏览器构建。
-declare const require: (path: string) => any
-const XLSX = require('./vendor/xlsx.mini.min.js')
 
 type QuoteSize = { w?: number; h?: number; count?: number; notes?: string[]; note?: string }
 type QuoteItem = {
@@ -183,8 +179,7 @@ function paintPdfPage(
   const cardW = 940
   const cardH = pageH - cardY - 28
   ctx.fillStyle = '#FFFFFF'
-  ctx.beginPath()
-  ctx.roundRect(cardX, cardY, cardW, cardH, 24)
+  roundedRect(ctx, cardX, cardY, cardW, cardH, 24)
   ctx.fill()
 
   let y = 254
@@ -235,8 +230,7 @@ function paintPdfPage(
     const total = Math.max(0, Math.round(Number(order.total) || 0))
     const boxY = Math.min(pageH - 192, y + 22)
     ctx.fillStyle = '#EAF7F1'
-    ctx.beginPath()
-    ctx.roundRect(54, boxY, 892, 126, 16)
+    roundedRect(ctx, 54, boxY, 892, 126, 16)
     ctx.fill()
     ctx.fillStyle = '#557267'
     ctx.font = '18px sans-serif'
@@ -295,12 +289,10 @@ function paintImagePage(
 
   const cardY = 224
   ctx.fillStyle = '#FFFFFF'
-  ctx.beginPath()
-  ctx.roundRect(30, cardY, 940, pageH - cardY - 28, 30)
+  roundedRect(ctx, 30, cardY, 940, pageH - cardY - 28, 30)
   ctx.fill()
   ctx.fillStyle = '#EDF8F3'
-  ctx.beginPath()
-  ctx.roundRect(58, 252, 884, 76, 18)
+  roundedRect(ctx, 58, 252, 884, 76, 18)
   ctx.fill()
   ctx.fillStyle = '#176C59'
   ctx.font = '700 21px sans-serif'
@@ -316,8 +308,7 @@ function paintImagePage(
     const detailLines = wrap(ctx, row.detail, 590)
     const rowH = Math.max(94, 46 + detailLines.length * 26)
     ctx.fillStyle = index % 2 ? '#FAFDFC' : '#F2F9F5'
-    ctx.beginPath()
-    ctx.roundRect(58, y, 884, rowH - 10, 16)
+    roundedRect(ctx, 58, y, 884, rowH - 10, 16)
     ctx.fill()
     ctx.fillStyle = '#138B69'
     ctx.beginPath()
@@ -356,8 +347,7 @@ function paintImagePage(
     totalBg.addColorStop(0, '#0C795F')
     totalBg.addColorStop(1, '#19A982')
     ctx.fillStyle = totalBg
-    ctx.beginPath()
-    ctx.roundRect(58, boxY, 884, 132, 20)
+    roundedRect(ctx, 58, boxY, 884, 132, 20)
     ctx.fill()
     ctx.fillStyle = 'rgba(255,255,255,0.78)'
     ctx.font = '20px sans-serif'
@@ -375,27 +365,79 @@ function paintImagePage(
 }
 
 function getCanvas(page: any, selector: string): Promise<any> {
+  return withTimeout(
+    new Promise((resolve, reject) => {
+      page
+        .createSelectorQuery()
+        .select(selector)
+        .fields({ node: true, size: true })
+        .exec((result: any[]) =>
+          result && result[0]?.node ? resolve(result[0].node) : reject(new Error('报价画布未就绪')),
+        )
+    }),
+    4000,
+    '报价画布未就绪，请返回订单详情后重试',
+  )
+}
+
+function withTimeout<T>(promise: Promise<T>, timeout: number, message: string): Promise<T> {
   return new Promise((resolve, reject) => {
-    page
-      .createSelectorQuery()
-      .select(selector)
-      .fields({ node: true })
-      .exec((result: any[]) =>
-        result && result[0]?.node ? resolve(result[0].node) : reject(new Error('报价画布未就绪')),
-      )
+    const timer = setTimeout(() => reject(new Error(message)), timeout)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
   })
 }
 
+function roundedRect(
+  ctx: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const r = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(x, y, width, height, r)
+    return
+  }
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + width - r, y)
+  ctx.arcTo(x + width, y, x + width, y + r, r)
+  ctx.lineTo(x + width, y + height - r)
+  ctx.arcTo(x + width, y + height, x + width - r, y + height, r)
+  ctx.lineTo(x + r, y + height)
+  ctx.arcTo(x, y + height, x, y + height - r, r)
+  ctx.lineTo(x, y + r)
+  ctx.arcTo(x, y, x + r, y, r)
+  ctx.closePath()
+}
+
 function canvasToJpeg(canvas: any): Promise<string> {
-  return new Promise((resolve, reject) => {
-    wx.canvasToTempFilePath({
-      canvas,
-      fileType: 'jpg',
-      quality: 0.92,
-      success: (result) => resolve(result.tempFilePath),
-      fail: reject,
-    })
-  })
+  return withTimeout(
+    new Promise((resolve, reject) => {
+      wx.canvasToTempFilePath({
+        canvas,
+        fileType: 'jpg',
+        quality: 0.92,
+        destWidth: canvas.width,
+        destHeight: canvas.height,
+        success: (result) => resolve(result.tempFilePath),
+        fail: reject,
+      })
+    }),
+    15000,
+    '图片生成超时，请重试',
+  )
 }
 
 async function renderImages(
@@ -406,6 +448,7 @@ async function renderImages(
 ): Promise<string[]> {
   const canvas = await getCanvas(page, selector)
   const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('手机端 2D 画布初始化失败')
   const pages = quotePages(order)
   const paths: string[] = []
   for (let index = 0; index < pages.length; index++) {
@@ -420,100 +463,49 @@ export function renderQuoteImages(page: any, selector: string, order: QuoteExpor
   return renderImages(page, selector, order, paintImagePage)
 }
 
-function detailRows(order: QuoteExportOrder) {
-  const rows: any[][] = []
-  ;(Array.isArray(order.items) ? order.items : []).forEach((item, itemIndex) => {
-    const name = safeText(item.name) || `产品 ${itemIndex + 1}`
-    const sizes = Array.isArray(item.sizes)
-      ? item.sizes.filter((size) => n(size.w) && n(size.h))
-      : []
-    if (!sizes.length) {
-      rows.push([
-        itemIndex + 1,
-        name,
-        '—',
-        '—',
-        Math.max(1, Math.round(n(item.qty) || 1)),
-        n(item.baseArea),
-        itemBillingQty(item),
-        Math.round(n(item.unitPrice)),
-        itemSubtotal(item),
-        safeText(item.note) || '—',
-      ])
-      return
-    }
-    sizes.forEach((size, sizeIndex) => {
-      const count = Math.max(1, Math.round(n(size.count) || 1))
-      const rawArea = (n(size.w) * n(size.h)) / 1_000_000
-      rows.push([
-        itemIndex + 1,
-        sizeIndex === 0 ? name : '',
-        Math.round(n(size.w)),
-        Math.round(n(size.h)),
-        count,
-        n(item.baseArea),
-        Math.max(rawArea, n(item.baseArea)) * count,
-        Math.round(n(item.unitPrice)),
-        sizeIndex === 0 ? itemSubtotal(item) : '',
-        safeText(Array.isArray(size.notes) ? size.notes[0] : size.note) || '—',
-      ])
-    })
-  })
-  return rows.length
-    ? rows
-    : [
-        [
-          1,
-          '订单报价',
-          '—',
-          '—',
-          1,
-          0,
-          0,
-          0,
-          Math.max(0, Math.round(Number(order.total) || 0)),
-          '未填写产品明细',
-        ],
-      ]
-}
-
-function styleSheet(sheet: any, widths: number[], merges: string[] = []) {
-  sheet['!cols'] = widths.map((wch) => ({ wch }))
-  if (merges.length) sheet['!merges'] = merges.map((ref) => XLSX.utils.decode_range(ref))
-  return sheet
-}
-
 function stem(order: QuoteExportOrder) {
   const customer = (safeText(order.customer) || '客户').replace(/[\\/:*?"<>|]/g, '_').slice(0, 16)
   return `报价单_${customer}_${datePart(order.date).replace(/[^\d]/g, '') || '今日'}`
 }
 
 function writeFile(path: string, data: string | ArrayBuffer, encoding?: any): Promise<void> {
-  return new Promise((resolve, reject) => {
-    wx.getFileSystemManager().writeFile({
-      filePath: path,
-      data,
-      encoding,
-      success: () => resolve(),
-      fail: reject,
-    } as any)
-  })
+  return withTimeout(
+    new Promise((resolve, reject) => {
+      wx.getFileSystemManager().writeFile({
+        filePath: path,
+        data,
+        encoding,
+        success: () => resolve(),
+        fail: reject,
+      } as any)
+    }),
+    10000,
+    '报价文件保存超时',
+  )
 }
 
 function readBase64(path: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    wx.getFileSystemManager().readFile({
-      filePath: path,
-      encoding: 'base64',
-      success: (res: any) => resolve(String(res.data)),
-      fail: reject,
-    } as any)
-  })
+  return withTimeout(
+    new Promise((resolve, reject) => {
+      wx.getFileSystemManager().readFile({
+        filePath: path,
+        encoding: 'base64',
+        success: (res: any) => resolve(String(res.data)),
+        fail: reject,
+      } as any)
+    }),
+    10000,
+    '图片读取超时',
+  )
 }
 
 function imageInfo(path: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) =>
-    wx.getImageInfo({ src: path, success: resolve, fail: reject }),
+  return withTimeout(
+    new Promise((resolve, reject) =>
+      wx.getImageInfo({ src: path, success: resolve, fail: reject }),
+    ),
+    10000,
+    '图片信息读取超时',
   )
 }
 
@@ -607,104 +599,20 @@ export async function createQuotePdf(page: any, selector: string, order: QuoteEx
   return path
 }
 
-export async function createQuoteSheet(order: QuoteExportOrder) {
-  const workbook = XLSX.utils.book_new()
-  workbook.Props = {
-    Title: '门窗利账客户报价单',
-    Subject: '门窗产品报价',
-    Author: '门窗利账',
-    CreatedDate: new Date(),
-  }
-  const total = Math.max(0, Math.round(Number(order.total) || 0))
-  const overview = XLSX.utils.aoa_to_sheet([
-    ['门窗利账｜客户报价单'],
-    [],
-    [
-      '客户名称',
-      safeText(order.customer) || '未填写客户',
-      '报价编号',
-      safeText(order.id) || '待确认',
-    ],
-    ['报价日期', datePart(order.date), '产品项数', quoteRows(order).length],
-    [],
-    ['报价摘要', '金额（元）'],
-    ['产品明细合计', quoteRows(order).reduce((sum, row) => sum + row.subtotal, 0)],
-    ['优惠', Math.max(0, Math.round(Number(order.discount) || 0))],
-    ['回收', Math.max(0, Math.round(Number(order.recycle) || 0))],
-    ['报价合计', total],
-    [],
-    ['订单备注', safeText(order.note) || '—'],
-  ])
-  styleSheet(overview, [18, 28, 18, 28], ['A1:D1', 'B12:D12'])
-  const detail = XLSX.utils.aoa_to_sheet([
-    [
-      '序号',
-      '产品名称',
-      '宽（mm）',
-      '高（mm）',
-      '数量',
-      '起算面积（㎡）',
-      '计费面积（㎡）',
-      '单价（元）',
-      '小计（元）',
-      '备注',
-    ],
-    ...detailRows(order),
-  ])
-  styleSheet(detail, [8, 20, 12, 12, 10, 16, 16, 14, 14, 24])
-  const terms = XLSX.utils.aoa_to_sheet([
-    ['报价说明'],
-    ['1. 本工作簿由门窗利账自动生成，产品尺寸、数量与金额请以双方最终确认内容为准。'],
-    ['2. “计费面积”已按每项设置的起算面积和尺寸数量计算。'],
-    ['3. 优惠、回收及报价合计已在“报价概览”工作表中汇总。'],
-    ['4. 请妥善保存本文件，便于后续报价核对和订单沟通。'],
-  ])
-  styleSheet(terms, [96])
-  XLSX.utils.book_append_sheet(workbook, overview, '报价概览')
-  XLSX.utils.book_append_sheet(workbook, detail, '产品明细')
-  XLSX.utils.book_append_sheet(workbook, terms, '报价说明')
-  const data = XLSX.write(workbook, {
-    bookType: 'xlsx',
-    type: 'array',
-    compression: true,
-  }) as ArrayBuffer
-  const path = `${wx.env.USER_DATA_PATH}/${stem(order)}.xlsx`
-  await writeFile(path, data)
-  return path
-}
-
-/** 优先直接发文件；旧基础库回退到文件预览页，用户可从右上角转发。 */
-export async function shareOrOpenFile(path: string, fileName: string) {
-  const shareFile = (wx as any).shareFileMessage
-  // 开发者工具对 shareFileMessage 会长时间超时；直接预览即可验证 XLSX/PDF 是否生成成功。
-  const platform = (() => {
-    try {
-      return wx.getSystemInfoSync().platform
-    } catch {
-      return ''
-    }
-  })()
-  if (platform !== 'devtools' && typeof shareFile === 'function') {
-    try {
-      await new Promise<void>((resolve, reject) =>
-        shareFile({ filePath: path, fileName, success: resolve, fail: reject }),
-      )
-      return 'shared' as const
-    } catch {
-      // 部分微信版本不支持直接文件分享，回退文件预览。
-    }
-  }
-  await new Promise<void>((resolve, reject) => {
-    wx.openDocument({ filePath: path, showMenu: true, success: resolve, fail: reject } as any)
-  })
-  return 'opened' as const
-}
-
-export async function showQuoteImageShare(path: string) {
-  const showShareImageMenu = (wx as any).showShareImageMenu
-  if (typeof showShareImageMenu !== 'function') return false
-  await new Promise<void>((resolve, reject) =>
-    showShareImageMenu({ path, success: resolve, fail: reject }),
+/** 手机端统一打开 PDF 预览页，用户可从预览页右上角转发或保存。 */
+export async function shareOrOpenFile(path: string, _fileName: string) {
+  await withTimeout(
+    new Promise<void>((resolve, reject) => {
+      wx.openDocument({
+        filePath: path,
+        fileType: 'pdf',
+        showMenu: true,
+        success: resolve,
+        fail: reject,
+      } as any)
+    }),
+    15000,
+    'PDF预览打开超时',
   )
-  return true
+  return 'opened' as const
 }

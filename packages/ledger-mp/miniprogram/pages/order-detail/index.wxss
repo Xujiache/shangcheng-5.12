@@ -113,8 +113,11 @@
 /* 离屏报价画布：移出可视区但仍需保留渲染节点，供 canvasToTempFilePath 读取。 */
 .od__export-canvas {
   position: fixed;
-  left: -9999px;
+  left: 0;
   top: 0;
-  width: 500px;
-  height: 400px;
+  z-index: -1;
+  width: 2px;
+  height: 2px;
+  opacity: 0.01;
+  pointer-events: none;
 }
