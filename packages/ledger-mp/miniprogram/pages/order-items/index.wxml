@@ -20,7 +20,7 @@
       <view class="oi__subrow">
         <view class="oi__sub-f">
           <text class="oi__sub-l">备注</text>
-          <input class="oi__sub-in" value="{{item.note}}" placeholder="如 灰色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-field="note" bindinput="onItemInput" />
+          <input class="oi__sub-in" value="{{item.note}}" placeholder="备注 / 颜色，如灰色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-field="note" bindinput="onItemInput" />
         </view>
         <view class="oi__sub-f">
           <text class="oi__sub-l">起算面积</text>
@@ -41,7 +41,7 @@
               <text class="oi__size-op">×</text>
               <input class="oi__size-cnt" type="number" value="{{sz.countStr}}" placeholder="樘" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="countStr" bindinput="onSizeInput" />
               <text class="oi__size-eq">= {{sz.areaText || '0'}}㎡{{sz.clamped ? ' 起算' : ''}}</text>
-              <input class="oi__size-note" value="{{sz.noteStr}}" placeholder="位置" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="noteStr" bindinput="onSizeInput" />
+              <input class="oi__size-note" value="{{sz.noteStr}}" placeholder="位置 / 颜色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="noteStr" bindinput="onSizeInput" />
             </view>
           </view>
         </view>

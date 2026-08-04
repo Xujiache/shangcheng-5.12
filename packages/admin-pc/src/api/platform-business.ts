@@ -901,6 +901,12 @@ export function toggleAdminUser(id: string) {
 export function removeAdminUser(id: string) {
   return request.del<{ ok: boolean }>({ url: `/api/v1/p/admins/${id}` })
 }
+export function resetAdminPassword(id: string, password: string) {
+  return request.post<{ ok: true; userId: string }>({
+    url: `/api/v1/p/admins/${id}/reset-password`,
+    data: { password }
+  })
+}
 
 /* ============ 12. 系统设置 ============ */
 /**

@@ -1,7 +1,0 @@
-export * from './category'
-export * from './product'
-export * from './merchant'
-export * from './user'
-export * from './order'
-export * from './plaza'
-export * from './misc'

@@ -31,20 +31,20 @@
         <input
           class="cc__input"
           value="{{item.name}}"
-          placeholder="例如：石膏板、刮大白、家具"
+          placeholder="例如：板材、油漆、人工"
           placeholder-class="cc__placeholder"
           maxlength="20"
-          data-index="{{index}}"
+          data-id="{{item.id}}"
           bindinput="onName"
         />
         <view class="cc__sort">
-          <view class="cc__icon {{index === 0 ? 'cc__icon--disabled' : ''}}" data-index="{{index}}" bindtap="moveUp">
+          <view class="cc__icon {{index === 0 ? 'cc__icon--disabled' : ''}}" data-id="{{item.id}}" catchtap="moveUp">
             <lz-icon name="up" size="16" color="{{index === 0 ? '#C7D1CC' : '#5C6B64'}}" />
           </view>
-          <view class="cc__icon {{index === categories.length - 1 ? 'cc__icon--disabled' : ''}}" data-index="{{index}}" bindtap="moveDown">
+          <view class="cc__icon {{index === categories.length - 1 ? 'cc__icon--disabled' : ''}}" data-id="{{item.id}}" catchtap="moveDown">
             <lz-icon name="down" size="16" color="{{index === categories.length - 1 ? '#C7D1CC' : '#5C6B64'}}" />
           </view>
-          <view class="cc__icon cc__icon--delete" data-index="{{index}}" bindtap="removeCategory">
+          <view class="cc__icon cc__icon--delete" data-id="{{item.id}}" catchtap="removeCategory">
             <lz-icon name="trash" size="15" color="#C8442B" />
           </view>
         </view>
@@ -54,9 +54,9 @@
     <view class="cc__example">
       <view class="cc__example-title">适用于任何经营场景</view>
       <view class="cc__tags">
-        <text>装修：石膏板 · 刮大白 · 人工</text>
-        <text>家具：板材 · 五金 · 运费</text>
-        <text>门窗：型材 · 玻璃 · 配件</text>
+      <text>装修：板材 · 油漆 · 人工</text>
+      <text>家具：木料 · 五金 · 运费</text>
+      <text>门窗：型材 · 玻璃 · 配件</text>
       </view>
     </view>
   </view>

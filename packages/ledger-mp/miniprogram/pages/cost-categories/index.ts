@@ -40,9 +40,10 @@ Page({
   },
 
   onName(e: any) {
-    const index = Number(e.currentTarget.dataset.index)
+    const id = String(e.currentTarget.dataset.id || '')
+    const index = this.data.categories.findIndex((item: any) => String(item.id) === id)
+    if (index < 0) return
     const categories = [...this.data.categories]
-    if (!categories[index]) return
     categories[index] = {
       ...categories[index],
       name: String(e.detail.value || '').slice(0, 20),
@@ -51,19 +52,23 @@ Page({
   },
 
   moveUp(e: any) {
-    this.move(Number(e.currentTarget.dataset.index), -1)
+    this.moveById(String(e.currentTarget.dataset.id || ''), -1)
   },
 
   moveDown(e: any) {
-    this.move(Number(e.currentTarget.dataset.index), 1)
+    this.moveById(String(e.currentTarget.dataset.id || ''), 1)
   },
 
-  move(index: number, offset: number) {
+  moveById(id: string, offset: number) {
+    const index = this.data.categories.findIndex((item: any) => String(item.id) === id)
+    if (index < 0) return
     const target = index + offset
     if (target < 0 || target >= this.data.categories.length) return
     const categories = [...this.data.categories]
-    ;[categories[index], categories[target]] = [categories[target], categories[index]]
-    this.setData({ categories })
+    const [moving] = categories.splice(index, 1)
+    categories.splice(target, 0, moving)
+    // 每一项保留稳定 id，避免重排后输入框复用旧节点导致内容错位/短暂消失。
+    this.setData({ categories: categories.map((item: any) => ({ ...item })) })
   },
 
   removeCategory(e: any) {
@@ -71,9 +76,9 @@ Page({
       wx.showToast({ title: '至少保留一个成本分类', icon: 'none' })
       return
     }
-    const index = Number(e.currentTarget.dataset.index)
+    const id = String(e.currentTarget.dataset.id || '')
     this.setData({
-      categories: this.data.categories.filter((_: any, i: number) => i !== index),
+      categories: this.data.categories.filter((item: any) => String(item.id) !== id),
     })
   },
 

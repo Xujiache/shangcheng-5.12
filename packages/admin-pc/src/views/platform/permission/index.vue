@@ -185,12 +185,14 @@
     saveAdminUser,
     toggleAdminUser,
     removeAdminUser,
+    resetAdminPassword,
     type AdminRole,
     type AdminUser
   } from '@/api/platform-business'
   import { formatDateTime } from '@jiujiu/shared/utils'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { Refresh, Plus } from '@element-plus/icons-vue'
+  import { h } from 'vue'
 
   defineOptions({ name: 'PlatformPermission' })
 
@@ -294,18 +296,63 @@
     await load()
   }
 
-  async function onReset(a: AdminUser) {
+  function generateTemporaryPassword(length = 12) {
     const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%'
-    let pwd = ''
-    for (let i = 0; i < 12; i++) pwd += charset[Math.floor(Math.random() * charset.length)]
+    const randomValues = crypto.getRandomValues(new Uint32Array(length))
+    return Array.from(randomValues, (value) => charset[value % charset.length]).join('')
+  }
+
+  async function onReset(a: AdminUser) {
     try {
+      await ElMessageBox.confirm(
+        `确认重置 ${a.nickname || a.username}（${a.username}）的登录密码？`,
+        '重置密码',
+        {
+          type: 'warning',
+          confirmButtonText: '确认重置',
+          cancelButtonText: '取消'
+        }
+      )
+
+      const pwd = generateTemporaryPassword()
+      const result = await resetAdminPassword(a.id, pwd)
+      if (!result.ok || result.userId !== a.id) {
+        throw new Error('密码重置结果校验失败')
+      }
+
       await ElMessageBox.alert(
-        `<div style="font-size:13px;color:#6b7280;margin-bottom:10px">已为 <b style="color:#1f2937">${a.nickname}</b> (${a.username}) 生成新密码：</div>` +
-          `<div style="font-family:monospace;font-size:18px;font-weight:600;padding:12px;background:#fafbfc;border:1px dashed #e5e7eb;border-radius:8px;text-align:center;letter-spacing:1px;color:#ff4d2d">${pwd}</div>` +
-          `<div style="font-size:12px;color:#f56c6c;margin-top:10px"><b>仅显示一次</b>，请立即复制并通知管理员，本窗口关闭后无法再次查看。</div>`,
+        h('div', [
+          h(
+            'div',
+            { style: { marginBottom: '10px', color: '#6b7280', fontSize: '13px' } },
+            `已为 ${a.nickname || a.username}（${a.username}）重置登录密码：`
+          ),
+          h(
+            'div',
+            {
+              style: {
+                padding: '12px',
+                border: '1px dashed #e5e7eb',
+                borderRadius: '8px',
+                background: '#fafbfc',
+                color: '#ff4d2d',
+                fontFamily: 'monospace',
+                fontSize: '18px',
+                fontWeight: '600',
+                letterSpacing: '1px',
+                textAlign: 'center'
+              }
+            },
+            pwd
+          ),
+          h(
+            'div',
+            { style: { marginTop: '10px', color: '#f56c6c', fontSize: '12px' } },
+            '密码仅显示一次，请立即复制并通知管理员。'
+          )
+        ]),
         '密码已重置',
         {
-          dangerouslyUseHTMLString: true,
           confirmButtonText: '复制密码',
           showClose: true,
           callback: async (action: string) => {
@@ -320,8 +367,10 @@
           }
         }
       )
-    } catch {
-      /* close */
+    } catch (error) {
+      if (error !== 'cancel' && error !== 'close') {
+        throw error
+      }
     }
   }
 

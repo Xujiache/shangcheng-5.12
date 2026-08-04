@@ -1,6 +1,6 @@
 /**
  * 报价单导出（纯小程序本地实现）：
- * - 图片：客户展示型分享卡，突出客户、报价合计与产品摘要。
+ * - 图片：直接复用正式 PDF 页面，保存为 JPG 后写入手机相册。
  * - PDF：正式多页报价文件，完整保留尺寸、单价和小计。
  */
 
@@ -26,10 +26,24 @@ export interface QuoteExportOrder {
   items?: QuoteItem[]
 }
 
+type QuoteSizeRow = {
+  w: number
+  h: number
+  count: number
+  area: number
+  clamped: boolean
+  note: string
+}
+
 type QuoteRow = {
   name: string
-  detail: string
+  note: string
+  baseArea: number
+  sizes: QuoteSizeRow[]
+  qty: number
+  billingQty: number
   unitPrice: number
+  unitLabel: string
   subtotal: number
 }
 
@@ -71,43 +85,91 @@ function itemSubtotal(item: QuoteItem) {
   return Math.round(itemBillingQty(item) * n(item.unitPrice))
 }
 
-function sizeText(s: QuoteSize) {
-  const dimension = `${Math.round(n(s.w))} × ${Math.round(n(s.h))} mm`
+function sizeNotes(s: QuoteSize) {
+  const values = Array.isArray(s.notes) ? s.notes : s.note ? [s.note] : []
+  return values.map(safeText).filter(Boolean).join('、')
+}
+
+function sizeRow(s: QuoteSize, baseArea: number): QuoteSizeRow {
+  const w = Math.round(n(s.w))
+  const h = Math.round(n(s.h))
   const count = Math.max(1, Math.round(n(s.count) || 1))
-  const note = safeText(Array.isArray(s.notes) ? s.notes[0] : s.note)
-  return `${dimension} × ${count}${note ? `（${note}）` : ''}`
+  const rawArea = (w * h) / 1_000_000
+  const billArea = Math.max(rawArea, baseArea)
+  return {
+    w,
+    h,
+    count,
+    area: billArea * count,
+    clamped: baseArea > rawArea,
+    note: sizeNotes(s),
+  }
+}
+
+function sizeText(s: QuoteSizeRow) {
+  const dimension = `${s.w} × ${s.h} mm`
+  return `${dimension} × ${s.count}樘 = ${fmtArea(s.area)}㎡${s.clamped ? '（起算）' : ''}${s.note ? ` · ${s.note}` : ''}`
 }
 
 function quoteRows(order: QuoteExportOrder): QuoteRow[] {
   const rows = (Array.isArray(order.items) ? order.items : [])
     .map((item, index) => {
-      const sizes = Array.isArray(item.sizes) ? item.sizes.filter((s) => n(s.w) && n(s.h)) : []
-      const detail = sizes.length
-        ? sizes.map(sizeText).join('；')
-        : `数量 ${fmtArea(n(item.qty))} 件${item.note ? ` · ${safeText(item.note)}` : ''}`
+      const baseArea = n(item.baseArea)
+      const sizes = (Array.isArray(item.sizes) ? item.sizes : [])
+        .filter((s) => n(s.w) && n(s.h))
+        .map((s) => sizeRow(s, baseArea))
+      const billingQty = sizes.length
+        ? sizes.reduce((sum, size) => sum + size.area, 0)
+        : n(item.qty)
       return {
         name: safeText(item.name) || `产品 ${index + 1}`,
-        detail,
+        note: safeText(item.note),
+        baseArea,
+        sizes,
+        qty: n(item.qty),
+        billingQty,
         unitPrice: Math.round(n(item.unitPrice)),
+        unitLabel: sizes.length ? '㎡' : '件',
         subtotal: itemSubtotal(item),
       }
     })
-    .filter((row) => row.name || row.subtotal || row.detail)
+    .filter((row) => row.name || row.subtotal || row.billingQty || row.note)
   return rows.length
     ? rows
     : [
         {
           name: '订单报价',
-          detail: '未填写产品明细',
+          note: '',
+          baseArea: 0,
+          sizes: [],
+          qty: 0,
+          billingQty: 0,
           unitPrice: 0,
+          unitLabel: '件',
           subtotal: Math.max(0, Math.round(Number(order.total) || 0)),
         },
       ]
 }
 
+function rowDetailLines(row: QuoteRow) {
+  if (row.sizes.length) {
+    return [...row.sizes.map(sizeText), `计费面积：${fmtArea(row.billingQty)}㎡`]
+  }
+  return [`数量：${fmtArea(row.qty)}件`]
+}
+
+function rowMetaLines(row: QuoteRow) {
+  const lines: string[] = []
+  if (row.note) lines.push(`备注/颜色：${row.note}`)
+  if (row.baseArea > 0) lines.push(`起算面积：${fmtArea(row.baseArea)}㎡`)
+  return lines
+}
+
 function estimateRowHeight(row: QuoteRow) {
-  // Canvas 的规格列约可容纳 27 个汉字；用保守估算提前分页，实际绘制不会截断内容。
-  return 76 + Math.max(0, Math.ceil(row.detail.length / 27) - 1) * 28
+  // 右侧尺寸明细、左侧备注均会独立换行，按最长列预留高度，避免导出内容互相覆盖。
+  const detailLines = rowDetailLines(row).reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 27)), 0)
+  const metaLines = rowMetaLines(row).reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 12)), 0)
+  return Math.max(100, 42 + Math.max(detailLines, metaLines) * 28)
 }
 
 function quotePages(order: QuoteExportOrder): QuotePage[] {
@@ -142,6 +204,14 @@ function wrap(ctx: any, value: string, maxWidth: number) {
   return lines.length ? lines : ['—']
 }
 
+function wrappedLines(ctx: any, values: string[], maxWidth: number) {
+  const lines: string[] = []
+  values.forEach((value) => {
+    wrap(ctx, value, maxWidth).forEach((line) => lines.push(line))
+  })
+  return lines
+}
+
 /** 正式 PDF 版：白底表格与完整字段，便于客户留档、打印。 */
 function paintPdfPage(
   canvas: any,
@@ -151,7 +221,8 @@ function paintPdfPage(
   pageIndex: number,
   pageCount: number,
 ) {
-  const pageH = Math.max(720, Math.min(1960, 520 + page.contentHeight))
+  // PDF 同时作为图片导出源，额外预留底部空间，避免明细新增备注后盖住合计卡片。
+  const pageH = Math.max(800, Math.min(1960, 600 + page.contentHeight))
   canvas.width = CANVAS_W
   canvas.height = pageH
 
@@ -188,7 +259,7 @@ function paintPdfPage(
   ctx.fillStyle = '#557267'
   ctx.font = '600 19px sans-serif'
   ctx.fillText('产品', 72, y + 29)
-  ctx.fillText('尺寸 / 规格', 300, y + 29)
+  ctx.fillText('尺寸 / 数量 / 面积', 300, y + 29)
   ctx.textAlign = 'right'
   ctx.fillText('单价', 790, y + 29)
   ctx.fillText('小计', 925, y + 29)
@@ -196,12 +267,10 @@ function paintPdfPage(
   y += 66
 
   page.rows.forEach((row) => {
-    ctx.font = '600 22px sans-serif'
-    const detailLines = (() => {
-      ctx.font = '18px sans-serif'
-      return wrap(ctx, row.detail, 440)
-    })()
-    const rowH = Math.max(76, 32 + detailLines.length * 27)
+    ctx.font = '18px sans-serif'
+    const detailLines = wrappedLines(ctx, rowDetailLines(row), 440)
+    const metaLines = wrappedLines(ctx, rowMetaLines(row), 205)
+    const rowH = Math.max(100, 42 + Math.max(detailLines.length, metaLines.length) * 27)
     ctx.strokeStyle = '#E4EEE8'
     ctx.lineWidth = 1
     ctx.beginPath()
@@ -212,11 +281,17 @@ function paintPdfPage(
     ctx.font = '600 22px sans-serif'
     ctx.fillText(row.name, 72, y + 31)
     ctx.fillStyle = '#72897E'
+    ctx.font = '16px sans-serif'
+    metaLines.forEach((line, index) => ctx.fillText(line, 72, y + 57 + index * 23))
+    ctx.fillStyle = '#72897E'
     ctx.font = '18px sans-serif'
-    detailLines.forEach((line, index) => ctx.fillText(line, 300, y + 26 + index * 27))
+    detailLines.forEach((line, index) => ctx.fillText(line, 300, y + 27 + index * 27))
     ctx.fillStyle = '#40574C'
     ctx.textAlign = 'right'
     ctx.fillText(yuan(row.unitPrice), 790, y + 31)
+    ctx.fillStyle = '#91A69C'
+    ctx.font = '15px sans-serif'
+    ctx.fillText(`/ ${row.unitLabel}`, 790, y + 55)
     ctx.fillStyle = '#138B69'
     ctx.font = '700 22px sans-serif'
     ctx.fillText(yuan(row.subtotal), 925, y + 31)
@@ -228,7 +303,9 @@ function paintPdfPage(
     const discount = Math.max(0, Math.round(Number(order.discount) || 0))
     const recycle = Math.max(0, Math.round(Number(order.recycle) || 0))
     const total = Math.max(0, Math.round(Number(order.total) || 0))
-    const boxY = Math.min(pageH - 192, y + 22)
+    const orderNote = safeText(order.note)
+    const summaryBottom = orderNote ? 288 : 192
+    const boxY = Math.min(pageH - summaryBottom, y + 22)
     ctx.fillStyle = '#EAF7F1'
     roundedRect(ctx, 54, boxY, 892, 126, 16)
     ctx.fill()
@@ -240,6 +317,20 @@ function paintPdfPage(
     ctx.textAlign = 'right'
     ctx.fillText(`合计 ${yuan(total)}`, 920, boxY + 88)
     ctx.textAlign = 'left'
+    if (orderNote) {
+      const noteY = boxY + 150
+      ctx.fillStyle = '#F7FBF9'
+      roundedRect(ctx, 54, noteY, 892, 86, 16)
+      ctx.fill()
+      ctx.fillStyle = '#557267'
+      ctx.font = '17px sans-serif'
+      ctx.fillText('项目备注', 78, noteY + 30)
+      ctx.fillStyle = '#72897E'
+      ctx.font = '16px sans-serif'
+      wrap(ctx, orderNote, 790).slice(0, 2).forEach((line, index) =>
+        ctx.fillText(line, 160, noteY + 30 + index * 23),
+      )
+    }
   }
   ctx.fillStyle = '#91A69C'
   ctx.font = '16px sans-serif'
@@ -305,8 +396,10 @@ function paintImagePage(
   let y = 352
   page.rows.forEach((row, index) => {
     ctx.font = '18px sans-serif'
-    const detailLines = wrap(ctx, row.detail, 590)
-    const rowH = Math.max(94, 46 + detailLines.length * 26)
+    const detailLines = wrappedLines(ctx, rowDetailLines(row), 590)
+    const metaLines = wrappedLines(ctx, rowMetaLines(row), 590)
+    const lines = [...metaLines, ...detailLines]
+    const rowH = Math.max(118, 46 + lines.length * 26)
     ctx.fillStyle = index % 2 ? '#FAFDFC' : '#F2F9F5'
     roundedRect(ctx, 58, y, 884, rowH - 10, 16)
     ctx.fill()
@@ -324,25 +417,23 @@ function paintImagePage(
     ctx.fillText(row.name, 124, y + 35)
     ctx.fillStyle = '#6C877A'
     ctx.font = '18px sans-serif'
-    detailLines.forEach((line, lineIndex) => ctx.fillText(line, 124, y + 65 + lineIndex * 26))
+    lines.forEach((line, lineIndex) => ctx.fillText(line, 124, y + 65 + lineIndex * 26))
     ctx.fillStyle = '#0B7A62'
     ctx.font = '700 28px sans-serif'
     ctx.textAlign = 'right'
     ctx.fillText(yuan(row.subtotal), 910, y + 43)
     ctx.fillStyle = '#769186'
     ctx.font = '16px sans-serif'
-    ctx.fillText(
-      `${yuan(row.unitPrice)} / ${row.detail.indexOf('mm') >= 0 ? '㎡' : '件'}`,
-      910,
-      y + 70,
-    )
+    ctx.fillText(`${yuan(row.unitPrice)} / ${row.unitLabel}`, 910, y + 70)
     ctx.textAlign = 'left'
     y += rowH
   })
 
   if (pageIndex === pageCount - 1) {
     const total = Math.max(0, Math.round(Number(order.total) || 0))
-    const boxY = Math.min(pageH - 202, y + 20)
+    const orderNote = safeText(order.note)
+    const summaryBottom = orderNote ? 306 : 202
+    const boxY = Math.min(pageH - summaryBottom, y + 20)
     const totalBg = ctx.createLinearGradient(58, boxY, 942, boxY + 132)
     totalBg.addColorStop(0, '#0C795F')
     totalBg.addColorStop(1, '#19A982')
@@ -358,6 +449,20 @@ function paintImagePage(
     ctx.textAlign = 'right'
     ctx.fillText(yuan(total), 914, boxY + 83)
     ctx.textAlign = 'left'
+    if (orderNote) {
+      const noteY = boxY + 154
+      ctx.fillStyle = 'rgba(255,255,255,0.86)'
+      roundedRect(ctx, 58, noteY, 884, 90, 18)
+      ctx.fill()
+      ctx.fillStyle = '#176C59'
+      ctx.font = '700 17px sans-serif'
+      ctx.fillText('项目备注', 84, noteY + 32)
+      ctx.fillStyle = '#6C877A'
+      ctx.font = '16px sans-serif'
+      wrap(ctx, orderNote, 740).slice(0, 2).forEach((line, index) =>
+        ctx.fillText(line, 188, noteY + 32 + index * 24),
+      )
+    }
   }
   ctx.fillStyle = 'rgba(255,255,255,0.78)'
   ctx.font = '16px sans-serif'
@@ -458,9 +563,9 @@ async function renderImages(
   return paths
 }
 
-/** 图片分享版：客户展示卡视觉，多页时逐页保存相册。 */
+/** 图片导出直接复用正式 PDF 页面，保证两种格式内容和分页完全一致。 */
 export function renderQuoteImages(page: any, selector: string, order: QuoteExportOrder) {
-  return renderImages(page, selector, order, paintImagePage)
+  return renderImages(page, selector, order, paintPdfPage)
 }
 
 function stem(order: QuoteExportOrder) {
@@ -599,20 +704,21 @@ export async function createQuotePdf(page: any, selector: string, order: QuoteEx
   return path
 }
 
-/** 手机端统一打开 PDF 预览页，用户可从预览页右上角转发或保存。 */
-export async function shareOrOpenFile(path: string, _fileName: string) {
+/** 直接使用微信官方接口将 PDF 文件转发给好友。 */
+export async function shareQuoteFile(path: string, fileName: string) {
+  const shareFileMessage = (wx as any).shareFileMessage
+  if (typeof shareFileMessage !== 'function') throw new Error('当前环境不支持文件转发')
   await withTimeout(
     new Promise<void>((resolve, reject) => {
-      wx.openDocument({
+      shareFileMessage({
         filePath: path,
-        fileType: 'pdf',
-        showMenu: true,
-        success: resolve,
+        fileName,
+        success: () => resolve(),
         fail: reject,
-      } as any)
+      })
     }),
     15000,
-    'PDF预览打开超时',
+    'PDF文件分享超时',
   )
-  return 'opened' as const
+  return 'shared' as const
 }

@@ -113,6 +113,14 @@
       <lz-icon name="pencil" size="18" color="white" /> 编辑此订单
     </button>
   </view>
+  <view wx:if="{{pdfReadyToShare}}" class="od__pdf-mask" bindtap="cancelPendingPdf">
+    <view class="od__pdf-sheet" catchtap="stopPdfShareTap">
+      <view class="od__pdf-sheet-title">PDF 已生成</view>
+      <view class="od__pdf-sheet-hint">再次点击按钮，调用微信官方接口转发报价文件</view>
+      <button class="lz-btn lz-btn--primary lz-btn--lg od__pdf-share-btn" bindtap="sharePendingPdf">立即转发 PDF</button>
+      <view class="od__pdf-cancel" bindtap="cancelPendingPdf">稍后再说</view>
+    </view>
+  </view>
   <!-- 离屏报价画布：仅用于生成图片/PDF，不能 display:none。 -->
   <canvas type="2d" id="quoteExport" class="od__export-canvas"></canvas>
 </view>

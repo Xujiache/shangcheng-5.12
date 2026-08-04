@@ -110,6 +110,45 @@
 .od__share {
   flex: 0 0 110px;
 }
+.od__pdf-mask {
+  position: fixed;
+  z-index: 100;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(21, 32, 28, 0.42);
+}
+.od__pdf-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 22px 20px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  background: rgba(247, 252, 249, 0.98);
+  box-shadow: 0 -12px 34px rgba(21, 82, 65, 0.18);
+  text-align: center;
+}
+.od__pdf-sheet-title {
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 800;
+}
+.od__pdf-sheet-hint {
+  margin: 8px 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.od__pdf-share-btn {
+  width: 100%;
+  margin: 0;
+}
+.od__pdf-cancel {
+  padding-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
 /* 离屏报价画布：移出可视区但仍需保留渲染节点，供 canvasToTempFilePath 读取。 */
 .od__export-canvas {
   position: fixed;

@@ -2,7 +2,7 @@ import { orderApi, settingApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
 import { normalizeCostCategories } from '../../utils/cost-categories'
-import { createQuotePdf, renderQuoteImages, shareOrOpenFile } from '../../utils/quote-export'
+import { createQuotePdf, renderQuoteImages, shareQuoteFile } from '../../utils/quote-export'
 
 const CATS: Array<[string, string, string]> = [
   ['profile', '型材', 'c1'],
@@ -36,6 +36,9 @@ Page({
     costText: '¥0',
     extrasTotalText: '¥0',
     exporting: false,
+    pdfReadyToShare: false,
+    pendingPdfPath: '',
+    pendingPdfName: '',
   },
   _seq: 0,
 
@@ -198,13 +201,13 @@ Page({
   onShareQuote() {
     if (!this.data.o || this.data.exporting) return
     wx.showActionSheet({
-      itemList: ['客户展示图片', '正式 PDF 报价'],
+      itemList: ['报价图片（保存相册）', 'PDF转发'],
       success: (result) => this.exportQuote(result.tapIndex),
     })
   },
   async exportQuote(type: number) {
     if (!this.data.o || this.data.exporting) return
-    this.setData({ exporting: true })
+    this.setData({ exporting: true, pdfReadyToShare: false })
     const labels = ['生成图片…', '生成 PDF…']
     wx.showLoading({ title: labels[type] || '生成报价单…', mask: true })
     let filePath = ''
@@ -231,18 +234,50 @@ Page({
       wx.hideLoading()
       this.setData({ exporting: false })
     }
-    // 生成与分享拆开：文件已经生成时，开发者工具不支持分享也不再误报为“生成失败”。
-    if (!filePath) return
-    try {
-      await shareOrOpenFile(filePath, fileName)
-    } catch (e) {
+    // 官方文件转发必须发生在真实 TAP 事件内，生成完成后交给用户再次点击转发。
+    if (filePath && type === 1) {
+      this.setData({
+        pendingPdfPath: filePath,
+        pendingPdfName: fileName,
+        pdfReadyToShare: true,
+      })
+      wx.showToast({ title: 'PDF已生成，请点击转发', icon: 'none' })
+    }
+  },
+  stopPdfShareTap() {},
+  cancelPendingPdf() {
+    this.setData({ pdfReadyToShare: false, pendingPdfPath: '', pendingPdfName: '' })
+  },
+  sharePendingPdf() {
+    const path = String(this.data.pendingPdfPath || '')
+    const fileName = String(this.data.pendingPdfName || '正式报价单.pdf')
+    if (!path) return
+    if (wx.getSystemInfoSync().platform === 'devtools') {
+      this.setData({ pdfReadyToShare: false })
       wx.showModal({
-        title: '文件已生成',
-        content: '当前环境暂不支持直接分享。请使用真机打开后，从文件预览页右上角转发给客户。',
+        title: '请使用真机转发',
+        content: '微信开发者工具不支持官方文件转发，请用手机微信打开小程序后再次点击“PDF转发”。',
         showCancel: false,
         confirmText: '知道了',
       })
+      return
     }
+    // 不要在调用前 await、setTimeout 或弹窗，确保 shareFileMessage 仍处于用户 TAP 手势内。
+    shareQuoteFile(path, fileName)
+      .then(() => {
+        this.setData({ pdfReadyToShare: false, pendingPdfPath: '', pendingPdfName: '' })
+        wx.showToast({ title: 'PDF已发送', icon: 'success' })
+      })
+      .catch((e) => {
+        console.error('[quote-export] shareFileMessage', e)
+        this.setData({ pdfReadyToShare: false })
+        wx.showModal({
+          title: 'PDF转发失败',
+          content: '请使用手机微信真机运行，并点击“立即转发 PDF”完成官方文件转发。',
+          showCancel: false,
+          confirmText: '知道了',
+        })
+      })
   },
   saveQuoteImages(paths: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
