@@ -9,7 +9,6 @@ interface MembershipStatus {
   expiringSoon: boolean
   lastPlanKey: string | null
   perpetual?: boolean
-  trialClaimed?: boolean
 }
 
 interface LedgerUserInfo {

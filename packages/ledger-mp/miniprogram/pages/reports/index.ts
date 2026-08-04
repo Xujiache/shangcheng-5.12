@@ -3,8 +3,6 @@ import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount, glassCardStyle, goToLogin, isLoggedIn } from '../../utils/store'
 
 const CURRENT_YEAR = new Date().getFullYear()
-const INITIAL_GUEST = !isLoggedIn()
-
 interface MonthRow {
   month: number
   label: string
@@ -18,8 +16,7 @@ interface MonthRow {
 
 Page({
   data: {
-    isGuest: INITIAL_GUEST,
-    headerSubtitle: INITIAL_GUEST ? '游客可浏览公开内容' : `${CURRENT_YEAR}年 · 全年统计`,
+    headerSubtitle: `${CURRENT_YEAR}年 · 全年统计`,
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     tabMotion: false,
     tab: 'profit',
@@ -27,7 +24,7 @@ Page({
       { value: 'profit', label: '利润统计' },
       { value: 'labor', label: '人工统计' },
     ],
-    loading: !INITIAL_GUEST,
+    loading: true,
     loadError: false, // 网络/加载失败：区别于"暂无数据"空态
     sel: -1,
     ovYear: CURRENT_YEAR,
@@ -55,20 +52,16 @@ Page({
   _seq: 0,
 
   onShow() {
-    const wasGuest = this.data.isGuest
-    const isGuest = !isLoggedIn()
+    if (!isLoggedIn()) {
+      goToLogin()
+      return
+    }
     this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(2) : tb.setData({ selected: 2 })
     this.setData({
-      isGuest,
-      headerSubtitle: isGuest ? '游客可浏览公开内容' : `${this.data.ovYear}年 · 全年统计`,
+      headerSubtitle: `${this.data.ovYear}年 · 全年统计`,
     })
-    if (isGuest) {
-      this.enterGuestMode()
-      return
-    }
-    if (wasGuest) this.setData({ loading: true, loadError: false })
     this.load()
   },
   enterGuestMode() {

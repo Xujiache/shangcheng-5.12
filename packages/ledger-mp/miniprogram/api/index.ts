@@ -29,11 +29,6 @@ export const meApi = {
   // 虚拟支付下单（虚拟商品合规内购）→ 返回 wx.requestVirtualPayment 所需 signData/paySig/signature
   createVirtualPay: (planKey: string, code?: string) =>
     http.post('/l/membership/xpay-order', { planKey, code }),
-  // 领取体验卡（一次性，免费套餐专用，不走支付）
-  claimTrial: () => {
-    invalidateCache(['/l/me', '/l/membership'])
-    return http.post('/l/membership/claim-trial', {})
-  },
   updateProfile: (data: { nickname?: string; avatar?: string }) =>
     http.patch('/l/profile', data).then((r) => {
       invalidateCache(['/l/me', '/l/membership'])

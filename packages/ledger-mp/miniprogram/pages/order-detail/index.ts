@@ -1,6 +1,11 @@
-import { orderApi, settingApi } from '../../api/index'
+import { meApi, orderApi, settingApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
-import { getHideAmount } from '../../utils/store'
+import {
+  getHideAmount,
+  hasActiveMembership,
+  requireMembership,
+  setMembership,
+} from '../../utils/store'
 import { normalizeCostCategories } from '../../utils/cost-categories'
 import { createQuotePdf, renderQuoteImages, shareQuoteFile } from '../../utils/quote-export'
 
@@ -39,6 +44,7 @@ Page({
     pdfReadyToShare: false,
     pendingPdfPath: '',
     pendingPdfName: '',
+    readOnly: !hasActiveMembership(),
   },
   _seq: 0,
 
@@ -46,7 +52,17 @@ Page({
     this.setData({ id: opt.id || '' })
   },
   onShow() {
+    this.refreshMembershipMode()
     if (this.data.id) this.load()
+  },
+  async refreshMembershipMode() {
+    try {
+      const membership = (await meApi.refreshMembership()) as MembershipStatus
+      setMembership(membership)
+      this.setData({ readOnly: !hasActiveMembership(membership) })
+    } catch (e) {
+      // 状态刷新失败不影响当前订单预览。
+    }
   },
 
   async load() {
@@ -171,10 +187,18 @@ Page({
 
   toEdit() {
     if (this._deleted) return
+    if (this.data.readOnly) {
+      requireMembership('会员已到期，历史订单可以查看和预览，但暂不能修改。')
+      return
+    }
     wx.navigateTo({ url: '/pages/order-edit/index?id=' + this.data.id })
   },
   onDelete() {
     if (this._deleted) return
+    if (this.data.readOnly) {
+      requireMembership('会员已到期，历史订单可以查看和预览，但暂不能删除。')
+      return
+    }
     wx.showModal({
       title: '删除订单',
       content: '删除后不可恢复，确定删除这笔订单？',
@@ -195,6 +219,10 @@ Page({
   },
   toCustomer() {
     const o = this.data.o
+    if (this.data.readOnly) {
+      wx.showToast({ title: '只读模式下不可修改客户资料', icon: 'none' })
+      return
+    }
     // 点击客户直接进编辑客户信息页（返回后 onShow 会重新拉取订单，名字自动刷新）
     if (o && o.customerId) wx.navigateTo({ url: '/pages/customer-edit/index?id=' + o.customerId })
   },

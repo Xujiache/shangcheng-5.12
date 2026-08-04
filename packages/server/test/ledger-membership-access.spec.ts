@@ -6,6 +6,8 @@ jest.mock('nanoid', () => ({
 }))
 
 import { LedgerService } from '../src/modules/ledger/ledger.service'
+import { BizCode, BizException } from '../src/common/exceptions/biz.exception'
+import { LedgerMembershipGuard } from '../src/modules/ledger/guards/ledger-membership.guard'
 
 const userWith = (membership: any) => ({
   id: 'wechat-user-1',
@@ -50,5 +52,41 @@ describe('LedgerService.cutAccess 会员闸门', () => {
       mode: 'member',
       membership: { active: true, lastPlanKey: 'month' },
     })
+  })
+})
+
+function guardContext(method: string, originalUrl: string, membership: any): any {
+  return {
+    switchToHttp: () => ({
+      getRequest: () => ({ method, originalUrl, ledgerUser: { membership } }),
+    }),
+  }
+}
+
+describe('LedgerMembershipGuard 到期会员订单只读', () => {
+  const guard = new LedgerMembershipGuard()
+  const expiredMembership = { active: false, expired: true }
+
+  it.each(['/api/v1/l/orders', '/api/v1/l/orders/order-1?source=history'])(
+    '%s 的 GET 请求可读取历史订单',
+    (url) => {
+      expect(guard.canActivate(guardContext('GET', url, expiredMembership))).toBe(true)
+    },
+  )
+
+  it.each([
+    ['POST', '/api/v1/l/orders'],
+    ['PATCH', '/api/v1/l/orders/order-1'],
+    ['DELETE', '/api/v1/l/orders/order-1'],
+    ['GET', '/api/v1/l/customers'],
+  ])('%s %s 仍受会员闸门保护', (method, url) => {
+    expect(() => guard.canActivate(guardContext(method, url, expiredMembership))).toThrow(
+      BizException,
+    )
+    try {
+      guard.canActivate(guardContext(method, url, expiredMembership))
+    } catch (error) {
+      expect((error as BizException).getResponse()).toMatchObject({ code: BizCode.MEMBER_EXPIRED })
+    }
   })
 })

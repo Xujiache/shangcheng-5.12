@@ -126,12 +126,9 @@ Page({
     }
   },
 
-  routeAfterLogin(m: MembershipStatus | null, created = false) {
-    // 新微信账号默认只有空会员档案；未开通时必须先进入会员开通页。
-    if (!m || !m.active) {
-      wx.reLaunch({ url: '/pages/membership/index?gate=1' + (created ? '&new=1' : '') })
-      return
-    }
+  routeAfterLogin(m: MembershipStatus | null, _created = false) {
+    // 新微信账号由服务端/数据库自动发放 30 天会员。
+    // 未开通或已到期账号也直接进入首页，不再强制跳转会员开通页。
     if (getBioLock() && !getBioVerified()) {
       const pages = getCurrentPages()
       const current = pages[pages.length - 1]
@@ -140,7 +137,7 @@ Page({
       }
       return
     }
-    if (m.expiringSoon) {
+    if (m && m.active && m.expiringSoon) {
       wx.showToast({ title: `会员剩 ${m.daysLeft} 天即将到期`, icon: 'none' })
       setTimeout(() => wx.switchTab({ url: '/pages/home/index' }), 800)
     } else {

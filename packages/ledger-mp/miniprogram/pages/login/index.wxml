@@ -3,11 +3,8 @@
     <image class="login__hero-image" src="/assets/login/login-hero.jpg" mode="aspectFill" />
     <view class="login__hero-shade"></view>
     <view class="login__hero-bridge"></view>
-    <view class="login__brand">
-      <view class="login__brand-mark">
-        <image wx:if="{{logoUrl}}" class="login__brand-logo" src="{{logoUrl}}" mode="aspectFit" />
-        <lz-icon wx:else name="cube" size="25" color="white" stroke="2" />
-      </view>
+    <view class="login__guest-top" hover-class="login__guest-top--press" bindtap="continueAsGuest">
+      <text>暂不登录</text>
     </view>
   </view>
 
@@ -47,11 +44,6 @@
           和
           <text class="login__link" catchtap="openPrivacyContract">{{privacyContractName}}</text>
         </view>
-      </view>
-
-      <view class="login__guest" hover-class="tap-active" bindtap="continueAsGuest">
-        <text>暂不登录，先浏览页面</text>
-        <lz-icon name="chevron" size="15" color="accent" />
       </view>
 
     </block>

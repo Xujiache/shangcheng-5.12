@@ -1,16 +1,16 @@
-import { orderApi } from '../../api/index'
+import { meApi, orderApi } from '../../api/index'
 import { maskMoney, yuan } from '../../utils/format'
 import {
   getHideAmount,
   glassCardStyle,
   goToLogin,
+  hasActiveMembership,
   isLoggedIn,
   requireLogin,
+  setMembership,
 } from '../../utils/store'
 
 const PAGE_SIZE = 50
-const INITIAL_GUEST = !isLoggedIn()
-
 const SEG_DEF: Array<[string, string]> = [
   ['profile', 'c1'],
   ['glass', 'c2'],
@@ -21,7 +21,6 @@ const SEG_DEF: Array<[string, string]> = [
 
 Page({
   data: {
-    isGuest: INITIAL_GUEST,
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
@@ -33,10 +32,11 @@ Page({
     ],
     list: [] as any[],
     summary: { count: 0, profit: '¥0', avg: '¥0' },
-    loading: !INITIAL_GUEST,
+    loading: true,
     loadError: false, // 网络/加载失败：区别于"暂无订单"空态
     hasMore: false,
     loadingMore: false,
+    readOnly: !hasActiveMembership(),
   },
 
   _t: 0 as any,
@@ -44,21 +44,27 @@ Page({
   _page: 1,
 
   onShow() {
-    const wasGuest = this.data.isGuest
-    const isGuest = !isLoggedIn()
+    if (!isLoggedIn()) {
+      goToLogin()
+      return
+    }
     this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(1) : tb.setData({ selected: 1 })
     this.setData({
       hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10,
-      isGuest,
     })
-    if (isGuest) {
-      this.enterGuestMode()
-      return
-    }
-    if (wasGuest) this.setData({ loading: true, loadError: false })
+    this.refreshMembershipMode()
     this.load()
+  },
+  async refreshMembershipMode() {
+    try {
+      const membership = (await meApi.refreshMembership()) as MembershipStatus
+      setMembership(membership)
+      this.setData({ readOnly: !hasActiveMembership(membership) })
+    } catch (e) {
+      // 会员状态刷新失败不覆盖当前列表，写入口仍由服务端最终校验。
+    }
   },
   enterGuestMode() {
     clearTimeout(this._t)

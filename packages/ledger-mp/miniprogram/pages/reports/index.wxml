@@ -3,15 +3,7 @@
   <lz-header title="经营报表" subtitle="{{headerSubtitle}}" back="{{false}}" />
 
   <view class="lz-page lz-page--pad-bottom">
-    <view wx:if="{{isGuest}}" class="lz-card lz-card--glow rp__guest">
-      <view class="rp__guest-icon"><lz-icon name="profit" size="28" color="accent" /></view>
-      <view class="rp__guest-title">登录后生成经营报表</view>
-      <view class="rp__guest-copy">年度利润、人工成本和月度趋势来自你的私有订单数据。游客状态不会读取任何经营数据。</view>
-      <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full rp__guest-login" bindtap="toLogin">去登录</button>
-      <button class="lz-btn lz-btn--ghost lz-btn--lg lz-btn--full rp__guest-home" bindtap="toHome">返回首页浏览工具</button>
-    </view>
-
-    <block wx:else>
+    <block>
     <view style="margin-bottom: var(--gap);">
       <lz-segmented options="{{tabs}}" value="{{tab}}" bindchange="onTab" />
     </view>

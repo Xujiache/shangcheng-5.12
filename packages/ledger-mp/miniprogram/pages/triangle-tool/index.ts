@@ -1,4 +1,3 @@
-import { hasActiveMembership, requireMembership } from '../../utils/store'
 import {
   initialMembershipAccess,
   membershipAccessView,
@@ -132,15 +131,10 @@ Page({
       this.checkAccess()
       return
     }
-    requireMembership('三角计算仅限有效会员使用，开通或续费后即可输入参数并计算。')
+    this.checkAccess()
   },
   ensureAccess(): boolean {
-    if (this.data.canUse && hasActiveMembership()) return true
-    if (this.data.accessState === 'active') {
-      this.setData({ ...membershipAccessView('locked'), values: emptyValues(), resultRows: [] })
-    }
-    this.openAccess()
-    return false
+    return !!this.data.canUse
   },
   onInput(e: any) {
     if (!this.ensureAccess()) return

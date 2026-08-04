@@ -1,6 +1,7 @@
 import { cutPlanApi } from '../../api/index'
 import { optimizeCutting } from '../../utils/cutting'
 import { optimizeNesting, NestResult } from '../../utils/nesting'
+import { hasActiveMembership, requireLogin, requireMembership } from '../../utils/store'
 
 const MATERIALS: Record<string, { name: string; unit: string; is2d: boolean; noKerf: boolean }> = {
   profile: { name: '型材', unit: '段', is2d: false, noKerf: false },
@@ -441,6 +442,11 @@ Page({
 
   // ── 保存方案（入参来自上一页）：起名 + 继续编辑则更新、否则新建 ──
   savePlan() {
+    if (!requireLogin('登录后才能将优化下料方案保存到云端。')) return
+    if (!hasActiveMembership()) {
+      requireMembership('会员已到期，优化计算仍可使用；续费后可继续保存云端方案。')
+      return
+    }
     if (this.data.savingPlan) return
     if (!this.data.summary) return
     const meta = MATERIALS[this.data.material] || MATERIALS.profile

@@ -131,63 +131,6 @@ export class LedgerService {
     }
   }
 
-  /**
-   * 领取体验卡（一次性）：仅免费套餐（实付分=0）可走此口，避免 0 元走微信支付失败。
-   * 拦截：已永久会员 / 已领过体验卡 → 拒绝。发放后记 trialClaimedAt 锁定一次性。
-   */
-  async claimTrial(userId: string) {
-    const cfg = await this.readConfig()
-    // 体验卡一律免费直接领取（不论展示价），限领一次；付费套餐走虚拟支付
-    const trial = cfg.plans.find((p) => p.trial)
-    if (!trial) throw new BizException(BizCode.BUSINESS_ERROR, '体验卡未配置')
-    const now = new Date()
-    const existing = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
-    if (existing?.perpetual) {
-      throw new BizException(BizCode.BUSINESS_ERROR, '您已是永久会员，无需领取体验卡')
-    }
-    if (existing?.trialClaimedAt) {
-      throw new BizException(BizCode.BUSINESS_ERROR, '体验卡仅限领取一次，您已领取过')
-    }
-    const before = existing?.expiresAt ?? null
-    const after = computeGrantExpiry(before, trial.days, now)
-    const m = existing
-      ? await this.prisma.ledgerMembership.update({
-          where: { id: existing.id },
-          data: { expiresAt: after, lastPlanKey: trial.key, trialClaimedAt: now },
-        })
-      : await this.prisma.ledgerMembership.create({
-          data: { userId, expiresAt: after, lastPlanKey: trial.key, trialClaimedAt: now },
-        })
-    await this.prisma.ledgerMembershipLog.create({
-      data: {
-        membershipId: m.id,
-        deltaDays: trial.days,
-        planKey: trial.key,
-        beforeAt: before,
-        afterAt: after,
-        operatorId: null,
-        note: `领取体验卡（${trial.days} 天，一次性）`,
-      },
-    })
-    await this.prisma.ledgerNotification
-      .create({
-        data: {
-          userId,
-          type: 'member',
-          title: '体验卡已领取',
-          body: `已为您开通 ${trial.days} 天体验会员，有效期至 ${after.toISOString().slice(0, 10)}。`,
-        },
-      })
-      .catch(() => {})
-    return {
-      ...deriveMembership(m.expiresAt, m.lastPlanKey, now, {
-        perpetual: m.perpetual,
-        trialClaimedAt: m.trialClaimedAt,
-      }),
-      plans: cfg.plans,
-    }
-  }
-
   async updateProfile(userId: string, dto: UpdateLedgerProfileDto) {
     const data: any = {}
     if (typeof dto.nickname === 'string' && dto.nickname.trim()) {

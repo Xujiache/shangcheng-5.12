@@ -34,28 +34,29 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 72%);
   pointer-events: none;
 }
-.login__brand {
+.login__guest-top {
   position: absolute;
+  z-index: 1;
   top: calc(env(safe-area-inset-top) + 14px);
   left: 20px;
-}
-.login__brand-mark {
-  width: 46px;
-  height: 46px;
+  min-width: 82px;
+  height: 38px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 14px;
-  background: rgba(14, 124, 102, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(14, 124, 102, 0.88);
   box-shadow: 0 9px 22px rgba(7, 71, 94, 0.2);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
 }
-.login__brand-logo {
-  width: 68%;
-  height: 68%;
-  border-radius: 8px;
+.login__guest-top--press {
+  opacity: 0.82;
+  transform: scale(0.97);
 }
 .login__sheet {
   position: relative;
@@ -137,17 +138,6 @@
 .login__link {
   color: var(--accent-text);
   font-weight: 600;
-}
-.login__guest {
-  min-height: 38px;
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--accent-text);
-  font-size: 13px;
-  font-weight: 700;
 }
 .login__sheet--checking {
   min-height: 250px;

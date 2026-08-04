@@ -13,6 +13,15 @@ export class LedgerMembershipGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>()
     const m = (req as any).ledgerUser?.membership
+
+    // 会员到期后保留历史订单只读能力；新增、修改、删除仍继续走会员闸门。
+    const path = String(req.originalUrl || '')
+      .split('?')[0]
+      .replace(/^\/api\/v1/, '')
+    if (req.method === 'GET' && /^\/l\/orders(?:\/[^/]+)?\/?$/.test(path)) {
+      return true
+    }
+
     if (!m?.active) {
       throw new BizException(
         BizCode.MEMBER_EXPIRED,

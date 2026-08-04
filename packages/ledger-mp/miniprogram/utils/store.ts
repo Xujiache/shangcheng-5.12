@@ -88,7 +88,7 @@ export function requireMembership(
   content = '该功能仅限有效会员使用，开通或续费后即可解锁。',
 ): boolean {
   if (!isLoggedIn()) {
-    requireLogin('登录并开通有效会员后，才可使用软件内的计算与经营功能。')
+    requireLogin('登录后才可使用订单写入和云端经营功能。')
     return false
   }
   if (hasActiveMembership()) return true

@@ -1,5 +1,5 @@
-import { statsApi, notificationApi, adApi, changelogApi } from '../../api/index'
-import { yuan, maskMoney } from '../../utils/format'
+import { statsApi, notificationApi, adApi, changelogApi, meApi } from '../../api/index'
+import { fmtDate, yuan, maskMoney } from '../../utils/format'
 import {
   getHideAmount,
   getFxMode,
@@ -7,10 +7,9 @@ import {
   goToLogin,
   isLoggedIn,
   requireLogin,
+  setMembership,
 } from '../../utils/store'
 import { makeShareCover } from '../../utils/share-cover'
-
-const INITIAL_GUEST = !isLoggedIn()
 
 const COLORMAP: Record<string, string> = {
   profile: 'c1',
@@ -26,7 +25,7 @@ const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', y
 Page({
   _cover: '',
   data: {
-    isGuest: INITIAL_GUEST,
+    loggedIn: isLoggedIn(),
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
@@ -43,7 +42,7 @@ Page({
     ],
     periodLabel: '本年',
     seriesTitle: '各月',
-    loading: !INITIAL_GUEST,
+    loading: true,
     loadError: false, // 网络/加载失败：区别于"暂无数据"空态
     unread: false,
     ovYear: new Date().getFullYear(),
@@ -62,6 +61,9 @@ Page({
     goalTargetText: '未设',
     goalPct: 0,
     ads: [] as any[],
+    welcomeBannerVisible: false,
+    welcomeDaysLeft: 0,
+    welcomeExpiresLabel: '',
     clogShow: false,
     clog: null as any,
   },
@@ -77,8 +79,7 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
-    const wasGuest = this.data.isGuest
-    const isGuest = !isLoggedIn()
+    const loggedIn = isLoggedIn()
     this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
@@ -92,15 +93,40 @@ Page({
     } catch (e) {
       /* 旧基础库兜底用默认 18 */
     }
-    this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max', isGuest })
-    if (isGuest) {
-      this.enterGuestMode()
-      return
-    }
-    if (wasGuest) this.setData({ loading: true, loadError: false })
-    this.load()
+    this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max', loggedIn })
+    this.refreshMembershipAndData()
     this.loadAds()
     this.maybeShowChangelog()
+  },
+  async refreshMembershipAndData() {
+    if (!isLoggedIn()) {
+      this.setData({
+        welcomeBannerVisible: false,
+        welcomeDaysLeft: 0,
+        welcomeExpiresLabel: '',
+      })
+      this.load()
+      return
+    }
+    try {
+      const membership = (await meApi.refreshMembership()) as MembershipStatus
+      setMembership(membership)
+      const welcomeBannerVisible = !!membership.active && membership.lastPlanKey === 'welcome-30d'
+      this.setData({
+        welcomeBannerVisible,
+        welcomeDaysLeft: Math.max(0, membership.daysLeft || 0),
+        welcomeExpiresLabel: fmtDate(membership.expiresAt),
+      })
+      if (membership.active) {
+        this.load()
+      } else {
+        // 到期账号留在首页，不触发经营接口闸门；页面保持默认/已有数据。
+        this.setData({ loading: false, loadError: false })
+      }
+    } catch (e) {
+      // 会员状态刷新失败时仍尝试按原流程加载，避免临时网络问题造成整页空白。
+      this.load()
+    }
   },
   enterGuestMode() {
     ;(this as any)._seq = (((this as any)._seq as number) || 0) + 1
@@ -204,6 +230,7 @@ Page({
 
   async load(done?: () => void) {
     if (!isLoggedIn()) {
+      this.setData({ loading: false, loadError: false })
       if (done) done()
       return
     }
@@ -343,7 +370,6 @@ Page({
     wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
   },
   toCut() {
-    if (!requireLogin('登录并开通会员后可保存优化下料方案；计算工具页面可免登录浏览。')) return
     wx.navigateTo({ url: '/pages/cut/index' })
   },
   toTriangleTool() {

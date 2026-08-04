@@ -2,6 +2,25 @@ import { TOKEN_KEY, VERSION } from './config'
 import { captureInviteCode, getBioLock, getBioVerified } from './utils/store'
 import { clearAllCache } from './utils/request'
 
+const GUEST_ALLOWED_ROUTES = new Set([
+  'pages/home/index',
+  'pages/login/index',
+  'pages/triangle-tool/index',
+  'pages/arc-tool/index',
+  'pages/cut/index',
+  'pages/cut-result/index',
+  // 登录页必须允许查看用户协议和隐私政策。
+  'pages/doc/index',
+])
+
+function blockRestrictedGuestRoute(options: any, token: string): boolean {
+  if (token) return false
+  const path = String((options && options.path) || '').replace(/^\/+/, '')
+  if (!path || GUEST_ALLOWED_ROUTES.has(path)) return false
+  setTimeout(() => wx.reLaunch({ url: '/pages/login/index' }), 0)
+  return true
+}
+
 App<IAppOption>({
   globalData: {
     token: '',
@@ -14,6 +33,7 @@ App<IAppOption>({
   onLaunch(options: any) {
     this.globalData.token = wx.getStorageSync(TOKEN_KEY) || ''
     captureInviteCode(options && options.query && options.query.inviteCode)
+    blockRestrictedGuestRoute(options, this.globalData.token)
     // 真实状态栏高度：安卓 env(safe-area-inset-top) 返回 0，自定义导航必须用它做顶部留白
     try {
       this.globalData.statusBarHeight = wx.getWindowInfo().statusBarHeight || 20
@@ -32,6 +52,7 @@ App<IAppOption>({
   },
   onShow(options: any) {
     captureInviteCode(options && options.query && options.query.inviteCode)
+    if (blockRestrictedGuestRoute(options, this.globalData.token)) return
     // 生物解锁闸门：每次冷启动校验一次（解锁后 bioVerified 置位不再拦）。
     // 未登录不锁（登录流程不受影响）；深链进入的页面解锁后统一落到首页。
     if (getBioVerified() || !getBioLock() || !this.globalData.token) return

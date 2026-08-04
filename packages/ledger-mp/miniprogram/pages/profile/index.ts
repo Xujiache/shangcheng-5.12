@@ -11,12 +11,9 @@ import {
   requireLogin,
 } from '../../utils/store'
 
-const INITIAL_GUEST = !isLoggedIn()
-
 Page({
   _cover: '',
   data: {
-    isGuest: INITIAL_GUEST,
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     tabMotion: false,
     topSpace: 38, // 顶部留白 = 状态栏高度 + 18
@@ -52,33 +49,18 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
-    const isGuest = !isLoggedIn()
+    if (!isLoggedIn()) {
+      goToLogin()
+      return
+    }
     this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(3) : tb.setData({ selected: 3 })
     this.setData({
       topSpace: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18,
-      isGuest,
     })
-    if (isGuest) {
-      this.enterGuestMode()
-      return
-    }
     this.load()
   },
-  enterGuestMode() {
-    this.setData({
-      isGuest: true,
-      nickname: '游客模式',
-      accountText: '公开页面可直接浏览',
-      avatarChar: '访',
-      avatarUrl: '',
-      memberActive: false,
-      memberText: '未登录',
-      memberSub: '登录后查看账号与会员状态',
-    })
-  },
-
   applyUser(u: any) {
     if (!u) return
     const m = u.membership || {}

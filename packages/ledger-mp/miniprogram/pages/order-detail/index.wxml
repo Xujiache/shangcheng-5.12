@@ -5,6 +5,10 @@
   </lz-header>
 
   <view wx:if="{{o}}" class="lz-page" style="padding-bottom: 110px;">
+    <view wx:if="{{readOnly}}" class="lz-card" style="margin-bottom: var(--gap); padding: 12px 14px; color: var(--accent-text); font-size: 13px;">
+      会员已到期，当前订单仅支持查看、预览和导出。
+    </view>
+
     <!-- 核心 -->
     <view class="lz-card lz-card--glow od__core">
       <lz-donut data="{{donut}}" size="120" thickness="18">
@@ -103,13 +107,13 @@
   </view>
 
   <view wx:if="{{o}}" class="lz-footer" style="display: flex; gap: 10px;">
-    <button class="lz-btn lz-btn--ghost lz-btn--lg" style="flex: 0 0 104px;" bindtap="onDelete">
+    <button wx:if="{{!readOnly}}" class="lz-btn lz-btn--ghost lz-btn--lg" style="flex: 0 0 104px;" bindtap="onDelete">
       <lz-icon name="trash" size="18" color="loss" /> 删除
     </button>
-    <button class="lz-btn lz-btn--ghost lz-btn--lg od__share" bindtap="onShareQuote" loading="{{exporting}}">
+    <button class="lz-btn lz-btn--ghost lz-btn--lg od__share {{readOnly ? 'lz-flex1' : ''}}" bindtap="onShareQuote" loading="{{exporting}}">
       <lz-icon name="share" size="18" color="accent" /> 报价单
     </button>
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-flex1" bindtap="toEdit">
+    <button wx:if="{{!readOnly}}" class="lz-btn lz-btn--primary lz-btn--lg lz-flex1" bindtap="toEdit">
       <lz-icon name="pencil" size="18" color="white" /> 编辑此订单
     </button>
   </view>

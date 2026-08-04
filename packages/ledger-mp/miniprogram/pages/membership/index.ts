@@ -32,7 +32,6 @@ const BENEFITS = [
 ]
 
 const PLAN_FALLBACK = [
-  { key: 'day', label: '体验卡', days: 1, price: '¥1' },
   { key: 'week', label: '周卡', days: 7, price: '¥9' },
   { key: 'month', label: '月卡', days: 30, price: '¥29' },
   { key: 'quarter', label: '季卡', days: 90, price: '¥79' },
@@ -42,7 +41,6 @@ const PLAN_FALLBACK = [
 Page({
   data: {
     gate: false,
-    newWechatUser: false,
     accountCode: '',
     loading: true,
     loadError: false, // 首次加载失败：换重试卡，避免把默认值「尚未开通会员」当真相展示
@@ -72,7 +70,6 @@ Page({
   onLoad(opt: any) {
     this.setData({
       gate: opt.gate === '1',
-      newWechatUser: opt.new === '1',
       accountCode: getUser()?.accountCode || '',
     })
     this.load()
@@ -93,18 +90,13 @@ Page({
   applyMembership(res: any) {
     const m: MembershipStatus = res
     const rawPlans = res.plans && res.plans.length ? res.plans : PLAN_FALLBACK
-    const plans = rawPlans.map((p: any) => {
-      const trial = !!p.trial
-      // 体验卡一律免费直接领取：展示「免费」、isFree=true（走领取不走支付）
-      const isFree = trial || (Number(String(p.price).replace(/[^\d.]/g, '')) || 0) <= 0
-      return {
+    // 新用户 30 天会员由注册流程自动发放，会员中心不再提供手动领取入口。
+    const plans = rawPlans
+      .filter((p: any) => !p.trial && p.key !== 'day')
+      .map((p: any) => ({
         ...p,
-        price: trial ? '免费' : p.price,
         durLabel: p.perpetual ? '永久' : p.days + ' 天',
-        isFree,
-        claimed: trial && !!m.trialClaimed, // 体验卡(限领1次)：已领过则置「已领取」
-      }
-    })
+      }))
     const plan = plans.find((p: any) => p.key === m.lastPlanKey)
     const planLabel = m.never ? '门窗利账 会员' : plan ? plan.label : '门窗利账 会员'
     const statusText = m.perpetual
@@ -149,53 +141,13 @@ Page({
   ctaForKey(key: string, m: any, plans: any[]) {
     const plan = (plans || this.data.plans).find((p: any) => p.key === key)
     if (!plan) return m && m.active ? '续费会员' : '开通会员'
-    if (plan.trial && m && m.trialClaimed) return '体验卡已领取'
-    if (plan.isFree) return '免费领取 ' + plan.label
     return (m && m.active ? '续费 ' : '开通 ') + plan.label + ' ' + plan.price
   },
 
-  // 领取体验卡（一次性，免费套餐专用，不走支付）
-  async claimTrial() {
-    if (this.data.m && this.data.m.trialClaimed) {
-      wx.showToast({ title: '体验卡仅限领取一次', icon: 'none' })
-      return
-    }
-    if (this.data.paying) return
-    this.setData({ paying: true })
-    wx.showLoading({ title: '领取中…', mask: true })
-    try {
-      const res: any = await meApi.claimTrial()
-      wx.hideLoading()
-      this.applyMembership(res)
-      wx.showToast({ title: '体验卡已领取', icon: 'success' })
-    } catch (e) {
-      wx.hideLoading()
-      // request 层已 toast 具体原因（已领过 / 已永久 / 未配置）
-    } finally {
-      this.setData({ paying: false })
-    }
-  },
-
   onRenew() {
-    const sel = this.data.plans.find((p: any) => p.key === this.data.selectedKey)
     // 已是永久会员：无需再开通
     if (this.data.m && this.data.m.perpetual) {
       wx.showToast({ title: '您已是永久会员', icon: 'none' })
-      return
-    }
-    // 体验卡限领1次：已领过 → 弹窗拦截（后端也会拒，这里提前给出醒目提醒）
-    if (sel && (sel as any).trial && this.data.m && this.data.m.trialClaimed) {
-      wx.showModal({
-        title: '无法重复领取',
-        content: '体验卡每个账号仅限领取一次，您已领取过，无需重复领取。',
-        showCancel: false,
-        confirmText: '知道了',
-      })
-      return
-    }
-    // 体验卡/免费套餐 → 直接领取，不走支付（体验卡已在上面拦了重复领取）
-    if (sel && (sel as any).isFree) {
-      this.claimTrial()
       return
     }
     // 虚拟支付就绪 → 合规内购（虚拟商品必须走虚拟支付，不能用普通微信支付）

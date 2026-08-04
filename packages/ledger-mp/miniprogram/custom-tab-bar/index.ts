@@ -1,4 +1,14 @@
-import { getGlass, getLiquidTab, glassTabStyle, requireLogin } from '../utils/store'
+import { meApi } from '../api/index'
+import {
+  getGlass,
+  getLiquidTab,
+  glassTabStyle,
+  goToLogin,
+  hasActiveMembership,
+  isLoggedIn,
+  requireMembership,
+  setMembership,
+} from '../utils/store'
 
 // FAB 防连点：避免连续打开多个新增订单页面。
 let adding = false
@@ -57,6 +67,10 @@ Component({
       const index = Number(e.currentTarget.dataset.index)
       if (!Number.isInteger(index) || index < 0 || index >= this.data.tabs.length) return
       if (this.data.switching || index === this.data.selected) return
+      if (index > 0 && !isLoggedIn()) {
+        goToLogin()
+        return
+      }
       const previous = this.data.selected
       this.setData({ switching: true })
       this.selectTab(index)
@@ -72,14 +86,26 @@ Component({
       })
     },
 
-    onAdd() {
+    async onAdd() {
       if (adding) return
-      if (!requireLogin('登录并开通会员后可新增订单；公开页面可免登录浏览。')) return
+      if (!isLoggedIn()) {
+        goToLogin()
+        return
+      }
       adding = true
-      wx.navigateTo({
-        url: '/pages/order-edit/index',
-        complete: () => setTimeout(() => (adding = false), 600),
-      })
+      try {
+        const membership = (await meApi.refreshMembership()) as MembershipStatus
+        setMembership(membership)
+        if (!hasActiveMembership(membership)) {
+          requireMembership('会员已到期，历史订单仍可查看，但新增订单需要续费。')
+          return
+        }
+        wx.navigateTo({ url: '/pages/order-edit/index' })
+      } catch (e) {
+        // request 层已经给出网络提示；状态不明时不开放写入口。
+      } finally {
+        setTimeout(() => (adding = false), 600)
+      }
     },
   },
 })

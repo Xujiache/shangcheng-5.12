@@ -1,6 +1,7 @@
-import { customerApi, orderApi, settingApi } from '../../api/index'
+import { customerApi, meApi, orderApi, settingApi } from '../../api/index'
 import { yuan } from '../../utils/format'
 import { EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
+import { hasActiveMembership, requireMembership, setMembership } from '../../utils/store'
 import {
   CostCategory,
   cacheCostCategories,
@@ -527,6 +528,21 @@ Page({
       } else {
         wx.showToast({ title: '请点「报价明细」录入明细或总价', icon: 'none' })
       }
+      return
+    }
+    try {
+      const membership = (await meApi.refreshMembership()) as MembershipStatus
+      setMembership(membership)
+      if (!hasActiveMembership(membership)) {
+        requireMembership(
+          this.data.editing
+            ? '会员已到期，历史订单可以查看和预览，但暂不能修改。'
+            : '会员已到期，历史订单仍可查看，但新增订单需要续费。',
+        )
+        return
+      }
+    } catch (e) {
+      // 状态校验失败时不开放写操作，request 层已提示具体网络错误。
       return
     }
     this.setData({ saving: true })

@@ -54,7 +54,7 @@ export class LedgerPayService {
     if (amountFen <= 0) {
       throw new BizException(BizCode.BUSINESS_ERROR, '该套餐暂不支持在线支付，请联系管理员')
     }
-    // 体验卡免费直接领取，不允许走支付（应调用 /l/membership/claim-trial）
+    // ???????????????????? 30 ??????????
     if (plan.trial) {
       throw new BizException(BizCode.BUSINESS_ERROR, '体验卡免费领取，无需支付')
     }

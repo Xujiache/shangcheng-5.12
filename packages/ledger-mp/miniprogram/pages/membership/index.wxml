@@ -2,7 +2,7 @@
 <view class="ms">
   <lz-header
     title="{{gate ? '开通会员' : '会员中心'}}"
-    subtitle="{{gate ? '会员制应用 · 开通后即可使用' : ''}}"
+    subtitle="{{gate ? '开通后可新增订单并恢复完整功能' : ''}}"
     back="{{!gate}}"
   >
     <view wx:if="{{gate}}" slot="right" class="ms__logout" bindtap="onLogout">退出登录</view>
@@ -39,14 +39,14 @@
       <view class="ms__hero-bot">
         <text class="ms__valid">{{m.perpetual ? '永久有效 · 无到期日' : (m.active ? ('有效期至 ' + expiresLabel) : (m.expired ? ('已于 ' + expiresLabel + ' 到期') : '开通后享全部功能'))}}</text>
         <view wx:if="{{m.expiringSoon}}" class="ms__badge ms__badge--soon">即将到期</view>
-        <view wx:elif="{{m.expired}}" class="ms__badge ms__badge--lock">功能已锁定</view>
+        <view wx:elif="{{m.expired}}" class="ms__badge ms__badge--lock">会员已到期</view>
       </view>
     </view>
 
     <!-- gate notice -->
     <view wx:if="{{gate && !m.active}}" class="ms__notice">
       <lz-icon name="info" size="17" color="loss" />
-      <text>{{m.expired ? '您的会员已到期，续费后即可继续使用全部功能。' : (newWechatUser ? '微信账号已创建。开通会员后即可使用全部功能。' : '门窗利账为会员制应用，开通会员后即可开始记账。')}}</text>
+      <text>{{m.expired ? '会员已到期，历史订单和三个计算工具仍可使用；续费后可新增订单并恢复全部功能。' : '开通会员后可新增订单并使用完整经营功能。'}}</text>
     </view>
     <view wx:if="{{gate && !m.active && accountCode}}" class="ms__foot-note">
       账号编号：{{accountCode}} · 联系管理员开通时请提供此编号
@@ -59,7 +59,7 @@
         <view wx:if="{{item.key === selectedKey}}" class="ms__pc-check"><lz-icon name="check" size="12" color="white" stroke="2.6" /></view>
         <view class="ms__pc-label">{{item.label}}</view>
         <view class="ms__pc-price">{{item.price}}</view>
-        <view class="ms__pc-days">{{item.claimed ? '已领取' : item.durLabel}}</view>
+        <view class="ms__pc-days">{{item.durLabel}}</view>
       </view>
     </view>
 
@@ -78,7 +78,7 @@
       </view>
     </view>
 
-    <view class="ms__foot-note">{{payEnabled ? '选择套餐 · 微信支付秒开通 · 到期数据保留，续费即恢复' : '会员由管理员后台开通 · 到期后数据保留，续费即可恢复使用'}}</view>
+    <view class="ms__foot-note">{{payEnabled ? '选择套餐 · 微信支付秒开通 · 到期后历史订单仍可查看' : '会员由管理员后台开通 · 到期后历史订单与计算工具仍可使用'}}</view>
     </block>
   </view>
 

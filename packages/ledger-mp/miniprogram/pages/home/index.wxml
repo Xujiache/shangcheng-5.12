@@ -3,9 +3,9 @@
   <view class="home__hd" style="padding-top: {{hdPad}}px; padding-right: {{hdRight}}px;">
     <view>
       <view class="home__title">利润中心</view>
-      <view class="home__sub">{{isGuest ? '工具页面可免登录浏览' : '门窗经营一目了然'}}</view>
+      <view class="home__sub">门窗经营一目了然</view>
     </view>
-    <view wx:if="{{isGuest}}" class="home__login-pill" hover-class="tap-active" bindtap="toLogin">
+    <view wx:if="{{!loggedIn}}" class="home__login-pill" hover-class="tap-active" bindtap="toLogin">
       <lz-icon name="user" size="16" color="accent" />
       <text>登录</text>
     </view>
@@ -16,8 +16,18 @@
   </view>
 
   <view class="lz-page lz-page--pad-bottom">
+    <view wx:if="{{welcomeBannerVisible}}" class="home__welcome">
+      <view class="home__welcome-icon">
+        <lz-icon name="crown" size="20" color="white" />
+      </view>
+      <view class="lz-flex1">
+        <view class="home__welcome-title">新用户 30 天会员已自动开通</view>
+        <view class="home__welcome-sub">剩余 {{welcomeDaysLeft}} 天 · 有效期至 {{welcomeExpiresLabel}}</view>
+      </view>
+    </view>
+
     <!-- 广告轮播（#2）-->
-    <swiper wx:if="{{!isGuest && ads.length}}" class="home__ads" indicator-dots="{{ads.length > 1}}" autoplay circular interval="4000" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
+    <swiper wx:if="{{loggedIn && ads.length}}" class="home__ads" indicator-dots="{{ads.length > 1}}" autoplay circular interval="4000" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
       <swiper-item wx:for="{{ads}}" wx:key="id" data-link="{{item.link}}" bindtap="onAd">
         <image class="home__ad-img" src="{{item.image}}" mode="aspectFill" lazy-load />
       </swiper-item>
@@ -31,23 +41,16 @@
           <image class="home__tool-image" src="/assets/tools/tool-triangle.png" mode="aspectFit" />
         </view>
         <view class="home__tool-t">三角计算</view>
-        <view class="home__tool-s">{{isGuest ? '会员解锁计算' : '边角反算'}}</view>
+        <view class="home__tool-s">边角反算</view>
       </view>
       <view class="home__tool-card" hover-class="tap-active" bindtap="toArcTool">
         <view class="home__tool-icon home__tool-icon--c2">
           <image class="home__tool-image" src="/assets/tools/tool-arc.png" mode="aspectFit" />
         </view>
         <view class="home__tool-t">圆弧计算</view>
-        <view class="home__tool-s">{{isGuest ? '会员解锁计算' : '弦长拱高'}}</view>
+        <view class="home__tool-s">弦长拱高</view>
       </view>
-      <view wx:if="{{isGuest}}" class="home__tool-card" hover-class="tap-active" bindtap="toAbout">
-        <view class="home__tool-icon home__tool-icon--c3">
-          <lz-icon name="info" size="25" color="accent" />
-        </view>
-        <view class="home__tool-t">关于产品</view>
-        <view class="home__tool-s">功能与服务</view>
-      </view>
-      <view wx:else class="home__tool-card" hover-class="tap-active" bindtap="toCut">
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toCut">
         <view class="home__tool-icon home__tool-icon--c3">
           <image class="home__tool-image" src="/assets/tools/tool-cut.png" mode="aspectFit" />
         </view>
@@ -56,52 +59,7 @@
       </view>
     </view>
 
-    <block wx:if="{{isGuest}}">
-      <view
-        class="home__guest"
-        hover-class="home__guest--press"
-        hover-stay-time="90"
-        bindtap="toLogin"
-        aria-role="button"
-        aria-label="微信登录并查看会员权益"
-      >
-        <view class="home__guest-icon">
-          <lz-icon name="lock" size="21" color="accent" stroke="1.9" />
-        </view>
-        <view class="home__guest-main">
-          <view class="home__guest-title">解锁计算与经营功能</view>
-          <view class="home__guest-copy">公开内容可免登录浏览</view>
-        </view>
-        <view class="home__guest-action">
-          <text>微信登录</text>
-          <lz-icon name="chevron" size="14" color="accent" stroke="2.2" />
-        </view>
-      </view>
-
-      <view class="home__section">公开内容</view>
-      <view class="lz-card lz-card--flush home__public">
-        <view class="lz-row" bindtap="toAbout" hover-class="tap-active">
-          <view class="lz-row__icon"><lz-icon name="info" size="19" color="accent" /></view>
-          <view class="lz-row__main">
-            <view class="lz-row__label">关于门窗利账</view>
-            <view class="lz-row__sub">了解产品功能与服务信息</view>
-          </view>
-          <lz-icon name="chevron" size="17" color="faint" />
-        </view>
-        <view class="lz-row" data-key="terms" bindtap="toDoc" hover-class="tap-active">
-          <view class="lz-row__icon"><lz-icon name="doc" size="19" color="accent" /></view>
-          <view class="lz-row__main"><view class="lz-row__label">用户协议</view></view>
-          <lz-icon name="chevron" size="17" color="faint" />
-        </view>
-        <view class="lz-row" data-key="privacy" bindtap="toDoc" hover-class="tap-active">
-          <view class="lz-row__icon"><lz-icon name="shield" size="19" color="accent" /></view>
-          <view class="lz-row__main"><view class="lz-row__label">隐私政策</view></view>
-          <lz-icon name="chevron" size="17" color="faint" />
-        </view>
-      </view>
-    </block>
-
-    <block wx:else>
+    <block>
       <!-- 加载失败（网络等）：带重试，不渲染"暂无…"空态 -->
       <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
         <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
