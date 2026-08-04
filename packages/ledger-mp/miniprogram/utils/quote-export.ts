@@ -167,8 +167,14 @@ function rowMetaLines(row: QuoteRow) {
 
 function estimateRowHeight(row: QuoteRow) {
   // 右侧尺寸明细、左侧备注均会独立换行，按最长列预留高度，避免导出内容互相覆盖。
-  const detailLines = rowDetailLines(row).reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 27)), 0)
-  const metaLines = rowMetaLines(row).reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 12)), 0)
+  const detailLines = rowDetailLines(row).reduce(
+    (sum, line) => sum + Math.max(1, Math.ceil(line.length / 27)),
+    0,
+  )
+  const metaLines = rowMetaLines(row).reduce(
+    (sum, line) => sum + Math.max(1, Math.ceil(line.length / 12)),
+    0,
+  )
   return Math.max(100, 42 + Math.max(detailLines, metaLines) * 28)
 }
 
@@ -327,9 +333,9 @@ function paintPdfPage(
       ctx.fillText('项目备注', 78, noteY + 30)
       ctx.fillStyle = '#72897E'
       ctx.font = '16px sans-serif'
-      wrap(ctx, orderNote, 790).slice(0, 2).forEach((line, index) =>
-        ctx.fillText(line, 160, noteY + 30 + index * 23),
-      )
+      wrap(ctx, orderNote, 790)
+        .slice(0, 2)
+        .forEach((line, index) => ctx.fillText(line, 160, noteY + 30 + index * 23))
     }
   }
   ctx.fillStyle = '#91A69C'
@@ -459,9 +465,9 @@ function paintImagePage(
       ctx.fillText('项目备注', 84, noteY + 32)
       ctx.fillStyle = '#6C877A'
       ctx.font = '16px sans-serif'
-      wrap(ctx, orderNote, 740).slice(0, 2).forEach((line, index) =>
-        ctx.fillText(line, 188, noteY + 32 + index * 24),
-      )
+      wrap(ctx, orderNote, 740)
+        .slice(0, 2)
+        .forEach((line, index) => ctx.fillText(line, 188, noteY + 32 + index * 24))
     }
   }
   ctx.fillStyle = 'rgba(255,255,255,0.78)'

@@ -1,0 +1,1198 @@
+// 经纬科技 · Prisma Schema（完整版）
+// 覆盖 40+ 业务实体：用户/商户/商品/订单/支付/售后/佣金/会员/广告/广场/聊天/装修/审核/系统
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 用户 / 鉴权
+// ============================================================
+model User {
+  id           String  @id @default(cuid())
+  // 三端通用账号
+  openid       String? @unique
+  unionid      String?
+  phone        String? @unique
+  email        String? @unique
+  username     String? @unique // 后台账号
+  passwordHash String? // argon2 hash（仅后台/手机注册）
+
+  nickname    String
+  avatar      String?
+  gender      Int       @default(0)
+  // 角色：customer / promoter / factory / store / admin / platform / super-admin
+  role        String    @default("customer")
+  // 推广关系
+  inviterId   String?
+  // 商家关联（factory/store/merchant 时）
+  merchantId  String?
+  // admin/platform 角色关联
+  adminRoleId String?
+  // 状态
+  status      String    @default("active") // active / disabled
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses    Address[]
+  orders       Order[]
+  favorites    Favorite[]
+  cartItems    CartItem[]
+  refunds      Refund[]
+  withdraws    Withdraw[]
+  bookings     Booking[]
+  commissions  Commission[]
+  chatSessions ChatSession[]
+  adminRole    AdminRole?    @relation(fields: [adminRoleId], references: [id])
+
+  @@index([phone])
+  @@index([email])
+  @@index([role])
+  @@index([merchantId])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  phone     String
+  region    String
+  detail    String
+  longitude Float?
+  latitude  Float?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model SmsCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  scene     String   @default("login") // login / register / reset
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, scene])
+}
+
+// ============================================================
+// 商户 / 门店 / 员工
+// ============================================================
+model Merchant {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  type            String // factory / store
+  name            String
+  legalName       String
+  creditCode      String
+  legalRep        String
+  contact         String
+  contactPhone    String
+  region          String
+  address         String
+  businessLicense String?
+  qualifications  String[]  @default([])
+  categories      String[]  @default([])
+  status          String    @default("pending") // pending / active / rejected / disabled
+  level           String? // A / B / C
+  credit          String? // A / B / C / D
+  rejectRate      Float?    @default(0)
+  totalGmv        Decimal?  @db.Decimal(14, 2)
+  trialEndAt      DateTime?
+  rejectReason    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  products           Product[]
+  orders             Order[]
+  refunds            Refund[]
+  withdraws          Withdraw[]
+  stores             Store[]
+  staffs             Staff[]
+  shopDecorate       ShopDecorate?
+  commissionRules    CommissionRule[]
+  coupons            Coupon[]
+  flashSales         FlashSale[]
+  groupBuys          GroupBuy[]
+  chatSessions       ChatSession[]
+  quickReplies       QuickReply[]
+  memberships        MerchantMembership[]
+  usageQuotas        UsageQuota[]
+  paymentRecords     PaymentRecord[]
+  featureOverrides   MerchantFeatureOverride[]
+  agencyApplications AgencyApplication[]
+
+  @@index([type, status])
+  @@index([userId])
+}
+
+model Store {
+  id            String    @id @default(cuid())
+  merchantId    String
+  merchant      Merchant  @relation(fields: [merchantId], references: [id])
+  name          String
+  contact       String
+  phone         String
+  region        String
+  address       String
+  longitude     Float?
+  latitude      Float?
+  level         String    @default("C") // A / B / C
+  status        String    @default("pending") // active / pending / cancelled
+  authValidFrom DateTime?
+  authValidTo   DateTime?
+  // 授权 5 字段（priceVisible/categories/markupRatio/expiresAt 等存 JSON）
+  authConfig    Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([merchantId])
+}
+
+model Staff {
+  id                 String   @id @default(cuid())
+  merchantId         String
+  merchant           Merchant @relation(fields: [merchantId], references: [id])
+  name               String
+  phone              String
+  role               String   @default("sales") // sales / cs / manager
+  status             String   @default("active") // active / left
+  permissions        String[] @default([])
+  monthlyPerformance Decimal? @db.Decimal(10, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+model ShopDecorate {
+  id            String   @id @default(cuid())
+  merchantId    String   @unique
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  themeColor    String   @default("#FF4D2D")
+  fontStyle     String   @default("modern") // modern / elegant / playful / minimal
+  productLayout String   @default("twoColumn") // waterfall / twoColumn / singleLarge
+  cornerStyle   String   @default("soft") // sharp / soft / round
+  // banners + modules 存 JSON
+  banners       Json     @default("[]")
+  modules       Json     @default("[]")
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================================
+// 商品 / SKU
+// ============================================================
+model Category {
+  id         String     @id @default(cuid())
+  parentId   String?
+  parent     Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryTree")
+  name       String
+  icon       String?
+  sort       Int        @default(0)
+  type       String     @default("platform") // platform / merchant
+  merchantId String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  products Product[]
+
+  @@index([parentId])
+  @@index([merchantId])
+}
+
+model Product {
+  id                 String   @id @default(cuid())
+  merchantId         String
+  merchant           Merchant @relation(fields: [merchantId], references: [id])
+  categoryId         String
+  category           Category @relation(fields: [categoryId], references: [id])
+  merchantCategoryId String?
+  name               String
+  description        String?
+  images             String[] @default([])
+  // 商品详情图（按顺序展示，商家端最多 20 张；老数据若为空则回退到 images.slice(1)）
+  detailImages       String[] @default([])
+  // 富文本详情（已被 detailImages 取代，保留兼容历史数据）
+  detailHtml         String?
+  tags               String[] @default([])
+  // 价格聚合
+  priceRetailMin     Decimal  @db.Decimal(10, 2)
+  priceRetailMax     Decimal  @db.Decimal(10, 2)
+  priceWholesaleMin  Decimal? @db.Decimal(10, 2)
+  priceWholesaleMax  Decimal? @db.Decimal(10, 2)
+  priceMemberMin     Decimal? @db.Decimal(10, 2)
+  priceMemberMax     Decimal? @db.Decimal(10, 2)
+  // 按尺寸定价（窗帘/家具类）
+  pricingMode        String?  @default("standard") // standard / by-size
+  pricePerSqm        Decimal? @db.Decimal(10, 2)
+  minLength          Float?
+  minWidth           Float?
+  maxLength          Float?
+  maxWidth           Float?
+  baseFee            Decimal? @db.Decimal(10, 2)
+  sizeUnit           String? // cm / m
+  // 状态
+  status             String   @default("draft") // draft / auditing / active / offline / rejected
+  totalStock         Int      @default(0)
+  sales              Int      @default(0)
+  commentCount       Int      @default(0)
+  shipping           String[] @default([]) // factory / local / pickup
+  // 价格显示规则（4 客户层级 × 4 价格策略）
+  priceDisplayRules  Json     @default("{}")
+  rejectReason       String?
+  autoApproved       Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  skus            Sku[]
+  favorites       Favorite[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  commissionRules CommissionRule[]
+
+  @@index([merchantId, status])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model Sku {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  specs          Json // { size: '1.4m', color: '橡木' }
+  specsLabel     String
+  // SKU 代表图(可选):用户端选规格弹层的视觉规格组按此图展示;
+  // 例如"颜色:红色"对应的红色实物图。无图则降级为纯文字 chip。
+  image          String?
+  priceWholesale Decimal  @db.Decimal(10, 2)
+  priceRetail    Decimal  @db.Decimal(10, 2)
+  priceMember    Decimal  @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  skuId     String
+  sku       Sku      @relation(fields: [skuId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, skuId])
+}
+
+// ============================================================
+// 订单 / 支付 / 售后
+// ============================================================
+model Order {
+  id              String    @id @default(cuid())
+  no              String    @unique
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  merchantId      String
+  merchant        Merchant  @relation(fields: [merchantId], references: [id])
+  status          String    @default("pending_payment")
+  totalAmount     Decimal   @db.Decimal(10, 2)
+  discountAmount  Decimal   @default(0) @db.Decimal(10, 2)
+  shippingFee     Decimal   @default(0) @db.Decimal(10, 2)
+  payAmount       Decimal   @db.Decimal(10, 2)
+  paymentMethod   String?
+  shippingMethod  String    @default("factory")
+  address         Json // 收货地址快照
+  remark          String?
+  couponId        String?
+  couponDiscount  Decimal?  @db.Decimal(10, 2)
+  trackingNumber  String?
+  trackingCompany String?
+  paidAt          DateTime?
+  shippedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  items       OrderItem[]
+  payments    Payment[]
+  refunds     Refund[]
+  commissions Commission[]
+
+  @@index([userId, status])
+  @@index([merchantId, status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  skuId        String
+  sku          Sku      @relation(fields: [skuId], references: [id])
+  productName  String
+  productImage String
+  specsLabel   String
+  unitPrice    Decimal  @db.Decimal(10, 2)
+  quantity     Int
+  createdAt    DateTime @default(now())
+
+  refunds Refund[]
+
+  @@index([orderId])
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  orderId         String
+  order           Order     @relation(fields: [orderId], references: [id])
+  method          String // wechat / alipay / balance
+  amount          Decimal   @db.Decimal(10, 2)
+  status          String    @default("pending") // pending / success / failed
+  wxTransactionId String?
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  refundAmount    Decimal?  @db.Decimal(10, 2)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([orderId])
+}
+
+model Refund {
+  id            String    @id @default(cuid())
+  no            String    @unique
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id])
+  orderItemId   String
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id])
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  merchantId    String
+  merchant      Merchant  @relation(fields: [merchantId], references: [id])
+  type          String // refund_only / refund_with_return
+  reason        String
+  description   String?
+  evidence      String[]  @default([])
+  applyAmount   Decimal   @db.Decimal(10, 2)
+  refundAmount  Decimal?  @db.Decimal(10, 2)
+  status        String    @default("pending") // pending / agreed / rejected / in_progress / completed
+  merchantReply String?
+  returnAddress Json?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([merchantId, status])
+  @@index([userId])
+}
+
+// ============================================================
+// 佣金 / 提现 / 预约
+// ============================================================
+model CommissionRule {
+  id                String   @id @default(cuid())
+  merchantId        String
+  merchant          Merchant @relation(fields: [merchantId], references: [id])
+  productId         String?
+  product           Product? @relation(fields: [productId], references: [id])
+  level1Percent     Float    @default(0)
+  level2Percent     Float    @default(0)
+  visibleToPromoter Boolean  @default(true)
+  allowOffline      Boolean  @default(false)
+  enabled           Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([merchantId, productId])
+  @@index([merchantId])
+}
+
+model Commission {
+  id        String    @id @default(cuid())
+  orderId   String
+  order     Order     @relation(fields: [orderId], references: [id])
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  level     Int       @default(1) // 1 / 2
+  amount    Decimal   @db.Decimal(10, 2)
+  status    String    @default("pending") // pending / settled / cancelled
+  settledAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, status])
+  @@index([orderId])
+}
+
+model Withdraw {
+  id           String    @id @default(cuid())
+  no           String    @unique
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  merchantId   String?
+  merchant     Merchant? @relation(fields: [merchantId], references: [id])
+  applyAmount  Decimal   @db.Decimal(10, 2)
+  actualAmount Decimal   @default(0) @db.Decimal(10, 2)
+  remark       String?
+  remarkTags   String[]  @default([])
+  method       String    @default("wechat") // wechat / bank / alipay
+  account      String?
+  status       String    @default("pending") // pending / approved / rejected / paid / failed
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([merchantId, status])
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  contactName     String
+  contactPhone    String
+  address         String
+  scheduledAt     DateTime
+  spaceTypes      String[] @default([])
+  remark          String?
+  status          String   @default("pending") // pending / confirmed / completed / cancelled
+  merchantId      String?
+  assignedStaffId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([merchantId])
+}
+
+// ============================================================
+// 营销（优惠券 / 限时 / 团购）
+// ============================================================
+model Coupon {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  name            String
+  type            String // fullReduce / discount / fixed
+  amount          Decimal? @db.Decimal(10, 2)
+  discountPercent Float?
+  threshold       Decimal? @db.Decimal(10, 2)
+  stock           Int      @default(0)
+  received        Int      @default(0)
+  used            Int      @default(0)
+  validFrom       DateTime
+  validTo         DateTime
+  perUserLimit    Int      @default(1)
+  scope           String   @default("all") // all / category / product
+  scopeIds        String[] @default([])
+  status          String   @default("pending") // pending / active / paused / ended
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([merchantId, status])
+}
+
+// 用户持券正式表（替代 SystemConfig key=`user_coupon:<userId>:<couponId>` 领取记录
+// 与 `user_coupon_used:<userId>:<no>` 核销流水的 KV 兜底）。
+//
+// 之前每用户每券一行 JSON { count, ids[], claimedAt }，核销再散落一堆 used 流水 key，
+// 列表查询要按前缀扫 + 应用层拼装；改为一券一行后 perUserLimit 直接 count()，
+// 核销直接按主键 no update，状态/时间全部走索引查询。
+model UserCoupon {
+  no        String    @id // 用户券唯一编号（claimCoupon 生成的 UCxxx）
+  userId    String
+  couponId  String
+  status    String    @default("unused") // unused / used
+  usedAt    DateTime?
+  orderId   String?
+  orderNo   String?
+  claimedAt DateTime  @default(now())
+
+  @@index([userId, couponId])
+  @@index([userId, status])
+}
+
+model FlashSale {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  productId  String
+  skuId      String?
+  price      Decimal  @db.Decimal(10, 2)
+  stock      Int
+  sold       Int      @default(0)
+  startAt    DateTime
+  endAt      DateTime
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+model GroupBuy {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  productId  String
+  skuId      String?
+  groupSize  Int
+  price      Decimal  @db.Decimal(10, 2)
+  validHours Int
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+// ============================================================
+// 客服 / 聊天
+// ============================================================
+model ChatSession {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  merchantId    String
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  lastMessageAt DateTime @default(now())
+  unreadCount   Int      @default(0)
+  status        String   @default("open") // open / closed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@unique([userId, merchantId])
+  @@index([merchantId])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+  sender    String // user / merchant / system
+  type      String // text / image / quick / product / order / system
+  content   String
+  meta      Json?
+  read      Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId, createdAt])
+}
+
+model QuickReply {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  label      String
+  content    String
+  sort       Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([merchantId])
+}
+
+// ============================================================
+// 选品广场 / 代理申请
+// ============================================================
+model PlazaPush {
+  id                String   @id @default(cuid())
+  productIds        String[] @default([])
+  factoryIds        String[] @default([])
+  targetType        String // product / factory
+  positions         String[] @default([])
+  tags              String[] @default([])
+  audience          String   @default("all")
+  scheduledStart    DateTime
+  scheduledEnd      DateTime
+  weight            Int      @default(0)
+  suggestMarkupMin  Float?
+  suggestMarkupMax  Float?
+  suggestCommission Float?
+  pushText          String?
+  status            String   @default("draft") // draft / pending / active / offline / ended
+  impressions       Int      @default(0)
+  clicks            Int      @default(0)
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([status])
+}
+
+model AgencyApplication {
+  id                String   @id @default(cuid())
+  merchantId        String
+  merchant          Merchant @relation(fields: [merchantId], references: [id])
+  factoryMerchantId String
+  productIds        String[] @default([])
+  markupPercent     Float    @default(30)
+  autoSyncPrice     Boolean  @default(true)
+  message           String?
+  status            String   @default("pending") // pending / approved / rejected / offline
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([merchantId, status])
+  @@index([factoryMerchantId])
+}
+
+// ============================================================
+// 广告
+// ============================================================
+model AdSlot {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String
+  scene     String?
+  target    String    @default("all") // customer / factory / store / all
+  position  String?
+  size      String?
+  sort      Int       @default(0)
+  unitPrice Decimal?  @db.Decimal(10, 2)
+  enabled   Boolean   @default(true)
+  status    String    @default("active")
+  // 广告位预览图 / 投放时段（P0：从 SystemConfig.business.adSlotMeta 兜底升级为主表字段）
+  // 兼容旧 SystemConfig 兜底：service 读取时仍合并 SystemConfig.adSlotMeta，
+  // 运维需要执行 migrateAdSlotMeta() 把历史 meta 同步到主表后再清理 SystemConfig key
+  preview   String?
+  startAt   DateTime?
+  endAt     DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  creatives AdCreative[]
+}
+
+model AdCreative {
+  id          String   @id @default(cuid())
+  slotId      String
+  slot        AdSlot   @relation(fields: [slotId], references: [id])
+  merchantId  String?
+  title       String
+  image       String?
+  video       String?
+  link        String?
+  startAt     DateTime
+  endAt       DateTime
+  budget      Decimal? @db.Decimal(10, 2)
+  spent       Decimal? @default(0) @db.Decimal(10, 2)
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  status      String   @default("pending") // pending / active / paused / ended / rejected
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slotId])
+}
+
+// ============================================================
+// 会员套餐 / 订阅 / 配额 / 缴费
+// ============================================================
+model MemberPlan {
+  id            String   @id @default(cuid())
+  type          String // basic / ad / addon
+  code          String   @unique
+  name          String
+  price         Decimal  @db.Decimal(10, 2)
+  originalPrice Decimal? @db.Decimal(10, 2)
+  period        String   @default("monthly") // monthly / yearly / weekly / daily / oneoff
+  periodCount   Int      @default(1)
+  hot           Boolean  @default(false)
+  rights        Json     @default("[]") // 权益数组
+  constraints   Json? // 配额约束 { pushSlots, bannerLimit, impressionLimit, adSlotPriority, ... }
+  trialDays     Int?
+  status        String   @default("active") // active / disabled
+  sort          Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions  MerchantMembership[]
+  paymentRecords PaymentRecord[]
+}
+
+model MerchantMembership {
+  id         String     @id @default(cuid())
+  merchantId String
+  merchant   Merchant   @relation(fields: [merchantId], references: [id])
+  planId     String
+  plan       MemberPlan @relation(fields: [planId], references: [id])
+  planCode   String
+  startAt    DateTime
+  endAt      DateTime
+  status     String     @default("active") // trial / active / expired
+  autoRenew  Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([merchantId, status])
+}
+
+model UsageQuota {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  planId          String?
+  periodStart     DateTime
+  periodEnd       DateTime
+  // 各项配额（used/limit 存 JSON 灵活）
+  data            Json     @default("{}")
+  // 兼容直接字段
+  pushSlotsUsed   Int      @default(0)
+  pushSlotsLimit  Int      @default(0)
+  bannerUsed      Int      @default(0)
+  bannerLimit     Int      @default(0)
+  impressionUsed  Int      @default(0)
+  impressionLimit Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([merchantId, periodStart])
+  @@index([merchantId])
+}
+
+model PaymentRecord {
+  id            String      @id @default(cuid())
+  no            String      @unique
+  merchantId    String
+  merchant      Merchant    @relation(fields: [merchantId], references: [id])
+  planId        String?
+  plan          MemberPlan? @relation(fields: [planId], references: [id])
+  planName      String
+  planType      String?
+  amount        Decimal     @db.Decimal(10, 2)
+  paymentMethod String      @default("wechat") // wechat / alipay / bank / balance
+  status        String      @default("pending") // pending / paid / refunding / refunded / failed
+  paidAt        DateTime?
+  refundReason  String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([merchantId, status])
+}
+
+// ============================================================
+// 功能开关 / 灰度
+// ============================================================
+model FeatureFlag {
+  id                  String    @id @default(cuid())
+  key                 String    @unique
+  label               String
+  icon                String?
+  group               String // home_entry / role_button / side_menu
+  defaultEnabled      Boolean   @default(true)
+  audience            String    @default("all") // all / factory / store / specific
+  specificMerchantIds String[]  @default([])
+  grayPercent         Int       @default(100)
+  grayWhitelist       String[]  @default([])
+  scheduledAt         DateTime?
+  badge               String?
+  description         String?
+  sort                Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  overrides MerchantFeatureOverride[]
+
+  @@index([group])
+}
+
+model MerchantFeatureOverride {
+  id         String      @id @default(cuid())
+  merchantId String
+  merchant   Merchant    @relation(fields: [merchantId], references: [id])
+  flagKey    String
+  flag       FeatureFlag @relation(fields: [flagKey], references: [key])
+  enabled    Boolean
+  reason     String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([merchantId, flagKey])
+}
+
+// ============================================================
+// 审核记录
+// ============================================================
+model AuditRecord {
+  id            String    @id @default(cuid())
+  type          String // merchant / product
+  targetId      String
+  status        String // pending / approved / rejected / auto_approved / sample_check
+  auditorId     String?
+  reason        String?
+  autoApproved  Boolean   @default(false)
+  sampleChecked Boolean   @default(false)
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([type, status])
+  @@index([targetId])
+}
+
+// ============================================================
+// 后台角色 / 系统配置 / 文件
+// ============================================================
+model AdminRole {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  permissions String[] @default([])
+  isSystem    Boolean  @default(false)
+  memberCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+}
+
+model SystemConfig {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model UploadedFile {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  url       String
+  size      Int
+  mimeType  String
+  bizType   String
+  ownerId   String?
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([bizType])
+}
+
+// APP 安装包发布记录（#7 软件自更新）
+//
+// 一条 = 一次发版，按 platform + versionCode 排序，最新一条作为 latest 推给端上。
+// APK 文件本身存 MinIO（url 字段）；force=true 时端上无法跳过此版本。
+model AppRelease {
+  id          String   @id @default(cuid())
+  platform    String // 'merchant' | 'platform'
+  version     String // 例：1.2.0
+  versionCode Int // 例：120（严格自增，端上用它比较）
+  url         String // APK 下载 URL（MinIO 公开链接）
+  size        Int // 文件大小（字节）
+  changelog   String   @default("")
+  force       Boolean  @default(false)
+  publishedAt DateTime @default(now())
+  createdById String?
+
+  @@unique([platform, versionCode])
+  @@index([platform])
+}
+
+// 订单分享正式表（替代 SystemConfig key=`order_share:<shareCode>` 兜底）
+//
+// 之前分享数据塞在 SystemConfig 里，列表查询要按前缀扫且被 take:500 截断；
+// 改为独立表后 shareCode 直接 findUnique（O(1)），列表/撤销按 orderId/merchantId
+// 走索引，不再有截断问题。shareCode = 外部生成的 12 位 nanoid，直接作主键。
+model OrderShare {
+  shareCode     String    @id
+  orderId       String
+  merchantId    String
+  visibleFields String[]  @default([])
+  expiresAt     DateTime?
+  intro         String?
+  viewCount     Int       @default(0)
+  revoked       Boolean   @default(false)
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([merchantId])
+  @@index([revoked])
+}
+
+// ============================================================
+// 门窗利账（ledger · 记账小程序新端）
+// 独立域，与商城（User/Product/Order）零耦合：账号由首次微信登录自动创建，
+// 会员时长由后台叠加，订单/客户按 LedgerUser 隔离。金额单位：元（整数）。
+// ============================================================
+model LedgerUser {
+  id             String    @id @default(cuid())
+  phone          String?   @unique // 旧账号兼容字段；不再用于登录或绑定
+  passwordHash   String? // 旧账号兼容字段；纯微信账号为空
+  nickname       String    @default("门窗店主")
+  avatar         String? // 字母底色 hue key 或上传头像的公网 URL
+  wxOpenid       String?   @unique // 唯一登录身份；旧账号迁移前允许为空
+  inviteCode     String?   @unique // 邀请码（#10 分享注册）
+  invitedById    String? // 邀请人 LedgerUser.id
+  cutFirstUsedAt DateTime? // 历史试用留痕字段；不再参与任何权限判断
+  status         String    @default("active") // active / disabled
+  mustReset      Boolean   @default(false) // 旧账号兼容字段，不再参与登录流程
+  createdById    String? // 操作管理员 User.id
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  membership    LedgerMembership?
+  goal          LedgerGoal?
+  setting       LedgerSetting?
+  orders        LedgerOrder[]
+  customers     LedgerCustomer[]
+  notifications LedgerNotification[]
+  feedbacks     LedgerFeedback[]
+  cutPlans      LedgerCutPlan[]
+  payments      LedgerPaymentOrder[]
+
+  @@index([status])
+  @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
+}
+
+model LedgerMembership {
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt      DateTime? // null=从未开通；>now=有效；<=now=过期
+  lastPlanKey    String? // day/week/month/quarter/year/custom
+  perpetual      Boolean    @default(false) // true=永久会员（不看 expiresAt，永远有效）
+  trialClaimedAt DateTime? // 体验卡领取时间（非空=已领过，一次性）
+  updatedById    String?
+  updatedAt      DateTime   @updatedAt
+
+  logs LedgerMembershipLog[]
+}
+
+model LedgerMembershipLog {
+  id           String           @id @default(cuid())
+  membershipId String
+  membership   LedgerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  deltaDays    Int // +N / -N
+  planKey      String?
+  beforeAt     DateTime?
+  afterAt      DateTime?
+  operatorId   String? // 管理员 User.id（在线支付自动开通时为 null）
+  note         String?
+  createdAt    DateTime         @default(now())
+
+  @@index([membershipId])
+}
+
+/// 会员在线支付订单（用户直接付款 → 微信回调自动开通会员）。
+/// 资金安全：amountFen / days 在下单时按后台套餐锁定，回调以本表为准，绝不信前端。
+/// 幂等：outTradeNo 唯一；回调按 status 拦重复发放。
+model LedgerPaymentOrder {
+  id            String     @id @default(cuid())
+  outTradeNo    String     @unique // 商户订单号（LMEM 前缀）
+  userId        String
+  user          LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planKey       String // 套餐 key（day/week/month/quarter/year）
+  days          Int // 下单时锁定的会员天数
+  amountFen     Int // 下单时锁定的实付金额（分）
+  status        String     @default("pending") // pending / paid / failed
+  transactionId String? // 微信支付交易号
+  paidAt        DateTime? // 回调入账时间
+  grantedAt     DateTime? // 已发放会员的时间（幂等标记）
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model LedgerCustomer {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String?
+  address   String?
+  note      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  orders LedgerOrder[]
+
+  @@index([userId])
+}
+
+model LedgerOrder {
+  id           String          @id @default(cuid())
+  userId       String
+  user         LedgerUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId   String?
+  customer     LedgerCustomer? @relation(fields: [customerId], references: [id])
+  customerName String // 冗余客户名（兼容快速录入 / 客户删档）
+  date         DateTime
+  total        Int             @default(0) // 订单总价（元）
+  extraIncome  Int             @default(0) // [废弃] 旧版额外收入，已不计入利润/营收；保留列避免历史数据丢失
+  received     Int             @default(0) // 收款（元）：定金之外后续已收金额；未收 = 总价 − 定金 − 收款
+  costProfile  Int             @default(0) // 型材
+  costGlass    Int             @default(0) // 玻璃
+  costHardware Int             @default(0) // 配件
+  costLabor    Int             @default(0) // 人工
+  costScreen   Int             @default(0) // 纱窗
+  extras       Json            @default("[]") // [{type,amount}] 其他开销
+  customCosts  Json            @default("[]") // [{name,amount}] 自定义成本项（#5）
+  items        Json            @default("[]") // 门窗报价明细 [{name,note,baseArea,unitPrice,qty,sizes:[{w,h,note}]}]
+  discount     Int             @default(0) // 优惠（元）
+  recycle      Int             @default(0) // 回收（拆旧窗折抵，从总价再减，元）
+  deposit      Int             @default(0) // 定金（元）
+  note         String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId, date])
+  @@index([customerId])
+}
+
+model LedgerGoal {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthly   Int        @default(0)
+  yearly    Int        @default(0)
+  updatedAt DateTime   @updatedAt
+}
+
+// 应用内消息中心。由下单/开通会员等业务事件 + 后台推送产生（无假数据）。
+model LedgerNotification {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String     @default("system") // order/report/goal/member/security/system/welcome
+  title     String
+  body      String
+  read      Boolean    @default(false)
+  createdAt DateTime   @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+// 用户意见反馈（含注销申请），后台 admin-pc 可查看与处理。
+model LedgerFeedback {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String     @default("general") // general / delete_account
+  content   String
+  contact   String?
+  images    Json? // 反馈附图 URL 数组(最多 9 张)
+  status    String     @default("open") // open / resolved
+  reply     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([status, createdAt])
+}
+
+// 每账号一行偏好设置（通知开关 / 免打扰 / 隐私）。设备级偏好也落库，换机不丢。
+model LedgerSetting {
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifyOrder    Boolean    @default(true) // 订单提醒
+  notifyReport   Boolean    @default(true) // 报表提醒
+  notifyGoal     Boolean    @default(true) // 目标提醒
+  notifySystem   Boolean    @default(false) // 系统通知
+  dndEnabled     Boolean    @default(false) // 免打扰开关
+  dndStart       String     @default("22:00")
+  dndEnd         String     @default("08:00")
+  hideAmount     Boolean    @default(false) // 隐藏金额
+  bioLock        Boolean    @default(false) // 生物解锁
+  encBackup      Boolean    @default(true) // 加密备份
+  costCategories Json       @default("[]") // 常用成本分类 [{id,name,color}]，数组顺序即展示顺序
+  updatedAt      DateTime   @updatedAt
+}
+
+// 优化下料·云端历史方案。每账号多行，按 userId 隔离，列表 updatedAt 倒序。
+// input = 可重算的完整入参（1D:{stockLength,kerf,pieces} / 2D:{sheetW,sheetH,kerf,pieces}）。
+// summary = 列表展示小快照 {material,count,util,units}。两者均做 JSON 体积上限保护。
+model LedgerCutPlan {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  material  String // profile / glass / board
+  input     Json // 完整可编辑入参，供继续编辑时重算
+  summary   Json // 列表展示快照 {material,count,util,units}
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+// 首页广告 banner（#2）。后台 admin-pc 维护，App 首页轮播。
+model LedgerAd {
+  id        String   @id @default(cuid())
+  title     String?
+  image     String // 公网图片 URL
+  link      String? // 可选跳转
+  sort      Int      @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled, sort])
+}
+
+// 版本更新日志：按 version 定向推送（客户端只拉自己版本那条做弹窗）。后台可增删改。
+model LedgerChangelog {
+  id        String   @id @default(cuid())
+  version   String   @unique
+  title     String
+  content   String // 多行文本，每行一条更新项
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, version])
+}
+
+// ledger 域全局配置（key-value）：优化下料试用天数 / 邀请奖励天数 / 自助注册开关 等。
+model LedgerConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}

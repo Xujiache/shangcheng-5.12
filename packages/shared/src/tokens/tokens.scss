@@ -1,0 +1,143 @@
+// ============================================
+// 经纬科技 · Design Tokens · SCSS 版
+// 自动从 tokens/*.ts 同步，可作为 uni-app / PC 全局变量
+// ============================================
+
+// ============ 品牌色 ============
+$brand-primary: #ff4d2d;
+$brand-primary-hover: #ff6e4d;
+$brand-primary-active: #e63d1f;
+$brand-primary-light: #ffe9e2;
+$brand-primary-ghost: #fff5f2;
+$brand-secondary: #ffb84d;
+$brand-secondary-hover: #ffc971;
+$brand-gradient: linear-gradient(135deg, #ff6e4d 0%, #ff4d2d 100%);
+$brand-gradient-dark: linear-gradient(135deg, #ff4d2d 0%, #e63d1f 100%);
+
+// ============ 文字 ============
+$text-primary: #1a1a2e;
+$text-secondary: #4e5969;
+$text-tertiary: #86909c;
+$text-disabled: #c9cdd4;
+$text-inverse: #ffffff;
+$text-link: #165dff;
+$text-danger: #f53f3f;
+
+// ============ 背景 ============
+$bg-page: #f7f8fa;
+$bg-card: #ffffff;
+$bg-hover: #f2f3f5;
+$bg-active: #e5e6eb;
+$bg-mask: rgba(0, 0, 0, 0.55);
+$bg-spotlight: rgba(255, 77, 45, 0.05);
+
+// ============ 边框 ============
+$border-default: #e5e6eb;
+$border-light: #f2f3f5;
+$border-dark: #c9cdd4;
+$border-focus: #ff4d2d;
+
+// ============ 状态 ============
+$status-success: #00b42a;
+$status-success-bg: #e8ffea;
+$status-warning: #ff7d00;
+$status-warning-bg: #fff7e8;
+$status-error: #f53f3f;
+$status-error-bg: #ffece8;
+$status-info: #165dff;
+$status-info-bg: #e8f3ff;
+$status-highlight: #ffd43b;
+$status-highlight-bg: #fffbe6;
+
+// ============ 业务色 ============
+$price-retail: #ff4d2d;
+$price-wholesale: #1677ff;
+$price-member: #722ed1;
+$price-original: #86909c;
+$color-commission: #00b42a;
+$color-vip: #d4a038;
+$color-factory: #ff4d2d;
+$color-store: #ff7d00;
+
+// ============ 间距（8px 基线）============
+$spacing-0: 0;
+$spacing-1: 2px;
+$spacing-2: 4px;
+$spacing-3: 6px;
+$spacing-4: 8px;
+$spacing-5: 10px;
+$spacing-6: 12px;
+$spacing-7: 14px;
+$spacing-8: 16px;
+$spacing-10: 20px;
+$spacing-12: 24px;
+$spacing-14: 28px;
+$spacing-16: 32px;
+$spacing-20: 40px;
+$spacing-24: 48px;
+$spacing-32: 64px;
+
+// ============ 字号 ============
+$font-family-base:
+  'HarmonyOS Sans SC', -apple-system, blinkmacsystemfont, 'PingFang SC', 'Microsoft YaHei',
+  sans-serif;
+$font-family-number: inter, 'HarmonyOS Sans SC', sans-serif;
+
+$font-size-xs: 10px;
+$font-size-sm: 12px;
+$font-size-base: 14px;
+$font-size-md: 15px;
+$font-size-lg: 16px;
+$font-size-xl: 18px;
+$font-size-2xl: 20px;
+$font-size-3xl: 24px;
+$font-size-4xl: 28px;
+$font-size-5xl: 32px;
+$font-size-6xl: 40px;
+
+$line-height-xs: 14px;
+$line-height-sm: 18px;
+$line-height-base: 22px;
+$line-height-md: 24px;
+$line-height-lg: 26px;
+$line-height-xl: 28px;
+$line-height-2xl: 30px;
+
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// ============ 圆角 ============
+$radius-none: 0;
+$radius-xs: 2px;
+$radius-sm: 4px;
+$radius-md: 6px;
+$radius-base: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-2xl: 20px;
+$radius-3xl: 24px;
+$radius-pill: 999px;
+$radius-full: 50%;
+
+// ============ 阴影 ============
+$shadow-none: none;
+$shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+$shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+$shadow-base: 0 4px 8px 0 rgba(0, 0, 0, 0.08);
+$shadow-md: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 12px 24px 0 rgba(0, 0, 0, 0.12);
+$shadow-xl: 0 20px 40px 0 rgba(0, 0, 0, 0.16);
+$shadow-brand: 0 6px 16px 0 rgba(255, 77, 45, 0.25);
+
+// ============ z-index ============
+$z-base: 0;
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-fixed: 300;
+$z-modal: 1000;
+$z-popover: 1100;
+$z-tooltip: 1200;
+$z-toast: 1300;
