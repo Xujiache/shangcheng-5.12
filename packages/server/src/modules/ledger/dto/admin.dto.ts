@@ -18,7 +18,7 @@ export class UpdateLedgerUserDto {
 
 /**
  * 增加会员时长。planKey 与 days 二选一（同传则 days 优先）：
- * - planKey ∈ day/week/month/quarter/year（按 LEDGER_PLAN_DAYS 取天数）
+ * - planKey 从后台动态套餐配置中取值（永久套餐按 perpetual 字段判定）
  * - days 自定义天数（可正可负；负数=扣减/纠错）
  */
 export class GrantMembershipDto {
@@ -61,8 +61,17 @@ export class UpdateLedgerAdDto {
 export class UpdateLedgerConfigDto {
   @IsOptional() @IsInt() @Min(0) @Max(3650) inviteRewardDays?: number
   @IsOptional() @IsInt() @Min(0) @Max(100000) inviteMaxRewarded?: number
-  // 会员套餐数组 [{key,label,days,price}]；服务端 normalizeLedgerPlans 逐项收口 + 去重
-  @IsOptional() @IsArray() plans?: { key: string; label: string; days: number; price: string }[]
+  // 会员套餐数组；服务端 normalizeLedgerPlans 逐项收口 + 去重
+  @IsOptional()
+  @IsArray()
+  plans?: {
+    key: string
+    label: string
+    days: number
+    price: string
+    perpetual?: boolean
+    trial?: boolean
+  }[]
 }
 
 /** 后台 AI 生图（gpt-image-2）。size/quality 见聚鑫科技文档枚举。 */

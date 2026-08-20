@@ -14,8 +14,18 @@ import request from '@/utils/http'
 
 /* ============ 类型定义 ============ */
 
-/** 会员套餐 key（与后端 grant 接口的 planKey 枚举对齐） */
-export type LedgerPlanKey = 'day' | 'week' | 'month' | 'quarter' | 'year'
+/**
+ * 会员套餐 key。内置 key 保留类型提示，后台功能配置也允许自定义 key。
+ * `perpetual` 是历史上常用的永久套餐 key；真实永久语义以套餐的 perpetual 字段为准。
+ */
+export type LedgerPlanKey =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'quarter'
+  | 'year'
+  | 'perpetual'
+  | (string & Record<never, never>)
 
 /**
  * 账号会员状态（后端在 User 上聚合派生）
@@ -36,6 +46,8 @@ export interface LedgerMembership {
   daysLeft: number
   expiringSoon: boolean
   lastPlanKey: string | null
+  /** true=永久会员，expiresAt 为 null 且不参与到期判定 */
+  perpetual: boolean
 }
 
 /** 门窗利账账号 */
@@ -131,8 +143,8 @@ export function updateLedgerAccount(
 /**
  * 增加会员时长（充值）
  *
- * planKey ∈ day|week|month|quarter|year，或自定义整数 days；**days 优先于 planKey**。
- * 该操作为「累加」：新到期 = max(now, 当前到期) + N 天。
+ * planKey 来自后台动态套餐配置，或传自定义整数 days；**days 优先于 planKey**。
+ * 普通套餐为「累加」；perpetual=true 的套餐会开通永久会员。
  */
 export function grantLedgerMembership(
   id: string,

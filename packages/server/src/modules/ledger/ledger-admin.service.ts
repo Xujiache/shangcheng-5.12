@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
@@ -91,66 +92,100 @@ export class LedgerAdminService {
   async grantMembership(id: string, dto: GrantMembershipDto, operatorId?: string) {
     const user = await this.prisma.ledgerUser.findUnique({
       where: { id },
-      include: { membership: true },
+      select: { id: true },
     })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
     let days = dto.days
     let isPerpetual = false
-    // 按套餐授予时，天数以后台配置的套餐为准（兼容旧 key 回落 LEDGER_PLAN_DAYS）；永久套餐置 perpetual
-    if (dto.planKey) {
+    // 自定义 days 优先；否则以后台动态套餐为准（旧 key 回落 LEDGER_PLAN_DAYS）。
+    if (dto.planKey && (days === undefined || days === null)) {
       const cfg = await this.getConfig()
       const plan = cfg.plans.find((p) => p.key === dto.planKey)
       if (plan?.perpetual) isPerpetual = true
-      if (days === undefined || days === null) {
-        days = plan ? plan.days : LEDGER_PLAN_DAYS[dto.planKey]
-      }
+      days = plan ? plan.days : LEDGER_PLAN_DAYS[dto.planKey]
     }
     if (!isPerpetual && (days === undefined || days === null || days === 0)) {
       throw new BizException(BizCode.INVALID_PARAMS, '请选择套餐或填写有效天数')
     }
     days = days ?? 0
 
-    let membership = user.membership
-    if (!membership) {
-      membership = await this.prisma.ledgerMembership.create({ data: { userId: id } })
+    const auditNote = dto.note?.trim() || ''
+    const deltaDays = isPerpetual ? 0 : days
+    const grantOnce = () =>
+      this.prisma.$transaction(
+        async (tx) => {
+          // 必须在事务内重读到期时间，避免并发授予基于事务外旧快照累加。
+          let membership = await tx.ledgerMembership.findUnique({ where: { userId: id } })
+          if (!membership) {
+            membership = await tx.ledgerMembership.create({ data: { userId: id } })
+          }
+          const before = membership.expiresAt
+          // 永久会员是独立语义，不用「10 年到期」假装；审计也不记为 +3650 天。
+          const nextExpiry = isPerpetual ? null : computeGrantExpiry(before, days)
+          const next = await tx.ledgerMembership.update({
+            where: { id: membership.id },
+            data: {
+              expiresAt: nextExpiry,
+              lastPlanKey: dto.planKey || 'custom',
+              updatedById: operatorId || null,
+              ...(isPerpetual ? { perpetual: true } : {}),
+            },
+          })
+          await tx.ledgerMembershipLog.create({
+            data: {
+              membershipId: membership.id,
+              deltaDays,
+              planKey: dto.planKey || 'custom',
+              beforeAt: before,
+              afterAt: nextExpiry,
+              operatorId: operatorId || null,
+              note: isPerpetual
+                ? ['开通永久会员', auditNote].filter(Boolean).join('；')
+                : auditNote || null,
+            },
+          })
+          return { updated: next, after: nextExpiry }
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+
+    let grantResult: Awaited<ReturnType<typeof grantOnce>>
+    try {
+      grantResult = await grantOnce()
+    } catch (e) {
+      const conflict = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034'
+      if (!conflict) throw e
+      try {
+        grantResult = await grantOnce()
+      } catch (retryError) {
+        const retryConflict =
+          retryError instanceof Prisma.PrismaClientKnownRequestError && retryError.code === 'P2034'
+        if (retryConflict) {
+          throw new BizException(BizCode.BUSINESS_ERROR, '会员状态正在更新，请重试')
+        }
+        throw retryError
+      }
     }
-    const before = membership.expiresAt
-    const after = computeGrantExpiry(before, days)
-    const updated = await this.prisma.ledgerMembership.update({
-      where: { id: membership.id },
-      data: {
-        expiresAt: after,
-        lastPlanKey: dto.planKey || 'custom',
-        updatedById: operatorId || null,
-        ...(isPerpetual ? { perpetual: true } : {}),
-      },
-    })
-    await this.prisma.ledgerMembershipLog.create({
-      data: {
-        membershipId: membership.id,
-        deltaDays: days,
-        planKey: dto.planKey || 'custom',
-        beforeAt: before,
-        afterAt: after,
-        operatorId: operatorId || null,
-        note: dto.note?.trim() || null,
-      },
-    })
+    const { updated, after } = grantResult
     const status = deriveMembership(updated.expiresAt, updated.lastPlanKey, new Date(), {
-      perpetual: updated.perpetual,
+      perpetual: isPerpetual || updated.perpetual,
       trialClaimedAt: updated.trialClaimedAt,
     })
     // 给记账用户写一条真实的会员通知（消息中心可见）
-    await this.notify(
-      id,
-      'member',
-      days >= 0 ? '会员已开通 / 续费' : '会员时长已调整',
-      days >= 0
-        ? `已为您增加 ${days} 天会员时长，有效期至 ${this.ymd(after)}。`
-        : `会员时长调整 ${days} 天，当前有效期至 ${this.ymd(after)}。`,
-    )
-    return { membership: status, deltaDays: days }
+    if (isPerpetual) {
+      await this.notify(id, 'member', '永久会员已开通', '已为您开通永久会员，长期有效。')
+    } else {
+      await this.notify(
+        id,
+        'member',
+        days >= 0 ? '会员已开通 / 续费' : '会员时长已调整',
+        days >= 0
+          ? `已为您增加 ${days} 天会员时长，有效期至 ${this.ymd(after as Date)}。`
+          : `会员时长调整 ${days} 天，当前有效期至 ${this.ymd(after as Date)}。`,
+      )
+    }
+    return { membership: status, deltaDays }
   }
 
   /** 写入一条记账用户的应用内通知（best-effort）。 */

@@ -1,0 +1,50 @@
+<lz-bg />
+<view class="wl">
+  <lz-header title="记工" subtitle="日工明细 · 独立台账" />
+  <view class="wl__body lz-page lz-page--pad-bottom">
+    <view class="lz-card wl__summary">
+      <picker mode="date" fields="month" value="{{month}}" bindchange="onMonth">
+        <view class="wl__month">{{month}} <lz-icon name="calendar" size="15" color="accent" /></view>
+      </picker>
+      <view class="wl__metrics">
+        <view><view class="wl__v">{{totalAmountText}}</view><view class="wl__l">本月人工金额</view></view>
+        <view><view class="wl__v">{{dayQuantityText}}</view><view class="wl__l">工天</view></view>
+        <view><view class="wl__v">{{hourQuantityText}}</view><view class="wl__l">工时</view></view>
+      </view>
+    </view>
+
+    <view class="lz-card wl__form">
+      <view class="wl__form-title">{{editingId ? '编辑记工明细' : '记一笔日工'}}</view>
+      <view class="wl__row">
+        <text>日期</text>
+        <picker mode="date" value="{{date}}" bindchange="onDate"><view class="wl__picker">{{date}}</view></picker>
+      </view>
+      <view class="wl__row"><text>工人</text><input value="{{workerName}}" data-field="workerName" bindinput="onInput" maxlength="30" placeholder="姓名" placeholder-class="ph" /></view>
+      <view class="wl__row"><text>工种</text><input value="{{jobType}}" data-field="jobType" bindinput="onInput" maxlength="30" placeholder="例如：安装、制作" placeholder-class="ph" /></view>
+      <lz-segmented options="{{units}}" value="{{unit}}" bind:change="onUnit" />
+      <view class="wl__row"><text>{{unit === 'hour' ? '工时' : '工天'}}</text><input type="digit" value="{{quantityStr}}" data-field="quantityStr" bindinput="onInput" placeholder="0" placeholder-class="ph" /></view>
+      <view class="wl__row"><text>单价</text><view class="wl__money"><text>¥</text><input type="digit" value="{{unitPriceStr}}" data-field="unitPriceStr" bindinput="onInput" placeholder="0" placeholder-class="ph" /><text>/{{unit === 'hour' ? '时' : '天'}}</text></view></view>
+      <view class="wl__row"><text>金额</text><text class="wl__amount">{{amountText}}</text></view>
+      <view class="wl__note"><textarea value="{{note}}" data-field="note" bindinput="onInput" maxlength="200" auto-height placeholder="备注（选填）" placeholder-class="ph" /></view>
+      <view class="wl__actions">
+        <view wx:if="{{editingId}}" class="wl__cancel" bindtap="clearEditor">取消编辑</view>
+        <button class="lz-btn lz-btn--primary wl__save" bindtap="save" disabled="{{saving}}">{{saving ? '保存中…' : (editingId ? '保存修改' : '保存记工')}}</button>
+      </view>
+    </view>
+
+    <view class="wl__list-title">本月记录 · {{count}} 笔</view>
+    <view wx:if="{{loading}}" class="lz-empty">加载中…</view>
+    <view wx:elif="{{loadError}}" class="lz-card wl__error"><text>加载失败，请检查网络后重试</text><button class="lz-btn lz-btn--ghost" bindtap="retry">重试</button></view>
+    <view wx:elif="{{!groups.length}}" class="lz-empty">本月还没有记工记录</view>
+    <block wx:else>
+      <view wx:for="{{groups}}" wx:key="date" class="lz-card lz-card--flush wl__group">
+        <view class="wl__date">{{item.date}}</view>
+        <view wx:for="{{item.rows}}" wx:for-item="row" wx:key="id" class="wl__item" data-id="{{row.id}}" bindtap="edit" hover-class="tap-active">
+          <view class="wl__avatar">{{row.avatarChar}}</view>
+          <view class="lz-flex1"><view class="wl__name">{{row.workerName}}</view><view class="wl__sub">{{row.subText}}</view><view wx:if="{{row.note}}" class="wl__sub">{{row.note}}</view></view>
+          <view class="wl__right"><view class="wl__row-amount">{{row.amountText}}</view><view class="wl__delete" data-id="{{row.id}}" catchtap="remove">删除</view></view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

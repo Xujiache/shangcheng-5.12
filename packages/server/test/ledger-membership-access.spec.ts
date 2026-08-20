@@ -79,6 +79,8 @@ describe('LedgerMembershipGuard 到期会员订单只读', () => {
     ['PATCH', '/api/v1/l/orders/order-1'],
     ['DELETE', '/api/v1/l/orders/order-1'],
     ['GET', '/api/v1/l/customers'],
+    ['GET', '/api/v1/l/work-logs?month=2026-06'],
+    ['POST', '/api/v1/l/work-logs'],
   ])('%s %s 仍受会员闸门保护', (method, url) => {
     expect(() => guard.canActivate(guardContext(method, url, expiredMembership))).toThrow(
       BizException,

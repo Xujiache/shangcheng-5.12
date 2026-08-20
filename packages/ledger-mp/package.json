@@ -4,7 +4,8 @@
   "private": true,
   "description": "门窗利账 · 原生微信小程序（记账新端）",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:nesting": "tsx scripts/verify-nesting.ts"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^3.12.2",

@@ -21,7 +21,7 @@ function approxMs(actual: number, expected: number, toleranceMs = 5000) {
 }
 
 function buildPrisma() {
-  return {
+  const delegates = {
     ledgerUser: {
       findUnique: jest.fn(async (..._a: any[]) => null as any),
       findMany: jest.fn(async (..._a: any[]) => [] as any),
@@ -30,6 +30,7 @@ function buildPrisma() {
       update: jest.fn(async (..._a: any[]) => ({}) as any),
     },
     ledgerMembership: {
+      findUnique: jest.fn(async (..._a: any[]) => null as any),
       create: jest.fn(async (..._a: any[]) => ({}) as any),
       update: jest.fn(async (..._a: any[]) => ({}) as any),
     },
@@ -51,6 +52,15 @@ function buildPrisma() {
       count: jest.fn(async (..._a: any[]) => 0),
     },
   }
+  return {
+    ...delegates,
+    $transaction: jest.fn(
+      async (
+        work: (tx: typeof delegates) => Promise<unknown>,
+        _options?: { isolationLevel?: string },
+      ) => work(delegates),
+    ),
+  }
 }
 
 describe('LedgerAdminService.grantMembership', () => {
@@ -64,9 +74,12 @@ describe('LedgerAdminService.grantMembership', () => {
 
   it('用例1：planKey=month 从未开通 → 到期≈now+30d，日志 deltaDays=30/beforeAt=null', async () => {
     // 用户存在，会员行存在但 expiresAt=null（从未开通）
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      membership: { id: 'm1', expiresAt: null, lastPlanKey: null },
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
+    prisma.ledgerMembership.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      expiresAt: null,
+      lastPlanKey: null,
+      perpetual: false,
     } as any)
     // update 回传一个带 expiresAt 的会员，便于 deriveMembership 派生状态
     prisma.ledgerMembership.update.mockImplementationOnce(async (args: any) => ({
@@ -88,12 +101,18 @@ describe('LedgerAdminService.grantMembership', () => {
     const logArg = prisma.ledgerMembershipLog.create.mock.calls[0][0] as any
     expect(logArg.data.deltaDays).toBe(30)
     expect(logArg.data.beforeAt).toBeNull()
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    })
   })
 
   it('用例2：days 与 planKey 同传 → days 优先（days=5, planKey=year → delta=5）', async () => {
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      membership: { id: 'm1', expiresAt: null, lastPlanKey: null },
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
+    prisma.ledgerMembership.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      expiresAt: null,
+      lastPlanKey: null,
+      perpetual: false,
     } as any)
     prisma.ledgerMembership.update.mockImplementationOnce(async (args: any) => ({
       id: 'm1',
@@ -113,10 +132,7 @@ describe('LedgerAdminService.grantMembership', () => {
   })
 
   it('用例3：无 days 且 planKey 非法/缺失 → 1001', async () => {
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      membership: { id: 'm1', expiresAt: null, lastPlanKey: null },
-    } as any)
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
 
     try {
       await service.grantMembership('u1', { planKey: 'nope' } as any)
@@ -132,9 +148,12 @@ describe('LedgerAdminService.grantMembership', () => {
   it('用例4：当前到期+10d，叠加 30 → afterAt≈+40d（不浪费剩余时长）', async () => {
     const now = Date.now()
     const currentExpiry = new Date(now + 10 * DAY_MS)
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      membership: { id: 'm1', expiresAt: currentExpiry, lastPlanKey: 'month' },
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
+    prisma.ledgerMembership.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      expiresAt: currentExpiry,
+      lastPlanKey: 'month',
+      perpetual: false,
     } as any)
     prisma.ledgerMembership.update.mockImplementationOnce(async (args: any) => ({
       id: 'm1',
@@ -154,10 +173,8 @@ describe('LedgerAdminService.grantMembership', () => {
   })
 
   it('用例5：会员行缺失 → 自动创建后再开通', async () => {
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      membership: null, // 没有 1:1 会员行
-    } as any)
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
+    prisma.ledgerMembership.findUnique.mockResolvedValueOnce(null) // 没有 1:1 会员行
     prisma.ledgerMembership.create.mockResolvedValueOnce({
       id: 'm-new',
       expiresAt: null,
@@ -183,9 +200,12 @@ describe('LedgerAdminService.grantMembership', () => {
   })
 
   it('用例6：通知写入失败不影响返回（best-effort）', async () => {
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      membership: { id: 'm1', expiresAt: null, lastPlanKey: null },
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
+    prisma.ledgerMembership.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      expiresAt: null,
+      lastPlanKey: null,
+      perpetual: false,
     } as any)
     prisma.ledgerMembership.update.mockImplementationOnce(async (args: any) => ({
       id: 'm1',
@@ -199,6 +219,94 @@ describe('LedgerAdminService.grantMembership', () => {
     expect(res.deltaDays).toBe(30)
     expect(res.membership).toBeDefined()
     expect(prisma.ledgerNotification.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('用例7：动态永久套餐 → expiresAt=null + 永久审计/通知，不写 3650 天', async () => {
+    const oldExpiry = new Date(Date.now() + 30 * DAY_MS)
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
+    prisma.ledgerConfig.findUnique.mockResolvedValueOnce({
+      value: {
+        plans: [
+          {
+            key: 'lifetime',
+            label: '永久会员',
+            days: 3650,
+            price: '¥999',
+            perpetual: true,
+          },
+        ],
+      },
+    } as any)
+    prisma.ledgerMembership.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      expiresAt: oldExpiry,
+      lastPlanKey: 'month',
+      perpetual: false,
+    } as any)
+    prisma.ledgerMembership.update.mockImplementationOnce(async (args: any) => ({
+      id: 'm1',
+      expiresAt: args.data.expiresAt,
+      lastPlanKey: args.data.lastPlanKey,
+      perpetual: args.data.perpetual,
+      trialClaimedAt: null,
+    }))
+
+    const res = await service.grantMembership(
+      'u1',
+      { planKey: 'lifetime', note: '客户付费' } as any,
+      'op1',
+    )
+
+    expect(res.deltaDays).toBe(0)
+    expect(res.membership).toMatchObject({
+      active: true,
+      perpetual: true,
+      expiresAt: null,
+      lastPlanKey: 'lifetime',
+    })
+    const updateArg = prisma.ledgerMembership.update.mock.calls[0][0] as any
+    expect(updateArg.data).toMatchObject({
+      expiresAt: null,
+      lastPlanKey: 'lifetime',
+      perpetual: true,
+      updatedById: 'op1',
+    })
+    const logArg = prisma.ledgerMembershipLog.create.mock.calls[0][0] as any
+    expect(logArg.data).toMatchObject({
+      deltaDays: 0,
+      planKey: 'lifetime',
+      beforeAt: oldExpiry,
+      afterAt: null,
+      note: '开通永久会员；客户付费',
+    })
+    expect(prisma.ledgerNotification.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'u1',
+        type: 'member',
+        title: '永久会员已开通',
+        body: '已为您开通永久会员，长期有效。',
+      },
+    })
+  })
+
+  it('用例8：审计日志写入失败 → 授予失败且不发成功通知', async () => {
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce({ id: 'u1' } as any)
+    prisma.ledgerMembership.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      expiresAt: null,
+      lastPlanKey: null,
+      perpetual: false,
+    } as any)
+    prisma.ledgerMembership.update.mockImplementationOnce(async (args: any) => ({
+      id: 'm1',
+      expiresAt: args.data.expiresAt,
+      lastPlanKey: args.data.lastPlanKey,
+    }))
+    prisma.ledgerMembershipLog.create.mockRejectedValueOnce(new Error('audit failed') as any)
+
+    await expect(service.grantMembership('u1', { days: 30 } as any)).rejects.toThrow('audit failed')
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1)
+    expect(prisma.ledgerNotification.create).not.toHaveBeenCalled()
   })
 })
 

@@ -229,7 +229,7 @@
 }
 .home__tools {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: var(--gap);
 }
@@ -266,6 +266,9 @@
 }
 .home__tool-icon--c3 {
   background: rgba(223, 160, 58, 0.14);
+}
+.home__tool-icon--c4 {
+  background: rgba(210, 115, 90, 0.14);
 }
 .home__tool-t {
   font-size: 15px;

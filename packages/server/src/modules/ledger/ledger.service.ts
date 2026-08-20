@@ -30,6 +30,7 @@ import {
   UpdateLedgerSettingDto,
 } from './dto/misc.dto'
 import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
+import { CreateLedgerWorkLogDto, UpdateLedgerWorkLogDto, WorkLogQueryDto } from './dto/work-log.dto'
 import { ContentSecurityService } from '../content-security/content-security.service'
 
 /** input/summary JSON 序列化后体积上限（字节），超出拒绝，防滥用。 */
@@ -57,6 +58,21 @@ type OrderRow = {
 }
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10)
+const workQuantity = (value: unknown) => Math.round(Number(value) * 100) / 100
+const workAmount = (quantity: number, unitPrice: number) => Math.round(quantity * unitPrice)
+
+function workDateOf(value: string): Date {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) throw new BizException(BizCode.INVALID_PARAMS, '日期格式不正确')
+  return date
+}
+
+function monthRange(month: string) {
+  const [year, mon] = month.split('-').map(Number)
+  const from = new Date(Date.UTC(year, mon - 1, 1))
+  const to = new Date(Date.UTC(year, mon, 1))
+  return { from, to }
+}
 
 // ── 通知偏好 ──────────────────────────────────────────────
 /** 通知类型 → LedgerSetting 开关字段（未列出的类型不受偏好约束，始终投递）。 */
@@ -578,6 +594,95 @@ export class LedgerService {
       data: { customerId: null },
     })
     await this.prisma.ledgerCustomer.delete({ where: { id, userId } })
+    return { ok: true }
+  }
+
+  // ── 记工（日工台账，按 userId 隔离，不计入订单成本）────────────────────
+  private mapWorkLog(row: any) {
+    return {
+      id: row.id,
+      workDate: ymd(row.workDate),
+      workerName: row.workerName,
+      jobType: row.jobType,
+      unit: row.unit,
+      quantity: Number(row.quantity),
+      unitPrice: row.unitPrice,
+      amount: row.amount,
+      note: row.note,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    }
+  }
+
+  async listWorkLogs(userId: string, query: WorkLogQueryDto) {
+    const { from, to } = monthRange(query.month)
+    const rows = await this.prisma.ledgerWorkLog.findMany({
+      where: { userId, workDate: { gte: from, lt: to } },
+      orderBy: [{ workDate: 'desc' }, { createdAt: 'desc' }],
+    })
+    const list = rows.map((row) => this.mapWorkLog(row))
+    const summary = list.reduce(
+      (acc, row) => {
+        acc.totalAmount += row.amount
+        if (row.unit === 'day') acc.dayQuantity += row.quantity
+        else acc.hourQuantity += row.quantity
+        return acc
+      },
+      { totalAmount: 0, dayQuantity: 0, hourQuantity: 0, count: list.length },
+    )
+    return { month: query.month, list, summary }
+  }
+
+  async createWorkLog(userId: string, dto: CreateLedgerWorkLogDto) {
+    const workerName = dto.workerName.trim()
+    if (!workerName) throw new BizException(BizCode.INVALID_PARAMS, '请填写工人姓名')
+    const quantity = workQuantity(dto.quantity)
+    const unitPrice = Math.round(dto.unitPrice)
+    const row = await this.prisma.ledgerWorkLog.create({
+      data: {
+        userId,
+        workDate: workDateOf(dto.workDate),
+        workerName,
+        jobType: dto.jobType?.trim() || null,
+        unit: dto.unit,
+        quantity,
+        unitPrice,
+        amount: workAmount(quantity, unitPrice),
+        note: dto.note?.trim() || null,
+      },
+    })
+    return this.mapWorkLog(row)
+  }
+
+  async updateWorkLog(userId: string, id: string, dto: UpdateLedgerWorkLogDto) {
+    // 先按 userId 命中，跨账号 ID 一律按不存在处理，杜绝 IDOR。
+    const current = await this.prisma.ledgerWorkLog.findFirst({ where: { id, userId } })
+    if (!current) throw new BizException(BizCode.NOT_FOUND, '记工记录不存在')
+
+    const workerName = dto.workerName === undefined ? current.workerName : dto.workerName.trim()
+    if (!workerName) throw new BizException(BizCode.INVALID_PARAMS, '请填写工人姓名')
+    const quantity =
+      dto.quantity === undefined ? Number(current.quantity) : workQuantity(dto.quantity)
+    const unitPrice = dto.unitPrice === undefined ? current.unitPrice : Math.round(dto.unitPrice)
+    const row = await this.prisma.ledgerWorkLog.update({
+      where: { id },
+      data: {
+        ...(dto.workDate === undefined ? {} : { workDate: workDateOf(dto.workDate) }),
+        workerName,
+        ...(dto.jobType === undefined ? {} : { jobType: dto.jobType.trim() || null }),
+        ...(dto.unit === undefined ? {} : { unit: dto.unit }),
+        quantity,
+        unitPrice,
+        amount: workAmount(quantity, unitPrice),
+        ...(dto.note === undefined ? {} : { note: dto.note.trim() || null }),
+      },
+    })
+    return this.mapWorkLog(row)
+  }
+
+  async deleteWorkLog(userId: string, id: string) {
+    const deleted = await this.prisma.ledgerWorkLog.deleteMany({ where: { id, userId } })
+    if (!deleted.count) throw new BizException(BizCode.NOT_FOUND, '记工记录不存在')
     return { ok: true }
   }
 

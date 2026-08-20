@@ -57,6 +57,13 @@
         <view class="home__tool-t">优化下料</view>
         <view class="home__tool-s">省料排版</view>
       </view>
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toWorkLog">
+        <view class="home__tool-icon home__tool-icon--c4">
+          <lz-icon name="labor" size="23" color="c4" />
+        </view>
+        <view class="home__tool-t">记工</view>
+        <view class="home__tool-s">日工明细</view>
+      </view>
     </view>
 
     <block>

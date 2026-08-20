@@ -112,6 +112,36 @@ function mergeCostRows(categories: CostCategory[], raw: any, legacyCosts: any = 
   return [...configured, ...extras].slice(0, 50)
 }
 
+/**
+ * “恢复门窗默认”从当前编辑器返回时专用：只使用当前订单已经显示的成本行。
+ * 不再以 legacyCosts 或任何其它订单为来源补行，避免恢复默认误把历史成本带回来。
+ */
+function resetCurrentCostRows(categories: CostCategory[], raw: any) {
+  const source = Array.isArray(raw) ? raw : []
+  const used = new Set<number>()
+  return categories.map((category) => {
+    let index = source.findIndex((item: any, i: number) => !used.has(i) && item?.id === category.id)
+    if (index < 0) {
+      index = source.findIndex(
+        (item: any, i: number) => !used.has(i) && !item?.id && item?.name === category.name,
+      )
+    }
+    if (index >= 0) used.add(index)
+    const current = index >= 0 ? source[index] : null
+    const amount = Math.max(0, Math.round(Number(current?.amount) || 0))
+    return {
+      _k: current?._k || uid(),
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      amount,
+      amountStr: amount ? String(amount) : '',
+      isTemplate: true,
+      legacyKey: LEGACY_FIELD[category.id] ? category.id : '',
+    }
+  })
+}
+
 Page({
   data: {
     editing: false,
@@ -186,12 +216,30 @@ Page({
   },
   onShow() {
     this._openingItems = false // 从明细页/客户页返回，解除 toAmount 防双击锁
+    // 管理分类页从“编辑此订单”进入时，优先消费一次性的本单结果。
+    // 恢复默认仅重置当前表单行，不会读取、更不会写回其它历史订单。
+    const categoryResult = wx.getStorageSync('ledger_order_cost_categories_out')
+    if (categoryResult) {
+      wx.removeStorageSync('ledger_order_cost_categories_out')
+      const categories = Array.isArray(categoryResult.categories)
+        ? (categoryResult.categories as CostCategory[])
+        : readCostCategories()
+      this.setData(
+        {
+          costCategories: categories,
+          customCosts: categoryResult.resetCurrentOrder
+            ? resetCurrentCostRows(categories, this.data.customCosts)
+            : mergeCostRows(categories, this.data.customCosts),
+        },
+        () => this.refresh(),
+      )
+    }
     const cachedCategories = readCostCategories()
     const currentIds = this.data.costCategories.map(
       (item: CostCategory) => `${item.id}:${item.name}`,
     )
     const cachedIds = cachedCategories.map((item) => `${item.id}:${item.name}`)
-    if (currentIds.join('|') !== cachedIds.join('|')) {
+    if (!categoryResult && currentIds.join('|') !== cachedIds.join('|')) {
       this.setData(
         {
           costCategories: cachedCategories,
@@ -328,7 +376,7 @@ Page({
     )
   },
   manageCostCategories() {
-    wx.navigateTo({ url: '/pages/cost-categories/index' })
+    wx.navigateTo({ url: '/pages/cost-categories/index?fromOrder=1' })
   },
   retryLoad() {
     this.setData({ loadError: false })

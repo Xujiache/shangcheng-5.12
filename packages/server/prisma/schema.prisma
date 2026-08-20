@@ -982,6 +982,7 @@ model LedgerUser {
   feedbacks     LedgerFeedback[]
   cutPlans      LedgerCutPlan[]
   payments      LedgerPaymentOrder[]
+  workLogs      LedgerWorkLog[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
@@ -1160,6 +1161,25 @@ model LedgerCutPlan {
   updatedAt DateTime   @updatedAt
 
   @@index([userId, updatedAt])
+}
+
+// 独立日工台账：不关联订单成本，按记账账号严格隔离。
+model LedgerWorkLog {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workDate  DateTime
+  workerName String
+  jobType   String?
+  unit      String     // day / hour
+  quantity  Decimal    @db.Decimal(8, 2)
+  unitPrice Int        // 元/工天 或 元/工时
+  amount    Int        // 服务端按 quantity × unitPrice 重算，单位元
+  note      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId, workDate])
 }
 
 // 首页广告 banner（#2）。后台 admin-pc 维护，App 首页轮播。

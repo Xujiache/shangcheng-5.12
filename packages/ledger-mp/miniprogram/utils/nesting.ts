@@ -18,9 +18,9 @@
 // 切分按含 kerf 的 pw/ph 进行，所以保守、不会重叠。原片最右/最下一列工件天然
 // 不需要再留 kerf，按 pw/ph 预留只是略偏保守（少排极个别块），属可接受取舍。
 //
-// ── 不旋转(no-rotation) 理由 ────────────────────────────────────────────────
-// 玻璃有镀膜/纹理方向、板材有木纹方向，旋转 90° 会破坏工艺方向，故强制不旋转：
-// w>sheetW 或 h>sheetH 的小块直接判为 oversize（永不落位），不尝试转向塞入。
+// ── 方向策略 ────────────────────────────────────────────────────────────────
+// 板材有木纹方向，必须禁止旋转；玻璃默认允许旋转以提高利用率。调用方通过
+// allowRotate 显式选择策略，避免把工艺差异藏在算法内部。
 //
 // ── 不变量(INVARIANTS，下方切分逻辑保证其恒成立) ────────────────────────────
 //   1. 任意两个 Placement 不重叠：每次落位都消耗某个 free rect 并把它切成
@@ -50,6 +50,8 @@ export interface Placement {
   w: number // 小块真实宽（不含 kerf）
   h: number // 小块真实高（不含 kerf）
   label: string
+  /** 是否相对输入边长旋转了 90°；用于排料图和导出图保持实际摆放方向。 */
+  rotated: boolean
 }
 export interface NestSheet {
   placements: Placement[]
@@ -66,6 +68,11 @@ export interface NestResult {
   totalArea: number // = sheetCount × sheetW × sheetH
   utilization: number // 0..1 = usedArea / totalArea
   oversize: { w: number; h: number; qty: number }[] // 超过原片尺寸、无法套料的块（按尺寸聚合）
+}
+
+export interface NestingOptions {
+  /** true 时每个工件可在不改变面积的前提下自动旋转 90°。 */
+  allowRotate?: boolean
 }
 
 // 内部：算法用的可变空闲矩形（不对外暴露）。
@@ -112,22 +119,45 @@ function splitFreeRect(sheet: WorkSheet, idx: number, pw: number, ph: number): v
 // 内部辅助：在单张原片里为占用尺寸 pw×ph 选「最贴合」的空闲矩形下标。
 // 贴合度 = 剩余面积最小；平手再比最短边贴合（leftover 短边更小者更优）。
 // 找不到任何能容纳的 free rect 返回 -1。
-function findBestFreeRect(sheet: WorkSheet, pw: number, ph: number): number {
-  let best = -1
+function findBestPlacement(
+  sheet: WorkSheet,
+  orientations: Array<{ w: number; h: number; rotated: boolean }>,
+  kerf: number,
+): { idx: number; w: number; h: number; rotated: boolean; score: number; short: number } | null {
+  let best: {
+    idx: number
+    w: number
+    h: number
+    rotated: boolean
+    score: number
+    short: number
+  } | null = null
   let bestLeftoverArea = Infinity
   let bestShortLeftover = Infinity
   for (let i = 0; i < sheet.free.length; i++) {
     const fr = sheet.free[i]
-    if (pw > fr.w || ph > fr.h) continue // 放不下
-    const leftoverArea = fr.w * fr.h - pw * ph
-    const shortLeftover = Math.min(fr.w - pw, fr.h - ph)
-    if (
-      leftoverArea < bestLeftoverArea ||
-      (leftoverArea === bestLeftoverArea && shortLeftover < bestShortLeftover)
-    ) {
-      best = i
-      bestLeftoverArea = leftoverArea
-      bestShortLeftover = shortLeftover
+    for (const orientation of orientations) {
+      const pw = orientation.w + kerf
+      const ph = orientation.h + kerf
+      if (pw > fr.w || ph > fr.h) continue
+      const leftoverArea = fr.w * fr.h - pw * ph
+      const shortLeftover = Math.min(fr.w - pw, fr.h - ph)
+      // 分数相同时保留先检查的未旋转方向，保证结果稳定且更易阅读。
+      if (
+        leftoverArea < bestLeftoverArea ||
+        (leftoverArea === bestLeftoverArea && shortLeftover < bestShortLeftover)
+      ) {
+        best = {
+          idx: i,
+          w: orientation.w,
+          h: orientation.h,
+          rotated: orientation.rotated,
+          score: leftoverArea,
+          short: shortLeftover,
+        }
+        bestLeftoverArea = leftoverArea
+        bestShortLeftover = shortLeftover
+      }
     }
   }
   return best
@@ -138,6 +168,7 @@ export function optimizeNesting(
   sheetH: number,
   pieces: NestPiece[],
   kerf = 0,
+  options: NestingOptions = {},
 ): NestResult {
   const SW = Math.max(0, Math.round(Number(sheetW) || 0))
   const SH = Math.max(0, Math.round(Number(sheetH) || 0))
@@ -160,8 +191,10 @@ export function optimizeNesting(
     // 默认标签：原料行序号（1 起），便于切割图区分；用户传了 label 则用 label。
     const label = p.label != null && String(p.label).length > 0 ? String(p.label) : `${++autoLabel}`
     for (let i = 0; i < qty; i++) {
-      // 原片尺寸非法(<=0) 或块宽/高超过原片 → 无法套料，记入 oversize（不旋转，不强塞）。
-      if (SW <= 0 || SH <= 0 || w > SW || h > SH) {
+      const fitsOriginal = w <= SW && h <= SH
+      const fitsRotated = !!options.allowRotate && h <= SW && w <= SH
+      // 两个方向都放不下才算超尺寸；允许旋转时不把可转向的玻璃误判为 oversize。
+      if (SW <= 0 || SH <= 0 || (!fitsOriginal && !fitsRotated)) {
         const key = `${w}x${h}`
         if (oversizeMap[key]) oversizeMap[key].qty++
         else oversizeMap[key] = { w, h, qty: 1 }
@@ -181,36 +214,53 @@ export function optimizeNesting(
   let placedCount = 0
   for (const piece of flat) {
     if (placedCount >= MAX_PLACED) break // 病态 qty 防御：停止落位
-    const pw = piece.w + k // 含锯缝的占用宽
-    const ph = piece.h + k // 含锯缝的占用高
+    const orientations = [
+      { w: piece.w, h: piece.h, rotated: false },
+      ...(options.allowRotate && piece.w !== piece.h
+        ? [{ w: piece.h, h: piece.w, rotated: true }]
+        : []),
+    ]
 
     let targetSheet: WorkSheet | null = null
-    let targetIdx = -1
-    // 先在已有原片里找最贴合的空隙（沿用先开先用，保持确定性）。
+    let target: ReturnType<typeof findBestPlacement> = null
+    // 在已开原片的所有可用方向中选最贴合位置，提升旋转玻璃的利用率。
     for (const sheet of sheets) {
-      const idx = findBestFreeRect(sheet, pw, ph)
-      if (idx >= 0) {
+      const candidate = findBestPlacement(sheet, orientations, k)
+      if (
+        candidate &&
+        (!target ||
+          candidate.score < target.score ||
+          (candidate.score === target.score && candidate.short < target.short))
+      ) {
         targetSheet = sheet
-        targetIdx = idx
-        break
+        target = candidate
       }
     }
     // 都放不下 → 新开一张原片（初始空闲矩形 = 整张原片）。
     if (!targetSheet) {
-      targetSheet = { free: [{ x: 0, y: 0, w: SW, h: SH }], placements: [], usedArea: 0 }
+      const fresh: WorkSheet = { free: [{ x: 0, y: 0, w: SW, h: SH }], placements: [], usedArea: 0 }
+      target = findBestPlacement(fresh, orientations, k)
+      // 锯缝也可能让边界尺寸放不下；此时不要留下空原片。
+      if (!target) continue
+      targetSheet = fresh
       sheets.push(targetSheet)
-      targetIdx = findBestFreeRect(targetSheet, pw, ph)
-      // 理论上整张原片必能容纳（前面已过滤超尺寸块），保险起见再判一次。
-      if (targetIdx < 0) continue
     }
 
-    const fr = targetSheet.free[targetIdx]
+    if (!target) continue
+    const fr = targetSheet.free[target.idx]
     // 落位：记录小块真实尺寸于 free rect 左上原点（不含 kerf）。
-    targetSheet.placements.push({ x: fr.x, y: fr.y, w: piece.w, h: piece.h, label: piece.label })
-    targetSheet.usedArea += piece.w * piece.h
+    targetSheet.placements.push({
+      x: fr.x,
+      y: fr.y,
+      w: target.w,
+      h: target.h,
+      label: piece.label,
+      rotated: target.rotated,
+    })
+    targetSheet.usedArea += target.w * target.h
     placedCount++
     // 用含 kerf 的占用尺寸做 guillotine 切分，保证相邻块留出锯路、不重叠。
-    splitFreeRect(targetSheet, targetIdx, pw, ph)
+    splitFreeRect(targetSheet, target.idx, target.w + k, target.h + k)
   }
 
   // 3) 汇总输出。

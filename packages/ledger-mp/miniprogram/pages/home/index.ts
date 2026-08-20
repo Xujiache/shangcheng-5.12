@@ -157,6 +157,9 @@ Page({
   },
   // 新版本首开弹更新日志：按当前版本定向，每版本只弹一次
   maybeShowChangelog() {
+    // 更新日志接口需要 ledger token；游客态不发请求，避免 401 触发统一登出/重载。
+    // 必须在 _clogChecked 置位前返回，这样同一页面登录成功后仍会检查一次。
+    if (!isLoggedIn()) return
     if ((this as any)._clogChecked) return
     ;(this as any)._clogChecked = true
     let v = ''
@@ -371,6 +374,10 @@ Page({
   },
   toCut() {
     wx.navigateTo({ url: '/pages/cut/index' })
+  },
+  toWorkLog() {
+    if (!requireLogin()) return
+    wx.navigateTo({ url: '/pages/work-log/index' })
   },
   toTriangleTool() {
     wx.navigateTo({ url: '/pages/triangle-tool/index' })

@@ -84,7 +84,8 @@
         </ElTableColumn>
         <ElTableColumn label="到期日" width="170">
           <template #default="{ row }">
-            <span v-if="row.membership.expiresAt">{{
+            <span v-if="row.membership.perpetual" class="text-primary font-semibold">永久有效</span>
+            <span v-else-if="row.membership.expiresAt">{{
               formatDateTime(row.membership.expiresAt)
             }}</span>
             <span v-else class="text-g-500">—</span>

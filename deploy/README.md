@@ -70,6 +70,7 @@ services：
 | `ledger-remove-manual-trial.patch`     | 后端源码补丁                   | 删除旧的 `POST /l/membership/claim-trial` 手动领取接口及服务逻辑；新用户会员统一由 `ledger-welcome-membership-30d.sql` 自动发放。                                                                                                                                                                                                                                                                      |
 | `ledger-payment-order-init.sql`        | 一次性补表                     | 新建 `LedgerPaymentOrder`（会员在线支付订单，v1.0.3：用户直接付款 → 微信回调自动开通会员）+ 索引 + 指向 `LedgerUser` 的级联外键。                                                                                                                                                                                                                                                                      |
 | `ledger-cutplan-init.sql`              | 一次性补表 / 幂等              | 新建 `LedgerCutPlan`（优化下料「云端历史方案」）+ `(userId, updatedAt)` 索引 + `LedgerUser` 级联外键。                                                                                                                                                                                                                                                                                                 |
+| `ledger-work-log-init.sql`             | 一次性补表 / 幂等              | 新建 `LedgerWorkLog`（日工明细台账）+ `(userId, workDate)` 索引 + `LedgerUser` 级联外键；不关联订单成本。                                                                                                                                                                                                                                                                                              |
 | `ledger-changelog-init.sql`            | **init（建表）**               | 新建 `LedgerChangelog`（版本更新日志，v1.0.2）+ 索引。**必须先于 seed 执行。**                                                                                                                                                                                                                                                                                                                         |
 | `ledger-changelog-seed.sql`            | **seed（初始数据）**           | 写入 1.0.1 ~ 1.0.2 的更新日志内容；**依赖 `ledger-changelog-init.sql` 已建表**；按 `version` `ON CONFLICT DO UPDATE` 幂等覆盖。                                                                                                                                                                                                                                                                        |
 | `ledger-received-init.sql`             | 一次性补列 / 幂等              | 给 `LedgerOrder` 增加 `received`（收款）列（未收 = total − deposit − received，收款不计入利润/营收）。注释说明旧 `extraIncome` 列保留、文件末尾附默认注释掉的 `DROP COLUMN`。                                                                                                                                                                                                                          |
@@ -88,13 +89,14 @@ services：
 3. `ledger-welcome-membership-30d.sql`（新账号自动发放 30 天会员）
 4. `ledger-payment-order-init.sql`（依赖 `LedgerUser`）
 5. `ledger-cutplan-init.sql`（依赖 `LedgerUser`）
-6. `ledger-received-init.sql`（给 `LedgerOrder` 补列）
-7. `ledger-recycle-init.sql`（给 `LedgerOrder` 补列）
-8. `ledger-feedback-images.sql`（给 `LedgerFeedback` 补列）
-9. `ledger-changelog-init.sql`（建表）
-10. `ledger-changelog-seed.sql`（**必须在 changelog-init 之后**，写初始日志）
-11. `order-share-init.sql`（商城主域：建 `OrderShare` + 回填）
-12. `user-coupon-init.sql`（商城主域：建 `UserCoupon` + 回填）
+6. `ledger-work-log-init.sql`（依赖 `LedgerUser`）
+7. `ledger-received-init.sql`（给 `LedgerOrder` 补列）
+8. `ledger-recycle-init.sql`（给 `LedgerOrder` 补列）
+9. `ledger-feedback-images.sql`（给 `LedgerFeedback` 补列）
+10. `ledger-changelog-init.sql`（建表）
+11. `ledger-changelog-seed.sql`（**必须在 changelog-init 之后**，写初始日志）
+12. `order-share-init.sql`（商城主域：建 `OrderShare` + 回填）
+13. `user-coupon-init.sql`（商城主域：建 `UserCoupon` + 回填）
 
 执行方式（任一种）：
 

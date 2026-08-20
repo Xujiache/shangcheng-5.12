@@ -18,6 +18,7 @@ export function membershipTagType(m?: LedgerMembership): 'success' | 'warning' |
 /** 会员状态文案 */
 export function membershipLabel(m?: LedgerMembership): string {
   if (!m || m.never) return '未开通'
+  if (m.perpetual) return '永久会员'
   if (m.expired) return '已过期'
   if (m.active) return `有效 · 剩 ${Math.max(0, m.daysLeft)} 天`
   return '未开通'

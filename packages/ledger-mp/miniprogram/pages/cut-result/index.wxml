@@ -24,6 +24,7 @@
           </view>
         </view>
         <view wx:if="{{oversizeText}}" style="font-size: 12.5px; margin-top: 10px; color: var(--loss);">{{oversizeText}}</view>
+        <view wx:if="{{material === 'board'}}" style="font-size: 12.5px; margin-top: 10px; color: #9A6A22;">注意花纹方向：板材排版不旋转。</view>
       </view>
 
       <!-- 排料图（仅玻璃/板材二维）-->

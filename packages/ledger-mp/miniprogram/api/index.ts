@@ -189,6 +189,22 @@ export const cutPlanApi = {
     }),
 }
 
+/** 日工明细（需会员，独立台账，不计入订单人工成本） */
+export const workLogApi = {
+  list: (month: string) => http.get('/l/work-logs', { month }),
+  create: (data: {
+    workDate: string
+    workerName: string
+    jobType?: string
+    unit: 'day' | 'hour'
+    quantity: number
+    unitPrice: number
+    note?: string
+  }) => http.post('/l/work-logs', data),
+  update: (id: string, data: Record<string, any>) => http.patch('/l/work-logs/' + id, data),
+  remove: (id: string) => http.del('/l/work-logs/' + id),
+}
+
 /** 邀请（仅需登录） */
 export const inviteApi = {
   get: () =>

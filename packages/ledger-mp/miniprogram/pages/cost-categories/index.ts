@@ -12,9 +12,12 @@ Page({
     categories: readCostCategories() as any[],
     loading: true,
     saving: false,
+    fromOrder: false,
+    resetCurrentOrder: false,
   },
 
-  async onLoad() {
+  async onLoad(opt: any) {
+    this.setData({ fromOrder: String(opt?.fromOrder || '') === '1' })
     try {
       const settings: any = await settingApi.get()
       this.setData({ categories: cacheCostCategories(settings.costCategories) })
@@ -87,8 +90,13 @@ Page({
       title: '恢复默认分类',
       content: '将恢复为型材、玻璃、配件、人工、纱窗，当前排序和名称会被替换。',
       success: (result) => {
-        if (result.confirm)
-          this.setData({ categories: DEFAULT_COST_CATEGORIES.map((item) => ({ ...item })) })
+        if (result.confirm) {
+          this.setData({
+            categories: DEFAULT_COST_CATEGORIES.map((item) => ({ ...item })),
+            // 订单编辑器进入时，恢复默认还会通知该编辑器只重置自己的本地成本行。
+            resetCurrentOrder: this.data.fromOrder,
+          })
+        }
       },
     })
   },
@@ -112,7 +120,14 @@ Page({
     this.setData({ saving: true })
     try {
       const result: any = await settingApi.update({ costCategories: categories })
-      cacheCostCategories(result.costCategories || categories)
+      const saved = cacheCostCategories(result.costCategories || categories)
+      if (this.data.fromOrder) {
+        // 只在内存中打开的这张订单消费，绝不读取或改写其它历史订单。
+        wx.setStorageSync('ledger_order_cost_categories_out', {
+          categories: saved,
+          resetCurrentOrder: this.data.resetCurrentOrder,
+        })
+      }
       wx.showToast({ title: '分类已保存', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 450)
     } catch {

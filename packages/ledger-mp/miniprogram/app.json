@@ -6,6 +6,7 @@
     "pages/lock/index",
     "pages/membership/index",
     "pages/cut/index",
+    "pages/work-log/index",
     "pages/triangle-tool/index",
     "pages/arc-tool/index",
     "pages/cut-result/index",

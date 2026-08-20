@@ -1,9 +1,8 @@
 <!--
   门窗利账 · 增加会员时长弹窗（账号页 / 会员页共用）
   ─────────────────────────────────────────────
-  预设套餐（体验卡1天 / 周卡7天 / 月卡30天 / 季卡90天 / 年卡365天）单选，
-  或自定义天数（自定义优先于预设）+ 备注。调用后端 grant 接口（累加时长），
-  成功后向上 emit('success', deltaDays, newExpiresAt) 由父页刷新列表 + 提示新到期。
+  套餐从后台功能配置动态读取，支持普通时长套餐与永久套餐；
+  也可自定义天数（自定义优先于套餐）+ 备注。成功后由父页刷新列表。
 -->
 <template>
   <ElDialog
@@ -22,13 +21,17 @@
       </div>
       <div class="ledger-grant__cur">
         当前到期：<b>{{
-          account.membership.expiresAt ? formatDateTime(account.membership.expiresAt) : '未开通'
+          account.membership.perpetual
+            ? '永久有效'
+            : account.membership.expiresAt
+              ? formatDateTime(account.membership.expiresAt)
+              : '未开通'
         }}</b>
       </div>
 
       <ElForm :model="form" label-position="top">
         <ElFormItem label="选择套餐">
-          <div class="ledger-grant__plans">
+          <div v-loading="plansLoading" class="ledger-grant__plans">
             <ElButton
               v-for="p in plans"
               :key="p.key"
@@ -36,8 +39,13 @@
               :plain="!(form.planKey === p.key && !customActive)"
               @click="pickPlan(p.key)"
             >
-              {{ p.label }} · {{ p.days }}天
+              {{ p.label }} · {{ p.perpetual ? '永久' : `${p.days}天` }}
             </ElButton>
+            <ElEmpty
+              v-if="!plansLoading && !plans.length"
+              description="暂无可用套餐"
+              :image-size="48"
+            />
           </div>
         </ElFormItem>
 
@@ -65,8 +73,11 @@
           />
         </ElFormItem>
 
-        <div class="ledger-grant__preview">
-          本次将增加 <b class="text-primary">{{ effectiveDays }}</b> 天， 新到期约
+        <div v-if="effectivePerpetual" class="ledger-grant__preview">
+          本次将开通 <b class="text-primary">永久会员</b>，开通后长期有效。
+        </div>
+        <div v-else class="ledger-grant__preview">
+          本次将增加 <b class="text-primary">{{ effectiveDays }}</b> 天，新到期约
           <b>{{ previewExpiry }}</b>
         </div>
       </ElForm>
@@ -74,8 +85,8 @@
 
     <template #footer>
       <ElButton @click="visible = false">取消</ElButton>
-      <ElButton type="primary" :loading="submitting" :disabled="effectiveDays <= 0" @click="submit">
-        确认充值
+      <ElButton type="primary" :loading="submitting" :disabled="!canSubmit" @click="submit">
+        {{ effectivePerpetual ? '确认开通永久会员' : '确认充值' }}
       </ElButton>
     </template>
   </ElDialog>
@@ -85,10 +96,10 @@
   import { ref, reactive, computed, watch } from 'vue'
   import { ElMessage } from 'element-plus'
   import {
+    fetchLedgerConfig,
     grantLedgerMembership,
-    LEDGER_PLANS,
     type LedgerAccount,
-    type LedgerPlanKey
+    type LedgerPlan
   } from '@/api/ledger'
   import { membershipTagType, membershipLabel } from './shared'
   import { formatDateTime } from '@jiujiu/shared/utils'
@@ -105,7 +116,8 @@
     (e: 'success', deltaDays: number, newExpiresAt: string | null): void
   }>()
 
-  const plans = LEDGER_PLANS
+  const plans = ref<LedgerPlan[]>([])
+  const plansLoading = ref(false)
 
   const visible = computed({
     get: () => props.modelValue,
@@ -113,8 +125,8 @@
   })
 
   const submitting = ref(false)
-  const form = reactive<{ planKey: LedgerPlanKey; days: number | undefined; note: string }>({
-    planKey: 'month',
+  const form = reactive<{ planKey: string; days: number | undefined; note: string }>({
+    planKey: '',
     days: undefined,
     note: ''
   })
@@ -122,14 +134,15 @@
   // 自定义天数有值时视为「自定义模式」，预设按钮取消高亮、days 优先生效
   const customActive = computed(() => typeof form.days === 'number' && form.days > 0)
 
-  // 每次打开弹窗时重置表单（默认月卡）
+  // 每次打开弹窗时重置表单，并重新读取后台的最新套餐配置。
   watch(
     () => props.modelValue,
     (open) => {
       if (open) {
-        form.planKey = 'month'
+        form.planKey = ''
         form.days = undefined
         form.note = ''
+        void loadPlans()
       }
     }
   )
@@ -137,21 +150,49 @@
   const curTagType = computed(() => membershipTagType(props.account?.membership))
   const curLabel = computed(() => membershipLabel(props.account?.membership))
 
-  /** 实际生效天数：自定义优先，否则取预设套餐天数 */
+  const selectedPlan = computed(() => plans.value.find((p) => p.key === form.planKey))
+  const effectivePerpetual = computed(() => !customActive.value && !!selectedPlan.value?.perpetual)
+
+  /** 实际生效天数：自定义优先，永久套餐不折算为天数。 */
   const effectiveDays = computed(() => {
     if (customActive.value) return form.days as number
-    return plans.find((p) => p.key === form.planKey)?.days ?? 0
+    if (effectivePerpetual.value) return 0
+    return selectedPlan.value?.days ?? 0
   })
+
+  const canSubmit = computed(
+    () =>
+      !plansLoading.value &&
+      !submitting.value &&
+      (effectivePerpetual.value || effectiveDays.value > 0)
+  )
 
   /** 预览新到期：本地估算（max(now, 当前到期) + N 天），仅供参考，真实值以后端返回为准 */
   const previewExpiry = computed(() => {
+    if (effectiveDays.value <= 0) return '—'
     const base = props.account?.membership.expiresAt
     const now = Date.now()
     const from = base ? Math.max(now, new Date(base).getTime()) : now
     return formatDateTime(new Date(from + effectiveDays.value * 86400000))
   })
 
-  function pickPlan(key: LedgerPlanKey) {
+  async function loadPlans() {
+    plansLoading.value = true
+    try {
+      const cfg = await fetchLedgerConfig()
+      plans.value = cfg.plans.map((p) => ({ ...p }))
+      const preferred = plans.value.find((p) => p.key === 'month') ?? plans.value[0]
+      form.planKey = preferred?.key ?? ''
+    } catch (e: any) {
+      plans.value = []
+      form.planKey = ''
+      ElMessage.error(e?.message || '加载会员套餐失败')
+    } finally {
+      plansLoading.value = false
+    }
+  }
+
+  function pickPlan(key: string) {
     form.planKey = key
     // 选预设时清掉自定义天数，回到「套餐模式」
     form.days = undefined
@@ -163,11 +204,12 @@
 
   function onClosed() {
     submitting.value = false
+    plansLoading.value = false
   }
 
   async function submit() {
     if (!props.account) return
-    if (effectiveDays.value <= 0) {
+    if (!canSubmit.value) {
       ElMessage.warning('请选择套餐或填写自定义天数')
       return
     }
@@ -179,10 +221,14 @@
         : { planKey: form.planKey, note: form.note.trim() || undefined }
       const res = await grantLedgerMembership(props.account.id, payload)
       const newExpiry = res?.membership?.expiresAt ?? null
-      ElMessage.success(
-        `已增加 ${res?.deltaDays ?? effectiveDays.value} 天` +
-          (newExpiry ? `，新到期 ${formatDateTime(newExpiry)}` : '')
-      )
+      if (res?.membership?.perpetual) {
+        ElMessage.success('已开通永久会员')
+      } else {
+        ElMessage.success(
+          `已增加 ${res?.deltaDays ?? effectiveDays.value} 天` +
+            (newExpiry ? `，新到期 ${formatDateTime(newExpiry)}` : '')
+        )
+      }
       emit('success', res?.deltaDays ?? effectiveDays.value, newExpiry)
       visible.value = false
     } catch (e: any) {
