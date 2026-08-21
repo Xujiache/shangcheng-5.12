@@ -63,7 +63,7 @@ function guardContext(method: string, originalUrl: string, membership: any): any
   }
 }
 
-describe('LedgerMembershipGuard 到期会员订单只读', () => {
+describe('LedgerMembershipGuard 到期会员只读访问', () => {
   const guard = new LedgerMembershipGuard()
   const expiredMembership = { active: false, expired: true }
 
@@ -75,9 +75,18 @@ describe('LedgerMembershipGuard 到期会员订单只读', () => {
   )
 
   it.each([
+    '/api/v1/l/stats/overview?period=month',
+    '/api/v1/l/stats/monthly?year=2026',
+    '/api/v1/l/stats/series?granularity=month',
+  ])('%s 的 GET 请求可查看历史经营统计', (url) => {
+    expect(guard.canActivate(guardContext('GET', url, expiredMembership))).toBe(true)
+  })
+
+  it.each([
     ['POST', '/api/v1/l/orders'],
     ['PATCH', '/api/v1/l/orders/order-1'],
     ['DELETE', '/api/v1/l/orders/order-1'],
+    ['POST', '/api/v1/l/stats/monthly'],
     ['GET', '/api/v1/l/customers'],
     ['GET', '/api/v1/l/work-logs?month=2026-06'],
     ['POST', '/api/v1/l/work-logs'],
