@@ -20,7 +20,7 @@
         hover-class="tap-active"
       >
         <view class="mc__icon" style="background: {{item.tint}};">
-          <lz-icon name="{{item.icon}}" size="18" color="{{item.color}}" />
+          <image class="mc__icon-image" src="{{item.iconSrc}}" mode="aspectFit" />
         </view>
         <view class="mc__body">
           <view class="mc__top">

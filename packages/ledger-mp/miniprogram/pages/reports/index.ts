@@ -1,7 +1,8 @@
 import { statsApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
-import { getHideAmount } from '../../utils/store'
+import { getHideAmount, glassCardStyle, goToLogin, isLoggedIn } from '../../utils/store'
 
+const CURRENT_YEAR = new Date().getFullYear()
 interface MonthRow {
   month: number
   label: string
@@ -15,6 +16,9 @@ interface MonthRow {
 
 Page({
   data: {
+    headerSubtitle: `${CURRENT_YEAR}年 · 全年统计`,
+    glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
+    tabMotion: false,
     tab: 'profit',
     tabs: [
       { value: 'profit', label: '利润统计' },
@@ -23,7 +27,7 @@ Page({
     loading: true,
     loadError: false, // 网络/加载失败：区别于"暂无数据"空态
     sel: -1,
-    ovYear: new Date().getFullYear(),
+    ovYear: CURRENT_YEAR,
     hasData: false,
     // raw rows for the detail list
     months: [] as any[],
@@ -48,11 +52,47 @@ Page({
   _seq: 0,
 
   onShow() {
+    if (!isLoggedIn()) {
+      goToLogin()
+      return
+    }
+    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.setData({ selected: 2 })
+    if (tb) tb.selectTab ? tb.selectTab(2) : tb.setData({ selected: 2 })
+    this.setData({
+      headerSubtitle: `${this.data.ovYear}年 · 全年统计`,
+    })
     this.load()
   },
+  enterGuestMode() {
+    this._seq = (this._seq || 0) + 1
+    this.setData({
+      isGuest: true,
+      headerSubtitle: '游客可浏览公开内容',
+      loading: false,
+      loadError: false,
+      sel: -1,
+      hasData: false,
+      months: [],
+      monthsView: [],
+      profitBars: [],
+      laborBars: [],
+      yearProfitBare: '0',
+      count: 0,
+      avgProfitText: '¥0',
+      bestMonthLabel: '—',
+      yearLaborBare: '0',
+      yearOtherText: '¥0',
+      avgLaborText: '¥0',
+      expandMonths: false,
+      hiddenCount: 0,
+    })
+  },
   onPullDownRefresh() {
+    if (!isLoggedIn()) {
+      wx.stopPullDownRefresh()
+      return
+    }
     this.load(() => wx.stopPullDownRefresh())
   },
   onTab(e: any) {
@@ -64,6 +104,10 @@ Page({
   },
 
   async load(done?: () => void) {
+    if (!isLoggedIn()) {
+      if (done) done()
+      return
+    }
     // 序号守卫：onShow/下拉可能并发触发，旧响应不得覆盖新数据
     const seq = (this._seq = (this._seq || 0) + 1)
     try {
@@ -146,5 +190,11 @@ Page({
   },
   retry() {
     this.setData({ loading: true, loadError: false }, () => this.load())
+  },
+  toLogin() {
+    goToLogin()
+  },
+  toHome() {
+    wx.switchTab({ url: '/pages/home/index' })
   },
 })

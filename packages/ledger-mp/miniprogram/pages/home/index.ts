@@ -1,6 +1,14 @@
-import { statsApi, notificationApi, adApi, changelogApi } from '../../api/index'
-import { yuan, maskMoney } from '../../utils/format'
-import { getHideAmount, getFxMode } from '../../utils/store'
+import { statsApi, notificationApi, adApi, changelogApi, meApi } from '../../api/index'
+import { fmtDate, yuan, maskMoney } from '../../utils/format'
+import {
+  getHideAmount,
+  getFxMode,
+  glassCardStyle,
+  goToLogin,
+  isLoggedIn,
+  requireLogin,
+  setMembership,
+} from '../../utils/store'
 import { makeShareCover } from '../../utils/share-cover'
 
 const COLORMAP: Record<string, string> = {
@@ -17,6 +25,9 @@ const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', y
 Page({
   _cover: '',
   data: {
+    loggedIn: isLoggedIn(),
+    glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
+    tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     hdRight: 18, // 右侧留白：动态避让微信原生胶囊（onShow 计算）
     fxMax: false, // 性能模式：开启 hero 触摸流光（每帧 setData，默认关）
@@ -50,6 +61,9 @@ Page({
     goalTargetText: '未设',
     goalPct: 0,
     ads: [] as any[],
+    welcomeBannerVisible: false,
+    welcomeDaysLeft: 0,
+    welcomeExpiresLabel: '',
     clogShow: false,
     clog: null as any,
   },
@@ -65,8 +79,10 @@ Page({
     }).then((p) => (this._cover = p))
   },
   onShow() {
+    const loggedIn = isLoggedIn()
+    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.setData({ selected: 0 })
+    if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
     const sb = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
     let hdRight = 18
     try {
@@ -77,13 +93,73 @@ Page({
     } catch (e) {
       /* 旧基础库兜底用默认 18 */
     }
-    this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max' })
-    this.load()
+    this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max', loggedIn })
+    this.refreshMembershipAndData()
     this.loadAds()
     this.maybeShowChangelog()
   },
+  async refreshMembershipAndData() {
+    if (!isLoggedIn()) {
+      this.setData({
+        welcomeBannerVisible: false,
+        welcomeDaysLeft: 0,
+        welcomeExpiresLabel: '',
+      })
+      this.load()
+      return
+    }
+    try {
+      const membership = (await meApi.refreshMembership()) as MembershipStatus
+      setMembership(membership)
+      const welcomeBannerVisible = !!membership.active && membership.lastPlanKey === 'welcome-30d'
+      this.setData({
+        welcomeBannerVisible,
+        welcomeDaysLeft: Math.max(0, membership.daysLeft || 0),
+        welcomeExpiresLabel: fmtDate(membership.expiresAt),
+      })
+      if (membership.active) {
+        this.load()
+      } else {
+        // 到期账号留在首页，不触发经营接口闸门；页面保持默认/已有数据。
+        this.setData({ loading: false, loadError: false })
+      }
+    } catch (e) {
+      // 会员状态刷新失败时仍尝试按原流程加载，避免临时网络问题造成整页空白。
+      this.load()
+    }
+  },
+  enterGuestMode() {
+    ;(this as any)._seq = (((this as any)._seq as number) || 0) + 1
+    ;(this as any)._loaded = false
+    this.setData({
+      isGuest: true,
+      loading: false,
+      loadError: false,
+      unread: false,
+      ads: [],
+      donut: [],
+      legend: [],
+      profitBars: [],
+      countBars: [],
+      tops: [],
+      profitBare: '0',
+      revenueText: '¥0',
+      costText: '¥0',
+      donutCostText: '¥0',
+      count: 0,
+      avgText: '¥0',
+      monthProfitText: '¥0',
+      goalTargetText: '未设',
+      goalPct: 0,
+      clogShow: false,
+      clog: null,
+    })
+  },
   // 新版本首开弹更新日志：按当前版本定向，每版本只弹一次
   maybeShowChangelog() {
+    // 更新日志接口需要 ledger token；游客态不发请求，避免 401 触发统一登出/重载。
+    // 必须在 _clogChecked 置位前返回，这样同一页面登录成功后仍会检查一次。
+    if (!isLoggedIn()) return
     if ((this as any)._clogChecked) return
     ;(this as any)._clogChecked = true
     let v = ''
@@ -98,6 +174,7 @@ Page({
     changelogApi
       .byVersion(v)
       .then((c: any) => {
+        if (!isLoggedIn()) return
         if (c && c.version) {
           this.setData({
             clog: {
@@ -144,6 +221,10 @@ Page({
     this.setData({ tlx: t.clientX - r.left, tly: t.clientY - r.top })
   },
   onPullDownRefresh() {
+    if (!isLoggedIn()) {
+      wx.stopPullDownRefresh()
+      return
+    }
     this.load(() => wx.stopPullDownRefresh())
   },
   onPeriod(e: any) {
@@ -151,6 +232,11 @@ Page({
   },
 
   async load(done?: () => void) {
+    if (!isLoggedIn()) {
+      this.setData({ loading: false, loadError: false })
+      if (done) done()
+      return
+    }
     // 序号守卫：日/月/年 可被快速连点，慢的旧响应不允许覆盖新数据
     const seq = ((this as any)._seq = (((this as any)._seq as number) || 0) + 1)
     const period = this.data.period
@@ -236,8 +322,10 @@ Page({
   },
 
   async loadUnread() {
+    if (!isLoggedIn()) return
     try {
       const r: any = await notificationApi.unreadCount()
+      if (!isLoggedIn()) return
       this.setData({ unread: (r?.count || 0) > 0 })
     } catch (e) {
       /* 静默：红点不是关键路径 */
@@ -245,8 +333,10 @@ Page({
   },
 
   async loadAds() {
+    if (!isLoggedIn()) return
     try {
       const ads: any = await adApi.list()
+      if (!isLoggedIn()) return
       this.setData({ ads: Array.isArray(ads) ? ads : [] })
     } catch (e) {
       /* 静默：广告非关键路径 */
@@ -273,27 +363,50 @@ Page({
       })
     }
   },
+  toLogin() {
+    goToLogin()
+  },
+  toAbout() {
+    wx.navigateTo({ url: '/pages/about/index' })
+  },
+  toDoc(e: any) {
+    wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
+  },
   toCut() {
     wx.navigateTo({ url: '/pages/cut/index' })
   },
+  toWorkLog() {
+    if (!requireLogin()) return
+    wx.navigateTo({ url: '/pages/work-log/index' })
+  },
+  toTriangleTool() {
+    wx.navigateTo({ url: '/pages/triangle-tool/index' })
+  },
+  toArcTool() {
+    wx.navigateTo({ url: '/pages/arc-tool/index' })
+  },
 
   toCost() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/cost-analysis/index' })
   },
   toGoal() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/goal/index' })
   },
   toMsg() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/message-center/index' })
   },
   toOrder(e: any) {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
   },
   // 开启「转发给朋友」/「分享到朋友圈」
   onShareAppMessage() {
     return {
       title: '我在用「门窗利账」记账算利润，门窗人的记账利器',
-      path: '/pages/register/index',
+      path: '/pages/home/index',
       imageUrl: this._cover || undefined,
     }
   },

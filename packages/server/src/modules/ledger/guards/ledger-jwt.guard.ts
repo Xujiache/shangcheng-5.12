@@ -51,7 +51,7 @@ export class LedgerJwtGuard implements CanActivate {
     if (user.status === 'disabled') throw new BizException(BizCode.FORBIDDEN, '账号已被禁用')
     ;(req as any).ledgerUser = {
       id: user.id,
-      phone: user.phone,
+      accountCode: user.id.slice(-8).toUpperCase(),
       nickname: user.nickname,
       avatar: user.avatar,
       membership: deriveMembership(

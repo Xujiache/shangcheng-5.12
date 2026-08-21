@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import * as argon2 from 'argon2'
-import { customAlphabet } from 'nanoid'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
@@ -11,7 +10,6 @@ import {
 } from './ledger.constants'
 import {
   CreateLedgerAdDto,
-  CreateLedgerUserDto,
   GrantMembershipDto,
   PushNotificationDto,
   UpdateLedgerAdDto,
@@ -20,12 +18,9 @@ import {
   UpdateLedgerUserDto,
 } from './dto/admin.dto'
 
-// 初始/重置密码：去掉易混字符（0/O/1/l/I），8 位
-const genPassword = customAlphabet('23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ', 8)
-
 /**
  * 门窗利账 · 后台管理服务（admin-pc 平台工作台调用）。
- * 管理记账账号的创建/禁用/改密，以及会员时长的叠加与审计。
+ * 微信账号由小程序首次登录自动创建；后台负责禁用、资料维护和会员时长审计。
  */
 @Injectable()
 export class LedgerAdminService {
@@ -34,11 +29,11 @@ export class LedgerAdminService {
   private mapUser(u: any) {
     return {
       id: u.id,
-      phone: u.phone,
+      accountCode: u.id.slice(-8).toUpperCase(),
+      wechatLinked: !!u.wxOpenid,
       nickname: u.nickname,
       avatar: u.avatar,
       status: u.status,
-      mustReset: u.mustReset,
       lastLoginAt: u.lastLoginAt,
       createdAt: u.createdAt,
       membership: deriveMembership(
@@ -56,7 +51,12 @@ export class LedgerAdminService {
   async listUsers(q: any) {
     const kw = String(q?.keyword || '').trim()
     const where: any = {}
-    if (kw) where.OR = [{ phone: { contains: kw } }, { nickname: { contains: kw } }]
+    if (kw) {
+      where.OR = [
+        { id: { contains: kw.toLowerCase() } },
+        { nickname: { contains: kw, mode: 'insensitive' } },
+      ]
+    }
     if (q?.status === 'active' || q?.status === 'disabled') where.status = q.status
 
     const page = Math.max(1, Number(q?.page) || 1)
@@ -74,30 +74,6 @@ export class LedgerAdminService {
     return { list: rows.map((u) => this.mapUser(u)), total, page, pageSize }
   }
 
-  async createUser(dto: CreateLedgerUserDto, operatorId?: string) {
-    const phone = String(dto.phone || '').trim()
-    if (!/^1[3-9]\d{9}$/.test(phone))
-      throw new BizException(BizCode.INVALID_PARAMS, '手机号格式不正确')
-    const dup = await this.prisma.ledgerUser.findUnique({ where: { phone }, select: { id: true } })
-    if (dup) throw new BizException(BizCode.CONFLICT, '该手机号已存在')
-
-    const generated = !dto.password
-    const plain = dto.password || genPassword()
-    const passwordHash = await argon2.hash(plain)
-    const u = await this.prisma.ledgerUser.create({
-      data: {
-        phone,
-        passwordHash,
-        nickname: dto.nickname?.trim() || '门窗店主',
-        createdById: operatorId || null,
-        mustReset: generated, // 系统生成的初始密码要求首登改密
-        membership: { create: {} }, // 1:1 空会员（expiresAt=null=未开通）
-      },
-      include: { membership: true },
-    })
-    return { ...this.mapUser(u), generatedPassword: generated ? plain : undefined }
-  }
-
   async updateUser(id: string, dto: UpdateLedgerUserDto) {
     const exist = await this.prisma.ledgerUser.findUnique({ where: { id } })
     if (!exist) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
@@ -112,81 +88,104 @@ export class LedgerAdminService {
     return this.mapUser(u)
   }
 
-  async resetPassword(id: string) {
-    const exist = await this.prisma.ledgerUser.findUnique({ where: { id }, select: { id: true } })
-    if (!exist) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
-    const plain = genPassword()
-    await this.prisma.ledgerUser.update({
-      where: { id },
-      data: { passwordHash: await argon2.hash(plain), mustReset: true },
-    })
-    return { password: plain }
-  }
-
   /** 增加会员时长（叠加）。planKey 与 days 二选一，days 优先。 */
   async grantMembership(id: string, dto: GrantMembershipDto, operatorId?: string) {
     const user = await this.prisma.ledgerUser.findUnique({
       where: { id },
-      include: { membership: true },
+      select: { id: true },
     })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
     let days = dto.days
     let isPerpetual = false
-    // 按套餐授予时，天数以后台配置的套餐为准（兼容旧 key 回落 LEDGER_PLAN_DAYS）；永久套餐置 perpetual
-    if (dto.planKey) {
+    // 自定义 days 优先；否则以后台动态套餐为准（旧 key 回落 LEDGER_PLAN_DAYS）。
+    if (dto.planKey && (days === undefined || days === null)) {
       const cfg = await this.getConfig()
       const plan = cfg.plans.find((p) => p.key === dto.planKey)
       if (plan?.perpetual) isPerpetual = true
-      if (days === undefined || days === null) {
-        days = plan ? plan.days : LEDGER_PLAN_DAYS[dto.planKey]
-      }
+      days = plan ? plan.days : LEDGER_PLAN_DAYS[dto.planKey]
     }
     if (!isPerpetual && (days === undefined || days === null || days === 0)) {
       throw new BizException(BizCode.INVALID_PARAMS, '请选择套餐或填写有效天数')
     }
     days = days ?? 0
 
-    let membership = user.membership
-    if (!membership) {
-      membership = await this.prisma.ledgerMembership.create({ data: { userId: id } })
+    const auditNote = dto.note?.trim() || ''
+    const deltaDays = isPerpetual ? 0 : days
+    const grantOnce = () =>
+      this.prisma.$transaction(
+        async (tx) => {
+          // 必须在事务内重读到期时间，避免并发授予基于事务外旧快照累加。
+          let membership = await tx.ledgerMembership.findUnique({ where: { userId: id } })
+          if (!membership) {
+            membership = await tx.ledgerMembership.create({ data: { userId: id } })
+          }
+          const before = membership.expiresAt
+          // 永久会员是独立语义，不用「10 年到期」假装；审计也不记为 +3650 天。
+          const nextExpiry = isPerpetual ? null : computeGrantExpiry(before, days)
+          const next = await tx.ledgerMembership.update({
+            where: { id: membership.id },
+            data: {
+              expiresAt: nextExpiry,
+              lastPlanKey: dto.planKey || 'custom',
+              updatedById: operatorId || null,
+              ...(isPerpetual ? { perpetual: true } : {}),
+            },
+          })
+          await tx.ledgerMembershipLog.create({
+            data: {
+              membershipId: membership.id,
+              deltaDays,
+              planKey: dto.planKey || 'custom',
+              beforeAt: before,
+              afterAt: nextExpiry,
+              operatorId: operatorId || null,
+              note: isPerpetual
+                ? ['开通永久会员', auditNote].filter(Boolean).join('；')
+                : auditNote || null,
+            },
+          })
+          return { updated: next, after: nextExpiry }
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+
+    let grantResult: Awaited<ReturnType<typeof grantOnce>>
+    try {
+      grantResult = await grantOnce()
+    } catch (e) {
+      const conflict = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034'
+      if (!conflict) throw e
+      try {
+        grantResult = await grantOnce()
+      } catch (retryError) {
+        const retryConflict =
+          retryError instanceof Prisma.PrismaClientKnownRequestError && retryError.code === 'P2034'
+        if (retryConflict) {
+          throw new BizException(BizCode.BUSINESS_ERROR, '会员状态正在更新，请重试')
+        }
+        throw retryError
+      }
     }
-    const before = membership.expiresAt
-    const after = computeGrantExpiry(before, days)
-    const updated = await this.prisma.ledgerMembership.update({
-      where: { id: membership.id },
-      data: {
-        expiresAt: after,
-        lastPlanKey: dto.planKey || 'custom',
-        updatedById: operatorId || null,
-        ...(isPerpetual ? { perpetual: true } : {}),
-      },
-    })
-    await this.prisma.ledgerMembershipLog.create({
-      data: {
-        membershipId: membership.id,
-        deltaDays: days,
-        planKey: dto.planKey || 'custom',
-        beforeAt: before,
-        afterAt: after,
-        operatorId: operatorId || null,
-        note: dto.note?.trim() || null,
-      },
-    })
+    const { updated, after } = grantResult
     const status = deriveMembership(updated.expiresAt, updated.lastPlanKey, new Date(), {
-      perpetual: updated.perpetual,
+      perpetual: isPerpetual || updated.perpetual,
       trialClaimedAt: updated.trialClaimedAt,
     })
     // 给记账用户写一条真实的会员通知（消息中心可见）
-    await this.notify(
-      id,
-      'member',
-      days >= 0 ? '会员已开通 / 续费' : '会员时长已调整',
-      days >= 0
-        ? `已为您增加 ${days} 天会员时长，有效期至 ${this.ymd(after)}。`
-        : `会员时长调整 ${days} 天，当前有效期至 ${this.ymd(after)}。`,
-    )
-    return { membership: status, deltaDays: days }
+    if (isPerpetual) {
+      await this.notify(id, 'member', '永久会员已开通', '已为您开通永久会员，长期有效。')
+    } else {
+      await this.notify(
+        id,
+        'member',
+        days >= 0 ? '会员已开通 / 续费' : '会员时长已调整',
+        days >= 0
+          ? `已为您增加 ${days} 天会员时长，有效期至 ${this.ymd(after as Date)}。`
+          : `会员时长调整 ${days} 天，当前有效期至 ${this.ymd(after as Date)}。`,
+      )
+    }
+    return { membership: status, deltaDays }
   }
 
   /** 写入一条记账用户的应用内通知（best-effort）。 */
@@ -228,7 +227,7 @@ export class LedgerAdminService {
     const [rows, total] = await Promise.all([
       this.prisma.ledgerFeedback.findMany({
         where,
-        include: { user: { select: { phone: true, nickname: true } } },
+        include: { user: { select: { id: true, nickname: true } } },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -238,7 +237,7 @@ export class LedgerAdminService {
     const list = rows.map((f) => ({
       id: f.id,
       userId: f.userId,
-      phone: f.user?.phone || '',
+      accountCode: f.user?.id.slice(-8).toUpperCase() || '',
       nickname: f.user?.nickname || '',
       type: f.type,
       content: f.content,
@@ -346,14 +345,14 @@ export class LedgerAdminService {
       .slice(0, 100)
     const inviters = await this.prisma.ledgerUser.findMany({
       where: { id: { in: sorted.map((s) => s.inviterId) } },
-      select: { id: true, phone: true, nickname: true, inviteCode: true },
+      select: { id: true, nickname: true, inviteCode: true },
     })
     const map = new Map(inviters.map((u) => [u.id, u]))
     const list = sorted.map((s) => {
       const u = map.get(s.inviterId)
       return {
         inviterId: s.inviterId,
-        phone: u?.phone || '',
+        accountCode: u?.id.slice(-8).toUpperCase() || '',
         nickname: u?.nickname || '',
         inviteCode: u?.inviteCode || '',
         invitedCount: s.count,

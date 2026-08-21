@@ -32,10 +32,13 @@ packages/ledger-mp/
    - 本地调试：改成 `http://localhost:3000` 并在工具里勾选「不校验合法域名」（`project.config` 已设 `urlCheck:false`）。
 5. 类型检查：`pnpm --filter @jiujiu/ledger-mp typecheck`。
 
-## 登录 / 演示账号
+## 登录 / 隐私配置
 
-- 账号由 **admin-pc 后台**「门窗利账 → 账号管理」创建（手机号 + 密码），无 App 自助注册。
-- 后端 `prisma:seed` 内置演示账号：**手机号 `13800138000` / 密码 = `SEED_DEFAULT_PASSWORD`**，已带月卡会员 + 3 客户 + 5 订单。该密码无默认值，须在跑 seed 前显式设置（至少 8 位强密码），否则 seed 拒绝运行。
+- 登录仅使用 `wx.login`：后端按微信 `openid` 自动识别账号，首次登录自动建立账号和空会员记录。
+- 新微信账号会自动出现在 **admin-pc 后台**「门窗利账 → 账号管理」，运营按账号编号开通会员。
+- 后端必须配置 `LEDGER_WX_APPID`、`LEDGER_WX_SECRET`，并与 `project.config.json` 的小程序 AppID 一致。
+- 登录只调用 `wx.login`，后端以 openid 作为唯一身份，不接入其他身份认证组件。
+- 微信公众平台隐私保护指引只保留小程序实际处理的信息类型，登录本身不新增额外个人信息类型。
 - 会员到期/未开通 → 登录后进「开通会员」闸门页；在后台「会员管理」给账号**增加时长**后重登即可进入。
 
 ## 后端接口
@@ -49,4 +52,4 @@ packages/ledger-mp/
 - 图表：成本占比用 canvas 环形（`lz-donut`），趋势/月度用 view 柱状（`lz-bars`，规避真机 canvas 兼容问题）。
 - `lz-donut` 依赖 Canvas 2D（基础库 ≥ 2.9）。
 - 报表「成本分析」中除人工/其他外，型材/玻璃/配件/纱窗暂无逐月明细（后端 `stats/monthly` 仅含 labor/otherCost），展示为年度合计 + 提示。
-- 微信一键登录入口为占位（当前以手机号+密码为主，符合需求）。
+- 微信登录依赖后端正确配置与当前小程序一致的 AppID / AppSecret。

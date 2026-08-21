@@ -24,6 +24,16 @@ export function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
   return request.get<Api.Auth.UserInfo>({ url: '/api/v1/auth/user-info' })
 }
 
+/** 注销并吊销当前 refresh token */
+export function fetchLogout(refreshToken: string): Promise<{ ok: true }> {
+  return request.post<{ ok: true }>({
+    url: '/api/v1/auth/logout',
+    data: { refreshToken },
+    timeout: 5000,
+    showErrorMessage: false
+  })
+}
+
 /** 发送短信验证码（用于修改手机号） */
 export function sendSmsCode(phone: string) {
   return request.post<{ ok: boolean }>({

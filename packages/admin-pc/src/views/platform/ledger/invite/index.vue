@@ -45,7 +45,7 @@
         </ElTableColumn>
         <ElTableColumn label="邀请人" min-width="160">
           <template #default="{ row }">
-            <div class="pf-mono">{{ row.phone }}</div>
+            <div class="pf-mono">{{ row.accountCode }}</div>
             <div class="text-xs text-g-500">{{ row.nickname || '—' }}</div>
           </template>
         </ElTableColumn>

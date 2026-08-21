@@ -7,6 +7,20 @@ function fmtBarVal(v: number): string {
   return String(Math.round(v))
 }
 
+/**
+ * 横轴最多保留 7 个均匀分布的标签。
+ * 月度（12 项以内）仍完整显示；每日（28～31 项）避免双位数日期互相覆盖。
+ */
+function visibleLabelIndexes(total: number): Set<number> {
+  if (total <= 12) return new Set(Array.from({ length: total }, (_, index) => index))
+  const visible = new Set<number>()
+  const count = Math.min(7, total)
+  for (let slot = 0; slot < count; slot += 1) {
+    visible.add(Math.round((slot * (total - 1)) / (count - 1)))
+  }
+  return visible
+}
+
 Component({
   properties: {
     series: { type: Array, value: [] as Array<{ label: string; value: number; value2?: number }> },
@@ -15,7 +29,19 @@ Component({
     highlight: { type: Number, value: -1 },
   },
   data: {
-    bars: [] as Array<{ idx: number; h: number; h2: number; label: string; vt: string }>,
+    bars: [] as Array<{
+      idx: number
+      h: number
+      h2: number
+      label: string
+      vt: string
+    }>,
+    axisLabels: [] as Array<{
+      idx: number
+      label: string
+      position: number
+      edge: 'start' | 'middle' | 'end'
+    }>,
     grouped: false,
     c1: 'var(--accent)',
     c2: 'var(--c4)',
@@ -24,15 +50,39 @@ Component({
     'series, colors, height'(series: any[], colors: string[], height: number) {
       const grouped = (colors || []).length > 1
       let max = 0
-      ;(series || []).forEach((s) => {
+      let primaryMax = 0
+      let primaryMaxIndex = -1
+      ;(series || []).forEach((s, index) => {
+        const value = Number(s.value) || 0
         max = Math.max(max, Number(s.value) || 0, grouped ? Number(s.value2) || 0 : 0)
+        if (value > primaryMax) {
+          primaryMax = value
+          primaryMaxIndex = index
+        }
       })
       const safeMax = max || 1
       const drawMax = Math.max(20, height - 14) // 顶部留 14px 放数字标签
+      const dense = (series || []).length > 12
+      const visibleLabels = visibleLabelIndexes((series || []).length)
+      const lastIndex = Math.max(0, (series || []).length - 1)
+      const axisLabels = Array.from(visibleLabels)
+        .sort((a, b) => a - b)
+        .map((idx) => ({
+          idx,
+          label: String(series[idx]?.label ?? ''),
+          position: lastIndex ? (idx / lastIndex) * 100 : 0,
+          edge:
+            idx === 0
+              ? ('start' as const)
+              : idx === lastIndex
+                ? ('end' as const)
+                : ('middle' as const),
+        }))
       const bars = (series || []).map((s, idx) => ({
         idx,
         label: s.label,
-        vt: fmtBarVal(Number(s.value) || 0),
+        // 密集的每日趋势只标最高值，避免 31 个柱顶数字再次互相覆盖。
+        vt: !dense || idx === primaryMaxIndex ? fmtBarVal(Number(s.value) || 0) : '',
         h: Math.max(s.value > 0 ? 2 : 0, ((Number(s.value) || 0) / safeMax) * drawMax),
         h2: grouped
           ? Math.max((s.value2 || 0) > 0 ? 2 : 0, ((Number(s.value2) || 0) / safeMax) * drawMax)
@@ -40,6 +90,7 @@ Component({
       }))
       this.setData({
         bars,
+        axisLabels,
         grouped,
         c1: resolveColor(colors && colors[0] ? colors[0] : 'accent'),
         c2: resolveColor(colors && colors[1] ? colors[1] : 'c4'),

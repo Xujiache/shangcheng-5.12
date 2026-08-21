@@ -1,6 +1,7 @@
 import { cutPlanApi } from '../../api/index'
 import { optimizeCutting } from '../../utils/cutting'
 import { optimizeNesting, NestResult } from '../../utils/nesting'
+import { hasActiveMembership, requireLogin, requireMembership } from '../../utils/store'
 
 const MATERIALS: Record<string, { name: string; unit: string; is2d: boolean; noKerf: boolean }> = {
   profile: { name: '型材', unit: '段', is2d: false, noKerf: false },
@@ -49,7 +50,7 @@ Page({
         is2d: meta.is2d,
         noKerf: meta.noKerf,
         unit: meta.unit,
-        subt: `${meta.name} · 优化方案`,
+        subt: material === 'glass' ? '玻璃 · 自动旋转优化方案' : `${meta.name} · 优化方案`,
         editingTitle: d.editingTitle || '',
       },
       () => (meta.is2d ? this.compute2d() : this.compute1d()),
@@ -88,6 +89,7 @@ Page({
       input.sheetH || 0,
       input.pieces || [],
       input.kerf || 0,
+      { allowRotate: this.data.material === 'glass' },
     )
     this._nest = r
     this._cut1d = null
@@ -280,7 +282,7 @@ Page({
     const r = this._nest!
     const W = 1000
     const margin = 24
-    const headH = 56
+    const headH = this.data.material === 'board' ? 76 : 56
     const titleH = 30
     const gap = 16
     const inner = W - margin * 2
@@ -311,6 +313,10 @@ Page({
       margin,
       margin + 32,
     )
+    if (this.data.material === 'board') {
+      ctx.fillStyle = '#9A6A22'
+      ctx.fillText('注意花纹方向：板材排版不旋转', margin, margin + 50)
+    }
     let y = margin + headH
     r.sheets.forEach((sheet, si) => {
       const util = ((sheet.usedArea / (r.sheetW * r.sheetH)) * 100).toFixed(1)
@@ -441,6 +447,11 @@ Page({
 
   // ── 保存方案（入参来自上一页）：起名 + 继续编辑则更新、否则新建 ──
   savePlan() {
+    if (!requireLogin('登录后才能将优化下料方案保存到云端。')) return
+    if (!hasActiveMembership()) {
+      requireMembership('会员已到期，优化计算仍可使用；续费后可继续保存云端方案。')
+      return
+    }
     if (this.data.savingPlan) return
     if (!this.data.summary) return
     const meta = MATERIALS[this.data.material] || MATERIALS.profile

@@ -66,6 +66,8 @@ export const useUserStore = defineStore(
     const accessToken = ref('')
     // 刷新令牌
     const refreshToken = ref('')
+    // 避免多个 401 / 用户点击同时触发重复吊销请求
+    let logoutPromise: Promise<void> | null = null
     /**
      * 当前工作台（仅对超管有意义）
      * - merchant：商家工作台
@@ -179,7 +181,7 @@ export const useUserStore = defineStore(
      * 清空所有用户相关状态并跳转到登录页
      * 如果是同一账号重新登录，保留工作台标签页
      */
-    const logOut = () => {
+    const clearLocalSession = () => {
       // 保存当前用户 ID，用于下次登录时判断是否为同一用户
       const currentUserId = info.value.userId
       if (currentUserId) {
@@ -212,6 +214,30 @@ export const useUserStore = defineStore(
         name: 'Login',
         query: redirect ? { redirect } : undefined
       })
+    }
+
+    const logOut = (): Promise<void> => {
+      if (logoutPromise) return logoutPromise
+
+      // 必须在清理持久化状态前捕获 refresh token，供服务端加入吊销名单。
+      const tokenToRevoke = refreshToken.value
+      logoutPromise = (async () => {
+        try {
+          if (tokenToRevoke) {
+            // 动态导入避免 user store -> auth API -> HTTP -> user store 的静态循环依赖。
+            const { fetchLogout } = await import('@/api/auth')
+            await fetchLogout(tokenToRevoke)
+          }
+        } catch {
+          // 登出是 fail-safe 操作：服务端暂时不可达时仍必须清理本地凭据。
+          console.warn('[Auth] refresh token 吊销请求失败，已继续清理本地会话')
+        } finally {
+          clearLocalSession()
+          logoutPromise = null
+        }
+      })()
+
+      return logoutPromise
     }
 
     /**

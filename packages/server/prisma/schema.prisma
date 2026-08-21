@@ -953,25 +953,25 @@ model OrderShare {
 
 // ============================================================
 // 门窗利账（ledger · 记账小程序新端）
-// 独立域，与商城（User/Product/Order）零耦合：账号由 admin-pc 后台创建，
+// 独立域，与商城（User/Product/Order）零耦合：账号由首次微信登录自动创建，
 // 会员时长由后台叠加，订单/客户按 LedgerUser 隔离。金额单位：元（整数）。
 // ============================================================
 model LedgerUser {
-  id           String    @id @default(cuid())
-  phone        String    @unique // 登录名（唯一）
-  passwordHash String // argon2
-  nickname     String    @default("门窗店主")
-  avatar       String? // 字母底色 hue key 或上传头像的公网 URL
-  wxOpenid       String?   @unique // 微信 openid（绑定后可微信一键登录）
+  id             String    @id @default(cuid())
+  phone          String?   @unique // 旧账号兼容字段；不再用于登录或绑定
+  passwordHash   String? // 旧账号兼容字段；纯微信账号为空
+  nickname       String    @default("门窗店主")
+  avatar         String? // 字母底色 hue key 或上传头像的公网 URL
+  wxOpenid       String?   @unique // 唯一登录身份；旧账号迁移前允许为空
   inviteCode     String?   @unique // 邀请码（#10 分享注册）
   invitedById    String? // 邀请人 LedgerUser.id
-  cutFirstUsedAt DateTime? // 优化下料首次使用时间（#9 试用计时）
+  cutFirstUsedAt DateTime? // 历史试用留痕字段；不再参与任何权限判断
   status         String    @default("active") // active / disabled
-  mustReset    Boolean   @default(false) // 首登强制改密（预留）
-  createdById  String? // 操作管理员 User.id
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  mustReset      Boolean   @default(false) // 旧账号兼容字段，不再参与登录流程
+  createdById    String? // 操作管理员 User.id
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   membership    LedgerMembership?
   goal          LedgerGoal?
@@ -982,21 +982,22 @@ model LedgerUser {
   feedbacks     LedgerFeedback[]
   cutPlans      LedgerCutPlan[]
   payments      LedgerPaymentOrder[]
+  workLogs      LedgerWorkLog[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
 }
 
 model LedgerMembership {
-  id          String     @id @default(cuid())
-  userId      String     @unique
-  user        LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt   DateTime? // null=从未开通；>now=有效；<=now=过期
-  lastPlanKey String? // day/week/month/quarter/year/custom
-  perpetual   Boolean    @default(false) // true=永久会员（不看 expiresAt，永远有效）
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt      DateTime? // null=从未开通；>now=有效；<=now=过期
+  lastPlanKey    String? // day/week/month/quarter/year/custom
+  perpetual      Boolean    @default(false) // true=永久会员（不看 expiresAt，永远有效）
   trialClaimedAt DateTime? // 体验卡领取时间（非空=已领过，一次性）
-  updatedById String?
-  updatedAt   DateTime   @updatedAt
+  updatedById    String?
+  updatedAt      DateTime   @updatedAt
 
   logs LedgerMembershipLog[]
 }
@@ -1108,15 +1109,15 @@ model LedgerNotification {
   @@index([userId, createdAt])
 }
 
-// 用户意见反馈（含注销/换号申请），后台 admin-pc 可查看与处理。
+// 用户意见反馈（含注销申请），后台 admin-pc 可查看与处理。
 model LedgerFeedback {
   id        String     @id @default(cuid())
   userId    String
   user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String     @default("general") // general / delete_account / phone_change
+  type      String     @default("general") // general / delete_account
   content   String
   contact   String?
-  images    Json?      // 反馈附图 URL 数组(最多 9 张)
+  images    Json? // 反馈附图 URL 数组(最多 9 张)
   status    String     @default("open") // open / resolved
   reply     String?
   createdAt DateTime   @default(now())
@@ -1128,20 +1129,21 @@ model LedgerFeedback {
 
 // 每账号一行偏好设置（通知开关 / 免打扰 / 隐私）。设备级偏好也落库，换机不丢。
 model LedgerSetting {
-  id           String     @id @default(cuid())
-  userId       String     @unique
-  user         LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notifyOrder  Boolean    @default(true) // 订单提醒
-  notifyReport Boolean    @default(true) // 报表提醒
-  notifyGoal   Boolean    @default(true) // 目标提醒
-  notifySystem Boolean    @default(false) // 系统通知
-  dndEnabled   Boolean    @default(false) // 免打扰开关
-  dndStart     String     @default("22:00")
-  dndEnd       String     @default("08:00")
-  hideAmount   Boolean    @default(false) // 隐藏金额
-  bioLock      Boolean    @default(false) // 生物解锁
-  encBackup    Boolean    @default(true) // 加密备份
-  updatedAt    DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifyOrder    Boolean    @default(true) // 订单提醒
+  notifyReport   Boolean    @default(true) // 报表提醒
+  notifyGoal     Boolean    @default(true) // 目标提醒
+  notifySystem   Boolean    @default(false) // 系统通知
+  dndEnabled     Boolean    @default(false) // 免打扰开关
+  dndStart       String     @default("22:00")
+  dndEnd         String     @default("08:00")
+  hideAmount     Boolean    @default(false) // 隐藏金额
+  bioLock        Boolean    @default(false) // 生物解锁
+  encBackup      Boolean    @default(true) // 加密备份
+  costCategories Json       @default("[]") // 常用成本分类 [{id,name,color}]，数组顺序即展示顺序
+  updatedAt      DateTime   @updatedAt
 }
 
 // 优化下料·云端历史方案。每账号多行，按 userId 隔离，列表 updatedAt 倒序。
@@ -1159,6 +1161,25 @@ model LedgerCutPlan {
   updatedAt DateTime   @updatedAt
 
   @@index([userId, updatedAt])
+}
+
+// 独立日工台账：不关联订单成本，按记账账号严格隔离。
+model LedgerWorkLog {
+  id        String     @id @default(cuid())
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workDate  DateTime
+  workerName String
+  jobType   String?
+  unit      String     // day / hour
+  quantity  Decimal    @db.Decimal(8, 2)
+  unitPrice Int        // 元/工天 或 元/工时
+  amount    Int        // 服务端按 quantity × unitPrice 重算，单位元
+  note      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId, workDate])
 }
 
 // 首页广告 banner（#2）。后台 admin-pc 维护，App 首页轮播。
@@ -1180,7 +1201,7 @@ model LedgerChangelog {
   id        String   @id @default(cuid())
   version   String   @unique
   title     String
-  content   String   // 多行文本，每行一条更新项
+  content   String // 多行文本，每行一条更新项
   published Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

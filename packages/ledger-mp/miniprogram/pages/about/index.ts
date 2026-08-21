@@ -40,6 +40,9 @@ Page({
   toFeedback() {
     wx.navigateTo({ url: '/pages/feedback/index' })
   },
+  toChangelog() {
+    wx.navigateTo({ url: '/pages/changelog/index' })
+  },
   // 检查更新：微信平台真实更新流程（onCheckForUpdate → 自动下载 → onUpdateReady → applyUpdate）
   onCheckUpdate() {
     const version = this.data.appVersion

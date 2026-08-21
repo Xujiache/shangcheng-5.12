@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="ord">
+<view class="ord tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
   <view class="ord__hd" style="padding-top: {{hdPad}}px;">
     <view class="ord__title">订单管理</view>
     <view class="ord__cust-btn" bindtap="toCustomers" hover-class="tap-active">
@@ -9,6 +9,15 @@
   </view>
 
   <view class="lz-page lz-page--pad-bottom">
+    <block>
+    <view wx:if="{{readOnly}}" class="ord__readonly">
+      <lz-icon name="info" size="17" color="accent" />
+      <view>
+        <view class="ord__readonly-title">会员已到期 · 当前为只读模式</view>
+        <view class="ord__readonly-text">可以查看和预览历史订单，续费后可新增订单。</view>
+      </view>
+    </view>
+
     <!-- 汇总 -->
     <view class="lz-card lz-card--glow ord__sum">
       <view class="ord__sum-i">
@@ -79,7 +88,8 @@
       <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
-    <view wx:elif="{{!loading}}" class="lz-empty">暂无订单，点击底部 + 记一笔</view>
+    <view wx:elif="{{!loading}}" class="lz-empty">{{readOnly ? '暂无历史订单' : '暂无订单，点击底部 + 记一笔'}}</view>
     <view wx:else class="lz-empty">加载中…</view>
+    </block>
   </view>
 </view>

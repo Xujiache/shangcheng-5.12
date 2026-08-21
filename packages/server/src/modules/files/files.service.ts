@@ -1,8 +1,12 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common'
+import { Injectable, OnModuleInit, Logger, Optional } from '@nestjs/common'
 import { Client } from 'minio'
 import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
+import {
+  ContentSecurityService,
+  WechatContentScope,
+} from '../content-security/content-security.service'
 
 const nano = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 16)
 
@@ -26,7 +30,10 @@ export class FilesService implements OnModuleInit {
   private bucket = process.env.S3_BUCKET || 'jiujiu-mall'
   private publicUrl = process.env.S3_PUBLIC_URL || 'http://localhost:9000/jiujiu-mall'
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly contentSecurity?: ContentSecurityService,
+  ) {}
 
   async onModuleInit() {
     const isProd = process.env.NODE_ENV === 'production'
@@ -81,9 +88,26 @@ export class FilesService implements OnModuleInit {
     }
   }
 
-  async upload(file: MulterFile, bizType: string, ownerId?: string) {
+  async upload(
+    file: MulterFile,
+    bizType: string,
+    ownerId?: string,
+    contentScope: WechatContentScope = 'mall',
+  ) {
     if (!file) throw new BizException(BizCode.INVALID_PARAMS, '未上传文件')
     this.validateFile(file)
+    if (IMAGE_MIME.includes(file.mimetype)) {
+      if (!this.contentSecurity && process.env.NODE_ENV === 'production') {
+        throw new BizException(BizCode.BUSINESS_ERROR, '内容安全服务未初始化，暂时无法上传图片')
+      }
+      // 先同步过微信图片安全检测，再写对象存储和数据库，避免不合规头像/UGC 被发布。
+      await this.contentSecurity?.assertImageSafe(file.buffer, {
+        scope: contentScope,
+        scene: bizType === 'avatar' ? 1 : 2,
+        filename: file.originalname,
+        mimeType: file.mimetype,
+      })
+    }
     if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
 
     const ext = (file.originalname.split('.').pop() || 'bin').toLowerCase()
@@ -107,9 +131,14 @@ export class FilesService implements OnModuleInit {
     return { url, key, size: file.size, mimeType: file.mimetype }
   }
 
-  async batchUpload(files: MulterFile[], bizType: string, ownerId?: string) {
+  async batchUpload(
+    files: MulterFile[],
+    bizType: string,
+    ownerId?: string,
+    contentScope: WechatContentScope = 'mall',
+  ) {
     const out: any[] = []
-    for (const f of files) out.push(await this.upload(f, bizType, ownerId))
+    for (const f of files) out.push(await this.upload(f, bizType, ownerId, contentScope))
     return out
   }
 

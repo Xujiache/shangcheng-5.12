@@ -1,0 +1,69 @@
+<lz-bg />
+<view class="geo">
+  <lz-header title="三角计算" />
+
+  <view class="lz-page lz-page--pad-bottom geo__page">
+    <view class="geo__sketch geo__sketch--tri">
+      <image class="geo__demo" src="/assets/tools/triangle-demo.jpg" mode="aspectFit" />
+    </view>
+
+    <view class="geo__rule">
+      <view>计算规则：输入任意 3 个参数进行计算，全三角除外。</view>
+      <view>计算顺序：从上往下，按顺序取 3 个。</view>
+    </view>
+
+    <view wx:if="{{!canUse}}" class="lz-card lz-card--glow geo__gate">
+      <view class="geo__gate-icon"><lz-icon name="crown" size="25" color="accent" /></view>
+      <view class="lz-flex1" style="min-width: 0;">
+        <view class="geo__gate-title">{{gateTitle}}</view>
+        <view class="geo__gate-text">{{gateText}}</view>
+      </view>
+      <view class="geo__gate-cta" bindtap="openAccess" hover-class="tap-active">{{gateButtonText}}</view>
+    </view>
+
+    <view class="geo__title">输入区</view>
+    <view class="lz-card lz-card--flush geo__form {{!canUse ? 'geo__form--locked' : ''}}">
+      <view class="lz-row">
+        <view class="geo__label">a 边长</view>
+        <input class="geo__input" type="digit" value="{{values.a}}" data-key="a" placeholder="输入 a 边长" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">b 边长</view>
+        <input class="geo__input" type="digit" value="{{values.b}}" data-key="b" placeholder="输入 b 边长" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">c 边长</view>
+        <input class="geo__input" type="digit" value="{{values.c}}" data-key="c" placeholder="输入 c 边长" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">A 角度</view>
+        <input class="geo__input" type="digit" value="{{values.A}}" data-key="A" placeholder="输入 A 角度" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
+      </view>
+      <view class="lz-row">
+        <view class="geo__label">B 角度</view>
+        <input class="geo__input" type="digit" value="{{values.B}}" data-key="B" placeholder="输入 B 角度" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
+      </view>
+      <view class="lz-row lz-row--last">
+        <view class="geo__label">C 角度</view>
+        <input class="geo__input" type="digit" value="{{values.C}}" data-key="C" placeholder="输入 C 角度" placeholder-class="ph" disabled="{{!canUse}}" bindinput="onInput" />
+      </view>
+    </view>
+
+    <view class="geo__title">结果区</view>
+    <view class="lz-card lz-card--flush">
+      <block wx:if="{{canUse && resultRows.length}}">
+        <view wx:for="{{resultRows}}" wx:key="label" class="lz-row {{index === resultRows.length - 1 ? 'lz-row--last' : ''}}">
+          <view class="geo__label">{{item.label}}</view>
+          <view class="geo__value">{{item.value}}</view>
+        </view>
+      </block>
+      <view wx:else class="geo__empty">{{canUse ? '输入 3 个参数后点击计算' : '会员解锁后可查看计算结果'}}</view>
+    </view>
+
+  </view>
+
+  <view class="geo__actions">
+    <button class="geo__btn geo__btn--main {{!canUse ? 'geo__btn--locked' : ''}}" bindtap="calc">{{actionText}}</button>
+    <button class="geo__btn" disabled="{{!canUse}}" bindtap="clear">清空</button>
+  </view>
+</view>

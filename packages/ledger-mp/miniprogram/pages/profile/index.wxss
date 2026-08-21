@@ -18,10 +18,28 @@
   font-weight: 700;
   color: var(--text);
 }
-.prof__phone {
+.prof__account {
   font-size: 13px;
   color: var(--muted);
   margin-top: 3px;
+}
+.prof__guest-card {
+  margin-bottom: var(--gap);
+  padding: 20px;
+}
+.prof__guest-title {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+}
+.prof__guest-copy {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.prof__guest-login {
+  margin-top: 17px;
 }
 .prof__member {
   display: flex;
@@ -44,8 +62,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #f4d58a, #d9a441);
+  background: rgba(244, 213, 138, 0.14);
+  border: 1px solid rgba(244, 213, 138, 0.24);
   flex-shrink: 0;
+}
+.prof__m-icon-img {
+  display: block;
+  width: 36px;
+  height: 36px;
 }
 .prof__m-t {
   font-size: 15px;
@@ -62,4 +86,42 @@
   font-weight: 700;
   color: #f4d58a;
   white-space: nowrap;
+}
+
+/* 常用功能 4 宫格 */
+.prof__grid {
+  display: flex;
+  padding: 8px 2px;
+}
+.prof__grid-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-radius: 14px;
+}
+.prof__grid-ic {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.prof__grid-icon-img {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+.prof__grid-t {
+  font-size: 12.5px;
+  color: var(--text);
+}
+.prof__row-icon-img {
+  display: block;
+  width: 30px;
+  height: 30px;
 }

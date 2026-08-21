@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
@@ -7,6 +7,7 @@ import { decimalToNumber } from '../../common/utils/decimal.util'
 import { orderNo, refundNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
 import { ChatGateway } from '../chat/chat.gateway'
+import { ContentSecurityService } from '../content-security/content-security.service'
 
 /** Haversine 公式：两点经纬度直线距离（km，保留两位小数） */
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -27,7 +28,17 @@ export class UserMpService {
     private readonly prisma: PrismaService,
     private readonly wxpay: WxPayService,
     private readonly chat: ChatGateway,
+    @Optional() private readonly contentSecurity?: ContentSecurityService,
   ) {}
+
+  /** 生产环境不能因依赖装配异常而绕过内容审核。 */
+  private async assertUserTextSafe(content: string, scene: number) {
+    if (!content.trim()) return
+    if (!this.contentSecurity && process.env.NODE_ENV === 'production') {
+      throw new BizException(BizCode.BUSINESS_ERROR, '内容安全服务未初始化，暂时无法提交内容')
+    }
+    await this.contentSecurity?.assertTextSafe(content, { scope: 'mall', scene })
+  }
 
   // ========== 用户资料（读写 + WS 实时多端同步） ==========
   async profile(userId: string) {
@@ -38,8 +49,11 @@ export class UserMpService {
 
   async updateProfile(userId: string, dto: any) {
     const data: any = {}
-    if (typeof dto.nickname === 'string' && dto.nickname.trim())
-      data.nickname = dto.nickname.trim().slice(0, 32)
+    if (typeof dto.nickname === 'string' && dto.nickname.trim()) {
+      const nickname = dto.nickname.trim().slice(0, 32)
+      await this.assertUserTextSafe(nickname, 1)
+      data.nickname = nickname
+    }
     if (typeof dto.avatar === 'string') data.avatar = dto.avatar
     if (typeof dto.gender === 'number' && [0, 1, 2].includes(dto.gender)) data.gender = dto.gender
     if (typeof dto.email === 'string' && dto.email.trim()) {
@@ -366,6 +380,8 @@ export class UserMpService {
     // 仅接受 couponId 字符串（指向 Coupon.id）；旧字段 dto.couponDiscount/dto.coupon 一律忽略——
     // 前端可篡改的金额绝不能进入服务端计费链路
     const couponId = typeof dto.couponId === 'string' && dto.couponId ? dto.couponId : null
+    const remark = typeof dto.remark === 'string' ? dto.remark.trim().slice(0, 500) : ''
+    await this.assertUserTextSafe(remark, 2)
 
     if (!dto.addressId) throw new BizException(BizCode.INVALID_PARAMS, '缺少收货地址')
     const address = await this.prisma.address.findFirst({ where: { id: dto.addressId, userId } })
@@ -609,7 +625,7 @@ export class UserMpService {
           payAmount,
           shippingMethod,
           address: address as any,
-          remark: dto.remark || null,
+          remark: remark || null,
           couponId,
           couponDiscount: couponDiscount > 0 ? couponDiscount : null,
           expiresAt: new Date(Date.now() + 30 * 60_000),

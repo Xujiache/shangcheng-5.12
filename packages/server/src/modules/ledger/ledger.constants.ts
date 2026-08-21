@@ -21,7 +21,7 @@ export interface LedgerPlan {
   price: string
   /** true=永久会员（开通后不过期；days 仅作展示，发放时忽略） */
   perpetual?: boolean
-  /** true=体验卡：每账号限领/限购一次（免费走 claim-trial，付费走支付，均按 trialClaimedAt 拦一次） */
+  /** true=??????????????????????????????????????????? */
   trial?: boolean
 }
 
@@ -39,7 +39,7 @@ export function normalizeLedgerPlans(raw: any): LedgerPlan[] {
   if (!Array.isArray(raw)) return LEDGER_PLANS
   const seen = new Set<string>()
   const cleaned = raw
-    .slice(0, 20)
+    .slice(0, 50)
     .map((p: any) => ({
       key: String(p?.key ?? '')
         .trim()
@@ -71,18 +71,13 @@ export function ledgerPlanPriceFen(price: string | number | null | undefined): n
 
 /**
  * ledger 域全局配置默认值（存 LedgerConfig 单行 key=value，后台 admin-pc 可调）。
- * - allowSelfRegister: 是否开放 App 自助注册（#10）
  * - inviteRewardDays:  邀请成功奖励邀请人的天数（#10）
- * - cutTrialDays:      优化下料免费试用天数（#9）
- * - cutRequireMembership: 试用期后是否需要会员才能用优化下料（#9）
+ * 会员能力始终以 LedgerMembership 的有效状态为准；不提供按单功能的免会员绕过开关。
  */
 export const LEDGER_CONFIG_DEFAULTS = {
-  allowSelfRegister: true,
   inviteRewardDays: 7,
   /** 每个邀请人最多奖励多少个被邀请人（反刷量上限）；0=不限 */
   inviteMaxRewarded: 50,
-  cutTrialDays: 7,
-  cutRequireMembership: true,
   /** 会员套餐（后台可编辑；App /l/membership 与后台授予按此天数）*/
   plans: LEDGER_PLANS as LedgerPlan[],
 }
@@ -95,9 +90,7 @@ export function normalizeLedgerConfig(raw: any): LedgerConfigShape {
     const n = Math.round(Number(v))
     return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : d
   }
-  const bool = (v: any, d: boolean) => (typeof v === 'boolean' ? v : d)
   return {
-    allowSelfRegister: bool(r.allowSelfRegister, LEDGER_CONFIG_DEFAULTS.allowSelfRegister),
     inviteRewardDays: num(r.inviteRewardDays, LEDGER_CONFIG_DEFAULTS.inviteRewardDays, 0, 3650),
     inviteMaxRewarded: num(
       r.inviteMaxRewarded,
@@ -105,8 +98,6 @@ export function normalizeLedgerConfig(raw: any): LedgerConfigShape {
       0,
       100000,
     ),
-    cutTrialDays: num(r.cutTrialDays, LEDGER_CONFIG_DEFAULTS.cutTrialDays, 0, 3650),
-    cutRequireMembership: bool(r.cutRequireMembership, LEDGER_CONFIG_DEFAULTS.cutRequireMembership),
     plans: normalizeLedgerPlans(r.plans),
   }
 }
@@ -233,16 +224,73 @@ export function extrasTotal(extras: unknown): number {
   return sanitizeExtras(extras).reduce((s, e) => s + e.amount, 0)
 }
 
+// ── 常用成本分类：账号级模板，数组顺序即订单编辑页展示顺序 ──
+export interface CostCategory {
+  id: string
+  name: string
+  color: string
+}
+export const DEFAULT_COST_CATEGORIES: CostCategory[] = [
+  { id: 'profile', name: '型材', color: 'c1' },
+  { id: 'glass', name: '玻璃', color: 'c2' },
+  { id: 'hardware', name: '配件', color: 'c3' },
+  { id: 'labor', name: '人工', color: 'c4' },
+  { id: 'screen', name: '纱窗', color: 'c5' },
+]
+const COST_COLORS = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6']
+
+export function sanitizeCostCategories(raw: unknown): CostCategory[] {
+  if (!Array.isArray(raw) || raw.length === 0) return DEFAULT_COST_CATEGORIES.map((x) => ({ ...x }))
+  const seen = new Set<string>()
+  const list = raw
+    .slice(0, 20)
+    .map((item: any, index) => {
+      const fallbackId = `cost-${index + 1}`
+      const id =
+        String(item?.id ?? fallbackId)
+          .trim()
+          .replace(/[^a-zA-Z0-9_-]/g, '')
+          .slice(0, 40) || fallbackId
+      const name = String(item?.name ?? '')
+        .trim()
+        .slice(0, 20)
+      const color = COST_COLORS.includes(String(item?.color))
+        ? String(item.color)
+        : COST_COLORS[index % COST_COLORS.length]
+      return { id, name, color }
+    })
+    .filter((item) => {
+      if (!item.name || seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
+  return list.length ? list : DEFAULT_COST_CATEGORIES.map((x) => ({ ...x }))
+}
+
 // ── 自定义成本项（#5）：成本明细里用户自定义名目 ──
 export interface CustomCost {
+  id?: string
+  color?: string
   name: string
   amount: number
 }
 export function sanitizeCustomCosts(raw: unknown): CustomCost[] {
   if (!Array.isArray(raw)) return []
   return raw
-    .slice(0, 20)
+    .slice(0, 50)
     .map((e: any) => ({
+      ...(String(e?.id ?? '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 40)
+        ? {
+            id: String(e.id)
+              .trim()
+              .replace(/[^a-zA-Z0-9_-]/g, '')
+              .slice(0, 40),
+          }
+        : {}),
+      ...(COST_COLORS.includes(String(e?.color)) ? { color: String(e.color) } : {}),
       name: String(e?.name ?? '')
         .trim()
         .slice(0, 20),

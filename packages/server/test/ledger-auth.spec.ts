@@ -1,151 +1,198 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
-import * as argon2 from 'argon2'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 
-// nanoid@5 是纯 ESM，ts-jest(CJS) 无法直接 require。轻量替身保留字符集+长度契约。
-// ledger-auth.service 直接 import customAlphabet，且间接经 ledger.constants 再次 import。
+// nanoid@5 是纯 ESM，ts-jest(CJS) 使用确定性替身。
 jest.mock('nanoid', () => ({
-  customAlphabet: (alphabet: string, size: number) => () => {
-    let out = ''
-    for (let i = 0; i < size; i++) {
-      out += alphabet[Math.floor(Math.random() * alphabet.length)]
-    }
-    return out
-  },
+  customAlphabet: (_alphabet: string, size: number) => () => 'A'.repeat(size),
 }))
 
 import { LedgerAuthService } from '../src/modules/ledger/ledger-auth.service'
 
-// ----------------------------------------------------------------------------
-// LedgerAuthService — 门窗利账鉴权（真实测试）
-//
-// 实现位置：packages/server/src/modules/ledger/ledger-auth.service.ts
-//
-// 关键行为契约：
-//   - changePassword：mustReset=true 首登设密可免旧密；两条路径成功后均清 mustReset=false
-//   - changePassword：已设密码（mustReset=false）必须验旧密，缺失/错误 → 1001
-//   - getPublicConfig：与 register 校验读同一份 LedgerConfig（allowSelfRegister）
-// ----------------------------------------------------------------------------
-
-/** 断言抛出的 BizException 业务码 */
-async function expectBizCode(fn: () => Promise<unknown>, code: number) {
-  try {
-    await fn()
-    throw new Error('should have thrown')
-  } catch (e: any) {
-    expect(e.getResponse().code).toBe(code)
-  }
-}
-
-// ── prisma 替身：仅含本服务消费到的模型/方法 ──
 function buildPrisma() {
   return {
     ledgerUser: {
-      findUnique: jest.fn(async (..._a: any[]) => null as any),
-      update: jest.fn(async (..._a: any[]) => ({}) as any),
+      findUnique: jest.fn(async (..._args: any[]) => null as any),
+      create: jest.fn(async (..._args: any[]) => null as any),
+      update: jest.fn(async (..._args: any[]) => ({}) as any),
+      count: jest.fn(async (..._args: any[]) => 0),
     },
     ledgerConfig: {
-      findUnique: jest.fn(async (..._a: any[]) => null as any),
+      findUnique: jest.fn(async (..._args: any[]) => null as any),
+    },
+    systemConfig: {
+      findUnique: jest.fn(async (..._args: any[]) => null as any),
+    },
+    ledgerMembership: {
+      create: jest.fn(async (..._args: any[]) => null as any),
+      upsert: jest.fn(async (..._args: any[]) => null as any),
+      update: jest.fn(async (..._args: any[]) => null as any),
+    },
+    ledgerMembershipLog: {
+      create: jest.fn(async (..._args: any[]) => null as any),
+    },
+    ledgerNotification: {
+      create: jest.fn(async (..._args: any[]) => null as any),
     },
   }
 }
 
-const jwtMock = () => ({ signAsync: jest.fn(async () => 'tok') })
-const smsMock = () => ({ sendVerifyCode: jest.fn() })
-
 function buildService(prisma: ReturnType<typeof buildPrisma>) {
-  return new LedgerAuthService(prisma as any, jwtMock() as any, smsMock() as any)
+  const jwt = { signAsync: jest.fn(async () => 'ledger-token') }
+  const service = new LedgerAuthService(prisma as any, jwt as any)
+  ;(service as any).jscode2session = jest.fn(async () => 'openid-1')
+  return { service, jwt }
 }
 
-describe('LedgerAuthService.changePassword（mustReset 闭环）', () => {
+const activeUser = (overrides: Record<string, unknown> = {}) => ({
+  id: 'user-abc12345',
+  nickname: '微信用户',
+  avatar: null,
+  status: 'active',
+  membership: null,
+  ...overrides,
+})
+
+describe('LedgerAuthService 纯微信登录', () => {
   let prisma: ReturnType<typeof buildPrisma>
   let service: LedgerAuthService
 
   beforeEach(() => {
     prisma = buildPrisma()
-    service = buildService(prisma)
+    service = buildService(prisma).service
   })
 
-  it('用例1：mustReset=true 不传旧密码也能改密，且成功后清 mustReset=false', async () => {
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      mustReset: true,
-      passwordHash: null, // 后台建号未设密
-    } as any)
+  it('已有 openid 直接登录，不重复建号', async () => {
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce(activeUser() as any)
 
-    const res = await service.changePassword('u1', { newPassword: 'newpass1' } as any)
-    expect(res).toEqual({ ok: true })
+    const result = await service.wechatLogin({ code: 'wx-code' })
 
-    expect(prisma.ledgerUser.update).toHaveBeenCalledTimes(1)
-    const arg = prisma.ledgerUser.update.mock.calls[0][0] as any
-    expect(arg.where.id).toBe('u1')
-    expect(arg.data.mustReset).toBe(false)
-    // 落库的是新密码的 argon2 哈希
-    expect(await argon2.verify(arg.data.passwordHash, 'newpass1')).toBe(true)
+    expect(result.token).toBe('ledger-token')
+    expect(result.created).toBe(false)
+    expect(result.user).toMatchObject({
+      id: 'user-abc12345',
+      accountCode: 'ABC12345',
+      nickname: '微信用户',
+    })
+    expect(prisma.ledgerUser.create).not.toHaveBeenCalled()
+    expect(prisma.ledgerUser.update).toHaveBeenCalledWith({
+      where: { id: 'user-abc12345' },
+      data: { lastLoginAt: expect.any(Date) },
+    })
   })
 
-  it('用例2：mustReset=false 验旧密成功 → 同样写 mustReset=false（幂等闭环）', async () => {
-    const oldHash = await argon2.hash('oldpass1')
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      mustReset: false,
-      passwordHash: oldHash,
+  it('历史微信账号缺少会员行时，登录会补建默认未开通会员档案', async () => {
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce(activeUser() as any)
+    prisma.ledgerMembership.upsert.mockResolvedValueOnce({
+      id: 'member-1',
+      userId: 'user-abc12345',
+      expiresAt: null,
+      lastPlanKey: null,
+      perpetual: false,
+      trialClaimedAt: null,
     } as any)
 
-    const res = await service.changePassword('u1', {
-      oldPassword: 'oldpass1',
-      newPassword: 'newpass1',
-    } as any)
-    expect(res).toEqual({ ok: true })
+    const result = await service.wechatLogin({ code: 'wx-code' })
 
-    const arg = prisma.ledgerUser.update.mock.calls[0][0] as any
-    expect(arg.data.mustReset).toBe(false)
-    expect(await argon2.verify(arg.data.passwordHash, 'newpass1')).toBe(true)
+    expect(prisma.ledgerMembership.upsert).toHaveBeenCalledWith({
+      where: { userId: 'user-abc12345' },
+      create: { userId: 'user-abc12345' },
+      update: {},
+    })
+    expect(result.membership).toMatchObject({ active: false, never: true })
   })
 
-  it('用例3：mustReset=false 缺旧密码 → 1001，不更新', async () => {
-    prisma.ledgerUser.findUnique.mockResolvedValueOnce({
-      id: 'u1',
-      mustReset: false,
-      passwordHash: await argon2.hash('oldpass1'),
+  it('首次微信登录自动创建账号和空会员记录', async () => {
+    const created = activeUser()
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce(null as any)
+    prisma.ledgerUser.create.mockResolvedValueOnce(created as any)
+
+    const result = await service.wechatLogin({ code: 'wx-code' })
+
+    expect(result.created).toBe(true)
+    expect(prisma.ledgerUser.create).toHaveBeenCalledWith({
+      data: {
+        wxOpenid: 'openid-1',
+        nickname: '微信用户',
+        inviteCode: 'AAAAAAAA',
+        invitedById: null,
+        membership: { create: {} },
+      },
+      include: { membership: true },
+    })
+    const data = (prisma.ledgerUser.create.mock.calls[0][0] as any).data
+    expect(data).not.toHaveProperty('phone')
+    expect(data).not.toHaveProperty('passwordHash')
+  })
+
+  it('同一 openid 并发首次登录时复用唯一索引已创建账号', async () => {
+    prisma.ledgerUser.findUnique
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce(activeUser() as any)
+    prisma.ledgerUser.create.mockRejectedValueOnce({ code: 'P2002' })
+
+    const result = await service.wechatLogin({ code: 'wx-code' })
+
+    expect(result.created).toBe(false)
+    expect(result.user.id).toBe('user-abc12345')
+  })
+
+  it('禁用的微信账号不能登录', async () => {
+    prisma.ledgerUser.findUnique.mockResolvedValueOnce(activeUser({ status: 'disabled' }) as any)
+
+    await expect(service.wechatLogin({ code: 'wx-code' })).rejects.toMatchObject({
+      message: '账号已被禁用，请联系管理员',
+    })
+    expect(prisma.ledgerUser.update).not.toHaveBeenCalled()
+  })
+
+  it('邀请奖励只在好友首次微信登录建号后发放', async () => {
+    const inviter = {
+      id: 'inviter-87654321',
+      status: 'active',
+      membership: {
+        id: 'member-1',
+        expiresAt: null,
+        lastPlanKey: null,
+      },
+    }
+    prisma.ledgerUser.findUnique
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce({ id: inviter.id, status: 'active' } as any)
+      .mockResolvedValueOnce(inviter as any)
+    prisma.ledgerUser.create.mockResolvedValueOnce(activeUser() as any)
+    prisma.ledgerUser.count.mockResolvedValueOnce(1)
+    prisma.ledgerConfig.findUnique.mockResolvedValueOnce({
+      value: { inviteRewardDays: 7, inviteMaxRewarded: 50 },
     } as any)
 
-    await expectBizCode(
-      () => service.changePassword('u1', { newPassword: 'newpass1' } as any),
-      1001,
+    const result = await service.wechatLogin({ code: 'wx-code', inviteCode: 'invite88' })
+
+    expect(result.created).toBe(true)
+    expect(prisma.ledgerUser.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ invitedById: inviter.id }),
+      }),
     )
-    expect(prisma.ledgerUser.update).not.toHaveBeenCalled()
-  })
-
-  it('用例4：新密码不足 6 位 → 1001，不更新', async () => {
-    await expectBizCode(() => service.changePassword('u1', { newPassword: '12345' } as any), 1001)
-    expect(prisma.ledgerUser.update).not.toHaveBeenCalled()
+    expect(prisma.ledgerMembershipLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        membershipId: 'member-1',
+        deltaDays: 7,
+        planKey: 'invite',
+      }),
+    })
+    expect(prisma.ledgerNotification.create).toHaveBeenCalled()
   })
 })
 
-describe('LedgerAuthService.getPublicConfig（登录页公开配置）', () => {
-  let prisma: ReturnType<typeof buildPrisma>
-  let service: LedgerAuthService
-
-  beforeEach(() => {
-    prisma = buildPrisma()
-    service = buildService(prisma)
-  })
-
-  it('用例5：无配置行 → 走 LEDGER_CONFIG_DEFAULTS（allowSelfRegister 默认 true）', async () => {
-    prisma.ledgerConfig.findUnique.mockResolvedValueOnce(null as any)
-    const res = await service.getPublicConfig()
-    expect(res).toEqual({ allowSelfRegister: true, logoUrl: '' })
-  })
-
-  it('用例6：后台关闭自助注册 → 返回 false（与 register 校验同一数据源）', async () => {
-    prisma.ledgerConfig.findUnique.mockResolvedValueOnce({
-      key: 'global',
-      value: { allowSelfRegister: false },
+describe('LedgerAuthService 登录页公开配置', () => {
+  it('只返回品牌 LOGO，不再返回其他登录方式开关', async () => {
+    const prisma = buildPrisma()
+    prisma.systemConfig.findUnique.mockResolvedValueOnce({
+      value: { site: { logo: 'https://cdn.example/logo.png' } },
     } as any)
-    const res = await service.getPublicConfig()
-    expect(res).toEqual({ allowSelfRegister: false, logoUrl: '' })
-    // 读的就是 register 用的那行 LedgerConfig(key='global')
-    const arg = prisma.ledgerConfig.findUnique.mock.calls[0][0] as any
-    expect(arg.where.key).toBe('global')
+    const service = buildService(prisma).service
+
+    await expect(service.getPublicConfig()).resolves.toEqual({
+      logoUrl: 'https://cdn.example/logo.png',
+    })
   })
 })

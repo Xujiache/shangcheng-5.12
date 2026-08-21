@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common'
+import { Injectable, Inject, forwardRef, Logger, Optional } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
@@ -6,6 +6,7 @@ import { decimalToNumber } from '../../common/utils/decimal.util'
 import { MerchantService } from '../merchant/merchant.service'
 import { UpdateAdminDto } from './dto/update-admin.dto'
 import { WxPayService } from '../payment/wxpay.service'
+import { ContentSecurityService } from '../content-security/content-security.service'
 import * as argon2 from 'argon2'
 
 /** updateAdmin 服务层二次过滤白名单（DTO 是入口防御，service 是出口防御，双保险） */
@@ -30,6 +31,7 @@ export class PlatformService {
     private readonly merchantService: MerchantService,
     // PaymentModule 是 @Global，可直接注入；平台代审退款时调微信支付 v3
     private readonly wxpay: WxPayService,
+    @Optional() private readonly contentSecurity?: ContentSecurityService,
   ) {}
 
   // ========== Dashboard ==========
@@ -1960,13 +1962,18 @@ export class PlatformService {
     if (!dto?.content || String(dto.content).trim().length < 10) {
       throw new BizException(BizCode.INVALID_PARAMS, '反馈内容至少 10 字')
     }
+    const content = String(dto.content).trim().slice(0, 1000)
+    if (!this.contentSecurity && process.env.NODE_ENV === 'production') {
+      throw new BizException(BizCode.BUSINESS_ERROR, '内容安全服务未初始化，暂时无法提交反馈')
+    }
+    await this.contentSecurity?.assertTextSafe(content, { scope: 'mall', scene: 2 })
     const validTypes = ['suggestion', 'bug', 'experience', 'other']
     const type = validTypes.includes(dto?.type) ? dto.type : 'other'
     const id = `${Date.now()}${Math.random().toString(36).slice(2, 6)}`
     const value = {
       id,
       type,
-      content: String(dto.content).slice(0, 1000),
+      content,
       contact: dto?.contact ? String(dto.contact).slice(0, 100) : '',
       images: Array.isArray(dto?.images) ? dto.images.slice(0, 3) : [],
       fromUserId: callerSub || null,

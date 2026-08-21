@@ -3,28 +3,15 @@ import { invalidateCache } from '../utils/request'
 
 /** 鉴权（登录类 auth:false 不带 token） */
 export const authApi = {
-  // 公开配置（是否开放自助注册等）；silent 让页面自行兜底默认值
+  // 登录页公开品牌配置；silent 让页面自行兜底默认值。
   config: () =>
-    http.get<{ allowSelfRegister: boolean; logoUrl?: string }>('/l/auth/config', undefined, {
+    http.get<{ logoUrl?: string }>('/l/auth/config', undefined, {
       auth: false,
       silent: true,
     }),
-  login: (phone: string, password: string) =>
-    http.post('/l/auth/login', { phone, password }, { auth: false }),
-  register: (data: { phone: string; password: string; nickname?: string; inviteCode?: string }) =>
-    http.post('/l/auth/register', data, { auth: false }),
-  smsCode: (phone: string) => http.post('/l/auth/sms-code', { phone }, { auth: false }),
-  smsLogin: (phone: string, code: string) =>
-    http.post('/l/auth/sms-login', { phone, code }, { auth: false }),
-  changePassword: (oldPassword: string | undefined, newPassword: string) =>
-    http.post('/l/auth/change-password', { oldPassword, newPassword }),
-  // 微信一键登录（openid 须已绑定）；silent 让登录页自行处理"未绑定"提示
-  wechatLogin: (code: string) =>
-    http.post('/l/auth/wechat-login', { code }, { auth: false, silent: true }),
-  // 绑定/解绑微信（需登录 + 密码确认）
-  bindWechat: (code: string, password: string) =>
-    http.post('/l/auth/wechat/bind', { code, password }),
-  unbindWechat: (password: string) => http.post('/l/auth/wechat/unbind', { password }),
+  // 唯一登录入口：首次使用 openid 自动建号，inviteCode 仅首次登录时消费。
+  wechatLogin: (code: string, inviteCode?: string) =>
+    http.post('/l/auth/wechat-login', { code, inviteCode }, { auth: false, silent: true }),
 }
 
 /** 账户 / 会员（仅需登录） */
@@ -39,11 +26,9 @@ export const meApi = {
   // 会员在线支付下单 → 返回小程序 wx.requestPayment 所需参数
   createMembershipPay: (planKey: string, code?: string) =>
     http.post('/l/membership/pay', { planKey, code }),
-  // 领取体验卡（一次性，免费套餐专用，不走支付）
-  claimTrial: () => {
-    invalidateCache(['/l/me', '/l/membership'])
-    return http.post('/l/membership/claim-trial', {})
-  },
+  // 虚拟支付下单（虚拟商品合规内购）→ 返回 wx.requestVirtualPayment 所需 signData/paySig/signature
+  createVirtualPay: (planKey: string, code?: string) =>
+    http.post('/l/membership/xpay-order', { planKey, code }),
   updateProfile: (data: { nickname?: string; avatar?: string }) =>
     http.patch('/l/profile', data).then((r) => {
       invalidateCache(['/l/me', '/l/membership'])
@@ -81,6 +66,12 @@ export const customerApi = {
   get: (id: string) => http.get('/l/customers/' + id, undefined, { cache: true }),
   create: (data: any) =>
     http.post('/l/customers', data).then((r) => {
+      invalidateCustomers()
+      return r
+    }),
+  // 无档客户（订单自动生成）按姓名幂等建档 + 关联同名历史订单，返回正式档案
+  ensureByName: (name: string) =>
+    http.post('/l/customers/ensure', { name }).then((r) => {
       invalidateCustomers()
       return r
     }),
@@ -173,7 +164,7 @@ export const adApi = {
   list: () => http.get<Array<{ id: string; image: string; link: string; title: string }>>('/l/ads'),
 }
 
-/** 优化下料试用/会员闸门（仅需登录） */
+/** 优化下料会员闸门（仅需登录，仅返回是否已开通） */
 export const cutApi = {
   access: () => http.get('/l/cut/access'),
 }
@@ -198,6 +189,22 @@ export const cutPlanApi = {
     }),
 }
 
+/** 日工明细（需会员，独立台账，不计入订单人工成本） */
+export const workLogApi = {
+  list: (month: string) => http.get('/l/work-logs', { month }),
+  create: (data: {
+    workDate: string
+    workerName: string
+    jobType?: string
+    unit: 'day' | 'hour'
+    quantity: number
+    unitPrice: number
+    note?: string
+  }) => http.post('/l/work-logs', data),
+  update: (id: string, data: Record<string, any>) => http.patch('/l/work-logs/' + id, data),
+  remove: (id: string) => http.del('/l/work-logs/' + id),
+}
+
 /** 邀请（仅需登录） */
 export const inviteApi = {
   get: () =>
@@ -205,6 +212,5 @@ export const inviteApi = {
       inviteCode: string
       invitedCount: number
       rewardDays: number
-      allowSelfRegister: boolean
     }>('/l/invite', undefined, { cache: true }),
 }

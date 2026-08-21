@@ -1,0 +1,32 @@
+.wl { min-height: 100vh; color: var(--text); }
+.wl__body { padding-top: 10px; }
+.wl__summary { padding: 18px; }
+.wl__month { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); font-size: 14px; font-weight: 800; }
+.wl__metrics { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 8px; margin-top: 16px; }
+.wl__v { color: var(--text); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.wl__l { margin-top: 4px; color: var(--muted); font-size: 11px; }
+.wl__form { margin-top: var(--gap); padding: 16px; }
+.wl__form-title { margin-bottom: 13px; font-size: 17px; font-weight: 800; }
+.wl__row { display: flex; min-height: 48px; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
+.wl__row > text:first-child { width: 44px; flex: 0 0 auto; color: var(--muted); font-size: 14px; }
+.wl__row input { flex: 1; min-width: 0; text-align: right; font-size: 14px; font-weight: 600; }
+.wl__picker { color: var(--accent); font-size: 14px; font-weight: 700; }
+.wl__money { display: flex; flex: 1; align-items: center; justify-content: flex-end; color: var(--faint); }
+.wl__money input { max-width: 110px; }
+.wl__amount { margin-left: auto; color: var(--accent); font-size: 17px; font-weight: 800; }
+.wl__note { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(14,124,102,.05); }
+.wl__note textarea { width: 100%; min-height: 22px; color: var(--text); font-size: 13px; }
+.wl__actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+.wl__cancel { padding: 10px 4px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.wl__save { flex: 1; height: 46px; }
+.wl__list-title { margin: 22px 4px 10px; font-size: 16px; font-weight: 800; }
+.wl__group { margin-bottom: 12px; }
+.wl__date { padding: 11px 14px 7px; color: var(--muted); font-size: 12px; font-weight: 800; }
+.wl__item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--border); }
+.wl__avatar { display: flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 14px; font-weight: 800; }
+.wl__name { font-size: 14px; font-weight: 800; }
+.wl__sub { margin-top: 3px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.wl__right { min-width: 60px; text-align: right; }
+.wl__row-amount { color: var(--accent); font-size: 14px; font-weight: 800; }
+.wl__delete { margin-top: 5px; color: var(--loss); font-size: 11.5px; }
+.wl__error { display: flex; flex-direction: column; gap: 12px; align-items: center; color: var(--muted); font-size: 13px; text-align: center; }

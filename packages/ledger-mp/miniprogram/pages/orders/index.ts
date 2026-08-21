@@ -1,9 +1,16 @@
-import { orderApi } from '../../api/index'
+import { meApi, orderApi } from '../../api/index'
 import { maskMoney, yuan } from '../../utils/format'
-import { getHideAmount } from '../../utils/store'
+import {
+  getHideAmount,
+  glassCardStyle,
+  goToLogin,
+  hasActiveMembership,
+  isLoggedIn,
+  requireLogin,
+  setMembership,
+} from '../../utils/store'
 
 const PAGE_SIZE = 50
-
 const SEG_DEF: Array<[string, string]> = [
   ['profile', 'c1'],
   ['glass', 'c2'],
@@ -14,6 +21,8 @@ const SEG_DEF: Array<[string, string]> = [
 
 Page({
   data: {
+    glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
+    tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     keyword: '',
     sort: 'date',
@@ -27,6 +36,7 @@ Page({
     loadError: false, // 网络/加载失败：区别于"暂无订单"空态
     hasMore: false,
     loadingMore: false,
+    readOnly: !hasActiveMembership(),
   },
 
   _t: 0 as any,
@@ -34,10 +44,42 @@ Page({
   _page: 1,
 
   onShow() {
+    if (!isLoggedIn()) {
+      goToLogin()
+      return
+    }
+    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.setData({ selected: 1 })
-    this.setData({ hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10 })
+    if (tb) tb.selectTab ? tb.selectTab(1) : tb.setData({ selected: 1 })
+    this.setData({
+      hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10,
+    })
+    this.refreshMembershipMode()
     this.load()
+  },
+  async refreshMembershipMode() {
+    try {
+      const membership = (await meApi.refreshMembership()) as MembershipStatus
+      setMembership(membership)
+      this.setData({ readOnly: !hasActiveMembership(membership) })
+    } catch (e) {
+      // 会员状态刷新失败不覆盖当前列表，写入口仍由服务端最终校验。
+    }
+  },
+  enterGuestMode() {
+    clearTimeout(this._t)
+    this._seq = (this._seq || 0) + 1
+    this._page = 1
+    this.setData({
+      isGuest: true,
+      keyword: '',
+      list: [],
+      summary: { count: 0, profit: '¥0', avg: '¥0' },
+      loading: false,
+      loadError: false,
+      hasMore: false,
+      loadingMore: false,
+    })
   },
   onHide() {
     clearTimeout(this._t)
@@ -46,6 +88,10 @@ Page({
     clearTimeout(this._t)
   },
   onPullDownRefresh() {
+    if (!isLoggedIn()) {
+      wx.stopPullDownRefresh()
+      return
+    }
     this.load(() => wx.stopPullDownRefresh())
   },
   onSearch(e: any) {
@@ -94,6 +140,10 @@ Page({
   },
 
   async load(done?: () => void) {
+    if (!isLoggedIn()) {
+      if (done) done()
+      return
+    }
     this._seq = (this._seq || 0) + 1
     const seq = this._seq
     this._page = 1
@@ -133,6 +183,7 @@ Page({
   },
 
   async onReachBottom() {
+    if (!isLoggedIn()) return
     if (this.data.loading || this.data.loadingMore || this.data.loadError || !this.data.hasMore)
       return
     const seq = this._seq
@@ -163,9 +214,17 @@ Page({
   },
 
   toDetail(e: any) {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
   },
   toCustomers() {
+    if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/customers/index' })
+  },
+  toLogin() {
+    goToLogin()
+  },
+  toHome() {
+    wx.switchTab({ url: '/pages/home/index' })
   },
 })

@@ -1,47 +1,22 @@
 <!--
-  平台 PC · 门窗利账 · 功能配置（#9 优化下料 / #10 邀请）
+  平台 PC · 门窗利账 · 功能配置（会员套餐 / 微信邀请）
   ─────────────────────────────────────────────
   对接后端 /api/v1/p/ledger/config（读取 / 更新）。
-  运营在此调整：优化下料试用天数 / 是否需会员、邀请奖励天数、是否开放自助注册。
+  运营在此调整：微信邀请奖励与会员套餐。所有业务功能均要求有效会员。
 -->
 <template>
   <div class="pf-ledger">
     <div class="pf-page-header">
       <div>
         <h2 class="m-0 text-xl font-semibold">功能配置</h2>
-        <p class="mt-1 text-sm text-g-500">优化下料试用规则 · 邀请奖励 · 自助注册开关</p>
+        <p class="mt-1 text-sm text-g-500">微信账号体系 · 邀请奖励 · 会员套餐</p>
       </div>
       <ElButton :icon="Refresh" plain @click="load">刷新</ElButton>
     </div>
 
     <ElCard v-loading="loading" shadow="never" class="pf-cfg-card">
-      <h3 class="pf-cfg-title">型材优化下料（#9）</h3>
+      <h3 class="pf-cfg-title">微信邀请（#10）</h3>
       <ElForm :model="form" label-width="180px" label-position="left">
-        <ElFormItem label="试用期后需会员">
-          <ElSwitch v-model="form.cutRequireMembership" />
-          <span class="pf-cfg-hint">关闭则所有用户永久免费使用优化下料</span>
-        </ElFormItem>
-        <ElFormItem label="免费试用天数">
-          <ElInputNumber
-            v-model="form.cutTrialDays"
-            :min="0"
-            :max="3650"
-            :value-on-clear="0"
-            controls-position="right"
-            :disabled="!form.cutRequireMembership"
-          />
-          <span class="pf-cfg-hint">从用户首次使用起算；0 表示无试用，直接要求会员</span>
-        </ElFormItem>
-      </ElForm>
-
-      <ElDivider />
-
-      <h3 class="pf-cfg-title">邀请与注册（#10）</h3>
-      <ElForm :model="form" label-width="180px" label-position="left">
-        <ElFormItem label="开放自助注册">
-          <ElSwitch v-model="form.allowSelfRegister" />
-          <span class="pf-cfg-hint">关闭后 App 注册入口将提示"请联系管理员开通"</span>
-        </ElFormItem>
         <ElFormItem label="邀请奖励天数">
           <ElInputNumber
             v-model="form.inviteRewardDays"
@@ -51,7 +26,7 @@
             controls-position="right"
           />
           <span class="pf-cfg-hint"
-            >好友凭邀请码注册成功后，赠送邀请人的会员天数；0 表示不奖励</span
+            >好友通过分享首次微信登录后，赠送邀请人的会员天数；0 表示不奖励</span
           >
         </ElFormItem>
         <ElFormItem label="每人最多奖励人数">
@@ -112,7 +87,7 @@
             <ElSwitch v-model="row.trial" />
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="72">
+        <ElTableColumn label="操作" min-width="72">
           <template #default="{ $index }">
             <ElButton type="danger" link @click="removePlan($index)">删除</ElButton>
           </template>
@@ -143,11 +118,8 @@
   const loading = ref(false)
   const saving = ref(false)
   const form = reactive<LedgerConfig>({
-    allowSelfRegister: true,
     inviteRewardDays: 7,
     inviteMaxRewarded: 50,
-    cutTrialDays: 7,
-    cutRequireMembership: true,
     plans: []
   })
 
@@ -162,11 +134,8 @@
     loading.value = true
     try {
       const cfg = await fetchLedgerConfig()
-      form.allowSelfRegister = cfg.allowSelfRegister
       form.inviteRewardDays = cfg.inviteRewardDays
       form.inviteMaxRewarded = cfg.inviteMaxRewarded
-      form.cutTrialDays = cfg.cutTrialDays
-      form.cutRequireMembership = cfg.cutRequireMembership
       // 拷贝一份，避免直接引用接口返回对象
       form.plans = cfg.plans.map((p) => ({ ...p }))
     } catch (e: any) {
@@ -215,11 +184,8 @@
     saving.value = true
     try {
       await updateLedgerConfig({
-        allowSelfRegister: form.allowSelfRegister,
         inviteRewardDays: form.inviteRewardDays,
         inviteMaxRewarded: form.inviteMaxRewarded,
-        cutTrialDays: form.cutTrialDays,
-        cutRequireMembership: form.cutRequireMembership,
         plans
       })
       ElMessage.success('配置已保存')
@@ -255,7 +221,7 @@
   }
 
   .pf-cfg-card {
-    max-width: 720px;
+    max-width: 860px;
   }
 
   .pf-cfg-title {

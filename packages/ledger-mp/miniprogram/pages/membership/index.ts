@@ -1,18 +1,37 @@
 import { meApi } from '../../api/index'
 import { fmtDate } from '../../utils/format'
-import { logout } from '../../utils/store'
+import { getUser, logout } from '../../utils/store'
 
 const BENEFITS = [
-  { icon: 'orders', t: '无限订单录入', s: '不限笔数，随时增删改' },
-  { icon: 'trend', t: '经营利润报表', s: '本月 / 本季 / 全年多维分析' },
-  { icon: 'user', t: '客户档案管理', s: '客户贡献榜与历史订单' },
-  { icon: 'shield', t: '数据云端备份', s: '换机不丢数据，安全无忧' },
-  { icon: 'target', t: '经营目标跟踪', s: '月度 / 年度利润目标提醒' },
-  { icon: 'heart', t: '专属客服支持', s: '使用问题优先响应' },
+  {
+    iconSrc: '/assets/settings/notification-order.png',
+    t: '无限订单录入',
+    s: '不限笔数，随时增删改',
+  },
+  {
+    iconSrc: '/assets/settings/notification-report.png',
+    t: '经营利润报表',
+    s: '本月 / 本季 / 全年多维分析',
+  },
+  {
+    iconSrc: '/assets/profile/profile-customers.png',
+    t: '客户档案管理',
+    s: '客户贡献榜与历史订单',
+  },
+  {
+    iconSrc: '/assets/settings/settings-privacy.png',
+    t: '数据云端备份',
+    s: '换机不丢数据，安全无忧',
+  },
+  { iconSrc: '/assets/profile/profile-goal.png', t: '经营目标跟踪', s: '月度 / 年度利润目标提醒' },
+  {
+    iconSrc: '/assets/settings/notification-message.png',
+    t: '专属客服支持',
+    s: '使用问题优先响应',
+  },
 ]
 
 const PLAN_FALLBACK = [
-  { key: 'day', label: '体验卡', days: 1, price: '¥1' },
   { key: 'week', label: '周卡', days: 7, price: '¥9' },
   { key: 'month', label: '月卡', days: 30, price: '¥29' },
   { key: 'quarter', label: '季卡', days: 90, price: '¥79' },
@@ -22,6 +41,7 @@ const PLAN_FALLBACK = [
 Page({
   data: {
     gate: false,
+    accountCode: '',
     loading: true,
     loadError: false, // 首次加载失败：换重试卡，避免把默认值「尚未开通会员」当真相展示
     m: {
@@ -40,14 +60,18 @@ Page({
     expiresLabel: '—',
     selectedKey: '', // 用户点选的套餐
     ctaText: '开通会员',
-    payEnabled: false, // 服务端微信支付就绪：true=直接付款开通；false=回退留言找管理员
+    payEnabled: false, // 普通微信支付就绪（保留给非小程序端；小程序内购不再用它）
+    virtualPayEnabled: false, // 小程序虚拟支付就绪：true=走 wx.requestVirtualPayment 合规内购；false=回退留言
     paying: false,
   },
 
   _loaded: false, // 是否成功加载过：刷新失败时保留已展示内容，不退回重试卡
 
   onLoad(opt: any) {
-    this.setData({ gate: opt.gate === '1' })
+    this.setData({
+      gate: opt.gate === '1',
+      accountCode: getUser()?.accountCode || '',
+    })
     this.load()
   },
   onShow() {
@@ -66,15 +90,13 @@ Page({
   applyMembership(res: any) {
     const m: MembershipStatus = res
     const rawPlans = res.plans && res.plans.length ? res.plans : PLAN_FALLBACK
-    const plans = rawPlans.map((p: any) => {
-      const isFree = (Number(String(p.price).replace(/[^\d.]/g, '')) || 0) <= 0
-      return {
+    // 新用户 30 天会员由注册流程自动发放，会员中心不再提供手动领取入口。
+    const plans = rawPlans
+      .filter((p: any) => !p.trial && p.key !== 'day')
+      .map((p: any) => ({
         ...p,
         durLabel: p.perpetual ? '永久' : p.days + ' 天',
-        isFree,
-        claimed: !!p.trial && !!m.trialClaimed, // 体验卡(限领1次)：已领过则置「已领取」
-      }
-    })
+      }))
     const plan = plans.find((p: any) => p.key === m.lastPlanKey)
     const planLabel = m.never ? '门窗利账 会员' : plan ? plan.label : '门窗利账 会员'
     const statusText = m.perpetual
@@ -91,6 +113,7 @@ Page({
       planLabel,
       statusText,
       payEnabled: !!res.payEnabled,
+      virtualPayEnabled: !!res.virtualPayEnabled,
       expiresLabel: fmtDate(m.expiresAt),
       ctaText: this.data.selectedKey
         ? this.ctaForKey(this.data.selectedKey, m, plans)
@@ -118,57 +141,25 @@ Page({
   ctaForKey(key: string, m: any, plans: any[]) {
     const plan = (plans || this.data.plans).find((p: any) => p.key === key)
     if (!plan) return m && m.active ? '续费会员' : '开通会员'
-    if (plan.trial && m && m.trialClaimed) return '体验卡已领取'
-    if (plan.isFree) return '免费领取 ' + plan.label
     return (m && m.active ? '续费 ' : '开通 ') + plan.label + ' ' + plan.price
   },
 
-  // 领取体验卡（一次性，免费套餐专用，不走支付）
-  async claimTrial() {
-    if (this.data.m && this.data.m.trialClaimed) {
-      wx.showToast({ title: '体验卡仅限领取一次', icon: 'none' })
-      return
-    }
-    if (this.data.paying) return
-    this.setData({ paying: true })
-    wx.showLoading({ title: '领取中…', mask: true })
-    try {
-      const res: any = await meApi.claimTrial()
-      wx.hideLoading()
-      this.applyMembership(res)
-      wx.showToast({ title: '体验卡已领取', icon: 'success' })
-    } catch (e) {
-      wx.hideLoading()
-      // request 层已 toast 具体原因（已领过 / 已永久 / 未配置）
-    } finally {
-      this.setData({ paying: false })
-    }
-  },
-
   onRenew() {
-    const sel = this.data.plans.find((p: any) => p.key === this.data.selectedKey)
     // 已是永久会员：无需再开通
     if (this.data.m && this.data.m.perpetual) {
       wx.showToast({ title: '您已是永久会员', icon: 'none' })
       return
     }
-    // 体验卡限领1次：已领过 → 拦截（后端也会拒，这里提前提示）
-    if (sel && (sel as any).trial && this.data.m && this.data.m.trialClaimed) {
-      wx.showToast({ title: '体验卡仅限一次，您已领取', icon: 'none' })
+    // 虚拟支付就绪 → 合规内购（虚拟商品必须走虚拟支付，不能用普通微信支付）
+    if (this.data.virtualPayEnabled) {
+      this.payVirtual()
       return
     }
-    // 免费体验卡 → 一次性领取（不走支付）；付费体验卡走支付（后端拦一次性）
-    if (sel && (sel as any).isFree) {
-      this.claimTrial()
-      return
-    }
-    // 微信支付就绪 → 用户直接付款全自动开通
-    if (this.data.payEnabled) {
-      this.payNow()
-      return
-    }
-    // 回退：微信支付未配置 → 留言找管理员（原逻辑）
+    // 回退：微信支付未配置 → 提供账号编号联系管理员开通
     const plan = this.data.plans.find((p: any) => p.key === this.data.selectedKey)
+    const accountHint = this.data.accountCode
+      ? '您的账号编号为 ' + this.data.accountCode + '。'
+      : '请在「我的」页面查看并提供账号编号。'
     const content = plan
       ? '您选择了「' +
         plan.label +
@@ -176,8 +167,10 @@ Page({
         plan.price +
         ' · ' +
         plan.days +
-        ' 天）。会员由管理员后台开通/续费，可在「意见反馈」留下手机号与想开通的套餐，管理员会与您联系。'
-      : '会员由管理员后台开通/续费，可在「意见反馈」中留下手机号，管理员会与您联系。'
+        ' 天）。会员由管理员后台开通/续费。' +
+        accountHint +
+        '可在「意见反馈」中说明想开通的套餐。'
+      : '会员由管理员后台开通/续费。' + accountHint + '可在「意见反馈」中说明开通需求。'
     wx.showModal({
       title: '会员开通',
       content,
@@ -191,8 +184,8 @@ Page({
     })
   },
 
-  // ── 在线支付开通（payEnabled）：选套餐 → 微信支付 → 回调自动开通 ──
-  async payNow() {
+  // ── 虚拟支付开通：选套餐 → 后端下单(signData/paySig/signature) → wx.requestVirtualPayment → 发货回调发放 ──
+  async payVirtual() {
     const key = this.data.selectedKey
     const plan = this.data.plans.find((p: any) => p.key === key)
     if (!plan) {
@@ -201,12 +194,12 @@ Page({
     }
     if (this.data.paying) return
     this.setData({ paying: true })
-    let payParams: any
+    let params: any
     try {
-      // 拿 wx.login code（未绑定微信的用户用它换 openid；已绑定的服务端忽略）
+      // 拿 wx.login code（后端用它换 session_key 算用户态签名 signature）
       const code = await this.wxLogin()
       wx.showLoading({ title: '发起支付…', mask: true })
-      payParams = await meApi.createMembershipPay(key, code)
+      params = await meApi.createVirtualPay(key, code)
       wx.hideLoading()
     } catch (e) {
       wx.hideLoading()
@@ -214,7 +207,7 @@ Page({
       return // 下单失败：wx.login 失败 / request 层已 toast
     }
     try {
-      await this.requestPayment(payParams)
+      await this.requestVirtualPayment(params)
     } catch (e: any) {
       this.setData({ paying: false })
       // 用户主动取消不提示，其余提示支付未完成
@@ -223,7 +216,7 @@ Page({
       }
       return
     }
-    // 支付成功 → 会员由微信回调异步开通，轮询刷新状态
+    // 支付成功 → 会员由发货回调异步开通，轮询刷新状态
     wx.showLoading({ title: '开通中…', mask: true })
     await this.pollMembership()
     wx.hideLoading()
@@ -239,17 +232,23 @@ Page({
       wx.login({ success: (r) => resolve(r.code || ''), fail: reject })
     })
   },
-  requestPayment(p: any): Promise<void> {
+  // 虚拟支付调起：wx.requestVirtualPayment（旧基础库无此 API，用 any 调用 + 兜底提示）
+  requestVirtualPayment(p: any): Promise<void> {
     return new Promise((resolve, reject) => {
-      wx.requestPayment({
-        timeStamp: p.timeStamp,
-        nonceStr: p.nonceStr,
-        package: p.package,
-        signType: p.signType || 'RSA',
-        paySign: p.paySign,
+      const fn = (wx as any).requestVirtualPayment
+      if (typeof fn !== 'function') {
+        reject({ errMsg: '当前微信版本不支持虚拟支付，请升级微信后重试' })
+        return
+      }
+      fn({
+        signData: p.signData,
+        paySig: p.paySig,
+        signature: p.signature,
+        mode: p.mode || 'short_series_goods',
+        env: p.env || 0,
         success: () => resolve(),
         fail: reject,
-      } as any)
+      })
     })
   },
   // 微信回调异步开通：轮询会员状态，命中 active 即停（最多 ~6s）

@@ -1,18 +1,17 @@
 <!--
   平台 PC · 门窗利账 · 账号管理
   ─────────────────────────────────────────────
-  对接后端 /api/v1/p/ledger/users（列表 / 新建 / 改昵称·状态 / 重置密码 / 充值）。
-  运营在此创建门窗利账小程序用户、启停账号、重置密码、为其充值会员时长。
+  对接后端 /api/v1/p/ledger/users（列表 / 改昵称·状态 / 充值）。
+  用户首次微信登录后自动建号，运营在此启停账号并开通会员。
 -->
 <template>
   <div class="pf-ledger">
     <div class="pf-page-header">
       <div>
         <h2 class="m-0 text-xl font-semibold">账号管理</h2>
-        <p class="mt-1 text-sm text-g-500">门窗利账用户 · 创建 · 启停 · 重置密码 · 充值会员</p>
+        <p class="mt-1 text-sm text-g-500">微信登录用户 · 启停账号 · 充值会员</p>
       </div>
       <div class="flex gap-2">
-        <ElButton type="primary" :icon="Plus" @click="openCreate">新建账号</ElButton>
         <ElButton :icon="Refresh" plain @click="load">刷新</ElButton>
       </div>
     </div>
@@ -22,7 +21,7 @@
       <div class="pf-filters">
         <ElInput
           v-model="keyword"
-          placeholder="搜索手机号 / 昵称"
+          placeholder="搜索账号编号 / 昵称"
           clearable
           style="width: 240px"
           @keyup.enter="onSearch"
@@ -50,11 +49,18 @@
         :data="list"
         stripe
         :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
-        empty-text="暂无账号，点击右上角「新建账号」创建"
+        empty-text="暂无账号，用户首次微信登录后会自动出现在这里"
       >
-        <ElTableColumn label="手机号" min-width="130">
+        <ElTableColumn label="账号编号" min-width="120">
           <template #default="{ row }">
-            <span class="pf-mono">{{ row.phone }}</span>
+            <span class="pf-mono">{{ row.accountCode }}</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="微信登录" width="100" align="center">
+          <template #default="{ row }">
+            <ElTag :type="row.wechatLinked ? 'success' : 'info'" size="small">
+              {{ row.wechatLinked ? '已登录' : '旧账号' }}
+            </ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="昵称" min-width="120">
@@ -78,7 +84,8 @@
         </ElTableColumn>
         <ElTableColumn label="到期日" width="170">
           <template #default="{ row }">
-            <span v-if="row.membership.expiresAt">{{
+            <span v-if="row.membership.perpetual" class="text-primary font-semibold">永久有效</span>
+            <span v-else-if="row.membership.expiresAt">{{
               formatDateTime(row.membership.expiresAt)
             }}</span>
             <span v-else class="text-g-500">—</span>
@@ -95,7 +102,7 @@
             <span>{{ formatDateTime(row.createdAt) }}</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="350" fixed="right">
+        <ElTableColumn label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <ElButton link type="primary" @click="openEdit(row)">编辑</ElButton>
             <ElButton
@@ -105,7 +112,6 @@
             >
               {{ row.status === 'active' ? '停用' : '启用' }}
             </ElButton>
-            <ElButton link type="danger" @click="onResetPassword(row)">重置密码</ElButton>
             <ElButton link type="primary" @click="openGrant(row)">增加时长</ElButton>
             <ElButton link type="primary" @click="openNotify(row)">发送通知</ElButton>
           </template>
@@ -126,47 +132,11 @@
       </div>
     </ElCard>
 
-    <!-- 新建账号 -->
-    <ElDialog v-model="createOpen" title="新建账号" width="460px" align-center destroy-on-close>
-      <ElForm
-        ref="createFormRef"
-        :model="createForm"
-        :rules="createRules"
-        label-width="84px"
-        label-position="right"
-      >
-        <ElFormItem label="手机号" prop="phone">
-          <ElInput
-            v-model="createForm.phone"
-            placeholder="11 位手机号（即登录账号）"
-            maxlength="11"
-            clearable
-          />
-        </ElFormItem>
-        <ElFormItem label="初始密码" prop="password">
-          <ElInput
-            v-model="createForm.password"
-            placeholder="留空则系统自动生成并展示"
-            maxlength="32"
-            clearable
-            show-password
-          />
-        </ElFormItem>
-        <ElFormItem label="昵称" prop="nickname">
-          <ElInput v-model="createForm.nickname" placeholder="选填" maxlength="20" clearable />
-        </ElFormItem>
-      </ElForm>
-      <template #footer>
-        <ElButton @click="createOpen = false">取消</ElButton>
-        <ElButton type="primary" :loading="createSubmitting" @click="submitCreate">创建</ElButton>
-      </template>
-    </ElDialog>
-
     <!-- 编辑昵称 -->
     <ElDialog v-model="editOpen" title="编辑账号" width="420px" align-center destroy-on-close>
       <ElForm :model="editForm" label-width="84px" label-position="right">
-        <ElFormItem label="手机号">
-          <span class="pf-mono">{{ editForm.phone }}</span>
+        <ElFormItem label="账号编号">
+          <span class="pf-mono">{{ editForm.accountCode }}</span>
         </ElFormItem>
         <ElFormItem label="昵称">
           <ElInput v-model="editForm.nickname" placeholder="选填" maxlength="20" clearable />
@@ -191,7 +161,7 @@
         label-position="right"
       >
         <ElFormItem label="接收人">
-          <span class="pf-mono">{{ notifyTargetPhone }}</span>
+          <span class="pf-mono">{{ notifyTargetAccount }}</span>
         </ElFormItem>
         <ElFormItem label="标题" prop="title">
           <ElInput
@@ -223,12 +193,10 @@
 <script setup lang="ts">
   import { ref, reactive, onMounted } from 'vue'
   import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-  import { Refresh, Plus, Search } from '@element-plus/icons-vue'
+  import { Refresh, Search } from '@element-plus/icons-vue'
   import {
     fetchLedgerAccounts,
-    createLedgerAccount,
     updateLedgerAccount,
-    resetLedgerPassword,
     pushLedgerNotification,
     type LedgerAccount
   } from '@/api/ledger'
@@ -236,8 +204,7 @@
     membershipTagType,
     membershipLabel,
     accountStatusTagType,
-    accountStatusLabel,
-    showPasswordDialog
+    accountStatusLabel
   } from '../shared'
   import GrantMembershipDialog from '../GrantMembershipDialog.vue'
   import { formatDateTime } from '@jiujiu/shared/utils'
@@ -281,71 +248,18 @@
     load()
   }
 
-  // ====== 新建账号 ======
-  const createOpen = ref(false)
-  const createSubmitting = ref(false)
-  const createFormRef = ref<FormInstance>()
-  const createForm = reactive<{ phone: string; password: string; nickname: string }>({
-    phone: '',
-    password: '',
-    nickname: ''
-  })
-  const createRules: FormRules = {
-    phone: [
-      { required: true, message: '请输入手机号', trigger: 'blur' },
-      { pattern: /^1\d{10}$/, message: '请输入正确的 11 位手机号', trigger: 'blur' }
-    ]
-  }
-
-  function openCreate() {
-    createForm.phone = ''
-    createForm.password = ''
-    createForm.nickname = ''
-    createOpen.value = true
-  }
-
-  async function submitCreate() {
-    if (!createFormRef.value) return
-    try {
-      await createFormRef.value.validate()
-    } catch {
-      return
-    }
-    createSubmitting.value = true
-    try {
-      const res = await createLedgerAccount({
-        phone: createForm.phone.trim(),
-        password: createForm.password.trim() || undefined,
-        nickname: createForm.nickname.trim() || undefined
-      })
-      createOpen.value = false
-      ElMessage.success('账号已创建')
-      // 系统生成的密码仅返回一次，必须立即展示给管理员复制
-      if (res?.generatedPassword) {
-        await showPasswordDialog({
-          title: '账号已创建',
-          intro: `已为 <b style="color:#1f2937">${res.phone}</b> 生成初始密码：`,
-          password: res.generatedPassword
-        })
-      }
-      page.value = 1
-      await load()
-    } catch (e: any) {
-      ElMessage.error(e?.message || '创建失败，请稍后重试')
-    } finally {
-      createSubmitting.value = false
-    }
-  }
-
   // ====== 编辑昵称 ======
   const editOpen = ref(false)
   const editSubmitting = ref(false)
   const editTargetId = ref('')
-  const editForm = reactive<{ phone: string; nickname: string }>({ phone: '', nickname: '' })
+  const editForm = reactive<{ accountCode: string; nickname: string }>({
+    accountCode: '',
+    nickname: ''
+  })
 
   function openEdit(row: LedgerAccount) {
     editTargetId.value = row.id
-    editForm.phone = row.phone
+    editForm.accountCode = row.accountCode
     editForm.nickname = row.nickname || ''
     editOpen.value = true
   }
@@ -370,7 +284,7 @@
     const actionLabel = next === 'disabled' ? '停用' : '启用'
     try {
       await ElMessageBox.confirm(
-        `确认${actionLabel}账号「${row.phone}」？${
+        `确认${actionLabel}账号「${row.nickname || row.accountCode}（${row.accountCode}）」？${
           next === 'disabled' ? '停用后该用户将无法登录门窗利账小程序。' : ''
         }`,
         `${actionLabel}账号`,
@@ -385,29 +299,6 @@
       ElMessage.success(`已${actionLabel}`)
     } catch (e: any) {
       ElMessage.error(e?.message || '操作失败，请稍后重试')
-    }
-  }
-
-  // ====== 重置密码 ======
-  async function onResetPassword(row: LedgerAccount) {
-    try {
-      await ElMessageBox.confirm(
-        `确认重置账号「${row.phone}」的密码？将生成一个新密码，旧密码立即失效。`,
-        '重置密码',
-        { confirmButtonText: '确认重置', cancelButtonText: '取消', type: 'warning' }
-      )
-    } catch {
-      return
-    }
-    try {
-      const res = await resetLedgerPassword(row.id)
-      await showPasswordDialog({
-        title: '密码已重置',
-        intro: `已为 <b style="color:#1f2937">${row.phone}</b> 生成新密码：`,
-        password: res.password
-      })
-    } catch (e: any) {
-      ElMessage.error(e?.message || '重置失败，请稍后重试')
     }
   }
 
@@ -429,7 +320,7 @@
   const notifyOpen = ref(false)
   const notifySubmitting = ref(false)
   const notifyTargetId = ref('')
-  const notifyTargetPhone = ref('')
+  const notifyTargetAccount = ref('')
   const notifyFormRef = ref<FormInstance>()
   const notifyForm = reactive<{ title: string; body: string }>({ title: '', body: '' })
   const notifyRules: FormRules = {
@@ -439,7 +330,7 @@
 
   function openNotify(row: LedgerAccount) {
     notifyTargetId.value = row.id
-    notifyTargetPhone.value = row.phone
+    notifyTargetAccount.value = `${row.nickname || '微信用户'}（${row.accountCode}）`
     notifyForm.title = ''
     notifyForm.body = ''
     notifyOpen.value = true

@@ -35,6 +35,11 @@
   justify-content: center;
   box-shadow: var(--shadow-soft);
 }
+.home__bell-image {
+  display: block;
+  width: 36px;
+  height: 36px;
+}
 .home__dot {
   position: absolute;
   top: 9px;
@@ -45,9 +50,57 @@
   background: var(--loss);
   border: 1.5px solid var(--surface);
 }
+.home__login-pill {
+  min-width: 68px;
+  height: 38px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--accent-text);
+  font-size: 13.5px;
+  font-weight: 700;
+}
 .home__hero {
   margin-bottom: var(--gap);
   overflow: hidden;
+}
+.home__welcome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--gap);
+  padding: 13px 15px;
+  border: 1px solid rgba(14, 124, 102, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(14, 124, 102, 0.96), rgba(46, 180, 150, 0.88));
+  box-shadow: 0 10px 24px rgba(14, 124, 102, 0.2);
+}
+.home__welcome-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.home__welcome-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+.home__welcome-sub {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11.5px;
 }
 /* 性能模式：跟随手指的流体光晕 */
 .home__touch {
@@ -166,12 +219,32 @@
   display: block;
 }
 
-/* 工具入口：优化下料（#9）*/
-.home__tool {
+/* 工具栏 */
+.home__tool-head {
+  margin: 2px 2px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.home__tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: var(--gap);
+}
+.home__tool-card {
   display: flex;
+  min-width: 0;
+  min-height: 112px;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: var(--gap);
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 8px 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
 }
 .home__tool-icon {
   width: 40px;
@@ -182,15 +255,31 @@
   justify-content: center;
   background: rgba(14, 124, 102, 0.1);
 }
+.home__tool-image {
+  width: 40px;
+  height: 40px;
+  display: block;
+  flex: 0 0 auto;
+}
+.home__tool-icon--c2 {
+  background: rgba(76, 159, 190, 0.12);
+}
+.home__tool-icon--c3 {
+  background: rgba(223, 160, 58, 0.14);
+}
+.home__tool-icon--c4 {
+  background: rgba(210, 115, 90, 0.14);
+}
 .home__tool-t {
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
+  white-space: nowrap;
 }
 .home__tool-s {
-  font-size: 12.5px;
+  font-size: 11.5px;
   color: var(--muted);
-  margin-top: 2px;
+  white-space: nowrap;
 }
 
 /* 经营概览面板：周期控件 + 目标行 + 分析分组标题 */
@@ -215,6 +304,107 @@
   height: 1px;
   margin-top: 16px;
   background: var(--border);
+}
+
+/* 游客首页：公开能力直接可用，私有经营数据按需登录 */
+.home__guest {
+  display: flex;
+  align-items: center;
+  min-height: 84px;
+  margin-bottom: var(--gap);
+  padding: 16px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(241, 248, 245, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 24px rgba(16, 40, 30, 0.08);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home__guest--press {
+  transform: scale(0.985);
+  background: rgba(246, 250, 248, 0.98);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 3px 12px rgba(16, 40, 30, 0.08);
+}
+.home__guest-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border: 1px solid rgba(14, 124, 102, 0.09);
+  border-radius: 14px;
+  background: var(--accent-soft);
+}
+.home__guest-main {
+  min-width: 0;
+  flex: 1;
+  margin-left: 12px;
+}
+.home__guest-title {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.home__guest-copy {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.home__guest-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 44px;
+  margin-left: 8px;
+  flex-shrink: 0;
+  gap: 1px;
+  color: var(--accent-text);
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.home__public {
+  margin-bottom: var(--gap);
+}
+
+@media (max-width: 350px) {
+  .home__guest {
+    padding: 14px;
+  }
+  .home__guest-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 13px;
+  }
+  .home__guest-main {
+    margin-left: 10px;
+  }
+  .home__guest-title {
+    font-size: 15px;
+  }
+  .home__guest-copy,
+  .home__guest-action {
+    font-size: 12.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home__guest {
+    transition: none;
+  }
 }
 
 /* 新版本更新日志弹窗 */

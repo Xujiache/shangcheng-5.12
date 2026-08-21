@@ -1,44 +1,82 @@
 <lz-bg />
-<view class="home">
+<view class="home tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
   <view class="home__hd" style="padding-top: {{hdPad}}px; padding-right: {{hdRight}}px;">
     <view>
       <view class="home__title">利润中心</view>
       <view class="home__sub">门窗经营一目了然</view>
     </view>
-    <view class="home__bell" hover-class="tap-active" bindtap="toMsg">
-      <lz-icon name="bell" size="22" color="text" />
+    <view wx:if="{{!loggedIn}}" class="home__login-pill" hover-class="tap-active" bindtap="toLogin">
+      <lz-icon name="user" size="16" color="accent" />
+      <text>登录</text>
+    </view>
+    <view wx:else class="home__bell" hover-class="tap-active" bindtap="toMsg">
+      <image class="home__bell-image" src="/assets/profile/profile-message.png" mode="aspectFit" />
       <view wx:if="{{unread}}" class="home__dot"></view>
     </view>
   </view>
 
   <view class="lz-page lz-page--pad-bottom">
+    <view wx:if="{{welcomeBannerVisible}}" class="home__welcome">
+      <view class="home__welcome-icon">
+        <lz-icon name="crown" size="20" color="white" />
+      </view>
+      <view class="lz-flex1">
+        <view class="home__welcome-title">新用户 30 天会员已自动开通</view>
+        <view class="home__welcome-sub">剩余 {{welcomeDaysLeft}} 天 · 有效期至 {{welcomeExpiresLabel}}</view>
+      </view>
+    </view>
+
     <!-- 广告轮播（#2）-->
-    <swiper wx:if="{{ads.length}}" class="home__ads" indicator-dots="{{ads.length > 1}}" autoplay circular interval="4000" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
+    <swiper wx:if="{{loggedIn && ads.length}}" class="home__ads" indicator-dots="{{ads.length > 1}}" autoplay circular interval="4000" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
       <swiper-item wx:for="{{ads}}" wx:key="id" data-link="{{item.link}}" bindtap="onAd">
         <image class="home__ad-img" src="{{item.image}}" mode="aspectFill" lazy-load />
       </swiper-item>
     </swiper>
 
-    <!-- 实用工具：型材优化下料（#9）：放在广告下方做快捷入口 -->
-    <view class="lz-card home__tool" hover-class="tap-active" bindtap="toCut">
-      <view class="home__tool-icon"><lz-icon name="cube" size="20" color="accent" /></view>
-      <view class="lz-flex1">
-        <view class="home__tool-t">型材优化下料</view>
-        <view class="home__tool-s">一维切割排版 · 省料省成本</view>
+    <!-- 实用工具栏 -->
+    <view class="home__tool-head">实用工具</view>
+    <view class="home__tools">
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toTriangleTool">
+        <view class="home__tool-icon">
+          <image class="home__tool-image" src="/assets/tools/tool-triangle.png" mode="aspectFit" />
+        </view>
+        <view class="home__tool-t">三角计算</view>
+        <view class="home__tool-s">边角反算</view>
       </view>
-      <lz-icon name="chevron" size="16" color="faint" />
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toArcTool">
+        <view class="home__tool-icon home__tool-icon--c2">
+          <image class="home__tool-image" src="/assets/tools/tool-arc.png" mode="aspectFit" />
+        </view>
+        <view class="home__tool-t">圆弧计算</view>
+        <view class="home__tool-s">弦长拱高</view>
+      </view>
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toCut">
+        <view class="home__tool-icon home__tool-icon--c3">
+          <image class="home__tool-image" src="/assets/tools/tool-cut.png" mode="aspectFit" />
+        </view>
+        <view class="home__tool-t">优化下料</view>
+        <view class="home__tool-s">省料排版</view>
+      </view>
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toWorkLog">
+        <view class="home__tool-icon home__tool-icon--c4">
+          <lz-icon name="labor" size="23" color="c4" />
+        </view>
+        <view class="home__tool-t">记工</view>
+        <view class="home__tool-s">日工明细</view>
+      </view>
     </view>
 
-    <!-- 加载失败（网络等）：带重试，不渲染"暂无…"空态 -->
-    <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
-      <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
-      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
-    </view>
+    <block>
+      <!-- 加载失败（网络等）：带重试，不渲染"暂无…"空态 -->
+      <view wx:if="{{loadError}}" class="lz-card" style="text-align: center;">
+        <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+        <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
+      </view>
 
-    <!-- 首次加载：占位，避免把初始 ¥0 当成真利润 -->
-    <view wx:elif="{{loading}}" class="lz-empty">加载中…</view>
+      <!-- 首次加载：占位，避免把初始 ¥0 当成真利润 -->
+      <view wx:elif="{{loading}}" class="lz-empty">加载中…</view>
 
-    <block wx:else>
+      <block wx:else>
       <!-- 经营概览：周期 + 净利润 + KPI + 目标，合并为一张主面板（信息聚合、层次清晰）-->
       <view class="lz-card lz-card--glow home__hero" bindtouchstart="onHeroTouchStart" bindtouchmove="onHeroTouchMove" bindtouchend="onHeroTouchEnd" bindtouchcancel="onHeroTouchEnd">
         <view wx:if="{{fxMax}}" class="home__touch" style="left: {{tlx}}px; top: {{tly}}px; opacity: {{tlShow ? 1 : 0}};"></view>
@@ -130,6 +168,7 @@
         </view>
         <view wx:else class="lz-empty">本期暂无订单，点击底部 + 记一笔</view>
       </view>
+      </block>
     </block>
   </view>
   <view wx:if="{{clogShow}}" class="clog-mask" bindtap="closeChangelog">

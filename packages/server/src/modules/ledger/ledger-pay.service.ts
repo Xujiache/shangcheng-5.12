@@ -54,18 +54,15 @@ export class LedgerPayService {
     if (amountFen <= 0) {
       throw new BizException(BizCode.BUSINESS_ERROR, '该套餐暂不支持在线支付，请联系管理员')
     }
-    // 体验卡限购一次：已领/已购买过 → 拒绝下单（防止反复低价刷体验卡）
+    // ???????????????????? 30 ??????????
     if (plan.trial) {
-      const mem = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
-      if (mem?.trialClaimedAt) {
-        throw new BizException(BizCode.BUSINESS_ERROR, '体验卡仅限购买一次，您已购买过')
-      }
+      throw new BizException(BizCode.BUSINESS_ERROR, '体验卡免费领取，无需支付')
     }
 
     const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
-    // openid：优先已绑定的 wxOpenid（与 ledger appid 同源）；否则用本次 wx.login 的 code 兑换
+    // openid：优先使用登录账号身份；旧数据缺失时用本次 wx.login code 兑换。
     let openid = user.wxOpenid || ''
     if (!openid) {
       if (!code) throw new BizException(BizCode.INVALID_PARAMS, '缺少微信授权，请重试')

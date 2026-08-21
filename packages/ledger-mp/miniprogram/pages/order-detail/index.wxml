@@ -1,10 +1,14 @@
 <lz-bg />
 <view class="od">
   <lz-header title="订单详情" subtitle="{{o.id}}">
-    <view slot="right" class="od__edit" bindtap="toEdit">编辑</view>
+    <view slot="right" class="od__edit" bindtap="onShareQuote">分享</view>
   </lz-header>
 
   <view wx:if="{{o}}" class="lz-page" style="padding-bottom: 110px;">
+    <view wx:if="{{readOnly}}" class="lz-card" style="margin-bottom: var(--gap); padding: 12px 14px; color: var(--accent-text); font-size: 13px;">
+      会员已到期，当前订单仅支持查看、预览和导出。
+    </view>
+
     <!-- 核心 -->
     <view class="lz-card lz-card--glow od__core">
       <lz-donut data="{{donut}}" size="120" thickness="18">
@@ -76,12 +80,7 @@
         <text class="od__c-pct">{{item.pct}}%</text>
         <text class="od__c-val">{{item.value}}</text>
       </view>
-      <view wx:for="{{customCosts}}" wx:key="idx" class="od__cost">
-        <view class="lz-dot" style="background: var(--c6);"></view>
-        <text class="od__c-name">{{item.name}}</text>
-        <view class="lz-flex1"></view>
-        <text class="od__c-val">{{item.amountText}}</text>
-      </view>
+      <view wx:if="{{!costRows.length}}" class="lz-faint" style="font-size: 13px;">暂无成本明细</view>
     </view>
 
     <!-- 其他开销 -->
@@ -108,11 +107,24 @@
   </view>
 
   <view wx:if="{{o}}" class="lz-footer" style="display: flex; gap: 10px;">
-    <button class="lz-btn lz-btn--ghost lz-btn--lg" style="flex: 0 0 104px;" bindtap="onDelete">
+    <button wx:if="{{!readOnly}}" class="lz-btn lz-btn--ghost lz-btn--lg" style="flex: 0 0 104px;" bindtap="onDelete">
       <lz-icon name="trash" size="18" color="loss" /> 删除
     </button>
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-flex1" bindtap="toEdit">
+    <button class="lz-btn lz-btn--ghost lz-btn--lg od__share {{readOnly ? 'lz-flex1' : ''}}" bindtap="onShareQuote" loading="{{exporting}}">
+      <lz-icon name="share" size="18" color="accent" /> 报价单
+    </button>
+    <button wx:if="{{!readOnly}}" class="lz-btn lz-btn--primary lz-btn--lg lz-flex1" bindtap="toEdit">
       <lz-icon name="pencil" size="18" color="white" /> 编辑此订单
     </button>
   </view>
+  <view wx:if="{{pdfReadyToShare}}" class="od__pdf-mask" bindtap="cancelPendingPdf">
+    <view class="od__pdf-sheet" catchtap="stopPdfShareTap">
+      <view class="od__pdf-sheet-title">PDF 已生成</view>
+      <view class="od__pdf-sheet-hint">再次点击按钮，调用微信官方接口转发报价文件</view>
+      <button class="lz-btn lz-btn--primary lz-btn--lg od__pdf-share-btn" bindtap="sharePendingPdf">立即转发 PDF</button>
+      <view class="od__pdf-cancel" bindtap="cancelPendingPdf">稍后再说</view>
+    </view>
+  </view>
+  <!-- 离屏报价画布：仅用于生成图片/PDF，不能 display:none。 -->
+  <canvas type="2d" id="quoteExport" class="od__export-canvas"></canvas>
 </view>

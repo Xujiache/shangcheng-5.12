@@ -20,6 +20,7 @@ import { CreateLedgerOrderDto, OrderQueryDto, UpdateLedgerOrderDto } from './dto
 import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer.dto'
 import { UpdateLedgerGoalDto } from './dto/misc.dto'
 import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
+import { CreateLedgerWorkLogDto, UpdateLedgerWorkLogDto, WorkLogQueryDto } from './dto/work-log.dto'
 
 /**
  * 门窗利账 App · 业务（/api/v1/l/*，需登录 + 会员有效）。
@@ -67,6 +68,11 @@ export class LedgerBizController {
   createCustomer(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerCustomerDto) {
     return this.svc.createCustomer(u.id, dto)
   }
+  // 无档客户（订单自动生成）点击进入时：按姓名幂等建档 + 关联同名历史订单
+  @Post('customers/ensure')
+  ensureCustomer(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerCustomerDto) {
+    return this.svc.ensureCustomerByName(u.id, dto.name)
+  }
   @Get('customers/:id')
   getCustomer(@CurrentLedgerUser() u: LedgerAuthUser, @Param('id') id: string) {
     return this.svc.getCustomer(u.id, id)
@@ -82,6 +88,28 @@ export class LedgerBizController {
   @Delete('customers/:id')
   deleteCustomer(@CurrentLedgerUser() u: LedgerAuthUser, @Param('id') id: string) {
     return this.svc.deleteCustomer(u.id, id)
+  }
+
+  // ── 记工（独立日工台账）──
+  @Get('work-logs')
+  listWorkLogs(@CurrentLedgerUser() u: LedgerAuthUser, @Query() q: WorkLogQueryDto) {
+    return this.svc.listWorkLogs(u.id, q)
+  }
+  @Post('work-logs')
+  createWorkLog(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerWorkLogDto) {
+    return this.svc.createWorkLog(u.id, dto)
+  }
+  @Patch('work-logs/:id')
+  updateWorkLog(
+    @CurrentLedgerUser() u: LedgerAuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateLedgerWorkLogDto,
+  ) {
+    return this.svc.updateWorkLog(u.id, id, dto)
+  }
+  @Delete('work-logs/:id')
+  deleteWorkLog(@CurrentLedgerUser() u: LedgerAuthUser, @Param('id') id: string) {
+    return this.svc.deleteWorkLog(u.id, id)
   }
 
   // ── 统计 ──

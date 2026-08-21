@@ -5,6 +5,39 @@
 .rp .lz-card {
   margin-bottom: var(--gap);
 }
+.rp__guest {
+  margin-top: 8px;
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+.rp__guest-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  border-radius: 18px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rp__guest-title {
+  margin-top: 16px;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 800;
+}
+.rp__guest-copy {
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.rp__guest-login {
+  margin-top: 20px;
+}
+.rp__guest-home {
+  margin-top: 10px;
+}
 .rp__hero {
   margin-bottom: var(--gap);
 }

@@ -44,12 +44,26 @@ Page({
     this.setData({ loading: true, loadError: false }, () => this.load())
   },
 
-  toDetail(e: any) {
-    const id = e.currentTarget.dataset.id
+  async toDetail(e: any) {
+    const { id, name } = e.currentTarget.dataset
     if (id) {
       wx.navigateTo({ url: '/pages/customer-detail/index?id=' + id })
-    } else {
-      wx.showToast({ title: '该客户由订单自动生成，暂无独立档案', icon: 'none' })
+      return
+    }
+    // 无档客户（订单自动生成）：自动建档 + 关联同名历史订单后，进入完整详情
+    if (!name) return
+    wx.showLoading({ title: '建档中…', mask: true })
+    try {
+      const c: any = await customerApi.ensureByName(name)
+      wx.hideLoading()
+      if (c && c.id) {
+        wx.navigateTo({ url: '/pages/customer-detail/index?id=' + c.id })
+      } else {
+        wx.showToast({ title: '建档失败，请重试', icon: 'none' })
+      }
+    } catch (err) {
+      wx.hideLoading()
+      wx.showToast({ title: '建档失败，请重试', icon: 'none' })
     }
   },
   toAdd() {

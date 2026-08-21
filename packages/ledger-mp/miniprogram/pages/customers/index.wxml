@@ -8,7 +8,7 @@
 
   <view class="lz-page" style="padding-bottom: 40px;">
     <view wx:if="{{list.length}}" class="lz-card lz-card--flush">
-      <view wx:for="{{list}}" wx:key="_k" class="lz-row" data-id="{{item.id}}" bindtap="toDetail" hover-class="tap-active">
+      <view wx:for="{{list}}" wx:key="_k" class="lz-row" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="toDetail" hover-class="tap-active">
         <view class="lz-avatar cl__av">{{item.initial}}</view>
         <view class="lz-row__main">
           <view class="lz-row__label lz-ellipsis" style="font-weight: 600;">{{item.name}}</view>

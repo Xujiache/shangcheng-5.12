@@ -11,7 +11,7 @@
     <!-- 产品项 -->
     <view wx:for="{{items}}" wx:key="_k" class="oi__item">
       <view class="oi__item-hd">
-        <input class="oi__name" value="{{item.name}}" placeholder="名称（选填，如 推拉窗）" placeholder-class="ph" maxlength="40" data-idx="{{index}}" data-field="name" bindinput="onItemInput" />
+        <input class="oi__name" value="{{item.name}}" placeholder="请输入产品名称（如：推拉窗）" placeholder-class="ph" maxlength="40" data-idx="{{index}}" data-field="name" bindinput="onItemInput" />
         <view class="oi__item-del" data-idx="{{index}}" bindtap="delItem" hover-class="oi__tap">
           <lz-icon name="trash" size="16" color="#9bab9f" />
         </view>
@@ -20,7 +20,7 @@
       <view class="oi__subrow">
         <view class="oi__sub-f">
           <text class="oi__sub-l">备注</text>
-          <input class="oi__sub-in" value="{{item.note}}" placeholder="如 灰色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-field="note" bindinput="onItemInput" />
+          <input class="oi__sub-in" value="{{item.note}}" placeholder="备注 / 颜色，如灰色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-field="note" bindinput="onItemInput" />
         </view>
         <view class="oi__sub-f">
           <text class="oi__sub-l">起算面积</text>
@@ -41,7 +41,7 @@
               <text class="oi__size-op">×</text>
               <input class="oi__size-cnt" type="number" value="{{sz.countStr}}" placeholder="樘" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="countStr" bindinput="onSizeInput" />
               <text class="oi__size-eq">= {{sz.areaText || '0'}}㎡{{sz.clamped ? ' 起算' : ''}}</text>
-              <input class="oi__size-note" value="{{sz.noteStr}}" placeholder="位置" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="noteStr" bindinput="onSizeInput" />
+              <input class="oi__size-note" value="{{sz.noteStr}}" placeholder="位置 / 颜色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="noteStr" bindinput="onSizeInput" />
             </view>
           </view>
         </view>
@@ -116,6 +116,6 @@
 
   <view class="oi__bar">
     <button class="oi__save" bindtap="save">完成</button>
-    <text class="oi__bar-hint">明细已带回订单 · 回订单页点「保存订单」才真正入账</text>
+    <text class="oi__bar-hint">保存订单后，可在订单详情分享图片 / PDF 报价单</text>
   </view>
 </view>

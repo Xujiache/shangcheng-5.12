@@ -26,6 +26,31 @@ function writeCache<T = any>(key: string, data: T): void {
     /* 存储满/序列化失败：静默放弃，不影响主流程 */
   }
 }
+
+/**
+ * 兼容尚未升级“到期订单只读”守卫的服务端：
+ * 到期后若 GET 订单仍返回 6001，优先使用会员有效期内落下的订单缓存。
+ * 正式服务端放开 GET /l/orders* 后不会进入此分支。
+ */
+function readExpiredOrderCache<T>(url: string, cacheKey: string): T | null {
+  const direct = readCache<T>(cacheKey)
+  if (direct) return direct.data
+  const detail = url.match(/^\/l\/orders\/([^/]+)$/)
+  if (!detail) return null
+  const id = decodeURIComponent(detail[1])
+  try {
+    const keys = (wx.getStorageInfoSync().keys || []) as string[]
+    for (const key of keys) {
+      if (key.indexOf(CACHE_PREFIX + '/l/orders?') !== 0) continue
+      const raw = wx.getStorageSync(key) as CacheEntry<any>
+      const row = raw?.data?.list?.find((item: any) => item && item.id === id)
+      if (row) return row as T
+    }
+  } catch (e) {
+    /* ignore */
+  }
+  return null
+}
 /** 按前缀失效相关缓存（写接口成功后调用） */
 export function invalidateCache(prefixes: string | string[]): void {
   const list = Array.isArray(prefixes) ? prefixes : [prefixes]
@@ -84,7 +109,8 @@ export function handleUnauthorized() {
   unauthHandling = true
   const app = getApp<IAppOption>()
   app?.clearAuth?.()
-  wx.reLaunch({ url: '/pages/login/index' })
+  wx.showToast({ title: '登录已失效，请重新登录', icon: 'none' })
+  wx.reLaunch({ url: '/pages/home/index' })
   setTimeout(() => (unauthHandling = false), 1500)
 }
 
@@ -92,17 +118,9 @@ let gateHandling = false
 function handleMemberExpired() {
   if (gateHandling) return
   gateHandling = true
-  // reLaunch 会清空页面栈（正在录入的内容会丢失），先用阻断式弹窗说明再跳闸门页
-  wx.showModal({
-    title: '会员已到期',
-    content: '会员已到期，请联系管理员续费后再继续使用；当前未保存的内容请先截图留存。',
-    showCancel: false,
-    confirmText: '我知道了',
-    complete: () => {
-      wx.reLaunch({ url: '/pages/membership/index?gate=1' })
-      setTimeout(() => (gateHandling = false), 1500)
-    },
-  })
+  // 到期后保持当前页面：历史订单与三个计算工具仍可使用，写操作由接口继续拒绝。
+  wx.showToast({ title: '会员已到期，当前为只读模式', icon: 'none' })
+  setTimeout(() => (gateHandling = false), 1500)
 }
 
 // 离线/失败回退缓存时的统一提示（节流；silent 时只置标记不弹）
@@ -159,8 +177,15 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
           err.code = body.code
           err.data = body.data
           if (body.code === 6001) {
-            // 会员过期/未开通 → 进闸门页（业务接口才会触发）
+            // 会员过期/未开通：不强制跳转，保留当前页面与已加载数据。
             handleMemberExpired()
+            if (method === 'GET' && opts.url.indexOf('/l/orders') === 0) {
+              const cached = readExpiredOrderCache<T>(opts.url, cacheKey)
+              if (cached) {
+                resolve(cached)
+                return
+              }
+            }
             reject(err)
             return
           }

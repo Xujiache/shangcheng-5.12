@@ -1,4 +1,5 @@
 import { cutApi, cutPlanApi } from '../../api/index'
+import { isLoggedIn } from '../../utils/store'
 
 // 切割清单行的稳定 key：删除中间行时避免 wx:key 失配导致输入框内容串行
 let pieceUid = 0
@@ -31,9 +32,10 @@ Page({
     checking: true,
     loadError: false,
     allowed: false,
+    cloudEnabled: false,
     mode: '',
     trialDaysLeft: 0,
-    gateReason: '优化下料试用已结束，开通会员后继续使用',
+    gateReason: '优化下料为会员功能，开通会员后即可使用',
 
     material: 'profile',
     materialOptions: [
@@ -73,7 +75,7 @@ Page({
   },
   onShow() {
     // 从「下料结果」页保存方案后返回，刷新历史列表
-    if (this.data.allowed) this.fetchHistory()
+    if (this.data.cloudEnabled) this.fetchHistory()
   },
   onHide() {
     this.flushDrafts()
@@ -167,19 +169,38 @@ Page({
   },
 
   async checkAccess() {
+    if (!isLoggedIn()) {
+      this.setData({
+        checking: false,
+        loadError: false,
+        allowed: true,
+        cloudEnabled: false,
+        mode: 'guest-tools',
+      })
+      return
+    }
     try {
       const a: any = await cutApi.access()
       this.setData({
         checking: false,
         loadError: false,
-        allowed: !!a.allowed,
-        mode: a.mode || '',
-        trialDaysLeft: a.trialDaysLeft || 0,
-        gateReason: a.reason || '优化下料试用已结束，开通会员后继续使用',
+        // 优化计算本身始终开放；有效会员额外启用云端历史方案。
+        allowed: true,
+        cloudEnabled: !!a.allowed,
+        mode: a.allowed ? a.mode || 'member' : 'free-tools',
+        trialDaysLeft: 0,
+        gateReason: '',
       })
       if (a.allowed) this.fetchHistory()
     } catch (e) {
-      this.setData({ checking: false, loadError: true })
+      // 会员状态接口失败不影响本地计算，只暂时关闭云端历史。
+      this.setData({
+        checking: false,
+        loadError: false,
+        allowed: true,
+        cloudEnabled: false,
+        mode: 'free-tools',
+      })
     }
   },
   retry() {

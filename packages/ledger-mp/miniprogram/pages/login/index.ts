@@ -2,246 +2,146 @@ import { authApi, meApi } from '../../api/index'
 import {
   setAuth,
   setUser,
-  getUser,
   getToken,
   getBioLock,
   getBioVerified,
   getLogo,
   setLogo,
+  getPendingInviteCode,
+  clearPendingInviteCode,
 } from '../../utils/store'
 
 interface LoginData {
-  mode: string
-  modes: Array<{ value: string; label: string }>
-  phone: string
-  pwd: string
-  code: string
-  showPwd: boolean
-  sent: number
   loading: boolean
-  canLogin: boolean
   checking: boolean
-  allowRegister: boolean
   agreed: boolean
   logoUrl: string
+  privacyContractName: string
+}
+
+function getWechatLoginCode(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    wx.login({
+      success: (res) => (res.code ? resolve(res.code) : reject(new Error('missing code'))),
+      fail: reject,
+    })
+  })
 }
 
 Page({
   data: {
-    mode: 'password',
-    modes: [
-      { value: 'password', label: '密码登录' },
-      { value: 'code', label: '验证码登录' },
-    ],
-    phone: '',
-    pwd: '',
-    code: '',
-    showPwd: false,
-    sent: 0,
     loading: false,
-    canLogin: false,
-    // 默认进入"校验中"占位：有 token 时静默登录期间不露出表单，避免每次启动闪登录页
-    checking: true,
-    allowRegister: true,
-    logoUrl: getLogo(),
-    // 隐私合规：默认不勾选，用户须自行阅读后勾选同意才能登录（不得默认同意）
+    // 仅已有 token 时显示静默校验；游客主动进入登录页时直接展示登录选项，避免闪屏。
+    checking: !!getToken(),
+    // 隐私合规：必须由用户主动勾选，不得默认同意。
     agreed: false,
+    logoUrl: getLogo(),
+    privacyContractName: '《小程序用户隐私保护指引》',
   } as LoginData,
 
-  _timer: 0 as any,
-
   onLoad() {
-    // 管理端关闭自助注册时隐藏「立即注册」入口（接口失败按开放兜底）
+    this.loadPrivacySetting()
     authApi
       .config()
-      .then((c: any) => {
-        this.setData({
-          allowRegister: !c || c.allowSelfRegister !== false,
-          logoUrl: (c && c.logoUrl) || '',
-        })
-        setLogo((c && c.logoUrl) || '')
+      .then((config: any) => {
+        const logoUrl = (config && config.logoUrl) || ''
+        this.setData({ logoUrl })
+        setLogo(logoUrl)
       })
       .catch(() => {})
     if (!getToken()) {
-      // 未登录：直接显示登录表单
       this.setData({ checking: false })
       return
     }
-    // 已登录：显示"正在进入…"占位，静默拉 me 判断会员并路由；失败才回退到表单
     meApi
       .me()
-      .then((u: any) => {
-        setUser(u)
-        this.routeAfterLogin(u.membership)
+      .then((user: any) => {
+        setUser(user)
+        this.routeAfterLogin(user.membership)
       })
-      .catch(() => {
-        this.setData({ checking: false })
-      })
+      .catch(() => this.setData({ checking: false }))
   },
 
-  refreshCanLogin() {
-    const d = this.data
-    const phoneOk = d.phone.length === 11
-    const canLogin =
-      d.mode === 'password' ? phoneOk && d.pwd.length >= 6 : phoneOk && d.code.length === 6
-    this.setData({ canLogin })
+  loadPrivacySetting() {
+    const getPrivacySetting = (wx as any).getPrivacySetting
+    if (typeof getPrivacySetting !== 'function') return
+    getPrivacySetting({
+      success: (res: any) => {
+        if (res && res.privacyContractName) {
+          this.setData({ privacyContractName: res.privacyContractName })
+        }
+      },
+    })
   },
-  onModeChange(e: any) {
-    this.setData({ mode: e.detail.value }, () => this.refreshCanLogin())
-  },
-  onPhone(e: any) {
-    this.setData({ phone: String(e.detail.value).replace(/[^\d]/g, '').slice(0, 11) }, () =>
-      this.refreshCanLogin(),
-    )
-  },
-  onPwd(e: any) {
-    this.setData({ pwd: String(e.detail.value).slice(0, 20) }, () => this.refreshCanLogin())
-  },
-  onCode(e: any) {
-    this.setData({ code: String(e.detail.value).replace(/\D/g, '').slice(0, 6) }, () =>
-      this.refreshCanLogin(),
-    )
-  },
-  togglePwd() {
-    this.setData({ showPwd: !this.data.showPwd })
-  },
+
   toggleAgree() {
     this.setData({ agreed: !this.data.agreed })
   },
-  // 登录前置：未勾选同意协议则拦截并提示，不得默认同意
   ensureAgreed(): boolean {
     if (this.data.agreed) return true
     wx.showToast({ title: '请先阅读并勾选同意《用户协议》与《隐私政策》', icon: 'none' })
     return false
   },
-  onForgot() {
-    wx.showToast({ title: '请用验证码登录后重置，或联系管理员', icon: 'none' })
+  onDoc(e: any) {
+    wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
   },
-  onWechat() {
-    if (this.data.loading) return
-    if (!this.ensureAgreed()) return
-    this.setData({ loading: true })
-    wx.login({
-      success: (r) => {
-        if (!r.code) {
-          this.setData({ loading: false })
-          wx.showToast({ title: '微信授权失败', icon: 'none' })
-          return
-        }
-        authApi
-          .wechatLogin(r.code)
-          .then((res: any) => {
-            setAuth(res.token, res.user)
-            // 成功后不重置 loading：跳转前防重复点击
-            this.routeAfterLogin(res.membership || (res.user && res.user.membership))
-          })
-          .catch((e: any) => {
-            this.setData({ loading: false })
-            wx.showModal({
-              title: '微信未绑定',
-              content:
-                (e && e.message) ||
-                '请先用手机号登录，在「我的 → 账户安全」绑定微信后再用微信登录。',
-              showCancel: false,
-              confirmText: '我知道了',
-            })
-          })
-      },
-      fail: () => {
-        this.setData({ loading: false })
-        wx.showToast({ title: '微信授权失败', icon: 'none' })
-      },
+  continueAsGuest() {
+    wx.switchTab({ url: '/pages/home/index' })
+  },
+  openPrivacyContract() {
+    const openPrivacyContract = (wx as any).openPrivacyContract
+    if (typeof openPrivacyContract !== 'function') {
+      wx.showToast({ title: '当前微信版本暂不支持查看，请升级微信', icon: 'none' })
+      return
+    }
+    openPrivacyContract({
+      fail: () => wx.showToast({ title: '隐私保护指引暂未配置，请联系管理员', icon: 'none' }),
     })
   },
-  onDoc(e: any) {
-    const key = e.currentTarget.dataset.key
-    wx.navigateTo({ url: '/pages/doc/index?key=' + key })
-  },
-  toRegister() {
-    wx.navigateTo({ url: '/pages/register/index' })
-  },
 
-  async getCode() {
-    if (this.data.phone.length !== 11) {
-      wx.showToast({ title: '请输入正确手机号', icon: 'none' })
-      return
-    }
-    if (this.data.sent > 0) return
-    try {
-      await authApi.smsCode(this.data.phone)
-      wx.showToast({ title: '验证码已发送', icon: 'none' })
-      this.startCountdown()
-    } catch (e) {
-      /* toast handled in request */
-    }
-  },
-  startCountdown() {
-    this.setData({ sent: 60 })
-    this._timer = setInterval(() => {
-      const s = this.data.sent - 1
-      if (s <= 0) {
-        clearInterval(this._timer)
-        this.setData({ sent: 0 })
-      } else {
-        this.setData({ sent: s })
-      }
-    }, 1000)
-  },
-
-  async doLogin() {
-    if (this.data.loading) return
-    if (!this.ensureAgreed()) return
-    if (!this.data.canLogin) {
-      // 按钮置灰但可点：提示第一项未满足的条件，而不是无声无息
-      const d = this.data
-      if (d.phone.length !== 11) wx.showToast({ title: '请输入 11 位手机号', icon: 'none' })
-      else if (d.mode === 'password') wx.showToast({ title: '密码至少 6 位', icon: 'none' })
-      else wx.showToast({ title: '请输入 6 位验证码', icon: 'none' })
-      return
-    }
+  async onWechatLogin() {
+    if (this.data.loading || !this.ensureAgreed()) return
     this.setData({ loading: true })
+    let code = ''
     try {
-      const res =
-        this.data.mode === 'password'
-          ? await authApi.login(this.data.phone, this.data.pwd)
-          : await authApi.smsLogin(this.data.phone, this.data.code)
-      setAuth(res.token, res.user)
-      // 成功后不重置 loading：跳转前防重复点击
-      this.routeAfterLogin(res.membership || (res.user && res.user.membership))
+      code = await getWechatLoginCode()
     } catch (e) {
       this.setData({ loading: false })
-    }
-  },
-  routeAfterLogin(m: MembershipStatus | null) {
-    // 管理员重置过密码：先强制设置新密码，再走会员路由
-    const u = getUser()
-    if (u && u.mustReset) {
-      wx.reLaunch({ url: '/pages/password/index?reset=1' })
+      wx.showToast({ title: '微信登录初始化失败，请重试', icon: 'none' })
       return
     }
-    // 静默路径未提交过凭证（setAuth 未走），开了生物锁则先过锁屏，解锁后回首页。
-    // 新登录在 setAuth 里已置 bioVerified，不会进此分支。
+    try {
+      const res = await authApi.wechatLogin(code, getPendingInviteCode() || undefined)
+      setAuth(res.token, res.user)
+      clearPendingInviteCode()
+      this.routeAfterLogin(res.membership || (res.user && res.user.membership), !!res.created)
+    } catch (e: any) {
+      this.setData({ loading: false })
+      wx.showModal({
+        title: '微信登录失败',
+        content: (e && e.message) || '微信服务暂不可用，请稍后重试。',
+        showCancel: false,
+        confirmText: '我知道了',
+      })
+    }
+  },
+
+  routeAfterLogin(m: MembershipStatus | null, _created = false) {
+    // 新微信账号由服务端/数据库自动发放 30 天会员。
+    // 未开通或已到期账号也直接进入首页，不再强制跳转会员开通页。
     if (getBioLock() && !getBioVerified()) {
-      // 只读栈顶，不可 pop()：修改 getCurrentPages() 返回的数组会破坏路由状态
       const pages = getCurrentPages()
-      const cur = pages[pages.length - 1]
-      if (!cur || cur.route !== 'pages/lock/index') {
+      const current = pages[pages.length - 1]
+      if (!current || current.route !== 'pages/lock/index') {
         wx.reLaunch({ url: '/pages/lock/index' })
       }
       return
     }
-    if (!m || !m.active) {
-      wx.reLaunch({ url: '/pages/membership/index?gate=1' })
-      return
-    }
-    if (m.expiringSoon) {
+    if (m && m.active && m.expiringSoon) {
       wx.showToast({ title: `会员剩 ${m.daysLeft} 天即将到期`, icon: 'none' })
       setTimeout(() => wx.switchTab({ url: '/pages/home/index' }), 800)
     } else {
       wx.switchTab({ url: '/pages/home/index' })
     }
-  },
-  onUnload() {
-    if (this._timer) clearInterval(this._timer)
   },
 })

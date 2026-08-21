@@ -32,15 +32,19 @@ export function extrasTotal(extras: any): number {
 }
 
 export interface CustomCost {
+  id?: string
+  color?: string
   name: string
   amount: number
 }
 export function sanitizeCustomCosts(raw: any): CustomCost[] {
   if (!Array.isArray(raw)) return []
-  // 与后端 ledger.constants.sanitizeCustomCosts 同口径：条数 ≤20、name ≤20 字。
+  // 与后端 ledger.constants.sanitizeCustomCosts 同口径：条数 ≤50、name ≤20 字。
   return raw
-    .slice(0, 20)
+    .slice(0, 50)
     .map((e) => ({
+      ...(e?.id ? { id: String(e.id).slice(0, 40) } : {}),
+      ...(e?.color ? { color: String(e.color).slice(0, 4) } : {}),
       name: String(e?.name ?? '')
         .trim()
         .slice(0, 20),

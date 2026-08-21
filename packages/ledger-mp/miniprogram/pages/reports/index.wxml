@@ -1,8 +1,9 @@
 <lz-bg />
-<view class="rp">
-  <lz-header title="经营报表" subtitle="{{ovYear}}年 · 全年统计" back="{{false}}" />
+<view class="rp tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
+  <lz-header title="经营报表" subtitle="{{headerSubtitle}}" back="{{false}}" />
 
   <view class="lz-page lz-page--pad-bottom">
+    <block>
     <view style="margin-bottom: var(--gap);">
       <lz-segmented options="{{tabs}}" value="{{tab}}" bindchange="onTab" />
     </view>
@@ -109,6 +110,7 @@
         </view>
         <view wx:else class="lz-empty">本年暂无订单，点击底部 + 记一笔</view>
       </view>
+    </block>
     </block>
   </view>
 </view>

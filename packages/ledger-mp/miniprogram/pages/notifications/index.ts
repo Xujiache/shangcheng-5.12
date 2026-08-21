@@ -3,7 +3,7 @@ import { settingApi } from '../../api/index'
 interface ToggleItem {
   key: string
   settingKey: string
-  icon: string
+  iconSrc: string
   label: string
   sub: string
   on: boolean
@@ -13,7 +13,7 @@ const DEFS: ToggleItem[] = [
   {
     key: 'order',
     settingKey: 'notifyOrder',
-    icon: 'orders',
+    iconSrc: '/assets/settings/notification-order.png',
     label: '订单提醒',
     sub: '新订单保存与变更通知',
     on: true,
@@ -21,7 +21,7 @@ const DEFS: ToggleItem[] = [
   {
     key: 'report',
     settingKey: 'notifyReport',
-    icon: 'trend',
+    iconSrc: '/assets/settings/notification-report.png',
     label: '报表提醒',
     sub: '周报 / 月报生成提醒',
     on: true,
@@ -29,7 +29,7 @@ const DEFS: ToggleItem[] = [
   {
     key: 'goal',
     settingKey: 'notifyGoal',
-    icon: 'target',
+    iconSrc: '/assets/profile/profile-goal.png',
     label: '目标提醒',
     sub: '经营目标进度与达成提醒',
     on: true,
@@ -37,7 +37,7 @@ const DEFS: ToggleItem[] = [
   {
     key: 'system',
     settingKey: 'notifySystem',
-    icon: 'bell',
+    iconSrc: '/assets/profile/profile-message.png',
     label: '系统通知',
     sub: '会员、安全与版本通知',
     on: false,

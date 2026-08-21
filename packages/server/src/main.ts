@@ -104,8 +104,9 @@ async function bootstrap() {
   }
 
   const port = Number(process.env.SERVER_PORT) || 3000
-  await app.listen(port, '0.0.0.0')
-  console.log(`🚀 Server running on http://localhost:${port}`)
+  const host = process.env.SERVER_HOST || '127.0.0.1'
+  await app.listen(port, host)
+  console.log(`🚀 Server running on http://${host}:${port}`)
   if (swaggerEnabled) {
     console.log(`📖 Swagger docs at http://localhost:${port}/api/docs`)
   } else {

@@ -20,6 +20,8 @@ import {
   extrasTotal,
   sanitizeCustomCosts,
   customCostsTotal,
+  sanitizeCostCategories,
+  DEFAULT_COST_CATEGORIES,
   sanitizeOrderItems,
   itemBillingQty,
   itemSubtotal,
@@ -181,9 +183,9 @@ describe('sanitizeCustomCosts / customCostsTotal 自定义成本项', () => {
     expect(sanitizeCustomCosts(undefined)).toEqual([])
   })
 
-  it('截断超过 20 条', () => {
-    const raw = Array.from({ length: 30 }, () => ({ name: '杂费', amount: 3 }))
-    expect(sanitizeCustomCosts(raw)).toHaveLength(20)
+  it('截断超过 50 条', () => {
+    const raw = Array.from({ length: 60 }, () => ({ name: '杂费', amount: 3 }))
+    expect(sanitizeCustomCosts(raw)).toHaveLength(50)
   })
 
   it('name 截断到 20 字符；无名 / 0 金额项被丢弃', () => {
@@ -206,6 +208,31 @@ describe('sanitizeCustomCosts / customCostsTotal 自定义成本项', () => {
         { name: 'b', amount: 15 },
       ]),
     ).toBe(20)
+  })
+
+  it('保留合法分类 id，非法字符会被清洗', () => {
+    expect(sanitizeCustomCosts([{ id: ' cost:board/1 ', name: '板材', amount: 80 }])).toEqual([
+      { id: 'costboard1', name: '板材', amount: 80 },
+    ])
+  })
+})
+
+describe('sanitizeCostCategories 常用成本分类', () => {
+  it('空配置回退到门窗默认五类', () => {
+    expect(sanitizeCostCategories([])).toEqual(DEFAULT_COST_CATEGORIES)
+  })
+
+  it('保留用户排序、清理重复 id 并补齐合法颜色', () => {
+    expect(
+      sanitizeCostCategories([
+        { id: 'board', name: '石膏板', color: 'c4' },
+        { id: 'paint', name: '刮大白', color: 'bad' },
+        { id: 'board', name: '重复项', color: 'c1' },
+      ]),
+    ).toEqual([
+      { id: 'board', name: '石膏板', color: 'c4' },
+      { id: 'paint', name: '刮大白', color: 'c2' },
+    ])
   })
 })
 
@@ -448,12 +475,10 @@ describe('normalizeLedgerConfig 配置收口', () => {
   it('数值越上限被钳到 3650，越下限被钳到 0，并四舍五入', () => {
     const out = normalizeLedgerConfig({
       inviteRewardDays: 99999,
-      cutTrialDays: -10,
-      inviteMaxRewarded: 12.6,
+      inviteMaxRewarded: -10,
     })
     expect(out.inviteRewardDays).toBe(3650)
-    expect(out.cutTrialDays).toBe(0)
-    expect(out.inviteMaxRewarded).toBe(13)
+    expect(out.inviteMaxRewarded).toBe(0)
   })
 
   it('数值非法（NaN）→ 回落该字段默认值', () => {
@@ -461,10 +486,10 @@ describe('normalizeLedgerConfig 配置收口', () => {
     expect(out.inviteRewardDays).toBe(LEDGER_CONFIG_DEFAULTS.inviteRewardDays)
   })
 
-  it('布尔字段非布尔 → 回落默认值；合法布尔被采用', () => {
-    const out = normalizeLedgerConfig({ allowSelfRegister: 'yes', cutRequireMembership: false })
-    expect(out.allowSelfRegister).toBe(LEDGER_CONFIG_DEFAULTS.allowSelfRegister)
-    expect(out.cutRequireMembership).toBe(false)
+  it('历史试用字段被忽略，不能关闭会员闸门', () => {
+    const out = normalizeLedgerConfig({ cutRequireMembership: false, cutTrialDays: 3650 })
+    expect(out).not.toHaveProperty('cutRequireMembership')
+    expect(out).not.toHaveProperty('cutTrialDays')
   })
 
   it('plans 缺省 / 非数组 → 回落默认套餐', () => {
@@ -480,8 +505,8 @@ describe('normalizeLedgerPlans 套餐收口', () => {
       { key: 'year', label: '年卡', days: 365, price: '¥268' },
     ])
     expect(out).toEqual([
-      { key: 'month', label: '月卡', days: 30, price: '¥29', perpetual: false },
-      { key: 'year', label: '年卡', days: 365, price: '¥268', perpetual: false },
+      { key: 'month', label: '月卡', days: 30, price: '¥29', perpetual: false, trial: false },
+      { key: 'year', label: '年卡', days: 365, price: '¥268', perpetual: false, trial: false },
     ])
   })
 
@@ -493,8 +518,8 @@ describe('normalizeLedgerPlans 套餐收口', () => {
       { key: 'noname', label: '', days: 10, price: '' }, // 缺 label → 丢弃
     ])
     expect(out).toEqual([
-      { key: 'big', label: '超大', days: 3650, price: '', perpetual: false },
-      { key: 'zero', label: '零天', days: 1, price: '', perpetual: false },
+      { key: 'big', label: '超大', days: 3650, price: '', perpetual: false, trial: false },
+      { key: 'zero', label: '零天', days: 1, price: '', perpetual: false, trial: false },
     ])
   })
 
@@ -503,7 +528,9 @@ describe('normalizeLedgerPlans 套餐收口', () => {
       { key: 'm', label: '月卡A', days: 30, price: '' },
       { key: 'm', label: '月卡B', days: 60, price: '' },
     ])
-    expect(out).toEqual([{ key: 'm', label: '月卡A', days: 30, price: '', perpetual: false }])
+    expect(out).toEqual([
+      { key: 'm', label: '月卡A', days: 30, price: '', perpetual: false, trial: false },
+    ])
   })
 
   it('全部非法 / 空数组 → 回落默认套餐', () => {

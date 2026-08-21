@@ -24,7 +24,7 @@
  * 鉴权：握手后必须先发 auth，JWT 校验通过才能 join/message。
  * 用户只能 join 自己的会话；商家只能 join 自己 merchantId 名下的会话。
  */
-import { Logger } from '@nestjs/common'
+import { Logger, Optional } from '@nestjs/common'
 import {
   ConnectedSocket,
   MessageBody,
@@ -37,6 +37,7 @@ import {
 import { Server, Socket } from 'socket.io'
 import { JwtService } from '@nestjs/jwt'
 import { PrismaService } from '../../prisma/prisma.service'
+import { ContentSecurityService } from '../content-security/content-security.service'
 
 interface AuthedSocket extends Socket {
   data: {
@@ -60,6 +61,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly contentSecurity?: ContentSecurityService,
   ) {}
 
   async handleConnection(client: AuthedSocket) {
@@ -164,11 +166,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('error', { message: '未鉴权' })
       return
     }
-    if (!data.content || !data.content.trim()) return
+    const content = String(data.content || '').trim()
+    if (!content) return
+    if (content.length > 1_000) {
+      client.emit('error', { message: '消息不能超过 1000 个字符' })
+      return
+    }
     const session = await this.findOwnSession(client, data.sessionId)
     if (!session) {
       client.emit('error', { message: '无此会话访问权限' })
       return
+    }
+
+    if ((data.kind || 'text') === 'text') {
+      if (!this.contentSecurity && process.env.NODE_ENV === 'production') {
+        client.emit('error', { message: '内容安全服务暂不可用，请稍后重试' })
+        return
+      }
+      try {
+        await this.contentSecurity?.assertTextSafe(content, { scope: 'mall', scene: 2 })
+      } catch (error: any) {
+        client.emit('error', { message: error?.message || '消息未通过内容安全检测' })
+        return
+      }
     }
 
     const sender = client.data.role === 'merchant' ? 'merchant' : 'user'
@@ -177,7 +197,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         sessionId: data.sessionId,
         sender,
         type: data.kind || 'text',
-        content: data.content,
+        content,
         read: false,
       },
     })

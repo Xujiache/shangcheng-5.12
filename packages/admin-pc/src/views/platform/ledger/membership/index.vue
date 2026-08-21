@@ -33,7 +33,7 @@
       <div class="pf-filters">
         <ElInput
           v-model="keyword"
-          placeholder="搜索手机号 / 昵称"
+          placeholder="搜索账号编号 / 昵称"
           clearable
           style="width: 240px"
           @keyup.enter="onSearch"
@@ -63,9 +63,9 @@
         :header-cell-style="{ background: '#FAFBFC', fontWeight: 600 }"
         empty-text="暂无会员账号"
       >
-        <ElTableColumn label="手机号" min-width="130">
+        <ElTableColumn label="账号编号" min-width="120">
           <template #default="{ row }">
-            <span class="pf-mono">{{ row.phone }}</span>
+            <span class="pf-mono">{{ row.accountCode }}</span>
           </template>
         </ElTableColumn>
         <ElTableColumn label="昵称" min-width="110">
@@ -82,8 +82,9 @@
         </ElTableColumn>
         <ElTableColumn label="剩余天数" width="100" align="center">
           <template #default="{ row }">
+            <span v-if="row.membership.perpetual" class="text-primary font-semibold">永久</span>
             <span
-              v-if="!row.membership.never"
+              v-else-if="!row.membership.never"
               :class="row.membership.expired ? 'text-g-500' : 'text-primary font-semibold'"
             >
               {{ Math.max(0, row.membership.daysLeft) }} 天
@@ -93,7 +94,8 @@
         </ElTableColumn>
         <ElTableColumn label="到期日" width="170">
           <template #default="{ row }">
-            <span v-if="row.membership.expiresAt">{{
+            <span v-if="row.membership.perpetual" class="text-primary font-semibold">永久有效</span>
+            <span v-else-if="row.membership.expiresAt">{{
               formatDateTime(row.membership.expiresAt)
             }}</span>
             <span v-else class="text-g-500">未开通</span>
@@ -135,7 +137,7 @@
         <h3 class="m-0">
           会员变更记录
           <span v-if="logsTarget" class="text-sm text-g-500 font-normal pf-mono">
-            · {{ logsTarget.phone }}</span
+            · {{ logsTarget.accountCode }}</span
           >
         </h3>
         <ElTimeline v-if="!logsLoading && logs.length" class="pf-logs__timeline">
@@ -148,7 +150,11 @@
           >
             <div class="pf-logs__delta">
               <b :class="lg.deltaDays >= 0 ? 'text-primary' : 'text-danger'">
-                {{ lg.deltaDays >= 0 ? '+' : '' }}{{ lg.deltaDays }} 天
+                {{
+                  isPerpetualLog(lg)
+                    ? '开通永久会员'
+                    : `${lg.deltaDays >= 0 ? '+' : ''}${lg.deltaDays} 天`
+                }}
               </b>
               <ElTag v-if="lg.planKey" size="small" effect="plain" class="ml-2">{{
                 lastPlanLabel(lg.planKey)
@@ -157,7 +163,9 @@
             <div class="pf-logs__range">
               {{ lg.beforeAt ? formatDateTime(lg.beforeAt) : '未开通' }}
               →
-              <b>{{ lg.afterAt ? formatDateTime(lg.afterAt) : '—' }}</b>
+              <b>{{
+                isPerpetualLog(lg) ? '永久有效' : lg.afterAt ? formatDateTime(lg.afterAt) : '—'
+              }}</b>
             </div>
             <div v-if="lg.note" class="pf-logs__note">{{ lg.note }}</div>
           </ElTimelineItem>
@@ -225,6 +233,10 @@
   function lastPlanLabel(key?: string | null) {
     if (!key) return '—'
     return LEDGER_PLANS.find((p) => p.key === key)?.label || key
+  }
+
+  function isPerpetualLog(log: LedgerMembershipLog) {
+    return log.deltaDays === 0 && !log.afterAt && !!log.planKey
   }
 
   async function load() {

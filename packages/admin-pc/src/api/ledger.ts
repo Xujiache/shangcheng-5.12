@@ -7,15 +7,25 @@
  * 列表接口后端统一返回 `{ list, total, page, pageSize }`；此处保留分页对象形态返回，
  * 由视图层自行驱动 ElPagination（与 platform-business.ts 中提现 / 审核日志的分页签名一致）。
  *
- * 约定：写操作（创建 / 改状态 / 重置密码 / 充值）失败时向上抛错，由视图 catch 后用
+ * 约定：写操作（改状态 / 充值 / 通知）失败时向上抛错，由视图 catch 后用
  * ElMessage 提示；读操作失败兜底空分页 / 空数组，让页面进入空态而非崩溃。
  */
 import request from '@/utils/http'
 
 /* ============ 类型定义 ============ */
 
-/** 会员套餐 key（与后端 grant 接口的 planKey 枚举对齐） */
-export type LedgerPlanKey = 'day' | 'week' | 'month' | 'quarter' | 'year'
+/**
+ * 会员套餐 key。内置 key 保留类型提示，后台功能配置也允许自定义 key。
+ * `perpetual` 是历史上常用的永久套餐 key；真实永久语义以套餐的 perpetual 字段为准。
+ */
+export type LedgerPlanKey =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'quarter'
+  | 'year'
+  | 'perpetual'
+  | (string & Record<never, never>)
 
 /**
  * 账号会员状态（后端在 User 上聚合派生）
@@ -36,17 +46,19 @@ export interface LedgerMembership {
   daysLeft: number
   expiringSoon: boolean
   lastPlanKey: string | null
+  /** true=永久会员，expiresAt 为 null 且不参与到期判定 */
+  perpetual: boolean
 }
 
 /** 门窗利账账号 */
 export interface LedgerAccount {
   id: string
-  phone: string
+  /** 由内部用户 ID 派生的 8 位展示编号，用于客服/会员开通时识别账号 */
+  accountCode: string
+  wechatLinked: boolean
   nickname: string
   avatar: string
   status: 'active' | 'disabled'
-  /** 是否要求下次登录强制改密 */
-  mustReset: boolean
   lastLoginAt: string | null
   createdAt: string
   membership: LedgerMembership
@@ -70,9 +82,6 @@ export interface LedgerAccountsPage {
   page: number
   pageSize: number
 }
-
-/** 创建账号返回：仅当未显式传 password 时才会带 generatedPassword（系统生成，仅返回一次） */
-export type LedgerCreateResult = LedgerAccount & { generatedPassword?: string }
 
 /** 充值返回 */
 export interface LedgerGrantResult {
@@ -118,20 +127,6 @@ export async function fetchLedgerAccounts(params?: {
   }
 }
 
-/**
- * 创建账号
- *
- * password 留空时后端自动生成并在返回值的 `generatedPassword` 字段带回（仅此一次），
- * 调用方必须把它展示给管理员复制——之后无法再取回。
- */
-export function createLedgerAccount(payload: {
-  phone: string
-  password?: string
-  nickname?: string
-}) {
-  return request.post<LedgerCreateResult>({ url: '/api/v1/p/ledger/users', data: payload })
-}
-
 /** 更新账号（启用 / 停用 · 改昵称） */
 export function updateLedgerAccount(
   id: string,
@@ -145,18 +140,11 @@ export function updateLedgerAccount(
   })
 }
 
-/** 重置密码（后端生成新密码并返回，需展示给管理员） */
-export function resetLedgerPassword(id: string) {
-  return request.post<{ password: string }>({
-    url: `/api/v1/p/ledger/users/${encodeURIComponent(id)}/reset-password`
-  })
-}
-
 /**
  * 增加会员时长（充值）
  *
- * planKey ∈ day|week|month|quarter|year，或自定义整数 days；**days 优先于 planKey**。
- * 该操作为「累加」：新到期 = max(now, 当前到期) + N 天。
+ * planKey 来自后台动态套餐配置，或传自定义整数 days；**days 优先于 planKey**。
+ * 普通套餐为「累加」；perpetual=true 的套餐会开通永久会员。
  */
 export function grantLedgerMembership(
   id: string,
@@ -194,13 +182,13 @@ export function pushLedgerNotification(
 /* ============ 意见反馈 ============ */
 
 /** 反馈类型 */
-export type LedgerFeedbackType = 'general' | 'delete_account' | 'phone_change'
+export type LedgerFeedbackType = 'general' | 'delete_account'
 
-/** 意见反馈条目（后端联表带出提交人手机号 / 昵称） */
+/** 意见反馈条目（后端联表带出提交人账号编号 / 昵称） */
 export interface LedgerFeedback {
   id: string
   userId: string
-  phone: string
+  accountCode: string
   nickname: string
   type: LedgerFeedbackType | string
   content: string
@@ -372,26 +360,17 @@ const DEFAULT_LEDGER_PLANS: LedgerPlan[] = [
 ]
 
 export interface LedgerConfig {
-  /** 是否开放 App 自助注册 */
-  allowSelfRegister: boolean
   /** 邀请成功奖励邀请人的天数 */
   inviteRewardDays: number
   /** 单个邀请人最多奖励多少个被邀请人（0=不限） */
   inviteMaxRewarded: number
-  /** 优化下料免费试用天数 */
-  cutTrialDays: number
-  /** 试用期后是否需会员才能用优化下料 */
-  cutRequireMembership: boolean
   /** 会员套餐（后台可编辑） */
   plans: LedgerPlan[]
 }
 
 const DEFAULT_LEDGER_CONFIG: LedgerConfig = {
-  allowSelfRegister: true,
   inviteRewardDays: 7,
   inviteMaxRewarded: 50,
-  cutTrialDays: 7,
-  cutRequireMembership: true,
   plans: DEFAULT_LEDGER_PLANS
 }
 
@@ -400,11 +379,8 @@ export async function fetchLedgerConfig(): Promise<LedgerConfig> {
     const resp = await request.get<any>({ url: '/api/v1/p/ledger/config' })
     if (!resp || typeof resp !== 'object') return { ...DEFAULT_LEDGER_CONFIG }
     return {
-      allowSelfRegister: resp.allowSelfRegister !== false,
       inviteRewardDays: Number(resp.inviteRewardDays ?? DEFAULT_LEDGER_CONFIG.inviteRewardDays),
       inviteMaxRewarded: Number(resp.inviteMaxRewarded ?? DEFAULT_LEDGER_CONFIG.inviteMaxRewarded),
-      cutTrialDays: Number(resp.cutTrialDays ?? DEFAULT_LEDGER_CONFIG.cutTrialDays),
-      cutRequireMembership: resp.cutRequireMembership !== false,
       plans: Array.isArray(resp.plans) && resp.plans.length ? resp.plans : DEFAULT_LEDGER_PLANS
     }
   } catch {
@@ -424,7 +400,7 @@ export function updateLedgerConfig(payload: Partial<LedgerConfig>) {
 
 export interface LedgerInviteRow {
   inviterId: string
-  phone: string
+  accountCode: string
   nickname: string
   inviteCode: string
   invitedCount: number

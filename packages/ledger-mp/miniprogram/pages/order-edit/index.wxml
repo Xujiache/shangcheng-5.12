@@ -7,13 +7,28 @@
   <view wx:if="{{!loadError}}" class="oe__body">
     <!-- 基本信息 + 金额（一张白卡）-->
     <view class="oe__card">
-      <view class="oe__row" bindtap="onCustomerTap" hover-class="oe__tap">
-        <text class="oe__row-l">客户</text>
+      <view class="oe__row">
+        <text class="oe__row-l">姓名</text>
         <view class="oe__row-r">
-          <view wx:if="{{customerName}}" class="oe__change" catchtap="openPicker">更换</view>
-          <text wx:if="{{customerName}}" class="oe__cust">{{customerName}}</text>
-          <text wx:else class="oe__cust oe__cust--ph">选择或新增客户</text>
-          <lz-icon name="chevron" size="16" color="#9bab9f" />
+          <input class="oe__cust-in" value="{{customerName}}" placeholder="客户姓名（必填）" placeholder-class="ph" maxlength="40" confirm-type="done" bindinput="onCustomerName" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">电话</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" type="number" value="{{customerPhone}}" placeholder="联系电话（选填）" placeholder-class="ph" maxlength="20" confirm-type="done" bindinput="onCustomerPhone" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">地址</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" value="{{customerAddress}}" placeholder="安装地址（选填）" placeholder-class="ph" maxlength="120" confirm-type="done" bindinput="onCustomerAddress" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">备注</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" value="{{customerNote}}" placeholder="客户备注（选填）" placeholder-class="ph" maxlength="200" confirm-type="done" bindinput="onCustomerNote" />
         </view>
       </view>
       <picker mode="date" value="{{date}}" bindchange="onDate">
@@ -73,56 +88,48 @@
     <!-- 成本明细 -->
     <view class="oe__sec">
       <view class="oe__sechead">
-        <text class="oe__sec-t">成本明细</text>
-        <text class="oe__sec-hint">按需开启成本项</text>
+        <view>
+          <text class="oe__sec-t">成本明细</text>
+          <view class="oe__sec-hint">名称和顺序可按行业自由设置</view>
+        </view>
+        <view class="oe__cost-actions">
+          <view class="oe__addbtn" bindtap="addCustomCost" hover-class="oe__tap">
+            <lz-icon name="plus" size="14" color="#2E9E78" stroke="2.2" /><text>临时项</text>
+          </view>
+          <view class="oe__managebtn" bindtap="manageCostCategories" hover-class="oe__tap">
+            <text>管理/排序</text><lz-icon name="chevron" size="12" color="#0E7C66" />
+          </view>
+        </view>
       </view>
       <view class="oe__grid">
-        <view wx:for="{{activeCells}}" wx:key="key" class="oe__costcard">
+        <view wx:for="{{customCosts}}" wx:key="_k" class="oe__costcard">
           <view class="oe__costcard-hd">
             <view class="oe__dot oe__dot--{{item.color}}"></view>
-            <text class="oe__costcard-n">{{item.name}}成本</text>
+            <text wx:if="{{item.isTemplate}}" class="oe__costcard-n">{{item.name}}</text>
+            <input
+              wx:else
+              class="oe__costcard-namein"
+              value="{{item.name}}"
+              placeholder="成本名称"
+              placeholder-class="ph"
+              maxlength="20"
+              data-idx="{{index}}"
+              bindinput="onCustomName"
+            />
             <view class="lz-flex1"></view>
-            <view class="oe__costcard-x" data-key="{{item.key}}" bindtap="removeCat" hover-class="oe__tap">
-              <lz-icon name="close" size="11" color="#9bab9f" stroke="2.4" />
+            <view wx:if="{{!item.isTemplate}}" class="oe__costcard-x" data-idx="{{index}}" bindtap="delCustomCost" hover-class="oe__tap">
+              <lz-icon name="trash" size="12" color="#9bab9f" stroke="2.1" />
             </view>
           </view>
           <view class="oe__costcard-amt">
             <text class="oe__cur">¥</text>
-            <input class="oe__amt-in oe__amt-in--lg" type="digit" value="{{item.valueStr}}" placeholder="0" placeholder-class="ph" data-key="{{item.key}}" bindinput="onCost" bindblur="onCostBlur" />
+            <input class="oe__amt-in oe__amt-in--lg" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onCustomAmt" bindblur="onCustomAmtBlur" />
           </view>
         </view>
       </view>
-      <view wx:if="{{removedCats.length}}" class="oe__add">
-        <text class="oe__add-l">添加成本项</text>
-        <view wx:for="{{removedCats}}" wx:key="key" class="oe__chip" data-key="{{item.key}}" bindtap="addCat" hover-class="oe__tap">
-          <view class="oe__dot oe__dot--sm oe__dot--{{item.color}}"></view>
-          <text class="oe__chip-t">{{item.name}}</text>
-          <lz-icon name="plus" size="13" color="#2E9E78" stroke="2.2" />
-        </view>
-      </view>
-    </view>
-
-    <!-- 自定义成本（#5）-->
-    <view class="oe__sec">
-      <view class="oe__sechead">
-        <text class="oe__sec-t">自定义成本</text>
-        <view class="oe__addbtn" bindtap="addCustomCost" hover-class="oe__tap">
-          <lz-icon name="plus" size="15" color="#2E9E78" stroke="2.2" /><text>添加</text>
-        </view>
-      </view>
-      <view class="oe__card">
-        <block wx:if="{{customCosts.length}}">
-          <view wx:for="{{customCosts}}" wx:key="_k" class="oe__listrow {{index === customCosts.length - 1 ? 'oe__listrow--last' : ''}}">
-            <input class="oe__listname" value="{{item.name}}" placeholder="成本名目" placeholder-class="ph" maxlength="20" data-idx="{{index}}" bindinput="onCustomName" />
-            <view class="lz-flex1"></view>
-            <text class="oe__cur">¥</text>
-            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onCustomAmt" bindblur="onCustomAmtBlur" />
-            <view class="oe__listdel" data-idx="{{index}}" bindtap="delCustomCost" hover-class="oe__tap">
-              <lz-icon name="trash" size="15" color="#9bab9f" />
-            </view>
-          </view>
-        </block>
-        <view wx:else class="oe__empty">固定 5 类之外的成本，点击右上角添加</view>
+      <view wx:if="{{!customCosts.length}}" class="oe__cost-empty" bindtap="manageCostCategories">
+        <lz-icon name="plus" size="17" color="#2E9E78" stroke="2.2" />
+        <text>添加你的第一个常用成本分类</text>
       </view>
     </view>
 
@@ -186,37 +193,5 @@
     <button class="oe__save {{canSave && !saving ? '' : 'oe__save--disabled'}}" bindtap="save">
       <lz-icon name="check" size="20" color="white" /> {{saving ? '保存中…' : (editing ? '保存修改' : '保存订单')}}
     </button>
-  </view>
-
-  <!-- 客户选择器 -->
-  <view wx:if="{{showPicker}}" class="oe__mask" bindtap="closePicker">
-    <view class="oe__sheet" catchtap="noop">
-      <view class="oe__sheet-handle"></view>
-      <view class="oe__sheet-hd">
-        <text class="oe__sheet-t">选择客户</text>
-        <view class="lz-flex1"></view>
-        <view class="oe__newc" bindtap="newCustomer" hover-class="oe__tap">
-          <lz-icon name="plus" size="15" color="#2E9E78" stroke="2.2" /><text>新增客户</text>
-        </view>
-      </view>
-      <view class="oe__sheet-search">
-        <lz-icon name="search" size="17" color="#9bab9f" />
-        <input class="lz-flex1" value="{{pickerQ}}" placeholder="搜索客户姓名" placeholder-class="ph" bindinput="onPickerSearch" />
-      </view>
-      <scroll-view scroll-y class="oe__sheet-list">
-        <view wx:for="{{pickerList}}" wx:key="id" class="oe__pc" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="pickCustomer" hover-class="oe__tap">
-          <view class="oe__pc-av">{{item.initial}}</view>
-          <view class="lz-flex1" style="min-width: 0;">
-            <view class="oe__pc-n">{{item.name}}</view>
-            <view class="oe__pc-s">{{item.sub}}</view>
-          </view>
-          <lz-icon wx:if="{{item.name === customerName}}" name="check" size="18" color="#2E9E78" stroke="2.4" />
-          <view class="oe__pc-del" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="delCustomer" hover-class="oe__tap">
-            <lz-icon name="trash" size="16" color="#c0ccc4" />
-          </view>
-        </view>
-        <view wx:if="{{!pickerList.length}}" class="oe__empty">没有找到客户，点击右上角新增</view>
-      </scroll-view>
-    </view>
   </view>
 </view>

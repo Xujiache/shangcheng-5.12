@@ -9,6 +9,11 @@
   height: 64%;
   border-radius: 14px;
 }
+.ab__logo-mark {
+  display: block;
+  width: 68px;
+  height: 68px;
+}
 .ab__logo {
   width: 76px;
   height: 76px;
@@ -17,7 +22,9 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(145deg, #3ba58c, var(--accent));
-  box-shadow: 0 16px 36px rgba(14, 124, 102, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 16px 36px rgba(14, 124, 102, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
 }
 .ab__name {
   font-size: 22px;
@@ -25,6 +32,18 @@
   letter-spacing: -0.01em;
   color: var(--text);
   margin-top: 16px;
+}
+.ab__row-icon {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(14, 124, 102, 0.16);
+  border-radius: 11px;
+  background: #edf7f3;
+}
+.ab__icon-image {
+  display: block;
+  width: 38px;
+  height: 38px;
 }
 .ab__ver {
   font-size: 13px;

@@ -1,10 +1,9 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
   deriveMembership,
   computeGrantExpiry,
-  ledgerPlanPriceFen,
   sanitizeExtras,
   fixedCost,
   extrasTotal,
@@ -14,6 +13,7 @@ import {
   revenueOf,
   sanitizeCustomCosts,
   customCostsTotal,
+  sanitizeCostCategories,
   sanitizeOrderItems,
   orderItemsAmount,
   orderTotalFromItems,
@@ -30,8 +30,8 @@ import {
   UpdateLedgerSettingDto,
 } from './dto/misc.dto'
 import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
-
-const DAY_MS = 86_400_000
+import { CreateLedgerWorkLogDto, UpdateLedgerWorkLogDto, WorkLogQueryDto } from './dto/work-log.dto'
+import { ContentSecurityService } from '../content-security/content-security.service'
 
 /** input/summary JSON 序列化后体积上限（字节），超出拒绝，防滥用。 */
 const CUT_JSON_MAX = 20_000
@@ -58,6 +58,21 @@ type OrderRow = {
 }
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10)
+const workQuantity = (value: unknown) => Math.round(Number(value) * 100) / 100
+const workAmount = (quantity: number, unitPrice: number) => Math.round(quantity * unitPrice)
+
+function workDateOf(value: string): Date {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) throw new BizException(BizCode.INVALID_PARAMS, '日期格式不正确')
+  return date
+}
+
+function monthRange(month: string) {
+  const [year, mon] = month.split('-').map(Number)
+  const from = new Date(Date.UTC(year, mon - 1, 1))
+  const to = new Date(Date.UTC(year, mon, 1))
+  return { from, to }
+}
 
 // ── 通知偏好 ──────────────────────────────────────────────
 /** 通知类型 → LedgerSetting 开关字段（未列出的类型不受偏好约束，始终投递）。 */
@@ -83,7 +98,18 @@ const NOTIFY_SETTING_DEFAULTS = {
 /** 门窗利账 App 业务服务。所有读写强制按 userId 隔离（DTO 不接受 userId 入参）。 */
 @Injectable()
 export class LedgerService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly contentSecurity?: ContentSecurityService,
+  ) {}
+
+  private async assertLedgerTextSafe(content: string, scene: number) {
+    if (!content.trim()) return
+    if (!this.contentSecurity && process.env.NODE_ENV === 'production') {
+      throw new BizException(BizCode.BUSINESS_ERROR, '内容安全服务未初始化，暂时无法提交内容')
+    }
+    await this.contentSecurity?.assertTextSafe(content, { scope: 'ledger', scene })
+  }
 
   // ── 账户 / 会员 ───────────────────────────────────────────
   async me(userId: string) {
@@ -94,11 +120,9 @@ export class LedgerService {
     if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
     return {
       id: u.id,
-      phone: u.phone,
+      accountCode: u.id.slice(-8).toUpperCase(),
       nickname: u.nickname,
       avatar: u.avatar,
-      mustReset: u.mustReset,
-      wxBound: !!u.wxOpenid,
       membership: deriveMembership(
         u.membership?.expiresAt ?? null,
         u.membership?.lastPlanKey,
@@ -123,65 +147,13 @@ export class LedgerService {
     }
   }
 
-  /**
-   * 领取体验卡（一次性）：仅免费套餐（实付分=0）可走此口，避免 0 元走微信支付失败。
-   * 拦截：已永久会员 / 已领过体验卡 → 拒绝。发放后记 trialClaimedAt 锁定一次性。
-   */
-  async claimTrial(userId: string) {
-    const cfg = await this.readConfig()
-    const trial = cfg.plans.find((p) => p.trial && ledgerPlanPriceFen(p.price) === 0)
-    if (!trial) throw new BizException(BizCode.BUSINESS_ERROR, '免费体验卡未配置（付费体验卡请走支付）')
-    const now = new Date()
-    const existing = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
-    if (existing?.perpetual) {
-      throw new BizException(BizCode.BUSINESS_ERROR, '您已是永久会员，无需领取体验卡')
-    }
-    if (existing?.trialClaimedAt) {
-      throw new BizException(BizCode.BUSINESS_ERROR, '体验卡仅限领取一次，您已领取过')
-    }
-    const before = existing?.expiresAt ?? null
-    const after = computeGrantExpiry(before, trial.days, now)
-    const m = existing
-      ? await this.prisma.ledgerMembership.update({
-          where: { id: existing.id },
-          data: { expiresAt: after, lastPlanKey: trial.key, trialClaimedAt: now },
-        })
-      : await this.prisma.ledgerMembership.create({
-          data: { userId, expiresAt: after, lastPlanKey: trial.key, trialClaimedAt: now },
-        })
-    await this.prisma.ledgerMembershipLog.create({
-      data: {
-        membershipId: m.id,
-        deltaDays: trial.days,
-        planKey: trial.key,
-        beforeAt: before,
-        afterAt: after,
-        operatorId: null,
-        note: `领取体验卡（${trial.days} 天，一次性）`,
-      },
-    })
-    await this.prisma.ledgerNotification
-      .create({
-        data: {
-          userId,
-          type: 'member',
-          title: '体验卡已领取',
-          body: `已为您开通 ${trial.days} 天体验会员，有效期至 ${after.toISOString().slice(0, 10)}。`,
-        },
-      })
-      .catch(() => {})
-    return {
-      ...deriveMembership(m.expiresAt, m.lastPlanKey, now, {
-        perpetual: m.perpetual,
-        trialClaimedAt: m.trialClaimedAt,
-      }),
-      plans: cfg.plans,
-    }
-  }
-
   async updateProfile(userId: string, dto: UpdateLedgerProfileDto) {
     const data: any = {}
-    if (typeof dto.nickname === 'string' && dto.nickname.trim()) data.nickname = dto.nickname.trim()
+    if (typeof dto.nickname === 'string' && dto.nickname.trim()) {
+      const nickname = dto.nickname.trim()
+      await this.assertLedgerTextSafe(nickname, 1)
+      data.nickname = nickname
+    }
     if (typeof dto.avatar === 'string') data.avatar = dto.avatar
     const u = await this.prisma.ledgerUser.update({ where: { id: userId }, data })
     return { id: u.id, nickname: u.nickname, avatar: u.avatar }
@@ -203,19 +175,12 @@ export class LedgerService {
     return rows.map((a) => ({ id: a.id, image: a.image, link: a.link || '', title: a.title || '' }))
   }
 
-  // ── 优化下料（#9）：试用 / 会员闸门 ────────────────────────
+  // ── 优化下料（#9）：会员闸门 ──────────────────────────────
   /**
-   * 返回是否可用优化下料。规则：
-   * - 配置不要求会员 → 永久可用
-   * - 会员有效 → 可用
-   * - 否则进入试用：首次使用时间起 cutTrialDays 天内可用，过期需开通会员
-   * 首次调用会惰性写入 cutFirstUsedAt 作为试用计时起点。
+   * 返回优化下料可用状态。所有业务能力均以会员有效状态为准，
+   * 此接口只用于客户端在进入工具页前展示开通引导，绝不写试用状态或放行未开通账号。
    */
   async cutAccess(userId: string) {
-    const cfg = await this.readConfig()
-    if (!cfg.cutRequireMembership) {
-      return { allowed: true, mode: 'free' as const, trialDays: cfg.cutTrialDays }
-    }
     const u = await this.prisma.ledgerUser.findUnique({
       where: { id: userId },
       include: { membership: true },
@@ -235,38 +200,17 @@ export class LedgerService {
         allowed: true,
         mode: 'member' as const,
         membership: mem,
-        trialDays: cfg.cutTrialDays,
-      }
-    }
-    let firstUsed = u.cutFirstUsedAt
-    if (!firstUsed) {
-      firstUsed = new Date()
-      await this.prisma.ledgerUser.update({
-        where: { id: userId },
-        data: { cutFirstUsedAt: firstUsed },
-      })
-    }
-    const trialEnds = new Date(firstUsed.getTime() + cfg.cutTrialDays * DAY_MS)
-    const now = new Date()
-    if (now.getTime() < trialEnds.getTime()) {
-      return {
-        allowed: true,
-        mode: 'trial' as const,
-        trialDays: cfg.cutTrialDays,
-        trialDaysLeft: Math.ceil((trialEnds.getTime() - now.getTime()) / DAY_MS),
-        trialEndsAt: trialEnds.toISOString(),
       }
     }
     return {
       allowed: false,
-      mode: 'expired' as const,
-      trialDays: cfg.cutTrialDays,
-      trialEndsAt: trialEnds.toISOString(),
-      reason: '优化下料试用已结束，开通会员后继续使用',
+      mode: 'locked' as const,
+      membership: mem,
+      reason: '优化下料为会员功能，开通会员后即可使用',
     }
   }
 
-  // ── 邀请（#10）：自助注册分享 ──────────────────────────────
+  // ── 邀请（#10）：好友首次微信登录时建立邀请关系 ────────────
   /** 取（必要时生成）当前账号的邀请码。 */
   async ensureInviteCode(userId: string): Promise<string> {
     const u = await this.prisma.ledgerUser.findUnique({
@@ -295,7 +239,6 @@ export class LedgerService {
       inviteCode: code,
       invitedCount,
       rewardDays: cfg.inviteRewardDays,
-      allowSelfRegister: cfg.allowSelfRegister,
     }
   }
 
@@ -603,6 +546,26 @@ export class LedgerService {
     return c
   }
 
+  /**
+   * 按姓名确保客户档案存在（幂等）：同名已建档则复用，否则新建；
+   * 并把同名、未关联档案的历史订单关联到该档案（与客户列表「按名归并」一致）。
+   * 供客户列表点击「订单自动生成的无档客户」时自动建档并进入详情。
+   */
+  async ensureCustomerByName(userId: string, rawName: string) {
+    const name = String(rawName || '').trim()
+    if (!name) throw new BizException(BizCode.INVALID_PARAMS, '请填写客户姓名')
+    let c = await this.prisma.ledgerCustomer.findFirst({ where: { userId, name } })
+    if (!c) {
+      c = await this.prisma.ledgerCustomer.create({ data: { userId, name } })
+    }
+    // 把同名、未关联档案的历史订单挂到该档案，使统计/再下单与档案一致
+    await this.prisma.ledgerOrder.updateMany({
+      where: { userId, customerName: name, customerId: null },
+      data: { customerId: c.id },
+    })
+    return c
+  }
+
   async updateCustomer(userId: string, id: string, dto: UpdateLedgerCustomerDto) {
     const exist = await this.prisma.ledgerCustomer.findFirst({ where: { id, userId } })
     if (!exist) throw new BizException(BizCode.NOT_FOUND, '客户不存在')
@@ -631,6 +594,95 @@ export class LedgerService {
       data: { customerId: null },
     })
     await this.prisma.ledgerCustomer.delete({ where: { id, userId } })
+    return { ok: true }
+  }
+
+  // ── 记工（日工台账，按 userId 隔离，不计入订单成本）────────────────────
+  private mapWorkLog(row: any) {
+    return {
+      id: row.id,
+      workDate: ymd(row.workDate),
+      workerName: row.workerName,
+      jobType: row.jobType,
+      unit: row.unit,
+      quantity: Number(row.quantity),
+      unitPrice: row.unitPrice,
+      amount: row.amount,
+      note: row.note,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    }
+  }
+
+  async listWorkLogs(userId: string, query: WorkLogQueryDto) {
+    const { from, to } = monthRange(query.month)
+    const rows = await this.prisma.ledgerWorkLog.findMany({
+      where: { userId, workDate: { gte: from, lt: to } },
+      orderBy: [{ workDate: 'desc' }, { createdAt: 'desc' }],
+    })
+    const list = rows.map((row) => this.mapWorkLog(row))
+    const summary = list.reduce(
+      (acc, row) => {
+        acc.totalAmount += row.amount
+        if (row.unit === 'day') acc.dayQuantity += row.quantity
+        else acc.hourQuantity += row.quantity
+        return acc
+      },
+      { totalAmount: 0, dayQuantity: 0, hourQuantity: 0, count: list.length },
+    )
+    return { month: query.month, list, summary }
+  }
+
+  async createWorkLog(userId: string, dto: CreateLedgerWorkLogDto) {
+    const workerName = dto.workerName.trim()
+    if (!workerName) throw new BizException(BizCode.INVALID_PARAMS, '请填写工人姓名')
+    const quantity = workQuantity(dto.quantity)
+    const unitPrice = Math.round(dto.unitPrice)
+    const row = await this.prisma.ledgerWorkLog.create({
+      data: {
+        userId,
+        workDate: workDateOf(dto.workDate),
+        workerName,
+        jobType: dto.jobType?.trim() || null,
+        unit: dto.unit,
+        quantity,
+        unitPrice,
+        amount: workAmount(quantity, unitPrice),
+        note: dto.note?.trim() || null,
+      },
+    })
+    return this.mapWorkLog(row)
+  }
+
+  async updateWorkLog(userId: string, id: string, dto: UpdateLedgerWorkLogDto) {
+    // 先按 userId 命中，跨账号 ID 一律按不存在处理，杜绝 IDOR。
+    const current = await this.prisma.ledgerWorkLog.findFirst({ where: { id, userId } })
+    if (!current) throw new BizException(BizCode.NOT_FOUND, '记工记录不存在')
+
+    const workerName = dto.workerName === undefined ? current.workerName : dto.workerName.trim()
+    if (!workerName) throw new BizException(BizCode.INVALID_PARAMS, '请填写工人姓名')
+    const quantity =
+      dto.quantity === undefined ? Number(current.quantity) : workQuantity(dto.quantity)
+    const unitPrice = dto.unitPrice === undefined ? current.unitPrice : Math.round(dto.unitPrice)
+    const row = await this.prisma.ledgerWorkLog.update({
+      where: { id },
+      data: {
+        ...(dto.workDate === undefined ? {} : { workDate: workDateOf(dto.workDate) }),
+        workerName,
+        ...(dto.jobType === undefined ? {} : { jobType: dto.jobType.trim() || null }),
+        ...(dto.unit === undefined ? {} : { unit: dto.unit }),
+        quantity,
+        unitPrice,
+        amount: workAmount(quantity, unitPrice),
+        ...(dto.note === undefined ? {} : { note: dto.note.trim() || null }),
+      },
+    })
+    return this.mapWorkLog(row)
+  }
+
+  async deleteWorkLog(userId: string, id: string) {
+    const deleted = await this.prisma.ledgerWorkLog.deleteMany({ where: { id, userId } })
+    if (!deleted.count) throw new BizException(BizCode.NOT_FOUND, '记工记录不存在')
     return { ok: true }
   }
 
@@ -731,24 +783,30 @@ export class LedgerService {
     const now = new Date()
     const Y = now.getFullYear()
     const M = now.getMonth() + 1
-    const all = await this.prisma.ledgerOrder.findMany({
-      where: { userId },
-      // 仅取本方法消费到的列：id/customerName/date（展示）+ total（营收）
-      // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf/CAT_FIELD 用）。
-      select: {
-        id: true,
-        customerName: true,
-        date: true,
-        total: true,
-        costProfile: true,
-        costGlass: true,
-        costHardware: true,
-        costLabor: true,
-        costScreen: true,
-        extras: true,
-        customCosts: true,
-      },
-    })
+    const [all, setting] = await Promise.all([
+      this.prisma.ledgerOrder.findMany({
+        where: { userId },
+        // 仅取本方法消费到的列：id/customerName/date（展示）+ total（营收）
+        // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf 用）。
+        select: {
+          id: true,
+          customerName: true,
+          date: true,
+          total: true,
+          costProfile: true,
+          costGlass: true,
+          costHardware: true,
+          costLabor: true,
+          costScreen: true,
+          extras: true,
+          customCosts: true,
+        },
+      }),
+      this.prisma.ledgerSetting.findUnique({ where: { userId } }),
+    ])
+    const categoryMeta = new Map(
+      sanitizeCostCategories((setting as any)?.costCategories).map((item) => [item.id, item]),
+    )
     const yearOrders = all.filter((o) => o.date.getFullYear() === Y)
 
     const inPeriod = (o: { date: Date }) => {
@@ -769,21 +827,32 @@ export class LedgerService {
     const cur = agg(list)
     const yearProfit = yearOrders.reduce((s, o) => s + profitOf(o as any), 0)
 
-    // 成本占比（6 类）
-    const slice = (key: keyof typeof CAT_FIELD) =>
-      list.reduce((s, o) => s + (o as any)[CAT_FIELD[key]], 0)
-    const costSlices = [
-      { key: 'profile', name: '型材', value: slice('profile') },
-      { key: 'glass', name: '玻璃', value: slice('glass') },
-      { key: 'hardware', name: '配件', value: slice('hardware') },
-      { key: 'labor', name: '人工', value: slice('labor') },
-      { key: 'screen', name: '纱窗', value: slice('screen') },
-      {
-        key: 'extras',
-        name: '自定义',
-        value: list.reduce((s, o) => s + customCostsTotal(o.customCosts), 0),
-      },
-    ].filter((s) => s.value > 0)
+    // 成本占比：旧订单固定五类 + 新版可配置分类统一按分类 id 聚合。
+    const costSliceMap = new Map<
+      string,
+      { key: string; name: string; color: string; value: number }
+    >()
+    list.forEach((order) => {
+      orderCostBreakdown(order, categoryMeta).forEach((item) => {
+        const current = costSliceMap.get(item.key)
+        if (current) {
+          current.value += item.value
+          // 新版订单携带的是用户当前名称，优先于旧固定字段名称。
+          if (item.custom) {
+            current.name = item.name
+            current.color = item.color
+          }
+        } else {
+          costSliceMap.set(item.key, {
+            key: item.key,
+            name: item.name,
+            color: item.color,
+            value: item.value,
+          })
+        }
+      })
+    })
+    const costSlices = [...costSliceMap.values()].filter((item) => item.value > 0)
 
     // 高利润订单排行 top5
     const topOrders = list
@@ -857,23 +926,38 @@ export class LedgerService {
     const series: any[] = []
     for (let m = 1; m <= 12; m++) {
       const ml = yl.filter((o) => o.date.getMonth() + 1 === m)
-      const labor = ml.reduce((s, o) => s + o.costLabor, 0)
+      const categoryCosts: Record<string, number> = {}
+      ml.forEach((order) => {
+        orderCostBreakdown(order).forEach((item) => {
+          categoryCosts[item.key] = (categoryCosts[item.key] || 0) + item.value
+        })
+      })
+      const labor = categoryCosts.labor || 0
+      const monthCost = ml.reduce((s, o) => s + totalCost(o as any), 0)
       series.push({
         month: m,
         label: `${m}月`,
         count: ml.length,
         revenue: ml.reduce((s, o) => s + o.total, 0),
-        cost: ml.reduce((s, o) => s + totalCost(o as any), 0),
+        cost: monthCost,
         profit: ml.reduce((s, o) => s + profitOf(o as any), 0),
         labor,
-        otherCost: ml.reduce((s, o) => s + (totalCost(o as any) - o.costLabor), 0),
+        categoryCosts,
+        otherCost: Math.max(0, monthCost - labor),
       })
     }
     return {
       year: Y,
       series,
       yearProfit: yl.reduce((s, o) => s + profitOf(o as any), 0),
-      yearLabor: yl.reduce((s, o) => s + o.costLabor, 0),
+      yearLabor: yl.reduce(
+        (sum, order) =>
+          sum +
+          orderCostBreakdown(order)
+            .filter((item) => item.key === 'labor')
+            .reduce((itemSum, item) => itemSum + item.value, 0),
+        0,
+      ),
       count: yl.length,
     }
   }
@@ -1071,6 +1155,7 @@ export class LedgerService {
     hideAmount: boolean
     bioLock: boolean
     encBackup: boolean
+    costCategories?: unknown
   }) {
     return {
       notifyOrder: s.notifyOrder,
@@ -1083,6 +1168,7 @@ export class LedgerService {
       hideAmount: s.hideAmount,
       bioLock: s.bioLock,
       encBackup: s.encBackup,
+      costCategories: sanitizeCostCategories(s.costCategories),
     }
   }
 
@@ -1093,7 +1179,7 @@ export class LedgerService {
       update: {},
       create: { userId },
     })
-    return this.mapSetting(s)
+    return this.mapSetting(s as any)
   }
 
   async updateSettings(userId: string, dto: UpdateLedgerSettingDto) {
@@ -1113,18 +1199,21 @@ export class LedgerService {
     })
     if (dto.dndStart !== undefined) data.dndStart = dto.dndStart
     if (dto.dndEnd !== undefined) data.dndEnd = dto.dndEnd
+    if (dto.costCategories !== undefined)
+      data.costCategories = sanitizeCostCategories(dto.costCategories) as any
     const s = await this.prisma.ledgerSetting.upsert({
       where: { userId },
       update: data,
       create: { userId, ...data },
     })
-    return this.mapSetting(s)
+    return this.mapSetting(s as any)
   }
 
   // ── 意见反馈 ──────────────────────────────────────────────
   async createFeedback(userId: string, dto: CreateLedgerFeedbackDto) {
     const content = String(dto.content || '').trim()
     if (!content) throw new BizException(BizCode.INVALID_PARAMS, '请填写反馈内容')
+    await this.assertLedgerTextSafe(content, 2)
     const images = Array.isArray(dto.images)
       ? dto.images.filter((u) => typeof u === 'string' && /^https?:\/\//.test(u)).slice(0, 9)
       : []
@@ -1141,10 +1230,60 @@ export class LedgerService {
   }
 }
 
-const CAT_FIELD = {
-  profile: 'costProfile',
-  glass: 'costGlass',
-  hardware: 'costHardware',
-  labor: 'costLabor',
-  screen: 'costScreen',
-} as const
+const LEGACY_COST_META = [
+  { key: 'profile', field: 'costProfile', name: '型材', color: 'c1' },
+  { key: 'glass', field: 'costGlass', name: '玻璃', color: 'c2' },
+  { key: 'hardware', field: 'costHardware', name: '配件', color: 'c3' },
+  { key: 'labor', field: 'costLabor', name: '人工', color: 'c4' },
+  { key: 'screen', field: 'costScreen', name: '纱窗', color: 'c5' },
+] as const
+
+function orderCostBreakdown(
+  order: any,
+  categoryMeta?: Map<string, { name: string; color: string }>,
+): Array<{
+  key: string
+  name: string
+  color: string
+  value: number
+  custom: boolean
+}> {
+  const map = new Map<
+    string,
+    { key: string; name: string; color: string; value: number; custom: boolean }
+  >()
+  LEGACY_COST_META.forEach((meta) => {
+    const value = Math.max(0, Math.round(Number(order?.[meta.field]) || 0))
+    const configured = categoryMeta?.get(meta.key)
+    if (value > 0)
+      map.set(meta.key, {
+        ...meta,
+        name: configured?.name || meta.name,
+        color: configured?.color || meta.color,
+        value,
+        custom: false,
+      })
+  })
+  sanitizeCustomCosts(order?.customCosts).forEach((item, index) => {
+    const key = item.id || `custom-name-${encodeURIComponent(item.name)}`
+    const current = map.get(key)
+    const configured = categoryMeta?.get(key)
+    const name = configured?.name || item.name
+    const color = configured?.color || item.color || `c${(index % 6) + 1}`
+    if (current) {
+      current.value += item.amount
+      current.name = name
+      current.color = color
+      current.custom = true
+    } else {
+      map.set(key, {
+        key,
+        name,
+        color,
+        value: item.amount,
+        custom: true,
+      })
+    }
+  })
+  return [...map.values()]
+}

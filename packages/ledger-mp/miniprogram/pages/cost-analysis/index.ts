@@ -11,15 +11,10 @@ const COLORMAP: Record<string, string> = {
   screen: 'c5',
   extras: 'c6',
 }
-// monthly 序列里有逐月明细的分类（人工 / 其他）
-const MONTHLY_FIELD: Record<string, 'labor' | 'otherCost'> = {
-  labor: 'labor',
-  extras: 'otherCost',
-}
-
 interface Slice {
   key: string
   name: string
+  color?: string
   value: number
 }
 
@@ -61,7 +56,10 @@ Page({
         statsApi.monthly(this.data.ovYear) as Promise<any>,
       ])
       if (seq !== this._seq) return
-      const slices: Slice[] = (ov && ov.costSlices) || []
+      const slices: Slice[] = ((ov && ov.costSlices) || []).map((item: Slice, index: number) => ({
+        ...item,
+        color: item.color || COLORMAP[item.key] || `c${(index % 6) + 1}`,
+      }))
       const series: any[] = (mon && mon.series) || []
       const total = slices.reduce((s, x) => s + (x.value || 0), 0)
 
@@ -72,11 +70,11 @@ Page({
 
       // 隐藏金额模式：仅掩码文本金额，环图/占比保持相对比例
       const hide = getHideAmount()
-      const donut = slices.map((s) => ({ value: s.value, color: COLORMAP[s.key] || 'c6' }))
+      const donut = slices.map((s) => ({ value: s.value, color: s.color || 'c6' }))
       const legend = slices.map((s) => ({
         key: s.key,
         name: s.name,
-        color: COLORMAP[s.key] || 'c6',
+        color: s.color || 'c6',
         valueText: hide ? maskMoney(s.value) : yuan(s.value),
         pct: Math.round((s.value / total) * 100),
       }))
@@ -115,15 +113,20 @@ Page({
   // 根据选中分类计算总额 / 逐月柱
   applyCat(key: string) {
     const slice = this.data._slices.find((s) => s.key === key)
-    const color = COLORMAP[key] || 'c6'
-    const field = MONTHLY_FIELD[key]
-    let catBars: any[] = []
-    let catHasMonthly = false
-    if (field) {
-      const series = this.data._series || []
-      catBars = series.map((s: any) => ({ label: s.label, value: s[field] || 0 }))
-      catHasMonthly = catBars.some((b) => b.value > 0)
-    }
+    const color = slice?.color || COLORMAP[key] || 'c6'
+    const series = this.data._series || []
+    const catBars = series.map((item: any) => ({
+      label: item.label,
+      value:
+        item.categoryCosts && item.categoryCosts[key] !== undefined
+          ? item.categoryCosts[key]
+          : key === 'labor'
+            ? item.labor || 0
+            : key === 'extras'
+              ? item.otherCost || 0
+              : 0,
+    }))
+    const catHasMonthly = catBars.some((bar: any) => bar.value > 0)
     const catTotal = slice ? slice.value : 0
     this.setData({
       catName: slice ? slice.name : '',

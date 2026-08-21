@@ -133,6 +133,15 @@
   width: 100%;
   display: block;
 }
+.cut__direction-note {
+  margin: 10px 4px 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(223, 160, 58, 0.13);
+  color: #8a6121;
+  font-size: 12px;
+  line-height: 1.55;
+}
 /* 导出专用画布：移出可视区但仍渲染（display:none 会导致截图空白）*/
 .cut__cv-export {
   position: fixed;

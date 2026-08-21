@@ -12,6 +12,33 @@ export function isLoggedIn(): boolean {
   return !!getToken()
 }
 
+export function goToLogin() {
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1]
+  if (current && current.route === 'pages/login/index') return
+  wx.navigateTo({ url: '/pages/login/index' })
+}
+
+let loginPrompting = false
+export function requireLogin(content = '登录后可使用订单、报表及云端数据。'): boolean {
+  if (isLoggedIn()) return true
+  if (loginPrompting) return false
+  loginPrompting = true
+  wx.showModal({
+    title: '登录后使用',
+    content,
+    confirmText: '去登录',
+    cancelText: '继续浏览',
+    success: (res) => {
+      if (res.confirm) goToLogin()
+    },
+    complete: () => {
+      loginPrompting = false
+    },
+  })
+  return false
+}
+
 export function setAuth(token: string, user?: LedgerUserInfo) {
   const a = app()
   if (!a) return
@@ -20,7 +47,7 @@ export function setAuth(token: string, user?: LedgerUserInfo) {
     a.globalData.user = user
     a.globalData.membership = user.membership
   }
-  // setAuth 仅在用户刚提交过凭证（密码/短信/微信授权）时调用，等同已完成身份验证：
+  // setAuth 仅在用户主动完成微信登录后调用，等同已完成身份验证：
   // 视作本次冷启动已解锁，避免登录后一切后台又被生物锁拦一次
   bioVerified = true
 }
@@ -40,9 +67,70 @@ export function getMembership(): MembershipStatus | null {
   return app()?.globalData?.membership || null
 }
 
+export function setMembership(membership: MembershipStatus) {
+  const a = app()
+  if (!a) return
+  a.globalData.membership = membership
+  if (a.globalData.user) a.globalData.user.membership = membership
+}
+
+export function hasActiveMembership(
+  membership: MembershipStatus | null = getMembership(),
+): boolean {
+  if (!isLoggedIn() || !membership || !membership.active) return false
+  if (membership.perpetual || !membership.expiresAt) return true
+  const expiresAt = Date.parse(membership.expiresAt)
+  return !Number.isFinite(expiresAt) || expiresAt > Date.now()
+}
+
+let membershipPrompting = false
+export function requireMembership(
+  content = '该功能仅限有效会员使用，开通或续费后即可解锁。',
+): boolean {
+  if (!isLoggedIn()) {
+    requireLogin('登录后才可使用订单写入和云端经营功能。')
+    return false
+  }
+  if (hasActiveMembership()) return true
+  if (membershipPrompting) return false
+  membershipPrompting = true
+  wx.showModal({
+    title: '会员功能',
+    content,
+    confirmText: '查看会员',
+    cancelText: '继续查看',
+    success: (res) => {
+      if (res.confirm) wx.navigateTo({ url: '/pages/membership/index' })
+    },
+    complete: () => {
+      membershipPrompting = false
+    },
+  })
+  return false
+}
+
 export function logout() {
   app()?.clearAuth?.()
-  wx.reLaunch({ url: '/pages/login/index' })
+  wx.reLaunch({ url: '/pages/home/index' })
+}
+
+/* ---- 邀请码：分享落地页先暂存，首次微信登录成功后清理 ---- */
+const PENDING_INVITE_KEY = 'ledger_pending_invite_code'
+
+export function captureInviteCode(value: unknown) {
+  const code = String(value || '')
+    .trim()
+    .toUpperCase()
+    .slice(0, 32)
+  if (code) wx.setStorageSync(PENDING_INVITE_KEY, code)
+}
+
+export function getPendingInviteCode(): string {
+  return String(wx.getStorageSync(PENDING_INVITE_KEY) || '')
+}
+
+export function clearPendingInviteCode() {
+  wx.removeStorageSync(PENDING_INVITE_KEY)
 }
 
 /* ---- 隐私设置本地镜像（设置页保存成功后写入，供各页同步读取） ---- */
@@ -77,6 +165,50 @@ export function setGlass(v: boolean) {
   wx.setStorageSync(GLASS_KEY, v)
 }
 
+/* ---- 玻璃通透度（0-100，越大越通透/越透出背景光，越小越磨砂厚实），默认 50 ≈ 现状 ---- */
+const GLASS_OPACITY_KEY = 'ledger_glass_opacity'
+export function getGlassOpacity(): number {
+  const v = wx.getStorageSync(GLASS_OPACITY_KEY)
+  if (v === '' || v === undefined || v === null) return 50
+  const n = Number(v)
+  return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : 50
+}
+export function setGlassOpacity(t: number) {
+  wx.setStorageSync(GLASS_OPACITY_KEY, Math.min(100, Math.max(0, Math.round(t))))
+}
+/* 通透度 → 玻璃外观：t 越大越通透（填充更淡 + 模糊更弱、更清晰），t 越小越磨砂厚实
+   （填充更浓 + 模糊更强）。同时调「透明度 + 模糊」才看得出明显区别——白玻璃在浅色底上
+   只动透明度几乎无感，模糊强度变化最直观（尤其卡片浮在彩色光晕上）。默认 t=50 ≈ 现状。 */
+function lerp(a: number, b: number, f: number): number {
+  return a + (b - a) * f
+}
+/** 由通透度得出模糊滤镜与渐变上/下沿不透明度。f=0 最厚(30px) → f=1 最通透(4px)。 */
+function glassParts(t: number) {
+  const f = Math.min(100, Math.max(0, t)) / 100
+  return { f, blur: Math.round(lerp(30, 4, f)), sat: Math.round(lerp(185, 120, f)) }
+}
+function gradient(deg: number, topSolid: number, ratio: number, f: number): string {
+  const top = +lerp(topSolid, 0.1, f).toFixed(3) // f=0 最实(topSolid) → f=1 最透(0.1)
+  const bot = +(top * ratio).toFixed(3)
+  return `linear-gradient(${deg}deg, rgba(255,255,255,${top}) 0%, rgba(255,255,255,${bot}) 100%)`
+}
+/** 卡片（.lz-card）玻璃：设在页面内容根节点上，级联覆盖该页所有卡片的 --glass-card-bg / --glass-blur。 */
+export function glassCardStyle(t: number = getGlassOpacity()): string {
+  const { f, blur, sat } = glassParts(t)
+  return `--glass-card-bg:${gradient(160, 0.92, 0.62, f)};--glass-blur:blur(${blur}px) saturate(${sat}%);`
+}
+/** 导航/标题栏玻璃：覆盖 --glass-nav-bg 与 --glass-blur-strong（标题栏模糊略强）。 */
+export function glassNavStyle(t: number = getGlassOpacity()): string {
+  const { f, blur, sat } = glassParts(t)
+  return `--glass-nav-bg:${gradient(180, 0.9, 0.52, f)};--glass-blur-strong:blur(${blur + 4}px) saturate(${sat + 10}%);`
+}
+/** 底部 tabBar 玻璃（独立渲染上下文读不到 page 变量，直接给出 background + backdrop-filter 内联值）。 */
+export function glassTabStyle(t: number = getGlassOpacity()): string {
+  const { f, blur, sat } = glassParts(t)
+  const filter = `blur(${blur}px) saturate(${sat}%)`
+  return `background:${gradient(180, 0.92, 0.6, f)};-webkit-backdrop-filter:${filter};backdrop-filter:${filter};`
+}
+
 /* ---- 小程序 LOGO（管理后台 system_settings.site.logo 下发，登录/关于页展示，本地缓存兜底） ---- */
 const LOGO_KEY = 'ledger_logo'
 export function getLogo(): string {
@@ -93,6 +225,17 @@ export function getFxMode(): 'normal' | 'max' {
 }
 export function setFxMode(m: 'normal' | 'max') {
   wx.setStorageSync(FX_KEY, m === 'max' ? 'max' : 'normal')
+}
+
+/* ---- 液态导航栏：底部 Tab 选中项显示柔和玻璃高亮，默认开启 ---- */
+const LIQUID_TAB_KEY = 'ledger_liquid_tab'
+export function getLiquidTab(): boolean {
+  const v = wx.getStorageSync(LIQUID_TAB_KEY)
+  // 未设置过（空串/undefined）视为默认开启
+  return v === '' || v === undefined || v === null ? true : !!v
+}
+export function setLiquidTab(v: boolean) {
+  wx.setStorageSync(LIQUID_TAB_KEY, v)
 }
 
 // 本次冷启动是否已通过生物验证（仅内存，每次冷启动重置 → 重新要求解锁）

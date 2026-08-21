@@ -1,9 +1,23 @@
-import { orderApi, customerApi } from '../../api/index'
+import { customerApi, meApi, orderApi, settingApi } from '../../api/index'
 import { yuan } from '../../utils/format'
-import { COST_CATS, EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
+import { EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
+import { hasActiveMembership, requireMembership, setMembership } from '../../utils/store'
+import {
+  CostCategory,
+  cacheCostCategories,
+  createCostCategoryId,
+  nextCostColor,
+  readCostCategories,
+} from '../../utils/cost-categories'
 
-const CORE = ['profile', 'glass', 'labor']
-const KEYMAP: Record<string, string> = {
+const LEGACY_COSTS = [
+  { key: 'profile', name: '型材' },
+  { key: 'glass', name: '玻璃' },
+  { key: 'hardware', name: '配件' },
+  { key: 'labor', name: '人工' },
+  { key: 'screen', name: '纱窗' },
+]
+const LEGACY_FIELD: Record<string, string> = {
   profile: 'costProfile',
   glass: 'costGlass',
   hardware: 'costHardware',
@@ -20,12 +34,123 @@ function today(): string {
 let seq = 0
 const uid = () => 'k' + ++seq
 
+function mergeCostRows(categories: CostCategory[], raw: any, legacyCosts: any = {}) {
+  const source = Array.isArray(raw)
+    ? raw.map((item: any) => ({
+        ...item,
+        id: String(item?.id || ''),
+        name: String(item?.name || '').slice(0, 20),
+        amount: Math.max(0, Math.round(Number(item?.amount) || 0)),
+        amountStr:
+          item?.amountStr !== undefined
+            ? String(item.amountStr)
+            : item?.amount
+              ? String(Math.max(0, Math.round(Number(item.amount) || 0)))
+              : '',
+      }))
+    : []
+  const used = new Set<number>()
+  const configured = categories.map((category) => {
+    let found = source.findIndex((item: any, index: number) => {
+      if (used.has(index)) return false
+      return item.id === category.id
+    })
+    if (found < 0) {
+      found = source.findIndex((item: any, index: number) => {
+        if (used.has(index) || item.id) return false
+        return item.name === category.name
+      })
+    }
+    if (found >= 0) used.add(found)
+    const existing = found >= 0 ? source[found] : null
+    const legacy = Math.max(0, Math.round(Number(legacyCosts?.[category.id]) || 0))
+    const amount = (existing?.amount || 0) + legacy
+    return {
+      _k: existing?._k || uid(),
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      amount,
+      amountStr: amount ? String(amount) : '',
+      isTemplate: true,
+      legacyKey: LEGACY_FIELD[category.id] ? category.id : '',
+    }
+  })
+
+  const extras = source
+    .filter(
+      (item: any, index: number) =>
+        !used.has(index) && (!item.isTemplate || Math.max(0, Number(item.amount) || 0) > 0),
+    )
+    .map((item: any, index: number) => ({
+      _k: item._k || uid(),
+      id: item.id || createCostCategoryId(),
+      name: item.name,
+      color: item.color || nextCostColor(categories.length + index),
+      amount: item.amount,
+      amountStr: item.amountStr,
+      isTemplate: false,
+      legacyKey: item.legacyKey || '',
+    }))
+
+  // 当前模板中已删除的旧固定分类仍保留有金额的行，避免旧订单成本丢失。
+  LEGACY_COSTS.forEach((legacy, index) => {
+    if (categories.some((category) => category.id === legacy.key)) return
+    const amount = Math.max(0, Math.round(Number(legacyCosts?.[legacy.key]) || 0))
+    if (!amount) return
+    extras.push({
+      _k: uid(),
+      id: `legacy-${legacy.key}`,
+      name: legacy.name,
+      color: nextCostColor(categories.length + extras.length + index),
+      amount,
+      amountStr: String(amount),
+      isTemplate: false,
+      legacyKey: legacy.key,
+    })
+  })
+  return [...configured, ...extras].slice(0, 50)
+}
+
+/**
+ * “恢复门窗默认”从当前编辑器返回时专用：只使用当前订单已经显示的成本行。
+ * 不再以 legacyCosts 或任何其它订单为来源补行，避免恢复默认误把历史成本带回来。
+ */
+function resetCurrentCostRows(categories: CostCategory[], raw: any) {
+  const source = Array.isArray(raw) ? raw : []
+  const used = new Set<number>()
+  return categories.map((category) => {
+    let index = source.findIndex((item: any, i: number) => !used.has(i) && item?.id === category.id)
+    if (index < 0) {
+      index = source.findIndex(
+        (item: any, i: number) => !used.has(i) && !item?.id && item?.name === category.name,
+      )
+    }
+    if (index >= 0) used.add(index)
+    const current = index >= 0 ? source[index] : null
+    const amount = Math.max(0, Math.round(Number(current?.amount) || 0))
+    return {
+      _k: current?._k || uid(),
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      amount,
+      amountStr: amount ? String(amount) : '',
+      isTemplate: true,
+      legacyKey: LEGACY_FIELD[category.id] ? category.id : '',
+    }
+  })
+}
+
 Page({
   data: {
     editing: false,
     id: '',
     customerId: null as string | null,
     customerName: '',
+    customerPhone: '',
+    customerAddress: '',
+    customerNote: '',
     date: today(),
     total: 0,
     received: 0,
@@ -33,11 +158,7 @@ Page({
     totalStr: '',
     receivedStr: '',
     costs: { profile: 0, glass: 0, hardware: 0, labor: 0, screen: 0 } as any,
-    // 成本输入框的原始字符串（输入中不回写，失焦才归一，避免光标跳动）
-    costStrs: { profile: '', glass: '', hardware: '', labor: '', screen: '' } as any,
-    activeCats: [...CORE] as string[],
-    activeCells: [] as any[],
-    removedCats: [] as any[],
+    costCategories: readCostCategories() as CostCategory[],
     extras: [] as any[],
     customCosts: [] as any[],
     items: [] as any[],
@@ -52,11 +173,7 @@ Page({
     saving: false,
     loadError: false,
     unpaid: 0,
-    showPicker: false,
-    pickerList: [] as any[],
-    pickerQ: '',
     extraTypes: EXTRA_TYPES,
-    _allCustomers: [] as any[],
   },
 
   _openingItems: false, // toAmount 防双击锁，onShow 返回时解除
@@ -73,24 +190,81 @@ Page({
       this.setData({ editing: true, id: opt.id })
       this.loadOrder()
     } else {
+      const categories = readCostCategories()
+      this.setData({
+        costCategories: categories,
+        customCosts: mergeCostRows(categories, []),
+      })
+      this.loadCostCategoryTemplates()
       // 从客户页「再来一单」带入：id + 名字一起，真正关联到该客户（仅传名字会变成游离订单）
-      if (opt.prefillCustomer)
-        this.setData({
-          customerId: opt.prefillCustomerId || null,
-          customerName: decodeURIComponent(opt.prefillCustomer),
-        })
-      this.refresh()
+      if (opt.prefillCustomer) {
+        const customerId = opt.prefillCustomerId || null
+        this.setData(
+          {
+            customerId,
+            customerName: decodeURIComponent(opt.prefillCustomer),
+          },
+          () => {
+            if (customerId) this.loadCustomerProfile(customerId)
+            this.refresh()
+          },
+        )
+      } else {
+        this.refresh()
+      }
     }
   },
   onShow() {
     this._openingItems = false // 从明细页/客户页返回，解除 toAmount 防双击锁
+    // 管理分类页从“编辑此订单”进入时，优先消费一次性的本单结果。
+    // 恢复默认仅重置当前表单行，不会读取、更不会写回其它历史订单。
+    const categoryResult = wx.getStorageSync('ledger_order_cost_categories_out')
+    if (categoryResult) {
+      wx.removeStorageSync('ledger_order_cost_categories_out')
+      const categories = Array.isArray(categoryResult.categories)
+        ? (categoryResult.categories as CostCategory[])
+        : readCostCategories()
+      this.setData(
+        {
+          costCategories: categories,
+          customCosts: categoryResult.resetCurrentOrder
+            ? resetCurrentCostRows(categories, this.data.customCosts)
+            : mergeCostRows(categories, this.data.customCosts),
+        },
+        () => this.refresh(),
+      )
+    }
+    const cachedCategories = readCostCategories()
+    const currentIds = this.data.costCategories.map(
+      (item: CostCategory) => `${item.id}:${item.name}`,
+    )
+    const cachedIds = cachedCategories.map((item) => `${item.id}:${item.name}`)
+    if (!categoryResult && currentIds.join('|') !== cachedIds.join('|')) {
+      this.setData(
+        {
+          costCategories: cachedCategories,
+          customCosts: mergeCostRows(cachedCategories, this.data.customCosts),
+        },
+        () => this.refresh(),
+      )
+    }
     const p = wx.getStorageSync('ledger_pending_customer')
     if (p && p.name) {
       wx.removeStorageSync('ledger_pending_customer')
       // 清空选择器缓存：刚新增的客户要能在下次打开选择器时出现
       this.setData(
-        { customerId: p.id || null, customerName: p.name, showPicker: false, _allCustomers: [] },
-        () => this.refresh(),
+        {
+          customerId: p.id || null,
+          customerName: p.name,
+          customerPhone: p.phone || '',
+          customerAddress: p.address || '',
+          customerNote: p.note || '',
+        },
+        () => {
+          if (p.id && p.phone === undefined && p.address === undefined && p.note === undefined)
+            this.loadCustomerProfile(p.id)
+          this.refresh()
+        },
       )
     }
     // 从「报价明细」页返回，回填 明细/总价/优惠/定金/收款/备注
@@ -135,31 +309,27 @@ Page({
 
   async loadOrder() {
     try {
-      const o: any = await orderApi.get(this.data.id)
-      const active = COST_CATS.filter((c) => (o.costs ? o.costs[c.key] || 0 : 0) > 0).map(
-        (c) => c.key,
-      )
+      const [o, categories]: [any, CostCategory[]] = await Promise.all([
+        orderApi.get(this.data.id),
+        this.fetchCostCategories(),
+      ])
       this.setData(
         {
           customerId: o.customerId || null,
           customerName: o.customer,
+          customerPhone: '',
+          customerAddress: '',
+          customerNote: '',
           date: o.date,
           total: o.total,
           costs: {
-            profile: o.costs.profile,
-            glass: o.costs.glass,
-            hardware: o.costs.hardware,
-            labor: o.costs.labor,
-            screen: o.costs.screen,
+            profile: 0,
+            glass: 0,
+            hardware: 0,
+            labor: 0,
+            screen: 0,
           },
-          costStrs: {
-            profile: o.costs.profile ? String(o.costs.profile) : '',
-            glass: o.costs.glass ? String(o.costs.glass) : '',
-            hardware: o.costs.hardware ? String(o.costs.hardware) : '',
-            labor: o.costs.labor ? String(o.costs.labor) : '',
-            screen: o.costs.screen ? String(o.costs.screen) : '',
-          },
-          activeCats: active.length ? active : [...CORE],
+          costCategories: categories,
           extras: (o.extras || []).map((e: any) => ({
             _k: uid(),
             type: e.type,
@@ -167,12 +337,7 @@ Page({
             amountStr: e.amount ? String(e.amount) : '',
             typeIdx: Math.max(0, EXTRA_TYPES.indexOf(e.type)),
           })),
-          customCosts: (o.customCosts || []).map((c: any) => ({
-            _k: uid(),
-            name: c.name,
-            amount: c.amount,
-            amountStr: c.amount ? String(c.amount) : '',
-          })),
+          customCosts: mergeCostRows(categories, o.customCosts || [], o.costs || {}),
           items: o.items || [],
           discount: o.discount || 0,
           recycle: o.recycle || 0,
@@ -182,36 +347,64 @@ Page({
           receivedStr: o.received ? String(o.received) : '',
           note: o.note || '',
         },
-        () => this.refresh(),
+        () => {
+          this.refresh()
+          if (o.customerId) this.loadCustomerProfile(o.customerId)
+        },
       )
     } catch (e) {
       // 编辑态加载失败不能渲染空表单：保存空表单会把真实订单清零，改为展示重试卡
       this.setData({ loadError: true })
     }
   },
+  async fetchCostCategories(): Promise<CostCategory[]> {
+    try {
+      const settings: any = await settingApi.get()
+      return cacheCostCategories(settings.costCategories)
+    } catch {
+      return readCostCategories()
+    }
+  },
+  async loadCostCategoryTemplates() {
+    const categories = await this.fetchCostCategories()
+    this.setData(
+      {
+        costCategories: categories,
+        customCosts: mergeCostRows(categories, this.data.customCosts),
+      },
+      () => this.refresh(),
+    )
+  },
+  manageCostCategories() {
+    wx.navigateTo({ url: '/pages/cost-categories/index?fromOrder=1' })
+  },
   retryLoad() {
     this.setData({ loadError: false })
     this.loadOrder()
   },
+  async loadCustomerProfile(id: string) {
+    try {
+      const c: any = await customerApi.get(id)
+      if (this.data.customerId !== id) return
+      this.setData(
+        {
+          customerName: c.name || this.data.customerName,
+          customerPhone: c.phone || '',
+          customerAddress: c.address || '',
+          customerNote: c.note || '',
+        },
+        () => this.refresh(),
+      )
+    } catch (e) {
+      // 客户档案加载失败不阻断订单编辑，订单仍保留 customerName 快照。
+    }
+  },
 
   refresh() {
-    const { costs, costStrs, activeCats, extras, total, received, customCosts, deposit } = this.data
-    const activeCells = COST_CATS.filter((c) => activeCats.includes(c.key)).map((c) => ({
-      key: c.key,
-      name: c.name,
-      color: c.color,
-      valueStr: costStrs[c.key] || '',
-    }))
-    const removedCats = COST_CATS.filter((c) => !activeCats.includes(c.key)).map((c) => ({
-      key: c.key,
-      name: c.name,
-      color: c.color,
-    }))
+    const { costs, extras, total, received, customCosts, deposit } = this.data
     const profit = profitOf(total, costs, extras, customCosts)
     const margin = marginOf(total, costs, extras, customCosts)
     this.setData({
-      activeCells,
-      removedCats,
       unpaid: Math.max(0, total - deposit - received), // 与明细页/后端同口径：未收 = 总价 − 定金 − 收款
       profitText: yuan(profit),
       profitNeg: profit < 0,
@@ -220,18 +413,6 @@ Page({
     })
   },
 
-  onCost(e: any) {
-    const k = e.currentTarget.dataset.key
-    const v = Math.max(0, Math.round(Number(e.detail.value) || 0))
-    this.setData({ ['costs.' + k]: v, ['costStrs.' + k]: e.detail.value }, () => this.refresh())
-  },
-  onCostBlur(e: any) {
-    const k = e.currentTarget.dataset.key
-    const s = String(e.detail.value || '').trim()
-    this.setData({ ['costStrs.' + k]: s ? String(this.data.costs[k] || 0) : '' }, () =>
-      this.refresh(),
-    )
-  },
   onDate(e: any) {
     this.setData({ date: e.detail.value })
   },
@@ -256,21 +437,17 @@ Page({
   onNote(e: any) {
     this.setData({ note: e.detail.value })
   },
-  addCat(e: any) {
-    const k = e.currentTarget.dataset.key
-    if (!this.data.activeCats.includes(k))
-      this.setData({ activeCats: [...this.data.activeCats, k] }, () => this.refresh())
+  onCustomerName(e: any) {
+    this.setData({ customerName: String(e.detail.value).slice(0, 40) }, () => this.refresh())
   },
-  removeCat(e: any) {
-    const k = e.currentTarget.dataset.key
-    this.setData(
-      {
-        activeCats: this.data.activeCats.filter((x) => x !== k),
-        ['costs.' + k]: 0,
-        ['costStrs.' + k]: '',
-      },
-      () => this.refresh(),
-    )
+  onCustomerPhone(e: any) {
+    this.setData({ customerPhone: String(e.detail.value).slice(0, 20) })
+  },
+  onCustomerAddress(e: any) {
+    this.setData({ customerAddress: String(e.detail.value).slice(0, 120) })
+  },
+  onCustomerNote(e: any) {
+    this.setData({ customerNote: String(e.detail.value).slice(0, 200) })
   },
   addExtra() {
     // 后端 sanitizeExtras 截断 50 条，前端同口径拦截
@@ -314,15 +491,26 @@ Page({
     )
   },
 
-  // ── 自定义成本项（#5）──
+  // ── 通用成本项：常用分类来自账号设置，也允许本单临时添加 ──
   addCustomCost() {
     // 后端 sanitizeCustomCosts 截断 20 条，前端同口径拦截
-    if (this.data.customCosts.length >= 20) {
-      wx.showToast({ title: '最多 20 项自定义成本', icon: 'none' })
+    if (this.data.customCosts.length >= 50) {
+      wx.showToast({ title: '每个订单最多 50 项成本', icon: 'none' })
       return
     }
     this.setData({
-      customCosts: [...this.data.customCosts, { _k: uid(), name: '', amount: 0, amountStr: '' }],
+      customCosts: [
+        ...this.data.customCosts,
+        {
+          _k: uid(),
+          id: createCostCategoryId(),
+          name: '',
+          color: nextCostColor(this.data.customCosts.length),
+          amount: 0,
+          amountStr: '',
+          isTemplate: false,
+        },
+      ],
     })
   },
   onCustomName(e: any) {
@@ -354,122 +542,64 @@ Page({
     )
   },
 
-  // 点击客户行：已选客户 → 编辑其信息（fromOrder=1 让保存后名字同步回订单）；未选 → 打开选择器
-  onCustomerTap() {
-    if (this.data.customerId) {
-      wx.navigateTo({
-        url: '/pages/customer-edit/index?id=' + this.data.customerId + '&fromOrder=1',
-      })
-    } else {
-      this.openPicker()
-    }
-  },
-
-  async openPicker() {
-    this.setData({ showPicker: true, pickerQ: '' })
-    if (!this.data._allCustomers.length) {
-      try {
-        const list: any = await customerApi.list()
-        this.setData({ _allCustomers: list || [] })
-      } catch (e) {
-        /* handled */
-      }
-    }
-    this.filterPicker()
-  },
-  closePicker() {
-    this.setData({ showPicker: false })
-  },
-  noop() {},
-  onPickerSearch(e: any) {
-    this.setData({ pickerQ: e.detail.value })
-    this.filterPicker()
-  },
-  filterPicker() {
-    const q = String(this.data.pickerQ).trim()
-    const list = this.data._allCustomers
-      .filter((c: any) => !q || (c.name || '').includes(q))
-      .map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        initial: (c.name || '·').slice(-1),
-        sub: c.count > 0 ? `${c.count} 单 · 累计利润 ${yuan(c.profit)}` : c.phone || '新客户',
-      }))
-    this.setData({ pickerList: list })
-  },
-  pickCustomer(e: any) {
-    const { id, name } = e.currentTarget.dataset
-    this.setData({ customerId: id || null, customerName: name, showPicker: false }, () =>
-      this.refresh(),
-    )
-  },
-  // 删除客户：后端会先解绑历史订单（保留客户名快照）再删档；删的是已选客户则清空选择
-  delCustomer(e: any) {
-    const id = e.currentTarget.dataset.id
-    const name = e.currentTarget.dataset.name
-    wx.showModal({
-      title: '删除客户',
-      content: '确定删除客户「' + name + '」？历史订单会保留（仅解绑该客户），此操作不可恢复。',
-      confirmColor: '#C8442B',
-      success: (m) => {
-        if (!m.confirm) return
-        customerApi
-          .remove(id)
-          .then(() => {
-            const set: any = {
-              _allCustomers: this.data._allCustomers.filter((c: any) => c.id !== id),
-            }
-            if (this.data.customerId === id) {
-              set.customerId = null
-              set.customerName = ''
-            }
-            this.setData(set, () => {
-              this.filterPicker()
-              this.refresh()
-            })
-            wx.showToast({ title: '已删除', icon: 'success' })
-          })
-          .catch(() => {
-            /* 错误 toast 由 request 层统一弹 */
-          })
-      },
-    })
-  },
-  newCustomer() {
-    this.setData({ showPicker: false })
-    wx.navigateTo({
-      url:
-        '/pages/customer-edit/index?fromOrder=1&name=' +
-        encodeURIComponent(this.data.pickerQ || ''),
-    })
-  },
-
   onCancel() {
     if (this.data.saving) return // 保存成功后的延时返回期间再点取消会连退两页
     wx.navigateBack()
+  },
+  async syncCustomerProfile() {
+    const name = String(this.data.customerName || '').trim()
+    const phone = String(this.data.customerPhone || '').trim()
+    const address = String(this.data.customerAddress || '').trim()
+    const note = String(this.data.customerNote || '').trim()
+    if (!name) return { customerId: null as string | null, customerName: '' }
+
+    const data = { name, phone, address, note }
+    if (this.data.customerId) {
+      const c: any = await customerApi.update(this.data.customerId, data)
+      return { customerId: c.id as string, customerName: c.name || name }
+    }
+
+    if (phone || address || note) {
+      const ensured: any = await customerApi.ensureByName(name)
+      const c: any = await customerApi.update(ensured.id, data)
+      return { customerId: c.id as string, customerName: c.name || name }
+    }
+
+    return { customerId: null as string | null, customerName: name }
   },
   async save() {
     if (this.data.saving) return
     if (!this.data.canSave) {
       // 缺必填项时给出具体指引，避免点保存毫无反应
       if (!String(this.data.customerName).trim()) {
-        wx.showToast({ title: '请先选择客户', icon: 'none' })
+        wx.showToast({ title: '请填写客户姓名', icon: 'none' })
       } else {
         wx.showToast({ title: '请点「报价明细」录入明细或总价', icon: 'none' })
       }
+      return
+    }
+    try {
+      const membership = (await meApi.refreshMembership()) as MembershipStatus
+      setMembership(membership)
+      if (!hasActiveMembership(membership)) {
+        requireMembership(
+          this.data.editing
+            ? '会员已到期，历史订单可以查看和预览，但暂不能修改。'
+            : '会员已到期，历史订单仍可查看，但新增订单需要续费。',
+        )
+        return
+      }
+    } catch (e) {
+      // 状态校验失败时不开放写操作，request 层已提示具体网络错误。
       return
     }
     this.setData({ saving: true })
     const {
       editing,
       id,
-      customerId,
-      customerName,
       date,
       total,
       received,
-      costs,
-      activeCats,
       extras,
       customCosts,
       items,
@@ -485,25 +615,40 @@ Page({
       costLabor: 0,
       costScreen: 0,
     }
-    activeCats.forEach((k) => {
-      payloadCosts[KEYMAP[k]] = costs[k] || 0
+    customCosts.forEach((item: any) => {
+      if (!item.legacyKey || !LEGACY_FIELD[item.legacyKey]) return
+      payloadCosts[LEGACY_FIELD[item.legacyKey]] =
+        (payloadCosts[LEGACY_FIELD[item.legacyKey]] || 0) +
+        Math.max(0, Math.round(Number(item.amount) || 0))
     })
-    const payload = {
-      customerId: customerId || undefined,
-      customerName: String(customerName).trim(),
-      date,
-      total,
-      received,
-      ...payloadCosts,
-      extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
-      customCosts: customCosts.map((c: any) => ({ name: c.name, amount: c.amount })),
-      items,
-      discount,
-      recycle,
-      deposit,
-      note,
-    }
     try {
+      const syncedCustomer = await this.syncCustomerProfile()
+      this.setData({
+        customerId: syncedCustomer.customerId,
+        customerName: syncedCustomer.customerName,
+      })
+      const payload = {
+        customerId: syncedCustomer.customerId || undefined,
+        customerName: syncedCustomer.customerName,
+        date,
+        total,
+        received,
+        ...payloadCosts,
+        extras: extras.map((e: any) => ({ type: e.type, amount: e.amount })),
+        customCosts: customCosts
+          .filter((c: any) => !c.legacyKey)
+          .map((c: any) => ({
+            id: c.id,
+            color: c.color,
+            name: c.name,
+            amount: c.amount,
+          })),
+        items,
+        discount,
+        recycle,
+        deposit,
+        note,
+      }
       if (editing) await orderApi.update(id, payload)
       else await orderApi.create(payload)
       wx.showToast({ title: editing ? '已保存' : '已记账', icon: 'success' })

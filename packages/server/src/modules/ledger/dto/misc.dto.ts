@@ -39,13 +39,18 @@ export class UpdateLedgerSettingDto {
   @IsOptional() @IsBoolean() hideAmount?: boolean
   @IsOptional() @IsBoolean() bioLock?: boolean
   @IsOptional() @IsBoolean() encBackup?: boolean
+  @IsOptional() @IsArray() @ArrayMaxSize(20) costCategories?: Array<{
+    id: string
+    name: string
+    color?: string
+  }>
 }
 
-/** 提交意见反馈（含注销/换号申请）。 */
+/** 提交意见反馈（含注销申请）。 */
 export class CreateLedgerFeedbackDto {
   @IsString() @IsNotEmpty({ message: '请填写反馈内容' }) @MaxLength(1000) content!: string
   @IsOptional() @IsString() @MaxLength(40) contact?: string
-  @IsOptional() @IsIn(['general', 'delete_account', 'phone_change']) type?: string
+  @IsOptional() @IsIn(['general', 'delete_account']) type?: string
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(9)
@@ -63,7 +68,7 @@ export class ImportDataDto {
   @IsString() @IsNotEmpty({ message: '请粘贴数据包' }) @MaxLength(5_000_000) pkg!: string
 }
 
-/** 会员在线支付下单：planKey 必填；code 为 wx.login 临时码（未绑定微信的用户用它换 openid）。 */
+/** 会员在线支付下单：planKey 必填；code 为 wx.login 临时码。 */
 export class CreateLedgerPayDto {
   @IsString() @IsNotEmpty({ message: '请选择套餐' }) @MaxLength(20) planKey!: string
   @IsOptional() @IsString() @MaxLength(120) code?: string

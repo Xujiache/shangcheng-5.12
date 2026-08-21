@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
@@ -6,6 +6,7 @@ import { decimalToNumber } from '../../common/utils/decimal.util'
 import { withdrawNo, refundNo, membershipNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
 import { ChatGateway } from '../chat/chat.gateway'
+import { ContentSecurityService } from '../content-security/content-security.service'
 
 const QUOTA_KEYS = ['pushSlots', 'banner', 'impression'] as const
 type QuotaKey = (typeof QUOTA_KEYS)[number]
@@ -109,7 +110,27 @@ export class MerchantService {
     private readonly prisma: PrismaService,
     private readonly wxpay: WxPayService,
     private readonly chat: ChatGateway,
+    @Optional() private readonly contentSecurity?: ContentSecurityService,
   ) {}
+
+  /**
+   * 商品富文本可能远长于单次微信检测限制，按 500 字符分段全部检测；任一段失败即不落库。
+   */
+  private async assertMerchantTextSafe(value: unknown) {
+    const text = String(value || '')
+      .replace(/<[^>]*>/g, ' ')
+      .trim()
+    if (!text) return
+    if (!this.contentSecurity && process.env.NODE_ENV === 'production') {
+      throw new BizException(BizCode.BUSINESS_ERROR, '内容安全服务未初始化，暂时无法提交内容')
+    }
+    for (let offset = 0; offset < text.length; offset += 500) {
+      await this.contentSecurity?.assertTextSafe(text.slice(offset, offset + 500), {
+        scope: 'mall',
+        scene: 2,
+      })
+    }
+  }
 
   /**
    * 获取商家 merchantId（user 必须为 factory/store/super-admin）
@@ -366,6 +387,9 @@ export class MerchantService {
    * priceWholesale/priceMember/stock/active）由 Prisma Sku 模型自行校验，无需在此白名单。
    */
   async createProduct(merchantId: string, dto: any) {
+    await this.assertMerchantTextSafe(dto?.name)
+    await this.assertMerchantTextSafe(dto?.description)
+    await this.assertMerchantTextSafe(dto?.detailHtml)
     const rawSkus = Array.isArray(dto?.skus) ? dto.skus : []
     // SKU 字段白名单 —— 防止前端误传 id / productId / createdAt 等 Prisma 嵌套 create 不接受的字段
     const skus = rawSkus.map((s: any) => ({
@@ -478,6 +502,10 @@ export class MerchantService {
       include: { skus: { select: { id: true } } },
     })
     if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+
+    await this.assertMerchantTextSafe(dto?.name)
+    await this.assertMerchantTextSafe(dto?.description)
+    await this.assertMerchantTextSafe(dto?.detailHtml)
 
     const data = pickProductFields(dto)
     const inputSkus: Array<Record<string, any>> = Array.isArray(dto?.skus) ? dto.skus : []
@@ -2312,6 +2340,9 @@ export class MerchantService {
   }
 
   async updateProfile(merchantId: string, dto: any) {
+    await this.assertMerchantTextSafe(dto?.shopName)
+    await this.assertMerchantTextSafe(dto?.contactName)
+    await this.assertMerchantTextSafe(dto?.description)
     const data: any = {}
     if (typeof dto.shopName === 'string') data.name = dto.shopName
     if (typeof dto.contactName === 'string') data.contact = dto.contactName
