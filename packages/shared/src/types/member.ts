@@ -14,6 +14,7 @@ export interface MemberPlan extends BaseEntity {
   type: MemberPlanType
   code: string
   name: string
+  nameEn?: string
   price: number
   /** 原价（展示删除线用） */
   originalPrice?: number
@@ -24,6 +25,7 @@ export interface MemberPlan extends BaseEntity {
   hot?: boolean
   /** 权益列表（rich text 或结构化） */
   rights: string[]
+  rightsEn?: string[]
   /** 限制条件（仅广告推送套餐） */
   constraints?: {
     pushSlots?: number // 推送位数

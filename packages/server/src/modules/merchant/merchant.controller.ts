@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
@@ -643,24 +644,33 @@ export class MerchantController {
   }
 
   // ============ 会员 ============
-  @Get('membership/plans') memberPlans() {
-    return this.svc.memberPlans()
+  @Get('membership/plans') memberPlans(@Headers('accept-language') language?: string) {
+    return this.svc.memberPlans(language)
   }
-  @Get('membership') async myMembership(@CurrentUser() u: AuthUser) {
+  @Get('membership') async myMembership(
+    @CurrentUser() u: AuthUser,
+    @Headers('accept-language') language?: string,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
-    return this.svc.myMembership(mid)
+    return this.svc.myMembership(mid, language)
   }
   @Get('membership/quota') async quota(@CurrentUser() u: AuthUser) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.quota(mid)
   }
-  @Get('membership/payments') async payments(@CurrentUser() u: AuthUser) {
+  @Get('membership/payments') async payments(
+    @CurrentUser() u: AuthUser,
+    @Headers('accept-language') language?: string,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
-    return this.svc.myPayments(mid)
+    return this.svc.myPayments(mid, language)
   }
-  @Get('membership/notices') async notices(@CurrentUser() u: AuthUser) {
+  @Get('membership/notices') async notices(
+    @CurrentUser() u: AuthUser,
+    @Headers('accept-language') language?: string,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
-    return this.svc.membershipNotices(mid)
+    return this.svc.membershipNotices(mid, language)
   }
   @Post('membership/subscribe') async subscribe(@CurrentUser() u: AuthUser, @Body() dto: any) {
     const mid = await this.svc.ensureMerchantId(u)

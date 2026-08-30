@@ -739,13 +739,43 @@ export class PlatformService {
     return decimalToNumber(await this.prisma.memberPlan.findMany({ orderBy: { sort: 'asc' } }))
   }
   async saveMemberPlan(dto: any) {
+    const normalize = (value: unknown): string[] =>
+      Array.isArray(value)
+        ? value
+            .filter((item): item is string => typeof item === 'string')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : []
+    const data = {
+      ...dto,
+      nameEn: typeof dto.nameEn === 'string' ? dto.nameEn.trim() || null : dto.nameEn,
+      rightsEn: dto.rightsEn === undefined ? undefined : normalize(dto.rightsEn),
+    }
     if (dto.id) {
-      const { id, ...data } = dto
-      return decimalToNumber(await this.prisma.memberPlan.update({ where: { id }, data }))
+      const existing = await this.prisma.memberPlan.findUnique({ where: { id: dto.id } })
+      if (!existing) throw new BizException(BizCode.NOT_FOUND, '会员套餐不存在')
+      const enabling = existing.status !== 'active' && data.status === 'active'
+      if (enabling) {
+        const nameEn = String(data.nameEn ?? existing.nameEn ?? '').trim()
+        const rightsEn = data.rightsEn === undefined ? normalize(existing.rightsEn) : data.rightsEn
+        if (!nameEn || rightsEn.length === 0) {
+          throw new BizException(BizCode.INVALID_PARAMS, '启用套餐前必须填写英文名称和英文权益')
+        }
+      }
+      const { id, ...updateData } = data
+      return decimalToNumber(
+        await this.prisma.memberPlan.update({ where: { id }, data: updateData }),
+      )
+    }
+    if (
+      (data.status ?? 'active') === 'active' &&
+      (!String(data.nameEn || '').trim() || normalize(data.rightsEn).length === 0)
+    ) {
+      throw new BizException(BizCode.INVALID_PARAMS, '新建启用套餐必须填写英文名称和英文权益')
     }
     return decimalToNumber(
       await this.prisma.memberPlan.create({
-        data: { ...dto, code: dto.code || `plan_${Date.now()}` },
+        data: { ...data, code: data.code || `plan_${Date.now()}` },
       }),
     )
   }

@@ -190,6 +190,9 @@
                 placeholder="如：年费会员"
               />
             </ElFormItem>
+            <ElFormItem label="英文名称">
+              <ElInput v-model="editForm.nameEn" placeholder="Required for English clients" />
+            </ElFormItem>
             <ElFormItem v-if="editMode === 'create'" label="套餐 Code">
               <ElInput v-model="editForm.code" placeholder="英文标识，如 yearly_pro" />
             </ElFormItem>
@@ -229,6 +232,9 @@
           </template>
 
           <template v-if="editMode === 'create' || editMode === 'rights'">
+            <ElFormItem v-if="editMode === 'rights'" label="英文名称">
+              <ElInput v-model="editForm.nameEn" placeholder="Required for English clients" />
+            </ElFormItem>
             <ElFormItem label="权益列表">
               <div class="flex w-full gap-2">
                 <ElInput
@@ -252,6 +258,32 @@
                 </ElTag>
                 <span v-if="editForm.rights.length === 0" class="text-xs text-g-500"
                   >尚未添加任何权益</span
+                >
+              </div>
+            </ElFormItem>
+            <ElFormItem label="英文权益列表">
+              <div class="flex w-full gap-2">
+                <ElInput
+                  v-model="editForm.rightEnInput"
+                  placeholder="Enter an English benefit and press Enter"
+                  @keyup.enter="addRightEn"
+                />
+                <ElButton type="primary" plain @click="addRightEn">添加</ElButton>
+              </div>
+              <div class="pf-rights-list mt-2">
+                <ElTag
+                  v-for="(r, i) in editForm.rightsEn"
+                  :key="i"
+                  closable
+                  type="warning"
+                  effect="plain"
+                  class="mr-2 mb-2"
+                  @close="removeRightEn(i)"
+                >
+                  {{ r }}
+                </ElTag>
+                <span v-if="editForm.rightsEn.length === 0" class="text-xs text-g-500"
+                  >尚未添加英文权益</span
                 >
               </div>
             </ElFormItem>
@@ -372,12 +404,15 @@
     id?: string
     type: MemberPlan['type']
     name: string
+    nameEn: string
     code: string
     price: number
     originalPrice: number
     period: MemberPlan['period']
     rights: string[]
     rightInput: string
+    rightsEn: string[]
+    rightEnInput: string
     constraints: NonNullable<MemberPlan['constraints']>
     hot: boolean
     trialDays: number
@@ -385,12 +420,15 @@
     id: undefined,
     type: 'basic',
     name: '',
+    nameEn: '',
     code: '',
     price: 99,
     originalPrice: 0,
     period: 'monthly',
     rights: [],
     rightInput: '',
+    rightsEn: [],
+    rightEnInput: '',
     constraints: { pushSlots: 5, weightLimit: 60, bannerLimit: 0, impressionLimit: 50000 },
     hot: false,
     trialDays: 0
@@ -408,6 +446,11 @@
   async function onEdit(p: MemberPlan, cmd: string) {
     if (cmd === 'toggle') {
       const next = p.status === 'active' ? 'disabled' : 'active'
+      if (next === 'active' && (!p.nameEn?.trim() || !p.rightsEn?.length)) {
+        await onEdit(p, 'rights')
+        ElMessage.warning('启用前请补全英文名称和英文权益')
+        return
+      }
       await savePlatformMemberPlan({ id: p.id, status: next })
       p.status = next as MemberPlan['status']
       ElMessage.success(next === 'active' ? '已上架' : '已下架')
@@ -417,12 +460,15 @@
     editForm.id = p.id
     editForm.type = p.type
     editForm.name = p.name
+    editForm.nameEn = p.nameEn || ''
     editForm.code = p.code
     editForm.price = p.price
     editForm.originalPrice = p.originalPrice ?? 0
     editForm.period = p.period
     editForm.rights = [...p.rights]
     editForm.rightInput = ''
+    editForm.rightsEn = [...(p.rightsEn || [])]
+    editForm.rightEnInput = ''
     editForm.constraints = p.constraints
       ? { ...p.constraints }
       : { pushSlots: 5, weightLimit: 60, bannerLimit: 0, impressionLimit: 50000 }
@@ -436,12 +482,15 @@
     editForm.id = undefined
     editForm.type = tab.value === 'orders' ? 'basic' : (tab.value as MemberPlan['type'])
     editForm.name = ''
+    editForm.nameEn = ''
     editForm.code = ''
     editForm.price = 99
     editForm.originalPrice = 0
     editForm.period = 'monthly'
     editForm.rights = []
     editForm.rightInput = ''
+    editForm.rightsEn = []
+    editForm.rightEnInput = ''
     editForm.constraints = { pushSlots: 5, weightLimit: 60, bannerLimit: 0, impressionLimit: 50000 }
     editForm.hot = false
     editForm.trialDays = 0
@@ -457,6 +506,15 @@
   function removeRight(i: number) {
     editForm.rights.splice(i, 1)
   }
+  function addRightEn() {
+    const value = editForm.rightEnInput.trim()
+    if (!value) return
+    editForm.rightsEn.push(value)
+    editForm.rightEnInput = ''
+  }
+  function removeRightEn(i: number) {
+    editForm.rightsEn.splice(i, 1)
+  }
 
   async function submitEdit() {
     if (editMode.value === 'create' && !editForm.name.trim()) {
@@ -465,6 +523,13 @@
     }
     if (editMode.value === 'create' && !editForm.code.trim()) {
       ElMessage.warning('请填写套餐 code')
+      return
+    }
+    if (
+      (editMode.value === 'create' || editMode.value === 'rights') &&
+      (!editForm.nameEn.trim() || editForm.rightsEn.length === 0)
+    ) {
+      ElMessage.warning('请填写英文名称并至少添加 1 项英文权益')
       return
     }
     if (
@@ -478,11 +543,13 @@
       id: editForm.id,
       type: editForm.type,
       name: editForm.name.trim(),
+      nameEn: editForm.nameEn.trim(),
       code: editForm.code.trim(),
       price: editForm.price,
       originalPrice: editForm.originalPrice || undefined,
       period: editForm.period,
       rights: [...editForm.rights],
+      rightsEn: [...editForm.rightsEn],
       hot: editForm.hot,
       trialDays: editForm.trialDays || undefined,
       status: 'active',

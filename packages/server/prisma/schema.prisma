@@ -736,12 +736,14 @@ model MemberPlan {
   type          String // basic / ad / addon
   code          String   @unique
   name          String
+  nameEn        String?
   price         Decimal  @db.Decimal(10, 2)
   originalPrice Decimal? @db.Decimal(10, 2)
   period        String   @default("monthly") // monthly / yearly / weekly / daily / oneoff
   periodCount   Int      @default(1)
   hot           Boolean  @default(false)
   rights        Json     @default("[]") // 权益数组
+  rightsEn      Json? // 英文权益数组；商家端按 Accept-Language 返回
   constraints   Json? // 配额约束 { pushSlots, bannerLimit, impressionLimit, adSlotPriority, ... }
   trialDays     Int?
   status        String   @default("active") // active / disabled

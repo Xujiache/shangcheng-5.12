@@ -17,6 +17,34 @@ import {
 const QUOTA_KEYS = ['pushSlots', 'banner', 'impression'] as const
 type QuotaKey = (typeof QUOTA_KEYS)[number]
 
+type LocalizableMemberPlan = {
+  name: string
+  nameEn?: string | null
+  rights: unknown
+  rightsEn?: unknown
+}
+
+export function isEnglishLocale(language?: string): boolean {
+  return String(language || '')
+    .toLowerCase()
+    .startsWith('en')
+}
+
+export function localizeMemberPlan<T extends LocalizableMemberPlan>(plan: T, language?: string): T {
+  if (!isEnglishLocale(language)) return plan
+  const nameEn = String(plan.nameEn || '').trim()
+  const rightsEn = Array.isArray(plan.rightsEn)
+    ? plan.rightsEn.filter(
+        (item): item is string => typeof item === 'string' && item.trim().length > 0,
+      )
+    : []
+  return {
+    ...plan,
+    name: nameEn || plan.name,
+    rights: rightsEn.length > 0 ? rightsEn : plan.rights,
+  }
+}
+
 /**
  * Product 表第一类字段白名单 —— 防止前端误传 schema 不认的字段（如 freeShipping）
  * 触发 PrismaClientValidationError。所有 by-size 字段都是首类列，已纳入白名单，
@@ -2546,20 +2574,19 @@ export class MerchantService {
   }
 
   // ========== 会员 ==========
-  async memberPlans() {
-    return decimalToNumber(
-      await this.prisma.memberPlan.findMany({
-        where: { status: 'active' },
-        orderBy: { sort: 'asc' },
-      }),
-    )
+  async memberPlans(language?: string) {
+    const plans = await this.prisma.memberPlan.findMany({
+      where: { status: 'active' },
+      orderBy: { sort: 'asc' },
+    })
+    return decimalToNumber(plans.map((plan) => localizeMemberPlan(plan, language)))
   }
   /**
    * 当前订阅;同时给出嵌套和扁平字段,兼容多端:
    *   - merchant-app 用 m.plan.* (嵌套)
    *   - admin-pc/PC 视图用 planName/planType/price/merchantName/totalDays/subscribedAt (扁平)
    */
-  async myMembership(merchantId: string) {
+  async myMembership(merchantId: string, language?: string) {
     const m = await this.prisma.merchantMembership.findFirst({
       where: { merchantId, status: { in: ['trial', 'active'] } },
       orderBy: { createdAt: 'desc' },
@@ -2567,11 +2594,13 @@ export class MerchantService {
     })
     if (!m) return null
     const totalDays = Math.max(1, Math.ceil((m.endAt.getTime() - m.startAt.getTime()) / 86400000))
+    const plan = m.plan ? localizeMemberPlan(m.plan, language) : null
     return decimalToNumber({
       ...m,
-      planName: m.plan?.name ?? '',
-      planType: m.plan?.type ?? '',
-      price: m.plan ? Number(m.plan.price) : 0,
+      plan,
+      planName: plan?.name ?? '',
+      planType: plan?.type ?? '',
+      price: plan ? Number(plan.price) : 0,
       merchantName: m.merchant?.name ?? '',
       totalDays,
       subscribedAt: m.createdAt,
@@ -2626,31 +2655,42 @@ export class MerchantService {
     }
   }
   /** 缴费记录;加 payMethod 别名兼容 admin-pc 视图 */
-  async myPayments(merchantId: string) {
+  async myPayments(merchantId: string, language?: string) {
     const list = await this.prisma.paymentRecord.findMany({
       where: { merchantId },
+      include: { plan: true },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
-    return list.map((r) =>
-      decimalToNumber({
-        ...r,
-        payMethod: r.paymentMethod,
-      }),
-    )
+    return list.map((record) => {
+      const { plan, ...payment } = record
+      const localizedPlan = plan ? localizeMemberPlan(plan, language) : null
+      return decimalToNumber({
+        ...payment,
+        planName: localizedPlan?.name || payment.planName,
+        payMethod: payment.paymentMethod,
+      })
+    })
   }
-  async membershipNotices(merchantId: string) {
+  async membershipNotices(merchantId: string, language?: string) {
     const q = await this.quota(merchantId)
+    const english = isEnglishLocale(language)
     const notices: any[] = []
     if (q.pushSlotsLimit > 0 && q.pushSlotsUsed >= q.pushSlotsLimit * 0.8) {
       notices.push({
         type: 'warn',
-        text: `广场推荐次数已用 ${q.pushSlotsUsed}/${q.pushSlotsLimit}`,
+        text: english
+          ? `Featured plaza slots used: ${q.pushSlotsUsed}/${q.pushSlotsLimit}`
+          : `广场推荐次数已用 ${q.pushSlotsUsed}/${q.pushSlotsLimit}`,
         link: '/merchant/member',
       })
     }
     if (q.bannerLimit > 0 && q.bannerUsed >= q.bannerLimit) {
-      notices.push({ type: 'error', text: 'Banner 配额已用尽', link: '/merchant/member' })
+      notices.push({
+        type: 'error',
+        text: english ? 'Banner quota has been fully used' : 'Banner 配额已用尽',
+        link: '/merchant/member',
+      })
     }
     return notices
   }
