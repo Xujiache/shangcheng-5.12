@@ -545,6 +545,10 @@ export class MerchantController {
       keyword: q?.keyword,
     })
   }
+  @Get('plaza/filter-options') async plazaFilterOptions(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u).catch(() => '')
+    return this.svc.plazaFilterOptions(mid)
+  }
   @Get('plaza/factories/:id') async plazaFactory(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,

@@ -7,6 +7,12 @@ import { withdrawNo, refundNo, membershipNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
 import { ChatGateway } from '../chat/chat.gateway'
 import { ContentSecurityService } from '../content-security/content-security.service'
+import { thumbnailUrlFor } from '../files/image-thumbnail.util'
+import {
+  excludedPlazaMerchantIds,
+  filterOptionValues,
+  internalTestMerchantIds,
+} from './plaza-filter-options.util'
 
 const QUOTA_KEYS = ['pushSlots', 'banner', 'impression'] as const
 type QuotaKey = (typeof QUOTA_KEYS)[number]
@@ -1913,6 +1919,17 @@ export class MerchantService {
   }
 
   // ========== 选品广场 ==========
+  private async internalTestMerchantIds(): Promise<string[]> {
+    const cfg = await this.prisma.systemConfig.findUnique({
+      where: { key: 'internal_test_merchants' },
+    })
+    return internalTestMerchantIds(cfg?.value)
+  }
+
+  private imageThumb(url: string): string | undefined {
+    return thumbnailUrlFor(url, process.env.S3_PUBLIC_URL || 'http://localhost:9000/jiujiu-mall')
+  }
+
   /**
    * 选品广场商品列表
    *
@@ -1927,12 +1944,15 @@ export class MerchantService {
   async plazaProducts(merchantId: string, q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const where: any = { status: 'active' }
+    const internalIds = await this.internalTestMerchantIds()
     if (q.factoryId) {
+      if (internalIds.includes(q.factoryId)) return buildPage([], 0, page, pageSize)
       where.merchantId = q.factoryId
-    } else if (merchantId) {
-      where.merchantId = { not: merchantId }
+    } else {
+      where.merchantId = { notIn: excludedPlazaMerchantIds(merchantId, internalIds) }
     }
     if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
+    if (q.tags) where.tags = { has: q.tags }
     const [list, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -1995,6 +2015,7 @@ export class MerchantService {
         productId: p.id,
         productName: p.name,
         productImage: p.images[0] || '',
+        productImageThumb: this.imageThumb(p.images[0] || ''),
         factoryName: p.merchant.name,
         factoryId: p.merchantId,
         startPrice: Number(p.priceWholesaleMin || p.priceRetailMin),
@@ -2020,11 +2041,35 @@ export class MerchantService {
     merchantId: string,
     q: { region?: string; category?: string; minRating?: number; keyword?: string } = {},
   ) {
-    const where: any = { type: 'factory', status: 'active', id: { not: merchantId } }
+    const internalIds = await this.internalTestMerchantIds()
+    const where: any = {
+      type: 'factory',
+      status: 'active',
+      id: { notIn: excludedPlazaMerchantIds(merchantId, internalIds) },
+    }
     if (q.region) where.region = { contains: q.region, mode: 'insensitive' }
     if (q.category) where.categories = { has: q.category }
     if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
-    const factories = await this.prisma.merchant.findMany({ where, take: 100 })
+    const factories = await this.prisma.merchant.findMany({
+      where,
+      take: 100,
+      include: { _count: { select: { products: { where: { status: 'active' } } } } },
+    })
+    const agencyRows = factories.length
+      ? await this.prisma.agencyApplication.findMany({
+          where: {
+            factoryMerchantId: { in: factories.map((factory) => factory.id) },
+            status: 'approved',
+          },
+          select: { factoryMerchantId: true, merchantId: true },
+        })
+      : []
+    const agencies = new Map<string, Set<string>>()
+    for (const row of agencyRows) {
+      const set = agencies.get(row.factoryMerchantId) || new Set<string>()
+      set.add(row.merchantId)
+      agencies.set(row.factoryMerchantId, set)
+    }
 
     // 评分 / 头像 从 profile-extras 批量读
     const extrasMap = new Map<
@@ -2048,16 +2093,72 @@ export class MerchantService {
           id: f.id,
           name: f.name,
           logo: ex.avatar || '',
+          logoThumb: this.imageThumb(ex.avatar || ''),
           region: f.region,
           categories: f.categories,
           gmv: Number(f.totalGmv || 0),
           rating: typeof ex.rating === 'number' ? ex.rating : 5,
           ratingCount: typeof ex.ratingCount === 'number' ? ex.ratingCount : 0,
+          productCount: f._count.products,
+          agencyCount: agencies.get(f.id)?.size || 0,
           tags: [],
         }
       })
       .filter((x) => x.rating >= minRating)
     return result
+  }
+
+  async plazaFilterOptions(merchantId: string) {
+    const internalIds = await this.internalTestMerchantIds()
+    const excludedIds = excludedPlazaMerchantIds(merchantId, internalIds)
+    const [products, factories] = await Promise.all([
+      this.prisma.product.findMany({
+        where: {
+          status: 'active',
+          merchantId: { notIn: excludedIds },
+          merchant: { is: { type: 'factory', status: 'active' } },
+        },
+        select: { id: true, tags: true },
+        take: 1000,
+      }),
+      this.prisma.merchant.findMany({
+        where: { type: 'factory', status: 'active', id: { notIn: excludedIds } },
+        select: { region: true, categories: true },
+        take: 1000,
+      }),
+    ])
+    const onlineCfgs = products.length
+      ? await this.prisma.systemConfig.findMany({
+          where: { key: { in: products.map((product) => `plaza:product:${product.id}`) } },
+        })
+      : []
+    const offlineIds = new Set(
+      onlineCfgs
+        .filter((cfg) => !(cfg.value as any)?.online)
+        .map((cfg) => cfg.key.replace('plaza:product:', '')),
+    )
+    const productTags = Array.from(
+      new Set(
+        products
+          .filter((product) => !offlineIds.has(product.id))
+          .flatMap((product) => product.tags),
+      ),
+    ).filter(Boolean)
+    const regions = Array.from(new Set(factories.map((factory) => factory.region).filter(Boolean)))
+    const categories = Array.from(
+      new Set(factories.flatMap((factory) => factory.categories)),
+    ).filter(Boolean)
+    return {
+      productTags: filterOptionValues(productTags),
+      regions: filterOptionValues(regions),
+      categories: filterOptionValues(categories),
+      ratingOptions: [
+        { value: '0', label: '不限' },
+        { value: '3', label: '3分及以上' },
+        { value: '4', label: '4分及以上' },
+        { value: '5', label: '5分' },
+      ],
+    }
   }
 
   async plazaFactory(merchantId: string, id: string) {
@@ -2068,6 +2169,7 @@ export class MerchantService {
       id: f.id,
       name: f.name,
       logo: ex.avatar || '',
+      logoThumb: this.imageThumb(ex.avatar || ''),
       banner: ex.avatar || '',
       region: f.region,
       address: f.address,

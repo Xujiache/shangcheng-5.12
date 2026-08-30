@@ -7,6 +7,11 @@ import {
   ContentSecurityService,
   WechatContentScope,
 } from '../content-security/content-security.service'
+import {
+  createSquareThumbnail,
+  IMMUTABLE_CACHE_CONTROL,
+  thumbnailKeyForObjectKey,
+} from './image-thumbnail.util'
 
 const nano = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 16)
 
@@ -115,8 +120,25 @@ export class FilesService implements OnModuleInit {
     const key = `${bizType}/${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${nano()}.${ext}`
     await this.client.putObject(this.bucket, key, file.buffer, file.size, {
       'Content-Type': file.mimetype,
+      'Cache-Control': IMMUTABLE_CACHE_CONTROL,
     })
     const url = `${this.publicUrl}/${key}`
+    let thumbnailUrl: string | undefined
+    if (IMAGE_MIME.includes(file.mimetype)) {
+      const thumbnailKey = thumbnailKeyForObjectKey(key)
+      if (thumbnailKey) {
+        try {
+          const thumbnail = await createSquareThumbnail(file.buffer)
+          await this.client.putObject(this.bucket, thumbnailKey, thumbnail, thumbnail.length, {
+            'Content-Type': 'image/webp',
+            'Cache-Control': IMMUTABLE_CACHE_CONTROL,
+          })
+          thumbnailUrl = `${this.publicUrl}/${thumbnailKey}`
+        } catch (error: any) {
+          this.logger.warn(`thumbnail failed for ${key}: ${error?.message || 'unknown error'}`)
+        }
+      }
+    }
 
     await this.prisma.uploadedFile.create({
       data: {
@@ -128,7 +150,7 @@ export class FilesService implements OnModuleInit {
         ownerId: ownerId || null,
       },
     })
-    return { url, key, size: file.size, mimeType: file.mimetype }
+    return { url, key, size: file.size, mimeType: file.mimetype, thumbnailUrl }
   }
 
   async batchUpload(
@@ -210,6 +232,8 @@ export class FilesService implements OnModuleInit {
       throw new BizException(BizCode.FORBIDDEN, '无权删除该文件')
     }
     await this.client.removeObject(this.bucket, key).catch(() => null)
+    const thumbnailKey = thumbnailKeyForObjectKey(key)
+    if (thumbnailKey) await this.client.removeObject(this.bucket, thumbnailKey).catch(() => null)
     await this.prisma.uploadedFile.delete({ where: { key } })
     return { ok: true }
   }
