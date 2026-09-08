@@ -1,0 +1,7 @@
+{
+  "string": [
+    { "name": "module_test_desc", "value": "经纬商家端原生自动化测试模块" },
+    { "name": "test_ability_desc", "value": "运行原生自动化测试" },
+    { "name": "test_ability_label", "value": "经纬商家端测试" }
+  ]
+}

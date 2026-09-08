@@ -1,0 +1,9 @@
+{
+  "string": [
+    { "name": "module_desc", "value": "经纬商家端原生业务模块" },
+    { "name": "entry_desc", "value": "经纬科技商家工作台" },
+    { "name": "location_reason", "value": "用于选择商户位置、完善门店资料和地图导航" },
+    { "name": "camera_reason", "value": "用于拍摄商品、资质和售后凭证" }
+  ]
+}
+

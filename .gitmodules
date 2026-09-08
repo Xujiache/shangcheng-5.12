@@ -1,0 +1,3 @@
+[submodule "native/harmony-merchant/third_party/ibest-ui"]
+	path = native/harmony-merchant/third_party/ibest-ui
+	url = https://github.com/Xujiache/ibest-ui.git

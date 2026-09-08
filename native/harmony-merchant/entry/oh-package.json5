@@ -1,0 +1,12 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "经纬商家端原生入口模块",
+  "main": "",
+  "author": "辽宁经纬建筑装饰有限公司",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@ibestservices/ibest-ui": "file:../third_party/ibest-ui/library"
+  },
+  "devDependencies": {}
+}

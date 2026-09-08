@@ -1,0 +1,14 @@
+{
+  "modelVersion": "7.0.0",
+  "dependencies": {},
+  "execution": {
+    "daemon": true,
+    "incremental": true,
+    "parallel": true,
+    "typeCheck": true
+  },
+  "logging": { "level": "info" },
+  "debugging": { "stacktrace": true },
+  "nodeOptions": { "maxOldSpaceSize": 8192 }
+}
+

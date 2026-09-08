@@ -1,0 +1,22 @@
+name: Harmony source checks
+on:
+  push:
+    paths: ['native/harmony-merchant/**', '.github/workflows/harmony-quality.yml', '.gitmodules']
+  pull_request:
+    paths: ['native/harmony-merchant/**', '.github/workflows/harmony-quality.yml', '.gitmodules']
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/harmony-merchant
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: bash scripts/audit-clean-room.sh
+      - run: node scripts/audit-secret-boundary.mjs
+      - run: node scripts/audit-i18n.mjs --strict
+      - run: node scripts/audit-routes.mjs
+      - run: node scripts/audit-api-contracts.mjs

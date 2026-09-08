@@ -1,0 +1,179 @@
+{
+  "routerMap": [
+    {
+      "name": "MerchantApply",
+      "pageSourceFile": "src/main/ets/features/auth/MerchantApplyPage.ets",
+      "buildFunction": "MerchantApplyBuilder"
+    },
+    {
+      "name": "SetPassword",
+      "pageSourceFile": "src/main/ets/features/auth/SetPasswordPage.ets",
+      "buildFunction": "SetPasswordBuilder"
+    },
+    {
+      "name": "ChangePhone",
+      "pageSourceFile": "src/main/ets/features/auth/ChangePhonePage.ets",
+      "buildFunction": "ChangePhoneBuilder"
+    },
+    {
+      "name": "Agreements",
+      "pageSourceFile": "src/main/ets/features/legal/AgreementsPage.ets",
+      "buildFunction": "AgreementsBuilder"
+    },
+    {
+      "name": "UpdateCenter",
+      "pageSourceFile": "src/main/ets/features/update/UpdatePage.ets",
+      "buildFunction": "UpdateBuilder"
+    },
+    {
+      "name": "ProductEdit",
+      "pageSourceFile": "src/main/ets/features/product/ProductEditPage.ets",
+      "buildFunction": "ProductEditBuilder"
+    },
+    {
+      "name": "CategoryManager",
+      "pageSourceFile": "src/main/ets/features/product/CategoryPage.ets",
+      "buildFunction": "CategoryManagerBuilder"
+    },
+    {
+      "name": "OrderDetail",
+      "pageSourceFile": "src/main/ets/features/order/OrderDetailPage.ets",
+      "buildFunction": "OrderDetailBuilder"
+    },
+    {
+      "name": "AfterSale",
+      "pageSourceFile": "src/main/ets/features/order/AfterSalePage.ets",
+      "buildFunction": "AfterSaleBuilder"
+    },
+    {
+      "name": "AfterSaleDetail",
+      "pageSourceFile": "src/main/ets/features/order/AfterSaleDetailPage.ets",
+      "buildFunction": "AfterSaleDetailBuilder"
+    },
+    {
+      "name": "Customers",
+      "pageSourceFile": "src/main/ets/features/business/CustomerPage.ets",
+      "buildFunction": "CustomersBuilder"
+    },
+    {
+      "name": "Commission",
+      "pageSourceFile": "src/main/ets/features/business/CommissionPage.ets",
+      "buildFunction": "CommissionBuilder"
+    },
+    {
+      "name": "Stores",
+      "pageSourceFile": "src/main/ets/features/business/StorePage.ets",
+      "buildFunction": "StoresBuilder"
+    },
+    {
+      "name": "StoreAuth",
+      "pageSourceFile": "src/main/ets/features/business/StoreAuthPage.ets",
+      "buildFunction": "StoreAuthBuilder"
+    },
+    {
+      "name": "Staffs",
+      "pageSourceFile": "src/main/ets/features/business/StaffPage.ets",
+      "buildFunction": "StaffsBuilder"
+    },
+    {
+      "name": "Marketing",
+      "pageSourceFile": "src/main/ets/features/business/MarketingPage.ets",
+      "buildFunction": "MarketingBuilder"
+    },
+    {
+      "name": "Decorate",
+      "pageSourceFile": "src/main/ets/features/business/DecoratePage.ets",
+      "buildFunction": "DecorateBuilder"
+    },
+    {
+      "name": "PriceRule",
+      "pageSourceFile": "src/main/ets/features/business/PriceRulePage.ets",
+      "buildFunction": "PriceRuleBuilder"
+    },
+    {
+      "name": "ChatSessions",
+      "pageSourceFile": "src/main/ets/features/chat/ChatSessionsPage.ets",
+      "buildFunction": "ChatSessionsBuilder"
+    },
+    {
+      "name": "ChatDetail",
+      "pageSourceFile": "src/main/ets/features/chat/ChatDetailPage.ets",
+      "buildFunction": "ChatDetailBuilder"
+    },
+    {
+      "name": "Plaza",
+      "pageSourceFile": "src/main/ets/features/plaza/PlazaPage.ets",
+      "buildFunction": "PlazaBuilder"
+    },
+    {
+      "name": "FactoryDetail",
+      "pageSourceFile": "src/main/ets/features/plaza/FactoryPage.ets",
+      "buildFunction": "FactoryDetailBuilder"
+    },
+    {
+      "name": "AgencyProducts",
+      "pageSourceFile": "src/main/ets/features/plaza/AgencyPage.ets",
+      "buildFunction": "AgencyProductsBuilder"
+    },
+    {
+      "name": "Membership",
+      "pageSourceFile": "src/main/ets/features/member/MembershipPage.ets",
+      "buildFunction": "MembershipBuilder"
+    },
+    {
+      "name": "Profile",
+      "pageSourceFile": "src/main/ets/features/profile/ProfilePage.ets",
+      "buildFunction": "ProfileBuilder"
+    },
+    {
+      "name": "LocationPicker",
+      "pageSourceFile": "src/main/ets/features/profile/LocationPickerPage.ets",
+      "buildFunction": "LocationPickerBuilder"
+    },
+    {
+      "name": "Settings",
+      "pageSourceFile": "src/main/ets/features/profile/SettingsPage.ets",
+      "buildFunction": "SettingsBuilder"
+    },
+    {
+      "name": "AccountSecurity",
+      "pageSourceFile": "src/main/ets/features/profile/AccountSecurityPage.ets",
+      "buildFunction": "AccountSecurityBuilder"
+    },
+    {
+      "name": "AppearanceSettings",
+      "pageSourceFile": "src/main/ets/features/profile/AppearanceSettingsPage.ets",
+      "buildFunction": "AppearanceSettingsBuilder"
+    },
+    {
+      "name": "NotificationSettings",
+      "pageSourceFile": "src/main/ets/features/profile/NotificationSettingsPage.ets",
+      "buildFunction": "NotificationSettingsBuilder"
+    },
+    {
+      "name": "AboutApp",
+      "pageSourceFile": "src/main/ets/features/profile/AboutPage.ets",
+      "buildFunction": "AboutAppBuilder"
+    },
+    {
+      "name": "ShareApp",
+      "pageSourceFile": "src/main/ets/features/profile/SharePage.ets",
+      "buildFunction": "ShareAppBuilder"
+    },
+    {
+      "name": "FilteredOrders",
+      "pageSourceFile": "src/main/ets/features/shell/FilteredListRoutes.ets",
+      "buildFunction": "FilteredOrdersBuilder"
+    },
+    {
+      "name": "FilteredProducts",
+      "pageSourceFile": "src/main/ets/features/shell/FilteredListRoutes.ets",
+      "buildFunction": "FilteredProductsBuilder"
+    },
+    {
+      "name": "StatsFull",
+      "pageSourceFile": "src/main/ets/features/stats/StatsPage.ets",
+      "buildFunction": "StatsFullBuilder"
+    }
+  ]
+}

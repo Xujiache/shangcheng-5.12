@@ -7,6 +7,8 @@
 
 ## 项目结构
 
+鸿蒙原生商家 App 已纳入本仓库：[native/harmony-merchant](native/harmony-merchant/README.md)。在 DevEco Studio 中打开该目录；首次使用运行 `git submodule update --init --recursive` 获取第三方 IBest-UI。
+
 ```
 商城5.0/
 ├── packages/

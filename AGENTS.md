@@ -19,6 +19,8 @@
 
 ## 关键约定（动代码前必读）
 
+- 鸿蒙原生商家 App 位于 `native/harmony-merchant/`，由本仓库统一管理；使用 DevEco/Hvigor，不加入 pnpm workspace。遵循该目录的 AGENTS.md，第三方 IBest-UI 继续固定为子模块。
+
 - **统一响应壳**：成功一律 HTTP 200，`{ code:0, data, message, msg, traceId, timestamp }`（`message`/`msg` 双字段冗余）。契约源在 `@jiujiu/shared` 的 `ApiResult` / `ErrorCode`，后端 `response.interceptor` / `biz.exception` 与之对齐。
 - **JWT 双 token**：accessToken 2h + refreshToken 7d；refresh 打 `_r` 标记，禁止用于业务接口（`jwt.guard.ts`）。
 - **角色别名** `expandRole`：`factory/store→merchant`、`admin→platform`、`super-admin→全部`；`RolesGuard` 仅在 `@Roles()` 路由生效。
