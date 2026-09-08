@@ -3,7 +3,7 @@
   "icons": 30,
   "iconNodes": 85,
   "iconBytes": 191490,
-  "mainSourceBytes": 1904143,
+  "mainSourceBytes": 1904198,
   "pageCoverage": {
     "pages/work-log/index.wxml": 13,
     "subpackages/workbook/edit/index.wxml": 9,

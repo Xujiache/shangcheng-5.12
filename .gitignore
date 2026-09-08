@@ -63,6 +63,7 @@ wxpay_public_key.pem
 
 # Test
 coverage/
+.quality/
 .nyc_output/
 
 # Prisma
@@ -76,3 +77,5 @@ deploy/data/
 
 # Misc
 *.local
+
+**/.workbook-test/

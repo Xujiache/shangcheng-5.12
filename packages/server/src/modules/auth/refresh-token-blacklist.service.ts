@@ -1,27 +1,8 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common'
+import { Injectable, Logger, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common'
 import Redis from 'ioredis'
 
-/**
- * Refresh Token 黑名单（按 jti 标记吊销）。
- *
- * 用途：实现 refresh token rotation —— 每次成功 refresh 都把旧 jti 列入黑名单，
- * 旧 refresh token 即便落入攻击者手里也立刻失效。
- *
- * 存储策略（双层）：
- *   - L1：进程内 Map + TTL（永远写入）。单实例部署 / Redis 故障期间行为与纯内存版完全一致。
- *   - L2：当设置了 REDIS_URL 时，写穿到 Redis（SET rtbl:<jti> 1 EX <ttl>），
- *     读取时先查 L1（快路径），未命中再查 Redis（EXISTS rtbl:<jti>）。
- *     这保证了多实例水平扩展下"实例 A 吊销，实例 B 立即可见"的一致性。
- *
- * Redis 故障语义 —— fail-open（查询出错按"未吊销"处理）：
- *   这与今天纯内存实现"进程重启即丢失整张 Map"的安全姿态一致 —— 黑名单是
- *   尽力而为的重放防御层，不是唯一防线（refresh token 本身仍有签名 + 过期校验）。
- *   且 L1 仍然保护本实例：本实例吊销过的 jti 在 Redis 故障期间照样被拦截。
- *   错误日志每分钟最多 warn 一次，避免 Redis 故障时刷爆日志。
- *
- * 内置兜底（L1）：
- *   - 每分钟扫一次清掉过期条目（避免 Map 无限增长）
- *   - 大小硬上限 10w，超出时一次性清空（不应触达；防极端 DoS 场景的 OOM）
+/** Shared refresh receipts. Production requires Redis; failures reject writes and lookups.
+ * Development/test may use bounded process-local receipts. Live receipts are never cleared on overflow.
  */
 @Injectable()
 export class RefreshTokenBlacklistService implements OnModuleDestroy {
@@ -54,34 +35,30 @@ export class RefreshTokenBlacklistService implements OnModuleDestroy {
    * 这样黑名单条目过期时该 token 也已天然失效，可以安全清掉。
    *
    * 两种模式都先写 L1（内存 Map），配置了 Redis 时再写穿到 Redis；
-   * Redis 写失败只降级（L1 已生效，本实例语义不变），不向调用方抛错。
+   * Redis 写失败必须向调用方返回暂不可用，不能报告吊销成功。
    */
   async revoke(jti: string, ttlSeconds: number): Promise<void> {
     if (!jti) return
     const ttlSec = Math.max(1, Math.floor(ttlSeconds))
 
-    // L1：永远写内存（Redis 故障期间单实例行为与纯内存版一致）
-    if (this.store.size >= this.MAX_ENTRIES) {
-      this.logger.warn(
-        `[refresh-blacklist] 触达 MAX_ENTRIES=${this.MAX_ENTRIES}，全量清空以避免 OOM；这不应该发生`,
-      )
-      this.store.clear()
+    if (!this.redisUrl) {
+      this.requireLocalFallback()
+      this.remember(jti, ttlSec)
+      return
     }
-    this.store.set(jti, Date.now() + ttlSec * 1000)
-
-    // L2：写穿 Redis（仅当配置了 REDIS_URL）
-    if (!this.redisUrl) return
     try {
       const client = await this.getRedis()
       await client.set(RefreshTokenBlacklistService.KEY_PREFIX + jti, '1', 'EX', ttlSec)
+      this.remember(jti, ttlSec)
     } catch (e) {
       this.warnRedisError('revoke', e)
+      throw new ServiceUnavailableException('登录状态暂不可用，请稍后重试')
     }
   }
 
   /**
    * 是否已吊销。先查 L1（快路径 + Redis 故障兜底），未命中且配置了 Redis 再查 L2。
-   * Redis 查询出错 → fail-open（按未吊销处理），理由见类注释。
+   * Redis 查询出错会拒绝请求，不把未知状态当作未吊销。
    */
   async isRevoked(jti: string): Promise<boolean> {
     if (!jti) return false
@@ -94,14 +71,17 @@ export class RefreshTokenBlacklistService implements OnModuleDestroy {
     }
 
     // L2：跨实例可见性
-    if (!this.redisUrl) return false
+    if (!this.redisUrl) {
+      this.requireLocalFallback()
+      return false
+    }
     try {
       const client = await this.getRedis()
       const exists = await client.exists(RefreshTokenBlacklistService.KEY_PREFIX + jti)
       return exists > 0
     } catch (e) {
       this.warnRedisError('isRevoked', e)
-      return false // fail-open：与"进程重启丢 Map"同等安全姿态；L1 仍保护本实例
+      throw new ServiceUnavailableException('登录状态暂不可用，请稍后重试')
     }
   }
 
@@ -132,16 +112,65 @@ export class RefreshTokenBlacklistService implements OnModuleDestroy {
     this.store.clear()
   }
 
+  /** Atomic check-and-consume; never issue two refresh results for one receipt. */
+  async consume(jti: string, ttlSeconds: number): Promise<boolean> {
+    if (!jti || !Number.isFinite(ttlSeconds))
+      throw new ServiceUnavailableException('登录状态校验失败')
+    const ttl = Math.max(1, Math.floor(ttlSeconds))
+    if ((this.store.get(jti) ?? 0) > Date.now()) return false
+    if (!this.redisUrl) {
+      this.requireLocalFallback()
+      // Deliberately no await between the local check and mutation.
+      this.remember(jti, ttl)
+      return true
+    }
+    try {
+      const client = await this.getRedis()
+      const result = await client.set(
+        RefreshTokenBlacklistService.KEY_PREFIX + jti,
+        '1',
+        'EX',
+        ttl,
+        'NX',
+      )
+      if (result !== 'OK') return false
+      this.remember(jti, ttl)
+      return true
+    } catch (error) {
+      this.warnRedisError('consume', error)
+      throw new ServiceUnavailableException('登录状态暂不可用，请稍后重试')
+    }
+  }
+
+  private requireLocalFallback(): void {
+    if (process.env.NODE_ENV === 'production')
+      throw new ServiceUnavailableException('登录状态暂不可用，请稍后重试')
+  }
+
+  private remember(jti: string, ttl: number): void {
+    if (!this.store.has(jti) && this.store.size >= this.MAX_ENTRIES) {
+      this.sweep()
+      if (this.store.size >= this.MAX_ENTRIES) {
+        if (!this.redisUrl) throw new ServiceUnavailableException('登录状态暂不可用，请稍后重试')
+        // Shared Redis still holds the receipt; evict only one local cache entry.
+        this.store.delete(this.store.keys().next().value as string)
+      }
+    }
+    this.store.set(jti, Date.now() + ttl * 1000)
+  }
+
   /**
    * 懒创建并确保 Redis 连接就绪。
    * lazyConnect + enableOfflineQueue:false：未就绪时命令立即失败（由调用方降级），
-   * 不堆积队列；maxRetriesPerRequest:1 让单条命令失败快速浮出。
+   * 不堆积队列；命令超时限制为 2 秒，不进行无限重试。
    */
   private async getRedis(): Promise<Redis> {
     if (!this.redis) {
       this.redis = new Redis(this.redisUrl as string, {
         lazyConnect: true,
-        maxRetriesPerRequest: 1,
+        maxRetriesPerRequest: 0,
+        commandTimeout: 2000,
+        retryStrategy: () => null,
         enableOfflineQueue: false,
         connectTimeout: 2_000, // 建连兜底超时，避免首次使用时长时间阻塞登录/刷新链路
       })
@@ -151,10 +180,12 @@ export class RefreshTokenBlacklistService implements OnModuleDestroy {
     }
     if (this.redis.status !== 'ready') {
       if (!this.connecting) {
-        this.connecting = this.redis.connect().catch((e) => {
-          this.connecting = null // 失败后允许下次调用重试建连
-          throw e
-        })
+        const flight = this.redis.connect()
+        this.connecting = flight
+        const clear = () => {
+          if (this.connecting === flight) this.connecting = null
+        }
+        void flight.then(clear, clear)
       }
       await this.connecting
     }
@@ -166,8 +197,7 @@ export class RefreshTokenBlacklistService implements OnModuleDestroy {
     const now = Date.now()
     if (now - this.lastRedisWarnAt < 60_000) return
     this.lastRedisWarnAt = now
-    const msg = e instanceof Error ? e.message : String(e)
-    this.logger.warn(`[refresh-blacklist] Redis ${op} 失败，已降级为进程内黑名单：${msg}`)
+    this.logger.warn(`[refresh-blacklist] Redis ${op} unavailable; request rejected`)
   }
 
   private sweep(): void {

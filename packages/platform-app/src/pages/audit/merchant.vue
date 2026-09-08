@@ -119,17 +119,16 @@ onMounted(load)
     </view>
 
     <scroll-view scroll-y class="scroll">
-      <view
-        v-for="m in filtered"
-        :key="m.id"
-        class="card"
-      >
+      <view v-for="m in filtered" :key="m.id" class="card">
         <view class="card-head">
           <view class="head-left">
             <text class="name">{{ m.name }}</text>
             <view
               class="type-tag"
-              :style="{ color: typeMetaOf(m.type).tint, background: typeMetaOf(m.type).tint + '14' }"
+              :style="{
+                color: typeMetaOf(m.type).tint,
+                background: typeMetaOf(m.type).tint + '14',
+              }"
             >
               {{ typeMetaOf(m.type).label }}
             </view>
@@ -154,10 +153,16 @@ onMounted(load)
 
         <!-- 资质图 -->
         <view class="qual-row">
-          <view v-for="(q, i) in (m.qualifications || []).slice(0, 3)" :key="i" class="qual-img-wrap">
+          <view
+            v-for="(q, i) in (m.qualifications || []).slice(0, 3)"
+            :key="i"
+            class="qual-img-wrap"
+          >
             <image :src="q" mode="aspectFill" class="qual-img" />
           </view>
-          <text v-if="(m.qualifications || []).length > 3" class="qual-more">+{{ (m.qualifications || []).length - 3 }} 张</text>
+          <text v-if="(m.qualifications || []).length > 3" class="qual-more"
+            >+{{ (m.qualifications || []).length - 3 }} 张</text
+          >
         </view>
 
         <view v-if="m.status === 'rejected' && m.rejectReason" class="reject-reason">
@@ -176,11 +181,11 @@ onMounted(load)
 
       <EmptyState
         v-if="!loading && filtered.length === 0"
-        :title="`暂无${TABS.find(t => t.key === tab)?.label}商户`"
+        :title="`暂无${TABS.find((t) => t.key === tab)?.label}商户`"
         desc="审核进度会实时同步到首页待办"
         icon="home-shop"
       />
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -313,7 +318,11 @@ onMounted(load)
   overflow: hidden;
   background: var(--bg-page);
   flex-shrink: 0;
-  .qual-img { width: 100%; height: 100%; display: block; }
+  .qual-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 }
 .qual-more {
   font-size: 22rpx;
@@ -324,10 +333,10 @@ onMounted(load)
   align-items: flex-start;
   gap: 8rpx;
   padding: 12rpx;
-  background: rgba(255,59,48,0.08);
+  background: rgba(255, 59, 48, 0.08);
   border-radius: 12rpx;
   font-size: 22rpx;
-  color: #FF3B30;
+  color: #ff3b30;
   line-height: 1.4;
 }
 .actions {
@@ -351,7 +360,7 @@ onMounted(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 </style>

@@ -19,7 +19,12 @@ function openPhoneChangeSheet() {
   securityOpen.value = true
 }
 import { useAdminStore } from '../../../store/admin'
-import { merchantService, productAuditService, ticketService, systemService } from '../../../services'
+import {
+  merchantService,
+  productAuditService,
+  ticketService,
+  systemService,
+} from '../../../services'
 import { platformAuthService } from '../../../services/auth'
 import type { SystemSettings } from '../../../services'
 import Icon from '../../../components/icon/icon.vue'
@@ -87,9 +92,7 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 /** 头像/昵称/用户名 优先后端实时数据,fallback 到本地登录态 */
-const meNickname = computed(
-  () => userInfo.value?.nickname || adminStore.nickname || '管理员',
-)
+const meNickname = computed(() => userInfo.value?.nickname || adminStore.nickname || '管理员')
 const meUsername = computed(() => userInfo.value?.username || '—')
 const meRoleKey = computed(() => userInfo.value?.role || '')
 const meRoleLabel = computed(() => ROLE_LABEL[meRoleKey.value] || meRoleKey.value || '管理员')

@@ -39,7 +39,10 @@ const TABS = computed(() => [
   { key: 'rejected' as Tab, label: '已拒绝' },
 ])
 
-const STATUS_LABEL: Record<RefundStatus, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const STATUS_LABEL: Record<
+  RefundStatus,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   pending: { text: '待处理', tone: 'warning' },
   agreed: { text: '已同意', tone: 'success' },
   rejected: { text: '已拒绝', tone: 'error' },
@@ -68,7 +71,9 @@ async function load(reset = false) {
     })
     // 后端 listRefunds 不支持按 orderId 过滤(merchant.service.ts:521 where 仅取 merchantId/status),
     // 这里本地兜底:从订单详情跳进来时,只展示该订单的售后单。
-    const filtered = orderId.value ? data.list.filter((r) => r.orderId === orderId.value) : data.list
+    const filtered = orderId.value
+      ? data.list.filter((r) => r.orderId === orderId.value)
+      : data.list
     list.value = reset ? filtered : [...list.value, ...filtered]
     total.value = orderId.value ? filtered.length : data.total
     hasMore.value = !!data.hasMore && !orderId.value
@@ -185,8 +190,22 @@ onMounted(() => load(true))
         </view>
       </view>
 
-      <EmptyState v-if="!loading && list.length === 0" title="暂无售后单" desc="切换标签查看其他状态" />
-      <view v-if="hasMore && list.length > 0" class="loadmore" @click="page++; load()">加载更多 ›</view>
+      <EmptyState
+        v-if="!loading && list.length === 0"
+        title="暂无售后单"
+        desc="切换标签查看其他状态"
+      />
+      <view
+        v-if="hasMore && list.length > 0"
+        class="loadmore"
+        @click="
+          ($event) => {
+            page++
+            load()
+          }
+        "
+        >加载更多 ›</view
+      >
       <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
     </view>
 
@@ -234,7 +253,11 @@ onMounted(() => load(true))
     display: flex;
     align-items: center;
     gap: 12rpx;
-    .no { font-size: 24rpx; color: var(--text-secondary); font-family: var(--font-family-base); }
+    .no {
+      font-size: 24rpx;
+      color: var(--text-secondary);
+      font-family: var(--font-family-base);
+    }
   }
 }
 .body {
@@ -253,14 +276,21 @@ onMounted(() => load(true))
   .row-value {
     flex: 1;
     color: var(--text-primary);
-    &.primary { color: var(--brand-primary); font-weight: 700; font-size: 28rpx; }
+    &.primary {
+      color: var(--brand-primary);
+      font-weight: 700;
+      font-size: 28rpx;
+    }
   }
 }
 .evidences {
   background: var(--bg-page);
   border-radius: 12rpx;
   padding: 12rpx;
-  .evidence-title { font-size: 22rpx; color: var(--text-tertiary); }
+  .evidence-title {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .evidence-row {
     margin-top: 8rpx;
     display: flex;
@@ -291,11 +321,23 @@ onMounted(() => load(true))
     &.primary {
       background: var(--brand-gradient);
       color: #fff;
-      box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+      box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
     }
   }
 }
-.loadmore { padding: 24rpx; text-align: center; font-size: 22rpx; color: var(--brand-primary); }
-.end { padding: 24rpx; text-align: center; font-size: 20rpx; color: var(--text-tertiary); }
-.safe-bottom { height: 40rpx; }
+.loadmore {
+  padding: 24rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--brand-primary);
+}
+.end {
+  padding: 24rpx;
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--text-tertiary);
+}
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { Observable, map } from 'rxjs'
-import { nanoid } from 'nanoid'
+import { requestTraceId } from '../trace'
 import { Request } from 'express'
 import { SKIP_RESPONSE_WRAP } from '../decorators/skip-response.decorator'
 
@@ -30,7 +30,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResult<T> |
     }
 
     const req = context.switchToHttp().getRequest<Request>()
-    const traceId = (req.headers['x-trace-id'] as string) || `t-${nanoid(10)}`
+    const traceId = requestTraceId(req)
 
     return next.handle().pipe(
       map((data) => ({

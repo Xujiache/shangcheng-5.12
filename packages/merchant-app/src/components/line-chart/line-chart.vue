@@ -49,10 +49,12 @@ function measure(): Promise<number> {
   return new Promise((resolve) => {
     try {
       const q = uni.createSelectorQuery().in(inst as any)
-      q.select('#wrap-' + canvasId).boundingClientRect((r: any) => {
-        if (r && r.width) resolve(r.width)
-        else resolve(canvasWidthPx.value)
-      }).exec()
+      q.select('#wrap-' + canvasId)
+        .boundingClientRect((r: any) => {
+          if (r && r.width) resolve(r.width)
+          else resolve(canvasWidthPx.value)
+        })
+        .exec()
     } catch {
       resolve(canvasWidthPx.value)
     }

@@ -382,7 +382,6 @@ export const adService = {
         { silent: true },
       )
     } catch {
-      // eslint-disable-next-line no-console -- Agent E 待补 approve 路由的明确提示
       console.warn(
         '[adService.approveCreative] 后端 /p/ads/creatives/:id/approve 未实现,降级使用 updateCreative({status:"active"})。请在后端 PlatformController 补 approve/reject 路由后移除该 fallback。',
       )
@@ -402,7 +401,6 @@ export const adService = {
         { silent: true },
       )
     } catch {
-      // eslint-disable-next-line no-console -- Agent E 待补 reject 路由的明确提示
       console.warn(
         '[adService.rejectCreative] 后端 /p/ads/creatives/:id/reject 未实现,降级使用 updateCreative({status:"rejected"})。请在后端 PlatformController 补 approve/reject 路由后移除该 fallback。',
       )

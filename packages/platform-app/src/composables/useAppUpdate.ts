@@ -17,11 +17,12 @@ interface RuntimeVersion {
 function readRuntimeVersion(): RuntimeVersion {
   try {
     const sys = uni.getSystemInfoSync() as any
-    const os = (sys.platform || '').toLowerCase() === 'android'
-      ? 'android'
-      : (sys.platform || '').toLowerCase() === 'ios'
-      ? 'ios'
-      : 'other'
+    const os =
+      (sys.platform || '').toLowerCase() === 'android'
+        ? 'android'
+        : (sys.platform || '').toLowerCase() === 'ios'
+          ? 'ios'
+          : 'other'
     const version = sys.appVersion || sys.appVersionName || '0.0.0'
     let versionCode = Number(sys.appVersionCode) || 0
     try {
@@ -38,10 +39,16 @@ function readRuntimeVersion(): RuntimeVersion {
 }
 
 function getIgnored(): number {
-  try { return Number(uni.getStorageSync(IGNORE_KEY)) || 0 } catch { return 0 }
+  try {
+    return Number(uni.getStorageSync(IGNORE_KEY)) || 0
+  } catch {
+    return 0
+  }
 }
 function setIgnored(code: number) {
-  try { uni.setStorageSync(IGNORE_KEY, String(code)) } catch {}
+  try {
+    uni.setStorageSync(IGNORE_KEY, String(code))
+  } catch {}
 }
 
 function downloadAndInstall(url: string, onProgress?: (pct: number) => void): Promise<void> {
@@ -93,9 +100,7 @@ function showUpdatePrompt(
   changelog: string,
   force: boolean,
 ) {
-  const content =
-    `最新版本：v${version}\n` +
-    (changelog ? `\n更新内容：\n${changelog}\n` : '\n')
+  const content = `最新版本：v${version}\n` + (changelog ? `\n更新内容：\n${changelog}\n` : '\n')
 
   uni.showModal({
     title: force ? '需要更新（强制）' : '发现新版本',

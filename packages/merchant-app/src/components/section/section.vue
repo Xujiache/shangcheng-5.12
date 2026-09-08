@@ -48,7 +48,10 @@ const emit = defineEmits<{
   border-radius: 16rpx;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  &.flush { background: transparent; box-shadow: none; }
+  &.flush {
+    background: transparent;
+    box-shadow: none;
+  }
 
   .section-head {
     display: flex;

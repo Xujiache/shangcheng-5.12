@@ -3,7 +3,9 @@ set -euo pipefail
 
 project_root=$(cd "$(dirname "$0")/.." && pwd)
 backend_root=${BACKEND_SERVER_ROOT:-$project_root/../../packages/server}
-production_base_url=${HARMONY_BACKEND_BASE_URL:-https://ewsn.top}
+production_base_url=${HARMONY_BACKEND_BASE_URL:?Set an explicit non-production backend URL}
+[[ "${HARMONY_BACKEND_ENV:-}" == "test" ]] || { echo "Set HARMONY_BACKEND_ENV=test" >&2; exit 2; }
+[[ "$production_base_url" != *ewsn.top* ]] || { echo "Refusing the production backend" >&2; exit 2; }
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 evidence_dir=${HARMONY_BACKEND_EVIDENCE_DIR:-$project_root/artifacts/backend-verification/$timestamp}
 scratch=$(mktemp -d)
@@ -33,6 +35,10 @@ tests=(
   test/merchant-chat.spec.ts
   test/chat.gateway.spec.ts
 )
+
+for test_file in "${tests[@]}"; do
+  [[ -f "$backend_root/$test_file" ]] || { echo "Missing required test: $test_file" >&2; exit 2; }
+done
 
 (
   cd "$backend_root"

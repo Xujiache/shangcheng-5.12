@@ -72,7 +72,9 @@ function logout() {
       <view class="blob blob-1" />
       <view class="blob blob-2" />
       <view class="hero-title">设置登录密码</view>
-      <view class="hero-sub">首次登录请设置 6 位以上密码，之后可用「手机号/账号 + 密码」登录管理后台</view>
+      <view class="hero-sub"
+        >首次登录请设置 6 位以上密码，之后可用「手机号/账号 + 密码」登录管理后台</view
+      >
       <view v-if="phoneHint" class="hero-phone">
         <Icon name="phone" :size="22" color="rgba(255,255,255,0.9)" />
         <text>{{ phoneHint }}</text>

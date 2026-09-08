@@ -1,10 +1,10 @@
 # ----------------------------------------------------------------------------
-# CI: 静态检查 + 类型检查 + 单元测试 + 集成测试（PR 与 main 分支必跑）
+# CI: 真实质量检查 + 全包单元测试 + 隔离数据库集成测试（全部 PR 和开发分支）
 #
 # 设计原则：
 #   - 全部硬门禁：lint / typecheck / test 任一失败 → 红灯阻断
 #     （server/test/ 已是真实用例，详见 Unit tests 步骤注释）。
-#   - 单 Node 版本（20.x）：仓库 engines.node 已锁 >=20.19.0；引入 matrix
+#   - 单 Node 版本（24 LTS）：仓库 engines.node 已锁 >=24.19.0 <25；引入 matrix
 #     会让 pnpm 缓存命中率下降、且暂无多版本验证需求。
 #   - pnpm 通过 packageManager 字段（package.json）自动启用 corepack。
 # ----------------------------------------------------------------------------
@@ -12,9 +12,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
-    branches: [main]
+    branches: ['**']
 
 # 同一 PR 连续 push 时取消旧任务，节省 Actions 配额
 concurrency:
@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20']
+        node: ['24.19.0']
     # 集成测试依赖的服务容器：随 job 启动、随 job 销毁（每次 run 全新实例）。
     # 因此对该库执行 prisma db push 是安全的——它只是一次性测试库，没有任何
     # 持久数据，无需 migrate 历史。健康检查确保服务就绪后才开始跑 steps。
@@ -88,8 +88,8 @@ jobs:
         # （与 build.yml 的 Build server 前置步骤保持一致）。
         run: pnpm --filter @jiujiu/server exec prisma generate
 
-      - name: Lint
-        run: pnpm lint
+      - name: Format, lint, types and contracts
+        run: pnpm quality:check
 
       - name: Typecheck
         # 防 vue-tsc 插件路径失效导致 typecheck 静默降级为「假绿灯」：
@@ -102,23 +102,34 @@ jobs:
             exit 1
           fi
 
-      - name: Unit tests (server)
-        # 硬门禁：server/test/ 已补齐 13 套真实用例（234 个），覆盖资金安全核心
+      - name: Unit tests (all workspaces)
+        # 硬门禁：运行各包真实测试，数量以当前运行报告为准；覆盖资金安全核心
         # （微信回调幂等/验签/refresh rotation/价格分级计价/优惠券重算/会员闸门/
         # WS 鉴权）。测试失败必须红灯阻断，不再 || true 软放过。
-        run: pnpm test:server
+        run: pnpm test:unit
 
       - name: Push schema to test DB
         # db push（非 migrate）直接按 schema.prisma 建表：服务容器里的库是
         # 每次 run 的一次性实例，无历史数据，push 安全且最快。硬门禁。
         run: pnpm --filter @jiujiu/server db:push:test
         env:
+          ALLOW_DATABASE_TESTS: '1'
           DATABASE_URL: postgresql://test:test@localhost:5432/test?schema=public
 
       - name: Integration tests (server)
         # 硬门禁：跑 jest.integration.config.js（--runInBand），连真实
         # Postgres + Redis 服务容器验证仓储/事务/缓存行为。
-        run: pnpm --filter @jiujiu/server test:integration
+        run: pnpm test:integration
         env:
+          ALLOW_DATABASE_TESTS: '1'
           DATABASE_URL: postgresql://test:test@localhost:5432/test?schema=public
-          REDIS_URL: redis://localhost:6379
+          REDIS_URL: redis://localhost:6379/15
+
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-evidence
+          path: .quality
+          include-hidden-files: true
+          if-no-files-found: error

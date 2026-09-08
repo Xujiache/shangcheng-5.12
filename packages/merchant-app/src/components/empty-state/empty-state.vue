@@ -28,8 +28,19 @@ withDefaults(
   flex-direction: column;
   align-items: center;
   text-align: center;
-  .icon { font-size: 96rpx; opacity: 0.4; }
-  .title { margin-top: 24rpx; font-size: 28rpx; color: var(--text-secondary); }
-  .desc { margin-top: 12rpx; font-size: 22rpx; color: var(--text-tertiary); }
+  .icon {
+    font-size: 96rpx;
+    opacity: 0.4;
+  }
+  .title {
+    margin-top: 24rpx;
+    font-size: 28rpx;
+    color: var(--text-secondary);
+  }
+  .desc {
+    margin-top: 12rpx;
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 </style>

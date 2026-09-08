@@ -53,7 +53,9 @@ async function loadVisibility() {
   try {
     const data = await profileService.getPlazaVisibility()
     visibility.value = data.scope
-  } catch { /* keep default */ }
+  } catch {
+    /* keep default */
+  }
 }
 
 async function setVisibility(scope: 'stores' | 'public') {
@@ -61,13 +63,18 @@ async function setVisibility(scope: 'stores' | 'public') {
   try {
     await profileService.setPlazaVisibility(scope)
     visibility.value = scope
-    uni.showToast({ title: scope === 'public' ? '已设为所有人可看' : '已设为仅门店可看', icon: 'success' })
+    uni.showToast({
+      title: scope === 'public' ? '已设为所有人可看' : '已设为仅门店可看',
+      icon: 'success',
+    })
   } catch (e: any) {
     uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
   }
 }
 
-function openUpload() { showUploadSheet.value = true }
+function openUpload() {
+  showUploadSheet.value = true
+}
 function pickUploadMyProducts() {
   showUploadSheet.value = false
   uni.navigateTo({ url: '/pages/product/add' })
@@ -109,7 +116,9 @@ const filteredProducts = computed(() => {
   }
   if (keyword.value) {
     const kw = keyword.value.toLowerCase()
-    list = list.filter((p) => p.productName.toLowerCase().includes(kw) || p.factoryName.includes(keyword.value))
+    list = list.filter(
+      (p) => p.productName.toLowerCase().includes(kw) || p.factoryName.includes(keyword.value),
+    )
   }
   return list
 })
@@ -118,13 +127,14 @@ const leftColumn = computed(() => filteredProducts.value.filter((_, i) => i % 2 
 const rightColumn = computed(() => filteredProducts.value.filter((_, i) => i % 2 === 1))
 
 async function loadProducts() {
-  const data = await plazaService.products({ pageSize: 30 }) as { list: PlazaProductCard[] }
+  const data = (await plazaService.products({ pageSize: 30 })) as { list: PlazaProductCard[] }
   products.value = data.list
 }
 async function loadFactories() {
   const params: any = {}
   if (filterRegion.value && filterRegion.value !== '全部') params.region = filterRegion.value
-  if (filterCategory.value && filterCategory.value !== '全部') params.category = filterCategory.value
+  if (filterCategory.value && filterCategory.value !== '全部')
+    params.category = filterCategory.value
   if (filterMinRating.value > 0) params.minRating = filterMinRating.value
   if (keyword.value) params.keyword = keyword.value
   factories.value = await plazaService.factories(params)
@@ -174,7 +184,10 @@ onMounted(() => {
 
 <template>
   <view class="page">
-    <view class="header" :style="{ background: 'var(--brand-gradient)', paddingTop: heroPaddingTop }">
+    <view
+      class="header"
+      :style="{ background: 'var(--brand-gradient)', paddingTop: heroPaddingTop }"
+    >
       <view class="head-row">
         <text class="head-title">选品广场</text>
         <text class="head-sub">平台精选 · 厂家直供</text>
@@ -202,13 +215,19 @@ onMounted(() => {
             :key="t"
             :class="['tag-pill', { active: activeTag === t }]"
             @click="activeTag = t"
-          >{{ t }}</view>
+            >{{ t }}</view
+          >
         </view>
       </scroll-view>
 
       <view class="waterfall">
         <view class="col">
-          <view v-for="p in leftColumn" :key="p.productId" class="card" @click="goFactory(p.factoryId)">
+          <view
+            v-for="p in leftColumn"
+            :key="p.productId"
+            class="card"
+            @click="goFactory(p.factoryId)"
+          >
             <view class="card-img-wrap">
               <image :src="p.productImage" mode="aspectFill" class="card-img" />
               <view v-if="p.isPlatformPushed" class="pushed-badge">平台推送</view>
@@ -236,7 +255,12 @@ onMounted(() => {
           </view>
         </view>
         <view class="col">
-          <view v-for="p in rightColumn" :key="p.productId" class="card" @click="goFactory(p.factoryId)">
+          <view
+            v-for="p in rightColumn"
+            :key="p.productId"
+            class="card"
+            @click="goFactory(p.factoryId)"
+          >
             <view class="card-img-wrap">
               <image :src="p.productImage" mode="aspectFill" class="card-img" />
               <view v-if="p.isPlatformPushed" class="pushed-badge">平台推送</view>
@@ -276,15 +300,24 @@ onMounted(() => {
     <view v-else-if="tab === 'factories'" class="content">
       <!-- 筛选条 -->
       <view class="filter-bar">
-        <view :class="['filter-chip', filterRegion !== '全部' && 'on']" @click="showFilterPanel = 'region'">
+        <view
+          :class="['filter-chip', filterRegion !== '全部' && 'on']"
+          @click="showFilterPanel = 'region'"
+        >
           <text>{{ filterRegion === '全部' ? '地区' : filterRegion }}</text>
           <Icon name="chevron-down" :size="18" color="var(--text-tertiary)" />
         </view>
-        <view :class="['filter-chip', filterCategory !== '全部' && 'on']" @click="showFilterPanel = 'category'">
+        <view
+          :class="['filter-chip', filterCategory !== '全部' && 'on']"
+          @click="showFilterPanel = 'category'"
+        >
           <text>{{ filterCategory === '全部' ? '品类' : filterCategory }}</text>
           <Icon name="chevron-down" :size="18" color="var(--text-tertiary)" />
         </view>
-        <view :class="['filter-chip', filterMinRating > 0 && 'on']" @click="showFilterPanel = 'rating'">
+        <view
+          :class="['filter-chip', filterMinRating > 0 && 'on']"
+          @click="showFilterPanel = 'rating'"
+        >
           <text>{{ filterMinRating > 0 ? `${filterMinRating}★+` : '评分' }}</text>
           <Icon name="chevron-down" :size="18" color="var(--text-tertiary)" />
         </view>
@@ -304,7 +337,9 @@ onMounted(() => {
               <view class="rating-pill" @click.stop="rateFactory(f)">
                 <Icon name="star-fill" :size="20" color="#FFD43B" :fill="true" />
                 <text>{{ (f.rating ?? 5).toFixed(1) }}</text>
-                <text v-if="(f.ratingCount ?? 0) > 0" class="rating-count">({{ f.ratingCount }})</text>
+                <text v-if="(f.ratingCount ?? 0) > 0" class="rating-count"
+                  >({{ f.ratingCount }})</text
+                >
               </view>
             </view>
             <view class="factory-meta">
@@ -313,7 +348,9 @@ onMounted(() => {
               <text v-if="f.categories?.length">· {{ f.categories.slice(0, 2).join(' / ') }}</text>
             </view>
             <view class="factory-stats">
-              <text class="fs-item">¥{{ Math.round((f.gmv || 0) / 10000) }}<span class="fs-label">万 GMV</span></text>
+              <text class="fs-item"
+                >¥{{ Math.round((f.gmv || 0) / 10000) }}<span class="fs-label">万 GMV</span></text
+              >
               <view class="factory-rate-btn" @click.stop="rateFactory(f)">给厂家评分</view>
             </view>
           </view>
@@ -339,7 +376,8 @@ onMounted(() => {
               :key="r"
               :class="['filter-item', filterRegion === r && 'on']"
               @click="pickFilter('region', r)"
-            >{{ r }}</view>
+              >{{ r }}</view
+            >
           </view>
         </view>
         <view v-else-if="showFilterPanel === 'category'">
@@ -349,7 +387,8 @@ onMounted(() => {
               :key="c"
               :class="['filter-item', filterCategory === c && 'on']"
               @click="pickFilter('category', c)"
-            >{{ c }}</view>
+              >{{ c }}</view
+            >
           </view>
         </view>
         <view v-else-if="showFilterPanel === 'rating'">
@@ -359,7 +398,8 @@ onMounted(() => {
               :key="r.value"
               :class="['filter-item', filterMinRating === r.value && 'on']"
               @click="pickFilter('rating', r.value)"
-            >{{ r.label }}</view>
+              >{{ r.label }}</view
+            >
           </view>
         </view>
       </view>
@@ -394,7 +434,9 @@ onMounted(() => {
           </view>
           <view class="action-info">
             <text class="action-title">产品显示规则</text>
-            <text class="action-sub">当前：{{ visibility === 'public' ? '所有人可看' : '仅门店可看' }}</text>
+            <text class="action-sub"
+              >当前：{{ visibility === 'public' ? '所有人可看' : '仅门店可看' }}</text
+            >
           </view>
           <Icon name="forward" :size="24" color="var(--text-tertiary)" />
         </view>
@@ -409,7 +451,11 @@ onMounted(() => {
           <text class="sheet-close" @click="showVisibilityDialog = false">完成</text>
         </view>
         <text class="vis-hint">设置我上传到选品广场的产品对谁可见。</text>
-        <view class="vis-option" :class="{ on: visibility === 'stores' }" @click="setVisibility('stores')">
+        <view
+          class="vis-option"
+          :class="{ on: visibility === 'stores' }"
+          @click="setVisibility('stores')"
+        >
           <view class="vis-radio">
             <view v-if="visibility === 'stores'" class="vis-dot" />
           </view>
@@ -418,7 +464,11 @@ onMounted(() => {
             <text class="vis-sub">只有审核通过的合作门店能在广场看到</text>
           </view>
         </view>
-        <view class="vis-option" :class="{ on: visibility === 'public' }" @click="setVisibility('public')">
+        <view
+          class="vis-option"
+          :class="{ on: visibility === 'public' }"
+          @click="setVisibility('public')"
+        >
           <view class="vis-radio">
             <view v-if="visibility === 'public'" class="vis-dot" />
           </view>
@@ -444,26 +494,44 @@ onMounted(() => {
     display: flex;
     align-items: baseline;
     gap: 12rpx;
-    .head-title { font-size: 36rpx; font-weight: 700; }
-    .head-sub { font-size: 22rpx; opacity: 0.85; }
+    .head-title {
+      font-size: 36rpx;
+      font-weight: 700;
+    }
+    .head-sub {
+      font-size: 22rpx;
+      opacity: 0.85;
+    }
   }
   .search-wrap {
     margin-top: 16rpx;
     display: flex;
     align-items: center;
     gap: 8rpx;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 999rpx;
     padding: 0 16rpx 0 20rpx;
     height: 72rpx;
-    .search-input { flex: 1; height: 100%; font-size: 26rpx; color: #fff; }
+    .search-input {
+      flex: 1;
+      height: 100%;
+      font-size: 26rpx;
+      color: #fff;
+    }
   }
   .tabs-row {
     margin-top: 16rpx;
-    :deep(.tab-text) { color: rgba(255,255,255,0.85); }
+    :deep(.tab-text) {
+      color: rgba(255, 255, 255, 0.85);
+    }
     :deep(.tab.active) {
-      .tab-text { color: #fff; font-weight: 700; }
-      &::after { background: #fff; }
+      .tab-text {
+        color: #fff;
+        font-weight: 700;
+      }
+      &::after {
+        background: #fff;
+      }
     }
   }
 }
@@ -518,7 +586,10 @@ onMounted(() => {
   width: 100%;
   aspect-ratio: 1;
 }
-.card-img { width: 100%; height: 100%; }
+.card-img {
+  width: 100%;
+  height: 100%;
+}
 .pushed-badge {
   position: absolute;
   top: 8rpx;
@@ -528,7 +599,7 @@ onMounted(() => {
   color: #fff;
   font-size: 18rpx;
   border-radius: 6rpx;
-  box-shadow: 0 2rpx 6rpx rgba(255,77,45,0.4);
+  box-shadow: 0 2rpx 6rpx rgba(255, 77, 45, 0.4);
 }
 .card-body {
   padding: 12rpx;
@@ -558,9 +629,19 @@ onMounted(() => {
 .meta-price {
   color: var(--brand-primary);
   font-family: var(--font-family-base);
-  .symbol { font-size: 18rpx; font-weight: 600; }
-  .value { font-size: 30rpx; font-weight: 700; }
-  .suffix { font-size: 18rpx; color: var(--text-tertiary); margin-left: 4rpx; }
+  .symbol {
+    font-size: 18rpx;
+    font-weight: 600;
+  }
+  .value {
+    font-size: 30rpx;
+    font-weight: 700;
+  }
+  .suffix {
+    font-size: 18rpx;
+    color: var(--text-tertiary);
+    margin-left: 4rpx;
+  }
 }
 .agency-count {
   font-size: 18rpx;
@@ -633,7 +714,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  .factory-name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+  .factory-name {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
   .pushed-mini {
     padding: 1rpx 6rpx;
     background: var(--brand-primary);
@@ -677,7 +762,9 @@ onMounted(() => {
     border-radius: 4rpx;
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 
 /* ============ v2 新增：筛选 / 评分 / 上传 / 显示规则 ============ */
 .filter-bar {
@@ -743,7 +830,10 @@ onMounted(() => {
   overflow: hidden;
   background: #f5f6f8;
 }
-.factory-logo { width: 100%; height: 100%; }
+.factory-logo {
+  width: 100%;
+  height: 100%;
+}
 .factory-logo-empty {
   display: flex;
   align-items: center;
@@ -766,7 +856,11 @@ onMounted(() => {
   font-size: 22rpx;
   font-weight: 700;
   flex-shrink: 0;
-  .rating-count { font-size: 18rpx; opacity: 0.7; font-weight: 400; }
+  .rating-count {
+    font-size: 18rpx;
+    opacity: 0.7;
+    font-weight: 400;
+  }
 }
 .factory-rate-btn {
   margin-left: auto;
@@ -776,7 +870,9 @@ onMounted(() => {
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 600;
-  &:active { opacity: 0.85; }
+  &:active {
+    opacity: 0.85;
+  }
 }
 
 .upload-fab {
@@ -794,7 +890,9 @@ onMounted(() => {
   border-radius: 999rpx;
   box-shadow: 0 10rpx 28rpx rgba(255, 77, 45, 0.4);
   z-index: 80;
-  &:active { transform: scale(0.97); }
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 .sheet-mask {
@@ -828,8 +926,16 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12rpx 4rpx 4rpx;
-  .sheet-title { font-size: 32rpx; font-weight: 800; color: #1d2129; }
-  .sheet-close { font-size: 26rpx; color: #ff4d2d; font-weight: 600; }
+  .sheet-title {
+    font-size: 32rpx;
+    font-weight: 800;
+    color: #1d2129;
+  }
+  .sheet-close {
+    font-size: 26rpx;
+    color: #ff4d2d;
+    font-weight: 600;
+  }
 }
 .sheet-action {
   display: flex;
@@ -838,7 +944,9 @@ onMounted(() => {
   padding: 20rpx 12rpx;
   border-radius: 16rpx;
   background: #f7f8fa;
-  &:active { background: #ebedf0; }
+  &:active {
+    background: #ebedf0;
+  }
 }
 .action-icon {
   width: 80rpx;
@@ -849,13 +957,34 @@ onMounted(() => {
   justify-content: center;
   flex-shrink: 0;
 }
-.action-icon-primary { background: linear-gradient(135deg, #ff7a4e, #ff4d2d); }
-.action-icon-ghost { background: linear-gradient(135deg, #5b8def, #3370ff); }
-.action-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
-.action-title { font-size: 28rpx; font-weight: 700; color: #1d2129; }
-.action-sub { font-size: 22rpx; color: #86909c; }
+.action-icon-primary {
+  background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+}
+.action-icon-ghost {
+  background: linear-gradient(135deg, #5b8def, #3370ff);
+}
+.action-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.action-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1d2129;
+}
+.action-sub {
+  font-size: 22rpx;
+  color: #86909c;
+}
 
-.vis-hint { font-size: 24rpx; color: #86909c; padding: 0 4rpx; }
+.vis-hint {
+  font-size: 24rpx;
+  color: #86909c;
+  padding: 0 4rpx;
+}
 .vis-option {
   display: flex;
   align-items: flex-start;
@@ -887,8 +1016,23 @@ onMounted(() => {
     background: #ff4d2d;
   }
 }
-.vis-option.on .vis-radio { border-color: #ff4d2d; }
-.vis-info { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
-.vis-title { font-size: 28rpx; font-weight: 700; color: #1d2129; }
-.vis-sub { font-size: 22rpx; color: #86909c; line-height: 1.5; }
+.vis-option.on .vis-radio {
+  border-color: #ff4d2d;
+}
+.vis-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.vis-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1d2129;
+}
+.vis-sub {
+  font-size: 22rpx;
+  color: #86909c;
+  line-height: 1.5;
+}
 </style>

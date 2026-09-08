@@ -1,0 +1,19 @@
+
+> jiujiu-mall@0.0.1 lint D:\工作\工作\工作（客户）\经纬智能科技\代码
+> pnpm -r lint
+
+Scope: 7 of 8 workspace projects
+packages/ledger-mp lint$ eslint miniprogram scripts --config ../../eslint.config.mjs
+packages/shared lint$ eslint src --config ../../eslint.config.mjs
+packages/shared lint: Done
+packages/ledger-mp lint: Done
+packages/admin-pc lint$ eslint
+packages/merchant-app lint$ eslint src --config ../../eslint.config.mjs
+packages/server lint$ eslint src --config ../../eslint.config.mjs
+packages/platform-app lint$ eslint src --config ../../eslint.config.mjs
+packages/server lint: Done
+packages/user-mp lint$ eslint src --config ../../eslint.config.mjs
+packages/platform-app lint: Done
+packages/merchant-app lint: Done
+packages/user-mp lint: Done
+packages/admin-pc lint: Done

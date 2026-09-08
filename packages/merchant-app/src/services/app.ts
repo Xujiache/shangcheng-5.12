@@ -14,13 +14,13 @@ import { http } from '../utils/request'
 export type AppPlatform = 'merchant' | 'platform'
 
 export interface AppRelease {
-  version: string           // 例:1.0.2
-  versionCode: number       // 例:102
-  url: string               // APK 下载直链
-  size: number              // 文件大小(字节)
-  changelog: string         // 更新说明
-  force: boolean            // 是否强制更新
-  publishedAt: string       // ISO 时间
+  version: string // 例:1.0.2
+  versionCode: number // 例:102
+  url: string // APK 下载直链
+  size: number // 文件大小(字节)
+  changelog: string // 更新说明
+  force: boolean // 是否强制更新
+  publishedAt: string // ISO 时间
 }
 
 export const appService = {

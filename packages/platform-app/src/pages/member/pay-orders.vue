@@ -209,7 +209,10 @@ onMounted(load)
           </view>
           <view
             class="status-tag"
-            :style="{ color: STATUS_META[o.status].tint, background: STATUS_META[o.status].tint + '14' }"
+            :style="{
+              color: STATUS_META[o.status].tint,
+              background: STATUS_META[o.status].tint + '14',
+            }"
           >
             {{ STATUS_META[o.status].label }}
           </view>
@@ -250,11 +253,11 @@ onMounted(load)
 
       <EmptyState
         v-if="!loading && filtered.length === 0"
-        :title="`暂无${TABS.find(t => t.key === tab)?.label}订单`"
+        :title="`暂无${TABS.find((t) => t.key === tab)?.label}订单`"
         desc="商户购买套餐后会在这里显示"
         icon="wallet"
       />
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -270,13 +273,13 @@ onMounted(load)
 .hero {
   margin: 16rpx 24rpx 0;
   padding: 24rpx;
-  background: linear-gradient(135deg, #FF4D2D, #FAAD14);
+  background: linear-gradient(135deg, #ff4d2d, #faad14);
   color: #fff;
   border-radius: 20rpx;
   display: flex;
   gap: 16rpx;
   align-items: stretch;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.25);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.25);
 }
 .hero-main {
   flex: 1;
@@ -291,8 +294,15 @@ onMounted(load)
     display: flex;
     align-items: baseline;
     font-family: var(--font-family-base);
-    .cur { font-size: 28rpx; font-weight: 800; }
-    .num { font-size: 56rpx; font-weight: 800; line-height: 1; }
+    .cur {
+      font-size: 28rpx;
+      font-weight: 800;
+    }
+    .num {
+      font-size: 56rpx;
+      font-weight: 800;
+      line-height: 1;
+    }
   }
   .hero-sub {
     font-size: 20rpx;
@@ -305,7 +315,7 @@ onMounted(load)
   justify-content: space-around;
   gap: 12rpx;
   padding: 8rpx 16rpx;
-  border-left: 1rpx solid rgba(255,255,255,0.3);
+  border-left: 1rpx solid rgba(255, 255, 255, 0.3);
 }
 .hs-item {
   text-align: right;
@@ -457,8 +467,15 @@ onMounted(load)
   gap: 2rpx;
   color: var(--brand-primary);
   font-family: var(--font-family-base);
-  .a-cur { font-size: 22rpx; font-weight: 800; }
-  .a-num { font-size: 36rpx; font-weight: 800; line-height: 1; }
+  .a-cur {
+    font-size: 22rpx;
+    font-weight: 800;
+  }
+  .a-num {
+    font-size: 36rpx;
+    font-weight: 800;
+    line-height: 1;
+  }
 }
 .ft-row {
   display: flex;
@@ -483,7 +500,7 @@ onMounted(load)
     color: var(--text-tertiary);
     font-family: var(--font-family-base);
     &.pending-text {
-      color: #FAAD14;
+      color: #faad14;
       font-weight: 600;
     }
   }
@@ -510,12 +527,12 @@ onMounted(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
   &.danger {
     background: var(--bg-card);
-    border: 1rpx solid rgba(255,59,48,0.4);
-    color: #FF3B30;
+    border: 1rpx solid rgba(255, 59, 48, 0.4);
+    color: #ff3b30;
   }
 }
 </style>

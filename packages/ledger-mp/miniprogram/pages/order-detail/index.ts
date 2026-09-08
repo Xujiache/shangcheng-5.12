@@ -314,9 +314,9 @@ MotionPage({
       const save = async () => {
         try {
           for (const path of paths) {
-            await new Promise<void>((ok, fail) =>
-              wx.saveImageToPhotosAlbum({ filePath: path, success: () => ok(), fail }),
-            )
+            await new Promise<void>((ok, fail) => {
+              wx.saveImageToPhotosAlbum({ filePath: path, success: () => ok(), fail })
+            })
           }
           resolve()
         } catch (e) {

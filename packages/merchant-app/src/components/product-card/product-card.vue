@@ -91,14 +91,20 @@ const priceColor = computed(() => {
   &.layout-vertical {
     flex-direction: column;
     padding: 12rpx;
-    .image-wrap { width: 100%; height: 280rpx; }
+    .image-wrap {
+      width: 100%;
+      height: 280rpx;
+    }
   }
 
   .checkbox {
     display: flex;
     align-items: center;
     padding-right: 8rpx;
-    text { font-size: 36rpx; color: var(--text-tertiary); }
+    text {
+      font-size: 36rpx;
+      color: var(--text-tertiary);
+    }
   }
   .image-wrap {
     flex: 0 0 160rpx;
@@ -108,7 +114,10 @@ const priceColor = computed(() => {
     overflow: hidden;
     position: relative;
     background: var(--bg-hover);
-    .image { width: 100%; height: 100%; }
+    .image {
+      width: 100%;
+      height: 100%;
+    }
     .badge-platform {
       position: absolute;
       top: 8rpx;

@@ -6,6 +6,7 @@
  * 401 / 2001 / 2002 → 节流 toast + 清 storage + 跳 /pages/auth/login
  */
 import type { ApiResult } from '@jiujiu/shared/types'
+import { createSessionCoordinator, LoginExpiredError } from '@jiujiu/shared/utils'
 
 // 后端统一入口 https://ewsn.top —— 不再支持本地 server,
 // .env 缺失 / uni-app mp-weixin 注入失败 / build 模式不匹配等任何场景,
@@ -78,6 +79,7 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
   return new Promise((resolve, reject) => {
     uni.request({
       url: BASE_URL + url,
+      timeout: 18000,
       method: (options.method ?? 'GET') as any,
       data: options.data as UniNamespace.RequestOptions['data'],
       header: {
@@ -86,18 +88,36 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
         ...(options.headers ?? {}),
       },
       success: (res) => {
-        const status = (res as any).statusCode as number
+        const status = res.statusCode
+        if (status >= 500) {
+          reject(new Error('服务暂时不可用，请稍后重试'))
+          return
+        }
         if (status === 401) {
           resolve({
             code: 2001,
             data: null,
             message: '登录已过期',
+            msg: '登录已过期',
             traceId: '',
             timestamp: Date.now(),
           } as ApiResult<T>)
           return
         }
-        resolve(res.data as ApiResult<T>)
+        const body = res.data as Partial<ApiResult<T>> | null
+        if (
+          !body ||
+          typeof body.code !== 'number' ||
+          !Object.prototype.hasOwnProperty.call(body, 'data')
+        ) {
+          reject(new Error('服务响应异常，请稍后重试'))
+          return
+        }
+        if ((status < 200 || status >= 300) && body.code === 0) {
+          reject(new Error('服务响应异常，请稍后重试'))
+          return
+        }
+        resolve(body as ApiResult<T>)
       },
       fail: (err) => reject(err),
     })
@@ -112,43 +132,51 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
  *
  * 失败一定要返回 false，让上层走 handleUnauthorized 流程。
  */
-let refreshPromise: Promise<boolean> | null = null
-function tryRefresh(): Promise<boolean> {
-  if (refreshPromise) return refreshPromise
-  refreshPromise = (async () => {
-    const rt = getRefreshToken()
-    if (!rt) return false
-    return await new Promise<boolean>((resolve) => {
-      uni.request({
-        url: BASE_URL + '/api/v1/auth/refresh',
-        method: 'POST',
-        data: { refreshToken: rt },
-        header: { 'Content-Type': 'application/json' },
-        success: (res) => {
-          try {
-            const data = res.data as ApiResult<{ accessToken: string; refreshToken: string }>
-            if (data?.code === 0 && data.data?.accessToken && data.data?.refreshToken) {
-              uni.setStorageSync(TOKEN_KEY, data.data.accessToken)
-              uni.setStorageSync(REFRESH_KEY, data.data.refreshToken)
-              resolve(true)
-              return
-            }
-          } catch {
-            /* ignore */
-          }
-          resolve(false)
-        },
-        fail: () => resolve(false),
-      })
-    })
-  })()
+const session = createSessionCoordinator(() => ({
+  accessToken: getToken(),
+  refreshToken: getRefreshToken(),
+}))
+async function tryRefresh(epoch: number, sentAccessToken: string | null): Promise<boolean> {
   try {
-    return refreshPromise
-  } finally {
-    // 清掉 in-flight 占位（无论结果都释放，等下次再调时才会重新发起）
-    refreshPromise.finally(() => {
-      refreshPromise = null
-    })
+    await session.refresh(
+      epoch,
+      (refreshToken) =>
+        new Promise((resolve, reject) => {
+          uni.request({
+            url: BASE_URL + '/api/v1/auth/refresh',
+            method: 'POST',
+            timeout: 15000,
+            data: { refreshToken },
+            success: (res) => {
+              const result = res.data as ApiResult<{ accessToken: string; refreshToken: string }>
+              if (res.statusCode >= 500) {
+                reject(new Error('登录续期暂时不可用，请稍后重试'))
+              } else if (res.statusCode === 401 || isAuthExpired(result?.code)) {
+                reject(new LoginExpiredError('登录已过期'))
+              } else if (
+                res.statusCode === 200 &&
+                result?.code === 0 &&
+                result.data?.accessToken &&
+                result.data?.refreshToken
+              ) {
+                resolve(result.data)
+              } else {
+                reject(new Error('登录续期暂时不可用，请稍后重试'))
+              }
+            },
+            fail: () => reject(new Error('网络连接失败，请检查网络后重试')),
+          })
+        }),
+      (tokens) => {
+        uni.setStorageSync(TOKEN_KEY, tokens.accessToken)
+        uni.setStorageSync(REFRESH_KEY, tokens.refreshToken)
+      },
+      sentAccessToken,
+    )
+    return true
+  } catch (error) {
+    if (error instanceof LoginExpiredError) return false
+    throw error
   }
 }
 
@@ -170,6 +198,7 @@ function handleUnauthorized(message: string) {
   uni.showToast({ title: message || '登录已过期，请重新登录', icon: 'none', duration: 1500 })
 
   setTimeout(() => {
+    if (getToken()) return
     try {
       const pages = getCurrentPages?.() || []
       const top = pages[pages.length - 1] as any
@@ -188,15 +217,20 @@ function isAuthExpired(code: number) {
 }
 
 export async function request<T = unknown>(url: string, options: RequestOptions = {}): Promise<T> {
+  const epoch = session.capture()
+  const sentAccessToken = getToken()
   const fullUrl = buildUrl(url, options.params)
   let result = await realRequest<T>(fullUrl, options)
+  session.assertCurrent(epoch)
 
   // 鉴权失败 → 尝试用 refresh token 静默续签后重试一次
   // /auth/refresh 自身失败不再递归
   if (result.code !== 0 && isAuthExpired(result.code) && !url.includes('/auth/refresh')) {
-    const ok = await tryRefresh()
+    const ok = await tryRefresh(epoch, sentAccessToken)
+    session.assertCurrent(epoch)
     if (ok) {
       result = await realRequest<T>(fullUrl, options)
+      session.assertCurrent(epoch)
     }
   }
 

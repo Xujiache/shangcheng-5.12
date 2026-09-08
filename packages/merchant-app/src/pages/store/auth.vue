@@ -163,7 +163,9 @@ onMounted(() => {
           >
             <view class="tier-color" :style="{ background: t.color }" />
             <text class="tier-label">{{ t.label }}</text>
-            <text class="tier-check">{{ config.visiblePriceTiers.includes(t.key) ? '✓' : '+' }}</text>
+            <text class="tier-check">{{
+              config.visiblePriceTiers.includes(t.key) ? '✓' : '+'
+            }}</text>
           </view>
         </view>
       </Section>
@@ -177,8 +179,15 @@ onMounted(() => {
         <view class="policy-list">
           <view v-for="p in config.productPolicies" :key="p.categoryId" class="policy-row">
             <view class="policy-left">
-              <switch :checked="p.enabled" color="#FF4D2D" @change="togglePolicy(p)" style="transform: scale(0.8)" />
-              <text class="policy-name" :class="{ disabled: !p.enabled }">{{ p.categoryName }}</text>
+              <switch
+                :checked="p.enabled"
+                color="#FF4D2D"
+                @change="togglePolicy(p)"
+                style="transform: scale(0.8)"
+              />
+              <text class="policy-name" :class="{ disabled: !p.enabled }">{{
+                p.categoryName
+              }}</text>
             </view>
             <view v-if="p.enabled" class="policy-markup">
               <text class="markup-label">加价</text>
@@ -202,7 +211,12 @@ onMounted(() => {
             <text class="valid-value">{{ config.authValidFrom }}</text>
           </view>
           <text class="valid-arrow">→</text>
-          <picker mode="date" :value="config.authValidTo" :start="config.authValidFrom" @change="pickValidTo">
+          <picker
+            mode="date"
+            :value="config.authValidTo"
+            :start="config.authValidFrom"
+            @change="pickValidTo"
+          >
             <view class="valid-block clickable">
               <text class="valid-label">结束</text>
               <text class="valid-value">{{ config.authValidTo }}</text>
@@ -264,8 +278,15 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .level-name { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-    .level-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .level-name {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .level-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
   .tick {
     color: var(--brand-primary);
@@ -309,7 +330,10 @@ onMounted(() => {
     font-size: 28rpx;
     color: var(--text-tertiary);
   }
-  &.active .tier-check { color: var(--brand-primary); font-weight: 700; }
+  &.active .tier-check {
+    color: var(--brand-primary);
+    font-weight: 700;
+  }
 }
 .policy-list {
   display: flex;
@@ -321,7 +345,9 @@ onMounted(() => {
   justify-content: space-between;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .policy-left {
   display: flex;
@@ -331,14 +357,20 @@ onMounted(() => {
   .policy-name {
     font-size: 26rpx;
     color: var(--text-primary);
-    &.disabled { color: var(--text-tertiary); text-decoration: line-through; }
+    &.disabled {
+      color: var(--text-tertiary);
+      text-decoration: line-through;
+    }
   }
 }
 .policy-markup {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  .markup-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .markup-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .markup-step {
     width: 48rpx;
     height: 48rpx;
@@ -357,10 +389,17 @@ onMounted(() => {
     font-weight: 700;
     color: var(--brand-primary);
     font-family: var(--font-family-base);
-    .unit { font-size: 20rpx; color: var(--text-tertiary); margin-left: 2rpx; }
+    .unit {
+      font-size: 20rpx;
+      color: var(--text-tertiary);
+      margin-left: 2rpx;
+    }
   }
 }
-.policy-disabled-tip { font-size: 22rpx; color: var(--text-tertiary); }
+.policy-disabled-tip {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
 .valid-row {
   display: flex;
   align-items: center;
@@ -379,7 +418,10 @@ onMounted(() => {
     background: var(--brand-primary-ghost);
     border: 1rpx solid var(--brand-primary);
   }
-  .valid-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .valid-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .valid-value {
     font-size: 26rpx;
     font-weight: 700;
@@ -399,5 +441,7 @@ onMounted(() => {
   font-size: 22rpx;
   color: var(--text-secondary);
 }
-.safe-bottom { height: 80rpx; }
+.safe-bottom {
+  height: 80rpx;
+}
 </style>

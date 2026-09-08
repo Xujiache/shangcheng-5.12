@@ -7,6 +7,8 @@ import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { json } from 'express'
+import helmet from 'helmet'
+import { requestTraceId } from './common/trace'
 
 /**
  * 解析允许的 CORS 源列表。
@@ -52,29 +54,28 @@ async function bootstrap() {
   // Only workbook import needs a larger JSON body; payment rawBody is unchanged.
   app.use('/api/v1/l/workbook/sync', json({ limit: '8mb' }))
 
-  // 安全响应头：HSTS / X-Content-Type-Options / X-Frame-Options 等
-  // helmet 是可选依赖（package.json 暂未列入），缺失时不阻塞启动；
-  // 待运维执行 `pnpm --filter @jiujiu/server add helmet` 后自动生效。
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const helmet = require('helmet')
-    // 默认配置已是合理基线；如未来要嵌微信支付收银台/小程序 webview 等需要放宽 CSP，
-    // 可在这里传入 { contentSecurityPolicy: false } 或自定义 directives。
-    app.use(helmet())
-    Logger.log('[security] helmet 已启用', 'Bootstrap')
-  } catch (e: any) {
-    Logger.warn(
-      `[security] helmet 未安装（${e?.code || e?.message || 'MODULE_NOT_FOUND'}），跳过；运行 \`pnpm --filter @jiujiu/server add helmet\` 后重启生效`,
-      'Bootstrap',
-    )
-  }
+  app.use(helmet())
+  app.use(
+    (
+      req: import('express').Request,
+      res: import('express').Response,
+      next: import('express').NextFunction,
+    ) => {
+      res.setHeader('X-Trace-Id', requestTraceId(req))
+      next()
+    },
+  )
+  app.enableShutdownHooks()
 
   // 为 WebSocket Gateway 启用 socket.io IoAdapter，namespace 走 /ws/chat
   app.useWebSocketAdapter(new IoAdapter(app))
 
   // 全局前缀（exclude 旧 admin-pc 兼容路径）
   app.setGlobalPrefix('api/v1', {
-    exclude: [{ path: 'health', method: RequestMethod.GET }],
+    exclude: ['health', 'health/live', 'health/ready'].map((path) => ({
+      path,
+      method: RequestMethod.GET,
+    })),
   })
 
   app.useGlobalPipes(

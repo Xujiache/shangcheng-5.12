@@ -88,7 +88,9 @@ export function useChatSocket(token: string, role: 'user' | 'merchant' = 'user')
 
   function disconnect() {
     if (!io) return
-    try { io.disconnect() } catch {}
+    try {
+      io.disconnect()
+    } catch {}
     io = null
     connected.value = false
   }
@@ -121,7 +123,8 @@ export function useChatSocket(token: string, role: 'user' | 'merchant' = 'user')
     markRead,
     onMessage: (h) => msgHandlers.push(h),
     offMessage: (h) => {
-      const i = msgHandlers.indexOf(h); if (i >= 0) msgHandlers.splice(i, 1)
+      const i = msgHandlers.indexOf(h)
+      if (i >= 0) msgHandlers.splice(i, 1)
     },
     onTyping: (h) => typingHandlers.push(h),
   }

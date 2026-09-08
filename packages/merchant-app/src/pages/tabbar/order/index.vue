@@ -214,7 +214,9 @@ function getNotifyPrefs(): { notify: boolean; notifyOrder: boolean } {
       const p = JSON.parse(raw)
       return { notify: p.notify ?? true, notifyOrder: p.notifyOrder ?? true }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { notify: true, notifyOrder: true }
 }
 
@@ -229,7 +231,9 @@ function playNewOrderSound() {
     }
     audioCtx.stop()
     audioCtx.play()
-  } catch { /* 资源缺失或平台不支持，忽略 */ }
+  } catch {
+    /* 资源缺失或平台不支持，忽略 */
+  }
 }
 
 function handleNewOrder(payload: MerchantNewOrderPayload) {
@@ -238,7 +242,11 @@ function handleNewOrder(payload: MerchantNewOrderPayload) {
 
   // 通知开关：尊重 settings 页
   if (prefs.notify && prefs.notifyOrder) {
-    try { uni.vibrateShort({}) } catch { /* ignore */ }
+    try {
+      uni.vibrateShort({})
+    } catch {
+      /* ignore */
+    }
     playNewOrderSound()
     uni.showToast({
       title: `新订单：${payload.no || payload.id}`,
@@ -276,7 +284,11 @@ onShow(() => {
 onPullDownRefresh(() => load(true))
 onUnload(() => {
   notify.offNewOrder(handleNewOrder)
-  try { audioCtx?.destroy?.() } catch { /* ignore */ }
+  try {
+    audioCtx?.destroy?.()
+  } catch {
+    /* ignore */
+  }
   audioCtx = null
 })
 </script>
@@ -297,7 +309,16 @@ onUnload(() => {
           confirm-type="search"
           @confirm="onSearch"
         />
-        <view v-if="keyword" class="clear" @click="keyword = ''; onSearch()">
+        <view
+          v-if="keyword"
+          class="clear"
+          @click="
+            ($event) => {
+              keyword = ''
+              onSearch()
+            }
+          "
+        >
           <Icon name="close" :size="24" color="var(--text-tertiary)" />
         </view>
       </view>
@@ -307,10 +328,17 @@ onUnload(() => {
             v-for="t in TABS"
             :key="t.key"
             :class="['tab-item', tab === t.key && 'active']"
-            @click="tab = t.key; onTabChange()"
+            @click="
+              ($event) => {
+                tab = t.key
+                onTabChange()
+              }
+            "
           >
             <text class="tab-text">{{ t.label }}</text>
-            <text v-if="t.badge && t.badge > 0" class="tab-badge">{{ t.badge > 99 ? '99+' : t.badge }}</text>
+            <text v-if="t.badge && t.badge > 0" class="tab-badge">{{
+              t.badge > 99 ? '99+' : t.badge
+            }}</text>
           </view>
         </view>
       </scroll-view>
@@ -325,8 +353,21 @@ onUnload(() => {
         @click="goDetail"
         @action="onAction"
       />
-      <EmptyState v-if="!loading && list.length === 0" title="暂无订单" desc="切换标签或调整搜索条件" />
-      <view v-if="hasMore && list.length > 0" class="loadmore" @click="page++; load()">
+      <EmptyState
+        v-if="!loading && list.length === 0"
+        title="暂无订单"
+        desc="切换标签或调整搜索条件"
+      />
+      <view
+        v-if="hasMore && list.length > 0"
+        class="loadmore"
+        @click="
+          ($event) => {
+            page++
+            load()
+          }
+        "
+      >
         加载更多 ›
       </view>
       <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
@@ -346,7 +387,7 @@ onUnload(() => {
             <text class="ship-label">快递公司</text>
             <picker
               mode="selector"
-              :range="SHIP_COMPANIES.map(c => c.name)"
+              :range="SHIP_COMPANIES.map((c) => c.name)"
               :value="shipDialog.companyIndex"
               @change="onShipCompanyChange"
             >
@@ -425,7 +466,9 @@ onUnload(() => {
     font-size: 26rpx;
     color: var(--text-primary);
   }
-  .clear { padding: 4rpx; }
+  .clear {
+    padding: 4rpx;
+  }
 }
 /* 直接内联 Tab 实现，避开 scroll-view + 组件 flex 冲突 */
 .tabs-scroll {
@@ -433,7 +476,9 @@ onUnload(() => {
   border-bottom: 1rpx solid var(--border-light);
   width: 100%;
   white-space: nowrap;
-  &::-webkit-scrollbar { display: none; }
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 .tabs-inline {
   display: inline-flex;
@@ -497,7 +542,9 @@ onUnload(() => {
   font-size: 20rpx;
   color: var(--text-tertiary);
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 
 /* 发货弹窗 */
 .ship-mask {
@@ -586,7 +633,7 @@ onUnload(() => {
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 4rpx 12rpx rgba(255,77,45,0.3);
+    box-shadow: 0 4rpx 12rpx rgba(255, 77, 45, 0.3);
     &.disabled {
       opacity: 0.6;
       pointer-events: none;

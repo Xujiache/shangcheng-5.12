@@ -158,7 +158,12 @@ onMounted(() => {
             v-for="(q, i) in detail.qualifications"
             :key="q.name"
             class="quali-cell"
-            @click="previewQualification(detail.qualifications.map(x => x.image), i)"
+            @click="
+              previewQualification(
+                detail.qualifications.map((x) => x.image),
+                i,
+              )
+            "
           >
             <image :src="q.image" class="quali-img" mode="aspectFill" />
             <text class="quali-name">{{ q.name }}</text>
@@ -239,7 +244,11 @@ onMounted(() => {
               <text class="opt-name">价格自动同步</text>
               <text class="opt-desc">厂家调价时自动同步到本店</text>
             </view>
-            <switch :checked="agencyForm.autoSyncPrice" color="#FF4D2D" @change="(e) => agencyForm.autoSyncPrice = e.detail.value" />
+            <switch
+              :checked="agencyForm.autoSyncPrice"
+              color="#FF4D2D"
+              @change="(e) => (agencyForm.autoSyncPrice = e.detail.value)"
+            />
           </view>
         </view>
 
@@ -271,7 +280,7 @@ onMounted(() => {
 .nav-on-dark :deep(.title),
 .nav-on-dark :deep(.back-icon) {
   color: #fff !important;
-  text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.3);
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
 }
 .nav-on-dark {
   border-bottom: none !important;
@@ -292,7 +301,7 @@ onMounted(() => {
 .hero-mask {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7));
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.7));
 }
 .hero-info {
   position: absolute;
@@ -425,7 +434,10 @@ onMounted(() => {
   border-radius: 12rpx;
   overflow: hidden;
 }
-.prod-img { width: 100%; height: 100%; }
+.prod-img {
+  width: 100%;
+  height: 100%;
+}
 .prod-push {
   position: absolute;
   top: 6rpx;
@@ -467,7 +479,7 @@ onMounted(() => {
   align-items: center;
   background: var(--bg-card);
   padding: 12rpx 24rpx calc(12rpx + env(safe-area-inset-bottom));
-  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
   gap: 16rpx;
 }
 .f-icon-btn {
@@ -491,13 +503,15 @@ onMounted(() => {
   line-height: 88rpx;
   font-size: 30rpx;
   font-weight: 700;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.4);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.4);
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: flex-end;
+  display: flex;
+  align-items: flex-end;
 }
 .sheet {
   width: 100%;
@@ -514,8 +528,15 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  .sheet-title { font-size: 32rpx; font-weight: 700; color: var(--text-primary); }
-  .sheet-close { font-size: 28rpx; color: var(--text-tertiary); }
+  .sheet-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .sheet-close {
+    font-size: 28rpx;
+    color: var(--text-tertiary);
+  }
 }
 .sheet-sub {
   font-size: 22rpx;
@@ -527,7 +548,9 @@ onMounted(() => {
 .sheet-section {
   padding: 12rpx 0;
   border-bottom: 1rpx solid var(--border-light);
-  &:last-of-type { border-bottom: none; }
+  &:last-of-type {
+    border-bottom: none;
+  }
 }
 .sheet-label {
   display: block;
@@ -585,8 +608,15 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .opt-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); }
-    .opt-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .opt-name {
+      font-size: 26rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .opt-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .ag-textarea {
@@ -611,12 +641,17 @@ onMounted(() => {
   line-height: 88rpx;
   font-size: 28rpx;
   font-weight: 700;
-  &.ghost { background: var(--bg-hover); color: var(--text-primary); }
+  &.ghost {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.4);
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.4);
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

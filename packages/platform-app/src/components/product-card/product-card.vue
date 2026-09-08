@@ -136,7 +136,7 @@ const heightPx = computed(() => `${props.imgHeight}rpx`)
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
   .sales {
     font-size: 20rpx;

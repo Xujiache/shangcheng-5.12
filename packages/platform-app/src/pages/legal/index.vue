@@ -227,7 +227,9 @@ onMounted(load)
   padding: 24rpx 0;
   gap: 16rpx;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .m-key {
   display: flex;
@@ -252,7 +254,10 @@ onMounted(load)
     font-size: 26rpx;
     color: var(--text-primary);
     font-weight: 600;
-    &.mono { font-family: var(--font-family-base); font-weight: 500; }
+    &.mono {
+      font-family: var(--font-family-base);
+      font-weight: 500;
+    }
   }
 }
 .body-card {
@@ -269,8 +274,16 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  .body-title { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
-  .body-len { font-size: 20rpx; color: var(--text-tertiary); font-family: var(--font-family-base); }
+  .body-title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .body-len {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+    font-family: var(--font-family-base);
+  }
 }
 .body-input {
   width: 100%;
@@ -317,6 +330,8 @@ onMounted(load)
   color: #fff;
   background: var(--brand-gradient);
   box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
-  &.loading { opacity: 0.7; }
+  &.loading {
+    opacity: 0.7;
+  }
 }
 </style>

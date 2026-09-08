@@ -318,7 +318,7 @@ onShow(() => {
               v-for="(p, i) in salesTrendPoints.dots"
               :key="i"
               class="bar bar-sales"
-              :style="{ height: ((44 - p.y) / 40 * 100).toFixed(1) + '%' }"
+              :style="{ height: (((44 - p.y) / 40) * 100).toFixed(1) + '%' }"
             />
           </view>
         </view>
@@ -375,7 +375,7 @@ onShow(() => {
               v-for="(p, i) in trendPoints.dots"
               :key="i"
               class="bar bar-reg"
-              :style="{ height: ((44 - p.y) / 40 * 100).toFixed(1) + '%' }"
+              :style="{ height: (((44 - p.y) / 40) * 100).toFixed(1) + '%' }"
             />
           </view>
         </view>
@@ -763,10 +763,10 @@ onShow(() => {
   transition: height 0.3s ease;
 }
 .bar-sales {
-  background: linear-gradient(180deg, #FF4D2D, #F59E0B);
+  background: linear-gradient(180deg, #ff4d2d, #f59e0b);
 }
 .bar-reg {
-  background: linear-gradient(180deg, #A855F7, #EC4899);
+  background: linear-gradient(180deg, #a855f7, #ec4899);
 }
 
 /* === 卡内错误 === */

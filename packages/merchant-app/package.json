@@ -11,8 +11,8 @@
     "build:mp-weixin": "uni build -p mp-weixin",
     "build:app": "uni build -p app",
     "typecheck": "vue-tsc --noEmit",
-    "lint": "echo 'lint: merchant-app'",
-    "test": "echo 'test: merchant-app'"
+    "lint": "eslint src --config ../../eslint.config.mjs",
+    "test": "vitest run --config ../../vitest.config.mts"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-alpha-5000820260508001",
@@ -45,5 +45,8 @@
     "typescript": "~5.6.3",
     "vite": "^7.1.5",
     "vue-tsc": "~2.1.6"
+  },
+  "engines": {
+    "node": ">=24.19.0 <25"
   }
 }

@@ -40,9 +40,18 @@ export function genPlazaPush(): PlazaPush {
 export function genPlazaCard(): PlazaProductCard {
   return {
     productId: genId(),
-    productName: faker.helpers.arrayElement(['实木真皮沙发', '岩板茶几', '北欧吊灯', '智能升降桌']) + ' #' + faker.number.int({ min: 1, max: 999 }),
+    productName:
+      faker.helpers.arrayElement(['实木真皮沙发', '岩板茶几', '北欧吊灯', '智能升降桌']) +
+      ' #' +
+      faker.number.int({ min: 1, max: 999 }),
     productImage: `https://picsum.photos/seed/${faker.number.int({ min: 1, max: 100 })}/400/400`,
-    factoryName: faker.helpers.arrayElement(['经纬科技', '佛山实木家具厂', '南方睡眠科技', '岩板工厂', '创智办公']),
+    factoryName: faker.helpers.arrayElement([
+      '经纬科技',
+      '佛山实木家具厂',
+      '南方睡眠科技',
+      '岩板工厂',
+      '创智办公',
+    ]),
     factoryId: genId(),
     startPrice: faker.number.int({ min: 800, max: 5000 }),
     agencyCount: faker.number.int({ min: 0, max: 300 }),

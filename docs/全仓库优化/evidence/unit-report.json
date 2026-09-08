@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "9a91ab63215086de13e2c2c4c5682cc6a35d25117f32c1c6e454e89d1bbeb58d",
+  "mode": "unit",
+  "startedAt": "2026-09-08T20:14:09.448Z",
+  "status": "passed",
+  "steps": [
+    {
+      "command": ["pnpm.cmd", "build:shared"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 6890,
+      "artifact": "docs/全仓库优化/evidence/unit/0.txt",
+      "sha256": "ac2828d490ba095b2820e56f8931c9c9205879918c6c9a98dab503049e163efe"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "prisma:generate"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 4672,
+      "artifact": "docs/全仓库优化/evidence/unit/1.txt",
+      "sha256": "5680e5b6bdc3ca495f4bf75e4791085bbf8e135e0cddf93fb9559d1012738da7"
+    },
+    {
+      "command": ["pnpm.cmd", "-r", "--workspace-concurrency=1", "test"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 32452,
+      "artifact": "docs/全仓库优化/evidence/unit/2.txt",
+      "sha256": "7d86686180a7af8a0e3aba6768c6e9d7dd13d815b5335025ad48ec8f68f6d17f"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        "scripts/quality/release.test.mjs",
+        "scripts/quality/uni-processor.test.mjs",
+        "scripts/db/migrate.test.mjs"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 1291,
+      "artifact": "docs/全仓库优化/evidence/unit/3.txt",
+      "sha256": "d318bd2d3cabe96022efd26f6adfe1df3247174ea058b4cef2032a2602793c5f"
+    }
+  ],
+  "finishedAt": "2026-09-08T20:14:56.96Z",
+  "archivedFrom": ".quality/unit/report.json"
+}

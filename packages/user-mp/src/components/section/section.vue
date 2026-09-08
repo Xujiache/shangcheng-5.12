@@ -46,14 +46,27 @@ const emit = defineEmits<{ (e: 'action'): void }>()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  .head-left { display: flex; flex-direction: column; gap: 4rpx; }
-  .title { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-  .desc { font-size: 22rpx; color: var(--text-tertiary); }
+  .head-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+  }
+  .title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .desc {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .action {
     font-size: 24rpx;
     color: var(--brand-primary);
     padding: 6rpx;
   }
 }
-.section-body { padding: 8rpx 32rpx 24rpx; }
+.section-body {
+  padding: 8rpx 32rpx 24rpx;
+}
 </style>

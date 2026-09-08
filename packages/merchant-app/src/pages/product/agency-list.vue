@@ -104,7 +104,10 @@ onMounted(loadAgencyApps)
 onShow(loadAgencyApps)
 
 function goPlaza() {
-  uni.switchTab({ url: '/pages/tabbar/home/index', fail: () => uni.navigateTo({ url: '/pages/plaza/index' }) })
+  uni.switchTab({
+    url: '/pages/tabbar/home/index',
+    fail: () => uni.navigateTo({ url: '/pages/plaza/index' }),
+  })
   setTimeout(() => uni.navigateTo({ url: '/pages/plaza/index' }), 100)
 }
 
@@ -300,7 +303,10 @@ function goEditProduct(a: AgencyApp) {
               <text class="name">{{ a.productName }}</text>
               <view
                 class="status"
-                :style="{ color: STATUS_META[a.status].tint, background: STATUS_META[a.status].tint + '14' }"
+                :style="{
+                  color: STATUS_META[a.status].tint,
+                  background: STATUS_META[a.status].tint + '14',
+                }"
               >
                 {{ STATUS_META[a.status].label }}
               </view>
@@ -361,7 +367,7 @@ function goEditProduct(a: AgencyApp) {
           <view class="empty-btn" @click="goPlaza">去选品广场 ›</view>
         </template>
       </EmptyState>
-      <view style="height: 40rpx;" />
+      <view style="height: 40rpx" />
     </scroll-view>
 
     <!-- 加价弹窗（% 加价率 / ¥ 固定金额） -->
@@ -375,7 +381,11 @@ function goEditProduct(a: AgencyApp) {
         </view>
         <view class="mk-body">
           <view class="mk-target" v-if="markupDialog.target">
-            <image :src="markupDialog.target.productImage" mode="aspectFill" class="mk-target-img" />
+            <image
+              :src="markupDialog.target.productImage"
+              mode="aspectFill"
+              class="mk-target-img"
+            />
             <view class="mk-target-info">
               <text class="mk-target-name">{{ markupDialog.target.productName }}</text>
               <text class="mk-target-price">出厂价 ¥{{ markupDialog.target.startPrice }}</text>
@@ -423,7 +433,9 @@ function goEditProduct(a: AgencyApp) {
             <view class="mk-preview-arrow">↓</view>
             <view class="mk-preview-row mk-preview-row--accent">
               <text class="mk-preview-label">新零售价</text>
-              <text class="mk-preview-value mk-preview-value--big">¥{{ markupPreview.newRetail }}</text>
+              <text class="mk-preview-value mk-preview-value--big"
+                >¥{{ markupPreview.newRetail }}</text
+              >
             </view>
             <view class="mk-preview-row mk-preview-row--small">
               <text class="mk-preview-label">实际加价率</text>
@@ -451,7 +463,7 @@ function goEditProduct(a: AgencyApp) {
 .success-banner {
   margin: 16rpx 24rpx 0;
   padding: 16rpx 20rpx;
-  background: linear-gradient(135deg, #52C41A, #95E063);
+  background: linear-gradient(135deg, #52c41a, #95e063);
   color: #fff;
   border-radius: 16rpx;
   display: flex;
@@ -485,11 +497,20 @@ function goEditProduct(a: AgencyApp) {
       line-height: 1.4;
     }
   }
-  .sb-close { padding: 4rpx; flex-shrink: 0; }
+  .sb-close {
+    padding: 4rpx;
+    flex-shrink: 0;
+  }
 }
 @keyframes slide-in {
-  from { opacity: 0; transform: translateY(-12rpx); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stats {
@@ -513,10 +534,17 @@ function goEditProduct(a: AgencyApp) {
     color: var(--text-primary);
     line-height: 1;
     font-family: var(--font-family-base);
-    &.accent { color: #FAAD14; }
-    &.success { color: #52C41A; }
+    &.accent {
+      color: #faad14;
+    }
+    &.success {
+      color: #52c41a;
+    }
   }
-  .label { font-size: 20rpx; color: var(--text-tertiary); }
+  .label {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
 }
 .divider {
   width: 1rpx;
@@ -644,7 +672,9 @@ function goEditProduct(a: AgencyApp) {
       font-weight: 800;
       color: var(--text-primary);
       font-family: var(--font-family-base);
-      &.accent { color: var(--brand-primary); }
+      &.accent {
+        color: var(--brand-primary);
+      }
     }
   }
   .p-divider {
@@ -656,7 +686,7 @@ function goEditProduct(a: AgencyApp) {
     margin-left: auto;
     padding: 4rpx 12rpx;
     background: rgba(82, 196, 26, 0.1);
-    color: #52C41A;
+    color: #52c41a;
     border-radius: 999rpx;
     font-size: 20rpx;
     font-weight: 800;
@@ -678,7 +708,7 @@ function goEditProduct(a: AgencyApp) {
     align-items: center;
     gap: 4rpx;
     font-size: 18rpx;
-    color: #52C41A;
+    color: #52c41a;
     font-weight: 600;
   }
 }
@@ -704,7 +734,7 @@ function goEditProduct(a: AgencyApp) {
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 
@@ -717,7 +747,7 @@ function goEditProduct(a: AgencyApp) {
   font-size: 26rpx;
   font-weight: 700;
   display: inline-block;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
 }
 
 /* ============ 加价弹窗 ============ */
@@ -732,8 +762,12 @@ function goEditProduct(a: AgencyApp) {
 }
 
 @keyframes mk-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .mk-sheet {
@@ -747,8 +781,12 @@ function goEditProduct(a: AgencyApp) {
 }
 
 @keyframes mk-slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .mk-head {

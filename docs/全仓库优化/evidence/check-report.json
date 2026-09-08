@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "9a91ab63215086de13e2c2c4c5682cc6a35d25117f32c1c6e454e89d1bbeb58d",
+  "mode": "check",
+  "startedAt": "2026-09-08T20:12:12.477Z",
+  "status": "passed",
+  "steps": [
+    {
+      "command": ["pnpm.cmd", "build:shared"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 7058,
+      "artifact": "docs/全仓库优化/evidence/check/0.txt",
+      "sha256": "ef97e12847006a10471dc8499248f99eedd74a08564543e870bc8e59b1caf563"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "prisma:generate"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 4463,
+      "artifact": "docs/全仓库优化/evidence/check/1.txt",
+      "sha256": "1aeea666c1a918c80d075e46d5e3066308d265e5711c887927282ce822198dff"
+    },
+    {
+      "command": ["C:\\Program Files\\nodejs\\node.exe", "scripts/quality/contracts.mjs"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 122,
+      "artifact": "docs/全仓库优化/evidence/check/2.txt",
+      "sha256": "e503ab717516ea1e7e58f5a032eea4462ae3bd8a106b91ccecd9030aae18eb18"
+    },
+    {
+      "command": ["C:\\Program Files\\nodejs\\node.exe", "scripts/quality/vue-templates.mjs"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 2876,
+      "artifact": "docs/全仓库优化/evidence/check/3.txt",
+      "sha256": "a5af09d8f1a8e5a0000ee6bc8d007711110698b38f4d60c44c534e239b4d131e"
+    },
+    {
+      "command": ["pnpm.cmd", "format:check"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 28100,
+      "artifact": "docs/全仓库优化/evidence/check/4.txt",
+      "sha256": "51a4020a474e8ba18ae0366c67f83494de35652d1df8c9819f347e1634c119a9"
+    },
+    {
+      "command": ["pnpm.cmd", "lint"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 31129,
+      "artifact": "docs/全仓库优化/evidence/check/5.txt",
+      "sha256": "4b715095027d3ae8d1f607e36aa08495a8698cdcbb170da98fc045888ad8cab8"
+    },
+    {
+      "command": ["pnpm.cmd", "typecheck"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 36737,
+      "artifact": "docs/全仓库优化/evidence/check/6.txt",
+      "sha256": "e35866c959f38235345df4e00de0ffd81eb3ad8cdfd9bfa4aec61fe4d780a857"
+    },
+    {
+      "command": ["C:\\Program Files\\nodejs\\node.exe", "scripts/workbook-contract.mjs"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 115,
+      "artifact": "docs/全仓库优化/evidence/check/7.txt",
+      "sha256": "a5bf717842ef72c00c4db04c683c4bc16b6059826b335b46e216c426ecbec4d0"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "native/harmony-merchant/scripts/audit-secret-boundary.mjs"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 441,
+      "artifact": "docs/全仓库优化/evidence/check/8.txt",
+      "sha256": "f4feddbf35bc47aa4d7bebf5f62362c71317f2c41ddad2c07377017fce70ddef"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "native/harmony-merchant/scripts/audit-i18n.mjs",
+        "--strict"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 210,
+      "artifact": "docs/全仓库优化/evidence/check/9.txt",
+      "sha256": "ecb788b59852d1dcba74c7409d914f606fd8bd3c139af95c2e3d8f8cac57ad73"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "native/harmony-merchant/scripts/audit-routes.mjs"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 144,
+      "artifact": "docs/全仓库优化/evidence/check/10.txt",
+      "sha256": "9a8bde0775cf2d5b0a88117884bec2d63226614b40b538d4a8d10e14bd2f33aa"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "native/harmony-merchant/scripts/audit-api-contracts.mjs"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 114,
+      "artifact": "docs/全仓库优化/evidence/check/11.txt",
+      "sha256": "2a8ad3b7da8377a022beed01c8f1654bc60cbe2b0903fc0e4b33a7e059e58c3b"
+    }
+  ],
+  "finishedAt": "2026-09-08T20:14:06.282Z",
+  "archivedFrom": ".quality/check/report.json"
+}

@@ -76,7 +76,8 @@ function dismissApplyBanner() {
 }
 
 const canSubmit = computed(() => {
-  if (mode.value === 'account') return username.value.trim().length >= 3 && password.value.length >= 6
+  if (mode.value === 'account')
+    return username.value.trim().length >= 3 && password.value.length >= 6
   return /^1[3-9]\d{9}$/.test(phone.value) && /^\d{4,6}$/.test(smsCode.value)
 })
 
@@ -86,14 +87,21 @@ async function onLogin() {
     return
   }
   if (!canSubmit.value) {
-    uni.showToast({ title: mode.value === 'account' ? '账号或密码格式有误' : '手机号 / 验证码格式有误', icon: 'none' })
+    uni.showToast({
+      title: mode.value === 'account' ? '账号或密码格式有误' : '手机号 / 验证码格式有误',
+      icon: 'none',
+    })
     return
   }
   loading.value = true
   try {
-    const session = mode.value === 'account'
-      ? await authService.adminLogin({ username: username.value.trim(), password: password.value })
-      : await authService.phoneLogin({ phone: phone.value, code: smsCode.value })
+    const session =
+      mode.value === 'account'
+        ? await authService.adminLogin({
+            username: username.value.trim(),
+            password: password.value,
+          })
+        : await authService.phoneLogin({ phone: phone.value, code: smsCode.value })
 
     userStore.setSession(session as any)
 
@@ -203,7 +211,9 @@ function goApply() {
       </view>
       <view class="apply-banner-text">
         <text class="apply-banner-title">入驻申请已提交</text>
-        <text class="apply-banner-sub">请使用 手机号 + 短信验证码 登录，登录后会引导你设置首次密码</text>
+        <text class="apply-banner-sub"
+          >请使用 手机号 + 短信验证码 登录，登录后会引导你设置首次密码</text
+        >
       </view>
       <view class="apply-banner-close" @click="dismissApplyBanner">
         <Icon name="close" :size="24" color="#fff" />
@@ -233,7 +243,12 @@ function goApply() {
           <view class="prefix">
             <Icon name="biz-me" :size="32" color="#86909c" />
           </view>
-          <input v-model="username" class="input" placeholder="邮箱 / 用户名" placeholder-class="ph" />
+          <input
+            v-model="username"
+            class="input"
+            placeholder="邮箱 / 用户名"
+            placeholder-class="ph"
+          />
         </view>
         <view class="field">
           <view class="prefix">
@@ -258,17 +273,28 @@ function goApply() {
           <view class="prefix">
             <Icon name="phone" :size="32" color="#86909c" />
           </view>
-          <input v-model="phone" class="input" type="number" maxlength="11" placeholder="手机号" placeholder-class="ph" />
+          <input
+            v-model="phone"
+            class="input"
+            type="number"
+            maxlength="11"
+            placeholder="手机号"
+            placeholder-class="ph"
+          />
         </view>
         <view class="field">
           <view class="prefix">
             <Icon name="biz-receipt" :size="32" color="#86909c" />
           </view>
-          <input v-model="smsCode" class="input" type="number" maxlength="6" placeholder="短信验证码" placeholder-class="ph" />
-          <view
-            :class="['code-btn', (countdown > 0 || sending) && 'disabled']"
-            @click="onSendCode"
-          >
+          <input
+            v-model="smsCode"
+            class="input"
+            type="number"
+            maxlength="6"
+            placeholder="短信验证码"
+            placeholder-class="ph"
+          />
+          <view :class="['code-btn', (countdown > 0 || sending) && 'disabled']" @click="onSendCode">
             {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
           </view>
         </view>
@@ -336,7 +362,7 @@ function goApply() {
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #F7F8FA;
+  background: #f7f8fa;
   padding-bottom: 48rpx;
   box-sizing: border-box;
   position: relative;
@@ -349,7 +375,7 @@ function goApply() {
   display: flex;
   align-items: center;
   gap: 20rpx;
-  background: linear-gradient(135deg, #1ABC9C 0%, #16A085 100%);
+  background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
   border-radius: 24rpx;
   box-shadow: 0 12rpx 32rpx rgba(26, 188, 156, 0.32);
   position: relative;
@@ -402,9 +428,9 @@ function goApply() {
   /* padding-top 由内联样式 heroPaddingTop 注入（状态栏 + 40rpx） */
   padding: 0 40rpx 120rpx;
   background:
-    radial-gradient(140% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
-    radial-gradient(120% 80% at 0% 100%, #FF3B1F 0%, transparent 50%),
-    linear-gradient(160deg, #FF6B45 0%, #FF4D2D 50%, #E63A1F 100%);
+    radial-gradient(140% 80% at 100% 0%, #ff8a5e 0%, transparent 60%),
+    radial-gradient(120% 80% at 0% 100%, #ff3b1f 0%, transparent 50%),
+    linear-gradient(160deg, #ff6b45 0%, #ff4d2d 50%, #e63a1f 100%);
   border-bottom-left-radius: 56rpx;
   border-bottom-right-radius: 56rpx;
   overflow: hidden;
@@ -418,19 +444,25 @@ function goApply() {
   pointer-events: none;
 }
 .blob-1 {
-  width: 360rpx; height: 360rpx;
-  background: #FFD3A8;
-  top: -100rpx; right: -100rpx;
+  width: 360rpx;
+  height: 360rpx;
+  background: #ffd3a8;
+  top: -100rpx;
+  right: -100rpx;
 }
 .blob-2 {
-  width: 260rpx; height: 260rpx;
-  background: #FFE7B0;
-  top: 280rpx; left: -80rpx;
+  width: 260rpx;
+  height: 260rpx;
+  background: #ffe7b0;
+  top: 280rpx;
+  left: -80rpx;
 }
 .blob-3 {
-  width: 200rpx; height: 200rpx;
-  background: #FFAA82;
-  bottom: -60rpx; right: 30%;
+  width: 200rpx;
+  height: 200rpx;
+  background: #ffaa82;
+  bottom: -60rpx;
+  right: 30%;
   opacity: 0.4;
 }
 
@@ -445,17 +477,17 @@ function goApply() {
   width: 108rpx;
   height: 108rpx;
   border-radius: 28rpx;
-  background: linear-gradient(135deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.14) 100%);
-  border: 2rpx solid rgba(255,255,255,0.4);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.14) 100%);
+  border: 2rpx solid rgba(255, 255, 255, 0.4);
   padding: 6rpx;
-  box-shadow: 0 12rpx 32rpx rgba(0,0,0,0.18);
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.18);
   box-sizing: border-box;
 }
 .logo-inner {
   width: 100%;
   height: 100%;
   border-radius: 22rpx;
-  background: linear-gradient(135deg, #fff 0%, #FFE6DC 100%);
+  background: linear-gradient(135deg, #fff 0%, #ffe6dc 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -463,7 +495,7 @@ function goApply() {
 .logo-letter {
   font-size: 52rpx;
   font-weight: 900;
-  background: linear-gradient(135deg, #FF6B45, #E63A1F);
+  background: linear-gradient(135deg, #ff6b45, #e63a1f);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -482,7 +514,7 @@ function goApply() {
 }
 .brand-tag {
   font-size: 24rpx;
-  color: rgba(255,255,255,0.88);
+  color: rgba(255, 255, 255, 0.88);
   letter-spacing: 1rpx;
 }
 
@@ -502,7 +534,7 @@ function goApply() {
 }
 .lead-sub {
   font-size: 24rpx;
-  color: rgba(255,255,255,0.82);
+  color: rgba(255, 255, 255, 0.82);
   letter-spacing: 1rpx;
 }
 
@@ -521,8 +553,8 @@ function goApply() {
   justify-content: center;
   gap: 8rpx;
   padding: 0 16rpx;
-  background: rgba(255,255,255,0.18);
-  border: 2rpx solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.28);
   border-radius: 999rpx;
   box-sizing: border-box;
 }
@@ -538,7 +570,9 @@ function goApply() {
   background: #fff;
   border-radius: 36rpx;
   padding: 8rpx 32rpx 36rpx;
-  box-shadow: 0 24rpx 60rpx rgba(255,90,40,0.15), 0 8rpx 24rpx rgba(0,0,0,0.06);
+  box-shadow:
+    0 24rpx 60rpx rgba(255, 90, 40, 0.15),
+    0 8rpx 24rpx rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 3;
 }
@@ -572,9 +606,9 @@ function goApply() {
   transform: translateX(-50%);
   width: 56rpx;
   height: 6rpx;
-  background: linear-gradient(90deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(90deg, #ff6b45, #ff4d2d);
   border-radius: 3rpx;
-  box-shadow: 0 4rpx 8rpx rgba(255,77,45,0.4);
+  box-shadow: 0 4rpx 8rpx rgba(255, 77, 45, 0.4);
 }
 
 /* 表单 */
@@ -588,14 +622,16 @@ function goApply() {
   align-items: center;
   height: 104rpx;
   padding: 0 24rpx;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: #f7f8fa;
+  border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 .field:focus-within,
 .field:active {
-  border-color: #FFB199;
+  border-color: #ffb199;
   background: #fff;
 }
 .prefix {
@@ -627,16 +663,16 @@ function goApply() {
 .code-btn {
   margin-left: 12rpx;
   padding: 12rpx 24rpx;
-  background: linear-gradient(135deg, #FFF1ED, #FFE2D6);
-  color: #FF4D2D;
+  background: linear-gradient(135deg, #fff1ed, #ffe2d6);
+  color: #ff4d2d;
   border-radius: 999rpx;
   font-size: 24rpx;
   font-weight: 600;
   white-space: nowrap;
 }
 .code-btn.disabled {
-  background: #F2F3F5;
-  color: #C9CDD4;
+  background: #f2f3f5;
+  color: #c9cdd4;
 }
 
 /* 协议 */
@@ -649,7 +685,7 @@ function goApply() {
 .check {
   width: 32rpx;
   height: 32rpx;
-  border: 2rpx solid #C9CDD4;
+  border: 2rpx solid #c9cdd4;
   border-radius: 50%;
   flex-shrink: 0;
   display: flex;
@@ -659,8 +695,8 @@ function goApply() {
   transition: all 0.2s;
 }
 .check.on {
-  background: #FF4D2D;
-  border-color: #FF4D2D;
+  background: #ff4d2d;
+  border-color: #ff4d2d;
 }
 .agree-text {
   flex: 1;
@@ -669,7 +705,7 @@ function goApply() {
   color: #86909c;
 }
 .agree-text .hl {
-  color: #FF4D2D;
+  color: #ff4d2d;
 }
 
 /* 提交 */
@@ -677,22 +713,24 @@ function goApply() {
   width: 100%;
   height: 96rpx;
   line-height: 96rpx;
-  background: linear-gradient(135deg, #FF6B45 0%, #FF4D2D 100%);
+  background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
   color: #fff;
   font-size: 32rpx;
   font-weight: 700;
   letter-spacing: 10rpx;
   border-radius: 20rpx;
   border: none;
-  box-shadow: 0 16rpx 32rpx rgba(255,77,45,0.36);
+  box-shadow: 0 16rpx 32rpx rgba(255, 77, 45, 0.36);
   text-align: center;
 }
-.submit::after { border: none; }
+.submit::after {
+  border: none;
+}
 .submit.disabled,
 .submit[disabled] {
   opacity: 0.5;
   box-shadow: none;
-  background: linear-gradient(135deg, #FFB199, #FF8A6A);
+  background: linear-gradient(135deg, #ffb199, #ff8a6a);
 }
 
 /* 分割 */
@@ -705,11 +743,11 @@ function goApply() {
 .divider .line {
   flex: 1;
   height: 2rpx;
-  background: #F0F1F4;
+  background: #f0f1f4;
 }
 .dtext {
   font-size: 22rpx;
-  color: #C9CDD4;
+  color: #c9cdd4;
   letter-spacing: 1rpx;
 }
 
@@ -719,8 +757,8 @@ function goApply() {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #FFF6F1 0%, #FFE9DC 100%);
-  border: 2rpx solid #FFE0CD;
+  background: linear-gradient(135deg, #fff6f1 0%, #ffe9dc 100%);
+  border: 2rpx solid #ffe0cd;
   border-radius: 20rpx;
 }
 .apply-left {
@@ -736,7 +774,7 @@ function goApply() {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(255,77,45,0.12);
+  box-shadow: 0 4rpx 12rpx rgba(255, 77, 45, 0.12);
 }
 .apply-info {
   display: flex;
@@ -766,11 +804,11 @@ function goApply() {
 }
 .meta {
   font-size: 22rpx;
-  color: #C9CDD4;
+  color: #c9cdd4;
   letter-spacing: 1rpx;
 }
 .dot-divider {
   font-size: 22rpx;
-  color: #C9CDD4;
+  color: #c9cdd4;
 }
 </style>

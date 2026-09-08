@@ -1,0 +1,26 @@
+
+> @jiujiu/server@0.0.1 test:integration D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\server
+> node ../../scripts/db/test-target.mjs --with-redis && jest --config jest.integration.config.js --runInBand && node --test ../../scripts/db/migrate.integration.mjs
+
+Disposable database target confirmed (connection details not logged)
+Disposable database target confirmed (connection details not logged)
+PASS test-integration/coupon-claim.it.spec.ts (10.015 s)
+PASS test-integration/order-share.it.spec.ts
+PASS test-integration/workbook.it.spec.ts
+PASS test-integration/redis-blacklist.it.spec.ts
+PASS test-integration/smoke.it.spec.ts
+
+Test Suites: 5 passed, 5 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        18.227 s, estimated 20 s
+Ran all test suites.
+✔ real PostgreSQL: failure rollback, retry, repeat, checksum and existing data (382.4053ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 594.907

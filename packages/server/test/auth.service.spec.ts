@@ -57,7 +57,7 @@ async function catchMessage(fn: () => Promise<unknown>): Promise<string> {
 function makeJwtMock() {
   return {
     verifyAsync: jest.fn(),
-    signAsync: jest.fn(async () => 'tok'),
+    signAsync: jest.fn(async (_payload?: unknown, _options?: unknown) => 'tok'),
   }
 }
 
@@ -115,7 +115,16 @@ describe('AuthService.refresh —— rotation / 重放 / 错误语义', () => {
     blacklist = new RefreshTokenBlacklistService()
     jwt = makeJwtMock()
     sms = makeSmsMock()
-    prisma = {}
+    prisma = {
+      user: {
+        findUnique: jest.fn(async () => ({
+          id: 'u1',
+          status: 'active',
+          role: 'customer',
+          merchantId: null,
+        })),
+      },
+    }
     service = new AuthService(prisma as any, jwt as any, sms as any, blacklist)
   })
 
@@ -182,6 +191,55 @@ describe('AuthService.refresh —— rotation / 重放 / 错误语义', () => {
     jwt.verifyAsync.mockRejectedValue(err as never)
 
     await expectBizCode(() => service.refresh({ refreshToken: 'rt-expired' } as any), 2002)
+  })
+  it('concurrent refresh of the same credential has exactly one winner', async () => {
+    jwt.verifyAsync.mockResolvedValue({
+      _r: 1,
+      sub: 'u1',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      jti: 'race',
+    } as never)
+    const results = await Promise.allSettled([
+      service.refresh({ refreshToken: 'same' }),
+      service.refresh({ refreshToken: 'same' }),
+    ])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1)
+  })
+  it('legacy refresh tokens are still one-use, without storing the raw token', async () => {
+    jwt.verifyAsync.mockResolvedValue({
+      _r: 1,
+      sub: 'u1',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    } as never)
+    await service.refresh({ refreshToken: 'legacy-secret' })
+    await expectBizCode(() => service.refresh({ refreshToken: 'legacy-secret' }), 2001)
+    expect([...((blacklist as any).store as Map<string, number>).keys()][0]).toMatch(
+      /^legacy:[a-f0-9]{64}$/,
+    )
+  })
+  it('refresh uses the current account role and rejects disabled accounts', async () => {
+    jwt.verifyAsync.mockResolvedValue({
+      _r: 1,
+      sub: 'u1',
+      role: 'admin',
+      merchantId: 'old',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      jti: 'current',
+    } as never)
+    await service.refresh({ refreshToken: 'current' })
+    expect(jwt.signAsync.mock.calls[0][0]).toMatchObject({
+      role: 'customer',
+      merchantId: undefined,
+    })
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', status: 'disabled' })
+    jwt.verifyAsync.mockResolvedValue({
+      _r: 1,
+      sub: 'u1',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      jti: 'disabled',
+    } as never)
+    await expectBizCode(() => service.refresh({ refreshToken: 'disabled' }), 2003)
   })
 })
 
@@ -330,5 +388,14 @@ describe('AuthService.logout', () => {
 
     const res = await service.logout('garbage')
     expect(res).toEqual({ ok: true })
+  })
+  it('does not report logout success when shared revocation fails', async () => {
+    jwt.verifyAsync.mockResolvedValue({
+      sub: 'u1',
+      jti: 'logout-error',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    } as never)
+    jest.spyOn(blacklist, 'revoke').mockRejectedValue(new Error('unavailable'))
+    await expect(service.logout('valid')).rejects.toThrow('unavailable')
   })
 })

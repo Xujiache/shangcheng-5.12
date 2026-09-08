@@ -1,0 +1,1 @@
+Native i18n audit passed: no unlocalized Chinese literals.

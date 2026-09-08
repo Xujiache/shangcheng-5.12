@@ -387,8 +387,10 @@ onUnload(() => {
       <view
         class="ia-btn"
         @click="
-          showActions = !showActions;
-          showQuick = false
+          ($event) => {
+            showActions = !showActions
+            showQuick = false
+          }
         "
       >
         <Icon :name="showActions ? 'close' : 'plus'" :size="44" color="var(--text-secondary)" />
@@ -401,16 +403,20 @@ onUnload(() => {
           confirm-type="send"
           @confirm="send"
           @focus="
-            showActions = false;
-            showQuick = false
+            ($event) => {
+              showActions = false
+              showQuick = false
+            }
           "
         />
       </view>
       <view
         class="ia-btn"
         @click="
-          showQuick = !showQuick;
-          showActions = false
+          ($event) => {
+            showQuick = !showQuick
+            showActions = false
+          }
         "
       >
         <Icon
@@ -431,8 +437,10 @@ onUnload(() => {
       <view
         class="ap-item"
         @click="
-          uni.showToast({ title: '商品已发送', icon: 'success' });
-          showActions = false
+          ($event) => {
+            uni.showToast({ title: '商品已发送', icon: 'success' })
+            showActions = false
+          }
         "
       >
         <view class="ap-icon" style="background: #3b82f6"
@@ -443,8 +451,10 @@ onUnload(() => {
       <view
         class="ap-item"
         @click="
-          uni.showToast({ title: '订单已发送', icon: 'success' });
-          showActions = false
+          ($event) => {
+            uni.showToast({ title: '订单已发送', icon: 'success' })
+            showActions = false
+          }
         "
       >
         <view class="ap-icon" style="background: #10b981"
@@ -455,8 +465,10 @@ onUnload(() => {
       <view
         class="ap-item"
         @click="
-          uni.showToast({ title: '优惠券已发送', icon: 'success' });
-          showActions = false
+          ($event) => {
+            uni.showToast({ title: '优惠券已发送', icon: 'success' })
+            showActions = false
+          }
         "
       >
         <view class="ap-icon" style="background: #f59e0b"

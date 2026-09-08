@@ -1,0 +1,17 @@
+{
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "9a91ab63215086de13e2c2c4c5682cc6a35d25117f32c1c6e454e89d1bbeb58d",
+  "releasable": false,
+  "blockers": [
+    "external:full-scope-regression",
+    "external:wechat-android",
+    "external:wechat-ios",
+    "external:uni-app-packages",
+    "external:harmony-31-features",
+    "external:third-party-flows",
+    "external:performance",
+    "external:backup-restore",
+    "external:deployment-rollback",
+    "external:privacy-review"
+  ]
+}

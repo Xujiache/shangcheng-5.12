@@ -1,5 +1,7 @@
 # docs/ 文档索引
 
+当前全仓库优化实施台账见 [全仓库优化](./全仓库优化/README.md)。自动检查、数据库实验与真机/第三方验收分开登记，不能把实施台账当作全部完成证明。
+
 > 经纬科技商城 5.0（pnpm monorepo / NestJS + 4 前端 + 原生小程序）全部任务文档总览。
 > 每个子目录对应一次任务的 6A 流程产物（ALIGNMENT / CONSENSUS / DESIGN / TASK / ACCEPTANCE / FINAL / TODO 等）。
 

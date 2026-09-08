@@ -161,11 +161,7 @@ onShow(load)
               <text class="time">{{ formatDateRange(c) }}</text>
             </view>
             <view
-              :class="[
-                'claim-btn',
-                claimedIds.has(c.id) ? 'done' : '',
-                isSoldOut(c) ? 'out' : '',
-              ]"
+              :class="['claim-btn', claimedIds.has(c.id) ? 'done' : '', isSoldOut(c) ? 'out' : '']"
               @click="claim(c)"
             >
               <text v-if="claiming[c.id]">领取中…</text>

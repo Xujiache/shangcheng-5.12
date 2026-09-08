@@ -40,8 +40,10 @@ export function useTencentMap() {
     params.set('scale', '2')
     if (markers.length) {
       // 腾讯静态图 markers 语法： size:large|color:0xFF4D2D|label:1|lat,lng|lat,lng...
-      const m = ['size:large', 'color:0xFF4D2D'].join('|') +
-        '|' + markers.map((p) => `${p.lat},${p.lng}`).join('|')
+      const m =
+        ['size:large', 'color:0xFF4D2D'].join('|') +
+        '|' +
+        markers.map((p) => `${p.lat},${p.lng}`).join('|')
       params.set('markers', m)
     }
     return `${base}?${params.toString()}`
@@ -59,6 +61,7 @@ export function useTencentMap() {
     })
     return
     // #endif
+    // #ifndef MP-WEIXIN
 
     // H5：跳到腾讯地图路线规划页（用户选驾车/公交/步行）
     const url =
@@ -76,6 +79,7 @@ export function useTencentMap() {
       /* fall through */
     }
     uni.showToast({ title: '请在腾讯地图打开', icon: 'none' })
+    // #endif
   }
 
   /** 在地图里查看一个点（marker 模式，不强制规划路线） */
@@ -89,6 +93,7 @@ export function useTencentMap() {
     })
     return
     // #endif
+    // #ifndef MP-WEIXIN
 
     const url =
       `https://apis.map.qq.com/uri/v1/marker?` +
@@ -102,6 +107,7 @@ export function useTencentMap() {
     } catch {
       /* noop */
     }
+    // #endif
   }
 
   /**

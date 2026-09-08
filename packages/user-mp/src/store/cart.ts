@@ -65,9 +65,7 @@ function isLoggedIn(): boolean {
  */
 function serverToLine(it: ServerCartItem): CartLine {
   const sku = it.sku
-  const displayPrice = Number(
-    sku?.priceRetail ?? sku?.price ?? it.product?.priceRetailMin ?? 0,
-  )
+  const displayPrice = Number(sku?.priceRetail ?? sku?.price ?? it.product?.priceRetailMin ?? 0)
   return {
     id: it.id,
     productId: it.productId,

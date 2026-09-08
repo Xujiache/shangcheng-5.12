@@ -33,7 +33,10 @@ const stats = computed(() => ({
   pending: list.value.filter((s) => s.status === 'pending').length,
 }))
 
-const STATUS_LABEL: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const STATUS_LABEL: Record<
+  string,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   active: { text: '已授权', tone: 'success' },
   pending: { text: '待审核', tone: 'warning' },
   cancelled: { text: '已取消', tone: 'default' },
@@ -80,7 +83,9 @@ watch(keyword, () => {
 })
 
 function goAuth(s: Store) {
-  uni.navigateTo({ url: `/pages/store/auth?id=${s.id}&name=${encodeURIComponent(s.name)}&level=${s.level}` })
+  uni.navigateTo({
+    url: `/pages/store/auth?id=${s.id}&name=${encodeURIComponent(s.name)}&level=${s.level}`,
+  })
 }
 function callStore(s: Store) {
   uni.makePhoneCall({ phoneNumber: s.phone })
@@ -181,11 +186,7 @@ onMounted(load)
     <view class="header">
       <view class="search-wrap">
         <Icon name="search" :size="32" color="var(--text-tertiary)" />
-        <input
-          v-model="keyword"
-          class="search-input"
-          placeholder="搜索门店名称 / 联系人"
-        />
+        <input v-model="keyword" class="search-input" placeholder="搜索门店名称 / 联系人" />
       </view>
       <Tabs v-model="tab" :items="TABS" variant="underline" />
     </view>
@@ -231,12 +232,18 @@ onMounted(load)
             <Icon name="phone" :size="24" color="var(--text-primary)" />
             <text>联系</text>
           </view>
-          <view v-if="s.status === 'active'" class="action primary" @click="goAuth(s)">授权设置</view>
+          <view v-if="s.status === 'active'" class="action primary" @click="goAuth(s)"
+            >授权设置</view
+          >
           <view v-if="s.status === 'cancelled'" class="action ghost">查看记录</view>
         </view>
       </view>
 
-      <EmptyState v-if="!loading && filtered.length === 0" title="暂无门店" desc="可邀请门店或调整筛选条件" />
+      <EmptyState
+        v-if="!loading && filtered.length === 0"
+        title="暂无门店"
+        desc="可邀请门店或调整筛选条件"
+      />
     </view>
 
     <view class="safe-bottom" />
@@ -275,7 +282,7 @@ onMounted(load)
   .divider {
     width: 2rpx;
     height: 56rpx;
-    background: rgba(255,255,255,0.3);
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 .header {
@@ -294,7 +301,11 @@ onMounted(load)
   padding: 0 16rpx 0 20rpx;
   height: 72rpx;
   margin-bottom: 12rpx;
-  .search-input { flex: 1; height: 100%; font-size: 26rpx; }
+  .search-input {
+    flex: 1;
+    height: 100%;
+    font-size: 26rpx;
+  }
 }
 .list {
   padding: 16rpx 24rpx;
@@ -367,8 +378,14 @@ onMounted(load)
   display: flex;
   font-size: 24rpx;
   gap: 16rpx;
-  .row-label { width: 140rpx; color: var(--text-tertiary); }
-  .row-value { flex: 1; color: var(--text-primary); }
+  .row-label {
+    width: 140rpx;
+    color: var(--text-tertiary);
+  }
+  .row-value {
+    flex: 1;
+    color: var(--text-primary);
+  }
 }
 .card-actions {
   display: flex;
@@ -382,13 +399,18 @@ onMounted(load)
     border-radius: 999rpx;
     font-size: 24rpx;
     font-weight: 600;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
     &.primary {
       background: var(--brand-gradient);
       color: #fff;
-      box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+      box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
     }
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

@@ -1,0 +1,6435 @@
+{
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "9a91ab63215086de13e2c2c4c5682cc6a35d25117f32c1c6e454e89d1bbeb58d",
+  "generatedAt": "2026-09-08T20:22:18.038Z",
+  "notes": [
+    "源码清单，不等于运行时路由/权限/业务验收",
+    "业务接口默认带 /api/v1 前缀，health 例外；动态表达式保留待核实",
+    "异常、空数据、加载、无权限、离线均须逐项验证"
+  ],
+  "pages": [
+    {
+      "product": "user-mp",
+      "route": "pages/tabbar/home/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/tabbar/category/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/tabbar/cart/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/tabbar/me/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/product/detail",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/product/list",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/auth/login",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/order/confirm",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/order/pay",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/order/list",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/order/detail",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/address/list",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/address/edit",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/me/edit",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/search/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/search/result",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/store/map",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/store/list",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/favorite/list",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/coupon/center",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/coupon/my",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/merchant/apply",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/channel/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/chat/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/booking/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/promote/index",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "user-mp",
+      "route": "pages/share/order",
+      "source": "packages/user-mp/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/auth/login",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/auth/apply",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/auth/set-password",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/tabbar/home/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/tabbar/product/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/tabbar/order/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/tabbar/stats/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/tabbar/me/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/product/add",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/product/category",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/product/agency-list",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/order/detail",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/order/aftersale",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/customer/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/commission/setting",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/store/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/store/auth",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/staff/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/shop/decorate",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/marketing/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/chat/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/plaza/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/plaza/factory",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/member/index",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/me/profile",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/me/settings",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/me/share",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "merchant-app",
+      "route": "pages/shop/price-rule",
+      "source": "packages/merchant-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/auth/login",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/tabbar/home/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/tabbar/merchant/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/tabbar/order/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/tabbar/stats/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/tabbar/me/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/audit/merchant",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/audit/product",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/ad/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/plaza/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/plaza/push",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/plaza/pushes",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/member/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/member/pay-orders",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/feature-flag/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/permission/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/system/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/legal/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/app-release/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/ticket/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/operation-log/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/withdraws/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/refunds/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/notify/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/share-stats/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/feedback/index",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "platform-app",
+      "route": "pages/feedback/admin-list",
+      "source": "packages/platform-app/src/pages.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/home/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/login/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/lock/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/membership/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/cut/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/work-log/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/triangle-tool/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/arc-tool/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/cut-result/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/changelog/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/invite/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/orders/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/reports/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/profile/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/order-detail/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/order-edit/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/order-items/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/customers/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/customer-detail/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/customer-edit/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/cost-analysis/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/goal/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/message-center/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/edit-profile/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/account-security/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/notifications/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/settings/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/cost-categories/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/appearance/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/privacy/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/data-backup/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/about/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/dnd/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/feedback/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/delete-account/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "pages/doc/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "subpackages/workbook/records/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "subpackages/workbook/edit/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "subpackages/workbook/people/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "subpackages/workbook/finance/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "ledger-mp",
+      "route": "subpackages/workbook/reports/index",
+      "source": "packages/ledger-mp/miniprogram/app.json",
+      "status": "待验证"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/auth/forget-password/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/auth/login/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/auth/register/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/exception/403/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/exception/404/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/exception/500/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/index/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/chat/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/commission/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/customer/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/dashboard/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/decorate/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/marketing/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/member/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/order/aftersale/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/order/list/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/plaza/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/product/add/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/product/agency/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/product/category/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/product/list/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/staff/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/stats/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/store/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/merchant/withdraw/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/outside/Iframe.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ad/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/app-release/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/audit/merchant/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/audit/product/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/audit-record/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/dashboard/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/data-center/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/feature-flag/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/accounts/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/ads/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/changelogs/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/config/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/feedback/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/GrantMembershipDialog.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/invite/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/ledger/membership/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/legal/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/member/orders/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/member/plan/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/merchant/list/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/order/list/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/order-share/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/permission/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/plaza/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/system/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/platform/withdraws/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/system/user/modules/user-search.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/article/comment/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/article/detail/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/article/list/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/article/publish/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/change/log/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/customer-satisfaction.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/sales-mapping-by-country.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/target-vs-reality.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/today-sales.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/top-products.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/total-revenue.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/visitor-insights.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/analysis/modules/volume-service-level.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/annual-sales.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/banner.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/cart-conversion-rate.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/hot-commodity.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/hot-products-list.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/product-sales.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/recent-transaction.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/sales-classification.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/sales-growth.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/sales-trend.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/total-order-volume.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/total-products.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/dashboard/ecommerce/modules/transaction-list.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/forms/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/forms/search-bar.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/permission/button-auth/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/permission/page-visibility/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/permission/switch-role/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/socket-chat/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/tables/basic.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/tables/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/tables/tree.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/examples/tabs/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/result/fail/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/result/success/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/safeguard/server/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/system/menu/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/system/menu/modules/menu-dialog.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/system/nested/menu1/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/system/nested/menu2/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/system/nested/menu3/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/system/nested/menu3/menu3-2/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/template/banners/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/template/calendar/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/template/cards/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/template/charts/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/template/chat/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/template/map/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/template/pricing/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/context-menu/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/count-to/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/drag/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/excel/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/fireworks/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/icon/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/image-crop/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/qrcode/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/text-scroll/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/video/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/wang-editor/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "admin-pc",
+      "source": "packages/admin-pc/src/views/_examples/widgets/watermark/index.vue",
+      "route": null,
+      "status": "待验证",
+      "note": "需登录各角色核实动态菜单与可达性"
+    },
+    {
+      "product": "harmony",
+      "route": "pages/Index",
+      "source": "native/harmony-merchant/entry/src/main/resources/base/profile/main_pages.json",
+      "status": "待验证",
+      "note": "31项功能面需另按原生矩阵真机验证"
+    }
+  ],
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "check",
+      "source": "packages/server/src/health.controller.ts",
+      "line": 13,
+      "decorators": ["ApiTags('系统')", "Controller('health')", "Public()", "Get()"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/health/live",
+      "handler": "live",
+      "source": "packages/server/src/health.controller.ts",
+      "line": 24,
+      "decorators": [
+        "ApiTags('系统')",
+        "Controller('health')",
+        "Public()",
+        "SkipThrottle()",
+        "SkipResponseWrap()",
+        "Get('live')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "handler": "ready",
+      "source": "packages/server/src/health.controller.ts",
+      "line": 32,
+      "decorators": [
+        "ApiTags('系统')",
+        "Controller('health')",
+        "Public()",
+        "SkipThrottle()",
+        "SkipResponseWrap()",
+        "Get('ready')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/app-releases",
+      "handler": "create",
+      "source": "packages/server/src/modules/app-release/app-release.controller.ts",
+      "line": 27,
+      "decorators": [
+        "ApiTags('APP 发布')",
+        "Controller()",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Post('p/app-releases')",
+        "ApiConsumes('multipart/form-data')",
+        "UseInterceptors(FileInterceptor('file'))"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/app-releases",
+      "handler": "list",
+      "source": "packages/server/src/modules/app-release/app-release.controller.ts",
+      "line": 46,
+      "decorators": [
+        "ApiTags('APP 发布')",
+        "Controller()",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Get('p/app-releases')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/app-releases/:id",
+      "handler": "remove",
+      "source": "packages/server/src/modules/app-release/app-release.controller.ts",
+      "line": 53,
+      "decorators": [
+        "ApiTags('APP 发布')",
+        "Controller()",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Delete('p/app-releases/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/app/latest",
+      "handler": "merchantLatest",
+      "source": "packages/server/src/modules/app-release/app-release.controller.ts",
+      "line": 61,
+      "decorators": ["ApiTags('APP 发布')", "Controller()", "Public()", "Get('m/app/latest')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/admin-pc/login",
+      "handler": "login",
+      "source": "packages/server/src/modules/auth/admin-pc-compat.controller.ts",
+      "line": 37,
+      "decorators": [
+        "ApiTags('admin-pc 兼容')",
+        "UseGuards(RolesGuard)",
+        "Controller('admin-pc')",
+        "Public()",
+        "Post('login')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/admin-pc/user-info",
+      "handler": "userInfo",
+      "source": "packages/server/src/modules/auth/admin-pc-compat.controller.ts",
+      "line": 44,
+      "decorators": [
+        "ApiTags('admin-pc 兼容')",
+        "UseGuards(RolesGuard)",
+        "Controller('admin-pc')",
+        "Get('user-info')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/admin-pc/users",
+      "handler": "users",
+      "source": "packages/server/src/modules/auth/admin-pc-compat.controller.ts",
+      "line": 55,
+      "decorators": [
+        "ApiTags('admin-pc 兼容')",
+        "UseGuards(RolesGuard)",
+        "Controller('admin-pc')",
+        "Roles('platform', 'super-admin')",
+        "Get('users')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/admin-pc/roles",
+      "handler": "roles",
+      "source": "packages/server/src/modules/auth/admin-pc-compat.controller.ts",
+      "line": 88,
+      "decorators": [
+        "ApiTags('admin-pc 兼容')",
+        "UseGuards(RolesGuard)",
+        "Controller('admin-pc')",
+        "Roles('platform', 'super-admin')",
+        "Get('roles')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/admin-pc/menus",
+      "handler": "menus",
+      "source": "packages/server/src/modules/auth/admin-pc-compat.controller.ts",
+      "line": 114,
+      "decorators": [
+        "ApiTags('admin-pc 兼容')",
+        "UseGuards(RolesGuard)",
+        "Controller('admin-pc')",
+        "Get('menus')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/wechat-login",
+      "handler": "wechatLogin",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 34,
+      "decorators": [
+        "ApiTags('认证')",
+        "Controller('auth')",
+        "Public()",
+        "Throttle({ default: { limit: 60, ttl: 60_000 } })",
+        "Post('wechat-login')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/phone-login",
+      "handler": "phoneLogin",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 42,
+      "decorators": [
+        "ApiTags('认证')",
+        "Controller('auth')",
+        "Public()",
+        "Throttle({ default: { limit: 10, ttl: 60_000 } })",
+        "Post('phone-login')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/sms-code",
+      "handler": "sendSmsCode",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 50,
+      "decorators": [
+        "ApiTags('认证')",
+        "Controller('auth')",
+        "Public()",
+        "Throttle({ default: { limit: 3, ttl: 60_000 } })",
+        "Post('sms-code')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/admin-login",
+      "handler": "adminLogin",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 58,
+      "decorators": [
+        "ApiTags('认证')",
+        "Controller('auth')",
+        "Public()",
+        "Throttle({ default: { limit: 10, ttl: 60_000 } })",
+        "Post('admin-login')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/refresh",
+      "handler": "refresh",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 67,
+      "decorators": [
+        "ApiTags('认证')",
+        "Controller('auth')",
+        "Public()",
+        "Throttle({ default: { limit: 60, ttl: 60_000 } })",
+        "Post('refresh')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "handler": "logout",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 90,
+      "decorators": ["ApiTags('认证')", "Controller('auth')", "Public()", "Post('logout')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/user-info",
+      "handler": "userInfo",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 96,
+      "decorators": ["ApiTags('认证')", "Controller('auth')", "Get('user-info')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/change-password",
+      "handler": "changePassword",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 106,
+      "decorators": ["ApiTags('认证')", "Controller('auth')", "Post('change-password')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/change-phone",
+      "handler": "changePhone",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 119,
+      "decorators": ["ApiTags('认证')", "Controller('auth')", "Post('change-phone')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/menus",
+      "handler": "menus",
+      "source": "packages/server/src/modules/auth/auth.controller.ts",
+      "line": 147,
+      "decorators": ["ApiTags('认证')", "Controller('auth')", "Get('menus')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/files/upload",
+      "handler": "upload",
+      "source": "packages/server/src/modules/files/files.controller.ts",
+      "line": 67,
+      "decorators": [
+        "ApiTags('文件')",
+        "Controller('files')",
+        "Post('upload')",
+        "ApiConsumes('multipart/form-data')",
+        "Throttle({ default: { limit: 60, ttl: 60_000 } })",
+        "UseInterceptors(FileInterceptor('file'))"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/files/batch-upload",
+      "handler": "batchUpload",
+      "source": "packages/server/src/modules/files/files.controller.ts",
+      "line": 84,
+      "decorators": [
+        "ApiTags('文件')",
+        "Controller('files')",
+        "Post('batch-upload')",
+        "ApiConsumes('multipart/form-data')",
+        "Throttle({ default: { limit: 60, ttl: 60_000 } })",
+        "UseInterceptors(FilesInterceptor('files', 20))"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/files/:key",
+      "handler": "remove",
+      "source": "packages/server/src/modules/files/files.controller.ts",
+      "line": 99,
+      "decorators": ["ApiTags('文件')", "Controller('files')", "Delete(':key')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/users",
+      "handler": "listUsers",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 49,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('users')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/p/ledger/users/:id",
+      "handler": "updateUser",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 54,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Patch('users/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ledger/users/:id/membership/grant",
+      "handler": "grant",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 59,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Post('users/:id/membership/grant')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/users/:id/membership/logs",
+      "handler": "logs",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 64,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('users/:id/membership/logs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ledger/users/:id/notify",
+      "handler": "notify",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 70,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Post('users/:id/notify')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/feedback",
+      "handler": "listFeedback",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 76,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('feedback')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/p/ledger/feedback/:id",
+      "handler": "updateFeedback",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 81,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Patch('feedback/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/ads",
+      "handler": "listAds",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 87,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('ads')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ledger/ads",
+      "handler": "createAd",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 92,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Post('ads')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/p/ledger/ads/:id",
+      "handler": "updateAd",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 97,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Patch('ads/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/ledger/ads/:id",
+      "handler": "deleteAd",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 102,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Delete('ads/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/config",
+      "handler": "getConfig",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 108,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('config')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/p/ledger/config",
+      "handler": "updateConfig",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 113,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Put('config')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/invite-stats",
+      "handler": "inviteStats",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 119,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('invite-stats')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ledger/ai/image",
+      "handler": "genAiImage",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 125,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Post('ai/image')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/ai/image/status",
+      "handler": "aiImageStatus",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 129,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('ai/image/status')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ledger/ai/image/adopt",
+      "handler": "adoptAiImage",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 133,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Post('ai/image/adopt')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ledger/changelogs",
+      "handler": "changelogs",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 139,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Get('changelogs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ledger/changelogs",
+      "handler": "createChangelog",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 143,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Post('changelogs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/p/ledger/changelogs/:id",
+      "handler": "updateChangelog",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 147,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Patch('changelogs/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/ledger/changelogs/:id",
+      "handler": "removeChangelog",
+      "source": "packages/server/src/modules/ledger/ledger-admin.controller.ts",
+      "line": 151,
+      "decorators": [
+        "ApiTags('门窗利账-后台')",
+        "UseGuards(RolesGuard)",
+        "Roles('platform', 'super-admin')",
+        "Controller('p/ledger')",
+        "Delete('changelogs/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/auth/config",
+      "handler": "config",
+      "source": "packages/server/src/modules/ledger/ledger-auth.controller.ts",
+      "line": 16,
+      "decorators": [
+        "ApiTags('门窗利账-鉴权')",
+        "Public()",
+        "Controller('l/auth')",
+        "Throttle({ default: { limit: 30, ttl: 60_000 } })",
+        "Get('config')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/auth/wechat-login",
+      "handler": "wechatLogin",
+      "source": "packages/server/src/modules/ledger/ledger-auth.controller.ts",
+      "line": 23,
+      "decorators": [
+        "ApiTags('门窗利账-鉴权')",
+        "Public()",
+        "Controller('l/auth')",
+        "Throttle({ default: { limit: 10, ttl: 60_000 } })",
+        "Post('wechat-login')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/orders",
+      "handler": "listOrders",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 41,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('orders')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/orders",
+      "handler": "createOrder",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 45,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Post('orders')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/orders/:id",
+      "handler": "getOrder",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 49,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('orders/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/l/orders/:id",
+      "handler": "updateOrder",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 53,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Patch('orders/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/l/orders/:id",
+      "handler": "deleteOrder",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 61,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Delete('orders/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/customers",
+      "handler": "listCustomers",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 67,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('customers')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/customers",
+      "handler": "createCustomer",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 71,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Post('customers')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/customers/ensure",
+      "handler": "ensureCustomer",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 76,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Post('customers/ensure')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/customers/:id",
+      "handler": "getCustomer",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 80,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('customers/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/l/customers/:id",
+      "handler": "updateCustomer",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 84,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Patch('customers/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/l/customers/:id",
+      "handler": "deleteCustomer",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 92,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Delete('customers/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/work-logs",
+      "handler": "listWorkLogs",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 98,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('work-logs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/work-logs",
+      "handler": "createWorkLog",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 102,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Post('work-logs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/l/work-logs/:id",
+      "handler": "updateWorkLog",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 106,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Patch('work-logs/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/l/work-logs/:id",
+      "handler": "deleteWorkLog",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 114,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Delete('work-logs/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/stats/overview",
+      "handler": "overview",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 120,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('stats/overview')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/stats/monthly",
+      "handler": "monthly",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 124,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('stats/monthly')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/stats/series",
+      "handler": "series",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 129,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('stats/series')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/goal",
+      "handler": "getGoal",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 135,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('goal')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/l/goal",
+      "handler": "setGoal",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 139,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Put('goal')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/cut/plans",
+      "handler": "listCutPlans",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 145,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Get('cut/plans')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/cut/plans",
+      "handler": "createCutPlan",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 149,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Post('cut/plans')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/l/cut/plans/:id",
+      "handler": "updateCutPlan",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 153,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Put('cut/plans/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/l/cut/plans/:id",
+      "handler": "deleteCutPlan",
+      "source": "packages/server/src/modules/ledger/ledger-biz.controller.ts",
+      "line": 161,
+      "decorators": [
+        "ApiTags('门窗利账-业务')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard, LedgerMembershipGuard)",
+        "Controller('l')",
+        "Delete('cut/plans/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/membership/pay",
+      "handler": "createPay",
+      "source": "packages/server/src/modules/ledger/ledger-pay.controller.ts",
+      "line": 33,
+      "decorators": [
+        "ApiTags('门窗利账-支付')",
+        "Public()",
+        "Controller('l')",
+        "UseGuards(LedgerJwtGuard)",
+        "Throttle({ default: { limit: 20, ttl: 60_000 } })",
+        "Post('membership/pay')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/membership/xpay-order",
+      "handler": "createXpay",
+      "source": "packages/server/src/modules/ledger/ledger-pay.controller.ts",
+      "line": 44,
+      "decorators": [
+        "ApiTags('门窗利账-支付')",
+        "Public()",
+        "Controller('l')",
+        "UseGuards(LedgerJwtGuard)",
+        "Throttle({ default: { limit: 20, ttl: 60_000 } })",
+        "Post('membership/xpay-order')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/pay/notify",
+      "handler": "notify",
+      "source": "packages/server/src/modules/ledger/ledger-pay.controller.ts",
+      "line": 55,
+      "decorators": [
+        "ApiTags('门窗利账-支付')",
+        "Public()",
+        "Controller('l')",
+        "SkipResponseWrap()",
+        "Throttle({ default: { limit: 200, ttl: 60_000 } })",
+        "Post('pay/notify')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/xpay/deliver-notify",
+      "handler": "xpayVerify",
+      "source": "packages/server/src/modules/ledger/ledger-pay.controller.ts",
+      "line": 105,
+      "decorators": [
+        "ApiTags('门窗利账-支付')",
+        "Public()",
+        "Controller('l')",
+        "SkipResponseWrap()",
+        "Get('xpay/deliver-notify')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/xpay/deliver-notify",
+      "handler": "xpayDeliver",
+      "source": "packages/server/src/modules/ledger/ledger-pay.controller.ts",
+      "line": 119,
+      "decorators": [
+        "ApiTags('门窗利账-支付')",
+        "Public()",
+        "Controller('l')",
+        "SkipResponseWrap()",
+        "Throttle({ default: { limit: 200, ttl: 60_000 } })",
+        "Post('xpay/deliver-notify')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/me",
+      "handler": "me",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 51,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('me')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/avatar",
+      "handler": "uploadAvatar",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 57,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Post('avatar')",
+        "ApiConsumes('multipart/form-data')",
+        "Throttle({ default: { limit: 30, ttl: 60_000 } })",
+        "UseInterceptors(FileInterceptor('file'))"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/membership",
+      "handler": "membership",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 68,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('membership')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/l/profile",
+      "handler": "updateProfile",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 76,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Patch('profile')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/notifications",
+      "handler": "notifications",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 82,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('notifications')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/notifications/unread-count",
+      "handler": "unreadCount",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 86,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('notifications/unread-count')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/notifications/read-all",
+      "handler": "readAll",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 90,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Post('notifications/read-all')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/notifications/:id/read",
+      "handler": "readOne",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 94,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Post('notifications/:id/read')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/settings",
+      "handler": "getSettings",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 100,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('settings')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/l/settings",
+      "handler": "updateSettings",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 104,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Put('settings')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/feedback-media",
+      "handler": "uploadFeedbackMedia",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 111,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Post('feedback-media')",
+        "ApiConsumes('multipart/form-data')",
+        "Throttle({ default: { limit: 30, ttl: 60_000 } })",
+        "UseInterceptors(FileInterceptor('file'))"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/feedback",
+      "handler": "feedback",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 121,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Post('feedback')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/ads",
+      "handler": "ads",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 127,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('ads')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/cut/access",
+      "handler": "cutAccess",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 133,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('cut/access')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/invite",
+      "handler": "invite",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 139,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('invite')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/changelogs",
+      "handler": "changelogs",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 145,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('changelogs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/changelog",
+      "handler": "changelog",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 149,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Get('changelog')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/data/export",
+      "handler": "exportData",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 155,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Throttle({ default: { limit: 10, ttl: 60_000 } })",
+        "Post('data/export')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/data/import",
+      "handler": "importData",
+      "source": "packages/server/src/modules/ledger/ledger.controller.ts",
+      "line": 160,
+      "decorators": [
+        "ApiTags('门窗利账-账户')",
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l')",
+        "Throttle({ default: { limit: 10, ttl: 60_000 } })",
+        "Post('data/import')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/workbook/access",
+      "handler": "access",
+      "source": "packages/server/src/modules/ledger/workbook/workbook.controller.ts",
+      "line": 32,
+      "decorators": [
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l/workbook')",
+        "Get('access')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/workbook/snapshot",
+      "handler": "snapshot",
+      "source": "packages/server/src/modules/ledger/workbook/workbook.controller.ts",
+      "line": 35,
+      "decorators": [
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l/workbook')",
+        "Get('snapshot')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/workbook/changes",
+      "handler": "changes",
+      "source": "packages/server/src/modules/ledger/workbook/workbook.controller.ts",
+      "line": 38,
+      "decorators": [
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l/workbook')",
+        "Get('changes')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/workbook/sync",
+      "handler": "sync",
+      "source": "packages/server/src/modules/ledger/workbook/workbook.controller.ts",
+      "line": 44,
+      "decorators": [
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l/workbook')",
+        "Post('sync')",
+        "HttpCode(200)",
+        "UseGuards(LedgerMembershipGuard)"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/l/workbook/attachments/:id",
+      "handler": "upload",
+      "source": "packages/server/src/modules/ledger/workbook/workbook.controller.ts",
+      "line": 50,
+      "decorators": [
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l/workbook')",
+        "Post('attachments/:id')",
+        "HttpCode(200)",
+        "UseGuards(LedgerMembershipGuard)",
+        "UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024, files: 1 } }))"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/l/workbook/attachments/:id",
+      "handler": "download",
+      "source": "packages/server/src/modules/ledger/workbook/workbook.controller.ts",
+      "line": 61,
+      "decorators": [
+        "Public()",
+        "UseGuards(LedgerJwtGuard)",
+        "Controller('l/workbook')",
+        "Get('attachments/:id')",
+        "SkipResponseWrap()"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/agreements",
+      "handler": "list",
+      "source": "packages/server/src/modules/legal/legal.controller.ts",
+      "line": 23,
+      "decorators": ["ApiTags('协议 · 公开')", "Controller('u')", "Public()", "Get('agreements')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/legal/agreements",
+      "handler": "read",
+      "source": "packages/server/src/modules/legal/legal.controller.ts",
+      "line": 37,
+      "decorators": [
+        "ApiTags('协议 · 平台')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p/legal')",
+        "Get('agreements')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/p/legal/agreements",
+      "handler": "write",
+      "source": "packages/server/src/modules/legal/legal.controller.ts",
+      "line": 42,
+      "decorators": [
+        "ApiTags('协议 · 平台')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p/legal')",
+        "Put('agreements')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/dashboard",
+      "handler": "dashboard",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 35,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('dashboard')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/stats",
+      "handler": "stats",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 39,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('stats')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/products",
+      "handler": "listProducts",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 45,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('products')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/products/:id",
+      "handler": "productDetail",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 49,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('products/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/products",
+      "handler": "createProduct",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 53,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('products')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/products/:id",
+      "handler": "updateProduct",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 57,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('products/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/products/batch-online",
+      "handler": "batchOnline",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 65,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('products/batch-online')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/products/batch-offline",
+      "handler": "batchOffline",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 72,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('products/batch-offline')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/products/batch-delete",
+      "handler": "batchDelete",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 79,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('products/batch-delete')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/products/batch-status",
+      "handler": "batchStatus",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 86,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('products/batch-status')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/m/products",
+      "handler": "deleteByIds",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 93,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Delete('products')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/categories",
+      "handler": "categories",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 101,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('categories')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/categories",
+      "handler": "createCategory",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 105,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('categories')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/categories",
+      "handler": "batchSaveCategories",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 109,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('categories')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/categories/:id",
+      "handler": "updateCategory",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 118,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('categories/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/m/categories/:id",
+      "handler": "deleteCategory",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 126,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Delete('categories/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/categories/sort",
+      "handler": "sortCategories",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 133,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('categories/sort')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/orders",
+      "handler": "listOrders",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 142,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('orders')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/orders/shares",
+      "handler": "merchantOrderShares",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 152,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('orders/shares')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/orders/:id",
+      "handler": "orderDetail",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 156,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('orders/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/orders/:id/ship",
+      "handler": "ship",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 160,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('orders/:id/ship')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/orders/batch-ship",
+      "handler": "batchShip",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 168,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('orders/batch-ship')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/orders/parse-address",
+      "handler": "parseAddress",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 175,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('orders/parse-address')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/orders/:id/share",
+      "handler": "createOrderShare",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 185,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('orders/:id/share')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/orders/:id/share/current",
+      "handler": "currentOrderShare",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 202,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('orders/:id/share/current')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/orders/:id/share/revoke",
+      "handler": "revokeOrderShare",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 211,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('orders/:id/share/revoke')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/refunds",
+      "handler": "refunds",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 220,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('refunds')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/refunds/:id/agree",
+      "handler": "agree",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 224,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('refunds/:id/agree')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/refunds/:id/reject",
+      "handler": "reject",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 232,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('refunds/:id/reject')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/aftersales",
+      "handler": "aftersales",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 241,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('aftersales')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/aftersales/:id/review",
+      "handler": "reviewAftersale",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 245,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('aftersales/:id/review')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/customers",
+      "handler": "customers",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 256,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('customers')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/customers/:id/price-tier",
+      "handler": "setTier",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 260,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('customers/:id/price-tier')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/customers/:id/authorize",
+      "handler": "authorize",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 268,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('customers/:id/authorize')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/m/customers/:id/blacklist",
+      "handler": "setBlacklist",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 282,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Patch('customers/:id/blacklist')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/commission/rules",
+      "handler": "commissionRules",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 292,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('commission/rules')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/commission/rules",
+      "handler": "saveCommissionRules",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 296,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('commission/rules')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/commission-rule",
+      "handler": "commissionRuleAlias",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 304,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('commission-rule')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/commission-rule",
+      "handler": "saveCommissionRuleAlias",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 307,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('commission-rule')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/commissions",
+      "handler": "myCommissions",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 313,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('commissions')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/promote-summary",
+      "handler": "promoteSummary",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 317,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('promote-summary')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/commission/history",
+      "handler": "commissionHistory",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 322,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('commission/history')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/marketing",
+      "handler": "marketingAlias",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 326,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('marketing')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/marketing/activities",
+      "handler": "marketingActivities",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 331,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('marketing/activities')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/staff",
+      "handler": "staffAlias",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 338,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('staff')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/withdraws",
+      "handler": "withdraws",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 344,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('withdraws')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/withdraws",
+      "handler": "createWithdraw",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 348,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('withdraws')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/withdraws/:id/review",
+      "handler": "reviewWithdraw",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 359,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('withdraws/:id/review')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/withdraws/:id/reject",
+      "handler": "rejectWithdraw",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 368,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('withdraws/:id/reject')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/balance",
+      "handler": "balance",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 376,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('balance')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/stores",
+      "handler": "stores",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 382,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('stores')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/stores",
+      "handler": "createStore",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 386,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('stores')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/stores/:id",
+      "handler": "updateStore",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 390,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('stores/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/m/stores/:id",
+      "handler": "removeStore",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 398,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Delete('stores/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/stores/:id/auth",
+      "handler": "getAuth",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 402,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('stores/:id/auth')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/stores/:id/auth",
+      "handler": "saveAuth",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 406,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('stores/:id/auth')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/staffs",
+      "handler": "staffs",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 416,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('staffs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/staffs",
+      "handler": "createStaff",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 420,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('staffs')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/staffs/:id",
+      "handler": "updateStaff",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 424,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('staffs/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/m/staffs/:id",
+      "handler": "removeStaff",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 432,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Delete('staffs/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/shop/decorate",
+      "handler": "getDecorate",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 438,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('shop/decorate')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/shop/decorate",
+      "handler": "saveDecorate",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 442,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('shop/decorate')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/shop/decorate",
+      "handler": "putDecorate",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 446,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('shop/decorate')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/marketing/overview",
+      "handler": "marketingOverview",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 452,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('marketing/overview')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/marketing/coupons",
+      "handler": "marketingCoupons",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 456,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('marketing/coupons')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/marketing/coupons",
+      "handler": "createCoupon",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 461,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('marketing/coupons')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/marketing/coupons/:id",
+      "handler": "updateCouponApi",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 468,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('marketing/coupons/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/m/marketing/coupons/:id",
+      "handler": "deleteCoupon",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 476,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Delete('marketing/coupons/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/marketing/coupons/:id/toggle",
+      "handler": "toggleCoupon",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 483,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('marketing/coupons/:id/toggle')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/chat/sessions",
+      "handler": "chatSessions",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 493,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('chat/sessions')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/chat/sessions/:id/messages",
+      "handler": "chatMessages",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 497,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('chat/sessions/:id/messages')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/chat/sessions/:id/messages",
+      "handler": "chatSend",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 504,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('chat/sessions/:id/messages')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/chat/quick-replies",
+      "handler": "chatQuickReplies",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 512,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('chat/quick-replies')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/chat/messages",
+      "handler": "chatMessagesAlias",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 517,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('chat/messages')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/chat/messages",
+      "handler": "chatSendAlias",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 524,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('chat/messages')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/products",
+      "handler": "plazaProducts",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 533,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/products')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/cards",
+      "handler": "plazaCards",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 537,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/cards')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/factories",
+      "handler": "plazaFactories",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 540,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/factories')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/filter-options",
+      "handler": "plazaFilterOptions",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 549,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/filter-options')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/factories/:id",
+      "handler": "plazaFactory",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 553,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/factories/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/factory/:id",
+      "handler": "plazaFactoryAlias",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 560,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/factory/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/plaza/factories/:id/follow",
+      "handler": "followFactory",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 566,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('plaza/factories/:id/follow')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/plaza/factories/:id/rate",
+      "handler": "rateFactory",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 574,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('plaza/factories/:id/rate')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/visibility",
+      "handler": "getPlazaVisibility",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 582,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/visibility')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/plaza/visibility",
+      "handler": "setPlazaVisibility",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 586,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('plaza/visibility')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/plaza/agency",
+      "handler": "applyAgency",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 593,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('plaza/agency')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/plaza/applications",
+      "handler": "myAgencyApplications",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 597,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('plaza/applications')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/m/plaza/applications/:id",
+      "handler": "updateAgencyApp",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 604,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Patch('plaza/applications/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/m/plaza/applications/:id",
+      "handler": "cancelAgencyApp",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 612,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Delete('plaza/applications/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/profile",
+      "handler": "myProfile",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 621,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('profile')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/m/profile",
+      "handler": "updateProfile",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 625,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Patch('profile')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/shop/price-rule",
+      "handler": "getPriceRule",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 631,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('shop/price-rule')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/m/shop/price-rule",
+      "handler": "putPriceRule",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 635,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Put('shop/price-rule')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/feature-flags",
+      "handler": "featureFlags",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 641,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('feature-flags')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/membership/plans",
+      "handler": "memberPlans",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 647,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('membership/plans')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/membership",
+      "handler": "myMembership",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 650,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('membership')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/membership/quota",
+      "handler": "quota",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 657,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('membership/quota')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/membership/payments",
+      "handler": "payments",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 661,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('membership/payments')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/membership/notices",
+      "handler": "notices",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 668,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('membership/notices')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/membership/subscribe",
+      "handler": "subscribe",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 675,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('membership/subscribe')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/m/membership/payments/:no/status",
+      "handler": "membershipPayStatus",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 680,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Get('membership/payments/:no/status')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/membership/cancel",
+      "handler": "cancelSub",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 687,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('membership/cancel')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/membership/auto-renew",
+      "handler": "setAutoRenew",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 691,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('membership/auto-renew')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/membership/quota/use",
+      "handler": "useQuota",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 698,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('membership/quota/use')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/m/membership/quota/release",
+      "handler": "releaseQuota",
+      "source": "packages/server/src/modules/merchant/merchant.controller.ts",
+      "line": 705,
+      "decorators": [
+        "ApiTags('商家端')",
+        "UseGuards(RolesGuard)",
+        "Roles('merchant', 'factory', 'store', 'super-admin')",
+        "Controller('m')",
+        "Post('membership/quota/release')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/payments/wechat/notify",
+      "handler": "wechatNotify",
+      "source": "packages/server/src/modules/payment/payment.controller.ts",
+      "line": 48,
+      "decorators": [
+        "SkipResponseWrap()",
+        "Controller('payments')",
+        "Public()",
+        "Throttle({ default: { limit: 200, ttl: 60_000 } })",
+        "Post('wechat/notify')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/dashboard",
+      "handler": "dashboard",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 30,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('dashboard')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/stats",
+      "handler": "stats",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 33,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('stats')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/merchants",
+      "handler": "merchants",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 38,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('merchants')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/audit/merchants",
+      "handler": "auditMerchants",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 41,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('audit/merchants')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/merchants/:id/approve",
+      "handler": "approveMerchant",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 44,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('merchants/:id/approve')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/merchants/:id/reject",
+      "handler": "rejectMerchant",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 47,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('merchants/:id/reject')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/merchants/:id/pause",
+      "handler": "pauseMerchant",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 53,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('merchants/:id/pause')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/merchants/:id/resume",
+      "handler": "resumeMerchant",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 56,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('merchants/:id/resume')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/orders",
+      "handler": "orders",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 61,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('orders')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/audit/products",
+      "handler": "auditProducts",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 66,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('audit/products')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/audit/products/config",
+      "handler": "getAuditConfig",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 69,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('audit/products/config')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/audit/products/config",
+      "handler": "saveAuditConfig",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 72,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('audit/products/config')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/products/:id/approve",
+      "handler": "approveProduct",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 75,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('products/:id/approve')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/products/:id/reject",
+      "handler": "rejectProduct",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 78,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('products/:id/reject')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/audit/products/:id/sample-check",
+      "handler": "sampleCheckProduct",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 86,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('audit/products/:id/sample-check')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/p/plaza/products/:id/online",
+      "handler": "setPlazaProductOnline",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 93,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Patch('plaza/products/:id/online')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ads/slots",
+      "handler": "adSlots",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 101,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('ads/slots')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ads/slots",
+      "handler": "createAdSlot",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 104,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('ads/slots')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/p/ads/slots/:id",
+      "handler": "updateAdSlot",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 107,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Put('ads/slots/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/ads/slots/:id",
+      "handler": "deleteAdSlot",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 110,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Delete('ads/slots/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/ads/creatives",
+      "handler": "adCreatives",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 113,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('ads/creatives')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ads/creatives",
+      "handler": "createAdCreative",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 116,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('ads/creatives')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/p/ads/creatives/:id",
+      "handler": "updateAdCreative",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 119,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Put('ads/creatives/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/ads/creatives/:id",
+      "handler": "deleteAdCreative",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 122,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Delete('ads/creatives/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ads/creatives/:id/approve",
+      "handler": "approveAdCreative",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 126,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('ads/creatives/:id/approve')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/ads/creatives/:id/reject",
+      "handler": "rejectAdCreative",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 132,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('ads/creatives/:id/reject')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/plaza/pushes",
+      "handler": "plazaPushes",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 141,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('plaza/pushes')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/plaza/pushes",
+      "handler": "createPlazaPush",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 144,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('plaza/pushes')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/plaza/products",
+      "handler": "plazaProducts",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 147,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('plaza/products')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/plaza/factories",
+      "handler": "plazaFactories",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 150,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('plaza/factories')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/plaza/records",
+      "handler": "plazaRecords",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 153,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('plaza/records')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/member-plans/trial-days",
+      "handler": "memberTrialDays",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 159,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('member-plans/trial-days')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/p/member-plans/trial-days",
+      "handler": "saveMemberTrialDays",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 162,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Put('member-plans/trial-days')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/member-plans",
+      "handler": "memberPlans",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 165,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('member-plans')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/member-plans",
+      "handler": "saveMemberPlan",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 168,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('member-plans')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/member-plans/:id",
+      "handler": "deleteMemberPlan",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 171,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Delete('member-plans/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/member-plans/:id/subscriptions",
+      "handler": "planSubscriptions",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 174,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('member-plans/:id/subscriptions')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/withdraws",
+      "handler": "withdraws",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 184,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('withdraws')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/withdraws/:id/approve",
+      "handler": "approveWithdraw",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 187,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('withdraws/:id/approve')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/withdraws/:id/reject",
+      "handler": "rejectWithdrawPlat",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 194,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('withdraws/:id/reject')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/withdraws/:id/mark-paid",
+      "handler": "markWithdrawPaid",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 201,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('withdraws/:id/mark-paid')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/member-pay-orders",
+      "handler": "memberPayOrders",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 210,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('member-pay-orders')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/p/member-pay-orders/:id/status",
+      "handler": "updatePayStatus",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 213,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Patch('member-pay-orders/:id/status')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/member-pay-orders/:id/approve-refund",
+      "handler": "approveRefund",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 219,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('member-pay-orders/:id/approve-refund')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/member-pay-orders/:id/reject-refund",
+      "handler": "rejectRefund",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 222,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('member-pay-orders/:id/reject-refund')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/feature-flags",
+      "handler": "featureFlags",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 230,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('feature-flags')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/feature-flags",
+      "handler": "createFeatureFlag",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 233,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('feature-flags')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/feature-flags/:id",
+      "handler": "deleteFeatureFlag",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 236,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Delete('feature-flags/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/feature-flags/:id/toggle",
+      "handler": "toggleFeatureFlag",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 239,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('feature-flags/:id/toggle')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/feature-flags/gray",
+      "handler": "featureFlagGray",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 245,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('feature-flags/gray')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/feature-flags/gray",
+      "handler": "setFeatureFlagGray",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 248,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('feature-flags/gray')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/feature-flags/reset",
+      "handler": "resetFeatureFlags",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 251,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('feature-flags/reset')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/admins",
+      "handler": "admins",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 256,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('admins')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/admins",
+      "handler": "createAdmin",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 259,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('admins')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/p/admins/:id",
+      "handler": "updateAdmin",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 262,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Put('admins/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/admins/:id",
+      "handler": "deleteAdmin",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 269,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Delete('admins/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/admins/:id/toggle",
+      "handler": "toggleAdmin",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 272,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('admins/:id/toggle')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/admins/:id/reset-password",
+      "handler": "resetAdminPwd",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 276,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('admins/:id/reset-password')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/roles",
+      "handler": "roles",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 284,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('roles')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/roles",
+      "handler": "saveRole",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 287,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('roles')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/p/roles/:id",
+      "handler": "updateRole",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 290,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Put('roles/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/p/roles/:id",
+      "handler": "deleteRole",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 293,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Delete('roles/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/audit/records",
+      "handler": "auditRecords",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 299,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('audit/records')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/order-shares/stats",
+      "handler": "orderSharesStats",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 306,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('order-shares/stats')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/order-shares",
+      "handler": "orderShares",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 309,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('order-shares')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/system/settings",
+      "handler": "systemSettings",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 314,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('system/settings')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/system/settings",
+      "handler": "saveSystemSettings",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 317,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('system/settings')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/tickets/handled-count",
+      "handler": "handledTicketCount",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 324,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('tickets/handled-count')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/tickets/pending-count",
+      "handler": "pendingTicketCount",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 327,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('tickets/pending-count')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/tickets",
+      "handler": "tickets",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 330,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('tickets')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/tickets",
+      "handler": "createTicket",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 333,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('tickets')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/tickets/:id/handle",
+      "handler": "handleTicket",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 342,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('tickets/:id/handle')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/notifications",
+      "handler": "notifications",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 353,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('notifications')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/notifications/read-all",
+      "handler": "notificationsReadAll",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 356,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('notifications/read-all')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/notifications/:id/read",
+      "handler": "notificationRead",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 359,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('notifications/:id/read')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/feedback",
+      "handler": "submitFeedback",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 369,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('feedback')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/feedback",
+      "handler": "feedbackList",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 372,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('feedback')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/p/refunds",
+      "handler": "refunds",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 379,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Get('refunds')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/refunds/:id/agree",
+      "handler": "agreeRefund",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 382,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('refunds/:id/agree')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/p/refunds/:id/reject",
+      "handler": "rejectRefundPlat",
+      "source": "packages/server/src/modules/platform/platform.controller.ts",
+      "line": 389,
+      "decorators": [
+        "ApiTags('平台端')",
+        "UseGuards(RolesGuard)",
+        "Roles('admin', 'platform', 'super-admin')",
+        "Controller('p')",
+        "Post('refunds/:id/reject')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/share/orders/:code",
+      "handler": "getSharedOrder",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 28,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('share/orders/:code')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/products",
+      "handler": "listProducts",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 33,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Public()", "Get('products')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/products/:id",
+      "handler": "productDetail",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 36,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('products/:id')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/categories",
+      "handler": "categories",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 41,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('categories')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/shops",
+      "handler": "searchShops",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 46,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Public()", "Get('shops')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/orders",
+      "handler": "listOrders",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 51,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('orders')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/orders/:id",
+      "handler": "orderDetail",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 54,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('orders/:id')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/orders",
+      "handler": "createOrder",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 57,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('orders')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/orders/:id/pay",
+      "handler": "pay",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 60,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('orders/:id/pay')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/orders/:id/confirm",
+      "handler": "confirm",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 67,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('orders/:id/confirm')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/orders/:id/cancel",
+      "handler": "cancel",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 70,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('orders/:id/cancel')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/orders/:id/urge",
+      "handler": "urge",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 73,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('orders/:id/urge')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/orders/:id/refund",
+      "handler": "refundOrder",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 89,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('orders/:id/refund')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/banners",
+      "handler": "banners",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 98,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Public()", "Get('banners')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/hot-keywords",
+      "handler": "hotKeywords",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 103,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('hot-keywords')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/addresses",
+      "handler": "addresses",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 108,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('addresses')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/addresses/default",
+      "handler": "defaultAddress",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 111,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('addresses/default')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/addresses",
+      "handler": "addAddress",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 114,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('addresses')"],
+      "status": "待验证"
+    },
+    {
+      "method": "PUT",
+      "path": "/u/addresses/:id",
+      "handler": "updateAddress",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 117,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Put('addresses/:id')"],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/u/addresses/:id",
+      "handler": "removeAddress",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 124,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Delete('addresses/:id')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/favorites",
+      "handler": "favorites",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 129,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('favorites')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/favorites",
+      "handler": "addFavorite",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 132,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('favorites')"],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/u/favorites/:id",
+      "handler": "removeFavorite",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 135,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Delete('favorites/:id')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/coupons",
+      "handler": "coupons",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 140,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Public()", "Get('coupons')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/coupons/:id/claim",
+      "handler": "claimCoupon",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 149,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('coupons/:id/claim')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/my-coupons",
+      "handler": "myCoupons",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 159,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('my-coupons')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/booking",
+      "handler": "booking",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 170,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Throttle({ default: { limit: 3, ttl: 60_000 } })",
+        "Post('booking')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/promote/summary",
+      "handler": "promoteSummary",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 178,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('promote/summary')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/promote/orders",
+      "handler": "promoteOrders",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 181,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('promote/orders')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/promote/share-link",
+      "handler": "promoteShareLink",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 185,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('promote/share-link')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/promote/rules",
+      "handler": "promoteRules",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 195,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('promote/rules')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/promote/bind-inviter",
+      "handler": "bindInviter",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 199,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Post('promote/bind-inviter')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/stores/nearby",
+      "handler": "nearbyStores",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 207,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('stores/nearby')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/shops/:merchantId/price-rule",
+      "handler": "shopPriceRule",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 212,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('shops/:merchantId/price-rule')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/shops/:merchantId/my-tier",
+      "handler": "myTier",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 219,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Get('shops/:merchantId/my-tier')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/profile",
+      "handler": "profile",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 227,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('profile')"],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/u/profile",
+      "handler": "updateProfile",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 230,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Patch('profile')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/bind-phone",
+      "handler": "bindPhone",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 235,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('bind-phone')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/bind-wechat",
+      "handler": "bindWechat",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 238,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('bind-wechat')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/merchant-apply",
+      "handler": "merchantApply",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 243,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('merchant-apply')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/system/settings",
+      "handler": "systemSettings",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 255,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Public()",
+        "Get('system/settings')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/chat/sessions",
+      "handler": "chatSessions",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 261,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('chat/sessions')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/chat/sessions",
+      "handler": "ensureChatSession",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 264,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('chat/sessions')"],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/chat/sessions/:id/messages",
+      "handler": "chatMessages",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 270,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Get('chat/sessions/:id/messages')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/chat/sessions/:id/messages",
+      "handler": "chatSend",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 276,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Post('chat/sessions/:id/messages')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/chat/sessions/:id/read",
+      "handler": "chatRead",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 283,
+      "decorators": [
+        "ApiTags('用户端 user-mp')",
+        "Controller('u')",
+        "Post('chat/sessions/:id/read')"
+      ],
+      "status": "待验证"
+    },
+    {
+      "method": "GET",
+      "path": "/u/cart",
+      "handler": "listCart",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 288,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Get('cart')"],
+      "status": "待验证"
+    },
+    {
+      "method": "POST",
+      "path": "/u/cart",
+      "handler": "addCart",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 291,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Post('cart')"],
+      "status": "待验证"
+    },
+    {
+      "method": "PATCH",
+      "path": "/u/cart/:id",
+      "handler": "updateCart",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 297,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Patch('cart/:id')"],
+      "status": "待验证"
+    },
+    {
+      "method": "DELETE",
+      "path": "/u/cart/:id",
+      "handler": "removeCart",
+      "source": "packages/server/src/modules/user-mp/user-mp.controller.ts",
+      "line": 304,
+      "decorators": ["ApiTags('用户端 user-mp')", "Controller('u')", "Delete('cart/:id')"],
+      "status": "待验证"
+    }
+  ]
+}

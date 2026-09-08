@@ -612,9 +612,9 @@ function readBase64(path: string): Promise<string> {
 
 function imageInfo(path: string): Promise<{ width: number; height: number }> {
   return withTimeout(
-    new Promise((resolve, reject) =>
-      wx.getImageInfo({ src: path, success: resolve, fail: reject }),
-    ),
+    new Promise((resolve, reject) => {
+      wx.getImageInfo({ src: path, success: resolve, fail: reject })
+    }),
     10000,
     '图片信息读取超时',
   )

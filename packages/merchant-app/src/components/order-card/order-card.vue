@@ -17,7 +17,10 @@ defineEmits<{
   (e: 'action', action: string, order: Order): void
 }>()
 
-const STATUS_MAP: Record<OrderStatus, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const STATUS_MAP: Record<
+  OrderStatus,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   pending_payment: { text: '待付款', tone: 'warning' },
   pending_shipment: { text: '待发货', tone: 'primary' },
   shipped: { text: '已发货', tone: 'info' },
@@ -58,9 +61,24 @@ const itemCount = computed(() => props.order.items?.length ?? 0)
     <view class="actions">
       <slot name="actions" :order="order" :status="order.status">
         <view class="btn" @click.stop="$emit('action', 'detail', order)">详情</view>
-        <view v-if="order.status === 'pending_shipment'" class="btn primary" @click.stop="$emit('action', 'ship', order)">发货</view>
-        <view v-if="order.status === 'shipped'" class="btn" @click.stop="$emit('action', 'tracking', order)">查物流</view>
-        <view v-if="order.status === 'after_sale'" class="btn" @click.stop="$emit('action', 'refund', order)">处理售后</view>
+        <view
+          v-if="order.status === 'pending_shipment'"
+          class="btn primary"
+          @click.stop="$emit('action', 'ship', order)"
+          >发货</view
+        >
+        <view
+          v-if="order.status === 'shipped'"
+          class="btn"
+          @click.stop="$emit('action', 'tracking', order)"
+          >查物流</view
+        >
+        <view
+          v-if="order.status === 'after_sale'"
+          class="btn"
+          @click.stop="$emit('action', 'refund', order)"
+          >处理售后</view
+        >
       </slot>
     </view>
   </view>
@@ -81,7 +99,11 @@ const itemCount = computed(() => props.order.items?.length ?? 0)
     margin-bottom: 16rpx;
     padding-bottom: 16rpx;
     border-bottom: 1rpx dashed var(--border-light);
-    .head-left { display: flex; align-items: center; gap: 8rpx; }
+    .head-left {
+      display: flex;
+      align-items: center;
+      gap: 8rpx;
+    }
     .no {
       font-size: 24rpx;
       color: var(--text-secondary);

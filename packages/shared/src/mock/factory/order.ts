@@ -5,7 +5,11 @@ import type { Order, OrderItem, OrderStatus, Refund } from '../../types/order'
 import { faker, chineseName, chinaPhone, CITIES, placeholderImage, chance } from '../faker'
 import { genId, genOrderNo, genRefundNo } from '../../utils/id'
 
-export function genOrder(opts?: { userId?: string; merchantId?: string; status?: OrderStatus }): Order {
+export function genOrder(opts?: {
+  userId?: string
+  merchantId?: string
+  status?: OrderStatus
+}): Order {
   const now = new Date().toISOString()
   const itemCount = faker.number.int({ min: 1, max: 3 })
   const items: OrderItem[] = Array.from({ length: itemCount }).map(() => {
@@ -16,7 +20,14 @@ export function genOrder(opts?: { userId?: string; merchantId?: string; status?:
       orderId: '',
       productId: genId(),
       skuId: genId(),
-      productName: faker.helpers.arrayElement(['实木餐桌', '布艺沙发', '北欧床', '儿童椅', '落地灯', '岩板茶几']),
+      productName: faker.helpers.arrayElement([
+        '实木餐桌',
+        '布艺沙发',
+        '北欧床',
+        '儿童椅',
+        '落地灯',
+        '岩板茶几',
+      ]),
       productImage: placeholderImage(400, 400),
       specsLabel: `${faker.helpers.arrayElement(['1.2m', '1.4m'])} · ${faker.helpers.arrayElement(['橡木', '胡桃木'])}`,
       unitPrice,
@@ -27,7 +38,14 @@ export function genOrder(opts?: { userId?: string; merchantId?: string; status?:
   })
   const totalAmount = items.reduce((s, x) => s + x.unitPrice * x.quantity, 0)
   const discount = chance(40) ? Math.round(totalAmount * 0.05) : 0
-  const status = opts?.status ?? faker.helpers.arrayElement(['pending_payment', 'pending_shipment', 'shipped', 'completed'] as const)
+  const status =
+    opts?.status ??
+    faker.helpers.arrayElement([
+      'pending_payment',
+      'pending_shipment',
+      'shipped',
+      'completed',
+    ] as const)
   const city = faker.helpers.arrayElement(CITIES)
 
   const order: Order = {
@@ -77,7 +95,13 @@ export function genRefund(orderId: string): Refund {
     userId: genId(),
     merchantId: genId(),
     type: chance(60) ? 'refund_with_return' : 'refund_only',
-    reason: faker.helpers.arrayElement(['商品损坏', '尺寸不符', '颜色不喜欢', '不想要了', '质量问题']),
+    reason: faker.helpers.arrayElement([
+      '商品损坏',
+      '尺寸不符',
+      '颜色不喜欢',
+      '不想要了',
+      '质量问题',
+    ]),
     description: faker.lorem.sentence(),
     evidence: Array.from({ length: 3 }).map(() => placeholderImage(400, 400)),
     applyAmount: faker.number.float({ min: 100, max: 3000, fractionDigits: 2 }),

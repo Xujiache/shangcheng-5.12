@@ -96,7 +96,11 @@ function goCreate() {
   uni.navigateTo({ url: '/pages/plaza/push' })
 }
 
-const totalLabel = computed(() => (tab.value === 'all' ? `共 ${total.value} 条` : `${total.value} 条 ${STATUS_META[tab.value]?.label || ''}`))
+const totalLabel = computed(() =>
+  tab.value === 'all'
+    ? `共 ${total.value} 条`
+    : `${total.value} 条 ${STATUS_META[tab.value]?.label || ''}`,
+)
 
 onMounted(() => load(true))
 
@@ -184,7 +188,9 @@ function onScrollToLower() {
       <EmptyState
         v-if="!loading && list.length === 0"
         title="暂无推送记录"
-        :desc="tab === 'all' ? '点击右上角 + 立刻发起一次推送' : '当前筛选下无记录，切换其它状态看看'"
+        :desc="
+          tab === 'all' ? '点击右上角 + 立刻发起一次推送' : '当前筛选下无记录，切换其它状态看看'
+        "
         icon="biz-plaza"
       />
       <view style="height: 40rpx" />
@@ -295,8 +301,14 @@ function onScrollToLower() {
   border-radius: 6rpx;
   font-size: 20rpx;
   font-weight: 700;
-  &.product { background: rgba(255, 77, 45, 0.1); color: #FF4D2D; }
-  &.factory { background: rgba(18, 150, 219, 0.1); color: #1296DB; }
+  &.product {
+    background: rgba(255, 77, 45, 0.1);
+    color: #ff4d2d;
+  }
+  &.factory {
+    background: rgba(18, 150, 219, 0.1);
+    color: #1296db;
+  }
 }
 .ft {
   display: flex;

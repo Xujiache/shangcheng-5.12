@@ -98,25 +98,25 @@ export function reportError(e: any) {
   wx.showModal({ title: '操作未完成', content: errorText(e), showCancel: false })
 }
 export function confirm(title: string, content: string): Promise<boolean> {
-  return new Promise((resolve) =>
+  return new Promise((resolve) => {
     wx.showModal({
       title,
       content,
       success: (r) => resolve(r.confirm),
       fail: () => resolve(false),
-    }),
-  )
+    })
+  })
 }
 export function ask(title: string, placeholder = ''): Promise<string | null> {
-  return new Promise((resolve) =>
+  return new Promise((resolve) => {
     wx.showModal({
       title,
       editable: true,
       placeholderText: placeholder,
       success: (r) => resolve(r.confirm ? r.content || '' : null),
       fail: () => resolve(null),
-    }),
-  )
+    })
+  })
 }
 export async function maybeImportGuest(): Promise<void> {
   if (scope() === 'guest') return
@@ -298,7 +298,7 @@ export async function syncWorkbook(manualPull = false): Promise<{ pending: numbe
   }
 }
 async function uploadProof(id: string, path: string, still: () => void): Promise<void> {
-  await new Promise<void>((resolve, reject) =>
+  await new Promise<void>((resolve, reject) => {
     wx.uploadFile({
       url: `${API_BASE}/api/v1/l/workbook/attachments/${id}`,
       filePath: path,
@@ -315,8 +315,8 @@ async function uploadProof(id: string, path: string, still: () => void): Promise
         }
       },
       fail: reject,
-    }),
-  )
+    })
+  })
 }
 export async function proofPath(id: string): Promise<string> {
   const repo = repository()
@@ -329,15 +329,15 @@ export async function proofPath(id: string): Promise<string> {
     } catch {}
   }
   check(scope() !== 'guest', '本机凭证文件缺失，请从完整备份恢复')
-  const p = await new Promise<string>((resolve, reject) =>
+  const p = await new Promise<string>((resolve, reject) => {
     wx.downloadFile({
       url: `${API_BASE}/api/v1/l/workbook/attachments/${id}`,
       header: { Authorization: `Bearer ${getToken()}` },
       success: (r) =>
         r.statusCode === 200 ? resolve(r.tempFilePath) : reject(new Error('凭证下载失败')),
       fail: reject,
-    }),
-  )
+    })
+  })
   check(scope() === repo.scope, '账号已切换')
   const path = `${wx.env.USER_DATA_PATH}/wb-proof-${id}`
   wx.getFileSystemManager().copyFileSync(p, path)

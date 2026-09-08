@@ -132,7 +132,8 @@ function remove(f: FeatureFlag) {
 async function reset() {
   uni.showModal({
     title: '重置灰度配置',
-    content: '将所有开关的灰度恢复为 100%、清空白名单、移除所有商户级别的 override；不会影响 enable/disable 本身。',
+    content:
+      '将所有开关的灰度恢复为 100%、清空白名单、移除所有商户级别的 override；不会影响 enable/disable 本身。',
     success: async (r) => {
       if (!r.confirm) return
       try {
@@ -169,7 +170,12 @@ onMounted(load)
         <view class="hero-info">
           <text class="label">已开启开关</text>
           <view class="progress">
-            <view class="bar" :style="{ width: (totalCount ? (enabledCount / totalCount * 100).toFixed(0) : 0) + '%' }" />
+            <view
+              class="bar"
+              :style="{
+                width: (totalCount ? ((enabledCount / totalCount) * 100).toFixed(0) : 0) + '%',
+              }"
+            />
           </view>
         </view>
       </view>
@@ -213,11 +219,21 @@ onMounted(load)
 
         <view class="form-row">
           <text class="form-label">规则名称</text>
-          <input v-model="addForm.label" class="form-input" placeholder="例：上传到选品广场" maxlength="40" />
+          <input
+            v-model="addForm.label"
+            class="form-input"
+            placeholder="例：上传到选品广场"
+            maxlength="40"
+          />
         </view>
         <view class="form-row">
           <text class="form-label">key</text>
-          <input v-model="addForm.key" class="form-input" placeholder="例：role.button.uploadToPlaza" maxlength="80" />
+          <input
+            v-model="addForm.key"
+            class="form-input"
+            placeholder="例：role.button.uploadToPlaza"
+            maxlength="80"
+          />
           <text class="form-hint">规范：group.subkey.name；最后一段为商家端读取的短键</text>
         </view>
         <view class="form-row">
@@ -228,7 +244,8 @@ onMounted(load)
               :key="g"
               :class="['form-chip', addForm.group === g && 'on']"
               @click="addForm.group = g as any"
-            >{{ GROUP_LABEL[g] }}</view>
+              >{{ GROUP_LABEL[g] }}</view
+            >
           </view>
         </view>
         <view class="form-row">
@@ -239,12 +256,17 @@ onMounted(load)
               :key="a"
               :class="['form-chip', addForm.audience === a && 'on']"
               @click="addForm.audience = a as any"
-            >{{ AUDIENCE_LABEL[a] }}</view>
+              >{{ AUDIENCE_LABEL[a] }}</view
+            >
           </view>
         </view>
         <view class="form-row">
           <text class="form-label">默认开启</text>
-          <switch :checked="addForm.defaultEnabled" color="#FF4D2D" @click.stop="addForm.defaultEnabled = !addForm.defaultEnabled" />
+          <switch
+            :checked="addForm.defaultEnabled"
+            color="#FF4D2D"
+            @click.stop="addForm.defaultEnabled = !addForm.defaultEnabled"
+          />
         </view>
 
         <view class="submit" @click="submitAdd">确定新增</view>
@@ -260,7 +282,10 @@ onMounted(load)
   display: flex;
   flex-direction: column;
 }
-.scroll { flex: 1; height: 0; }
+.scroll {
+  flex: 1;
+  height: 0;
+}
 
 .tip-strip {
   margin: 16rpx 24rpx 0;
@@ -287,24 +312,42 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   gap: 4rpx;
-  .num { font-size: 56rpx; font-weight: 800; }
-  .total { font-size: 24rpx; opacity: 0.8; }
+  .num {
+    font-size: 56rpx;
+    font-weight: 800;
+  }
+  .total {
+    font-size: 24rpx;
+    opacity: 0.8;
+  }
 }
-.hero-info { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }
-.hero-info .label { font-size: 22rpx; opacity: 0.85; }
+.hero-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.hero-info .label {
+  font-size: 22rpx;
+  opacity: 0.85;
+}
 .progress {
   height: 8rpx;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 999rpx;
   overflow: hidden;
-  .bar { height: 100%; background: #fff; border-radius: 999rpx; }
+  .bar {
+    height: 100%;
+    background: #fff;
+    border-radius: 999rpx;
+  }
 }
 
 .card {
   margin: 24rpx;
   background: #fff;
   border-radius: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 .card-head {
@@ -312,8 +355,15 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  .card-title { font-size: 28rpx; font-weight: 700; color: #1d2129; }
-  .card-count { font-size: 22rpx; color: #86909c; }
+  .card-title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #1d2129;
+  }
+  .card-count {
+    font-size: 22rpx;
+    color: #86909c;
+  }
 }
 .row {
   display: flex;
@@ -321,12 +371,32 @@ onMounted(load)
   gap: 16rpx;
   padding: 20rpx 24rpx;
   border-top: 1rpx solid #f0f2f5;
-  &:active { background: #fafbfc; }
+  &:active {
+    background: #fafbfc;
+  }
 }
-.row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
-.row-title-row { display: flex; align-items: center; gap: 8rpx; }
-.row-title { font-size: 28rpx; color: #1d2129; font-weight: 500; }
-.row-key { font-size: 20rpx; color: #909399; font-family: var(--font-family-base, monospace); }
+.row-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.row-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.row-title {
+  font-size: 28rpx;
+  color: #1d2129;
+  font-weight: 500;
+}
+.row-key {
+  font-size: 20rpx;
+  color: #909399;
+  font-family: var(--font-family-base, monospace);
+}
 .row-empty {
   padding: 32rpx 24rpx;
   text-align: center;
@@ -342,9 +412,18 @@ onMounted(load)
   font-weight: 600;
   background: #f5f6f8;
   color: #4e5969;
-  &.factory { background: rgba(255, 77, 45, 0.1); color: #ff4d2d; }
-  &.store { background: rgba(82, 196, 26, 0.1); color: #52c41a; }
-  &.specific { background: rgba(114, 46, 209, 0.1); color: #722ED1; }
+  &.factory {
+    background: rgba(255, 77, 45, 0.1);
+    color: #ff4d2d;
+  }
+  &.store {
+    background: rgba(82, 196, 26, 0.1);
+    color: #52c41a;
+  }
+  &.specific {
+    background: rgba(114, 46, 209, 0.1);
+    color: #722ed1;
+  }
 }
 
 .footer-tip {
@@ -369,7 +448,9 @@ onMounted(load)
   border-radius: 999rpx;
   box-shadow: 0 10rpx 28rpx rgba(255, 77, 45, 0.4);
   z-index: 80;
-  &:active { transform: scale(0.97); }
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 .mask {
@@ -395,16 +476,30 @@ onMounted(load)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  .sheet-title { font-size: 32rpx; font-weight: 800; color: #1d2129; }
-  .sheet-close { font-size: 26rpx; color: #86909c; }
+  .sheet-title {
+    font-size: 32rpx;
+    font-weight: 800;
+    color: #1d2129;
+  }
+  .sheet-close {
+    font-size: 26rpx;
+    color: #86909c;
+  }
 }
 .form-row {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
-.form-label { font-size: 24rpx; color: #4e5969; font-weight: 600; }
-.form-hint { font-size: 20rpx; color: #c0c4cc; }
+.form-label {
+  font-size: 24rpx;
+  color: #4e5969;
+  font-weight: 600;
+}
+.form-hint {
+  font-size: 20rpx;
+  color: #c0c4cc;
+}
 .form-input {
   height: 88rpx;
   padding: 0 20rpx;
@@ -441,6 +536,8 @@ onMounted(load)
   font-weight: 700;
   border-radius: 999rpx;
   box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.35);
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>

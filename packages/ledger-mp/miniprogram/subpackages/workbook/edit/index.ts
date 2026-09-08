@@ -192,14 +192,15 @@ MotionPage({
   async addProof() {
     try {
       const r = await new Promise<WechatMiniprogram.ChooseMediaSuccessCallbackResult>(
-        (resolve, reject) =>
+        (resolve, reject) => {
           wx.chooseMedia({
             count: 9 - this.data.proofs.length,
             mediaType: ['image'],
             sizeType: ['compressed'],
             success: resolve,
             fail: reject,
-          }),
+          })
+        },
       )
       const fs = wx.getFileSystemManager()
       const added = r.tempFiles.map((f) => {

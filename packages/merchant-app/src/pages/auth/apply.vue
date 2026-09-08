@@ -97,10 +97,18 @@ function toggleCat(c: string) {
   else form.categories.push(c)
 }
 
-const formValid = computed(() => (
-  form.name && form.legalName && form.creditCode && form.legalRep && form.contact &&
-  form.contactPhone && form.region && form.address && form.categories.length > 0
-))
+const formValid = computed(
+  () =>
+    form.name &&
+    form.legalName &&
+    form.creditCode &&
+    form.legalRep &&
+    form.contact &&
+    form.contactPhone &&
+    form.region &&
+    form.address &&
+    form.categories.length > 0,
+)
 
 const submitting = ref(false)
 async function submit() {
@@ -121,7 +129,11 @@ async function submit() {
       /* ignore */
     }
     // 提交完成后用户已在"已登录"状态（apply 第一步即 phone-login），登出当前会话避免直接进入主页
-    try { userStore.logout() } catch { /* ignore */ }
+    try {
+      userStore.logout()
+    } catch {
+      /* ignore */
+    }
     step.value = 'done'
   } catch (e: any) {
     uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
@@ -161,11 +173,7 @@ const STEPS = [
 
       <!-- Stepper -->
       <view class="stepper">
-        <view
-          v-for="(s, i) in STEPS"
-          :key="s.key"
-          class="step-item"
-        >
+        <view v-for="(s, i) in STEPS" :key="s.key" class="step-item">
           <view class="step-row">
             <view :class="['dot', i <= stepIndex && 'reached', i === stepIndex && 'active']">
               <Icon v-if="i < stepIndex" name="check" :size="20" color="#FF4D2D" />
@@ -191,13 +199,27 @@ const STEPS = [
             <view class="prefix">
               <Icon name="phone" :size="32" color="#86909c" />
             </view>
-            <input v-model="phone" class="input" type="number" maxlength="11" placeholder="11 位手机号" placeholder-class="ph" />
+            <input
+              v-model="phone"
+              class="input"
+              type="number"
+              maxlength="11"
+              placeholder="11 位手机号"
+              placeholder-class="ph"
+            />
           </view>
           <view class="field">
             <view class="prefix">
               <Icon name="biz-receipt" :size="32" color="#86909c" />
             </view>
-            <input v-model="smsCode" class="input" type="number" maxlength="6" placeholder="4-6 位验证码" placeholder-class="ph" />
+            <input
+              v-model="smsCode"
+              class="input"
+              type="number"
+              maxlength="6"
+              placeholder="4-6 位验证码"
+              placeholder-class="ph"
+            />
             <view :class="['code-btn', (countdown > 0 || sending) && 'disabled']" @click="sendCode">
               {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
             </view>
@@ -223,12 +245,26 @@ const STEPS = [
           <view class="field-block">
             <text class="label">主体类型</text>
             <view class="seg">
-              <view :class="['seg-item', form.type === 'store' && 'active']" @click="form.type = 'store'">
-                <Icon name="biz-store" :size="28" :color="form.type === 'store' ? '#FF4D2D' : '#86909c'" />
+              <view
+                :class="['seg-item', form.type === 'store' && 'active']"
+                @click="form.type = 'store'"
+              >
+                <Icon
+                  name="biz-store"
+                  :size="28"
+                  :color="form.type === 'store' ? '#FF4D2D' : '#86909c'"
+                />
                 <text>门店</text>
               </view>
-              <view :class="['seg-item', form.type === 'factory' && 'active']" @click="form.type = 'factory'">
-                <Icon name="biz-product" :size="28" :color="form.type === 'factory' ? '#FF4D2D' : '#86909c'" />
+              <view
+                :class="['seg-item', form.type === 'factory' && 'active']"
+                @click="form.type = 'factory'"
+              >
+                <Icon
+                  name="biz-product"
+                  :size="28"
+                  :color="form.type === 'factory' ? '#FF4D2D' : '#86909c'"
+                />
                 <text>厂家</text>
               </view>
             </view>
@@ -240,7 +276,12 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="biz-shop-decorate" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.name" class="input" placeholder="例：经纬科技" placeholder-class="ph" />
+              <input
+                v-model="form.name"
+                class="input"
+                placeholder="例：经纬科技"
+                placeholder-class="ph"
+              />
             </view>
           </view>
 
@@ -250,7 +291,12 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="doc" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.legalName" class="input" placeholder="营业执照上的全称" placeholder-class="ph" />
+              <input
+                v-model="form.legalName"
+                class="input"
+                placeholder="营业执照上的全称"
+                placeholder-class="ph"
+              />
             </view>
           </view>
 
@@ -260,7 +306,12 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="biz-receipt" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.creditCode" class="input" placeholder="18 位社会信用代码" placeholder-class="ph" />
+              <input
+                v-model="form.creditCode"
+                class="input"
+                placeholder="18 位社会信用代码"
+                placeholder-class="ph"
+              />
             </view>
           </view>
 
@@ -270,7 +321,12 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="biz-me" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.legalRep" class="input" placeholder="姓名" placeholder-class="ph" />
+              <input
+                v-model="form.legalRep"
+                class="input"
+                placeholder="姓名"
+                placeholder-class="ph"
+              />
             </view>
           </view>
         </view>
@@ -289,7 +345,12 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="biz-staff" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.contact" class="input" placeholder="联系人姓名" placeholder-class="ph" />
+              <input
+                v-model="form.contact"
+                class="input"
+                placeholder="联系人姓名"
+                placeholder-class="ph"
+              />
             </view>
           </view>
 
@@ -299,7 +360,14 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="phone" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.contactPhone" class="input" type="number" maxlength="11" placeholder="11 位手机号" placeholder-class="ph" />
+              <input
+                v-model="form.contactPhone"
+                class="input"
+                type="number"
+                maxlength="11"
+                placeholder="11 位手机号"
+                placeholder-class="ph"
+              />
             </view>
           </view>
 
@@ -309,7 +377,12 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="location" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.region" class="input" placeholder="例：上海市浦东新区" placeholder-class="ph" />
+              <input
+                v-model="form.region"
+                class="input"
+                placeholder="例：上海市浦东新区"
+                placeholder-class="ph"
+              />
             </view>
           </view>
 
@@ -319,7 +392,12 @@ const STEPS = [
               <view class="prefix">
                 <Icon name="biz-home" :size="32" color="#86909c" />
               </view>
-              <input v-model="form.address" class="input" placeholder="街道、门牌号" placeholder-class="ph" />
+              <input
+                v-model="form.address"
+                class="input"
+                placeholder="街道、门牌号"
+                placeholder-class="ph"
+              />
             </view>
           </view>
         </view>
@@ -388,7 +466,7 @@ const STEPS = [
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #F7F8FA;
+  background: #f7f8fa;
   padding-bottom: 48rpx;
   box-sizing: border-box;
 }
@@ -399,8 +477,8 @@ const STEPS = [
   /* padding-top 由内联样式 heroPaddingTop 注入（状态栏 + 40rpx） */
   padding: 0 32rpx 88rpx;
   background:
-    radial-gradient(120% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
-    linear-gradient(160deg, #FF6B45 0%, #FF4D2D 50%, #E63A1F 100%);
+    radial-gradient(120% 80% at 100% 0%, #ff8a5e 0%, transparent 60%),
+    linear-gradient(160deg, #ff6b45 0%, #ff4d2d 50%, #e63a1f 100%);
   border-bottom-left-radius: 48rpx;
   border-bottom-right-radius: 48rpx;
   overflow: hidden;
@@ -414,14 +492,18 @@ const STEPS = [
   pointer-events: none;
 }
 .blob-1 {
-  width: 320rpx; height: 320rpx;
-  background: #FFD3A8;
-  top: -120rpx; right: -100rpx;
+  width: 320rpx;
+  height: 320rpx;
+  background: #ffd3a8;
+  top: -120rpx;
+  right: -100rpx;
 }
 .blob-2 {
-  width: 220rpx; height: 220rpx;
-  background: #FFAA82;
-  bottom: -80rpx; left: -40rpx;
+  width: 220rpx;
+  height: 220rpx;
+  background: #ffaa82;
+  bottom: -80rpx;
+  left: -40rpx;
   opacity: 0.4;
 }
 
@@ -436,8 +518,8 @@ const STEPS = [
   width: 64rpx;
   height: 64rpx;
   border-radius: 16rpx;
-  background: rgba(255,255,255,0.18);
-  border: 2rpx solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -455,7 +537,7 @@ const STEPS = [
 }
 .hero-sub {
   font-size: 24rpx;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   letter-spacing: 1rpx;
 }
 
@@ -483,8 +565,8 @@ const STEPS = [
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: rgba(255,255,255,0.22);
-  border: 2rpx solid rgba(255,255,255,0.45);
+  background: rgba(255, 255, 255, 0.22);
+  border: 2rpx solid rgba(255, 255, 255, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -496,21 +578,21 @@ const STEPS = [
   border-color: #fff;
 }
 .dot.active {
-  box-shadow: 0 0 0 8rpx rgba(255,255,255,0.25);
+  box-shadow: 0 0 0 8rpx rgba(255, 255, 255, 0.25);
 }
 .dot-num {
   font-size: 26rpx;
   font-weight: 700;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
 .dot.reached .dot-num {
-  color: #FF4D2D;
+  color: #ff4d2d;
 }
 .bar {
   flex: 1;
   height: 4rpx;
   margin: 0 8rpx;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 2rpx;
 }
 .bar.reached {
@@ -518,7 +600,7 @@ const STEPS = [
 }
 .step-label {
   font-size: 22rpx;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
   letter-spacing: 1rpx;
   padding-left: 6rpx;
 }
@@ -542,7 +624,7 @@ const STEPS = [
   background: #fff;
   border-radius: 28rpx;
   padding: 32rpx 28rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.06);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.06);
 }
 
 .card-head {
@@ -574,7 +656,7 @@ const STEPS = [
   width: 8rpx;
   height: 28rpx;
   border-radius: 4rpx;
-  background: linear-gradient(180deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(180deg, #ff6b45, #ff4d2d);
 }
 .section-title {
   font-size: 30rpx;
@@ -585,8 +667,8 @@ const STEPS = [
 }
 .section-tag {
   font-size: 20rpx;
-  color: #FF4D2D;
-  background: #FFF1ED;
+  color: #ff4d2d;
+  background: #fff1ed;
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
 }
@@ -623,13 +705,15 @@ const STEPS = [
   align-items: center;
   height: 96rpx;
   padding: 0 24rpx;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: #f7f8fa;
+  border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 .field:focus-within {
-  border-color: #FFB199;
+  border-color: #ffb199;
   background: #fff;
 }
 .prefix {
@@ -653,22 +737,22 @@ const STEPS = [
 .code-btn {
   margin-left: 12rpx;
   padding: 12rpx 24rpx;
-  background: linear-gradient(135deg, #FFF1ED, #FFE2D6);
-  color: #FF4D2D;
+  background: linear-gradient(135deg, #fff1ed, #ffe2d6);
+  color: #ff4d2d;
   border-radius: 999rpx;
   font-size: 24rpx;
   font-weight: 600;
   white-space: nowrap;
 }
 .code-btn.disabled {
-  background: #F2F3F5;
-  color: #C9CDD4;
+  background: #f2f3f5;
+  color: #c9cdd4;
 }
 
 /* Seg */
 .seg {
   display: flex;
-  background: #F2F3F5;
+  background: #f2f3f5;
   border-radius: 20rpx;
   padding: 8rpx;
   gap: 8rpx;
@@ -687,9 +771,9 @@ const STEPS = [
 }
 .seg-item.active {
   background: #fff;
-  color: #FF4D2D;
+  color: #ff4d2d;
   font-weight: 700;
-  box-shadow: 0 4rpx 12rpx rgba(255,77,45,0.15);
+  box-shadow: 0 4rpx 12rpx rgba(255, 77, 45, 0.15);
 }
 
 /* Chips */
@@ -703,17 +787,17 @@ const STEPS = [
   align-items: center;
   gap: 6rpx;
   padding: 16rpx 28rpx;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: #f7f8fa;
+  border: 2rpx solid #f0f1f4;
   border-radius: 999rpx;
   font-size: 26rpx;
   color: #4e5969;
   transition: all 0.2s;
 }
 .chip.active {
-  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
-  color: #FF4D2D;
-  border-color: #FFB199;
+  background: linear-gradient(135deg, #fff6f1, #ffe9dc);
+  color: #ff4d2d;
+  border-color: #ffb199;
   font-weight: 600;
 }
 
@@ -730,22 +814,24 @@ const STEPS = [
   width: 100%;
   height: 96rpx;
   line-height: 96rpx;
-  background: linear-gradient(135deg, #FF6B45 0%, #FF4D2D 100%);
+  background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
   color: #fff;
   font-size: 32rpx;
   font-weight: 700;
   letter-spacing: 8rpx;
   border-radius: 20rpx;
   border: none;
-  box-shadow: 0 16rpx 32rpx rgba(255,77,45,0.36);
+  box-shadow: 0 16rpx 32rpx rgba(255, 77, 45, 0.36);
   text-align: center;
   margin-top: 12rpx;
 }
-.submit::after { border: none; }
+.submit::after {
+  border: none;
+}
 .submit[disabled] {
   opacity: 0.5;
   box-shadow: none;
-  background: linear-gradient(135deg, #FFB199, #FF8A6A);
+  background: linear-gradient(135deg, #ffb199, #ff8a6a);
 }
 .submit-hint {
   font-size: 22rpx;
@@ -771,12 +857,12 @@ const STEPS = [
   width: 140rpx;
   height: 140rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #36D399, #00B42A);
+  background: linear-gradient(135deg, #36d399, #00b42a);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 32rpx;
-  box-shadow: 0 16rpx 36rpx rgba(0,180,42,0.32);
+  box-shadow: 0 16rpx 36rpx rgba(0, 180, 42, 0.32);
 }
 .done-title {
   font-size: 36rpx;
@@ -793,8 +879,8 @@ const STEPS = [
 }
 .done-meta {
   width: 100%;
-  background: #FFF6F1;
-  border: 2rpx solid #FFE0CD;
+  background: #fff6f1;
+  border: 2rpx solid #ffe0cd;
   border-radius: 20rpx;
   padding: 20rpx 24rpx;
   display: flex;

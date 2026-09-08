@@ -43,7 +43,9 @@ function pick(key: string) {
       @click="pick(it.key)"
     >
       <text class="tab-text">{{ it.label }}</text>
-      <text v-if="it.badge && it.badge > 0" class="tab-badge">{{ it.badge > 99 ? '99+' : it.badge }}</text>
+      <text v-if="it.badge && it.badge > 0" class="tab-badge">{{
+        it.badge > 99 ? '99+' : it.badge
+      }}</text>
     </view>
   </view>
 </template>
@@ -52,8 +54,13 @@ function pick(key: string) {
 .tabs {
   display: flex;
   gap: 8rpx;
-  &.fill { width: 100%; }
-  &.fill .tab { flex: 1; justify-content: center; }
+  &.fill {
+    width: 100%;
+  }
+  &.fill .tab {
+    flex: 1;
+    justify-content: center;
+  }
 
   .tab {
     position: relative;
@@ -100,7 +107,10 @@ function pick(key: string) {
     background: var(--bg-hover);
     &.active {
       background: var(--brand-primary);
-      .tab-text { color: #fff; font-weight: 700; }
+      .tab-text {
+        color: #fff;
+        font-weight: 700;
+      }
     }
   }
 }

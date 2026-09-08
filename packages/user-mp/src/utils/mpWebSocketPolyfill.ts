@@ -95,9 +95,16 @@ class MpWebSocket {
   private dispatch(type: 'open' | 'message' | 'error' | 'close', payload: any) {
     const ev = { type, target: this, ...payload }
     const cb = (this as any)['on' + type] as Listener | null
-    if (cb) try { cb(ev) } catch {}
+    if (cb)
+      try {
+        cb(ev)
+      } catch {}
     const arr = this.listeners[type]
-    if (arr) for (const fn of arr.slice()) try { fn(ev) } catch {}
+    if (arr)
+      for (const fn of arr.slice())
+        try {
+          fn(ev)
+        } catch {}
   }
 }
 

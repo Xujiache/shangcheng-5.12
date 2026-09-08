@@ -20,7 +20,10 @@ const merchantList = ref<Category[]>([])
 const expanded = ref<Set<string>>(new Set())
 
 const showEditor = ref(false)
-const editing = ref<{ id?: string; name: string; parentId: string | null }>({ name: '', parentId: null })
+const editing = ref<{ id?: string; name: string; parentId: string | null }>({
+  name: '',
+  parentId: null,
+})
 
 const TABS = [
   { key: 'merchant' as Tab, label: '厂家自定义' },
@@ -177,7 +180,9 @@ onMounted(load)
       <view v-for="root in currentRoots" :key="root.id" class="tree-root">
         <view class="row root-row" @click="toggleExpand(root.id)">
           <view class="row-left">
-            <text class="caret">{{ childrenOf(root.id).length ? (isExpanded(root.id) ? '▼' : '▶') : '·' }}</text>
+            <text class="caret">{{
+              childrenOf(root.id).length ? (isExpanded(root.id) ? '▼' : '▶') : '·'
+            }}</text>
             <text class="row-name">{{ root.name }}</text>
             <StatusTag v-if="tab === 'merchant'" text="自定义" tone="info" />
             <text class="row-count">{{ childrenOf(root.id).length }} 子项</text>
@@ -225,11 +230,18 @@ onMounted(load)
         <view class="sheet-body">
           <view class="form-row">
             <text class="form-label">分类名称</text>
-            <input v-model="editing.name" class="form-input" placeholder="不超过 10 字" maxlength="10" />
+            <input
+              v-model="editing.name"
+              class="form-input"
+              placeholder="不超过 10 字"
+              maxlength="10"
+            />
           </view>
           <view class="form-row" v-if="editing.parentId">
             <text class="form-label">上级</text>
-            <text class="form-text">{{ merchantList.find(c => c.id === editing.parentId)?.name || '—' }}</text>
+            <text class="form-text">{{
+              merchantList.find((c) => c.id === editing.parentId)?.name || '—'
+            }}</text>
           </view>
           <view class="form-row" v-else>
             <text class="form-label">类型</text>
@@ -268,7 +280,9 @@ onMounted(load)
   color: #fff;
   border-radius: 999rpx;
   font-size: 22rpx;
-  .add-icon { font-size: 24rpx; }
+  .add-icon {
+    font-size: 24rpx;
+  }
 }
 .tree {
   padding: 16rpx 24rpx;
@@ -287,8 +301,12 @@ onMounted(load)
   align-items: center;
   padding: 20rpx 24rpx;
   border-bottom: 1rpx solid var(--border-light);
-  &.root-row { background: var(--bg-page); }
-  &:last-child { border-bottom: none; }
+  &.root-row {
+    background: var(--bg-page);
+  }
+  &:last-child {
+    border-bottom: none;
+  }
   .row-left {
     flex: 1;
     display: flex;
@@ -305,8 +323,16 @@ onMounted(load)
       color: var(--text-tertiary);
       font-size: 22rpx;
     }
-    .row-name { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-    .row-count { margin-left: auto; font-size: 20rpx; color: var(--text-tertiary); }
+    .row-name {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .row-count {
+      margin-left: auto;
+      font-size: 20rpx;
+      color: var(--text-tertiary);
+    }
   }
   .row-actions {
     display: flex;
@@ -320,7 +346,9 @@ onMounted(load)
       line-height: 48rpx;
       font-size: 24rpx;
       color: var(--text-secondary);
-      &.danger { color: var(--status-error); }
+      &.danger {
+        color: var(--status-error);
+      }
     }
   }
 }
@@ -330,7 +358,10 @@ onMounted(load)
 .sub-row {
   padding-left: 56rpx;
   background: var(--bg-card);
-  .row-name { font-size: 26rpx; font-weight: 500; }
+  .row-name {
+    font-size: 26rpx;
+    font-weight: 500;
+  }
 }
 .sub-add {
   padding: 16rpx 56rpx;
@@ -345,10 +376,13 @@ onMounted(load)
   color: var(--text-tertiary);
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0 48rpx;
 }
 .sheet {
@@ -358,19 +392,33 @@ onMounted(load)
   overflow: hidden;
 }
 .sheet-head {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 24rpx;
   border-bottom: 1rpx solid var(--border-light);
-  font-size: 30rpx; font-weight: 700;
-  .close { font-size: 28rpx; color: var(--text-tertiary); }
+  font-size: 30rpx;
+  font-weight: 700;
+  .close {
+    font-size: 28rpx;
+    color: var(--text-tertiary);
+  }
 }
 .sheet-body {
   padding: 24rpx;
-  display: flex; flex-direction: column; gap: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 .form-row {
-  display: flex; align-items: center; gap: 16rpx;
-  .form-label { width: 120rpx; font-size: 26rpx; color: var(--text-secondary); }
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  .form-label {
+    width: 120rpx;
+    font-size: 26rpx;
+    color: var(--text-secondary);
+  }
   .form-input {
     flex: 1;
     background: var(--bg-page);
@@ -379,17 +427,32 @@ onMounted(load)
     font-size: 26rpx;
     color: var(--text-primary);
   }
-  .form-text { flex: 1; font-size: 26rpx; color: var(--text-primary); }
+  .form-text {
+    flex: 1;
+    font-size: 26rpx;
+    color: var(--text-primary);
+  }
 }
 .sheet-footer {
-  display: flex; gap: 12rpx;
+  display: flex;
+  gap: 12rpx;
   padding: 16rpx 24rpx 24rpx;
   .btn {
-    flex: 1; height: 80rpx; border-radius: 999rpx;
-    text-align: center; line-height: 80rpx;
-    font-size: 26rpx; font-weight: 600;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
-    &.primary { background: var(--brand-gradient); color: #fff; }
+    flex: 1;
+    height: 80rpx;
+    border-radius: 999rpx;
+    text-align: center;
+    line-height: 80rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    &.primary {
+      background: var(--brand-gradient);
+      color: #fff;
+    }
   }
 }
 </style>

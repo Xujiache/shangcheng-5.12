@@ -40,7 +40,9 @@ const TABS = computed(() => [
 // 批量
 const batchMode = ref(false)
 const selected = ref<Set<string>>(new Set())
-const allSelected = computed(() => list.value.length > 0 && list.value.every((p) => selected.value.has(p.id)))
+const allSelected = computed(
+  () => list.value.length > 0 && list.value.every((p) => selected.value.has(p.id)),
+)
 
 async function load(reset = false) {
   if (loading.value) return
@@ -151,13 +153,7 @@ function moreActions(p: Product, e?: any) {
   if (e?.stopPropagation) e.stopPropagation()
   const isActive = p.status === 'active'
   uni.showActionSheet({
-    itemList: [
-      isActive ? '下架商品' : '上架商品',
-      '复制链接',
-      '分享商品',
-      '查看数据',
-      '删除商品',
-    ],
+    itemList: [isActive ? '下架商品' : '上架商品', '复制链接', '分享商品', '查看数据', '删除商品'],
     success: async (res) => {
       if (res.tapIndex === 0) {
         if (isActive) await productService.batchOffline([p.id])
@@ -178,14 +174,20 @@ function moreActions(p: Product, e?: any) {
           },
         })
       } else {
-        uni.showToast({ title: ['', '链接已复制', '分享中', '查看数据'][res.tapIndex] || '操作', icon: 'none' })
+        uni.showToast({
+          title: ['', '链接已复制', '分享中', '查看数据'][res.tapIndex] || '操作',
+          icon: 'none',
+        })
       }
     },
   })
 }
 
 function statusOf(p: Product) {
-  const map: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+  const map: Record<
+    string,
+    { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+  > = {
     active: { text: '在售', tone: 'success' },
     offline: { text: '已下架', tone: 'default' },
     auditing: { text: '审核中', tone: 'warning' },
@@ -215,7 +217,16 @@ onShow(() => {
             confirm-type="search"
             @confirm="onSearch"
           />
-          <view v-if="keyword" class="clear" @click="keyword = ''; onSearch()">
+          <view
+            v-if="keyword"
+            class="clear"
+            @click="
+              ($event) => {
+                keyword = ''
+                onSearch()
+              }
+            "
+          >
             <Icon name="close" :size="24" color="var(--text-tertiary)" />
           </view>
         </view>
@@ -245,7 +256,9 @@ onShow(() => {
             <text>价格规则</text>
           </view>
         </view>
-        <text class="link link-text" @click="toggleBatch">{{ batchMode ? '取消批量' : '批量操作' }}</text>
+        <text class="link link-text" @click="toggleBatch">{{
+          batchMode ? '取消批量' : '批量操作'
+        }}</text>
       </view>
     </view>
 
@@ -285,7 +298,16 @@ onShow(() => {
         </ProductCard>
       </view>
       <EmptyState v-if="!loading && list.length === 0" title="暂无商品" desc="点击右上角 ＋ 添加" />
-      <view v-if="hasMore && list.length > 0" class="loadmore" @click="page++; load()">
+      <view
+        v-if="hasMore && list.length > 0"
+        class="loadmore"
+        @click="
+          ($event) => {
+            page++
+            load()
+          }
+        "
+      >
         <text>加载更多 ›</text>
       </view>
       <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
@@ -360,7 +382,7 @@ onShow(() => {
   font-weight: 700;
   text-align: center;
   line-height: 72rpx;
-  box-shadow: 0 4rpx 12rpx rgba(255,77,45,0.4);
+  box-shadow: 0 4rpx 12rpx rgba(255, 77, 45, 0.4);
 }
 .status-tabs {
   margin-top: 8rpx;
@@ -383,7 +405,10 @@ onShow(() => {
     font-size: 24rpx;
     color: var(--brand-primary);
   }
-  .link-text { font-size: 24rpx; color: var(--brand-primary); }
+  .link-text {
+    font-size: 24rpx;
+    color: var(--brand-primary);
+  }
 }
 .card-actions {
   margin-top: 12rpx;
@@ -402,7 +427,7 @@ onShow(() => {
   font-size: 22rpx;
   font-weight: 600;
   &.edit {
-    background: var(--brand-primary-ghost, rgba(255,77,45,0.08));
+    background: var(--brand-primary-ghost, rgba(255, 77, 45, 0.08));
     color: var(--brand-primary);
   }
   &.more {
@@ -456,7 +481,7 @@ onShow(() => {
   align-items: center;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   background: var(--bg-card);
-  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
   gap: 16rpx;
   .select-all {
     display: flex;
@@ -464,7 +489,10 @@ onShow(() => {
     gap: 8rpx;
     font-size: 26rpx;
     color: var(--text-primary);
-    .check { color: var(--brand-primary); font-size: 32rpx; }
+    .check {
+      color: var(--brand-primary);
+      font-size: 32rpx;
+    }
   }
   .batch-actions {
     flex: 1;
@@ -477,10 +505,21 @@ onShow(() => {
     border-radius: 999rpx;
     font-size: 24rpx;
     font-weight: 600;
-    &.online { background: var(--status-success-bg); color: var(--status-success); }
-    &.offline { background: var(--bg-hover); color: var(--text-secondary); }
-    &.danger { background: var(--status-error); color: #fff; }
+    &.online {
+      background: var(--status-success-bg);
+      color: var(--status-success);
+    }
+    &.offline {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+    &.danger {
+      background: var(--status-error);
+      color: #fff;
+    }
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

@@ -1,0 +1,1 @@
+Vue template syntax checked across uni targets: 122 files (not native runtime acceptance)

@@ -33,7 +33,9 @@ onShow(load)
 
 function pickAddress(a: Address) {
   if (!isPickMode.value) return
-  try { uni.setStorageSync('jiujiu_pick_address', a.id) } catch {}
+  try {
+    uni.setStorageSync('jiujiu_pick_address', a.id)
+  } catch {}
   uni.navigateBack({ delta: 1 })
 }
 
@@ -83,7 +85,9 @@ async function setAsDefault(a: Address, e?: any) {
     <NavBar :title="isPickMode ? '选择收货地址' : '收货地址'" :sticky="true" />
 
     <view v-if="!loading && list.length === 0" class="empty">
-      <view class="empty-icon"><Icon name="location-pin" :size="80" color="var(--text-tertiary)" /></view>
+      <view class="empty-icon"
+        ><Icon name="location-pin" :size="80" color="var(--text-tertiary)"
+      /></view>
       <text class="empty-title">还没有收货地址</text>
       <text class="empty-sub">点击底部按钮添加第一个地址</text>
     </view>
@@ -94,7 +98,7 @@ async function setAsDefault(a: Address, e?: any) {
           v-for="a in list"
           :key="a.id"
           class="addr-card"
-          :class="{ 'pickable': isPickMode }"
+          :class="{ pickable: isPickMode }"
           @click="pickAddress(a)"
         >
           <view class="addr-info">
@@ -117,7 +121,7 @@ async function setAsDefault(a: Address, e?: any) {
             </view>
             <view class="action-mini" @click.stop="removeOne(a, $event)">
               <Icon name="trash" :size="22" color="#FF3B30" />
-              <text style="color:#FF3B30">删除</text>
+              <text style="color: #ff3b30">删除</text>
             </view>
           </view>
           <view v-if="isPickMode" class="pick-arrow">
@@ -125,7 +129,7 @@ async function setAsDefault(a: Address, e?: any) {
           </view>
         </view>
       </view>
-      <view style="height: 160rpx;" />
+      <view style="height: 160rpx" />
     </scroll-view>
 
     <view class="ft">
@@ -142,9 +146,12 @@ async function setAsDefault(a: Address, e?: any) {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #F7F8FA;
+  background: #f7f8fa;
 }
-.scroll { flex: 1; height: 0; }
+.scroll {
+  flex: 1;
+  height: 0;
+}
 
 .empty {
   flex: 1;
@@ -154,9 +161,18 @@ async function setAsDefault(a: Address, e?: any) {
   justify-content: center;
   padding: 120rpx 32rpx;
   gap: 12rpx;
-  .empty-icon { opacity: 0.4; }
-  .empty-title { font-size: 28rpx; font-weight: 600; color: var(--text-secondary); }
-  .empty-sub { font-size: 22rpx; color: var(--text-tertiary); }
+  .empty-icon {
+    opacity: 0.4;
+  }
+  .empty-title {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .empty-sub {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 
 .addr-list {
@@ -171,12 +187,14 @@ async function setAsDefault(a: Address, e?: any) {
   padding: 24rpx;
   display: flex;
   gap: 12rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   position: relative;
   &.pickable {
     cursor: pointer;
     padding-right: 56rpx;
-    &:active { background: rgba(255,77,45,0.03); }
+    &:active {
+      background: rgba(255, 77, 45, 0.03);
+    }
   }
 }
 .addr-info {
@@ -190,12 +208,19 @@ async function setAsDefault(a: Address, e?: any) {
   align-items: center;
   gap: 12rpx;
   flex-wrap: wrap;
-  .name { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-  .phone { font-size: 26rpx; color: var(--text-secondary); }
+  .name {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .phone {
+    font-size: 26rpx;
+    color: var(--text-secondary);
+  }
 }
 .badge-default {
   padding: 2rpx 12rpx;
-  background: linear-gradient(135deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(135deg, #ff6b45, #ff4d2d);
   color: #fff;
   font-size: 18rpx;
   font-weight: 700;
@@ -240,7 +265,7 @@ async function setAsDefault(a: Address, e?: any) {
 }
 .add-btn {
   height: 88rpx;
-  background: linear-gradient(135deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(135deg, #ff6b45, #ff4d2d);
   border-radius: 999rpx;
   color: #fff;
   font-size: 28rpx;
@@ -249,6 +274,6 @@ async function setAsDefault(a: Address, e?: any) {
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.35);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.35);
 }
 </style>

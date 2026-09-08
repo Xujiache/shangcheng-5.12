@@ -7,7 +7,11 @@
  */
 import { computed, onMounted, watch, getCurrentInstance, nextTick } from 'vue'
 
-interface Segment { label: string; value: number; color: string }
+interface Segment {
+  label: string
+  value: number
+  color: string
+}
 
 const props = withDefaults(
   defineProps<{
@@ -66,13 +70,7 @@ function draw() {
   for (const a of arcs.value) {
     if (a.end - a.start <= 0) continue
     ctx.beginPath()
-    ctx.arc(
-      cx,
-      cy,
-      r,
-      -Math.PI / 2 + a.start * Math.PI * 2,
-      -Math.PI / 2 + a.end * Math.PI * 2,
-    )
+    ctx.arc(cx, cy, r, -Math.PI / 2 + a.start * Math.PI * 2, -Math.PI / 2 + a.end * Math.PI * 2)
     ctx.setStrokeStyle(a.color)
     ctx.setLineWidth(lineW)
     ctx.setLineCap('butt')

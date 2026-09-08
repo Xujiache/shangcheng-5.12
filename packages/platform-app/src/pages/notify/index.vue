@@ -177,11 +177,7 @@ onMounted(load)
       </view>
 
       <view v-else-if="loadError" class="empty-wrap">
-        <EmptyState
-          icon="bell"
-          title="暂无通知"
-          desc="加载失败,可能是后端通知服务暂未启用"
-        />
+        <EmptyState icon="bell" title="暂无通知" desc="加载失败,可能是后端通知服务暂未启用" />
         <view class="retry-btn" @click="load">
           <Icon name="refresh" :size="24" color="#FF4D2D" />
           <text>点击重试</text>

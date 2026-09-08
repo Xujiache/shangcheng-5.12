@@ -776,7 +776,9 @@ async function main() {
     delayed = o
   }
   const late = overview.onShow()
-  await new Promise((resolve) => setTimeout(resolve, 0))
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0)
+  })
   assert(delayed)
   overview.onHide()
   delayed.success({ statusCode: 404, data: { code: 1001, message: 'Cannot GET old request' } })

@@ -42,7 +42,11 @@ export function parseAddress(raw: string): ParsedAddress {
   if (regionMatch) {
     const [, province, city, district] = regionMatch
     region = [province, city, district].filter(Boolean).join(' ')
-    detail = addressText.replace(province ?? '', '').replace(city ?? '', '').replace(district ?? '', '').trim()
+    detail = addressText
+      .replace(province ?? '', '')
+      .replace(city ?? '', '')
+      .replace(district ?? '', '')
+      .trim()
   } else {
     detail = addressText
   }

@@ -44,9 +44,15 @@ withDefaults(
 
   &.accent {
     background: var(--brand-gradient);
-    .label { color: rgba(255,255,255,0.85); }
-    .value { color: #fff; }
-    .delta { color: rgba(255,255,255,0.9); }
+    .label {
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .value {
+      color: #fff;
+    }
+    .delta {
+      color: rgba(255, 255, 255, 0.9);
+    }
   }
 
   .label {
@@ -67,10 +73,18 @@ withDefaults(
     align-items: center;
     gap: 4rpx;
     font-size: 20rpx;
-    &.trend-up { color: var(--status-success); }
-    &.trend-down { color: var(--status-error); }
-    &.trend-flat { color: var(--text-tertiary); }
-    .arrow { font-size: 22rpx; }
+    &.trend-up {
+      color: var(--status-success);
+    }
+    &.trend-down {
+      color: var(--status-error);
+    }
+    &.trend-flat {
+      color: var(--text-tertiary);
+    }
+    .arrow {
+      font-size: 22rpx;
+    }
   }
 }
 </style>

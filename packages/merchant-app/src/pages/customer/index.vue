@@ -29,13 +29,19 @@ const TABS = computed(() => [
   { key: 'normal' as Tab, label: '普通客户' },
 ])
 
-const TIER_LABEL: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const TIER_LABEL: Record<
+  string,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   wholesale: { text: '批发价', tone: 'success' },
   member: { text: '会员价', tone: 'primary' },
   retail: { text: '零售价', tone: 'default' },
 }
 
-const KIND_LABEL: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const KIND_LABEL: Record<
+  string,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   promoter: { text: '分佣', tone: 'warning' },
   member: { text: '会员', tone: 'primary' },
   normal: { text: '普通', tone: 'default' },
@@ -129,7 +135,9 @@ onMounted(load)
             <text class="stat-label">累计消费</text>
           </view>
           <view class="stat">
-            <text class="stat-value">{{ c.lastOrderAt ? formatRelative(c.lastOrderAt) : '—' }}</text>
+            <text class="stat-value">{{
+              c.lastOrderAt ? formatRelative(c.lastOrderAt) : '—'
+            }}</text>
             <text class="stat-label">最近下单</text>
           </view>
         </view>
@@ -138,7 +146,11 @@ onMounted(load)
           <view class="foot-left">
             <text class="foot-label">价格层级</text>
             <view class="tier-pill" @click="openTierPicker(c)">
-              <StatusTag :text="TIER_LABEL[c.priceTier].text" :tone="TIER_LABEL[c.priceTier].tone" fill />
+              <StatusTag
+                :text="TIER_LABEL[c.priceTier].text"
+                :tone="TIER_LABEL[c.priceTier].tone"
+                fill
+              />
               <text class="caret">›</text>
             </view>
           </view>
@@ -167,7 +179,13 @@ onMounted(load)
           >
             <text class="opt-title">{{ TIER_LABEL[t].text }}</text>
             <text class="opt-desc">
-              {{ t === 'retail' ? '默认零售价' : t === 'wholesale' ? '批发价（已授权门店）' : '会员价' }}
+              {{
+                t === 'retail'
+                  ? '默认零售价'
+                  : t === 'wholesale'
+                    ? '批发价（已授权门店）'
+                    : '会员价'
+              }}
             </text>
             <text v-if="showTierPicker.priceTier === t" class="opt-tick">✓</text>
           </view>
@@ -200,7 +218,11 @@ onMounted(load)
   padding: 0 16rpx 0 20rpx;
   height: 72rpx;
   margin-bottom: 12rpx;
-  .search-input { flex: 1; height: 100%; font-size: 26rpx; }
+  .search-input {
+    flex: 1;
+    height: 100%;
+    font-size: 26rpx;
+  }
 }
 .list {
   padding: 16rpx 24rpx;
@@ -237,7 +259,11 @@ onMounted(load)
       align-items: center;
       gap: 8rpx;
       flex-wrap: wrap;
-      .name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+      .name {
+        font-size: 28rpx;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
     }
     .phone {
       font-size: 22rpx;
@@ -285,24 +311,33 @@ onMounted(load)
   align-items: center;
   padding-top: 16rpx;
   border-top: 1rpx dashed var(--border-light);
-  .foot-left, .foot-right {
+  .foot-left,
+  .foot-right {
     display: flex;
     align-items: center;
     gap: 12rpx;
   }
-  .foot-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .foot-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .tier-pill {
     display: flex;
     align-items: center;
     gap: 4rpx;
-    .caret { font-size: 24rpx; color: var(--text-tertiary); }
+    .caret {
+      font-size: 24rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: flex-end;
+  display: flex;
+  align-items: flex-end;
 }
 .sheet {
   width: 100%;
@@ -334,8 +369,16 @@ onMounted(load)
     background: var(--brand-primary-ghost);
     border-color: var(--brand-primary);
   }
-  .opt-title { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-  .opt-desc { margin-top: 4rpx; font-size: 22rpx; color: var(--text-tertiary); }
+  .opt-title {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .opt-desc {
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .opt-tick {
     position: absolute;
     top: 24rpx;
@@ -345,5 +388,7 @@ onMounted(load)
     font-weight: 700;
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

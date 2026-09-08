@@ -97,9 +97,9 @@ export class JwtAuthGuard implements CanActivate {
     // 绝不允许直接当 access token 访问业务接口（否则可访问窗口被放大到 refresh 的 7 天 TTL）。
     if (payload?._r) throw new BizException(BizCode.UNAUTHORIZED, 'refresh token 不能用于业务接口')
 
-    // 查最新 user 状态：禁用账号、角色变更必须在 access token 期内即时生效，
-    // 否则攻击者持已签发 token 可继续访问 → P1 安全风险
-    let fresh = getCachedUser(sub)
+    // Reads may use the documented 60s cache; writes always verify current ownership.
+    const readOnly = !req.method || req.method === 'GET' || req.method === 'HEAD'
+    let fresh = readOnly ? getCachedUser(sub) : null
     if (!fresh) {
       const u = await this.prisma.user.findUnique({
         where: { id: sub },
@@ -123,7 +123,8 @@ export class JwtAuthGuard implements CanActivate {
       ...payload,
       sub: fresh.id,
       role: fresh.role,
-      merchantId: fresh.merchantId || payload.merchantId,
+      // A cleared DB association must not resurrect the signed token's old merchant.
+      merchantId: fresh.merchantId ?? undefined,
     }
     return true
   }

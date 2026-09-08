@@ -256,7 +256,7 @@ onShow(() => {
           :circular="true"
           @change="onBannerChange"
         >
-          <swiper-item v-for="(b, i) in banners" :key="b.id" @click="goBanner(b.link ?? '')">
+          <swiper-item v-for="b in banners" :key="b.id" @click="goBanner(b.link ?? '')">
             <image :src="b.image" mode="aspectFill" class="banner-img" />
             <view class="banner-title">{{ b.title }}</view>
           </swiper-item>

@@ -524,13 +524,7 @@ onMounted(load)
             <text class="trial-desc">新注册商户自动赠送基础套餐</text>
           </view>
           <text class="trial-value">
-            {{
-              trialDays === null
-                ? '暂无配置'
-                : trialDays > 0
-                  ? `${trialDays} 天`
-                  : '已关闭'
-            }}
+            {{ trialDays === null ? '暂无配置' : trialDays > 0 ? `${trialDays} 天` : '已关闭' }}
           </text>
           <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
         </view>

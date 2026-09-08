@@ -94,7 +94,9 @@ async function pollPaymentStatus(
     } catch {
       /* 单次失败忽略，下次再试 */
     }
-    await new Promise((r) => setTimeout(r, intervalMs))
+    await new Promise((r) => {
+      setTimeout(r, intervalMs)
+    })
   }
   return 'timeout'
 }

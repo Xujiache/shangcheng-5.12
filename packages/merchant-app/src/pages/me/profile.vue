@@ -157,9 +157,11 @@ function pickAddressOnMap() {
   })
   return
   // #endif
+  // #ifndef MP-WEIXIN
   showMapPick.value = true
   mapPickKeyword.value = form.address || form.shopName || ''
   doMapSearch()
+  // #endif
 }
 
 async function doMapSearch() {

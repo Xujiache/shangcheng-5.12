@@ -91,12 +91,36 @@ function goMember() {
 
 /** 主入口：10 个槽位（一行 5 个，两行） */
 const CORE_ENTRIES = [
-  { key: 'product', icon: 'biz-product', label: '商品', to: '/pages/tabbar/product/index', tint: 'orange' },
+  {
+    key: 'product',
+    icon: 'biz-product',
+    label: '商品',
+    to: '/pages/tabbar/product/index',
+    tint: 'orange',
+  },
   { key: 'order', icon: 'biz-order', label: '订单', to: '/pages/tabbar/order/index', tint: 'blue' },
-  { key: 'customer', icon: 'biz-customer', label: '客户', to: '/pages/customer/index', tint: 'green' },
-  { key: 'stats', icon: 'biz-stats', label: '数据', to: '/pages/tabbar/stats/index', tint: 'purple' },
+  {
+    key: 'customer',
+    icon: 'biz-customer',
+    label: '客户',
+    to: '/pages/customer/index',
+    tint: 'green',
+  },
+  {
+    key: 'stats',
+    icon: 'biz-stats',
+    label: '数据',
+    to: '/pages/tabbar/stats/index',
+    tint: 'purple',
+  },
   { key: 'chat', icon: 'biz-chat', label: '客服', to: '/pages/chat/index', tint: 'pink' },
-  { key: 'marketing', icon: 'biz-marketing', label: '营销', to: '/pages/marketing/index', tint: 'yellow' },
+  {
+    key: 'marketing',
+    icon: 'biz-marketing',
+    label: '营销',
+    to: '/pages/marketing/index',
+    tint: 'yellow',
+  },
   { key: 'store', icon: 'biz-store', label: '门店', to: '/pages/store/index', tint: 'cyan' },
   { key: 'staff', icon: 'biz-staff', label: '员工', to: '/pages/staff/index', tint: 'teal' },
   { key: 'agency', icon: 'tag', label: '代理', to: '/pages/product/agency-list', tint: 'red' },
@@ -141,9 +165,7 @@ const weekLabels = computed(() => {
 })
 
 /** 周销售小指标（与 BarChart 并列）：本周累计 + 峰值 */
-const weekTotal = computed(() =>
-  (dashboard.value?.weekSales || []).reduce((s, v) => s + v, 0),
-)
+const weekTotal = computed(() => (dashboard.value?.weekSales || []).reduce((s, v) => s + v, 0))
 const weekPeak = computed(() => Math.max(0, ...(dashboard.value?.weekSales || [])))
 
 function goPlaza() {
@@ -247,19 +269,15 @@ onShow(() => {
       <view class="kpi-card">
         <view class="kpi-head">
           <text class="kpi-head-title">今日数据</text>
-          <text class="kpi-head-date">{{ new Date().getMonth() + 1 }}/{{ new Date().getDate() }}</text>
+          <text class="kpi-head-date"
+            >{{ new Date().getMonth() + 1 }}/{{ new Date().getDate() }}</text
+          >
         </view>
         <view class="kpi-row">
-          <view
-            :class="['kpi-cell', activeStat === 0 && 'active']"
-            @click="activeStat = 0"
-          >
+          <view :class="['kpi-cell', activeStat === 0 && 'active']" @click="activeStat = 0">
             <text class="kpi-label">今日订单</text>
             <text class="kpi-value">{{ dashboard.today.orders }}</text>
-            <view
-              class="kpi-delta"
-              :class="dashboard.today.ordersDelta >= 0 ? 'up' : 'down'"
-            >
+            <view class="kpi-delta" :class="dashboard.today.ordersDelta >= 0 ? 'up' : 'down'">
               <Icon
                 :name="dashboard.today.ordersDelta >= 0 ? 'arrow-up' : 'arrow-down'"
                 :size="16"
@@ -269,16 +287,10 @@ onShow(() => {
             </view>
           </view>
           <view class="kpi-divider" />
-          <view
-            :class="['kpi-cell', activeStat === 1 && 'active']"
-            @click="activeStat = 1"
-          >
+          <view :class="['kpi-cell', activeStat === 1 && 'active']" @click="activeStat = 1">
             <text class="kpi-label">新客户</text>
             <text class="kpi-value">{{ dashboard.today.newCustomers }}</text>
-            <view
-              class="kpi-delta"
-              :class="dashboard.today.newCustomersDelta >= 0 ? 'up' : 'down'"
-            >
+            <view class="kpi-delta" :class="dashboard.today.newCustomersDelta >= 0 ? 'up' : 'down'">
               <Icon
                 :name="dashboard.today.newCustomersDelta >= 0 ? 'arrow-up' : 'arrow-down'"
                 :size="16"
@@ -288,16 +300,10 @@ onShow(() => {
             </view>
           </view>
           <view class="kpi-divider" />
-          <view
-            :class="['kpi-cell', activeStat === 2 && 'active']"
-            @click="activeStat = 2"
-          >
+          <view :class="['kpi-cell', activeStat === 2 && 'active']" @click="activeStat = 2">
             <text class="kpi-label">销售额</text>
             <text class="kpi-value">{{ formatWan(dashboard.today.sales) }}</text>
-            <view
-              class="kpi-delta"
-              :class="dashboard.today.salesDelta >= 0 ? 'up' : 'down'"
-            >
+            <view class="kpi-delta" :class="dashboard.today.salesDelta >= 0 ? 'up' : 'down'">
               <Icon
                 :name="dashboard.today.salesDelta >= 0 ? 'arrow-up' : 'arrow-down'"
                 :size="16"
@@ -472,9 +478,29 @@ onShow(() => {
   opacity: 0.55;
   pointer-events: none;
 }
-.blob-1 { width: 320rpx; height: 320rpx; background: #ffd6c5; top: 30rpx; right: -90rpx; }
-.blob-2 { width: 240rpx; height: 240rpx; background: #ffeede; top: 160rpx; left: -60rpx; opacity: 0.4; }
-.blob-3 { width: 360rpx; height: 360rpx; background: #ff8a5e; bottom: -160rpx; right: 30%; opacity: 0.35; }
+.blob-1 {
+  width: 320rpx;
+  height: 320rpx;
+  background: #ffd6c5;
+  top: 30rpx;
+  right: -90rpx;
+}
+.blob-2 {
+  width: 240rpx;
+  height: 240rpx;
+  background: #ffeede;
+  top: 160rpx;
+  left: -60rpx;
+  opacity: 0.4;
+}
+.blob-3 {
+  width: 360rpx;
+  height: 360rpx;
+  background: #ff8a5e;
+  bottom: -160rpx;
+  right: 30%;
+  opacity: 0.35;
+}
 
 .hero-content {
   position: relative;
@@ -498,10 +524,17 @@ onShow(() => {
   font-size: 36rpx;
   font-weight: 700;
   overflow: hidden;
-  box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.12), inset 0 0 0 2rpx rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 6rpx 24rpx rgba(0, 0, 0, 0.12),
+    inset 0 0 0 2rpx rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
-  .avatar-img { width: 100%; height: 100%; }
-  .avatar-text { font-weight: 800; }
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+  }
+  .avatar-text {
+    font-weight: 800;
+  }
 }
 .brand-info {
   flex: 1;
@@ -564,7 +597,9 @@ onShow(() => {
   background: #fff;
   border-radius: 24rpx;
   padding: 24rpx 24rpx 28rpx;
-  box-shadow: 0 16rpx 40rpx rgba(229, 60, 31, 0.16), 0 4rpx 12rpx rgba(15, 23, 42, 0.04);
+  box-shadow:
+    0 16rpx 40rpx rgba(229, 60, 31, 0.16),
+    0 4rpx 12rpx rgba(15, 23, 42, 0.04);
   position: relative;
 }
 .kpi-head {
@@ -601,11 +636,20 @@ onShow(() => {
   &.active {
     background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
     box-shadow: 0 8rpx 20rpx rgba(255, 77, 45, 0.36);
-    .kpi-label { color: rgba(255, 255, 255, 0.86); }
-    .kpi-value { color: #fff; }
-    .kpi-delta { color: rgba(255, 255, 255, 0.95); background: rgba(255, 255, 255, 0.16); }
+    .kpi-label {
+      color: rgba(255, 255, 255, 0.86);
+    }
+    .kpi-value {
+      color: #fff;
+    }
+    .kpi-delta {
+      color: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.16);
+    }
     .kpi-delta.up text,
-    .kpi-delta.down text { color: #fff; }
+    .kpi-delta.down text {
+      color: #fff;
+    }
   }
 }
 .kpi-divider {
@@ -634,10 +678,14 @@ onShow(() => {
   border-radius: 999rpx;
   font-size: 20rpx;
   background: rgba(0, 181, 120, 0.08);
-  &.up text { color: #00b578; }
+  &.up text {
+    color: #00b578;
+  }
   &.down {
     background: rgba(255, 59, 48, 0.08);
-    text { color: #ff3b30; }
+    text {
+      color: #ff3b30;
+    }
   }
 }
 
@@ -693,7 +741,9 @@ onShow(() => {
   align-items: center;
   gap: 12rpx;
   transition: transform 0.15s;
-  &:active { transform: scale(0.92); }
+  &:active {
+    transform: scale(0.92);
+  }
 }
 .entry-icon {
   width: 88rpx;
@@ -719,26 +769,54 @@ onShow(() => {
   font-weight: 500;
 }
 /* tint 配色：每格独立渐变 + 同色阴影 */
-.tint-orange { background: linear-gradient(135deg, #ffb088, #ff5722); box-shadow: 0 8rpx 18rpx rgba(255, 87, 34, 0.32); }
-.tint-blue   { background: linear-gradient(135deg, #7fd0fa, #1e88e5); box-shadow: 0 8rpx 18rpx rgba(30, 136, 229, 0.32); }
-.tint-green  { background: linear-gradient(135deg, #a6dda8, #43a047); box-shadow: 0 8rpx 18rpx rgba(67, 160, 71, 0.32); }
-.tint-purple { background: linear-gradient(135deg, #ce93d8, #8e24aa); box-shadow: 0 8rpx 18rpx rgba(142, 36, 170, 0.32); }
-.tint-pink   { background: linear-gradient(135deg, #f48fb1, #e91e63); box-shadow: 0 8rpx 18rpx rgba(233, 30, 99, 0.32); }
-.tint-yellow { background: linear-gradient(135deg, #ffe082, #ffa000); box-shadow: 0 8rpx 18rpx rgba(255, 160, 0, 0.32); }
-.tint-cyan   { background: linear-gradient(135deg, #80deea, #00838f); box-shadow: 0 8rpx 18rpx rgba(0, 131, 143, 0.32); }
-.tint-teal   { background: linear-gradient(135deg, #80cbc4, #00897b); box-shadow: 0 8rpx 18rpx rgba(0, 137, 123, 0.32); }
-.tint-red    { background: linear-gradient(135deg, #ef9a9a, #e53935); box-shadow: 0 8rpx 18rpx rgba(229, 57, 53, 0.32); }
-.tint-gray   { background: linear-gradient(135deg, #cfd8dc, #607d8b); box-shadow: 0 8rpx 18rpx rgba(96, 125, 139, 0.3); }
+.tint-orange {
+  background: linear-gradient(135deg, #ffb088, #ff5722);
+  box-shadow: 0 8rpx 18rpx rgba(255, 87, 34, 0.32);
+}
+.tint-blue {
+  background: linear-gradient(135deg, #7fd0fa, #1e88e5);
+  box-shadow: 0 8rpx 18rpx rgba(30, 136, 229, 0.32);
+}
+.tint-green {
+  background: linear-gradient(135deg, #a6dda8, #43a047);
+  box-shadow: 0 8rpx 18rpx rgba(67, 160, 71, 0.32);
+}
+.tint-purple {
+  background: linear-gradient(135deg, #ce93d8, #8e24aa);
+  box-shadow: 0 8rpx 18rpx rgba(142, 36, 170, 0.32);
+}
+.tint-pink {
+  background: linear-gradient(135deg, #f48fb1, #e91e63);
+  box-shadow: 0 8rpx 18rpx rgba(233, 30, 99, 0.32);
+}
+.tint-yellow {
+  background: linear-gradient(135deg, #ffe082, #ffa000);
+  box-shadow: 0 8rpx 18rpx rgba(255, 160, 0, 0.32);
+}
+.tint-cyan {
+  background: linear-gradient(135deg, #80deea, #00838f);
+  box-shadow: 0 8rpx 18rpx rgba(0, 131, 143, 0.32);
+}
+.tint-teal {
+  background: linear-gradient(135deg, #80cbc4, #00897b);
+  box-shadow: 0 8rpx 18rpx rgba(0, 137, 123, 0.32);
+}
+.tint-red {
+  background: linear-gradient(135deg, #ef9a9a, #e53935);
+  box-shadow: 0 8rpx 18rpx rgba(229, 57, 53, 0.32);
+}
+.tint-gray {
+  background: linear-gradient(135deg, #cfd8dc, #607d8b);
+  box-shadow: 0 8rpx 18rpx rgba(96, 125, 139, 0.3);
+}
 
 /* ============ 选品广场 ============ */
 .plaza-card {
   position: relative;
   border-radius: 24rpx;
   padding: 24rpx;
-  background:
-    linear-gradient(135deg, #fff0eb 0%, #ffffff 60%),
-    #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(229, 60, 31, 0.10);
+  background: linear-gradient(135deg, #fff0eb 0%, #ffffff 60%), #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(229, 60, 31, 0.1);
   border: 2rpx solid rgba(255, 77, 45, 0.16);
   overflow: hidden;
   display: flex;
@@ -761,7 +839,9 @@ onShow(() => {
   align-items: center;
   position: relative;
 }
-.plaza-info { flex: 1; }
+.plaza-info {
+  flex: 1;
+}
 .plaza-title-row {
   display: flex;
   align-items: center;
@@ -896,11 +976,17 @@ onShow(() => {
   border-radius: 18rpx;
   border: 1rpx solid #f2f3f5;
   transition: transform 0.15s;
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
   &.empty {
     background: #fafafa;
-    .todo-count { color: #c9cdd4; }
-    .todo-icon { opacity: 0.5; }
+    .todo-count {
+      color: #c9cdd4;
+    }
+    .todo-icon {
+      opacity: 0.5;
+    }
   }
 }
 .todo-icon {

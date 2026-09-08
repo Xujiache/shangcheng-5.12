@@ -255,7 +255,9 @@ MotionPage({
   // 微信回调异步开通：轮询会员状态，命中 active 即停（最多 ~6s）
   async pollMembership() {
     for (let i = 0; i < 6; i++) {
-      await new Promise((r) => setTimeout(r, 1000))
+      await new Promise((r) => {
+        setTimeout(r, 1000)
+      })
       try {
         const res: any = await meApi.refreshMembership()
         this.applyMembership(res)

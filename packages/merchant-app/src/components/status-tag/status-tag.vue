@@ -35,20 +35,124 @@ withDefaults(
 
   &.size-sm {
     height: 32rpx;
-    .tag-text { font-size: 20rpx; line-height: 1; }
+    .tag-text {
+      font-size: 20rpx;
+      line-height: 1;
+    }
   }
   &.size-md {
     height: 40rpx;
     padding: 0 16rpx;
-    .tag-text { font-size: 22rpx; line-height: 1; }
+    .tag-text {
+      font-size: 22rpx;
+      line-height: 1;
+    }
   }
 
-  &.tone-primary { &.fill { background: var(--brand-primary); .tag-text { color: #fff; } } &.ghost { background: var(--brand-primary-ghost); border-color: var(--brand-primary); .tag-text { color: var(--brand-primary); } } }
-  &.tone-success { &.fill { background: var(--status-success); .tag-text { color: #fff; } } &.ghost { background: var(--status-success-bg); border-color: var(--status-success); .tag-text { color: var(--status-success); } } }
-  &.tone-warning { &.fill { background: var(--status-warning); .tag-text { color: #fff; } } &.ghost { background: var(--status-warning-bg); border-color: var(--status-warning); .tag-text { color: var(--status-warning); } } }
-  &.tone-error { &.fill { background: var(--status-error); .tag-text { color: #fff; } } &.ghost { background: var(--status-error-bg); border-color: var(--status-error); .tag-text { color: var(--status-error); } } }
-  &.tone-info { &.fill { background: var(--status-info); .tag-text { color: #fff; } } &.ghost { background: var(--status-info-bg); border-color: var(--status-info); .tag-text { color: var(--status-info); } } }
-  &.tone-highlight { &.fill { background: var(--status-highlight); .tag-text { color: var(--text-primary); } } &.ghost { background: var(--status-highlight-bg); border-color: var(--status-highlight); .tag-text { color: var(--text-primary); } } }
-  &.tone-default { &.fill { background: var(--bg-hover); .tag-text { color: var(--text-secondary); } } &.ghost { background: var(--bg-card); border-color: var(--border-default); .tag-text { color: var(--text-secondary); } } }
+  &.tone-primary {
+    &.fill {
+      background: var(--brand-primary);
+      .tag-text {
+        color: #fff;
+      }
+    }
+    &.ghost {
+      background: var(--brand-primary-ghost);
+      border-color: var(--brand-primary);
+      .tag-text {
+        color: var(--brand-primary);
+      }
+    }
+  }
+  &.tone-success {
+    &.fill {
+      background: var(--status-success);
+      .tag-text {
+        color: #fff;
+      }
+    }
+    &.ghost {
+      background: var(--status-success-bg);
+      border-color: var(--status-success);
+      .tag-text {
+        color: var(--status-success);
+      }
+    }
+  }
+  &.tone-warning {
+    &.fill {
+      background: var(--status-warning);
+      .tag-text {
+        color: #fff;
+      }
+    }
+    &.ghost {
+      background: var(--status-warning-bg);
+      border-color: var(--status-warning);
+      .tag-text {
+        color: var(--status-warning);
+      }
+    }
+  }
+  &.tone-error {
+    &.fill {
+      background: var(--status-error);
+      .tag-text {
+        color: #fff;
+      }
+    }
+    &.ghost {
+      background: var(--status-error-bg);
+      border-color: var(--status-error);
+      .tag-text {
+        color: var(--status-error);
+      }
+    }
+  }
+  &.tone-info {
+    &.fill {
+      background: var(--status-info);
+      .tag-text {
+        color: #fff;
+      }
+    }
+    &.ghost {
+      background: var(--status-info-bg);
+      border-color: var(--status-info);
+      .tag-text {
+        color: var(--status-info);
+      }
+    }
+  }
+  &.tone-highlight {
+    &.fill {
+      background: var(--status-highlight);
+      .tag-text {
+        color: var(--text-primary);
+      }
+    }
+    &.ghost {
+      background: var(--status-highlight-bg);
+      border-color: var(--status-highlight);
+      .tag-text {
+        color: var(--text-primary);
+      }
+    }
+  }
+  &.tone-default {
+    &.fill {
+      background: var(--bg-hover);
+      .tag-text {
+        color: var(--text-secondary);
+      }
+    }
+    &.ghost {
+      background: var(--bg-card);
+      border-color: var(--border-default);
+      .tag-text {
+        color: var(--text-secondary);
+      }
+    }
+  }
 }
 </style>

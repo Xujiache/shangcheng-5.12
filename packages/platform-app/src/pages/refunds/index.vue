@@ -12,11 +12,7 @@
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import {
-  refundService,
-  type RefundRow,
-  type RefundStatus,
-} from '../../services'
+import { refundService, type RefundRow, type RefundStatus } from '../../services'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
 import NavBar from '../../components/nav-bar/nav-bar.vue'
 import Icon from '../../components/icon/icon.vue'
@@ -87,9 +83,7 @@ function viewDetail(r: RefundRow) {
     `原因: ${r.reason}`,
     r.description ? `描述: ${r.description}` : '',
     `申请金额: ¥${formatPrice(r.applyAmount)}`,
-    typeof r.refundAmount === 'number'
-      ? `实际退款: ¥${formatPrice(r.refundAmount)}`
-      : '',
+    typeof r.refundAmount === 'number' ? `实际退款: ¥${formatPrice(r.refundAmount)}` : '',
     `提交时间: ${formatDate(r.createdAt)}`,
     r.merchantReply ? `\n商家回复: ${r.merchantReply}` : '',
   ].filter(Boolean)
@@ -176,11 +170,7 @@ onShow(load)
       <view v-if="loading" class="state">加载中…</view>
 
       <view v-else-if="loadError" class="state-wrap">
-        <EmptyState
-          icon="biz-order"
-          title="加载失败"
-          :desc="errorMsg || '请检查网络后重试'"
-        />
+        <EmptyState icon="biz-order" title="加载失败" :desc="errorMsg || '请检查网络后重试'" />
         <text class="state-hint">
           若后端 `/p/refunds` 接口尚未实现,请联系平台技术(Agent E)补全。
         </text>

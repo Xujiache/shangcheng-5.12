@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as argon2 from 'argon2'
-import { randomInt } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
@@ -313,59 +313,50 @@ export class AuthService {
     }
   }
 
-  /**
-   * 刷新 Token —— 带 rotation 防重放
-   *
-   * 错误语义精确化（P3-38）：
-   *   - 真正过期（jsonwebtoken 抛 TokenExpiredError）→ TOKEN_EXPIRED 2002
-   *     前端拦截器据此清 token 并跳转登录页
-   *   - 签名无效 / 结构错误 / payload 缺 `_r:1`（access token 传错位置 / 伪造 token）
-   *     → UNAUTHORIZED 2001 + 'invalid refresh token'
-   *     与"过期"区分，避免误导排查（之前所有错误都映射 TOKEN_EXPIRED）
-   *   - 已被 rotation 吊销 → UNAUTHORIZED + 'refresh token revoked'
-   *   - 其他未知异常一律按 UNAUTHORIZED 处理，绝不把内部错误明文回前端
-   *
-   * Rotation 流程：
-   *   1. verifyAsync 通过 + payload._r === 1 → 拿到旧 jti
-   *   2. isRevoked(jti) → 若已吊销，拒绝（防泄露后重放）
-   *   3. 重新 signTokens 得到全新 access + refresh（新 jti）
-   *   4. 把旧 jti 加入黑名单，TTL = 旧 refresh token 剩余有效期
-   *      —— 攻击者拿到旧 refresh token 后续刷新会被 step 2 拦截
-   */
+  /** Verify current account, sign, then atomically consume before exposing new tokens. */
   async refresh(dto: RefreshDto) {
-    let payload: any
+    let payload: { _r?: number; sub?: string; jti?: string; exp?: number }
     try {
       payload = await this.jwt.verifyAsync(dto.refreshToken)
-    } catch (e: any) {
-      if (e?.name === 'TokenExpiredError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'TokenExpiredError')
         throw new BizException(BizCode.TOKEN_EXPIRED, 'refreshToken 已过期')
-      }
       throw new BizException(BizCode.UNAUTHORIZED, 'invalid refresh token')
     }
-    if (!payload?._r) {
+    if (
+      payload?._r !== 1 ||
+      typeof payload.sub !== 'string' ||
+      !payload.sub ||
+      typeof payload.exp !== 'number' ||
+      !Number.isFinite(payload.exp)
+    )
       throw new BizException(BizCode.UNAUTHORIZED, 'invalid refresh token')
-    }
-
-    const oldJti: string | undefined = payload.jti
-    if (oldJti && (await this.refreshBlacklist.isRevoked(oldJti))) {
-      // 已被 rotation 吊销过的 refresh token 再次出现 = 强烈的重放/泄露信号
+    const remaining = payload.exp - Math.floor(Date.now() / 1000)
+    if (remaining <= 0) throw new BizException(BizCode.TOKEN_EXPIRED, 'refreshToken 已过期')
+    const receipt = this.refreshReceipt(payload.jti, dto.refreshToken)
+    if (await this.refreshBlacklist.isRevoked(receipt))
       throw new BizException(BizCode.UNAUTHORIZED, 'refresh token revoked')
-    }
-
-    const tokens = await this.signTokens({
-      sub: payload.sub,
-      role: payload.role,
-      merchantId: payload.merchantId,
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, status: true, role: true, merchantId: true },
     })
-
-    // 吊销旧 jti：TTL = 旧 refresh token 剩余有效期（payload.exp 是 unix 秒）
-    // 兼容旧客户端：老 refresh token 不带 jti，跳过吊销但仍返回新 token（平滑升级）
-    if (oldJti && typeof payload.exp === 'number') {
-      const remainSec = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
-      await this.refreshBlacklist.revoke(oldJti, remainSec)
-    }
-
+    if (!user) throw new BizException(BizCode.UNAUTHORIZED, '账号不存在或已注销')
+    if (user.status === 'disabled') throw new BizException(BizCode.FORBIDDEN, '账号已被禁用')
+    const tokens = await this.signTokens({
+      sub: user.id,
+      role: user.role,
+      merchantId: user.merchantId ?? undefined,
+    })
+    // Sign failures leave the old token usable; only the atomic winner returns its new pair.
+    if (!(await this.refreshBlacklist.consume(receipt, remaining)))
+      throw new BizException(BizCode.UNAUTHORIZED, 'refresh token revoked')
     return tokens
+  }
+
+  private refreshReceipt(jti: unknown, token: string): string {
+    return typeof jti === 'string' && jti
+      ? jti
+      : 'legacy:' + createHash('sha256').update(token).digest('hex')
   }
 
   /** 当前用户信息 */
@@ -395,20 +386,22 @@ export class AuthService {
    */
   async logout(refreshToken?: string, callerSub?: string): Promise<{ ok: true }> {
     if (refreshToken) {
+      let payload: { sub?: string; jti?: string; exp?: number } | undefined
       try {
-        const payload: any = await this.jwt.verifyAsync(refreshToken)
-        const jti: string | undefined = payload?.jti
-        if (jti && typeof payload?.exp === 'number') {
-          const remainSec = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
-          await this.refreshBlacklist.revoke(jti, remainSec)
-        }
-        if (!callerSub && payload?.sub) callerSub = payload.sub
-      } catch (e: any) {
-        // 过期 / 篡改 / 结构错 → 一律按已失效处理。不抛错保证幂等。
-        this.logger.debug(
-          `[auth.logout] refresh token verify failed (treated as already invalid): ${e?.message || e}`,
-        )
+        payload = await this.jwt.verifyAsync(refreshToken)
+      } catch {
+        this.logger.debug('[auth.logout] invalid or expired credential')
       }
+      // Storage failures must not be reported as a successful revocation.
+      if (payload && typeof payload.exp === 'number' && Number.isFinite(payload.exp)) {
+        const remaining = payload.exp - Math.floor(Date.now() / 1000)
+        if (remaining > 0)
+          await this.refreshBlacklist.revoke(
+            this.refreshReceipt(payload.jti, refreshToken),
+            remaining,
+          )
+      }
+      if (!callerSub && payload?.sub) callerSub = payload.sub
     }
     if (callerSub) {
       try {

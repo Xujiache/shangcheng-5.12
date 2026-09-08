@@ -229,22 +229,18 @@ function asGuest() {
             placeholder="短信验证码"
             placeholder-class="ph"
           />
-          <view
-            :class="['code-btn', (countdown > 0 || sending) && 'disabled']"
-            @click="sendCode"
-          >
-            {{
-              countdown > 0
-                ? `${countdown}s 后重发`
-                : sending
-                ? '发送中…'
-                : '获取验证码'
-            }}
+          <view :class="['code-btn', (countdown > 0 || sending) && 'disabled']" @click="sendCode">
+            {{ countdown > 0 ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
           </view>
         </view>
 
         <view
-          :class="['btn-primary', 'btn-submit', !canSubmitPhone && 'disabled', loading && 'is-loading']"
+          :class="[
+            'btn-primary',
+            'btn-submit',
+            !canSubmitPhone && 'disabled',
+            loading && 'is-loading',
+          ]"
           @click="phoneLogin"
         >
           <text>{{ loading ? '登录中…' : '登录 / 注册' }}</text>
@@ -287,8 +283,13 @@ function asGuest() {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(120% 80% at 50% 0%, #ffb98c 0%, #ff7a4e 35%, #ff4d2d 70%, #d43014 100%);
+  background: radial-gradient(
+    120% 80% at 50% 0%,
+    #ffb98c 0%,
+    #ff7a4e 35%,
+    #ff4d2d 70%,
+    #d43014 100%
+  );
 }
 .bg-glow {
   position: absolute;

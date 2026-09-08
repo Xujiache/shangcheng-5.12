@@ -5,11 +5,16 @@
   "description": "门窗利账 · 原生微信小程序（记账新端）",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test:nesting": "tsx scripts/verify-nesting.ts"
+    "test:nesting": "tsx scripts/verify-nesting.ts",
+    "lint": "eslint miniprogram scripts --config ../../eslint.config.mjs",
+    "test": "tsx scripts/verify-workbook.ts && tsx scripts/verify-workbook-flow.ts && pnpm test:nesting && cd ../.. && node scripts/verify-page-transitions.cjs && node scripts/verify-workbook-icons.cjs"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^3.12.2",
     "miniprogram-automator": "^0.12.1",
     "typescript": "~5.6.3"
+  },
+  "engines": {
+    "node": ">=24.19.0 <25"
   }
 }

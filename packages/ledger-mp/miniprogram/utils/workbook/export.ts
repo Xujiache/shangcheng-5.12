@@ -128,9 +128,9 @@ export async function exportBackup(): Promise<string> {
   return writeExport('门窗记工完整备份-' + uid('backup') + '.lwb', JSON.stringify(payload))
 }
 export async function readBackup(): Promise<any> {
-  const result = await new Promise<any>((resolve, reject) =>
-    wx.chooseMessageFile({ count: 1, type: 'file', success: resolve, fail: reject }),
-  )
+  const result = await new Promise<any>((resolve, reject) => {
+    wx.chooseMessageFile({ count: 1, type: 'file', success: resolve, fail: reject })
+  })
   const file = result.tempFiles[0]
   check(file && file.size <= 200 * 1024 * 1024, '备份文件过大或未选择')
   const text = wx.getFileSystemManager().readFileSync(file.path, 'utf8') as string
@@ -223,14 +223,13 @@ export async function renderReport(
   b: Workbook,
   f: Filter,
 ): Promise<{ pdf: string; images: string[] }> {
-  const canvas: any = await new Promise((resolve, reject) =>
-    wx
-      .createSelectorQuery()
+  const canvas: any = await new Promise((resolve, reject) => {
+    wx.createSelectorQuery()
       .in(page)
       .select('#wb-export-canvas')
       .fields({ node: true, size: true })
-      .exec((r) => (r?.[0]?.node ? resolve(r[0].node) : reject(new Error('导出画布未就绪')))),
-  )
+      .exec((r) => (r?.[0]?.node ? resolve(r[0].node) : reject(new Error('导出画布未就绪'))))
+  })
   const width = 1000,
     height = 1414
   canvas.width = width
@@ -298,7 +297,7 @@ export async function renderReport(
       54,
       1370,
     )
-    const result = await new Promise<any>((resolve, reject) =>
+    const result = await new Promise<any>((resolve, reject) => {
       wx.canvasToTempFilePath(
         {
           canvas,
@@ -310,8 +309,8 @@ export async function renderReport(
           fail: reject,
         } as any,
         page,
-      ),
-    )
+      )
+    })
     images.push(result.tempFilePath)
     const raw = wx.getFileSystemManager().readFileSync(result.tempFilePath) as ArrayBuffer
     bytes.push({ bytes: new Uint8Array(raw), width, height })

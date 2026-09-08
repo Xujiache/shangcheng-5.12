@@ -5,8 +5,8 @@
   "description": "经纬科技 · 用户小程序 + 商家 APP/PC + 平台 APP/PC + NestJS 后端",
   "type": "module",
   "engines": {
-    "node": ">=20.19.0",
-    "pnpm": ">=8.8.0"
+    "node": ">=24.19.0 <25",
+    "pnpm": "9.0.0"
   },
   "packageManager": "pnpm@9.0.0",
   "workspaces": [
@@ -23,21 +23,39 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm test:unit",
     "test:server": "pnpm --filter @jiujiu/server test",
     "clean": "pnpm -r exec rm -rf node_modules dist .turbo",
     "prisma:migrate-init": "pnpm --filter @jiujiu/server prisma migrate dev --name init --create-only",
     "prisma:deploy": "pnpm --filter @jiujiu/server prisma migrate deploy",
-    "prepare": "husky"
+    "prepare": "husky",
+    "quality:check": "node scripts/quality/run.mjs check",
+    "test:unit": "node scripts/quality/run.mjs unit",
+    "test:integration": "node scripts/quality/run.mjs integration",
+    "build:verify": "node scripts/quality/run.mjs build",
+    "release:check": "node scripts/quality/release.mjs",
+    "quality:inventory": "node scripts/quality/inventory.mjs",
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,vue}\" \"packages/ledger-mp/miniprogram/**/*.ts\" \"scripts/quality/*.mjs\" \"scripts/db/*.mjs\"",
+    "db:upgrade": "node scripts/db/migrate.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.4.1",
     "@commitlint/config-conventional": "^19.4.1",
+    "@eslint/js": "9.9.1",
+    "@typescript-eslint/parser": "8.9.0",
+    "@vitejs/plugin-vue": "6.0.1",
+    "@vue/compiler-sfc": "3.5.34",
+    "@vue/test-utils": "2.4.6",
+    "eslint": "9.9.1",
+    "eslint-plugin-vue": "9.27.0",
+    "globals": "15.9.0",
+    "happy-dom": "20.8.4",
     "husky": "^9.1.5",
     "lint-staged": "^15.5.2",
     "only-allow": "^1.2.1",
     "prettier": "^3.5.3",
     "tsx": "^4.20.3",
-    "typescript": "~5.6.3"
+    "typescript": "~5.6.3",
+    "vitest": "3.2.7"
   }
 }
