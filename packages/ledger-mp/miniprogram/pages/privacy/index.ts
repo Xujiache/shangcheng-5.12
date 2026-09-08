@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { settingApi } from '../../api/index'
 import { setBioLock, setHideAmount } from '../../utils/store'
 
@@ -30,7 +31,7 @@ const DEFS: ToggleItem[] = [
 ]
 
 // 隐私与安全：隐私开关（隐藏金额 / 生物解锁）+ 账户安全 / 协议 / 注销账户 入口
-Page({
+MotionPage({
   data: {
     items: DEFS.map((it) => ({ ...it })),
     links: [
@@ -112,6 +113,6 @@ Page({
   },
 
   toLink(e: any) {
-    wx.navigateTo({ url: e.currentTarget.dataset.page })
+    navigation.navigateTo({ url: e.currentTarget.dataset.page })
   },
 })

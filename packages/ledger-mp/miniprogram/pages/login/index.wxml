@@ -1,4 +1,4 @@
-<view class="login">
+<view class="login lz-route-scene {{_routeMotion}}">
   <view class="login__hero">
     <image class="login__hero-image" src="/assets/login/login-hero.jpg" mode="aspectFill" />
     <view class="login__hero-shade"></view>
@@ -49,3 +49,5 @@
     </block>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

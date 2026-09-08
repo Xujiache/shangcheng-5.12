@@ -1,0 +1,307 @@
+/* Shared top dropdown filters for workbook records and reports. */
+.records-filter-bar {
+  position: relative;
+  z-index: 102;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  height: 46px;
+  margin: 0 -18px 16px;
+  padding: 0 18px;
+  background: #fff;
+  border-bottom: 1px solid #edf1ee;
+}
+.records-filter-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #65786e;
+}
+.records-filter-tab--active {
+  color: #0e7c66;
+}
+.records-filter-tab--pressed {
+  opacity: 0.65;
+}
+.records-filter-arrow { display:flex; align-items:center; justify-content:center; width:14px; height:14px; flex-shrink:0; }
+
+.records-filter-badge {
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: #e3f1e9;
+  font-size: 9px;
+  line-height: 15px;
+  color: #0e7c66;
+  text-align: center;
+}
+.records-filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: -4px 0 16px;
+}
+.records-filter-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #e7f1eb;
+  color: #18785f;
+  font-size: 11px;
+}
+.records-filter-tag__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.records-filter-mask {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  background: rgba(20, 33, 27, 0.38);
+}
+.records-filter-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 10px 20px rgba(18, 48, 33, 0.08);
+  animation: records-filter-open 0.18s ease-out;
+}
+.records-filter-scroll {
+  flex: 1;
+  height: 0;
+  min-height: 0;
+}
+.records-filter-content {
+  padding: 22px 20px 20px;
+}
+.records-filter-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #f5f7f5;
+}
+.records-filter-search input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0;
+  font-size: 13px;
+  color: #263e32;
+}
+.records-filter-placeholder {
+  color: #9aa89f;
+}
+.records-filter-search__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 34px;
+  flex-shrink: 0;
+}
+.records-filter-section {
+  margin-top: 26px;
+}
+.records-filter-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d4438;
+}
+.records-filter-label__hint {
+  font-size: 10px;
+  font-weight: 400;
+  color: #93a097;
+}
+.records-filter-options {
+  display: flex;
+  gap: 10px;
+}
+.records-filter-option {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 4px;
+  border-radius: 6px;
+  background: #f7f8f7;
+  color: #6d7b72;
+  text-align: center;
+  font-size: 12px;
+  line-height: 18px;
+  border: 1px solid transparent;
+}
+.records-filter-option--active {
+  background: #edf7f0;
+  color: #0e7c66;
+  border-color: #c1e0ce;
+  font-weight: 600;
+}
+.records-filter-dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 11px 5px;
+  background: #f8faf8;
+  border-radius: 6px;
+}
+.records-filter-dates picker {
+  flex: 1;
+  min-width: 0;
+}
+.records-filter-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  line-height: 19px;
+  color: #354d40;
+  font-variant-numeric: tabular-nums;
+}
+.records-filter-date__label {
+  font-size: 10px;
+  line-height: 14px;
+  color: #94a198;
+}
+.records-filter-date__divider {
+  color: #bdc9c0;
+  font-size: 12px;
+}
+.records-filter-error {
+  color: #b25440;
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 18px;
+}
+.records-filter-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.records-filter-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #f7f8f7;
+  color: #6d7b72;
+  text-align: center;
+}
+.records-filter-choice__name {
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 18px;
+  word-break: break-all;
+}
+.records-filter-choice__code {
+  margin-top: 3px;
+  font-size: 9px;
+  color: #9ca89e;
+}
+.records-filter-choice--active {
+  background: #edf7f0;
+  border-color: #c1e0ce;
+  color: #0e7c66;
+}
+.records-filter-note {
+  margin-top: 16px;
+  color: #96a299;
+  font-size: 11px;
+  line-height: 18px;
+}
+.records-filter-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  padding: 12px 20px 14px;
+  border-top: 1px solid #f0f3f0;
+  background: #fff;
+}
+.records-filter-panel .records-filter-reset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  gap: 3px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #7d8a81;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 14px;
+}
+.records-filter-panel .records-filter-apply {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 44px;
+  padding: 0 8px;
+  margin: 0;
+  border-radius: 8px;
+  background: #0e7c66;
+  color: #fff;
+  font-size: 14px;
+  line-height: 44px;
+  font-weight: 600;
+}
+.records-filter-panel .records-filter-apply[disabled] {
+  background: #94b9a9;
+  color: #fff;
+}
+@keyframes records-filter-open {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .records-filter-panel {
+    animation: none;
+  }
+  .records-filter-arrow {
+    transition: none;
+  }
+}

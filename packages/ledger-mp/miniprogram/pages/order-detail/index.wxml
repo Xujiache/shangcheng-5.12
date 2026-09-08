@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="od">
+<view class="od lz-route-scene {{_routeMotion}}">
   <lz-header title="订单详情" subtitle="{{o.id}}">
     <view slot="right" class="od__edit" bindtap="onShareQuote">分享</view>
   </lz-header>
@@ -106,6 +106,9 @@
     </view>
   </view>
 
+  <view wx:elif="{{id}}" class="lz-page"><lz-skeleton variant="detail" /></view>
+  <view wx:else class="lz-page"><view class="lz-empty">未找到记录，请返回后重新打开</view></view>
+
   <view wx:if="{{o}}" class="lz-footer" style="display: flex; gap: 10px;">
     <button wx:if="{{!readOnly}}" class="lz-btn lz-btn--ghost lz-btn--lg" style="flex: 0 0 104px;" bindtap="onDelete">
       <lz-icon name="trash" size="18" color="loss" /> 删除
@@ -128,3 +131,5 @@
   <!-- 离屏报价画布：仅用于生成图片/PDF，不能 display:none。 -->
   <canvas type="2d" id="quoteExport" class="od__export-canvas"></canvas>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

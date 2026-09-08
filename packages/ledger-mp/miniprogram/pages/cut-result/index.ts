@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { cutPlanApi } from '../../api/index'
 import { optimizeCutting } from '../../utils/cutting'
 import { optimizeNesting, NestResult } from '../../utils/nesting'
@@ -10,7 +11,7 @@ const MATERIALS: Record<string, { name: string; unit: string; is2d: boolean; noK
 }
 const RESULT_KEY = 'ledger_cut_result'
 
-Page({
+MotionPage({
   data: {
     material: 'profile',
     is2d: false,
@@ -504,6 +505,6 @@ Page({
     this.setData({ editingTitle: '' })
   },
   back() {
-    wx.navigateBack()
+    navigation.navigateBack()
   },
 })

@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="fb">
+<view class="fb lz-route-scene {{_routeMotion}}">
   <lz-header title="意见反馈" subtitle="你的建议帮助门窗利账更好用" />
 
   <view class="lz-page lz-page--pad-bottom">
@@ -53,3 +53,5 @@
     <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSubmit && !uploading ? '' : 'lz-btn--disabled'}}" bindtap="onSubmit">{{submitting ? '提交中…' : '提交反馈'}}</button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

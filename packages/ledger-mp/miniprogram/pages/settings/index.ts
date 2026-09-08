@@ -1,5 +1,6 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 // 设置总入口：分类导航到各设置子页（分别调整）
-Page({
+MotionPage({
   data: {
     rows: [
       {
@@ -42,6 +43,6 @@ Page({
   },
 
   toRow(e: any) {
-    wx.navigateTo({ url: e.currentTarget.dataset.page })
+    navigation.navigateTo({ url: e.currentTarget.dataset.page })
   },
 })

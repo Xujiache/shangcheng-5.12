@@ -1,6 +1,7 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { logout, setBioVerified } from '../../utils/store'
 
-Page({
+MotionPage({
   data: {
     verifying: false,
     supported: true, // 设备是否支持指纹/面容；不支持时换诚实文案并把退出登录作为主出口
@@ -39,7 +40,7 @@ Page({
       success: () => {
         setBioVerified(true)
         // 深链冷启动也统一落到首页（解锁前的目标页不恢复）
-        wx.reLaunch({ url: '/pages/home/index' })
+        navigation.reLaunch({ url: '/pages/home/index' })
       },
       fail: (e: any) => {
         // 90001/90002/90003 设备/方式不支持、90011 未录入：重试永远不会成功，换诚实出口

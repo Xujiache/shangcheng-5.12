@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="ord tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
+<view class="ord tab-page lz-route-scene {{_routeMotion}}" style="{{glassCard}}">
   <view class="ord__hd" style="padding-top: {{hdPad}}px;">
     <view class="ord__title">订单管理</view>
     <view class="ord__cust-btn" bindtap="toCustomers" hover-class="tap-active">
@@ -77,7 +77,7 @@
         </view>
       </view>
       <view class="ord__foot">
-        <text wx:if="{{loadingMore}}">加载中…</text>
+        <lz-skeleton wx:if="{{loadingMore}}" variant="inline" label="正在加载更多" />
         <text wx:elif="{{hasMore}}">已显示 {{list.length}} 条 / 共 {{summary.count}} 条</text>
         <text wx:else>已全部加载</text>
       </view>
@@ -89,7 +89,9 @@
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
     <view wx:elif="{{!loading}}" class="lz-empty">{{readOnly ? '暂无历史订单' : '暂无订单，点击底部 + 记一笔'}}</view>
-    <view wx:else class="lz-empty">加载中…</view>
+    <lz-skeleton wx:else variant="list" />
     </block>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

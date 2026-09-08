@@ -1,8 +1,9 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { customerApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
 
-Page({
+MotionPage({
   data: {
     id: '',
     c: null as any,
@@ -67,12 +68,12 @@ Page({
     })
   },
   toEdit() {
-    wx.navigateTo({ url: '/pages/customer-edit/index?id=' + this.data.id })
+    navigation.navigateTo({ url: '/pages/customer-edit/index?id=' + this.data.id })
   },
   reorder() {
     const name = this.data.c ? this.data.c.name : ''
     // 必须带上客户 id，否则新订单只按名字兜底、未真正关联到该客户（客户页/统计会对不上）
-    wx.navigateTo({
+    navigation.navigateTo({
       url:
         '/pages/order-edit/index?prefillCustomerId=' +
         this.data.id +
@@ -81,6 +82,6 @@ Page({
     })
   },
   toOrder(e: any) {
-    wx.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
+    navigation.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
   },
 })

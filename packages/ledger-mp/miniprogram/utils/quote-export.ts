@@ -643,7 +643,7 @@ function object(id: number, body: Uint8Array | string) {
 }
 
 /** 将 Canvas JPEG 页封装为 PDF，文字已在图片中渲染，中文不会因缺字体而乱码。 */
-function makePdf(images: Array<{ bytes: Uint8Array; width: number; height: number }>) {
+export function makePdf(images: Array<{ bytes: Uint8Array; width: number; height: number }>) {
   const pageIds = images.map((_, index) => 3 + index * 3)
   const objects: Uint8Array[] = []
   objects.push(object(1, '<< /Type /Catalog /Pages 2 0 R >>'))

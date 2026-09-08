@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="prof tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
+<view class="prof tab-page lz-route-scene {{_routeMotion}}" style="{{glassCard}}">
   <view style="height: {{topSpace}}px;"></view>
 
   <view class="lz-page lz-page--pad-bottom">
@@ -83,3 +83,5 @@
   </view>
   <canvas type="2d" id="shareCover" class="share-cover-cv"></canvas>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

@@ -1,0 +1,12 @@
+<view class="nav"
+  ><view
+    wx:for="{{items}}"
+    wx:key="id"
+    class="item {{active===item.id?'selected':''}}"
+    data-index="{{index}}"
+    bindtap="go"
+    ><workbook-icon name="{{item.icon}}" size="26" color="{{active===item.id?'accent':'muted'}}" /><text
+      >{{item.name}}</text
+    ></view
+  ></view
+>

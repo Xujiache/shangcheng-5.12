@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi } from '../../api/index'
 import { API_BASE } from '../../config'
 import { handleUnauthorized } from '../../utils/request'
@@ -12,7 +13,7 @@ const HUES = [
   { key: 'violet', grad: 'linear-gradient(140deg, #afa3cf 0%, #9488b8 100%)' },
 ]
 
-Page({
+MotionPage({
   data: {
     nickname: '',
     initial: '账',
@@ -152,7 +153,7 @@ Page({
         setUser(u)
       }
       wx.showToast({ title: '已保存', icon: 'success' })
-      setTimeout(() => wx.navigateBack(), 600)
+      setTimeout(() => navigation.navigateBack(), 600)
       // 成功后不重置 saving：返回前防重复提交
     } catch (e) {
       /* toast handled in request */

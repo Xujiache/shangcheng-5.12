@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="oi">
+<view class="oi lz-route-scene {{_routeMotion}}">
   <lz-header title="报价明细" subtitle="产品 · 尺寸 · 金额" />
 
   <view class="oi__body">
@@ -119,3 +119,5 @@
     <text class="oi__bar-hint">保存订单后，可在订单详情分享图片 / PDF 报价单</text>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="nt">
+<view class="nt lz-route-scene {{_routeMotion}}">
   <lz-header title="通知提醒" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -51,3 +51,5 @@
     <view class="nt__note">关闭后将不再收到对应类型的推送通知，应用内消息中心仍会保留记录。</view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

@@ -1,3 +1,4 @@
+import { MotionPage } from '../../utils/page-transition'
 import { notificationApi } from '../../api/index'
 
 // 消息类型 → 生成图标 / 底色
@@ -27,7 +28,7 @@ function fmtTime(iso: string): string {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
 }
 
-Page({
+MotionPage({
   data: {
     list: [] as any[],
     hasUnread: false,

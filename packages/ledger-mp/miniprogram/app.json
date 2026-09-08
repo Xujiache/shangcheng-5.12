@@ -51,13 +51,45 @@
     "selectedColor": "#0E7C66",
     "backgroundColor": "#EBF0ED",
     "list": [
-      { "pagePath": "pages/home/index", "text": "首页" },
-      { "pagePath": "pages/orders/index", "text": "订单" },
-      { "pagePath": "pages/reports/index", "text": "报表" },
-      { "pagePath": "pages/profile/index", "text": "我的" }
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/orders/index",
+        "text": "订单"
+      },
+      {
+        "pagePath": "pages/reports/index",
+        "text": "报表"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的"
+      }
     ]
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "subPackages": [
+    {
+      "root": "subpackages/workbook",
+      "pages": ["records/index", "edit/index", "people/index", "finance/index", "reports/index"]
+    }
+  ],
+  "usingComponents": {
+    "lz-route-feedback": "/components/lz-route-feedback/index",
+    "lz-skeleton": "/components/lz-skeleton/index"
+  },
+  "preloadRule": {
+    "pages/home/index": {
+      "network": "wifi",
+      "packages": ["subpackages/workbook"]
+    },
+    "pages/work-log/index": {
+      "network": "all",
+      "packages": ["subpackages/workbook"]
+    }
+  }
 }

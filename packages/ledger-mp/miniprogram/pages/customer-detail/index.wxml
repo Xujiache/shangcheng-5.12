@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="cd">
+<view class="cd lz-route-scene {{_routeMotion}}">
   <lz-header title="客户详情">
     <view slot="right" class="cd__edit" bindtap="toEdit">编辑</view>
   </lz-header>
@@ -60,6 +60,9 @@
     </view>
   </view>
 
+  <view wx:elif="{{id}}" class="lz-page"><lz-skeleton variant="detail" /></view>
+  <view wx:else class="lz-page"><view class="lz-empty">未找到记录，请返回后重新打开</view></view>
+
   <view wx:if="{{c}}" class="lz-footer" style="display: flex; gap: 10px;">
     <button class="lz-btn lz-btn--ghost lz-btn--lg lz-flex1" bindtap="copyPhone" wx:if="{{c.phone}}">
       <lz-icon name="phone" size="18" color="text" /> 复制号码
@@ -69,3 +72,5 @@
     </button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

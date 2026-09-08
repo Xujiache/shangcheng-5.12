@@ -1,12 +1,12 @@
 <lz-bg />
-<view class="cut">
+<view class="cut lz-route-scene {{_routeMotion}}">
   <lz-header title="优化下料" subtitle="型材一维 / 玻璃·板材二维套料">
     <view slot="right" wx:if="{{cloudEnabled && !loadError && !checking}}" class="cut__hist" bindtap="openHistory" hover-class="tap-active">
       <lz-icon name="clock" size="16" color="accent" />历史
     </view>
   </lz-header>
   <view class="lz-page lz-page--pad-bottom">
-    <view wx:if="{{checking}}" class="lz-empty">加载中…</view>
+    <lz-skeleton wx:if="{{checking}}" variant="form" />
 
     <!-- 加载失败（网络等）：带重试，不当作付费墙 -->
     <view wx:elif="{{loadError}}" class="lz-card" style="text-align: center;">
@@ -123,7 +123,7 @@
         <view class="cut__hclose" bindtap="closeHistory" hover-class="tap-active">关闭</view>
       </view>
       <scroll-view scroll-y class="oe__sheet-list">
-        <view wx:if="{{historyLoading}}" class="oe__empty">加载中…</view>
+        <lz-skeleton wx:if="{{historyLoading}}" variant="list" />
         <view wx:elif="{{historyError}}" class="cut__herr">
           <text>加载失败，请重试</text>
           <view class="cut__hretry" bindtap="retryHistory" hover-class="tap-active">重新加载</view>
@@ -145,3 +145,5 @@
     </view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

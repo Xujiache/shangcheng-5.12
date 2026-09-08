@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { customerApi, meApi, orderApi, settingApi } from '../../api/index'
 import { yuan } from '../../utils/format'
 import { EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
@@ -142,7 +143,7 @@ function resetCurrentCostRows(categories: CostCategory[], raw: any) {
   })
 }
 
-Page({
+MotionPage({
   data: {
     editing: false,
     id: '',
@@ -171,6 +172,7 @@ Page({
     marginPct: '0.0',
     canSave: false,
     saving: false,
+    loadingRecord: false,
     loadError: false,
     unpaid: 0,
     extraTypes: EXTRA_TYPES,
@@ -304,10 +306,12 @@ Page({
       received: this.data.received,
       note: this.data.note,
     })
-    wx.navigateTo({ url: '/pages/order-items/index' })
+    navigation.navigateTo({ url: '/pages/order-items/index' })
   },
 
   async loadOrder() {
+    if (this.data.loadingRecord) return
+    this.setData({ loadingRecord: true, loadError: false })
     try {
       const [o, categories]: [any, CostCategory[]] = await Promise.all([
         orderApi.get(this.data.id),
@@ -355,6 +359,8 @@ Page({
     } catch (e) {
       // 编辑态加载失败不能渲染空表单：保存空表单会把真实订单清零，改为展示重试卡
       this.setData({ loadError: true })
+    } finally {
+      this.setData({ loadingRecord: false })
     }
   },
   async fetchCostCategories(): Promise<CostCategory[]> {
@@ -376,7 +382,7 @@ Page({
     )
   },
   manageCostCategories() {
-    wx.navigateTo({ url: '/pages/cost-categories/index?fromOrder=1' })
+    navigation.navigateTo({ url: '/pages/cost-categories/index?fromOrder=1' })
   },
   retryLoad() {
     this.setData({ loadError: false })
@@ -544,7 +550,7 @@ Page({
 
   onCancel() {
     if (this.data.saving) return // 保存成功后的延时返回期间再点取消会连退两页
-    wx.navigateBack()
+    navigation.navigateBack()
   },
   async syncCustomerProfile() {
     const name = String(this.data.customerName || '').trim()
@@ -568,6 +574,7 @@ Page({
     return { customerId: null as string | null, customerName: name }
   },
   async save() {
+    if (this.data.loadingRecord || this.data.loadError) return
     if (this.data.saving) return
     if (!this.data.canSave) {
       // 缺必填项时给出具体指引，避免点保存毫无反应
@@ -653,7 +660,7 @@ Page({
       else await orderApi.create(payload)
       wx.showToast({ title: editing ? '已保存' : '已记账', icon: 'success' })
       // 成功后不重置 saving，保持按钮禁用直到返回，避免重复提交
-      setTimeout(() => wx.navigateBack(), 500)
+      setTimeout(() => navigation.navigateBack(), 500)
     } catch (e) {
       this.setData({ saving: false }) // 失败允许重试
     }

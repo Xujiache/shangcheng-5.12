@@ -6,6 +6,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
+import { json } from 'express'
 
 /**
  * 解析允许的 CORS 源列表。
@@ -47,6 +48,9 @@ async function bootstrap() {
     },
     rawBody: true,
   })
+
+  // Only workbook import needs a larger JSON body; payment rawBody is unchanged.
+  app.use('/api/v1/l/workbook/sync', json({ limit: '8mb' }))
 
   // 安全响应头：HSTS / X-Content-Type-Options / X-Frame-Options 等
   // helmet 是可选依赖（package.json 暂未列入），缺失时不阻塞启动；

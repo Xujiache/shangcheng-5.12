@@ -1,0 +1,25 @@
+@import "../../../utils/workbook/page.wxss";
+
+/* 与档案页复用同一分段组件，四个入口等宽排列。 */
+.finance-tabs {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 0 18px;
+}
+
+/* 列表预留主操作与底部导航的空间，不遮住最后一笔记录。 */
+.finance--action {
+  padding-bottom: calc(144px + env(safe-area-inset-bottom));
+}
+
+.finance-primary-action > .wb-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  height: 44px;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: inherit;
+}

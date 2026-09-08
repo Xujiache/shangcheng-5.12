@@ -1,0 +1,96 @@
+页面过渡优化验证 2026-09-09T03:13:23.5002793+09:00
+
+>>> pnpm --filter @jiujiu/ledger-mp typecheck
+
+> @jiujiu/ledger-mp@0.0.1 typecheck D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\ledger-mp
+> tsc --noEmit
+
+
+>>> node scripts/verify-page-transitions.cjs
+PASS native route dispatch has no animation delay; fast navigation never flashes a loader
+PASS slow native navigation shows delayed rail then hint; ready clears both
+PASS double tap shares native promise and eventChannel; unrelated callbacks/events are not swallowed
+PASS failure releases feedback and rejects awaiters; retry starts immediately
+PASS cached return keeps amount, inputs and scroll; app foreground does not replay motion
+PASS hide/unload prevents timer writes; stale callback cannot dismiss a newer navigation
+PASS watchdog only removes cosmetic feedback; late native success still resolves
+PASS lifecycle arguments, this, async results and thrown errors are preserved
+PASS motion preference and preparation feedback do not interfere with navigation
+PASS loading components respect motion preference, deduplicate updates and stop hidden-page animation
+PASS real customer/order editors guard unfinished loads, release errors and support retry without blank saves
+PASS all registered pages use shared motion/feedback; native fixed positioning is not transformed
+{"passed":12,"checks":["native route dispatch has no animation delay; fast navigation never flashes a loader","slow native navigation shows delayed rail then hint; ready clears both","double tap shares native promise and eventChannel; unrelated callbacks/events are not swallowed","failure releases feedback and rejects awaiters; retry starts immediately","cached return keeps amount, inputs and scroll; app foreground does not replay motion","hide/unload prevents timer writes; stale callback cannot dismiss a newer navigation","watchdog only removes cosmetic feedback; late native success still resolves","lifecycle arguments, this, async results and thrown errors are preserved","motion preference and preparation feedback do not interfere with navigation","loading components respect motion preference, deduplicate updates and stop hidden-page animation","real customer/order editors guard unfinished loads, release errors and support retry without blank saves","all registered pages use shared motion/feedback; native fixed positioning is not transformed"],"routes":41,"realDeviceVerified":false}
+
+>>> node scripts/verify-workbook-templates.cjs
+{"routes":41,"wxml":53,"wxss":60,"result":"official WeChat WXML/WXSS compilers passed"}
+
+>>> node scripts/verify-workbook-icons.cjs
+{
+  "status": "passed",
+  "icons": 30,
+  "iconNodes": 85,
+  "iconBytes": 191490,
+  "mainSourceBytes": 1896606,
+  "pageCoverage": {
+    "pages/work-log/index.wxml": 13,
+    "subpackages/workbook/edit/index.wxml": 9,
+    "subpackages/workbook/finance/index.wxml": 6,
+    "subpackages/workbook/people/index.wxml": 14,
+    "subpackages/workbook/records/index.wxml": 11,
+    "subpackages/workbook/reports/index.wxml": 30,
+    "components/workbook-header/index.wxml": 1,
+    "components/workbook-nav/index.wxml": 1,
+    "components/workbook-icon/index.wxml": 0
+  },
+  "sourceProvenance": "All 30 original PNGs contain gpt-image version 2.0 in C2PA softwareAgent metadata",
+  "runtimeScreenshotVerified": false
+}
+
+>>> pnpm exec tsx packages/ledger-mp/scripts/verify-workbook-flow.ts
+PASS calendar blanks, selection, segmented views, month switching and leap February
+PASS profile editor pay-mode buttons/units, invalid selection, inline validation, busy guards, field allowlist and clean form reset
+PASS archive-page segmented views, first-use/filtered empty, search reset, archive/recover and card display fields
+PASS top dropdown anchor, grouped selection, option search, draft-preserving tab switch, toggle and cancel
+PASS filter draft/cancel/apply/reset, per-condition removal, preview count, invalid dates, cross-month list, status and keyboard layout
+PASS overview guest offline refresh, month validation, display fields and management/first-entry navigation
+PASS finance shared segmented control: all four tabs and invalid-value guard
+PASS custom highlight draft/cancel/confirm, inclusive range calendar, reversed/same-day selection, pending guard, leap day, month boundaries and shortcuts
+PASS automatic export dialog, close/reopen, shared file identity, duplicate-click guard, cancellation and failure/retry
+PASS export format selection/dispatch, busy and draft guards, personal preview, CSV generation, empty report and immutable output scope
+PASS report lightweight date controls and integrated card tabs via native tap events
+PASS reports sections, shared top filters, draft/cancel/apply, invalid dates, date presets, unit/amount summaries and actual CSV export handler
+PASS unavailable cloud route is separate from local totals and stale-page response is ignored
+PASS native-page guest offline entry → advance → settlement → payment → CSV → backup → import → lost-ACK retry → expiry → renewal → logout isolation
+{"requestsDuringGuestFlow":0,"cloudRevision":2,"guestEarnedFen":15013,"accountEarnedFen":15113,"accountDueFen":6013,"backedUpCollections":9}
+
+>>> pnpm exec tsx packages/ledger-mp/scripts/verify-workbook.ts
+PASS decimal parsing and integer rounding
+PASS day/hour/piece/fixed and attendance earnings
+PASS historical rates do not follow worker changes
+PASS strict references, dates, text and prototype-safe IDs
+PASS one entry cannot be settled twice or changed after settlement
+PASS advance allocation, partial payments, and overdraft rejection
+PASS void audit preserves original amount and releases locks only after payments void
+PASS signed adjustments enter earnings without mixing units
+PASS stale versions reject rather than overwrite
+PASS deleted rows restored and archive never cascades
+PASS durable journal survives restart and deduplicates a double click
+PASS failed chunk/head writes preserve the last committed ledger
+PASS guest/account isolation and recoverable previous manifest
+PASS backup validation and mirrored domain stay consistent
+PASS local date does not convert to UTC date
+10000 records domain ms: 205
+PASS 10000 offline records retain exact totals and distinct IDs
+Workbook checks passed: 16
+
+>>> pnpm --filter @jiujiu/ledger-mp test:nesting
+
+> @jiujiu/ledger-mp@0.0.1 test:nesting D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\ledger-mp
+> tsx scripts/verify-nesting.ts
+
+nesting verification passed
+
+>>> Final template, component preview and whitespace checks
+{"routes":41,"wxml":53,"wxss":60,"result":"official WeChat WXML/WXSS compilers passed"}
+{"source":"actual WXML/WXSS rendered in Chromium, not WeChat","checks":["list @ 320: no horizontal overflow","dashboard @ 320: no horizontal overflow","detail @ 320: no horizontal overflow","form @ 320: no horizontal overflow","inline @ 320: no horizontal overflow","list @ 390: no horizontal overflow","dashboard @ 390: no horizontal overflow","detail @ 390: no horizontal overflow","form @ 390: no horizontal overflow","inline @ 390: no horizontal overflow","list @ 430: no horizontal overflow","dashboard @ 430: no horizontal overflow","detail @ 430: no horizontal overflow","form @ 430: no horizontal overflow","inline @ 430: no horizontal overflow"],"reducedMotion":"passed","pageErrors":[],"nativeVerified":false}
+git diff --check passed

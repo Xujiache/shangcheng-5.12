@@ -1,3 +1,4 @@
+import { navigation } from './page-transition'
 import { API_BASE, TOKEN_KEY } from '../config'
 // ── 读接口本地缓存（原 utils/cache 内联进来：避免新增文件被 DevTools 增量编译漏掉）──
 const CACHE_PREFIX = 'lc:' // ledger read-cache 命名空间
@@ -110,7 +111,7 @@ export function handleUnauthorized() {
   const app = getApp<IAppOption>()
   app?.clearAuth?.()
   wx.showToast({ title: '登录已失效，请重新登录', icon: 'none' })
-  wx.reLaunch({ url: '/pages/home/index' })
+  navigation.reLaunch({ url: '/pages/home/index' })
   setTimeout(() => (unauthHandling = false), 1500)
 }
 

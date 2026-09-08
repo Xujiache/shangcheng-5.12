@@ -1,10 +1,11 @@
 <lz-bg />
-<view class="oe">
+<view class="oe lz-route-scene {{_routeMotion}}">
   <lz-header title="{{editing ? '编辑订单' : '新增订单'}}">
     <view slot="right" class="oe__cancel" bindtap="onCancel">取消</view>
   </lz-header>
 
-  <view wx:if="{{!loadError}}" class="oe__body">
+  <view wx:if="{{loadingRecord}}" class="lz-page"><lz-skeleton variant="form" /></view>
+  <view wx:elif="{{!loadError}}" class="oe__body">
     <!-- 基本信息 + 金额（一张白卡）-->
     <view class="oe__card">
       <view class="oe__row">
@@ -189,9 +190,11 @@
   </view>
 
   <!-- 底部保存栏（固定）-->
-  <view wx:if="{{!loadError}}" class="oe__bar">
+  <view wx:if="{{!loadError&&!loadingRecord}}" class="oe__bar">
     <button class="oe__save {{canSave && !saving ? '' : 'oe__save--disabled'}}" bindtap="save">
       <lz-icon name="check" size="20" color="white" /> {{saving ? '保存中…' : (editing ? '保存修改' : '保存订单')}}
     </button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

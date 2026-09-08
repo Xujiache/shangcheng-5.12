@@ -1,3 +1,4 @@
+import { MotionPage } from '../../utils/page-transition'
 import { dataApi } from '../../api/index'
 import { TOKEN_KEY } from '../../config'
 import { getBioLock, getHideAmount, setBioLock, setHideAmount } from '../../utils/store'
@@ -14,7 +15,7 @@ function calcCache(): string {
 }
 
 // 数据管理：加密导出 / 导入 + 清除缓存
-Page({
+MotionPage({
   data: {
     cacheSize: '0 KB',
     exportShow: false,

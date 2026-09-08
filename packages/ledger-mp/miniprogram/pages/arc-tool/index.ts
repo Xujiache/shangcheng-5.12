@@ -1,3 +1,4 @@
+import { MotionPage } from '../../utils/page-transition'
 import {
   initialMembershipAccess,
   membershipAccessView,
@@ -108,7 +109,7 @@ function solve(raw: Partial<Record<Key, number>>): Arc {
   throw new Error('参数组合无法计算')
 }
 
-Page({
+MotionPage({
   _accessSeq: 0,
   data: {
     ...initialMembershipAccess(),

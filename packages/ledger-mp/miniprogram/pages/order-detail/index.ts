@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi, orderApi, settingApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import {
@@ -24,7 +25,7 @@ function fmtArea(n: number): string {
   return v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
 }
 
-Page({
+MotionPage({
   data: {
     id: '',
     o: null as any,
@@ -191,7 +192,7 @@ Page({
       requireMembership('会员已到期，历史订单可以查看和预览，但暂不能修改。')
       return
     }
-    wx.navigateTo({ url: '/pages/order-edit/index?id=' + this.data.id })
+    navigation.navigateTo({ url: '/pages/order-edit/index?id=' + this.data.id })
   },
   onDelete() {
     if (this._deleted) return
@@ -210,7 +211,7 @@ Page({
           await orderApi.remove(this.data.id)
           this._deleted = true
           wx.showToast({ title: '已删除', icon: 'success' })
-          setTimeout(() => wx.navigateBack(), 500)
+          setTimeout(() => navigation.navigateBack(), 500)
         } catch (e) {
           /* toast handled in request */
         }
@@ -224,7 +225,8 @@ Page({
       return
     }
     // 点击客户直接进编辑客户信息页（返回后 onShow 会重新拉取订单，名字自动刷新）
-    if (o && o.customerId) wx.navigateTo({ url: '/pages/customer-edit/index?id=' + o.customerId })
+    if (o && o.customerId)
+      navigation.navigateTo({ url: '/pages/customer-edit/index?id=' + o.customerId })
   },
   onShareQuote() {
     if (!this.data.o || this.data.exporting) return

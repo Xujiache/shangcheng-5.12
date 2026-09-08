@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { feedbackApi } from '../../api/index'
 import { API_BASE } from '../../config'
 import { handleUnauthorized } from '../../utils/request'
@@ -5,7 +6,7 @@ import { getToken } from '../../utils/store'
 
 const MAX_IMG = 9
 
-Page({
+MotionPage({
   data: {
     content: '',
     contact: '',
@@ -116,7 +117,7 @@ Page({
         images: this.data.images.length ? this.data.images : undefined,
       })
       wx.showToast({ title: '已提交', icon: 'success' })
-      setTimeout(() => wx.navigateBack(), 600)
+      setTimeout(() => navigation.navigateBack(), 600)
       // 成功后不重置 submitting：返回前防重复提交
     } catch (e) {
       this.setData({ submitting: false })

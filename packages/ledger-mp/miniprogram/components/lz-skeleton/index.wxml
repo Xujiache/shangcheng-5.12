@@ -1,0 +1,30 @@
+<view class="sk sk--{{variant}} {{moving?'sk--moving':''}}" aria-label="{{label}}" aria-role="status">
+  <view wx:if="{{variant==='inline'}}" class="sk-inline">
+    <view class="sk-line"></view>
+    <text>{{label}}</text>
+  </view>
+  <block wx:else>
+    <view wx:if="{{variant==='dashboard'||variant==='detail'}}" class="sk-card sk-hero">
+      <view class="sk-line sk-short"></view>
+      <view class="sk-amount"></view>
+      <view class="sk-stats">
+        <view wx:for="{{rows}}" wx:key="*this">
+          <view class="sk-line"></view>
+          <view class="sk-line sk-short"></view>
+        </view>
+      </view>
+    </view>
+    <view class="sk-card" wx:for="{{rows}}" wx:key="*this">
+      <view class="sk-row">
+        <view wx:if="{{variant!=='form'}}" class="sk-avatar"></view>
+        <view class="sk-copy">
+          <view class="sk-line sk-title"></view>
+          <view class="sk-line sk-subtitle"></view>
+        </view>
+        <view wx:if="{{variant==='list'}}" class="sk-end"></view>
+      </view>
+      <view wx:if="{{variant==='form'}}" class="sk-input"></view>
+      <view wx:elif="{{variant!=='list'}}" class="sk-line sk-bottom"></view>
+    </view>
+  </block>
+</view>

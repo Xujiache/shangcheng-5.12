@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="da">
+<view class="da lz-route-scene {{_routeMotion}}">
   <lz-header title="注销账户" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -30,3 +30,5 @@
     </button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

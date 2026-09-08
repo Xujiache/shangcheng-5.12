@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { settingApi } from '../../api/index'
 
 interface ToggleItem {
@@ -44,7 +45,7 @@ const DEFS: ToggleItem[] = [
   },
 ]
 
-Page({
+MotionPage({
   data: {
     items: DEFS.map((it) => ({ ...it })),
   },
@@ -81,9 +82,9 @@ Page({
   },
 
   toMsgCenter() {
-    wx.navigateTo({ url: '/pages/message-center/index' })
+    navigation.navigateTo({ url: '/pages/message-center/index' })
   },
   toDnd() {
-    wx.navigateTo({ url: '/pages/dnd/index' })
+    navigation.navigateTo({ url: '/pages/dnd/index' })
   },
 })

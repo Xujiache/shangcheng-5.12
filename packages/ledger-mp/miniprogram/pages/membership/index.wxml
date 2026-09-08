@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="ms">
+<view class="ms lz-route-scene {{_routeMotion}}">
   <lz-header
     title="{{gate ? '开通会员' : '会员中心'}}"
     subtitle="{{gate ? '开通后可新增订单并恢复完整功能' : ''}}"
@@ -15,6 +15,7 @@
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
 
+    <lz-skeleton wx:elif="{{loading}}" variant="detail" />
     <block wx:else>
     <!-- Hero -->
     <view class="ms__hero {{m.active ? 'ms__hero--on' : ''}}">
@@ -92,3 +93,5 @@
     </button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

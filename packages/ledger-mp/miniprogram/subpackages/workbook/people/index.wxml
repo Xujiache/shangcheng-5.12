@@ -1,0 +1,269 @@
+<view class="wb people lz-route-scene {{_routeMotion}}">
+  <workbook-header title="人员与工地" subtitle="档案归档不影响历史工资" back />
+  <view class="wb-body">
+    <view wx:if="{{!editing}}" class="people-tabs"
+      ><lz-segmented options="{{tabOptions}}" value="{{tab}}" bindchange="tab"
+    /></view>
+    <view wx:if="{{editing}}" class="people-form">
+      <view class="people-form-heading"
+        ><view class="people-form-icon"
+          ><workbook-icon name="{{tab==='workers'?'labor':'project'}}" size="25" color="accent" /></view
+        ><view
+          ><view class="people-form-title">{{form.id?'编辑':'新增'}}{{tab==='workers'?'工人':'工地'}}</view
+          ><view class="people-form-subtitle">{{tab==='workers'?'建好档案，记工时一键选用':'完善资料，按工地查看人工支出'}}</view></view
+        ></view
+      >
+      <view class="people-form-section">
+        <view class="people-form-section-title">基本资料<text>仅名称必填</text></view>
+        <view class="people-form-field"
+          ><view class="people-form-label"
+            >{{tab==='workers'?'工人姓名':'工地名称'}}<text class="people-form-required"> *</text></view
+          ><input
+            class="people-form-input"
+            value="{{form.name}}"
+            maxlength="40"
+            data-field="name"
+            bindinput="field"
+            placeholder="{{tab==='workers'?'填写工人姓名':'例如：阳光花园门窗安装'}}"
+            placeholder-class="people-placeholder"
+            disabled="{{saving}}"
+            cursor-spacing="100"
+        /></view>
+        <block wx:if="{{tab==='workers'}}">
+          <view class="people-form-grid">
+            <view class="people-form-field"
+              ><view class="people-form-label">工种 / 分组<text>选填</text></view
+              ><input
+                class="people-form-input"
+                value="{{form.jobType}}"
+                data-field="jobType"
+                bindinput="field"
+                maxlength="40"
+                placeholder="例如：安装工"
+                placeholder-class="people-placeholder"
+                disabled="{{saving}}"
+                cursor-spacing="100"
+            /></view>
+            <view class="people-form-field"
+              ><view class="people-form-label">联系电话<text>选填</text></view
+              ><input
+                class="people-form-input"
+                value="{{form.phone}}"
+                data-field="phone"
+                bindinput="field"
+                maxlength="40"
+                placeholder="方便联系"
+                placeholder-class="people-placeholder"
+                disabled="{{saving}}"
+                cursor-spacing="100"
+            /></view>
+          </view>
+        </block>
+        <block wx:else>
+          <view class="people-form-field"
+            ><view class="people-form-label">工地地址<text>选填</text></view
+            ><input
+              class="people-form-input"
+              value="{{form.address}}"
+              data-field="address"
+              bindinput="field"
+              maxlength="200"
+              placeholder="小区、楼栋或详细地址"
+              placeholder-class="people-placeholder"
+              disabled="{{saving}}"
+              cursor-spacing="100"
+          /></view>
+          <view class="people-form-field"
+            ><view class="people-form-label">联系人及电话<text>选填</text></view
+            ><input
+              class="people-form-input"
+              value="{{form.contact}}"
+              data-field="contact"
+              bindinput="field"
+              maxlength="100"
+              placeholder="填写联系人和联系方式"
+              placeholder-class="people-placeholder"
+              disabled="{{saving}}"
+              cursor-spacing="100"
+          /></view>
+          <view class="people-form-field"
+            ><view class="people-form-label">开工日期</view
+            ><picker
+              mode="date"
+              value="{{form.startDate}}"
+              data-field="startDate"
+              bindchange="field"
+              disabled="{{saving}}"
+              ><view class="people-form-date"
+                ><text>{{form.startDate}}</text
+                ><workbook-icon name="calendar" size="17" color="muted" /></view></picker
+          ></view>
+        </block>
+      </view>
+      <view wx:if="{{tab==='workers'}}" class="people-form-section people-form-pay">
+        <view class="people-form-section-title">计薪设置<text>记工时可单独调整</text></view>
+        <view class="people-form-modes"
+          ><button
+            wx:for="{{modes}}"
+            wx:key="*this"
+            class="people-form-mode {{modeIndex===index?'people-form-mode--active':''}}"
+            style="width: 100%"
+            data-index="{{index}}"
+            bindtap="mode"
+            disabled="{{saving}}"
+            aria-label="{{item}}{{modeIndex===index?'，已选中':''}}"
+          >
+            {{item}}
+          </button></view
+        >
+        <view class="people-form-label">{{modeIndex===3?'默认包工金额':'默认单价'}}</view>
+        <view class="people-form-price"
+          ><text class="people-form-currency">¥</text
+          ><input
+            type="digit"
+            value="{{form.rate}}"
+            data-field="rate"
+            bindinput="field"
+            maxlength="16"
+            placeholder="0.00"
+            placeholder-class="people-price-placeholder"
+            disabled="{{saving}}"
+            cursor-spacing="110"
+          /><text class="people-form-unit">元 / {{modeUnits[modeIndex]}}</text></view
+        >
+        <view class="people-form-hint">可暂不填写；修改默认单价不会改变历史工资。</view>
+      </view>
+      <view class="people-form-footer"
+        ><view wx:if="{{formError}}" class="people-form-error">{{formError}}</view
+        ><view class="people-form-actions"
+          ><button
+            class="people-form-cancel"
+            style="width: 84px"
+            bindtap="cancel"
+            disabled="{{saving}}"
+          >
+            取消</button
+          ><button
+            class="people-form-save"
+            style="width: 0; flex: 1"
+            bindtap="save"
+            disabled="{{saving}}"
+          >
+            <view wx:if="{{saving}}" class="wb-generated-loading"
+              ><workbook-icon name="loading" size="16"
+            /></view>
+            {{saving?'保存中…':'保存档案'}}
+          </button></view
+        ><view class="people-form-note"
+          ><workbook-icon name="shield" size="12" color="faint" /><text
+            >本机免费保存 · 历史记工独立保留</text
+          ></view
+        ></view
+      >
+    </view>
+    <block wx:else>
+      <block wx:if="{{totalCount}}">
+        <view class="people-search"
+          ><workbook-icon name="search" size="18" color="muted" /><input
+            value="{{search}}"
+            bindinput="search"
+            maxlength="100"
+            placeholder="{{tab==='workers'?'搜索姓名、工种或联系方式':'搜索工地、地址或联系人'}}"
+            placeholder-class="people-placeholder" /><view
+            wx:if="{{search}}"
+            class="people-clear"
+            bindtap="clearSearch"
+            aria-role="button"
+            aria-label="清空搜索"
+            ><workbook-icon name="close" size="16" color="muted" /></view
+        ></view>
+        <view class="people-list-head"
+          ><text class="people-count"
+            >{{tab==='workers'?'工人':'工地'}}档案 <text class="people-count__number">{{list.length}}</text></text
+          ><view class="people-head-actions"
+            ><view
+              class="people-archive-toggle {{archived?'people-archive-toggle--active':''}}"
+              bindtap="toggleArchived"
+              aria-role="button"
+              aria-label="{{archived?'隐藏已归档':'显示已归档'}}"
+              ><view class="people-checkbox"
+                ><workbook-icon
+                  wx:if="{{archived}}"
+                  name="check"
+                  size="11"
+                  color="white" /></view
+              ><text>含已归档</text></view
+            ><view class="people-add-link" bindtap="add" hover-class="tap-active" aria-role="button"
+              ><workbook-icon name="plus" size="15" color="accent" /><text>新增</text></view
+            ></view
+          ></view
+        >
+      </block>
+      <view wx:if="{{!list.length}}" class="people-empty">
+        <view class="people-empty__icon"
+          ><workbook-icon name="{{totalCount?'search':tab==='workers'?'labor':'project'}}" size="32" color="accent" stroke="1.5"
+        /></view>
+        <view class="people-empty__title">{{totalCount?'没有符合条件的档案':tab==='workers'?'添加第一位工人':'添加第一个工地'}}</view>
+        <view class="people-empty__desc">{{totalCount?'试试其他关键词，或查看已归档的档案。':tab==='workers'?'保存工种与默认单价，记工时直接选用。':'按工地归集记工，人工支出一目了然。'}}</view>
+        <button
+          class="people-empty__button"
+          style="width: 100%"
+          bindtap="{{totalCount?'resetSearch':'add'}}"
+          hover-class="tap-active"
+        >
+          <workbook-icon name="{{totalCount?'reset':'plus'}}" size="19" />
+          {{totalCount?'清除筛选':tab==='workers'?'新增工人':'新增工地'}}
+        </button>
+        <view wx:if="{{!totalCount}}" class="people-empty__note">{{tab==='workers'?'同名工人独立编号，历史工资互不影响':'暂不建档也可记工，记录归入未分配工地'}}</view>
+      </view>
+      <view wx:for="{{list}}" wx:key="id" class="people-card">
+        <view class="people-card__head">
+          <view class="people-avatar {{tab==='projects'?'people-avatar--site':''}}"
+            ><text wx:if="{{tab==='workers'}}">{{item.initial}}</text
+            ><workbook-icon wx:else name="project" size="22" color="accent"
+          /></view>
+          <view class="people-card__identity"
+            ><view class="people-card__name">{{item.name}}</view
+            ><view class="people-card__meta"
+              >{{tab==='workers'?(item.jobType||'未设置工种'):'工地档案'}}<text class="people-card__code">#{{item.code}}</text></view
+            ></view
+          >
+          <text class="people-status {{item.status==='active'?'':'people-status--archived'}}">{{item.statusText}}</text>
+        </view>
+        <view wx:if="{{tab==='workers'}}" class="people-card__detail"
+          ><text>默认单价</text
+          ><view class="people-rate">{{item.rate}}<text> / {{item.unitLabel}}</text></view></view
+        >
+        <view wx:else class="people-card__address">{{item.address||'暂未填写工地地址'}}</view>
+        <view wx:if="{{item.phone||item.contact}}" class="people-contact"
+          ><workbook-icon name="phone" size="13" color="muted" /><text>{{item.phone||item.contact}}</text></view
+        >
+        <view class="people-card__footer"
+          ><view
+            class="people-card__action people-card__action--muted"
+            data-id="{{item.id}}"
+            bindtap="archive"
+            hover-class="tap-active"
+            aria-role="button"
+            >{{item.status==='active'?'归档':'恢复档案'}}</view
+          ><view
+            class="people-card__action"
+            data-id="{{item.id}}"
+            bindtap="edit"
+            hover-class="tap-active"
+            aria-role="button"
+            ><workbook-icon name="pencil" size="14" color="accent" /><text>编辑档案</text></view
+          ></view
+        >
+      </view>
+      <view class="people-local-note"
+        ><workbook-icon name="shield" size="13" color="faint" /><text
+          >本机免费管理 · 归档不删除历史记工</text
+        ></view
+      >
+    </block>
+  </view>
+  <workbook-nav active="people" />
+</view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

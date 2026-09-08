@@ -1,0 +1,8 @@
+<image
+  hidden="{{!src}}"
+  class="workbook-icon"
+  src="{{src}}"
+  mode="aspectFit"
+  style="width: {{displaySize}}px; height: {{displaySize}}px"
+  aria-hidden="true"
+/>

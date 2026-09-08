@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="as">
+<view class="as lz-route-scene {{_routeMotion}}">
   <lz-header title="账户安全" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -36,3 +36,5 @@
     <view class="as__note">门窗利账通过当前微信身份识别账号，使经营数据始终与同一微信账号保持对应。</view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

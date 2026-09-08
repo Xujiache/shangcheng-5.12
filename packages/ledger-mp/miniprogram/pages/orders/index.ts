@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi, orderApi } from '../../api/index'
 import { maskMoney, yuan } from '../../utils/format'
 import {
@@ -19,10 +20,9 @@ const SEG_DEF: Array<[string, string]> = [
   ['screen', 'c5'],
 ]
 
-Page({
+MotionPage({
   data: {
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
-    tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     keyword: '',
     sort: 'date',
@@ -48,7 +48,7 @@ Page({
       goToLogin()
       return
     }
-    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
+    this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(1) : tb.setData({ selected: 1 })
     this.setData({
@@ -215,16 +215,16 @@ Page({
 
   toDetail(e: any) {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
+    navigation.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
   },
   toCustomers() {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/customers/index' })
+    navigation.navigateTo({ url: '/pages/customers/index' })
   },
   toLogin() {
     goToLogin()
   },
   toHome() {
-    wx.switchTab({ url: '/pages/home/index' })
+    navigation.switchTab({ url: '/pages/home/index' })
   },
 })

@@ -1,6 +1,7 @@
+import { MotionPage } from '../../utils/page-transition'
 import { changelogApi } from '../../api/index'
 
-Page({
+MotionPage({
   data: {
     loading: true,
     list: [] as any[],

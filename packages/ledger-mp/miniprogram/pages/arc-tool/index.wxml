@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="arc">
+<view class="arc lz-route-scene {{_routeMotion}}">
   <lz-header title="圆弧计算" />
 
   <view class="lz-page lz-page--pad-bottom arc__page">
@@ -63,3 +63,5 @@
     <button class="arc__btn" disabled="{{!canUse}}" bindtap="clear">清空</button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi } from '../../api/index'
 import { makeShareCover } from '../../utils/share-cover'
 import { fmtDate } from '../../utils/format'
@@ -11,11 +12,10 @@ import {
   requireLogin,
 } from '../../utils/store'
 
-Page({
+MotionPage({
   _cover: '',
   data: {
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
-    tabMotion: false,
     topSpace: 38, // 顶部留白 = 状态栏高度 + 18
     nickname: '门窗店主',
     accountText: '',
@@ -53,7 +53,7 @@ Page({
       goToLogin()
       return
     }
-    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
+    this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(3) : tb.setData({ selected: 3 })
     this.setData({
@@ -94,21 +94,21 @@ Page({
 
   toEdit() {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/edit-profile/index' })
+    navigation.navigateTo({ url: '/pages/edit-profile/index' })
   },
   toMembership() {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/membership/index' })
+    navigation.navigateTo({ url: '/pages/membership/index' })
   },
   toRow(e: any) {
     if (!requireLogin()) return
-    wx.navigateTo({ url: e.currentTarget.dataset.page })
+    navigation.navigateTo({ url: e.currentTarget.dataset.page })
   },
   toLogin() {
     goToLogin()
   },
   toPublicPage(e: any) {
-    wx.navigateTo({ url: e.currentTarget.dataset.page })
+    navigation.navigateTo({ url: e.currentTarget.dataset.page })
   },
   onLogout() {
     wx.showModal({

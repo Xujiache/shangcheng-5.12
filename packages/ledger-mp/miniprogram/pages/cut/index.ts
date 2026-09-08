@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { cutApi, cutPlanApi } from '../../api/index'
 import { isLoggedIn } from '../../utils/store'
 
@@ -27,7 +28,7 @@ function defaultDraft(material: string): any {
 const DRAFT_KEY = 'ledger_cut_draft_v1' // 输入自动保存（按材料分别留存）
 const RESULT_KEY = 'ledger_cut_result' // 传给「下料结果」页的入参
 
-Page({
+MotionPage({
   data: {
     checking: true,
     loadError: false,
@@ -367,7 +368,7 @@ Page({
     } catch (e) {
       /* ignore */
     }
-    wx.navigateTo({ url: '/pages/cut-result/index' })
+    navigation.navigateTo({ url: '/pages/cut-result/index' })
   },
 
   // ── 云端历史 ──
@@ -498,6 +499,6 @@ Page({
   },
 
   toMember() {
-    wx.navigateTo({ url: '/pages/membership/index' })
+    navigation.navigateTo({ url: '/pages/membership/index' })
   },
 })

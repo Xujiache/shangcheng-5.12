@@ -1,8 +1,8 @@
 <lz-bg />
-<view class="clog">
+<view class="clog lz-route-scene {{_routeMotion}}">
   <lz-header title="更新日志" subtitle="门窗利账历次更新" />
   <view class="lz-page lz-page--pad-bottom">
-    <view wx:if="{{loading}}" class="lz-empty">加载中…</view>
+    <lz-skeleton wx:if="{{loading}}" variant="list" />
     <view wx:elif="{{!list.length}}" class="lz-empty">暂无更新日志</view>
     <view wx:for="{{list}}" wx:key="version" class="lz-card clog__item">
       <view class="clog__hd">
@@ -13,3 +13,5 @@
     </view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

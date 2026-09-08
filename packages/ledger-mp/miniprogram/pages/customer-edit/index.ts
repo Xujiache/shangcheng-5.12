@@ -1,6 +1,7 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { customerApi } from '../../api/index'
 
-Page({
+MotionPage({
   data: {
     editing: false,
     id: '',
@@ -11,6 +12,7 @@ Page({
     note: '',
     canSave: false,
     saving: false,
+    loadingRecord: false,
     loadError: false, // 编辑模式加载失败：隐藏表单，避免把空表单保存覆盖客户资料
   },
 
@@ -25,6 +27,8 @@ Page({
   },
 
   async load() {
+    if (this.data.loadingRecord) return
+    this.setData({ loadingRecord: true, loadError: false })
     try {
       const c: any = await customerApi.get(this.data.id)
       this.setData(
@@ -40,6 +44,8 @@ Page({
     } catch (e) {
       // 加载失败必须挡住表单：空表单一旦保存会把客户资料覆盖为空（同目标页口径）
       this.setData({ loadError: true })
+    } finally {
+      this.setData({ loadingRecord: false })
     }
   },
   retry() {
@@ -63,6 +69,7 @@ Page({
   },
 
   async save() {
+    if (this.data.loadingRecord || this.data.loadError) return
     if (this.data.saving) return
     if (!this.data.canSave) {
       // 与登录/订单页同模式：禁用态点按给出缺什么的提示，而非静默无反馈
@@ -89,7 +96,7 @@ Page({
         })
       }
       wx.showToast({ title: editing ? '已保存' : '已新增', icon: 'success' })
-      setTimeout(() => wx.navigateBack(), 500)
+      setTimeout(() => navigation.navigateBack(), 500)
     } catch (e) {
       this.setData({ saving: false }) // 失败允许重试
     }

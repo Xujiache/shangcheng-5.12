@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="rp tab-page {{tabMotion ? 'tab-page--motion-b' : 'tab-page--motion-a'}}" style="{{glassCard}}">
+<view class="rp tab-page lz-route-scene {{_routeMotion}}" style="{{glassCard}}">
   <lz-header title="经营报表" subtitle="{{headerSubtitle}}" back="{{false}}" />
 
   <view class="lz-page lz-page--pad-bottom">
@@ -14,6 +14,7 @@
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
 
+    <lz-skeleton wx:elif="{{loading}}" variant="dashboard" />
     <!-- ===== 利润统计 ===== -->
     <block wx:elif="{{tab === 'profit'}}">
       <view class="lz-card lz-card--glow rp__hero">
@@ -114,3 +115,5 @@
     </block>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

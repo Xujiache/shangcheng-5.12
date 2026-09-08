@@ -1,3 +1,4 @@
+import { MotionPage } from '../../utils/page-transition'
 interface DocSection {
   h: string
   p: string[]
@@ -95,7 +96,7 @@ const DOCS: Record<string, DocEntry> = {
   },
 }
 
-Page({
+MotionPage({
   data: {
     title: '协议正文',
     updated: '',

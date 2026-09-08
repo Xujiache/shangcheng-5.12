@@ -1,0 +1,69 @@
+.route-feedback {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 140ms ease,
+    visibility 140ms ease;
+}
+.route-feedback--visible {
+  opacity: 1;
+  visibility: visible;
+}
+.route-feedback__track {
+  height: 2px;
+  overflow: hidden;
+  background: rgba(14, 124, 102, 0.06);
+}
+.route-feedback__light {
+  height: 100%;
+  width: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, transparent, #35ba97, #a5dec8);
+}
+.route-feedback--visible.route-feedback--moving .route-feedback__light {
+  width: 32%;
+  transform: translateX(-110%);
+  animation: routeLight 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.route-feedback__note {
+  width: 126px;
+  margin: 10px auto 0;
+  padding: 8px 12px;
+  border: 1px solid #e1eee7;
+  border-radius: 24px;
+  background: #f6fbf8;
+  box-shadow: 0 4px 16px rgba(20, 85, 62, 0.06);
+  color: #527768;
+  font-size: 11px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.route-feedback__note--visible {
+  opacity: 1;
+}
+@keyframes routeLight {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(420%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-feedback,
+  .route-feedback__note {
+    transition: none;
+  }
+  .route-feedback--visible.route-feedback--moving .route-feedback__light {
+    animation: none;
+    transform: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}

@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { settingApi } from '../../api/index'
 import {
   DEFAULT_COST_CATEGORIES,
@@ -7,7 +8,7 @@ import {
   readCostCategories,
 } from '../../utils/cost-categories'
 
-Page({
+MotionPage({
   data: {
     categories: readCostCategories() as any[],
     loading: true,
@@ -129,7 +130,7 @@ Page({
         })
       }
       wx.showToast({ title: '分类已保存', icon: 'success' })
-      setTimeout(() => wx.navigateBack(), 450)
+      setTimeout(() => navigation.navigateBack(), 450)
     } catch {
       this.setData({ saving: false })
     }

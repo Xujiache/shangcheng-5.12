@@ -1,6 +1,7 @@
 @import './styles/tokens.wxss';
 @import './styles/animations.wxss';
 @import './styles/components.wxss';
+@import './styles/page-transition.wxss';
 
 /* 全局基础 */
 page {
@@ -33,17 +34,3 @@ button::after {
 /* 通用动画类 */
 .screen-fwd { animation: slideInR 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 .fade-in { animation: fadeIn 0.22s ease; }
-
-/* 四个底部 Tab 页统一进入节奏；通过 A/B class 切换让缓存页每次 onShow 都能重播。 */
-.tab-page--motion-a,
-.tab-page--motion-b {
-  backface-visibility: hidden;
-  animation: tabPageIn 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tab-page--motion-a,
-  .tab-page--motion-b {
-    animation: none;
-  }
-}

@@ -1,0 +1,621 @@
+<page-meta page-style="{{filterOpen||outputOpen?'overflow: hidden;':''}}" />
+<view class="wb reports {{section==='export'?'reports--export':''}} lz-route-scene {{_routeMotion}}">
+  <workbook-header title="记工报表" subtitle="统计、导出、备份与同步" back />
+  <view class="wb-body">
+    <view class="reports-main-tabs"
+      ><lz-segmented options="{{sectionOptions}}" value="{{section}}" bindchange="section"
+    /></view>
+    <view
+      wx:if="{{outputPath}}"
+      class="reports-output-reopen"
+      bindtap="openOutput"
+      aria-role="button"
+      ><workbook-icon name="check" size="14" color="accent" /><text>最近生成的文件</text
+      ><view>查看 / 分享 <workbook-icon name="chevron" size="14" /></view
+    ></view>
+    <block wx:if="{{section!=='data'}}">
+      <view class="reports-controls {{filterOpen?'reports-controls--open':''}}">
+        <view class="reports-period"
+          ><view
+            wx:for="{{periodOptions}}"
+            wx:key="value"
+            class="reports-period-option {{(filterOpen?draftPeriod:period)===item.value?'reports-period-option--active':''}}"
+            data-type="{{item.value}}"
+            bindtap="range"
+            hover-class="reports-tab-pressed"
+            aria-role="button"
+            aria-label="{{item.label}}{{(filterOpen?draftPeriod:period)===item.value?'，已选中':''}}"
+            ><text class="reports-period-label">{{item.label}}</text></view
+          ></view
+        >
+        <view class="reports-range"
+          ><workbook-icon name="calendar" size="13" color="muted" /><text wx:if="{{filterOpen}}"
+            >{{draft.from}}<block wx:if="{{rangePending||draft.from!==draft.to}}"> 至 {{rangePending?'待选择':draft.to}}</block></text
+          ><text wx:else>{{from===to?from:from+' 至 '+to}}</text></view
+        >
+        <view class="records-filter-bar reports-filter-bar">
+          <view
+            class="records-filter-tab {{workerIndex||(filterOpen&&filterGroup==='workers')?'records-filter-tab--active':''}} {{filterOpen&&filterGroup==='workers'?'records-filter-tab--open':''}}"
+            data-group="workers"
+            bindtap="openFilter"
+            aria-role="button"
+            ><text>工人</text
+            ><view class="records-filter-arrow"
+              ><workbook-icon name="{{filterOpen&&filterGroup==='workers'?'arrow-up':'arrow-down'}}" size="14" /></view
+          ></view>
+          <view
+            class="records-filter-tab {{projectIndex||(filterOpen&&filterGroup==='projects')?'records-filter-tab--active':''}} {{filterOpen&&filterGroup==='projects'?'records-filter-tab--open':''}}"
+            data-group="projects"
+            bindtap="openFilter"
+            aria-role="button"
+            ><text>工地</text
+            ><view class="records-filter-arrow"
+              ><workbook-icon name="{{filterOpen&&filterGroup==='projects'?'arrow-up':'arrow-down'}}" size="14" /></view
+          ></view>
+          <view
+            class="records-filter-tab {{period==='custom'||(filterOpen&&filterGroup==='date')?'records-filter-tab--active':''}} {{filterOpen&&filterGroup==='date'?'records-filter-tab--open':''}}"
+            data-group="date"
+            bindtap="openFilter"
+            aria-role="button"
+            ><text>日期</text
+            ><view class="records-filter-arrow"
+              ><workbook-icon name="{{filterOpen&&filterGroup==='date'?'arrow-up':'arrow-down'}}" size="14" /></view
+          ></view>
+        </view>
+      </view>
+      <view wx:if="{{filterTags.length}}" class="records-filter-tags"
+        ><view
+          wx:for="{{filterTags}}"
+          wx:key="key"
+          class="records-filter-tag"
+          data-key="{{item.key}}"
+          bindtap="removeFilter"
+          aria-role="button"
+          aria-label="移除筛选：{{item.label}}"
+          ><text class="records-filter-tag__label">{{item.label}}</text
+          ><workbook-icon name="close" size="12" color="accent" /></view
+      ></view>
+    </block>
+    <block wx:if="{{section==='stats'}}">
+      <view class="reports-overview">
+        <view class="reports-card-heading"
+          ><text>工资概览</text><text class="reports-small">{{recordCount}} 笔记工</text></view
+        >
+        <view class="reports-amount-label">期间应计工资 <text>含补差</text></view>
+        <view class="reports-amount">{{earned}}</view>
+        <view class="reports-metrics">
+          <view
+            ><view class="reports-metric-label">期间已付</view
+            ><view class="reports-metric-value">{{paid}}</view></view
+          >
+          <view
+            ><view class="reports-metric-label">累计已结算</view
+            ><view class="reports-metric-value">{{settled}}</view></view
+          >
+          <view
+            ><view class="reports-metric-label">累计待付</view
+            ><view class="reports-metric-value reports-metric-value--due"
+              >{{due}}</view
+            ></view
+          >
+          <view
+            ><view class="reports-metric-label">未抵扣借支</view
+            ><view class="reports-metric-value">{{advance}}</view></view
+          >
+        </view>
+        <view class="reports-quantities"
+          ><view><text>{{days}}</text>工天</view
+          ><view><text>{{hours}}</text>工时（含加班）</view
+          ><view><text>{{pieces}}</text>计件数量</view></view
+        >
+        <view class="reports-note">结算及待付为累计金额；借支按人员累计，不受日期与工地限制。</view>
+      </view>
+      <view class="reports-card reports-breakdown"
+        ><view class="reports-breakdown-tabs"
+          ><view
+            wx:for="{{reportOptions}}"
+            wx:key="value"
+            class="reports-breakdown-tab {{reportTab===item.value?'reports-breakdown-tab--active':''}}"
+            data-value="{{item.value}}"
+            bindtap="reportTab"
+            hover-class="reports-tab-pressed"
+            aria-role="button"
+            aria-label="{{item.label}}{{reportTab===item.value?'，已选中':''}}"
+            >{{item.label}}</view
+          ></view
+        >
+        <block wx:if="{{reportTab==='people'}}">
+          <view wx:if="{{people.length}}" class="reports-table-caption"
+            ><text>{{people.length}} 位工人</text><text>应计工资</text></view
+          >
+          <view wx:for="{{people}}" wx:key="id" class="reports-person">
+            <view class="reports-person__head"
+              ><view class="reports-avatar">{{item.initial}}</view
+              ><text class="reports-person__name">{{item.name}}</text
+              ><text class="reports-row-amount">{{item.amount}}</text></view
+            >
+            <view class="reports-person__foot"
+              ><text>累计待付 {{item.due}}</text><text>未抵扣借支 {{item.advance}}</text></view
+            >
+          </view>
+          <view wx:if="{{!people.length}}" class="reports-empty"
+            ><workbook-icon name="labor" size="28" color="faint" /><view>暂无工人档案</view
+            ><text>先添加工人，工资会自动汇总到这里</text></view
+          >
+        </block>
+        <block wx:elif="{{reportTab==='sites'}}">
+          <view wx:if="{{sites.length}}" class="reports-table-caption"
+            ><text>{{sites.length}} 个工地</text><text>仅记工，不含补差</text></view
+          >
+          <view wx:for="{{sites}}" wx:key="id" class="reports-site-row"
+            ><view class="reports-site-name"
+              ><workbook-icon name="project" size="16" color="muted" /><text
+                >{{item.name}}</text
+              ></view
+            ><text class="reports-row-amount">{{item.amount}}</text></view
+          >
+          <view wx:if="{{!sites.length}}" class="reports-empty"
+            ><workbook-icon name="project" size="28" color="faint" /><view
+              >当前范围暂无工地支出</view
+            ><text>记工时选择工地，即可按项目查看</text></view
+          >
+        </block>
+        <block wx:else>
+          <view wx:if="{{trend.length}}" class="reports-table-caption"
+            ><text>每日应计</text><text>按记工日期，不含补差</text></view
+          >
+          <view wx:for="{{trend}}" wx:key="date" class="reports-trend"
+            ><view class="reports-trend__label"
+              ><text>{{item.date}}</text><text>{{item.amount}}</text></view
+            ><view class="wb-bar"><view style="width: {{item.width}}%" /></view
+          ></view>
+          <view wx:if="{{!trend.length}}" class="reports-empty"
+            ><workbook-icon name="trend" size="28" color="faint" /><view>暂无工资趋势</view
+            ><text>有记工记录后，将按日期展示变化</text></view
+          >
+        </block>
+      </view>
+    </block>
+    <block wx:elif="{{section==='export'}}">
+      <view class="reports-card reports-export-sheet">
+        <view class="reports-export-preview">
+          <view class="reports-export-preview-heading"
+            ><view class="reports-export-document"
+              ><workbook-icon name="profit" size="24" color="accent" /></view
+            ><view class="reports-export-heading-main"
+              ><view class="reports-export-name">{{exportTitle}}</view></view
+            ><text class="reports-free">免费</text></view
+          >
+          <view class="reports-export-scope">{{exportScope}}</view>
+          <view class="reports-export-totals"
+            ><view
+              ><text class="reports-export-stat-label">记工记录</text
+              ><view class="reports-export-count">{{recordCount}}<text> 笔</text></view></view
+            ><view class="reports-export-earned"
+              ><text class="reports-export-stat-label">期间应计 · 含补差</text
+              ><view>{{earned}}</view></view
+            ></view
+          >
+        </view>
+        <view class="reports-export-format-heading"
+          ><text>文件格式</text><text>请选择一种</text></view
+        >
+        <view class="reports-export-formats">
+          <button
+            wx:for="{{exportFormats}}"
+            wx:key="value"
+            class="reports-export-choice {{exportFormat===item.value?'reports-export-choice--active':''}}"
+            style="width: 100%"
+            disabled="{{busy}}"
+            data-value="{{item.value}}"
+            bindtap="selectExportFormat"
+            aria-label="{{item.label}}{{exportFormat===item.value?'，已选中':''}}"
+          >
+            <view class="reports-export-choice-icon"
+              ><workbook-icon name="{{item.icon}}" size="19" color="accent"
+            /></view>
+            <view class="reports-export-choice-copy"
+              ><text>{{item.label}}</text><text>{{item.description}}</text></view
+            >
+            <view class="reports-export-radio"
+              ><workbook-icon wx:if="{{exportFormat===item.value}}" name="check" size="12" color="#ffffff"
+            /></view>
+          </button>
+        </view>
+        <view wx:if="{{!recordCount}}" class="reports-export-empty-hint"
+          >当前范围暂无记工，仍可导出汇总及相关账目。</view
+        >
+        <button
+          class="reports-btn reports-export-submit"
+          style="width: 100%"
+          bindtap="exportSelected"
+          disabled="{{busy}}"
+        >
+          <view wx:if="{{busy}}" class="wb-generated-loading"
+            ><workbook-icon name="loading" size="16" /></view
+          ><workbook-icon wx:else name="download" size="19" />
+          <block wx:if="{{busy}}">正在生成…</block>
+          <block wx:else>生成 {{exportFormatLabel}}</block>
+        </button>
+        <view class="reports-export-privacy"
+          ><workbook-icon name="shield" size="12" color="muted" /><text
+            >本机生成 · 无需登录 · 分享前请核对工资信息</text
+          ></view
+        >
+      </view>
+    </block>
+    <block wx:else>
+      <view class="reports-local"
+        ><workbook-icon name="shield" size="16" color="accent" /><text>{{identity}}</text></view
+      >
+      <view class="reports-card">
+        <view class="reports-card-heading">本机备份<text class="reports-free">完整免费</text></view>
+        <view class="reports-description"
+          >包含档案、记工、结算、付款及凭证。备份含私人信息，请妥善保存。</view
+        >
+        <view class="reports-actions"
+          ><button
+            class="reports-btn"
+            style="width: 0; flex: 1"
+            disabled="{{busy}}"
+            data-type="backup"
+            bindtap="export"
+          >
+            导出完整备份</button
+          ><button
+            class="reports-btn reports-btn--soft"
+            style="width: 0; flex: 1"
+            disabled="{{busy}}"
+            bindtap="import"
+          >
+            导入备份
+          </button></view
+        >
+      </view>
+      <view class="reports-card">
+        <view class="reports-card-heading"
+          ><text>云端同步<text class="reports-member">会员功能</text></text
+          ><button
+            class="reports-switch"
+            style="width: auto"
+            disabled="{{busy}}"
+            bindtap="enableCloud"
+          >
+            {{cloudEnabled?'关闭同步':'开启同步'}}
+          </button></view
+        >
+        <view class="reports-sync-status"
+          ><view class="reports-status-dot {{cloudEnabled?'reports-status-dot--on':''}}"></view
+          ><text>{{cloudEnabled?'已开启':'未开启'}} · {{pending}} 次操作待同步</text></view
+        >
+        <view class="reports-description"
+          >仅主动开启后上传。会员到期不影响本机记工，仍可手动取回云端历史。</view
+        >
+        <view class="reports-actions"
+          ><button
+            class="reports-btn reports-btn--soft"
+            style="width: 0; flex: 1"
+            disabled="{{busy}}"
+            bindtap="sync"
+          >
+            立即同步</button
+          ><button
+            class="reports-btn reports-btn--soft"
+            style="width: 0; flex: 1"
+            disabled="{{busy}}"
+            bindtap="pull"
+          >
+            取回云端历史
+          </button></view
+        >
+      </view>
+      <view class="reports-card reports-breakdown"
+        ><view class="reports-breakdown-tabs"
+          ><view
+            wx:for="{{dataOptions}}"
+            wx:key="value"
+            class="reports-breakdown-tab {{dataTab===item.value?'reports-breakdown-tab--active':''}}"
+            data-value="{{item.value}}"
+            bindtap="dataTab"
+            hover-class="reports-tab-pressed"
+            aria-role="button"
+            aria-label="{{item.label}}{{dataTab===item.value?'，已选中':''}}"
+            >{{item.label}}</view
+          ></view
+        >
+        <block wx:if="{{dataTab==='trash'}}">
+          <view class="reports-card-heading"
+            >回收站<text class="reports-small">{{trash.length}} 条</text></view
+          >
+          <view wx:for="{{trash}}" wx:key="id" class="reports-manage-row"
+            ><view class="reports-manage-main"
+              ><view>{{item.name}} · {{item.amount}}</view
+              ><text>{{item.workDate}}</text></view
+            ><button
+              class="reports-small-btn"
+              style="width: auto"
+              data-id="{{item.id}}"
+              data-collection="{{item.collection}}"
+              bindtap="restore"
+              disabled="{{busy}}"
+            >
+              恢复
+            </button></view
+          >
+          <view wx:if="{{!trash.length}}" class="reports-empty"
+            ><workbook-icon name="trash" size="25" color="faint" /><view>回收站是空的</view></view
+          >
+        </block>
+        <block wx:elif="{{dataTab==='history'}}">
+          <view class="reports-card-heading">变更记录</view
+          ><view class="reports-description">最近 100 次本机操作，完整历史随备份保留。</view>
+          <view
+            wx:for="{{history}}"
+            wx:key="id"
+            class="reports-manage-row"
+            data-id="{{item.id}}"
+            bindtap="historyDetail"
+            ><view class="reports-manage-main"
+              ><view>{{item.label}}</view
+              ><text>{{item.time}} · {{item.count}} 条变更</text></view
+            ><workbook-icon name="chevron" size="14" color="faint"
+          /></view>
+          <view wx:if="{{!history.length}}" class="reports-empty"
+            ><workbook-icon name="clock" size="25" color="faint" /><view>暂无操作记录</view></view
+          >
+        </block>
+        <block wx:else>
+          <view class="reports-card-heading">常用模板</view>
+          <view wx:for="{{templates}}" wx:key="id" class="reports-manage-row"
+            ><text class="reports-manage-main">{{item.name}}</text
+            ><button
+              class="reports-small-btn reports-small-btn--danger"
+              style="width: auto"
+              data-id="{{item.id}}"
+              bindtap="deleteTemplate"
+              disabled="{{busy}}"
+            >
+              删除
+            </button></view
+          >
+          <view wx:if="{{!templates.length}}" class="reports-empty"
+            ><workbook-icon name="template" size="25" color="faint" /><view>暂无常用模板</view
+            ><text>可在记工表单中保存常用模板</text></view
+          >
+        </block>
+      </view>
+    </block>
+    <view wx:if="{{error}}" class="reports-card"
+      ><view class="wb-error">{{error}}</view
+      ><button
+        wx:if="{{cloudError}}"
+        class="reports-btn reports-btn--danger"
+        style="width: 100%; margin-top: 12px"
+        disabled="{{busy}}"
+        bindtap="restoreCloud"
+      >
+        备份本机后恢复云端版本
+      </button></view
+    >
+    <view wx:if="{{busy}}" class="wb-warn">正在处理，请暂勿切换账号或关闭小程序…</view>
+  </view>
+  <block wx:if="{{filterOpen}}">
+    <view
+      class="records-filter-mask reports-filter-mask"
+      bindtap="closeFilter"
+      catchtouchmove="noop"
+    ></view>
+    <view
+      class="records-filter-panel reports-filter-panel"
+      style="top: {{filterTop}}px; height: {{panelHeight}}px; left: {{filterLeft}}px; width: {{filterWidth?filterWidth+'px':'calc(100% - 36px)'}};"
+      catchtap="noop"
+    >
+      <scroll-view
+        scroll-y
+        enhanced
+        show-scrollbar="{{false}}"
+        class="records-filter-scroll"
+        ><view class="records-filter-content">
+          <block wx:if="{{filterGroup==='date'}}">
+            <view class="reports-range-heading"
+              ><text>自定义日期</text
+              ><text class="reports-range-badge">{{rangePending?'选择结束日期':rangeDays+' 天'}}</text></view
+            >
+            <view class="reports-range-shortcuts">
+              <view data-type="recent7" bindtap="draftRange" hover-class="reports-tab-pressed"
+                >近 7 天</view
+              >
+              <view data-type="recent30" bindtap="draftRange" hover-class="reports-tab-pressed"
+                >近 30 天</view
+              >
+              <view data-type="previousMonth" bindtap="draftRange" hover-class="reports-tab-pressed"
+                >上个月</view
+              >
+            </view>
+            <view class="reports-range-endpoints">
+              <picker
+                mode="date"
+                start="1900-01-01"
+                end="2199-12-31"
+                value="{{draft.from}}"
+                data-field="from"
+                bindchange="draftDate"
+                ><view class="reports-range-endpoint"
+                  ><text class="reports-range-caption">开始日期</text
+                  ><text>{{draft.from}}</text></view
+                ></picker
+              >
+              <text class="reports-range-dash">至</text>
+              <picker
+                mode="date"
+                start="1900-01-01"
+                end="2199-12-31"
+                value="{{draft.to}}"
+                data-field="to"
+                bindchange="draftDate"
+                ><view class="reports-range-endpoint {{rangePending?'reports-range-endpoint--pending':''}}"
+                  ><text class="reports-range-caption">结束日期</text
+                  ><text>{{rangePending?'待选择':draft.to}}</text></view
+                ></picker
+              >
+            </view>
+            <view class="reports-range-month">
+              <view
+                class="reports-range-nav"
+                data-step="-1"
+                bindtap="calendarMove"
+                aria-role="button"
+                aria-label="上个月"
+                ><workbook-icon name="back" size="20"
+              /></view>
+              <picker
+                mode="date"
+                fields="month"
+                start="1900-01"
+                end="2199-12"
+                value="{{calendarMonth}}"
+                bindchange="calendarMonthChange"
+                ><view class="reports-range-month-title"
+                  >{{calendarMonth}}<view class="records-filter-arrow"
+                    ><workbook-icon name="arrow-down" size="14" /></view></view
+              ></picker>
+              <view
+                class="reports-range-nav"
+                data-step="1"
+                bindtap="calendarMove"
+                aria-role="button"
+                aria-label="下个月"
+                ><workbook-icon name="chevron" size="20"
+              /></view>
+            </view>
+            <view class="reports-range-week"
+              ><text wx:for="{{calendarWeek}}" wx:key="*this">{{item}}</text></view
+            >
+            <view class="reports-range-grid">
+              <block wx:for="{{calendarCells}}" wx:key="id">
+                <view wx:if="{{!item.date}}" class="reports-range-cell"></view>
+                <view
+                  wx:else
+                  class="reports-range-cell {{item.between?'reports-range-cell--between':''}} {{item.start?'reports-range-cell--start':''}} {{item.end?'reports-range-cell--end':''}} {{item.start&&item.end?'reports-range-cell--single':''}}"
+                  data-date="{{item.date}}"
+                  bindtap="calendarDay"
+                  aria-role="button"
+                  aria-label="{{item.date}}{{item.start?'，开始日期':''}}{{item.end&&!rangePending?'，结束日期':''}}"
+                >
+                  <text class="reports-range-number {{item.today?'reports-range-number--today':''}} {{item.start||item.end?'reports-range-number--selected':''}}"
+                    >{{item.day}}</text
+                  >
+                </view>
+              </block>
+            </view>
+            <view class="reports-range-tip">{{rangePending?'再点一天作为结束日期':'点选起止日期，可跨月选择'}}</view>
+            <view wx:if="{{filterError}}" class="records-filter-error">{{filterError}}</view>
+            <view class="reports-range-accounting">累计待付和未抵扣借支不按日期截断。</view>
+          </block>
+          <block wx:else>
+            <view class="records-filter-label">{{filterGroup==='workers'?'选择工人':'选择工地'}}</view>
+            <view class="records-filter-search"
+              ><workbook-icon name="search" size="17" color="muted" /><input
+                value="{{optionSearch}}"
+                bindinput="optionField"
+                bindkeyboardheightchange="keyboard"
+                bindblur="keyboardBlur"
+                adjust-position="{{false}}"
+                maxlength="60"
+                placeholder="搜索名称 / 编号"
+                placeholder-class="records-filter-placeholder"
+            /></view>
+            <view class="records-filter-choices"
+              ><view
+                wx:for="{{choices}}"
+                wx:key="index"
+                class="records-filter-choice {{(filterGroup==='workers'?draft.workerIndex:draft.projectIndex)===item.index?'records-filter-choice--active':''}}"
+                data-index="{{item.index}}"
+                bindtap="chooseOption"
+                ><text class="records-filter-choice__name">{{item.name}}</text
+                ><text wx:if="{{item.code}}" class="records-filter-choice__code"
+                  >{{item.code}}</text
+                ></view
+              ></view
+            >
+            <view wx:if="{{choices.length===1&&optionSearch}}" class="records-filter-note"
+              >没有匹配项，请修改搜索词</view
+            >
+          </block>
+        </view></scroll-view
+      >
+      <view class="records-filter-footer" catchtouchmove="noop"
+        ><button class="records-filter-reset" style="width: 52px" bindtap="resetFilter">
+          <workbook-icon name="reset" size="18" color="muted" /><text>重置</text></button
+        ><button
+          class="records-filter-apply"
+          style="width: 0; flex: 1"
+          bindtap="applyFilter"
+          disabled="{{!!filterError||rangePending}}"
+        >
+          {{rangePending?'请选择结束日期':(filterGroup==='date'?'确定区间（'+rangeDays+'天）':'确定筛选')}}
+        </button></view
+      >
+    </view>
+  </block>
+  <view
+    wx:if="{{outputOpen}}"
+    class="reports-output-overlay"
+    catchtouchmove="noop"
+    bindtap="closeOutput"
+  >
+    <view class="reports-output-dialog" catchtap="noop" aria-role="dialog" aria-label="文件已生成">
+      <view class="reports-output-dialog-heading"
+        ><view class="reports-output-success"
+          ><workbook-icon name="check" size="22" color="accent" /></view
+        ><text>文件已生成</text
+        ><button
+          class="reports-output-close"
+          style="width: 32px"
+          disabled="{{outputSharing}}"
+          bindtap="closeOutput"
+          aria-label="关闭"
+        >
+          <workbook-icon name="close" size="18" color="muted" /></button
+      ></view>
+      <scroll-view scroll-y class="reports-output-details"
+        ><view class="reports-output-name">{{outputName}}</view
+        ><view class="reports-output-scope">{{outputScope}}</view
+        ><view class="reports-description"
+          >文件已在本机生成，请通过微信分享另存。备份包含私人信息，请妥善保管。</view
+        ><view wx:if="{{outputError}}" class="wb-error">{{outputError}}</view></scroll-view
+      >
+      <button class="reports-btn" style="width: 100%" bindtap="share" disabled="{{busy||outputSharing}}">
+        <view wx:if="{{outputSharing}}" class="wb-generated-loading"
+          ><workbook-icon name="loading" size="16"
+        /></view>
+        {{outputSharing?'正在打开…':'分享 / 保存文件'}}
+      </button>
+      <button
+        wx:if="{{images.length}}"
+        class="reports-btn reports-btn--soft"
+        style="width: 100%; margin-top: 8px"
+        bindtap="previewImages"
+        disabled="{{outputSharing}}"
+      >
+        查看 {{images.length}} 页报表图片
+      </button>
+      <button
+        class="reports-output-later"
+        style="width: 100%"
+        bindtap="closeOutput"
+        disabled="{{outputSharing}}"
+      >
+        稍后处理
+      </button>
+    </view>
+  </view>
+  <canvas
+    type="2d"
+    id="wb-export-canvas"
+    style="position: fixed; left: -2000px; top: 0; width: 1000px; height: 1414px"
+  />
+  <workbook-nav active="reports" />
+</view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

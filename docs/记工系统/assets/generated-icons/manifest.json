@@ -1,0 +1,242 @@
+[
+  {
+    "name": "home",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-652a2be9-aeab-4f26-b217-2bdf9462c3cf.png",
+    "prompt": "House icon generated from tool-icons-review.png style reference",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "calendar",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-afb10718-c7bf-4be3-91f2-6e284e0c2095.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. A compact calendar with two tiny golden binder rings, mint page and four large date squares, no numerals.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "labor",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-cf2c9ca9-60fd-4fd6-8ce2-d0ed690516c8.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. A stylized person bust, one round mint head and shoulders, tiny golden collar detail. No facial features, no surrounding circle.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "project",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-97533a03-ee26-4492-9a62-a4779aa7ea90.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. A miniature construction building, three floors with bold mint window openings and a small golden roof beam. A worksite, not a house.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "wallet",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-29776e24-29bb-471b-ade4-141eca18dc13.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. A mint wallet with rounded flap, one tiny gold snap, nothing else.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "profit",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-8e7ddf6e-27b5-4d55-a1ec-4e1cffd91270.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. A report clipboard bearing a simple three-bar chart; gold clip on top. This is the REPORTS navigation icon, distinguish from plain calendar.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "trend",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-24a02759-6cf3-4a6a-9fe7-0ec7f4ac4293.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. Three ascending mint bars with a clearly visible upward arrow and a small gold arrowhead, a compact statistics icon.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "back",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-907e05f8-5117-463f-8c1f-a0958fcc14b0.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE thick left-pointing chevron, like < but as one solid rounded mint shape, no stem, no circle. Subtle gold on lower tip. Very bold legible navigation glyph.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "chevron",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-ed58941a-1fba-4240-aed9-4562a9bc3e22.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE thick right-pointing chevron, like > but as one solid rounded mint shape, no stem, no circle. Subtle gold on lower tip. Very bold legible navigation glyph.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "arrow-down",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-63698e76-7c9c-4e2f-9f15-b49c6cdb9c51.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE thick downward-pointing V chevron, round mint arms, no stem, no container, only a subtle gold edge. Symmetric clear dropdown glyph.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "arrow-up",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-42dd2168-3f3a-44e7-bc7a-6d258a5c86a1.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE thick upward-pointing chevron, an inverted V, round mint arms, no stem, no container, only a subtle gold edge. Symmetric clear collapse glyph.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "plus",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-4e6e8253-f8fd-4c54-ba9b-7c1fff3c59b9.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE thick plus sign with four equal-length mint arms, rounded ends, subtle gold accent on one end, no circle. An ADD action glyph.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "minus",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-f1c5eb65-a986-4c55-98b5-3a288b7d9ae1.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE horizontal mint rounded bar, subtle gold accent on one end, no other objects, no circle. A minus/collapse action glyph.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "check",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-f3ae4874-3710-4f0c-90e2-b348c4d02d92.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE very bold thick mint check mark, curved rounded ends with a tiny gold accent at short tip. No enclosing box or circle, no other symbols.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "close",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-c3125133-c9dc-4891-994a-bebd17646409.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE bold mint X close glyph with equal diagonal arms and rounded ends. Tiny gold inset at one arm tip. No circle, no surrounding square.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "search",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-3ebca8e5-dac1-4c9e-ac73-64cfedd8fad6.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE mint magnifying glass: round thick rim, completely empty WHITE circular lens interior for clean transparency conversion, short handle extending down-right with tiny gold end. No glass reflections in the empty hole.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "trash",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-f064c7c4-34ad-401f-9166-82873d8b0c05.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE small mint trash bin with golden lid handle and two vertical groove details, readable at small size.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "phone",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-fe264e4d-ced0-475d-b58f-cb8c60e8bc07.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE mint telephone receiver diagonal, old-fashioned curved handset, small gold endcap, no phone screen, no extra symbols.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "pencil",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-c5a62d9b-3260-4a3f-b71f-ba1f60468828.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE chunky mint pencil tilted diagonally upward to right, golden writing point, no paper or box. An edit glyph.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "shield",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-18dfa7f4-e926-46dc-bebb-ac07b36685d6.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE mint security shield with a bold raised golden check mark on its face. Rounded silhouette, no circle. Private local-data safety icon.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "info",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-ccde7562-ec7a-45d3-a1b3-8a9858efe070.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE chunky lowercase information i in mint with a small golden dot, no enclosing circle or tile. This one letter is the icon, not a label.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "orders",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-a7244f50-6bb9-4a37-881e-019cc46d7b89.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE mint spreadsheet sheet with folded upper-right corner in pale gold and a simple visible 2-column 3-row embossed grid. No letters. A CSV table file icon.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "pdf",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-df2783a0-e09f-410d-ba5f-a5f697b3d18f.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE mint document with a gold folded corner and three bold raised cream-gold letters PDF across the center. Exception to no-text rule: ONLY exact text PDF, no other text. Distinct from spreadsheet grid.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "download",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-efefbe2a-d236-46cf-a2b0-6d4c3c30eee6.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE thick mint downward arrow above a shallow mint receiving tray, tiny gold tray accent. Download/export icon, not a chevron.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "camera",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-88467ef4-f1b7-4161-aebc-36e8d4af6b6c.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE compact mint camera body with a large circular teal lens and a small gold shutter button. No photo background or label.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "clock",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-e1429526-7c43-43b1-b3a8-73b8e013215b.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE round mint clock with a mint face, two bold golden hands showing about 10:10 and only four tiny hour tick marks. No numerals.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "template",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-6120ce03-2f0a-446a-a8c3-49c4292d2977.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. TWO slightly offset stacked mint form cards, front card with three thick mint horizontal raised lines and a small gold tab. Clearly a reusable template, not a chart or spreadsheet.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "reset",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-c8cff401-16e7-4491-9628-39318073d8c5.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE counterclockwise circular mint arrow forming three quarters of a circle with golden arrowhead pointing backwards. Hollow pure white center, reset/undo action, no circular tile.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "loading",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-bac24b7b-b487-48ad-bf3e-80b8a5e4f1d6.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE almost-complete thick rounded mint circular ring with one clean small gap at top, one golden rounded end at the gap. Empty pure white center, no arrowhead. Loading/progress icon.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  },
+  {
+    "name": "photo",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-808e561b-abf7-418a-be41-ae71022b2ce4.png",
+    "prompt": "Generate one isolated production UI icon for a mint-green workbook WeChat app. Reference is STYLE ONLY. Match the translucent mint/teal glass-clay 3D finish, rounded edges, subtle cream-gold accents and soft upper-left lighting, front-facing almost orthographic, clear bold silhouette legible at 20px. Center ONE object at 78% of a square image. FLAT PURE WHITE background #FFFFFF, NO checkerboard, NO background texture, NO floor shadow, no surrounding app tile, no labels, no text, no watermark, no extra unrelated ornaments. ONE mint framed picture icon with two simple rounded mountain shapes and a small golden sun. A picture/image file, not a camera, no labels.",
+    "tool": "built-in image_gen",
+    "model": "gpt-image 2.0 (PNG C2PA softwareAgent metadata)",
+    "reference": "docs/记工系统/assets/tool-icons-review.png"
+  }
+]

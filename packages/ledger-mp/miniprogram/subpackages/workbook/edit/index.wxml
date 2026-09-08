@@ -1,0 +1,235 @@
+<view class="wb lz-route-scene {{_routeMotion}}"
+  ><workbook-header title="{{id?'记工详情':'记一笔'}}" subtitle="本机完整免费 · 历史单价独立保存" back /><view
+    class="wb-body"
+    ><view wx:if="{{locked}}" class="wb-warn"
+      >这笔记工已结算，仅供查看。调整工资请前往结算页记补差，或先撤销原结算。</view
+    >
+    <view class="wb-card"
+      ><view class="wb-row"
+        ><text class="wb-label">选择工人 {{workerIds.length?'('+workerIds.length+')':''}}</text
+        ><view class="wb-link" bindtap="people"
+          ><workbook-icon name="plus" size="17" /> 管理档案</view
+        ></view
+      ><checkbox-group bindchange="chooseWorkers"
+        ><label wx:for="{{workers}}" wx:key="id" class="wb-check"
+          ><view class="wb-generated-checkbox"
+            ><checkbox
+              value="{{item.id}}"
+              checked="{{item.chosen}}"
+              disabled="{{locked || !!id}}"
+              color="#0e7c66" /><view class="wb-generated-checkbox-visual"
+              ><workbook-icon wx:if="{{item.chosen}}" name="check" size="18" /></view></view
+          ><view class="wb-flex"
+            >{{item.name}} <text class="wb-muted">{{item.jobType}} · #{{item.code}}</text></view
+          ><text class="wb-muted">{{item.rate}}</text></label
+        ></checkbox-group
+      ><view wx:if="{{!workers.length}}" class="wb-empty">先添加工人，即可开始记工</view
+      ><view wx:if="{{workerIds.length>1}}" class="wb-row"
+        ><text class="wb-muted">使用各工人默认单价及计薪方式</text
+        ><switch
+          checked="{{batchRates}}"
+          data-field="batchRates"
+          bindchange="toggle"
+          color="#0e7c66"
+      /></view>
+      <view class="wb-field"
+        ><text>所属工地</text
+        ><picker
+          range="{{projects}}"
+          range-key="name"
+          value="{{projectIndex}}"
+          data-field="projectIndex"
+          bindchange="picker"
+          disabled="{{locked}}"
+          ><view class="wb-select"
+            >{{projects[projectIndex].name}} <workbook-icon name="arrow-down" size="14" /></view></picker></view
+    ></view>
+    <view class="wb-card"
+      ><view class="wb-grid"
+        ><view class="wb-field"
+          ><text>记工日期</text
+          ><picker
+            mode="date"
+            value="{{form.date}}"
+            data-field="date"
+            bindchange="field"
+            disabled="{{locked}}"
+            ><view class="wb-select">{{form.date}}</view></picker
+          ></view
+        ><view class="wb-field"
+          ><text>出勤状态</text
+          ><picker
+            range="{{attendances}}"
+            value="{{attendanceIndex}}"
+            data-field="attendanceIndex"
+            bindchange="picker"
+            disabled="{{locked}}"
+            ><view class="wb-select"
+              >{{attendances[attendanceIndex]}}
+              <workbook-icon name="arrow-down" size="14" /></view></picker></view></view
+      ><view wx:if="{{!id}}" class="wb-actions"
+        ><button class="wb-btn wb-btn--soft wb-btn--small" bindtap="addDate">加入补记日期</button
+        ><button class="wb-btn wb-btn--soft wb-btn--small" bindtap="copyYesterday">
+          复制昨日
+        </button></view
+      ><view wx:if="{{form.dates}}" class="wb-field"
+        ><text>批量补记日期（逗号分隔）</text
+        ><textarea value="{{form.dates}}" data-field="dates" bindinput="field" maxlength="2000" />
+      </view>
+      <view class="wb-grid"
+        ><view class="wb-field"
+          ><text>计薪方式</text
+          ><picker
+            range="{{modes}}"
+            value="{{modeIndex}}"
+            data-field="modeIndex"
+            bindchange="picker"
+            disabled="{{locked}}"
+            ><view class="wb-select"
+              >{{modes[modeIndex]}} <workbook-icon name="arrow-down" size="14" /></view></picker></view
+        ><view class="wb-field"
+          ><text>{{modeIndex===3?'包工金额':'单价'}}（元）</text
+          ><input
+            type="digit"
+            value="{{form.rate}}"
+            data-field="rate"
+            bindinput="field"
+            disabled="{{locked}}" /></view></view
+      ><view wx:if="{{modeIndex!==3}}" class="wb-field"
+        ><text>{{modes[modeIndex]}}数量</text
+        ><input
+          type="digit"
+          value="{{form.quantity}}"
+          data-field="quantity"
+          bindinput="field"
+          disabled="{{locked}}" /></view
+      ><view wx:if="{{modeIndex===0 && !locked}}" class="wb-chips"
+        ><view class="wb-chip" data-value="0.5" bindtap="quick">半天 0.5</view
+        ><view class="wb-chip" data-value="1" bindtap="quick">全天 1</view
+        ><view class="wb-chip" data-value="1.5" bindtap="quick">1.5 天</view></view
+      ><view wx:if="{{attendanceIndex!==0}}" class="wb-muted"
+        >非出工状态不产生基础工资或加班工资；有薪项目请在补贴或奖金中明确填写。</view
+      >
+      <view class="wb-sep" /><view class="wb-row" bindtap="advanced"
+        ><text class="wb-label">加班、奖扣与备注</text
+        ><view class="wb-inline-action"
+          ><text>{{advanced?'收起':'展开'}}</text
+          ><workbook-icon name="{{advanced?'minus':'plus'}}" size="16" /></view></view
+      ><block wx:if="{{advanced}}"
+        ><view class="wb-grid"
+          ><view class="wb-field"
+            ><text>加班小时</text
+            ><input
+              type="digit"
+              value="{{form.overtimeQuantity}}"
+              data-field="overtimeQuantity"
+              bindinput="field"
+              disabled="{{locked}}" /></view
+          ><view class="wb-field"
+            ><text>加班时薪（元）</text
+            ><input
+              type="digit"
+              value="{{form.overtimeRate}}"
+              data-field="overtimeRate"
+              bindinput="field"
+              disabled="{{locked}}" /></view
+          ><view class="wb-field"
+            ><text>奖金（元）</text
+            ><input
+              type="digit"
+              value="{{form.bonus}}"
+              data-field="bonus"
+              bindinput="field"
+              disabled="{{locked}}" /></view
+          ><view class="wb-field"
+            ><text>补贴（元）</text
+            ><input
+              type="digit"
+              value="{{form.subsidy}}"
+              data-field="subsidy"
+              bindinput="field"
+              disabled="{{locked}}" /></view
+          ><view class="wb-field"
+            ><text>扣款（元）</text
+            ><input
+              type="digit"
+              value="{{form.deduction}}"
+              data-field="deduction"
+              bindinput="field"
+              disabled="{{locked}}" /></view
+          ><view class="wb-field"
+            ><text>标签 / 班次</text
+            ><input
+              value="{{form.tags}}"
+              data-field="tags"
+              bindinput="field"
+              maxlength="100"
+              disabled="{{locked}}" /></view></view
+        ><view class="wb-field"
+          ><text>备注</text
+          ><textarea
+            value="{{form.note}}"
+            data-field="note"
+            bindinput="field"
+            maxlength="500"
+            disabled="{{locked}}"
+          /></view></block
+    ></view>
+    <view class="wb-card"
+      ><view class="wb-row"
+        ><text class="wb-label">凭证图片（{{proofs.length}}/9）</text
+        ><view wx:if="{{!locked && proofs.length<9}}" class="wb-link" bindtap="addProof"
+          ><workbook-icon name="camera" size="20" /> 添加</view
+        ></view
+      ><view class="wb-actions"
+        ><view wx:for="{{proofs}}" wx:key="id"
+          ><image
+            src="{{item.path}}"
+            class="wb-proof"
+            mode="aspectFill"
+            data-id="{{item.id}}"
+            bindtap="viewProof"
+          /><view
+            wx:if="{{!locked}}"
+            class="wb-muted"
+            data-id="{{item.id}}"
+            bindtap="removeProof"
+            >移除</view
+          ></view
+        ></view
+      ><view class="wb-muted">只保存在本机；开启会员云同步后才上传私有凭证。</view></view
+    >
+    <view class="wb-card"
+      ><view class="wb-row"
+        ><text class="wb-muted">单人单日预览</text
+        ><text class="wb-title">{{amount}}</text></view
+      ><view wx:if="{{workerIds.length>1 && batchRates}}" class="wb-muted"
+        >批量保存时按各工人档案单价计算，以最终明细为准。</view
+      ><block wx:if="{{!locked}}"
+        ><view class="wb-actions"
+          ><button class="wb-btn" disabled="{{saving}}" bindtap="save">
+            <view wx:if="{{saving}}" class="wb-generated-loading"
+              ><workbook-icon name="loading" size="16" /></view
+            >{{saving?'保存中…':'保存到本机'}}
+          </button></view
+        ><view wx:if="{{!id}}" class="wb-actions"
+          ><picker range="{{templates}}" range-key="name" bindchange="useTemplate"
+            ><view class="wb-chip"
+              >套用模板 <workbook-icon name="arrow-down" size="14" /></view></picker
+          ><button class="wb-btn wb-btn--soft wb-btn--small" bindtap="saveTemplate">
+            存为模板
+          </button></view
+        ><button
+          wx:if="{{id}}"
+          class="wb-btn wb-btn--danger"
+          style="margin-top: 12px"
+          bindtap="remove"
+        >
+          移入回收站
+        </button></block
+      ></view
+    >
+  </view></view
+>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

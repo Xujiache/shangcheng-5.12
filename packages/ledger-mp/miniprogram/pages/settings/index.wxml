@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="st">
+<view class="st lz-route-scene {{_routeMotion}}">
   <lz-header title="设置" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -24,3 +24,5 @@
     </view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

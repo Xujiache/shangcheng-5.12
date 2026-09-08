@@ -1,8 +1,8 @@
 <lz-bg />
-<view class="inv">
+<view class="inv lz-route-scene {{_routeMotion}}">
   <lz-header title="邀请好友" subtitle="好友首次微信登录即生效" />
   <view class="lz-page">
-    <view wx:if="{{loading}}" class="lz-empty">加载中…</view>
+    <lz-skeleton wx:if="{{loading}}" variant="detail" />
     <!-- 加载失败（网络等）：带重试，不渲染空邀请码的复制/分享 -->
     <view wx:elif="{{loadError}}" class="lz-card" style="text-align: center;">
       <view class="lz-muted" style="font-size: 14px; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
@@ -61,3 +61,5 @@
   </view>
   <canvas type="2d" id="shareCover" class="share-cover-cv"></canvas>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

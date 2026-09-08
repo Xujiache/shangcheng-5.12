@@ -985,6 +985,9 @@ model LedgerUser {
   cutPlans      LedgerCutPlan[]
   payments      LedgerPaymentOrder[]
   workLogs      LedgerWorkLog[]
+  workbook      LedgerWorkbook?
+  workbookOperations LedgerWorkbookOperation[]
+  workbookAttachments LedgerWorkbookAttachment[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
@@ -1182,6 +1185,42 @@ model LedgerWorkLog {
   updatedAt DateTime   @updatedAt
 
   @@index([userId, workDate])
+}
+
+// Workbook is an account-scoped transactional document. All entity references and
+// financial invariants are validated by the identical native/server domain module.
+model LedgerWorkbook {
+  userId    String   @id
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revision  Int      @default(0)
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model LedgerWorkbookOperation {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  user        LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operationId String
+  revision    Int
+  digest      String
+  operation   Json
+  createdAt   DateTime @default(now())
+  @@unique([userId, operationId])
+  @@index([userId, revision])
+}
+
+// Never published to the public avatar/CDN bucket. Download requires ledger JWT.
+model LedgerWorkbookAttachment {
+  id        String
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mime      String
+  size      Int
+  digest    String
+  content   Bytes
+  createdAt DateTime @default(now())
+  @@id([userId, id])
 }
 
 // 首页广告 banner（#2）。后台 admin-pc 维护，App 首页轮播。

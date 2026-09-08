@@ -458,3 +458,10 @@
   color: var(--muted);
   line-height: 1.9;
 }
+
+/* Workbook: compact four-tool entrance */
+.home__tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;background:#fff;border:1px solid var(--border);border-radius:18px;padding:12px 4px;margin-bottom:16px;box-shadow:var(--shadow-soft)}
+.home__tool-card{min-height:92px;border:0!important;border-radius:12px;padding:4px 0;box-shadow:none!important;background:transparent!important;gap:0}
+.home__tool-icon,.home__tool-icon--c2,.home__tool-icon--c3,.home__tool-icon--c4{width:48px;height:48px;background:transparent!important;border:0;box-shadow:none}
+.home__tool-image{width:48px;height:48px;display:block}.home__tool-t{font-size:13px;line-height:20px;margin-top:6px;font-weight:700}.home__tool-s{font-size:10px;line-height:16px;margin-top:1px;color:var(--muted)}
+.home__tool-head{font-size:13px;margin:0 0 10px;color:var(--muted);font-weight:600}.home__guest-intro{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px 20px}.home__guest-title{font-size:19px;font-weight:750;color:var(--text)}.home__guest-text{font-size:13px;line-height:1.9;color:var(--muted);margin-top:10px}.home__guest-link{font-size:13px;color:var(--accent);margin-top:20px;font-weight:650}

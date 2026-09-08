@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="ep">
+<view class="ep lz-route-scene {{_routeMotion}}">
   <lz-header title="编辑资料" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -66,3 +66,5 @@
     </button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

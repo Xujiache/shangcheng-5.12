@@ -1,0 +1,512 @@
+[
+  {
+    "name": "home",
+    "source": "docs\\记工系统\\assets\\generated-icons\\home-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\home.png",
+    "sourceSha256": "29deb79b8191bea49d15a9a33f346c801fdddf4ee662250f27dd2ed3e473ee80",
+    "sha256": "93b88662026ad7659aa5576f4eb31cf50617eb1fb2eb6c5dbf7beaaff6ae9abe",
+    "width": 128,
+    "height": 128,
+    "bytes": 7542,
+    "removedBackgroundPixels": 1087799,
+    "crop": {
+      "left": 212,
+      "top": 215,
+      "width": 830,
+      "height": 794
+    }
+  },
+  {
+    "name": "calendar",
+    "source": "docs\\记工系统\\assets\\generated-icons\\calendar-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\calendar.png",
+    "sourceSha256": "d381b9027c5f853160ffa9fbde1c3d916a4a552c11a5b38647a4eb1087700ba6",
+    "sha256": "e9c89edbe43181c45587697fd05b0affe19b6c850f88cdbede934c886d5d7b6c",
+    "width": 128,
+    "height": 128,
+    "bytes": 7382,
+    "removedBackgroundPixels": 1106788,
+    "crop": {
+      "left": 293,
+      "top": 233,
+      "width": 667,
+      "height": 763
+    }
+  },
+  {
+    "name": "labor",
+    "source": "docs\\记工系统\\assets\\generated-icons\\labor-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\labor.png",
+    "sourceSha256": "d3d368f8c8c4f3f1ee646b8f690382c23fde08bb70743f6ac3b5fb2bfd4528a3",
+    "sha256": "7ac4f51b0ceb97a002b7c193903d74907c2726feb2cf7cf2a411842cb86a582d",
+    "width": 128,
+    "height": 128,
+    "bytes": 7694,
+    "removedBackgroundPixels": 1203190,
+    "crop": {
+      "left": 268,
+      "top": 242,
+      "width": 712,
+      "height": 768
+    }
+  },
+  {
+    "name": "project",
+    "source": "docs\\记工系统\\assets\\generated-icons\\project-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\project.png",
+    "sourceSha256": "e7b87a1fa86016a65262e371bb998ed5ad01540c5949e020be44ec7cc7cae1d4",
+    "sha256": "142c487bab375bcfb22db06b41326f2ff43d6eba58f53e7ba3ef7408c6b5722b",
+    "width": 128,
+    "height": 128,
+    "bytes": 6940,
+    "removedBackgroundPixels": 1191952,
+    "crop": {
+      "left": 322,
+      "top": 238,
+      "width": 610,
+      "height": 779
+    }
+  },
+  {
+    "name": "wallet",
+    "source": "docs\\记工系统\\assets\\generated-icons\\wallet-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\wallet.png",
+    "sourceSha256": "926ff87981b0aafd47ee1fa3386063aa1cd9bd2a360d1d38f590d09ed3db4d00",
+    "sha256": "bb88d85635b7022548bc65ec1b2a2bf0282f5bd940f557764fb01adc7cde2305",
+    "width": 128,
+    "height": 128,
+    "bytes": 7190,
+    "removedBackgroundPixels": 1134076,
+    "crop": {
+      "left": 268,
+      "top": 285,
+      "width": 732,
+      "height": 652
+    }
+  },
+  {
+    "name": "profit",
+    "source": "docs\\记工系统\\assets\\generated-icons\\profit-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\profit.png",
+    "sourceSha256": "06d43c28ff45665696deb56d239d1fb943458a205df9a360ca37f1113d9968d5",
+    "sha256": "2327917c3e150dee4797c9553edd86e4486fff35b49a2672502b3d66a963a5f8",
+    "width": 128,
+    "height": 128,
+    "bytes": 6604,
+    "removedBackgroundPixels": 1180200,
+    "crop": {
+      "left": 327,
+      "top": 233,
+      "width": 599,
+      "height": 744
+    }
+  },
+  {
+    "name": "trend",
+    "source": "docs\\记工系统\\assets\\generated-icons\\trend-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\trend.png",
+    "sourceSha256": "4c279768c2d158b7b7b459a1a0641d6594f52ec693fa7e7759b3b4f2cd83eee3",
+    "sha256": "25e8ec6fe152e31ec3d63fbbd91d3bdb7a72074d3a148e034cf559016186688e",
+    "width": 128,
+    "height": 128,
+    "bytes": 6640,
+    "removedBackgroundPixels": 1291406,
+    "crop": {
+      "left": 287,
+      "top": 248,
+      "width": 678,
+      "height": 727
+    }
+  },
+  {
+    "name": "back",
+    "source": "docs\\记工系统\\assets\\generated-icons\\back-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\back.png",
+    "sourceSha256": "40f8df29094e159d6b40b420e6dcf5174b29b44e54ea26522fba3f0f39c273b3",
+    "sha256": "f58818e8f8ac13d223ba42bc728aebf61e0730288592cecf132bc280316d9ca7",
+    "width": 128,
+    "height": 128,
+    "bytes": 5115,
+    "removedBackgroundPixels": 1359391,
+    "crop": {
+      "left": 355,
+      "top": 242,
+      "width": 495,
+      "height": 764
+    }
+  },
+  {
+    "name": "chevron",
+    "source": "docs\\记工系统\\assets\\generated-icons\\chevron-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\chevron.png",
+    "sourceSha256": "83a726fb749c6476cd837c3b6592d2a93b30d9d3d1cdf375dedda11e8c85a816",
+    "sha256": "80344fef2137c66275d43d09851e50bdbb60cf219e17e6bf2170584633fb9d36",
+    "width": 128,
+    "height": 128,
+    "bytes": 4523,
+    "removedBackgroundPixels": 1358633,
+    "crop": {
+      "left": 371,
+      "top": 224,
+      "width": 512,
+      "height": 803
+    }
+  },
+  {
+    "name": "arrow-down",
+    "source": "docs\\记工系统\\assets\\generated-icons\\arrow-down-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\arrow-down.png",
+    "sourceSha256": "039a9b9223ee1c4167266bb51a9abbc5ff485b980ba3fd6a2b7c1e2ad6b40ba8",
+    "sha256": "632f0e6f4b0ec23d9d671de2774ffdf3abfe7b22071cafe6de1e8821dcf05729",
+    "width": 128,
+    "height": 128,
+    "bytes": 4541,
+    "removedBackgroundPixels": 1339616,
+    "crop": {
+      "left": 197,
+      "top": 368,
+      "width": 860,
+      "height": 543
+    }
+  },
+  {
+    "name": "arrow-up",
+    "source": "docs\\记工系统\\assets\\generated-icons\\arrow-up-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\arrow-up.png",
+    "sourceSha256": "2ec2b865ea346103350ad4781b995dbcb6c862d93a83578bd14856bc13c78745",
+    "sha256": "278b0d040c1d243eb85c44af4df5f1703ff7324daa27b71590a4956b4a802048",
+    "width": 128,
+    "height": 128,
+    "bytes": 4783,
+    "removedBackgroundPixels": 1296410,
+    "crop": {
+      "left": 151,
+      "top": 319,
+      "width": 941,
+      "height": 602
+    }
+  },
+  {
+    "name": "plus",
+    "source": "docs\\记工系统\\assets\\generated-icons\\plus-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\plus.png",
+    "sourceSha256": "82294ddc319455de0441a684790e2e44884660422cca29af9422e9c5edccc403",
+    "sha256": "5e2df9c8856b253e47a64ebff5fe7a87cd679334d107282a87435031ea743476",
+    "width": 128,
+    "height": 128,
+    "bytes": 5774,
+    "removedBackgroundPixels": 1309784,
+    "crop": {
+      "left": 234,
+      "top": 222,
+      "width": 786,
+      "height": 767
+    }
+  },
+  {
+    "name": "minus",
+    "source": "docs\\记工系统\\assets\\generated-icons\\minus-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\minus.png",
+    "sourceSha256": "f619ae1931fe71647b7703f19518bf5bda405c65e9cf5e016ccea81e8bd9b22f",
+    "sha256": "c48593e74de0f1b3b46a708182e187b81760dff7ab987d1ae5082b429ecd7576",
+    "width": 128,
+    "height": 128,
+    "bytes": 3120,
+    "removedBackgroundPixels": 1378839,
+    "crop": {
+      "left": 183,
+      "top": 502,
+      "width": 887,
+      "height": 230
+    }
+  },
+  {
+    "name": "check",
+    "source": "docs\\记工系统\\assets\\generated-icons\\check-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\check.png",
+    "sourceSha256": "64a6d22d03c8e7d80454f16125d1d17362963f19415c40377952a8fa4c973a22",
+    "sha256": "9e1a4f30200dbe54ceb23a9d7bbdf4297d0eeabd5bbf1477151407fb715541e6",
+    "width": 128,
+    "height": 128,
+    "bytes": 4579,
+    "removedBackgroundPixels": 1274504,
+    "crop": {
+      "left": 165,
+      "top": 284,
+      "width": 938,
+      "height": 706
+    }
+  },
+  {
+    "name": "close",
+    "source": "docs\\记工系统\\assets\\generated-icons\\close-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\close.png",
+    "sourceSha256": "ce852681b622f1df10ba2ec9ce51822c47cd52ac0f8af2ce0c69d5051b94b1ab",
+    "sha256": "65801d85fd46cd9163e87b26cd23b4a2c00366563d1914094638ef2f950a15df",
+    "width": 128,
+    "height": 128,
+    "bytes": 7843,
+    "removedBackgroundPixels": 1304584,
+    "crop": {
+      "left": 299,
+      "top": 294,
+      "width": 656,
+      "height": 653
+    }
+  },
+  {
+    "name": "search",
+    "source": "docs\\记工系统\\assets\\generated-icons\\search-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\search.png",
+    "sourceSha256": "37a15bcd383e901f23aa03d72916957a1bf9d5ce109e83c25ea95767cd780507",
+    "sha256": "02074fdeb071930391c60cb652789827dc791eff067f4b3d800f6c7336bad001",
+    "width": 128,
+    "height": 128,
+    "bytes": 6238,
+    "removedBackgroundPixels": 1353571,
+    "crop": {
+      "left": 242,
+      "top": 226,
+      "width": 778,
+      "height": 777
+    }
+  },
+  {
+    "name": "trash",
+    "source": "docs\\记工系统\\assets\\generated-icons\\trash-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\trash.png",
+    "sourceSha256": "b7d109911fdc8e2228157d2c2cc9cae14be2bc381ca9c052ead4d1e3e4e73ba2",
+    "sha256": "04e2bffe7cfe6ca23cc0fd214981106328c2b56dbc3863d59f9c93ebc8b5df35",
+    "width": 128,
+    "height": 128,
+    "bytes": 7012,
+    "removedBackgroundPixels": 1337896,
+    "crop": {
+      "left": 377,
+      "top": 316,
+      "width": 499,
+      "height": 609
+    }
+  },
+  {
+    "name": "phone",
+    "source": "docs\\记工系统\\assets\\generated-icons\\phone-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\phone.png",
+    "sourceSha256": "328c05bf2ab0784e1288333908109a0f2afa701c472e68b18c2a3aa4858d5db9",
+    "sha256": "905a34b2267a41456857b18a80a860bae738ab867c4730c831489181bb2bd759",
+    "width": 128,
+    "height": 128,
+    "bytes": 5675,
+    "removedBackgroundPixels": 1315698,
+    "crop": {
+      "left": 253,
+      "top": 174,
+      "width": 739,
+      "height": 851
+    }
+  },
+  {
+    "name": "pencil",
+    "source": "docs\\记工系统\\assets\\generated-icons\\pencil-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\pencil.png",
+    "sourceSha256": "f989efe8851b10137f952cf1601b961155309215ae8b7e5d030ac49f20fc5ac2",
+    "sha256": "5770d20b782ae3691e19d463fc1585b422c37c95880ea872a0ce23e1e071e766",
+    "width": 128,
+    "height": 128,
+    "bytes": 5151,
+    "removedBackgroundPixels": 1303759,
+    "crop": {
+      "left": 267,
+      "top": 202,
+      "width": 761,
+      "height": 788
+    }
+  },
+  {
+    "name": "shield",
+    "source": "docs\\记工系统\\assets\\generated-icons\\shield-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\shield.png",
+    "sourceSha256": "360aedeb118c05b746dbe622c633ea3709f484979dfe291925c2254d07d0d630",
+    "sha256": "c82ddb2d0cd807edb315e974d907e99d072c44fd1e399e5e9fa92d7a7bc4b732",
+    "width": 128,
+    "height": 128,
+    "bytes": 7498,
+    "removedBackgroundPixels": 1072781,
+    "crop": {
+      "left": 249,
+      "top": 174,
+      "width": 753,
+      "height": 875
+    }
+  },
+  {
+    "name": "info",
+    "source": "docs\\记工系统\\assets\\generated-icons\\info-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\info.png",
+    "sourceSha256": "18d81a6fa6cfaf41e3ff79bdb45f399c5312872a076ca5b678a89e497fe3e50b",
+    "sha256": "222a27f020370e6639aa440f1988c5f87b9ba923daeeb509fe98f44de68d8bd7",
+    "width": 128,
+    "height": 128,
+    "bytes": 4276,
+    "removedBackgroundPixels": 1405975,
+    "crop": {
+      "left": 458,
+      "top": 236,
+      "width": 353,
+      "height": 779
+    }
+  },
+  {
+    "name": "orders",
+    "source": "docs\\记工系统\\assets\\generated-icons\\orders-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\orders.png",
+    "sourceSha256": "751403f602a95604daef346bd82bafc74a9f30a8d7770559142ec621b01b61c5",
+    "sha256": "071b7f1a7e4cd7a42044abdcdf55502e55cf1873c60c255c587fcc2dcef42ea3",
+    "width": 128,
+    "height": 128,
+    "bytes": 6443,
+    "removedBackgroundPixels": 1122704,
+    "crop": {
+      "left": 321,
+      "top": 231,
+      "width": 613,
+      "height": 784
+    }
+  },
+  {
+    "name": "pdf",
+    "source": "docs\\记工系统\\assets\\generated-icons\\pdf-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\pdf.png",
+    "sourceSha256": "4cedf7d713845a2f5a7e8fc2b2455a2480a0587eb7b94ab2e22fda5a624dc4ba",
+    "sha256": "af6cfc3d11f76fdab0ef43f4054b1ee86cf9d17dc76384701048ac456e7bac04",
+    "width": 128,
+    "height": 128,
+    "bytes": 7025,
+    "removedBackgroundPixels": 980098,
+    "crop": {
+      "left": 261,
+      "top": 192,
+      "width": 732,
+      "height": 864
+    }
+  },
+  {
+    "name": "download",
+    "source": "docs\\记工系统\\assets\\generated-icons\\download-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\download.png",
+    "sourceSha256": "73998221e09e106b5ca7cfef3a4eb197d041497805b891cdc66d3f3373ad3753",
+    "sha256": "989829e63a8b3be5b68621490b50675242b26b22f2b15d4ae22e10fc6235fa9a",
+    "width": 128,
+    "height": 128,
+    "bytes": 6450,
+    "removedBackgroundPixels": 1244461,
+    "crop": {
+      "left": 249,
+      "top": 234,
+      "width": 753,
+      "height": 774
+    }
+  },
+  {
+    "name": "camera",
+    "source": "docs\\记工系统\\assets\\generated-icons\\camera-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\camera.png",
+    "sourceSha256": "cb7efdc7d0138cb658de35eeff5e511230df91222bad43dc602af5b91fa82d75",
+    "sha256": "5aa5aad4ced004c9e92aaa2d18a5a2f6a331750ad167a274226b6b7a03ac852e",
+    "width": 128,
+    "height": 128,
+    "bytes": 7585,
+    "removedBackgroundPixels": 1076036,
+    "crop": {
+      "left": 206,
+      "top": 270,
+      "width": 841,
+      "height": 659
+    }
+  },
+  {
+    "name": "clock",
+    "source": "docs\\记工系统\\assets\\generated-icons\\clock-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\clock.png",
+    "sourceSha256": "86d6bccc7776683f5e6a36f88666831a8de84ed98b924cb2730e87430b58bedd",
+    "sha256": "3418cd44917fec1221c7dd964089fd8e69df6e5ffd1cafe41670ef1408511a4c",
+    "width": 128,
+    "height": 128,
+    "bytes": 8986,
+    "removedBackgroundPixels": 1095862,
+    "crop": {
+      "left": 235,
+      "top": 218,
+      "width": 783,
+      "height": 773
+    }
+  },
+  {
+    "name": "template",
+    "source": "docs\\记工系统\\assets\\generated-icons\\template-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\template.png",
+    "sourceSha256": "85c2c8b805faae786782873c7a8293eeba59ed1fe0cfd7a82f2f2931cbaf3ee5",
+    "sha256": "480e20475af6c1259fd9c7da2f2150bfe613f0069239b3262967ae4fe7ae2b8f",
+    "width": 128,
+    "height": 128,
+    "bytes": 6548,
+    "removedBackgroundPixels": 1170116,
+    "crop": {
+      "left": 324,
+      "top": 263,
+      "width": 609,
+      "height": 714
+    }
+  },
+  {
+    "name": "reset",
+    "source": "docs\\记工系统\\assets\\generated-icons\\reset-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\reset.png",
+    "sourceSha256": "1059295870c6b2fc9588cfe0c5453b518619e6ab3db475fd330576f0f721ecd5",
+    "sha256": "8894a636c80fdb9c1e379bd606c3b1808295d2fc0c7529a2f0613ce7429d380b",
+    "width": 128,
+    "height": 128,
+    "bytes": 6948,
+    "removedBackgroundPixels": 1281042,
+    "crop": {
+      "left": 252,
+      "top": 212,
+      "width": 772,
+      "height": 812
+    }
+  },
+  {
+    "name": "loading",
+    "source": "docs\\记工系统\\assets\\generated-icons\\loading-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\loading.png",
+    "sourceSha256": "848a12ee541dbe9275f7d583e77f6e94281f6f3a42a469effca05d0675f5482a",
+    "sha256": "a42ab15717f155da09eab867bb53d15192f2eeb0a75b7bfa9fea1acbffa582c7",
+    "width": 128,
+    "height": 128,
+    "bytes": 7164,
+    "removedBackgroundPixels": 1303133,
+    "crop": {
+      "left": 216,
+      "top": 195,
+      "width": 821,
+      "height": 800
+    }
+  },
+  {
+    "name": "photo",
+    "source": "docs\\记工系统\\assets\\generated-icons\\photo-source.png",
+    "output": "packages\\ledger-mp\\miniprogram\\assets\\workbook-icons\\photo.png",
+    "sourceSha256": "5327232fab210471a51270e7b1d63720bc9ad736b76c691e691a4d48d36b2b1b",
+    "sha256": "cd1635ede994bb94b125af587c199d5ec8c4302f7ed438725a79111726619805",
+    "width": 128,
+    "height": 128,
+    "bytes": 8221,
+    "removedBackgroundPixels": 1025499,
+    "crop": {
+      "left": 220,
+      "top": 268,
+      "width": 815,
+      "height": 685
+    }
+  }
+]

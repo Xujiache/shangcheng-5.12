@@ -1,7 +1,8 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { feedbackApi } from '../../api/index'
 import { getUser } from '../../utils/store'
 
-Page({
+MotionPage({
   data: {
     agree: false,
     submitting: false,
@@ -42,7 +43,7 @@ Page({
             content: '注销申请已提交，管理员将在核实身份后为您处理。如需撤回请联系管理员。',
             showCancel: false,
             confirmText: '我知道了',
-            success: () => wx.navigateBack(),
+            success: () => navigation.navigateBack(),
           })
         } catch (e) {
           /* toast handled in request */

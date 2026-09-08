@@ -1,7 +1,8 @@
+import { MotionPage } from '../../utils/page-transition'
 import { inviteApi } from '../../api/index'
 import { makeShareCover } from '../../utils/share-cover'
 
-Page({
+MotionPage({
   _cover: '',
   data: {
     loading: true,

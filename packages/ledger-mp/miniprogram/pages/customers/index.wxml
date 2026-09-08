@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="cl">
+<view class="cl lz-route-scene {{_routeMotion}}">
   <lz-header title="客户管理" subtitle="按累计利润排序">
     <view slot="right" class="cl__add" bindtap="toAdd" hover-class="tap-active">
       <lz-icon name="plus" size="16" color="accent" stroke="2.2" /><text>新增</text>
@@ -26,5 +26,8 @@
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
     <view wx:elif="{{!loading}}" class="lz-empty">暂无客户，点击右上角新增</view>
+    <lz-skeleton wx:else variant="list" />
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

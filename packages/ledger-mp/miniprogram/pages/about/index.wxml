@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="ab">
+<view class="ab lz-route-scene {{_routeMotion}}">
   <lz-header title="关于" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -55,3 +55,5 @@
     <view class="ab__copyright">经纬科技 · 门窗利账{{'\n'}}© 2026 保留所有权利</view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

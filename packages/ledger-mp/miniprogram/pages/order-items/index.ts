@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { yuan } from '../../utils/format'
 
 // 与后端 ledger.constants 同口径的门窗报价计算（mm→㎡，单条尺寸按起算面积兜底）
@@ -66,7 +67,7 @@ function normMoneyStr(v: any): string {
   return s ? String(Math.round(num(s))) : ''
 }
 
-Page({
+MotionPage({
   data: {
     items: [] as any[],
     discountStr: '',
@@ -365,6 +366,6 @@ Page({
     }
     this._navigating = true
     this.writeBack()
-    wx.navigateBack()
+    navigation.navigateBack()
   },
 })

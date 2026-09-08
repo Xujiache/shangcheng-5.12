@@ -1,3 +1,4 @@
+import { navigation } from './utils/page-transition'
 import { TOKEN_KEY, VERSION } from './config'
 import { captureInviteCode, getBioLock, getBioVerified } from './utils/store'
 import { clearAllCache } from './utils/request'
@@ -8,6 +9,12 @@ const GUEST_ALLOWED_ROUTES = new Set([
   'pages/triangle-tool/index',
   'pages/arc-tool/index',
   'pages/cut/index',
+  'pages/work-log/index',
+  'subpackages/workbook/records/index',
+  'subpackages/workbook/edit/index',
+  'subpackages/workbook/people/index',
+  'subpackages/workbook/finance/index',
+  'subpackages/workbook/reports/index',
   'pages/cut-result/index',
   // 登录页必须允许查看用户协议和隐私政策。
   'pages/doc/index',
@@ -17,7 +24,7 @@ function blockRestrictedGuestRoute(options: any, token: string): boolean {
   if (token) return false
   const path = String((options && options.path) || '').replace(/^\/+/, '')
   if (!path || GUEST_ALLOWED_ROUTES.has(path)) return false
-  setTimeout(() => wx.reLaunch({ url: '/pages/login/index' }), 0)
+  setTimeout(() => navigation.reLaunch({ url: '/pages/login/index' }), 0)
   return true
 }
 
@@ -60,7 +67,7 @@ App<IAppOption>({
     const cur = pages[pages.length - 1]
     // 已在锁屏页时不重复 reLaunch，避免验证弹窗切前台触发循环
     if (cur && cur.route === 'pages/lock/index') return
-    wx.reLaunch({ url: '/pages/lock/index' })
+    navigation.reLaunch({ url: '/pages/lock/index' })
   },
   setToken(token: string) {
     this.globalData.token = token

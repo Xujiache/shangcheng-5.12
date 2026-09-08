@@ -1,3 +1,4 @@
+import { MotionPage, pageMotionEnabled, setPageMotionEnabled } from '../../utils/page-transition'
 import {
   getGlass,
   setGlass,
@@ -10,9 +11,10 @@ import {
 } from '../../utils/store'
 
 // 外观与个性化：沉浸光感开关 + 玻璃通透度 + 玻璃导航高亮 + 特效模式（纯本地偏好，切回各页 onShow 即生效）
-Page({
+MotionPage({
   data: {
     glassOn: true,
+    pageMotion: true,
     glassOpacity: 50, // 玻璃通透度 0-100（越大越通透）
     liquidTab: true, // 液态导航栏：底部 Tab 选中项显示柔和玻璃高亮
     fxMode: 'normal' as 'normal' | 'max',
@@ -25,10 +27,17 @@ Page({
   onLoad() {
     this.setData({
       glassOn: getGlass(),
+      pageMotion: pageMotionEnabled(),
       glassOpacity: getGlassOpacity(),
       liquidTab: getLiquidTab(),
       fxMode: getFxMode(),
     })
+  },
+
+  onTogglePageMotion() {
+    const pageMotion = !this.data.pageMotion
+    setPageMotionEnabled(pageMotion)
+    this.setData({ pageMotion })
   },
 
   onToggleLiquid() {

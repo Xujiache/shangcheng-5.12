@@ -1,3 +1,4 @@
+import { MotionPage } from '../../utils/page-transition'
 import {
   initialMembershipAccess,
   membershipAccessView,
@@ -95,7 +96,7 @@ function solve(input: Tri): Tri & { h: number; area: number } {
   return { ...t, h: (2 * area) / t.b, area }
 }
 
-Page({
+MotionPage({
   _accessSeq: 0,
   data: {
     ...initialMembershipAccess(),
