@@ -115,6 +115,15 @@ for (const stream of [child.stdout, child.stderr]) {
 
 try {
   await waitForHealth(baseUrl, child, output)
+  // A valid phone plus deliberately invalid scene must fail ONLY scene validation.
+  // This exercises JSON parsing without invoking the SMS sender or writing a code.
+  const smsBody = await request(baseUrl, '/api/v1/auth/sms-code', {
+    method: 'POST', body: JSON.stringify({ phone: '13800000000', scene: 17 }),
+  })
+  const validation = JSON.stringify(smsBody.body?.message || '')
+  if (smsBody.status !== 400 || !validation.includes('scene') || validation.includes('phone') || validation.includes('手机号')) {
+    throw new Error('SMS JSON body parsing regression')
+  }
   const latest = await request(baseUrl, '/api/v1/m/app/latest?platform=merchant-harmony')
   if (latest.status !== 200 || Number(latest.body?.code) !== 0
     || (latest.body?.data !== null && latest.body?.data?.platform !== 'merchant-harmony')) {

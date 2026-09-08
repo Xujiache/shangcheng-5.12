@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
-import { json } from 'express'
+import { configureWorkbookBodyParser } from './common/workbook-body-parser'
 import helmet from 'helmet'
 import { requestTraceId } from './common/trace'
 
@@ -54,7 +54,7 @@ async function bootstrap() {
   })
 
   // Only workbook import needs a larger JSON body; payment rawBody is unchanged.
-  app.use('/api/v1/l/workbook/sync', json({ limit: '8mb' }))
+  configureWorkbookBodyParser(app)
 
   app.use(helmet())
   app.use(

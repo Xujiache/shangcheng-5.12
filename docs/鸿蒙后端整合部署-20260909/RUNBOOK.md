@@ -58,3 +58,11 @@ pm2 save
 磁盘余量风险：仅将可重建 pnpm metadata 缓存移到 `/dev/shm/jingwei-huawei-pnpm-metadata-20260909` 腾挪空间；无业务数据删除。内存盘重启会丢缓存但可由包管理器重建；长期应扩容。
 
 线上切换结果及实际提交/产物哈希记录到同名私有备份目录的 deployment-verification.json。
+
+## 追加修复：普通 JSON 请求体未解析
+
+真机反馈 SMS 接口在手机号已填写时返回 `phone must be a string`。线上用有效字符串 phone 和故意错误的数字 scene 复现同一错误，且不会调用短信服务。
+
+根因：main.ts 把 Express 的 `jsonParser` 直接挂在 workbook 子路径上，Nest ExpressAdapter 按函数名判断已存在 JSON parser，从而跳过全局 parser。之前的 GET/空参数冒烟未发现这一写入链路缺口。
+
+修复：以独立命名的 `workbookBodyParser` 包装局部解析器，保留 Nest 自动注册的全局 JSON/rawBody 解析。4 项真实 Nest HTTP 回归覆盖正常 DTO 解析、数值手机号拒绝、支付 rawBody 字节一致、大 workbook 及普通路由大小限制。生产启动冒烟同时增加 SMS 请求体断言（使用非法 scene，绝不发送短信）。修复前 dist 已额外备份到 `pre-body-parser-fix-dist.tgz`。
