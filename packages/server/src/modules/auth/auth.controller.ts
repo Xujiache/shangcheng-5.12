@@ -4,6 +4,8 @@ import { Throttle } from '@nestjs/throttler'
 import { AuthService } from './auth.service'
 import {
   AdminLoginDto,
+  MerchantPasswordLoginDto,
+  MerchantSmsLoginDto,
   PhoneLoginDto,
   RefreshDto,
   SmsCodeDto,
@@ -44,6 +46,22 @@ export class AuthController {
   @Post('phone-login')
   phoneLogin(@Body() dto: PhoneLoginDto) {
     return this.authService.phoneLogin(dto)
+  }
+
+  /** 商家 APP 专用：只接受手机号 + 密码，不接受用户名或邮箱。 */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('merchant-password-login')
+  merchantPasswordLogin(@Body() dto: MerchantPasswordLoginDto) {
+    return this.authService.merchantPasswordLogin(dto)
+  }
+
+  /** 商家 APP 专用：短信只登录已有用户，绝不静默创建账号。 */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('merchant-sms-login')
+  merchantSmsLogin(@Body() dto: MerchantSmsLoginDto) {
+    return this.authService.merchantSmsLogin(dto)
   }
 
   // P1-25：发短信验证码走 'sms' 桶（3/min/IP），防短信轰炸
@@ -108,7 +126,7 @@ export class AuthController {
     @CurrentUser() user: AuthUser,
     @Body() dto: { oldPassword: string; newPassword: string },
   ) {
-    return this.authService.changePassword(user.sub, dto)
+    return this.authService.changePassword(user.sub, dto, user.amr, user.amrAt)
   }
 
   /**

@@ -473,6 +473,9 @@ importers:
       dayjs:
         specifier: ^1.11.13
         version: 1.11.20
+      express:
+        specifier: 4.22.1
+        version: 4.22.1
       helmet:
         specifier: 8.1.0
         version: 8.1.0
@@ -518,6 +521,9 @@ importers:
       undici:
         specifier: ^6
         version: 6.25.0
+      ws:
+        specifier: ^8.18.3
+        version: 8.20.0
     devDependencies:
       '@jest/globals':
         specifier: ^30.4.1
@@ -546,6 +552,9 @@ importers:
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.3
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@24.12.3)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.6.3))
@@ -6913,9 +6922,6 @@ packages:
 
   perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
-
-  pg-cloudflare@1.4.0:
-    resolution: {integrity: sha512-Vo7z/6rrQYxpNRylp4Tlob2elzbh+N/MOQbxFVWCxS7oEx6jF53GTJFxK2WWpKuBRkmiin4Mt+xofFDjx09R0A==}
 
   pg-connection-string@2.14.0:
     resolution: {integrity: sha512-XwWDGcLRGCXAR8F/AM5bG7Q+A3Wm2s6QeEjlOKZLlH3UYcguiqCWKyWXVag5TLTIjR7oOJUY8kcADaZgWPyLeg==}
@@ -16435,9 +16441,6 @@ snapshots:
 
   perfect-debounce@1.0.0: {}
 
-  pg-cloudflare@1.4.0:
-    optional: true
-
   pg-connection-string@2.14.0: {}
 
   pg-int8@1.0.1: {}
@@ -16463,8 +16466,6 @@ snapshots:
       pg-protocol: 1.16.0
       pg-types: 2.2.0
       pgpass: 1.0.5
-    optionalDependencies:
-      pg-cloudflare: 1.4.0
 
   pgpass@1.0.5:
     dependencies:

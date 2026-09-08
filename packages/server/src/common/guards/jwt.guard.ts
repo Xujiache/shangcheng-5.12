@@ -93,8 +93,9 @@ export class JwtAuthGuard implements CanActivate {
 
     const sub: string | undefined = payload?.sub
     if (!sub) throw new BizException(BizCode.UNAUTHORIZED, '无效 Token')
+    if (payload.scope) throw new BizException(BizCode.UNAUTHORIZED, '令牌不属于商城域')
     // refresh token（签发时打了 _r 标记）只能用于 /auth/refresh 换取 access token，
-    // 绝不允许直接当 access token 访问业务接口（否则可访问窗口被放大到 refresh 的 7 天 TTL）。
+    // 绝不允许直接当 access token 访问业务接口（否则可访问窗口被放大到 refresh 的 30 天 TTL）。
     if (payload?._r) throw new BizException(BizCode.UNAUTHORIZED, 'refresh token 不能用于业务接口')
 
     // Reads may use the documented 60s cache; writes always verify current ownership.

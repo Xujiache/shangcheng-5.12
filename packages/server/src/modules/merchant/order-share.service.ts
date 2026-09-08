@@ -25,6 +25,7 @@ import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
+import { isInternalTestMerchant } from '../../common/utils/internal-test-merchant.util'
 
 export type ShareField = 'basics' | 'customer' | 'pricing' | 'items' | 'extra'
 
@@ -208,6 +209,9 @@ export class OrderShareService {
       where: { shareCode },
     })
     if (!row) throw new BizException(BizCode.NOT_FOUND, '分享不存在或已撤销')
+    if (await isInternalTestMerchant(this.prisma, row.merchantId)) {
+      throw new BizException(BizCode.NOT_FOUND, '分享不存在或已撤销')
+    }
     const cfg = this.toConfig(row)
     if (cfg.revoked) throw new BizException(BizCode.FORBIDDEN, '该分享已被商家撤销')
     if (cfg.expiresAt && new Date(cfg.expiresAt).getTime() < Date.now()) {

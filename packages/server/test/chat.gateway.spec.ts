@@ -32,12 +32,17 @@ const makeGateway = () => {
   const prisma = {
     user: { findUnique: jest.fn() },
     merchant: { findUnique: jest.fn() },
-    chatSession: { findFirst: jest.fn(), update: jest.fn() },
+    chatSession: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     chatMessage: { create: jest.fn(), updateMany: jest.fn() },
   }
-  const gateway = new ChatGateway(jwt as any, prisma as any)
+  const harmonyRealtime = {
+    registerLegacyChatBridge: jest.fn(),
+    emitMerchant: jest.fn(),
+    emitChatMessage: jest.fn(),
+  }
+  const gateway = new ChatGateway(jwt as any, prisma as any, undefined, harmonyRealtime as any)
   gateway.server = { to: jest.fn(() => ({ emit: serverEmit })) } as any
-  return { gateway, jwt, prisma }
+  return { gateway, jwt, prisma, harmonyRealtime }
 }
 
 beforeEach(() => {
@@ -142,6 +147,42 @@ describe('ChatGateway.onAuth — 鉴权与通道推导', () => {
     expect(client.join).toHaveBeenCalledWith('user:u5')
     expect(prisma.merchant.findUnique).not.toHaveBeenCalled()
   })
+
+  it('双身份 super-admin：token merchantId 与数据库绑定一致时进入商家通道', async () => {
+    const { gateway, jwt, prisma } = makeGateway()
+    jwt.verifyAsync.mockResolvedValue({ sub: 'u-admin', role: 'super-admin', merchantId: 'm1' } as never)
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u-admin',
+      role: 'super-admin',
+      merchantId: 'm1',
+    } as never)
+    prisma.merchant.findUnique.mockResolvedValue({ id: 'm1', userId: 'u-admin' } as never)
+    const client = makeClient()
+
+    await gateway.onAuth(client, { token: 't' })
+
+    expect(client.data.role).toBe('merchant')
+    expect(client.data.merchantId).toBe('m1')
+    expect(client.join).toHaveBeenCalledWith('merchant:m1')
+  })
+
+  it('双身份防伪造：token merchantId 与数据库绑定不一致时仍按普通用户处理', async () => {
+    const { gateway, jwt, prisma } = makeGateway()
+    jwt.verifyAsync.mockResolvedValue({ sub: 'u-admin', role: 'super-admin', merchantId: 'forged' } as never)
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u-admin',
+      role: 'super-admin',
+      merchantId: 'm1',
+    } as never)
+    const client = makeClient()
+
+    await gateway.onAuth(client, { token: 't' })
+
+    expect(client.data.role).toBe('user')
+    expect(client.data.merchantId).toBeUndefined()
+    expect(client.join).toHaveBeenCalledWith('user:u-admin')
+    expect(prisma.merchant.findUnique).not.toHaveBeenCalled()
+  })
 })
 
 describe('ChatGateway.onJoin — 会话房间归属校验', () => {
@@ -211,11 +252,40 @@ describe('ChatGateway.onMessage — 持久化与广播契约', () => {
 
     // 广播：到正确房间 + payload 形状严格为 { sessionId, message }
     expect(gateway.server.to).toHaveBeenCalledWith('session:s-1')
-    expect(serverEmit).toHaveBeenCalledTimes(1)
-    const [evt, payload] = serverEmit.mock.calls[0] as any[]
+    // session 房间供聊天详情接收；user 房间的 chat:message 供会话列表实时置顶。
+    expect(serverEmit).toHaveBeenCalledTimes(2)
+    const messageCall = serverEmit.mock.calls.find((call: any[]) => call[0] === 'message') as any[]
+    const [evt, payload] = messageCall
     expect(evt).toBe('message')
     expect(Object.keys(payload).sort()).toEqual(['message', 'sessionId'])
     expect(payload).toEqual({ sessionId: 's-1', message: created })
+    expect(gateway.server.to).toHaveBeenCalledWith('user:u1')
+    expect(serverEmit).toHaveBeenCalledWith('chat:message', { sessionId: 's-1', message: created })
+  })
+
+  it('商家自己发送消息不增加商家侧 unreadCount', async () => {
+    const { gateway, prisma } = makeGateway()
+    prisma.chatSession.findFirst.mockResolvedValue({
+      id: 's-1',
+      userId: 'u1',
+      merchantId: 'm1',
+    } as never)
+    prisma.chatMessage.create.mockResolvedValue({
+      id: 'msg-m',
+      sessionId: 's-1',
+      sender: 'merchant',
+      content: '收到',
+      createdAt: new Date(),
+    } as never)
+    const client = makeClient()
+    client.data.role = 'merchant'
+    client.data.merchantId = 'm1'
+
+    await gateway.onMessage(client, { sessionId: 's-1', content: '收到', kind: 'quick' })
+
+    const updateArg = prisma.chatSession.update.mock.calls[0][0] as any
+    expect(updateArg.data.unreadCount).toBeUndefined()
+    expect(updateArg.data.lastMessageAt).toBeInstanceOf(Date)
   })
 
   it('空白/纯空格内容 → 不落库、不广播', async () => {
@@ -248,6 +318,20 @@ describe('ChatGateway.onTyping — 伪造 sessionId 防御', () => {
 })
 
 describe('ChatGateway.onRead — 已读回执', () => {
+  it('客户 HTTP 已读回执同步到 Harmony 商家身份通道', async () => {
+    const { gateway, prisma, harmonyRealtime } = makeGateway()
+    prisma.chatSession.findUnique.mockResolvedValue({ merchantId: 'm1' } as never)
+
+    gateway.emitReadReceipt('s-1', 'user')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(harmonyRealtime.emitMerchant).toHaveBeenCalledWith('m1', 'chat.read', {
+      sessionId: 's-1',
+      byRole: 'user',
+    })
+  })
+
   it('商家已读 → 仅把对方(user)未读标为已读，并清零会话 unreadCount', async () => {
     const { gateway, prisma } = makeGateway()
     prisma.chatSession.findFirst.mockResolvedValue({ id: 's-1', merchantId: 'm1' } as never)
@@ -268,6 +352,20 @@ describe('ChatGateway.onRead — 已读回执', () => {
     const sess = prisma.chatSession.update.mock.calls[0][0] as any
     expect(sess.where).toEqual({ id: 's-1' })
     expect(sess.data).toEqual({ unreadCount: 0 })
+  })
+
+  it('客户已读 → 标记商家消息已读，但不清零商家侧 unreadCount', async () => {
+    const { gateway, prisma } = makeGateway()
+    prisma.chatSession.findFirst.mockResolvedValue({ id: 's-1', userId: 'u1' } as never)
+    const client = makeClient()
+    client.data.role = 'user'
+    client.data.userId = 'u1'
+
+    await gateway.onRead(client, { sessionId: 's-1' })
+
+    const upd = prisma.chatMessage.updateMany.mock.calls[0][0] as any
+    expect(upd.where.sender).toBe('merchant')
+    expect(prisma.chatSession.update).not.toHaveBeenCalled()
   })
 })
 

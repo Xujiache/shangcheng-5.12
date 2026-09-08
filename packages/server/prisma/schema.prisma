@@ -355,6 +355,7 @@ model Order {
 
   @@index([userId, status])
   @@index([merchantId, status])
+  @@index([merchantId, paidAt])
   @@index([createdAt])
 }
 
@@ -750,24 +751,28 @@ model MemberPlan {
   sort          Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  huaweiProductId   String? @unique
+  huaweiProductType String? // subscription / consumable
 
   subscriptions  MerchantMembership[]
   paymentRecords PaymentRecord[]
 }
 
 model MerchantMembership {
-  id         String     @id @default(cuid())
-  merchantId String
-  merchant   Merchant   @relation(fields: [merchantId], references: [id])
-  planId     String
-  plan       MemberPlan @relation(fields: [planId], references: [id])
-  planCode   String
-  startAt    DateTime
-  endAt      DateTime
-  status     String     @default("active") // trial / active / expired
-  autoRenew  Boolean    @default(false)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id                     String     @id @default(cuid())
+  merchantId             String
+  merchant               Merchant   @relation(fields: [merchantId], references: [id])
+  planId                 String
+  plan                   MemberPlan @relation(fields: [planId], references: [id])
+  planCode               String
+  startAt                DateTime
+  endAt                  DateTime
+  status                 String     @default("active") // trial / active / expired
+  autoRenew              Boolean    @default(false)
+  provider               String? // wechat / huawei_iap / manual
+  providerSubscriptionId String?    @unique
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
 
   @@index([merchantId, status])
 }
@@ -795,23 +800,101 @@ model UsageQuota {
 }
 
 model PaymentRecord {
-  id            String      @id @default(cuid())
-  no            String      @unique
-  merchantId    String
-  merchant      Merchant    @relation(fields: [merchantId], references: [id])
-  planId        String?
-  plan          MemberPlan? @relation(fields: [planId], references: [id])
-  planName      String
-  planType      String?
-  amount        Decimal     @db.Decimal(10, 2)
-  paymentMethod String      @default("wechat") // wechat / alipay / bank / balance
-  status        String      @default("pending") // pending / paid / refunding / refunded / failed
-  paidAt        DateTime?
-  refundReason  String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  no              String      @unique
+  merchantId      String
+  merchant        Merchant    @relation(fields: [merchantId], references: [id])
+  planId          String?
+  plan            MemberPlan? @relation(fields: [planId], references: [id])
+  planName        String
+  planType        String?
+  amount          Decimal     @db.Decimal(10, 2)
+  paymentMethod   String      @default("wechat") // wechat / alipay / bank / balance
+  status          String      @default("pending") // pending / paid / refunding / refunded / failed
+  paidAt          DateTime?
+  refundReason    String?
+  providerOrderId String?     @unique
+  purchaseToken   String?     @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([merchantId, status])
+}
+
+// HarmonyOS NEXT Push Kit 设备。token 只用于服务端推送，不返回给其他商户。
+model HarmonyPushDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  merchantId String
+  token      String   @unique
+  deviceId   String?
+  locale     String?  @default("zh-CN")
+  enabled    Boolean  @default(true)
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([merchantId, enabled])
+  @@index([userId])
+}
+
+// 每个商户一份推送偏好；服务端在投递前再次检查，客户端开关不是唯一防线。
+model HarmonyPushPreference {
+  merchantId String   @id
+  orders     Boolean  @default(true)
+  refunds    Boolean  @default(true)
+  chat       Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+}
+
+// Huawei IAP 原始交易账本。orderNo / purchaseToken / providerOrderId 三重幂等，
+// 任何回调重放都只能激活一次会员权益。
+model HarmonyIapOrder {
+  id              String    @id @default(cuid())
+  orderNo         String    @unique
+  merchantId      String
+  userId          String
+  planId          String
+  productId       String
+  productType     String
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String    @default("CNY")
+  status          String    @default("prepared") // prepared / verified / activated / cancelled / refunded / expired / failed
+  purchaseToken   String?   @unique
+  providerOrderId String?   @unique
+  purchaseData    Json?
+  verifiedAt      DateTime?
+  activatedAt     DateTime?
+  refundedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([merchantId, status])
+  @@index([userId])
+  @@index([planId])
+}
+
+// HarmonyOS IAP v3 callback inbox. requestId is provider-generated and unique;
+// failed attempts are released so Huawei's documented retry schedule can
+// continue, while completed callbacks become durable no-op replays.
+model HarmonyIapNotification {
+  id                String   @id @default(cuid())
+  requestId         String   @unique
+  notificationType  String
+  notificationSubtype String?
+  environment       String
+  purchaseToken     String?
+  providerOrderId   String?
+  orderId           String?
+  status            String   @default("processing") // processing / processed
+  payload           Json
+  processedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([purchaseToken])
+  @@index([providerOrderId])
 }
 
 // ============================================================
@@ -1170,19 +1253,19 @@ model LedgerCutPlan {
 
 // 独立日工台账：不关联订单成本，按记账账号严格隔离。
 model LedgerWorkLog {
-  id        String     @id @default(cuid())
-  userId    String
-  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workDate  DateTime
+  id         String     @id @default(cuid())
+  userId     String
+  user       LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workDate   DateTime
   workerName String
-  jobType   String?
-  unit      String     // day / hour
-  quantity  Decimal    @db.Decimal(8, 2)
-  unitPrice Int        // 元/工天 或 元/工时
-  amount    Int        // 服务端按 quantity × unitPrice 重算，单位元
-  note      String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  jobType    String?
+  unit       String // day / hour
+  quantity   Decimal    @db.Decimal(8, 2)
+  unitPrice  Int // 元/工天 或 元/工时
+  amount     Int // 服务端按 quantity × unitPrice 重算，单位元
+  note       String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   @@index([userId, workDate])
 }

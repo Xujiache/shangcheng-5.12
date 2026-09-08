@@ -25,6 +25,33 @@ export interface MerchantDashboard {
     productImage: string
     price: number
   }[]
+  /** 新版商家工作台；旧字段继续保留给已发布客户端。 */
+  workbench: {
+    /** 服务端生成时间（ISO 8601） */
+    updatedAt: string
+    overview: {
+      /** 今日实付成交额，按 paidAt + 北京时间统计 */
+      paidAmount: number
+      /** 今日实付订单数 */
+      paidOrders: number
+      /** 今日实付订单中的去重客户数 */
+      paidCustomers: number
+      versusYesterday: {
+        paidAmountPct: number | null
+        paidOrdersPct: number | null
+        paidCustomersPct: number | null
+      }
+    }
+    trend7d: { date: string; paidAmount: number }[]
+    actions: {
+      pendingShipment: number
+      pendingRefund: number
+      unreadMessages: number
+      rejectedProducts: number
+      auditingProducts: number
+      pendingStoreAuth: number
+    }
+  }
 }
 
 /** 商家统计 · 销售趋势 */

@@ -12,21 +12,60 @@ import {
   LEGAL_AGREEMENTS_KEY,
   type LegalAgreements,
 } from './legal.defaults'
+import {
+  DEFAULT_LEGAL_AGREEMENTS_EN,
+  LEGAL_AGREEMENTS_EN_KEY,
+} from './legal.defaults.en'
+import {
+  MERCHANT_HARMONY_LEGAL_EN_KEY,
+  MERCHANT_HARMONY_LEGAL_KEY,
+  merchantHarmonyAgreements,
+  type PublicLegalContact,
+} from './legal.merchant-harmony'
 
 @Injectable()
 export class LegalService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(): Promise<LegalAgreements> {
+  async list(language: string = 'zh-CN', platform: string = ''): Promise<LegalAgreements> {
+    if (platform.trim().toLowerCase() === 'merchant-harmony') {
+      return this.merchantHarmonyList(language)
+    }
+    const english = language.toLowerCase().startsWith('en')
+    const key = english ? LEGAL_AGREEMENTS_EN_KEY : LEGAL_AGREEMENTS_KEY
+    const defaults = english ? DEFAULT_LEGAL_AGREEMENTS_EN : DEFAULT_LEGAL_AGREEMENTS
     const row = await this.prisma.systemConfig.findUnique({
-      where: { key: LEGAL_AGREEMENTS_KEY },
+      where: { key },
     })
     const stored = (row?.value as Partial<LegalAgreements>) || {}
     // 与默认值做 deep merge，避免后台只更了一项时其他两项为空
     return {
-      user: { ...DEFAULT_LEGAL_AGREEMENTS.user, ...(stored.user || {}) },
-      privacy: { ...DEFAULT_LEGAL_AGREEMENTS.privacy, ...(stored.privacy || {}) },
-      collect: { ...DEFAULT_LEGAL_AGREEMENTS.collect, ...(stored.collect || {}) },
+      user: { ...defaults.user, ...(stored.user || {}) },
+      privacy: { ...defaults.privacy, ...(stored.privacy || {}) },
+      collect: { ...defaults.collect, ...(stored.collect || {}) },
+    }
+  }
+
+  async merchantHarmonyList(language: string = 'zh-CN'): Promise<LegalAgreements> {
+    const english = language.toLowerCase().startsWith('en')
+    const key = english ? MERCHANT_HARMONY_LEGAL_EN_KEY : MERCHANT_HARMONY_LEGAL_KEY
+    const [row, systemSettings] = await Promise.all([
+      this.prisma.systemConfig.findUnique({ where: { key } }),
+      this.prisma.systemConfig.findUnique({ where: { key: 'system_settings' } }),
+    ])
+    const raw = (systemSettings?.value as any) || {}
+    const service = (raw.service as any) || {}
+    const contact: PublicLegalContact = {
+      phone: service.customerServicePhone ?? service.phone ?? raw.customerServicePhone ?? null,
+      email: service.customerServiceEmail ?? service.email ?? raw.customerServiceEmail ?? null,
+      hours: service.customerServiceHours ?? service.workTime ?? raw.customerServiceHours ?? null,
+    }
+    const defaults = merchantHarmonyAgreements(language, contact)
+    const stored = (row?.value as Partial<LegalAgreements>) || {}
+    return {
+      user: { ...defaults.user, ...(stored.user || {}) },
+      privacy: { ...defaults.privacy, ...(stored.privacy || {}) },
+      collect: { ...defaults.collect, ...(stored.collect || {}) },
     }
   }
 

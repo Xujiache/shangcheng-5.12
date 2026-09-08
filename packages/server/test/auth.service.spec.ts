@@ -146,6 +146,24 @@ describe('AuthService.refresh —— rotation / 重放 / 错误语义', () => {
     expect(await blacklist.isRevoked('old-jti')).toBe(true)
   })
 
+  it('B：refresh 保留原短信认证方式与时间，不延长 15 分钟窗口', async () => {
+    const amrAt = Math.floor(Date.now() / 1000) - 300
+    jwt.verifyAsync.mockResolvedValueOnce({
+      _r: 1,
+      sub: 'u1',
+      role: 'customer',
+      amr: 'sms',
+      amrAt,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      jti: 'sms-old-jti',
+    } as never)
+
+    await service.refresh({ refreshToken: 'rt-sms' } as any)
+
+    expect(jwt.signAsync.mock.calls[0][0]).toMatchObject({ amr: 'sms', amrAt })
+    expect(jwt.signAsync.mock.calls[1][0]).toMatchObject({ amr: 'sms', amrAt })
+  })
+
   // C. 重放：同一 token 第二次 refresh
   it('C：同一 refresh token 第二次使用 → 抛 2001 且 message 含 "revoked"', async () => {
     const payload = {
@@ -354,7 +372,164 @@ describe('AuthService.adminLogin', () => {
 })
 
 // ============================================================================
-// F. logout
+// F. 商家 APP 专用手机号登录
+// ============================================================================
+describe('AuthService 商家手机号登录', () => {
+  let blacklist: RefreshTokenBlacklistService
+  let jwt: ReturnType<typeof makeJwtMock>
+  let sms: ReturnType<typeof makeSmsMock>
+  let prisma: any
+  let service: AuthService
+
+  const PHONE = '13800138000'
+  const PLAIN = 'secret123'
+
+  beforeEach(() => {
+    blacklist = new RefreshTokenBlacklistService()
+    jwt = makeJwtMock()
+    sms = makeSmsMock()
+    prisma = {
+      user: {
+        findUnique: jest.fn(),
+        update: jest.fn(async () => ({})),
+        create: jest.fn(),
+      },
+      merchant: {
+        findUnique: jest.fn(async () => ({
+          status: 'active',
+          name: '测试门窗厂',
+          type: 'factory',
+          rejectReason: null,
+        })),
+      },
+      smsCode: {
+        findFirst: jest.fn(),
+        update: jest.fn(async () => ({})),
+      },
+    }
+    service = new AuthService(prisma as any, jwt as any, sms as any, blacklist)
+  })
+
+  it('手机号密码成功：只按 phone 查询并返回商家申请状态', async () => {
+    const passwordHash = await argon2.hash(PLAIN)
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'merchant-user-1',
+      phone: PHONE,
+      nickname: '商家',
+      role: 'factory',
+      status: 'active',
+      merchantId: 'merchant-1',
+      passwordHash,
+      adminRole: null,
+    })
+
+    const res: any = await service.merchantPasswordLogin({ phone: PHONE, password: PLAIN })
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { phone: PHONE },
+      include: { adminRole: true },
+    })
+    expect(res.merchantApplication).toMatchObject({ status: 'active', type: 'factory' })
+    expect(res.user.passwordHash).toBeUndefined()
+    expect(jwt.signAsync.mock.calls[0][0]).toMatchObject({ amr: 'password' })
+  })
+
+  it('密码错误与手机号不存在返回相同文案（防枚举）', async () => {
+    const passwordHash = await argon2.hash(PLAIN)
+    prisma.user.findUnique.mockResolvedValueOnce({
+      id: 'merchant-user-1',
+      role: 'factory',
+      status: 'active',
+      passwordHash,
+      adminRole: null,
+    })
+    const wrongMessage = await catchMessage(() =>
+      service.merchantPasswordLogin({ phone: PHONE, password: 'wrong-password' }),
+    )
+    prisma.user.findUnique.mockResolvedValueOnce(null)
+    const unknownMessage = await catchMessage(() =>
+      service.merchantPasswordLogin({ phone: PHONE, password: PLAIN }),
+    )
+
+    expect(wrongMessage).toBe('手机号或密码错误')
+    expect(unknownMessage).toBe(wrongMessage)
+  })
+
+  it('手机号密码登录遇到禁用账号返回 2003', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'merchant-user-1',
+      role: 'factory',
+      status: 'disabled',
+      passwordHash: await argon2.hash(PLAIN),
+      adminRole: null,
+    })
+    await expectBizCode(
+      () => service.merchantPasswordLogin({ phone: PHONE, password: PLAIN }),
+      2003,
+    )
+  })
+
+  it('验证码登录未知手机号：明确提示先注册且绝不创建用户', async () => {
+    prisma.user.findUnique.mockResolvedValue(null)
+    const message = await catchMessage(() =>
+      service.merchantSmsLogin({ phone: PHONE, code: '123456' }),
+    )
+
+    expect(message).toContain('请先注册')
+    expect(prisma.user.create).not.toHaveBeenCalled()
+    expect(prisma.smsCode.update).not.toHaveBeenCalled()
+  })
+
+  it('验证码错误或过期：不消费验证码', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'merchant-user-1',
+      role: 'customer',
+      status: 'active',
+      passwordHash: null,
+      adminRole: null,
+    })
+    prisma.smsCode.findFirst.mockResolvedValue(null)
+
+    const message = await catchMessage(() =>
+      service.merchantSmsLogin({ phone: PHONE, code: '123456' }),
+    )
+    expect(message).toBe('验证码错误或已过期')
+    expect(prisma.smsCode.update).not.toHaveBeenCalled()
+  })
+
+  it('验证码登录已有用户：消费 login 场景验证码并记录短信认证时间', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'merchant-user-1',
+      phone: PHONE,
+      role: 'customer',
+      status: 'active',
+      passwordHash: null,
+      adminRole: null,
+    })
+    prisma.smsCode.findFirst.mockResolvedValue({ id: 'sms-1' })
+
+    const res: any = await service.merchantSmsLogin({ phone: PHONE, code: '123456' })
+
+    expect(prisma.smsCode.findFirst.mock.calls[0][0].where).toMatchObject({
+      phone: PHONE,
+      code: '123456',
+      scene: 'login',
+      used: false,
+    })
+    expect(prisma.smsCode.update).toHaveBeenCalledWith({
+      where: { id: 'sms-1' },
+      data: { used: true },
+    })
+    expect(res.merchantApplication.status).toBe('active')
+    expect(jwt.signAsync.mock.calls[0][0]).toMatchObject({
+      amr: 'sms',
+      amrAt: expect.any(Number),
+    })
+  })
+})
+
+// ============================================================================
+// G. logout
 // ============================================================================
 describe('AuthService.logout', () => {
   let blacklist: RefreshTokenBlacklistService

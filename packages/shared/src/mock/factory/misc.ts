@@ -278,13 +278,23 @@ export function genFeatureFlags(): FeatureFlag[] {
 
 /* ============ 仪表盘 ============ */
 export function genMerchantDashboard(): MerchantDashboard {
+  const paidAmount = faker.number.int({ min: 5000, max: 30000 })
+  const paidOrders = faker.number.int({ min: 10, max: 50 })
+  const paidCustomers = faker.number.int({ min: 1, max: paidOrders })
+  const trend7d = Array.from({ length: 7 }).map((_, index) => ({
+    date: faker.date
+      .recent({ days: 7 - index })
+      .toISOString()
+      .slice(0, 10),
+    paidAmount: faker.number.int({ min: 30, max: 10000 }),
+  }))
   return {
     today: {
-      orders: faker.number.int({ min: 10, max: 50 }),
+      orders: paidOrders,
       ordersDelta: faker.number.int({ min: -20, max: 30 }),
-      newCustomers: faker.number.int({ min: 0, max: 15 }),
+      newCustomers: paidCustomers,
       newCustomersDelta: faker.number.int({ min: -5, max: 10 }),
-      sales: faker.number.int({ min: 5000, max: 30000 }),
+      sales: paidAmount,
       salesDelta: faker.number.int({ min: -20, max: 30 }),
     },
     weekSales: Array.from({ length: 7 }).map(() => faker.number.int({ min: 30, max: 100 })),
@@ -298,6 +308,28 @@ export function genMerchantDashboard(): MerchantDashboard {
       productImage: placeholderImage(160, 160),
       price: faker.number.int({ min: 500, max: 5000 }),
     })),
+    workbench: {
+      updatedAt: new Date().toISOString(),
+      overview: {
+        paidAmount,
+        paidOrders,
+        paidCustomers,
+        versusYesterday: {
+          paidAmountPct: faker.number.float({ min: -40, max: 80, fractionDigits: 1 }),
+          paidOrdersPct: faker.number.float({ min: -40, max: 80, fractionDigits: 1 }),
+          paidCustomersPct: faker.number.float({ min: -40, max: 80, fractionDigits: 1 }),
+        },
+      },
+      trend7d,
+      actions: {
+        pendingShipment: 3,
+        pendingRefund: 1,
+        unreadMessages: 6,
+        rejectedProducts: 1,
+        auditingProducts: 2,
+        pendingStoreAuth: 1,
+      },
+    },
   }
 }
 

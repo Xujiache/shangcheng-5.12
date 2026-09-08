@@ -38,6 +38,8 @@ import { Server, Socket } from 'socket.io'
 import { JwtService } from '@nestjs/jwt'
 import { PrismaService } from '../../prisma/prisma.service'
 import { ContentSecurityService } from '../content-security/content-security.service'
+import { HarmonyRealtimeService } from '../harmony-merchant/harmony-realtime.service'
+import { HarmonyPushService } from '../harmony-merchant/harmony-push.service'
 
 interface AuthedSocket extends Socket {
   data: {
@@ -62,7 +64,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     @Optional() private readonly contentSecurity?: ContentSecurityService,
-  ) {}
+    @Optional() private readonly harmonyRealtime?: HarmonyRealtimeService,
+    @Optional() private readonly harmonyPush?: HarmonyPushService,
+  ) {
+    this.harmonyRealtime?.registerLegacyChatBridge((event, sessionId, payload) => {
+      if (!this.server) return
+      this.server.to(`session:${sessionId}`).emit(event, payload)
+    })
+  }
 
   async handleConnection(client: AuthedSocket) {
     this.logger.log(`socket connected: ${client.id}`)
@@ -92,20 +101,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     try {
       const payload: any = await this.jwt.verifyAsync(data.token)
+      if (payload._r || payload.scope || !payload.sub) throw new Error('invalid access token')
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } })
       if (!user) {
         client.emit('error', { message: '用户不存在' })
         return
       }
+      if (user.status === 'disabled') throw new Error('account disabled')
 
       // 严格根据 JWT payload.role 推导通道，禁止读取 data.role
       const jwtRole = String(payload?.role || user.role || 'customer').toLowerCase()
-      const isMerchantRole = ['factory', 'store', 'merchant'].includes(jwtRole)
+      // 双身份账号（例如已绑定商户的 super-admin）在商家专用登录接口签发的 token
+      // 中带有 merchantId。只有该 claim 与数据库当前绑定完全一致时才允许进入商家通道，
+      // 既支持平台管理员切换商家工作台，也不重新信任客户端可伪造的 role 参数。
+      const claimedMerchantId = String(payload?.merchantId || '')
+      const boundMerchantId = String(user.merchantId || '')
+      const hasVerifiedMerchantClaim =
+        !!claimedMerchantId && !!boundMerchantId && claimedMerchantId === boundMerchantId
+      const isMerchantRole =
+        ['factory', 'store', 'merchant'].includes(jwtRole) || hasVerifiedMerchantClaim
 
       if (isMerchantRole) {
         const m = await this.prisma.merchant.findUnique({ where: { userId: user.id } })
         if (!m) {
           client.emit('error', { message: '当前账号未关联商户' })
+          return
+        }
+        if (claimedMerchantId && claimedMerchantId !== m.id) {
+          client.emit('error', { message: '商户身份已失效，请重新登录' })
           return
         }
         client.data.role = 'merchant'
@@ -127,6 +150,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         merchantId: client.data.merchantId,
       })
     } catch {
+      client.data = {}
+      for (const room of client.rooms || []) {
+        if (room !== client.id) client.leave(room)
+      }
       client.emit('error', { message: 'token 无效或过期' })
     }
   }
@@ -172,13 +199,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('error', { message: '消息不能超过 1000 个字符' })
       return
     }
+    const kind = String(data.kind || 'text').toLowerCase()
+    if (!['text', 'image', 'quick', 'product', 'order'].includes(kind)) {
+      client.emit('error', { message: '不支持的消息类型' })
+      return
+    }
     const session = await this.findOwnSession(client, data.sessionId)
     if (!session) {
       client.emit('error', { message: '无此会话访问权限' })
       return
     }
 
-    if ((data.kind || 'text') === 'text') {
+    if (kind === 'text' || kind === 'quick') {
       if (!this.contentSecurity && process.env.NODE_ENV === 'production') {
         client.emit('error', { message: '内容安全服务暂不可用，请稍后重试' })
         return
@@ -196,21 +228,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data: {
         sessionId: data.sessionId,
         sender,
-        type: data.kind || 'text',
+        type: kind,
         content,
         read: false,
       },
     })
     await this.prisma.chatSession.update({
       where: { id: data.sessionId },
-      data: { lastMessageAt: new Date(), unreadCount: { increment: 1 } },
+      data: {
+        lastMessageAt: msg.createdAt || new Date(),
+        // ChatSession.unreadCount 是商家侧未读数；商家自己发送绝不能自增。
+        ...(sender === 'user' ? { unreadCount: { increment: 1 } } : {}),
+      },
     })
 
     // 广播到房间，包括发送方（让 UI 用 server 时间戳）
-    this.server.to(`session:${data.sessionId}`).emit('message', {
-      sessionId: data.sessionId,
-      message: msg,
-    })
+    this.emitChatMessage(data.sessionId, msg, session)
   }
 
   /** 4. 正在输入提示（不持久化） */
@@ -246,11 +279,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       where: { sessionId: data.sessionId, sender: otherSender, read: false },
       data: { read: true },
     })
-    // 清零未读
-    await this.prisma.chatSession.update({
-      where: { id: data.sessionId },
-      data: { unreadCount: 0 },
-    })
+    // ChatSession.unreadCount 只表示商家侧未读；顾客已读不能清掉商家未读。
+    if (client.data.role === 'merchant') {
+      await this.prisma.chatSession.update({
+        where: { id: data.sessionId },
+        data: { unreadCount: 0 },
+      })
+    }
     client.to(`session:${data.sessionId}`).emit('read', {
       sessionId: data.sessionId,
       byRole: client.data.role,
@@ -290,9 +325,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * 失败保护：自身 try/catch；外部 service 也再裹一层避免推送异常阻塞主业务。
    */
   emitOrderNew(merchantId: string, payload: any) {
-    if (!this.server || !merchantId) return
+    if (!merchantId) return
     try {
-      this.server.to(`merchant:${merchantId}`).emit('order:new', payload)
+      this.server?.to(`merchant:${merchantId}`).emit('order:new', payload)
+      this.harmonyRealtime?.emitMerchant(merchantId, 'order.new', payload)
+      void this.harmonyPush?.sendToMerchant(merchantId, {
+        topic: 'orders',
+        title: '收到新订单',
+        body: payload?.no ? `订单 ${payload.no} 已创建，请及时查看` : '收到一笔新订单，请及时查看',
+        data: {
+          route: 'order-detail',
+          id: payload?.id || payload?.orderId || '',
+          status: payload?.status || '',
+        },
+        appMessageId: payload?.id ? `order-new-${payload.id}` : undefined,
+      })
     } catch (e: any) {
       this.logger.warn(`emitOrderNew failed merchantId=${merchantId}: ${e?.message || e}`)
     }
@@ -310,9 +357,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * payload 建议字段：{ orderId, no?, status, updatedAt }
    */
   emitOrderUpdate(merchantId: string, payload: any) {
-    if (!this.server || !merchantId) return
+    if (!merchantId) return
     try {
-      this.server.to(`merchant:${merchantId}`).emit('order:update', payload)
+      this.server?.to(`merchant:${merchantId}`).emit('order:update', payload)
+      this.harmonyRealtime?.emitMerchant(merchantId, 'order.update', payload)
+      const status = String(payload?.status || '')
+      const statusText: Record<string, string> = {
+        pending_shipment: '已付款，等待发货',
+        shipped: '已发货',
+        completed: '已完成',
+        cancelled: '已取消',
+        after_sale: '进入售后处理',
+      }
+      if (statusText[status]) {
+        const id = payload?.orderId || payload?.id || ''
+        void this.harmonyPush?.sendToMerchant(merchantId, {
+          topic: 'orders',
+          title: '订单状态更新',
+          body: payload?.no
+            ? `订单 ${payload.no} ${statusText[status]}`
+            : `一笔订单${statusText[status]}`,
+          data: { route: 'order-detail', id, status },
+          appMessageId: id ? `order-${status}-${id}` : undefined,
+        })
+      }
     } catch (e: any) {
       this.logger.warn(`emitOrderUpdate failed merchantId=${merchantId}: ${e?.message || e}`)
     }
@@ -325,9 +393,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * 预留接口给未来 user-mp 退款入口或 admin 代发起退款接入）。
    */
   emitRefundNew(merchantId: string, payload: any) {
-    if (!this.server || !merchantId) return
+    if (!merchantId) return
     try {
-      this.server.to(`merchant:${merchantId}`).emit('refund:new', payload)
+      this.server?.to(`merchant:${merchantId}`).emit('refund:new', payload)
+      this.harmonyRealtime?.emitMerchant(merchantId, 'refund.new', payload)
+      const id = payload?.refundId || payload?.id || ''
+      const status = String(payload?.status || 'pending')
+      void this.harmonyPush?.sendToMerchant(merchantId, {
+        topic: 'refunds',
+        title: status === 'pending' ? '收到新的售后申请' : '售后状态更新',
+        body: payload?.no
+          ? `售后单 ${payload.no} 有新的处理动态`
+          : '有一笔售后申请需要查看',
+        data: { route: 'after-sale-detail', id, status },
+        appMessageId: id ? `refund-${status}-${id}` : undefined,
+      })
     } catch (e: any) {
       this.logger.warn(`emitRefundNew failed merchantId=${merchantId}: ${e?.message || e}`)
     }
@@ -345,12 +425,70 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
    *   - 失败 fire-and-forget，不阻塞 HTTP 主流程；DB 已落库的消息丢推送也不影响后续轮询
    *   - 仅推送给已 join(`session:<sessionId>`) 的 socket；用户/商家未在线就跳过
    */
-  emitChatMessage(sessionId: string, message: any) {
-    if (!this.server || !sessionId) return
+  /**
+   * 同时推送会话详情事件和列表级事件。
+   * chat:message 发到 merchant/user 身份房间，列表页无需 join 最多100个 session 房间。
+   */
+  emitChatMessage(
+    sessionId: string,
+    message: any,
+    session?: { merchantId?: string; userId?: string },
+  ) {
+    if (!sessionId) return
     try {
-      this.server.to(`session:${sessionId}`).emit('message', { sessionId, message })
+      this.server?.to(`session:${sessionId}`).emit('message', { sessionId, message })
+      const payload = { sessionId, message }
+      if (session?.merchantId) {
+        this.server?.to(`merchant:${session.merchantId}`).emit('chat:message', payload)
+        this.harmonyRealtime?.emitChatMessage(sessionId, session.merchantId, message)
+        if (message?.sender === 'user') {
+          const content =
+            message?.type === 'image'
+              ? '[图片]'
+              : String(message?.content || '客户发来一条新消息').slice(0, 80)
+          void this.harmonyPush?.sendToMerchant(session.merchantId, {
+            topic: 'chat',
+            title: '客户发来新消息',
+            body: content,
+            data: { route: 'chat-detail', id: sessionId },
+            appMessageId: message?.id ? `chat-${message.id}` : undefined,
+          })
+        }
+      }
+      if (session?.userId) {
+        this.server?.to(`user:${session.userId}`).emit('chat:message', payload)
+      }
     } catch (e: any) {
       this.logger.warn(`emitChatMessage failed sessionId=${sessionId}: ${e?.message || e}`)
+    }
+  }
+
+  emitReadReceipt(sessionId: string, byRole: 'user' | 'merchant') {
+    if (!this.server || !sessionId) return
+    try {
+      const payload = { sessionId, byRole }
+      this.server.to(`session:${sessionId}`).emit('read', payload)
+      // HarmonyOS NEXT uses a separate pure-JSON socket. Resolve the owning merchant
+      // asynchronously so customer read receipts also reach native merchant clients.
+      void this.prisma.chatSession
+        .findUnique({ where: { id: sessionId }, select: { merchantId: true } })
+        .then((session) => {
+          if (session?.merchantId) this.harmonyRealtime?.emitMerchant(session.merchantId, 'chat.read', payload)
+        })
+        .catch(() => {})
+    } catch (e: any) {
+      this.logger.warn(`emitReadReceipt failed sessionId=${sessionId}: ${e?.message || e}`)
+    }
+  }
+
+  isUserOnline(userId: string): boolean {
+    if (!this.server || !userId) return false
+    try {
+      const rooms: Map<string, Set<string>> | undefined = (this.server as any)?.sockets?.adapter
+        ?.rooms
+      return !!rooms?.get(`user:${userId}`)?.size
+    } catch {
+      return false
     }
   }
 }

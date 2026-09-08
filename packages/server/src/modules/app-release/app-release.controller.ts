@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   Post,
   Query,
@@ -38,6 +39,7 @@ export class AppReleaseController {
         versionCode: Number(body.versionCode),
         changelog: body.changelog,
         force: body.force === true || body.force === 'true',
+        storeUrl: body.storeUrl,
       },
       user?.sub,
     )
@@ -60,6 +62,7 @@ export class AppReleaseController {
   // ===== 端上公开（启动时检查更新）=====
   @Public()
   @Get('m/app/latest')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate')
   merchantLatest(@Query('platform') platform?: string) {
     return this.svc.latest(platform || 'merchant')
   }

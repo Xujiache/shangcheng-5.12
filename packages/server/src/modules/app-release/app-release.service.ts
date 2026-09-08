@@ -9,7 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service'
 import { FilesService } from '../files/files.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 
-export type AppPlatform = 'merchant' | 'platform'
+export type AppPlatform = 'merchant' | 'platform' | 'merchant-harmony'
 
 export interface CreateReleaseDto {
   platform: AppPlatform
@@ -17,6 +17,7 @@ export interface CreateReleaseDto {
   versionCode: number
   changelog?: string
   force?: boolean
+  storeUrl?: string
 }
 
 @Injectable()
@@ -27,8 +28,11 @@ export class AppReleaseService {
   ) {}
 
   private assertPlatform(p?: string): AppPlatform {
-    if (p === 'merchant' || p === 'platform') return p
-    throw new BizException(BizCode.INVALID_PARAMS, 'platform 仅支持 merchant / platform')
+    if (p === 'merchant' || p === 'platform' || p === 'merchant-harmony') return p
+    throw new BizException(
+      BizCode.INVALID_PARAMS,
+      'platform 仅支持 merchant / platform / merchant-harmony',
+    )
   }
 
   /** 创建发布：先上传 APK，再写库 */
@@ -50,15 +54,28 @@ export class AppReleaseService {
       )
     }
 
-    const uploaded = await this.files.uploadApk(file, createdById)
+    let releaseUrl = ''
+    let releaseSize = 0
+    if (platform === 'merchant-harmony') {
+      const storeUrl = String(dto.storeUrl || '').trim()
+      if (!/^https:\/\//i.test(storeUrl)) {
+        throw new BizException(BizCode.INVALID_PARAMS, '鸿蒙版本必须填写 HTTPS AppGallery 地址')
+      }
+      releaseUrl = storeUrl
+    } else {
+      if (!file) throw new BizException(BizCode.INVALID_PARAMS, '请选择 APK 文件')
+      const uploaded = await this.files.uploadApk(file, createdById)
+      releaseUrl = uploaded.url
+      releaseSize = uploaded.size
+    }
 
     const row = await this.prisma.appRelease.create({
       data: {
         platform,
         version: dto.version,
         versionCode,
-        url: uploaded.url,
-        size: uploaded.size,
+        url: releaseUrl,
+        size: releaseSize,
         changelog: dto.changelog || '',
         force: !!(dto.force === true || String(dto.force) === 'true'),
         createdById: createdById || null,
@@ -121,6 +138,7 @@ export class AppReleaseService {
       version: row.version,
       versionCode: row.versionCode,
       url: row.url,
+      storeUrl: p === 'merchant-harmony' ? row.url : null,
       size: row.size,
       changelog: row.changelog,
       force: row.force,

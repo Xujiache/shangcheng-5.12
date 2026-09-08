@@ -154,7 +154,10 @@ describe('UserMpService.listCart available 聚合', () => {
 describe('UserMpService.addFavorite 幂等收藏', () => {
   it('调用 favorite.upsert，where 为复合主键 userId_productId', async () => {
     const upsert = jest.fn(async (..._args: any[]) => ({ id: 'f1' }))
-    const prisma = { favorite: { upsert } }
+    const prisma = {
+      product: { findUnique: jest.fn(async () => ({ merchantId: 'm1' })) },
+      favorite: { upsert },
+    }
     const svc = new UserMpService(prisma as any, makeWxpayMock() as any, makeChatMock() as any)
 
     const r = await svc.addFavorite('u1', 'p1')

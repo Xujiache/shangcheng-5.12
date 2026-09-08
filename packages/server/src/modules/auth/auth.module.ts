@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 import { JwtModule } from '@nestjs/jwt'
 import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
@@ -9,10 +10,14 @@ import { resolveJwtSecret } from '../../common/utils/jwt-secret.util'
 
 @Module({
   imports: [
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      secret: resolveJwtSecret(),
-      signOptions: { expiresIn: '2h' },
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: resolveJwtSecret(config.get<string>('JWT_SECRET'), config.get<string>('NODE_ENV')),
+        signOptions: { expiresIn: '2h' },
+      }),
     }),
     // 引入 PlatformModule 让 admin-pc-compat 委托 PlatformService 完成
     // 管理员/角色列表查询，避免在该 controller 直接调 Prisma 散漏鉴权/分页逻辑

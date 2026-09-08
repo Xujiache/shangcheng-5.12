@@ -1,13 +1,20 @@
 import { Injectable, Optional } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import * as argon2 from 'argon2'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
+import { AuthUser } from '../../common/decorators/current-user.decorator'
 import { buildPage, parsePage } from '../../common/utils/pagination.util'
 import { decimalToNumber } from '../../common/utils/decimal.util'
 import { orderNo, refundNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
 import { ChatGateway } from '../chat/chat.gateway'
 import { ContentSecurityService } from '../content-security/content-security.service'
+import { MerchantApplyDto } from './dto/merchant-apply.dto'
+import {
+  getInternalTestMerchantIds,
+  isInternalTestMerchant,
+} from '../../common/utils/internal-test-merchant.util'
 
 /** Haversine 公式：两点经纬度直线距离（km，保留两位小数） */
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -38,6 +45,13 @@ export class UserMpService {
       throw new BizException(BizCode.BUSINESS_ERROR, '内容安全服务未初始化，暂时无法提交内容')
     }
     await this.contentSecurity?.assertTextSafe(content, { scope: 'mall', scene })
+  }
+
+  /** 顾客端对内部测试商户统一表现为“不存在”，不泄露测试环境标记。 */
+  private async assertPublicMerchant(merchantId: string | null | undefined) {
+    if (await isInternalTestMerchant(this.prisma, merchantId)) {
+      throw new BizException(BizCode.NOT_FOUND, '内容不存在')
+    }
   }
 
   // ========== 用户资料（读写 + WS 实时多端同步） ==========
@@ -235,6 +249,7 @@ export class UserMpService {
    */
   async listProducts(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     // 自动通过(auto_approved) = 已上架可售，与 active 等价对用户可见
     const where: any = { status: { in: ['active', 'auto_approved'] } }
     if (q.keyword) {
@@ -249,7 +264,14 @@ export class UserMpService {
       const ids = [q.categoryId, ...children.map((c) => c.id)]
       where.categoryId = { in: ids }
     }
-    if (q.merchantId) where.merchantId = q.merchantId
+    if (q.merchantId) {
+      if (internalMerchantIds.includes(String(q.merchantId))) {
+        return buildPage([], 0, page, pageSize)
+      }
+      where.merchantId = q.merchantId
+    } else if (internalMerchantIds.length) {
+      where.merchantId = { notIn: internalMerchantIds }
+    }
 
     const sort = String(q?.sort || '').trim()
     let orderBy: any
@@ -278,7 +300,9 @@ export class UserMpService {
   /** 店铺搜索（按关键词模糊匹配店名） */
   async searchShops(q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const where: any = { status: 'active' }
+    if (internalMerchantIds.length) where.id = { notIn: internalMerchantIds }
     const kw = String(q.keyword || '').trim()
     if (kw) where.name = { contains: kw, mode: 'insensitive' }
     if (q.type === 'factory' || q.type === 'store') where.type = q.type
@@ -318,6 +342,7 @@ export class UserMpService {
   async productDetail(id: string) {
     const p = await this.prisma.product.findUnique({ where: { id }, include: { skus: true } })
     if (!p) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+    await this.assertPublicMerchant(p.merchantId)
     return decimalToNumber(p)
   }
 
@@ -334,6 +359,8 @@ export class UserMpService {
   async listOrders(userId: string, q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
     const where: any = { userId }
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
+    if (internalMerchantIds.length) where.merchantId = { notIn: internalMerchantIds }
     if (q.status) where.status = q.status
     const [list, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -354,6 +381,7 @@ export class UserMpService {
       include: { items: true, payments: true },
     })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
+    await this.assertPublicMerchant(o.merchantId)
     // expiresIn (秒) 计算 —— user-mp 待付款倒计时直接消费该字段
     // 只在 pending_payment 状态下有意义，其他状态返回 null 避免误导
     let expiresIn: number | null = null
@@ -406,6 +434,7 @@ export class UserMpService {
       throw new BizException(BizCode.BUSINESS_ERROR, '不支持跨商户合并下单，请分别下单')
     }
     const merchantId = Array.from(merchantSet)[0]
+    await this.assertPublicMerchant(merchantId)
 
     // ===== 价格分级解析（资金安全 P0）=====
     // 之前固定按 sku.priceRetail 计价，会让会员/代理客户被收原价；同时未校验店铺规则
@@ -714,6 +743,7 @@ export class UserMpService {
   async payOrder(userId: string, id: string, _method: string) {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
+    await this.assertPublicMerchant(o.merchantId)
     if (o.status !== 'pending_payment') {
       throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单状态不允许支付')
     }
@@ -749,6 +779,7 @@ export class UserMpService {
   async confirmOrder(userId: string, id: string) {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
+    await this.assertPublicMerchant(o.merchantId)
     if (o.status !== 'shipped') throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单尚未发货')
     const completedAt = new Date()
     await this.prisma.order.update({
@@ -803,6 +834,7 @@ export class UserMpService {
       include: { items: true },
     })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
+    await this.assertPublicMerchant(o.merchantId)
 
     const allowedStatus = ['pending_shipment', 'shipped', 'completed']
     if (!allowedStatus.includes(o.status)) {
@@ -893,6 +925,7 @@ export class UserMpService {
       include: { items: true },
     })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
+    await this.assertPublicMerchant(o.merchantId)
     if (!['pending_payment', 'pending_shipment'].includes(o.status)) {
       throw new BizException(BizCode.ORDER_STATUS_INVALID, '当前状态不允许取消')
     }
@@ -936,6 +969,7 @@ export class UserMpService {
   async urgeOrder(userId: string, id: string) {
     const o = await this.prisma.order.findFirst({ where: { id, userId } })
     if (!o) throw new BizException(BizCode.NOT_FOUND, '订单不存在')
+    await this.assertPublicMerchant(o.merchantId)
     if (o.status !== 'pending_shipment') {
       throw new BizException(BizCode.ORDER_STATUS_INVALID, '订单当前状态无需催发货')
     }
@@ -1066,8 +1100,14 @@ export class UserMpService {
 
   // ========== 收藏 ==========
   async listFavorites(userId: string) {
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const favs = await this.prisma.favorite.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(internalMerchantIds.length
+          ? { product: { merchantId: { notIn: internalMerchantIds } } }
+          : {}),
+      },
       include: { product: true },
     })
     return favs.map((f) => ({
@@ -1079,6 +1119,12 @@ export class UserMpService {
     }))
   }
   async addFavorite(userId: string, productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { merchantId: true },
+    })
+    if (!product) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+    await this.assertPublicMerchant(product.merchantId)
     await this.prisma.favorite.upsert({
       where: { userId_productId: { userId, productId } },
       update: {},
@@ -1101,11 +1147,13 @@ export class UserMpService {
    */
   async listAvailableCoupons() {
     const now = new Date()
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const all = await this.prisma.coupon.findMany({
       where: {
         status: 'active',
         validFrom: { lte: now },
         validTo: { gte: now },
+        ...(internalMerchantIds.length ? { merchantId: { notIn: internalMerchantIds } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -1138,6 +1186,7 @@ export class UserMpService {
     // 这些字段并不依赖"本用户已领数量"，提前拦截可避免无谓开事务。
     const c = await this.prisma.coupon.findUnique({ where: { id: couponId } })
     if (!c) throw new BizException(BizCode.NOT_FOUND, '优惠券不存在')
+    await this.assertPublicMerchant(c.merchantId)
     if (c.status !== 'active') {
       throw new BizException(BizCode.BUSINESS_ERROR, '优惠券未上架或已下架')
     }
@@ -1245,8 +1294,12 @@ export class UserMpService {
     if (!rows.length) return []
 
     const couponIds = Array.from(new Set(rows.map((r) => r.couponId)))
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const coupons = await this.prisma.coupon.findMany({
-      where: { id: { in: couponIds } },
+      where: {
+        id: { in: couponIds },
+        ...(internalMerchantIds.length ? { merchantId: { notIn: internalMerchantIds } } : {}),
+      },
       include: { merchant: { select: { id: true, name: true } } },
     })
     const cmap = new Map(coupons.map((c) => [c.id, c]))
@@ -1527,11 +1580,13 @@ export class UserMpService {
     const userLng = q.lng !== undefined && q.lng !== '' ? Number(q.lng) : NaN
     const hasUserLoc = Number.isFinite(userLat) && Number.isFinite(userLng)
 
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const stores = await this.prisma.store.findMany({
       where: {
         status: 'active',
         latitude: { not: null },
         longitude: { not: null },
+        ...(internalMerchantIds.length ? { merchantId: { notIn: internalMerchantIds } } : {}),
       },
       take: 200,
     })
@@ -1561,33 +1616,58 @@ export class UserMpService {
   }
 
   // ========== 入驻申请 ==========
-  async merchantApply(userId: string | null, dto: any) {
-    if (!userId) throw new BizException(BizCode.UNAUTHORIZED, '请先登录')
-    const exists = await this.prisma.merchant.findUnique({ where: { userId } })
-    if (exists) throw new BizException(BizCode.CONFLICT, '已提交入驻申请')
-    const m = await this.prisma.merchant.create({
-      data: {
-        userId,
-        type: dto.type || 'store',
-        name: dto.name || dto.legalName,
-        legalName: dto.legalName || dto.name,
-        creditCode: dto.creditCode || '',
-        legalRep: dto.legalRep || '',
-        contact: dto.contact || dto.legalRep || '',
-        contactPhone: dto.contactPhone || dto.phone || '',
-        region: dto.region || '',
-        address: dto.address || '',
-        businessLicense: dto.businessLicense || '',
-        qualifications: dto.qualifications || [],
-        categories: dto.categories || [],
-        status: 'pending',
-      },
+  async merchantApply(authUser: AuthUser | null, dto: MerchantApplyDto) {
+    if (!authUser?.sub) throw new BizException(BizCode.UNAUTHORIZED, '请先登录')
+    const userId = authUser.sub
+
+    const m = await this.prisma.$transaction(async (tx) => {
+      const exists = await tx.merchant.findUnique({ where: { userId } })
+      if (exists) throw new BizException(BizCode.CONFLICT, '已提交入驻申请')
+
+      const user = await tx.user.findUnique({ where: { id: userId } })
+      if (!user) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+
+      // 只有“尚未设置密码”的新手机号账号才写入 passwordHash。已有密码的普通用户
+      // 即使旧/异常客户端误传 password，也直接忽略，绝不重置原密码。
+      if (!user.passwordHash && dto.password) {
+        const nowSec = Math.floor(Date.now() / 1000)
+        const smsAuthIsFresh =
+          authUser.amr === 'sms' &&
+          typeof authUser.amrAt === 'number' &&
+          authUser.amrAt <= nowSec + 30 &&
+          nowSec - authUser.amrAt <= 15 * 60
+        if (!smsAuthIsFresh) {
+          throw new BizException(BizCode.UNAUTHORIZED, '短信验证已过期，请重新验证手机号')
+        }
+        const passwordHash = await argon2.hash(dto.password)
+        await tx.user.update({ where: { id: userId }, data: { passwordHash } })
+      }
+
+      return tx.merchant.create({
+        data: {
+          userId,
+          type: dto.type || 'store',
+          name: dto.name || dto.legalName || '',
+          legalName: dto.legalName || dto.name || '',
+          creditCode: dto.creditCode || '',
+          legalRep: dto.legalRep || '',
+          contact: dto.contact || dto.legalRep || '',
+          contactPhone: dto.contactPhone || dto.phone || '',
+          region: dto.region || '',
+          address: dto.address || '',
+          businessLicense: dto.businessLicense || '',
+          qualifications: dto.qualifications || [],
+          categories: dto.categories || [],
+          status: 'pending',
+        },
+      })
     })
     return { ok: true, applyId: m.id }
   }
 
   // ========== 店铺价格规则 (user-mp 端读取) ==========
   async shopPriceRule(merchantId: string) {
+    await this.assertPublicMerchant(merchantId)
     const cfg = await this.prisma.systemConfig.findUnique({
       where: { key: `shop:${merchantId}:priceRule` },
     })
@@ -1614,6 +1694,7 @@ export class UserMpService {
    *  - 其它 → customer
    */
   async myTierInShop(userId: string, merchantId: string) {
+    await this.assertPublicMerchant(merchantId)
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (!user) return { myTier: 'guest' as const, priceAuthorized: false }
     if (['factory', 'store', 'merchant'].includes(user.role)) {
@@ -1638,8 +1719,12 @@ export class UserMpService {
   // ========== 在线客服（用户端） ==========
 
   async chatSessions(userId: string) {
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const sessions = await this.prisma.chatSession.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(internalMerchantIds.length ? { merchantId: { notIn: internalMerchantIds } } : {}),
+      },
       orderBy: { lastMessageAt: 'desc' },
       include: { merchant: { select: { id: true, name: true } } },
     })
@@ -1670,6 +1755,7 @@ export class UserMpService {
     if (!merchantId) {
       throw new BizException(BizCode.INVALID_PARAMS, '请从店铺进入客服')
     }
+    await this.assertPublicMerchant(merchantId)
     const existing = await this.prisma.chatSession.findUnique({
       where: { userId_merchantId: { userId, merchantId } },
     })
@@ -1683,6 +1769,7 @@ export class UserMpService {
   async chatMessages(userId: string, sessionId: string) {
     const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, userId } })
     if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    await this.assertPublicMerchant(s.merchantId)
     return this.prisma.chatMessage.findMany({
       where: { sessionId },
       orderBy: { createdAt: 'asc' },
@@ -1693,6 +1780,7 @@ export class UserMpService {
   async chatSend(userId: string, sessionId: string, type: string, content: string) {
     const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, userId } })
     if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    await this.assertPublicMerchant(s.merchantId)
     const m = await this.prisma.chatMessage.create({
       data: { sessionId, sender: 'user', type, content, read: false },
     })
@@ -1703,7 +1791,7 @@ export class UserMpService {
     // 同步推送给房间内的所有 WS（包括商家端）；HTTP 链路之前只写 DB，对方要等下次轮询才看得到 → P1 体验断点
     // fire-and-forget：失败不影响 HTTP 主流程
     try {
-      this.chat.emitChatMessage(sessionId, m)
+      this.chat.emitChatMessage(sessionId, m, s)
     } catch {}
     return m
   }
@@ -1711,10 +1799,12 @@ export class UserMpService {
   async chatMarkRead(userId: string, sessionId: string) {
     const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, userId } })
     if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    await this.assertPublicMerchant(s.merchantId)
     await this.prisma.chatMessage.updateMany({
       where: { sessionId, sender: 'merchant', read: false },
       data: { read: true },
     })
+    this.chat.emitReadReceipt(sessionId, 'user')
     return { ok: true }
   }
 
@@ -1729,6 +1819,7 @@ export class UserMpService {
    * 不再返回含糊的 `price` 字段。前端按 myTier + shopPriceRule 自己选展示哪个价。
    */
   async listCart(userId: string) {
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const items = await this.prisma.cartItem.findMany({
       where: { userId },
       orderBy: { updatedAt: 'desc' },
@@ -1756,41 +1847,43 @@ export class UserMpService {
         },
       },
     })
-    return items.map((it) => ({
-      id: it.id,
-      productId: it.productId,
-      skuId: it.skuId,
-      quantity: it.quantity,
-      product: it.product
-        ? {
-            id: it.product.id,
-            name: it.product.name,
-            image: it.product.images?.[0] || '',
-            status: it.product.status,
-            merchantId: it.product.merchantId,
-          }
-        : null,
-      sku: it.sku
-        ? {
-            id: it.sku.id,
-            specsLabel: it.sku.specsLabel,
-            priceRetail: Number(it.sku.priceRetail),
-            priceWholesale: Number(it.sku.priceWholesale),
-            priceMember: Number(it.sku.priceMember),
-            stock: it.sku.stock,
-            active: it.sku.active,
-          }
-        : null,
-      // 整条是否仍可下单（前端给灰禁用 + 提示用）
-      available:
-        !!it.product &&
-        ['active', 'auto_approved'].includes(it.product.status) &&
-        !!it.sku &&
-        it.sku.active &&
-        it.sku.stock > 0,
-      createdAt: it.createdAt,
-      updatedAt: it.updatedAt,
-    }))
+    return items
+      .filter((it) => !internalMerchantIds.includes(it.product?.merchantId || ''))
+      .map((it) => ({
+        id: it.id,
+        productId: it.productId,
+        skuId: it.skuId,
+        quantity: it.quantity,
+        product: it.product
+          ? {
+              id: it.product.id,
+              name: it.product.name,
+              image: it.product.images?.[0] || '',
+              status: it.product.status,
+              merchantId: it.product.merchantId,
+            }
+          : null,
+        sku: it.sku
+          ? {
+              id: it.sku.id,
+              specsLabel: it.sku.specsLabel,
+              priceRetail: Number(it.sku.priceRetail),
+              priceWholesale: Number(it.sku.priceWholesale),
+              priceMember: Number(it.sku.priceMember),
+              stock: it.sku.stock,
+              active: it.sku.active,
+            }
+          : null,
+        // 整条是否仍可下单（前端给灰禁用 + 提示用）
+        available:
+          !!it.product &&
+          ['active', 'auto_approved'].includes(it.product.status) &&
+          !!it.sku &&
+          it.sku.active &&
+          it.sku.stock > 0,
+        createdAt: it.createdAt,
+        updatedAt: it.updatedAt,
+      }))
   }
 
   /**
@@ -1810,6 +1903,7 @@ export class UserMpService {
 
     const product = await this.prisma.product.findUnique({ where: { id: productId } })
     if (!product) throw new BizException(BizCode.NOT_FOUND, '商品不存在')
+    await this.assertPublicMerchant(product.merchantId)
     // auto_approved（自动免审上架）与 active 同属"在售可购"，与列表/详情可见性、立即购买保持一致，
     // 否则会出现"能立即购买却不能加购物车"的自相矛盾。
     if (!['active', 'auto_approved'].includes(product.status)) {
@@ -1872,9 +1966,13 @@ export class UserMpService {
   async updateCart(userId: string, id: string, dto: { quantity: number }) {
     const item = await this.prisma.cartItem.findFirst({
       where: { id, userId },
-      include: { sku: { select: { stock: true, active: true } } },
+      include: {
+        sku: { select: { stock: true, active: true } },
+        product: { select: { merchantId: true } },
+      },
     })
     if (!item) throw new BizException(BizCode.NOT_FOUND, '购物车条目不存在或无权限')
+    await this.assertPublicMerchant(item.product.merchantId)
 
     const qty = Math.floor(Number(dto?.quantity ?? 0))
     if (!Number.isFinite(qty) || qty < 1) {
