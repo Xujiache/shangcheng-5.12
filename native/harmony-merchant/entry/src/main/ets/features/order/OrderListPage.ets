@@ -126,11 +126,11 @@ export struct OrderListPage {
         Row() {
           Blank();
           IBestButton({ text: I18n.text(this.language, '立即发货', 'Ship now'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => AppRouter.push('OrderDetail', new IdRouteParams(item.id, 'ship')) });
-        }.width('100%').onClick((event: ClickEvent): void => event.stopPropagation());
+        }.width('100%').onClick((): void => { /* Consume this tap without blocking parent scrolling. */ });
       } else if (item.status === 'shipped') {
-        Row() { Blank(); IBestButton({ text: I18n.text(this.language, '查看物流', 'View tracking'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('OrderDetail', new IdRouteParams(item.id)) }); }.width('100%').onClick((event: ClickEvent): void => event.stopPropagation());
+        Row() { Blank(); IBestButton({ text: I18n.text(this.language, '查看物流', 'View tracking'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('OrderDetail', new IdRouteParams(item.id)) }); }.width('100%').onClick((): void => { /* Consume this tap without blocking parent scrolling. */ });
       } else if (item.status === 'after_sale') {
-        Row() { Blank(); IBestButton({ text: I18n.text(this.language, '处理售后', 'Handle request'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('AfterSale') }); }.width('100%').onClick((event: ClickEvent): void => event.stopPropagation());
+        Row() { Blank(); IBestButton({ text: I18n.text(this.language, '处理售后', 'Handle request'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('AfterSale') }); }.width('100%').onClick((): void => { /* Consume this tap without blocking parent scrolling. */ });
       }
     }
     .width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)

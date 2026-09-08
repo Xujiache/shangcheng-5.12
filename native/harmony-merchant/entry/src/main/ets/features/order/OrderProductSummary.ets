@@ -10,7 +10,7 @@ export struct OrderProductSummary {
   build() {
     Row({ space: 12 }) {
       ResilientRemoteImage({ originalUrl: this.item.productImage || '', widthValue: 64, heightValue: 64, radius: 10 })
-        .onClick((event: ClickEvent): void => event.stopPropagation());
+        .onClick((): void => { /* Consume this tap without blocking parent scrolling. */ });
       Column({ space: 5 }) {
         Text(this.item.productName)
           .width('100%').fontSize(14).fontWeight(FontWeight.Medium)
