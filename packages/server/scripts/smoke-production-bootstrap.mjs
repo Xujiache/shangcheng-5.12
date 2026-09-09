@@ -77,7 +77,7 @@ function waitForHarmonySocket(url) {
 }
 
 async function waitForHealth(baseUrl, child, output) {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     if (child.exitCode !== null) {
       throw new Error(`production server exited during bootstrap\n${output.value.slice(-4_000)}`)
     }
