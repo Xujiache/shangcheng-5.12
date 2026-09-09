@@ -2,8 +2,8 @@ import { IBestIcon } from '@ibestservices/ibest-ui';
 
 /**
  * Compile-time whitelist for every semantic icon owned by the merchant app.
- * IBestIcon deliberately renders unknown string values as text, so feature
- * pages must use this wrapper instead of passing arbitrary icon names.
+ * IBestIcon is backed by GeneratedIconRegistry through the reviewed vendor
+ * adapter. Preserve semantic names while all controls use generated bitmaps.
  */
 export type MerchantIconName =
   'wap-home-o' |
@@ -53,7 +53,7 @@ export type MerchantIconName =
   'checked' |
   'replay' |
   'question-o' |
-  'envelop-o';
+  'envelop-o' | 'lock' | 'search' | 'clock-o';
 
 @Component
 export struct MerchantIcon {

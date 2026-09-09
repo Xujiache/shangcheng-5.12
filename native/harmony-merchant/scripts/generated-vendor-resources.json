@@ -1,0 +1,67 @@
+[
+  {
+    "target": "src/main/ets/components/icon/index.ets",
+    "source": "patches/generated-icons/IBestIcon.ets",
+    "originalSha256": "f6631cf0f203b79180470772e3a59d14ada903f218dee3ef9802d5301151433e"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_default_avatar.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_default_avatar.png",
+    "source": "entry/src/main/resources/base/media/commerce_profile_lite.png",
+    "originalSha256": "6e941504303f864f151ed2720460a47ad5b5c2ca494258bca51c9efd341085cb"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_delete.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_delete.png",
+    "source": "entry/src/main/resources/base/media/ui_backspace.png",
+    "originalSha256": "e39c7eec6857da0cc5395b8e22fe5c8388337272a29a470788b2d303ec6f9ea1"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_empty.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_empty.png",
+    "source": "entry/src/main/resources/base/media/commerce_products_lite.png",
+    "originalSha256": "ae964c49d266816a838c26f719d6ad3cb5cf373a95f947e7b8d9090fb086bd6a"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_empty_error.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_empty_error.png",
+    "source": "entry/src/main/resources/base/media/commerce_rejected_lite.png",
+    "originalSha256": "0e35e32bacb2342222a19dfe281b4ef8d5c0d47a93934fcf4ddb8c4a51896b19"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_empty_network_error.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_empty_network_error.png",
+    "source": "entry/src/main/resources/base/media/ui_network.png",
+    "originalSha256": "34bac2fd0bb0cfad77d8e2b7c7cfb27c94b6ae01c0861cea16d9d13e9be69760"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_empty_search_error.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_empty_search_error.png",
+    "source": "entry/src/main/resources/base/media/ui_search.png",
+    "originalSha256": "71455dd05701f6790d0e8e0ea7bde889e6b3d498b6f8b8281fa2aa9ec73a492e"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_icon_star_o.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_icon_star_o.png",
+    "source": "entry/src/main/resources/base/media/ui_star.png",
+    "originalSha256": "6dfd990e52ba713d9706bd97930a73f45dd34fc9cc77440c6e7045fd1f8b67f0"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_icon_star.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_icon_star.png",
+    "source": "entry/src/main/resources/base/media/ui_star.png",
+    "originalSha256": "41ea59561dd752033770a01549777abdbd1a7f071e342e7729c4953b6dc60ab9"
+  },
+  {
+    "target": "src/main/resources/base/media/ibest_key_board.svg",
+    "pngTarget": "src/main/resources/base/media/ibest_key_board.png",
+    "source": "entry/src/main/resources/base/media/ui_keyboard.png",
+    "originalSha256": "94f5a9d2a1775b814bc6c9626910cd959af2489f4192367ab6b3b8db5e6e9719"
+  },
+  {
+    "target": "src/main/ets/components/field/index.ets",
+    "source": "patches/generated-icons/field-password-icons.json",
+    "originalSha256": "589aee5f5888ddd1cf7f373bac62c220168305bc65c8e9c873e29fce3322c19a",
+    "textReplacement": true
+  }
+]

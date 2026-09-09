@@ -1,6 +1,7 @@
 import { DesignTokens } from '../theme/DesignTokens';
 import { MerchantIcon } from '../theme/MerchantIcon';
 import { I18n } from '../i18n/I18n';
+import { ImageAttempt, RemoteImagePolicy } from './RemoteImagePolicy';
 
 @Component
 export struct ResilientRemoteImage {
@@ -11,68 +12,65 @@ export struct ResilientRemoteImage {
   @Prop radius: number = 12;
   @StorageLink('darkMode') private darkMode: boolean = false;
   @StorageLink('language') private language: string = 'zh-CN';
-  @State private currentUrl: string = '';
+  @State private attempts: ImageAttempt[] = [];
   @State private loading: boolean = true;
   @State private failed: boolean = false;
-  private usingOriginal: boolean = false;
+  private sequence: number = 0;
 
-  aboutToAppear(): void {
-    this.resetSource();
-  }
-
+  aboutToAppear(): void { this.resetSource(); }
+  aboutToDisappear(): void { this.sequence += 1; }
   private resetSource(): void {
-    this.usingOriginal = !this.thumbnailUrl;
-    this.currentUrl = this.thumbnailUrl || this.originalUrl;
-    this.loading = this.currentUrl.length > 0;
-    this.failed = this.currentUrl.length === 0;
+    const url = RemoteImagePolicy.first((this.thumbnailUrl || '').trim(), (this.originalUrl || '').trim());
+    this.start(url);
   }
-
-  private onLoadFailed(): void {
-    if (!this.usingOriginal && this.originalUrl && this.originalUrl !== this.currentUrl) {
-      this.usingOriginal = true;
-      this.loading = true;
-      this.failed = false;
-      this.currentUrl = this.originalUrl;
-      return;
+  private start(url: string): void {
+    this.sequence += 1;
+    this.loading = !!url;
+    this.failed = false;
+    this.attempts = url ? [new ImageAttempt(this.sequence, url)] : [];
+  }
+  private onLoadFailed(attempt: ImageAttempt): void {
+    if (attempt.id !== this.sequence) return;
+    if (attempt.url === this.thumbnailUrl && this.originalUrl && this.originalUrl !== attempt.url) {
+      RemoteImagePolicy.failedThumbnail(attempt.url);
+      this.start(this.originalUrl);
+    } else {
+      this.loading = false;
+      this.failed = true;
     }
-    this.loading = false;
-    this.failed = true;
   }
-
-  private retry(): void {
-    this.resetSource();
-  }
-
   build() {
     Stack({ alignContent: Alignment.Center }) {
-      if (this.loading) {
-        Column()
-          .width('100%').height('100%')
-          .backgroundColor(DesignTokens.subtle(this.darkMode));
-        LoadingProgress().width(22).height(22).color(DesignTokens.brand(this.darkMode));
-      }
-      if (this.currentUrl && !this.failed) {
-        Image(this.currentUrl)
-          .width('100%').height('100%')
-          .objectFit(ImageFit.Cover)
-          .sourceSize({ width: 480, height: 480 })
-          .opacity(this.loading ? 0 : 1)
-          .onComplete((): void => {
-            this.loading = false;
-            this.failed = false;
-          })
-          .onError((): void => this.onLoadFailed());
-      }
-      if (this.failed) {
+      if (this.loading || this.attempts.length === 0) {
         Column({ space: 5 }) {
-          MerchantIcon({ name: 'warning-o', color: DesignTokens.muted(this.darkMode), iconSize: 18 });
-          Text(I18n.text(this.language, '点击重试', 'Tap to retry'))
-            .fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
-        }.width('100%').height('100%').justifyContent(FlexAlign.Center).onClick(() => this.retry());
+          MerchantIcon({ name: 'photo-o', color: DesignTokens.muted(this.darkMode), iconSize: 30 });
+          if (!this.loading) {
+            Text(I18n.text(this.language, '暂无图片', 'No image')).fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
+          }
+        }.opacity(0.55);
       }
-    }
-    .width(this.widthValue).height(this.heightValue)
-    .borderRadius(this.radius).clip(true)
-    .backgroundColor(DesignTokens.subtle(this.darkMode));
+      if (!this.failed) {
+        ForEach(this.attempts, (attempt: ImageAttempt) => {
+          Image(attempt.url).width('100%').height('100%').objectFit(ImageFit.Cover)
+            .sourceSize({ width: Math.min(480, this.widthValue * 3), height: Math.min(480, this.heightValue * 3) })
+            .syncLoad(false).draggable(false).opacity(this.loading ? 0 : 1)
+            .onComplete((event): void => {
+              if (attempt.id !== this.sequence || event?.loadingStatus !== 1) return;
+              this.loading = false;
+            })
+            .onError((): void => this.onLoadFailed(attempt));
+        }, (attempt: ImageAttempt): string => `${attempt.id}:${attempt.url}`);
+      } else {
+        Button({ type: ButtonType.Normal }) {
+          Column({ space: 5 }) {
+            MerchantIcon({ name: 'replay', color: DesignTokens.muted(this.darkMode), iconSize: 22 });
+            Text(I18n.text(this.language, '重新加载', 'Retry')).fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
+          }
+        }.width('100%').height('100%').backgroundColor(Color.Transparent)
+          .accessibilityText(I18n.text(this.language, '重新加载图片', 'Retry image'))
+          .onClick((): void => this.resetSource());
+      }
+    }.width(this.widthValue).height(this.heightValue).borderRadius(this.radius).clip(true)
+      .backgroundColor(DesignTokens.subtle(this.darkMode));
   }
 }

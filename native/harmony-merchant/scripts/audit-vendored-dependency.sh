@@ -31,13 +31,7 @@ if [[ "$actual_revision" != "$expected_revision" ]]; then
   exit 1
 fi
 
-unexpected=$(git -C "$vendor_root" status --porcelain --untracked-files=all \
-  | grep -vE "^ M ($relative_target|$relative_profile)$" || true)
-if [[ -n "$unexpected" ]]; then
-  echo "Unexpected changes exist in the vendored IBest-UI tree:" >&2
-  echo "$unexpected" >&2
-  exit 1
-fi
+node "$project_root/scripts/audit-generated-vendor.mjs"
 
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT

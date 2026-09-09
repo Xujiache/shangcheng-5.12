@@ -1,0 +1,57 @@
+{
+  "observedAt": "2026-09-08T22:21:36.273477+00:00",
+  "baseline": "709de9c74554d337d7aee8a0674f9f1cbc1afa08",
+  "status": "local_verified_device_pending",
+  "build": {
+    "result": "passed",
+    "tool": "Local DevEco Studio 26 / Hvigor debug assembleHap",
+    "artifact": "D:\\DevEcoProjects\\jingwei-workspace\\native\\harmony-merchant\\entry\\build\\default\\outputs\\default\\entry-default-signed.hap",
+    "sha256": "3aed15b3eef502393536236d3b281780a80626fcc21204e2fed47c831cef71cc",
+    "bytes": 13529223,
+    "evidence": ["> hvigor \u001b[32mBUILD SUCCESSFUL in 23 s 255 ms \u001b[39m"]
+  },
+  "packagedIcons": {
+    "newUiPng": 36,
+    "newLauncherPng": 1,
+    "existingGeneratedCommercePng": 34,
+    "svgEntries": []
+  },
+  "tests": {
+    "uiLogic": {
+      "passed": 9,
+      "failed": 0
+    },
+    "serverThumbnail": {
+      "passed": 7,
+      "failed": 0
+    },
+    "arktsSyntax": {
+      "sourceFiles": 112,
+      "errors": 0
+    },
+    "generatedSourceAndVendorAudit": "passed",
+    "appearanceAndSettingsAudit": "passed",
+    "adaptivePerformanceStaticAudit": "passed",
+    "diffCheck": "passed"
+  },
+  "device": {
+    "connected": false,
+    "installedThisTurn": false,
+    "realUiAcceptance": "pending"
+  },
+  "deployment": {
+    "githubPushed": false,
+    "serverDeployed": false,
+    "historicalThumbnailsBackfilled": false
+  },
+  "preserved": [
+    "existing signing and private credentials",
+    "existing ledger project.config.json",
+    "application data and backend data"
+  ],
+  "constraints": [
+    "Thumbnail field requires backend deployment; original images still supported.",
+    "Missing historical thumbnails fall back to originals.",
+    "No on-device latency or visual acceptance claim."
+  ]
+}

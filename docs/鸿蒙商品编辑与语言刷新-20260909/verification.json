@@ -1,0 +1,46 @@
+{
+  "observedAt": "2026-09-09T19:06:57.216404+09:00",
+  "status": "local_verified_device_blocked",
+  "baseline": "709de9c74554d337d7aee8a0674f9f1cbc1afa08",
+  "build": {
+    "result": "passed",
+    "artifact": "D:\\DevEcoProjects\\jingwei-workspace\\native\\harmony-merchant\\entry\\build\\default\\outputs\\default\\entry-default-signed.hap",
+    "sha256": "064a45b1607c67be4ab9828a7f5db4316c0469f86b0e49d3f347c120e18223e1",
+    "bytes": 13660099,
+    "warnings": "Existing SDK compatibility warnings remain; no new-file warning appeared in final log"
+  },
+  "checks": {
+    "focused": {
+      "passed": 17,
+      "failed": 0
+    },
+    "appearanceAudit": "passed",
+    "generatedIconAudit": "passed",
+    "diffCheck": "passed"
+  },
+  "devEcoSourceMatches": {
+    "product/ProductEditPage.ets": true,
+    "product/ProductImageQueue.ets": true,
+    "product/ProductEditPolicy.ets": true,
+    "product/ProductEditorControls.ets": true,
+    "product/ProductMediaEditor.ets": true,
+    "profile/LocalizedMenu.ets": true,
+    "profile/SettingsPage.ets": true,
+    "profile/MePage.ets": true
+  },
+  "packagedSvgEntries": [],
+  "device": {
+    "initial": "connected, locked",
+    "final": "HDC [Empty]",
+    "installed": false,
+    "uiAcceptance": "not performed"
+  },
+  "preserved": {
+    "signingConfiguration": true,
+    "ledgerConfigHash": "12f3a5532f80082d4ded85074f78c91fd36089ad7cd3d48a5fc4f118d0da4beb",
+    "phoneData": true,
+    "serverData": true
+  },
+  "githubPushed": false,
+  "serverDeployed": false
+}

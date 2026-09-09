@@ -16,7 +16,7 @@ describe('MerchantController membership language negotiation', () => {
     }
     return {
       service,
-      controller: new MerchantController(service as never, {} as never),
+      controller: new MerchantController(service as never, {} as never, {} as never),
     }
   }
 

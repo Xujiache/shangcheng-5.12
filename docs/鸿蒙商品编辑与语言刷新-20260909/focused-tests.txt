@@ -1,0 +1,25 @@
+✔ SKU regeneration preserves matching IDs, images, amounts and stock (2.1762ms)
+✔ cancelled option drafts cannot modify nested parent values (0.5196ms)
+✔ partial upload keeps successes and retries only the chosen failed item (1.1396ms)
+✔ abandoned image request does not publish after leaving or changing account (0.406ms)
+✔ media limits and failed upload validation apply to draft as well as review (0.7152ms)
+✔ invalid dimensions, fractional stock, empty name and missing delivery are blocked (0.4529ms)
+✔ save single-flight, dirty baseline and stale page epoch (0.3635ms)
+✔ setting menu leaves subscribe to locale and are not passed translated snapshots (1.5421ms)
+✔ rapid theme/language selections persist only the latest pair (155.345ms)
+✔ late bootstrap cannot undo an already selected theme or language (34.4696ms)
+✔ storage failure keeps live selection and exposes a successful retry (22.8115ms)
+✔ explicit mode configuration echoes do not become the system preference (22.8957ms)
+✔ runtime language does not reconfigure native resources or change theme (18.9116ms)
+✔ missing initialization cannot leave save feedback stuck indefinitely (22.2691ms)
+✔ missing thumbnail falls back once and becomes eligible again after TTL (15.9781ms)
+✔ thumbnail negative cache remains bounded (8.2965ms)
+✔ virtual list unregisters listeners and notifies current subscribers (9.9059ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 795.3355

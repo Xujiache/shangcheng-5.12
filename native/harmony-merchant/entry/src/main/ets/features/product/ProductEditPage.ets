@@ -1,3 +1,4 @@
+import { KeyboardAvoidMode } from '@kit.ArkUI';
 import {
   IBestButton,
   IBestActionSheet,
@@ -18,6 +19,12 @@ import { CategoryItem, ProductDetail, ProductMutation, ProductSku, ProductSpecGr
 import { ProductRepository } from './ProductRepository';
 import { I18n } from '../../core/i18n/I18n';
 import { ProductSkuMatrix } from './ProductSkuMatrix';
+import { ProductImageItem, ProductImageQueue } from './ProductImageQueue';
+import { ProductEditPolicy, ProductEditSession, ProductFieldError } from './ProductEditPolicy';
+import { ProductMediaEditor } from './ProductMediaEditor';
+import { EditorHeading, EditorActionRow, EditorChoice, EditorNumberField } from './ProductEditorControls';
+import { ResilientRemoteImage } from '../../core/ui/ResilientRemoteImage';
+import { SessionStore } from '../../core/storage/SessionStore';
 
 @Builder
 export function ProductEditBuilder(_: string, raw: Object) {
@@ -39,8 +46,10 @@ struct ProductEditPage {
   @State private categoryId: string = '';
   @State private merchantCategoryId: string = '';
   @State private description: string = '';
-  @State private images: string[] = [];
-  @State private detailImages: string[] = [];
+  @State private descriptionExpanded: boolean = false;
+  @State private directSku: boolean = false;
+  @State private images: ProductImageItem[] = [];
+  @State private detailImages: ProductImageItem[] = [];
   @State private shippingFactory: boolean = true;
   @State private shippingLocal: boolean = false;
   @State private shippingPickup: boolean = false;
@@ -71,27 +80,63 @@ struct ProductEditPage {
   @State private skuWholesale: string = '';
   @State private skuMember: string = '';
   @State private skuStock: string = '';
+  @State private skuActive: boolean = true;
+  private previousKeyboardMode: KeyboardAvoidMode = KeyboardAvoidMode.OFFSET;
+  private ownsKeyboardMode: boolean = false;
 
-  aboutToAppear(): void { this.initialize(); }
+  @State private loadFailed: boolean = false;
+  @State private errors: ProductFieldError[] = [];
+  @State private optionsVisible: boolean = false;
+  @State private detailVisible: boolean = false;
+  @State private detailDraft: ProductImageItem[] = [];
+  private mediaOperation: number = 0;
+  @State private categoryVisible: boolean = false;
+  @State private categoryStore: boolean = false;
+  @State private categoryDraft: string = '';
+  @State private categorySearch: string = '';
+  @State private editorSkus: ProductSku[] = [];
+  @State private editorGroups: ProductSpecGroup[] = [];
+  private session: ProductEditSession = new ProductEditSession();
+  private mediaQueue: ProductImageQueue = new ProductImageQueue();
+  private scroller: Scroller = new Scroller();
+  private epoch: number = 0;
+  private owner: string = '';
+  private skuEpoch: number = 0;
+
+  aboutToAppear(): void { this.epoch = this.session.begin(); this.owner = SessionStore.shared().user?.id || ''; this.initialize(); }
+  aboutToDisappear(): void { this.session.invalidate(); this.mediaQueue.cancel(); this.skuEpoch += 1; this.restoreKeyboard(); }
+  private activateKeyboard(): void {
+    if (this.ownsKeyboardMode) return;
+    this.previousKeyboardMode = this.getUIContext().getKeyboardAvoidMode();
+    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE); this.ownsKeyboardMode = true;
+  }
+  private restoreKeyboard(): void {
+    if (!this.ownsKeyboardMode) return;
+    this.getUIContext().setKeyboardAvoidMode(this.previousKeyboardMode); this.ownsKeyboardMode = false;
+  }
+  private current(): boolean { return this.session.current(this.epoch) && this.owner === (SessionStore.shared().user?.id || ''); }
+
 
   private async initialize(): Promise<void> {
-    this.loading = true;
+    if (this.loading) return;
+    this.loading = true; this.loadFailed = false;
     try {
-      this.categories = this.flattenCategories(await ProductRepository.platformCategories());
+      const categories = await ProductRepository.platformCategories();
+      if (!this.current()) return;
+      this.categories = this.flattenCategories(categories);
       try {
-        this.merchantCategories = this.flattenCategories(await ProductRepository.merchantCategories());
-      } catch (_) {
-        this.merchantCategories = [];
-      }
+        const store = await ProductRepository.merchantCategories();
+        if (!this.current()) return;
+        this.merchantCategories = this.flattenCategories(store);
+      } catch (_) { if (this.current()) this.merchantCategories = []; }
       if (this.params.id) {
         const detail = await ProductRepository.detail(this.params.id);
+        if (!this.current()) return;
         this.fill(detail);
-      } else {
-        this.skus = [this.defaultSku()];
-      }
-    } catch (error) { IBestToast.show(error instanceof ApiError ? error.message
-      : I18n.text(this.language, '商品信息加载失败', 'Failed to load product details')); }
-    finally { this.loading = false; }
+      } else this.skus = [this.defaultSku()];
+      this.session.accept(this.snapshot());
+    } catch (_) { if (this.current()) this.loadFailed = true; }
+    finally { if (this.current()) this.loading = false; }
   }
 
   private flattenCategories(source: CategoryItem[], prefix: string = ''): CategoryItem[] {
@@ -102,7 +147,7 @@ struct ProductEditPage {
         icon: item.icon, sort: item.sort, type: item.type, children: item.children
       });
       if (item.children && item.children.length > 0) {
-        result.push(...this.flattenCategories(item.children, `${prefix}· `));
+        result.push(...this.flattenCategories(item.children, `${prefix}${item.name} / `));
       }
     });
     return result;
@@ -113,11 +158,11 @@ struct ProductEditPage {
     this.categoryId = detail.categoryId;
     this.merchantCategoryId = detail.merchantCategoryId || '';
     this.description = detail.description || '';
-    this.images = detail.images || [];
-    this.detailImages = detail.detailImages || [];
-    this.shippingFactory = detail.shipping.includes('factory');
-    this.shippingLocal = detail.shipping.includes('local');
-    this.shippingPickup = detail.shipping.includes('pickup');
+    this.images = ProductImageQueue.remote(detail.images || []);
+    this.detailImages = ProductImageQueue.remote(detail.detailImages || []);
+    this.shippingFactory = (detail.shipping || []).includes('factory');
+    this.shippingLocal = (detail.shipping || []).includes('local');
+    this.shippingPickup = (detail.shipping || []).includes('pickup');
     this.status = detail.status === 'draft' ? 'draft' : 'auditing';
     this.pricingMode = detail.pricingMode === 'by-size' ? 'by-size' : 'standard';
     this.pricePerSqm = detail.pricePerSqm !== undefined ? `${detail.pricePerSqm}` : '';
@@ -170,150 +215,107 @@ struct ProductEditPage {
     if (this.skus.length === 0) this.skus = [this.defaultSku()];
   }
 
-  private async addImages(detail: boolean): Promise<void> {
+  private addImageMenu(detail: boolean): void {
     if (this.uploading || this.saving) return;
-    this.uploading = true;
-    try {
-      const current = detail ? this.detailImages.length : this.images.length;
-      const limit = detail ? 20 : 10;
-      if (current >= limit) { IBestToast.show(I18n.text(this.language, `最多上传 ${limit} 张`, `Up to ${limit} images`)); return; }
-      const urls = await FileUploadService.chooseAndUploadImages(limit - current, 'product');
-      if (detail) this.detailImages = this.detailImages.concat(urls);
-      else this.images = this.images.concat(urls);
-    } catch (error) { IBestToast.show(error instanceof Error ? error.message
-      : I18n.text(this.language, '图片上传失败', 'Image upload failed')); }
-    finally { this.uploading = false; }
+    IBestActionSheet.show({ actions: [I18n.text(this.language, '从相册选择', 'Choose from Photos'), I18n.text(this.language, '拍照', 'Take photo')],
+      cancelText: I18n.text(this.language, '取消', 'Cancel'), onSelect: (index: number) => this.addImages(detail, index === 1) });
   }
 
-  private async captureImage(detail: boolean): Promise<void> {
+  private async addImages(detail: boolean, camera: boolean = false, replaceIndex: number = -1): Promise<void> {
     if (this.uploading || this.saving) return;
-    const current = detail ? this.detailImages.length : this.images.length;
-    const limit = detail ? 20 : 10;
-    if (current >= limit) {
-      IBestToast.show(I18n.text(this.language, `最多上传 ${limit} 张`, `Up to ${limit} images`));
-      return;
-    }
+    const operation = ++this.mediaOperation;
     this.uploading = true;
     try {
-      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      const url = await FileUploadService.captureAndUploadImage(context, 'product');
-      if (!url) return;
-      if (detail) this.detailImages = this.detailImages.concat([url]);
-      else this.images = this.images.concat([url]);
-    } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
-        : I18n.text(this.language, '拍照上传失败', 'Failed to capture and upload photo'));
-    } finally {
-      this.uploading = false;
-    }
-  }
-
-  private removeImage(index: number, detail: boolean): void {
-    if (this.uploading || this.saving) return;
-    IBestDialogUtil.open({
-      title: I18n.text(this.language, '删除图片', 'Delete image'),
-      message: !detail && index === 0
-        ? I18n.text(this.language, '当前是商品主图，删除后下一张会自动成为主图。', 'This is the cover image. The next image will become the cover after deletion.')
-        : I18n.text(this.language, '确定删除这张图片吗？', 'Delete this image?'),
-      showCancelButton: true,
-      cancelButtonText: I18n.text(this.language, '取消', 'Cancel'),
-      confirmButtonText: I18n.text(this.language, '确认', 'Confirm'),
-      confirmButtonColor: DesignTokens.danger(this.darkMode),
-      onConfirm: () => {
-        if (detail) this.detailImages = this.detailImages.filter((_: string, itemIndex: number) => itemIndex !== index);
-        else this.images = this.images.filter((_: string, itemIndex: number) => itemIndex !== index);
+      const items = detail ? this.detailDraft : this.images;
+      const remaining = replaceIndex >= 0 ? 1 : (detail ? 20 : 10) - items.length;
+      if (remaining <= 0) return;
+      const uri = camera ? await FileUploadService.captureImage(this.getUIContext().getHostContext() as common.UIAbilityContext) : '';
+      if (!this.current() || operation !== this.mediaOperation) return;
+      const uris = camera ? (uri ? [uri] : []) : await FileUploadService.chooseImages(remaining);
+      if (!this.current() || operation !== this.mediaOperation || !uris.length) return;
+      let next = this.mediaQueue.append(items, uris, detail ? 20 : 10);
+      if (replaceIndex >= 0) {
+        next = items.slice();
+        const replacement = this.mediaQueue.append([], uris, 1)[0];
+        next[replaceIndex] = replacement;
       }
-    });
+      if (detail) this.detailDraft = next; else this.images = next;
+      await this.uploadImages(detail, next);
+    } catch (_) { if (this.current()) IBestToast.show(I18n.text(this.language, '无法读取图片，请重试', 'Unable to read images. Try again.')); }
+    finally { if (this.current() && operation === this.mediaOperation) this.uploading = false; }
+  }
+
+  private async uploadImages(detail: boolean, items: ProductImageItem[]): Promise<void> {
+    await this.mediaQueue.upload(items, (uri: string) => FileUploadService.uploadImage(uri, 'product'),
+      (next: ProductImageItem[]) => { if (detail) this.detailDraft = next; else this.images = next; }, () => this.current());
+  }
+
+  private failedImageMenu(index: number, detail: boolean): void {
+    IBestActionSheet.show({ actions: [I18n.text(this.language, '重新上传', 'Retry upload'), I18n.text(this.language, '移除图片', 'Remove image')],
+      cancelText: I18n.text(this.language, '取消', 'Cancel'), onSelect: (action: number) => { if (action === 0) this.retryImage(index, detail); else this.removeImage(index, detail); } });
+  }
+
+  private async retryImage(index: number, detail: boolean): Promise<void> {
+    if (this.uploading || this.saving) return;
+    const next = (detail ? this.detailDraft : this.images).slice();
+    const item = next[index];
+    if (!item) return;
+    next[index] = new ProductImageItem(item.id, item.preview);
+    const operation = ++this.mediaOperation;
+    this.uploading = true;
+    try { await this.uploadImages(detail, next); }
+    finally { if (this.current() && operation === this.mediaOperation) this.uploading = false; }
   }
 
   private previewImage(index: number, detail: boolean): void {
-    const source = detail ? this.detailImages : this.images;
-    if (source.length > 0) IBestImagePreview.show(source, {
-      startIndex: index,
-      closeOnClickImage: false,
-      closeOnClickOverlay: true
-    });
+    const source = (detail ? this.detailDraft : this.images).map((item: ProductImageItem) => item.url || item.preview);
+    if (source.length) IBestImagePreview.show(source, { startIndex: index, closeOnClickImage: false, closeOnClickOverlay: true });
   }
 
-  private setMainImage(index: number): void {
+  private imageMenu(index: number, detail: boolean): void {
     if (this.uploading || this.saving) return;
-    if (index <= 0 || index >= this.images.length) return;
-    const next = this.images.slice();
-    const selected = next[index];
-    next.splice(index, 1);
-    next.unshift(selected);
-    this.images = next;
-    IBestToast.show(I18n.text(this.language, '已设为主图', 'Cover image updated'));
+    const actions = [I18n.text(this.language, '替换图片', 'Replace image'), I18n.text(this.language, '向前移动', 'Move earlier'),
+      I18n.text(this.language, '向后移动', 'Move later'), I18n.text(this.language, '删除图片', 'Delete image')];
+    if (!detail) actions.push(I18n.text(this.language, '设为封面', 'Set as cover'));
+    IBestActionSheet.show({ actions, cancelText: I18n.text(this.language, '取消', 'Cancel'), onSelect: (action: number) => {
+      if (!this.current()) return;
+      if (action === 0) {
+        IBestActionSheet.show({ actions: [I18n.text(this.language, '相册', 'Photos'), I18n.text(this.language, '拍照', 'Camera')],
+          cancelText: I18n.text(this.language, '取消', 'Cancel'), onSelect: (source: number) => this.addImages(detail, source === 1, index) });
+      } else if (action === 3) this.removeImage(index, detail);
+      else this.moveImage(index, action === 4 ? -index : action === 1 ? -1 : 1, detail);
+    } });
   }
 
-  private replaceImage(index: number, detail: boolean): void {
-    if (this.uploading || this.saving) return;
-    IBestActionSheet.show({
-      actions: [
-        I18n.text(this.language, '从相册选择', 'Choose from Photos'),
-        I18n.text(this.language, '拍照', 'Take photo')
-      ],
-      cancelText: I18n.text(this.language, '取消', 'Cancel'),
-      onSelect: (sourceIndex: number): void => {
-        if (sourceIndex === 0) this.replaceImageFromAlbum(index, detail);
-        else if (sourceIndex === 1) this.replaceImageFromCamera(index, detail);
-      }
-    });
+  private removeImage(index: number, detail: boolean): void {
+    IBestDialogUtil.open({ title: I18n.text(this.language, '删除图片', 'Delete image'),
+      message: I18n.text(this.language, '仅从当前商品移除，删除封面后下一张将成为封面。', 'Remove from this product. The next image replaces a deleted cover.'),
+      showCancelButton: true, cancelButtonText: I18n.text(this.language, '取消', 'Cancel'), confirmButtonText: I18n.text(this.language, '删除', 'Delete'),
+      onConfirm: () => {
+        if (!this.current() || this.uploading || this.saving) return;
+        if (detail) this.detailDraft = this.detailDraft.filter((_: ProductImageItem, i: number) => i !== index);
+        else this.images = this.images.filter((_: ProductImageItem, i: number) => i !== index);
+      } });
   }
 
-  private async replaceImageFromAlbum(index: number, detail: boolean): Promise<void> {
-    if (this.uploading || this.saving) return;
-    this.uploading = true;
-    try {
-      const urls = await FileUploadService.chooseAndUploadImages(1, 'product');
-      if (urls.length === 0) return;
-      const next = (detail ? this.detailImages : this.images).slice();
-      next[index] = urls[0];
-      if (detail) this.detailImages = next; else this.images = next;
-    } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
-        : I18n.text(this.language, '图片替换失败', 'Failed to replace image'));
-    } finally {
-      this.uploading = false;
-    }
-  }
-
-  private async replaceImageFromCamera(index: number, detail: boolean): Promise<void> {
-    if (this.uploading || this.saving) return;
-    this.uploading = true;
-    try {
-      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      const url = await FileUploadService.captureAndUploadImage(context, 'product');
-      if (!url) return;
-      const next = (detail ? this.detailImages : this.images).slice();
-      next[index] = url;
-      if (detail) this.detailImages = next; else this.images = next;
-    } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
-        : I18n.text(this.language, '图片替换失败', 'Failed to replace image'));
-    } finally {
-      this.uploading = false;
-    }
-  }
-
-  private moveImage(index: number, offset: number): void {
-    if (this.uploading || this.saving) return;
+  private moveImage(index: number, offset: number, detail: boolean): void {
+    const next = (detail ? this.detailDraft : this.images).slice();
     const target = index + offset;
-    if (target < 0 || target >= this.images.length) return;
-    const next = this.images.slice();
-    const current = next[index]; next[index] = next[target]; next[target] = current;
-    this.images = next;
+    if (target < 0 || target >= next.length) return;
+    const item = next.splice(index, 1)[0]; next.splice(target, 0, item);
+    if (detail) this.detailDraft = next; else this.images = next;
   }
 
   private openSku(index: number = -1): void {
-    this.skuEditIndex = index;
-    const sku = index >= 0 ? this.skus[index] : undefined;
+    this.skuEpoch += 1; this.skuEditIndex = index;
+    const sku = index >= 0 ? this.editorSkus[index] : undefined;
     this.skuImage = sku?.image || '';
     this.skuLabel = sku?.specsLabel || I18n.text(this.language, '默认规格', 'Default option');
     this.skuRetail = sku ? `${sku.priceRetail}` : '';
     this.skuWholesale = sku ? `${sku.priceWholesale}` : '';
     this.skuMember = sku ? `${sku.priceMember}` : '';
     this.skuStock = sku ? `${sku.stock}` : '';
+    this.skuActive = sku?.active !== false;
     this.skuEditorVisible = true;
   }
 
@@ -334,62 +336,66 @@ struct ProductEditPage {
 
   private async chooseSkuImageFromAlbum(): Promise<void> {
     if (this.skuUploading || this.saving) return;
+    const epoch = this.skuEpoch;
     this.skuUploading = true;
     try {
       const urls = await FileUploadService.chooseAndUploadImages(1, 'product');
-      if (urls.length > 0) this.skuImage = urls[0];
-    } catch (error) { IBestToast.show(error instanceof Error ? error.message
+      if (this.current() && epoch === this.skuEpoch && urls.length > 0) this.skuImage = urls[0];
+    } catch (error) { if (this.current() && epoch === this.skuEpoch) IBestToast.show(error instanceof Error ? error.message
       : I18n.text(this.language, '规格图片上传失败', 'Option image upload failed')); }
-    finally { this.skuUploading = false; }
+    finally { if (this.current() && epoch === this.skuEpoch) this.skuUploading = false; }
   }
 
   private async captureSkuImage(): Promise<void> {
     if (this.skuUploading || this.saving) return;
+    const epoch = this.skuEpoch;
     this.skuUploading = true;
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
       const url = await FileUploadService.captureAndUploadImage(context, 'product');
-      if (url) this.skuImage = url;
+      if (this.current() && epoch === this.skuEpoch && url) this.skuImage = url;
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
+      if (this.current() && epoch === this.skuEpoch) IBestToast.show(error instanceof Error ? error.message
         : I18n.text(this.language, '规格图片拍摄上传失败', 'Failed to capture and upload option image'));
     } finally {
-      this.skuUploading = false;
+      if (this.current() && epoch === this.skuEpoch) this.skuUploading = false;
     }
   }
 
   private saveSku(): void {
-    if (this.skuUploading || this.saving) return;
+    if (!this.current() || this.skuUploading || this.saving) return;
     const retail = Number(this.skuRetail);
     const wholesale = Number(this.skuWholesale);
     const member = Number(this.skuMember);
     const stock = Number(this.skuStock);
-    if (!Number.isFinite(retail) || retail < 0 ||
+    if ([this.skuRetail, this.skuWholesale, this.skuMember, this.skuStock].some((value: string) => !value.trim()) || !Number.isFinite(retail) || retail < 0 ||
       !Number.isFinite(wholesale) || wholesale < 0 || !Number.isFinite(member) || member < 0 ||
-      !Number.isFinite(stock) || stock < 0) {
+      !Number.isInteger(stock) || stock < 0) {
       IBestToast.show(I18n.text(this.language, '请完整填写规格与价格库存', 'Complete the option, prices and stock')); return;
     }
-    const previous = this.skuEditIndex >= 0 ? this.skus[this.skuEditIndex] : undefined;
+    const previous = this.skuEditIndex >= 0 ? this.editorSkus[this.skuEditIndex] : undefined;
     const sku: ProductSku = {
       id: previous?.id,
       specs: previous?.specs || {}, specValues: previous?.specValues || [],
       specsLabel: this.skuLabel.trim() || I18n.text(this.language, '默认规格', 'Default option'), priceRetail: retail, priceWholesale: wholesale,
-      priceMember: member, stock: Math.floor(stock), active: previous?.active ?? true,
+      priceMember: member, stock, active: this.skuActive,
       image: this.skuImage || undefined
     };
-    const next = this.skus.slice();
+    const next = this.editorSkus.slice();
     if (this.skuEditIndex >= 0) next[this.skuEditIndex] = sku; else next.push(sku);
-    this.skus = next;
-    this.skuEditorVisible = false;
+    this.editorSkus = next;
+    // A direct edit has a single confirmation; matrix edits remain isolated until the parent panel is confirmed.
+    if (this.directSku) this.skus = ProductEditPolicy.cloneSkus(next);
+    this.directSku = false; this.skuEpoch += 1; this.skuEditorVisible = false;
   }
 
   private openSpecEditor(index: number = -1): void {
-    if (index < 0 && this.specGroups.length >= 4) {
+    if (index < 0 && this.editorGroups.length >= 4) {
       IBestToast.show(I18n.text(this.language, '最多添加 4 个规格', 'Up to 4 option groups'));
       return;
     }
     this.specEditIndex = index;
-    const group = index >= 0 ? this.specGroups[index] : undefined;
+    const group = index >= 0 ? this.editorGroups[index] : undefined;
     this.specName = group?.name || '';
     this.specValuesText = (group?.values || []).join('，');
     this.specEditorVisible = true;
@@ -406,16 +412,16 @@ struct ProductEditPage {
       IBestToast.show(I18n.text(this.language, '请填写规格名和至少一个规格值', 'Enter an option group name and at least one value'));
       return;
     }
-    const duplicate = this.specGroups.some((item: ProductSpecGroup, index: number) =>
+    const duplicate = this.editorGroups.some((item: ProductSpecGroup, index: number) =>
       index !== this.specEditIndex && item.name === name);
     if (duplicate) {
       IBestToast.show(I18n.text(this.language, '规格名不能重复', 'Option group names must be unique'));
       return;
     }
-    const next = this.specGroups.slice();
+    const next = this.editorGroups.slice();
     const group: ProductSpecGroup = { name, values };
     if (this.specEditIndex >= 0) next[this.specEditIndex] = group; else next.push(group);
-    this.specGroups = next;
+    this.editorGroups = next;
     this.regenerateSkus();
     this.specEditorVisible = false;
   }
@@ -423,27 +429,27 @@ struct ProductEditPage {
   private confirmRemoveSpec(index: number): void {
     IBestDialogUtil.open({
       title: I18n.text(this.language, '删除规格', 'Delete option group'),
-      message: I18n.text(this.language, `删除“${this.specGroups[index].name}”后，SKU 组合会重新生成。`,
-        `SKU combinations will be regenerated after deleting “${this.specGroups[index].name}”.`),
+      message: I18n.text(this.language, `删除“${this.editorGroups[index].name}”后，SKU 组合会重新生成。`,
+        `SKU combinations will be regenerated after deleting “${this.editorGroups[index].name}”.`),
       showCancelButton: true,
       cancelButtonText: I18n.text(this.language, '取消', 'Cancel'),
       confirmButtonText: I18n.text(this.language, '确认', 'Confirm'),
       confirmButtonColor: DesignTokens.danger(this.darkMode),
       onConfirm: () => {
-        this.specGroups = this.specGroups.filter((_: ProductSpecGroup, itemIndex: number) => itemIndex !== index);
+        this.editorGroups = this.editorGroups.filter((_: ProductSpecGroup, itemIndex: number) => itemIndex !== index);
         this.regenerateSkus();
       }
     });
   }
 
   private specsRecord(values: string[]): Record<string, string> {
-    return ProductSkuMatrix.specsRecord(this.specGroups, values);
+    return ProductSkuMatrix.specsRecord(this.editorGroups, values);
   }
 
   private regenerateSkus(): void {
-    this.skus = ProductSkuMatrix.regenerate(
-      this.specGroups,
-      this.skus,
+    this.editorSkus = ProductSkuMatrix.regenerate(
+      this.editorGroups,
+      this.editorSkus,
       I18n.text(this.language, '默认规格', 'Default option')
     );
   }
@@ -456,13 +462,13 @@ struct ProductEditPage {
 
   private applyBatch(): void {
     const value = Number(this.batchValue);
-    if (!Number.isFinite(value) || value < 0 || (this.batchMode === 'price' && value <= 0)) {
+    if (!this.batchValue.trim() || !Number.isFinite(value) || value < 0 || (this.batchMode === 'price' && value <= 0) || (this.batchMode === 'stock' && !Number.isInteger(value))) {
       IBestToast.show(this.batchMode === 'price'
         ? I18n.text(this.language, '请输入有效的批发价', 'Enter a valid wholesale price')
         : I18n.text(this.language, '请输入有效库存', 'Enter valid stock'));
       return;
     }
-    this.skus = this.skus.map((sku: ProductSku): ProductSku => {
+    this.editorSkus = this.editorSkus.map((sku: ProductSku): ProductSku => {
       if (this.batchMode === 'price') {
         return {
           id: sku.id, specs: sku.specs, specValues: sku.specValues, specsLabel: sku.specsLabel,
@@ -484,419 +490,393 @@ struct ProductEditPage {
     this.pricingMode = mode;
     if (mode === 'by-size' && this.specGroups.length === 0) {
       this.specGroups = [{ name: I18n.text(this.language, '材质', 'Material'), values: [I18n.text(this.language, '默认', 'Default')] }];
-      this.regenerateSkus();
+      this.skus = ProductSkuMatrix.regenerate(this.specGroups, this.skus, I18n.text(this.language, '默认规格', 'Default option'));
     }
   }
 
-  private isUploadedUrl(value: string): boolean {
-    return value.startsWith('https://') || value.startsWith('http://');
-  }
-
-  private async save(nextStatus: string): Promise<void> {
-    if (this.saving) return;
-    if (!this.name.trim() || !this.categoryId) { IBestToast.show(I18n.text(this.language, '请填写商品名称并选择平台分类', 'Enter a product name and select a platform category')); return; }
-    if (this.images.length === 0) { IBestToast.show(I18n.text(this.language, '请至少上传一张商品图', 'Upload at least one product image')); return; }
-    if (this.pricingMode === 'standard' && this.skus.length === 0) { IBestToast.show(I18n.text(this.language, '请先配置规格并生成 SKU', 'Configure options to generate SKUs first')); return; }
-    if (this.uploading || this.skuUploading) { IBestToast.show(I18n.text(this.language, '图片仍在上传，请稍候', 'Images are still uploading')); return; }
-    if (this.images.some((url: string) => !this.isUploadedUrl(url)) ||
-      this.detailImages.some((url: string) => !this.isUploadedUrl(url)) ||
-      this.skus.some((sku: ProductSku) => !!sku.image && !this.isUploadedUrl(sku.image))) {
-      IBestToast.show(I18n.text(this.language, '存在未上传完成的图片，请重新上传', 'Some images did not finish uploading. Upload them again.')); return;
-    }
-    const pricePerSqm = Number(this.pricePerSqm);
-    const minLength = Number(this.minLength);
-    const minWidth = Number(this.minWidth);
-    const maxLength = Number(this.maxLength);
-    const maxWidth = Number(this.maxWidth);
-    const baseFee = Number(this.baseFee);
-    if (this.pricingMode === 'by-size' && (!Number.isFinite(pricePerSqm) || pricePerSqm <= 0 ||
-      !Number.isFinite(minLength) || minLength <= 0 || !Number.isFinite(minWidth) || minWidth <= 0 ||
-      !Number.isFinite(maxLength) || maxLength < minLength || !Number.isFinite(maxWidth) || maxWidth < minWidth ||
-      !Number.isFinite(baseFee) || baseFee < 0)) {
-      IBestToast.show(I18n.text(this.language, '请正确填写尺寸计价、尺寸范围和基础费', 'Enter valid size pricing, range and base fee')); return;
-    }
+  private mutation(nextStatus: string): ProductMutation {
     const shipping: string[] = [];
     if (this.shippingFactory) shipping.push('factory');
     if (this.shippingLocal) shipping.push('local');
     if (this.shippingPickup) shipping.push('pickup');
-    if (shipping.length === 0) { IBestToast.show(I18n.text(this.language, '请选择物流方式', 'Select a delivery method')); return; }
-    const normalizedSkus = ProductSkuMatrix.normalize(
-      this.specGroups,
-      this.skus,
-      I18n.text(this.language, '默认规格', 'Default option')
-    );
-    const body: ProductMutation = {
+    return {
       categoryId: this.categoryId, merchantCategoryId: this.merchantCategoryId || undefined,
-      name: this.name.trim(), description: this.description.trim(), images: this.images,
-      detailImages: this.detailImages, shipping,
-      skus: normalizedSkus, pricingMode: this.pricingMode,
-      pricePerSqm: this.pricingMode === 'by-size' ? pricePerSqm : undefined,
-      minLength: this.pricingMode === 'by-size' ? minLength : undefined,
-      minWidth: this.pricingMode === 'by-size' ? minWidth : undefined,
-      maxLength: this.pricingMode === 'by-size' ? maxLength : undefined,
-      maxWidth: this.pricingMode === 'by-size' ? maxWidth : undefined,
-      baseFee: this.pricingMode === 'by-size' ? baseFee : undefined,
-      sizeUnit: this.pricingMode === 'by-size' ? this.sizeUnit : undefined,
-      status: nextStatus
+      name: this.name.trim(), description: this.description.trim(),
+      images: this.images.map((item: ProductImageItem) => item.url), detailImages: this.detailImages.map((item: ProductImageItem) => item.url),
+      shipping, skus: this.skus, pricingMode: this.pricingMode, status: nextStatus,
+      pricePerSqm: this.pricingMode === 'by-size' ? Number(this.pricePerSqm) : undefined,
+      minLength: this.pricingMode === 'by-size' ? Number(this.minLength) : undefined,
+      minWidth: this.pricingMode === 'by-size' ? Number(this.minWidth) : undefined,
+      maxLength: this.pricingMode === 'by-size' ? Number(this.maxLength) : undefined,
+      maxWidth: this.pricingMode === 'by-size' ? Number(this.maxWidth) : undefined,
+      baseFee: this.pricingMode === 'by-size' ? Number(this.baseFee) : undefined,
+      sizeUnit: this.pricingMode === 'by-size' ? this.sizeUnit : undefined
     };
+  }
+
+  private snapshot(): string { return JSON.stringify([this.mutation(this.status), this.images, this.detailImages, this.specGroups,
+    this.pricePerSqm, this.minLength, this.minWidth, this.maxLength, this.maxWidth, this.baseFee, this.sizeUnit]); }
+
+  private async save(nextStatus: string): Promise<void> {
+    if (!this.current() || this.loading || this.loadFailed || this.saving || this.uploading || this.skuUploading) return;
+    const body = this.mutation(nextStatus);
+    this.errors = ProductEditPolicy.validate(body, this.images, this.detailImages);
+    if (this.errors.length) {
+      this.scroller.scrollToIndex(['images', 'basic', 'pricing', 'shipping'].indexOf(this.errors[0].section), true, ScrollAlign.START);
+      return;
+    }
+    if (!this.session.beginSave()) return;
+    body.skus = ProductSkuMatrix.normalize(this.specGroups, this.skus, I18n.text(this.language, '默认规格', 'Default option'));
     this.saving = true;
     try {
-      if (this.params.id) await ProductRepository.update(this.params.id, body);
-      else await ProductRepository.create(body);
-      IBestToast.show(nextStatus === 'draft'
-        ? I18n.text(this.language, '草稿已保存', 'Draft saved')
-        : I18n.text(this.language, '已提交审核', 'Submitted for review'));
+      if (this.params.id) await ProductRepository.update(this.params.id, body); else await ProductRepository.create(body);
+      if (!this.current()) return;
+      this.session.accept(this.snapshot());
+      IBestToast.show(nextStatus === 'draft' ? I18n.text(this.language, '草稿已保存', 'Draft saved') : I18n.text(this.language, '已提交审核', 'Submitted for review'));
       AppRouter.back();
-    } catch (error) { IBestToast.show(error instanceof ApiError ? error.message
-      : I18n.text(this.language, '商品保存失败', 'Failed to save product')); }
-    finally { this.saving = false; }
+    } catch (error) {
+      if (this.current()) IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '保存失败，内容已保留，请重试', 'Save failed. Your changes are kept. Try again.'));
+    } finally { this.session.finishSave(); if (this.current()) this.saving = false; }
   }
 
-  @Builder
-  private sectionTitle(title: string, hint: string = '') {
-    Row() {
-      Text(title).fontSize(17).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
-      if (hint) Text(hint).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).margin({ left: 8 });
-    }.width('100%');
+  private requestBack(): void {
+    if (this.saving) return;
+    if (this.skuEditorVisible || this.specEditorVisible || this.batchEditorVisible) { this.closeInner(); return; }
+    if (this.optionsVisible) { this.optionsVisible = false; return; }
+    if (this.categoryVisible) { this.categoryVisible = false; return; }
+    if (this.detailVisible) { this.closeDetails(false); return; }
+    if (!this.session.dirty(this.snapshot())) { AppRouter.back(); return; }
+    IBestDialogUtil.open({ title: I18n.text(this.language, '尚未保存', 'Unsaved changes'),
+      message: I18n.text(this.language, '离开将放弃本次编辑，是否继续？', 'Leave and discard these changes?'), showCancelButton: true,
+      cancelButtonText: I18n.text(this.language, '继续编辑', 'Keep editing'), confirmButtonText: I18n.text(this.language, '放弃并离开', 'Discard'),
+      onConfirm: () => { if (this.current() && !this.saving) { this.mediaQueue.cancel(); this.session.invalidate(); AppRouter.back(); } } });
   }
 
-  @Builder
-  private imageGrid(items: string[], detail: boolean) {
-    Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start }) {
-      ForEach(items, (url: string, index: number) => {
-        Stack({ alignContent: Alignment.TopEnd }) {
-          Image(url).width(92).height(92).objectFit(ImageFit.Cover).borderRadius(12)
-            .onClick(() => this.previewImage(index, detail));
-          Column() { MerchantIcon({ name: 'cross', color: Color.White, iconSize: 14 }); }
-            .width(24).height(24).justifyContent(FlexAlign.Center)
-            .backgroundColor('#B8000000').borderRadius(12).onClick(() => this.removeImage(index, detail));
-          if (!detail && index === 0) {
-            Text(I18n.text(this.language, '主图', 'Cover')).fontSize(10).fontColor(DesignTokens.onBrand(this.darkMode)).padding({ left: 5, right: 5, top: 2, bottom: 2 })
-              .backgroundColor(DesignTokens.brand(this.darkMode)).borderRadius({ bottomRight: 8 }).align(Alignment.TopStart);
-          }
-          Row({ space: 2 }) {
-            Text(I18n.text(this.language, '换', 'Swap')).width(24).height(22).textAlign(TextAlign.Center).fontSize(10)
-              .backgroundColor('#99000000').fontColor(Color.White).onClick(() => this.replaceImage(index, detail));
-            if (!detail && index > 0) {
-              Text(I18n.text(this.language, '主', 'Cover')).width(24).height(22).textAlign(TextAlign.Center).fontSize(10)
-                .backgroundColor('#99000000').fontColor(Color.White).onClick(() => this.setMainImage(index));
-            }
-          }.align(Alignment.BottomStart);
-          if (!detail) {
-            Row({ space: 2 }) {
-              Column() { MerchantIcon({ name: 'arrow-left', color: Color.White, iconSize: 14 }); }
-                .width(26).height(22).justifyContent(FlexAlign.Center).backgroundColor('#99000000').onClick(() => this.moveImage(index, -1));
-              Column() { MerchantIcon({ name: 'arrow', color: Color.White, iconSize: 14 }); }
-                .width(26).height(22).justifyContent(FlexAlign.Center).backgroundColor('#99000000').onClick(() => this.moveImage(index, 1));
-            }.align(Alignment.Bottom);
-          }
-        }.margin({ right: 8, bottom: 8 });
-      }, (url: string) => url);
-      Column({ space: 4 }) {
-        MerchantIcon({ name: 'add-o', color: DesignTokens.brand(this.darkMode), iconSize: 28 });
-        Text(this.uploading ? I18n.text(this.language, '上传中', 'Uploading')
-          : I18n.text(this.language, '添加图片', 'Add image')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+  private openDetails(): void { if (this.uploading) return; this.detailDraft = this.detailImages.slice(); this.detailVisible = true; }
+  private closeDetails(commit: boolean): void {
+    if (commit && this.uploading) return;
+    if (commit) this.detailImages = this.detailDraft.slice();
+    this.mediaOperation += 1; this.mediaQueue.cancel(); this.uploading = false; this.detailVisible = false;
+  }
+  private openPricing(): void {
+    if (!this.current() || this.loading || this.saving) return;
+    if (this.skus.length !== 1) { this.openOptions(); return; }
+    this.editorSkus = ProductEditPolicy.cloneSkus(this.skus);
+    this.editorGroups = ProductEditPolicy.cloneGroups(this.specGroups);
+    this.directSku = true; this.openSku(0);
+  }
+  private openOptions(): void { this.directSku = false; this.editorSkus = ProductEditPolicy.cloneSkus(this.skus); this.editorGroups = ProductEditPolicy.cloneGroups(this.specGroups); this.optionsVisible = true; }
+  private acceptOptions(): void { this.skus = ProductEditPolicy.cloneSkus(this.editorSkus); this.specGroups = ProductEditPolicy.cloneGroups(this.editorGroups); this.optionsVisible = false; }
+  private closeInner(): void { this.directSku = false; this.skuEpoch += 1; this.skuUploading = false; this.skuEditorVisible = false; this.specEditorVisible = false; this.batchEditorVisible = false; }
+  private openCategory(store: boolean): void { this.categoryStore = store; this.categoryDraft = store ? this.merchantCategoryId : this.categoryId; this.categorySearch = ''; this.categoryVisible = true; }
+  private acceptCategory(): void { if (!this.categoryStore && !this.categoryDraft) return; if (this.categoryStore) this.merchantCategoryId = this.categoryDraft; else this.categoryId = this.categoryDraft; this.categoryVisible = false; }
+  private categoryName(store: boolean): string { return (store ? this.merchantCategories : this.categories).find((item: CategoryItem) => item.id === (store ? this.merchantCategoryId : this.categoryId))?.name || ''; }
+  private filteredCategories(): CategoryItem[] { const q = this.categorySearch.trim().toLocaleLowerCase(); return (this.categoryStore ? this.merchantCategories : this.categories).filter((item: CategoryItem) => item.name.toLocaleLowerCase().includes(q)); }
+  private priceSummary(): string {
+    const active = this.skus.filter((sku: ProductSku) => sku.active !== false);
+    const prices = active.map((sku: ProductSku) => Number(sku.priceRetail)).filter((value: number) => Number.isFinite(value));
+    const stock = active.reduce((sum: number, sku: ProductSku) => sum + (Number(sku.stock) || 0), 0);
+    const price = this.pricingMode === 'by-size' ? `${this.skus.length} SKU`
+      : `${I18n.text(this.language, '零售', 'Retail')} ${prices.length ? `¥${Math.min(...prices).toFixed(2)}` : '—'}`;
+    return `${price} · ${I18n.text(this.language, '可售库存', 'Stock')} ${stock}`;
+  }
+
+
+  @Builder private fieldErrors(field: string) {
+    ForEach(this.errors.filter((error: ProductFieldError) => error.field === field), (error: ProductFieldError) => {
+      Text(I18n.text(this.language, error.zh, error.en)).fontSize(12).fontColor(DesignTokens.danger(this.darkMode)).width('100%');
+    }, (error: ProductFieldError) => error.field + error.en);
+  }
+
+  @Builder private imagesSection() {
+    Column({ space: 8 }) {
+      Row({ space: 8 }) {
+        EditorHeading({ zh: '商品图片', en: 'Product images', step: '01' }).layoutWeight(1);
+        Text(`${this.images.length}/10`).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+      }.width('100%');
+      ProductMediaEditor({ items: $images, busy: this.uploading || this.saving, onAdd: () => this.addImageMenu(false),
+        onPreview: (i: number) => this.previewImage(i, false), onMenu: (i: number) => this.imageMenu(i, false), onRetry: (i: number) => this.failedImageMenu(i, false) });
+      this.fieldErrors('images');
+      EditorActionRow({ zh: '详情图片', en: 'Detail images', inline: true, value: `${this.detailImages.length}/20`, action: () => this.openDetails() });
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+  }
+
+  @Builder private basicSection() {
+    Column({ space: 8 }) {
+      EditorHeading({ zh: '基础信息', en: 'Basic information', step: '02' });
+      Text(I18n.text(this.language, '商品名称 *', 'Product name *')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+      TextInput({ text: this.name, placeholder: I18n.text(this.language, '填写清晰、易识别的商品名称', 'Enter a clear product name') })
+        .height(48).fontSize(15).padding(12).borderRadius(10).backgroundColor(DesignTokens.subtle(this.darkMode))
+        .fontColor(DesignTokens.text(this.darkMode)).onChange((value: string) => { this.name = value; });
+      this.fieldErrors('name');
+      Column() {
+        EditorActionRow({ zh: '平台分类 *', en: 'Platform category *', inline: true, value: this.categoryName(false), hintZh: '请选择', hintEn: 'Select', action: () => this.openCategory(false) });
+        this.fieldErrors('category');
+        EditorActionRow({ zh: '店铺分类', en: 'Store category', inline: true, value: this.categoryName(true), hintZh: '选填 · 不归类', hintEn: 'Optional', action: () => this.openCategory(true) });
+        EditorActionRow({ zh: this.descriptionExpanded ? '收起商品描述' : '商品描述', en: this.descriptionExpanded ? 'Hide description' : 'Description', inline: true,
+          value: this.descriptionExpanded ? '' : this.description, hintZh: this.descriptionExpanded ? '收起' : '选填', hintEn: this.descriptionExpanded ? 'Collapse' : 'Optional',
+          action: () => { this.descriptionExpanded = !this.descriptionExpanded; } });
+      }.width('100%');
+      if (this.descriptionExpanded) TextArea({ text: this.description, placeholder: I18n.text(this.language, '介绍材质、用途和商品特点', 'Describe materials, uses and features') })
+        .height(96).fontSize(14).padding(12).backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode))
+        .borderRadius(10).onChange((value: string) => { this.description = value; });
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+  }
+
+  @Builder private pricingSection() {
+    Column({ space: 10 }) {
+      EditorHeading({ zh: '价格与库存', en: 'Pricing and inventory', step: '03' });
+      Row({ space: 8 }) {
+        EditorChoice({ zh: '按规格', en: 'Per SKU', selected: this.pricingMode === 'standard', action: () => this.switchPricingMode('standard') }).layoutWeight(1);
+        EditorChoice({ zh: '按尺寸', en: 'By size', selected: this.pricingMode === 'by-size', action: () => this.switchPricingMode('by-size') }).layoutWeight(1);
+      }.width('100%');
+      if (this.pricingMode === 'by-size') {
+        Row({ space: 12 }) {
+          EditorNumberField({ value: $pricePerSqm, zh: '单价（元/㎡）', en: 'Price / m²' }).layoutWeight(1);
+          EditorNumberField({ value: $baseFee, zh: '基础费用（元）', en: 'Base fee' }).layoutWeight(1);
+        }.width('100%');
+        Row({ space: 8 }) {
+          Text(I18n.text(this.language, '尺寸单位', 'Unit')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
+          EditorChoice({ zh: '厘米 cm', en: 'cm', selected: this.sizeUnit === 'cm', action: () => { this.sizeUnit = 'cm'; } }).layoutWeight(1);
+          EditorChoice({ zh: '米 m', en: 'm', selected: this.sizeUnit === 'm', action: () => { this.sizeUnit = 'm'; } }).layoutWeight(1);
+        }.width('100%');
+        Row({ space: 12 }) {
+          EditorNumberField({ value: $minLength, zh: '最小长度', en: 'Min. length' }).layoutWeight(1);
+          EditorNumberField({ value: $maxLength, zh: '最大长度', en: 'Max. length' }).layoutWeight(1);
+        }.width('100%');
+        Row({ space: 12 }) {
+          EditorNumberField({ value: $minWidth, zh: '最小宽度', en: 'Min. width' }).layoutWeight(1);
+          EditorNumberField({ value: $maxWidth, zh: '最大宽度', en: 'Max. width' }).layoutWeight(1);
+        }.width('100%');
+        Text(I18n.text(this.language, '成交价 = 长 × 宽折算平方米 × 单价 + 基础费用', 'Price = area in m² × unit rate + base fee'))
+          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+        this.fieldErrors('size');
       }
-      .width(92).height(92).justifyContent(FlexAlign.Center).border({ width: 1, color: DesignTokens.border(this.darkMode), style: BorderStyle.Dashed })
-      .borderRadius(12).onClick(() => { if (!this.uploading) this.addImages(detail); });
+      Column() {
+        EditorActionRow({ zh: '编辑价格与库存', en: 'Edit prices and stock', value: this.priceSummary(), action: () => this.openPricing() });
+        this.fieldErrors('skus');
+        EditorActionRow({ zh: '规格管理', en: 'Manage options', inline: true, value: `${this.specGroups.length} ${I18n.text(this.language, '组', 'groups')} · ${this.skus.length} SKU`, action: () => this.openOptions() });
+        EditorActionRow({ zh: '全店价格展示', en: 'Price visibility', inline: true, hintZh: '全店通用', hintEn: 'Store-wide', action: () => AppRouter.push('PriceRule') });
+      }.width('100%');
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+  }
+
+  @Builder private shippingSection() {
+    Column({ space: 8 }) {
+      EditorHeading({ zh: '配送设置', en: 'Delivery', step: '04' });
+      Text(I18n.text(this.language, '至少选择一种，可多选', 'Choose one or more methods'))
+        .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
       Column({ space: 4 }) {
-        MerchantIcon({ name: 'photograph', color: DesignTokens.brand(this.darkMode), iconSize: 27 });
-        Text(I18n.text(this.language, '拍照', 'Camera')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
-      }
-      .width(92).height(92).justifyContent(FlexAlign.Center).border({ width: 1, color: DesignTokens.border(this.darkMode), style: BorderStyle.Dashed })
-      .borderRadius(12).margin({ left: 8 })
-      .onClick(() => { if (!this.uploading) this.captureImage(detail); });
-    }.width('100%');
+        EditorChoice({ zh: '厂家直发', en: 'Factory shipping', selected: this.shippingFactory, action: () => { this.shippingFactory = !this.shippingFactory; } });
+        EditorChoice({ zh: '同城配送', en: 'Local delivery', selected: this.shippingLocal, action: () => { this.shippingLocal = !this.shippingLocal; } });
+        EditorChoice({ zh: '到店自提', en: 'Store pickup', selected: this.shippingPickup, action: () => { this.shippingPickup = !this.shippingPickup; } });
+      }.width('100%');
+      this.fieldErrors('shipping');
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+  }
+
+  @Builder private panelHeader(zh: string, en: string, close: () => void) {
+    Row({ space: 12 }) {
+      EditorHeading({ zh, en }).layoutWeight(1);
+      Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'cross', iconSize: 22 , color: DesignTokens.muted(this.darkMode) }); }
+        .width(44).height(44).backgroundColor(Color.Transparent).onClick(close)
+        .accessibilityText(I18n.text(this.language, '取消编辑', 'Cancel editing'));
+    }.width('100%').padding({ left: 18, right: 10, top: 8, bottom: 8 })
+      .border({ width: { bottom: 0.5 }, color: DesignTokens.border(this.darkMode) });
+  }
+
+  @Builder private panelFooter(zh: string, en: string, confirm: () => void, cancel: () => void) {
+    Row({ space: 12 }) {
+      Button(I18n.text(this.language, '取消', 'Cancel'), { type: ButtonType.Normal }).height(48).layoutWeight(1)
+        .fontSize(14).fontColor(DesignTokens.text(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(12).onClick(cancel);
+      Button(I18n.text(this.language, zh, en), { type: ButtonType.Normal }).height(48).layoutWeight(2)
+        .fontSize(14).fontColor(DesignTokens.onBrand(this.darkMode)).backgroundColor(DesignTokens.brand(this.darkMode)).borderRadius(12)
+        .enabled(!this.skuUploading && (!this.detailVisible || !this.uploading) && (!this.categoryVisible || this.categoryStore || !!this.categoryDraft))
+        .opacity(this.skuUploading || (this.detailVisible && this.uploading) || (this.categoryVisible && !this.categoryStore && !this.categoryDraft) ? 0.45 : 1).onClick(confirm);
+    }.width('100%').padding({ left: 18, right: 18, top: 12, bottom: this.safeBottom + 12 })
+      .backgroundColor(DesignTokens.card(this.darkMode));
+  }
+
+  @Builder private categoryPanel() {
+    Column() {
+      this.panelHeader(this.categoryStore ? '店铺分类' : '平台分类', this.categoryStore ? 'Store category' : 'Platform category', () => { this.categoryVisible = false; });
+      TextInput({ text: this.categorySearch, placeholder: I18n.text(this.language, '搜索分类', 'Search categories') }).height(48).fontSize(14)
+        .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).borderRadius(12)
+        .margin({ left: 18, right: 18, top: 16, bottom: 12 }).onChange((value: string) => { this.categorySearch = value; });
+      List({ space: 8 }) {
+        if (this.categoryStore) ListItem() {
+          EditorChoice({ zh: '不归类', en: 'Uncategorized', selected: !this.categoryDraft, action: () => { this.categoryDraft = ''; } });
+        }
+        ForEach(this.filteredCategories(), (item: CategoryItem) => {
+          ListItem() { EditorChoice({ zh: item.name, en: item.name, selected: this.categoryDraft === item.id, action: () => { this.categoryDraft = item.id; } }); }
+        }, (item: CategoryItem) => item.id);
+        if (!this.filteredCategories().length) ListItem() {
+          Text(I18n.text(this.language, '没有匹配的分类', 'No matching categories')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).padding(24);
+        }
+      }.layoutWeight(1).width('100%').padding({ left: 18, right: 18 }).scrollBar(BarState.Off);
+      this.panelFooter('确定分类', 'Use category', () => this.acceptCategory(), () => { this.categoryVisible = false; });
+    }.height('92%').width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 }).clip(true);
+  }
+
+  @Builder private detailPanel() {
+    Column() {
+      this.panelHeader('详情图片', 'Detail images', () => this.closeDetails(false));
+      Scroll() {
+        Column({ space: 16 }) {
+          Text(I18n.text(this.language, '最多 20 张，按展示顺序排列。点击完成后应用到商品草稿。', 'Up to 20 images in display order. Tap Done to apply changes to this draft.'))
+            .fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+          ProductMediaEditor({ items: $detailDraft, detail: true, busy: this.uploading, onAdd: () => this.addImageMenu(true),
+            onPreview: (i: number) => this.previewImage(i, true), onMenu: (i: number) => this.imageMenu(i, true), onRetry: (i: number) => this.failedImageMenu(i, true) });
+        }.width('100%').padding(18);
+      }.layoutWeight(1).width('100%').align(Alignment.Top);
+      this.panelFooter('完成', 'Done', () => this.closeDetails(true), () => this.closeDetails(false));
+    }.height('92%').width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 }).clip(true);
+  }
+
+  @Builder private optionsPanel() {
+    Column() {
+      this.panelHeader('规格与库存', 'Options and inventory', () => { this.optionsVisible = false; });
+      List({ space: 14 }) {
+        ListItem() {
+          Column({ space: 12 }) {
+            Text(I18n.text(this.language, '最多 4 组规格；相同组合保留原有价格与库存。', 'Up to 4 groups. Matching combinations keep existing prices and stock.'))
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+            ForEach(this.editorGroups, (group: ProductSpecGroup, i: number) => {
+              Row({ space: 8 }) {
+                Column({ space: 6 }) {
+                  Text(group.name).fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
+                  Text(group.values.join(' · ')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).maxLines(2);
+                }.layoutWeight(1).alignItems(HorizontalAlign.Start).onClick(() => this.openSpecEditor(i));
+                Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'edit', iconSize: 20 , color: DesignTokens.muted(this.darkMode) }); }
+                  .width(44).height(44).backgroundColor(Color.Transparent).onClick(() => this.openSpecEditor(i));
+                Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'delete-o', iconSize: 20 , color: DesignTokens.muted(this.darkMode) }); }
+                  .width(44).height(44).backgroundColor(Color.Transparent).onClick(() => this.confirmRemoveSpec(i));
+              }.width('100%').padding(12).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(12);
+            }, (group: ProductSpecGroup, i: number) => `${i}-${group.name}`);
+            Button(I18n.text(this.language, '添加规格组', 'Add option group'), { type: ButtonType.Normal }).width('100%').height(48)
+              .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).borderRadius(12).enabled(this.editorGroups.length < 4)
+              .onClick(() => this.openSpecEditor());
+            Row({ space: 10 }) {
+              Button(I18n.text(this.language, '批量价格', 'Set prices'), { type: ButtonType.Normal }).layoutWeight(1).height(44).borderRadius(10)
+                .backgroundColor(DesignTokens.brandTint(this.darkMode)).fontColor(DesignTokens.brand(this.darkMode)).fontSize(13).onClick(() => this.openBatchEditor('price'));
+              Button(I18n.text(this.language, '批量库存', 'Set stock'), { type: ButtonType.Normal }).layoutWeight(1).height(44).borderRadius(10)
+                .backgroundColor(DesignTokens.brandTint(this.darkMode)).fontColor(DesignTokens.brand(this.darkMode)).fontSize(13).onClick(() => this.openBatchEditor('stock'));
+            }.width('100%');
+          }.width('100%');
+        }
+        ForEach(this.editorSkus, (sku: ProductSku, i: number) => {
+          ListItem() {
+            Row({ space: 12 }) {
+              ResilientRemoteImage({ originalUrl: sku.image || '', widthValue: 56, heightValue: 56 });
+              Column({ space: 6 }) {
+                Text(sku.specsLabel).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
+                if (!sku.active) Text(I18n.text(this.language, '已停用', 'Disabled')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                Text(I18n.text(this.language, `零售 ¥${Number(sku.priceRetail).toFixed(2)} · 库存 ${sku.stock}`, `Retail ¥${Number(sku.priceRetail).toFixed(2)} · Stock ${sku.stock}`))
+                  .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+              }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+              MerchantIcon({ name: 'arrow', iconSize: 18 , color: DesignTokens.muted(this.darkMode) });
+            }.width('100%').padding({ top: 12, bottom: 12 }).onClick(() => this.openSku(i));
+          }
+        }, (sku: ProductSku, i: number) => `${i}-${JSON.stringify(sku)}`);
+      }.layoutWeight(1).width('100%').padding({ left: 18, right: 18, top: 16 }).scrollBar(BarState.Off);
+      this.panelFooter('完成编辑', 'Apply changes', () => this.acceptOptions(), () => { this.optionsVisible = false; });
+    }.height('92%').width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 }).clip(true);
+  }
+
+  @Builder private innerPanel() {
+    Column() {
+      this.panelHeader(this.skuEditorVisible ? (this.directSku ? '价格与库存' : '编辑 SKU') : this.specEditorVisible ? '编辑规格组' : '批量设置',
+        this.skuEditorVisible ? (this.directSku ? 'Prices and stock' : 'Edit SKU') : this.specEditorVisible ? 'Edit option group' : 'Bulk edit', () => this.closeInner());
+      Scroll() {
+        Column({ space: 16 }) {
+          if (this.skuEditorVisible) {
+            Text(this.skuLabel).fontSize(16).fontWeight(FontWeight.Medium).width('100%').fontColor(DesignTokens.text(this.darkMode));
+            Row({ space: 12 }) {
+              EditorNumberField({ value: $skuRetail, zh: '零售价（元）', en: 'Retail price' }).layoutWeight(1);
+              EditorNumberField({ value: $skuStock, zh: '库存', en: 'Stock', integer: true }).layoutWeight(1);
+            }.width('100%');
+            Row({ space: 12 }) {
+              EditorNumberField({ value: $skuWholesale, zh: '批发价（元）', en: 'Wholesale price' }).layoutWeight(1);
+              EditorNumberField({ value: $skuMember, zh: '会员价（元）', en: 'Member price' }).layoutWeight(1);
+            }.width('100%');
+            Row({ space: 14 }) {
+              ResilientRemoteImage({ originalUrl: this.skuImage, widthValue: 84, heightValue: 84 });
+              Column({ space: 4 }) {
+                Button(I18n.text(this.language, '选择图片', 'Choose image'), { type: ButtonType.Normal }).height(44).fontSize(13)
+                  .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).onClick(() => this.chooseSkuImage());
+                if (this.skuImage) Button(I18n.text(this.language, '移除', 'Remove'), { type: ButtonType.Normal }).height(44).fontSize(13)
+                  .backgroundColor(Color.Transparent).fontColor(DesignTokens.danger(this.darkMode)).onClick(() => { this.skuImage = ''; });
+              }.layoutWeight(1).enabled(!this.skuUploading);
+            }.width('100%');
+            if (this.skuUploading) Text(I18n.text(this.language, '图片上传中…', 'Uploading image…')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+            EditorChoice({ zh: '启用此 SKU', en: 'Enable this SKU', selected: this.skuActive, action: () => { this.skuActive = !this.skuActive; } });
+          } else if (this.specEditorVisible) {
+            IBestField({ value: $specName, label: I18n.text(this.language, '规格名称', 'Option name'), placeholder: I18n.text(this.language, '例如：颜色', 'Example: Colour') });
+            TextArea({ text: this.specValuesText, placeholder: I18n.text(this.language, '填写规格值，使用逗号分隔', 'Enter values separated by commas') })
+              .height(140).padding(14).fontSize(15).fontColor(DesignTokens.text(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(12)
+              .onChange((value: string) => { this.specValuesText = value; });
+            Text(I18n.text(this.language, '新增组合以默认价格和库存开始；未改变的组合保留原值。', 'New combinations start with default values. Unchanged combinations keep their values.'))
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+          } else {
+            IBestField({ value: $batchValue, label: this.batchMode === 'price' ? I18n.text(this.language, '批发价', 'Wholesale price') : I18n.text(this.language, '库存', 'Stock'), placeholder: '0', type: this.batchMode === 'price' ? 'decimal' : 'number' });
+            Text(this.batchMode === 'price' ? I18n.text(this.language, '零售价 = 批发价 × 1.3；会员价 = 批发价 × 1.1。之后可单独修改。', 'Retail = wholesale × 1.3; member = wholesale × 1.1. You can edit each SKU later.')
+              : I18n.text(this.language, '将所有 SKU 的库存设为此整数，不是增加库存。', 'Replace every SKU stock with this whole number; this does not add stock.'))
+              .fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+          }
+        }.width('100%').padding(18);
+      }.layoutWeight(1).width('100%').align(Alignment.Top).scrollBar(BarState.Off);
+      this.panelFooter(this.directSku ? '应用到商品' : '保存修改', this.directSku ? 'Apply to product' : 'Save changes', () => { if (this.skuEditorVisible) this.saveSku(); else if (this.specEditorVisible) this.saveSpecGroup(); else this.applyBatch(); }, () => this.closeInner());
+    }.height('92%').width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 }).clip(true);
   }
 
   build() {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({ title: this.params.id ? I18n.text(this.language, '编辑商品', 'Edit product')
-            : I18n.text(this.language, '新增商品', 'Add product'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back() });
+          IBestNavBar({ title: this.params.id ? I18n.text(this.language, '编辑商品', 'Edit product') : I18n.text(this.language, '新增商品', 'Add product'),
+            isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => this.requestBack() });
           if (this.loading) {
-            Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }.layoutWeight(1).justifyContent(FlexAlign.Center);
+            Column({ space: 16 }) {
+              LoadingProgress().width(30).height(30).color(DesignTokens.brand(this.darkMode));
+              Text(I18n.text(this.language, '正在准备商品信息', 'Preparing product details')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
+            }.layoutWeight(1).justifyContent(FlexAlign.Center);
+          } else if (this.loadFailed) {
+            Column({ space: 16 }) {
+              MerchantIcon({ name: 'replay', iconSize: 36 , color: DesignTokens.muted(this.darkMode) });
+              Text(I18n.text(this.language, '商品信息暂时无法加载', 'Unable to load product details')).fontSize(15).fontColor(DesignTokens.text(this.darkMode));
+              Button(I18n.text(this.language, '重新加载', 'Retry')).onClick(() => this.initialize());
+            }.layoutWeight(1).justifyContent(FlexAlign.Center);
           } else {
-            Scroll() {
-              Column({ space: 14 }) {
-                Column({ space: 12 }) {
-                  this.sectionTitle(I18n.text(this.language, '基本信息', 'Basic information'));
-                  IBestField({ value: $name, label: I18n.text(this.language, '商品名称', 'Product name'), placeholder: I18n.text(this.language, '请输入商品名称', 'Enter a product name') });
-                  TextArea({ text: this.description, placeholder: I18n.text(this.language, '请输入商品描述', 'Enter a product description') })
-                    .height(112).padding(12).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(10)
-                    .onChange((value: string) => { this.description = value; });
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                Column({ space: 12 }) {
-                  this.sectionTitle(I18n.text(this.language, '平台分类', 'Platform category'), I18n.text(this.language, '必填', 'Required'));
-                  Flex({ wrap: FlexWrap.Wrap }) {
-                    ForEach(this.categories, (item: CategoryItem) => {
-                      Text(item.name).fontSize(12).padding({ left: 12, right: 12, top: 7, bottom: 7 })
-                        .fontColor(this.categoryId === item.id ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode))
-                        .backgroundColor(this.categoryId === item.id ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode))
-                        .borderRadius(16).margin({ right: 8, bottom: 8 }).onClick(() => { this.categoryId = item.id; });
-                    }, (item: CategoryItem) => item.id);
-                  }.width('100%');
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                if (this.merchantCategories.length > 0) {
-                  Column({ space: 12 }) {
-                    this.sectionTitle(I18n.text(this.language, '店内分类', 'Store category'), I18n.text(this.language, '选填，用于店内商品管理', 'Optional, for in-store management'));
-                    Flex({ wrap: FlexWrap.Wrap }) {
-                      Text(I18n.text(this.language, '不归类', 'Uncategorized')).fontSize(12).padding({ left: 12, right: 12, top: 7, bottom: 7 })
-                        .fontColor(!this.merchantCategoryId ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode))
-                        .backgroundColor(!this.merchantCategoryId ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode))
-                        .borderRadius(16).margin({ right: 8, bottom: 8 })
-                        .onClick(() => { this.merchantCategoryId = ''; });
-                      ForEach(this.merchantCategories, (item: CategoryItem) => {
-                        Text(item.name).fontSize(12).padding({ left: 12, right: 12, top: 7, bottom: 7 })
-                          .fontColor(this.merchantCategoryId === item.id ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode))
-                          .backgroundColor(this.merchantCategoryId === item.id ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode))
-                          .borderRadius(16).margin({ right: 8, bottom: 8 })
-                          .onClick(() => { this.merchantCategoryId = item.id; });
-                      }, (item: CategoryItem) => item.id);
-                    }.width('100%');
-                  }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                }
-                Column({ space: 12 }) {
-                  this.sectionTitle(I18n.text(this.language, '商品图', 'Product images'), I18n.text(this.language, '最多10张，首张为封面', 'Up to 10; the first is the cover'));
-                  this.imageGrid(this.images, false);
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                Column({ space: 12 }) {
-                  this.sectionTitle(I18n.text(this.language, '商品详情图', 'Detail images'), I18n.text(this.language, '最多20张', 'Up to 20'));
-                  this.imageGrid(this.detailImages, true);
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                Column({ space: 12 }) {
-                  this.sectionTitle(I18n.text(this.language, '计价方式', 'Pricing method'), I18n.text(this.language, '创建后仍可编辑', 'Editable after creation'));
-                  Row({ space: 10 }) {
-                    Column({ space: 4 }) {
-                      Text(I18n.text(this.language, '标准 SKU', 'Standard SKU')).fontSize(15).fontWeight(FontWeight.Medium)
-                        .fontColor(this.pricingMode === 'standard' ? DesignTokens.onBrand(this.darkMode) : DesignTokens.text(this.darkMode));
-                      Text(I18n.text(this.language, '按规格设置价格和库存', 'Set price and stock by option')).fontSize(10)
-                      .fontColor(this.pricingMode === 'standard' ? '#EFFFFFFF' : DesignTokens.muted(this.darkMode));
-                    }.layoutWeight(1).padding(12).borderRadius(12)
-                      .backgroundColor(this.pricingMode === 'standard' ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode))
-                      .onClick(() => this.switchPricingMode('standard'));
-                    Column({ space: 4 }) {
-                      Text(I18n.text(this.language, '按尺寸计价', 'Price by size')).fontSize(15).fontWeight(FontWeight.Medium)
-                        .fontColor(this.pricingMode === 'by-size' ? DesignTokens.onBrand(this.darkMode) : DesignTokens.text(this.darkMode));
-                      Text(I18n.text(this.language, '面积单价 + 基础费用', 'Area rate + base fee')).fontSize(10)
-                        .fontColor(this.pricingMode === 'by-size' ? '#EFFFFFFF' : DesignTokens.muted(this.darkMode));
-                    }.layoutWeight(1).padding(12).borderRadius(12)
-                      .backgroundColor(this.pricingMode === 'by-size' ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode))
-                      .onClick(() => this.switchPricingMode('by-size'));
-                  }.width('100%');
-                  if (this.pricingMode === 'by-size') {
-                    IBestField({ value: $pricePerSqm, label: I18n.text(this.language, '每平方米价格', 'Price per square metre'), placeholder: I18n.text(this.language, '请输入单价', 'Enter unit price'), type: 'decimal' });
-                    IBestField({ value: $baseFee, label: I18n.text(this.language, '基础费用', 'Base fee'), placeholder: I18n.text(this.language, '没有则填 0', 'Enter 0 if none'), type: 'decimal' });
-                    Row({ space: 10 }) {
-                      Text(I18n.text(this.language, '尺寸单位', 'Size unit')).fontSize(14).layoutWeight(1);
-                      Text(I18n.text(this.language, '厘米 cm', 'Centimetres (cm)')).fontSize(12).padding({ left: 12, right: 12, top: 7, bottom: 7 })
-                        .fontColor(this.sizeUnit === 'cm' ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode))
-                        .backgroundColor(this.sizeUnit === 'cm' ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode)).borderRadius(16)
-                        .onClick(() => { this.sizeUnit = 'cm'; });
-                      Text(I18n.text(this.language, '米 m', 'Metres (m)')).fontSize(12).padding({ left: 12, right: 12, top: 7, bottom: 7 })
-                        .fontColor(this.sizeUnit === 'm' ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode))
-                        .backgroundColor(this.sizeUnit === 'm' ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode)).borderRadius(16)
-                        .onClick(() => { this.sizeUnit = 'm'; });
-                    }.width('100%');
-                    Row({ space: 10 }) {
-                      Column({ space: 6 }) {
-                        Text(I18n.text(this.language, '最小尺寸', 'Minimum size')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
-                        IBestField({ value: $minLength, label: I18n.text(this.language, '长度', 'Length'), placeholder: '30', type: 'decimal' });
-                        IBestField({ value: $minWidth, label: I18n.text(this.language, '宽度', 'Width'), placeholder: '30', type: 'decimal' });
-                      }.layoutWeight(1);
-                      Column({ space: 6 }) {
-                        Text(I18n.text(this.language, '最大尺寸', 'Maximum size')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
-                        IBestField({ value: $maxLength, label: I18n.text(this.language, '长度', 'Length'), placeholder: '500', type: 'decimal' });
-                        IBestField({ value: $maxWidth, label: I18n.text(this.language, '宽度', 'Width'), placeholder: '500', type: 'decimal' });
-                      }.layoutWeight(1);
-                    }.width('100%');
-                    Text(I18n.text(this.language, '成交价 = 长 × 宽折算平方米 × 单价 + 基础费用',
-                      'Price = length × width in m² × unit rate + base fee'))
-                      .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
-                  }
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                Column({ space: 12 }) {
-                  Row() {
-                    this.sectionTitle(I18n.text(this.language, '商品规格', 'Product options'), I18n.text(this.language, '最多 4 组，自动生成 SKU 组合', 'Up to 4 groups; SKUs are generated automatically'));
-                    Blank();
-                    IBestButton({ text: I18n.text(this.language, '添加规格', 'Add option'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.openSpecEditor() });
-                  }.width('100%');
-                  if (this.specGroups.length === 0) {
-                    Text(I18n.text(this.language, '未添加规格，当前按“默认规格”单 SKU 销售。',
-                      'No options added. The product uses a single default SKU.'))
-                      .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
-                  }
-                  ForEach(this.specGroups, (group: ProductSpecGroup, index: number) => {
-                    Column({ space: 8 }) {
-                      Row() {
-                        Text(group.name).fontSize(14).fontWeight(FontWeight.Medium).layoutWeight(1);
-                        Text(I18n.text(this.language, '编辑', 'Edit')).fontSize(12).fontColor(DesignTokens.brand(this.darkMode)).padding(8)
-                          .onClick(() => this.openSpecEditor(index));
-                        Text(I18n.text(this.language, '删除', 'Delete')).fontSize(12).fontColor(DesignTokens.danger(this.darkMode)).padding(8)
-                          .onClick(() => this.confirmRemoveSpec(index));
-                      }.width('100%');
-                      Flex({ wrap: FlexWrap.Wrap }) {
-                        ForEach(group.values, (value: string) => {
-                          Text(value).fontSize(12).fontColor(DesignTokens.text(this.darkMode))
-                            .padding({ left: 10, right: 10, top: 6, bottom: 6 })
-                            .backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(14).margin({ right: 7, bottom: 6 });
-                        }, (value: string) => value);
-                      }.width('100%');
-                    }.width('100%').padding(10).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(10);
-                  }, (group: ProductSpecGroup, index: number) => `${group.name}-${index}`);
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-
-                if (this.pricingMode === 'standard') {
-                  Column({ space: 12 }) {
-                    Row() {
-                      this.sectionTitle(I18n.text(this.language, 'SKU 价格与库存', 'SKU prices and stock'), I18n.text(this.language, `${this.skus.length} 条`, `${this.skus.length} SKUs`));
-                      Blank();
-                      IBestButton({ text: I18n.text(this.language, '批量填价', 'Set prices'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.openBatchEditor('price') });
-                      IBestButton({ text: I18n.text(this.language, '批量库存', 'Set stock'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.openBatchEditor('stock') });
-                    }.width('100%');
-                    if (this.skus.length === 0) {
-                      Text(I18n.text(this.language, '请确保每组规格至少填写一个规格值', 'Each option group needs at least one value')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode))
-                        .width('100%').textAlign(TextAlign.Center).padding(20);
-                    }
-                    ForEach(this.skus, (sku: ProductSku, index: number) => {
-                      Row({ space: 8 }) {
-                        if (sku.image) {
-                          Image(sku.image).width(48).height(48).objectFit(ImageFit.Cover).borderRadius(8)
-                            .onClick(() => IBestImagePreview.show([sku.image || '']));
-                        } else {
-                          Column() { Text(I18n.text(this.language, '图', 'Image')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)); }
-                            .width(48).height(48).justifyContent(FlexAlign.Center).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(8);
-                        }
-                        Column({ space: 4 }) {
-                          Text(sku.specsLabel || I18n.text(this.language, '默认规格', 'Default option')).fontSize(14).fontWeight(FontWeight.Medium);
-                          Text(I18n.text(this.language,
-                            `零售 ¥${Number(sku.priceRetail).toFixed(2)}  批发 ¥${Number(sku.priceWholesale).toFixed(2)}  库存 ${sku.stock}`,
-                            `Retail ¥${Number(sku.priceRetail).toFixed(2)}  Wholesale ¥${Number(sku.priceWholesale).toFixed(2)}  Stock ${sku.stock}`))
-                            .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
-                        }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-                        Toggle({ type: ToggleType.Switch, isOn: sku.active }).selectedColor(DesignTokens.brand(this.darkMode))
-                          .onChange((active: boolean) => {
-                            this.skus = this.skus.map((item: ProductSku, itemIndex: number) => itemIndex === index ? {
-                              id: item.id, specs: item.specs, specValues: item.specValues, specsLabel: item.specsLabel,
-                              image: item.image, priceRetail: item.priceRetail, priceWholesale: item.priceWholesale,
-                              priceMember: item.priceMember, stock: item.stock, active
-                            } : item);
-                          });
-                        IBestButton({ text: I18n.text(this.language, '编辑', 'Edit'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.openSku(index) });
-                      }.width('100%').padding({ top: 8, bottom: 8 });
-                    }, (sku: ProductSku, index: number) => `${sku.id || sku.specsLabel}-${index}`);
-                  }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                }
-                Column({ space: 12 }) {
-                  this.sectionTitle(I18n.text(this.language, '配送方式', 'Delivery methods'));
-                  Row({ space: 12 }) {
-                    Checkbox({ name: 'factory', group: 'shipping' }).select(this.shippingFactory).selectedColor(DesignTokens.brand(this.darkMode)).onChange((value: boolean) => { this.shippingFactory = value; });
-                    Text(I18n.text(this.language, '厂家物流', 'Factory delivery')).fontSize(13);
-                    Checkbox({ name: 'local', group: 'shipping' }).select(this.shippingLocal).selectedColor(DesignTokens.brand(this.darkMode)).onChange((value: boolean) => { this.shippingLocal = value; });
-                    Text(I18n.text(this.language, '同城配送', 'Local delivery')).fontSize(13);
-                    Checkbox({ name: 'pickup', group: 'shipping' }).select(this.shippingPickup).selectedColor(DesignTokens.brand(this.darkMode)).onChange((value: boolean) => { this.shippingPickup = value; });
-                    Text(I18n.text(this.language, '到店自提', 'Store pickup')).fontSize(13);
-                  }.width('100%');
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
-                Row() {
-                  Column({ space: 4 }) {
-                    Text(I18n.text(this.language, '价格显示规则', 'Price display rules')).fontSize(15).fontWeight(FontWeight.Medium);
-                    Text(I18n.text(this.language, '已改为店铺全局设置', 'Managed as a store-wide setting')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
-                  }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-                  Text(I18n.text(this.language, '前往设置  ›', 'Open settings  ›')).fontSize(13).fontColor(DesignTokens.brand(this.darkMode));
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)
-                  .onClick(() => AppRouter.push('PriceRule'));
-              }.width('100%').padding({ left: 16, right: 16, top: 12, bottom: this.safeBottom + 92 });
-            }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
-            Row({ space: 10 }) {
-              IBestButton({ text: I18n.text(this.language, '保存草稿', 'Save draft'), plain: true, btnWidth: '38%', loading: this.saving, disabled: this.saving || this.uploading || this.skuUploading, onBtnClick: () => this.save('draft') });
-              IBestButton({ text: I18n.text(this.language, '提交审核', 'Submit for review'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '58%', loading: this.saving, disabled: this.saving || this.uploading || this.skuUploading, onBtnClick: () => this.save('auditing') });
-            }.width('100%').padding({ left: 16, right: 16, top: 10, bottom: this.safeBottom + 10 }).backgroundColor(DesignTokens.card(this.darkMode));
-          }
-        }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
-
-        if (this.skuEditorVisible) {
-          Column({ space: 12 }) {
-            Text(I18n.text(this.language, '编辑 SKU', 'Edit SKU')).fontSize(20).fontWeight(FontWeight.Bold);
+            List({ space: 10, scroller: this.scroller }) {
+              ListItem() { this.imagesSection(); }
+              ListItem() { this.basicSection(); }
+              ListItem() { this.pricingSection(); }
+              ListItem() { this.shippingSection(); }
+            }.layoutWeight(1).width('100%').constraintSize({ maxWidth: 760 }).padding({ left: 16, right: 16, top: 14, bottom: 18 })
+              .scrollBar(BarState.Off).enabled(!this.saving);
             Row({ space: 12 }) {
-              if (this.skuImage) {
-                Stack({ alignContent: Alignment.TopEnd }) {
-                  Image(this.skuImage).width(72).height(72).objectFit(ImageFit.Cover).borderRadius(10);
-                  Column() { MerchantIcon({ name: 'cross', color: Color.White, iconSize: 13 }); }
-                    .width(22).height(22).justifyContent(FlexAlign.Center)
-                    .backgroundColor('#B8000000').borderRadius(11).onClick(() => { this.skuImage = ''; });
-                }
-              } else {
-                Column({ space: 2 }) {
-                  MerchantIcon({ name: 'add-o', color: DesignTokens.brand(this.darkMode), iconSize: 23 });
-                  Text(this.skuUploading ? I18n.text(this.language, '上传中', 'Uploading')
-                    : I18n.text(this.language, '规格图', 'Option image')).fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
-                }.width(72).height(72).justifyContent(FlexAlign.Center)
-                  .border({ width: 1, color: DesignTokens.border(this.darkMode), style: BorderStyle.Dashed }).borderRadius(10)
-                  .onClick(() => { if (!this.skuUploading) this.chooseSkuImage(); });
-              }
-              Text(I18n.text(this.language, '规格图为选填；上传后将在商品规格列表中展示。',
-                'The option image is optional and appears in the SKU list.')).fontSize(11)
-                .fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
-            }.width('100%');
-            Row() {
-              Text(I18n.text(this.language, '规格', 'Option')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width(72);
-              Text(this.skuLabel || I18n.text(this.language, '默认规格', 'Default option')).fontSize(14).fontWeight(FontWeight.Medium).layoutWeight(1);
-            }.width('100%').padding({ top: 8, bottom: 8 });
-            IBestField({ value: $skuRetail, label: I18n.text(this.language, '零售价', 'Retail price'), placeholder: '0.00', type: 'decimal' });
-            IBestField({ value: $skuWholesale, label: I18n.text(this.language, '批发价', 'Wholesale price'), placeholder: '0.00', type: 'decimal' });
-            IBestField({ value: $skuMember, label: I18n.text(this.language, '会员价', 'Member price'), placeholder: '0.00', type: 'decimal' });
-            IBestField({ value: $skuStock, label: I18n.text(this.language, '库存', 'Stock'), placeholder: '0', type: 'number' });
-            Row({ space: 10 }) {
-              IBestButton({ text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', disabled: this.skuUploading, onBtnClick: () => { this.skuEditorVisible = false; } });
-              IBestButton({ text: I18n.text(this.language, '保存', 'Save'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', disabled: this.skuUploading, loading: this.skuUploading, onBtnClick: () => this.saveSku() });
-            }.width('100%');
-          }.width('100%').padding({ left: 20, right: 20, top: 22, bottom: this.safeBottom + 22 }).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 });
+              Button(I18n.text(this.language, '保存草稿', 'Save draft'), { type: ButtonType.Normal }).height(50).layoutWeight(1).fontSize(14)
+                .borderRadius(12).backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).onClick(() => this.save('draft'));
+              Button(this.saving ? I18n.text(this.language, '保存中…', 'Saving…') : I18n.text(this.language, '提交审核', 'Submit for review'), { type: ButtonType.Normal })
+                .height(50).layoutWeight(1.5).fontSize(14).fontWeight(FontWeight.Medium).borderRadius(12)
+                .backgroundColor(DesignTokens.brand(this.darkMode)).fontColor(DesignTokens.onBrand(this.darkMode)).onClick(() => this.save('auditing'));
+            }.width('100%').padding({ left: 16, right: 16, top: 12, bottom: this.safeBottom + 10 })
+              .backgroundColor(DesignTokens.card(this.darkMode)).enabled(!this.saving && !this.uploading && !this.skuUploading)
+              .opacity(this.saving || this.uploading ? 0.55 : 1);
+          }
+        }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode))
+          .enabled(!this.categoryVisible && !this.optionsVisible && !this.detailVisible && !this.skuEditorVisible && !this.specEditorVisible && !this.batchEditorVisible);
+        if (this.categoryVisible || this.optionsVisible || this.detailVisible) {
+          Column().width('100%').height('100%').backgroundColor('#66000000').onClick(() => this.requestBack());
+          if (this.categoryVisible) this.categoryPanel();
+          if (this.detailVisible) this.detailPanel();
+          if (this.optionsVisible) this.optionsPanel();
         }
-
-        if (this.specEditorVisible) {
-          Column({ space: 14 }) {
-            Text(this.specEditIndex >= 0 ? I18n.text(this.language, '编辑规格组', 'Edit option group')
-              : I18n.text(this.language, '添加规格组', 'Add option group')).fontSize(20).fontWeight(FontWeight.Bold);
-            IBestField({ value: $specName, label: I18n.text(this.language, '规格名', 'Option name'), placeholder: I18n.text(this.language, '例如：颜色、材质、尺寸', 'For example: colour, material, size') });
-            IBestField({ value: $specValuesText, label: I18n.text(this.language, '规格值', 'Option values'), placeholder: I18n.text(this.language, '多个值用逗号分隔', 'Separate multiple values with commas') });
-            Text(I18n.text(this.language, '保存后会自动重新生成所有规格组合，并尽量保留未改变组合的价格和库存。',
-              'Saving regenerates all combinations while preserving unchanged prices and stock where possible.'))
-              .fontSize(11).lineHeight(18).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
-            Row({ space: 10 }) {
-              IBestButton({ text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', onBtnClick: () => { this.specEditorVisible = false; } });
-              IBestButton({ text: I18n.text(this.language, '保存', 'Save'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', onBtnClick: () => this.saveSpecGroup() });
-            }.width('100%');
-          }.width('100%').padding({ left: 20, right: 20, top: 22, bottom: this.safeBottom + 22 })
-            .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 });
-        }
-
-        if (this.batchEditorVisible) {
-          Column({ space: 14 }) {
-            Text(this.batchMode === 'price' ? I18n.text(this.language, '批量填价', 'Set all prices')
-              : I18n.text(this.language, '批量填库存', 'Set all stock')).fontSize(20).fontWeight(FontWeight.Bold);
-            IBestField({
-              value: $batchValue,
-              label: this.batchMode === 'price' ? I18n.text(this.language, '批发价', 'Wholesale price') : I18n.text(this.language, '库存数', 'Stock'),
-              placeholder: this.batchMode === 'price'
-                ? I18n.text(this.language, '填写批发价，自动计算零售价和会员价', 'Retail and member prices are calculated automatically')
-                : I18n.text(this.language, '填写所有 SKU 的库存', 'Set stock for every SKU'),
-              type: this.batchMode === 'price' ? 'decimal' : 'number'
-            });
-            if (this.batchMode === 'price') {
-              Text(I18n.text(this.language, '零售价按批发价 × 1.3，会员价按批发价 × 1.1 自动填入，之后仍可单独修改。',
-                'Retail is wholesale × 1.3 and member price is wholesale × 1.1. Each SKU can still be edited.'))
-                .fontSize(11).lineHeight(18).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
-            }
-            Row({ space: 10 }) {
-              IBestButton({ text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', onBtnClick: () => { this.batchEditorVisible = false; } });
-              IBestButton({ text: I18n.text(this.language, '应用全部', 'Apply to all'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', onBtnClick: () => this.applyBatch() });
-            }.width('100%');
-          }.width('100%').padding({ left: 20, right: 20, top: 22, bottom: this.safeBottom + 22 })
-            .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 });
+        if (this.skuEditorVisible || this.specEditorVisible || this.batchEditorVisible) {
+          Column().width('100%').height('100%').backgroundColor('#66000000').onClick(() => this.closeInner());
+          this.innerPanel();
         }
       }.width('100%').height('100%');
-    }.hideTitleBar(true);
+    }.hideTitleBar(true).onShown(() => this.activateKeyboard()).onHidden(() => this.restoreKeyboard()).onBackPressed(() => { this.requestBack(); return true; });
   }
 }

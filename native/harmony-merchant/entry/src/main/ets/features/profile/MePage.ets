@@ -1,3 +1,4 @@
+import { MenuCopy, MenuRow, MenuTile } from './LocalizedMenu';
 import { PrimaryNavigationMetrics } from '../shell/PrimaryNavigationMetrics';
 import { common } from '@kit.AbilityKit';
 import { IBestDialogUtil, IBestToast } from '@ibestservices/ibest-ui';
@@ -127,13 +128,8 @@ export struct MePage {
   }
 
   @Builder
-  private primaryService(icon: Resource, title: string, route: string, contact: boolean = false) {
-    Column({ space: 8 }) {
-      Image(icon).width(48).height(48).objectFit(ImageFit.Contain);
-      Text(title).fontSize(12).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode))
-        .maxLines(1).textAlign(TextAlign.Center);
-    }.layoutWeight(1).height(82).justifyContent(FlexAlign.Center)
-      .onClick(() => { if (contact) this.contactSupport(); else AppRouter.push(route); });
+  private primaryService(icon: Resource, title: MenuCopy, route: string, contact: boolean = false) {
+    MenuTile({ icon, copy: title, action: () => { if (contact) this.contactSupport(); else AppRouter.push(route); } }).layoutWeight(1);
   }
 
   @Builder
@@ -142,21 +138,18 @@ export struct MePage {
       Text(I18n.text(this.language, '账户服务', 'Account services')).fontSize(16).fontWeight(FontWeight.Bold)
         .fontColor(DesignTokens.text(this.darkMode)).width('100%');
       Row() {
-        this.primaryService($r('app.media.commerce_membership_lite'), I18n.text(this.language, '会员', 'Membership'), 'Membership');
-        this.primaryService($r('app.media.commerce_profile_lite'), I18n.text(this.language, '资料', 'Profile'), 'Profile');
-        this.primaryService($r('app.media.commerce_support_lite'), I18n.text(this.language, '客服', 'Support'), '', true);
-        this.primaryService($r('app.media.commerce_settings_lite'), I18n.text(this.language, '设置', 'Settings'), 'Settings');
+        this.primaryService($r('app.media.commerce_membership_lite'), new MenuCopy('会员', 'Membership'), 'Membership');
+        this.primaryService($r('app.media.commerce_profile_lite'), new MenuCopy('资料', 'Profile'), 'Profile');
+        this.primaryService($r('app.media.commerce_support_lite'), new MenuCopy('客服', 'Support'), '', true);
+        this.primaryService($r('app.media.commerce_settings_lite'), new MenuCopy('设置', 'Settings'), 'Settings');
       }.width('100%');
     }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
       .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 1, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
-  private businessTool(icon: Resource, title: string, route: string) {
-    Column({ space: 7 }) {
-      Image(icon).width(43).height(43).objectFit(ImageFit.Contain);
-      Text(title).fontSize(11).fontColor(DesignTokens.text(this.darkMode)).maxLines(1).textAlign(TextAlign.Center);
-    }.layoutWeight(1).height(70).justifyContent(FlexAlign.Center).onClick(() => AppRouter.push(route));
+  private businessTool(icon: Resource, title: MenuCopy, route: string) {
+    MenuTile({ icon, copy: title, compact: true, action: () => AppRouter.push(route) }).layoutWeight(1);
   }
 
   @Builder
@@ -165,40 +158,33 @@ export struct MePage {
       Text(I18n.text(this.language, '经营服务', 'Business services')).fontSize(16).fontWeight(FontWeight.Bold)
         .fontColor(DesignTokens.text(this.darkMode)).width('100%');
       Row() {
-        this.businessTool($r('app.media.commerce_customers_lite'), I18n.text(this.language, '客户', 'Customers'), 'Customers');
-        this.businessTool($r('app.media.commerce_store_lite'), I18n.text(this.language, '门店', 'Stores'), 'Stores');
-        this.businessTool($r('app.media.commerce_staff_lite'), I18n.text(this.language, '员工', 'Staff'), 'Staffs');
-        this.businessTool($r('app.media.commerce_commission_lite'), I18n.text(this.language, '佣金', 'Commission'), 'Commission');
-        this.businessTool($r('app.media.commerce_marketing_lite'), I18n.text(this.language, '营销', 'Marketing'), 'Marketing');
+        this.businessTool($r('app.media.commerce_customers_lite'), new MenuCopy('客户', 'Customers'), 'Customers');
+        this.businessTool($r('app.media.commerce_store_lite'), new MenuCopy('门店', 'Stores'), 'Stores');
+        this.businessTool($r('app.media.commerce_staff_lite'), new MenuCopy('员工', 'Staff'), 'Staffs');
+        this.businessTool($r('app.media.commerce_commission_lite'), new MenuCopy('佣金', 'Commission'), 'Commission');
+        this.businessTool($r('app.media.commerce_marketing_lite'), new MenuCopy('营销', 'Marketing'), 'Marketing');
       }.width('100%');
       Row() {
-        this.businessTool($r('app.media.commerce_service_lite'), I18n.text(this.language, '客服', 'Messages'), 'ChatSessions');
-        this.businessTool($r('app.media.commerce_sourcing_lite'), I18n.text(this.language, '选品', 'Sourcing'), 'Plaza');
-        this.businessTool($r('app.media.commerce_agency_lite'), I18n.text(this.language, '代理', 'Agency'), 'AgencyProducts');
-        this.businessTool($r('app.media.commerce_decorate_lite'), I18n.text(this.language, '装修', 'Design'), 'Decorate');
-        this.businessTool($r('app.media.commerce_pricing_lite'), I18n.text(this.language, '价格', 'Pricing'), 'PriceRule');
+        this.businessTool($r('app.media.commerce_service_lite'), new MenuCopy('客服', 'Messages'), 'ChatSessions');
+        this.businessTool($r('app.media.commerce_sourcing_lite'), new MenuCopy('选品', 'Sourcing'), 'Plaza');
+        this.businessTool($r('app.media.commerce_agency_lite'), new MenuCopy('代理', 'Agency'), 'AgencyProducts');
+        this.businessTool($r('app.media.commerce_decorate_lite'), new MenuCopy('装修', 'Design'), 'Decorate');
+        this.businessTool($r('app.media.commerce_pricing_lite'), new MenuCopy('价格', 'Pricing'), 'PriceRule');
       }.width('100%');
     }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
       .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 1, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
-  private supportRow(icon: Resource, title: string, detail: string, action: () => void, border: boolean = true) {
-    Row({ space: 12 }) {
-      Image(icon).width(42).height(42).objectFit(ImageFit.Contain);
-      Text(title).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
-      if (detail) Text(detail).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
-      MerchantIcon({ name: 'arrow', color: DesignTokens.muted(this.darkMode), iconSize: 16 });
-    }.width('100%').height(58).padding({ left: 14, right: 14 })
-      .border({ width: { bottom: border ? 1 : 0 }, color: DesignTokens.border(this.darkMode) })
-      .onClick(action);
+  private supportRow(icon: Resource, title: MenuCopy, detail: string, action: () => void, border: boolean = true) {
+    MenuRow({ icon, copy: title, detail: new MenuCopy(detail, detail), action, showBorder: border });
   }
 
   @Builder
   private supportServices() {
     Column() {
-      this.supportRow($r('app.media.commerce_share_lite'), I18n.text(this.language, '分享应用', 'Share app'), '', () => AppRouter.push('ShareApp'));
-      this.supportRow($r('app.media.commerce_update_lite'), I18n.text(this.language, '检查更新', 'Check for updates'), `v${AppConfig.CLIENT_VERSION}`,
+      this.supportRow($r('app.media.commerce_share_lite'), new MenuCopy('分享应用', 'Share app'), '', () => AppRouter.push('ShareApp'));
+      this.supportRow($r('app.media.commerce_update_lite'), new MenuCopy('检查更新', 'Check for updates'), `v${AppConfig.CLIENT_VERSION}`,
         () => AppRouter.push('UpdateCenter'), false);
     }.width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)
       .border({ width: 1, color: DesignTokens.border(this.darkMode) }).clip(true);

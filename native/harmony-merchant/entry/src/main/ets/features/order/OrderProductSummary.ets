@@ -1,3 +1,4 @@
+import { IBestImagePreview } from '@ibestservices/ibest-ui';
 import { OrderItem } from './OrderModels';
 import { ResilientRemoteImage } from '../../core/ui/ResilientRemoteImage';
 import { DesignTokens } from '../../core/theme/DesignTokens';
@@ -5,12 +6,13 @@ import { DesignTokens } from '../../core/theme/DesignTokens';
 @Component
 export struct OrderProductSummary {
   @Prop item: OrderItem = { id: '', productId: '', productName: '', productImage: '', specsLabel: '', unitPrice: 0, quantity: 0 };
+  @Prop previewEnabled: boolean = false;
   @StorageLink('darkMode') private darkMode: boolean = false;
 
   build() {
     Row({ space: 12 }) {
       ResilientRemoteImage({ originalUrl: this.item.productImage || '', widthValue: 64, heightValue: 64, radius: 10 })
-        .onClick((): void => { /* Consume this tap without blocking parent scrolling. */ });
+        .onClick((): void => { if (this.previewEnabled && this.item.productImage) IBestImagePreview.show([this.item.productImage]); });
       Column({ space: 5 }) {
         Text(this.item.productName)
           .width('100%').fontSize(14).fontWeight(FontWeight.Medium)

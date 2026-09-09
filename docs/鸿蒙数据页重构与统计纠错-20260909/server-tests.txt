@@ -1,0 +1,8 @@
+PASS test/member-localization.controller.spec.ts
+PASS test/merchant-analytics.spec.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        3.663 s, estimated 4 s
+Ran all test suites matching /test\\merchant-analytics.spec.ts|test\\member-localization.controller.spec.ts/i.

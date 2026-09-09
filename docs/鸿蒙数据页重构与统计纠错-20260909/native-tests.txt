@@ -1,0 +1,16 @@
+✔ natural ranges and date boundaries use Beijing time, including leap days (4.1734ms)
+✔ date calendar keeps a draft, supports single day, and never truncates an excessive range (16.7025ms)
+✔ missing required fields fail closed while actual empty arrays render safely (1.6602ms)
+✔ duplicate activations coalesce; stale date responses cannot replace the latest selection (39.0564ms)
+✔ same-range failure retains data; new-range failure does not label stale figures as current (19.5214ms)
+✔ cancel keeps filters; confirmed custom range highlights independently; account change discards old results (23.7502ms)
+✔ missing endpoint reports unavailability and never falls back to legacy stats (25.578ms)
+✔ new shared and ArkTS response fields stay aligned; both route insets and live locale are preserved (11.1351ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156.7892

@@ -20,20 +20,23 @@ export class AppearanceService {
 
   static async initialize(context: common.UIAbilityContext): Promise<void> {
     AppearanceService.context = context;
+    const initializeRevision = AppearanceService.persistRevision;
     AppearanceService.systemDark = context.config.colorMode ===
       ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
     try {
       const store = await preferences.getPreferences(context, 'jingwei_appearance');
       const theme = String(await store.get('themeMode', 'system'));
       const language = String(await store.get('language', 'zh-CN'));
-      AppearanceService.themeMode = theme === 'dark' || theme === 'light' ? theme : 'system';
-      AppearanceService.languageMode = language === 'en-US' ? 'en-US' : 'zh-CN';
+      if (initializeRevision === AppearanceService.persistRevision) {
+        AppearanceService.themeMode = theme === 'dark' || theme === 'light' ? theme : 'system';
+        AppearanceService.languageMode = language === 'en-US' ? 'en-US' : 'zh-CN';
+      }
     } catch (_) {
     }
     // Native language resources are applied only during cold-start bootstrap.
     // Runtime language changes stay inside the reactive ArkUI state tree so a
     // settings tap can never trigger a full application configuration reload.
-    AppearanceService.applyColdStartNativeLanguage();
+    if (initializeRevision === AppearanceService.persistRevision) AppearanceService.applyColdStartNativeLanguage();
     AppearanceService.publishLanguage();
     AppearanceService.publishTheme(true);
     AppearanceService.applyNativeTheme();
@@ -67,6 +70,8 @@ export class AppearanceService {
   }
 
   static syncSystemColorMode(isDark: boolean): void {
+    // Ignore configuration echoes caused by an explicit in-app theme.
+    if (AppearanceService.themeMode !== 'system') return;
     AppearanceService.systemDark = isDark;
     if (AppearanceService.themeMode === 'system') {
       AppearanceService.publishTheme(false);
@@ -152,19 +157,29 @@ export class AppearanceService {
     }
   }
 
+  static retryPersistence(): void { AppearanceService.enqueuePersist(); }
+
   private static enqueuePersist(): Promise<void> {
     const revision = ++AppearanceService.persistRevision;
+    AppearanceService.setStorage<string>('appearanceSaveState', 'saving');
     const theme = AppearanceService.themeMode;
     const language = AppearanceService.languageMode;
     const write = async (): Promise<void> => {
-      if (!AppearanceService.context || revision !== AppearanceService.persistRevision) return;
+      if (revision !== AppearanceService.persistRevision) return;
+      if (!AppearanceService.context) {
+        AppearanceService.setStorage<string>('appearanceSaveState', 'failed');
+        return;
+      }
       try {
         const store = await preferences.getPreferences(AppearanceService.context, 'jingwei_appearance');
+        if (revision !== AppearanceService.persistRevision) return;
         await store.put('themeMode', theme);
         await store.put('language', language);
         await store.flush();
+        if (revision === AppearanceService.persistRevision) AppearanceService.setStorage<string>('appearanceSaveState', 'saved');
       } catch (_) {
-        // Runtime state remains valid even when preference persistence is unavailable.
+        // Keep the live selection and offer retry instead of silently claiming it was saved.
+        if (revision === AppearanceService.persistRevision) AppearanceService.setStorage<string>('appearanceSaveState', 'failed');
       }
     };
     AppearanceService.persistChain = AppearanceService.persistChain.then(write, write);

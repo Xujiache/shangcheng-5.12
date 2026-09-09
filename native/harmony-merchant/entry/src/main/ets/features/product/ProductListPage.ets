@@ -1,5 +1,5 @@
 import { PrimaryNavigationMetrics } from '../shell/PrimaryNavigationMetrics';
-import { IBestButton, IBestDialogUtil, IBestEmpty, IBestSearch, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestButton, IBestDialogUtil, IBestEmpty, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { IdRouteParams } from '../../core/navigation/RouteParams';
 import { ApiError } from '../../core/network/ApiClient';
@@ -8,9 +8,27 @@ import { MerchantIcon } from '../../core/theme/MerchantIcon';
 import { ProductSummary } from './ProductModels';
 import { ProductRepository } from './ProductRepository';
 import { I18n } from '../../core/i18n/I18n';
+import { ResilientRemoteImage } from '../../core/ui/ResilientRemoteImage';
+import { ProductDataSource } from './ProductDataSource';
 
 interface ProductFilter {
   value: string;
+}
+
+@Component
+struct ProductStatusOption {
+  @Prop value: string = '';
+  @Prop label: string = '';
+  @Link selected: string;
+  @StorageLink('darkMode') private darkMode: boolean = false;
+  build() {
+    Button(this.label, { type: ButtonType.Normal }).layoutWeight(1).height(46).fontSize(14)
+      .fontColor(this.selected === this.value ? DesignTokens.brand(this.darkMode) : DesignTokens.text(this.darkMode))
+      .backgroundColor(this.selected === this.value ? DesignTokens.selectedSurface(this.darkMode) : DesignTokens.subtle(this.darkMode))
+      .borderRadius(12).border({ width: this.selected === this.value ? 1 : 0, color: DesignTokens.brand(this.darkMode) })
+      .accessibilityText(`${this.label}${this.selected === this.value ? ' selected' : ''}`)
+      .onClick((): void => { this.selected = this.value; });
+  }
 }
 
 @Component
@@ -23,6 +41,7 @@ export struct ProductListPage {
   @StorageProp('windowWidth') private windowWidth: number = 390;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
+  @StorageProp('sessionEpoch') @Watch('onSessionChanged') private sessionEpoch: number = 0;
   @State private status: string = '';
   @State private keyword: string = '';
   @State private products: ProductSummary[] = [];
@@ -34,6 +53,11 @@ export struct ProductListPage {
   @State private selectionMode: boolean = false;
   @State private selectedIds: string[] = [];
   @State private processingBatch: boolean = false;
+  @State private panel: string = '';
+  @State private draftStatus: string = '';
+  private dataSource: ProductDataSource = new ProductDataSource();
+  private searchTimer: number = -1;
+  private failedAppend: boolean = false;
   private requestEpoch: number = 0;
   private readonly filters: ProductFilter[] = [
     { value: '' }, { value: 'active' }, { value: 'offline' }, { value: 'draft' },
@@ -43,6 +67,26 @@ export struct ProductListPage {
   aboutToAppear(): void {
     this.status = this.initialStatus;
     this.reload();
+  }
+
+  aboutToDisappear(): void {
+    this.requestEpoch += 1;
+    this.loading = false;
+    if (this.searchTimer >= 0) clearTimeout(this.searchTimer);
+  }
+
+  private onSessionChanged(): void {
+    this.requestEpoch += 1;
+    this.loading = false;
+    this.refreshing = false;
+    if (this.searchTimer >= 0) { clearTimeout(this.searchTimer); this.searchTimer = -1; }
+    this.products = [];
+    this.dataSource.update([]);
+    this.total = 0;
+    this.selectedIds = [];
+    this.selectionMode = false;
+    this.panel = '';
+    this.errorMessage = '';
   }
 
   private onInitialStatus(): void {
@@ -56,8 +100,7 @@ export struct ProductListPage {
   private onActivation(): void { this.reload(); }
 
   private async reload(): Promise<void> {
-    this.page = 1;
-    this.products = [];
+    if (this.searchTimer >= 0) { clearTimeout(this.searchTimer); this.searchTimer = -1; }
     await this.load(false);
   }
 
@@ -66,17 +109,22 @@ export struct ProductListPage {
     const epoch = ++this.requestEpoch;
     const requestedStatus = this.status;
     const requestedKeyword = this.keyword.trim();
-    const requestedPage = this.page;
+    const requestedPage = append ? this.page + 1 : 1;
+    const session = this.sessionEpoch;
     this.loading = true;
+    this.failedAppend = append;
     this.errorMessage = '';
     try {
       const result = await ProductRepository.list(requestedStatus, requestedKeyword, requestedPage);
-      if (epoch !== this.requestEpoch) return;
-      this.products = append ? this.products.concat(result.list) : result.list;
+      if (epoch !== this.requestEpoch || session !== this.sessionEpoch) return;
+      const incoming = Array.isArray(result.list) ? result.list : [];
+      this.products = append ? this.products.concat(incoming.filter((item: ProductSummary): boolean =>
+        !this.products.some((current: ProductSummary): boolean => current.id === item.id))) : incoming;
+      this.dataSource.update(this.products);
+      this.page = requestedPage;
       this.total = result.total;
     } catch (error) {
       if (epoch === this.requestEpoch) {
-        if (append && this.page === requestedPage) this.page = Math.max(1, requestedPage - 1);
         this.errorMessage = error instanceof ApiError ? error.message : 'i18n:product-load';
       }
     } finally {
@@ -89,7 +137,6 @@ export struct ProductListPage {
 
   private async loadMore(): Promise<void> {
     if (this.products.length >= this.total || this.loading) return;
-    this.page += 1;
     await this.load(true);
   }
 
@@ -97,7 +144,30 @@ export struct ProductListPage {
     if (this.status === next) return;
     this.status = next;
     this.selectedIds = [];
+    this.selectionMode = false;
+    this.products = [];
+    this.dataSource.update([]);
     this.reload();
+  }
+
+  private search(value: string): void {
+    this.keyword = value;
+    this.requestEpoch += 1;
+    if (this.searchTimer >= 0) clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout((): void => this.applySearch(), 300);
+  }
+
+  private applySearch(): void {
+    this.selectedIds = [];
+    this.products = [];
+    this.dataSource.update([]);
+    this.reload();
+  }
+
+  private openPanel(next: string): void {
+    if (this.panel === next) { this.panel = ''; return; }
+    this.draftStatus = this.status;
+    this.panel = next;
   }
 
   private toggleSelection(id: string): void {
@@ -182,140 +252,195 @@ export struct ProductListPage {
 
   @Builder
   private productCard(item: ProductSummary) {
-    Row({ space: 12 }) {
+    Row({ space: 14 }) {
       if (this.selectionMode) {
-        Checkbox({ name: item.id, group: 'product-selection' })
-          .select(this.selectedIds.includes(item.id))
-          .selectedColor(DesignTokens.brand(this.darkMode))
-          .onChange(() => this.toggleSelection(item.id));
+        Stack() {
+          if (this.selectedIds.includes(item.id)) {
+            MerchantIcon({ name: 'checked', color: DesignTokens.brand(this.darkMode), iconSize: 20 });
+          }
+        }.width(24).height(24).borderRadius(8).border({ width: 1, color: DesignTokens.border(this.darkMode) });
       }
-      if (item.images.length > 0) {
-        Image(item.images[0]).width(88).height(88).objectFit(ImageFit.Cover).borderRadius(12);
-      } else {
-        Column() { Text(I18n.text(this.language, '无图', 'No image')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }
-          .width(88).height(88).justifyContent(FlexAlign.Center)
-          .backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(12);
-      }
+      ResilientRemoteImage({
+        thumbnailUrl: item.imageThumbnailUrl || '',
+        originalUrl: Array.isArray(item.images) ? (item.images[0] || '') : '',
+        widthValue: 96, heightValue: 106, radius: 14
+      });
       Column({ space: 8 }) {
-        Row({ space: 8 }) {
-          Text(item.name).fontSize(15).fontWeight(FontWeight.Medium)
-            .fontColor(DesignTokens.text(this.darkMode)).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
-            .layoutWeight(1);
-          IBestTag({ text: this.statusLabel(item.status), tagSize: 'small', plain: true, color: DesignTokens.brand(this.darkMode) });
-        }
-        Text(`¥${item.priceRetailMin.toFixed(2)}${item.priceRetailMax > item.priceRetailMin ? ` ~ ¥${item.priceRetailMax.toFixed(2)}` : ''}`)
-          .fontSize(17).fontWeight(FontWeight.Bold).fontColor(DesignTokens.brand(this.darkMode));
-        Row() {
-          Text(I18n.text(this.language, `库存 ${item.totalStock}`, `Stock ${item.totalStock}`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
-          Blank();
-          Text(I18n.text(this.language, `销量 ${item.sales}`, `Sales ${item.sales}`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
-        }.width('100%');
+        Text(item.name || I18n.text(this.language, '未命名商品', 'Unnamed product')).fontSize(16).fontWeight(FontWeight.Medium)
+          .fontColor(DesignTokens.text(this.darkMode)).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis });
+        Text(this.statusLabel(item.status)).fontSize(10).fontColor(item.status === 'rejected' ? DesignTokens.danger(this.darkMode) : DesignTokens.brand(this.darkMode))
+          .padding({ left: 7, right: 7, top: 3, bottom: 3 }).borderRadius(5).backgroundColor(DesignTokens.subtle(this.darkMode));
+        Text(`¥${Number(item.priceRetailMin || 0).toFixed(2)}${item.priceRetailMax > item.priceRetailMin ? ' +' : ''}`)
+          .fontSize(21).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
+        Text(I18n.text(this.language, `库存 ${item.totalStock || 0}  ·  已售 ${item.sales || 0}`, `Stock ${item.totalStock || 0} · Sold ${item.sales || 0}`))
+          .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).maxLines(1);
         if (item.status === 'rejected' && item.rejectReason) {
-          Text(I18n.text(this.language, `驳回：${item.rejectReason}`, `Rejected: ${item.rejectReason}`)).fontSize(12).fontColor(DesignTokens.danger(this.darkMode)).maxLines(2);
+          Text(item.rejectReason).fontSize(11).fontColor(DesignTokens.danger(this.darkMode)).maxLines(2);
         }
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-    }
-    .width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)
-    .onClick(() => {
-      if (this.selectionMode) this.toggleSelection(item.id);
-      else AppRouter.push('ProductEdit', new IdRouteParams(item.id));
-    });
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(18)
+      .border({ width: 1, color: this.selectedIds.includes(item.id) ? DesignTokens.brand(this.darkMode) : DesignTokens.border(this.darkMode) })
+      .accessibilityText(`${item.name}, ${this.statusLabel(item.status)}`)
+      .onClick((): void => {
+        if (this.selectionMode) this.toggleSelection(item.id);
+        else AppRouter.push('ProductEdit', new IdRouteParams(item.id));
+      });
+  }
+
+  @Builder
+  private filterPanel() {
+    Column({ space: 18 }) {
+      if (this.panel === 'status') {
+        Row() {
+          Text(I18n.text(this.language, '商品状态', 'Product status')).fontSize(17).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
+          Text(I18n.text(this.language, '确认后生效', 'Apply to confirm')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+        }.width('100%');
+        Column({ space: 10 }) {
+          Row({ space: 8 }) {
+            ForEach(this.filters.slice(0, 3), (filter: ProductFilter) => {
+              ProductStatusOption({ value: filter.value, label: this.filterLabel(filter.value), selected: $draftStatus });
+            }, (filter: ProductFilter): string => filter.value);
+          }.width('100%');
+          Row({ space: 8 }) {
+            ForEach(this.filters.slice(3), (filter: ProductFilter) => {
+              ProductStatusOption({ value: filter.value, label: this.filterLabel(filter.value), selected: $draftStatus });
+            }, (filter: ProductFilter): string => filter.value);
+          }.width('100%');
+        }
+        Row({ space: 12 }) {
+          Button(I18n.text(this.language, '重置', 'Reset'), { type: ButtonType.Normal }).height(46).width(88)
+            .fontColor(DesignTokens.text(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(12)
+            .onClick((): void => { this.draftStatus = ''; });
+          Button(I18n.text(this.language, '确定筛选', 'Apply filters'), { type: ButtonType.Normal }).layoutWeight(1).height(46)
+            .fontColor(DesignTokens.onBrand(this.darkMode)).backgroundColor(DesignTokens.brand(this.darkMode)).borderRadius(12)
+            .onClick((): void => { this.panel = ''; this.changeStatus(this.draftStatus); });
+        }.width('100%');
+      } else {
+        Text(I18n.text(this.language, '商品管理', 'Product management')).fontSize(17).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).width('100%');
+        Button(I18n.text(this.language, '分类管理', 'Manage categories'), { type: ButtonType.Normal }).width('100%').height(46)
+          .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).borderRadius(12)
+          .onClick((): void => { this.panel = ''; AppRouter.push('CategoryManager'); });
+        Button(I18n.text(this.language, '代理商品', 'Agency products'), { type: ButtonType.Normal }).width('100%').height(46)
+          .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).borderRadius(12)
+          .onClick((): void => { this.panel = ''; AppRouter.push('AgencyProducts'); });
+        Button(I18n.text(this.language, '价格规则', 'Pricing rules'), { type: ButtonType.Normal }).width('100%').height(46)
+          .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).borderRadius(12)
+          .onClick((): void => { this.panel = ''; AppRouter.push('PriceRule'); });
+      }
+    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode))
+      .borderRadius({ bottomLeft: 22, bottomRight: 22 });
   }
 
   build() {
     Column() {
-      Row() {
+      Row({ space: 12 }) {
         if (this.showBack) {
-          Column() { MerchantIcon({ name: 'arrow-left', color: DesignTokens.text(this.darkMode), iconSize: 25 }); }
-            .width(34).height(38).justifyContent(FlexAlign.Center).onClick(() => AppRouter.back());
+          Button({ type: ButtonType.Normal }) {
+            MerchantIcon({ name: 'arrow-left', color: DesignTokens.text(this.darkMode), iconSize: 24 });
+          }.width(38).height(42).backgroundColor(Color.Transparent).onClick((): void => AppRouter.back());
         }
-        Column({ space: 2 }) {
-          Text(I18n.text(this.language, '商品', 'Products')).fontSize(26).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
-          Text(I18n.text(this.language, `共 ${this.total} 件`, `${this.total} total`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
-        }.alignItems(HorizontalAlign.Start);
-        Blank();
-        IBestButton({ text: I18n.text(this.language, '分类', 'Categories'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('CategoryManager') });
-        IBestButton({
-          text: this.selectionMode ? I18n.text(this.language, '取消', 'Cancel') : I18n.text(this.language, '批量', 'Select'), plain: true, color: DesignTokens.brand(this.darkMode),
-          onBtnClick: () => { this.selectionMode = !this.selectionMode; this.selectedIds = []; }
-        });
-        IBestButton({ text: I18n.text(this.language, '新增', 'Add'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => AppRouter.push('ProductEdit', new IdRouteParams()) });
-      }
-      .width('100%').padding({ top: this.safeTop + 12, left: 16, right: 16, bottom: 10 });
+        Column({ space: 4 }) {
+          Text(I18n.text(this.language, '商品', 'Products')).fontSize(27).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
+          Text(I18n.text(this.language, `共 ${this.total} 件商品`, `${this.total} products`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+        }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+        Button({ type: ButtonType.Normal }) {
+          Row({ space: 5 }) {
+            MerchantIcon({ name: 'add-o', color: DesignTokens.text(this.darkMode), iconSize: 19 });
+            Text(I18n.text(this.language, '新增', 'Add')).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
+          }.padding({ left: 14, right: 14 });
+        }.height(42).borderRadius(13).backgroundColor(DesignTokens.selectedSurface(this.darkMode))
+          .onClick((): void => AppRouter.push('ProductEdit', new IdRouteParams()));
+      }.width('100%').padding({ top: this.safeTop + 12, left: 18, right: 18, bottom: 16 });
 
-      IBestSearch({
-        value: $keyword, placeholder: I18n.text(this.language, '搜索商品名称', 'Search product name'), isRound: true,
-        outBgColor: DesignTokens.page(this.darkMode), innerBgColor: DesignTokens.card(this.darkMode),
-        showRightButton: true, rightButtonText: I18n.text(this.language, '搜索', 'Search'), onSearch: () => this.reload(),
-        onRightButtonClick: () => this.reload(), onClear: () => this.reload()
-      });
+      Row({ space: 9 }) {
+        MerchantIcon({ name: 'search', color: DesignTokens.muted(this.darkMode), iconSize: 20 });
+        TextInput({ text: this.keyword, placeholder: I18n.text(this.language, '搜索商品名称', 'Search product name') })
+          .layoutWeight(1).height(44).padding(0).fontSize(14).backgroundColor(Color.Transparent)
+          .fontColor(DesignTokens.text(this.darkMode)).placeholderColor(DesignTokens.muted(this.darkMode))
+          .enterKeyType(EnterKeyType.Search).onChange((value: string): void => this.search(value)).onSubmit((): void => this.applySearch());
+        if (this.keyword) {
+          Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'cross', color: DesignTokens.muted(this.darkMode), iconSize: 18 }); }
+            .width(34).height(40).backgroundColor(Color.Transparent)
+            .onClick((): void => { this.keyword = ''; this.applySearch(); });
+        }
+      }.margin({ left: 18, right: 18, bottom: 12 }).padding({ left: 12, right: 6 })
+        .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(14).border({ width: 1, color: DesignTokens.border(this.darkMode) });
 
-      Scroll() {
-        Row({ space: 8 }) {
-          ForEach(this.filters, (filter: ProductFilter) => {
-            Text(this.filterLabel(filter.value)).fontSize(13)
-              .fontColor(this.status === filter.value ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode))
-              .padding({ left: 14, right: 14, top: 8, bottom: 8 })
-              .backgroundColor(this.status === filter.value ? DesignTokens.brand(this.darkMode) : DesignTokens.card(this.darkMode))
-              .borderRadius(18).onClick(() => this.changeStatus(filter.value));
-          }, (filter: ProductFilter) => filter.value);
-        }.padding({ left: 16, right: 16, top: 4, bottom: 10 });
-      }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off);
-
-      Row({ space: 8 }) {
-        IBestButton({ text: I18n.text(this.language, '代理商品', 'Agency products'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('AgencyProducts') });
-        IBestButton({ text: I18n.text(this.language, '价格规则', 'Pricing rules'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('PriceRule') });
-        Blank();
-        Text(I18n.text(this.language, '商品经营设置', 'Product settings')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
-      }.width('100%').padding({ left: 16, right: 16, bottom: 10 });
-
-      if (this.errorMessage) {
-        Column({ space: 12 }) {
-          IBestEmpty({ description: I18n.state(this.language, this.errorMessage), emptyImage: 'network' });
-          IBestButton({ text: I18n.text(this.language, '重试', 'Retry'), color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.reload() });
-        }.layoutWeight(1).justifyContent(FlexAlign.Center);
-      } else if (!this.loading && this.products.length === 0) {
-        Column() { IBestEmpty({ description: I18n.text(this.language, '暂无商品', 'No products') }); }
-          .layoutWeight(1).justifyContent(FlexAlign.Center);
-      } else {
-        Refresh({ refreshing: $$this.refreshing }) {
-          List({ space: 10 }) {
-            ForEach(this.products, (item: ProductSummary) => {
-              ListItem() { this.productCard(item); }
-            }, (item: ProductSummary) => item.id);
-            if (this.loading) {
-              ListItem() { Row() { LoadingProgress().width(24).height(24).color(DesignTokens.brand(this.darkMode)); }.height(56).justifyContent(FlexAlign.Center); }
-            }
+      Row() {
+        Button({ type: ButtonType.Normal }) {
+          Row({ space: 6 }) {
+            Text(this.status ? this.statusLabel(this.status) : I18n.text(this.language, '全部状态', 'All statuses')).fontSize(13).maxLines(1);
+            MerchantIcon({ name: 'arrow-down', color: DesignTokens.text(this.darkMode), iconSize: 12 });
           }
-          .padding({
-            left: this.windowWidth >= 720 ? 24 : 16,
-            right: this.windowWidth >= 720 ? 24 : 16,
-            bottom: this.selectionMode ? (this.windowWidth >= 720 ? 96 : PrimaryNavigationMetrics.contentInset(this.safeBottom) + 64) : (this.windowWidth >= 720 ? 28 : PrimaryNavigationMetrics.contentInset(this.safeBottom))
-          })
-          .onReachEnd(() => this.loadMore());
+        }.layoutWeight(1).height(48).backgroundColor(Color.Transparent).fontColor(this.status ? DesignTokens.brand(this.darkMode) : DesignTokens.text(this.darkMode))
+          .onClick((): void => this.openPanel('status'));
+        Button(this.selectionMode ? I18n.text(this.language, '退出批量', 'Done') : I18n.text(this.language, '批量管理', 'Select'), { type: ButtonType.Normal })
+          .layoutWeight(1).height(48).fontSize(13).backgroundColor(Color.Transparent).fontColor(DesignTokens.text(this.darkMode))
+          .onClick((): void => { this.panel = ''; this.selectionMode = !this.selectionMode; this.selectedIds = []; });
+        Button({ type: ButtonType.Normal }) {
+          Row({ space: 6 }) {
+            Text(I18n.text(this.language, '管理工具', 'Tools')).fontSize(13).maxLines(1);
+            MerchantIcon({ name: 'arrow-down', color: DesignTokens.text(this.darkMode), iconSize: 12 });
+          }
+        }.layoutWeight(1).height(48).backgroundColor(Color.Transparent).fontColor(DesignTokens.text(this.darkMode))
+          .onClick((): void => this.openPanel('tools'));
+      }.width('100%').backgroundColor(DesignTokens.card(this.darkMode));
+
+      Stack({ alignContent: Alignment.Top }) {
+        Column() {
+          if (this.errorMessage) {
+            Row({ space: 8 }) {
+              Text(I18n.state(this.language, this.errorMessage)).fontSize(12).maxLines(2).layoutWeight(1).fontColor(DesignTokens.danger(this.darkMode));
+              Button(I18n.text(this.language, '重试', 'Retry')).fontSize(12).height(32).backgroundColor(DesignTokens.subtle(this.darkMode))
+                .fontColor(DesignTokens.text(this.darkMode)).onClick((): void => { this.load(this.failedAppend); });
+            }.padding(12).width('100%');
+          }
+          if (!this.loading && this.products.length === 0) {
+            Column({ space: 8 }) {
+              IBestEmpty({ description: this.errorMessage ? I18n.text(this.language, '暂时无法加载', 'Unable to load') : I18n.text(this.language, '暂无符合条件的商品', 'No matching products'), emptyImage: this.errorMessage ? 'network' : 'search' });
+              Text(I18n.text(this.language, '试试调整筛选，或新增第一件商品', 'Change filters or add your first product')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+            }.width('100%').layoutWeight(1).justifyContent(FlexAlign.Center);
+          } else {
+            Refresh({ refreshing: $$this.refreshing }) {
+              List({ space: 12 }) {
+                LazyForEach(this.dataSource, (item: ProductSummary) => {
+                  ListItem() { this.productCard(item); }
+                }, (item: ProductSummary): string => `${item.id}:${item.updatedAt}:${item.status}:${item.priceRetailMin}:${(Array.isArray(item.images) ? item.images : []).join(',')}`);
+                if (this.loading) {
+                  ListItem() { Row({ space: 8 }) { LoadingProgress().width(20).height(20).color(DesignTokens.brand(this.darkMode)); Text(I18n.text(this.language, '正在加载', 'Loading')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }.width('100%').height(54).justifyContent(FlexAlign.Center); }
+                }
+              }.width('100%').height('100%').cachedCount(2).scrollBar(BarState.Off)
+                .padding({ left: 16, right: 16, top: 14, bottom: this.selectionMode ? 12 : (this.windowWidth >= 720 ? 24 : PrimaryNavigationMetrics.contentInset(this.safeBottom)) })
+                .onReachEnd((): void => { if (!this.errorMessage) this.loadMore(); });
+            }.width('100%').layoutWeight(1).onRefreshing((): void => { this.refreshing = true; this.reload(); });
+          }
+        }.width('100%').height('100%');
+        if (this.panel) {
+          Column().width('100%').height('100%').backgroundColor('#66000000').onClick((): void => { this.panel = ''; });
+          this.filterPanel();
         }
-        .layoutWeight(1)
-        .onRefreshing(() => { this.refreshing = true; this.reload(); });
-      }
+      }.width('100%').layoutWeight(1);
 
       if (this.selectionMode) {
-        Row({ space: 8 }) {
-          Checkbox({ name: 'select-all-products' })
-            .select(this.allVisibleSelected()).selectedColor(DesignTokens.brand(this.darkMode))
-            .onChange(() => this.toggleAllVisible());
-          Text(I18n.text(this.language, '全选', 'Select all')).fontSize(13).onClick(() => this.toggleAllVisible());
-          Text(I18n.text(this.language, `已选 ${this.selectedIds.length}`, `${this.selectedIds.length} selected`)).fontSize(13).layoutWeight(1);
-          IBestButton({ text: I18n.text(this.language, '上架', 'Publish'), plain: true, color: DesignTokens.success(this.darkMode), loading: this.processingBatch, disabled: this.processingBatch, onBtnClick: () => this.batch('online') });
-          IBestButton({ text: I18n.text(this.language, '下架', 'Unpublish'), plain: true, color: DesignTokens.brand(this.darkMode), loading: this.processingBatch, disabled: this.processingBatch, onBtnClick: () => this.batch('offline') });
-          IBestButton({ text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', loading: this.processingBatch, disabled: this.processingBatch, onBtnClick: () => this.confirmBatchDelete() });
-        }
-        .width('100%').padding({
-          left: 16, right: 16, top: 10,
-          bottom: this.windowWidth >= 720 ? this.safeBottom + 10 : PrimaryNavigationMetrics.contentInset(this.safeBottom) - 8
-        })
-        .backgroundColor(DesignTokens.card(this.darkMode));
+        Column({ space: 10 }) {
+          Row({ space: 8 }) {
+            Button({ type: ButtonType.Normal }) {
+              Row({ space: 6 }) {
+                MerchantIcon({ name: this.allVisibleSelected() ? 'checked' : 'add-o', color: DesignTokens.brand(this.darkMode), iconSize: 20 });
+                Text(I18n.text(this.language, '全选当前列表', 'Select loaded')).fontSize(13).fontColor(DesignTokens.text(this.darkMode));
+              }
+            }.height(32).backgroundColor(Color.Transparent).onClick((): void => this.toggleAllVisible());
+            Blank();
+            Text(I18n.text(this.language, `已选 ${this.selectedIds.length}`, `${this.selectedIds.length} selected`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+          }.width('100%');
+          Row({ space: 8 }) {
+            IBestButton({ text: I18n.text(this.language, '上架', 'Publish'), plain: true, btnWidth: '100%', color: DesignTokens.brand(this.darkMode), disabled: this.processingBatch, onBtnClick: () => this.batch('online') }).layoutWeight(1);
+            IBestButton({ text: I18n.text(this.language, '下架', 'Unpublish'), plain: true, btnWidth: '100%', color: DesignTokens.brand(this.darkMode), disabled: this.processingBatch, onBtnClick: () => this.batch('offline') }).layoutWeight(1);
+            IBestButton({ text: I18n.text(this.language, '删除', 'Delete'), plain: true, btnWidth: '100%', type: 'danger', disabled: this.processingBatch, onBtnClick: () => this.confirmBatchDelete() }).layoutWeight(1);
+          }.width('100%');
+        }.width('100%').padding({ left: 16, right: 16, top: 8, bottom: this.windowWidth >= 720 ? this.safeBottom + 10 : PrimaryNavigationMetrics.contentInset(this.safeBottom) - 8 })
+          .backgroundColor(DesignTokens.card(this.darkMode));
       }
-    }
-    .width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
+    }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
   }
 }

@@ -2,6 +2,7 @@ import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want 
 import { display, window } from '@kit.ArkUI';
 import { IBestInit } from '@ibestservices/ibest-ui';
 import { AppearanceService } from '../core/theme/AppearanceService';
+import { GeneratedIconRegistry } from '../core/theme/GeneratedIconRegistry';
 import { ComponentThemeBridge } from '../core/theme/ComponentThemeBridge';
 import { pushService } from '@kit.PushKit';
 import { HarmonyPushClient } from '../core/push/HarmonyPushClient';
@@ -26,6 +27,7 @@ export default class EntryAbility extends UIAbility {
   };
 
   onCreate(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
+    GeneratedIconRegistry.install();
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (_) {
@@ -42,6 +44,7 @@ export default class EntryAbility extends UIAbility {
     // Appearance keys must exist before any @StorageProp/@StorageLink page is
     // constructed. Preferences later update these existing reactive entries.
     AppStorage.setOrCreate<string>('themeMode', 'system');
+    AppStorage.setOrCreate<string>('appearanceSaveState', 'saved');
     AppStorage.setOrCreate<string>('language', 'zh-CN');
     AppStorage.setOrCreate<boolean>('darkMode', this.context.config.colorMode ===
       ConfigurationConstant.ColorMode.COLOR_MODE_DARK);
