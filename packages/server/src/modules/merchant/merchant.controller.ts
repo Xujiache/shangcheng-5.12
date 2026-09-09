@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { MerchantService } from './merchant.service'
+import { MerchantAnalyticsService } from './merchant-analytics.service'
 import { OrderShareService, ShareField } from './order-share.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
@@ -29,6 +30,7 @@ export class MerchantController {
   constructor(
     private readonly svc: MerchantService,
     private readonly orderShare: OrderShareService,
+    private readonly analytics: MerchantAnalyticsService,
   ) {}
 
   // ============ Dashboard ============
@@ -39,6 +41,11 @@ export class MerchantController {
   @Get('stats') async stats(@CurrentUser() u: AuthUser, @Query() q: any) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.stats(mid, q)
+  }
+
+  @Get('stats/overview') async statsOverview(@CurrentUser() u: AuthUser, @Query() q: unknown) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.analytics.overview(mid, q)
   }
 
   // ============ 商品 ============

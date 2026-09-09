@@ -9,6 +9,7 @@ export interface ProductSummary {
   id: string;
   name: string;
   images: string[];
+  imageThumbnailUrl?: string;
   status: string;
   priceRetailMin: number;
   priceRetailMax: number;

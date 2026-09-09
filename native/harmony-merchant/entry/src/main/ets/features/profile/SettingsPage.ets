@@ -1,3 +1,4 @@
+import { MenuCopy, MenuHeading, MenuRow } from './LocalizedMenu';
 import { common } from '@kit.AbilityKit';
 import { IBestDialogUtil, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
 import { AppConfig } from '../../core/config/AppConfig';
@@ -57,7 +58,7 @@ struct SettingsPage {
 
   private maskedPhone(): string {
     const phone = SessionStore.shared().user?.phone || '';
-    if (phone.length < 7) return phone || I18n.text(this.language, '正在同步', 'Syncing');
+    if (phone.length < 7) return phone;
     return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
   }
 
@@ -142,37 +143,25 @@ struct SettingsPage {
   }
 
   @Builder
-  private sectionTitle(title: string, subtitle: string) {
-    Column({ space: 3 }) {
-      Text(title).fontSize(16).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).width('100%');
-      if (subtitle) Text(subtitle).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
-    }.width('100%').alignItems(HorizontalAlign.Start).padding({ left: 2, bottom: 8 });
+  private sectionTitle(title: MenuCopy, subtitle: string, account: boolean = false) {
+    MenuHeading({ copy: title, detail: subtitle, account });
   }
 
   @Builder
-  private settingRow(icon: Resource, title: string, detail: string, action: () => void, border: boolean = true) {
-    Row({ space: 12 }) {
-      Image(icon).width(42).height(42).objectFit(ImageFit.Contain).interpolation(ImageInterpolation.High);
-      Column({ space: 3 }) {
-        Text(title).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode))
-          .width('100%').maxLines(1);
-        if (detail) Text(detail).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%').maxLines(1);
-      }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-      MerchantIcon({ name: 'arrow', color: DesignTokens.muted(this.darkMode), iconSize: 16 });
-    }.width('100%').height(62).padding({ left: 14, right: 14 })
-      .border({ width: { bottom: border ? 1 : 0 }, color: DesignTokens.border(this.darkMode) }).onClick(action);
+  private settingRow(icon: Resource, title: MenuCopy, detail: MenuCopy, action: () => void, border: boolean = true, appearance: boolean = false) {
+    MenuRow({ icon, copy: title, detail, action, showBorder: border, appearanceSummary: appearance });
   }
 
   @Builder
   private accountGroup() {
     Column({ space: 8 }) {
-      this.sectionTitle(I18n.text(this.language, '账号与安全', 'Account and security'), this.maskedPhone());
+      this.sectionTitle(new MenuCopy('账号与安全', 'Account and security'), this.maskedPhone(), true);
       Column() {
-        this.settingRow($r('app.media.commerce_profile_lite'), I18n.text(this.language, '个人与店铺资料', 'Profile and store'),
-          I18n.text(this.language, '头像、联系信息、经营品类与地址', 'Identity, contacts, categories and address'),
+        this.settingRow($r('app.media.commerce_profile_lite'), new MenuCopy('个人与店铺资料', 'Profile and store'),
+          new MenuCopy('头像、联系信息、经营品类与地址', 'Identity, contacts, categories and address'),
           () => AppRouter.push('Profile'));
-        this.settingRow($r('app.media.commerce_security_lite'), I18n.text(this.language, '登录与账号安全', 'Sign-in and account security'),
-          I18n.text(this.language, '手机号与登录密码', 'Phone number and password'),
+        this.settingRow($r('app.media.commerce_security_lite'), new MenuCopy('登录与账号安全', 'Sign-in and account security'),
+          new MenuCopy('手机号与登录密码', 'Phone number and password'),
           () => AppRouter.push('AccountSecurity'), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
@@ -183,13 +172,13 @@ struct SettingsPage {
   @Builder
   private preferenceGroup() {
     Column({ space: 8 }) {
-      this.sectionTitle(I18n.text(this.language, '外观与通知', 'Appearance and notifications'), '');
+      this.sectionTitle(new MenuCopy('外观与通知', 'Appearance and notifications'), '');
       Column() {
-        this.settingRow($r('app.media.commerce_appearance_lite'), I18n.text(this.language, '主题与语言', 'Theme and language'),
-          `${this.themeLabel()} · ${this.languageLabel()}`,
-          () => AppRouter.push('AppearanceSettings'));
-        this.settingRow($r('app.media.commerce_notifications_lite'), I18n.text(this.language, '消息通知', 'Notifications'),
-          I18n.text(this.language, '订单、售后和客服提醒', 'Orders, after-sales and customer messages'),
+        this.settingRow($r('app.media.commerce_appearance_lite'), new MenuCopy('主题与语言', 'Theme and language'),
+          new MenuCopy(),
+          () => AppRouter.push('AppearanceSettings'), true, true);
+        this.settingRow($r('app.media.commerce_notifications_lite'), new MenuCopy('消息通知', 'Notifications'),
+          new MenuCopy('订单、售后和客服提醒', 'Orders, after-sales and customer messages'),
           () => AppRouter.push('NotificationSettings'), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
@@ -200,15 +189,15 @@ struct SettingsPage {
   @Builder
   private privacyGroup() {
     Column({ space: 8 }) {
-      this.sectionTitle(I18n.text(this.language, '存储与隐私', 'Storage and privacy'), '');
+      this.sectionTitle(new MenuCopy('存储与隐私', 'Storage and privacy'), '');
       Column() {
-        this.settingRow($r('app.media.commerce_cache_lite'), I18n.text(this.language, '清理缓存', 'Clear cache'), this.cacheSize,
+        this.settingRow($r('app.media.commerce_cache_lite'), new MenuCopy('清理缓存', 'Clear cache'), new MenuCopy(this.cacheSize, this.cacheSize),
           () => this.confirmClearCache());
-        this.settingRow($r('app.media.commerce_terms_lite'), I18n.text(this.language, '用户协议', 'Terms of service'), '',
+        this.settingRow($r('app.media.commerce_terms_lite'), new MenuCopy('用户协议', 'Terms of service'), new MenuCopy(),
           () => AppRouter.push('Agreements', new AgreementRouteParams('user')));
-        this.settingRow($r('app.media.commerce_privacy_lite'), I18n.text(this.language, '隐私政策', 'Privacy policy'), '',
+        this.settingRow($r('app.media.commerce_privacy_lite'), new MenuCopy('隐私政策', 'Privacy policy'), new MenuCopy(),
           () => AppRouter.push('Agreements', new AgreementRouteParams('privacy')));
-        this.settingRow($r('app.media.commerce_personal_info_lite'), I18n.text(this.language, '个人信息收集清单', 'Personal information checklist'), '',
+        this.settingRow($r('app.media.commerce_personal_info_lite'), new MenuCopy('个人信息收集清单', 'Personal information checklist'), new MenuCopy(),
           () => AppRouter.push('Agreements', new AgreementRouteParams('collect')), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
@@ -219,15 +208,15 @@ struct SettingsPage {
   @Builder
   private supportGroup() {
     Column({ space: 8 }) {
-      this.sectionTitle(I18n.text(this.language, '应用与支持', 'App and support'), '');
+      this.sectionTitle(new MenuCopy('应用与支持', 'App and support'), '');
       Column() {
-        this.settingRow($r('app.media.commerce_about_lite'), I18n.text(this.language, '关于经纬商家端', 'About Jingwei Merchant'),
-          `v${AppConfig.CLIENT_VERSION}`, () => AppRouter.push('AboutApp'));
-        this.settingRow($r('app.media.commerce_update_lite'), I18n.text(this.language, '检查更新', 'Check for updates'),
-          `versionCode ${AppConfig.CLIENT_VERSION_CODE}`, () => AppRouter.push('UpdateCenter'));
-        this.settingRow($r('app.media.commerce_share_lite'), I18n.text(this.language, '分享应用', 'Share app'), '',
+        this.settingRow($r('app.media.commerce_about_lite'), new MenuCopy('关于经纬商家端', 'About Jingwei Merchant'),
+          new MenuCopy(`v${AppConfig.CLIENT_VERSION}`, `v${AppConfig.CLIENT_VERSION}`), () => AppRouter.push('AboutApp'));
+        this.settingRow($r('app.media.commerce_update_lite'), new MenuCopy('检查更新', 'Check for updates'),
+          new MenuCopy(`versionCode ${AppConfig.CLIENT_VERSION_CODE}`, `versionCode ${AppConfig.CLIENT_VERSION_CODE}`), () => AppRouter.push('UpdateCenter'));
+        this.settingRow($r('app.media.commerce_share_lite'), new MenuCopy('分享应用', 'Share app'), new MenuCopy(),
           () => AppRouter.push('ShareApp'));
-        this.settingRow($r('app.media.commerce_support_lite'), I18n.text(this.language, '联系我们', 'Contact us'), '',
+        this.settingRow($r('app.media.commerce_support_lite'), new MenuCopy('联系我们', 'Contact us'), new MenuCopy(),
           () => this.contactSupport(), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })

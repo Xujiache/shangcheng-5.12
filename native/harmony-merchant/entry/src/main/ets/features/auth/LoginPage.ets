@@ -3,12 +3,12 @@ import {
   IBestCheckbox,
   IBestDialogUtil,
   IBestField,
-  IBestIcon,
   IBestToast
 } from '@ibestservices/ibest-ui';
 import { ApiError } from '../../core/network/ApiClient';
 import { MerchantLoginSession } from '../../core/model/AuthModels';
 import { DesignTokens } from '../../core/theme/DesignTokens';
+import { MerchantIcon } from '../../core/theme/MerchantIcon';
 import { AuthRepository } from './AuthRepository';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { AgreementRouteParams } from '../legal/LegalModels';
@@ -333,7 +333,7 @@ export struct LoginPage {
         });
 
         Row({ space: 6 }) {
-          IBestIcon({ name: this.smsMode ? 'lock' : 'chat-o', color: DesignTokens.brand(this.darkMode), iconSize: 15 });
+          MerchantIcon({ name: this.smsMode ? 'lock' : 'chat-o', color: DesignTokens.brand(this.darkMode), iconSize: 15 });
           Text(this.smsMode
             ? I18n.text(this.language, '返回手机号密码登录', 'Use phone and password')
             : I18n.text(this.language, '忘记密码？使用验证码登录', 'Forgot password? Use an SMS code'))

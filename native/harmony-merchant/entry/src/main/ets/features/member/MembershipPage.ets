@@ -228,7 +228,10 @@ struct MembershipPage {
           .fontColor(DesignTokens.muted(this.darkMode)).decoration({ type: TextDecorationType.LineThrough });
       }
       ForEach(this.planRights(item), (feature: string) => {
-        Text(`✓ ${feature}`).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+        Row({ space: 8 }) {
+          MerchantIcon({ name: 'checked', color: DesignTokens.brand(this.darkMode), iconSize: 16 });
+          Text(feature).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
+        }.width('100%');
       }, (feature: string) => feature);
       IBestButton({
         text: this.membership?.planId === item.id

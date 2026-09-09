@@ -1,0 +1,338 @@
+{
+  "generator": "image_gen (available tool; model version not asserted)",
+  "date": "2026-09-09",
+  "icons": [
+    {
+      "name": "search",
+      "subject": "a magnifying glass with an opaque warm ivory lens",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-a5012869-748b-464e-9d49-aa5ca041b6d3.png",
+      "prompt": "Single graphite/champagne icon on #00FF00; a magnifying glass with an opaque warm ivory lens",
+      "sourceSha256": "aa5a26a7f39e4b590b58252b9bb1241bd0516589b206974f321ede81988fa134",
+      "asset": "entry/src/main/resources/base/media/ui_search.png",
+      "sha256": "0b712bda2620ef0dedf891cb1192d66a7373d77cfb032bfa586176bc59c2c145"
+    },
+    {
+      "name": "filter",
+      "subject": "three horizontal slider bars with alternating round knobs",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-89382876-75f2-48f6-8838-ddc710eafc2b.png",
+      "prompt": "Single graphite/champagne icon on #00FF00; three horizontal slider bars with alternating round knobs",
+      "sourceSha256": "cde4263d01a34ad5aa2e66a22886f14138e6827aab8b16b9251aa331130a0862",
+      "asset": "entry/src/main/resources/base/media/ui_filter.png",
+      "sha256": "240b10b4680905547d9a2cd6ab778bb8c9f778d5890fc6b4219ac3ca61acf196"
+    },
+    {
+      "name": "close",
+      "subject": "a thick rounded X close symbol",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-cfe6f659-f254-49f0-9be8-83d731042cdf.png",
+      "prompt": "Single graphite/champagne icon on #00FF00; a thick rounded X close symbol",
+      "sourceSha256": "e67a257a5b8911a0bbf8135dd3ceba09d507a3caa2f0a42cfef82751e3ea7971",
+      "asset": "entry/src/main/resources/base/media/ui_close.png",
+      "sha256": "586ad80c249a9fcedb0dcfbac6bcbef4511f19ea42dac5d875ce1127cd3f6d09"
+    },
+    {
+      "name": "plus",
+      "subject": "a thick rounded plus sign",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-c045696a-1d71-48c0-a79d-214f81589db2.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a thick rounded plus sign. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "4700098b7360df1eb276851a69a445fd17816ebde1a6008d3bedb5bafe902169",
+      "asset": "entry/src/main/resources/base/media/ui_plus.png",
+      "sha256": "0a514dea10351108b803a911a66850e88cf8a5619c9a2f14b14c4a177bd21016"
+    },
+    {
+      "name": "phone",
+      "subject": "a simple telephone handset",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-bbc1513f-229d-4682-a87c-ba16136ec57b.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a simple telephone handset. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "05f5dbba295b9b38574f7d4c08d96bcc2eab4aeeda1a4d0176c228a18692a609",
+      "asset": "entry/src/main/resources/base/media/ui_phone.png",
+      "sha256": "5fe0dddab34a4df9e385c3bfb2e4ca435a1c260b00be48dce68cc0aafd860d1f"
+    },
+    {
+      "name": "more",
+      "subject": "three large circular dots in one horizontal row",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-351ba179-35a5-4fba-9745-dd56e1235fa3.png",
+      "prompt": "Generate ONE isolated mobile UI icon: three large circular dots in one horizontal row. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "e858ada4a5a70ec60975984277a541cf52175c3fc0e27b39d01e580e3c8d8a3a",
+      "asset": "entry/src/main/resources/base/media/ui_more.png",
+      "sha256": "a9c6c852c4e3af0d41f387b09eff5d0fb8f9b882225eb8860295ecc1e0b6da28"
+    },
+    {
+      "name": "photo",
+      "subject": "a rectangular photo frame with a mountain and sun",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-062fcb7a-299f-4f14-bb4f-e3bca19bef47.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a rectangular photo frame with a mountain and sun. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "13dfdfc2d2ba71ec5f1f219d5c2a809a548839df9fcee6ca02a5e144e4ad8d6e",
+      "asset": "entry/src/main/resources/base/media/ui_photo.png",
+      "sha256": "888e98235e2cab2d8a1e09d5f08c8a7859a970397b424a5f567429ab81448507"
+    },
+    {
+      "name": "camera",
+      "subject": "a simple camera with one large circular lens",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-0f528dcd-b891-437b-b770-869e89681636.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a simple camera with one large circular lens. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "243efbc3081b3423e7224e1d04aa2b173721664b49a6241ea11772d9f3485784",
+      "asset": "entry/src/main/resources/base/media/ui_camera.png",
+      "sha256": "8fc8745eb607ee10a8e82798ee98d35dedeb524663b232afbda19364cfae57af"
+    },
+    {
+      "name": "aim",
+      "subject": "a location target crosshair with a central dot",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-b5bee179-57f4-4634-a890-c419f5eeb7fc.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a location target crosshair with a central dot. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "a36c0094fb824c03ad421d982862477d81a705de8c04f7ff3e5cb6dedb2a2688",
+      "asset": "entry/src/main/resources/base/media/ui_aim.png",
+      "sha256": "63ddd95f22b78cf953a0135c5e473c74be09de894a3e52fb4c948cecb63d587b"
+    },
+    {
+      "name": "edit",
+      "subject": "one diagonal pencil",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-f0cea48d-d521-4016-82af-8e4dd769caab.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one diagonal pencil. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "b6532869b9ce384d4ff1891ba267422284370f4e78eab04e3d402b850ad308ba",
+      "asset": "entry/src/main/resources/base/media/ui_edit.png",
+      "sha256": "b71378b0c5056957361ee8f609c6d23e958fbf6894ec919b7ecdf8c9da6f04a2"
+    },
+    {
+      "name": "trash",
+      "subject": "a compact wastebasket with a lid",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-2509ca00-6c7f-4d91-874f-4a82276d6241.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a compact wastebasket with a lid. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "e93ddac106ab4156ad27cc3981affb13e21c3d5960aeb3b36dd31f5b2e25df2c",
+      "asset": "entry/src/main/resources/base/media/ui_trash.png",
+      "sha256": "0207e8304648a653df011de6d45a17021a6c932e5cf4733a7581e540c524b2be"
+    },
+    {
+      "name": "chevron",
+      "subject": "one thick rounded chevron pointing RIGHT",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-dae83fe6-f01e-4ecc-a6f4-4d2d6f3db62b.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one thick rounded chevron pointing RIGHT. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "6580e76d9eaf7c56a1fe612fc312a96c79f74debc78cb345ae5bfeedfcf70ce2",
+      "asset": "entry/src/main/resources/base/media/ui_chevron.png",
+      "sha256": "e7d23d66517fa4086d6eca5cf61d980a333417836697e2e4156de91952ac50b8"
+    },
+    {
+      "name": "check",
+      "subject": "one bold rounded check mark",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-c161544a-c1a4-48ff-b2f8-1c27273ac732.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one bold rounded check mark. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "ecc45b4fd9a2d98ae9ccf85f3e88ab4d6c3e46c7cace133936226fd0eb386e52",
+      "asset": "entry/src/main/resources/base/media/ui_check.png",
+      "sha256": "03529b879784227159eee9ff120b46c8b599a8250978559ab0aa909627def32d"
+    },
+    {
+      "name": "star",
+      "subject": "one five-pointed star",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-29cb6fde-ad0f-4031-815f-0219b5556fc8.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one five-pointed star. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "c8444a0a119eb3494d1f28f60c2f074af83f9e3dd7496851a449a01c04111a9f",
+      "asset": "entry/src/main/resources/base/media/ui_star.png",
+      "sha256": "10b1f436aa14906195b5b5f16629451f4c13ea627a1d0c443134c5a1f0287e7a"
+    },
+    {
+      "name": "flame",
+      "subject": "one simple flame",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-fd9965e2-8b1b-45bf-b962-36f8dbf1a9b6.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one simple flame. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "c09bb27e1d53ecbe23d4748778237226082f5ebe68acd84dede3552ea7f15764",
+      "asset": "entry/src/main/resources/base/media/ui_flame.png",
+      "sha256": "3be43fcdee34c1065852f2c109a1eee92b79064e4b7ec1bd3be5ac5700b4077f"
+    },
+    {
+      "name": "grid",
+      "subject": "four rounded square blocks in a 2 by 2 layout",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-1549382c-fcd3-4784-bd04-48c9ed9b97a3.png",
+      "prompt": "Generate ONE isolated mobile UI icon: four rounded square blocks in a 2 by 2 layout. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "789876837d6e71289e230b4c19138ba1c231b8a0fa5c4d9a0a90ca5c3b12d5bc",
+      "asset": "entry/src/main/resources/base/media/ui_grid.png",
+      "sha256": "53cf41038a8df966f72f6953b2f72192871104faa9c95812a100ba8e9f274e93"
+    },
+    {
+      "name": "eye",
+      "subject": "one open eye with a clear pupil",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-ba8842b0-49ed-4d34-aa38-a9c5afbb2297.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one open eye with a clear pupil. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "e6b50ace7f7da61d9bd336e32c880b783266a2439548beab70050be14d7f48e8",
+      "asset": "entry/src/main/resources/base/media/ui_eye.png",
+      "sha256": "0c217ae268fae19cfe07bbc64f286c8bc7e07683fd11790549a113cd1da163b6"
+    },
+    {
+      "name": "refresh",
+      "subject": "a circular clockwise arrow",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-4f56e2fb-5603-4db0-ba50-a9d68e675876.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a circular clockwise arrow. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "7e7ce63f2b4103701845f30723b71540e7e8d80b748856d43c938b414dbc30d6",
+      "asset": "entry/src/main/resources/base/media/ui_refresh.png",
+      "sha256": "0dfde3ad4e3fcf961ccd534cf4d3de15fdfd12630b3effa89eb2618f81680f09"
+    },
+    {
+      "name": "help",
+      "subject": "one bold question mark",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-210a4e47-302a-4797-a7d0-2c3101efc872.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one bold question mark. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "7a154ee472e09d53b6520358e0e2281529c63b1b31bed9bb214bf1fa3f79ac36",
+      "asset": "entry/src/main/resources/base/media/ui_help.png",
+      "sha256": "fc0416ece0b1d71c7fea4aece6ca2b749b07077c81a29457bd7226827988b58c"
+    },
+    {
+      "name": "mail",
+      "subject": "a simple sealed envelope",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-e720871e-f928-47e4-b76e-179641b28f5d.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a simple sealed envelope. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "f4f3b0e75752ae073bdd53c8231121daa066cb8ce8a096eb6c6c577aca3e9184",
+      "asset": "entry/src/main/resources/base/media/ui_mail.png",
+      "sha256": "8da328adfd53a39189fbfd829fb1335675d35292f959f0eb88ee09c0f9314b0c"
+    },
+    {
+      "name": "lock",
+      "subject": "a closed padlock",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-379bf1b6-8200-484f-9819-bb484721c744.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a closed padlock. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "222addaf3b1367c626d85a91d7b1dd1052ea877aa7a9c4b1b2cc385289605081",
+      "asset": "entry/src/main/resources/base/media/ui_lock.png",
+      "sha256": "3b8a4afdfd3211b2cc231b32067a231a3e00d675598c2ea03c130160a1535335"
+    },
+    {
+      "name": "moon",
+      "subject": "a crescent moon",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-0ae652e8-0d20-449c-8f16-1f61cd1b633e.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a crescent moon. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "b59c7a43b5e0aa0f035eeb7373a9c75de9bceedf74c9baaca689af6aebd993d1",
+      "asset": "entry/src/main/resources/base/media/ui_moon.png",
+      "sha256": "7bf7b5fbe03ec01696bb01fcfd23d51a087320407342bb0b3d38fe72101319e9"
+    },
+    {
+      "name": "sun",
+      "subject": "a sun disc with short rays",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-3697ed77-edcf-44e2-afed-7ecb5cfc11d2.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a sun disc with short rays. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "b2506a4b335d7894e382eea1961498232f0cc2b9605df45e70c28e020ea97d72",
+      "asset": "entry/src/main/resources/base/media/ui_sun.png",
+      "sha256": "0615dccc4e2db412e881b7f57b61a4ab95faf67e895c252bba81a1efb301dde4"
+    },
+    {
+      "name": "language",
+      "subject": "a simple globe with meridian and equator bands",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-3dabc71a-590b-46b7-9e16-4d67f42caa77.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a simple globe with meridian and equator bands. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "72336e6704cd1859fc3d2ee81cc013c0b352ca4c2cbce3d37d37bb5eb2c8db52",
+      "asset": "entry/src/main/resources/base/media/ui_language.png",
+      "sha256": "d4021fd0aac1fca07db1345e09b5c446727f302146ed9ea68f119473d3f17fa6"
+    },
+    {
+      "name": "minus",
+      "subject": "one thick short horizontal minus sign",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-36630788-b07d-47c0-8912-dc6c6f210baf.png",
+      "prompt": "Generate ONE isolated mobile UI icon: one thick short horizontal minus sign. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "58cd7c8365107f658339f759c5a1579ac46d94fc7d89191de4d1adb62f964907",
+      "asset": "entry/src/main/resources/base/media/ui_minus.png",
+      "sha256": "4f34a9b51324e0d133bcc469aa03b7e45f263c1503576abdf5db99259234f3b7"
+    },
+    {
+      "name": "eye_closed",
+      "subject": "a closed eye with a diagonal privacy slash",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-16e447b8-863d-42fa-ae20-42ee85cc2593.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a closed eye with a diagonal privacy slash. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "9b1be592da9089f37ca84336a91d5fe360f657786ed7310c1c391eb105875d5e",
+      "asset": "entry/src/main/resources/base/media/ui_eye_closed.png",
+      "sha256": "55af172995cb944c304162ad2f9517055c47c6e0d3d867c7badd47ea197f8b1a"
+    },
+    {
+      "name": "calendar",
+      "subject": "a small calendar with binding rings, no text",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-bc721f56-8413-49db-8518-8dbca13db3ad.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a small calendar with binding rings, no text. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "f93c2b05da41f935cccdff2a2c926e31677c86404c354986f1318d4457a639be",
+      "asset": "entry/src/main/resources/base/media/ui_calendar.png",
+      "sha256": "9652f4bb227873a16467502cbc18c3788472720da7e66f3a8a4748f945e3bca5"
+    },
+    {
+      "name": "clock",
+      "subject": "a round analog clock face, no numbers",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-6c9b3ae2-3cc9-4793-8d9f-eedb7b138fe4.png",
+      "prompt": "Generate ONE isolated mobile UI icon: a round analog clock face, no numbers. Bold rounded low-relief 3D, satin graphite charcoal material with restrained champagne gold edge details. Front-facing clear silhouette at 20 pixels, centered fills 75% of square canvas. BACKGROUND perfectly uniform solid chroma-key vivid green #00FF00 including holes and all outside spaces. No checkerboard, no ground shadows, no green tint on object. Opaque object, no transparent glass. No letters, no labels, no extra objects or background tile. Consistent premium merchant app icon family.",
+      "sourceSha256": "71f157106451baa7609a1e423e32c70869bc5657fba8ab606537411c12f1ff54",
+      "asset": "entry/src/main/resources/base/media/ui_clock.png",
+      "sha256": "580ccc83d6b3b6fe76cdd9662b1705e3a88c4a2af968c9e6ca6e080da96516fb"
+    },
+    {
+      "name": "location",
+      "subject": "a map location pin with a round hole",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-3efc7e9b-8976-4397-bd95-31b45c9f85f7.png",
+      "prompt": "ONE isolated mobile UI icon: a map location pin with a round hole. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "fe0d26f67fe12897fab29191af560ace52b5767377c1730f3ed471ced52dd9f4",
+      "asset": "entry/src/main/resources/base/media/ui_location.png",
+      "sha256": "f2c9d377b18cf3b17a63e1650d4e2f289ba986680e843a885fa3647cf7241a54"
+    },
+    {
+      "name": "network",
+      "subject": "a disconnected wifi symbol with a small cross",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-0e72a25b-2e36-4535-9514-08185ac217a4.png",
+      "prompt": "ONE isolated mobile UI icon: a disconnected wifi symbol with a small cross. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "392743a6e7ec7e81ac96241c0780c09f642bdef5da280adab5a01b51eb20c4f5",
+      "asset": "entry/src/main/resources/base/media/ui_network.png",
+      "sha256": "80cb5a71d6d1fed87fe22777395aac0f68361e7ffe72a803e4d6962e8508cf90"
+    },
+    {
+      "name": "keyboard",
+      "subject": "a small computer keyboard",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-ff21facc-bc8f-41ec-b46d-a50c07984afd.png",
+      "prompt": "ONE isolated mobile UI icon: a small computer keyboard. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "3401e3f1a08b30e9fb0090a77252269d329eeb82cec8343391f47190667e665d",
+      "asset": "entry/src/main/resources/base/media/ui_keyboard.png",
+      "sha256": "a422cf3cad978930af92547d4087de053ad514a9810edc48089ae81331b8cb27"
+    },
+    {
+      "name": "backspace",
+      "subject": "a backspace key pointing left with an X",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-a8d722ce-31d2-4afd-a704-f83ca42e2933.png",
+      "prompt": "ONE isolated mobile UI icon: a backspace key pointing left with an X. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "f10ae7695407eddc0d4325a735e750529eea6e3fc2df32971d253d5f4f881ad5",
+      "asset": "entry/src/main/resources/base/media/ui_backspace.png",
+      "sha256": "736f80852ab33fdd8d1b1a5cc647cc368ea0072673d57f468b00f79b6ccf0019"
+    },
+    {
+      "name": "double_chevron",
+      "subject": "two thick right-facing chevrons",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-3b14f9ea-4821-40f2-8752-4013e2fad72d.png",
+      "prompt": "ONE isolated mobile UI icon: two thick right-facing chevrons. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "e9fc1b357bd91bfad61768a70f03706a69cc0dd99dc9f8fc68d5e00aa632bbff",
+      "asset": "entry/src/main/resources/base/media/ui_double_chevron.png",
+      "sha256": "b2a78af9040398f9ecc26c2351122559489f3d2c1272907d01c3262bb29df3e0"
+    },
+    {
+      "name": "play",
+      "subject": "a rounded right-facing triangle play symbol",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-364f7791-2885-4a40-884c-d246b3dbb640.png",
+      "prompt": "ONE isolated mobile UI icon: a rounded right-facing triangle play symbol. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "c42b7899525c0e42a9fac3edbb9c073bcbaeeb000aa610e710c5ea2d3f75970c",
+      "asset": "entry/src/main/resources/base/media/ui_play.png",
+      "sha256": "ceed8e361c79db56e0dd70ac8dc997cdde24dc66c0c04655e889bd3d8b8e7c23"
+    },
+    {
+      "name": "photo_error",
+      "subject": "a photo frame with mountain and a small error cross",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-bc26047e-5f1c-430a-9d4b-60474bb8db04.png",
+      "prompt": "ONE isolated mobile UI icon: a photo frame with mountain and a small error cross. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "621435eb064daf0cb5d0051c5f173ec509074ea54e7627b2f93d279782d032c2",
+      "asset": "entry/src/main/resources/base/media/ui_photo_error.png",
+      "sha256": "3cca5de7e71273596844500628a2b21be60ee28274aa6f46a622f8caef78638a"
+    },
+    {
+      "name": "speaker",
+      "subject": "a speaker with two sound waves",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-310b4c0a-0feb-4f92-863f-b2c8987a7d2e.png",
+      "prompt": "ONE isolated mobile UI icon: a speaker with two sound waves. Bold rounded low-relief 3D satin graphite charcoal material with restrained champagne gold edges. Front facing strong simple silhouette readable at 20px. Center fills 75% square. Uniform solid chroma-key vivid green #00FF00 background including all holes. No checkerboard, no text, no label, no floor shadow, no tile, no green tint on opaque object.",
+      "sourceSha256": "44ddbf9d1bdd0431e605cc4c6878f278b1d9136469e1c6e2462602bb76beb612",
+      "asset": "entry/src/main/resources/base/media/ui_speaker.png",
+      "sha256": "02adab96c8c18b796ec9b7b25548d7d0bcdd8f62586f34ded7ad2afc9e9ee5fc"
+    }
+  ],
+  "launcher": {
+    "name": "launcher",
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a0817c-5153-7462-8ec2-1fb39fbe7095\\exec-5a87e812-989c-4289-8056-a457df478e60.png",
+    "prompt": "Create ONE finished premium mobile app launcher icon for Jingwei Technology merchant app. Square full-bleed opaque warm ivory background, graphite satin low-relief 3D emblem centered: two upright architectural rectangular window frames linked by a short horizontal connector, balanced geometric business monogram, restrained champagne gold metallic edge details. Emblem fills 68% of the square, strong readable silhouette, front facing, clean understated luxury enterprise aesthetic. Rounded geometry on emblem, no words or letters, no watermark, no orange, no scene, no extra objects. Outside background opaque warm ivory #F6F3EB, NOT transparent and NOT checkerboard.",
+    "asset": "AppScope/resources/base/media/app_icon.png",
+    "sourceSha256": "c459b0a14014b036c3e57b3394a2beb7829445158ef4af333f3821f0cf21f829",
+    "sha256": "b277278524bfe9baf5b497e41b54209f3f392d404d822377681057ce7ab516e4"
+  }
+}

@@ -88,3 +88,28 @@ export interface RegionStats {
   merchants: number
   gmv: number
 }
+
+/** Read-only paid analytics. Dates use Asia/Shanghai; monetary values are yuan. */
+export type MerchantAnalyticsPeriod = 'today' | 'week' | 'month' | 'year' | 'custom'
+export interface MerchantAnalyticsQuery {
+  period: MerchantAnalyticsPeriod
+  startDate?: string
+  endDate?: string
+}
+export interface MerchantAnalytics {
+  version: 1
+  period: MerchantAnalyticsPeriod
+  startDate: string
+  endDate: string
+  timeZone: 'Asia/Shanghai'
+  asOf: string
+  granularity: 'hour' | 'day' | 'month'
+  paidAmount: number
+  paidOrderCount: number
+  avgOrderValue: number
+  refundAmount: number
+  totalQuantity: number
+  trend: { bucketStart: string; amount: number }[]
+  topProducts: { productId: ID; name: string; quantity: number }[]
+  categories: { categoryId: string; name: string; quantity: number }[]
+}

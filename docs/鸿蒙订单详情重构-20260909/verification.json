@@ -1,0 +1,38 @@
+{
+  "observedAt": "2026-09-09T19:27:09.119912+09:00",
+  "status": "local_verified_device_pending",
+  "baseline": "709de9c74554d337d7aee8a0674f9f1cbc1afa08",
+  "build": {
+    "result": "passed",
+    "artifact": "D:\\DevEcoProjects\\jingwei-workspace\\native\\harmony-merchant\\entry\\build\\default\\outputs\\default\\entry-default-signed.hap",
+    "sha256": "aaaebfbe36ab7bd19812a76b4151a740fbdf6d16e0ef4ea0943dc54f6ba49f56",
+    "bytes": 13786350,
+    "warnings": "Existing SDK compatibility warnings remain"
+  },
+  "tests": {
+    "focusedPassed": 8,
+    "focusedFailed": 0,
+    "orderUiAudit": "passed",
+    "appearanceAudit": "passed",
+    "generatedIconsAudit": "passed",
+    "diffCheck": "passed"
+  },
+  "sourceMatchesDevEco": {
+    "entry/src/main/ets/features/order/OrderDetailPage.ets": true,
+    "entry/src/main/ets/features/order/OrderProductSummary.ets": true,
+    "entry/src/main/ets/features/order/OrderDetailPolicy.ets": true,
+    "entry/src/main/ets/features/order/OrderDetailCards.ets": true,
+    "entry/src/main/ets/core/theme/MerchantIcon.ets": true
+  },
+  "packagedSvgEntries": [],
+  "device": {
+    "observed": "HDC [Empty]",
+    "installed": false,
+    "uiAcceptance": "pending"
+  },
+  "realOrderMutationPerformed": false,
+  "signingConfigurationModified": false,
+  "githubPushed": false,
+  "serverDeployed": false,
+  "ledgerConfigHash": "12f3a5532f80082d4ded85074f78c91fd36089ad7cd3d48a5fc4f118d0da4beb"
+}

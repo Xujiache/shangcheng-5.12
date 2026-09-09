@@ -29,3 +29,4 @@ fi
 git -C "$vendor_root" show "$reviewed_revision:library/BuildProfile.ets" > "$generated_profile"
 
 echo "Vendored dependency compatibility patches are ready."
+node "$project_root/scripts/prepare-generated-icons.cjs"

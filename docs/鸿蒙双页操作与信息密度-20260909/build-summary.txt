@@ -1,0 +1,16 @@
+ It is recommended to use apiAvailable to safeguard API compatibility.
+
+WARN: ArkTS:WARN File: D:/DevEcoProjects/jingwei-workspace/native/harmony-merchant/entry/src/main/ets/core/theme/AdaptiveMaterialSurface.ets:48:8
+ The 'systemMaterial' API is supported since SDK version 26.0.0. However, the current compatible SDK version is 6.0.1(21).
+ It is recommended to use apiAvailable to safeguard API compatibility.
+
+
+> hvigor [32mFinished :entry:default@CompileArkTS... after 13 s 139 ms [39m
+> hvigor [32mUP-TO-DATE :entry:default@GeneratePkgModuleJson...  [39m
+> hvigor [32mFinished :entry:default@ProcessCompiledResources... after 1 ms [39m
+> hvigor [32mFinished :entry:default@PackageHap... after 1 s 37 ms [39m
+> hvigor [32mFinished :entry:default@PackingCheck... after 11 ms [39m
+> hvigor [32mFinished :entry:default@SignHap... after 4 s 175 ms [39m
+> hvigor [32mFinished :entry:default@CollectDebugSymbol... after 3 ms [39m
+> hvigor [32mFinished :entry:assembleHap... after 1 ms [39m
+> hvigor [32mBUILD SUCCESSFUL in 25 s 756 ms [39m

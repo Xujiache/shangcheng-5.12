@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "assertions": [
+    "unpaid exclusion",
+    "payment-time attribution",
+    "Beijing midnight boundaries",
+    "gross sales retain refunded orders",
+    "cross-period completed refunds",
+    "partial refunds",
+    "cents and rounding",
+    "ownership isolation",
+    "units not currency",
+    "monthly buckets",
+    "empty range",
+    "database session timezone"
+  ],
+  "directory": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\jingwei-analytics-pg-jjBhSq"
+}

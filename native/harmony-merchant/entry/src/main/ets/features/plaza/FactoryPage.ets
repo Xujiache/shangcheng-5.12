@@ -7,6 +7,7 @@ import { AppRouter } from '../../core/navigation/AppRouter';
 import { IdRouteParams } from '../../core/navigation/RouteParams';
 import { ApiError } from '../../core/network/ApiClient';
 import { DesignTokens } from '../../core/theme/DesignTokens';
+import { MerchantIcon } from '../../core/theme/MerchantIcon';
 import { AgencyRequest, PlazaFactory, PlazaProduct, PlazaQualification } from '../business/BusinessModels';
 import { BusinessRepository } from '../business/BusinessRepository';
 import { I18n } from '../../core/i18n/I18n';
@@ -294,7 +295,10 @@ struct FactoryPage {
                 Text(I18n.text(this.language, '为厂家评分', 'Rate this factory')).fontSize(18).fontWeight(FontWeight.Bold).width('100%');
                 Row({ space: 8 }) {
                   ForEach([1, 2, 3, 4, 5], (score: number) => {
-                    Text(`${score}★`).fontSize(13).fontColor(this.rating === score ? DesignTokens.onBrand(this.darkMode) : DesignTokens.brand(this.darkMode))
+                    Row({ space: 3 }) {
+                      Text(`${score}`).fontSize(13).fontColor(DesignTokens.text(this.darkMode));
+                      MerchantIcon({ name: 'star', color: DesignTokens.brand(this.darkMode), iconSize: 16 });
+                    }
                       .padding({ left: 10, right: 10, top: 8, bottom: 8 })
                       .backgroundColor(this.rating === score ? DesignTokens.brand(this.darkMode) : DesignTokens.selectedSurface(this.darkMode)).borderRadius(16)
                       .onClick(() => this.rate(score));

@@ -1,0 +1,16 @@
+✔ known statuses have clear labels and only pending shipment allows shipping (1.9533ms)
+✔ unpaid amounts are not described as paid; missing money is not invented as zero (0.447ms)
+✔ share validation rejects empty sections, invalid duration and overlong messages (0.3233ms)
+✔ address parsing copies only and never changes authoritative order address (76.1818ms)
+✔ late share prefill cannot reopen a dismissed panel or overwrite changed account state (40.6373ms)
+✔ shipping is single-flight and refreshes final order state (41.3005ms)
+✔ failed refresh preserves displayed order and disables further shipment until refreshed (36.92ms)
+✔ channel invalidation ignores stale responses without invalidating unrelated requests (0.3551ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 794.7643

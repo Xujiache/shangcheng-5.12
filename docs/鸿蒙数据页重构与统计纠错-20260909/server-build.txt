@@ -1,0 +1,3 @@
+
+> @jiujiu/server@0.0.1 build D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\server
+> nest build

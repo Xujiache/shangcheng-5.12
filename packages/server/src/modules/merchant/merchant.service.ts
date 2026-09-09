@@ -399,7 +399,17 @@ export class MerchantService {
       this.prisma.product.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
       this.prisma.product.count({ where }),
     ])
-    return buildPage(list.map(decimalToNumber), total, page, pageSize)
+    return buildPage(
+      list.map((item) => ({
+        ...decimalToNumber(item),
+        imageThumbnailUrl: this.imageThumb(
+          Array.isArray(item.images) ? String(item.images[0] || '') : '',
+        ),
+      })),
+      total,
+      page,
+      pageSize,
+    )
   }
   async productDetail(merchantId: string, id: string) {
     const p = await this.prisma.product.findFirst({
