@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-10 · 售后处理
  *
@@ -9,11 +10,6 @@ import { onLoad } from '@dcloudio/uni-app'
 import { refundService } from '../../services/order'
 import { formatPrice, formatDateTime } from '@jiujiu/shared/utils'
 import type { Refund, RefundStatus } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Tabs from '../../components/tabs/tabs.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type Tab = 'all' | RefundStatus
 
 const tab = ref<Tab>('pending')
@@ -39,7 +35,10 @@ const TABS = computed(() => [
   { key: 'rejected' as Tab, label: '已拒绝' },
 ])
 
-const STATUS_LABEL: Record<RefundStatus, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const STATUS_LABEL: Record<
+  RefundStatus,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   pending: { text: '待处理', tone: 'warning' },
   agreed: { text: '已同意', tone: 'success' },
   rejected: { text: '已拒绝', tone: 'error' },
@@ -68,7 +67,9 @@ async function load(reset = false) {
     })
     // 后端 listRefunds 不支持按 orderId 过滤(merchant.service.ts:521 where 仅取 merchantId/status),
     // 这里本地兜底:从订单详情跳进来时,只展示该订单的售后单。
-    const filtered = orderId.value ? data.list.filter((r) => r.orderId === orderId.value) : data.list
+    const filtered = orderId.value
+      ? data.list.filter((r) => r.orderId === orderId.value)
+      : data.list
     list.value = reset ? filtered : [...list.value, ...filtered]
     total.value = orderId.value ? filtered.length : data.total
     hasMore.value = !!data.hasMore && !orderId.value
@@ -78,13 +79,13 @@ async function load(reset = false) {
 }
 
 function agree(r: Refund) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '同意退款',
     content: `将退还 ${formatPrice(r.applyAmount)} 给客户，是否确认？`,
     success: async (m) => {
       if (m.confirm) {
         await refundService.agree(r.id, r.applyAmount)
-        uni.showToast({ title: '已同意' })
+        appFeedback.showToast({ title: '已同意' })
         load(true)
       }
     },
@@ -92,14 +93,14 @@ function agree(r: Refund) {
 }
 
 function reject(r: Refund) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '拒绝退款',
     editable: true,
     placeholderText: '请填写拒绝理由（客户可见）',
     success: async (m) => {
       if (m.confirm && m.content) {
         await refundService.reject(r.id, m.content)
-        uni.showToast({ title: '已拒绝' })
+        appFeedback.showToast({ title: '已拒绝' })
         load(true)
       }
     },
@@ -110,20 +111,53 @@ function previewEvidence(imgs: string[], idx: number) {
   uni.previewImage({ urls: imgs, current: imgs[idx] })
 }
 
+function loadMore() {
+  page.value += 1
+  load()
+}
+
 onLoad((opts) => {
   // 来源:订单列表/详情页"申请售后"按钮 → /pages/order/aftersale?orderId=xxx
   // 拿到 orderId 后,列表只展示该订单的售后单(本地 filter,见 load()),分页禁用
   orderId.value = (opts as { orderId?: string })?.orderId || ''
+  const requestedStatus = (opts as { status?: Tab })?.status
+  if (requestedStatus && TABS.value.some((item) => item.key === requestedStatus)) {
+    tab.value = requestedStatus
+  }
 })
 onMounted(() => load(true))
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="售后处理" />
+    <wd-navbar title="售后处理"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view class="header">
-      <Tabs v-model="tab" :items="TABS" variant="underline" @change="load(true)" />
+      <wd-tabs v-model="tab" @change="load(true)"  color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
     </view>
 
     <view class="list">
@@ -131,12 +165,10 @@ onMounted(() => load(true))
         <view class="head">
           <view class="head-left">
             <text class="no">{{ r.no }}</text>
-            <StatusTag
-              :text="r.type === 'refund_with_return' ? '退货退款' : '仅退款'"
-              :tone="r.type === 'refund_with_return' ? 'warning' : 'info'"
-            />
+            <wd-tag
+             :type="$jwTagType(r.type === 'refund_with_return' ? 'warning' : 'info')" :plain="true" round>{{ r.type === 'refund_with_return' ? '退货退款' : '仅退款' }}</wd-tag>
           </view>
-          <StatusTag :text="STATUS_LABEL[r.status].text" :tone="STATUS_LABEL[r.status].tone" fill />
+          <wd-tag  :type="$jwTagType(STATUS_LABEL[r.status].tone)" :plain="false" round>{{ STATUS_LABEL[r.status].text }}</wd-tag>
         </view>
 
         <view class="body">
@@ -185,13 +217,17 @@ onMounted(() => load(true))
         </view>
       </view>
 
-      <EmptyState v-if="!loading && list.length === 0" title="暂无售后单" desc="切换标签查看其他状态" />
-      <view v-if="hasMore && list.length > 0" class="loadmore" @click="page++; load()">加载更多 ›</view>
+      <wd-status-tip
+        v-if="!loading && list.length === 0"
+       image="content" :tip="['暂无售后单', '切换标签查看其他状态'].filter(Boolean).join(' · ')" />
+      <view v-if="hasMore && list.length > 0" class="loadmore" @click="loadMore">加载更多 ›</view>
       <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
     </view>
 
     <view class="safe-bottom" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -234,7 +270,11 @@ onMounted(() => load(true))
     display: flex;
     align-items: center;
     gap: 12rpx;
-    .no { font-size: 24rpx; color: var(--text-secondary); font-family: var(--font-family-base); }
+    .no {
+      font-size: 24rpx;
+      color: var(--text-secondary);
+      font-family: var(--font-family-base);
+    }
   }
 }
 .body {
@@ -253,14 +293,21 @@ onMounted(() => load(true))
   .row-value {
     flex: 1;
     color: var(--text-primary);
-    &.primary { color: var(--brand-primary); font-weight: 700; font-size: 28rpx; }
+    &.primary {
+      color: var(--brand-primary);
+      font-weight: 700;
+      font-size: 28rpx;
+    }
   }
 }
 .evidences {
   background: var(--bg-page);
   border-radius: 12rpx;
   padding: 12rpx;
-  .evidence-title { font-size: 22rpx; color: var(--text-tertiary); }
+  .evidence-title {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .evidence-row {
     margin-top: 8rpx;
     display: flex;
@@ -291,11 +338,23 @@ onMounted(() => load(true))
     &.primary {
       background: var(--brand-gradient);
       color: #fff;
-      box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+      box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
     }
   }
 }
-.loadmore { padding: 24rpx; text-align: center; font-size: 22rpx; color: var(--brand-primary); }
-.end { padding: 24rpx; text-align: center; font-size: 20rpx; color: var(--text-tertiary); }
-.safe-bottom { height: 40rpx; }
+.loadmore {
+  padding: 24rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--brand-primary);
+}
+.end {
+  padding: 24rpx;
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--text-tertiary);
+}
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

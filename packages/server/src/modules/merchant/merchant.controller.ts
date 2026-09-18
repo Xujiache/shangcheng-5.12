@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
@@ -19,6 +20,7 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 import { CreateWithdrawDto } from './dto/create-withdraw.dto'
 import { CreateCouponDto, UpdateCouponDto } from './dto/coupon.dto'
 import { SaveCommissionRulesDto } from './dto/save-commission-rules.dto'
+import { SendChatMessageDto } from './dto/send-chat-message.dto'
 
 @ApiTags('商家端')
 @UseGuards(RolesGuard)
@@ -220,6 +222,13 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.listRefunds(mid, q)
   }
+  @Get('refunds/:id') async refundDetail(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+  ) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.refundDetail(mid, id)
+  }
   @Post('refunds/:id/agree') async agree(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
@@ -386,6 +395,10 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.createStore(mid, dto)
   }
+  @Get('stores/:id') async store(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.getStore(mid, id)
+  }
   @Put('stores/:id') async updateStore(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
@@ -493,20 +506,35 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.chatSessions(mid)
   }
-  @Get('chat/sessions/:id/messages') async chatMessages(
+  @Get('chat/sessions/:id') async chatSession(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
   ) {
     const mid = await this.svc.ensureMerchantId(u)
-    return this.svc.chatMessages(mid, id)
+    return this.svc.chatSession(mid, id)
+  }
+  @Get('chat/sessions/:id/messages') async chatMessages(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+    @Query() query: { cursor?: string; pageSize?: string },
+  ) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.chatMessages(mid, id, query)
   }
   @Post('chat/sessions/:id/messages') async chatSend(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
-    @Body() dto: { type: string; content: string },
+    @Body() dto: SendChatMessageDto,
   ) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.chatSend(mid, id, dto.type || 'text', dto.content)
+  }
+  @Post('chat/sessions/:id/read') async chatRead(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+  ) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.svc.chatRead(mid, id)
   }
   @Get('chat/quick-replies') async chatQuickReplies(@CurrentUser() u: AuthUser) {
     const mid = await this.svc.ensureMerchantId(u)
@@ -654,9 +682,12 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.myPayments(mid)
   }
-  @Get('membership/notices') async notices(@CurrentUser() u: AuthUser) {
+  @Get('membership/notices') async notices(
+    @CurrentUser() u: AuthUser,
+    @Headers('accept-language') language?: string,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
-    return this.svc.membershipNotices(mid)
+    return this.svc.membershipNotices(mid, language)
   }
   @Post('membership/subscribe') async subscribe(@CurrentUser() u: AuthUser, @Body() dto: any) {
     const mid = await this.svc.ensureMerchantId(u)

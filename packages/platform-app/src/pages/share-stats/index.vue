@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 订单分享数据
  *
@@ -14,10 +15,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { orderShareService, type OrderShareRow, type OrderShareStats } from '../../services'
 import type { Pagination } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 const FIELD_LABELS: Record<string, string> = {
   basics: '订单基础',
   customer: '客户信息',
@@ -156,24 +153,24 @@ function loadMore() {
 
 function onCopyShareUrl(row: OrderShareRow) {
   if (!row.shareUrl) {
-    uni.showToast({ title: '链接不存在', icon: 'none' })
+    appFeedback.showToast({ title: '链接不存在', icon: 'none' })
     return
   }
   uni.setClipboardData({
     data: row.shareUrl,
-    success: () => uni.showToast({ title: '分享链接已复制', icon: 'success' }),
-    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+    success: () => appFeedback.showToast({ title: '分享链接已复制', icon: 'success' }),
+    fail: () => appFeedback.showToast({ title: '复制失败', icon: 'none' }),
   })
 }
 
 function onClickRow(row: OrderShareRow) {
   const visible = (row.visibleFields || []).map((f) => FIELD_LABELS[f] || f).join('、') || '—'
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['复制分享链接', '查看链接全文'],
     success: (r) => {
       if (r.tapIndex === 0) onCopyShareUrl(row)
       else if (r.tapIndex === 1) {
-        uni.showModal({
+        appFeedback.showModal({
           title: row.orderNo || row.orderId,
           content: `商家：${row.merchantName}\n可见字段：${visible}\n浏览次数：${row.viewCount}\n过期：${expiresLabel(row.expiresAt)}\n链接：${row.shareUrl}`,
           showCancel: false,
@@ -193,8 +190,26 @@ onMounted(refresh)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="订单分享数据" rightIcon="refresh" @right="refresh" />
+    <wd-navbar title="订单分享数据" @click-right="refresh"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+    </wd-navbar>
 
     <scroll-view scroll-y class="scroll" @scrolltolower="loadMore">
       <!-- KPI 4 卡 -->
@@ -206,7 +221,7 @@ onMounted(refresh)
           :style="{ background: c.tintSoft }"
         >
           <view class="kpi-icon" :style="{ background: c.tint }">
-            <Icon :name="c.icon" :size="28" color="#fff" />
+            <wd-icon :name="$jwIcon(c.icon)" size="14px" color="#fff"  />
           </view>
           <text class="kpi-label">{{ c.label }}</text>
           <text class="kpi-value" :style="{ color: c.tint }">{{ c.value }}</text>
@@ -258,7 +273,7 @@ onMounted(refresh)
       <!-- Top 商家 -->
       <view v-if="stats && stats.topMerchants && stats.topMerchants.length" class="top-card">
         <view class="block-head">
-          <Icon name="crown" :size="28" color="#FAAD14" />
+          <wd-icon :name="$jwIcon('crown')" size="14px" color="#FAAD14"  />
           <text class="block-title">分享 Top 商家</text>
           <text class="block-meta">TOP {{ stats.topMerchants.length }}</text>
         </view>
@@ -277,7 +292,7 @@ onMounted(refresh)
       <!-- 列表 -->
       <view class="list-card">
         <view class="block-head">
-          <Icon name="share" :size="28" color="var(--brand-primary)" />
+          <wd-icon :name="$jwIcon('share')" size="14px" color="var(--brand-primary)"  />
           <text class="block-title">分享明细</text>
           <text class="block-meta">{{ total }} 条</text>
         </view>
@@ -287,18 +302,15 @@ onMounted(refresh)
         </view>
 
         <view v-else-if="errorMsg" class="err-block">
-          <Icon name="info" :size="56" color="#FF7A45" />
+          <wd-icon :name="$jwIcon('info')" size="28px" color="#FF7A45"  />
           <text class="err-title">加载失败</text>
           <text class="err-msg">{{ errorMsg }}</text>
           <view class="err-btn" @click="refresh">点击重试</view>
         </view>
 
         <view v-else-if="list.length === 0" class="empty-wrap">
-          <EmptyState
-            icon="share"
-            title="暂无分享记录"
-            desc="商家通过 merchant-app 发起订单分享后,数据将出现在这里"
-          />
+          <wd-status-tip
+           image="content" :tip="['暂无分享记录', '商家通过 merchant-app 发起订单分享后,数据将出现在这里'].filter(Boolean).join(' · ')" />
         </view>
 
         <view v-else class="rows">
@@ -313,7 +325,7 @@ onMounted(refresh)
               </view>
             </view>
             <view class="r-merchant">
-              <Icon name="home-shop" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('home-shop')" size="11px" color="var(--text-tertiary)"  />
               <text>{{ row.merchantName }}</text>
             </view>
             <view v-if="row.visibleFields && row.visibleFields.length" class="r-tags">
@@ -323,20 +335,20 @@ onMounted(refresh)
             </view>
             <view class="r-foot">
               <view class="r-foot-item">
-                <Icon name="eye" :size="20" color="var(--text-tertiary)" />
+                <wd-icon :name="$jwIcon('eye')" size="10px" color="var(--text-tertiary)"  />
                 <text>{{ row.viewCount }} 浏览</text>
               </view>
               <view class="r-foot-item">
-                <Icon name="clock" :size="20" color="var(--text-tertiary)" />
+                <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)"  />
                 <text>过期 {{ expiresLabel(row.expiresAt) }}</text>
               </view>
               <view class="r-foot-item">
-                <Icon name="calendar" :size="20" color="var(--text-tertiary)" />
+                <wd-icon :name="$jwIcon('calendar')" size="10px" color="var(--text-tertiary)"  />
                 <text>{{ createdLabel(row.createdAt) }}</text>
               </view>
             </view>
             <view class="r-actions" @click.stop="onCopyShareUrl(row)">
-              <Icon name="share" :size="22" color="var(--brand-primary)" />
+              <wd-icon :name="$jwIcon('share')" size="11px" color="var(--brand-primary)"  />
               <text>复制分享链接</text>
             </view>
           </view>
@@ -351,6 +363,8 @@ onMounted(refresh)
       <view style="height: 48rpx" />
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

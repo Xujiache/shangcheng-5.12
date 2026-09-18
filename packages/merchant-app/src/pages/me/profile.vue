@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, delegateWotUploadChoose } from '@jiujiu/shared'
 /**
  * 个人信息 · 编辑页（v2）
  *
@@ -12,7 +13,6 @@
  *     me/index 和 home 都 onShow 时重新拉一次，避免分享出去的店铺信息和实际不一致
  */
 import { ref, computed, onMounted, reactive } from 'vue'
-import Icon from '../../components/icon/icon.vue'
 import { profileService, type MerchantProfile } from '../../services/profile'
 import { useUserStore } from '../../store'
 import { useTencentMap } from '../../composables/useTencentMap'
@@ -101,7 +101,7 @@ async function loadProfile() {
     form.categories = (form.categories || []).map(displayCategory)
     original.value = { ...form, categories: [...form.categories] }
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   }
 }
 
@@ -113,7 +113,7 @@ function chooseAvatar() {
       const tempPath = r.tempFilePaths?.[0]
       if (!tempPath) return
       uploadingAvatar.value = true
-      uni.showLoading({ title: '上传中…', mask: true })
+      appFeedback.showLoading({ title: '上传中…', mask: true })
       try {
         const uploadRes = await new Promise<{ url: string }>((resolve, reject) => {
           uni.uploadFile({
@@ -135,11 +135,11 @@ function chooseAvatar() {
           })
         })
         form.avatar = uploadRes.url
-        uni.hideLoading()
-        uni.showToast({ title: '已选择头像，记得保存', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: '已选择头像，记得保存', icon: 'none' })
       } catch (e: any) {
-        uni.hideLoading()
-        uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: e?.message || '上传失败', icon: 'none' })
       } finally {
         uploadingAvatar.value = false
       }
@@ -176,23 +176,23 @@ function pickMapResult(item: { lat: number; lng: number; name?: string; address?
 
 async function saveProfile() {
   if (!form.shopName.trim()) {
-    uni.showToast({ title: '请填写店名', icon: 'none' })
+    appFeedback.showToast({ title: '请填写店名', icon: 'none' })
     return
   }
   if (form.contactPhone && !/^[\d\s+\-*()]+$/.test(form.contactPhone)) {
-    uni.showToast({ title: '联系手机格式不对', icon: 'none' })
+    appFeedback.showToast({ title: '联系手机格式不对', icon: 'none' })
     return
   }
   if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    uni.showToast({ title: '邮箱格式不对', icon: 'none' })
+    appFeedback.showToast({ title: '邮箱格式不对', icon: 'none' })
     return
   }
   if (!form.categories.length) {
-    uni.showToast({ title: '至少选择 1 个经营品类', icon: 'none' })
+    appFeedback.showToast({ title: '至少选择 1 个经营品类', icon: 'none' })
     return
   }
 
-  uni.showLoading({ title: '保存中…' })
+  appFeedback.showLoading({ title: '保存中…' })
   try {
     const updated = await profileService.update({
       shopName: form.shopName,
@@ -210,12 +210,12 @@ async function saveProfile() {
     try {
       uni.setStorageSync('merchant_profile_changed_at', Date.now())
     } catch {}
-    uni.hideLoading()
-    uni.showToast({ title: '已保存', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: '已保存', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 600)
   } catch (e: any) {
-    uni.hideLoading()
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   }
 }
 
@@ -231,29 +231,53 @@ onMounted(loadProfile)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <!-- Hero · 渐变 + 头像 + 头部信息 -->
     <view class="hero" :style="{ paddingTop: heroPaddingTop }">
       <view class="hero-top">
         <view class="back-btn" @click="goBack">
-          <Icon name="back" :size="32" color="#fff" />
+          <wd-icon :name="$jwIcon('back')" size="16px" color="#fff"  />
         </view>
         <text class="hero-title">个人信息</text>
         <view class="back-btn placeholder" />
       </view>
-      <view class="avatar-block" @click="chooseAvatar">
+      <wd-upload
+        :file-list="[]"
+        :limit="1"
+        :disabled="uploadingAvatar"
+        :before-choose="(option: any) => delegateWotUploadChoose(option, chooseAvatar)"
+        custom-class="avatar-upload"
+      >
+      <view class="avatar-block">
         <view class="avatar-ring">
           <image v-if="form.avatar" :src="form.avatar" class="avatar-img" mode="aspectFill" />
           <view v-else class="avatar avatar-placeholder">
             <text>{{ form.shopName.slice(0, 1) || '?' }}</text>
           </view>
           <view class="avatar-edit-badge">
-            <Icon name="camera" :size="22" color="#fff" />
+            <wd-icon :name="$jwIcon('camera')" size="11px" color="#fff"  />
           </view>
         </view>
         <text class="hero-name">{{ form.shopName || '未命名店铺' }}</text>
         <text class="hero-no">商户号 {{ form.merchantNo || '--' }}</text>
       </view>
+      </wd-upload>
     </view>
 
     <!-- 基础信息 -->
@@ -266,21 +290,21 @@ onMounted(loadProfile)
       <view class="field-block">
         <text class="label">店名</text>
         <view class="field">
-          <view class="prefix"><Icon name="biz-shop-decorate" :size="32" color="#86909c" /></view>
-          <input
+          <view class="prefix"><wd-icon :name="$jwIcon('biz-shop-decorate')" size="16px" color="#86909c"  /></view>
+          <wd-input no-border
             v-model="form.shopName"
             class="input"
             placeholder="请输入店名"
             placeholder-class="ph"
             maxlength="40"
-          />
+           />
         </view>
       </view>
 
       <view class="field-block">
         <text class="label">商户号</text>
         <view class="field field-readonly">
-          <view class="prefix"><Icon name="biz-receipt" :size="32" color="#c9cdd4" /></view>
+          <view class="prefix"><wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#c9cdd4"  /></view>
           <text class="readonly-text">{{ form.merchantNo || '--' }}</text>
           <text class="readonly-hint">系统生成</text>
         </view>
@@ -289,43 +313,43 @@ onMounted(loadProfile)
       <view class="field-block">
         <text class="label">联系人</text>
         <view class="field">
-          <view class="prefix"><Icon name="biz-me" :size="32" color="#86909c" /></view>
-          <input
+          <view class="prefix"><wd-icon :name="$jwIcon('biz-me')" size="16px" color="#86909c"  /></view>
+          <wd-input no-border
             v-model="form.contactName"
             class="input"
             placeholder="请输入联系人"
             placeholder-class="ph"
             maxlength="20"
-          />
+           />
         </view>
       </view>
 
       <view class="field-block">
         <text class="label">联系手机</text>
         <view class="field">
-          <view class="prefix"><Icon name="phone" :size="32" color="#86909c" /></view>
-          <input
+          <view class="prefix"><wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"  /></view>
+          <wd-input no-border
             v-model="form.contactPhone"
             class="input"
             placeholder="例：13912345678"
             placeholder-class="ph"
             maxlength="20"
             type="number"
-          />
+           />
         </view>
       </view>
 
       <view class="field-block">
         <text class="label">邮箱</text>
         <view class="field">
-          <view class="prefix"><Icon name="mail" :size="32" color="#86909c" /></view>
-          <input
+          <view class="prefix"><wd-icon :name="$jwIcon('mail')" size="16px" color="#86909c"  /></view>
+          <wd-input no-border
             v-model="form.email"
             class="input"
             placeholder="例：contact@example.com"
             placeholder-class="ph"
             maxlength="60"
-          />
+           />
         </view>
       </view>
     </view>
@@ -349,40 +373,40 @@ onMounted(loadProfile)
             }}</view>
           </view>
           <text v-else class="cat-placeholder">点击选择经营品类</text>
-          <Icon name="forward" :size="24" color="#c9cdd4" />
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="#c9cdd4"  />
         </view>
       </view>
 
       <view class="field-block">
         <text class="label">联系地址</text>
         <view class="field">
-          <view class="prefix"><Icon name="location" :size="32" color="#86909c" /></view>
-          <input
+          <view class="prefix"><wd-icon :name="$jwIcon('location')" size="16px" color="#86909c"  /></view>
+          <wd-input no-border
             v-model="form.address"
             class="input"
             placeholder="详细地址"
             placeholder-class="ph"
             maxlength="100"
-          />
+           />
         </view>
         <view class="map-btn" @click="pickAddressOnMap">
-          <Icon name="location" :size="28" color="#FF4D2D" />
+          <wd-icon :name="$jwIcon('location')" size="14px" color="#FF4D2D"  />
           <text>在地图上选位置 / 搜索 POI</text>
-          <Icon name="forward" :size="22" color="#FF4D2D" />
+          <wd-icon :name="$jwIcon('forward')" size="11px" color="#FF4D2D"  />
         </view>
       </view>
 
       <view class="field-block">
         <text class="label">店铺简介</text>
         <view class="textarea-wrap">
-          <textarea
+          <wd-textarea no-border
             v-model="form.description"
             class="textarea"
             placeholder="一句话介绍你的店铺，让客户更了解你"
             placeholder-class="ph"
             :maxlength="160"
             auto-height
-          />
+           />
           <text class="count">{{ form.description.length }} / 160</text>
         </view>
       </view>
@@ -390,20 +414,20 @@ onMounted(loadProfile)
 
     <!-- 浮动保存按钮 -->
     <view class="save-dock">
-      <button
+      <wd-button
         class="btn-save"
         :class="{ 'btn-save--active': hasChange }"
         :disabled="!hasChange"
         @click="saveProfile"
-      >
+       type="primary" size="large" block>
         {{ hasChange ? '保存修改' : '未做修改' }}
-      </button>
+      </wd-button>
     </view>
     <view class="safe-bottom" />
 
     <!-- 经营品类多选弹层 -->
-    <view v-if="showCategoryPicker" class="picker-mask" @click="showCategoryPicker = false">
-      <view class="picker" @click.stop>
+    <wd-popup v-model="showCategoryPicker" position="bottom" custom-class="picker" safe-area-inset-bottom root-portal>
+      <view class="picker-content">
         <view class="picker-head">
           <text class="picker-title">选择经营品类（多选）</text>
           <text class="picker-close" @click="showCategoryPicker = false">完成</text>
@@ -417,28 +441,28 @@ onMounted(loadProfile)
             @click="toggleCategory(c)"
           >
             <text>{{ c }}</text>
-            <Icon v-if="form.categories.includes(c)" name="check" :size="28" color="#FF4D2D" />
+            <wd-icon v-if="form.categories.includes(c)" :name="$jwIcon('check')" size="14px" color="#FF4D2D"  />
           </view>
         </view>
       </view>
-    </view>
+    </wd-popup>
 
     <!-- #ifndef MP-WEIXIN -->
-    <view v-if="showMapPick" class="mpick-mask" @click="showMapPick = false">
-      <view class="mpick-sheet" @click.stop>
+    <wd-popup v-model="showMapPick" position="bottom" custom-class="mpick-sheet" safe-area-inset-bottom root-portal>
+      <view class="mpick-content">
         <view class="mpick-head">
           <text class="mpick-title">地图选址</text>
           <text class="mpick-close" @click="showMapPick = false">关闭</text>
         </view>
         <view class="mpick-search">
-          <input
+          <wd-input no-border
             v-model="mapPickKeyword"
             class="mpick-input"
             placeholder="输入小区 / 楼宇 / 地址关键词"
             confirm-type="search"
             @confirm="doMapSearch"
-          />
-          <view class="mpick-btn" @click="doMapSearch">搜索</view>
+           />
+          <wd-button type="primary" size="small" @click="doMapSearch">搜索</wd-button>
         </view>
         <scroll-view scroll-y class="mpick-list">
           <view v-if="!mapPickResults.length" class="mpick-empty">
@@ -450,7 +474,7 @@ onMounted(loadProfile)
             class="mpick-item"
             @click="pickMapResult(r)"
           >
-            <Icon name="location-pin" :size="32" color="#FF4D2D" />
+            <wd-icon :name="$jwIcon('location-pin')" size="16px" color="#FF4D2D"  />
             <view class="mpick-item-info">
               <text class="mpick-item-name">{{ r.name || '未命名' }}</text>
               <text class="mpick-item-addr">{{ r.address || '' }}</text>
@@ -458,9 +482,11 @@ onMounted(loadProfile)
           </view>
         </scroll-view>
       </view>
-    </view>
+    </wd-popup>
     <!-- #endif -->
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -584,7 +610,7 @@ onMounted(loadProfile)
 /* ===== 卡片 + Section ===== */
 .card {
   margin: 24rpx 28rpx 0;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 28rpx;
   padding: 28rpx 28rpx 8rpx;
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.06);
@@ -609,7 +635,7 @@ onMounted(loadProfile)
 .section-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   letter-spacing: 1rpx;
 }
 
@@ -622,13 +648,13 @@ onMounted(loadProfile)
 }
 .label {
   font-size: 26rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 1rpx;
 }
 .label-hint {
   font-weight: 400;
-  color: #86909c;
+  color: var(--text-tertiary);
   margin-left: 4rpx;
   font-size: 22rpx;
 }
@@ -638,7 +664,7 @@ onMounted(loadProfile)
   align-items: center;
   height: 92rpx;
   padding: 0 24rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
   transition:
@@ -647,7 +673,7 @@ onMounted(loadProfile)
 }
 .field:focus-within {
   border-color: #ffb199;
-  background: #fff;
+  background: var(--bg-card);
 }
 .field-readonly {
   background: #fafafb;
@@ -665,21 +691,21 @@ onMounted(loadProfile)
   flex: 1;
   height: 100%;
   font-size: 28rpx;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .ph {
-  color: #c9cdd4;
+  color: var(--text-disabled);
   font-size: 26rpx;
 }
 .readonly-text {
   flex: 1;
   font-size: 28rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   font-family: 'SF Mono', Consolas, monospace;
 }
 .readonly-hint {
   font-size: 20rpx;
-  color: #c9cdd4;
+  color: var(--text-disabled);
 }
 
 /* 经营品类选择器 */
@@ -689,13 +715,13 @@ onMounted(loadProfile)
   gap: 12rpx;
   min-height: 92rpx;
   padding: 16rpx 24rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
   transition: background 0.2s;
 }
 .cat-selector:active {
-  background: #fff;
+  background: var(--bg-card);
 }
 .cat-tags {
   flex: 1;
@@ -715,7 +741,7 @@ onMounted(loadProfile)
 .cat-placeholder {
   flex: 1;
   font-size: 26rpx;
-  color: #c9cdd4;
+  color: var(--text-disabled);
 }
 
 /* 地图入口（在地址行下方） */
@@ -739,7 +765,7 @@ onMounted(loadProfile)
 /* textarea */
 .textarea-wrap {
   position: relative;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
   padding: 20rpx 24rpx 36rpx;
@@ -748,7 +774,7 @@ onMounted(loadProfile)
   width: 100%;
   min-height: 140rpx;
   font-size: 28rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   line-height: 1.5;
   box-sizing: border-box;
 }
@@ -757,7 +783,7 @@ onMounted(loadProfile)
   bottom: 10rpx;
   right: 20rpx;
   font-size: 20rpx;
-  color: #c9cdd4;
+  color: var(--text-disabled);
 }
 
 /* 浮动保存按钮 */
@@ -807,7 +833,7 @@ onMounted(loadProfile)
 }
 .picker {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx 24rpx 0 0;
   max-height: 70vh;
   overflow: hidden;
@@ -819,7 +845,7 @@ onMounted(loadProfile)
   justify-content: space-between;
   align-items: center;
   padding: 28rpx 32rpx;
-  border-bottom: 1rpx solid #f0f2f5;
+  border-bottom: 1rpx solid var(--border-light);
 }
 .picker-title {
   font-size: 30rpx;
@@ -869,7 +895,7 @@ onMounted(loadProfile)
 }
 .mpick-sheet {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx 24rpx 0 0;
   max-height: 76vh;
   display: flex;
@@ -880,7 +906,7 @@ onMounted(loadProfile)
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 32rpx;
-  border-bottom: 1rpx solid #f0f2f5;
+  border-bottom: 1rpx solid var(--border-light);
 }
 .mpick-title {
   font-size: 30rpx;
@@ -902,7 +928,7 @@ onMounted(loadProfile)
   flex: 1;
   height: 72rpx;
   padding: 0 20rpx;
-  background: #f5f6f8;
+  background: var(--bg-page);
   border-radius: 999rpx;
   font-size: 28rpx;
 }

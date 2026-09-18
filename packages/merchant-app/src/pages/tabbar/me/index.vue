@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-03 · 我的（v2 · 紧凑顶部 + 后端单一真源）
  *
@@ -16,14 +17,9 @@ import { profileService, type MerchantProfile } from '../../../services/profile'
 import { memberService } from '../../../services/member'
 import type { MemberPlan } from '@jiujiu/shared/types'
 import { formatPrice } from '@jiujiu/shared/utils'
-import StatusTag from '../../../components/status-tag/status-tag.vue'
-import Icon from '../../../components/icon/icon.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
-import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
 import { useStatusBar } from '../../../composables/useStatusBar'
 import { checkAppUpdate } from '../../../composables/useAppUpdate'
 
-useHideNativeTabBar()
 const { heroPaddingTop } = useStatusBar(24)
 
 const userStore = useUserStore()
@@ -154,9 +150,9 @@ function handle(action: string) {
     profile: () => uni.navigateTo({ url: '/pages/me/profile' }),
     settings: () => uni.navigateTo({ url: '/pages/me/settings' }),
     commission: () => uni.navigateTo({ url: '/pages/commission/setting' }),
-    update: () => checkAppUpdate('merchant', { silent: false }),
+    update: () => checkAppUpdate('merchant', { silent: false, source: 'manual' }),
     contact: () =>
-      uni.showModal({
+      appFeedback.showModal({
         title: '联系我们',
         content: '客服电话：400-888-9988\n邮箱：support@jiujiu.com\n工作日 9:00 - 18:00',
         confirmText: '拨打',
@@ -169,14 +165,14 @@ function handle(action: string) {
 }
 
 function logout() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '退出登录',
     content: '确定退出当前账号？',
     confirmColor: '#FF3B30',
     success: (res) => {
       if (res.confirm) {
         userStore.logout()
-        uni.showToast({ title: '已退出', icon: 'success' })
+        appFeedback.showToast({ title: '已退出', icon: 'success' })
         setTimeout(() => uni.reLaunch({ url: '/pages/auth/login' }), 500)
       }
     },
@@ -185,6 +181,22 @@ function logout() {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <!-- 顶部：紧凑版（去掉了多余的 gear 按钮）-->
     <view class="hero" :style="{ paddingTop: heroPaddingTop }">
@@ -200,14 +212,14 @@ function logout() {
           <text class="merchant-no">商户号 {{ merchantNo }}</text>
           <view class="tags">
             <view class="rating-tag">
-              <Icon name="star-fill" :size="22" color="#FFD43B" :fill="true" />
+              <wd-icon :name="$jwIcon('star-fill')" size="11px" color="#FFD43B"  />
               <text class="rating-num">{{ rating.toFixed(1) }}</text>
               <text class="rating-count" v-if="ratingCount > 0">({{ ratingCount }})</text>
             </view>
-            <StatusTag text="VIP" tone="highlight" fill />
+            <wd-tag  :type="$jwTagType('highlight')" :plain="false" round>{{ "VIP" }}</wd-tag>
           </view>
         </view>
-        <Icon name="forward" :size="32" color="rgba(255,255,255,0.7)" />
+        <wd-icon :name="$jwIcon('forward')" size="16px" color="rgba(255,255,255,0.7)"  />
       </view>
     </view>
 
@@ -216,14 +228,14 @@ function logout() {
       <view class="member-row">
         <view class="member-left">
           <view class="m-title-row">
-            <Icon name="crown" :size="32" color="#5C2A00" />
+            <wd-icon :name="$jwIcon('crown')" size="16px" color="#5C2A00"  />
             <text class="m-title">会员开通</text>
           </view>
           <text class="m-sub">{{ memberSub }}</text>
         </view>
         <view class="m-btn">
           <text>续费 / 升级</text>
-          <Icon name="forward" :size="20" color="#FFD89B" />
+          <wd-icon :name="$jwIcon('forward')" size="10px" color="#FFD89B"  />
         </view>
       </view>
     </view>
@@ -244,14 +256,14 @@ function logout() {
         >
           <view class="row-left">
             <view class="row-icon-wrap" :class="`tint-${it.tint}`">
-              <Icon :name="it.icon" :size="32" color="#fff" :fill="true" />
+              <wd-icon :name="$jwIcon(it.icon)" size="16px" color="#fff"  />
             </view>
             <view class="row-text">
               <text class="row-label">{{ it.label }}</text>
               <text v-if="it.sub" class="row-sub">{{ it.sub() }}</text>
             </view>
           </view>
-          <Icon name="forward" :size="22" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('forward')" size="11px" color="var(--text-tertiary)"  />
         </view>
       </view>
     </view>
@@ -260,8 +272,10 @@ function logout() {
     <view class="version">经纬科技 · 商家版 v{{ appVersion }}</view>
     <view class="safe-bottom" />
 
-    <TabBar current="me" />
+    <PrimaryLiquidTabBar flavor="merchant" active="me" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

@@ -3,6 +3,7 @@ import { ValidationPipe, RequestMethod, Logger } from '@nestjs/common'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { IoAdapter } from '@nestjs/platform-socket.io'
+import { ConfigService } from '@nestjs/config'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
@@ -18,10 +19,10 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
  * 调本服务接口，等同于 CSRF / 跨站数据泄露的开门钥匙。宁可启动失败让运维补配置，
  * 也绝不放过这道防线。
  */
-function resolveCorsOrigin(): boolean | string[] {
-  const raw = process.env.CORS_ORIGIN
+function resolveCorsOrigin(config: ConfigService): boolean | string[] {
+  const raw = config.get<string>('CORS_ORIGIN')
   if (!raw || !raw.trim()) {
-    if (process.env.NODE_ENV === 'production') {
+    if (config.get<string>('NODE_ENV') === 'production') {
       Logger.error(
         '[security] 生产环境未配置 CORS_ORIGIN —— 启动中止。请在环境变量中设置允许的前端域名列表（逗号分隔），例如 https://m.example.com,https://admin.example.com',
         'Bootstrap',
@@ -41,11 +42,12 @@ async function bootstrap() {
   // verifyNotify 要拿到 *未被 JSON.parse 改写过* 的原始字节，
   // 否则 Wechatpay-Signature 永远算不出一致的 SHA256-RSA 摘要。
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: {
-      origin: resolveCorsOrigin(),
-      credentials: true,
-    },
     rawBody: true,
+  })
+  const configService = app.get(ConfigService)
+  app.enableCors({
+    origin: resolveCorsOrigin(configService),
+    credentials: true,
   })
 
   // 安全响应头：HSTS / X-Content-Type-Options / X-Frame-Options 等
@@ -91,7 +93,7 @@ async function bootstrap() {
   // /api/docs 会把所有接口结构 + 参数 schema 暴露给互联网，给攻击者免费提供攻击面图。
   // 真正需要看接口文档的内部场景，请在运维网段单独跑一个非生产实例，
   // 而不是在线上开洞。
-  const swaggerEnabled = process.env.NODE_ENV !== 'production'
+  const swaggerEnabled = configService.get<string>('NODE_ENV') !== 'production'
   if (swaggerEnabled) {
     const config = new DocumentBuilder()
       .setTitle('经纬科技 API')
@@ -103,8 +105,8 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document)
   }
 
-  const port = Number(process.env.SERVER_PORT) || 3000
-  const host = process.env.SERVER_HOST || '127.0.0.1'
+  const port = Number(configService.get<string>('SERVER_PORT')) || 3000
+  const host = configService.get<string>('SERVER_HOST') || '127.0.0.1'
   await app.listen(port, host)
   console.log(`🚀 Server running on http://${host}:${port}`)
   if (swaggerEnabled) {

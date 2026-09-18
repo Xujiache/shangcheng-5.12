@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, dateStringToTimestamp, timestampToDateString } from '@jiujiu/shared'
 /**
  * MA-15 · 门店授权设置
  *
@@ -9,10 +10,6 @@ import { onLoad } from '@dcloudio/uni-app'
 import { storeService } from '../../services/store'
 import { categoryService } from '../../services/product'
 import type { Category } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Section from '../../components/section/section.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-
 interface ProductPolicy {
   categoryId: string
   categoryName?: string
@@ -108,13 +105,13 @@ function selectAll(on: boolean) {
   config.productPolicies.forEach((p) => (p.enabled = on))
 }
 
-function pickValidTo(e: { detail: { value: string } }) {
-  config.authValidTo = e.detail.value
+function pickValidTo(value: unknown) {
+  config.authValidTo = timestampToDateString(value)
 }
 
 async function save() {
   await storeService.saveAuth(storeId.value, config)
-  uni.showToast({ title: '已保存', icon: 'success' })
+  appFeedback.showToast({ title: '已保存', icon: 'success' })
   setTimeout(() => uni.navigateBack(), 600)
 }
 
@@ -129,12 +126,29 @@ onMounted(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar :title="storeName + ' · 授权'" right-text="保存" @right="save" />
+    <wd-navbar :title="storeName + ' · 授权'" right-text="保存" @click-right="save"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view class="body">
       <!-- 等级 -->
-      <Section title="门店等级">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "门店等级" }}</text></view></view></template>
         <view class="level-list">
           <view
             v-for="l in LEVELS"
@@ -150,10 +164,11 @@ onMounted(() => {
             <text v-if="config.level === l.key" class="tick">✓</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 可见价格类型 -->
-      <Section title="可见价格" sub="门店登录后可看到的价格类型">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "可见价格" }}</text><text class="jw-section-sub">门店登录后可看到的价格类型</text></view></view></template>
         <view class="tier-row">
           <view
             v-for="t in PRICE_TIERS"
@@ -166,18 +181,16 @@ onMounted(() => {
             <text class="tier-check">{{ config.visiblePriceTiers.includes(t.key) ? '✓' : '+' }}</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 可上架商品 + 加价规则 -->
-      <Section
-        :title="`可上架商品 · ${enabledCount} / ${totalCount}`"
-        :action="enabledCount === totalCount ? '取消全选' : '全选'"
-        @action="selectAll(enabledCount !== totalCount)"
-      >
+      <wd-card
+       type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ `可上架商品 · ${enabledCount} / ${totalCount}` }}</text></view><wd-button type="text" size="small" @click="selectAll(enabledCount !== totalCount)">{{ enabledCount === totalCount ? '取消全选' : '全选' }}</wd-button></view></template>
         <view class="policy-list">
           <view v-for="p in config.productPolicies" :key="p.categoryId" class="policy-row">
             <view class="policy-left">
-              <switch :checked="p.enabled" color="#FF4D2D" @change="togglePolicy(p)" style="transform: scale(0.8)" />
+              <wd-switch :model-value="p.enabled" active-color="var(--brand-primary)" @change="togglePolicy(p)" style="transform: scale(0.8)"  />
               <text class="policy-name" :class="{ disabled: !p.enabled }">{{ p.categoryName }}</text>
             </view>
             <view v-if="p.enabled" class="policy-markup">
@@ -192,31 +205,40 @@ onMounted(() => {
             <view v-else class="policy-disabled-tip">未启用</view>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 有效期 -->
-      <Section title="授权有效期">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "授权有效期" }}</text></view></view></template>
         <view class="valid-row">
           <view class="valid-block">
             <text class="valid-label">开始</text>
             <text class="valid-value">{{ config.authValidFrom }}</text>
           </view>
           <text class="valid-arrow">→</text>
-          <picker mode="date" :value="config.authValidTo" :start="config.authValidFrom" @change="pickValidTo">
+          <wd-datetime-picker
+            type="date"
+            title="选择授权到期日"
+            :model-value="dateStringToTimestamp(config.authValidTo)"
+            :min-date="dateStringToTimestamp(config.authValidFrom)"
+            @confirm="pickValidTo($event.value)"
+          >
             <view class="valid-block clickable">
               <text class="valid-label">结束</text>
               <text class="valid-value">{{ config.authValidTo }}</text>
             </view>
-          </picker>
+          </wd-datetime-picker>
         </view>
         <view class="valid-tip">
           <text>到期后门店自动失去授权，可手动续期</text>
         </view>
-      </Section>
+      </wd-card>
 
       <view class="safe-bottom" />
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

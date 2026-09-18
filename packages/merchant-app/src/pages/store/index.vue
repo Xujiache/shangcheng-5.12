@@ -1,18 +1,14 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-14 · 门店列表
  *
  * 顶部统计 + Tab + 门店卡（等级 + 授权状态 + 联系/授权操作）
  */
 import { ref, computed, onMounted, watch } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { storeService } from '../../services/store'
 import type { Store } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Tabs from '../../components/tabs/tabs.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-import Icon from '../../components/icon/icon.vue'
-
 type Tab = 'all' | 'active' | 'pending' | 'cancelled'
 
 const tab = ref<Tab>('all')
@@ -33,7 +29,10 @@ const stats = computed(() => ({
   pending: list.value.filter((s) => s.status === 'pending').length,
 }))
 
-const STATUS_LABEL: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const STATUS_LABEL: Record<
+  string,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   active: { text: '已授权', tone: 'success' },
   pending: { text: '待审核', tone: 'warning' },
   cancelled: { text: '已取消', tone: 'default' },
@@ -80,7 +79,9 @@ watch(keyword, () => {
 })
 
 function goAuth(s: Store) {
-  uni.navigateTo({ url: `/pages/store/auth?id=${s.id}&name=${encodeURIComponent(s.name)}&level=${s.level}` })
+  uni.navigateTo({
+    url: `/pages/store/auth?id=${s.id}&name=${encodeURIComponent(s.name)}&level=${s.level}`,
+  })
 }
 function callStore(s: Store) {
   uni.makePhoneCall({ phoneNumber: s.phone })
@@ -97,12 +98,12 @@ function callStore(s: Store) {
  * 重新拉取 → 列表展示的状态以后端为准,出现不一致就直接暴露给用户/后端排查。
  */
 function approve(s: Store) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '通过门店申请',
     content: `通过「${s.name}」入驻申请，将颁发 ${s.level || 'A'} 级 1 年授权。`,
     success: async (r) => {
       if (!r.confirm) return
-      uni.showLoading({ title: '审核中…', mask: true })
+      appFeedback.showLoading({ title: '审核中…', mask: true })
       try {
         const now = new Date()
         const to = new Date(now)
@@ -115,12 +116,12 @@ function approve(s: Store) {
           authValidFrom: fmt(now),
           authValidTo: fmt(to),
         })
-        uni.hideLoading()
-        uni.showToast({ title: '已通过' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: '已通过' })
         await load()
       } catch (e: any) {
-        uni.hideLoading()
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -132,32 +133,55 @@ function approve(s: Store) {
  * 删除后重新 load() 全量列表(P2-15:不再本地 splice,以服务端为准)。
  */
 function reject(s: Store) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '驳回申请（将删除门店）',
     editable: true,
     placeholderText: '请填写驳回理由（仅本地记录）',
     success: async (r) => {
       if (!r.confirm) return
-      uni.showLoading({ title: '处理中…', mask: true })
+      appFeedback.showLoading({ title: '处理中…', mask: true })
       try {
         await storeService.remove(s.id)
-        uni.hideLoading()
-        uni.showToast({ title: '已驳回' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: '已驳回' })
         await load()
       } catch (e: any) {
-        uni.hideLoading()
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
 }
 
+onLoad((opts) => {
+  const requestedStatus = (opts as { status?: Tab })?.status
+  if (requestedStatus && TABS.value.some((item) => item.key === requestedStatus)) {
+    tab.value = requestedStatus
+  }
+})
+
 onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="门店管理" right-text="邀请" />
+    <wd-navbar title="门店管理" right-text="邀请"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 顶部统计 -->
     <view class="hero">
@@ -180,14 +204,18 @@ onMounted(load)
     <!-- 搜索 + Tab -->
     <view class="header">
       <view class="search-wrap">
-        <Icon name="search" :size="32" color="var(--text-tertiary)" />
-        <input
-          v-model="keyword"
-          class="search-input"
-          placeholder="搜索门店名称 / 联系人"
-        />
+        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
+        <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索门店名称 / 联系人"  />
       </view>
-      <Tabs v-model="tab" :items="TABS" variant="underline" />
+      <wd-tabs v-model="tab"  color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
     </view>
 
     <!-- 列表 -->
@@ -201,10 +229,10 @@ onMounted(load)
             <text class="store-name">{{ s.name }}</text>
             <view class="store-meta">
               <view class="meta-region">
-                <Icon name="location" :size="22" color="var(--text-tertiary)" />
+                <wd-icon :name="$jwIcon('location')" size="11px" color="var(--text-tertiary)"  />
                 <text>{{ s.region }}</text>
               </view>
-              <StatusTag :text="STATUS_LABEL[s.status].text" :tone="STATUS_LABEL[s.status].tone" />
+              <wd-tag  :type="$jwTagType(STATUS_LABEL[s.status].tone)" :plain="true" round>{{ STATUS_LABEL[s.status].text }}</wd-tag>
             </view>
           </view>
         </view>
@@ -228,19 +256,25 @@ onMounted(load)
           <view v-if="s.status === 'pending'" class="action ghost" @click="reject(s)">驳回</view>
           <view v-if="s.status === 'pending'" class="action primary" @click="approve(s)">通过</view>
           <view v-if="s.status === 'active'" class="action ghost" @click="callStore(s)">
-            <Icon name="phone" :size="24" color="var(--text-primary)" />
+            <wd-icon :name="$jwIcon('phone')" size="12px" color="var(--text-primary)"  />
             <text>联系</text>
           </view>
-          <view v-if="s.status === 'active'" class="action primary" @click="goAuth(s)">授权设置</view>
+          <view v-if="s.status === 'active'" class="action primary" @click="goAuth(s)"
+            >授权设置</view
+          >
           <view v-if="s.status === 'cancelled'" class="action ghost">查看记录</view>
         </view>
       </view>
 
-      <EmptyState v-if="!loading && filtered.length === 0" title="暂无门店" desc="可邀请门店或调整筛选条件" />
+      <wd-status-tip
+        v-if="!loading && filtered.length === 0"
+       image="content" :tip="['暂无门店', '可邀请门店或调整筛选条件'].filter(Boolean).join(' · ')" />
     </view>
 
     <view class="safe-bottom" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -275,7 +309,7 @@ onMounted(load)
   .divider {
     width: 2rpx;
     height: 56rpx;
-    background: rgba(255,255,255,0.3);
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 .header {
@@ -294,7 +328,11 @@ onMounted(load)
   padding: 0 16rpx 0 20rpx;
   height: 72rpx;
   margin-bottom: 12rpx;
-  .search-input { flex: 1; height: 100%; font-size: 26rpx; }
+  .search-input {
+    flex: 1;
+    height: 100%;
+    font-size: 26rpx;
+  }
 }
 .list {
   padding: 16rpx 24rpx;
@@ -367,8 +405,14 @@ onMounted(load)
   display: flex;
   font-size: 24rpx;
   gap: 16rpx;
-  .row-label { width: 140rpx; color: var(--text-tertiary); }
-  .row-value { flex: 1; color: var(--text-primary); }
+  .row-label {
+    width: 140rpx;
+    color: var(--text-tertiary);
+  }
+  .row-value {
+    flex: 1;
+    color: var(--text-primary);
+  }
 }
 .card-actions {
   display: flex;
@@ -382,13 +426,18 @@ onMounted(load)
     border-radius: 999rpx;
     font-size: 24rpx;
     font-weight: 600;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
     &.primary {
       background: var(--brand-gradient);
       color: #fff;
-      box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+      box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
     }
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

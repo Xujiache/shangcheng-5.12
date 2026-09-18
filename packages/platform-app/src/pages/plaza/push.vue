@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-07 · 新建广场推送
  *
@@ -22,9 +23,6 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { plazaService } from '../../services'
 import { formatPrice } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-
 interface PickedProduct {
   id: string
   name: string
@@ -73,9 +71,9 @@ onLoad((options) => {
   if (ids.length > 0) {
     const noun = subjectType.value === 'factory' ? '厂家' : '商品'
     products.value = ids.map((id) => ({ id, name: `${noun} ${id}` }))
-    uni.showToast({ title: `已选 ${ids.length} 个`, icon: 'none' })
+    appFeedback.showToast({ title: `已选 ${ids.length} 个`, icon: 'none' })
   } else if (options?.count) {
-    uni.showToast({ title: `已选 ${options.count} 件`, icon: 'none' })
+    appFeedback.showToast({ title: `已选 ${options.count} 件`, icon: 'none' })
   }
 })
 
@@ -92,7 +90,7 @@ function toggleTag(t: string) {
 }
 
 function addCustomTag() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '添加自定义标签',
     editable: true,
     placeholderText: '请输入标签名',
@@ -140,7 +138,7 @@ async function ensurePickerList() {
     )
     pickerList.value = pickerCache.value
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载商品失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载商品失败', icon: 'none' })
     pickerList.value = []
   } finally {
     pickerLoading.value = false
@@ -175,7 +173,7 @@ function confirmPicker() {
     return existingMap.get(id) || { id, name: `商品 ${id}` }
   })
   pickerOpen.value = false
-  uni.showToast({ title: `已选 ${products.value.length} 件`, icon: 'none' })
+  appFeedback.showToast({ title: `已选 ${products.value.length} 件`, icon: 'none' })
 }
 
 const filteredPicker = computed(() => {
@@ -194,7 +192,7 @@ function removeProduct(id: string) {
 }
 
 function chooseSchedule() {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['7 天(短期推广)', '15 天(标准)', '30 天(长期)', '90 天(季度套餐)'],
     success: (r) => {
       const days = [7, 15, 30, 90][r.tapIndex]
@@ -207,7 +205,7 @@ function chooseSchedule() {
 }
 
 function changeWeight() {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['40 - 标准', '60 - 高曝光', '80 - 推荐', '95 - 强推(仅旗舰包)'],
     success: (r) => {
       weight.value = [40, 60, 80, 95][r.tapIndex]
@@ -216,7 +214,7 @@ function changeWeight() {
 }
 
 function changeMarkup() {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['¥50~150', '¥200~500', '¥500~1000', '不限'],
     success: (r) => {
       markupRange.value = ['¥50~150', '¥200~500', '¥500~1000', '不限'][r.tapIndex]
@@ -225,7 +223,7 @@ function changeMarkup() {
 }
 
 function changeCommission() {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['5%', '8%', '12%', '15%'],
     success: (r) => {
       commission.value = [5, 8, 12, 15][r.tapIndex]
@@ -272,9 +270,9 @@ async function saveDraft() {
   saving.value = true
   try {
     await plazaService.createPush(buildPushPayload('draft'))
-    uni.showToast({ title: '草稿已保存', icon: 'success' })
+    appFeedback.showToast({ title: '草稿已保存', icon: 'success' })
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   } finally {
     saving.value = false
   }
@@ -286,20 +284,20 @@ function goPushList() {
 
 async function submit() {
   if (products.value.length === 0) {
-    uni.showToast({ title: '请先选择商品', icon: 'none' })
+    appFeedback.showToast({ title: '请先选择商品', icon: 'none' })
     return
   }
   if (positions.value.length === 0) {
-    uni.showToast({ title: '请选择推送位置', icon: 'none' })
+    appFeedback.showToast({ title: '请选择推送位置', icon: 'none' })
     return
   }
   submitting.value = true
   try {
     await plazaService.createPush(buildPushPayload('pending'))
-    uni.showToast({ title: '推送已发布', icon: 'success' })
+    appFeedback.showToast({ title: '推送已发布', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 800)
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '推送失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '推送失败', icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -307,8 +305,24 @@ async function submit() {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="新建推送" right-text="查看记录" @right="goPushList" />
+    <wd-navbar title="新建推送" right-text="查看记录" @click-right="goPushList"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <scroll-view scroll-y class="scroll">
       <!-- 推送对象 -->
@@ -333,7 +347,7 @@ async function submit() {
         <view class="card-head">
           <text class="label">选择内容(已选 {{ products.length }} 件)</text>
           <view class="add-btn" @click="openPicker">
-            <Icon name="plus" :size="22" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)"  />
             <text>添加商品</text>
           </view>
         </view>
@@ -352,7 +366,7 @@ async function submit() {
               ¥{{ formatPrice(p.price) }}
             </text>
             <view class="remove" @click="removeProduct(p.id)">
-              <Icon name="close" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('close')" size="11px" color="var(--text-tertiary)"  />
             </view>
           </view>
           <view v-if="products.length > 3" class="more">
@@ -387,7 +401,7 @@ async function submit() {
             >{{ t }}</view
           >
           <view class="chip add" @click="addCustomTag">
-            <Icon name="plus" :size="22" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)"  />
             <text>自定义</text>
           </view>
         </view>
@@ -413,28 +427,28 @@ async function submit() {
           <text class="r-label">排期</text>
           <view class="r-value">
             <text class="time">{{ scheduleStart }} → {{ scheduleEnd }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
         <view class="config-row" @click="changeWeight">
           <text class="r-label">排序权重</text>
           <view class="r-value">
             <text class="num">{{ weight }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
         <view class="config-row" @click="changeMarkup">
           <text class="r-label">建议加价</text>
           <view class="r-value">
             <text>{{ markupRange }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
         <view class="config-row" @click="changeCommission">
           <text class="r-label">建议佣金</text>
           <view class="r-value">
             <text class="num">{{ commission }}%</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -442,7 +456,7 @@ async function submit() {
       <!-- 推送语 -->
       <view class="card">
         <text class="label">推送语</text>
-        <input v-model="pushText" class="push-input" placeholder="平台精选 · 厂家直供 · 一键代理" />
+        <wd-input no-border v-model="pushText" class="push-input" placeholder="平台精选 · 厂家直供 · 一键代理"  />
       </view>
 
       <view style="height: 180rpx" />
@@ -466,14 +480,14 @@ async function submit() {
       </view>
 
       <view class="picker-search">
-        <Icon name="search" :size="28" color="var(--text-tertiary)" />
-        <input
+        <wd-icon :name="$jwIcon('search')" size="14px" color="var(--text-tertiary)"  />
+        <wd-input no-border
           v-model="pickerKeyword"
           class="picker-search-input"
           placeholder="搜索商品名 / 商家 / ID"
-        />
+         />
         <view v-if="pickerKeyword" class="picker-search-clear" @click="pickerKeyword = ''">
-          <Icon name="close" :size="22" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('close')" size="11px" color="var(--text-tertiary)"  />
         </view>
       </view>
 
@@ -482,7 +496,7 @@ async function submit() {
           <text>加载中…</text>
         </view>
         <view v-else-if="filteredPicker.length === 0" class="picker-empty">
-          <Icon name="search" :size="60" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('search')" size="30px" color="var(--text-tertiary)"  />
           <text>{{ pickerKeyword ? '没有匹配的商品' : '暂无可推送的商品' }}</text>
         </view>
         <view
@@ -493,17 +507,16 @@ async function submit() {
           @click="togglePick(p.id)"
         >
           <view class="picker-check">
-            <Icon
+            <wd-icon
               v-if="pickerSelected.has(p.id)"
-              name="check-circle"
-              :size="40"
+              :name="$jwIcon('check-circle')" size="20px"
               color="var(--brand-primary)"
-            />
-            <Icon v-else name="circle" :size="40" color="var(--text-tertiary)" />
+             />
+            <wd-icon v-else :name="$jwIcon('circle')" size="20px" color="var(--text-tertiary)"  />
           </view>
           <image v-if="p.image" :src="p.image" class="picker-item-img" mode="aspectFill" />
           <view v-else class="picker-item-img placeholder">
-            <Icon name="package" :size="32" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('package')" size="16px" color="var(--text-tertiary)"  />
           </view>
           <view class="picker-item-info">
             <text class="picker-item-name">{{ p.name }}</text>
@@ -522,6 +535,8 @@ async function submit() {
       </view>
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-12 · 商家端功能开关（v2 · 真后端驱动 · 增减默认规则）
  *
@@ -14,9 +15,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { featureFlagService } from '../../services'
 import type { FeatureFlag, FeatureFlagGroup, FeatureFlagAudience } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-
 const GROUP_LABEL: Record<string, string> = {
   home_entry: '首页入口',
   role_button: '角色按钮',
@@ -38,7 +36,7 @@ async function load() {
   try {
     flags.value = await featureFlagService.list()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -64,7 +62,7 @@ async function toggle(f: FeatureFlag) {
     await featureFlagService.toggle(f.id, next)
   } catch (e: any) {
     f.defaultEnabled = !next
-    uni.showToast({ title: e?.message || '切换失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '切换失败', icon: 'none' })
   }
 }
 
@@ -92,7 +90,7 @@ function openAdd() {
 async function submitAdd() {
   const f = addForm.value
   if (!f.key || !f.label) {
-    uni.showToast({ title: '请填写 key 和 label', icon: 'none' })
+    appFeedback.showToast({ title: '请填写 key 和 label', icon: 'none' })
     return
   }
   try {
@@ -103,16 +101,16 @@ async function submitAdd() {
       audience: f.audience,
       defaultEnabled: f.defaultEnabled,
     })
-    uni.showToast({ title: '已新增', icon: 'success' })
+    appFeedback.showToast({ title: '已新增', icon: 'success' })
     showAdd.value = false
     await load()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '新增失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '新增失败', icon: 'none' })
   }
 }
 
 function remove(f: FeatureFlag) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除规则',
     content: `删除「${f.label}」？商家端将立即恢复默认显示。`,
     confirmColor: '#FF3B30',
@@ -120,27 +118,27 @@ function remove(f: FeatureFlag) {
       if (!r.confirm) return
       try {
         await featureFlagService.remove(f.id)
-        uni.showToast({ title: '已删除', icon: 'success' })
+        appFeedback.showToast({ title: '已删除', icon: 'success' })
         await load()
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '删除失败', icon: 'none' })
       }
     },
   })
 }
 
 async function reset() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '重置灰度配置',
     content: '将所有开关的灰度恢复为 100%、清空白名单、移除所有商户级别的 override；不会影响 enable/disable 本身。',
     success: async (r) => {
       if (!r.confirm) return
       try {
         await featureFlagService.reset()
-        uni.showToast({ title: '已重置', icon: 'success' })
+        appFeedback.showToast({ title: '已重置', icon: 'success' })
         await load()
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '重置失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '重置失败', icon: 'none' })
       }
     },
   })
@@ -150,13 +148,31 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="商家端功能开关" right-icon="refresh" @right="reset" />
+    <wd-navbar title="商家端功能开关" @click-right="reset"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+    </wd-navbar>
 
     <scroll-view scroll-y class="scroll">
       <!-- 顶部提示 -->
       <view class="tip-strip">
-        <Icon name="info" :size="26" color="var(--brand-primary)" />
+        <wd-icon :name="$jwIcon('info')" size="13px" color="var(--brand-primary)"  />
         <text>控制商家 APP 后台的按钮 / 图标 / 菜单显隐 · 立即生效</text>
       </view>
 
@@ -188,7 +204,7 @@ onMounted(load)
             </view>
             <text class="row-key">{{ f.key }}</text>
           </view>
-          <switch :checked="f.defaultEnabled" color="#FF4D2D" @click.stop="toggle(f)" />
+          <wd-switch :model-value="f.defaultEnabled" active-color="var(--brand-primary)" @click.stop="toggle(f)"  />
         </view>
         <view v-if="list.length === 0" class="row-empty">暂无规则，点右下角"+"新增</view>
       </view>
@@ -199,13 +215,13 @@ onMounted(load)
 
     <!-- 浮动新增按钮 -->
     <view class="add-fab" @click="openAdd">
-      <Icon name="plus" :size="40" color="#fff" />
+      <wd-icon :name="$jwIcon('plus')" size="20px" color="#fff"  />
       <text>新增规则</text>
     </view>
 
     <!-- 新增弹层 -->
-    <view v-if="showAdd" class="mask" @click="showAdd = false">
-      <view class="sheet" @click.stop>
+    <wd-popup v-model="showAdd" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
+      <view class="sheet-content">
         <view class="sheet-head">
           <text class="sheet-title">新增功能开关</text>
           <text class="sheet-close" @click="showAdd = false">取消</text>
@@ -213,11 +229,11 @@ onMounted(load)
 
         <view class="form-row">
           <text class="form-label">规则名称</text>
-          <input v-model="addForm.label" class="form-input" placeholder="例：上传到选品广场" maxlength="40" />
+          <wd-input no-border v-model="addForm.label" class="form-input" placeholder="例：上传到选品广场" maxlength="40"  />
         </view>
         <view class="form-row">
           <text class="form-label">key</text>
-          <input v-model="addForm.key" class="form-input" placeholder="例：role.button.uploadToPlaza" maxlength="80" />
+          <wd-input no-border v-model="addForm.key" class="form-input" placeholder="例：role.button.uploadToPlaza" maxlength="80"  />
           <text class="form-hint">规范：group.subkey.name；最后一段为商家端读取的短键</text>
         </view>
         <view class="form-row">
@@ -244,13 +260,15 @@ onMounted(load)
         </view>
         <view class="form-row">
           <text class="form-label">默认开启</text>
-          <switch :checked="addForm.defaultEnabled" color="#FF4D2D" @click.stop="addForm.defaultEnabled = !addForm.defaultEnabled" />
+          <wd-switch :model-value="addForm.defaultEnabled" active-color="var(--brand-primary)" @click.stop="addForm.defaultEnabled = !addForm.defaultEnabled"  />
         </view>
 
-        <view class="submit" @click="submitAdd">确定新增</view>
+        <wd-button block type="primary" size="large" @click="submitAdd">确定新增</wd-button>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -297,12 +315,12 @@ onMounted(load)
   background: rgba(255,255,255,0.25);
   border-radius: 999rpx;
   overflow: hidden;
-  .bar { height: 100%; background: #fff; border-radius: 999rpx; }
+  .bar { height: 100%; background: var(--bg-card); border-radius: 999rpx; }
 }
 
 .card {
   margin: 24rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
   overflow: hidden;
@@ -312,20 +330,20 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  .card-title { font-size: 28rpx; font-weight: 700; color: #1d2129; }
-  .card-count { font-size: 22rpx; color: #86909c; }
+  .card-title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+  .card-count { font-size: 22rpx; color: var(--text-tertiary); }
 }
 .row {
   display: flex;
   align-items: center;
   gap: 16rpx;
   padding: 20rpx 24rpx;
-  border-top: 1rpx solid #f0f2f5;
+  border-top: 1rpx solid var(--border-light);
   &:active { background: #fafbfc; }
 }
 .row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
 .row-title-row { display: flex; align-items: center; gap: 8rpx; }
-.row-title { font-size: 28rpx; color: #1d2129; font-weight: 500; }
+.row-title { font-size: 28rpx; color: var(--text-primary); font-weight: 500; }
 .row-key { font-size: 20rpx; color: #909399; font-family: var(--font-family-base, monospace); }
 .row-empty {
   padding: 32rpx 24rpx;
@@ -340,8 +358,8 @@ onMounted(load)
   border-radius: 999rpx;
   font-size: 18rpx;
   font-weight: 600;
-  background: #f5f6f8;
-  color: #4e5969;
+  background: var(--bg-page);
+  color: var(--text-secondary);
   &.factory { background: rgba(255, 77, 45, 0.1); color: #ff4d2d; }
   &.store { background: rgba(82, 196, 26, 0.1); color: #52c41a; }
   &.specific { background: rgba(114, 46, 209, 0.1); color: #722ED1; }
@@ -382,7 +400,7 @@ onMounted(load)
 }
 .sheet {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 28rpx 28rpx 0 0;
   padding: 24rpx 28rpx 40rpx;
   display: flex;
@@ -395,23 +413,23 @@ onMounted(load)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  .sheet-title { font-size: 32rpx; font-weight: 800; color: #1d2129; }
-  .sheet-close { font-size: 26rpx; color: #86909c; }
+  .sheet-title { font-size: 32rpx; font-weight: 800; color: var(--text-primary); }
+  .sheet-close { font-size: 26rpx; color: var(--text-tertiary); }
 }
 .form-row {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
-.form-label { font-size: 24rpx; color: #4e5969; font-weight: 600; }
+.form-label { font-size: 24rpx; color: var(--text-secondary); font-weight: 600; }
 .form-hint { font-size: 20rpx; color: #c0c4cc; }
 .form-input {
   height: 88rpx;
   padding: 0 20rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 16rpx;
   font-size: 28rpx;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .form-chips {
   display: flex;
@@ -419,10 +437,10 @@ onMounted(load)
   gap: 12rpx;
   .form-chip {
     padding: 12rpx 24rpx;
-    background: #f7f8fa;
+    background: var(--bg-page);
     border-radius: 999rpx;
     font-size: 24rpx;
-    color: #4e5969;
+    color: var(--text-secondary);
     &.on {
       background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
       color: #fff;

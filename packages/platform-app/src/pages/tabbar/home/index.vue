@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-01 · 平台首页（数据驾驶舱 · v3 重构）
  *
@@ -14,11 +15,8 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { dashboardService } from '../../../services'
 import { useAdminStore } from '../../../store/admin'
-import { formatWan } from '@jiujiu/shared/utils'
+import { formatWan, parseQuery } from '@jiujiu/shared/utils'
 import type { PlatformDashboard } from '@jiujiu/shared/types'
-import Icon from '../../../components/icon/icon.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
-
 const adminStore = useAdminStore()
 const dashboard = ref<PlatformDashboard | null>(null)
 const loading = ref(true)
@@ -193,12 +191,12 @@ async function load() {
 
 function goTodo(item: (typeof TODO_LIST.value)[number]) {
   if (!item.count) {
-    uni.showToast({ title: '暂无待处理', icon: 'none' })
+    appFeedback.showToast({ title: '暂无待处理', icon: 'none' })
     return
   }
   if (!item.to) {
     // TODO_LIST 全部已绑定真实路径,这里仅作未来扩展防御
-    uni.showToast({
+    appFeedback.showToast({
       title: item.label + ' · 正在准备中,请等待下一版',
       icon: 'none',
       duration: 1600,
@@ -212,15 +210,14 @@ function goTodo(item: (typeof TODO_LIST.value)[number]) {
   const query = queryIdx >= 0 ? item.to.slice(queryIdx + 1) : ''
   if (query && base === '/pages/tabbar/order/index') {
     try {
-      const usp = new URLSearchParams(query)
-      const status = usp.get('status')
+      const status = parseQuery(query).status
       if (status) uni.setStorageSync('order_init_tab', status)
     } catch {
       /* ignore parse error */
     }
   }
   if (base.startsWith('/pages/tabbar/')) {
-    uni.switchTab({ url: base, fail: () => uni.reLaunch({ url: item.to }) })
+    uni.reLaunch({ url: base })
   } else {
     uni.navigateTo({ url: item.to })
   }
@@ -228,7 +225,7 @@ function goTodo(item: (typeof TODO_LIST.value)[number]) {
 
 function goEntry(item: (typeof QUICK_ENTRIES)[number]) {
   if (item.to.startsWith('/pages/tabbar/')) {
-    uni.switchTab({ url: item.to, fail: () => uni.reLaunch({ url: item.to }) })
+    uni.reLaunch({ url: item.to })
   } else {
     uni.navigateTo({ url: item.to })
   }
@@ -243,6 +240,22 @@ onShow(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <!-- 顶部 Hero（双大字关键指标） -->
     <view class="hero" :style="{ paddingTop: statusBarHeight }">
@@ -252,7 +265,7 @@ onShow(load)
           <text class="role">平台管理 · 经纬科技</text>
         </view>
         <view class="notify-btn" @click="goNotify">
-          <Icon name="bell" :size="36" color="#fff" />
+          <wd-icon :name="$jwIcon('bell')" size="18px" color="#fff"  />
           <view v-if="TOTAL_TODOS > 0" class="notify-dot">{{
             TOTAL_TODOS > 99 ? '99+' : TOTAL_TODOS
           }}</view>
@@ -268,11 +281,10 @@ onShow(load)
               v-if="dashboard"
               :class="['hs-delta', heroToday.ordersDelta >= 0 ? 'up' : 'down']"
             >
-              <Icon
-                :name="heroToday.ordersDelta >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="20"
+              <wd-icon
+                :name="$jwIcon(heroToday.ordersDelta >= 0 ? 'arrow-up' : 'arrow-down')" size="10px"
                 color="#fff"
-              />
+               />
               <text>{{ heroToday.ordersDelta >= 0 ? '+' : '' }}{{ heroToday.ordersDelta }}</text>
             </view>
           </view>
@@ -284,11 +296,10 @@ onShow(load)
             <text class="hs-cur">¥</text>
             <text class="hs-num">{{ heroToday.gmv }}</text>
             <view v-if="dashboard" :class="['hs-delta', heroToday.gmvDelta >= 0 ? 'up' : 'down']">
-              <Icon
-                :name="heroToday.gmvDelta >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="20"
+              <wd-icon
+                :name="$jwIcon(heroToday.gmvDelta >= 0 ? 'arrow-up' : 'arrow-down')" size="10px"
                 color="#fff"
-              />
+               />
               <text>{{ heroToday.gmvDelta }}%</text>
             </view>
           </view>
@@ -299,7 +310,7 @@ onShow(load)
     <view class="body">
       <!-- 错误态：load 失败 -->
       <view v-if="errorMsg && !dashboard" class="err-block">
-        <Icon name="info" :size="56" color="#FF7A45" />
+        <wd-icon :name="$jwIcon('info')" size="28px" color="#FF7A45"  />
         <text class="err-title">加载失败</text>
         <text class="err-msg">{{ errorMsg }}</text>
         <view class="err-btn" @click="load">点击重试</view>
@@ -319,16 +330,15 @@ onShow(load)
             :style="{ background: c.tintSoft }"
           >
             <view class="ov-icon-wrap" :style="{ background: c.tint }">
-              <Icon :name="c.icon" :size="28" color="#fff" />
+              <wd-icon :name="$jwIcon(c.icon)" size="14px" color="#fff"  />
             </view>
             <text class="ov-label">{{ c.label }}</text>
             <text class="ov-value" :style="{ color: c.tint }">{{ c.value }}</text>
             <view v-if="dashboard" :class="['ov-delta', (c.delta ?? 0) >= 0 ? 'up' : 'down']">
-              <Icon
-                :name="(c.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="14"
+              <wd-icon
+                :name="$jwIcon((c.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down')" size="7px"
                 :color="(c.delta ?? 0) >= 0 ? '#52C41A' : '#FF3B30'"
-              />
+               />
               <text
                 >{{ (c.delta ?? 0) >= 0 ? '+' : '' }}{{ c.delta ?? 0
                 }}{{ c.isPct ? '%' : '' }}</text
@@ -384,7 +394,7 @@ onShow(load)
       <view class="section todo-card">
         <view class="section-head">
           <view class="todo-head-left">
-            <Icon name="lightning" :size="28" color="#FF4D2D" />
+            <wd-icon :name="$jwIcon('lightning')" size="14px" color="#FF4D2D"  />
             <text class="section-title">待办事项</text>
           </view>
           <view v-if="TOTAL_TODOS > 0" class="todo-total">{{ TOTAL_TODOS }} 项</view>
@@ -395,7 +405,7 @@ onShow(load)
             <text class="todo-label">{{ t.label }}</text>
             <view v-if="t.count > 0" class="todo-badge">{{ t.count > 99 ? '99+' : t.count }}</view>
             <text v-else class="todo-clear">已清空</text>
-            <Icon name="chevron-right" :size="24" color="#C9CDD4" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="12px" color="#C9CDD4"  />
           </view>
         </view>
       </view>
@@ -414,7 +424,7 @@ onShow(load)
             @click="goEntry(e)"
           >
             <view class="entry-icon" :style="{ background: e.tint }">
-              <Icon :name="e.icon" :size="36" color="#fff" />
+              <wd-icon :name="$jwIcon(e.icon)" size="18px" color="#fff"  />
             </view>
             <view class="entry-text">
               <text class="entry-label">{{ e.label }}</text>
@@ -425,8 +435,10 @@ onShow(load)
       </view>
     </view>
 
-    <TabBar current="home" />
+    <PrimaryLiquidTabBar flavor="platform" active="home" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -495,7 +507,7 @@ onShow(load)
     height: 32rpx;
     padding: 0 8rpx;
     border-radius: 999rpx;
-    background: #fff;
+    background: var(--bg-card);
     color: var(--brand-primary);
     font-size: 18rpx;
     font-weight: 800;
@@ -748,7 +760,7 @@ onShow(load)
   }
   .todo-empty-tag {
     font-size: 22rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
     font-weight: 600;
   }
 }
@@ -789,7 +801,7 @@ onShow(load)
   }
   .todo-clear {
     font-size: 22rpx;
-    color: #c9cdd4;
+    color: var(--text-disabled);
     font-weight: 500;
   }
 }

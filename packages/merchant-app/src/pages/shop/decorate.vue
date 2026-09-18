@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, delegateWotUploadChoose } from '@jiujiu/shared'
 /**
  * MA-17 · 店铺装修（实时预览）
  *
@@ -12,9 +13,6 @@ import { shopService } from '../../services/store'
 import type { ShopDecorate } from '../../services/store'
 import { productService } from '../../services/product'
 import { uploadImages } from '../../utils/upload'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Section from '../../components/section/section.vue'
-
 interface PreviewProduct {
   name: string
   price: number
@@ -91,7 +89,7 @@ function pickLayout(l: 'waterfall' | 'twoColumn' | 'singleLarge') {
 function addBanner() {
   const remain = 5 - config.banners.length
   if (remain <= 0) {
-    uni.showToast({ title: '最多 5 张 Banner', icon: 'none' })
+    appFeedback.showToast({ title: '最多 5 张 Banner', icon: 'none' })
     return
   }
   uni.chooseImage({
@@ -110,7 +108,7 @@ function addBanner() {
           config.banners = [...config.banners, ...urls.map((u) => ({ image: u }))].slice(0, 5)
         }
       } catch (e: any) {
-        uni.showToast({ title: e?.message || 'Banner 上传失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || 'Banner 上传失败', icon: 'none' })
       } finally {
         uploading.value = false
       }
@@ -136,32 +134,48 @@ const fontFamily = computed(
 
 async function save() {
   if (uploading.value) {
-    uni.showToast({ title: 'Banner 仍在上传中，请稍候', icon: 'none' })
+    appFeedback.showToast({ title: 'Banner 仍在上传中，请稍候', icon: 'none' })
     return
   }
   // 防御：banners 必须全部是 http(s) URL，避免本地 tempFilePaths 被写库
   const bad = config.banners.find((b) => !/^https?:\/\//i.test(b.image))
   if (bad) {
-    uni.showToast({ title: '存在未上传完成的 Banner，请重新选择', icon: 'none', duration: 2000 })
+    appFeedback.showToast({ title: '存在未上传完成的 Banner，请重新选择', icon: 'none', duration: 2000 })
     return
   }
   try {
     await shopService.saveDecorate(config)
-    uni.showToast({ title: '已保存', icon: 'success' })
+    appFeedback.showToast({ title: '已保存', icon: 'success' })
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   }
 }
 async function preview() {
-  uni.showToast({ title: '在客户端预览', icon: 'none' })
+  appFeedback.showToast({ title: '在客户端预览', icon: 'none' })
 }
 
 onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="店铺装修" right-text="保存" @right="save" />
+    <wd-navbar title="店铺装修" right-text="保存" @click-right="save"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 顶部 mini 预览 -->
     <view class="preview-wrap">
@@ -221,7 +235,8 @@ onMounted(load)
 
     <view class="body">
       <!-- 主题色 -->
-      <Section title="主题色" :sub="config.themeColor">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "主题色" }}</text><text class="jw-section-sub">{{ config.themeColor }}</text></view></view></template>
         <view class="palette">
           <view
             v-for="c in COLOR_PALETTE"
@@ -233,10 +248,11 @@ onMounted(load)
             <text v-if="config.themeColor === c.value" class="tick">✓</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 字体 -->
-      <Section title="字体风格">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "字体风格" }}</text></view></view></template>
         <view class="font-grid">
           <view
             v-for="f in FONTS"
@@ -249,33 +265,37 @@ onMounted(load)
             <text class="font-desc">{{ f.desc }}</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- Banner -->
-      <Section
-        :title="`首页 Banner · ${config.banners.length} / 5`"
-        :sub="uploading ? '上传中…' : '支持轮播'"
-      >
+      <wd-card
+       type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ `首页 Banner · ${config.banners.length} / 5` }}</text><text class="jw-section-sub">{{ uploading ? '上传中…' : '支持轮播' }}</text></view></view></template>
         <view class="banner-grid">
           <view v-for="(b, i) in config.banners" :key="i" class="banner-cell">
             <image :src="b.image" class="banner-cell-img" mode="aspectFill" />
             <view class="banner-del" @click="removeBanner(i)">✕</view>
             <view v-if="i === 0" class="banner-main">首张</view>
           </view>
-          <view
+          <wd-upload
             v-if="config.banners.length < 5"
-            :class="['banner-add', uploading ? 'is-uploading' : '']"
-            @click="addBanner"
+            :file-list="[]"
+            :limit="1"
+            :disabled="uploading"
+            :before-choose="(option: any) => delegateWotUploadChoose(option, addBanner)"
           >
+          <view :class="['banner-add', uploading ? 'is-uploading' : '']">
             <text class="add-icon">{{ uploading ? '⌛' : '＋' }}</text>
             <text class="add-text">{{ uploading ? '上传中…' : '上传 Banner' }}</text>
             <text class="add-tip">建议 750×360</text>
           </view>
+          </wd-upload>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 展示风格 -->
-      <Section title="商品展示风格">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "商品展示风格" }}</text></view></view></template>
         <view class="layout-grid">
           <view
             v-for="l in LAYOUTS"
@@ -294,11 +314,13 @@ onMounted(load)
             <text class="layout-desc">{{ l.desc }}</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <view class="safe-bottom" />
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -316,7 +338,7 @@ onMounted(load)
 }
 .preview-phone {
   width: 480rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   overflow: hidden;
   box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.4);
@@ -327,7 +349,7 @@ onMounted(load)
   padding: 8rpx 16rpx;
   font-size: 18rpx;
   color: #000;
-  background: #fff;
+  background: var(--bg-card);
 }
 .phone-header {
   padding: 16rpx;
@@ -358,7 +380,7 @@ onMounted(load)
   align-items: center;
   justify-content: center;
   font-size: 18rpx;
-  color: #c9cdd4;
+  color: var(--text-disabled);
   background: #f5f7fa;
 }
 .phone-grid-empty {
@@ -366,13 +388,13 @@ onMounted(load)
   text-align: center;
   padding: 24rpx 8rpx;
   font-size: 18rpx;
-  color: #c9cdd4;
+  color: var(--text-disabled);
 }
 .phone-tabs {
   display: flex;
   padding: 8rpx;
   gap: 8rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-bottom: 1rpx solid #f3f4f6;
   .ph-tab {
     flex: 1;

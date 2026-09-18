@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 订单分享配置 Sheet
  *
@@ -163,10 +164,10 @@ async function onShare() {
     //    这里通过 emit 让父页处理)
     emit('shared', { shareCode, shareUrl })
 
-    uni.showToast({ title: '链接已复制', icon: 'success', duration: 1500 })
+    appFeedback.showToast({ title: '链接已复制', icon: 'success', duration: 1500 })
     setTimeout(() => emit('close'), 800)
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '分享失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '分享失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -174,10 +175,10 @@ async function onShare() {
 
 async function onRevoke() {
   if (!props.order?.id || !currentShareCode.value) {
-    uni.showToast({ title: '当前订单暂无生效分享', icon: 'none' })
+    appFeedback.showToast({ title: '当前订单暂无生效分享', icon: 'none' })
     return
   }
-  uni.showModal({
+  appFeedback.showModal({
     title: '撤销分享',
     content: '撤销后,客户使用旧链接将无法继续查看。已截屏的内容无法收回。',
     confirmColor: '#FF4D2D',
@@ -187,9 +188,9 @@ async function onRevoke() {
       try {
         await orderService.revokeShare(props.order.id)
         currentShareCode.value = ''
-        uni.showToast({ title: '已撤销', icon: 'success' })
+        appFeedback.showToast({ title: '已撤销', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '撤销失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '撤销失败', icon: 'none' })
       }
     },
   })
@@ -197,14 +198,21 @@ async function onRevoke() {
 </script>
 
 <template>
-  <view v-if="open" class="mask" @click="onClose">
-    <view class="sheet" @click.stop>
+  <wd-popup
+    :model-value="open"
+    position="bottom"
+    custom-class="share-popup"
+    safe-area-inset-bottom
+    root-portal
+    @close="onClose"
+  >
+    <scroll-view scroll-y class="sheet">
       <!-- 顶部摘要 -->
       <view class="head">
         <view class="head-title">分享订单</view>
-        <view class="head-share" :class="{ disabled: !canSubmit }" @click="onShare">
+        <wd-button size="small" type="success" :disabled="!canSubmit" :loading="loading" @click="onShare">
           {{ loading ? '生成中…' : '分享' }}
-        </view>
+        </wd-button>
       </view>
 
       <view v-if="headerSummary" class="summary">
@@ -237,6 +245,11 @@ async function onRevoke() {
             :class="['chip', { on: visible.has(f.key) }]"
             @click="toggleField(f.key)"
           >
+            <wd-checkbox
+              :model-value="visible.has(f.key)"
+              shape="circle"
+              @click.stop="toggleField(f.key)"
+            />
             <text class="chip-label">{{ f.label }}</text>
             <text class="chip-desc">{{ f.desc }}</text>
             <view v-if="visible.has(f.key)" class="chip-mark">
@@ -253,13 +266,13 @@ async function onRevoke() {
           <text class="block-tip">链接过期后无法访问</text>
         </view>
         <view class="duration-row">
-          <input
+          <wd-input no-border
             v-model.number="expiresInDays"
             type="number"
             class="duration-input"
             :placeholder="'30'"
             :maxlength="3"
-          />
+           />
           <text class="duration-unit">天</text>
           <text class="duration-hint">(0 为永久可见)</text>
         </view>
@@ -281,13 +294,13 @@ async function onRevoke() {
           <text>微信分享简介</text>
           <text class="block-tip">显示在分享卡片下方</text>
         </view>
-        <textarea
+        <wd-textarea no-border
           v-model="intro"
           class="intro-input"
           placeholder="例如:请查看您的家装订单详情"
           :maxlength="40"
           :auto-height="true"
-        />
+         />
         <view class="intro-meta">
           <text class="intro-count">{{ intro.length }}/40</text>
         </view>
@@ -300,8 +313,8 @@ async function onRevoke() {
         >
         <text class="revoke-btn">撤销</text>
       </view>
-    </view>
-  </view>
+    </scroll-view>
+  </wd-popup>
 </template>
 
 <style lang="scss" scoped>
@@ -315,7 +328,7 @@ async function onRevoke() {
 }
 .sheet {
   width: 100%;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 32rpx 32rpx 0 0;
   max-height: 85vh;
   overflow-y: auto;
@@ -332,7 +345,7 @@ async function onRevoke() {
 .head-title {
   font-size: 36rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   letter-spacing: 1rpx;
 }
 .head-share {
@@ -350,7 +363,7 @@ async function onRevoke() {
 .summary {
   margin-top: 20rpx;
   padding: 20rpx 24rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.03);
 }
@@ -362,11 +375,11 @@ async function onRevoke() {
 }
 .summary-label {
   font-size: 24rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
 }
 .summary-value {
   font-size: 26rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   font-weight: 500;
   &.primary {
     color: #ff4d2d;
@@ -377,7 +390,7 @@ async function onRevoke() {
 .block {
   margin-top: 28rpx;
   padding: 24rpx 24rpx 20rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.03);
 }
@@ -389,7 +402,7 @@ async function onRevoke() {
   > text:first-child {
     font-size: 28rpx;
     font-weight: 600;
-    color: #1d2129;
+    color: var(--text-primary);
   }
 }
 .block-tip {
@@ -406,7 +419,7 @@ async function onRevoke() {
   position: relative;
   flex: 0 0 calc(50% - 8rpx);
   padding: 16rpx 20rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx solid #ebeef5;
   border-radius: 16rpx;
   display: flex;
@@ -422,7 +435,7 @@ async function onRevoke() {
 .chip-label {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .chip-desc {
   font-size: 20rpx;
@@ -452,19 +465,19 @@ async function onRevoke() {
   align-items: center;
   gap: 12rpx;
   padding: 12rpx 16rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 12rpx;
 }
 .duration-input {
   flex: 1;
   font-size: 36rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   text-align: left;
 }
 .duration-unit {
   font-size: 26rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
 }
 .duration-hint {
   font-size: 22rpx;
@@ -478,12 +491,12 @@ async function onRevoke() {
 .quick {
   flex: 1;
   padding: 12rpx 0;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx solid transparent;
   border-radius: 12rpx;
   text-align: center;
   font-size: 24rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   &.on {
     background: rgba(16, 185, 129, 0.08);
     border-color: #10b981;
@@ -496,10 +509,10 @@ async function onRevoke() {
   width: 100%;
   min-height: 100rpx;
   padding: 16rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 12rpx;
   font-size: 26rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   box-sizing: border-box;
 }
 .intro-meta {
@@ -509,13 +522,13 @@ async function onRevoke() {
 }
 .intro-count {
   font-size: 22rpx;
-  color: #c9cdd4;
+  color: var(--text-disabled);
 }
 
 .revoke-row {
   margin-top: 24rpx;
   padding: 18rpx 24rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   border: 1rpx solid #fde6df;
   display: flex;
@@ -524,7 +537,7 @@ async function onRevoke() {
 }
 .revoke-tip {
   font-size: 24rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
 }
 .revoke-btn {
   font-size: 26rpx;

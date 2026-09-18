@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-Tab · 平台订单总览
  * 平台视角的全平台订单监控，原型未画 → 按平台风格补完
@@ -8,10 +9,6 @@ import { onShow } from '@dcloudio/uni-app'
 import { http } from '../../../utils/request'
 import type { Order } from '@jiujiu/shared/types'
 import { formatPrice, formatWan, formatDate } from '@jiujiu/shared/utils'
-import Icon from '../../../components/icon/icon.vue'
-import EmptyState from '../../../components/empty-state/empty-state.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
-
 type OrderTab =
   | 'all'
   | 'pending_payment'
@@ -120,7 +117,7 @@ watch(tab, () => {
 })
 
 function goDetail(o: Order) {
-  uni.showModal({
+  appFeedback.showModal({
     title: o.no,
     content: `收货人: ${o.address?.name}\n金额: ¥${formatPrice(o.payAmount)}\n商品: ${o.items?.length ?? 0} 件\n${o.paidAt ? '支付时间: ' + formatDate(o.paidAt) : ''}`,
     showCancel: false,
@@ -154,6 +151,22 @@ onShow(applyInitTabFromStorage)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <view class="top" :style="{ paddingTop: statusBarHeight }">
       <view class="top-title">
@@ -178,8 +191,8 @@ onShow(applyInitTabFromStorage)
 
     <view class="search-wrap">
       <view class="search-bar">
-        <Icon name="search" :size="32" color="var(--text-tertiary)" />
-        <input v-model="keyword" class="search-input" placeholder="搜索订单号 / 收货人" />
+        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
+        <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索订单号 / 收货人"  />
       </view>
     </view>
 
@@ -212,11 +225,11 @@ onShow(applyInitTabFromStorage)
         </view>
         <view class="info">
           <view class="addr">
-            <Icon name="user" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ o.address?.name }} · {{ o.address?.region }}</text>
           </view>
           <view class="qty">
-            <Icon name="package" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ o.items?.length ?? 0 }} 件商品</text>
           </view>
         </view>
@@ -228,16 +241,15 @@ onShow(applyInitTabFromStorage)
           </view>
         </view>
       </view>
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && filtered.length === 0"
-        title="暂无订单"
-        desc="订单产生后会同步到这里"
-        icon="biz-order"
-      />
+       image="content" :tip="['暂无订单', '订单产生后会同步到这里'].filter(Boolean).join(' · ')" />
     </view>
 
-    <TabBar current="order" />
+    <PrimaryLiquidTabBar flavor="platform" active="order" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

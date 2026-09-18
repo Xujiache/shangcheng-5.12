@@ -982,7 +982,7 @@ export function saveLegalAgreements(data: Partial<LegalAgreements>) {
 }
 
 /* ============ 12b. APP 发布管理 ============ */
-export type AppPlatformKind = 'merchant' | 'platform'
+export type AppPlatformKind = 'merchant' | 'platform' | 'merchant-harmony'
 export interface AppReleaseRow {
   id: string
   platform: AppPlatformKind
@@ -1017,23 +1017,25 @@ export function deleteAppRelease(id: string) {
  * 走 multipart/form-data，使用底层 fetch（绕开 request 工具对 JSON 的强假设）。
  */
 export async function uploadAppRelease(
-  file: File,
+  file: File | null,
   meta: {
     platform: AppPlatformKind
     version: string
     versionCode: number
     changelog?: string
     force?: boolean
+    storeUrl?: string
   },
   onProgress?: (pct: number) => void
 ): Promise<AppReleaseRow> {
   const fd = new FormData()
-  fd.append('file', file)
+  if (file) fd.append('file', file)
   fd.append('platform', meta.platform)
   fd.append('version', meta.version)
   fd.append('versionCode', String(meta.versionCode))
   if (meta.changelog) fd.append('changelog', meta.changelog)
   if (meta.force) fd.append('force', 'true')
+  if (meta.storeUrl) fd.append('storeUrl', meta.storeUrl)
 
   const env = (import.meta as any).env || {}
   const baseUrl = env.VITE_API_BASE_URL || env.VITE_API_URL || ''

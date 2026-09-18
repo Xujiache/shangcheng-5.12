@@ -1,3 +1,4 @@
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 文件上传公共 helper · merchant-app
  *
@@ -64,19 +65,19 @@ export function uploadImage(tempPath: string, bizType = 'misc'): Promise<string>
 export async function uploadImages(tempPaths: string[], bizType = 'misc'): Promise<string[]> {
   if (tempPaths.length === 0) return []
   const total = tempPaths.length
-  uni.showLoading({ title: total > 1 ? `上传中 0/${total}` : '上传中…', mask: true })
+  appFeedback.showLoading({ title: total > 1 ? `上传中 0/${total}` : '上传中…', mask: true })
   const urls: string[] = []
   try {
     for (let i = 0; i < tempPaths.length; i++) {
-      if (total > 1) uni.showLoading({ title: `上传中 ${i + 1}/${total}`, mask: true })
+      if (total > 1) appFeedback.showLoading({ title: `上传中 ${i + 1}/${total}`, mask: true })
       urls.push(await uploadImage(tempPaths[i], bizType))
     }
-    uni.hideLoading()
+    appFeedback.hideLoading()
     return urls
   } catch (e: any) {
-    uni.hideLoading()
+    appFeedback.hideLoading()
     if (urls.length > 0) {
-      uni.showToast({
+      appFeedback.showToast({
         title: `已上传 ${urls.length}/${total}，剩余失败: ${e?.message || '未知错误'}`,
         icon: 'none',
         duration: 2500,

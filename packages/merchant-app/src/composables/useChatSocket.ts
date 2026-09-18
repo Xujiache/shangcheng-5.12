@@ -55,11 +55,13 @@ export interface ChatSocket {
 interface InternalSock extends ChatSocket {
   _token: string
   _role: string
+  _updateToken: (token: string) => void
 }
 
 let _singleton: InternalSock | null = null
 
 function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
+  let authToken = token
   const connected = ref(false)
   let io: any = null
   const msgHandlers: ChatMessageHandler[] = []
@@ -74,7 +76,11 @@ function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
     attached.add(event)
     io.on(event, (payload: any) => {
       ;(extraEvents[event] || []).forEach((fn) => {
-        try { fn(payload) } catch (e) { console.warn(`[chat] ${event} handler error:`, e) }
+        try {
+          fn(payload)
+        } catch (e) {
+          console.warn(`[chat] ${event} handler error:`, e)
+        }
       })
     })
   }
@@ -105,16 +111,26 @@ function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
     })
     io.on('connect', () => {
       connected.value = true
-      io.emit('auth', { token, role })
+      io.emit('auth', { token: authToken, role })
     })
     io.on('disconnect', () => {
       connected.value = false
     })
     io.on('message', (data: any) => {
-      msgHandlers.forEach((h) => { try { h(data) } catch (e) { console.warn('[chat] message handler error:', e) } })
+      msgHandlers.forEach((h) => {
+        try {
+          h(data)
+        } catch (e) {
+          console.warn('[chat] message handler error:', e)
+        }
+      })
     })
     io.on('typing', (data: any) => {
-      typingHandlers.forEach((h) => { try { h(data) } catch {} })
+      typingHandlers.forEach((h) => {
+        try {
+          h(data)
+        } catch {}
+      })
     })
     io.on('error', (data: any) => {
       console.warn('[chat] socket error:', data)
@@ -126,20 +142,30 @@ function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
 
   function disconnect() {
     if (!io) return
-    try { io.disconnect() } catch {}
+    try {
+      io.disconnect()
+    } catch {}
     io = null
     connected.value = false
     attached.clear()
   }
 
-  function join(sessionId: string) { io?.emit('join', { sessionId }) }
-  function leave(sessionId: string) { io?.emit('leave', { sessionId }) }
+  function join(sessionId: string) {
+    io?.emit('join', { sessionId })
+  }
+  function leave(sessionId: string) {
+    io?.emit('leave', { sessionId })
+  }
   function send(sessionId: string, content: string, kind = 'text') {
     if (!content?.trim()) return
     io?.emit('message', { sessionId, kind, content })
   }
-  function typing(sessionId: string, on: boolean) { io?.emit('typing', { sessionId, on }) }
-  function markRead(sessionId: string) { io?.emit('read', { sessionId }) }
+  function typing(sessionId: string, on: boolean) {
+    io?.emit('typing', { sessionId, on })
+  }
+  function markRead(sessionId: string) {
+    io?.emit('read', { sessionId })
+  }
 
   function on(event: string, h: AnyEventHandler) {
     if (!extraEvents[event]) extraEvents[event] = []
@@ -156,6 +182,11 @@ function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
   const sock: InternalSock = {
     _token: token,
     _role: role,
+    _updateToken: (nextToken: string) => {
+      authToken = nextToken
+      sock._token = nextToken
+      if (io?.connected && nextToken) io.emit('auth', { token: nextToken, role })
+    },
     connected,
     connect,
     disconnect,
@@ -164,11 +195,16 @@ function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
     send,
     typing,
     markRead,
-    onMessage: (h) => { msgHandlers.push(h) },
-    offMessage: (h) => {
-      const i = msgHandlers.indexOf(h); if (i >= 0) msgHandlers.splice(i, 1)
+    onMessage: (h) => {
+      msgHandlers.push(h)
     },
-    onTyping: (h) => { typingHandlers.push(h) },
+    offMessage: (h) => {
+      const i = msgHandlers.indexOf(h)
+      if (i >= 0) msgHandlers.splice(i, 1)
+    },
+    onTyping: (h) => {
+      typingHandlers.push(h)
+    },
     on,
     off,
   }
@@ -187,7 +223,9 @@ export function useChatSocket(token: string, role: 'user' | 'merchant' = 'mercha
     return _singleton
   }
   if (_singleton) {
-    try { _singleton.disconnect() } catch {}
+    try {
+      _singleton.disconnect()
+    } catch {}
     _singleton = null
   }
   _singleton = createSocket(token, role)
@@ -197,6 +235,18 @@ export function useChatSocket(token: string, role: 'user' | 'merchant' = 'mercha
 /** 显式销毁单例（登出时调） */
 export function destroyChatSocket() {
   if (!_singleton) return
-  try { _singleton.disconnect() } catch {}
+  try {
+    _singleton.disconnect()
+  } catch {}
   _singleton = null
+}
+
+/** refresh token 轮换后原连接原地重新鉴权，保留页面已注册的全部事件处理器。 */
+export function refreshChatSocketToken(token: string) {
+  if (!_singleton || _singleton._token === token) return
+  if (!token) {
+    destroyChatSocket()
+    return
+  }
+  _singleton._updateToken(token)
 }

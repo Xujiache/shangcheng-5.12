@@ -18,6 +18,8 @@ import { AppReleaseModule } from './modules/app-release/app-release.module'
 import { LedgerModule } from './modules/ledger/ledger.module'
 import { ContentSecurityModule } from './modules/content-security/content-security.module'
 import { JwtAuthGuard } from './common/guards/jwt.guard'
+import { HarmonyRealtimeModule } from './modules/harmony-merchant/harmony-realtime.module'
+import { HarmonyMerchantModule } from './modules/harmony-merchant/harmony-merchant.module'
 
 /**
  * 单桶限流（v2 修复）
@@ -44,6 +46,7 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'] }),
     ContentSecurityModule,
+    HarmonyRealtimeModule,
     // ⚠️ 单桶模式（不要再加额外桶名！）
     //
     // @nestjs/throttler v6 行为：注册多个桶 → 每个请求被所有桶逐个评估，
@@ -72,6 +75,7 @@ import { JwtAuthGuard } from './common/guards/jwt.guard'
     PaymentModule,
     LegalModule,
     AppReleaseModule,
+    HarmonyMerchantModule,
     LedgerModule,
   ],
   controllers: [HealthController],

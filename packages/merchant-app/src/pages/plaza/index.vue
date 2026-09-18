@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-20 · 选品广场
  *
@@ -11,11 +12,6 @@ import { profileService } from '../../services/profile'
 import { useFeatureFlagStore } from '../../store'
 import type { PlazaProductCard } from '@jiujiu/shared/types'
 import { formatPrice } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Tabs from '../../components/tabs/tabs.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-import Icon from '../../components/icon/icon.vue'
 import { useStatusBar } from '../../composables/useStatusBar'
 
 const { heroPaddingTop } = useStatusBar(16)
@@ -61,9 +57,9 @@ async function setVisibility(scope: 'stores' | 'public') {
   try {
     await profileService.setPlazaVisibility(scope)
     visibility.value = scope
-    uni.showToast({ title: scope === 'public' ? '已设为所有人可看' : '已设为仅门店可看', icon: 'success' })
+    appFeedback.showToast({ title: scope === 'public' ? '已设为所有人可看' : '已设为仅门店可看', icon: 'success' })
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   }
 }
 
@@ -78,7 +74,7 @@ function pickVisibilityRules() {
 }
 
 async function rateFactory(f: PlazaFactoryItem) {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['1 星', '2 星', '3 星', '4 星', '5 星'],
     success: async (r) => {
       const score = r.tapIndex + 1
@@ -86,9 +82,9 @@ async function rateFactory(f: PlazaFactoryItem) {
         const res = await plazaService.rateFactory(f.id, score)
         f.rating = res.rating
         f.ratingCount = res.ratingCount
-        uni.showToast({ title: `已评价 ${score} 星`, icon: 'success' })
+        appFeedback.showToast({ title: `已评价 ${score} 星`, icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '评价失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '评价失败', icon: 'none' })
       }
     },
   })
@@ -143,7 +139,7 @@ function goFactory(factoryId: string) {
 }
 
 function applyAgency(p: PlazaProductCard) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '申请代理',
     content: `申请代理「${p.productName}」？\n建议加价 ¥${p.suggestMarkupMin}~${p.suggestMarkupMax} · 佣金 ${p.suggestCommission}%`,
     confirmText: '提交申请',
@@ -155,7 +151,7 @@ function applyAgency(p: PlazaProductCard) {
           markupPercent: p.suggestMarkupMin ?? 15,
           autoSyncPrice: true,
         })
-        uni.showToast({ title: '已提交，待厂家审核', icon: 'success' })
+        appFeedback.showToast({ title: '已提交，待厂家审核', icon: 'success' })
       }
     },
   })
@@ -173,6 +169,22 @@ onMounted(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <view class="header" :style="{ background: 'var(--brand-gradient)', paddingTop: heroPaddingTop }">
       <view class="head-row">
@@ -180,16 +192,24 @@ onMounted(() => {
         <text class="head-sub">平台精选 · 厂家直供</text>
       </view>
       <view class="search-wrap">
-        <Icon name="search" :size="32" color="rgba(255,255,255,0.85)" />
-        <input
+        <wd-icon :name="$jwIcon('search')" size="16px" color="rgba(255,255,255,0.85)"  />
+        <wd-input no-border
           v-model="keyword"
           class="search-input"
           placeholder="搜索商品 / 厂家"
           placeholder-style="color:rgba(255,255,255,0.6)"
-        />
+         />
       </view>
       <view class="tabs-row">
-        <Tabs v-model="tab" :items="TABS" variant="underline" fill />
+        <wd-tabs v-model="tab"  color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
       </view>
     </view>
 
@@ -265,11 +285,9 @@ onMounted(() => {
         </view>
       </view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="filteredProducts.length === 0"
-        title="暂无可代理的商品"
-        desc="选品广场只显示其他厂家上架的商品。当前没有匹配项,试试调整筛选或稍后再来"
-      />
+       image="content" :tip="['暂无可代理的商品', '选品广场只显示其他厂家上架的商品。当前没有匹配项,试试调整筛选或稍后再来'].filter(Boolean).join(' · ')" />
     </view>
 
     <!-- 厂家 Tab -->
@@ -278,15 +296,15 @@ onMounted(() => {
       <view class="filter-bar">
         <view :class="['filter-chip', filterRegion !== '全部' && 'on']" @click="showFilterPanel = 'region'">
           <text>{{ filterRegion === '全部' ? '地区' : filterRegion }}</text>
-          <Icon name="chevron-down" :size="18" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)"  />
         </view>
         <view :class="['filter-chip', filterCategory !== '全部' && 'on']" @click="showFilterPanel = 'category'">
           <text>{{ filterCategory === '全部' ? '品类' : filterCategory }}</text>
-          <Icon name="chevron-down" :size="18" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)"  />
         </view>
         <view :class="['filter-chip', filterMinRating > 0 && 'on']" @click="showFilterPanel = 'rating'">
           <text>{{ filterMinRating > 0 ? `${filterMinRating}★+` : '评分' }}</text>
-          <Icon name="chevron-down" :size="18" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)"  />
         </view>
       </view>
 
@@ -302,13 +320,13 @@ onMounted(() => {
             <view class="factory-name-row">
               <text class="factory-name">{{ f.name }}</text>
               <view class="rating-pill" @click.stop="rateFactory(f)">
-                <Icon name="star-fill" :size="20" color="#FFD43B" :fill="true" />
+                <wd-icon :name="$jwIcon('star-fill')" size="10px" color="#FFD43B"  />
                 <text>{{ (f.rating ?? 5).toFixed(1) }}</text>
                 <text v-if="(f.ratingCount ?? 0) > 0" class="rating-count">({{ f.ratingCount }})</text>
               </view>
             </view>
             <view class="factory-meta">
-              <Icon name="location" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('location')" size="11px" color="var(--text-tertiary)"  />
               <text>{{ f.region }}</text>
               <text v-if="f.categories?.length">· {{ f.categories.slice(0, 2).join(' / ') }}</text>
             </view>
@@ -318,20 +336,27 @@ onMounted(() => {
             </view>
           </view>
         </view>
-        <EmptyState v-if="factories.length === 0" title="没找到匹配厂家" desc="试试调整筛选条件" />
+        <wd-status-tip v-if="factories.length === 0"  image="content" :tip="['没找到匹配厂家', '试试调整筛选条件'].filter(Boolean).join(' · ')" />
       </view>
     </view>
 
     <!-- 我的代理 -->
     <view v-else class="content">
-      <EmptyState title="暂无代理" desc="去商品 Tab 申请代理感兴趣的商品" />
+      <wd-status-tip  image="content" :tip="['暂无代理', '去商品 Tab 申请代理感兴趣的商品'].filter(Boolean).join(' · ')" />
     </view>
 
     <view class="safe-bottom" />
 
     <!-- 筛选下拉面板 -->
-    <view v-if="showFilterPanel" class="filter-mask" @click="showFilterPanel = null">
-      <view class="filter-panel" @click.stop>
+    <wd-popup
+      :model-value="!!showFilterPanel"
+      position="bottom"
+      custom-class="filter-panel"
+      safe-area-inset-bottom
+      root-portal
+      @close="showFilterPanel = null"
+    >
+      <view class="filter-content">
         <view v-if="showFilterPanel === 'region'">
           <view class="filter-row">
             <view
@@ -363,47 +388,47 @@ onMounted(() => {
           </view>
         </view>
       </view>
-    </view>
+    </wd-popup>
 
     <!-- 上传产品 FAB（受平台 roleButton.uploadToPlaza 控制；默认开） -->
     <view v-if="showUploadFab" class="upload-fab" @click="openUpload">
-      <Icon name="plus" :size="36" color="#fff" />
+      <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff"  />
       <text>上传产品</text>
     </view>
 
     <!-- 上传 / 规则 sheet -->
-    <view v-if="showUploadSheet" class="sheet-mask" @click="showUploadSheet = false">
-      <view class="sheet" @click.stop>
+    <wd-popup v-model="showUploadSheet" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
+      <view class="sheet-content">
         <view class="sheet-head">
           <text class="sheet-title">上传产品</text>
           <text class="sheet-close" @click="showUploadSheet = false">关闭</text>
         </view>
         <view class="sheet-action" @click="pickUploadMyProducts">
           <view class="action-icon action-icon-primary">
-            <Icon name="image-plus" :size="36" color="#fff" />
+            <wd-icon :name="$jwIcon('image-plus')" size="18px" color="#fff"  />
           </view>
           <view class="action-info">
             <text class="action-title">我的上传</text>
             <text class="action-sub">把我的商品同步到选品广场</text>
           </view>
-          <Icon name="forward" :size="24" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
         </view>
         <view class="sheet-action" @click="pickVisibilityRules">
           <view class="action-icon action-icon-ghost">
-            <Icon name="eye" :size="36" color="#fff" />
+            <wd-icon :name="$jwIcon('eye')" size="18px" color="#fff"  />
           </view>
           <view class="action-info">
             <text class="action-title">产品显示规则</text>
             <text class="action-sub">当前：{{ visibility === 'public' ? '所有人可看' : '仅门店可看' }}</text>
           </view>
-          <Icon name="forward" :size="24" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
         </view>
       </view>
-    </view>
+    </wd-popup>
 
     <!-- 显示规则弹层 -->
-    <view v-if="showVisibilityDialog" class="sheet-mask" @click="showVisibilityDialog = false">
-      <view class="vis-dialog" @click.stop>
+    <wd-popup v-model="showVisibilityDialog" position="bottom" custom-class="vis-dialog" safe-area-inset-bottom root-portal>
+      <view class="vis-content">
         <view class="sheet-head">
           <text class="sheet-title">产品显示规则</text>
           <text class="sheet-close" @click="showVisibilityDialog = false">完成</text>
@@ -428,8 +453,10 @@ onMounted(() => {
           </view>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -463,7 +490,7 @@ onMounted(() => {
     :deep(.tab-text) { color: rgba(255,255,255,0.85); }
     :deep(.tab.active) {
       .tab-text { color: #fff; font-weight: 700; }
-      &::after { background: #fff; }
+      &::after { background: var(--bg-card); }
     }
   }
 }
@@ -690,7 +717,7 @@ onMounted(() => {
   align-items: center;
   gap: 4rpx;
   padding: 10rpx 18rpx;
-  background: #fff;
+  background: var(--bg-card);
   border: 1rpx solid var(--border-light);
   border-radius: 999rpx;
   font-size: 24rpx;
@@ -713,7 +740,7 @@ onMounted(() => {
 }
 .filter-panel {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   padding: 24rpx;
   border-radius: 0 0 20rpx 20rpx;
 }
@@ -724,7 +751,7 @@ onMounted(() => {
 }
 .filter-item {
   padding: 12rpx 24rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 999rpx;
   font-size: 26rpx;
   color: #303133;
@@ -741,7 +768,7 @@ onMounted(() => {
   flex-shrink: 0;
   border-radius: 16rpx;
   overflow: hidden;
-  background: #f5f6f8;
+  background: var(--bg-page);
 }
 .factory-logo { width: 100%; height: 100%; }
 .factory-logo-empty {
@@ -807,7 +834,7 @@ onMounted(() => {
 }
 .sheet {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 28rpx 28rpx 0 0;
   padding: 20rpx 24rpx 40rpx;
   display: flex;
@@ -816,7 +843,7 @@ onMounted(() => {
 }
 .vis-dialog {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 28rpx 28rpx 0 0;
   padding: 20rpx 24rpx 40rpx;
   display: flex;
@@ -828,7 +855,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12rpx 4rpx 4rpx;
-  .sheet-title { font-size: 32rpx; font-weight: 800; color: #1d2129; }
+  .sheet-title { font-size: 32rpx; font-weight: 800; color: var(--text-primary); }
   .sheet-close { font-size: 26rpx; color: #ff4d2d; font-weight: 600; }
 }
 .sheet-action {
@@ -837,7 +864,7 @@ onMounted(() => {
   gap: 18rpx;
   padding: 20rpx 12rpx;
   border-radius: 16rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   &:active { background: #ebedf0; }
 }
 .action-icon {
@@ -852,17 +879,17 @@ onMounted(() => {
 .action-icon-primary { background: linear-gradient(135deg, #ff7a4e, #ff4d2d); }
 .action-icon-ghost { background: linear-gradient(135deg, #5b8def, #3370ff); }
 .action-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
-.action-title { font-size: 28rpx; font-weight: 700; color: #1d2129; }
-.action-sub { font-size: 22rpx; color: #86909c; }
+.action-title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+.action-sub { font-size: 22rpx; color: var(--text-tertiary); }
 
-.vis-hint { font-size: 24rpx; color: #86909c; padding: 0 4rpx; }
+.vis-hint { font-size: 24rpx; color: var(--text-tertiary); padding: 0 4rpx; }
 .vis-option {
   display: flex;
   align-items: flex-start;
   gap: 16rpx;
   padding: 24rpx 16rpx;
   border-radius: 18rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx solid transparent;
   transition: all 0.18s;
   &.on {
@@ -889,6 +916,6 @@ onMounted(() => {
 }
 .vis-option.on .vis-radio { border-color: #ff4d2d; }
 .vis-info { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
-.vis-title { font-size: 28rpx; font-weight: 700; color: #1d2129; }
-.vis-sub { font-size: 22rpx; color: #86909c; line-height: 1.5; }
+.vis-title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+.vis-sub { font-size: 22rpx; color: var(--text-tertiary); line-height: 1.5; }
 </style>

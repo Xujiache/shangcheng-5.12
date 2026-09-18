@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-Tab · 平台数据中心（v3 · 自然文档流 + sticky 顶部 + fixed TabBar）
  *
@@ -28,9 +29,6 @@ import {
 } from '../../../services'
 import type { PlatformDashboard } from '@jiujiu/shared/types'
 import { formatWan } from '@jiujiu/shared/utils'
-import Icon from '../../../components/icon/icon.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
-
 const dashboard = ref<PlatformDashboard | null>(null)
 const stats = ref<PlatformStats | null>(null)
 const period = ref<StatsPeriod>('week')
@@ -209,10 +207,10 @@ function formatBeijingNow(): string {
 const todayString = computed(() => formatBeijingNow())
 
 function exportReport() {
-  uni.showLoading({ title: '导出中…' })
+  appFeedback.showLoading({ title: '导出中…' })
   setTimeout(() => {
-    uni.hideLoading()
-    uni.showToast({ title: '已导出 Excel', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: '已导出 Excel', icon: 'success' })
   }, 800)
 }
 
@@ -228,6 +226,22 @@ onShow(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <!-- 顶部 sticky 渐变条 -->
     <view class="top-bar" :style="{ paddingTop: statusBarHeight }">
@@ -237,7 +251,7 @@ onShow(() => {
           <text class="top-time">{{ todayString }} · 北京时间</text>
         </view>
         <view class="export-btn" @click="exportReport">
-          <Icon name="doc" :size="24" color="#fff" />
+          <wd-icon :name="$jwIcon('doc')" size="12px" color="#fff"  />
           <text>导出</text>
         </view>
       </view>
@@ -277,14 +291,13 @@ onShow(() => {
         <view v-for="k in KPI_CARDS" :key="k.key" class="kpi-card" :style="{ background: k.bg }">
           <view class="kpi-head">
             <view class="kpi-icon" :style="{ background: '#fff', color: k.tint }">
-              <Icon :name="k.icon" :size="28" :color="k.tint" />
+              <wd-icon :name="$jwIcon(k.icon)" size="14px" :color="k.tint"  />
             </view>
             <view :class="['kpi-delta', (k.delta ?? 0) >= 0 ? 'up' : 'down']">
-              <Icon
-                :name="(k.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="14"
+              <wd-icon
+                :name="$jwIcon((k.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down')" size="7px"
                 :color="(k.delta ?? 0) >= 0 ? '#16A34A' : '#DC2626'"
-              />
+               />
               <text>{{ (k.delta ?? 0) >= 0 ? '+' : '' }}{{ k.delta ?? 0 }}{{ k.unit }}</text>
             </view>
           </view>
@@ -511,16 +524,17 @@ onShow(() => {
       </view>
     </view>
 
-    <!-- TabBar 固定底部,永不丢失 -->
-    <TabBar current="stats" />
+    <PrimaryLiquidTabBar flavor="platform" active="stats" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
 /* === 根容器:自然文档流,不用 flex 撑高,绝不塌陷 === */
 .page {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg-page);
   /* 底部留出 TabBar (约 100rpx + 安全区) + 一点视觉缓冲 */
   padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
@@ -583,7 +597,7 @@ onShow(() => {
   transition: all 0.2s ease;
   color: rgba(255, 255, 255, 0.85);
   &.active {
-    background: #fff;
+    background: var(--bg-card);
     color: #ff4d2d;
     font-weight: 700;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
@@ -598,7 +612,7 @@ onShow(() => {
 /* === 错误态 === */
 .err-card {
   margin: 60rpx 0 24rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 60rpx 32rpx;
   display: flex;
@@ -612,11 +626,11 @@ onShow(() => {
   .err-title {
     font-size: 32rpx;
     font-weight: 800;
-    color: #1d2129;
+    color: var(--text-primary);
   }
   .err-msg {
     font-size: 24rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
     text-align: center;
     line-height: 1.6;
   }
@@ -685,7 +699,7 @@ onShow(() => {
 }
 .kpi-label {
   font-size: 22rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 .kpi-value-row {
@@ -707,7 +721,7 @@ onShow(() => {
 
 /* === 通用 chart-card === */
 .chart-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   padding: 24rpx;
   margin-bottom: 16rpx;
@@ -720,7 +734,7 @@ onShow(() => {
   margin-bottom: 18rpx;
   .meta {
     font-size: 20rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
     font-family: var(--font-family-base);
   }
 }
@@ -731,7 +745,7 @@ onShow(() => {
   .title {
     font-size: 28rpx;
     font-weight: 700;
-    color: #1d2129;
+    color: var(--text-primary);
   }
 }
 .title-dot {
@@ -779,7 +793,7 @@ onShow(() => {
 }
 .inline-err-msg {
   font-size: 24rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
 }
 .inline-err-btn {
   padding: 10rpx 32rpx;
@@ -804,7 +818,7 @@ onShow(() => {
   }
   .empty-text {
     font-size: 22rpx;
-    color: #c9cdd4;
+    color: var(--text-disabled);
   }
 }
 
@@ -823,8 +837,8 @@ onShow(() => {
   width: 36rpx;
   height: 36rpx;
   border-radius: 10rpx;
-  background: #f5f6f8;
-  color: #86909c;
+  background: var(--bg-page);
+  color: var(--text-tertiary);
   font-size: 20rpx;
   font-weight: 800;
   display: flex;
@@ -848,7 +862,7 @@ onShow(() => {
 .list-name {
   width: 140rpx;
   font-size: 24rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -856,7 +870,7 @@ onShow(() => {
 .list-bar-wrap {
   flex: 1;
   height: 14rpx;
-  background: #f5f6f8;
+  background: var(--bg-page);
   border-radius: 999rpx;
   overflow: hidden;
   min-width: 80rpx;
@@ -888,7 +902,7 @@ onShow(() => {
 .pie-item {
   position: relative;
   height: 72rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 18rpx;
   display: flex;
   align-items: center;
@@ -925,14 +939,14 @@ onShow(() => {
 .p-label {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   z-index: 1;
 }
 .p-pct {
   margin-left: auto;
   font-size: 22rpx;
   font-weight: 600;
-  color: #86909c;
+  color: var(--text-tertiary);
   font-family: var(--font-family-base);
   z-index: 1;
 }
@@ -998,7 +1012,7 @@ onShow(() => {
 }
 .md-label {
   font-size: 22rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -1011,7 +1025,7 @@ onShow(() => {
   border-radius: 12rpx;
 }
 .kpi-card.skel {
-  background: #fff;
+  background: var(--bg-card);
   border: 1rpx dashed #ebeef5;
   display: flex;
   flex-direction: column;

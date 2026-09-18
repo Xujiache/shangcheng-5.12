@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-08 · 会员&推广套餐
  *
@@ -22,9 +23,6 @@ import { memberService } from '../../services'
 import type { SubscriptionStatusOverview, PlanSubscriptionRow } from '../../services'
 import type { MemberPlan, MemberPlanType, MemberPlanPeriod } from '@jiujiu/shared/types'
 import { formatPrice } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-
 type TabKey = 'basic' | 'ad' | 'pay-orders' | 'status'
 
 const tab = ref<TabKey>('basic')
@@ -229,7 +227,7 @@ function closePlanSheet() {
 }
 
 function addPlan() {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['新增会员套餐', '新增广告推送套餐', '新增增值单项'],
     success: (r) => {
       const type = (['basic', 'ad', 'addon'] as const)[r.tapIndex]
@@ -261,11 +259,11 @@ async function savePlanSheet() {
   if (planSheetSaving.value) return
   const err = validateDraft()
   if (err) {
-    uni.showToast({ title: err, icon: 'none' })
+    appFeedback.showToast({ title: err, icon: 'none' })
     return
   }
   planSheetSaving.value = true
-  uni.showLoading({ title: '保存中…', mask: true })
+  appFeedback.showLoading({ title: '保存中…', mask: true })
   try {
     const rights = planDraft.rightsText
       .split(/\r?\n/)
@@ -305,16 +303,16 @@ async function savePlanSheet() {
       }
     }
     await memberService.savePlan(dto)
-    uni.hideLoading()
-    uni.showToast({ title: planSheetEditing.value ? '已保存' : '已创建', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: planSheetEditing.value ? '已保存' : '已创建', icon: 'success' })
     planSheetOpen.value = false
     // 失效订阅缓存(新建的套餐还没订阅,编辑的套餐订阅人数不变,先简单全清)
     subscriptionCache.clear()
     expandedPlanId.value = null
     await load()
   } catch (e: any) {
-    uni.hideLoading()
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   } finally {
     planSheetSaving.value = false
   }
@@ -322,7 +320,7 @@ async function savePlanSheet() {
 
 function confirmDeletePlan() {
   if (!planDraft.id) return
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除套餐',
     content: `确定要删除「${planDraft.name}」吗?\n删除后已订阅商家的会员状态不会被回收,但新商家无法再选购此套餐。`,
     confirmText: '确认删除',
@@ -330,18 +328,18 @@ function confirmDeletePlan() {
     success: async (r) => {
       if (!r.confirm || !planDraft.id) return
       planSheetDeleting.value = true
-      uni.showLoading({ title: '删除中…', mask: true })
+      appFeedback.showLoading({ title: '删除中…', mask: true })
       try {
         await memberService.deletePlan(planDraft.id)
-        uni.hideLoading()
-        uni.showToast({ title: '已删除', icon: 'success' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: '已删除', icon: 'success' })
         planSheetOpen.value = false
         subscriptionCache.delete(planDraft.id)
         if (expandedPlanId.value === planDraft.id) expandedPlanId.value = null
         await load()
       } catch (e: any) {
-        uni.hideLoading()
-        uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: e?.message || '删除失败', icon: 'none' })
       } finally {
         planSheetDeleting.value = false
       }
@@ -368,7 +366,7 @@ async function toggleSubscriptions(planId: string) {
     subscriptionCache.set(planId, Array.isArray(list) ? list : [])
   } catch (e: any) {
     subscriptionCache.set(planId, [])
-    uni.showToast({ title: e?.message || '加载订阅失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载订阅失败', icon: 'none' })
   } finally {
     subscriptionLoadingId.value = null
   }
@@ -392,19 +390,19 @@ const SUB_STATUS_LABEL: Record<string, { label: string; tone: string }> = {
 // ========== 试用期(全局) ==========
 
 function changeTrial() {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['7 天', '15 天', '30 天', '60 天', '关闭试用'],
     success: async (r) => {
       const days = [7, 15, 30, 60, 0][r.tapIndex]
       try {
         const res = await memberService.saveTrialDays(days)
         trialDays.value = res.days
-        uni.showToast({
+        appFeedback.showToast({
           title: res.days > 0 ? `已设为 ${res.days} 天` : '试用已关闭',
           icon: 'success',
         })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
       }
     },
   })
@@ -426,8 +424,26 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="会员管理" right-icon="plus" @right="addPlan" />
+    <wd-navbar title="会员管理" @click-right="addPlan"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+    </wd-navbar>
 
     <view class="tabs">
       <view
@@ -471,7 +487,7 @@ onMounted(load)
 
           <view class="rights">
             <view v-for="(r, i) in p.rights" :key="i" class="r-row">
-              <Icon name="check" :size="22" color="#52C41A" />
+              <wd-icon :name="$jwIcon('check')" size="11px" color="#52C41A"  />
               <text>{{ r }}</text>
             </view>
           </view>
@@ -479,11 +495,10 @@ onMounted(load)
           <view class="actions">
             <view class="link-btn" @click="toggleSubscriptions(p.id)">
               <text>{{ expandedPlanId === p.id ? '收起订阅商家' : '查看订阅商家' }}</text>
-              <Icon
-                :name="expandedPlanId === p.id ? 'chevron-up' : 'chevron-down'"
-                :size="22"
+              <wd-icon
+                :name="$jwIcon(expandedPlanId === p.id ? 'chevron-up' : 'chevron-down')" size="11px"
                 color="var(--text-tertiary)"
-              />
+               />
             </view>
             <view class="btn ghost" @click="openEditSheet(p)">编辑</view>
           </view>
@@ -517,7 +532,7 @@ onMounted(load)
         <!-- 试用期配置 -->
         <view class="card trial-card" @click="changeTrial">
           <view class="trial-icon">
-            <Icon name="gift" :size="36" color="#52C41A" />
+            <wd-icon :name="$jwIcon('gift')" size="18px" color="#52C41A"  />
           </view>
           <view class="trial-info">
             <text class="trial-label">新商户试用期</text>
@@ -532,11 +547,11 @@ onMounted(load)
                   : '已关闭'
             }}
           </text>
-          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
         </view>
 
         <view class="add-plan" @click="openCreateSheet('basic')">
-          <Icon name="plus" :size="28" color="#fff" />
+          <wd-icon :name="$jwIcon('plus')" size="14px" color="#fff"  />
           <text>新增会员套餐</text>
         </view>
       </view>
@@ -596,11 +611,10 @@ onMounted(load)
           <view class="actions">
             <view class="link-btn" @click="toggleSubscriptions(p.id)">
               <text>{{ expandedPlanId === p.id ? '收起订阅商家' : '查看订阅商家' }}</text>
-              <Icon
-                :name="expandedPlanId === p.id ? 'chevron-up' : 'chevron-down'"
-                :size="22"
+              <wd-icon
+                :name="$jwIcon(expandedPlanId === p.id ? 'chevron-up' : 'chevron-down')" size="11px"
                 color="var(--text-tertiary)"
-              />
+               />
             </view>
             <view class="btn ghost" @click="openEditSheet(p)">编辑</view>
           </view>
@@ -633,7 +647,7 @@ onMounted(load)
         <!-- 增值单项 -->
         <view class="card" v-if="addonItems.length > 0">
           <view class="card-head-row">
-            <Icon name="gift" :size="28" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('gift')" size="14px" color="var(--brand-primary)"  />
             <text class="card-title">增值单项购买</text>
           </view>
           <view class="addon-list">
@@ -644,17 +658,17 @@ onMounted(load)
               @click="openEditSheet(plans.find((x) => x.id === a.id)!)"
             >
               <view class="addon-icon">
-                <Icon :name="a.icon" :size="24" color="var(--brand-primary)" />
+                <wd-icon :name="$jwIcon(a.icon)" size="12px" color="var(--brand-primary)"  />
               </view>
               <text class="addon-label">{{ a.label }}</text>
               <text class="addon-price">¥{{ a.price }}</text>
-              <Icon name="chevron-right" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('chevron-right')" size="11px" color="var(--text-tertiary)"  />
             </view>
           </view>
         </view>
 
         <view class="add-plan" @click="openCreateSheet('ad')">
-          <Icon name="plus" :size="28" color="#fff" />
+          <wd-icon :name="$jwIcon('plus')" size="14px" color="#fff"  />
           <text>新增广告推送套餐</text>
         </view>
       </view>
@@ -689,24 +703,24 @@ onMounted(load)
     </scroll-view>
 
     <!-- 套餐编辑底部 sheet -->
-    <view v-if="planSheetOpen" class="mask" @click="closePlanSheet">
-      <view class="sheet" @click.stop>
+    <wd-popup v-model="planSheetOpen" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal @close="closePlanSheet">
+      <view class="sheet-content">
         <view class="sheet-head">
           <text class="sheet-title">{{ planSheetTitle }}</text>
-          <view :class="['sheet-save', planSheetSaving ? 'disabled' : '']" @click="savePlanSheet">
+          <wd-button size="small" type="primary" :loading="planSheetSaving" @click="savePlanSheet">
             {{ planSheetSaving ? '保存中…' : '保存' }}
-          </view>
+          </wd-button>
         </view>
 
         <scroll-view scroll-y class="sheet-body">
           <view class="form-block">
             <text class="form-label">套餐名称</text>
-            <input
+            <wd-input no-border
               v-model="planDraft.name"
               class="form-input"
               placeholder="例如：VIP 年费会员"
               maxlength="40"
-            />
+             />
           </view>
 
           <view class="form-block">
@@ -747,29 +761,28 @@ onMounted(load)
           <view class="form-row-grid">
             <view class="grid-col">
               <text class="form-label">周期数</text>
-              <input
+              <wd-input no-border
                 v-model.number="planDraft.periodCount"
                 class="form-input"
                 type="number"
                 placeholder="1"
-              />
+               />
               <text class="form-hint">如「12 个月年费」填 12</text>
             </view>
             <view class="grid-col">
               <text class="form-label">价格 (¥)</text>
-              <input
+              <wd-input no-border
                 v-model.number="planDraft.price"
                 class="form-input"
                 type="number"
                 placeholder="0.00"
-              />
+               />
             </view>
           </view>
 
           <view class="form-block">
             <text class="form-label">原价 (¥，可选)</text>
-            <input
-              :value="planDraft.originalPrice ?? ''"
+            <wd-input no-border :model-value="planDraft.originalPrice ?? ''"
               class="form-input"
               type="number"
               placeholder="留空则不显示删除线价"
@@ -779,17 +792,17 @@ onMounted(load)
                   planDraft.originalPrice = Number.isFinite(v) && v > 0 ? v : null
                 }
               "
-            />
+             />
           </view>
 
           <view v-if="showTrialDaysField" class="form-block">
             <text class="form-label">套餐试用天数</text>
-            <input
+            <wd-input no-border
               v-model.number="planDraft.trialDays"
               class="form-input"
               type="number"
               placeholder="0 表示无套餐内试用"
-            />
+             />
             <text class="form-hint">
               此处是「该套餐促销试用」,与全局「新商户试用期」不同(后者在套餐外侧设置)。
             </text>
@@ -797,13 +810,13 @@ onMounted(load)
 
           <view class="form-block">
             <text class="form-label">权益列表(每行一条)</text>
-            <textarea
+            <wd-textarea no-border
               v-model="planDraft.rightsText"
               class="form-textarea"
               placeholder="例如：&#10;无限商品上架&#10;开通直播带货&#10;5 个员工账号"
               :auto-height="true"
               :maxlength="800"
-            />
+             />
           </view>
 
           <view v-if="showConstraintsBlock" class="form-block">
@@ -811,39 +824,39 @@ onMounted(load)
             <view class="quota-grid">
               <view class="quota-item">
                 <text class="quota-label">推送位</text>
-                <input
+                <wd-input no-border
                   v-model.number="planDraft.constraints.pushSlots"
                   class="form-input"
                   type="number"
                   placeholder="0"
-                />
+                 />
               </view>
               <view class="quota-item">
                 <text class="quota-label">权重上限</text>
-                <input
+                <wd-input no-border
                   v-model.number="planDraft.constraints.weightLimit"
                   class="form-input"
                   type="number"
                   placeholder="0-100"
-                />
+                 />
               </view>
               <view class="quota-item">
                 <text class="quota-label">Banner 数</text>
-                <input
+                <wd-input no-border
                   v-model.number="planDraft.constraints.bannerLimit"
                   class="form-input"
                   type="number"
                   placeholder="0"
-                />
+                 />
               </view>
               <view class="quota-item">
                 <text class="quota-label">月曝光</text>
-                <input
+                <wd-input no-border
                   v-model.number="planDraft.constraints.impressionLimit"
                   class="form-input"
                   type="number"
                   placeholder="0"
-                />
+                 />
               </view>
             </view>
           </view>
@@ -853,12 +866,7 @@ onMounted(load)
               <text class="form-row-title">标记为 HOT</text>
               <text class="form-row-desc">在卡片上展示 HOT 角标,吸引商户点击</text>
             </view>
-            <view
-              :class="['switch', planDraft.hot ? 'on' : '']"
-              @click="planDraft.hot = !planDraft.hot"
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="planDraft.hot" active-color="var(--brand-primary)" />
           </view>
 
           <view class="form-row-switch">
@@ -866,12 +874,11 @@ onMounted(load)
               <text class="form-row-title">上架状态</text>
               <text class="form-row-desc">下架后商户无法新订阅,已订阅商家不受影响</text>
             </view>
-            <view
-              :class="['switch', planDraft.status === 'active' ? 'on' : '']"
-              @click="planDraft.status = planDraft.status === 'active' ? 'disabled' : 'active'"
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch
+              :model-value="planDraft.status === 'active'"
+              active-color="var(--brand-primary)"
+              @change="planDraft.status = $event.value ? 'active' : 'disabled'"
+            />
           </view>
 
           <view
@@ -879,13 +886,15 @@ onMounted(load)
             class="delete-row"
             @click="confirmDeletePlan"
           >
-            <Icon name="trash" :size="24" color="#F5222D" />
+            <wd-icon :name="$jwIcon('trash')" size="12px" color="#F5222D"  />
             <text>{{ planSheetDeleting ? '删除中…' : '删除该套餐' }}</text>
           </view>
         </scroll-view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -1344,7 +1353,7 @@ onMounted(load)
 }
 .sheet {
   width: 100%;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 32rpx 32rpx 0 0;
   max-height: 90vh;
   display: flex;
@@ -1358,12 +1367,12 @@ onMounted(load)
   justify-content: space-between;
   padding: 28rpx 32rpx 20rpx;
   border-bottom: 1rpx solid #ebeef5;
-  background: #f7f8fa;
+  background: var(--bg-page);
 }
 .sheet-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .sheet-save {
   padding: 12rpx 36rpx;
@@ -1388,7 +1397,7 @@ onMounted(load)
 }
 
 .form-block {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   display: flex;
@@ -1398,26 +1407,26 @@ onMounted(load)
 .form-label {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .form-input {
   width: 100%;
   height: 80rpx;
   padding: 0 20rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 12rpx;
   font-size: 28rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   box-sizing: border-box;
 }
 .form-textarea {
   width: 100%;
   min-height: 160rpx;
   padding: 16rpx 20rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 12rpx;
   font-size: 26rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   box-sizing: border-box;
   font-family: var(--font-family-base);
   line-height: 1.5;
@@ -1435,7 +1444,7 @@ onMounted(load)
   background: transparent;
 }
 .grid-col {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   display: flex;
@@ -1452,9 +1461,9 @@ onMounted(load)
 }
 .chip {
   padding: 10rpx 20rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 1rpx solid #ebeef5;
-  color: #1d2129;
+  color: var(--text-primary);
   border-radius: 999rpx;
   font-size: 24rpx;
   &.active {
@@ -1488,7 +1497,7 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 16rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
 }
@@ -1501,7 +1510,7 @@ onMounted(load)
   .form-row-title {
     font-size: 26rpx;
     font-weight: 700;
-    color: #1d2129;
+    color: var(--text-primary);
   }
   .form-row-desc {
     font-size: 20rpx;
@@ -1534,7 +1543,7 @@ onMounted(load)
     border-color: var(--brand-primary);
     .thumb {
       left: 38rpx;
-      background: #fff;
+      background: var(--bg-card);
     }
   }
 }
@@ -1545,7 +1554,7 @@ onMounted(load)
   justify-content: center;
   gap: 8rpx;
   padding: 24rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   color: #f5222d;
   font-size: 26rpx;

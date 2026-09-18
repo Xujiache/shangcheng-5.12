@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-09 · 订单详情（含一键识别地址）
  *
@@ -9,10 +10,6 @@ import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { orderService } from '../../services/order'
 import { formatPrice, formatDateTime } from '@jiujiu/shared/utils'
 import type { Order, OrderStatus, ParsedAddress } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Section from '../../components/section/section.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import Icon from '../../components/icon/icon.vue'
 import ShareSheet from '../../components/share-sheet/share-sheet.vue'
 
 // 分享订单
@@ -21,7 +18,7 @@ const lastShare = ref<{ shareCode: string; shareUrl: string } | null>(null)
 
 function openShare() {
   if (!order.value) {
-    uni.showToast({ title: '订单加载中', icon: 'none' })
+    appFeedback.showToast({ title: '订单加载中', icon: 'none' })
     return
   }
   showShareSheet.value = true
@@ -104,14 +101,14 @@ function openParse() {
  */
 async function doParse() {
   if (!parseInput.value.trim()) {
-    uni.showToast({ title: '请粘贴客户地址', icon: 'none' })
+    appFeedback.showToast({ title: '请粘贴客户地址', icon: 'none' })
     return
   }
   parsing.value = true
-  uni.showLoading({ title: '解析中…', mask: true })
+  appFeedback.showLoading({ title: '解析中…', mask: true })
   try {
     parsedResult.value = await orderService.parseAddress(parseInput.value)
-    uni.hideLoading()
+    appFeedback.hideLoading()
     if (
       !parsedResult.value ||
       (!parsedResult.value.name &&
@@ -119,11 +116,11 @@ async function doParse() {
         !parsedResult.value.region &&
         !parsedResult.value.detail)
     ) {
-      uni.showToast({ title: '未识别到有效信息', icon: 'none' })
+      appFeedback.showToast({ title: '未识别到有效信息', icon: 'none' })
     }
   } catch (e: any) {
-    uni.hideLoading()
-    uni.showToast({ title: e?.message || '解析失败', icon: 'none' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: e?.message || '解析失败', icon: 'none' })
   } finally {
     parsing.value = false
   }
@@ -153,38 +150,38 @@ function applyParsed() {
     uni.setClipboardData({
       data: text,
       success: () => {
-        uni.showToast({ title: '已解析并复制，请粘贴使用', icon: 'none', duration: 2200 })
+        appFeedback.showToast({ title: '已解析并复制，请粘贴使用', icon: 'none', duration: 2200 })
       },
-      fail: () => uni.showToast({ title: '已解析', icon: 'success' }),
+      fail: () => appFeedback.showToast({ title: '已解析', icon: 'success' }),
     })
   } else {
-    uni.showToast({ title: '已应用解析结果', icon: 'success' })
+    appFeedback.showToast({ title: '已应用解析结果', icon: 'success' })
   }
   showParseDialog.value = false
 }
 
 function copyOrderNo() {
   if (!order.value) return
-  uni.setClipboardData({ data: order.value.no, success: () => uni.showToast({ title: '已复制' }) })
+  uni.setClipboardData({ data: order.value.no, success: () => appFeedback.showToast({ title: '已复制' }) })
 }
 
 function copyAddress() {
   if (!order.value) return
   const a = order.value.address
   const text = `${a.name} ${a.phone} ${a.region} ${a.detail}`
-  uni.setClipboardData({ data: text, success: () => uni.showToast({ title: '已复制' }) })
+  uni.setClipboardData({ data: text, success: () => appFeedback.showToast({ title: '已复制' }) })
 }
 
 function ship() {
   if (!order.value) return
-  uni.showModal({
+  appFeedback.showModal({
     title: '填写物流单号',
     editable: true,
     placeholderText: '请输入运单号',
     success: async (r) => {
       if (r.confirm && r.content && order.value) {
         await orderService.ship(order.value.id, { company: '顺丰', trackingNumber: r.content })
-        uni.showToast({ title: '已发货' })
+        appFeedback.showToast({ title: '已发货' })
         load()
       }
     },
@@ -206,15 +203,31 @@ onMounted(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="订单详情" right-text="分享" @right="openShare" />
+    <wd-navbar title="订单详情" right-text="分享" @click-right="openShare"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view v-if="order" class="body">
       <!-- 状态条 -->
       <view :class="['status-bar', `status-${order.status}`]">
         <view class="status-info">
           <view class="status-title-row">
-            <Icon name="biz-order" :size="32" color="#fff" />
+            <wd-icon :name="$jwIcon('biz-order')" size="16px" color="#fff"  />
             <text class="status-title">{{ statusInfo.text }}</text>
           </view>
           <text class="status-desc">{{ statusInfo.desc }}</text>
@@ -225,7 +238,8 @@ onMounted(() => {
       </view>
 
       <!-- 收货地址 -->
-      <Section title="收货地址">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "收货地址" }}</text></view></view></template>
         <template #default>
           <view class="addr">
             <view class="addr-info">
@@ -237,7 +251,7 @@ onMounted(() => {
             </view>
             <view class="addr-actions">
               <view class="addr-btn primary" @click="openParse">
-                <Icon name="doc" :size="22" color="#fff" />
+                <wd-icon :name="$jwIcon('doc')" size="11px" color="#fff"  />
                 <text>一键识别</text>
               </view>
               <view class="addr-btn" @click="copyAddress">
@@ -246,10 +260,11 @@ onMounted(() => {
             </view>
           </view>
         </template>
-      </Section>
+      </wd-card>
 
       <!-- 商品 -->
-      <Section title="商品信息" :sub="`共 ${order.items?.length ?? 0} 件`">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "商品信息" }}</text><text class="jw-section-sub">{{ `共 ${order.items?.length ?? 0} 件` }}</text></view></view></template>
         <view class="items">
           <view v-for="it in order.items" :key="it.id" class="item">
             <image class="item-img" :src="it.productImage" mode="aspectFill" />
@@ -263,10 +278,11 @@ onMounted(() => {
             </view>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 金额表 -->
-      <Section title="费用明细">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "费用明细" }}</text></view></view></template>
         <view class="fees">
           <view class="fee-row">
             <text class="fee-label">商品总额</text>
@@ -287,10 +303,11 @@ onMounted(() => {
             <text class="fee-value primary">{{ formatPrice(order.payAmount) }}</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 订单信息 -->
-      <Section title="订单信息">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "订单信息" }}</text></view></view></template>
         <view class="meta-row" @click="copyOrderNo">
           <text class="meta-label">订单编号</text>
           <view class="meta-value">
@@ -320,7 +337,7 @@ onMounted(() => {
           <text class="meta-label">买家备注</text>
           <text class="meta-value">{{ order.remark }}</text>
         </view>
-      </Section>
+      </wd-card>
 
       <view class="safe-bottom" />
     </view>
@@ -328,7 +345,7 @@ onMounted(() => {
     <!-- 底部操作 -->
     <view v-if="order" class="footer">
       <view class="f-btn ghost" @click="callCustomer">
-        <Icon name="phone" :size="32" color="var(--text-primary)" />
+        <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--text-primary)"  />
         <text>联系客户</text>
       </view>
       <view v-if="order.status === 'pending_shipment'" class="f-btn primary" @click="ship"
@@ -337,7 +354,7 @@ onMounted(() => {
       <view
         v-else-if="order.status === 'shipped'"
         class="f-btn primary"
-        @click="uni.showToast({ title: '物流跟踪', icon: 'none' })"
+        @click="appFeedback.showToast({ title: '物流跟踪', icon: 'none' })"
         >查看物流</view
       >
       <view
@@ -346,27 +363,27 @@ onMounted(() => {
         @click="uni.navigateTo({ url: `/pages/order/aftersale?orderId=${order.id}` })"
         >处理售后</view
       >
-      <view v-else class="f-btn ghost" @click="uni.showToast({ title: '打印订单', icon: 'none' })"
+      <view v-else class="f-btn ghost" @click="appFeedback.showToast({ title: '打印订单', icon: 'none' })"
         >打印订单</view
       >
     </view>
 
     <!-- 一键识别弹窗 -->
-    <view v-if="showParseDialog" class="mask" @click="showParseDialog = false">
-      <view class="parse-sheet" @click.stop>
+    <wd-popup v-model="showParseDialog" position="bottom" custom-class="parse-sheet" safe-area-inset-bottom root-portal>
+      <view class="parse-content">
         <view class="parse-head">
           <text class="parse-title">一键识别地址</text>
           <text class="parse-close" @click="showParseDialog = false">✕</text>
         </view>
         <view class="parse-tip">粘贴客户发来的"姓名 + 手机号 + 地址"，自动拆分</view>
-        <textarea
+        <wd-textarea no-border
           v-model="parseInput"
           class="parse-input"
           placeholder="示例：张三 13800138000 浙江省杭州市西湖区文三路 100 号 西溪国际 3 幢 502"
           maxlength="200"
-        />
+         />
         <view class="parse-actions">
-          <view class="parse-btn primary" @click="doParse">立即识别</view>
+          <wd-button block type="primary" size="large" @click="doParse">立即识别</wd-button>
         </view>
 
         <view v-if="parsedResult" class="parse-result">
@@ -389,10 +406,10 @@ onMounted(() => {
               <text class="cell-value">{{ parsedResult.detail || '—' }}</text>
             </view>
           </view>
-          <view class="parse-apply" @click="applyParsed">应用到订单地址</view>
+          <wd-button block plain type="primary" @click="applyParsed">应用到订单地址</wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
 
     <!-- 订单分享配置 sheet -->
     <ShareSheet
@@ -402,6 +419,8 @@ onMounted(() => {
       @shared="onShared"
     />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

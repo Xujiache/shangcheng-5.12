@@ -57,7 +57,12 @@ export function genAdSlot(): AdSlot {
   return {
     id: genId(),
     code: 'AD_' + faker.string.alpha({ length: 6, casing: 'upper' }),
-    name: faker.helpers.arrayElement(['小程序首页轮播', '商家APP首页', '商家详情顶部', '广场首屏Banner']),
+    name: faker.helpers.arrayElement([
+      '小程序首页轮播',
+      '商家APP首页',
+      '商家详情顶部',
+      '广场首屏Banner',
+    ]),
     target: faker.helpers.arrayElement(['customer', 'factory', 'store'] as const),
     position: 'top',
     size: '750x300',
@@ -159,8 +164,19 @@ export function genMemberPlans(): MemberPlan[] {
       name: '旗舰推广包',
       price: 9800,
       period: 'yearly',
-      rights: ['推送位不限', '权重 ≤ 99', '首屏 Banner + 分类首屏 + 独立标签', '年曝光不限', '专属运营顾问'],
-      constraints: { pushSlots: 99999, weightLimit: 99, bannerLimit: 99999, impressionLimit: 99999999 },
+      rights: [
+        '推送位不限',
+        '权重 ≤ 99',
+        '首屏 Banner + 分类首屏 + 独立标签',
+        '年曝光不限',
+        '专属运营顾问',
+      ],
+      constraints: {
+        pushSlots: 99999,
+        weightLimit: 99,
+        bannerLimit: 99999,
+        impressionLimit: 99999999,
+      },
       status: 'active',
       sort: 12,
       createdAt: now,
@@ -262,13 +278,23 @@ export function genFeatureFlags(): FeatureFlag[] {
 
 /* ============ 仪表盘 ============ */
 export function genMerchantDashboard(): MerchantDashboard {
+  const paidAmount = faker.number.int({ min: 5000, max: 30000 })
+  const paidOrders = faker.number.int({ min: 10, max: 50 })
+  const paidCustomers = faker.number.int({ min: 1, max: paidOrders })
+  const trend7d = Array.from({ length: 7 }).map((_, index) => ({
+    date: faker.date
+      .recent({ days: 7 - index })
+      .toISOString()
+      .slice(0, 10),
+    paidAmount: faker.number.int({ min: 30, max: 10000 }),
+  }))
   return {
     today: {
-      orders: faker.number.int({ min: 10, max: 50 }),
+      orders: paidOrders,
       ordersDelta: faker.number.int({ min: -20, max: 30 }),
-      newCustomers: faker.number.int({ min: 0, max: 15 }),
+      newCustomers: paidCustomers,
       newCustomersDelta: faker.number.int({ min: -5, max: 10 }),
-      sales: faker.number.int({ min: 5000, max: 30000 }),
+      sales: paidAmount,
       salesDelta: faker.number.int({ min: -20, max: 30 }),
     },
     weekSales: Array.from({ length: 7 }).map(() => faker.number.int({ min: 30, max: 100 })),
@@ -282,6 +308,28 @@ export function genMerchantDashboard(): MerchantDashboard {
       productImage: placeholderImage(160, 160),
       price: faker.number.int({ min: 500, max: 5000 }),
     })),
+    workbench: {
+      updatedAt: new Date().toISOString(),
+      overview: {
+        paidAmount,
+        paidOrders,
+        paidCustomers,
+        versusYesterday: {
+          paidAmountPct: faker.number.float({ min: -40, max: 80, fractionDigits: 1 }),
+          paidOrdersPct: faker.number.float({ min: -40, max: 80, fractionDigits: 1 }),
+          paidCustomersPct: faker.number.float({ min: -40, max: 80, fractionDigits: 1 }),
+        },
+      },
+      trend7d,
+      actions: {
+        pendingShipment: 3,
+        pendingRefund: 1,
+        unreadMessages: 6,
+        rejectedProducts: 1,
+        auditingProducts: 2,
+        pendingStoreAuth: 1,
+      },
+    },
   }
 }
 
@@ -294,9 +342,16 @@ export function genMerchantStats(period: MerchantStats['period'] = 'week'): Merc
     return `${i + 1}月`
   }
   const topNames = [
-    '实木北欧餐桌 A款', '布艺真皮沙发 B款', '岩板茶几 A款',
-    '北欧吊灯 C款', '人体工学办公椅 B款', '日式榻榻米床 A款',
-    '智能升降桌 A款', '简约落地灯 B款', '羊毛地毯 C款', '实木餐边柜 A款',
+    '实木北欧餐桌 A款',
+    '布艺真皮沙发 B款',
+    '岩板茶几 A款',
+    '北欧吊灯 C款',
+    '人体工学办公椅 B款',
+    '日式榻榻米床 A款',
+    '智能升降桌 A款',
+    '简约落地灯 B款',
+    '羊毛地毯 C款',
+    '实木餐边柜 A款',
   ]
   const cats = ['家具', '灯具', '布艺', '厨卫', '摆件', '建材', '家电']
   const newRatio = faker.number.float({ min: 0.25, max: 0.55, fractionDigits: 2 })
@@ -318,7 +373,10 @@ export function genMerchantStats(period: MerchantStats['period'] = 'week'): Merc
       sales: faker.number.int({ min: 50 - i * 4, max: 200 - i * 12 }),
     })),
     customerAnalysis: { newRatio, oldRatio: Math.round((1 - newRatio) * 100) / 100 },
-    categoryBars: cats.map((c) => ({ category: c, sales: faker.number.int({ min: 20, max: 100 }) })),
+    categoryBars: cats.map((c) => ({
+      category: c,
+      sales: faker.number.int({ min: 20, max: 100 }),
+    })),
   }
 }
 

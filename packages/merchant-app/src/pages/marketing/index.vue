@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, dateStringToTimestamp, timestampToDateString } from '@jiujiu/shared'
 /**
  * MA-18 · 营销中心
  *
@@ -10,13 +11,6 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { marketingService } from '../../services/store'
 import type { MarketingCoupon, MarketingCouponDto, MarketingOverview } from '../../services/store'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Section from '../../components/section/section.vue'
-import Tabs from '../../components/tabs/tabs.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-import Icon from '../../components/icon/icon.vue'
-
 const overview = ref<MarketingOverview | null>(null)
 const couponTab = ref<'all' | 'active' | 'pending' | 'ended'>('active')
 const coupons = ref<MarketingCoupon[]>([])
@@ -165,11 +159,11 @@ function pickType(t: MarketingCoupon['type']) {
   form.type = t
 }
 
-function onDateFrom(e: any) {
-  form.validFrom = e.detail.value
+function onDateFrom(value: unknown) {
+  form.validFrom = timestampToDateString(value)
 }
-function onDateTo(e: any) {
-  form.validTo = e.detail.value
+function onDateTo(value: unknown) {
+  form.validTo = timestampToDateString(value)
 }
 
 function validateForm(): string | null {
@@ -192,7 +186,7 @@ function validateForm(): string | null {
 async function submitForm() {
   const err = validateForm()
   if (err) {
-    uni.showToast({ title: err, icon: 'none' })
+    appFeedback.showToast({ title: err, icon: 'none' })
     return
   }
   const dto: MarketingCouponDto = {
@@ -216,15 +210,15 @@ async function submitForm() {
   try {
     if (form.id) {
       await marketingService.updateCoupon(form.id, dto)
-      uni.showToast({ title: '已更新', icon: 'success' })
+      appFeedback.showToast({ title: '已更新', icon: 'success' })
     } else {
       await marketingService.createCoupon(dto)
-      uni.showToast({ title: '已创建', icon: 'success' })
+      appFeedback.showToast({ title: '已创建', icon: 'success' })
     }
     formVisible.value = false
     await Promise.all([loadOverview(), loadCoupons()])
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   } finally {
     formSaving.value = false
   }
@@ -240,7 +234,7 @@ function manageCoupon(c: MarketingCoupon) {
   const items: string[] = ['编辑']
   if (togglable) items.push(c.status === 'active' ? '暂停' : '启用')
   items.push('复制为新券', '删除')
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: items,
     success: (res) => {
       const label = items[res.tapIndex]
@@ -256,10 +250,10 @@ async function toggleCouponStatus(c: MarketingCoupon) {
   const nextActive = c.status !== 'active'
   try {
     await marketingService.toggleCoupon(c.id, nextActive)
-    uni.showToast({ title: nextActive ? '已启用' : '已暂停', icon: 'success' })
+    appFeedback.showToast({ title: nextActive ? '已启用' : '已暂停', icon: 'success' })
     await Promise.all([loadOverview(), loadCoupons()])
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
   }
 }
 
@@ -280,7 +274,7 @@ function duplicateCoupon(c: MarketingCoupon) {
 }
 
 function confirmRemove(c: MarketingCoupon) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除优惠券',
     content: `确认删除「${c.name}」？已领取的券不会自动撤销，但不再发放。`,
     confirmText: '删除',
@@ -289,10 +283,10 @@ function confirmRemove(c: MarketingCoupon) {
       if (!r.confirm) return
       try {
         await marketingService.removeCoupon(c.id)
-        uni.showToast({ title: '已删除', icon: 'success' })
+        appFeedback.showToast({ title: '已删除', icon: 'success' })
         await Promise.all([loadOverview(), loadCoupons()])
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '删除失败', icon: 'none' })
       }
     },
   })
@@ -305,8 +299,24 @@ onMounted(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="营销中心" right-text="数据" />
+    <wd-navbar title="营销中心" right-text="数据"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 工具入口 -->
     <view class="tools">
@@ -317,7 +327,7 @@ onMounted(() => {
         :style="{ background: `linear-gradient(135deg, ${t.accent}, ${t.accent}DD)` }"
       >
         <view class="tool-icon">
-          <Icon :name="t.icon" :size="48" color="#fff" />
+          <wd-icon :name="$jwIcon(t.icon)" size="24px" color="#fff"  />
         </view>
         <view class="tool-info">
           <text class="tool-label">{{ t.label }}</text>
@@ -347,9 +357,18 @@ onMounted(() => {
     </view>
 
     <!-- 优惠券列表 -->
-    <Section title="我的优惠券" action="创建" @action="createCoupon">
+    <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "我的优惠券" }}</text></view><wd-button type="text" size="small" @click="createCoupon">{{ "创建" }}</wd-button></view></template>
       <template #default>
-        <Tabs v-model="couponTab" :items="COUPON_TABS" variant="underline" @change="loadCoupons" />
+        <wd-tabs v-model="couponTab" @change="loadCoupons"  color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in COUPON_TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
         <view class="coupon-list">
           <view
             v-for="c in coupons"
@@ -370,10 +389,8 @@ onMounted(() => {
             <view class="cp-right">
               <view class="cp-head">
                 <text class="cp-name">{{ c.name }}</text>
-                <StatusTag
-                  :text="STATUS_LABEL[c.status].text"
-                  :tone="STATUS_LABEL[c.status].tone"
-                />
+                <wd-tag
+                 :type="$jwTagType(STATUS_LABEL[c.status].tone)" :plain="true" round>{{ STATUS_LABEL[c.status].text }}</wd-tag>
               </view>
               <text class="cp-type">{{ couponValueText(c) }}</text>
               <view class="cp-stats">
@@ -385,20 +402,18 @@ onMounted(() => {
               >
             </view>
           </view>
-          <EmptyState
+          <wd-status-tip
             v-if="!loading && coupons.length === 0"
-            title="暂无优惠券"
-            desc="点击右上角创建"
-          />
+           image="content" :tip="['暂无优惠券', '点击右上角创建'].filter(Boolean).join(' · ')" />
         </view>
       </template>
-    </Section>
+    </wd-card>
 
     <view class="safe-bottom" />
 
     <!-- 优惠券 创建 / 编辑 弹窗 -->
-    <view v-if="formVisible" class="cp-mask" @click="closeForm">
-      <view class="cp-sheet" @click.stop>
+    <wd-popup v-model="formVisible" position="bottom" custom-class="cp-sheet" safe-area-inset-bottom root-portal @close="closeForm">
+      <view class="cp-content">
         <view class="cp-head">
           <text class="cp-title">{{ form.id ? '编辑优惠券' : '创建优惠券' }}</text>
           <text class="cp-close" @click="closeForm">✕</text>
@@ -408,50 +423,47 @@ onMounted(() => {
           <!-- 类型 -->
           <view class="cp-block">
             <text class="cp-label">类型</text>
-            <view class="cp-type-grid">
-              <view
-                v-for="t in COUPON_TYPES"
-                :key="t.value"
-                :class="['cp-type', { active: form.type === t.value }]"
-                @click="pickType(t.value)"
-              >
-                <text class="t-label">{{ t.label }}</text>
-                <text class="t-desc">{{ t.desc }}</text>
-              </view>
-            </view>
+            <wd-segmented
+              :value="form.type"
+              :options="COUPON_TYPES.map((item) => ({ value: item.value, payload: item }))"
+              size="large"
+              @change="pickType(String($event.value) as MarketingCoupon['type'])"
+            >
+              <template #label="{ option }">{{ option.payload?.label }}</template>
+            </wd-segmented>
           </view>
 
           <!-- 名称 -->
           <view class="cp-row">
             <text class="row-label required">名称</text>
-            <input
+            <wd-input no-border
               v-model="form.name"
               class="row-input"
               placeholder="如 春节满 200 减 30"
               maxlength="30"
-            />
+             />
           </view>
 
           <!-- 满减 -->
           <template v-if="form.type === 'fullReduce'">
             <view class="cp-row">
               <text class="row-label required">满</text>
-              <input
+              <wd-input no-border
                 v-model.number="form.threshold"
                 type="digit"
                 class="row-input"
                 placeholder="使用门槛"
-              />
+               />
               <text class="row-suffix">元可用</text>
             </view>
             <view class="cp-row">
               <text class="row-label required">减</text>
-              <input
+              <wd-input no-border
                 v-model.number="form.amount"
                 type="digit"
                 class="row-input"
                 placeholder="优惠金额"
-              />
+               />
               <text class="row-suffix">元</text>
             </view>
           </template>
@@ -460,12 +472,12 @@ onMounted(() => {
           <template v-else-if="form.type === 'discount'">
             <view class="cp-row">
               <text class="row-label required">折扣</text>
-              <input
+              <wd-input no-border
                 v-model.number="form.discountPercent"
                 type="digit"
                 class="row-input"
                 placeholder="1-99"
-              />
+               />
               <text class="row-suffix">% 优惠（90 = 9 折）</text>
             </view>
           </template>
@@ -474,12 +486,12 @@ onMounted(() => {
           <template v-else>
             <view class="cp-row">
               <text class="row-label required">面值</text>
-              <input
+              <wd-input no-border
                 v-model.number="form.amount"
                 type="digit"
                 class="row-input"
                 placeholder="券面金额"
-              />
+               />
               <text class="row-suffix">元</text>
             </view>
           </template>
@@ -487,56 +499,66 @@ onMounted(() => {
           <!-- 发行量 -->
           <view class="cp-row">
             <text class="row-label required">发行量</text>
-            <input
+            <wd-input no-border
               v-model.number="form.stock"
               type="number"
               class="row-input"
               placeholder="总发行数"
-            />
+             />
             <text class="row-suffix">张</text>
           </view>
 
           <!-- 每人限领 -->
           <view class="cp-row">
             <text class="row-label">每人限领</text>
-            <input
+            <wd-input no-border
               v-model.number="form.perUserLimit"
               type="number"
               class="row-input"
               placeholder="默认 1 张"
-            />
+             />
             <text class="row-suffix">张</text>
           </view>
 
           <!-- 有效期 -->
           <view class="cp-row">
             <text class="row-label required">开始日期</text>
-            <picker
-              mode="date"
-              :value="form.validFrom"
-              @change="onDateFrom"
-              class="row-input picker"
+            <wd-datetime-picker
+              type="date"
+              title="选择开始日期"
+              :model-value="dateStringToTimestamp(form.validFrom)"
+              custom-class="row-input picker"
+              @confirm="onDateFrom($event.value)"
             >
               <view class="picker-text">{{ form.validFrom || '请选择' }}</view>
-            </picker>
+            </wd-datetime-picker>
           </view>
           <view class="cp-row">
             <text class="row-label required">结束日期</text>
-            <picker mode="date" :value="form.validTo" @change="onDateTo" class="row-input picker">
+            <wd-datetime-picker
+              type="date"
+              title="选择结束日期"
+              :model-value="dateStringToTimestamp(form.validTo)"
+              :min-date="dateStringToTimestamp(form.validFrom)"
+              custom-class="row-input picker"
+              @confirm="onDateTo($event.value)"
+            >
               <view class="picker-text">{{ form.validTo || '请选择' }}</view>
-            </picker>
+            </wd-datetime-picker>
           </view>
         </scroll-view>
 
         <view class="cp-footer">
-          <view class="cp-btn ghost" @click="closeForm">取消</view>
-          <view :class="['cp-btn primary', formSaving ? 'disabled' : '']" @click="submitForm">
+          <wd-button block plain size="large" :disabled="formSaving" @click="closeForm">取消</wd-button>
+          <wd-button block type="primary" size="large" :loading="formSaving" @click="submitForm">
             {{ formSaving ? '保存中…' : form.id ? '保存修改' : '创建' }}
-          </view>
+          </wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

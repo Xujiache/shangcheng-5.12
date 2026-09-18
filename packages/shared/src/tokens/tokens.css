@@ -97,6 +97,8 @@ page,
   --radius-base: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
   --radius-pill: 999px;
 
   /* ============ 阴影 ============ */
@@ -106,6 +108,23 @@ page,
   --shadow-lg: 0 12px 24px 0 rgba(0, 0, 0, 0.12);
   --shadow-brand: 0 6px 16px 0 rgba(255, 77, 45, 0.25);
 
+  /* ============ 液态玻璃与动效 ============ */
+  --surface-solid: #ffffff;
+  --surface-elevated: rgba(255, 255, 255, 0.88);
+  --glass-fill: rgba(255, 255, 255, 0.58);
+  --glass-fill-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.52);
+  --glass-highlight: rgba(255, 255, 255, 0.78);
+  --glass-shadow: 0 16px 48px rgba(30, 38, 54, 0.1);
+  --glass-blur: 22px;
+  --environment-gradient:
+    radial-gradient(circle at 8% 2%, rgba(255, 134, 91, 0.16), transparent 34%),
+    radial-gradient(circle at 94% 14%, rgba(89, 126, 255, 0.12), transparent 32%),
+    linear-gradient(180deg, #f8f9fc 0%, #f2f5f9 100%);
+  --motion-fast: 120ms;
+  --motion-normal: 200ms;
+  --motion-slow: 280ms;
+
   /* ============ z-index ============ */
   --z-dropdown: 100;
   --z-sticky: 200;
@@ -114,4 +133,51 @@ page,
   --z-popover: 1100;
   --z-tooltip: 1200;
   --z-toast: 1300;
+}
+
+.wot-theme-dark,
+page.theme-dark,
+:root.theme-dark {
+  color-scheme: dark;
+  --text-primary: #f4f6fb;
+  --text-secondary: #d7dce5;
+  --text-tertiary: #a8b0bd;
+  --text-disabled: #697282;
+  --bg-page: #0d1016;
+  --bg-card: #171b24;
+  --bg-hover: #202631;
+  --bg-active: #2a313d;
+  --bg-mask: rgba(0, 0, 0, 0.72);
+  --border-default: rgba(225, 231, 240, 0.16);
+  --border-light: rgba(225, 231, 240, 0.1);
+  --border-dark: rgba(225, 231, 240, 0.24);
+  --surface-solid: #171b24;
+  --surface-elevated: rgba(25, 30, 40, 0.9);
+  --glass-fill: rgba(26, 31, 42, 0.62);
+  --glass-fill-strong: rgba(29, 35, 46, 0.78);
+  --glass-border: rgba(224, 231, 241, 0.18);
+  --glass-highlight: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 18px 54px rgba(0, 0, 0, 0.34);
+  --environment-gradient:
+    radial-gradient(circle at 8% 2%, rgba(255, 102, 61, 0.16), transparent 34%),
+    radial-gradient(circle at 94% 14%, rgba(86, 110, 255, 0.14), transparent 32%),
+    linear-gradient(180deg, #0f131a 0%, #0b0e13 100%);
+}
+
+.jw-theme-root {
+  min-height: 100vh;
+  color: var(--text-primary);
+  background: var(--environment-gradient);
+  transition:
+    color var(--motion-normal) ease,
+    background-color var(--motion-normal) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  page,
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
+    --motion-slow: 0ms;
+  }
 }

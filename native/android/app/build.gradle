@@ -1,0 +1,161 @@
+plugins {
+    id 'com.android.application'
+}
+
+def requiredProperty = { String name ->
+    def value = project.findProperty(name)?.toString()?.trim()
+    if (!value) {
+        throw new GradleException("缺少 Gradle 参数 -P${name}")
+    }
+    value
+}
+
+def loadSigning = { String target ->
+    def signingDir = System.getenv('JIUJIU_ANDROID_SIGNING_DIR') ?: '/root/secure/jiujiu-android-signing'
+    def propsFile = file("${signingDir}/${target}.properties")
+    if (!propsFile.isFile()) {
+        throw new GradleException("缺少正式签名配置：${propsFile}")
+    }
+    def props = new Properties()
+    propsFile.withInputStream { props.load(it) }
+    for (key in ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']) {
+        if (!props.getProperty(key)?.trim()) {
+            throw new GradleException("${propsFile} 缺少 ${key}")
+        }
+    }
+    props
+}
+
+def merchantSigning = loadSigning('merchant')
+def platformSigning = loadSigning('platform')
+def releaseVersionName = requiredProperty('releaseVersionName')
+def releaseVersionCode = requiredProperty('releaseVersionCode').toInteger()
+def supportedAbis = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'] as Set
+def androidAbis = (project.findProperty('androidAbis') ?: 'armeabi-v7a,arm64-v8a')
+    .toString()
+    .split(',')
+    .collect { it.trim() }
+    .findAll { it }
+if (androidAbis.isEmpty() || androidAbis.any { !supportedAbis.contains(it) }) {
+    throw new GradleException("androidAbis 仅支持：${supportedAbis.join(', ')}")
+}
+
+android {
+    namespace 'top.ewsn.jingwei.androidshell'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 35
+        versionName releaseVersionName
+        versionCode releaseVersionCode
+        multiDexEnabled true
+        ndk {
+            // 正式包默认只包含真机 ABI；CI 可用 -PandroidAbis=x86_64 生成模拟器验收包。
+            abiFilters.addAll(androidAbis)
+        }
+    }
+
+    signingConfigs {
+        merchantRelease {
+            storeFile file(merchantSigning.getProperty('storeFile'))
+            storePassword merchantSigning.getProperty('storePassword')
+            keyAlias merchantSigning.getProperty('keyAlias')
+            keyPassword merchantSigning.getProperty('keyPassword')
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
+        }
+        platformRelease {
+            storeFile file(platformSigning.getProperty('storeFile'))
+            storePassword platformSigning.getProperty('storePassword')
+            keyAlias platformSigning.getProperty('keyAlias')
+            keyPassword platformSigning.getProperty('keyPassword')
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
+        }
+    }
+
+    flavorDimensions += 'client'
+    productFlavors {
+        merchant {
+            dimension 'client'
+            applicationId 'top.ewsn.jingwei.merchant'
+            resValue 'string', 'app_name', '经纬科技-商家端'
+            resValue 'color', 'launcher_background', '#FF6B35'
+            manifestPlaceholders = [
+                dcloudAppKey: System.getenv('DCLOUD_APPKEY_MERCHANT') ?: '',
+                appScheme: 'jingwei-merchant'
+            ]
+            signingConfig signingConfigs.merchantRelease
+        }
+        platform {
+            dimension 'client'
+            applicationId 'top.ewsn.jingwei.platform'
+            resValue 'string', 'app_name', '经纬科技-平台端'
+            resValue 'color', 'launcher_background', '#2563EB'
+            manifestPlaceholders = [
+                dcloudAppKey: System.getenv('DCLOUD_APPKEY_PLATFORM') ?: '',
+                appScheme: 'jingwei-platform'
+            ]
+            signingConfig signingConfigs.platformRelease
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        merchant {
+            assets.srcDirs = ['build/generated-assets/merchant']
+        }
+        platform {
+            assets.srcDirs = ['build/generated-assets/platform']
+        }
+        main {
+            jniLibs.srcDirs = ['build/vendor-libs/jniLibs']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
+        }
+    }
+
+    aaptOptions {
+        additionalParameters '--auto-add-overlay'
+        ignoreAssetsPattern '!.svn:!.git:.*:!CVS:!thumbs.db:!picasa.ini:!*.scc:*~'
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'build/vendor-libs', include: ['*.aar', '*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+    implementation 'androidx.core:core:1.1.0'
+    implementation 'androidx.fragment:fragment:1.1.0'
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.webkit:webkit:1.5.0'
+    implementation 'com.facebook.fresco:fresco:2.5.0'
+    implementation 'com.facebook.fresco:animated-gif:2.5.0'
+    implementation 'com.github.bumptech.glide:glide:4.9.0'
+    implementation 'com.alibaba:fastjson:1.2.83'
+    implementation 'net.lingala.zip4j:zip4j:2.11.5'
+}

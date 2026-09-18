@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 法律协议管理
  *
@@ -13,9 +14,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { legalService } from '../../services'
 import type { LegalAgreements } from '../../services'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-
 type SectionKey = 'user' | 'privacy' | 'collect'
 
 const TABS: { key: SectionKey; label: string; desc: string; tint: string }[] = [
@@ -36,7 +34,7 @@ async function load() {
   try {
     data.value = await legalService.get()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -44,7 +42,7 @@ async function load() {
 
 function onTitleEdit() {
   if (!current.value) return
-  uni.showModal({
+  appFeedback.showModal({
     title: '编辑标题',
     editable: true,
     content: current.value.title,
@@ -58,7 +56,7 @@ function onTitleEdit() {
 
 function onUpdatedAtEdit() {
   if (!current.value) return
-  uni.showModal({
+  appFeedback.showModal({
     title: '生效日期（YYYY-MM-DD）',
     editable: true,
     content: current.value.updatedAt,
@@ -73,18 +71,18 @@ function onUpdatedAtEdit() {
 async function save() {
   if (!data.value) return
   if (!data.value.user?.body || !data.value.privacy?.body || !data.value.collect?.body) {
-    uni.showToast({ title: '三段正文均不能为空', icon: 'none' })
+    appFeedback.showToast({ title: '三段正文均不能为空', icon: 'none' })
     return
   }
   saving.value = true
-  uni.showLoading({ title: '保存中…' })
+  appFeedback.showLoading({ title: '保存中…' })
   try {
     await legalService.save(data.value)
-    uni.hideLoading()
-    uni.showToast({ title: '已保存 · 端上即时生效', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: '已保存 · 端上即时生效', icon: 'success' })
   } catch (e: any) {
-    uni.hideLoading()
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   } finally {
     saving.value = false
   }
@@ -94,8 +92,24 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="法律协议管理" />
+    <wd-navbar title="法律协议管理"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view class="tabs">
       <view
@@ -114,22 +128,22 @@ onMounted(load)
       <view class="meta-card">
         <view class="meta-row" @click="onTitleEdit">
           <view class="m-key">
-            <Icon name="tag" :size="26" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('tag')" size="13px" color="var(--brand-primary)"  />
             <text>标题</text>
           </view>
           <view class="m-val">
             <text class="m-val-text">{{ current.title }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
         <view class="meta-row" @click="onUpdatedAtEdit">
           <view class="m-key">
-            <Icon name="clock" :size="26" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('clock')" size="13px" color="var(--brand-primary)"  />
             <text>生效日期</text>
           </view>
           <view class="m-val">
             <text class="m-val-text mono">{{ current.updatedAt }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -140,7 +154,7 @@ onMounted(load)
           <text class="body-title">正文（Markdown）</text>
           <text class="body-len">{{ current.body.length }} 字</text>
         </view>
-        <textarea
+        <wd-textarea no-border
           v-model="current.body"
           class="body-input"
           placeholder="支持 Markdown：# 标题、**加粗**、- 列表、表格等"
@@ -148,11 +162,11 @@ onMounted(load)
           :show-confirm-bar="false"
           :cursor-spacing="20"
           maxlength="-1"
-        />
+         />
       </view>
 
       <view class="tip">
-        <Icon name="info" :size="22" color="var(--text-tertiary)" />
+        <wd-icon :name="$jwIcon('info')" size="11px" color="var(--text-tertiary)"  />
         <text>三段协议合并保存，公开接口 /u/agreements 即刻返回最新内容</text>
       </view>
 
@@ -170,6 +184,8 @@ onMounted(load)
       </view>
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

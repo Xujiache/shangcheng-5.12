@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  appFeedback,
+  dateStringToTimestamp,
+  delegateWotUploadChoose,
+  timestampToDateString,
+} from '@jiujiu/shared'
 /**
  * PA-05 · 广告管理（移动端全量实现）
  *
@@ -30,9 +36,6 @@ import type {
 } from '../../services'
 import { pickAndUploadImage } from '../../utils/upload'
 import { formatWan } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
 import FormSheet from '../../components/form-sheet/form-sheet.vue'
 
 type TabKey = 'slots' | 'create' | 'stats'
@@ -80,7 +83,7 @@ async function load() {
     slots.value = slotList
     creatives.value = (creativeResp as any)?.list ?? []
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -159,10 +162,10 @@ async function onPickSlotPreview() {
   try {
     const url = await pickAndUploadImage({ bizType: 'misc' })
     slotForm.preview = url
-    uni.showToast({ title: '已上传', icon: 'success' })
+    appFeedback.showToast({ title: '已上传', icon: 'success' })
   } catch (e: any) {
     if (!/cancel/i.test(e?.message || '')) {
-      uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+      appFeedback.showToast({ title: e?.message || '上传失败', icon: 'none' })
     }
   }
 }
@@ -173,7 +176,7 @@ async function submitSlotSheet() {
   try {
     if (slotSheetMode.value === 'create') {
       if (!slotForm.name.trim()) {
-        uni.showToast({ title: '请填写广告位名称', icon: 'none' })
+        appFeedback.showToast({ title: '请填写广告位名称', icon: 'none' })
         return
       }
       const dto: CreateAdSlotDto = {
@@ -186,7 +189,7 @@ async function submitSlotSheet() {
         status: 'active',
       }
       await adService.createSlot(dto)
-      uni.showToast({ title: '已创建', icon: 'success' })
+      appFeedback.showToast({ title: '已创建', icon: 'success' })
     } else if (slotSheetMode.value === 'edit-asset' && editingSlotId.value) {
       const dto: UpdateAdSlotDto = {
         name: slotForm.name.trim(),
@@ -195,14 +198,14 @@ async function submitSlotSheet() {
         preview: slotForm.preview || undefined,
       }
       await adService.updateSlot(editingSlotId.value, dto)
-      uni.showToast({ title: '已保存', icon: 'success' })
+      appFeedback.showToast({ title: '已保存', icon: 'success' })
     } else if (slotSheetMode.value === 'edit-time' && editingSlotId.value) {
       if (!slotForm.startAt || !slotForm.endAt) {
-        uni.showToast({ title: '请选择起止日期', icon: 'none' })
+        appFeedback.showToast({ title: '请选择起止日期', icon: 'none' })
         return
       }
       if (slotForm.startAt > slotForm.endAt) {
-        uni.showToast({ title: '结束日期不能早于开始', icon: 'none' })
+        appFeedback.showToast({ title: '结束日期不能早于开始', icon: 'none' })
         return
       }
       const dto: UpdateAdSlotDto = {
@@ -210,12 +213,12 @@ async function submitSlotSheet() {
         endAt: slotForm.endAt,
       }
       await adService.updateSlot(editingSlotId.value, dto)
-      uni.showToast({ title: '时段已更新', icon: 'success' })
+      appFeedback.showToast({ title: '时段已更新', icon: 'success' })
     }
     slotSheetOpen.value = false
     await load()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '提交失败', icon: 'none' })
   } finally {
     slotSubmitting.value = false
   }
@@ -228,14 +231,14 @@ async function quickToggleAll() {
   const activeCount = slots.value.filter((s) => s.status === 'active').length
   const pausedCount = slots.value.filter((s) => s.status === 'paused').length
   if (activeCount + pausedCount === 0) {
-    uni.showToast({ title: '暂无可操作的广告位', icon: 'none' })
+    appFeedback.showToast({ title: '暂无可操作的广告位', icon: 'none' })
     return
   }
   const willPause = activeCount > 0
   const title = willPause
     ? `批量暂停 ${activeCount} 个进行中广告位？`
     : `批量恢复 ${pausedCount} 个已暂停广告位？`
-  uni.showModal({
+  appFeedback.showModal({
     title: '批量操作',
     content: title,
     success: async (r) => {
@@ -246,19 +249,19 @@ async function quickToggleAll() {
       try {
         await Promise.all(todo.map((s) => adService.updateSlot(s.id, { status: next })))
         todo.forEach((s) => (s.status = next))
-        uni.showToast({
+        appFeedback.showToast({
           title: willPause ? `已暂停 ${todo.length} 个` : `已恢复 ${todo.length} 个`,
           icon: 'success',
         })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '批量操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '批量操作失败', icon: 'none' })
       }
     },
   })
 }
 
 function viewStats(s: AdSlot) {
-  uni.showModal({
+  appFeedback.showModal({
     title: s.name + ' · 数据',
     content: `曝光 ${formatWan(s.impressions)}\n点击 ${formatWan(s.impressions * (s.ctr / 100))}\n点击率 ${s.ctr}%\n创意数 ${s.creativeCount}`,
     showCancel: false,
@@ -279,7 +282,7 @@ function openSlotActions(s: AdSlot) {
     s.status === 'paused' ? '恢复投放' : '暂停投放',
     '删除广告位',
   ]
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: items,
     success: async (r) => {
       try {
@@ -291,9 +294,9 @@ function openSlotActions(s: AdSlot) {
           const next = s.status === 'paused' ? 'active' : 'paused'
           await adService.updateSlot(s.id, { status: next })
           s.status = next
-          uni.showToast({ title: next === 'active' ? '已恢复' : '已暂停', icon: 'success' })
+          appFeedback.showToast({ title: next === 'active' ? '已恢复' : '已暂停', icon: 'success' })
         } else if (r.tapIndex === 3) {
-          uni.showModal({
+          appFeedback.showModal({
             title: '删除广告位',
             content: `确认删除「${s.name}」？该位下的创意会同时清除。`,
             confirmColor: '#FF3B30',
@@ -301,13 +304,13 @@ function openSlotActions(s: AdSlot) {
               if (m.confirm) {
                 await adService.deleteSlot(s.id)
                 slots.value = slots.value.filter((x) => x.id !== s.id)
-                uni.showToast({ title: '已删除', icon: 'success' })
+                appFeedback.showToast({ title: '已删除', icon: 'success' })
               }
             },
           })
         }
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -343,7 +346,7 @@ function resetCreativeForm() {
 
 function openCreateCreative() {
   if (slots.value.length === 0) {
-    uni.showToast({ title: '请先创建广告位', icon: 'none' })
+    appFeedback.showToast({ title: '请先创建广告位', icon: 'none' })
     return
   }
   resetCreativeForm()
@@ -383,10 +386,10 @@ async function onPickCreativeImage() {
   try {
     const url = await pickAndUploadImage({ bizType: 'misc' })
     creativeForm.image = url
-    uni.showToast({ title: '已上传', icon: 'success' })
+    appFeedback.showToast({ title: '已上传', icon: 'success' })
   } catch (e: any) {
     if (!/cancel/i.test(e?.message || '')) {
-      uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+      appFeedback.showToast({ title: e?.message || '上传失败', icon: 'none' })
     }
   }
 }
@@ -396,15 +399,15 @@ async function submitCreativeSheet() {
   creativeSubmitting.value = true
   try {
     if (!creativeForm.title.trim()) {
-      uni.showToast({ title: '请填写创意标题', icon: 'none' })
+      appFeedback.showToast({ title: '请填写创意标题', icon: 'none' })
       return
     }
     if (!creativeForm.slotId) {
-      uni.showToast({ title: '请选择广告位', icon: 'none' })
+      appFeedback.showToast({ title: '请选择广告位', icon: 'none' })
       return
     }
     if (creativeForm.startAt > creativeForm.endAt) {
-      uni.showToast({ title: '结束日期不能早于开始', icon: 'none' })
+      appFeedback.showToast({ title: '结束日期不能早于开始', icon: 'none' })
       return
     }
     if (creativeSheetMode.value === 'create') {
@@ -419,7 +422,7 @@ async function submitCreativeSheet() {
         status: 'active',
       }
       await adService.createCreative(dto)
-      uni.showToast({ title: '已创建', icon: 'success' })
+      appFeedback.showToast({ title: '已创建', icon: 'success' })
     } else if (editingCreativeId.value) {
       const dto: UpdateAdCreativeDto = {
         title: creativeForm.title.trim(),
@@ -430,19 +433,19 @@ async function submitCreativeSheet() {
         budget: Number(creativeForm.budget) || 0,
       }
       await adService.updateCreative(editingCreativeId.value, dto)
-      uni.showToast({ title: '已保存', icon: 'success' })
+      appFeedback.showToast({ title: '已保存', icon: 'success' })
     }
     creativeSheetOpen.value = false
     await load()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '提交失败', icon: 'none' })
   } finally {
     creativeSubmitting.value = false
   }
 }
 
 function deleteCreative(c: AdCreativeRow) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除创意',
     content: `确认删除「${c.title || c.id}」？删除后历史曝光数据保留,该创意不再展示。`,
     confirmColor: '#FF3B30',
@@ -451,9 +454,9 @@ function deleteCreative(c: AdCreativeRow) {
       try {
         await adService.deleteCreative(c.id)
         creatives.value = creatives.value.filter((x: AdCreativeRow) => x.id !== c.id)
-        uni.showToast({ title: '已删除', icon: 'success' })
+        appFeedback.showToast({ title: '已删除', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '删除失败', icon: 'none' })
       }
     },
   })
@@ -465,7 +468,7 @@ function deleteCreative(c: AdCreativeRow) {
  * 未实现时降级到 updateCreative({status:'active'}) 并 console.warn 提示 Agent E。
  */
 function approveCreative(c: AdCreativeRow) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '审核通过',
     content: `通过创意「${c.title || c.id}」？通过后立即上线展示。`,
     success: async (r) => {
@@ -473,9 +476,9 @@ function approveCreative(c: AdCreativeRow) {
       try {
         await adService.approveCreative(c.id)
         c.status = 'active'
-        uni.showToast({ title: '已通过', icon: 'success' })
+        appFeedback.showToast({ title: '已通过', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '审核失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '审核失败', icon: 'none' })
       }
     },
   })
@@ -486,7 +489,7 @@ function approveCreative(c: AdCreativeRow) {
  * 需录入原因(将同步到商户/创意所属人)
  */
 function rejectCreative(c: AdCreativeRow) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '驳回创意',
     content: '请填写驳回原因(将同步至创意提交方)',
     editable: true,
@@ -496,15 +499,15 @@ function rejectCreative(c: AdCreativeRow) {
       if (!m.confirm) return
       const reason = (m.content || '').trim()
       if (!reason) {
-        uni.showToast({ title: '请填写原因', icon: 'none' })
+        appFeedback.showToast({ title: '请填写原因', icon: 'none' })
         return
       }
       try {
         await adService.rejectCreative(c.id, reason)
         c.status = 'rejected'
-        uni.showToast({ title: '已驳回', icon: 'success' })
+        appFeedback.showToast({ title: '已驳回', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -513,7 +516,7 @@ function rejectCreative(c: AdCreativeRow) {
 function openCreativeActions(c: AdCreativeRow) {
   // 待审创意优先展示审核入口,其它状态保持编辑 / 删除
   if (c.status === 'pending') {
-    uni.showActionSheet({
+    appFeedback.showActionSheet({
       itemList: ['审核通过', '驳回', '编辑创意 (标题 / 图 / 时段)', '删除创意'],
       success: (r) => {
         if (r.tapIndex === 0) approveCreative(c)
@@ -524,7 +527,7 @@ function openCreativeActions(c: AdCreativeRow) {
     })
     return
   }
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['编辑创意 (标题 / 图 / 时段)', '删除创意'],
     success: (r) => {
       if (r.tapIndex === 0) openEditCreative(c)
@@ -559,8 +562,26 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="广告管理" right-icon="plus" @right="onNavRightTap" />
+    <wd-navbar title="广告管理" @click-right="onNavRightTap"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+    </wd-navbar>
 
     <view class="tabs">
       <view
@@ -602,11 +623,11 @@ onMounted(load)
       <view v-if="tab === 'slots'" class="list">
         <view class="quick-toolbar">
           <view class="qt-btn primary" @click="openCreateSlot">
-            <Icon name="plus" :size="24" color="#fff" />
+            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
             <text>新建广告位</text>
           </view>
           <view class="qt-btn ghost" @click="quickToggleAll">
-            <Icon name="refresh" :size="22" color="#FF4D2D" />
+            <wd-icon :name="$jwIcon('refresh')" size="11px" color="#FF4D2D"  />
             <text>批量暂停/恢复</text>
           </view>
         </view>
@@ -625,18 +646,18 @@ onMounted(load)
             </view>
           </view>
           <view class="meta">
-            <Icon name="navigation" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('navigation')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ s.scene || '未设场景' }} · 目标 {{ TARGET_LABEL[s.target] || s.target }}</text>
           </view>
           <view v-if="s.startAt && s.endAt" class="meta">
-            <Icon name="calendar" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('calendar')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ s.startAt }} ~ {{ s.endAt }}</text>
           </view>
 
           <view class="preview">
             <image v-if="s.preview" :src="s.preview" mode="aspectFill" class="preview-img" />
             <view v-else class="preview-bg">
-              <Icon name="megaphone" :size="56" color="rgba(255,77,45,0.3)" />
+              <wd-icon :name="$jwIcon('megaphone')" size="28px" color="rgba(255,77,45,0.3)"  />
               <text class="preview-text">未上传预览图</text>
             </view>
           </view>
@@ -662,19 +683,16 @@ onMounted(load)
           </view>
         </view>
 
-        <EmptyState
+        <wd-status-tip
           v-if="!loading && slots.length === 0"
-          title="暂无广告位"
-          desc="点击「新建广告位」开始投放"
-          icon="megaphone"
-        />
+         image="content" :tip="['暂无广告位', '点击「新建广告位」开始投放'].filter(Boolean).join(' · ')" />
       </view>
 
       <!-- Tab: 创意 -->
       <view v-else-if="tab === 'create'" class="list">
         <view class="quick-toolbar">
           <view class="qt-btn primary" @click="openCreateCreative">
-            <Icon name="plus" :size="24" color="#fff" />
+            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
             <text>新建创意</text>
           </view>
         </view>
@@ -682,7 +700,7 @@ onMounted(load)
         <view v-for="c in creatives" :key="c.id" class="creative-card">
           <image v-if="c.image" :src="c.image" mode="aspectFill" class="creative-img" />
           <view v-else class="creative-img placeholder">
-            <Icon name="image-plus" :size="40" color="#C9CDD4" />
+            <wd-icon :name="$jwIcon('image-plus')" size="20px" color="#C9CDD4"  />
           </view>
           <view class="creative-info">
             <text class="c-title">{{ c.title }}</text>
@@ -697,15 +715,12 @@ onMounted(load)
             </view>
           </view>
           <view class="more-btn" @click.stop="openCreativeActions(c)">
-            <Icon name="more-v" :size="32" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('more-v')" size="16px" color="var(--text-tertiary)"  />
           </view>
         </view>
-        <EmptyState
+        <wd-status-tip
           v-if="!loading && creatives.length === 0"
-          title="暂无创意"
-          desc="点击「新建创意」上传素材"
-          icon="image-plus"
-        />
+         image="content" :tip="['暂无创意', '点击「新建创意」上传素材'].filter(Boolean).join(' · ')" />
       </view>
 
       <!-- Tab: 数据 -->
@@ -734,12 +749,9 @@ onMounted(load)
             <text class="rank-name">{{ s.name }}</text>
             <text class="rank-val">{{ formatWan(s.impressions) }}</text>
           </view>
-          <EmptyState
+          <wd-status-tip
             v-if="!loading && slots.length === 0"
-            title="暂无数据"
-            desc="先创建几个广告位"
-            icon="megaphone"
-          />
+           image="content" :tip="['暂无数据', '先创建几个广告位'].filter(Boolean).join(' · ')" />
         </view>
       </view>
 
@@ -759,12 +771,12 @@ onMounted(load)
       <!-- 通用字段 -->
       <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
         <text class="form-label">广告位名称<text class="required">*</text></text>
-        <input
+        <wd-input no-border
           v-model="slotForm.name"
           class="form-input"
           placeholder="如:首页 Banner / 商品详情顶部"
           maxlength="40"
-        />
+         />
       </view>
       <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
         <text class="form-label">投放对象</text>
@@ -781,16 +793,22 @@ onMounted(load)
       </view>
       <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
         <text class="form-label">场景描述</text>
-        <input
+        <wd-input no-border
           v-model="slotForm.scene"
           class="form-input"
           placeholder="可选,如「首页轮播大图」"
           maxlength="40"
-        />
+         />
       </view>
       <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
         <text class="form-label">预览图(目标 URL 落地图)</text>
-        <view class="upload-box" @click="onPickSlotPreview">
+        <wd-upload
+          :file-list="[]"
+          :limit="1"
+          :disabled="slotSubmitting"
+          :before-choose="(option: any) => delegateWotUploadChoose(option, onPickSlotPreview)"
+        >
+        <view class="upload-box">
           <image
             v-if="slotForm.preview"
             :src="slotForm.preview"
@@ -798,10 +816,11 @@ onMounted(load)
             mode="aspectFill"
           />
           <view v-else class="upload-placeholder">
-            <Icon name="image-plus" :size="48" color="#C9CDD4" />
+            <wd-icon :name="$jwIcon('image-plus')" size="24px" color="#C9CDD4"  />
             <text class="upload-hint">点击选图上传</text>
           </view>
         </view>
+        </wd-upload>
         <view v-if="slotForm.preview" class="upload-actions">
           <text class="link-action" @click="slotForm.preview = ''">移除</text>
           <text class="link-action" @click="onPickSlotPreview">重新上传</text>
@@ -815,29 +834,32 @@ onMounted(load)
       </view>
       <view v-if="slotSheetMode === 'edit-time'" class="form-row">
         <text class="form-label">开始日期<text class="required">*</text></text>
-        <picker
-          mode="date"
-          :value="slotForm.startAt"
-          @change="(e: any) => (slotForm.startAt = e.detail.value)"
+        <wd-datetime-picker
+          type="date"
+          title="选择开始日期"
+          :model-value="dateStringToTimestamp(slotForm.startAt)"
+          @confirm="slotForm.startAt = timestampToDateString($event.value)"
         >
           <view class="form-input picker">
             <text>{{ slotForm.startAt || '请选择' }}</text>
-            <Icon name="calendar" :size="28" color="#86909C" />
+            <wd-icon :name="$jwIcon('calendar')" size="14px" color="#86909C"  />
           </view>
-        </picker>
+        </wd-datetime-picker>
       </view>
       <view v-if="slotSheetMode === 'edit-time'" class="form-row">
         <text class="form-label">结束日期<text class="required">*</text></text>
-        <picker
-          mode="date"
-          :value="slotForm.endAt"
-          @change="(e: any) => (slotForm.endAt = e.detail.value)"
+        <wd-datetime-picker
+          type="date"
+          title="选择结束日期"
+          :model-value="dateStringToTimestamp(slotForm.endAt)"
+          :min-date="dateStringToTimestamp(slotForm.startAt)"
+          @confirm="slotForm.endAt = timestampToDateString($event.value)"
         >
           <view class="form-input picker">
             <text>{{ slotForm.endAt || '请选择' }}</text>
-            <Icon name="calendar" :size="28" color="#86909C" />
+            <wd-icon :name="$jwIcon('calendar')" size="14px" color="#86909C"  />
           </view>
-        </picker>
+        </wd-datetime-picker>
       </view>
     </FormSheet>
 
@@ -853,32 +875,37 @@ onMounted(load)
     >
       <view class="form-row">
         <text class="form-label">创意标题<text class="required">*</text></text>
-        <input
+        <wd-input no-border
           v-model="creativeForm.title"
           class="form-input"
           placeholder="如:双11 全场五折"
           maxlength="40"
-        />
+         />
       </view>
       <view class="form-row">
         <text class="form-label">归属广告位<text class="required">*</text></text>
-        <picker
-          mode="selector"
-          :range="slots"
-          range-key="name"
-          :value="slots.findIndex((s) => s.id === creativeForm.slotId)"
+        <wd-picker
+          :model-value="creativeForm.slotId"
+          :columns="slots.map((slot) => ({ label: slot.name, value: slot.id }))"
           :disabled="creativeSheetMode === 'edit'"
-          @change="(e: any) => (creativeForm.slotId = slots[e.detail.value]?.id || '')"
+          title="选择广告位"
+          @confirm="creativeForm.slotId = String($event.value || '')"
         >
           <view :class="['form-input', 'picker', creativeSheetMode === 'edit' ? 'disabled' : '']">
             <text>{{ slotNameOf(creativeForm.slotId) || '请选择广告位' }}</text>
-            <Icon name="chevron-down" :size="28" color="#86909C" />
+            <wd-icon :name="$jwIcon('chevron-down')" size="14px" color="#86909C"  />
           </view>
-        </picker>
+        </wd-picker>
       </view>
       <view class="form-row">
         <text class="form-label">创意图<text class="required">*</text></text>
-        <view class="upload-box" @click="onPickCreativeImage">
+        <wd-upload
+          :file-list="[]"
+          :limit="1"
+          :disabled="creativeSubmitting"
+          :before-choose="(option: any) => delegateWotUploadChoose(option, onPickCreativeImage)"
+        >
+        <view class="upload-box">
           <image
             v-if="creativeForm.image"
             :src="creativeForm.image"
@@ -886,10 +913,11 @@ onMounted(load)
             mode="aspectFill"
           />
           <view v-else class="upload-placeholder">
-            <Icon name="image-plus" :size="48" color="#C9CDD4" />
+            <wd-icon :name="$jwIcon('image-plus')" size="24px" color="#C9CDD4"  />
             <text class="upload-hint">点击选图上传</text>
           </view>
         </view>
+        </wd-upload>
         <view v-if="creativeForm.image" class="upload-actions">
           <text class="link-action" @click="creativeForm.image = ''">移除</text>
           <text class="link-action" @click="onPickCreativeImage">重新上传</text>
@@ -897,50 +925,55 @@ onMounted(load)
       </view>
       <view class="form-row">
         <text class="form-label">点击跳转链接</text>
-        <input
+        <wd-input no-border
           v-model="creativeForm.link"
           class="form-input"
           placeholder="https:// 或 /pages/xxx"
           maxlength="200"
-        />
+         />
       </view>
       <view class="form-row form-row-half">
         <view class="half-col">
           <text class="form-label">开始日期</text>
-          <picker
-            mode="date"
-            :value="creativeForm.startAt"
-            @change="(e: any) => (creativeForm.startAt = e.detail.value)"
+          <wd-datetime-picker
+            type="date"
+            title="选择开始日期"
+            :model-value="dateStringToTimestamp(creativeForm.startAt)"
+            @confirm="creativeForm.startAt = timestampToDateString($event.value)"
           >
             <view class="form-input picker">
               <text>{{ creativeForm.startAt }}</text>
             </view>
-          </picker>
+          </wd-datetime-picker>
         </view>
         <view class="half-col">
           <text class="form-label">结束日期</text>
-          <picker
-            mode="date"
-            :value="creativeForm.endAt"
-            @change="(e: any) => (creativeForm.endAt = e.detail.value)"
+          <wd-datetime-picker
+            type="date"
+            title="选择结束日期"
+            :model-value="dateStringToTimestamp(creativeForm.endAt)"
+            :min-date="dateStringToTimestamp(creativeForm.startAt)"
+            @confirm="creativeForm.endAt = timestampToDateString($event.value)"
           >
             <view class="form-input picker">
               <text>{{ creativeForm.endAt }}</text>
             </view>
-          </picker>
+          </wd-datetime-picker>
         </view>
       </view>
       <view class="form-row">
         <text class="form-label">预算(元)</text>
-        <input
+        <wd-input no-border
           v-model.number="creativeForm.budget"
           class="form-input"
           type="number"
           placeholder="0 表示不设上限"
-        />
+         />
       </view>
     </FormSheet>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -1361,10 +1394,10 @@ onMounted(load)
   line-height: 80rpx;
   padding: 0 24rpx;
   font-size: 26rpx;
-  background: #f7f8fa;
-  border: 1rpx solid #e5e6eb;
+  background: var(--bg-page);
+  border: 1rpx solid var(--border-light);
   border-radius: 16rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   &.picker {
     display: flex;
     align-items: center;
@@ -1381,7 +1414,7 @@ onMounted(load)
   border-left: 4rpx solid #1296db;
   border-radius: 0 12rpx 12rpx 0;
   font-size: 22rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 .seg-group {
@@ -1390,8 +1423,8 @@ onMounted(load)
   gap: 12rpx;
   .seg-item {
     padding: 12rpx 24rpx;
-    background: #f7f8fa;
-    border: 1rpx solid #e5e6eb;
+    background: var(--bg-page);
+    border: 1rpx solid var(--border-light);
     border-radius: 999rpx;
     font-size: 24rpx;
     color: var(--text-secondary);
@@ -1407,7 +1440,7 @@ onMounted(load)
   width: 100%;
   height: 240rpx;
   border-radius: 16rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx dashed #c9cdd4;
   overflow: hidden;
   display: flex;

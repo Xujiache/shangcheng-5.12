@@ -132,6 +132,16 @@ $shadow-lg: 0 12px 24px 0 rgba(0, 0, 0, 0.12);
 $shadow-xl: 0 20px 40px 0 rgba(0, 0, 0, 0.16);
 $shadow-brand: 0 6px 16px 0 rgba(255, 77, 45, 0.25);
 
+// ============ 液态玻璃与动效 ============
+$glass-fill: rgba(255, 255, 255, 0.58);
+$glass-fill-strong: rgba(255, 255, 255, 0.72);
+$glass-border: rgba(255, 255, 255, 0.52);
+$glass-shadow: 0 16px 48px rgba(30, 38, 54, 0.1);
+$glass-blur: 22px;
+$motion-fast: 120ms;
+$motion-normal: 200ms;
+$motion-slow: 280ms;
+
 // ============ z-index ============
 $z-base: 0;
 $z-dropdown: 100;

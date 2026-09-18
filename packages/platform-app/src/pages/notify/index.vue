@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 消息中心
  *
@@ -15,14 +16,10 @@
  * 设计要点:
  *   - 4-Tab 过滤:全部 / 系统通知 / 待办提醒 / 业务提示
  *   - 每条:彩色 icon + 标题 + 摘要 + 相对时间 + 未读红点
- *   - 点击 → uni.showModal 显示全文(轻量,不再新建 detail 页)
+ *   - 点击 → appFeedback.showModal 显示全文(轻量,不再新建 detail 页)
  */
 import { ref, computed, onMounted } from 'vue'
 import { notifyService, type NotifyItem, type NotifyType } from '../../services'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TabKey = 'all' | NotifyType
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -106,7 +103,7 @@ function relTime(iso: string): string {
  *   3. 后端成功后才把本地 unread 翻为 false,失败则回滚 UI 状态保证一致性
  */
 async function openDetail(item: NotifyItem) {
-  uni.showModal({
+  appFeedback.showModal({
     title: item.title,
     content: item.content,
     showCancel: false,
@@ -122,28 +119,44 @@ async function openDetail(item: NotifyItem) {
 
 async function markAllRead() {
   if (unreadCount.value === 0) {
-    uni.showToast({ title: '已无未读消息', icon: 'none' })
+    appFeedback.showToast({ title: '已无未读消息', icon: 'none' })
     return
   }
-  uni.showLoading({ title: '处理中…' })
+  appFeedback.showLoading({ title: '处理中…' })
   const ok = await notifyService.markAllRead()
-  uni.hideLoading()
+  appFeedback.hideLoading()
   if (!ok) {
-    uni.showToast({ title: '操作失败,请稍后重试', icon: 'none' })
+    appFeedback.showToast({ title: '操作失败,请稍后重试', icon: 'none' })
     return
   }
   list.value.forEach((m) => {
     m.unread = false
   })
-  uni.showToast({ title: '已全部标记已读', icon: 'success' })
+  appFeedback.showToast({ title: '已全部标记已读', icon: 'success' })
 }
 
 onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="消息中心" />
+    <wd-navbar title="消息中心"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- Tabs -->
     <view class="tabs">
@@ -161,12 +174,12 @@ onMounted(load)
     <!-- 顶部条：未读统计 + 标记全部已读 -->
     <view class="top-bar">
       <view class="top-left">
-        <Icon name="bell" :size="28" color="var(--brand-primary)" />
+        <wd-icon :name="$jwIcon('bell')" size="14px" color="var(--brand-primary)"  />
         <text v-if="unreadCount > 0" class="unread-tip">{{ unreadCount }} 条未读</text>
         <text v-else class="unread-tip empty">暂无未读</text>
       </view>
       <view :class="['mark-btn', unreadCount === 0 ? 'disabled' : '']" @click="markAllRead">
-        <Icon name="check" :size="24" :color="unreadCount === 0 ? '#C9CDD4' : '#FF4D2D'" />
+        <wd-icon :name="$jwIcon('check')" size="12px" :color="unreadCount === 0 ? '#C9CDD4' : '#FF4D2D'"  />
         <text>标记全部已读</text>
       </view>
     </view>
@@ -177,19 +190,16 @@ onMounted(load)
       </view>
 
       <view v-else-if="loadError" class="empty-wrap">
-        <EmptyState
-          icon="bell"
-          title="暂无通知"
-          desc="加载失败,可能是后端通知服务暂未启用"
-        />
+        <wd-status-tip
+         image="content" :tip="['暂无通知', '加载失败,可能是后端通知服务暂未启用'].filter(Boolean).join(' · ')" />
         <view class="retry-btn" @click="load">
-          <Icon name="refresh" :size="24" color="#FF4D2D" />
+          <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D"  />
           <text>点击重试</text>
         </view>
       </view>
 
       <view v-else-if="filteredList.length === 0" class="empty-wrap">
-        <EmptyState icon="bell" title="该分类下暂无消息" />
+        <wd-status-tip  image="content" :tip="['该分类下暂无消息', ''].filter(Boolean).join(' · ')" />
       </view>
 
       <view v-else class="list">
@@ -200,7 +210,7 @@ onMounted(load)
           @click="openDetail(m)"
         >
           <view class="m-icon" :style="{ background: TYPE_META[m.type].tintSoft }">
-            <Icon :name="TYPE_META[m.type].icon" :size="32" :color="TYPE_META[m.type].tint" />
+            <wd-icon :name="$jwIcon(TYPE_META[m.type].icon)" size="16px" :color="TYPE_META[m.type].tint"  />
             <view v-if="m.unread" class="dot" />
           </view>
           <view class="m-body">
@@ -215,7 +225,7 @@ onMounted(load)
             </view>
             <text class="m-content">{{ m.content }}</text>
             <view class="m-foot">
-              <Icon name="clock" :size="20" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)"  />
               <text class="m-time">{{ relTime(m.createdAt) }}</text>
             </view>
           </view>
@@ -225,6 +235,8 @@ onMounted(load)
       </view>
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -301,7 +313,7 @@ onMounted(load)
     font-weight: 600;
     &.disabled {
       background: #f3f4f6;
-      color: #c9cdd4;
+      color: var(--text-disabled);
     }
   }
 }

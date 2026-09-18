@@ -58,6 +58,8 @@ services：
 | ---------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `order-share-init.sql` | 一次性 / 幂等 | 新建 `OrderShare` 表 + 索引，并从旧 `SystemConfig`（key=`order_share:<shareCode>`）回填；`IF NOT EXISTS` / `ON CONFLICT DO NOTHING`。文件末尾附**默认注释掉**的清理旧 `SystemConfig` 行的 `DELETE`。                   |
 | `user-coupon-init.sql` | 一次性 / 幂等 | 新建 `UserCoupon` 表 + 索引，并从旧 `SystemConfig`（领取记录 `user_coupon:<userId>:<couponId>` + 核销流水 `user_coupon_used:<userId>:<no>`）回填，按 `ids[]` 展开成多行。文件末尾附**默认注释掉**的两条清理 `DELETE`。 |
+| `order-paid-dashboard-index.sql` | 在线索引 / 幂等 | 使用 `CREATE INDEX CONCURRENTLY IF NOT EXISTS` 为商家工作台新增 `Order(merchantId, paidAt)` 组合索引；必须通过 `psql` 单独执行，不要包在事务中。 |
+| `harmony-merchant-prod-init.sql` | 一次性 / 幂等 | 仅增量创建 HarmonyOS NEXT 商家端 Push/IAP 表、套餐映射字段和唯一索引；不执行全量 schema 对齐，不触碰其他业务域。 |
 
 ### 2.2 门窗利账（ledger）域建表 / 补列
 
@@ -97,6 +99,7 @@ services：
 11. `ledger-changelog-seed.sql`（**必须在 changelog-init 之后**，写初始日志）
 12. `order-share-init.sql`（商城主域：建 `OrderShare` + 回填）
 13. `user-coupon-init.sql`（商城主域：建 `UserCoupon` + 回填）
+14. `harmony-merchant-prod-init.sql`（鸿蒙商家端：先通过 `smoke:prod`，再增量补齐 Push/IAP 结构）
 
 执行方式（任一种）：
 
@@ -158,3 +161,35 @@ upstream `jiujiu_api` 指向 `server:3000`。各 location：
 - **`/`** —— 默认页，直接返回 `{"service":"jiujiu-mall","status":"ok"}`（注释标明后期可挂载 PC 端构建产物作为静态根）。
 
 > 当前 `default.conf` 尚未为各前端（admin-pc 等）配置独立静态资源 location，根路径仅返回占位 JSON；server 块顶部注释「默认页（后期可挂载 PC 端构建产物）」即指此处预留。
+
+---
+
+## 5. HarmonyOS NEXT 商家端生产配置
+
+鸿蒙商家端的 REST 仍使用 `/api/v1`，纯 JSON WebSocket 使用
+`/ws/harmony/merchant`，现有 `/ws/` 反向代理会同时覆盖该路径。生产启动前必须由运维
+在私有环境注入：
+
+- `HUAWEI_PUSH_PROJECT_ID`：AppGallery Connect 项目 ID；
+- `HUAWEI_PUSH_SERVICE_ACCOUNT_FILE`：Push Kit 服务账号 JSON 的私有绝对路径；
+- `HUAWEI_PUSH_CATEGORY` 与 `HUAWEI_PUSH_CLICK_ACTION`：通知分类及点击深链；
+- `HUAWEI_IAP_PUBLIC_KEY`：IAP Kit 服务端响应验签公钥，支持 PEM 或单行 Base64；
+- `HUAWEI_IAP_APPLICATION_ID`、`HUAWEI_IAP_ISSUER_ID`、`HUAWEI_IAP_KEY_ID`：IAP Server API 应用与密钥标识；
+- `HUAWEI_IAP_PRIVATE_KEY_FILE`：IAP Server API ES256 私钥的私有绝对路径；
+- `HUAWEI_IAP_PACKAGE_NAME`：固定为 `top.ewsn.jingwei.merchant`；
+- `HUAWEI_IAP_ROOT_URL`：默认中国区 `https://iap.cloud.huawei.com`，其他区域按华为当期文档配置。
+
+Push 服务账号、IAP 验签公钥与服务端私钥、应用签名和 AGC 配置文件都不得进入 Git。
+`HUAWEI_PUSH_TEST_MESSAGE=1` 仅限 AGC 沙箱联调，生产必须为 `0`。会员套餐还需在
+`MemberPlan.huaweiProductId` 和 `MemberPlan.huaweiProductType` 中绑定 AppGallery 商品。
+当前 v3 通知只用于定位交易，服务端必须使用上述 ES256 密钥回查华为权威订阅/订单状态、
+完成 JWS 验签后才能发放或收回权益；不得直接信任通知中的事件名称。
+
+部署候选必须先执行 `pnpm --filter @jiujiu/server build` 和
+`pnpm --filter @jiujiu/server smoke:prod`。后者会用真实 `AppModule` 在随机本地端口完成
+生产引导，并验证更新、Push/IAP 鉴权边界和 `/ws/harmony/merchant` 首帧；它不会写业务数据。
+使用内部完整测试商户还可运行 `pnpm --filter @jiujiu/server smoke:harmony-account`，验证
+30 个只读商家功能面与带身份的 WebSocket；部署后以
+`HARMONY_SMOKE_BASE_URL=https://ewsn.top` 重新运行同一命令，确认公网 Nginx 和生产进程链路。
+随后使用 `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f deploy/harmony-merchant-prod-init.sql`
+执行定向增量结构，禁止为了鸿蒙上线直接运行包含其他未发布模型的全量 `prisma db push`。

@@ -63,23 +63,51 @@ export interface PaymentRecord {
   createdAt: string
 }
 
-/** subscribe() 返回值 —— 真实下单链路 */
-export interface SubscribeResult {
+export type MembershipClientPlatform = 'mp-weixin' | 'android'
+
+export interface MiniAppPayInvoke {
+  appId: string
+  timeStamp: string
+  nonceStr: string
+  package: string
+  signType: 'RSA' | 'MD5'
+  paySign: string
+}
+
+/**
+ * 微信 Android App 支付预留结构。
+ * 后端尚未启用该通道；接入 /v3/pay/transactions/app 后无需再改变前端契约。
+ */
+export interface AndroidAppPayInvoke {
+  appid: string
+  partnerid: string
+  prepayid: string
+  package: 'Sign=WXPay'
+  noncestr: string
+  timestamp: string
+  sign: string
+}
+
+interface SubscribeResultBase {
   ok: boolean
   /** 支付单号（用于轮询状态） */
   paymentNo: string
   /** PaymentRecord id */
   recordId: string
-  /** 微信小程序 uni.requestPayment 所需的全部字段 */
-  miniPay?: {
-    appId: string
-    timeStamp: string
-    nonceStr: string
-    package: string
-    signType: 'RSA' | 'MD5'
-    paySign: string
-  }
 }
+
+/** subscribe() 返回值 —— 小程序已启用，Android App 支付仅预留契约。 */
+export type SubscribeResult =
+  | (SubscribeResultBase & {
+      paymentMode: 'miniapp'
+      miniPay: MiniAppPayInvoke
+      appPay?: never
+    })
+  | (SubscribeResultBase & {
+      paymentMode: 'android-app'
+      miniPay?: never
+      appPay: AndroidAppPayInvoke
+    })
 
 export interface PaymentStatusVO {
   id: string
@@ -129,9 +157,17 @@ export const memberService = {
     return http.get<{ type: string; text: string; link?: string }[]>('/api/v1/m/membership/notices')
   },
 
-  /** 创建订阅订单：后端会写 PaymentRecord(pending) 并返回 wxpay miniPay 参数 */
-  subscribe(planId: string, payMethod: 'wechat' | 'alipay' | 'balance' = 'wechat') {
-    return http.post<SubscribeResult>('/api/v1/m/membership/subscribe', { planId, payMethod })
+  /** 创建订阅订单；Android 通道启用前服务端会在写支付单之前明确拒绝。 */
+  subscribe(
+    planId: string,
+    payMethod: 'wechat' | 'alipay' | 'balance' = 'wechat',
+    clientPlatform: MembershipClientPlatform = 'mp-weixin',
+  ) {
+    return http.post<SubscribeResult>('/api/v1/m/membership/subscribe', {
+      planId,
+      payMethod,
+      clientPlatform,
+    })
   },
 
   /** 轮询某笔订单是否已被微信回调激活（真实下单链路用） */

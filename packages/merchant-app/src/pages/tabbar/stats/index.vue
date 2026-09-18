@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, dateStringToTimestamp, timestampToDateString } from '@jiujiu/shared'
 /**
  * MA-02 · 数据统计（还原原型 + 美化）
  *
@@ -9,18 +10,12 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { dashboardService } from '../../../services/dashboard'
 import { formatWan, formatPrice } from '@jiujiu/shared/utils'
 import type { MerchantStats } from '@jiujiu/shared/types'
-import Section from '../../../components/section/section.vue'
-import Tabs from '../../../components/tabs/tabs.vue'
 import LineChart from '../../../components/line-chart/line-chart.vue'
 import BarChart from '../../../components/bar-chart/bar-chart.vue'
 import DonutChart from '../../../components/donut-chart/donut-chart.vue'
-import Icon from '../../../components/icon/icon.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
-import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
 import { useStatusBar } from '../../../composables/useStatusBar'
 import { safeSwitchTab } from '../../../utils/tab-nav'
 
-useHideNativeTabBar()
 const { heroPaddingTop } = useStatusBar(24)
 
 type Period = 'today' | 'week' | 'month' | 'year'
@@ -102,14 +97,14 @@ const catValues = computed(() => stats.value?.categoryBars.map((c) => c.sales) ?
  * 后端 stats 接口的 query 是 any，会接受 date 字段
  * （当前实现可能仅做提示用途，但语义上必须发起一次刷新而不是只 toast）
  */
-function pickDate(e: { detail: { value: string } }) {
-  customDate.value = e.detail.value
+function pickDate(value: unknown) {
+  customDate.value = timestampToDateString(value)
   if (period.value !== 'today') {
     period.value = 'today' // 触发 watch → loadStats
   } else {
     loadStats() // 已经是 today，需要手动刷新带上新 date
   }
-  uni.showToast({ title: `已查看 ${customDate.value}`, icon: 'none' })
+  appFeedback.showToast({ title: `已查看 ${customDate.value}`, icon: 'none' })
 }
 
 function goAllProducts() {
@@ -141,24 +136,51 @@ const periodText = computed(() =>
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <!-- 顶栏 -->
     <view class="topbar" :style="{ paddingTop: heroPaddingTop }">
       <view class="title-row">
         <text class="page-title">数据统计</text>
-        <picker mode="date" :value="customDate" @change="pickDate">
+        <wd-datetime-picker
+          type="date"
+          title="选择统计日期"
+          :model-value="dateStringToTimestamp(customDate)"
+          @confirm="pickDate($event.value)"
+        >
           <view class="cal-btn">
-            <Icon name="calendar" :size="36" color="#fff" />
+            <wd-icon :name="$jwIcon('calendar')" size="18px" color="#fff"  />
           </view>
-        </picker>
+        </wd-datetime-picker>
       </view>
-      <Tabs
+      <wd-tabs
         v-model="period"
-        :items="TABS"
-        variant="capsule"
         class="period-tabs"
         @change="(k: string) => changePeriod(k as Period)"
-      />
+       color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
     </view>
 
     <view class="body">
@@ -167,11 +189,10 @@ const periodText = computed(() =>
         <view class="overview-head">
           <text class="overview-title">{{ periodText }} 概览</text>
           <view class="overview-direction" :class="direction">
-            <Icon
-              :name="direction === 'down' ? 'arrow-down' : 'arrow-up'"
-              :size="20"
+            <wd-icon
+              :name="$jwIcon(direction === 'down' ? 'arrow-down' : 'arrow-up')" size="10px"
               :color="direction === 'down' ? '#FF3B30' : '#52C41A'"
-            />
+             />
             <text>{{
               direction === 'down' ? '环比下降' : direction === 'up' ? '环比上升' : '持平'
             }}</text>
@@ -205,14 +226,16 @@ const periodText = computed(() =>
       </view>
 
       <!-- 销售趋势 -->
-      <Section title="销售趋势" :sub="periodText">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "销售趋势" }}</text><text class="jw-section-sub">{{ periodText }}</text></view></view></template>
         <view class="trend-wrap">
           <LineChart v-if="values.length" :data="values" :labels="labels" :height="320" />
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 热销 TOP 10 -->
-      <Section title="热销商品 TOP 10" action="查看全部" @action="goAllProducts">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "热销商品 TOP 10" }}</text></view><wd-button type="text" size="small" @click="goAllProducts">{{ "查看全部" }}</wd-button></view></template>
         <view class="top-list">
           <view v-for="(p, i) in topProducts" :key="p.productId" class="top-row">
             <view :class="['rank', i < 3 ? `rank-${i + 1}` : 'rank-rest']">
@@ -230,14 +253,14 @@ const periodText = computed(() =>
             <text class="top-sales">售 {{ p.sales }}</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 商品分析 + 客户分析 双栏 -->
       <view class="duo">
         <view class="duo-card">
           <view class="duo-head">
             <text class="duo-title">商品分析</text>
-            <Icon name="biz-product" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('biz-product')" size="14px" color="var(--text-tertiary)"  />
           </view>
           <text class="duo-sub">分类销量分布</text>
           <view class="duo-chart">
@@ -247,7 +270,7 @@ const periodText = computed(() =>
         <view class="duo-card">
           <view class="duo-head">
             <text class="duo-title">客户分析</text>
-            <Icon name="biz-customer" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('biz-customer')" size="14px" color="var(--text-tertiary)"  />
           </view>
           <view class="customer-analysis">
             <view class="ca-donut">
@@ -281,8 +304,10 @@ const periodText = computed(() =>
       <view class="safe-bottom" />
     </view>
 
-    <TabBar current="stats" />
+    <PrimaryLiquidTabBar flavor="merchant" active="stats" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -366,7 +391,7 @@ const periodText = computed(() =>
 }
 /* 整体白色概览卡 */
 .overview-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx 24rpx 24rpx;
   box-shadow:

@@ -1,77 +1,114 @@
 <script setup lang="ts">
-import { onLaunch, onShow } from '@dcloudio/uni-app'
+import { onHide, onLaunch, onShow } from '@dcloudio/uni-app'
 import { useUserStore } from './store/user'
 import { checkAppUpdate } from './composables/useAppUpdate'
+import { appTheme } from './theme'
+import { useMessage, useToast } from 'wot-design-uni'
+import { bindWotFeedback } from '@jiujiu/shared'
+
+// 反馈桥接属于增强能力，不能阻断 App 根实例创建。部分旧 Android WebView
+// 在组件库上下文尚未建立时会拒绝 provide/inject，失败时页面仍可正常启动。
+try {
+  bindWotFeedback({ toast: useToast('global'), message: useMessage('global') })
+} catch (error) {
+  console.error('[startup] Wot feedback bridge unavailable', error)
+}
+
+const TOKEN_KEY = 'jiujiu_token'
+const REFRESH_KEY = 'jiujiu_refresh_token'
+
+function hasStoredSession(): boolean {
+  try {
+    return !!(uni.getStorageSync(TOKEN_KEY) || uni.getStorageSync(REFRESH_KEY))
+  } catch {
+    return false
+  }
+}
+
+function isPublicRoute(route: string): boolean {
+  return route.includes('pages/startup/') || route.includes('pages/auth/') || route.includes('pages/update/')
+}
+
+function currentRoute(): string {
+  try {
+    const pages = getCurrentPages()
+    return pages[pages.length - 1]?.route || ''
+  } catch {
+    return ''
+  }
+}
+
+let foregroundCheckTimer: ReturnType<typeof setTimeout> | null = null
+let pollingTimer: ReturnType<typeof setInterval> | null = null
+let lastAutomaticCheckAt = 0
+const FOREGROUND_MIN_INTERVAL = 60_000
+const POLLING_INTERVAL = 15 * 60_000
+
+async function runAutomaticUpdateCheck(source: 'foreground' | 'poll') {
+  const route = currentRoute()
+  if (route.includes('pages/startup/') || route.includes('pages/update/')) return
+  const now = Date.now()
+  if (now - lastAutomaticCheckAt < FOREGROUND_MIN_INTERVAL) return
+  lastAutomaticCheckAt = now
+  const result = await checkAppUpdate('merchant', { silent: true, source })
+  if (result === 'blocked' && !currentRoute().includes('pages/startup/')) {
+    uni.reLaunch({ url: '/pages/startup/index' })
+  }
+}
+
+function startPolling() {
+  if (pollingTimer) clearInterval(pollingTimer)
+  pollingTimer = setInterval(() => void runAutomaticUpdateCheck('poll'), POLLING_INTERVAL)
+}
+
+function scheduleForegroundUpdateCheck() {
+  if (foregroundCheckTimer) clearTimeout(foregroundCheckTimer)
+  foregroundCheckTimer = setTimeout(async () => {
+    foregroundCheckTimer = null
+    await runAutomaticUpdateCheck('foreground')
+  }, 500)
+}
 
 onLaunch(() => {
   const userStore = useUserStore()
   userStore.hydrate()
-  // uni.hideTabBar 在非 tabBar 页（如 onLaunch 落在 /pages/auth/login）会 reject
-  // 旧 try/catch 抓不到 promise 拒绝。这里同时提供 fail 回调 + catch 兜底，控制台不再有
-  // "hideTabBar:fail not TabBar page" 噪音。
-  try {
-    const ret: any = uni.hideTabBar({ animation: false, fail: () => {} })
-    if (ret && typeof ret.catch === 'function') ret.catch(() => {})
-  } catch {
-    /* ignore */
-  }
-  // 关键修复：直接读 storage 判断，不依赖 pinia computed
-  // (pinia computed 在同一微任务内未必更新，会导致刚 hydrate 完读到 false → 误跳登录页)
-  let loggedIn = false
-  try {
-    loggedIn = !!uni.getStorageSync('jiujiu_token')
-  } catch {
-    loggedIn = false
-  }
-  if (!loggedIn) {
-    setTimeout(() => uni.reLaunch({ url: '/pages/auth/login' }), 0)
-  }
-  // 启动 2.5s 后静默检查更新（让首页先稳定渲染）
-  setTimeout(() => {
-    checkAppUpdate('merchant', { silent: true })
-  }, 2500)
 })
 
 onShow(() => {
-  // 进入前台时再校验一次（被踢登录情况）：同样直接读 storage
-  let token = ''
-  try {
-    token = uni.getStorageSync('jiujiu_token') || ''
-  } catch {
-    token = ''
+  appTheme.refreshSystemTheme()
+  // 启动、登录和注册页面均为公开页；只保护真正的商家私有页面。
+  // 网络故障不会进入这里清理会话，只有请求层收到明确鉴权失效才会登出。
+  const route = currentRoute()
+  if (route && !isPublicRoute(route) && !hasStoredSession()) {
+    uni.reLaunch({ url: '/pages/auth/login' })
   }
-  if (!token) {
-    // 当前若已经在登录页则不重复跳
-    const pages = getCurrentPages()
-    const top = pages[pages.length - 1]
-    if (top && !top.route?.includes('pages/auth/')) {
-      uni.reLaunch({ url: '/pages/auth/login' })
-    }
-  }
+  scheduleForegroundUpdateCheck()
+  startPolling()
+})
+
+onHide(() => {
+  if (foregroundCheckTimer) clearTimeout(foregroundCheckTimer)
+  foregroundCheckTimer = null
+  if (pollingTimer) clearInterval(pollingTimer)
+  pollingTimer = null
 })
 </script>
 
 <style lang="scss">
 /* 引入 design tokens CSS 变量 */
 @import '@jiujiu/shared/tokens.css';
+@import '@jiujiu/shared/wot-overrides.scss';
 
 page {
-  background: var(--bg-page);
+  background: var(--environment-gradient, var(--bg-page));
   color: var(--text-primary);
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
 }
 
-/* H5：隐藏 uni 默认 tabBar（自定义 TabBar 接管） */
-.uni-tabbar,
-.uni-tabbar-bottom,
-.uni-tabbar-top,
-.uni-tabbar-border,
-uni-tabbar {
-  display: none !important;
+.wot-theme-dark page,
+.wot-theme-dark {
+  color-scheme: dark;
 }
-/* 框架默认会给 body 加 .uni-app--showtabbar 留 50px 空位，自定义 TabBar 接管后清掉 */
-.uni-app--showtabbar uni-page-wrapper {
-  bottom: 0 !important;
-}
+
 </style>

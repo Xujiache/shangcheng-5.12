@@ -1,79 +1,283 @@
 <script setup lang="ts">
 /**
- * MA-01 · 商家 APP 首页（Wave5 重构 · 立体化）
+ * 商家工作台首页
  *
- * 视觉策略：
- *   - Hero 暖橙渐变 + 3 个柔光圆斑 + VIP 胶囊
- *   - 浮起的"今日数据"卡（白卡 3 指标），与 Hero 重叠出层级
- *   - 快捷入口由 Section 卡片包裹，10 个图标在两行 5 列网格内，每个有独立色彩 + 高光
- *   - 选品广场卡保留 + 优化层级（背景渐变 + HOT 标 + 横滑商品图）
- *   - 本周销售：增加"周总额 / 周订单"小指标条 + BarChart
- *   - 待办列表：彩色头像式 icon + 数量徽标，0 项灰显
- *
- * 严格保持原有：3 个 KPI、10 个快捷入口、选品广场、周销售、4 类待办（待发货 / 退款 / 门店授权 / 员工）、
- *               TabBar、loading 占位、profile/membership/dashboard 三条数据拉取。
+ * 信息层级参考主流商家工作台：店铺身份 → 今日经营 → 待处理 → 常用工具 → 趋势/机会。
+ * 所有数字来自真实接口；没有采集基础的访客、曝光等指标不在此展示。
  */
-import { ref, onMounted, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { computed, onMounted, ref } from 'vue'
+import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import type { MerchantDashboard } from '@jiujiu/shared/types'
+import { formatPrice, formatTime, formatWan } from '@jiujiu/shared/utils'
 import { dashboardService } from '../../../services/dashboard'
 import { profileService, type MerchantProfile } from '../../../services/profile'
 import { memberService, type MembershipView } from '../../../services/member'
+import { plazaService, type PlazaPlazaProduct } from '../../../services/store'
 import { useFeatureFlagStore } from '../../../store'
-import { formatPrice, formatWan } from '@jiujiu/shared/utils'
-import type { MerchantDashboard } from '@jiujiu/shared/types'
-import Section from '../../../components/section/section.vue'
-import BarChart from '../../../components/bar-chart/bar-chart.vue'
-import StatusTag from '../../../components/status-tag/status-tag.vue'
-import Icon from '../../../components/icon/icon.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
-import { useHideNativeTabBar } from '../../../composables/useHideNativeTabBar'
+import { safeSwitchTab, setTabFilterIntent } from '../../../utils/tab-nav'
 import { useStatusBar } from '../../../composables/useStatusBar'
-import { safeSwitchTab } from '../../../utils/tab-nav'
+import BarChart from '../../../components/bar-chart/bar-chart.vue'
+const { heroPaddingTop } = useStatusBar(16)
 
-useHideNativeTabBar()
-const { heroPaddingTop } = useStatusBar(20)
-
+const flagStore = useFeatureFlagStore()
 const dashboard = ref<MerchantDashboard | null>(null)
 const profile = ref<MerchantProfile | null>(null)
 const membership = ref<MembershipView | null>(null)
-// 三宫格当前高亮项（0=订单 / 1=新客户 / 2=销售额）默认高亮销售额
-const activeStat = ref<0 | 1 | 2>(2)
-const loading = ref(true)
-const loadError = ref(false)
-const flagStore = useFeatureFlagStore()
+const plazaProducts = ref<PlazaPlazaProduct[]>([])
+const dashboardLoading = ref(true)
+const dashboardError = ref(false)
+const plazaLoading = ref(true)
 
-const brandName = computed(() => profile.value?.shopName || '经纬科技 · 商家版')
-const brandAvatar = computed(() => profile.value?.avatar || '')
-
-/**
- * VIP 副标题（来源 memberService.myMembership()）
- *   - 试用中:    "VIP · 试用 · 剩余 N 天"
- *   - 已开通:    "VIP · {套餐名} · 剩余 N 天"
- *   - 已过期:    "会员已过期 · 点击续费"
- *   - 已取消:    "会员已取消"
- *   - 未开通:    "尚未开通 · 点击查看套餐"
- */
-const membershipSub = computed(() => {
-  const m = membership.value
-  if (!m) return '尚未开通 · 点击查看套餐'
-  const planName = m.plan?.name || '会员套餐'
-  const remaining = Math.max(0, m.remainingDays)
-  if (m.status === 'expired') return '会员已过期 · 点击续费'
-  if (m.status === 'cancelled') return '会员已取消'
-  if (m.status === 'trial') return `VIP · 试用 · 剩余 ${remaining} 天`
-  return `VIP · ${planName} · 剩余 ${remaining} 天`
+const shopName = computed(() => profile.value?.shopName || '经纬科技 · 商家版')
+const shopAvatar = computed(() => profile.value?.avatar || '')
+const merchantType = computed(() => {
+  if (profile.value?.type === 'factory') return '厂家'
+  if (profile.value?.type === 'store') return '门店'
+  return '商家'
 })
 
-const isVipActive = computed(() => {
-  const s = membership.value?.status
-  return s === 'active' || s === 'trial'
+const memberLabel = computed(() => {
+  const item = membership.value
+  if (!item) return '未开通会员'
+  if (item.status === 'trial') return `试用 · ${Math.max(0, item.remainingDays)}天`
+  if (item.status === 'active')
+    return `${item.plan?.name || '会员'} · ${Math.max(0, item.remainingDays)}天`
+  if (item.status === 'expired') return '会员已到期'
+  return '会员已取消'
 })
+
+const workbench = computed(() => dashboard.value?.workbench)
+const unreadMessages = computed(() => workbench.value?.actions.unreadMessages || 0)
+const updatedTime = computed(() =>
+  workbench.value?.updatedAt ? formatTime(workbench.value.updatedAt) : '--:--',
+)
+
+function compactMoney(value: number): string {
+  return value >= 10_000 ? `¥${formatWan(value)}` : formatPrice(value)
+}
+
+function comparisonText(value: number | null): string {
+  if (value === null) return '较昨日 --'
+  if (value === 0) return '较昨日持平'
+  return `较昨日 ${value > 0 ? '↑' : '↓'} ${Math.abs(value).toFixed(1)}%`
+}
+
+function comparisonTone(value: number | null): string {
+  if (value === null || value === 0) return 'flat'
+  return value > 0 ? 'up' : 'down'
+}
+
+function countText(value: number): string {
+  return value > 99 ? '99+' : String(value || 0)
+}
+
+function goMember() {
+  uni.navigateTo({ url: '/pages/member/index' })
+}
+
+function goChat(focusUnread = false) {
+  uni.navigateTo({ url: `/pages/chat/sessions${focusUnread ? '?tab=unread' : ''}` })
+}
+
+function goOrder(status: 'all' | 'pending_shipment') {
+  setTabFilterIntent('order', status)
+  safeSwitchTab('/pages/tabbar/order/index')
+}
+
+function goRejectedProducts() {
+  setTabFilterIntent('product', 'rejected')
+  safeSwitchTab('/pages/tabbar/product/index')
+}
+
+function goEntry(to: string) {
+  if (to.startsWith('/pages/tabbar/')) safeSwitchTab(to)
+  else uni.navigateTo({ url: to })
+}
+
+const overviewItems = computed(() => {
+  const overview = workbench.value?.overview
+  if (!overview) return []
+  return [
+    {
+      key: 'amount',
+      label: '实付成交额',
+      value: compactMoney(overview.paidAmount),
+      comparison: overview.versusYesterday.paidAmountPct,
+      onClick: () => safeSwitchTab('/pages/tabbar/stats/index'),
+    },
+    {
+      key: 'orders',
+      label: '实付订单',
+      value: String(overview.paidOrders),
+      comparison: overview.versusYesterday.paidOrdersPct,
+      onClick: () => goOrder('all'),
+    },
+    {
+      key: 'customers',
+      label: '成交客户',
+      value: String(overview.paidCustomers),
+      comparison: overview.versusYesterday.paidCustomersPct,
+      onClick: () => uni.navigateTo({ url: '/pages/customer/index' }),
+    },
+  ]
+})
+
+const todoItems = computed(() => {
+  const actions = workbench.value?.actions
+  if (!actions) return []
+  return [
+    {
+      key: 'shipment',
+      label: '待发货',
+      count: actions.pendingShipment,
+      onClick: () => goOrder('pending_shipment'),
+    },
+    {
+      key: 'refund',
+      label: '退款/售后',
+      count: actions.pendingRefund,
+      onClick: () => uni.navigateTo({ url: '/pages/order/aftersale?status=pending' }),
+    },
+    {
+      key: 'message',
+      label: '未读消息',
+      count: actions.unreadMessages,
+      onClick: () => goChat(true),
+    },
+    {
+      key: 'rejected',
+      label: '商品驳回',
+      count: actions.rejectedProducts,
+      onClick: goRejectedProducts,
+    },
+    {
+      key: 'store',
+      label: '门店申请',
+      count: actions.pendingStoreAuth,
+      onClick: () => uni.navigateTo({ url: '/pages/store/index?status=pending' }),
+    },
+  ]
+})
+
+const pendingTotal = computed(() => todoItems.value.reduce((sum, item) => sum + item.count, 0))
+
+const CORE_ENTRIES = [
+  {
+    key: 'order',
+    icon: 'biz-order',
+    label: '订单',
+    to: '/pages/tabbar/order/index',
+    tone: 'orange',
+    color: '#FF4D2D',
+  },
+  {
+    key: 'product',
+    icon: 'biz-product',
+    label: '商品',
+    to: '/pages/tabbar/product/index',
+    tone: 'blue',
+    color: '#3478F6',
+  },
+  {
+    key: 'customer',
+    icon: 'biz-customer',
+    label: '客户',
+    to: '/pages/customer/index',
+    tone: 'green',
+    color: '#18A66A',
+  },
+  {
+    key: 'stats',
+    icon: 'biz-stats',
+    label: '数据',
+    to: '/pages/tabbar/stats/index',
+    tone: 'purple',
+    color: '#7A5AF8',
+  },
+  {
+    key: 'chat',
+    icon: 'biz-chat',
+    label: '客服',
+    to: '/pages/chat/sessions',
+    tone: 'pink',
+    color: '#E84D8A',
+  },
+  {
+    key: 'marketing',
+    icon: 'biz-marketing',
+    label: '营销',
+    to: '/pages/marketing/index',
+    tone: 'amber',
+    color: '#D98B00',
+  },
+  {
+    key: 'store',
+    icon: 'biz-store',
+    label: '门店',
+    to: '/pages/store/index',
+    tone: 'cyan',
+    color: '#148CA8',
+  },
+  {
+    key: 'staff',
+    icon: 'biz-staff',
+    label: '员工',
+    to: '/pages/staff/index',
+    tone: 'teal',
+    color: '#148F83',
+  },
+  {
+    key: 'agency',
+    icon: 'tag',
+    label: '代理',
+    to: '/pages/product/agency-list',
+    tone: 'red',
+    color: '#E64B4B',
+  },
+  {
+    key: 'price-rule',
+    icon: 'wallet',
+    label: '价格',
+    to: '/pages/shop/price-rule',
+    tone: 'gray',
+    color: '#646A73',
+  },
+] as const
+
+const visibleEntries = computed(() =>
+  CORE_ENTRIES.filter((entry) => flagStore.isHomeEntryEnabled(entry.key)),
+)
+
+const trendValues = computed(() => workbench.value?.trend7d.map((item) => item.paidAmount) || [])
+const trendLabels = computed(
+  () =>
+    workbench.value?.trend7d.map(
+      (item) => `${Number(item.date.slice(5, 7))}/${Number(item.date.slice(8, 10))}`,
+    ) || [],
+)
+const trendTotal = computed(() => trendValues.value.reduce((sum, value) => sum + value, 0))
+const trendPeakIndex = computed(() => {
+  if (!trendValues.value.length) return -1
+  return trendValues.value.indexOf(Math.max(...trendValues.value))
+})
+
+async function loadDashboard() {
+  dashboardLoading.value = !dashboard.value
+  dashboardError.value = false
+  try {
+    dashboard.value = await dashboardService.getDashboard()
+  } catch {
+    if (!dashboard.value) dashboardError.value = true
+  } finally {
+    dashboardLoading.value = false
+  }
+}
 
 async function loadProfile() {
   try {
     profile.value = await profileService.get()
   } catch {
-    /* 失败保留默认文案 */
+    // 店铺资料失败时保留默认身份，不影响工作台核心数据。
   }
 }
 
@@ -85,868 +289,780 @@ async function loadMembership() {
   }
 }
 
-function goMember() {
-  uni.navigateTo({ url: '/pages/member/index' })
-}
-
-/** 主入口：10 个槽位（一行 5 个，两行） */
-const CORE_ENTRIES = [
-  { key: 'product', icon: 'biz-product', label: '商品', to: '/pages/tabbar/product/index', tint: 'orange' },
-  { key: 'order', icon: 'biz-order', label: '订单', to: '/pages/tabbar/order/index', tint: 'blue' },
-  { key: 'customer', icon: 'biz-customer', label: '客户', to: '/pages/customer/index', tint: 'green' },
-  { key: 'stats', icon: 'biz-stats', label: '数据', to: '/pages/tabbar/stats/index', tint: 'purple' },
-  { key: 'chat', icon: 'biz-chat', label: '客服', to: '/pages/chat/index', tint: 'pink' },
-  { key: 'marketing', icon: 'biz-marketing', label: '营销', to: '/pages/marketing/index', tint: 'yellow' },
-  { key: 'store', icon: 'biz-store', label: '门店', to: '/pages/store/index', tint: 'cyan' },
-  { key: 'staff', icon: 'biz-staff', label: '员工', to: '/pages/staff/index', tint: 'teal' },
-  { key: 'agency', icon: 'tag', label: '代理', to: '/pages/product/agency-list', tint: 'red' },
-  { key: 'price-rule', icon: 'wallet', label: '价格', to: '/pages/shop/price-rule', tint: 'gray' },
-]
-
-const visibleCore = computed(() => CORE_ENTRIES.filter((e) => flagStore.isHomeEntryEnabled(e.key)))
-
-const totalTodos = computed(() => {
-  if (!dashboard.value) return 0
-  const t = dashboard.value.todos
-  return (
-    (t.pendingShipment ?? 0) +
-    (t.pendingRefund ?? 0) +
-    (t.pendingStoreAuth ?? 0) +
-    (t.pendingStaff ?? 0)
-  )
-})
-
-async function loadData() {
-  loading.value = true
-  loadError.value = false
+async function loadPlaza() {
+  plazaLoading.value = plazaProducts.value.length === 0
   try {
-    dashboard.value = await dashboardService.getDashboard()
+    const page = await plazaService.products({ page: 1, pageSize: 3 })
+    plazaProducts.value = page.list
   } catch {
-    // 拉取失败（网络/无权限等）→ 标记错误态，模板展示「加载失败 + 重试」，避免正文整块空白
-    if (!dashboard.value) loadError.value = true
+    plazaProducts.value = []
   } finally {
-    loading.value = false
+    plazaLoading.value = false
   }
 }
 
-/** 后端 dashboard.weekSales 是「今天往前 7 天滚动」的数组，
- *  所以标签必须按"今天的星期几"逆向计算，不能写死 一二三四五六日 */
-const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
-const weekLabels = computed(() => {
-  const now = new Date()
-  return Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(now.getTime() - (6 - i) * 86400_000)
-    return WEEKDAY[d.getDay()]
-  })
-})
-
-/** 周销售小指标（与 BarChart 并列）：本周累计 + 峰值 */
-const weekTotal = computed(() =>
-  (dashboard.value?.weekSales || []).reduce((s, v) => s + v, 0),
-)
-const weekPeak = computed(() => Math.max(0, ...(dashboard.value?.weekSales || [])))
+async function refreshAll() {
+  await Promise.all([loadDashboard(), loadProfile(), loadMembership(), loadPlaza()])
+  uni.stopPullDownRefresh()
+}
 
 function goPlaza() {
   uni.navigateTo({ url: '/pages/plaza/index' })
 }
 
-function goEntry(to: string) {
-  if (to.startsWith('/pages/tabbar/')) {
-    safeSwitchTab(to)
-  } else {
-    uni.navigateTo({ url: to })
-  }
+function goPlazaFactory(factoryId: string) {
+  uni.navigateTo({ url: `/pages/plaza/factory?id=${factoryId}` })
 }
-
-function goPendingOrder() {
-  safeSwitchTab('/pages/tabbar/order/index')
-}
-
-/** 4 类待办（顺序与 dashboard.todos 字段映射保持一致） */
-const todoItems = computed(() => {
-  const t = dashboard.value?.todos
-  if (!t) return []
-  return [
-    {
-      key: 'shipment',
-      icon: 'biz-order',
-      tint: 'orange',
-      count: t.pendingShipment ?? 0,
-      label: '订单待发货',
-      onClick: goPendingOrder,
-    },
-    {
-      key: 'refund',
-      icon: 'biz-aftersale',
-      tint: 'red',
-      count: t.pendingRefund ?? 0,
-      label: '退款待处理',
-      onClick: () => uni.navigateTo({ url: '/pages/order/aftersale' }),
-    },
-    {
-      key: 'store-auth',
-      icon: 'biz-store',
-      tint: 'blue',
-      count: t.pendingStoreAuth ?? 0,
-      label: '门店授权申请',
-      onClick: () => uni.navigateTo({ url: '/pages/store/index' }),
-    },
-    {
-      key: 'staff',
-      icon: 'biz-staff',
-      tint: 'green',
-      count: t.pendingStaff ?? 0,
-      label: '员工待入职',
-      onClick: () => uni.navigateTo({ url: '/pages/staff/index' }),
-    },
-  ]
-})
 
 onMounted(() => {
-  // 仅一次性初始化放这里；数据加载统一交给 onShow（首次进入也会触发），
-  // 避免 onMounted 与 onShow 在首帧重复拉取 dashboard/profile/membership。
   flagStore.fetchFlags()
 })
 
-onShow(() => {
-  loadData()
-  loadProfile()
-  loadMembership()
-})
+onShow(refreshAll)
+onPullDownRefresh(refreshAll)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <!-- Hero：暖橙渐变 + 圆斑 + 品牌 + VIP 胶囊 -->
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
-      <view class="hero-blob blob-1" />
-      <view class="hero-blob blob-2" />
-      <view class="hero-blob blob-3" />
-      <view class="hero-content">
-        <view class="brand">
-          <view class="avatar">
-            <image v-if="brandAvatar" :src="brandAvatar" class="avatar-img" mode="aspectFill" />
-            <text v-else class="avatar-text">{{ brandName.slice(0, 1) }}</text>
+    <view class="topbar" :style="{ paddingTop: heroPaddingTop }">
+      <view class="shop-identity">
+        <view class="shop-avatar">
+          <image v-if="shopAvatar" :src="shopAvatar" class="avatar-image" mode="aspectFill" />
+          <text v-else class="avatar-letter">{{ shopName.slice(0, 1) }}</text>
+        </view>
+        <view class="shop-copy">
+          <view class="shop-title-row">
+            <text class="shop-name">{{ shopName }}</text>
+            <view class="type-chip">{{ merchantType }}</view>
           </view>
-          <view class="brand-info">
-            <text class="brand-name">{{ brandName }}</text>
-            <view :class="['membership-pill', isVipActive && 'active']" @click="goMember">
-              <view class="crown-wrap">
-                <Icon name="crown" :size="20" color="#FFE082" />
-              </view>
-              <text class="membership-text">{{ membershipSub }}</text>
-              <Icon name="forward" :size="18" color="rgba(255,255,255,0.85)" />
-            </view>
+          <view class="member-chip" @click="goMember">
+            <wd-icon :name="$jwIcon('crown')" size="9px" color="#A66A16"  />
+            <text>{{ memberLabel }}</text>
+            <wd-icon :name="$jwIcon('forward')" size="7px" color="#A66A16"  />
           </view>
         </view>
+      </view>
+      <view class="message-button" @click="goChat(unreadMessages > 0)">
+        <wd-icon :name="$jwIcon('biz-chat')" size="19px" color="#1F2329"  />
+        <text v-if="unreadMessages > 0" class="message-badge">{{ countText(unreadMessages) }}</text>
       </view>
     </view>
 
-    <view v-if="dashboard" class="body">
-      <!-- 今日数据浮起卡：3 KPI 共面，点哪个哪个高亮 -->
-      <view class="kpi-card">
-        <view class="kpi-head">
-          <text class="kpi-head-title">今日数据</text>
-          <text class="kpi-head-date">{{ new Date().getMonth() + 1 }}/{{ new Date().getDate() }}</text>
-        </view>
-        <view class="kpi-row">
-          <view
-            :class="['kpi-cell', activeStat === 0 && 'active']"
-            @click="activeStat = 0"
-          >
-            <text class="kpi-label">今日订单</text>
-            <text class="kpi-value">{{ dashboard.today.orders }}</text>
-            <view
-              class="kpi-delta"
-              :class="dashboard.today.ordersDelta >= 0 ? 'up' : 'down'"
-            >
-              <Icon
-                :name="dashboard.today.ordersDelta >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="16"
-                :color="dashboard.today.ordersDelta >= 0 ? '#00b578' : '#ff3b30'"
-              />
-              <text>{{ Math.abs(dashboard.today.ordersDelta) }}</text>
+    <view class="content">
+      <template v-if="workbench">
+        <view class="business-card">
+          <view class="section-head compact">
+            <view class="section-title-row">
+              <text class="section-title">今日经营</text>
+              <text class="data-caption">实付数据</text>
+            </view>
+            <view class="updated-at">
+              <text>{{ updatedTime }} 更新</text>
+              <wd-icon :name="$jwIcon('refresh')" size="11px" color="#86909C"  />
             </view>
           </view>
-          <view class="kpi-divider" />
-          <view
-            :class="['kpi-cell', activeStat === 1 && 'active']"
-            @click="activeStat = 1"
-          >
-            <text class="kpi-label">新客户</text>
-            <text class="kpi-value">{{ dashboard.today.newCustomers }}</text>
+          <view class="overview-grid">
             <view
-              class="kpi-delta"
-              :class="dashboard.today.newCustomersDelta >= 0 ? 'up' : 'down'"
+              v-for="item in overviewItems"
+              :key="item.key"
+              class="overview-item"
+              @click="item.onClick"
             >
-              <Icon
-                :name="dashboard.today.newCustomersDelta >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="16"
-                :color="dashboard.today.newCustomersDelta >= 0 ? '#00b578' : '#ff3b30'"
-              />
-              <text>{{ Math.abs(dashboard.today.newCustomersDelta) }}</text>
-            </view>
-          </view>
-          <view class="kpi-divider" />
-          <view
-            :class="['kpi-cell', activeStat === 2 && 'active']"
-            @click="activeStat = 2"
-          >
-            <text class="kpi-label">销售额</text>
-            <text class="kpi-value">{{ formatWan(dashboard.today.sales) }}</text>
-            <view
-              class="kpi-delta"
-              :class="dashboard.today.salesDelta >= 0 ? 'up' : 'down'"
-            >
-              <Icon
-                :name="dashboard.today.salesDelta >= 0 ? 'arrow-up' : 'arrow-down'"
-                :size="16"
-                :color="dashboard.today.salesDelta >= 0 ? '#00b578' : '#ff3b30'"
-              />
-              <text>¥{{ Math.abs(dashboard.today.salesDelta) }}</text>
+              <text class="overview-label">{{ item.label }}</text>
+              <text class="overview-value">{{ item.value }}</text>
+              <text :class="['overview-compare', comparisonTone(item.comparison)]">
+                {{ comparisonText(item.comparison) }}
+              </text>
             </view>
           </view>
         </view>
+
+        <view class="todo-card">
+          <view class="section-head compact">
+            <view class="section-title-row">
+              <text class="section-title">待处理</text>
+              <text v-if="pendingTotal > 0" class="total-chip">{{ countText(pendingTotal) }}</text>
+            </view>
+            <text class="todo-hint">及时处理有助于提升服务体验</text>
+          </view>
+          <view class="todo-grid">
+            <view v-for="item in todoItems" :key="item.key" class="todo-item" @click="item.onClick">
+              <text :class="['todo-count', item.count > 0 && 'active']">{{
+                countText(item.count)
+              }}</text>
+              <text class="todo-label">{{ item.label }}</text>
+            </view>
+          </view>
+        </view>
+      </template>
+
+      <view v-else-if="dashboardLoading" class="dashboard-skeleton">
+        <view class="skeleton-line title" />
+        <view class="skeleton-row">
+          <view v-for="index in 3" :key="index" class="skeleton-stat" />
+        </view>
+        <view class="skeleton-line short" />
       </view>
 
-      <!-- 快捷入口 -->
-      <view class="block">
-        <view class="block-head">
-          <text class="block-title">快捷入口</text>
+      <view v-else-if="dashboardError" class="dashboard-error">
+        <view class="error-icon"><wd-icon :name="$jwIcon('refresh')" size="17px" color="#FF4D2D"  /></view>
+        <view class="error-copy">
+          <text class="error-title">经营数据加载失败</text>
+          <text class="error-desc">请检查网络后重试，其他功能仍可正常使用</text>
         </view>
-        <view class="entry-grid">
+        <view class="retry-button" @click="loadDashboard">重试</view>
+      </view>
+
+      <view class="panel tools-panel">
+        <view class="section-head">
+          <text class="section-title">常用工具</text>
+        </view>
+        <view class="tool-grid">
           <view
-            v-for="entry in visibleCore"
+            v-for="entry in visibleEntries"
             :key="entry.key"
-            class="entry-item"
+            class="tool-item"
             @click="goEntry(entry.to)"
           >
-            <view class="entry-icon" :class="`tint-${entry.tint}`">
-              <Icon :name="entry.icon" :size="36" color="#fff" :fill="false" :stroke="2" />
+            <view :class="['tool-icon', `tone-${entry.tone}`]">
+              <wd-icon :name="$jwIcon(entry.icon)" size="19px" :color="entry.color"  />
             </view>
-            <text class="entry-label">{{ entry.label }}</text>
+            <text class="tool-label">{{ entry.label }}</text>
           </view>
         </view>
       </view>
 
-      <!-- 选品广场入口卡 -->
-      <view class="plaza-card" @click="goPlaza">
-        <view class="plaza-bg-blob" />
-        <view class="plaza-head">
-          <view class="plaza-info">
-            <view class="plaza-title-row">
-              <view class="plaza-icon-wrap">
-                <Icon name="biz-plaza" :size="36" color="#FF4D2D" />
-              </view>
-              <text class="plaza-title">选品广场</text>
-              <StatusTag text="HOT" tone="primary" fill />
+      <view v-if="workbench" class="panel trend-panel">
+        <view class="section-head">
+          <view>
+            <text class="section-title">近七日成交</text>
+            <view class="trend-total-row">
+              <text class="trend-total">{{ formatPrice(trendTotal) }}</text>
+              <text class="trend-caption">实付成交额</text>
             </view>
-            <text class="plaza-sub">平台精选 · 厂家直推 · 一键代理</text>
           </view>
-          <view class="plaza-cta">
-            <text>进入</text>
-            <Icon name="forward" :size="20" color="#fff" />
-          </view>
-        </view>
-        <scroll-view
-          v-if="dashboard.plazaHighlights && dashboard.plazaHighlights.length"
-          scroll-x
-          class="plaza-scroll"
-          :show-scrollbar="false"
-        >
-          <view v-for="item in dashboard.plazaHighlights" :key="item.productId" class="plaza-item">
-            <image class="plaza-img" :src="item.productImage" mode="aspectFill" />
-            <text class="plaza-price">{{ formatPrice(item.price) }}</text>
-          </view>
-        </scroll-view>
-      </view>
-
-      <!-- 本周销售：小指标条 + 柱图 -->
-      <view class="block">
-        <view class="block-head">
-          <text class="block-title">本周销售</text>
-          <view class="block-action" @click="goEntry('/pages/tabbar/stats/index')">
-            <text>查看详情</text>
-            <Icon name="forward" :size="20" color="var(--text-tertiary)" />
+          <view class="section-action" @click="safeSwitchTab('/pages/tabbar/stats/index')">
+            <text>查看数据</text>
+            <wd-icon :name="$jwIcon('forward')" size="9px" color="#86909C"  />
           </view>
         </view>
-        <view class="week-mini">
-          <view class="week-mini-cell">
-            <text class="week-mini-label">本周累计</text>
-            <text class="week-mini-value">{{ formatPrice(weekTotal) }}</text>
-          </view>
-          <view class="week-mini-divider" />
-          <view class="week-mini-cell">
-            <text class="week-mini-label">日均</text>
-            <text class="week-mini-value">{{ formatPrice(Math.round(weekTotal / 7)) }}</text>
-          </view>
-          <view class="week-mini-divider" />
-          <view class="week-mini-cell">
-            <text class="week-mini-label">峰值</text>
-            <text class="week-mini-value">{{ formatPrice(weekPeak) }}</text>
-          </view>
-        </view>
-        <view class="week-chart-wrap">
+        <view class="chart-wrap">
           <BarChart
-            :data="dashboard.weekSales"
-            :labels="weekLabels"
-            :height="200"
-            :highlight-index="dashboard.weekSales.indexOf(weekPeak)"
+            :data="trendValues"
+            :labels="trendLabels"
+            :height="190"
+            :highlight-index="trendPeakIndex"
           />
         </view>
       </view>
 
-      <!-- 待办（彩色卡片化） -->
-      <view class="block">
-        <view class="block-head">
-          <text class="block-title">待办</text>
-          <view :class="['todo-badge', totalTodos > 0 && 'has']">{{ totalTodos }}</view>
-        </view>
-        <view class="todo-grid">
-          <view
-            v-for="t in todoItems"
-            :key="t.key"
-            :class="['todo-card', t.count === 0 && 'empty']"
-            @click="t.onClick"
-          >
-            <view :class="['todo-icon', `tint-${t.tint}`]">
-              <Icon :name="t.icon" :size="32" color="#fff" :stroke="2" />
+      <view class="panel plaza-panel">
+        <view class="section-head">
+          <view>
+            <view class="plaza-title-row">
+              <text class="section-title">选品机会</text>
+              <text class="opportunity-chip">厂家直供</text>
             </view>
-            <view class="todo-text-wrap">
-              <text class="todo-count">{{ t.count }}</text>
-              <text class="todo-label">{{ t.label }}</text>
-            </view>
-            <Icon name="forward" :size="22" color="var(--text-tertiary)" />
+            <text class="section-subtitle">发现真实货源，快速扩充在售商品</text>
           </view>
+          <view class="section-action" @click="goPlaza">
+            <text>进入广场</text>
+            <wd-icon :name="$jwIcon('forward')" size="9px" color="#86909C"  />
+          </view>
+        </view>
+
+        <view v-if="plazaLoading" class="plaza-skeleton-row">
+          <view v-for="index in 3" :key="index" class="plaza-skeleton" />
+        </view>
+        <view v-else-if="plazaProducts.length" class="plaza-grid">
+          <view
+            v-for="product in plazaProducts"
+            :key="product.productId"
+            class="plaza-product"
+            @click="goPlazaFactory(product.factoryId)"
+          >
+            <view class="product-image-wrap">
+              <image
+                v-if="product.productImage"
+                :src="product.productImage"
+                class="product-image"
+                mode="aspectFill"
+              />
+              <view v-else class="image-empty"
+                ><wd-icon :name="$jwIcon('biz-product')" size="17px" color="#C9CDD4"
+               /></view>
+            </view>
+            <text class="product-name">{{ product.productName }}</text>
+            <text class="product-price">{{ formatPrice(product.startPrice) }}起</text>
+          </view>
+        </view>
+        <view v-else class="plaza-empty" @click="goPlaza">
+          <view class="plaza-empty-icon"><wd-icon :name="$jwIcon('biz-plaza')" size="19px" color="#FF4D2D"  /></view>
+          <view class="plaza-empty-copy">
+            <text class="plaza-empty-title">去选品广场看看</text>
+            <text class="plaza-empty-desc">当前暂无推荐，仍可浏览全部厂家和商品</text>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="11px" color="#86909C"  />
         </view>
       </view>
 
       <view class="safe-bottom" />
     </view>
-    <view v-else-if="loading" class="loading">
-      <text>加载中…</text>
-    </view>
-    <view v-else-if="loadError" class="loading">
-      <text style="color: var(--text-tertiary)">加载失败，请检查网络后重试</text>
-      <view
-        style="
-          margin-top: 16rpx;
-          padding: 12rpx 32rpx;
-          background: #ff4d2d;
-          color: #fff;
-          border-radius: 999rpx;
-          font-size: 26rpx;
-        "
-        @click="loadData"
-        >点击重试</view
-      >
-    </view>
 
-    <TabBar current="home" />
+    <PrimaryLiquidTabBar flavor="merchant" active="home" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #fff3ee 0%, #f7f8fa 320rpx);
+  background: var(--bg-page);
   padding-bottom: 40rpx;
+  color: #1f2329;
 }
 
-/* ============ HERO ============ */
-.hero {
-  position: relative;
-  padding: 0 32rpx 96rpx;
-  background:
-    radial-gradient(140% 80% at 100% 0%, #ff8a5e 0%, transparent 60%),
-    radial-gradient(120% 80% at 0% 100%, #ff3b1f 0%, transparent 50%),
-    linear-gradient(160deg, #ff6b45 0%, #ff4d2d 50%, #e63a1f 100%);
-  border-bottom-left-radius: 48rpx;
-  border-bottom-right-radius: 48rpx;
-  overflow: hidden;
-}
-.hero-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(56rpx);
-  opacity: 0.55;
-  pointer-events: none;
-}
-.blob-1 { width: 320rpx; height: 320rpx; background: #ffd6c5; top: 30rpx; right: -90rpx; }
-.blob-2 { width: 240rpx; height: 240rpx; background: #ffeede; top: 160rpx; left: -60rpx; opacity: 0.4; }
-.blob-3 { width: 360rpx; height: 360rpx; background: #ff8a5e; bottom: -160rpx; right: 30%; opacity: 0.35; }
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-}
-.brand {
+.topbar {
+  min-height: 92rpx;
+  padding-right: 28rpx;
+  padding-bottom: 18rpx;
+  padding-left: 28rpx;
+  background: var(--bg-card);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20rpx;
+  border-bottom: 1rpx solid #f0f1f2;
 }
-.avatar {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(10rpx);
+.shop-identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+.shop-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  flex-shrink: 0;
+  border-radius: 18rpx;
+  overflow: hidden;
+  background: #fff1ec;
+  color: #ff4d2d;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 36rpx;
-  font-weight: 700;
-  overflow: hidden;
-  box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.12), inset 0 0 0 2rpx rgba(255, 255, 255, 0.4);
-  flex-shrink: 0;
-  .avatar-img { width: 100%; height: 100%; }
-  .avatar-text { font-weight: 800; }
+  box-shadow: inset 0 0 0 1rpx rgba(255, 77, 45, 0.12);
 }
-.brand-info {
+.avatar-image {
+  width: 100%;
+  height: 100%;
+}
+.avatar-letter {
+  font-size: 30rpx;
+  font-weight: 700;
+}
+.shop-copy {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 7rpx;
 }
-.brand-name {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
-}
-.membership-pill {
-  display: inline-flex;
+.shop-title-row {
+  display: flex;
   align-items: center;
-  gap: 8rpx;
-  padding: 6rpx 16rpx 6rpx 8rpx;
-  background: rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(8rpx);
-  border-radius: 999rpx;
-  font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.95);
+  gap: 10rpx;
+  min-width: 0;
+}
+.shop-name {
+  max-width: 350rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 30rpx;
+  line-height: 40rpx;
+  font-weight: 700;
+}
+.type-chip {
+  flex-shrink: 0;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  background: #fff1ec;
+  color: #ff4d2d;
+  font-size: 19rpx;
+  line-height: 30rpx;
+}
+.member-chip {
   align-self: flex-start;
   max-width: 100%;
-  &.active {
-    background: linear-gradient(90deg, rgba(255, 215, 0, 0.32), rgba(255, 152, 0, 0.32));
-  }
+  display: flex;
+  align-items: center;
+  gap: 5rpx;
+  color: #8a5a19;
+  font-size: 20rpx;
+  line-height: 28rpx;
 }
-.crown-wrap {
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
+.member-chip text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.message-button {
+  position: relative;
+  width: 72rpx;
+  height: 72rpx;
+  flex-shrink: 0;
+  border-radius: 20rpx;
+  background: var(--bg-page);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
-.membership-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.message-button:active {
+  background: #eef0f2;
 }
-
-/* ============ BODY ============ */
-.body {
-  margin-top: -72rpx;
-  padding: 0 24rpx;
+.message-badge {
+  position: absolute;
+  top: -5rpx;
+  right: -7rpx;
+  min-width: 28rpx;
+  height: 28rpx;
+  padding: 0 6rpx;
+  border: 3rpx solid #fff;
+  border-radius: 999rpx;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 17rpx;
+  line-height: 28rpx;
+  text-align: center;
+  box-sizing: content-box;
+}
+.content {
+  padding: 20rpx 22rpx 0;
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
-  position: relative;
-  z-index: 2;
+  gap: 20rpx;
 }
-
-/* ============ KPI 浮起卡 ============ */
-.kpi-card {
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 24rpx 24rpx 28rpx;
-  box-shadow: 0 16rpx 40rpx rgba(229, 60, 31, 0.16), 0 4rpx 12rpx rgba(15, 23, 42, 0.04);
-  position: relative;
+.business-card,
+.todo-card,
+.panel,
+.dashboard-skeleton,
+.dashboard-error {
+  background: var(--bg-card);
+  border-radius: 22rpx;
+  box-shadow: 0 3rpx 14rpx rgba(31, 35, 41, 0.035);
 }
-.kpi-head {
+.business-card {
+  padding: 24rpx 24rpx 22rpx;
+}
+.todo-card {
+  padding: 22rpx 12rpx 18rpx;
+}
+.panel {
+  padding: 25rpx 24rpx;
+}
+.section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 22rpx;
+}
+.section-head.compact {
+  align-items: center;
+  margin: 0 4rpx 18rpx;
+}
+.section-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12rpx;
+  gap: 10rpx;
 }
-.kpi-head-title {
-  font-size: 26rpx;
+.section-title {
+  font-size: 28rpx;
+  line-height: 40rpx;
   font-weight: 700;
-  color: #1f2329;
 }
-.kpi-head-date {
-  font-size: 22rpx;
-  color: #86909c;
+.section-subtitle {
+  display: block;
+  margin-top: 4rpx;
+  color: var(--text-tertiary);
+  font-size: 21rpx;
 }
-.kpi-row {
+.data-caption,
+.total-chip,
+.opportunity-chip {
+  padding: 2rpx 9rpx;
+  border-radius: 6rpx;
+  background: #fff1ec;
+  color: #ff4d2d;
+  font-size: 18rpx;
+  line-height: 28rpx;
+}
+.total-chip {
+  min-width: 24rpx;
+  text-align: center;
+}
+.updated-at,
+.section-action {
   display: flex;
-  align-items: stretch;
-  gap: 0;
+  align-items: center;
+  gap: 4rpx;
+  color: var(--text-tertiary);
+  font-size: 20rpx;
 }
-.kpi-cell {
+.todo-hint {
+  color: #a0a5ad;
+  font-size: 19rpx;
+}
+.overview-grid {
+  display: flex;
+}
+.overview-item {
+  position: relative;
   flex: 1;
+  min-width: 0;
+  padding: 4rpx 15rpx;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 14rpx 16rpx;
-  border-radius: 18rpx;
-  transition: all 0.18s;
-  &:active {
-    transform: scale(0.96);
-  }
-  &.active {
-    background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
-    box-shadow: 0 8rpx 20rpx rgba(255, 77, 45, 0.36);
-    .kpi-label { color: rgba(255, 255, 255, 0.86); }
-    .kpi-value { color: #fff; }
-    .kpi-delta { color: rgba(255, 255, 255, 0.95); background: rgba(255, 255, 255, 0.16); }
-    .kpi-delta.up text,
-    .kpi-delta.down text { color: #fff; }
-  }
+  gap: 7rpx;
 }
-.kpi-divider {
-  width: 1rpx;
-  background: linear-gradient(180deg, transparent, #ebedf0 30%, #ebedf0 70%, transparent);
-  margin: 8rpx 0;
+.overview-item:first-child {
+  padding-left: 4rpx;
 }
-.kpi-label {
-  font-size: 22rpx;
-  color: #86909c;
-  letter-spacing: 0.5rpx;
-}
-.kpi-value {
-  margin-top: 6rpx;
-  font-size: 44rpx;
-  font-weight: 800;
-  color: #1f2329;
-  font-feature-settings: 'tnum';
-}
-.kpi-delta {
-  margin-top: 6rpx;
-  display: inline-flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 999rpx;
-  font-size: 20rpx;
-  background: rgba(0, 181, 120, 0.08);
-  &.up text { color: #00b578; }
-  &.down {
-    background: rgba(255, 59, 48, 0.08);
-    text { color: #ff3b30; }
-  }
-}
-
-/* ============ Section block ============ */
-.block {
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 24rpx;
-  box-shadow: 0 6rpx 20rpx rgba(15, 23, 42, 0.04);
-}
-.block-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20rpx;
-}
-.block-title {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #1f2329;
-  position: relative;
-  padding-left: 16rpx;
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6rpx;
-    height: 26rpx;
-    border-radius: 3rpx;
-    background: linear-gradient(180deg, #ff6b45, #ff4d2d);
-  }
-}
-.block-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 4rpx;
-  font-size: 24rpx;
-  color: #86909c;
-}
-
-/* ============ 快捷入口 ============ */
-.entry-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 28rpx 0;
-  padding: 4rpx 0;
-}
-.entry-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12rpx;
-  transition: transform 0.15s;
-  &:active { transform: scale(0.92); }
-}
-.entry-icon {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 26rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 2rpx;
-    border-radius: 24rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%);
-    pointer-events: none;
-  }
-}
-.entry-label {
-  font-size: 22rpx;
-  color: #4e5969;
-  font-weight: 500;
-}
-/* tint 配色：每格独立渐变 + 同色阴影 */
-.tint-orange { background: linear-gradient(135deg, #ffb088, #ff5722); box-shadow: 0 8rpx 18rpx rgba(255, 87, 34, 0.32); }
-.tint-blue   { background: linear-gradient(135deg, #7fd0fa, #1e88e5); box-shadow: 0 8rpx 18rpx rgba(30, 136, 229, 0.32); }
-.tint-green  { background: linear-gradient(135deg, #a6dda8, #43a047); box-shadow: 0 8rpx 18rpx rgba(67, 160, 71, 0.32); }
-.tint-purple { background: linear-gradient(135deg, #ce93d8, #8e24aa); box-shadow: 0 8rpx 18rpx rgba(142, 36, 170, 0.32); }
-.tint-pink   { background: linear-gradient(135deg, #f48fb1, #e91e63); box-shadow: 0 8rpx 18rpx rgba(233, 30, 99, 0.32); }
-.tint-yellow { background: linear-gradient(135deg, #ffe082, #ffa000); box-shadow: 0 8rpx 18rpx rgba(255, 160, 0, 0.32); }
-.tint-cyan   { background: linear-gradient(135deg, #80deea, #00838f); box-shadow: 0 8rpx 18rpx rgba(0, 131, 143, 0.32); }
-.tint-teal   { background: linear-gradient(135deg, #80cbc4, #00897b); box-shadow: 0 8rpx 18rpx rgba(0, 137, 123, 0.32); }
-.tint-red    { background: linear-gradient(135deg, #ef9a9a, #e53935); box-shadow: 0 8rpx 18rpx rgba(229, 57, 53, 0.32); }
-.tint-gray   { background: linear-gradient(135deg, #cfd8dc, #607d8b); box-shadow: 0 8rpx 18rpx rgba(96, 125, 139, 0.3); }
-
-/* ============ 选品广场 ============ */
-.plaza-card {
-  position: relative;
-  border-radius: 24rpx;
-  padding: 24rpx;
-  background:
-    linear-gradient(135deg, #fff0eb 0%, #ffffff 60%),
-    #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(229, 60, 31, 0.10);
-  border: 2rpx solid rgba(255, 77, 45, 0.16);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-}
-.plaza-bg-blob {
+.overview-item:not(:last-child)::after {
+  content: '';
   position: absolute;
-  width: 220rpx;
-  height: 220rpx;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 138, 94, 0.35) 0%, transparent 70%);
-  top: -60rpx;
-  right: -40rpx;
-  filter: blur(20rpx);
-}
-.plaza-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-}
-.plaza-info { flex: 1; }
-.plaza-title-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-.plaza-icon-wrap {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 16rpx;
-  background: linear-gradient(135deg, #fff, #ffe7df);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(255, 77, 45, 0.18);
-}
-.plaza-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1f2329;
-}
-.plaza-sub {
-  display: block;
-  margin-top: 10rpx;
-  font-size: 22rpx;
-  color: #86909c;
-  padding-left: 76rpx;
-}
-.plaza-cta {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 12rpx 22rpx;
-  background: linear-gradient(135deg, #ff6b45, #ff4d2d);
-  color: #fff;
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  font-weight: 600;
-  box-shadow: 0 6rpx 16rpx rgba(255, 77, 45, 0.36);
-  flex-shrink: 0;
-}
-.plaza-scroll {
-  white-space: nowrap;
-  position: relative;
-}
-.plaza-item {
-  display: inline-flex;
-  flex-direction: column;
-  width: 150rpx;
-  margin-right: 16rpx;
-  border-radius: 16rpx;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.06);
-}
-.plaza-img {
-  width: 100%;
-  height: 150rpx;
-}
-.plaza-price {
-  padding: 10rpx;
-  font-size: 24rpx;
-  font-weight: 700;
-  color: #ff4d2d;
-  text-align: center;
-}
-
-/* ============ 本周销售小指标 ============ */
-.week-mini {
-  display: flex;
-  align-items: stretch;
-  padding: 18rpx 0;
-  margin-bottom: 12rpx;
-  background: linear-gradient(135deg, #fafafa, #ffffff);
-  border-radius: 16rpx;
-}
-.week-mini-cell {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6rpx;
-}
-.week-mini-label {
-  font-size: 22rpx;
-  color: #86909c;
-}
-.week-mini-value {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #1f2329;
-  font-feature-settings: 'tnum';
-}
-.week-mini-divider {
+  top: 11rpx;
+  right: 0;
   width: 1rpx;
-  margin: 6rpx 0;
-  background: linear-gradient(180deg, transparent, #ebedf0 30%, #ebedf0 70%, transparent);
+  height: 78rpx;
+  background: #f0f1f2;
 }
-.week-chart-wrap {
-  padding: 8rpx 0;
+.overview-label {
+  color: #6b7078;
+  font-size: 21rpx;
 }
-
-/* ============ 待办 ============ */
-.todo-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40rpx;
-  height: 40rpx;
-  padding: 0 12rpx;
-  border-radius: 999rpx;
-  background: #ebedf0;
-  color: #86909c;
-  font-size: 22rpx;
-  font-weight: 700;
-  &.has {
-    background: linear-gradient(135deg, #ff6b45, #ff4d2d);
-    color: #fff;
-    box-shadow: 0 4rpx 10rpx rgba(255, 77, 45, 0.32);
-  }
+.overview-value {
+  max-width: 100%;
+  color: #171a1f;
+  font-size: 34rpx;
+  line-height: 43rpx;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.overview-compare {
+  color: var(--text-tertiary);
+  font-size: 18rpx;
+  white-space: nowrap;
+}
+.overview-compare.up {
+  color: #f04d2f;
+}
+.overview-compare.down {
+  color: #00a870;
+}
+.overview-compare.flat {
+  color: #a0a5ad;
 }
 .todo-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 14rpx;
+  grid-template-columns: repeat(5, 1fr);
 }
-.todo-card {
+.todo-item {
+  min-width: 0;
+  min-height: 78rpx;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 18rpx;
-  padding: 18rpx 18rpx;
-  background: linear-gradient(135deg, #ffffff, #fafafa);
-  border-radius: 18rpx;
-  border: 1rpx solid #f2f3f5;
-  transition: transform 0.15s;
-  &:active { transform: scale(0.98); }
-  &.empty {
-    background: #fafafa;
-    .todo-count { color: #c9cdd4; }
-    .todo-icon { opacity: 0.5; }
-  }
+  justify-content: center;
+  gap: 7rpx;
 }
-.todo-icon {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 18rpx;
+.todo-count {
+  color: #4e535b;
+  font-size: 34rpx;
+  line-height: 40rpx;
+  font-weight: 700;
+}
+.todo-count.active {
+  color: #ff4d2d;
+}
+.todo-label {
+  max-width: 100%;
+  color: #6b7078;
+  font-size: 19rpx;
+  white-space: nowrap;
+}
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  row-gap: 27rpx;
+}
+.tool-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+.tool-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 19rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 2rpx;
-    border-radius: 16rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 55%);
-    pointer-events: none;
-  }
 }
-.todo-text-wrap {
-  flex: 1;
+.tool-label {
+  color: #4e535b;
+  font-size: 21rpx;
+}
+.tone-orange {
+  color: #ff4d2d;
+  background: #fff0eb;
+}
+.tone-blue {
+  color: #3478f6;
+  background: #edf4ff;
+}
+.tone-green {
+  color: #18a66a;
+  background: #ecf9f3;
+}
+.tone-purple {
+  color: #7a5af8;
+  background: #f2efff;
+}
+.tone-pink {
+  color: #e84d8a;
+  background: #fff0f6;
+}
+.tone-amber {
+  color: #d98b00;
+  background: #fff6df;
+}
+.tone-cyan {
+  color: #148ca8;
+  background: #eaf8fb;
+}
+.tone-teal {
+  color: #148f83;
+  background: #eaf8f6;
+}
+.tone-red {
+  color: #e64b4b;
+  background: #fff0f0;
+}
+.tone-gray {
+  color: #646a73;
+  background: #f1f3f5;
+}
+.trend-total-row {
+  margin-top: 6rpx;
   display: flex;
   align-items: baseline;
-  gap: 8rpx;
+  gap: 10rpx;
 }
-.todo-count {
+.trend-total {
+  color: #171a1f;
   font-size: 32rpx;
-  font-weight: 800;
+  line-height: 42rpx;
+  font-weight: 700;
+}
+.trend-caption {
+  color: #a0a5ad;
+  font-size: 19rpx;
+}
+.chart-wrap {
+  margin: 0 -4rpx -4rpx;
+}
+.plaza-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.plaza-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15rpx;
+}
+.plaza-product {
+  min-width: 0;
+}
+.product-image-wrap {
+  width: 100%;
+  height: 146rpx;
+  overflow: hidden;
+  border-radius: 14rpx;
+  background: var(--bg-page);
+}
+.product-image {
+  width: 100%;
+  height: 100%;
+}
+.image-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.product-name {
+  display: block;
+  margin-top: 9rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #4e535b;
+  font-size: 20rpx;
+}
+.product-price {
+  display: block;
+  margin-top: 5rpx;
+  color: #ff4d2d;
+  font-size: 21rpx;
+  font-weight: 600;
+}
+.plaza-empty {
+  min-height: 105rpx;
+  padding: 0 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.plaza-empty-icon {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 18rpx;
+  background: #fff1ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.plaza-empty-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.plaza-empty-title {
   color: #1f2329;
-  font-feature-settings: 'tnum';
+  font-size: 23rpx;
+  font-weight: 600;
 }
-.todo-label {
-  font-size: 26rpx;
-  color: #4e5969;
+.plaza-empty-desc {
+  color: #a0a5ad;
+  font-size: 19rpx;
 }
-
-.loading {
-  padding: 200rpx 0;
-  text-align: center;
-  color: #86909c;
-  font-size: 24rpx;
+.dashboard-skeleton {
+  height: 310rpx;
+  padding: 28rpx;
+  box-sizing: border-box;
 }
-
+.skeleton-line,
+.skeleton-stat,
+.plaza-skeleton {
+  background: linear-gradient(90deg, #f1f2f4 25%, #f8f9fa 37%, #f1f2f4 63%);
+  background-size: 400% 100%;
+  animation: skeleton 1.4s ease infinite;
+}
+.skeleton-line {
+  width: 160rpx;
+  height: 26rpx;
+  border-radius: 8rpx;
+}
+.skeleton-line.short {
+  width: 230rpx;
+  height: 20rpx;
+  margin-top: 28rpx;
+}
+.skeleton-row {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 34rpx;
+}
+.skeleton-stat {
+  flex: 1;
+  height: 112rpx;
+  border-radius: 14rpx;
+}
+.plaza-skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15rpx;
+}
+.plaza-skeleton {
+  height: 190rpx;
+  border-radius: 14rpx;
+}
+.dashboard-error {
+  min-height: 124rpx;
+  padding: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+.error-icon {
+  width: 62rpx;
+  height: 62rpx;
+  border-radius: 16rpx;
+  background: #fff1ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.error-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.error-title {
+  color: #1f2329;
+  font-size: 23rpx;
+  font-weight: 600;
+}
+.error-desc {
+  color: var(--text-tertiary);
+  font-size: 19rpx;
+}
+.retry-button {
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  background: #ff4d2d;
+  color: #fff;
+  font-size: 20rpx;
+}
 .safe-bottom {
-  height: 40rpx;
+  height: calc(130rpx + env(safe-area-inset-bottom));
+}
+@keyframes skeleton {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
 }
 </style>

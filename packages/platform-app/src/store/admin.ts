@@ -4,11 +4,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, UserSession } from '@jiujiu/shared/types'
+import { AUTH_TOKENS_UPDATED_EVENT, type AuthTokensUpdatedPayload } from '../utils/auth-events'
 
 const STORAGE_KEY = 'jiujiu_admin'
 const TOKEN_KEY = 'jiujiu_admin_token'
 const REFRESH_KEY = 'jiujiu_admin_refresh_token'
 const LOGIN_AT_KEY = 'jiujiu_admin_login_at'
+let tokenEventBound = false
 
 export const useAdminStore = defineStore('admin', () => {
   const admin = ref<User | null>(null)
@@ -17,19 +19,34 @@ export const useAdminStore = defineStore('admin', () => {
   /** 本次登录时间戳（毫秒）, 0 表示未登录 / 历史会话未记录 */
   const loginAt = ref<number>(0)
 
+  if (!tokenEventBound) {
+    try {
+      uni.$on(AUTH_TOKENS_UPDATED_EVENT, (payload: AuthTokensUpdatedPayload) => {
+        accessToken.value = payload.accessToken || ''
+        refreshToken.value = payload.refreshToken || ''
+      })
+      tokenEventBound = true
+    } catch {
+      // storage 仍是最终数据源，下一次 hydrate 会完成同步。
+    }
+  }
+
   function hydrate() {
     try {
       const t = uni.getStorageSync(TOKEN_KEY)
       const rt = uni.getStorageSync(REFRESH_KEY)
       const u = uni.getStorageSync(STORAGE_KEY)
       const lt = uni.getStorageSync(LOGIN_AT_KEY)
-      if (t) accessToken.value = t
-      if (rt) refreshToken.value = rt
-      if (u) admin.value = typeof u === 'string' ? JSON.parse(u) : u
+      accessToken.value = typeof t === 'string' ? t : ''
+      refreshToken.value = typeof rt === 'string' ? rt : ''
+      admin.value = u ? (typeof u === 'string' ? JSON.parse(u) : u) : null
       const ltNum = Number(lt)
-      if (Number.isFinite(ltNum) && ltNum > 0) loginAt.value = ltNum
+      loginAt.value = Number.isFinite(ltNum) && ltNum > 0 ? ltNum : 0
     } catch {
-      // ignore
+      accessToken.value = ''
+      refreshToken.value = ''
+      admin.value = null
+      loginAt.value = 0
     }
   }
 

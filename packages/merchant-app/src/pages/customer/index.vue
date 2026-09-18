@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-11 · 客户管理
  *
@@ -8,12 +9,6 @@ import { ref, computed, onMounted } from 'vue'
 import { customerService } from '../../services/customer'
 import type { MerchantCustomer } from '../../services/customer'
 import { formatPrice, formatRelative, maskPhone } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Tabs from '../../components/tabs/tabs.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-import Icon from '../../components/icon/icon.vue'
-
 type Tab = 'all' | 'promoter' | 'member' | 'normal'
 
 const tab = ref<Tab>('all')
@@ -62,7 +57,7 @@ async function load() {
 async function toggleAuth(c: MerchantCustomer) {
   c.priceAuthorized = !c.priceAuthorized
   await customerService.authorize(c.id, c.priceAuthorized)
-  uni.showToast({ title: c.priceAuthorized ? '已授权' : '已取消授权' })
+  appFeedback.showToast({ title: c.priceAuthorized ? '已授权' : '已取消授权' })
 }
 
 function openTierPicker(c: MerchantCustomer) {
@@ -73,7 +68,7 @@ async function pickTier(tier: 'retail' | 'wholesale' | 'member') {
   if (!showTierPicker.value) return
   showTierPicker.value.priceTier = tier
   await customerService.setPriceTier(showTierPicker.value.id, tier)
-  uni.showToast({ title: '已更新' })
+  appFeedback.showToast({ title: '已更新' })
   showTierPicker.value = null
 }
 
@@ -85,21 +80,45 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="客户管理" />
+    <wd-navbar title="客户管理"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view class="header">
       <view class="search-wrap">
-        <Icon name="search" :size="32" color="var(--text-tertiary)" />
-        <input
+        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
+        <wd-input no-border
           v-model="keyword"
           class="search-input"
           placeholder="搜索昵称 / 手机号"
           confirm-type="search"
           @confirm="load"
-        />
+         />
       </view>
-      <Tabs v-model="tab" :items="TABS" variant="underline" @change="load" />
+      <wd-tabs v-model="tab" @change="load"  color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
     </view>
 
     <view class="list">
@@ -109,13 +128,13 @@ onMounted(load)
           <view class="head-info">
             <view class="name-row">
               <text class="name">{{ c.nickname }}</text>
-              <StatusTag :text="KIND_LABEL[c.kind].text" :tone="KIND_LABEL[c.kind].tone" />
-              <StatusTag v-if="c.groupTag" :text="c.groupTag" tone="info" />
+              <wd-tag  :type="$jwTagType(KIND_LABEL[c.kind].tone)" :plain="true" round>{{ KIND_LABEL[c.kind].text }}</wd-tag>
+              <wd-tag v-if="c.groupTag"  :type="$jwTagType('info')" :plain="true" round>{{ c.groupTag }}</wd-tag>
             </view>
             <text class="phone">{{ maskPhone(c.phone) }}</text>
           </view>
           <view class="phone-call" @click="callCustomer(c)">
-            <Icon name="phone" :size="32" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--brand-primary)"  />
           </view>
         </view>
 
@@ -138,25 +157,32 @@ onMounted(load)
           <view class="foot-left">
             <text class="foot-label">价格层级</text>
             <view class="tier-pill" @click="openTierPicker(c)">
-              <StatusTag :text="TIER_LABEL[c.priceTier].text" :tone="TIER_LABEL[c.priceTier].tone" fill />
+              <wd-tag  :type="$jwTagType(TIER_LABEL[c.priceTier].tone)" :plain="false" round>{{ TIER_LABEL[c.priceTier].text }}</wd-tag>
               <text class="caret">›</text>
             </view>
           </view>
           <view class="foot-right">
             <text class="foot-label">价格授权</text>
-            <switch :checked="c.priceAuthorized" color="#FF4D2D" @change="toggleAuth(c)" />
+            <wd-switch :model-value="c.priceAuthorized" active-color="var(--brand-primary)" @change="toggleAuth(c)"  />
           </view>
         </view>
       </view>
 
-      <EmptyState v-if="!loading && list.length === 0" title="暂无客户" desc="切换标签或调整搜索" />
+      <wd-status-tip v-if="!loading && list.length === 0"  image="content" :tip="['暂无客户', '切换标签或调整搜索'].filter(Boolean).join(' · ')" />
     </view>
 
     <view class="safe-bottom" />
 
     <!-- 价格层级选择 -->
-    <view v-if="showTierPicker" class="mask" @click="showTierPicker = null">
-      <view class="sheet" @click.stop>
+    <wd-popup
+      :model-value="!!showTierPicker"
+      position="bottom"
+      custom-class="sheet"
+      safe-area-inset-bottom
+      root-portal
+      @close="showTierPicker = null"
+    >
+      <view v-if="showTierPicker" class="sheet-content">
         <view class="sheet-head">为「{{ showTierPicker.nickname }}」设置价格层级</view>
         <view class="sheet-options">
           <view
@@ -173,8 +199,10 @@ onMounted(load)
           </view>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

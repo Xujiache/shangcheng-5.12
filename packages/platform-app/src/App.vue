@@ -1,61 +1,115 @@
 <script setup lang="ts">
-import { onLaunch, onShow } from '@dcloudio/uni-app'
+import { onHide, onLaunch, onShow } from '@dcloudio/uni-app'
 import { useAdminStore } from './store/admin'
 import { checkAppUpdate } from './composables/useAppUpdate'
+import { appTheme } from './theme'
+import { useMessage, useToast } from 'wot-design-uni'
+import { bindWotFeedback } from '@jiujiu/shared'
+
+// 反馈桥接属于增强能力，不能阻断 App 根实例创建。部分旧 Android WebView
+// 在组件库上下文尚未建立时会拒绝 provide/inject，失败时页面仍可正常启动。
+try {
+  bindWotFeedback({ toast: useToast('global'), message: useMessage('global') })
+} catch (error) {
+  console.error('[startup] Wot feedback bridge unavailable', error)
+}
 
 const ADMIN_TOKEN_KEY = 'jiujiu_admin_token'
+const ADMIN_REFRESH_KEY = 'jiujiu_admin_refresh_token'
 
-function readLoggedInFromStorage(): boolean {
+function hasStoredSession(): boolean {
   try {
-    return !!uni.getStorageSync(ADMIN_TOKEN_KEY)
+    return !!(uni.getStorageSync(ADMIN_TOKEN_KEY) || uni.getStorageSync(ADMIN_REFRESH_KEY))
   } catch {
     return false
   }
 }
 
+function isPublicRoute(route: string): boolean {
+  return route.includes('pages/startup/') || route.includes('pages/auth/') || route.includes('pages/update/')
+}
+
+function currentRoute(): string {
+  try {
+    const pages = getCurrentPages()
+    return pages[pages.length - 1]?.route || ''
+  } catch {
+    return ''
+  }
+}
+
+let foregroundCheckTimer: ReturnType<typeof setTimeout> | null = null
+let pollingTimer: ReturnType<typeof setInterval> | null = null
+let lastAutomaticCheckAt = 0
+const FOREGROUND_MIN_INTERVAL = 60_000
+const POLLING_INTERVAL = 15 * 60_000
+
+async function runAutomaticUpdateCheck(source: 'foreground' | 'poll') {
+  const route = currentRoute()
+  if (route.includes('pages/startup/') || route.includes('pages/update/')) return
+  const now = Date.now()
+  if (now - lastAutomaticCheckAt < FOREGROUND_MIN_INTERVAL) return
+  lastAutomaticCheckAt = now
+  const result = await checkAppUpdate('platform', { silent: true, source })
+  if (result === 'blocked' && !currentRoute().includes('pages/startup/')) {
+    uni.reLaunch({ url: '/pages/startup/index' })
+  }
+}
+
+function startPolling() {
+  if (pollingTimer) clearInterval(pollingTimer)
+  pollingTimer = setInterval(() => void runAutomaticUpdateCheck('poll'), POLLING_INTERVAL)
+}
+
+function scheduleForegroundUpdateCheck() {
+  if (foregroundCheckTimer) clearTimeout(foregroundCheckTimer)
+  foregroundCheckTimer = setTimeout(async () => {
+    foregroundCheckTimer = null
+    await runAutomaticUpdateCheck('foreground')
+  }, 500)
+}
+
 onLaunch(() => {
   const adminStore = useAdminStore()
   adminStore.hydrate()
-  // 关键修复：直接读 storage 判断登录态，不依赖 pinia computed
-  // 原因：pinia 的 computed isLogin 在 hydrate 完成后的同一微任务内
-  // 不一定立刻读到 token 的新值,会导致刚 hydrate 完仍判定未登录,
-  // 进而错误地 reLaunch 到登录页（issue: 打包后无法记住登录）
-  if (!readLoggedInFromStorage()) {
-    setTimeout(() => uni.reLaunch({ url: '/pages/auth/login' }), 0)
-  }
-  setTimeout(() => {
-    checkAppUpdate('platform', { silent: true })
-  }, 2500)
 })
 
 onShow(() => {
-  if (!readLoggedInFromStorage()) {
-    const pages = getCurrentPages()
-    const top = pages[pages.length - 1] as any
-    const route = top?.route || ''
-    if (route && !route.includes('pages/auth/')) {
-      uni.reLaunch({ url: '/pages/auth/login' })
-    }
+  appTheme.refreshSystemTheme()
+  const route = currentRoute()
+  if (route && !isPublicRoute(route) && !hasStoredSession()) {
+    uni.reLaunch({ url: '/pages/auth/login' })
   }
+  scheduleForegroundUpdateCheck()
+  startPolling()
+})
+
+onHide(() => {
+  if (foregroundCheckTimer) clearTimeout(foregroundCheckTimer)
+  foregroundCheckTimer = null
+  if (pollingTimer) clearInterval(pollingTimer)
+  pollingTimer = null
 })
 </script>
 
 <style lang="scss">
 @import '@jiujiu/shared/tokens.css';
+@import '@jiujiu/shared/wot-overrides.scss';
 
 page {
-  background: var(--bg-page);
+  background: var(--environment-gradient, var(--bg-page));
   color: var(--text-primary);
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
+}
+
+.wot-theme-dark page,
+.wot-theme-dark {
+  color-scheme: dark;
 }
 
 ::-webkit-scrollbar {
   display: none;
 }
 
-.uni-tabbar,
-.uni-tabbar-bottom {
-  display: none !important;
-}
 </style>

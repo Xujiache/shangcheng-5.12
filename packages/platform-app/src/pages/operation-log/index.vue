@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 操作日志
  *
@@ -12,10 +13,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { auditLogService } from '../../services'
 import type { AuditRecord, AuditRecordType, AuditRecordStatus } from '../../services'
 import { formatDateTime } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TypeFilter = AuditRecordType | 'all'
 type StatusFilter = AuditRecordStatus | 'all'
 
@@ -64,7 +61,7 @@ async function load(reset = true) {
       list.value = []
       total.value = 0
     }
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -123,7 +120,7 @@ function copy(text: string) {
   if (!text) return
   uni.setClipboardData({
     data: text,
-    success: () => uni.showToast({ title: '已复制', icon: 'success', duration: 600 }),
+    success: () => appFeedback.showToast({ title: '已复制', icon: 'success', duration: 600 }),
   })
 }
 
@@ -131,8 +128,26 @@ onMounted(() => load(true))
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="操作日志" right-icon="refresh" @right="load(true)" />
+    <wd-navbar title="操作日志" @click-right="load(true)"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+    </wd-navbar>
 
     <!-- 类型筛选 -->
     <view class="filter-card">
@@ -202,18 +217,17 @@ onMounted(() => load(true))
         </view>
       </view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && list.length === 0"
-        title="暂无操作日志"
-        desc="审核 / 抽检 / 自动通过等动作会在这里留痕"
-        icon="doc"
-      />
+       image="content" :tip="['暂无操作日志', '审核 / 抽检 / 自动通过等动作会在这里留痕'].filter(Boolean).join(' · ')" />
 
       <view v-if="loading && list.length > 0" class="loading-tip">加载中…</view>
       <view v-else-if="!hasMore && list.length > 0" class="loading-tip">— 已经到底了 —</view>
       <view style="height: 60rpx" />
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

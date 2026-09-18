@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-21 · 厂家详情（申请代理）
  *
@@ -9,11 +10,6 @@ import { onLoad } from '@dcloudio/uni-app'
 import { plazaService } from '../../services/store'
 import type { PlazaFactoryDetail, PlazaPlazaProduct } from '../../services/store'
 import { formatPrice, formatWan } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Section from '../../components/section/section.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import Icon from '../../components/icon/icon.vue'
-
 const factoryId = ref('')
 const detail = ref<PlazaFactoryDetail | null>(null)
 const products = ref<PlazaPlazaProduct[]>([])
@@ -44,7 +40,7 @@ async function toggleFollow() {
   if (!detail.value) return
   detail.value.followed = !detail.value.followed
   await plazaService.follow(factoryId.value, detail.value.followed)
-  uni.showToast({ title: detail.value.followed ? '已关注' : '已取消关注' })
+  appFeedback.showToast({ title: detail.value.followed ? '已关注' : '已取消关注' })
 }
 
 function callFactory() {
@@ -63,7 +59,7 @@ function openAgency() {
 
 async function submitAgency() {
   if (products.value.length === 0) {
-    uni.showToast({ title: '该厂家暂无可代理商品', icon: 'none' })
+    appFeedback.showToast({ title: '该厂家暂无可代理商品', icon: 'none' })
     return
   }
   const productIds = products.value.slice(0, 5).map((p) => p.productId)
@@ -76,12 +72,12 @@ async function submitAgency() {
       message: agencyForm.value.message,
     })
     showAgency.value = false
-    uni.showToast({ title: '申请已提交', icon: 'success', duration: 1200 })
+    appFeedback.showToast({ title: '申请已提交', icon: 'success', duration: 1200 })
     setTimeout(() => {
       uni.redirectTo({ url: '/pages/product/agency-list?from=apply' })
     }, 1200)
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '提交失败', icon: 'none' })
   }
 }
 
@@ -99,8 +95,24 @@ onMounted(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page" v-if="detail">
-    <NavBar :title="detail.name" :bg="'transparent'" class="nav-on-dark" />
+    <wd-navbar :title="detail.name" class="nav-on-dark"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" custom-style="background: transparent;" />
 
     <!-- Banner + 头部 -->
     <view class="hero">
@@ -111,11 +123,11 @@ onMounted(() => {
         <view class="hero-name-row">
           <text class="hero-name">{{ detail.name }}</text>
           <view class="hero-tags">
-            <StatusTag v-for="t in detail.tags" :key="t" :text="t" tone="highlight" fill />
+            <wd-tag v-for="t in detail.tags" :key="t"  :type="$jwTagType('highlight')" :plain="false" round>{{ t }}</wd-tag>
           </view>
         </view>
         <view class="hero-meta">
-          <Icon name="location" :size="24" color="rgba(255,255,255,0.85)" />
+          <wd-icon :name="$jwIcon('location')" size="12px" color="rgba(255,255,255,0.85)"  />
           <text>{{ detail.region }}</text>
           <text>· 经营 {{ detail.years }} 年</text>
           <text>· 已为 {{ detail.agencyCount }} 家代理</text>
@@ -143,16 +155,18 @@ onMounted(() => {
 
     <view class="body">
       <!-- 厂家介绍 -->
-      <Section title="厂家介绍">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "厂家介绍" }}</text></view></view></template>
         <text class="desc">{{ detail.desc }}</text>
         <view class="addr-row">
-          <Icon name="location" :size="28" color="var(--text-secondary)" />
+          <wd-icon :name="$jwIcon('location')" size="14px" color="var(--text-secondary)"  />
           <text class="addr-text">{{ detail.address }}</text>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 资质 -->
-      <Section :title="`资质证照 · ${detail.qualifications.length} 项`">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ `资质证照 · ${detail.qualifications.length} 项` }}</text></view></view></template>
         <view class="quali-grid">
           <view
             v-for="(q, i) in detail.qualifications"
@@ -164,10 +178,11 @@ onMounted(() => {
             <text class="quali-name">{{ q.name }}</text>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <!-- 商品 grid -->
-      <Section title="主推商品" action="查看全部">
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "主推商品" }}</text></view><wd-button type="text" size="small">{{ "查看全部" }}</wd-button></view></template>
         <view v-if="products.length === 0" class="empty">该厂家暂无在售商品</view>
         <view v-else class="product-grid">
           <view v-for="p in products" :key="p.productId" class="prod">
@@ -182,7 +197,7 @@ onMounted(() => {
             </view>
           </view>
         </view>
-      </Section>
+      </wd-card>
 
       <view class="safe-bottom" />
     </view>
@@ -190,28 +205,26 @@ onMounted(() => {
     <!-- 底部固定 -->
     <view class="footer">
       <view class="f-icon-btn" @click="toggleFollow">
-        <Icon
-          :name="detail.followed ? 'star-fill' : 'star'"
-          :size="36"
+        <wd-icon
+          :name="$jwIcon(detail.followed ? 'star-fill' : 'star')" size="18px"
           :color="detail.followed ? '#FFAA33' : 'var(--text-secondary)'"
-          :stroke="detail.followed ? 0 : 1.6"
-        />
+         />
         <text class="f-icon-label">{{ detail.followed ? '已关注' : '关注' }}</text>
       </view>
       <view class="f-icon-btn" @click="callFactory">
-        <Icon name="phone" :size="36" color="var(--brand-primary)" />
+        <wd-icon :name="$jwIcon('phone')" size="18px" color="var(--brand-primary)"  />
         <text class="f-icon-label">联系</text>
       </view>
       <view class="f-cta" @click="openAgency">申请代理</view>
     </view>
 
     <!-- 申请代理弹层 -->
-    <view v-if="showAgency" class="mask" @click="showAgency = false">
-      <view class="sheet" @click.stop>
+    <wd-popup v-model="showAgency" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
+      <view class="sheet-content">
         <view class="sheet-head">
           <text class="sheet-title">申请代理</text>
           <view class="sheet-close" @click="showAgency = false">
-            <Icon name="close" :size="32" color="#909399" />
+            <wd-icon :name="$jwIcon('close')" size="16px" color="#909399"  />
           </view>
         </view>
         <text class="sheet-sub">提交后由厂家审核，通过后即可代理其全部主推商品</text>
@@ -220,14 +233,14 @@ onMounted(() => {
           <text class="sheet-label">统一加价幅度</text>
           <view class="markup-row">
             <view class="markup-step" @click="adjustMarkup(-5)">
-              <Icon name="minus" :size="40" color="var(--brand-primary)" />
+              <wd-icon :name="$jwIcon('minus')" size="20px" color="var(--brand-primary)"  />
             </view>
             <view class="markup-value">
               <text class="num">{{ agencyForm.markupPercent }}</text>
               <text class="unit">%</text>
             </view>
             <view class="markup-step" @click="adjustMarkup(5)">
-              <Icon name="plus" :size="40" color="var(--brand-primary)" />
+              <wd-icon :name="$jwIcon('plus')" size="20px" color="var(--brand-primary)"  />
             </view>
           </view>
           <text class="markup-tip">厂家建议 10% ~ 25%</text>
@@ -239,27 +252,29 @@ onMounted(() => {
               <text class="opt-name">价格自动同步</text>
               <text class="opt-desc">厂家调价时自动同步到本店</text>
             </view>
-            <switch :checked="agencyForm.autoSyncPrice" color="#FF4D2D" @change="(e) => agencyForm.autoSyncPrice = e.detail.value" />
+            <wd-switch :model-value="agencyForm.autoSyncPrice" active-color="var(--brand-primary)" @change="(e: any) => agencyForm.autoSyncPrice = e.value"  />
           </view>
         </view>
 
         <view class="sheet-section">
           <text class="sheet-label">申请留言</text>
-          <textarea
+          <wd-textarea no-border
             v-model="agencyForm.message"
             class="ag-textarea"
             placeholder="可填写门店情况、预计销量等 · 提升通过率"
             maxlength="120"
-          />
+           />
         </view>
 
         <view class="sheet-footer">
-          <view class="sf-btn ghost" @click="showAgency = false">取消</view>
-          <view class="sf-btn primary" @click="submitAgency">提交申请</view>
+          <wd-button block plain size="large" @click="showAgency = false">取消</wd-button>
+          <wd-button block type="primary" size="large" @click="submitAgency">提交申请</wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -310,7 +325,7 @@ onMounted(() => {
   height: 120rpx;
   border-radius: 24rpx;
   border: 4rpx solid #fff;
-  background: #fff;
+  background: var(--bg-card);
 }
 .hero-name-row {
   display: flex;

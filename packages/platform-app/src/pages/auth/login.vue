@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 平台管理 · 登录页
  *
  * 仅账号密码登录（B 端高权限）
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '../../store/admin'
 import { platformAuthService } from '../../services/auth'
+import { checkAppUpdate } from '../../composables/useAppUpdate'
 import AgreementSheet from '../../components/agreement-sheet/agreement-sheet.vue'
+import GlassSurface from '@jiujiu/shared/glass-surface.vue'
 
 const adminStore = useAdminStore()
 
@@ -22,18 +25,26 @@ function openAgreement(type: LegalKind) {
 const username = ref('')
 const password = ref('')
 const loading = ref(false)
+const checkingUpdate = ref(false)
 const showPwd = ref(false)
 const agreed = ref(true)
 
 const canSubmit = computed(() => username.value.trim().length >= 3 && password.value.length >= 6)
 
+onMounted(() => {
+  adminStore.hydrate()
+  if (adminStore.accessToken || adminStore.refreshToken) {
+    uni.reLaunch({ url: '/pages/tabbar/home/index' })
+  }
+})
+
 async function onLogin() {
   if (!agreed.value) {
-    uni.showToast({ title: '请先同意管理员守则', icon: 'none' })
+    appFeedback.showToast({ title: '请先同意管理员守则', icon: 'none' })
     return
   }
   if (!canSubmit.value) {
-    uni.showToast({ title: '请填写账号与密码（≥6位）', icon: 'none' })
+    appFeedback.showToast({ title: '请填写账号与密码（≥6位）', icon: 'none' })
     return
   }
   loading.value = true
@@ -44,24 +55,50 @@ async function onLogin() {
     })
     const role = (session as any).user?.role
     if (role !== 'platform' && role !== 'admin' && role !== 'super-admin') {
-      uni.showToast({ title: '当前账号无平台访问权限', icon: 'none' })
+      appFeedback.showToast({ title: '当前账号无平台访问权限', icon: 'none' })
       return
     }
     adminStore.setSession(session as any)
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    appFeedback.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => uni.reLaunch({ url: '/pages/tabbar/home/index' }), 500)
   } catch (e: any) {
     // 失败原因优先级:后端 BizException message > 网络错误 errMsg > 兜底
     const msg = e?.message || e?.errMsg || '登录失败,请检查网络'
-    uni.showToast({ title: msg, icon: 'none', duration: 2500 })
+    appFeedback.showToast({ title: msg, icon: 'none', duration: 2500 })
     console.error('[platform-app][login] 登录失败:', e)
   } finally {
     loading.value = false
   }
 }
+
+async function manualCheckUpdate() {
+  if (checkingUpdate.value) return
+  checkingUpdate.value = true
+  try {
+    await checkAppUpdate('platform', { silent: false, source: 'manual' })
+  } finally {
+    checkingUpdate.value = false
+  }
+}
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <view class="bg-deco" />
 
@@ -71,7 +108,7 @@ async function onLogin() {
       <text class="subtitle">Powered by 经纬科技 · Platform Console</text>
     </view>
 
-    <view class="card">
+    <GlassSurface class="card" variant="card" effect="auto">
       <view class="card-head">
         <text class="card-title">管理员登录</text>
         <text class="card-tip">仅授权人员可访问</text>
@@ -83,7 +120,7 @@ async function onLogin() {
         </view>
         <view class="input-wrap">
           <text class="prefix-icon">@</text>
-          <input v-model="username" class="input" placeholder="邮箱 / 工号" />
+          <wd-input no-border v-model="username" class="input" placeholder="邮箱 / 工号"  />
         </view>
       </view>
 
@@ -94,7 +131,7 @@ async function onLogin() {
         </view>
         <view class="input-wrap">
           <text class="prefix-icon">密</text>
-          <input v-model="password" class="input" :password="!showPwd" placeholder="6 位以上" />
+          <wd-input no-border v-model="password" class="input" show-password placeholder="6 位以上"  />
           <text class="suffix-toggle" @click="showPwd = !showPwd">{{
             showPwd ? '隐藏' : '显示'
           }}</text>
@@ -113,21 +150,26 @@ async function onLogin() {
         </text>
       </view>
 
-      <button
+      <wd-button
         :class="['submit', (!canSubmit || loading) && 'disabled']"
         :disabled="!canSubmit || loading"
         @click="onLogin"
-      >
+       type="primary" size="large" block>
         {{ loading ? '登录中…' : '登 录' }}
-      </button>
-    </view>
+      </wd-button>
+    </GlassSurface>
 
     <view class="footer">
+      <text class="update-link" @click="manualCheckUpdate">
+        {{ checkingUpdate ? '正在检查更新…' : '检查更新' }}
+      </text>
       <text class="copyright">© 2026 经纬科技 · 平台管理</text>
     </view>
 
     <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style scoped lang="scss">
@@ -194,13 +236,13 @@ async function onLogin() {
     display: block;
     font-size: 36rpx;
     font-weight: 700;
-    color: #1d2129;
+    color: var(--text-primary);
   }
   .card-tip {
     display: block;
     margin-top: 8rpx;
     font-size: 24rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
   }
 }
 .field {
@@ -213,7 +255,7 @@ async function onLogin() {
   margin-bottom: 12rpx;
   .label {
     font-size: 24rpx;
-    color: #4e5969;
+    color: var(--text-secondary);
     font-weight: 600;
   }
   .forgot {
@@ -226,17 +268,17 @@ async function onLogin() {
   align-items: center;
   height: 96rpx;
   padding: 0 24rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx solid transparent;
   border-radius: 16rpx;
   transition: all 0.2s;
   &:focus-within {
     border-color: #ff4d2d;
-    background: #fff;
+    background: var(--bg-card);
   }
   .prefix-icon {
     font-size: 32rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
     margin-right: 12rpx;
     width: 40rpx;
     text-align: center;
@@ -245,7 +287,7 @@ async function onLogin() {
     flex: 1;
     height: 100%;
     font-size: 30rpx;
-    color: #1d2129;
+    color: var(--text-primary);
   }
   .suffix-toggle {
     font-size: 24rpx;
@@ -276,7 +318,7 @@ async function onLogin() {
   }
   .agree-text {
     font-size: 24rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
     .hl {
       color: #ff4d2d;
     }
@@ -311,6 +353,11 @@ async function onLogin() {
   display: flex;
   flex-direction: column;
   gap: 6rpx;
+  .update-link {
+    margin-bottom: 14rpx;
+    font-size: 24rpx;
+    color: #ff6944;
+  }
   .copyright {
     font-size: 22rpx;
     color: rgba(255, 255, 255, 0.5);

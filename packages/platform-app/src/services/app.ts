@@ -19,7 +19,11 @@ export const appService = {
    * 拉最新发布包 —— 失败抛错,调用方应展示"获取失败"提示并允许重试。
    * 不再返回 PLACEHOLDER 占位对象,避免在 UI 上误显示 v0.0.0 误导用户。
    */
-  async getLatest(platform: AppPlatform): Promise<AppRelease> {
-    return http.get<AppRelease>('/api/v1/m/app/latest', { platform }, { silent: true })
+  async getLatest(platform: AppPlatform): Promise<AppRelease | null> {
+    return http.get<AppRelease | null>(
+      '/api/v1/m/app/latest',
+      { platform, _: Date.now() },
+      { silent: true, auth: 'none', timeout: 5000 },
+    )
   },
 }

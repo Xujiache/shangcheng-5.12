@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-04 · 商品审核
  * 还原 原型图/platform-app.jsx::PA_ProductAudit
@@ -12,10 +13,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { productAuditService } from '../../services'
 import type { ProductAuditConfig } from '../../services'
 import { formatDate, formatPrice } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 /**
  * 商品审核 tab 严格对齐后端 prisma Product.status 取值:
  *   draft / auditing / active / offline / rejected
@@ -128,7 +125,7 @@ async function toggleAutoApprove() {
   if (!config.value) return
   config.value.autoApprove = !config.value.autoApprove
   await productAuditService.saveConfig({ autoApprove: config.value.autoApprove })
-  uni.showToast({
+  appFeedback.showToast({
     title: config.value.autoApprove ? '已开启自动通过' : '已关闭自动通过',
     icon: 'success',
   })
@@ -144,19 +141,19 @@ async function toggleCondition(key: string) {
 
 function changeSamplingRate() {
   if (!config.value) return
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['5% 随机抽检', '10% 随机抽检', '20% 随机抽检', '30% 随机抽检', '50% 随机抽检'],
     success: async (r) => {
       const rate = [5, 10, 20, 30, 50][r.tapIndex]
       config.value!.samplingRate = rate
       await productAuditService.saveConfig({ samplingRate: rate })
-      uni.showToast({ title: `抽检比例已设置为 ${rate}%`, icon: 'success' })
+      appFeedback.showToast({ title: `抽检比例已设置为 ${rate}%`, icon: 'success' })
     },
   })
 }
 
 function approve(p: AuditProduct) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '通过审核',
     content: `通过「${p.name}」？通过后立即上架。`,
     success: async (r) => {
@@ -165,14 +162,14 @@ function approve(p: AuditProduct) {
         list.value = list.value.filter((x) => x.id !== p.id)
         counts.value.pending = Math.max(0, counts.value.pending - 1)
         counts.value.active = counts.value.active + 1
-        uni.showToast({ title: '已通过', icon: 'success' })
+        appFeedback.showToast({ title: '已通过', icon: 'success' })
       }
     },
   })
 }
 
 function reject(p: AuditProduct) {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['图片不清晰', '商品描述违规', '价格异常', '类目不符', '其他原因'],
     success: async (r) => {
       const reason = ['图片不清晰', '商品描述违规', '价格异常', '类目不符', '其他原因'][r.tapIndex]
@@ -180,7 +177,7 @@ function reject(p: AuditProduct) {
       list.value = list.value.filter((x) => x.id !== p.id)
       counts.value.pending = Math.max(0, counts.value.pending - 1)
       counts.value.rejected = counts.value.rejected + 1
-      uni.showToast({ title: '已驳回', icon: 'success' })
+      appFeedback.showToast({ title: '已驳回', icon: 'success' })
     },
   })
 }
@@ -193,13 +190,13 @@ function reject(p: AuditProduct) {
  * 4. 不通过会让后端下架,前端把该卡从 auto_approved 列表移除并刷新 rejected 徽章
  */
 function spotCheck(p: AuditProduct) {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['抽检通过（仅留痕）', '抽检不通过（自动下架）'],
     success: (r) => {
       if (r.tapIndex === 0) {
         doSampleCheck(p, true)
       } else if (r.tapIndex === 1) {
-        uni.showModal({
+        appFeedback.showModal({
           title: '抽检不通过',
           content: '请填写下架原因（将同步至商户)',
           editable: true,
@@ -209,7 +206,7 @@ function spotCheck(p: AuditProduct) {
             if (m.confirm && m.content && m.content.trim()) {
               doSampleCheck(p, false, m.content.trim())
             } else if (m.confirm) {
-              uni.showToast({ title: '请填写原因', icon: 'none' })
+              appFeedback.showToast({ title: '请填写原因', icon: 'none' })
             }
           },
         })
@@ -222,20 +219,20 @@ async function doSampleCheck(p: AuditProduct, passed: boolean, reason?: string) 
   try {
     await productAuditService.sampleCheck(p.id, passed, reason)
     if (passed) {
-      uni.showToast({ title: '抽检通过已记录', icon: 'success' })
+      appFeedback.showToast({ title: '抽检通过已记录', icon: 'success' })
     } else {
       list.value = list.value.filter((x) => x.id !== p.id)
       counts.value.active = Math.max(0, counts.value.active - 1)
       counts.value.rejected = counts.value.rejected + 1
-      uni.showToast({ title: '已下架并记录原因', icon: 'success' })
+      appFeedback.showToast({ title: '已下架并记录原因', icon: 'success' })
     }
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
   }
 }
 
 function viewDetail(p: AuditProduct) {
-  uni.showModal({
+  appFeedback.showModal({
     title: p.name,
     content: `商户: ${p.merchant}\n类目: ${p.category}\n价格: ¥${formatPrice(p.price)}\n提交时间: ${formatDate(p.submittedAt)}`,
     showCancel: false,
@@ -250,8 +247,26 @@ onMounted(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="商品审核" right-icon="gear" @right="showConfigDetail = !showConfigDetail" />
+    <wd-navbar title="商品审核" @click-right="showConfigDetail = !showConfigDetail"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('gear')" size="22px" /></template>
+    </wd-navbar>
 
     <scroll-view scroll-y class="scroll">
       <!-- 自动通过开关 -->
@@ -259,7 +274,7 @@ onMounted(() => {
         <view class="auto-head">
           <view class="auto-title">
             <view class="auto-emoji">
-              <Icon name="lightning" :size="36" color="#FF4D2D" />
+              <wd-icon :name="$jwIcon('lightning')" size="18px" color="#FF4D2D"  />
             </view>
             <view class="auto-text">
               <text class="t1">自动通过 · 免审核</text>
@@ -290,8 +305,8 @@ onMounted(() => {
             @click="toggleCondition(c.key)"
           >
             <view class="cond-check">
-              <Icon v-if="c.enabled" name="check-circle" :size="36" color="var(--brand-primary)" />
-              <Icon v-else name="circle" :size="36" color="var(--text-tertiary)" />
+              <wd-icon v-if="c.enabled" :name="$jwIcon('check-circle')" size="18px" color="var(--brand-primary)"  />
+              <wd-icon v-else :name="$jwIcon('circle')" size="18px" color="var(--text-tertiary)"  />
             </view>
             <text class="cond-label">{{ c.label }}</text>
             <view :class="['cond-state', c.enabled ? 'on' : 'off']">
@@ -303,7 +318,7 @@ onMounted(() => {
           <text class="s-label">抽检比例</text>
           <view class="s-value">
             <text>{{ config.samplingRate }}% 随机抽检</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -361,17 +376,16 @@ onMounted(() => {
           </view>
         </view>
 
-        <EmptyState
+        <wd-status-tip
           v-if="!loading && filtered.length === 0"
-          :title="`暂无${TABS.find((t) => t.key === tab)?.label}商品`"
-          desc="开启自动通过可减少人工审核工作量"
-          icon="package"
-        />
+         image="content" :tip="[`暂无${TABS.find((t) => t.key === tab)?.label}商品`, '开启自动通过可减少人工审核工作量'].filter(Boolean).join(' · ')" />
       </view>
 
       <view style="height: 40rpx" />
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

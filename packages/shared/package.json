@@ -29,12 +29,16 @@
       "import": "./src/utils/index.ts"
     },
     "./tokens.scss": "./src/tokens/tokens.scss",
-    "./tokens.css": "./src/tokens/tokens.css"
+    "./tokens.css": "./src/tokens/tokens.css",
+    "./wot-overrides.scss": "./src/tokens/wot-overrides.scss",
+    "./glass-surface.vue": "./src/ui/GlassSurface.vue",
+    "./primary-liquid-tabbar.vue": "./src/ui/PrimaryLiquidTabBar.vue"
   },
   "files": [
     "dist",
     "src/tokens/tokens.scss",
     "src/tokens/tokens.css",
+    "src/tokens/wot-overrides.scss",
     "src/icons"
   ],
   "scripts": {
@@ -42,12 +46,14 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'lint: shared'",
-    "test": "echo 'test: shared'"
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
+    "@aslanonur/liquid-glass-vue": "1.1.3",
     "@faker-js/faker": "^9.0.3",
     "dayjs": "^1.11.13",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.7",
+    "vue": "^3.5.21"
   },
   "devDependencies": {
     "tsup": "^8.3.0",

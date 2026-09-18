@@ -1,4 +1,6 @@
-import { IsOptional, IsString, MinLength } from 'class-validator'
+import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator'
+
+const MAINLAND_PHONE_PATTERN = /^1[3-9]\d{9}$/
 
 export class WechatLoginDto {
   @IsOptional() @IsString() code?: string
@@ -7,15 +9,39 @@ export class WechatLoginDto {
 }
 
 export class PhoneLoginDto {
-  @IsString() phone!: string
+  @IsString()
+  @Matches(MAINLAND_PHONE_PATTERN, { message: '手机号格式不正确' })
+  phone!: string
   // 兼容 code 与 smsCode
   @IsOptional() @IsString() code?: string
   @IsOptional() @IsString() smsCode?: string
 }
 
 export class SmsCodeDto {
-  @IsString() phone!: string
+  @IsString()
+  @Matches(MAINLAND_PHONE_PATTERN, { message: '手机号格式不正确' })
+  phone!: string
   @IsOptional() @IsString() scene?: string
+}
+
+export class MerchantPasswordLoginDto {
+  @IsString()
+  @Matches(MAINLAND_PHONE_PATTERN, { message: '手机号格式不正确' })
+  phone!: string
+
+  @IsString()
+  @MinLength(6)
+  @MaxLength(32)
+  password!: string
+}
+
+export class MerchantSmsLoginDto {
+  @IsString()
+  @Matches(MAINLAND_PHONE_PATTERN, { message: '手机号格式不正确' })
+  phone!: string
+
+  @IsString()
+  code!: string
 }
 
 export class AdminLoginDto {

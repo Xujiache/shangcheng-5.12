@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 商家入驻申请（v2 · 重构美化）
  *
  * 流程：
  *   1) 手机号 + 验证码（**强制走，不再因"已登录"跳过**）
- *   2) 填写资料 → POST /api/v1/u/merchant-apply
- *   3) 等待平台审核（status=pending）
+ *   2) 新用户设置并确认密码（已有密码的普通用户自动跳过）
+ *   3) 填写资料 → POST /api/v1/u/merchant-apply
+ *   4) 等待平台审核（status=pending）
  *
  * 安全：不论是否已登录，都必须当场用短信验证申请所用手机号。
  * 原因：
@@ -16,21 +18,19 @@
  *      避免用旧账号 token 冒名提交申请。
  *
  * 视觉：
- *   - Hero 渐变 + 可视化步进条（验证 → 信息 → 完成）
+ *   - Hero 渐变 + 可视化步进条（验证 → 密码 → 信息 → 完成）
  *   - 表单按 主体信息 / 联系方式 / 经营信息 三段分区
- *   - 字段使用 <Icon /> 图标前缀，与登录页统一
+ *   - 字段使用 <wd-icon  /> 图标前缀，与登录页统一
  */
 import { ref, reactive, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services/auth'
 import { useStatusBar } from '../../composables/useStatusBar'
-import Icon from '../../components/icon/icon.vue'
-
 const { heroPaddingTop } = useStatusBar(40)
 
 const userStore = useUserStore()
 
-const step = ref<'phone' | 'form' | 'done'>('phone')
+const step = ref<'phone' | 'password' | 'form' | 'done'>('phone')
 
 // 第一步：手机号验证码
 const phone = ref('')
@@ -41,13 +41,13 @@ const verifyLoading = ref(false)
 
 async function sendCode() {
   if (!/^1[3-9]\d{9}$/.test(phone.value)) {
-    uni.showToast({ title: '请输入正确手机号', icon: 'none' })
+    appFeedback.showToast({ title: '请输入正确手机号', icon: 'none' })
     return
   }
   sending.value = true
   try {
-    await authService.sendSmsCode(phone.value)
-    uni.showToast({ title: '验证码已发送，请注意查收', icon: 'success' })
+    await authService.sendSmsCode(phone.value, 'register')
+    appFeedback.showToast({ title: '验证码已发送，请注意查收', icon: 'success' })
     countdown.value = 60
     const t = setInterval(() => {
       countdown.value--
@@ -59,7 +59,7 @@ async function sendCode() {
 }
 async function verifyPhone() {
   if (!/^1[3-9]\d{9}$/.test(phone.value) || !/^\d{4,6}$/.test(smsCode.value)) {
-    uni.showToast({ title: '请填写完整手机号与验证码', icon: 'none' })
+    appFeedback.showToast({ title: '请填写完整手机号与验证码', icon: 'none' })
     return
   }
   verifyLoading.value = true
@@ -67,15 +67,41 @@ async function verifyPhone() {
     const session = await authService.phoneLogin({ phone: phone.value, code: smsCode.value })
     userStore.setSession(session as any)
     form.contactPhone = phone.value
-    step.value = 'form'
+    accountHasPassword.value = !!(session.user as any)?.hasPassword
+    step.value = accountHasPassword.value ? 'form' : 'password'
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '验证失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '验证失败', icon: 'none' })
   } finally {
     verifyLoading.value = false
   }
 }
 
-// 第二步：表单
+// 第二步：新账号设置密码。只存页面内存，最终提交时与申请一起原子写入。
+const accountHasPassword = ref(false)
+const password = ref('')
+const confirmPassword = ref('')
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+const passwordValid = computed(
+  () =>
+    password.value.length >= 6 &&
+    password.value.length <= 32 &&
+    confirmPassword.value === password.value,
+)
+
+function confirmNewPassword() {
+  if (password.value.length < 6 || password.value.length > 32) {
+    appFeedback.showToast({ title: '密码长度须为 6-32 位', icon: 'none' })
+    return
+  }
+  if (password.value !== confirmPassword.value) {
+    appFeedback.showToast({ title: '两次输入的密码不一致', icon: 'none' })
+    return
+  }
+  step.value = 'form'
+}
+
+// 第三步：表单
 const form = reactive({
   type: 'store' as 'factory' | 'store',
   name: '',
@@ -97,21 +123,32 @@ function toggleCat(c: string) {
   else form.categories.push(c)
 }
 
-const formValid = computed(() => (
-  form.name && form.legalName && form.creditCode && form.legalRep && form.contact &&
-  form.contactPhone && form.region && form.address && form.categories.length > 0
-))
+const formValid = computed(
+  () =>
+    form.name &&
+    form.legalName &&
+    form.creditCode &&
+    form.legalRep &&
+    form.contact &&
+    form.contactPhone &&
+    form.region &&
+    form.address &&
+    form.categories.length > 0,
+)
 
 const submitting = ref(false)
 async function submit() {
   if (!formValid.value) {
-    uni.showToast({ title: '请填写完整必填项', icon: 'none' })
+    appFeedback.showToast({ title: '请填写完整必填项', icon: 'none' })
     return
   }
   submitting.value = true
   try {
-    await authService.merchantApply({ ...form })
-    // 入驻成功 → 立刻让登录页知道：① 显示横幅 ② 强制走手机+短信登录 ③ 自动回填刚验证过的手机号
+    await authService.merchantApply({
+      ...form,
+      ...(accountHasPassword.value ? {} : { password: password.value }),
+    })
+    // 入驻成功 → 登录页显示审核状态横幅，并自动回填刚验证过的手机号。
     try {
       uni.setStorageSync('merchant_just_applied', '1')
       if (form.contactPhone) {
@@ -121,10 +158,34 @@ async function submit() {
       /* ignore */
     }
     // 提交完成后用户已在"已登录"状态（apply 第一步即 phone-login），登出当前会话避免直接进入主页
-    try { userStore.logout() } catch { /* ignore */ }
+    try {
+      userStore.logout()
+    } catch {
+      /* ignore */
+    }
+    password.value = ''
+    confirmPassword.value = ''
     step.value = 'done'
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    const message = e?.message || '提交失败'
+    if (message.includes('短信验证已过期')) {
+      try {
+        userStore.logout()
+      } catch {
+        /* ignore */
+      }
+      smsCode.value = ''
+      password.value = ''
+      confirmPassword.value = ''
+      step.value = 'phone'
+      appFeedback.showModal({
+        title: '手机号验证已过期',
+        content: '为保护账号安全，请重新获取验证码后再提交。',
+        showCancel: false,
+      })
+    } else {
+      appFeedback.showToast({ title: message, icon: 'none' })
+    }
   } finally {
     submitting.value = false
   }
@@ -134,16 +195,38 @@ function backToLogin() {
   uni.reLaunch({ url: '/pages/auth/login' })
 }
 
-/** 步进条当前位置（0/1/2） */
-const stepIndex = computed(() => (step.value === 'phone' ? 0 : step.value === 'form' ? 1 : 2))
+/** 步进条当前位置（0/1/2/3） */
+const stepIndex = computed(() => {
+  if (step.value === 'phone') return 0
+  if (step.value === 'password') return 1
+  if (step.value === 'form') return 2
+  return 3
+})
 const STEPS = [
   { key: 'phone', label: '验证手机号' },
+  { key: 'password', label: '设置密码' },
   { key: 'form', label: '填写资料' },
   { key: 'done', label: '等待审核' },
 ]
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <!-- Hero -->
     <view class="hero" :style="{ paddingTop: heroPaddingTop }">
@@ -151,7 +234,7 @@ const STEPS = [
       <view class="blob blob-2" />
       <view class="hero-top">
         <view class="back-btn" @click="backToLogin">
-          <Icon name="back" :size="32" color="#fff" />
+          <wd-icon :name="$jwIcon('back')" size="16px" color="#fff"  />
         </view>
         <view class="hero-titles">
           <text class="hero-title">商家入驻</text>
@@ -161,14 +244,10 @@ const STEPS = [
 
       <!-- Stepper -->
       <view class="stepper">
-        <view
-          v-for="(s, i) in STEPS"
-          :key="s.key"
-          class="step-item"
-        >
+        <view v-for="(s, i) in STEPS" :key="s.key" class="step-item">
           <view class="step-row">
             <view :class="['dot', i <= stepIndex && 'reached', i === stepIndex && 'active']">
-              <Icon v-if="i < stepIndex" name="check" :size="20" color="#FF4D2D" />
+              <wd-icon v-if="i < stepIndex" :name="$jwIcon('check')" size="10px" color="#FF4D2D"  />
               <text v-else class="dot-num">{{ i + 1 }}</text>
             </view>
             <view v-if="i < STEPS.length - 1" :class="['bar', i < stepIndex && 'reached']" />
@@ -189,28 +268,92 @@ const STEPS = [
         <view class="form">
           <view class="field">
             <view class="prefix">
-              <Icon name="phone" :size="32" color="#86909c" />
+              <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"  />
             </view>
-            <input v-model="phone" class="input" type="number" maxlength="11" placeholder="11 位手机号" placeholder-class="ph" />
+            <wd-input no-border
+              v-model="phone"
+              class="input"
+              type="number"
+              maxlength="11"
+              placeholder="11 位手机号"
+              placeholder-class="ph"
+             />
           </view>
           <view class="field">
             <view class="prefix">
-              <Icon name="biz-receipt" :size="32" color="#86909c" />
+              <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c"  />
             </view>
-            <input v-model="smsCode" class="input" type="number" maxlength="6" placeholder="4-6 位验证码" placeholder-class="ph" />
+            <wd-input no-border
+              v-model="smsCode"
+              class="input"
+              type="number"
+              maxlength="6"
+              placeholder="4-6 位验证码"
+              placeholder-class="ph"
+             />
             <view :class="['code-btn', (countdown > 0 || sending) && 'disabled']" @click="sendCode">
               {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
             </view>
           </view>
         </view>
 
-        <button class="submit" :disabled="verifyLoading" @click="verifyPhone">
+        <wd-button class="submit" :disabled="verifyLoading" @click="verifyPhone" type="primary" size="large" block>
           {{ verifyLoading ? '验证中…' : '下一步' }}
-        </button>
+        </wd-button>
         <view class="link" @click="backToLogin">已有账号？返回登录</view>
       </view>
 
-      <!-- Step 2: 表单 -->
+      <!-- Step 2: 设置并确认密码 -->
+      <view v-else-if="step === 'password'" class="card">
+        <view class="card-head">
+          <text class="card-title">设置登录密码</text>
+          <text class="card-lead">设置 6-32 位密码，审核通过后可用手机号和密码登录</text>
+        </view>
+
+        <view class="form">
+          <view class="field">
+            <view class="prefix">
+              <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
+            </view>
+            <wd-input no-border
+              v-model="password"
+              class="input" show-password
+              maxlength="32"
+              placeholder="请输入新密码"
+              placeholder-class="ph"
+             />
+            <view class="suffix" @click="showPassword = !showPassword">
+              <wd-icon :name="$jwIcon(showPassword ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
+            </view>
+          </view>
+
+          <view class="field">
+            <view class="prefix">
+              <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
+            </view>
+            <wd-input no-border
+              v-model="confirmPassword"
+              class="input" show-password
+              maxlength="32"
+              placeholder="请再次输入新密码"
+              placeholder-class="ph"
+             />
+            <view class="suffix" @click="showConfirmPassword = !showConfirmPassword">
+              <wd-icon :name="$jwIcon(showConfirmPassword ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
+            </view>
+          </view>
+        </view>
+
+        <view v-if="confirmPassword && confirmPassword !== password" class="password-error">
+          两次输入的密码不一致
+        </view>
+        <wd-button class="submit" :disabled="!passwordValid" @click="confirmNewPassword" type="primary" size="large" block>
+          下一步
+        </wd-button>
+        <view class="link" @click="step = 'phone'">返回重新验证手机号</view>
+      </view>
+
+      <!-- Step 3: 表单 -->
       <template v-else-if="step === 'form'">
         <!-- 主体信息 -->
         <view class="card">
@@ -223,12 +366,24 @@ const STEPS = [
           <view class="field-block">
             <text class="label">主体类型</text>
             <view class="seg">
-              <view :class="['seg-item', form.type === 'store' && 'active']" @click="form.type = 'store'">
-                <Icon name="biz-store" :size="28" :color="form.type === 'store' ? '#FF4D2D' : '#86909c'" />
+              <view
+                :class="['seg-item', form.type === 'store' && 'active']"
+                @click="form.type = 'store'"
+              >
+                <wd-icon
+                  :name="$jwIcon('biz-store')" size="14px"
+                  :color="form.type === 'store' ? '#FF4D2D' : '#86909c'"
+                 />
                 <text>门店</text>
               </view>
-              <view :class="['seg-item', form.type === 'factory' && 'active']" @click="form.type = 'factory'">
-                <Icon name="biz-product" :size="28" :color="form.type === 'factory' ? '#FF4D2D' : '#86909c'" />
+              <view
+                :class="['seg-item', form.type === 'factory' && 'active']"
+                @click="form.type = 'factory'"
+              >
+                <wd-icon
+                  :name="$jwIcon('biz-product')" size="14px"
+                  :color="form.type === 'factory' ? '#FF4D2D' : '#86909c'"
+                 />
                 <text>厂家</text>
               </view>
             </view>
@@ -238,9 +393,14 @@ const STEPS = [
             <text class="label">店铺名 / 工厂名</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="biz-shop-decorate" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('biz-shop-decorate')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.name" class="input" placeholder="例：经纬科技" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.name"
+                class="input"
+                placeholder="例：经纬科技"
+                placeholder-class="ph"
+               />
             </view>
           </view>
 
@@ -248,9 +408,14 @@ const STEPS = [
             <text class="label">营业执照法定名称</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="doc" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('doc')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.legalName" class="input" placeholder="营业执照上的全称" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.legalName"
+                class="input"
+                placeholder="营业执照上的全称"
+                placeholder-class="ph"
+               />
             </view>
           </view>
 
@@ -258,9 +423,14 @@ const STEPS = [
             <text class="label">统一社会信用代码</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="biz-receipt" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.creditCode" class="input" placeholder="18 位社会信用代码" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.creditCode"
+                class="input"
+                placeholder="18 位社会信用代码"
+                placeholder-class="ph"
+               />
             </view>
           </view>
 
@@ -268,9 +438,14 @@ const STEPS = [
             <text class="label">法定代表人</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="biz-me" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('biz-me')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.legalRep" class="input" placeholder="姓名" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.legalRep"
+                class="input"
+                placeholder="姓名"
+                placeholder-class="ph"
+               />
             </view>
           </view>
         </view>
@@ -287,9 +462,14 @@ const STEPS = [
             <text class="label">联系人</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="biz-staff" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('biz-staff')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.contact" class="input" placeholder="联系人姓名" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.contact"
+                class="input"
+                placeholder="联系人姓名"
+                placeholder-class="ph"
+               />
             </view>
           </view>
 
@@ -297,9 +477,16 @@ const STEPS = [
             <text class="label">联系电话</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="phone" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.contactPhone" class="input" type="number" maxlength="11" placeholder="11 位手机号" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.contactPhone"
+                class="input"
+                type="number"
+                maxlength="11"
+                placeholder="11 位手机号"
+                placeholder-class="ph"
+               />
             </view>
           </view>
 
@@ -307,9 +494,14 @@ const STEPS = [
             <text class="label">所在地区</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="location" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('location')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.region" class="input" placeholder="例：上海市浦东新区" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.region"
+                class="input"
+                placeholder="例：上海市浦东新区"
+                placeholder-class="ph"
+               />
             </view>
           </view>
 
@@ -317,9 +509,14 @@ const STEPS = [
             <text class="label">详细地址</text>
             <view class="field">
               <view class="prefix">
-                <Icon name="biz-home" :size="32" color="#86909c" />
+                <wd-icon :name="$jwIcon('biz-home')" size="16px" color="#86909c"  />
               </view>
-              <input v-model="form.address" class="input" placeholder="街道、门牌号" placeholder-class="ph" />
+              <wd-input no-border
+                v-model="form.address"
+                class="input"
+                placeholder="街道、门牌号"
+                placeholder-class="ph"
+               />
             </view>
           </view>
         </view>
@@ -344,7 +541,7 @@ const STEPS = [
                 :class="['chip', form.categories.includes(c) && 'active']"
                 @click="toggleCat(c)"
               >
-                <Icon v-if="form.categories.includes(c)" name="check" :size="22" color="#FF4D2D" />
+                <wd-icon v-if="form.categories.includes(c)" :name="$jwIcon('check')" size="11px" color="#FF4D2D"  />
                 <text>{{ c }}</text>
               </view>
             </view>
@@ -353,42 +550,46 @@ const STEPS = [
 
         <!-- 提交 -->
         <view class="submit-wrap">
-          <button class="submit" :disabled="submitting || !formValid" @click="submit">
+          <wd-button class="submit" :disabled="submitting || !formValid" @click="submit" type="primary" size="large" block>
             {{ submitting ? '提交中…' : '提交申请' }}
-          </button>
+          </wd-button>
           <text class="submit-hint">提交即视为同意《商家入驻协议》</text>
         </view>
       </template>
 
-      <!-- Step 3: 完成 -->
+      <!-- Step 4: 完成 -->
       <view v-else class="card done">
         <view class="done-icon">
-          <Icon name="check" :size="68" color="#fff" :stroke="3" />
+          <wd-icon :name="$jwIcon('check')" size="34px" color="#fff"  />
         </view>
         <text class="done-title">入驻申请已提交</text>
-        <text class="done-sub">平台审核约 1 个工作日，审核通过后即可使用商家工作台。</text>
+        <text class="done-sub"
+          >平台审核约 1 个工作日，审核通过后可使用手机号和密码登录商家工作台。</text
+        >
 
         <view class="done-meta">
           <view class="meta-row">
-            <Icon name="clock" :size="28" color="#FF4D2D" />
+            <wd-icon :name="$jwIcon('clock')" size="14px" color="#FF4D2D"  />
             <text class="meta-text">预计审核时长 ≤ 24 小时</text>
           </view>
           <view class="meta-row">
-            <Icon name="bell" :size="28" color="#FF4D2D" />
+            <wd-icon :name="$jwIcon('bell')" size="14px" color="#FF4D2D"  />
             <text class="meta-text">结果将以短信和站内消息通知</text>
           </view>
         </view>
 
-        <button class="submit" @click="backToLogin">返回登录</button>
+        <wd-button class="submit" @click="backToLogin" type="primary" size="large" block>返回登录</wd-button>
       </view>
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #F7F8FA;
+  background: var(--bg-page);
   padding-bottom: 48rpx;
   box-sizing: border-box;
 }
@@ -399,8 +600,8 @@ const STEPS = [
   /* padding-top 由内联样式 heroPaddingTop 注入（状态栏 + 40rpx） */
   padding: 0 32rpx 88rpx;
   background:
-    radial-gradient(120% 80% at 100% 0%, #FF8A5E 0%, transparent 60%),
-    linear-gradient(160deg, #FF6B45 0%, #FF4D2D 50%, #E63A1F 100%);
+    radial-gradient(120% 80% at 100% 0%, #ff8a5e 0%, transparent 60%),
+    linear-gradient(160deg, #ff6b45 0%, #ff4d2d 50%, #e63a1f 100%);
   border-bottom-left-radius: 48rpx;
   border-bottom-right-radius: 48rpx;
   overflow: hidden;
@@ -414,14 +615,18 @@ const STEPS = [
   pointer-events: none;
 }
 .blob-1 {
-  width: 320rpx; height: 320rpx;
-  background: #FFD3A8;
-  top: -120rpx; right: -100rpx;
+  width: 320rpx;
+  height: 320rpx;
+  background: #ffd3a8;
+  top: -120rpx;
+  right: -100rpx;
 }
 .blob-2 {
-  width: 220rpx; height: 220rpx;
-  background: #FFAA82;
-  bottom: -80rpx; left: -40rpx;
+  width: 220rpx;
+  height: 220rpx;
+  background: #ffaa82;
+  bottom: -80rpx;
+  left: -40rpx;
   opacity: 0.4;
 }
 
@@ -436,8 +641,8 @@ const STEPS = [
   width: 64rpx;
   height: 64rpx;
   border-radius: 16rpx;
-  background: rgba(255,255,255,0.18);
-  border: 2rpx solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -455,7 +660,7 @@ const STEPS = [
 }
 .hero-sub {
   font-size: 24rpx;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   letter-spacing: 1rpx;
 }
 
@@ -483,8 +688,8 @@ const STEPS = [
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: rgba(255,255,255,0.22);
-  border: 2rpx solid rgba(255,255,255,0.45);
+  background: rgba(255, 255, 255, 0.22);
+  border: 2rpx solid rgba(255, 255, 255, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -492,33 +697,33 @@ const STEPS = [
   transition: all 0.25s;
 }
 .dot.reached {
-  background: #fff;
+  background: var(--bg-card);
   border-color: #fff;
 }
 .dot.active {
-  box-shadow: 0 0 0 8rpx rgba(255,255,255,0.25);
+  box-shadow: 0 0 0 8rpx rgba(255, 255, 255, 0.25);
 }
 .dot-num {
   font-size: 26rpx;
   font-weight: 700;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
 .dot.reached .dot-num {
-  color: #FF4D2D;
+  color: #ff4d2d;
 }
 .bar {
   flex: 1;
   height: 4rpx;
   margin: 0 8rpx;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 2rpx;
 }
 .bar.reached {
-  background: #fff;
+  background: var(--bg-card);
 }
 .step-label {
   font-size: 22rpx;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
   letter-spacing: 1rpx;
   padding-left: 6rpx;
 }
@@ -539,10 +744,10 @@ const STEPS = [
 }
 
 .card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 28rpx;
   padding: 32rpx 28rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.06);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.06);
 }
 
 .card-head {
@@ -552,14 +757,14 @@ const STEPS = [
   display: block;
   font-size: 34rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   letter-spacing: 1rpx;
 }
 .card-lead {
   display: block;
   margin-top: 8rpx;
   font-size: 24rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   line-height: 1.5;
 }
 
@@ -574,19 +779,19 @@ const STEPS = [
   width: 8rpx;
   height: 28rpx;
   border-radius: 4rpx;
-  background: linear-gradient(180deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(180deg, #ff6b45, #ff4d2d);
 }
 .section-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   letter-spacing: 1rpx;
   flex: 1;
 }
 .section-tag {
   font-size: 20rpx;
-  color: #FF4D2D;
-  background: #FFF1ED;
+  color: #ff4d2d;
+  background: #fff1ed;
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
 }
@@ -607,13 +812,13 @@ const STEPS = [
 }
 .label {
   font-size: 26rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 1rpx;
 }
 .label-hint {
   font-weight: 400;
-  color: #86909c;
+  color: var(--text-tertiary);
   margin-left: 4rpx;
   font-size: 22rpx;
 }
@@ -623,14 +828,16 @@ const STEPS = [
   align-items: center;
   height: 96rpx;
   padding: 0 24rpx;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: var(--bg-page);
+  border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 .field:focus-within {
-  border-color: #FFB199;
-  background: #fff;
+  border-color: #ffb199;
+  background: var(--bg-card);
 }
 .prefix {
   width: 44rpx;
@@ -640,35 +847,48 @@ const STEPS = [
   justify-content: center;
   margin-right: 16rpx;
 }
+.suffix {
+  width: 56rpx;
+  height: 56rpx;
+  margin-left: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .input {
   flex: 1;
   height: 100%;
   font-size: 28rpx;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .ph {
-  color: #c9cdd4;
+  color: var(--text-disabled);
   font-size: 26rpx;
 }
 .code-btn {
   margin-left: 12rpx;
   padding: 12rpx 24rpx;
-  background: linear-gradient(135deg, #FFF1ED, #FFE2D6);
-  color: #FF4D2D;
+  background: linear-gradient(135deg, #fff1ed, #ffe2d6);
+  color: #ff4d2d;
   border-radius: 999rpx;
   font-size: 24rpx;
   font-weight: 600;
   white-space: nowrap;
 }
 .code-btn.disabled {
-  background: #F2F3F5;
-  color: #C9CDD4;
+  background: #f2f3f5;
+  color: var(--text-disabled);
+}
+.password-error {
+  margin-top: 16rpx;
+  color: #f53f3f;
+  font-size: 23rpx;
 }
 
 /* Seg */
 .seg {
   display: flex;
-  background: #F2F3F5;
+  background: #f2f3f5;
   border-radius: 20rpx;
   padding: 8rpx;
   gap: 8rpx;
@@ -681,15 +901,15 @@ const STEPS = [
   justify-content: center;
   gap: 10rpx;
   font-size: 28rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   border-radius: 14rpx;
   transition: all 0.2s;
 }
 .seg-item.active {
-  background: #fff;
-  color: #FF4D2D;
+  background: var(--bg-card);
+  color: #ff4d2d;
   font-weight: 700;
-  box-shadow: 0 4rpx 12rpx rgba(255,77,45,0.15);
+  box-shadow: 0 4rpx 12rpx rgba(255, 77, 45, 0.15);
 }
 
 /* Chips */
@@ -703,17 +923,17 @@ const STEPS = [
   align-items: center;
   gap: 6rpx;
   padding: 16rpx 28rpx;
-  background: #F7F8FA;
-  border: 2rpx solid #F0F1F4;
+  background: var(--bg-page);
+  border: 2rpx solid #f0f1f4;
   border-radius: 999rpx;
   font-size: 26rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 .chip.active {
-  background: linear-gradient(135deg, #FFF6F1, #FFE9DC);
-  color: #FF4D2D;
-  border-color: #FFB199;
+  background: linear-gradient(135deg, #fff6f1, #ffe9dc);
+  color: #ff4d2d;
+  border-color: #ffb199;
   font-weight: 600;
 }
 
@@ -730,32 +950,34 @@ const STEPS = [
   width: 100%;
   height: 96rpx;
   line-height: 96rpx;
-  background: linear-gradient(135deg, #FF6B45 0%, #FF4D2D 100%);
+  background: linear-gradient(135deg, #ff6b45 0%, #ff4d2d 100%);
   color: #fff;
   font-size: 32rpx;
   font-weight: 700;
   letter-spacing: 8rpx;
   border-radius: 20rpx;
   border: none;
-  box-shadow: 0 16rpx 32rpx rgba(255,77,45,0.36);
+  box-shadow: 0 16rpx 32rpx rgba(255, 77, 45, 0.36);
   text-align: center;
   margin-top: 12rpx;
 }
-.submit::after { border: none; }
+.submit::after {
+  border: none;
+}
 .submit[disabled] {
   opacity: 0.5;
   box-shadow: none;
-  background: linear-gradient(135deg, #FFB199, #FF8A6A);
+  background: linear-gradient(135deg, #ffb199, #ff8a6a);
 }
 .submit-hint {
   font-size: 22rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
 }
 .link {
   display: block;
   text-align: center;
   font-size: 24rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   margin-top: 20rpx;
 }
 
@@ -771,30 +993,30 @@ const STEPS = [
   width: 140rpx;
   height: 140rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #36D399, #00B42A);
+  background: linear-gradient(135deg, #36d399, #00b42a);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 32rpx;
-  box-shadow: 0 16rpx 36rpx rgba(0,180,42,0.32);
+  box-shadow: 0 16rpx 36rpx rgba(0, 180, 42, 0.32);
 }
 .done-title {
   font-size: 36rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   margin-bottom: 16rpx;
   letter-spacing: 1rpx;
 }
 .done-sub {
   font-size: 26rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   line-height: 1.6;
   margin-bottom: 32rpx;
 }
 .done-meta {
   width: 100%;
-  background: #FFF6F1;
-  border: 2rpx solid #FFE0CD;
+  background: #fff6f1;
+  border: 2rpx solid #ffe0cd;
   border-radius: 20rpx;
   padding: 20rpx 24rpx;
   display: flex;
@@ -809,7 +1031,7 @@ const STEPS = [
 }
 .meta-text {
   font-size: 24rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   text-align: left;
 }
 .done .submit {

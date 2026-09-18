@@ -11,15 +11,27 @@
  * 注意：interface Event 必须 declare global，否则 module 内的扩展不 merge 到全局。
  */
 
+import type { AppFeedbackState, AppNavigationController, AppThemeController } from '@jiujiu/shared'
+
 // 1. 把 uni 暴露给 Vue 组件实例（模板 this 上下文）
 declare module 'vue' {
   interface ComponentCustomProperties {
     uni: typeof uni
+    $jwTheme: AppThemeController
+    $jwNav: AppNavigationController
+    $jwIcon: (name: unknown) => string
+    $jwTagType: (tone: unknown) => 'default' | 'primary' | 'success' | 'warning' | 'danger'
+    $jwFeedbackState: AppFeedbackState
   }
 }
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
     uni: typeof uni
+    $jwTheme: AppThemeController
+    $jwNav: AppNavigationController
+    $jwIcon: (name: unknown) => string
+    $jwTagType: (tone: unknown) => 'default' | 'primary' | 'success' | 'warning' | 'danger'
+    $jwFeedbackState: AppFeedbackState
   }
 }
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, delegateWotUploadChoose } from '@jiujiu/shared'
 /**
  * PA-11 · 系统设置
  *
@@ -14,9 +15,6 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { systemService } from '../../services'
 import type { SystemSettings } from '../../services'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'https://ewsn.top'
 const TOKEN_KEY = 'jiujiu_admin_token'
 
@@ -176,7 +174,7 @@ function closeSheet() {
 async function saveSheet() {
   if (!settings.value || !activeSheet.value || saving.value) return
   saving.value = true
-  uni.showLoading({ title: '保存中…', mask: true })
+  appFeedback.showLoading({ title: '保存中…', mask: true })
   const key = activeSheet.value
   // 先在本地 merge 出待提交 payload(失败回滚 settings)
   const before = JSON.parse(JSON.stringify(settings.value)) as SystemSettings
@@ -205,13 +203,13 @@ async function saveSheet() {
   settings.value = next
   try {
     await systemService.saveSettings(next)
-    uni.hideLoading()
-    uni.showToast({ title: '已保存', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: '已保存', icon: 'success' })
     activeSheet.value = null
   } catch (e: any) {
     settings.value = before
-    uni.hideLoading()
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   } finally {
     saving.value = false
   }
@@ -232,7 +230,7 @@ function chooseLogo() {
       const tempPath = res.tempFilePaths?.[0]
       if (!tempPath) return
       uploadingLogo.value = true
-      uni.showLoading({ title: '上传中…', mask: true })
+      appFeedback.showLoading({ title: '上传中…', mask: true })
       try {
         const token = (() => {
           try {
@@ -264,11 +262,11 @@ function chooseLogo() {
           })
         })
         draft.site.logo = uploaded.url
-        uni.hideLoading()
-        uni.showToast({ title: '已上传,记得保存', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: '已上传,记得保存', icon: 'none' })
       } catch (e: any) {
-        uni.hideLoading()
-        uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: e?.message || '上传失败', icon: 'none' })
       } finally {
         uploadingLogo.value = false
       }
@@ -318,8 +316,24 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="系统设置" />
+    <wd-navbar title="系统设置"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <scroll-view scroll-y class="scroll" v-if="settings && summary">
       <!-- 站点信息卡 -->
@@ -338,7 +352,7 @@ onMounted(load)
       <!-- 基础设置 -->
       <view class="card" @click="openSheet('base')">
         <view class="card-title">
-          <Icon name="gear" :size="28" color="var(--brand-primary)" />
+          <wd-icon :name="$jwIcon('gear')" size="14px" color="var(--brand-primary)"  />
           <text>基础设置</text>
           <view class="edit-tag">编辑</view>
         </view>
@@ -346,28 +360,28 @@ onMounted(load)
           <text class="r-label">平台名称</text>
           <view class="r-value">
             <text>{{ summary.site.name || '—' }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
         <view class="row">
           <text class="r-label">平台 Logo</text>
           <view class="r-value">
             <text>{{ summary.site.logo ? '已上传' : '未上传' }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
         <view class="row">
           <text class="r-label">客服电话</text>
           <view class="r-value">
             <text class="value-mono">{{ summary.service.phone || '—' }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
         <view class="row">
           <text class="r-label">ICP 备案号</text>
           <view class="r-value">
             <text class="value-mono">{{ summary.site.icp || '—' }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -375,7 +389,7 @@ onMounted(load)
       <!-- 支付配置 -->
       <view class="card" @click="openSheet('payment')">
         <view class="card-title">
-          <Icon name="wallet" :size="28" color="#FAAD14" />
+          <wd-icon :name="$jwIcon('wallet')" size="14px" color="#FAAD14"  />
           <text>支付配置</text>
           <view class="edit-tag">编辑</view>
         </view>
@@ -405,7 +419,7 @@ onMounted(load)
             <text :class="['value-status', settings.payment.balance.enabled ? 'on' : 'warn']">{{
               settings.payment.balance.enabled ? '已启用' : '未启用'
             }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -413,7 +427,7 @@ onMounted(load)
       <!-- 业务规则 -->
       <view class="card" @click="openSheet('business')">
         <view class="card-title">
-          <Icon name="package" :size="28" color="#A855F7" />
+          <wd-icon :name="$jwIcon('package')" size="14px" color="#A855F7"  />
           <text>业务规则</text>
           <view class="edit-tag">编辑</view>
         </view>
@@ -445,7 +459,7 @@ onMounted(load)
           <text class="r-label">提现门槛</text>
           <view class="r-value">
             <text class="value-num">¥{{ summary.business.withdrawMinAmount }}</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -453,7 +467,7 @@ onMounted(load)
       <!-- 安全策略 -->
       <view class="card" @click="openSheet('security')">
         <view class="card-title">
-          <Icon name="lock" :size="28" color="#FF3B30" />
+          <wd-icon :name="$jwIcon('lock')" size="14px" color="#FF3B30"  />
           <text>安全策略</text>
           <view class="edit-tag">编辑</view>
         </view>
@@ -486,7 +500,7 @@ onMounted(load)
                   : '未启用'
               }}</text
             >
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -494,14 +508,14 @@ onMounted(load)
       <!-- 操作日志(独立页面) -->
       <view class="card" @click="viewLogs">
         <view class="card-title">
-          <Icon name="doc" :size="28" color="#52C41A" />
+          <wd-icon :name="$jwIcon('doc')" size="14px" color="#52C41A"  />
           <text>操作日志</text>
         </view>
         <view class="row">
           <text class="r-label">查看平台操作流水</text>
           <view class="r-value">
             <text class="hint">登录 / 配置变更 / 审核操作</text>
-            <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
           </view>
         </view>
       </view>
@@ -510,13 +524,20 @@ onMounted(load)
     </scroll-view>
 
     <!-- 编辑底部 sheet -->
-    <view v-if="activeSheet" class="mask" @click="closeSheet">
-      <view class="sheet" @click.stop>
+    <wd-popup
+      :model-value="!!activeSheet"
+      position="bottom"
+      custom-class="sheet"
+      safe-area-inset-bottom
+      root-portal
+      @close="closeSheet"
+    >
+      <view class="sheet-content">
         <view class="sheet-head">
           <text class="sheet-title">{{ sheetTitle }}</text>
-          <view :class="['sheet-save', saving ? 'disabled' : '']" @click="saveSheet">
+          <wd-button size="small" type="primary" :loading="saving" @click="saveSheet">
             {{ saving ? '保存中…' : '保存' }}
-          </view>
+          </wd-button>
         </view>
 
         <!-- 基础设置 sheet -->
@@ -524,13 +545,20 @@ onMounted(load)
           <view class="form-block">
             <text class="form-label">平台 Logo</text>
             <view class="logo-edit">
-              <view class="logo-thumb" @click="chooseLogo">
+              <wd-upload
+                :file-list="[]"
+                :limit="1"
+                :disabled="uploadingLogo"
+                :before-choose="(option: any) => delegateWotUploadChoose(option, chooseLogo)"
+              >
+              <view class="logo-thumb">
                 <image v-if="draft.site.logo" :src="draft.site.logo" class="logo-thumb-img" />
                 <view v-else class="logo-thumb-empty">
-                  <Icon name="image-plus" :size="40" color="var(--text-tertiary)" />
+                  <wd-icon :name="$jwIcon('image-plus')" size="20px" color="var(--text-tertiary)"  />
                   <text>点击上传</text>
                 </view>
               </view>
+              </wd-upload>
               <view class="logo-actions">
                 <view class="mini-btn ghost" @click="chooseLogo">
                   {{ uploadingLogo ? '上传中…' : '更换' }}
@@ -544,41 +572,41 @@ onMounted(load)
 
           <view class="form-block">
             <text class="form-label">平台名称</text>
-            <input
+            <wd-input no-border
               v-model="draft.site.name"
               class="form-input"
               placeholder="例如：经纬科技"
               maxlength="40"
-            />
+             />
           </view>
 
           <view class="form-block">
             <text class="form-label">客服电话</text>
-            <input
+            <wd-input no-border
               v-model="draft.service.phone"
               class="form-input"
               placeholder="例如：400-888-8888"
               type="text"
-            />
+             />
           </view>
 
           <view class="form-block">
             <text class="form-label">客服邮箱</text>
-            <input
+            <wd-input no-border
               v-model="draft.service.email"
               class="form-input"
               placeholder="support@example.com"
               type="text"
-            />
+             />
           </view>
 
           <view class="form-block">
             <text class="form-label">ICP 备案号</text>
-            <input
+            <wd-input no-border
               v-model="draft.site.icp"
               class="form-input"
               placeholder="例如：京 ICP 备 12345678 号"
-            />
+             />
           </view>
         </view>
 
@@ -586,48 +614,33 @@ onMounted(load)
         <view v-else-if="activeSheet === 'payment'" class="sheet-body">
           <view class="pay-edit-row">
             <view class="pay-icon" style="background: #3cb244">
-              <Icon name="wechat" :size="32" color="#fff" />
+              <wd-icon :name="$jwIcon('wechat')" size="16px" color="#fff"  />
             </view>
             <view class="pay-edit-info">
               <text class="pay-edit-name">微信支付</text>
               <text class="pay-edit-desc">官方接口 · 实时到账</text>
             </view>
-            <view
-              :class="['switch', draft.payment.wechat.enabled ? 'on' : '']"
-              @click="draft.payment.wechat.enabled = !draft.payment.wechat.enabled"
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="draft.payment.wechat.enabled" active-color="var(--brand-primary)" />
           </view>
           <view class="pay-edit-row">
             <view class="pay-icon" style="background: #1296db">
-              <Icon name="apple-pay" :size="32" color="#fff" />
+              <wd-icon :name="$jwIcon('apple-pay')" size="16px" color="#fff"  />
             </view>
             <view class="pay-edit-info">
               <text class="pay-edit-name">支付宝</text>
               <text class="pay-edit-desc">官方接口 · 实时到账</text>
             </view>
-            <view
-              :class="['switch', draft.payment.alipay.enabled ? 'on' : '']"
-              @click="draft.payment.alipay.enabled = !draft.payment.alipay.enabled"
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="draft.payment.alipay.enabled" active-color="var(--brand-primary)" />
           </view>
           <view class="pay-edit-row">
             <view class="pay-icon" style="background: #ff7a45">
-              <Icon name="wallet" :size="32" color="#fff" />
+              <wd-icon :name="$jwIcon('wallet')" size="16px" color="#fff"  />
             </view>
             <view class="pay-edit-info">
               <text class="pay-edit-name">余额支付</text>
               <text class="pay-edit-desc">商户余额钱包</text>
             </view>
-            <view
-              :class="['switch', draft.payment.balance.enabled ? 'on' : '']"
-              @click="draft.payment.balance.enabled = !draft.payment.balance.enabled"
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="draft.payment.balance.enabled" active-color="var(--brand-primary)" />
           </view>
           <text class="form-hint">
             * 关闭通道后,新订单不再展示对应支付方式,已生成的交易不受影响。
@@ -641,47 +654,35 @@ onMounted(load)
               <text class="form-row-title">新商户自动审批</text>
               <text class="form-row-desc">开启后,商户注册立即生效,跳过人工审核</text>
             </view>
-            <view
-              :class="['switch', draft.business.newMerchantAutoApprove ? 'on' : '']"
-              @click="
-                draft.business.newMerchantAutoApprove = !draft.business.newMerchantAutoApprove
-              "
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="draft.business.newMerchantAutoApprove" active-color="var(--brand-primary)" />
           </view>
           <view class="form-row-switch">
             <view class="form-row-info">
               <text class="form-row-title">新商品自动审批</text>
               <text class="form-row-desc">开启后,商家上架商品立即可见,平台事后抽检</text>
             </view>
-            <view
-              :class="['switch', draft.business.newProductAutoApprove ? 'on' : '']"
-              @click="draft.business.newProductAutoApprove = !draft.business.newProductAutoApprove"
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="draft.business.newProductAutoApprove" active-color="var(--brand-primary)" />
           </view>
 
           <view class="form-block">
             <text class="form-label">平台抽佣比例（%）</text>
-            <input
+            <wd-input no-border
               v-model.number="draft.business.platformCommissionRate"
               class="form-input"
               type="number"
               placeholder="0 - 50"
-            />
+             />
             <text class="form-hint">每笔交易完成后,从商户应收金额中扣除该比例作为平台收入。</text>
           </view>
 
           <view class="form-block">
             <text class="form-label">提现最低额度（元）</text>
-            <input
+            <wd-input no-border
               v-model.number="draft.business.withdrawMinAmount"
               class="form-input"
               type="number"
               placeholder="例如：100"
-            />
+             />
             <text class="form-hint">商户单次提现金额必须 ≥ 此门槛。</text>
           </view>
         </view>
@@ -690,12 +691,12 @@ onMounted(load)
         <view v-else-if="activeSheet === 'security'" class="sheet-body">
           <view class="form-block">
             <text class="form-label">密码最小长度</text>
-            <input
+            <wd-input no-border
               v-model.number="draft.security.passwordPolicy.minLength"
               class="form-input"
               type="number"
               placeholder="6 - 32"
-            />
+             />
             <text class="form-hint">商户/管理员登录密码长度下限,推荐 ≥ 8。</text>
           </view>
 
@@ -704,31 +705,25 @@ onMounted(load)
               <text class="form-row-title">密码必须含大写字母</text>
               <text class="form-row-desc">开启后,新建/修改密码必须含至少 1 个大写字母</text>
             </view>
-            <view
-              :class="['switch', draft.security.passwordPolicy.requireUppercase ? 'on' : '']"
-              @click="
-                draft.security.passwordPolicy.requireUppercase =
-                  !draft.security.passwordPolicy.requireUppercase
-              "
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="draft.security.passwordPolicy.requireUppercase" active-color="var(--brand-primary)" />
           </view>
 
           <view class="form-block">
             <text class="form-label">IP 白名单（一行一条 IP/CIDR）</text>
-            <textarea
+            <wd-textarea no-border
               v-model="ipWhitelistText"
               class="form-textarea"
               placeholder="留空 = 不启用白名单&#10;示例：&#10;192.168.1.0/24&#10;203.0.113.5"
               :auto-height="true"
-            />
+             />
             <text class="form-hint">非白名单 IP 调用后台 API 将被拒绝(留空则不启用)。</text>
           </view>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -913,7 +908,7 @@ onMounted(load)
     border-color: var(--brand-primary);
     .thumb {
       left: 38rpx;
-      background: #fff;
+      background: var(--bg-card);
     }
   }
 }
@@ -929,7 +924,7 @@ onMounted(load)
 }
 .sheet {
   width: 100%;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 32rpx 32rpx 0 0;
   max-height: 85vh;
   overflow-y: auto;
@@ -943,7 +938,7 @@ onMounted(load)
   justify-content: space-between;
   padding: 28rpx 32rpx 20rpx;
   border-bottom: 1rpx solid #ebeef5;
-  background: #f7f8fa;
+  background: var(--bg-page);
   position: sticky;
   top: 0;
   z-index: 2;
@@ -951,7 +946,7 @@ onMounted(load)
 .sheet-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .sheet-save {
   padding: 12rpx 36rpx;
@@ -973,7 +968,7 @@ onMounted(load)
 }
 
 .form-block {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.03);
@@ -984,26 +979,26 @@ onMounted(load)
 .form-label {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .form-input {
   width: 100%;
   height: 80rpx;
   padding: 0 20rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 12rpx;
   font-size: 28rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   box-sizing: border-box;
 }
 .form-textarea {
   width: 100%;
   min-height: 160rpx;
   padding: 16rpx 20rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 12rpx;
   font-size: 26rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   box-sizing: border-box;
   font-family: var(--font-family-base);
   line-height: 1.5;
@@ -1018,7 +1013,7 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 16rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.03);
@@ -1032,7 +1027,7 @@ onMounted(load)
   .form-row-title {
     font-size: 26rpx;
     font-weight: 700;
-    color: #1d2129;
+    color: var(--text-primary);
   }
   .form-row-desc {
     font-size: 20rpx;
@@ -1051,7 +1046,7 @@ onMounted(load)
   width: 160rpx;
   height: 160rpx;
   border-radius: 16rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border: 2rpx dashed #d6d9e0;
   overflow: hidden;
   display: flex;
@@ -1085,12 +1080,12 @@ onMounted(load)
   font-size: 24rpx;
   font-weight: 600;
   &.ghost {
-    background: #fff;
+    background: var(--bg-card);
     border: 1rpx solid #d6d9e0;
-    color: #1d2129;
+    color: var(--text-primary);
   }
   &.danger-ghost {
-    background: #fff;
+    background: var(--bg-card);
     border: 1rpx solid rgba(245, 34, 45, 0.4);
     color: #f5222d;
   }
@@ -1098,7 +1093,7 @@ onMounted(load)
 
 /* 支付通道编辑行 */
 .pay-edit-row {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   display: flex;
@@ -1124,7 +1119,7 @@ onMounted(load)
   .pay-edit-name {
     font-size: 26rpx;
     font-weight: 700;
-    color: #1d2129;
+    color: var(--text-primary);
   }
   .pay-edit-desc {
     font-size: 20rpx;

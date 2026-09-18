@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, delegateWotUploadChoose } from '@jiujiu/shared'
 /**
  * MA-06 · 添加 / 编辑商品（含 FX-2/5/6 增强）
  *
@@ -13,10 +14,6 @@ import { formatPrice } from '@jiujiu/shared/utils'
 import type { Category } from '@jiujiu/shared/types'
 import { BASE_URL } from '../../utils/request'
 import { useUserStore } from '../../store/user'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-
 const userStore = useUserStore()
 const uploading = ref(false)
 
@@ -57,20 +54,20 @@ async function uploadImages(tempPaths: string[]): Promise<string[]> {
   if (tempPaths.length === 0) return []
   uploading.value = true
   const total = tempPaths.length
-  uni.showLoading({ title: total > 1 ? `上传中 0/${total}` : '上传中…', mask: true })
+  appFeedback.showLoading({ title: total > 1 ? `上传中 0/${total}` : '上传中…', mask: true })
   const urls: string[] = []
   try {
     for (let i = 0; i < tempPaths.length; i++) {
-      if (total > 1) uni.showLoading({ title: `上传中 ${i + 1}/${total}`, mask: true })
+      if (total > 1) appFeedback.showLoading({ title: `上传中 ${i + 1}/${total}`, mask: true })
       urls.push(await uploadImage(tempPaths[i]))
     }
-    uni.hideLoading()
+    appFeedback.hideLoading()
     return urls
   } catch (e: any) {
-    uni.hideLoading()
+    appFeedback.hideLoading()
     if (urls.length > 0) {
       // 部分成功的不丢，提示用户哪些没传上
-      uni.showToast({
+      appFeedback.showToast({
         title: `已上传 ${urls.length}/${total}，剩余失败: ${e?.message || '未知错误'}`,
         icon: 'none',
         duration: 2500,
@@ -188,7 +185,7 @@ function chooseImage(field: ImageField = 'images') {
   const list = form[field]
   const max = maxOf(field)
   if (list.length >= max) {
-    uni.showToast({ title: `最多上传 ${max} 张`, icon: 'none' })
+    appFeedback.showToast({ title: `最多上传 ${max} 张`, icon: 'none' })
     return
   }
   uni.chooseImage({
@@ -203,14 +200,14 @@ function chooseImage(field: ImageField = 'images') {
           form[field] = [...form[field], ...urls].slice(0, max)
         }
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
       }
     },
   })
 }
 
 function removeImage(i: number, field: ImageField = 'images') {
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除图片',
     content:
       field === 'images' && i === 0
@@ -239,7 +236,7 @@ function replaceImage(i: number, field: ImageField = 'images') {
           form[field] = next
         }
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '图片上传失败', icon: 'none' })
       }
     },
   })
@@ -251,7 +248,7 @@ function setAsMain(i: number, field: ImageField = 'images') {
   const [picked] = next.splice(i, 1)
   next.unshift(picked)
   form[field] = next
-  uni.showToast({ title: '已设为主图', icon: 'success' })
+  appFeedback.showToast({ title: '已设为主图', icon: 'success' })
 }
 
 function moveImage(i: number, direction: -1 | 1, field: ImageField = 'images') {
@@ -280,7 +277,7 @@ function showImageMenu(i: number, field: ImageField = 'images') {
   if (i < list.length - 1) items.push('下移')
   items.push('预览')
   items.push('删除')
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: items,
     success: (r) => {
       const label = items[r.tapIndex]
@@ -303,10 +300,10 @@ function goPriceRule() {
 
 function addSpecGroup() {
   if (specGroups.value.length >= 4) {
-    uni.showToast({ title: '最多 4 个规格', icon: 'none' })
+    appFeedback.showToast({ title: '最多 4 个规格', icon: 'none' })
     return
   }
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: [
       ...PRESET_SPEC_NAMES.filter((n) => !specGroups.value.find((g) => g.name === n)),
       '自定义…',
@@ -315,7 +312,7 @@ function addSpecGroup() {
       const available = PRESET_SPEC_NAMES.filter((n) => !specGroups.value.find((g) => g.name === n))
       if (r.tapIndex === available.length) {
         // 自定义
-        uni.showModal({
+        appFeedback.showModal({
           title: '自定义规格名',
           editable: true,
           placeholderText: '如 香型 / 尺码',
@@ -336,10 +333,10 @@ function addSpecGroup() {
 
 function removeSpecGroup(i: number) {
   if (specGroups.value.length <= 1) {
-    uni.showToast({ title: '至少保留一个规格', icon: 'none' })
+    appFeedback.showToast({ title: '至少保留一个规格', icon: 'none' })
     return
   }
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除规格',
     content: `删除规格「${specGroups.value[i].name}」？关联的 SKU 将重新生成。`,
     success: (r) => {
@@ -352,7 +349,7 @@ function removeSpecGroup(i: number) {
 }
 
 function renameSpec(i: number) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '修改规格名',
     editable: true,
     content: specGroups.value[i].name,
@@ -365,7 +362,7 @@ function renameSpec(i: number) {
 }
 
 function addSpecValue(gi: number) {
-  uni.showModal({
+  appFeedback.showModal({
     title: `添加「${specGroups.value[gi].name}」`,
     editable: true,
     placeholderText: '请输入规格值',
@@ -373,7 +370,7 @@ function addSpecValue(gi: number) {
       if (r.confirm && r.content) {
         const v = r.content.trim()
         if (specGroups.value[gi].values.includes(v)) {
-          uni.showToast({ title: '该值已存在', icon: 'none' })
+          appFeedback.showToast({ title: '该值已存在', icon: 'none' })
           return
         }
         specGroups.value[gi].values = [...specGroups.value[gi].values, v]
@@ -389,7 +386,7 @@ function removeSpecValue(gi: number, vi: number) {
 }
 
 function editSpecValue(gi: number, vi: number) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '修改规格值',
     editable: true,
     content: specGroups.value[gi].values[vi],
@@ -456,7 +453,7 @@ function regenerateSkus() {
 
 /** 批量填价 */
 function batchFillPrice() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '批量填价',
     editable: true,
     placeholderText: '输入价格（如 1288）',
@@ -464,7 +461,7 @@ function batchFillPrice() {
       if (r.confirm && r.content) {
         const v = Number(r.content)
         if (isNaN(v) || v <= 0) {
-          uni.showToast({ title: '价格无效', icon: 'none' })
+          appFeedback.showToast({ title: '价格无效', icon: 'none' })
           return
         }
         skus.value.forEach((s) => {
@@ -472,14 +469,14 @@ function batchFillPrice() {
           s.priceRetail = Math.round(v * 1.3)
           s.priceMember = Math.round(v * 1.1)
         })
-        uni.showToast({ title: '已批量填充', icon: 'success' })
+        appFeedback.showToast({ title: '已批量填充', icon: 'success' })
       }
     },
   })
 }
 
 function batchFillStock() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '批量填库存',
     editable: true,
     placeholderText: '输入库存数',
@@ -488,7 +485,7 @@ function batchFillStock() {
         const v = Number(r.content)
         if (isNaN(v) || v < 0) return
         skus.value.forEach((s) => (s.stock = v))
-        uni.showToast({ title: '已批量填充', icon: 'success' })
+        appFeedback.showToast({ title: '已批量填充', icon: 'success' })
       }
     },
   })
@@ -506,7 +503,7 @@ async function chooseSkuImage(skuIndex: number) {
         const [url] = await uploadImages([paths[0]])
         if (url) skus.value[skuIndex].image = url
       } catch (e: any) {
-        uni.showToast({ title: e?.message || 'SKU 图上传失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || 'SKU 图上传失败', icon: 'none' })
       }
     },
   })
@@ -635,32 +632,32 @@ async function loadProduct() {
 /* ============ Submit ============ */
 
 async function submit(status: 'draft' | 'submit') {
-  if (!form.name) return uni.showToast({ title: '请填写商品名称', icon: 'none' })
-  if (!form.categoryId) return uni.showToast({ title: '请选择分类', icon: 'none' })
-  if (form.images.length === 0) return uni.showToast({ title: '请上传至少一张主图', icon: 'none' })
+  if (!form.name) return appFeedback.showToast({ title: '请填写商品名称', icon: 'none' })
+  if (!form.categoryId) return appFeedback.showToast({ title: '请选择分类', icon: 'none' })
+  if (form.images.length === 0) return appFeedback.showToast({ title: '请上传至少一张主图', icon: 'none' })
   // 防御:所有图片(主图/详情图/SKU 图)必须全是 http(s) URL,否则后端拿到本地 tempFilePath 会落库脏数据
   const isHttpUrl = (u: string) => /^https?:\/\//i.test(u)
   const badMain = form.images.find((u) => !isHttpUrl(u))
   const badDetail = form.detailImages.find((u) => !isHttpUrl(u))
   const badSku = skus.value.find((s) => s.image && !isHttpUrl(s.image))
   if (badMain || badDetail || badSku) {
-    return uni.showToast({
+    return appFeedback.showToast({
       title: '存在未上传完成的图片,请稍候重试',
       icon: 'none',
       duration: 2000,
     })
   }
   if (uploading.value) {
-    return uni.showToast({ title: '图片仍在上传,请稍候', icon: 'none' })
+    return appFeedback.showToast({ title: '图片仍在上传,请稍候', icon: 'none' })
   }
   if (form.pricingMode === 'by-size' && form.pricePerSqm <= 0) {
-    return uni.showToast({ title: '请填写每平米单价', icon: 'none' })
+    return appFeedback.showToast({ title: '请填写每平米单价', icon: 'none' })
   }
   if (form.pricingMode === 'standard' && skus.value.length === 0) {
-    return uni.showToast({ title: '请添加规格值生成 SKU', icon: 'none' })
+    return appFeedback.showToast({ title: '请添加规格值生成 SKU', icon: 'none' })
   }
   try {
-    uni.showLoading({ title: status === 'draft' ? '保存草稿…' : '提交审核…' })
+    appFeedback.showLoading({ title: status === 'draft' ? '保存草稿…' : '提交审核…' })
     const dto = {
       categoryId: form.categoryId,
       merchantCategoryId: form.merchantCategoryId || undefined,
@@ -718,16 +715,16 @@ async function submit(status: 'draft' | 'submit') {
     } else {
       await productService.create(dto)
     }
-    uni.hideLoading()
-    uni.showToast({ title: status === 'draft' ? '已保存' : '已提交', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: status === 'draft' ? '已保存' : '已提交', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 800)
   } catch (e: any) {
     // 不能再用空 catch 吞错误 —— 之前有过"toast 提交成功但商品没落库"的反馈,
     // 真因(throttler / 字段校验失败 / 商家未绑定)都被吞掉,排查时只能猜。
     // 这里把后端 message 抬到 UI,长一点也没关系,信息密度优先。
-    uni.hideLoading()
+    appFeedback.hideLoading()
     const msg = e?.message || e?.errMsg || '提交失败,请重试'
-    uni.showToast({ title: msg, icon: 'none', duration: 3000 })
+    appFeedback.showToast({ title: msg, icon: 'none', duration: 3000 })
     console.error('[product/add submit failed]', e)
   }
 }
@@ -743,8 +740,24 @@ onMounted(async () => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar :title="isEdit ? '编辑商品' : '添加商品'" right-text="预览" />
+    <wd-navbar :title="isEdit ? '编辑商品' : '添加商品'" right-text="预览"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view class="body">
       <!-- 商品主图 -->
@@ -765,27 +778,35 @@ onMounted(async () => {
             <view class="img-idx">{{ i + 1 }}</view>
             <view class="img-actions">
               <view class="img-btn" @click.stop="previewImage(i, 'images')">
-                <Icon name="eye" :size="22" color="#fff" />
+                <wd-icon :name="$jwIcon('eye')" size="11px" color="#fff"  />
               </view>
               <view class="img-btn danger" @click.stop="removeImage(i, 'images')">
-                <Icon name="close" :size="22" color="#fff" />
+                <wd-icon :name="$jwIcon('close')" size="11px" color="#fff"  />
               </view>
             </view>
             <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'images')">
-              <Icon name="chevron-up" :size="22" color="#fff" />
+              <wd-icon :name="$jwIcon('chevron-up')" size="11px" color="#fff"  />
             </view>
             <view
               v-if="i < form.images.length - 1"
               class="img-move down"
               @click.stop="moveImage(i, 1, 'images')"
             >
-              <Icon name="chevron-down" :size="22" color="#fff" />
+              <wd-icon :name="$jwIcon('chevron-down')" size="11px" color="#fff"  />
             </view>
           </view>
-          <view v-if="form.images.length < MAIN_MAX" class="img-add" @click="chooseImage('images')">
-            <Icon name="plus" :size="48" color="var(--text-tertiary)" />
+          <wd-upload
+            v-if="form.images.length < MAIN_MAX"
+            :file-list="[]"
+            :limit="1"
+            :disabled="uploading"
+            :before-choose="(option: any) => delegateWotUploadChoose(option, () => chooseImage('images'))"
+          >
+          <view class="img-add">
+            <wd-icon :name="$jwIcon('plus')" size="24px" color="var(--text-tertiary)"  />
             <text class="add-text">上传主图</text>
           </view>
+          </wd-upload>
         </view>
       </view>
 
@@ -793,12 +814,12 @@ onMounted(async () => {
       <view class="section">
         <view class="row">
           <text class="row-label required">商品标题</text>
-          <input
+          <wd-input no-border
             v-model="form.name"
             class="row-input"
             placeholder="必填，最多 30 字"
             maxlength="30"
-          />
+           />
         </view>
         <view class="row">
           <text class="row-label required">商品分类</text>
@@ -811,12 +832,12 @@ onMounted(async () => {
         </view>
         <view class="row align-top">
           <text class="row-label">商品简介</text>
-          <textarea
+          <wd-textarea no-border
             v-model="form.description"
             class="row-textarea"
             placeholder="可选 · 一句话描述商品卖点"
             maxlength="80"
-          />
+           />
         </view>
       </view>
 
@@ -839,31 +860,35 @@ onMounted(async () => {
             <view class="img-idx">{{ i + 1 }}</view>
             <view class="img-actions">
               <view class="img-btn" @click.stop="previewImage(i, 'detailImages')">
-                <Icon name="eye" :size="22" color="#fff" />
+                <wd-icon :name="$jwIcon('eye')" size="11px" color="#fff"  />
               </view>
               <view class="img-btn danger" @click.stop="removeImage(i, 'detailImages')">
-                <Icon name="close" :size="22" color="#fff" />
+                <wd-icon :name="$jwIcon('close')" size="11px" color="#fff"  />
               </view>
             </view>
             <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'detailImages')">
-              <Icon name="chevron-up" :size="22" color="#fff" />
+              <wd-icon :name="$jwIcon('chevron-up')" size="11px" color="#fff"  />
             </view>
             <view
               v-if="i < form.detailImages.length - 1"
               class="img-move down"
               @click.stop="moveImage(i, 1, 'detailImages')"
             >
-              <Icon name="chevron-down" :size="22" color="#fff" />
+              <wd-icon :name="$jwIcon('chevron-down')" size="11px" color="#fff"  />
             </view>
           </view>
-          <view
+          <wd-upload
             v-if="form.detailImages.length < DETAIL_MAX"
-            class="img-add"
-            @click="chooseImage('detailImages')"
+            :file-list="[]"
+            :limit="1"
+            :disabled="uploading"
+            :before-choose="(option: any) => delegateWotUploadChoose(option, () => chooseImage('detailImages'))"
           >
-            <Icon name="plus" :size="48" color="var(--text-tertiary)" />
+          <view class="img-add">
+            <wd-icon :name="$jwIcon('plus')" size="24px" color="var(--text-tertiary)"  />
             <text class="add-text">上传详情图</text>
           </view>
+          </wd-upload>
         </view>
       </view>
 
@@ -871,11 +896,8 @@ onMounted(async () => {
       <view class="section">
         <view class="section-head">
           <text class="title">定价模式</text>
-          <StatusTag
-            :text="form.pricingMode === 'standard' ? '标准' : '按尺寸'"
-            tone="primary"
-            fill
-          />
+          <wd-tag
+           :type="$jwTagType('primary')" :plain="false" round>{{ form.pricingMode === 'standard' ? '标准' : '按尺寸' }}</wd-tag>
         </view>
         <view class="mode-row">
           <view
@@ -883,7 +905,7 @@ onMounted(async () => {
             @click="switchPricingMode('standard')"
           >
             <view class="mode-icon">
-              <Icon name="package" :size="32" color="var(--brand-primary)" />
+              <wd-icon :name="$jwIcon('package')" size="16px" color="var(--brand-primary)"  />
             </view>
             <text class="mode-title">标准定价</text>
             <text class="mode-desc">按 SKU 规格分别定价</text>
@@ -893,7 +915,7 @@ onMounted(async () => {
             @click="switchPricingMode('by-size')"
           >
             <view class="mode-icon">
-              <Icon name="ruler" :size="32" color="var(--brand-primary)" />
+              <wd-icon :name="$jwIcon('ruler')" size="16px" color="var(--brand-primary)"  />
             </view>
             <text class="mode-title">按尺寸定价</text>
             <text class="mode-desc">每平方米单价 · 客户定制</text>
@@ -904,22 +926,22 @@ onMounted(async () => {
         <view v-if="form.pricingMode === 'by-size'" class="by-size-block">
           <view class="bs-row">
             <text class="bs-label required">每平米单价（元）</text>
-            <input
+            <wd-input no-border
               v-model.number="form.pricePerSqm"
               type="digit"
               class="bs-input"
               placeholder="如 480"
-            />
+             />
             <text class="bs-unit">元 / m²</text>
           </view>
           <view class="bs-row">
             <text class="bs-label">起售费（固定）</text>
-            <input
+            <wd-input no-border
               v-model.number="form.baseFee"
               type="digit"
               class="bs-input"
               placeholder="可选，如 50"
-            />
+             />
             <text class="bs-unit">元</text>
           </view>
           <view class="bs-row">
@@ -939,35 +961,35 @@ onMounted(async () => {
           </view>
           <view class="bs-row">
             <text class="bs-label">最小尺寸</text>
-            <input
+            <wd-input no-border
               v-model.number="form.minLength"
               type="number"
               class="bs-input dim"
               :placeholder="`最小长(${form.sizeUnit})`"
-            />
+             />
             <text class="bs-x">×</text>
-            <input
+            <wd-input no-border
               v-model.number="form.minWidth"
               type="number"
               class="bs-input dim"
               :placeholder="`最小宽(${form.sizeUnit})`"
-            />
+             />
           </view>
           <view class="bs-row">
             <text class="bs-label">最大尺寸</text>
-            <input
+            <wd-input no-border
               v-model.number="form.maxLength"
               type="number"
               class="bs-input dim"
               :placeholder="`最大长(${form.sizeUnit})`"
-            />
+             />
             <text class="bs-x">×</text>
-            <input
+            <wd-input no-border
               v-model.number="form.maxWidth"
               type="number"
               class="bs-input dim"
               :placeholder="`最大宽(${form.sizeUnit})`"
-            />
+             />
           </view>
 
           <!-- 实时预览 -->
@@ -1020,7 +1042,7 @@ onMounted(async () => {
         <view class="section-head">
           <text class="title">商品规格</text>
           <view class="add-spec" @click="addSpecGroup">
-            <Icon name="plus" :size="22" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)"  />
             <text>添加规格</text>
           </view>
         </view>
@@ -1029,10 +1051,10 @@ onMounted(async () => {
           <view class="sg-head">
             <view class="sg-name-edit" @click="renameSpec(gi)">
               <text class="sg-name">{{ g.name }}</text>
-              <Icon name="edit" :size="18" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('edit')" size="9px" color="var(--text-tertiary)"  />
             </view>
             <view class="sg-remove" v-if="specGroups.length > 1" @click="removeSpecGroup(gi)">
-              <Icon name="trash" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('trash')" size="11px" color="var(--text-tertiary)"  />
             </view>
           </view>
           <view class="sg-values">
@@ -1044,11 +1066,11 @@ onMounted(async () => {
             >
               <text>{{ v }}</text>
               <view class="sg-value-x" @click.stop="removeSpecValue(gi, vi)">
-                <Icon name="close" :size="18" color="#fff" />
+                <wd-icon :name="$jwIcon('close')" size="9px" color="#fff"  />
               </view>
             </view>
             <view class="sg-add-value" @click="addSpecValue(gi)">
-              <Icon name="plus" :size="20" color="var(--brand-primary)" />
+              <wd-icon :name="$jwIcon('plus')" size="10px" color="var(--brand-primary)"  />
               <text>添加值</text>
             </view>
           </view>
@@ -1064,11 +1086,11 @@ onMounted(async () => {
         <view v-if="skus.length === 0" class="sku-empty"> 请先在上方为每个规格添加至少一个值 </view>
         <view v-else class="sku-actions">
           <view class="sku-action" @click="batchFillPrice">
-            <Icon name="lightning" :size="22" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('lightning')" size="11px" color="var(--brand-primary)"  />
             <text>批量填价</text>
           </view>
           <view class="sku-action" @click="batchFillStock">
-            <Icon name="package" :size="22" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('package')" size="11px" color="var(--brand-primary)"  />
             <text>批量填库存</text>
           </view>
         </view>
@@ -1083,7 +1105,7 @@ onMounted(async () => {
               >
                 <image v-if="s.image" :src="s.image" class="sku-thumb-img" mode="aspectFill" />
                 <view v-else class="sku-thumb-empty">
-                  <Icon name="plus" :size="28" color="var(--text-tertiary)" />
+                  <wd-icon :name="$jwIcon('plus')" size="14px" color="var(--text-tertiary)"  />
                   <text>SKU 图</text>
                 </view>
               </view>
@@ -1096,43 +1118,42 @@ onMounted(async () => {
                   </view>
                 </view>
               </view>
-              <switch
-                :checked="s.active"
-                @change="(e) => (s.active = e.detail.value)"
+              <wd-switch :model-value="s.active"
+                @change="(e: any) => (s.active = e.value)"
                 style="transform: scale(0.7)"
-              />
+               />
             </view>
             <view class="sku-grid">
               <view class="sku-field">
                 <text class="field-label">库存</text>
-                <input v-model.number="s.stock" type="number" class="field-input" placeholder="0" />
+                <wd-input no-border v-model.number="s.stock" type="number" class="field-input" placeholder="0"  />
               </view>
               <view class="sku-field">
                 <text class="field-label" style="color: #1296db">批发价</text>
-                <input
+                <wd-input no-border
                   v-model.number="s.priceWholesale"
                   type="digit"
                   class="field-input"
                   placeholder="¥0"
-                />
+                 />
               </view>
               <view class="sku-field">
                 <text class="field-label" style="color: var(--brand-primary)">零售价</text>
-                <input
+                <wd-input no-border
                   v-model.number="s.priceRetail"
                   type="digit"
                   class="field-input"
                   placeholder="¥0"
-                />
+                 />
               </view>
               <view class="sku-field">
                 <text class="field-label" style="color: #a855f7">会员价</text>
-                <input
+                <wd-input no-border
                   v-model.number="s.priceMember"
                   type="digit"
                   class="field-input"
                   placeholder="¥0"
-                />
+                 />
               </view>
             </view>
           </view>
@@ -1149,17 +1170,17 @@ onMounted(async () => {
       <view class="section">
         <view class="section-head">
           <text class="title">价格显示规则</text>
-          <StatusTag text="全局" tone="default" />
+          <wd-tag  :type="$jwTagType('default')" :plain="true" round>{{ "全局" }}</wd-tag>
         </view>
         <view class="rule-migrated" @click="goPriceRule">
           <view class="rule-mig-icon">
-            <Icon name="wallet" :size="32" color="#FF4D2D" />
+            <wd-icon :name="$jwIcon('wallet')" size="16px" color="#FF4D2D"  />
           </view>
           <view class="rule-mig-info">
             <text class="rule-mig-title">价格显示规则已全局化</text>
             <text class="rule-mig-sub">所有商品共用一套规则，到「店铺 → 价格规则」修改</text>
           </view>
-          <Icon name="forward" :size="22" color="#FF4D2D" />
+          <wd-icon :name="$jwIcon('forward')" size="11px" color="#FF4D2D"  />
         </view>
       </view>
 
@@ -1175,8 +1196,8 @@ onMounted(async () => {
     </view>
 
     <!-- 分类选择浮层 -->
-    <view v-if="showCatPicker" class="cat-mask" @click="showCatPicker = false">
-      <view class="cat-sheet" @click.stop>
+    <wd-popup v-model="showCatPicker" position="bottom" custom-class="cat-sheet" safe-area-inset-bottom root-portal>
+      <view class="cat-content">
         <view class="cat-head">
           <text>选择分类</text>
           <text class="cat-close" @click="showCatPicker = false">✕</text>
@@ -1200,8 +1221,10 @@ onMounted(async () => {
           </view>
         </scroll-view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -1813,7 +1836,7 @@ onMounted(async () => {
   width: 64rpx;
   height: 64rpx;
   border-radius: 16rpx;
-  background: #fff;
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   justify-content: center;

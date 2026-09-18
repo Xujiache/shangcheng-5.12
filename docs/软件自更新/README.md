@@ -43,11 +43,13 @@ pnpm build && pm2 restart jiujiu-server   # 或你的部署脚本
 
 APP 下载 APK 不会带 token，所以 MinIO 的 `S3_PUBLIC_URL` 必须是**公网域名**且可匿名 GET。
 检查环境变量：
+
 - `S3_ENDPOINT`：MinIO 服务地址
 - `S3_PUBLIC_URL`：公开可访问的 URL（例：`https://cdn.ewsn.top/jiujiu-mall`）
 - `S3_BUCKET`：bucket 名（默认 `jiujiu-mall`）
 
 如果你之前只在内网用 MinIO，需要：
+
 1. 在 nginx 暴露一个公网域名指向 MinIO 9000 端口
 2. 给 bucket 加 readonly anonymous 策略：
    ```sh
@@ -66,19 +68,35 @@ pnpm build
 
 ## 三、发布一个新版本（业务方操作）
 
-### 1. 在 HBuilderX 里改版本号
+### 1. 确定版本号
 
-打开 `packages/merchant-app`（或 `platform-app`）→ HBuilderX → manifest → 基础配置：
+云端构建通过下节命令行参数传入版本号；如使用 HBuilderX，则在
+`packages/merchant-app`（或 `platform-app`）的 manifest 基础配置中修改。
+
 - **应用名称**：经纬科技 · 商家版
 - **应用版本名称**：`1.0.1`（用户能看到的）
 - **应用版本号**：`101`（端上比较用，**严格自增**，下次再发要 +1）
 
 ### 2. 构建 APK
 
+推荐使用仓库内统一云端正式构建（首次使用前见
+[`Android正式打包`](../Android正式打包/README.md)）：
+
+```sh
+pnpm android:release -- --target merchant --version-name 1.0.1 --version-code 101
+# 或平台端
+pnpm android:release -- --target platform --version-name 1.0.1 --version-code 101
+```
+
+产物在 `artifacts/android/`，命令会自动完成正式签名、验签和 SHA-256 校验。
+
+仍可使用 HBuilderX：
+
 HBuilderX → 发行 → 原生 App-云打包 → 选 Android → 提交（约 2–10 分钟）。
 完成后从云打包记录下载 .apk 文件到本地。
 
 或者本地构建：
+
 ```sh
 cd packages/merchant-app
 pnpm build:app
@@ -109,13 +127,13 @@ pnpm build:app
 
 ### 启动检查
 
-| 场景 | 行为 |
-|---|---|
-| 后台无发布 / 无新版本 | 静默不打扰 |
-| 有新版本，用户上次「忽略本版本」 | 静默不打扰（除非新一版又比它高） |
-| 有新版本，未被忽略 | 弹窗：版本号 + changelog + 立即下载 / 忽略 |
-| 强制更新（force=true） | 弹窗无「忽略」按钮，只能下载 |
-| iOS / H5 | 显示「请去 App Store」 |
+| 场景                             | 行为                                       |
+| -------------------------------- | ------------------------------------------ |
+| 后台无发布 / 无新版本            | 静默不打扰                                 |
+| 有新版本，用户上次「忽略本版本」 | 静默不打扰（除非新一版又比它高）           |
+| 有新版本，未被忽略               | 弹窗：版本号 + changelog + 立即下载 / 忽略 |
+| 强制更新（force=true）           | 弹窗无「忽略」按钮，只能下载               |
+| iOS / H5                         | 显示「请去 App Store」                     |
 
 ### 手动「检查更新」按钮
 
@@ -137,6 +155,7 @@ pnpm build:app
 
 通常是 MinIO 公网不可达。在浏览器直接打开 admin 列表里复制的 URL，看能否下载。
 如果不行：
+
 - 检查 nginx 反代规则
 - 检查 bucket 策略：`mc anonymous get local/jiujiu-mall` 应返回 `download`
 
@@ -148,6 +167,7 @@ pnpm build:app
 ### Q3：APP 弹窗但点确定没反应
 
 可能：
+
 - Android 没给「未知来源安装」权限：设置 → 安全 → 允许此应用安装应用
 - HBuilderX 打包时漏配 `<uses-permission REQUEST_INSTALL_PACKAGES />`
   - 这个权限默认包含在 uni-app 的 App 模板里，一般不用手加
@@ -156,6 +176,7 @@ pnpm build:app
 
 当前只做 Android。iOS 上弹窗会显示「请前往 App Store 更新」但不会自动跳转。
 后续如果上 App Store：
+
 - 后端 latest 接口加 `iosUrl` 字段
 - composable 加 `plus.runtime.openURL(latest.iosUrl)` 即可跳应用商店
 
@@ -163,14 +184,14 @@ pnpm build:app
 
 ## 六、相关代码位置
 
-| 角色 | 路径 |
-|---|---|
-| 数据库表 | `packages/server/prisma/schema.prisma` → `model AppRelease` |
-| 后端模块 | `packages/server/src/modules/app-release/` |
-| APK 上传 | `packages/server/src/modules/files/files.service.ts` → `uploadApk()` |
-| admin 页面 | `packages/admin-pc/src/views/platform/app-release/index.vue` |
-| admin API | `packages/admin-pc/src/api/platform-business.ts` → `fetchAppReleases / uploadAppRelease / deleteAppRelease` |
-| 商家端 composable | `packages/merchant-app/src/composables/useAppUpdate.ts` |
-| 平台端 composable | `packages/platform-app/src/composables/useAppUpdate.ts` |
-| 启动注入 | 两端 `App.vue` 的 `onLaunch` 末尾 |
-| 手动入口 | `packages/merchant-app/src/pages/tabbar/me/index.vue` → `handle('update')` |
+| 角色              | 路径                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| 数据库表          | `packages/server/prisma/schema.prisma` → `model AppRelease`                                                 |
+| 后端模块          | `packages/server/src/modules/app-release/`                                                                  |
+| APK 上传          | `packages/server/src/modules/files/files.service.ts` → `uploadApk()`                                        |
+| admin 页面        | `packages/admin-pc/src/views/platform/app-release/index.vue`                                                |
+| admin API         | `packages/admin-pc/src/api/platform-business.ts` → `fetchAppReleases / uploadAppRelease / deleteAppRelease` |
+| 商家端 composable | `packages/merchant-app/src/composables/useAppUpdate.ts`                                                     |
+| 平台端 composable | `packages/platform-app/src/composables/useAppUpdate.ts`                                                     |
+| 启动注入          | 两端 `App.vue` 的 `onLaunch` 末尾                                                                           |
+| 手动入口          | `packages/merchant-app/src/pages/tabbar/me/index.vue` → `handle('update')`                                  |

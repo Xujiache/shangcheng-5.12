@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-07 · 分类管理
  *
@@ -7,11 +8,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { categoryService } from '../../services/product'
 import type { Category } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Tabs from '../../components/tabs/tabs.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-
 type Tab = 'platform' | 'merchant'
 
 const tab = ref<Tab>('merchant')
@@ -66,7 +62,7 @@ function openAdd(parentId: string | null = null) {
 }
 function openEdit(c: Category) {
   if (tab.value === 'platform') {
-    uni.showToast({ title: '平台分类不可编辑', icon: 'none' })
+    appFeedback.showToast({ title: '平台分类不可编辑', icon: 'none' })
     return
   }
   editing.value = { id: c.id, name: c.name, parentId: c.parentId }
@@ -75,19 +71,19 @@ function openEdit(c: Category) {
 
 async function saveCategory() {
   if (!editing.value.name) {
-    uni.showToast({ title: '请输入名称', icon: 'none' })
+    appFeedback.showToast({ title: '请输入名称', icon: 'none' })
     return
   }
   if (editing.value.id) {
     await categoryService.update(editing.value.id, { name: editing.value.name })
-    uni.showToast({ title: '已更新' })
+    appFeedback.showToast({ title: '已更新' })
   } else {
     await categoryService.create({
       name: editing.value.name,
       parentId: editing.value.parentId,
       type: 'merchant',
     })
-    uni.showToast({ title: '已新增' })
+    appFeedback.showToast({ title: '已新增' })
   }
   showEditor.value = false
   load()
@@ -95,14 +91,14 @@ async function saveCategory() {
 
 function removeCat(c: Category) {
   if (tab.value === 'platform') return
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除分类',
     content: `确定删除"${c.name}"？该分类下的商品将变为未分类。`,
     confirmColor: '#FF3B30',
     success: async (r) => {
       if (r.confirm) {
         await categoryService.remove(c.id)
-        uni.showToast({ title: '已删除' })
+        appFeedback.showToast({ title: '已删除' })
         load()
       }
     },
@@ -123,7 +119,7 @@ async function persistSort(parentId: string | null) {
   try {
     await categoryService.sort(ids)
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '排序保存失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '排序保存失败', icon: 'none' })
     // 失败时重新拉取,避免本地与后端不一致
     await load()
   }
@@ -162,11 +158,35 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="分类管理" right-text="完成" @right="uni.navigateBack()" />
+    <wd-navbar title="分类管理" right-text="完成" @click-right="uni.navigateBack()"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view class="header">
-      <Tabs v-model="tab" :items="TABS" variant="capsule" />
+      <wd-tabs v-model="tab"  color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
       <view v-if="tab === 'merchant'" class="add-row" @click="openAdd(null)">
         <text class="add-icon">＋</text>
         <text>新增顶级分类</text>
@@ -179,7 +199,7 @@ onMounted(load)
           <view class="row-left">
             <text class="caret">{{ childrenOf(root.id).length ? (isExpanded(root.id) ? '▼' : '▶') : '·' }}</text>
             <text class="row-name">{{ root.name }}</text>
-            <StatusTag v-if="tab === 'merchant'" text="自定义" tone="info" />
+            <wd-tag v-if="tab === 'merchant'"  :type="$jwTagType('info')" :plain="true" round>{{ "自定义" }}</wd-tag>
             <text class="row-count">{{ childrenOf(root.id).length }} 子项</text>
           </view>
           <view class="row-actions" @click.stop>
@@ -209,15 +229,15 @@ onMounted(load)
         </view>
       </view>
     </view>
-    <EmptyState v-else title="暂无分类" desc="点击上方按钮新增" />
+    <wd-status-tip v-else  image="content" :tip="['暂无分类', '点击上方按钮新增'].filter(Boolean).join(' · ')" />
 
     <view v-if="tab === 'platform'" class="tip">
       <text>平台分类由后台统一维护，商家不可编辑</text>
     </view>
 
     <!-- 编辑浮层 -->
-    <view v-if="showEditor" class="mask" @click="showEditor = false">
-      <view class="sheet" @click.stop>
+    <wd-popup v-model="showEditor" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
+      <view class="sheet-content">
         <view class="sheet-head">
           <text>{{ editing.id ? '编辑分类' : '新增分类' }}</text>
           <text class="close" @click="showEditor = false">✕</text>
@@ -225,7 +245,7 @@ onMounted(load)
         <view class="sheet-body">
           <view class="form-row">
             <text class="form-label">分类名称</text>
-            <input v-model="editing.name" class="form-input" placeholder="不超过 10 字" maxlength="10" />
+            <wd-input no-border v-model="editing.name" class="form-input" placeholder="不超过 10 字" maxlength="10"  />
           </view>
           <view class="form-row" v-if="editing.parentId">
             <text class="form-label">上级</text>
@@ -237,12 +257,14 @@ onMounted(load)
           </view>
         </view>
         <view class="sheet-footer">
-          <view class="btn ghost" @click="showEditor = false">取消</view>
-          <view class="btn primary" @click="saveCategory">保存</view>
+          <wd-button block plain size="large" @click="showEditor = false">取消</wd-button>
+          <wd-button block type="primary" size="large" @click="saveCategory">保存</wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

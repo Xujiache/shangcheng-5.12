@@ -5,6 +5,7 @@ node_modules/
 # Build output
 dist/
 build/
+artifacts/android/
 .output/
 .nuxt/
 .next/
@@ -50,6 +51,8 @@ secrets/
 backups/
 ecosystem.config.cjs
 *.p12
+*.jks
+*.keystore
 apiclient_cert.pem
 apiclient_key.pem
 wxpay_public_key.pem
@@ -57,6 +60,7 @@ wxpay_public_key.pem
 
 # Cache
 .cache/
+.gradle/
 .parcel-cache/
 .eslintcache
 .stylelintcache
@@ -76,3 +80,4 @@ deploy/data/
 
 # Misc
 *.local
+native/android/local.properties

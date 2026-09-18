@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 反馈队列(运营查看)
  *
@@ -18,10 +19,6 @@ import {
   type FeedbackRow,
   type FeedbackStatus,
 } from '../../services'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TypeFilter = FeedbackDto['type'] | 'all'
 type StatusFilter = FeedbackStatus | 'all'
 
@@ -109,7 +106,7 @@ function relTime(iso: string): string {
 function openDetail(item: FeedbackRow) {
   const contactLine = item.contact ? `\n联系方式: ${item.contact}` : ''
   const imgLine = item.images && item.images.length ? `\n截图: ${item.images.length} 张` : ''
-  uni.showModal({
+  appFeedback.showModal({
     title: `${TYPE_META[item.type]?.label || item.type} · ${STATUS_META[item.status]?.label || item.status}`,
     content: `${item.content}${contactLine}${imgLine}\n\n提交时间: ${new Date(item.createdAt).toLocaleString()}`,
     showCancel: false,
@@ -135,8 +132,24 @@ onShow(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="反馈队列" />
+    <wd-navbar title="反馈队列"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 类型 tab -->
     <scroll-view scroll-x class="type-scroll" :show-scrollbar="false">
@@ -166,7 +179,7 @@ onShow(load)
 
     <!-- 汇总 -->
     <view class="summary">
-      <Icon name="message" :size="24" color="var(--brand-primary)" />
+      <wd-icon :name="$jwIcon('message')" size="12px" color="var(--brand-primary)"  />
       <text>{{ headerSummary }}</text>
     </view>
 
@@ -174,15 +187,15 @@ onShow(load)
       <view v-if="loading" class="state">加载中…</view>
 
       <view v-else-if="loadError" class="state-wrap">
-        <EmptyState icon="message" title="加载失败" desc="请检查网络后重试" />
+        <wd-status-tip  image="content" :tip="['加载失败', '请检查网络后重试'].filter(Boolean).join(' · ')" />
         <view class="retry-btn" @click="load">
-          <Icon name="refresh" :size="24" color="#FF4D2D" />
+          <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D"  />
           <text>点击重试</text>
         </view>
       </view>
 
       <view v-else-if="list.length === 0" class="state-wrap">
-        <EmptyState icon="message" title="暂无反馈" desc="商家或用户提交反馈后会在这里展示" />
+        <wd-status-tip  image="content" :tip="['暂无反馈', '商家或用户提交反馈后会在这里展示'].filter(Boolean).join(' · ')" />
       </view>
 
       <view v-else class="list">
@@ -195,11 +208,10 @@ onShow(load)
                 background: (TYPE_META[f.type]?.tint || '#86909C') + '14',
               }"
             >
-              <Icon
-                :name="TYPE_META[f.type]?.icon || 'message'"
-                :size="20"
+              <wd-icon
+                :name="$jwIcon(TYPE_META[f.type]?.icon || 'message')" size="10px"
                 :color="TYPE_META[f.type]?.tint || '#86909C'"
-              />
+               />
               <text>{{ TYPE_META[f.type]?.label || f.type }}</text>
             </view>
             <view
@@ -226,11 +238,11 @@ onShow(load)
           </view>
           <view class="foot">
             <view class="contact">
-              <Icon v-if="f.contact" name="user" :size="20" color="var(--text-tertiary)" />
+              <wd-icon v-if="f.contact" :name="$jwIcon('user')" size="10px" color="var(--text-tertiary)"  />
               <text v-if="f.contact">{{ f.contact }}</text>
             </view>
             <view class="time">
-              <Icon name="clock" :size="20" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)"  />
               <text>{{ relTime(f.createdAt) }}</text>
             </view>
           </view>
@@ -238,6 +250,8 @@ onShow(load)
       </view>
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

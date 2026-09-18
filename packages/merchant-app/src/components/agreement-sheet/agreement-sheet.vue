@@ -9,8 +9,6 @@
  */
 import { computed, ref, watch } from 'vue'
 import { http } from '../../utils/request'
-import Icon from '../icon/icon.vue'
-
 type Kind = 'user' | 'privacy' | 'collect'
 
 interface Section {
@@ -138,13 +136,20 @@ function close() {
 </script>
 
 <template>
-  <view v-if="open" class="mask" @click="close">
-    <view class="sheet" @click.stop>
+  <wd-popup
+    :model-value="open"
+    position="bottom"
+    custom-class="agreement-popup"
+    safe-area-inset-bottom
+    root-portal
+    @close="close"
+  >
+    <view class="sheet">
       <view class="handle" />
       <view class="head">
         <text class="title">{{ current?.title || KIND_LABEL[type] }}</text>
         <view class="close" @click="close">
-          <Icon name="close" :size="32" color="#909399" />
+          <wd-icon :name="$jwIcon('close')" size="16px" color="#909399"  />
         </view>
       </view>
       <text v-if="current?.updatedAt" class="updated">最近更新：{{ current.updatedAt }}</text>
@@ -177,10 +182,10 @@ function close() {
       </scroll-view>
 
       <view class="footer">
-        <view class="btn-close" @click="close">我已知悉</view>
+        <wd-button block type="primary" size="large" @click="close">我已知悉</wd-button>
       </view>
     </view>
-  </view>
+  </wd-popup>
 </template>
 
 <style lang="scss" scoped>
@@ -203,7 +208,7 @@ function close() {
 }
 .sheet {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 36rpx 36rpx 0 0;
   max-height: 86vh;
   /* 关键修复：用 flex + 子元素 min-height:0；同时 scroll-view 自带内联 max-height 兜底，
@@ -236,7 +241,7 @@ function close() {
   .title {
     font-size: 32rpx;
     font-weight: 800;
-    color: #1d2129;
+    color: var(--text-primary);
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -251,7 +256,7 @@ function close() {
   display: block;
   padding: 0 32rpx 12rpx;
   font-size: 22rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
 }
 .scroll {
   flex: 1 1 auto;
@@ -265,7 +270,7 @@ function close() {
   padding: 80rpx 0;
   text-align: center;
   font-size: 26rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   &.error {
     color: #f53f3f;
   }
@@ -277,7 +282,7 @@ function close() {
   display: block;
   font-size: 36rpx;
   font-weight: 900;
-  color: #1d2129;
+  color: var(--text-primary);
   margin: 24rpx 0 12rpx;
   letter-spacing: 1rpx;
 }
@@ -294,14 +299,14 @@ function close() {
   display: block;
   font-size: 28rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   margin: 20rpx 0 8rpx;
 }
 .p {
   display: block;
   font-size: 26rpx;
   line-height: 1.8;
-  color: #4e5969;
+  color: var(--text-secondary);
   margin: 8rpx 0;
 }
 .li {
@@ -321,7 +326,7 @@ function close() {
     flex: 1;
     font-size: 26rpx;
     line-height: 1.7;
-    color: #4e5969;
+    color: var(--text-secondary);
   }
 }
 .quote {
@@ -332,7 +337,7 @@ function close() {
   border-radius: 0 16rpx 16rpx 0;
   text {
     font-size: 24rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
     line-height: 1.7;
   }
 }
@@ -340,11 +345,11 @@ function close() {
   display: flex;
   gap: 12rpx;
   padding: 12rpx 8rpx;
-  border-bottom: 1rpx solid #f2f3f5;
+  border-bottom: 1rpx solid var(--border-light);
   .td {
     flex: 1;
     font-size: 22rpx;
-    color: #4e5969;
+    color: var(--text-secondary);
     line-height: 1.5;
     word-break: break-all;
   }
@@ -354,7 +359,7 @@ function close() {
   border-radius: 12rpx 12rpx 0 0;
   .td {
     font-weight: 700;
-    color: #1d2129;
+    color: var(--text-primary);
   }
 }
 .table-sep {
@@ -363,7 +368,7 @@ function close() {
 .footer {
   padding: 16rpx 32rpx 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #f2f3f5;
+  border-top: 1rpx solid var(--border-light);
 }
 .btn-close {
   height: 92rpx;

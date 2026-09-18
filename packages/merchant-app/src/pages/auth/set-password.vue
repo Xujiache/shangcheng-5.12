@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 商家端 · 首次设置密码
  *
- * 进入条件：登录响应里 user.hasPassword === false（首次登录），login.vue 自动 reLaunch 到本页。
+ * 历史异常账号兜底页：仅当已审核商家仍没有 passwordHash 时由 login.vue 导入。
+ * 新注册流程已在提交入驻申请时原子设置密码，不会进入本页。
  *
  * 提交逻辑：POST /api/v1/auth/change-password，oldPassword 传空（后端 changePassword 已支持首次设置场景）。
  *   - 服务端会把这次设的密码 hash 存到 User.passwordHash
- *   - 服务端额外把 User.username 写成手机号（如果当前 username 为空），让 admin-pc 后续可以用「手机号 + 密码」登录
+ *   - 服务端会继续兼容历史数据，并写入 User.passwordHash
  *
  * 离开本页：
  *   - 成功设密码 → reLaunch 到商家主页
@@ -16,8 +18,6 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '../../store/user'
 import { authService } from '../../services/auth'
 import { useStatusBar } from '../../composables/useStatusBar'
-import Icon from '../../components/icon/icon.vue'
-
 const { heroPaddingTop } = useStatusBar(40)
 const userStore = useUserStore()
 
@@ -39,22 +39,22 @@ const canSubmit = computed(
 
 async function submit() {
   if (password.value.length < 6) {
-    uni.showToast({ title: '密码至少 6 位', icon: 'none' })
+    appFeedback.showToast({ title: '密码至少 6 位', icon: 'none' })
     return
   }
   if (password.value !== confirm.value) {
-    uni.showToast({ title: '两次密码不一致', icon: 'none' })
+    appFeedback.showToast({ title: '两次密码不一致', icon: 'none' })
     return
   }
   submitting.value = true
   try {
     await authService.changePassword({ oldPassword: '', newPassword: password.value })
-    // 服务端这次会同步把 username 设为手机号，刷一次本地资料便于 UI 显示
+    // 刷一次本地资料，让 hasPassword 等状态立即同步。
     await userStore.refreshFromServer?.().catch(() => {})
-    uni.showToast({ title: '密码设置成功', icon: 'success' })
+    appFeedback.showToast({ title: '密码设置成功', icon: 'success' })
     setTimeout(() => uni.reLaunch({ url: '/pages/tabbar/home/index' }), 500)
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '设置失败，请重试', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '设置失败，请重试', icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -67,14 +67,30 @@ function logout() {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <view class="hero" :style="{ paddingTop: heroPaddingTop }">
       <view class="blob blob-1" />
       <view class="blob blob-2" />
       <view class="hero-title">设置登录密码</view>
-      <view class="hero-sub">首次登录请设置 6 位以上密码，之后可用「手机号/账号 + 密码」登录管理后台</view>
+      <view class="hero-sub">请设置 6-32 位密码，之后使用「手机号 + 密码」登录商家工作台</view>
       <view v-if="phoneHint" class="hero-phone">
-        <Icon name="phone" :size="22" color="rgba(255,255,255,0.9)" />
+        <wd-icon :name="$jwIcon('phone')" size="11px" color="rgba(255,255,255,0.9)"  />
         <text>{{ phoneHint }}</text>
       </view>
     </view>
@@ -87,54 +103,54 @@ function logout() {
 
       <view class="field">
         <view class="prefix">
-          <Icon name="lock" :size="32" color="#86909c" />
+          <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
         </view>
-        <input
+        <wd-input no-border
           v-model="password"
-          class="input"
-          :password="!showPwd"
+          class="input" show-password
           placeholder="请输入新密码"
           placeholder-class="ph"
           maxlength="32"
-        />
+         />
         <view class="suffix" @click="showPwd = !showPwd">
-          <Icon :name="showPwd ? 'eye' : 'eye-off'" :size="28" color="#86909c" />
+          <wd-icon :name="$jwIcon(showPwd ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
         </view>
       </view>
 
       <view class="field">
         <view class="prefix">
-          <Icon name="lock" :size="32" color="#86909c" />
+          <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
         </view>
-        <input
+        <wd-input no-border
           v-model="confirm"
-          class="input"
-          :password="!showConfirm"
+          class="input" show-password
           placeholder="请再次输入新密码"
           placeholder-class="ph"
           maxlength="32"
-        />
+         />
         <view class="suffix" @click="showConfirm = !showConfirm">
-          <Icon :name="showConfirm ? 'eye' : 'eye-off'" :size="28" color="#86909c" />
+          <wd-icon :name="$jwIcon(showConfirm ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
         </view>
       </view>
 
-      <button class="primary" :disabled="!canSubmit || submitting" @click="submit">
+      <wd-button class="primary" :disabled="!canSubmit || submitting" @click="submit" type="primary" size="large" block>
         <text v-if="!submitting">设置密码并进入商家工作台</text>
         <text v-else>设置中…</text>
-      </button>
+      </wd-button>
 
       <view class="quit" @click="logout">
         <text>暂不设置 · 退出登录</text>
       </view>
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg-page);
   padding-bottom: 60rpx;
 }
 .hero {
@@ -194,7 +210,7 @@ function logout() {
 .card {
   margin: -84rpx 32rpx 0;
   padding: 36rpx 36rpx 32rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 28rpx;
   box-shadow: 0 12rpx 40rpx rgba(15, 23, 42, 0.06);
   position: relative;
@@ -213,7 +229,7 @@ function logout() {
   display: block;
   margin-top: 6rpx;
   font-size: 22rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
 }
 .field {
   margin-top: 20rpx;
@@ -222,7 +238,7 @@ function logout() {
   height: 96rpx;
   padding: 0 24rpx;
   border-radius: 16rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
 }
 .prefix {
   width: 48rpx;
@@ -236,7 +252,7 @@ function logout() {
   color: #1f2329;
 }
 .ph {
-  color: #c9cdd4;
+  color: var(--text-disabled);
 }
 .suffix {
   padding: 0 8rpx;
@@ -260,6 +276,6 @@ function logout() {
   margin-top: 24rpx;
   text-align: center;
   font-size: 24rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
 }
 </style>

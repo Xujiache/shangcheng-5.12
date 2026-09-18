@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-04 · 会员套餐开通（v2 · 真实下单 + 剩余天数 + 当前订阅）
  *
@@ -10,9 +11,6 @@ import { ref, computed, onMounted } from 'vue'
 import { memberService, type MembershipView } from '../../services/member'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
 import type { MemberPlan } from '@jiujiu/shared/types'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-
 const plans = ref<MemberPlan[]>([])
 const currentMembership = ref<MembershipView | null>(null)
 const loading = ref(true)
@@ -27,6 +25,26 @@ const PAY_POLL_INTERVAL_MS = 1500
 const pendingPaymentNo = ref<string>('')
 const pendingActionLabel = ref<string>('开通')
 const showRefreshBtn = ref(false)
+
+/**
+ * 首版 Android 正式包只预留微信 App 支付契约，不允许误用小程序 JSAPI。
+ * 处理函数也会再次拦截，不能只依赖按钮的禁用样式。
+ */
+const androidPaymentPending = (() => {
+  let pending = false
+  // #ifdef APP-PLUS
+  try {
+    pending = String(uni.getSystemInfoSync().platform || '').toLowerCase() === 'android'
+  } catch {
+    pending = true
+  }
+  // #endif
+  return pending
+})()
+
+function showAndroidPaymentPending() {
+  appFeedback.showToast({ title: 'Android 支付即将开放', icon: 'none' })
+}
 
 const basicPlans = computed(() => plans.value.filter((p) => p.type === 'basic'))
 const adPlans = computed(() => plans.value.filter((p) => p.type === 'ad'))
@@ -107,29 +125,29 @@ async function pollPaymentStatus(
 async function refreshPayStatus() {
   if (!pendingPaymentNo.value || subscribing.value) return
   subscribing.value = true
-  uni.showLoading({ title: '查询支付状态…', mask: true })
+  appFeedback.showLoading({ title: '查询支付状态…', mask: true })
   try {
     const result = await pollPaymentStatus(pendingPaymentNo.value)
-    uni.hideLoading()
+    appFeedback.hideLoading()
     if (result === 'paid') {
-      uni.showToast({ title: pendingActionLabel.value + '成功', icon: 'success' })
+      appFeedback.showToast({ title: pendingActionLabel.value + '成功', icon: 'success' })
       showRefreshBtn.value = false
       pendingPaymentNo.value = ''
       await load()
     } else if (result === 'failed') {
-      uni.showToast({ title: '支付未成功，请重试', icon: 'none' })
+      appFeedback.showToast({ title: '支付未成功，请重试', icon: 'none' })
       showRefreshBtn.value = false
       pendingPaymentNo.value = ''
     } else {
-      uni.showToast({
+      appFeedback.showToast({
         title: '仍未确认到账，请稍后再试或联系客服',
         icon: 'none',
         duration: 2500,
       })
     }
   } catch (e: any) {
-    uni.hideLoading()
-    uni.showToast({ title: e?.message || '查询失败', icon: 'none' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: e?.message || '查询失败', icon: 'none' })
   } finally {
     subscribing.value = false
   }
@@ -137,21 +155,25 @@ async function refreshPayStatus() {
 
 async function doRealPay(plan: MemberPlan, actionLabel: string) {
   if (subscribing.value) return
+  if (androidPaymentPending) {
+    showAndroidPaymentPending()
+    return
+  }
   subscribing.value = true
-  uni.showLoading({ title: '调起支付…', mask: true })
+  appFeedback.showLoading({ title: '调起支付…', mask: true })
 
   try {
-    const res = await memberService.subscribe(plan.id, 'wechat')
-    uni.hideLoading()
+    const res = await memberService.subscribe(plan.id, 'wechat', 'mp-weixin')
+    appFeedback.hideLoading()
 
     if (!res.ok) {
-      uni.showToast({ title: actionLabel + '失败，请稍后重试', icon: 'none' })
+      appFeedback.showToast({ title: actionLabel + '失败，请稍后重试', icon: 'none' })
       return
     }
 
     // 真实链路：调起微信支付
     if (!res.miniPay) {
-      uni.showToast({ title: '支付参数缺失', icon: 'none' })
+      appFeedback.showToast({ title: '支付参数缺失', icon: 'none' })
       return
     }
 
@@ -175,20 +197,20 @@ async function doRealPay(plan: MemberPlan, actionLabel: string) {
     pendingPaymentNo.value = res.paymentNo
     pendingActionLabel.value = actionLabel
     showRefreshBtn.value = false
-    uni.showLoading({ title: '确认支付状态…', mask: true })
+    appFeedback.showLoading({ title: '确认支付状态…', mask: true })
     const result = await pollPaymentStatus(res.paymentNo)
-    uni.hideLoading()
+    appFeedback.hideLoading()
 
     if (result === 'paid') {
-      uni.showToast({ title: actionLabel + '成功', icon: 'success' })
+      appFeedback.showToast({ title: actionLabel + '成功', icon: 'success' })
       pendingPaymentNo.value = ''
       showRefreshBtn.value = false
     } else if (result === 'failed') {
-      uni.showToast({ title: '支付未成功，请重试', icon: 'none' })
+      appFeedback.showToast({ title: '支付未成功，请重试', icon: 'none' })
       pendingPaymentNo.value = ''
       showRefreshBtn.value = false
     } else {
-      uni.showToast({
+      appFeedback.showToast({
         title: '支付已发起，请稍后点击"刷新状态"查看',
         icon: 'none',
         duration: 2500,
@@ -197,9 +219,9 @@ async function doRealPay(plan: MemberPlan, actionLabel: string) {
     }
     await load()
   } catch (e: any) {
-    uni.hideLoading()
+    appFeedback.hideLoading()
     const msg = e?.errMsg?.includes('cancel') ? '已取消支付' : e?.message || '支付失败'
-    uni.showToast({ title: msg, icon: 'none' })
+    appFeedback.showToast({ title: msg, icon: 'none' })
   } finally {
     subscribing.value = false
   }
@@ -207,8 +229,12 @@ async function doRealPay(plan: MemberPlan, actionLabel: string) {
 
 async function subscribe() {
   if (!selected.value || subscribing.value) return
+  if (androidPaymentPending) {
+    showAndroidPaymentPending()
+    return
+  }
   const plan = selected.value
-  uni.showModal({
+  appFeedback.showModal({
     title: '确认开通',
     content: `开通${plan.name}，应付 ${formatPrice(plan.price)}`,
     confirmText: '立即支付',
@@ -220,7 +246,11 @@ async function subscribe() {
 
 async function buyAddon(p: MemberPlan) {
   if (subscribing.value) return
-  uni.showModal({
+  if (androidPaymentPending) {
+    showAndroidPaymentPending()
+    return
+  }
+  appFeedback.showModal({
     title: '购买增值',
     content: `购买「${p.name}」\n应付 ${formatPrice(p.price)}`,
     confirmText: '立即支付',
@@ -234,8 +264,24 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="开通会员" :bg="'transparent'" class="nav-on-dark" />
+    <wd-navbar title="开通会员" class="nav-on-dark"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" custom-style="background: transparent;" />
 
     <view class="header">
       <text class="hero-title">解锁全部经营能力</text>
@@ -275,6 +321,12 @@ onMounted(load)
       <view v-if="showRefreshBtn" class="pay-refresh">
         <text class="pay-refresh-tip">支付已发起但暂未确认到账</text>
         <view class="pay-refresh-btn" @click="refreshPayStatus">刷新状态</view>
+      </view>
+      <view v-if="androidPaymentPending" class="android-payment-pending">
+        <text class="android-payment-pending__title">Android 支付即将开放</text>
+        <text class="android-payment-pending__desc"
+          >当前可查看套餐与会员状态，购买功能将在接入微信 App 支付后开放。</text
+        >
       </view>
       <!-- 基础套餐：月费 / 年费 -->
       <view class="plans">
@@ -358,7 +410,7 @@ onMounted(load)
             </view>
             <view class="addon-action">
               <text class="addon-price">{{ formatPrice(p.price) }}</text>
-              <StatusTag text="购买" tone="primary" fill />
+              <wd-tag  :type="$jwTagType('primary')" :plain="false" round>{{ "购买" }}</wd-tag>
             </view>
           </view>
         </view>
@@ -376,11 +428,16 @@ onMounted(load)
           >原价 ¥{{ selected.originalPrice }}</text
         >
       </view>
-      <view class="footer-btn" @click="subscribe">
-        <text>立即开通</text>
+      <view
+        :class="['footer-btn', { 'footer-btn--disabled': androidPaymentPending }]"
+        @click="subscribe"
+      >
+        <text>{{ androidPaymentPending ? '支付即将开放' : '立即开通' }}</text>
       </view>
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -547,6 +604,28 @@ onMounted(load)
     font-weight: 700;
     box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
+}
+.android-payment-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  padding: 20rpx 24rpx;
+  border: 2rpx solid rgba(255, 149, 0, 0.28);
+  border-radius: 16rpx;
+  background: #fff8e8;
+}
+.android-payment-pending__title {
+  color: #9a4c00;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+.android-payment-pending__desc {
+  color: #8c6500;
+  font-size: 22rpx;
+  line-height: 1.55;
+}
+.footer-btn--disabled {
+  opacity: 0.55;
 }
 .plans {
   display: flex;

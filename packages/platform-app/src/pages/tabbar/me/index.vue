@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-Tab · 平台管理员我的
  * - 头像 + 昵称 + 角色徽章
@@ -7,6 +8,8 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AccountSecurity from '../../../components/account-security/account-security.vue'
+import { appTheme } from '../../../theme'
+import type { ThemeMode } from '@jiujiu/shared'
 
 const securityOpen = ref(false)
 const securityMode = ref<'password' | 'phone'>('password')
@@ -22,10 +25,19 @@ import { useAdminStore } from '../../../store/admin'
 import { merchantService, productAuditService, ticketService, systemService } from '../../../services'
 import { platformAuthService } from '../../../services/auth'
 import type { SystemSettings } from '../../../services'
-import Icon from '../../../components/icon/icon.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
+import { checkAppUpdate, readRuntimeVersion } from '../../../composables/useAppUpdate'
 
 const adminStore = useAdminStore()
+const appVersion = computed(() => readRuntimeVersion().version)
+const THEME_OPTIONS = [
+  { value: 'system', payload: { label: '跟随系统' } },
+  { value: 'light', payload: { label: '浅色' } },
+  { value: 'dark', payload: { label: '深色' } },
+]
+
+function changeTheme(event: { value: string | number }) {
+  appTheme.setMode(String(event.value) as ThemeMode)
+}
 
 const statusBarHeight = computed(() => {
   try {
@@ -265,7 +277,13 @@ function goShareStats() {
   uni.navigateTo({ url: '/pages/share-stats/index' })
 }
 
-const SYSTEM_ENTRIES = [
+const SYSTEM_ENTRIES: Array<{
+  key: string
+  icon: string
+  label: string
+  to: string
+  action?: 'update'
+}> = [
   { key: 'member', icon: 'crown', label: '会员&套餐', to: '/pages/member/index' },
   { key: 'feature', icon: 'gear', label: '功能开关', to: '/pages/feature-flag/index' },
   { key: 'perm', icon: 'lock', label: '权限管理', to: '/pages/permission/index' },
@@ -274,14 +292,23 @@ const SYSTEM_ENTRIES = [
   { key: 'feedback-list', icon: 'message', label: '反馈队列', to: '/pages/feedback/admin-list' },
   { key: 'feedback', icon: 'message', label: '我要反馈', to: '/pages/feedback/index' },
   { key: 'system', icon: 'gear', label: '系统设置', to: '/pages/system/index' },
+  { key: 'check-update', icon: 'refresh', label: '检查更新', to: '', action: 'update' },
 ]
 
 function goEntry(to: string) {
   if (!to) {
-    uni.showToast({ title: '功能正在准备中,请等待下一版', icon: 'none', duration: 1600 })
+    appFeedback.showToast({ title: '功能正在准备中,请等待下一版', icon: 'none', duration: 1600 })
     return
   }
   uni.navigateTo({ url: to })
+}
+
+function goSystemEntry(item: (typeof SYSTEM_ENTRIES)[number]) {
+  if (item.action === 'update') {
+    void checkAppUpdate('platform', { silent: false, source: 'manual' })
+    return
+  }
+  goEntry(item.to)
 }
 
 /**
@@ -297,11 +324,11 @@ function openHelp() {
 
   // 若 settings 还在加载中或后端未配置任何字段,提示运营完善
   if (!sysSettingsLoaded.value) {
-    uni.showToast({ title: '正在加载客服信息...', icon: 'none' })
+    appFeedback.showToast({ title: '正在加载客服信息...', icon: 'none' })
     return
   }
   if (!phone && !email && !workTime) {
-    uni.showModal({
+    appFeedback.showModal({
       title: '帮助中心',
       content: '暂未配置客服联系方式,请联系平台运营前往「系统设置 → 客服信息」配置后再试。',
       showCancel: true,
@@ -321,7 +348,7 @@ function openHelp() {
   lines.push('')
   lines.push('如需更多帮助,请在「我要反馈」提交工单。')
 
-  uni.showModal({
+  appFeedback.showModal({
     title: '帮助中心',
     content: lines.join('\n'),
     showCancel: true,
@@ -335,10 +362,10 @@ function openHelp() {
 
 /** 关于平台 - 简介 + 当前版本号 */
 function openAbout() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '关于平台',
     content:
-      '经纬科技 · 商城平台管理端\n当前版本：v1.0.0\n\n用于商户审核、订单总览、会员套餐、广告管理等平台运营事务。',
+      `经纬科技 · 商城平台管理端\n当前版本：v${appVersion.value}\n\n用于商户审核、订单总览、会员套餐、广告管理等平台运营事务。`,
     showCancel: false,
     confirmText: '我知道了',
   })
@@ -353,14 +380,14 @@ function goManageEntry(item: (typeof MANAGE_ENTRIES)[number]) {
 }
 
 function logout() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '退出登录',
     content: '确认退出当前管理员账号？',
     confirmColor: '#FF3B30',
     success: (r) => {
       if (r.confirm) {
         adminStore.logout()
-        uni.showToast({ title: '已退出', icon: 'success', duration: 800 })
+        appFeedback.showToast({ title: '已退出', icon: 'success', duration: 800 })
         setTimeout(() => uni.reLaunch({ url: '/pages/auth/login' }), 600)
       }
     },
@@ -381,7 +408,7 @@ function viewProfile() {
   lines.push('')
   lines.push('如需修改账号信息,请前往「权限管理」处理。')
 
-  uni.showModal({
+  appFeedback.showModal({
     title: '账号信息',
     content: lines.join('\n'),
     showCancel: false,
@@ -391,6 +418,22 @@ function viewProfile() {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <view class="status" :style="{ height: statusBarHeight }" />
 
@@ -412,20 +455,20 @@ function viewProfile() {
           <view class="name-row">
             <text class="nick">{{ meNickname }}</text>
             <view class="role-badge">
-              <Icon name="crown" :size="20" color="#fff" />
+              <wd-icon :name="$jwIcon('crown')" size="10px" color="#fff"  />
               <text>{{ meRoleLabel }}</text>
             </view>
           </view>
           <text class="sub">{{ meRoleLabel }} · {{ meUsername }}</text>
           <text v-if="lastLoginText" class="last-login">{{ lastLoginText }}</text>
         </view>
-        <Icon name="chevron-right" :size="32" color="rgba(255,255,255,0.7)" />
+        <wd-icon :name="$jwIcon('chevron-right')" size="16px" color="rgba(255,255,255,0.7)"  />
       </view>
 
       <view class="stat-row">
         <view v-for="s in STAT_CARDS" :key="s.key" class="stat-item" @click="onStatTap(s)">
           <view class="stat-icon" :style="{ background: 'rgba(255,255,255,0.2)' }">
-            <Icon :name="s.icon" :size="24" color="#fff" />
+            <wd-icon :name="$jwIcon(s.icon)" size="12px" color="#fff"  />
           </view>
           <view class="stat-info">
             <text class="s-num">{{ s.value }}</text>
@@ -447,7 +490,7 @@ function viewProfile() {
             @click="goManageEntry(e)"
           >
             <view class="m-icon" :style="{ background: e.tint + '18' }">
-              <Icon :name="e.icon" :size="40" :color="e.tint" />
+              <wd-icon :name="$jwIcon(e.icon)" size="20px" :color="e.tint"  />
             </view>
             <text class="m-label">{{ e.label }}</text>
             <text class="m-desc">{{ e.desc }}</text>
@@ -463,13 +506,13 @@ function viewProfile() {
           :key="e.key"
           class="sys-row"
           :class="{ 'with-divider': i < SYSTEM_ENTRIES.length - 1 }"
-          @click="goEntry(e.to)"
+          @click="goSystemEntry(e)"
         >
           <view class="sys-icon">
-            <Icon :name="e.icon" :size="32" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon(e.icon)" size="16px" color="var(--brand-primary)"  />
           </view>
           <text class="sys-label">{{ e.label }}</text>
-          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
         </view>
       </view>
 
@@ -477,47 +520,61 @@ function viewProfile() {
       <view class="card">
         <view class="sys-row with-divider" @click="openPasswordSheet">
           <view class="sys-icon">
-            <Icon name="lock" :size="32" color="#5b8def" />
+            <wd-icon :name="$jwIcon('lock')" size="16px" color="#5b8def"  />
           </view>
           <text class="sys-label">修改密码</text>
-          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
         </view>
         <view class="sys-row" @click="openPhoneChangeSheet">
           <view class="sys-icon">
-            <Icon name="phone" :size="32" color="#FF4D2D" />
+            <wd-icon :name="$jwIcon('phone')" size="16px" color="#FF4D2D"  />
           </view>
           <text class="sys-label">修改手机号</text>
-          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
         </view>
+      </view>
+
+      <view class="card appearance-card">
+        <text class="card-title">外观</text>
+        <text class="appearance-tip">可跟随系统自动切换浅色与深色模式</text>
+        <wd-segmented
+          :value="appTheme.mode"
+          :options="THEME_OPTIONS"
+          size="large"
+          vibrate-short
+          @change="changeTheme"
+        >
+          <template #label="{ option }">{{ option.payload?.label }}</template>
+        </wd-segmented>
       </view>
 
       <!-- 其他 -->
       <view class="card">
         <view class="sys-row with-divider" @click="openHelp">
           <view class="sys-icon">
-            <Icon name="help" :size="32" color="#52C41A" />
+            <wd-icon :name="$jwIcon('help')" size="16px" color="#52C41A"  />
           </view>
           <text class="sys-label">帮助中心</text>
-          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
         </view>
         <view class="sys-row" @click="openAbout">
           <view class="sys-icon">
-            <Icon name="info" :size="32" color="#1296DB" />
+            <wd-icon :name="$jwIcon('info')" size="16px" color="#1296DB"  />
           </view>
           <text class="sys-label">关于平台</text>
-          <text class="sys-meta">v1.0.0</text>
-          <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+          <text class="sys-meta">v{{ appVersion }}</text>
+          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
         </view>
       </view>
 
       <!-- 退出 -->
       <view class="logout-btn" @click="logout">
-        <Icon name="arrow-right" :size="28" color="#FF3B30" />
+        <wd-icon :name="$jwIcon('arrow-right')" size="14px" color="#FF3B30"  />
         <text>退出登录</text>
       </view>
     </view>
 
-    <TabBar current="me" />
+    <PrimaryLiquidTabBar flavor="platform" active="me" />
 
     <AccountSecurity
       :open="securityOpen"
@@ -526,6 +583,8 @@ function viewProfile() {
       @close="securityOpen = false"
     />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -676,6 +735,15 @@ function viewProfile() {
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 16rpx;
+}
+.appearance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.appearance-tip {
+  color: var(--text-tertiary);
+  font-size: 22rpx;
 }
 
 /* 业务管理网格 */

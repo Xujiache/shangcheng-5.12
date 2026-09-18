@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 提现审核 · 平台运营人员对商家发起的提现申请做审批
  *
@@ -15,9 +16,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { withdrawService, type Withdraw, type WithdrawStatus } from '../../services'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-
 type TabKey = 'pending' | 'approved' | 'paid' | 'rejected' | 'all'
 
 const TABS: { key: TabKey; label: string; status?: WithdrawStatus }[] = [
@@ -82,22 +80,22 @@ function formatDate(s: string | undefined): string {
 
 // 操作:审批通过
 async function onApprove(row: Withdraw) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '审批通过',
     content: `确认通过商家「${row.merchantName || row.merchantId}」的提现申请 ${formatYuan(row.amount)}?\n通过后还需"标记已打款"完成资金流转。`,
     confirmColor: '#16A34A',
     confirmText: '审批通过',
     success: async (r) => {
       if (!r.confirm) return
-      uni.showLoading({ title: '处理中', mask: true })
+      appFeedback.showLoading({ title: '处理中', mask: true })
       try {
         await withdrawService.approve(row.id, '平台运营审批通过')
-        uni.hideLoading()
-        uni.showToast({ title: '已通过', icon: 'success' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: '已通过', icon: 'success' })
         await load()
       } catch (e: any) {
-        uni.hideLoading()
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.hideLoading()
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -107,14 +105,14 @@ async function onApprove(row: Withdraw) {
 async function onReject(row: Withdraw) {
   // uni 没有原生 prompt,用一个简单 sheet:这里用 navigateTo 跳到细节页太重,直接用本地 reactive 模拟
   // 实际做法:先弹 modal 让用户编辑 reason
-  uni.showModal({
+  appFeedback.showModal({
     title: '驳回原因',
     content: `驳回商家「${row.merchantName || row.merchantId}」提现 ${formatYuan(row.amount)}\n请在弹出输入框中填写驳回原因`,
     confirmText: '继续',
     cancelText: '取消',
     success: (m) => {
       if (!m.confirm) return
-      // mp 风格:用 uni.showModal({editable:true}) 让用户填原因(微信 / 支付宝小程序支持,H5 / App 退化)
+      // mp 风格:用 appFeedback.showModal({editable:true}) 让用户填原因(微信 / 支付宝小程序支持,H5 / App 退化)
       const modalArgs: any = {
         title: '请输入驳回原因',
         editable: true,
@@ -122,24 +120,24 @@ async function onReject(row: Withdraw) {
         confirmText: '提交驳回',
         confirmColor: '#DC2626',
       }
-      uni.showModal({
+      appFeedback.showModal({
         ...modalArgs,
         success: async (e: any) => {
           if (!e.confirm) return
           const reason = String(e.content || '').trim()
           if (!reason) {
-            uni.showToast({ title: '必须填写驳回原因', icon: 'none' })
+            appFeedback.showToast({ title: '必须填写驳回原因', icon: 'none' })
             return
           }
-          uni.showLoading({ title: '驳回中', mask: true })
+          appFeedback.showLoading({ title: '驳回中', mask: true })
           try {
             await withdrawService.reject(row.id, reason)
-            uni.hideLoading()
-            uni.showToast({ title: '已驳回', icon: 'success' })
+            appFeedback.hideLoading()
+            appFeedback.showToast({ title: '已驳回', icon: 'success' })
             await load()
           } catch (err: any) {
-            uni.hideLoading()
-            uni.showToast({ title: err?.message || '驳回失败', icon: 'none' })
+            appFeedback.hideLoading()
+            appFeedback.showToast({ title: err?.message || '驳回失败', icon: 'none' })
           }
         },
       })
@@ -149,7 +147,7 @@ async function onReject(row: Withdraw) {
 
 // 标记已打款
 async function onMarkPaid(row: Withdraw) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '标记已打款',
     content: `确认已通过线下银行/财务系统打款 ${formatYuan(row.amount)} 给商家「${row.merchantName || row.merchantId}」?\n可在弹出框填写交易流水号(可选)`,
     confirmText: '继续',
@@ -162,20 +160,20 @@ async function onMarkPaid(row: Withdraw) {
         confirmText: '标记已打款',
         confirmColor: '#16A34A',
       }
-      uni.showModal({
+      appFeedback.showModal({
         ...modalArgs,
         success: async (e: any) => {
           if (!e.confirm) return
           const transactionId = String(e.content || '').trim()
-          uni.showLoading({ title: '标记中', mask: true })
+          appFeedback.showLoading({ title: '标记中', mask: true })
           try {
             await withdrawService.markPaid(row.id, { transactionId })
-            uni.hideLoading()
-            uni.showToast({ title: '已标记打款', icon: 'success' })
+            appFeedback.hideLoading()
+            appFeedback.showToast({ title: '已标记打款', icon: 'success' })
             await load()
           } catch (err: any) {
-            uni.hideLoading()
-            uni.showToast({ title: err?.message || '操作失败', icon: 'none' })
+            appFeedback.hideLoading()
+            appFeedback.showToast({ title: err?.message || '操作失败', icon: 'none' })
           }
         },
       })
@@ -188,7 +186,7 @@ function copyAccount(row: Withdraw) {
   if (!row.account) return
   uni.setClipboardData({
     data: row.account,
-    success: () => uni.showToast({ title: '账号已复制', icon: 'success' }),
+    success: () => appFeedback.showToast({ title: '账号已复制', icon: 'success' }),
   })
 }
 
@@ -202,8 +200,24 @@ const tabCount = computed(() => total.value)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="提现审核" />
+    <wd-navbar title="提现审核"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 状态 tab -->
     <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
@@ -309,17 +323,19 @@ const tabCount = computed(() => total.value)
 
     <view class="safe-bottom" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg-page);
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 }
 
 .tabs-scroll {
-  background: #fff;
+  background: var(--bg-card);
   padding: 16rpx 24rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
   white-space: nowrap;
@@ -333,10 +349,10 @@ const tabCount = computed(() => total.value)
   align-items: center;
   gap: 8rpx;
   padding: 12rpx 28rpx;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 999rpx;
   font-size: 24rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   transition: all 0.2s;
   &.active {
     background: linear-gradient(135deg, #ff4d2d, #ff9c6e);
@@ -364,7 +380,7 @@ const tabCount = computed(() => total.value)
   }
   .state-text {
     font-size: 26rpx;
-    color: #86909c;
+    color: var(--text-tertiary);
   }
   .state-btn {
     margin-top: 20rpx;
@@ -384,7 +400,7 @@ const tabCount = computed(() => total.value)
 }
 
 .card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   padding: 24rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
@@ -435,14 +451,14 @@ const tabCount = computed(() => total.value)
 }
 .info-label {
   font-size: 24rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   flex-shrink: 0;
   width: 140rpx;
 }
 .info-value {
   flex: 1;
   font-size: 24rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   text-align: right;
   word-break: break-all;
   &.reason-text {
@@ -491,8 +507,8 @@ const tabCount = computed(() => total.value)
     background: linear-gradient(135deg, #60a5fa, #3b82f6);
   }
   &.ghost {
-    background: #fff;
-    color: #4e5969;
+    background: var(--bg-card);
+    color: var(--text-secondary);
     border: 1rpx solid #ebeef5;
     &.reject {
       color: #dc2626;

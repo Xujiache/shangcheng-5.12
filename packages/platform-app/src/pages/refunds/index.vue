@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 售后/退款审核列表
  *
@@ -18,10 +19,6 @@ import {
   type RefundStatus,
 } from '../../services'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TabKey = 'all' | RefundStatus
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -93,7 +90,7 @@ function viewDetail(r: RefundRow) {
     `提交时间: ${formatDate(r.createdAt)}`,
     r.merchantReply ? `\n商家回复: ${r.merchantReply}` : '',
   ].filter(Boolean)
-  uni.showModal({
+  appFeedback.showModal({
     title: r.no,
     content: lines.join('\n'),
     showCancel: false,
@@ -102,24 +99,24 @@ function viewDetail(r: RefundRow) {
 }
 
 async function approve(r: RefundRow) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '同意退款',
     content: `同意退款 ${r.no} ?\n申请金额 ¥${formatPrice(r.applyAmount)}`,
     success: async (m) => {
       if (!m.confirm) return
       try {
         await refundService.agree(r.id, r.applyAmount)
-        uni.showToast({ title: '已同意', icon: 'success' })
+        appFeedback.showToast({ title: '已同意', icon: 'success' })
         await load()
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
 }
 
 function reject(r: RefundRow) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '驳回退款',
     content: '请填写驳回原因(将同步至商家与用户)',
     editable: true,
@@ -129,15 +126,15 @@ function reject(r: RefundRow) {
       if (!m.confirm) return
       const reason = (m.content || '').trim()
       if (!reason) {
-        uni.showToast({ title: '请填写原因', icon: 'none' })
+        appFeedback.showToast({ title: '请填写原因', icon: 'none' })
         return
       }
       try {
         await refundService.reject(r.id, reason)
-        uni.showToast({ title: '已驳回', icon: 'success' })
+        appFeedback.showToast({ title: '已驳回', icon: 'success' })
         await load()
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -150,8 +147,24 @@ onShow(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="售后/退款审核" />
+    <wd-navbar title="售后/退款审核"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- Tab -->
     <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
@@ -168,7 +181,7 @@ onShow(load)
     </scroll-view>
 
     <view class="summary">
-      <Icon name="info" :size="24" color="var(--brand-primary)" />
+      <wd-icon :name="$jwIcon('info')" size="12px" color="var(--brand-primary)"  />
       <text>共 {{ total }} 条 · 当前页待处理 {{ pendingCount }} 条</text>
     </view>
 
@@ -176,22 +189,19 @@ onShow(load)
       <view v-if="loading" class="state">加载中…</view>
 
       <view v-else-if="loadError" class="state-wrap">
-        <EmptyState
-          icon="biz-order"
-          title="加载失败"
-          :desc="errorMsg || '请检查网络后重试'"
-        />
+        <wd-status-tip
+         image="content" :tip="['加载失败', errorMsg || '请检查网络后重试'].filter(Boolean).join(' · ')" />
         <text class="state-hint">
           若后端 `/p/refunds` 接口尚未实现,请联系平台技术(Agent E)补全。
         </text>
         <view class="retry-btn" @click="load">
-          <Icon name="refresh" :size="24" color="#FF4D2D" />
+          <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D"  />
           <text>点击重试</text>
         </view>
       </view>
 
       <view v-else-if="list.length === 0" class="state-wrap">
-        <EmptyState icon="biz-order" title="暂无退款申请" desc="该分类下还没有售后单" />
+        <wd-status-tip  image="content" :tip="['暂无退款申请', '该分类下还没有售后单'].filter(Boolean).join(' · ')" />
       </view>
 
       <view v-else class="list">
@@ -210,11 +220,11 @@ onShow(load)
           </view>
           <view class="info">
             <view class="info-row">
-              <Icon name="user" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
               <text>{{ r.userName || r.userId }} · {{ r.merchantName || r.merchantId }}</text>
             </view>
             <view class="info-row">
-              <Icon name="package" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)"  />
               <text>{{ TYPE_LABEL[r.type] || r.type }} · {{ r.reason }}</text>
             </view>
           </view>
@@ -233,6 +243,8 @@ onShow(load)
       </view>
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

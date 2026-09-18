@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-02 · 商户入驻审核
  * 还原 原型图/platform-app.jsx::PA_Audit
@@ -7,10 +8,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { merchantService } from '../../services'
 import type { Merchant, MerchantType } from '@jiujiu/shared/types'
 import { formatDate } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TabKey = 'pending' | 'active' | 'rejected'
 
 const tab = ref<TabKey>('pending')
@@ -62,7 +59,7 @@ watch(tab, () => {
 })
 
 function viewDetail(m: Merchant) {
-  uni.showModal({
+  appFeedback.showModal({
     title: m.name,
     content: `主体: ${m.legalName || '—'}\n法人: ${m.legalRep || '—'}\n联系人: ${m.contact || '—'} (${m.contactPhone || '—'})\n地区: ${m.region || '—'}\n地址: ${m.address || '—'}\n经营品类: ${(m.categories || []).join('、') || '—'}\n信用代码: ${m.creditCode || '—'}`,
     showCancel: false,
@@ -70,13 +67,13 @@ function viewDetail(m: Merchant) {
 }
 
 function approve(m: Merchant) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '通过申请',
     content: `通过「${m.name}」入驻申请，将默认授予 ${m.type === 'factory' ? 'A 级厂家' : 'B 级门店'}权限。`,
     success: async (r) => {
       if (r.confirm) {
         await merchantService.approve(m.id)
-        uni.showToast({ title: '已通过', icon: 'success' })
+        appFeedback.showToast({ title: '已通过', icon: 'success' })
         await load()
       }
     },
@@ -84,14 +81,14 @@ function approve(m: Merchant) {
 }
 
 function reject(m: Merchant) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '驳回申请',
     editable: true,
     placeholderText: '请填写驳回理由（必填）',
     success: async (r) => {
       if (r.confirm && r.content) {
         await merchantService.reject(m.id, r.content)
-        uni.showToast({ title: '已驳回', icon: 'success' })
+        appFeedback.showToast({ title: '已驳回', icon: 'success' })
         await load()
       }
     },
@@ -102,8 +99,24 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="商户入驻审核" />
+    <wd-navbar title="商户入驻审核"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <view class="tabs">
       <view
@@ -139,15 +152,15 @@ onMounted(load)
 
         <view class="meta-rows">
           <view class="meta">
-            <Icon name="user" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ m.contact }} · {{ m.contactPhone }}</text>
           </view>
           <view class="meta">
-            <Icon name="location-pin" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('location-pin')" size="11px" color="var(--text-tertiary)"  />
             <text class="ellipsis">{{ m.region }}</text>
           </view>
           <view class="meta">
-            <Icon name="tag" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('tag')" size="11px" color="var(--text-tertiary)"  />
             <text class="ellipsis">{{ (m.categories || []).slice(0, 4).join(' / ') }}</text>
           </view>
         </view>
@@ -161,7 +174,7 @@ onMounted(load)
         </view>
 
         <view v-if="m.status === 'rejected' && m.rejectReason" class="reject-reason">
-          <Icon name="close-circle" :size="22" color="#FF3B30" />
+          <wd-icon :name="$jwIcon('close-circle')" size="11px" color="#FF3B30"  />
           <text>驳回原因：{{ m.rejectReason }}</text>
         </view>
 
@@ -174,15 +187,14 @@ onMounted(load)
         </view>
       </view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && filtered.length === 0"
-        :title="`暂无${TABS.find(t => t.key === tab)?.label}商户`"
-        desc="审核进度会实时同步到首页待办"
-        icon="home-shop"
-      />
+       image="content" :tip="[`暂无${TABS.find(t => t.key === tab)?.label}商户`, '审核进度会实时同步到首页待办'].filter(Boolean).join(' · ')" />
       <view style="height: 40rpx;" />
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

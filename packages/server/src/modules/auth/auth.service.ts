@@ -7,6 +7,8 @@ import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
   AdminLoginDto,
+  MerchantPasswordLoginDto,
+  MerchantSmsLoginDto,
   PhoneLoginDto,
   RefreshDto,
   SmsCodeDto,
@@ -48,9 +50,11 @@ export class AuthService {
     sub: string
     role: string
     merchantId?: string
+    amr?: 'sms' | 'password'
+    amrAt?: number
   }): Promise<TokenPair> {
     const accessTtl = Number(process.env.JWT_ACCESS_TOKEN_TTL) || 7200
-    const refreshTtl = Number(process.env.JWT_REFRESH_TOKEN_TTL) || 604800
+    const refreshTtl = Number(process.env.JWT_REFRESH_TOKEN_TTL) || 2592000
     const accessToken = await this.jwt.signAsync(
       { ...payload, jti: genJti() },
       { expiresIn: accessTtl },
@@ -80,6 +84,35 @@ export class AuthService {
       // 注意：不能直接把 passwordHash 给前端（即便是 boolean 化，也只在登录响应里返回，
       // /u/profile 等接口不应包含此字段）。
       hasPassword: !!passwordHash,
+    }
+  }
+
+  /** 商家 APP 登录统一返回的申请摘要，避免前端靠角色猜测审核状态。 */
+  private async merchantApplication(userId: string) {
+    return this.prisma.merchant.findUnique({
+      where: { userId },
+      select: {
+        status: true,
+        name: true,
+        type: true,
+        rejectReason: true,
+      },
+    })
+  }
+
+  private async merchantLoginSession(user: any, amr: 'sms' | 'password', amrAt?: number) {
+    const tokens = await this.signTokens({
+      sub: user.id,
+      role: user.role,
+      merchantId: user.merchantId || undefined,
+      amr,
+      amrAt,
+    })
+    return {
+      user: this.toUser(user),
+      ...tokens,
+      expiresAt: Date.now() + tokens.expiresIn * 1000,
+      merchantApplication: await this.merchantApplication(user.id),
     }
   }
 
@@ -204,12 +237,61 @@ export class AuthService {
       })
     }
     await this.prisma.user.update({ where: { id: user!.id }, data: { lastLoginAt: new Date() } })
+    const amrAt = Math.floor(Date.now() / 1000)
     const tokens = await this.signTokens({
       sub: user!.id,
       role: user!.role,
       merchantId: user!.merchantId || undefined,
+      amr: 'sms',
+      amrAt,
     })
     return { user: this.toUser(user), ...tokens, expiresAt: Date.now() + tokens.expiresIn * 1000 }
+  }
+
+  /** 商家 APP 手机号 + 密码登录；不存在与密码错误故意使用相同提示，防止账号枚举。 */
+  async merchantPasswordLogin(dto: MerchantPasswordLoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+      include: { adminRole: true },
+    })
+    if (!user || !user.passwordHash) {
+      throw new BizException(BizCode.INVALID_PARAMS, '手机号或密码错误')
+    }
+    const ok = await argon2.verify(user.passwordHash, dto.password)
+    if (!ok) throw new BizException(BizCode.INVALID_PARAMS, '手机号或密码错误')
+    if (user.status === 'disabled') throw new BizException(BizCode.FORBIDDEN, '账号已禁用')
+
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+    return this.merchantLoginSession(user, 'password')
+  }
+
+  /** 商家 APP 短信登录；未知手机号明确引导注册，且不会创建 User。 */
+  async merchantSmsLogin(dto: MerchantSmsLoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+      include: { adminRole: true },
+    })
+    if (!user) {
+      throw new BizException(BizCode.NOT_FOUND, '该手机号尚未注册商家账号，请先注册')
+    }
+
+    const rec = await this.prisma.smsCode.findFirst({
+      where: {
+        phone: dto.phone,
+        code: dto.code,
+        scene: 'login',
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (!rec) throw new BizException(BizCode.INVALID_PARAMS, '验证码错误或已过期')
+    if (user.status === 'disabled') throw new BizException(BizCode.FORBIDDEN, '账号已禁用')
+
+    await this.prisma.smsCode.update({ where: { id: rec.id }, data: { used: true } })
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+    const amrAt = Math.floor(Date.now() / 1000)
+    return this.merchantLoginSession(user, 'sms', amrAt)
   }
 
   /**
@@ -356,6 +438,8 @@ export class AuthService {
       sub: payload.sub,
       role: payload.role,
       merchantId: payload.merchantId,
+      amr: payload.amr,
+      amrAt: payload.amrAt,
     })
 
     // 吊销旧 jti：TTL = 旧 refresh token 剩余有效期（payload.exp 是 unix 秒）
@@ -429,7 +513,12 @@ export class AuthService {
    *   - 改完立刻清 JwtGuard 用户缓存，让该用户在所有设备上下次请求重查 DB
    *   - 不签发新 token；客户端如想"踢掉其它设备"应自行重新登录
    */
-  async changePassword(userId: string, dto: { oldPassword: string; newPassword: string }) {
+  async changePassword(
+    userId: string,
+    dto: { oldPassword: string; newPassword: string },
+    amr?: 'sms' | 'password',
+    amrAt?: number,
+  ) {
     const oldPwd = String(dto?.oldPassword || '')
     const newPwd = String(dto?.newPassword || '')
     if (!newPwd) {
@@ -441,6 +530,12 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '用户不存在')
+    if (!user.passwordHash) {
+      const now = Math.floor(Date.now() / 1000)
+      if (amr !== 'sms' || !amrAt || now - amrAt > 15 * 60 || now < amrAt) {
+        throw new BizException(BizCode.FORBIDDEN, '首次设置密码前请重新完成短信验证')
+      }
+    }
     // 首次设密码场景允许 oldPassword 为空；非首次必须填且与新密码不一致
     if (user.passwordHash) {
       if (!oldPwd) {

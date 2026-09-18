@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * FX-1 · 代理商品列表
  *
@@ -10,10 +11,6 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
 import { plazaService } from '../../services/store'
 import type { AgencyApplicationRow } from '../../services/store'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type Status = 'all' | 'pending' | 'approved' | 'rejected' | 'offline'
 
 interface AgencyApp {
@@ -90,7 +87,7 @@ async function loadAgencyApps() {
     const rows = await plazaService.agencyApplications()
     list.value = (rows || []).map(normalize)
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -104,7 +101,10 @@ onMounted(loadAgencyApps)
 onShow(loadAgencyApps)
 
 function goPlaza() {
-  uni.switchTab({ url: '/pages/tabbar/home/index', fail: () => uni.navigateTo({ url: '/pages/plaza/index' }) })
+  uni.reLaunch({
+    url: '/pages/tabbar/home/index',
+    fail: () => uni.navigateTo({ url: '/pages/plaza/index' }),
+  })
   setTimeout(() => uni.navigateTo({ url: '/pages/plaza/index' }), 100)
 }
 
@@ -175,7 +175,7 @@ async function confirmMarkup() {
     t.markupPercent = newRatio
     t.retailPrice = newRetail
     closeMarkupDialog()
-    uni.showToast({
+    appFeedback.showToast({
       title:
         markupDialog.value.mode === 'ratio'
           ? `加价率 +${newRatio}% · ¥${newRetail}`
@@ -183,12 +183,12 @@ async function confirmMarkup() {
       icon: 'success',
     })
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '保存失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   }
 }
 
 function takeOffline(a: AgencyApp) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '下架代理',
     content: `下架「${a.productName}」？该商品将从店铺中下架。`,
     success: async (r) => {
@@ -196,9 +196,9 @@ function takeOffline(a: AgencyApp) {
       try {
         await plazaService.updateAgencyApplication(a.applicationId, { status: 'offline' })
         a.status = 'offline'
-        uni.showToast({ title: '已下架', icon: 'success' })
+        appFeedback.showToast({ title: '已下架', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -208,14 +208,14 @@ async function relaunch(a: AgencyApp) {
   try {
     await plazaService.updateAgencyApplication(a.applicationId, { status: 'approved' })
     a.status = 'approved'
-    uni.showToast({ title: '已重新上架', icon: 'success' })
+    appFeedback.showToast({ title: '已重新上架', icon: 'success' })
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
   }
 }
 
 function cancelApply(a: AgencyApp) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '取消申请',
     content: `取消对「${a.productName}」的代理申请？`,
     success: async (r) => {
@@ -223,9 +223,9 @@ function cancelApply(a: AgencyApp) {
       try {
         await plazaService.cancelAgencyApplication(a.applicationId)
         list.value = list.value.filter((x) => x.applicationId !== a.applicationId)
-        uni.showToast({ title: '已取消', icon: 'success' })
+        appFeedback.showToast({ title: '已取消', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -237,20 +237,36 @@ function goEditProduct(a: AgencyApp) {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="代理商品" />
+    <wd-navbar title="代理商品"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 申请成功提示条 -->
     <view v-if="showSuccessHint" class="success-banner">
       <view class="sb-icon">
-        <Icon name="check-circle" :size="36" color="#fff" :fill="true" />
+        <wd-icon :name="$jwIcon('check-circle')" size="18px" color="#fff"  />
       </view>
       <view class="sb-info">
         <text class="sb-title">代理申请已提交</text>
         <text class="sb-desc">厂家审核通过后，商品将出现在「已通过」中，可直接上架销售</text>
       </view>
       <view class="sb-close" @click="showSuccessHint = false">
-        <Icon name="close" :size="28" color="rgba(255,255,255,0.85)" />
+        <wd-icon :name="$jwIcon('close')" size="14px" color="rgba(255,255,255,0.85)"  />
       </view>
     </view>
 
@@ -306,7 +322,7 @@ function goEditProduct(a: AgencyApp) {
               </view>
             </view>
             <view class="factory">
-              <Icon name="home-shop" :size="22" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('home-shop')" size="11px" color="var(--text-tertiary)"  />
               <text>{{ a.factoryName }}</text>
             </view>
             <view class="price-row">
@@ -324,7 +340,7 @@ function goEditProduct(a: AgencyApp) {
             <view class="extra-row">
               <text class="time">申请于 {{ formatDate(a.appliedAt) }}</text>
               <text v-if="a.autoSyncPrice" class="sync-tag">
-                <Icon name="refresh" :size="18" color="#52C41A" />
+                <wd-icon :name="$jwIcon('refresh')" size="9px" color="#52C41A"  />
                 价格自动同步
               </text>
             </view>
@@ -352,25 +368,30 @@ function goEditProduct(a: AgencyApp) {
         </view>
       </view>
 
-      <EmptyState
-        v-if="filtered.length === 0 && !loading"
-        :title="tab === 'all' ? '还没有代理商品' : '当前分类暂无商品'"
-        desc="去选品广场申请代理厂家商品"
-      >
-        <template #default>
-          <view class="empty-btn" @click="goPlaza">去选品广场 ›</view>
-        </template>
-      </EmptyState>
-      <view style="height: 40rpx;" />
+      <view v-if="filtered.length === 0 && !loading" class="agency-empty">
+        <wd-status-tip
+          image="content"
+          :tip="[tab === 'all' ? '还没有代理商品' : '当前分类暂无商品', '去选品广场申请代理厂家商品'].filter(Boolean).join(' · ')"
+        />
+        <wd-button type="primary" size="small" plain @click="goPlaza">去选品广场</wd-button>
+      </view>
+      <view style="height: 40rpx" />
     </scroll-view>
 
     <!-- 加价弹窗（% 加价率 / ¥ 固定金额） -->
-    <view v-if="markupDialog.open" class="mk-mask" @click="closeMarkupDialog">
-      <view class="mk-sheet" @click.stop>
+    <wd-popup
+      v-model="markupDialog.open"
+      position="bottom"
+      custom-class="mk-sheet"
+      safe-area-inset-bottom
+      root-portal
+      @close="closeMarkupDialog"
+    >
+      <view class="mk-content">
         <view class="mk-head">
           <text class="mk-title">调整加价</text>
           <view class="mk-close" @click="closeMarkupDialog">
-            <Icon name="close" :size="32" color="#909399" />
+            <wd-icon :name="$jwIcon('close')" size="16px" color="#909399"  />
           </view>
         </view>
         <view class="mk-body">
@@ -384,28 +405,23 @@ function goEditProduct(a: AgencyApp) {
 
           <view class="mk-label">加价（输入任意正数）</view>
           <view class="mk-input-row">
-            <input
+            <wd-input no-border
               v-model="markupDialog.valueStr"
               type="digit"
               class="mk-input"
               placeholder="输入加价数值"
-            />
-            <view class="mk-units">
-              <view
-                class="mk-unit"
-                :class="{ active: markupDialog.mode === 'ratio' }"
-                @click="markupDialog.mode = 'ratio'"
-              >
-                % 加价率
-              </view>
-              <view
-                class="mk-unit"
-                :class="{ active: markupDialog.mode === 'amount' }"
-                @click="markupDialog.mode = 'amount'"
-              >
-                ¥ 固定金额
-              </view>
-            </view>
+             />
+            <wd-segmented
+              :value="markupDialog.mode"
+              :options="[
+                { value: 'ratio', payload: { label: '% 加价率' } },
+                { value: 'amount', payload: { label: '¥ 固定金额' } },
+              ]"
+              size="large"
+              @change="markupDialog.mode = String($event.value) as 'ratio' | 'amount'"
+            >
+              <template #label="{ option }">{{ option.payload?.label }}</template>
+            </wd-segmented>
           </view>
           <text class="mk-hint">
             {{
@@ -432,12 +448,14 @@ function goEditProduct(a: AgencyApp) {
           </view>
         </view>
         <view class="mk-footer">
-          <view class="mk-btn mk-btn--ghost" @click="closeMarkupDialog">取消</view>
-          <view class="mk-btn mk-btn--primary" @click="confirmMarkup">确定</view>
+          <wd-button block plain size="large" @click="closeMarkupDialog">取消</wd-button>
+          <wd-button block type="primary" size="large" @click="confirmMarkup">确定</wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -738,7 +756,7 @@ function goEditProduct(a: AgencyApp) {
 
 .mk-sheet {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 32rpx 32rpx 0 0;
   display: flex;
   flex-direction: column;
@@ -756,7 +774,7 @@ function goEditProduct(a: AgencyApp) {
   justify-content: space-between;
   align-items: center;
   padding: 32rpx 32rpx 16rpx;
-  border-bottom: 1rpx solid #f0f2f5;
+  border-bottom: 1rpx solid var(--border-light);
 }
 
 .mk-title {
@@ -828,7 +846,7 @@ function goEditProduct(a: AgencyApp) {
   border: 2rpx solid #e5e7eb;
   border-radius: 14rpx;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .mk-input {
@@ -844,7 +862,7 @@ function goEditProduct(a: AgencyApp) {
 .mk-units {
   display: flex;
   flex-shrink: 0;
-  background: #f5f6f8;
+  background: var(--bg-page);
   border-left: 2rpx solid #e5e7eb;
 }
 
@@ -933,7 +951,7 @@ function goEditProduct(a: AgencyApp) {
   display: flex;
   gap: 16rpx;
   padding: 16rpx 32rpx 32rpx;
-  border-top: 1rpx solid #f0f2f5;
+  border-top: 1rpx solid var(--border-light);
 }
 
 .mk-btn {
@@ -946,7 +964,7 @@ function goEditProduct(a: AgencyApp) {
   font-weight: 600;
 
   &--ghost {
-    background: #f5f6f8;
+    background: var(--bg-page);
     color: #606266;
   }
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 工单管理
  *
@@ -17,10 +18,6 @@ import { ref, computed, onMounted } from 'vue'
 import { ticketService } from '../../services'
 import type { Ticket, TicketStatus, TicketPriority } from '../../services'
 import { formatDateTime } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TabKey = TicketStatus | 'all'
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -52,7 +49,7 @@ async function load() {
   } catch (e: any) {
     list.value = []
     total.value = 0
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -92,7 +89,7 @@ function closeHandle() {
 async function submitHandle() {
   if (!current.value) return
   if (targetStatus.value === 'closed' && !replyText.value.trim()) {
-    uni.showToast({ title: '关闭前请填写回复', icon: 'none' })
+    appFeedback.showToast({ title: '关闭前请填写回复', icon: 'none' })
     return
   }
   handling.value = true
@@ -101,13 +98,13 @@ async function submitHandle() {
       reply: replyText.value.trim(),
       status: targetStatus.value,
     })
-    uni.showToast({ title: '已处理', icon: 'success' })
+    appFeedback.showToast({ title: '已处理', icon: 'success' })
     handleOpen.value = false
     current.value = null
     replyText.value = ''
     await load()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '处理失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '处理失败', icon: 'none' })
   } finally {
     handling.value = false
   }
@@ -129,8 +126,26 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="工单管理" right-icon="refresh" @right="load" />
+    <wd-navbar title="工单管理" @click-right="load"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+    </wd-navbar>
 
     <!-- 状态 Tab -->
     <view class="tabs">
@@ -162,11 +177,11 @@ onMounted(load)
 
         <view class="meta-row">
           <view class="meta-chip">
-            <Icon name="user" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ t.fromUserName }}</text>
           </view>
           <view class="meta-chip">
-            <Icon name="clock" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('clock')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ formatDateTime(t.createdAt) }}</text>
           </view>
         </view>
@@ -177,22 +192,26 @@ onMounted(load)
         </view>
       </view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && filtered.length === 0"
-        :title="`暂无${TABS.find((t) => t.key === tab)?.label}工单`"
-        desc="新工单由用户端 / 商家端提交后会出现在这里"
-        icon="message"
-      />
+       image="content" :tip="[`暂无${TABS.find((t) => t.key === tab)?.label}工单`, '新工单由用户端 / 商家端提交后会出现在这里'].filter(Boolean).join(' · ')" />
       <view style="height: 80rpx" />
     </scroll-view>
 
     <!-- 处理 Sheet -->
-    <view v-if="handleOpen && current" class="sheet-mask" @click="closeHandle">
-      <view class="sheet" @click.stop>
+    <wd-popup
+      :model-value="handleOpen && !!current"
+      position="bottom"
+      custom-class="sheet"
+      safe-area-inset-bottom
+      root-portal
+      @close="closeHandle"
+    >
+      <view v-if="current" class="sheet-content">
         <view class="sheet-head">
           <text class="sheet-title">处理工单</text>
           <view class="sheet-close" @click="closeHandle">
-            <Icon name="close" :size="32" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('close')" size="16px" color="var(--text-tertiary)"  />
           </view>
         </view>
 
@@ -207,55 +226,50 @@ onMounted(load)
 
           <view class="field">
             <text class="field-label">回复内容</text>
-            <textarea
+            <wd-textarea no-border
               v-model="replyText"
               class="field-textarea"
               placeholder="请输入回复内容(关闭工单时必填)"
               maxlength="500"
               auto-height
               :disabled="handling"
-            />
+             />
           </view>
 
           <view class="field">
             <text class="field-label">目标状态</text>
-            <view class="seg-group">
-              <view
-                :class="['seg', targetStatus === 'open' ? 'active' : '']"
-                @click="setTargetStatus('open')"
-              >
-                待处理
-              </view>
-              <view
-                :class="['seg', targetStatus === 'handling' ? 'active' : '']"
-                @click="setTargetStatus('handling')"
-              >
-                处理中
-              </view>
-              <view
-                :class="['seg', 'closed', targetStatus === 'closed' ? 'active' : '']"
-                @click="setTargetStatus('closed')"
-              >
-                已关闭
-              </view>
-            </view>
+            <wd-segmented
+              :value="targetStatus"
+              :options="[
+                { value: 'open', payload: { label: '待处理' } },
+                { value: 'handling', payload: { label: '处理中' } },
+                { value: 'closed', payload: { label: '已关闭' } },
+              ]"
+              size="large"
+              @change="setTargetStatus(String($event.value) as TicketStatus)"
+            >
+              <template #label="{ option }">{{ option.payload?.label }}</template>
+            </wd-segmented>
           </view>
         </scroll-view>
 
         <view class="sheet-foot">
-          <view :class="['sheet-btn ghost', handling ? 'disabled' : '']" @click="closeHandle"
-            >取消</view
-          >
-          <view
-            :class="['sheet-btn primary', handling ? 'disabled' : '']"
+          <wd-button block plain size="large" :disabled="handling" @click="closeHandle">取消</wd-button>
+          <wd-button
+            block
+            type="primary"
+            size="large"
+            :loading="handling"
             @click="!handling && submitHandle()"
           >
             {{ handling ? '提交中…' : '提交处理' }}
-          </view>
+          </wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

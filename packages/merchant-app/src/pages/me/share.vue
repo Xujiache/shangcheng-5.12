@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 分享 APP（商家版）
  *
@@ -11,7 +12,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { appService, type AppRelease } from '../../services/app'
 import { useStatusBar } from '../../composables/useStatusBar'
-import Icon from '../../components/icon/icon.vue'
 import { safeBackOrHome } from '../../utils/tab-nav'
 
 const { heroPaddingTop } = useStatusBar(24)
@@ -34,7 +34,7 @@ function copyLink() {
   if (!downloadUrl.value) return
   uni.setClipboardData({
     data: downloadUrl.value,
-    success: () => uni.showToast({ title: '已复制下载链接', icon: 'success' }),
+    success: () => appFeedback.showToast({ title: '已复制下载链接', icon: 'success' }),
   })
 }
 
@@ -47,8 +47,8 @@ function systemShare() {
         type: 'text',
         summary: `点击下载安装：${version.value}`,
         href: downloadUrl.value,
-        success: () => uni.showToast({ title: '已唤起系统分享', icon: 'none' }),
-        fail: (e: any) => uni.showToast({ title: e?.errMsg || '分享失败', icon: 'none' }),
+        success: () => appFeedback.showToast({ title: '已唤起系统分享', icon: 'none' }),
+        fail: (e: any) => appFeedback.showToast({ title: e?.errMsg || '分享失败', icon: 'none' }),
       })
     } else {
       copyLink()
@@ -66,12 +66,12 @@ function saveQr() {
       if (r.statusCode === 200) {
         uni.saveImageToPhotosAlbum({
           filePath: r.tempFilePath,
-          success: () => uni.showToast({ title: '已保存到相册', icon: 'success' }),
-          fail: (e) => uni.showToast({ title: e?.errMsg || '保存失败', icon: 'none' }),
+          success: () => appFeedback.showToast({ title: '已保存到相册', icon: 'success' }),
+          fail: (e) => appFeedback.showToast({ title: e?.errMsg || '保存失败', icon: 'none' }),
         })
       }
     },
-    fail: () => uni.showToast({ title: '二维码下载失败', icon: 'none' }),
+    fail: () => appFeedback.showToast({ title: '二维码下载失败', icon: 'none' }),
   })
 }
 
@@ -81,11 +81,27 @@ function goBack() {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <view class="hero" :style="{ paddingTop: heroPaddingTop }">
       <view class="hero-top">
         <view class="back-btn" @click="goBack">
-          <Icon name="back" :size="32" color="#fff" />
+          <wd-icon :name="$jwIcon('back')" size="16px" color="#fff"  />
         </view>
         <text class="hero-title">分享 APP</text>
         <view class="back-btn placeholder" />
@@ -109,33 +125,35 @@ function goBack() {
 
     <view class="actions">
       <view class="action-btn primary" @click="copyLink">
-        <Icon name="doc" :size="36" color="#fff" />
+        <wd-icon :name="$jwIcon('doc')" size="18px" color="#fff"  />
         <text>复制链接</text>
       </view>
       <view class="action-btn" @click="systemShare">
-        <Icon name="share" :size="36" color="#FF4D2D" />
+        <wd-icon :name="$jwIcon('share')" size="18px" color="#FF4D2D"  />
         <text>系统分享</text>
       </view>
       <view class="action-btn" @click="saveQr">
-        <Icon name="image-plus" :size="36" color="#FF4D2D" />
+        <wd-icon :name="$jwIcon('image-plus')" size="18px" color="#FF4D2D"  />
         <text>保存二维码</text>
       </view>
     </view>
 
     <view class="tip">
-      <Icon name="info" :size="28" color="#86909c" />
+      <wd-icon :name="$jwIcon('info')" size="14px" color="#86909c"  />
       <text class="tip-text">
         分享给好友后，对方使用浏览器扫码或点击链接即可下载 APK 安装包。 iOS
         暂不支持自动安装，建议引导对方前往 App Store。
       </text>
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg-page);
   padding-bottom: 48rpx;
 }
 .hero {
@@ -181,7 +199,7 @@ function goBack() {
 
 .card {
   margin: -48rpx 28rpx 0;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 32rpx;
   padding: 36rpx 32rpx 28rpx;
   box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.08);
@@ -208,7 +226,7 @@ function goBack() {
   height: 100%;
 }
 .qr.placeholder {
-  color: #c9cdd4;
+  color: var(--text-disabled);
   font-size: 22rpx;
   display: flex;
   align-items: center;
@@ -217,25 +235,25 @@ function goBack() {
 .brand {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1d2129;
+  color: var(--text-primary);
   letter-spacing: 1rpx;
   margin-top: 8rpx;
 }
 .version {
   font-size: 22rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   font-family: 'SF Mono', Consolas, monospace;
 }
 .url-row {
   width: 100%;
-  background: #f7f8fa;
+  background: var(--bg-page);
   border-radius: 16rpx;
   padding: 16rpx 20rpx;
   margin-top: 4rpx;
 }
 .url-text {
   font-size: 22rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   word-break: break-all;
   line-height: 1.5;
 }
@@ -252,10 +270,10 @@ function goBack() {
   align-items: center;
   gap: 8rpx;
   padding: 20rpx 0;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   font-size: 22rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   font-weight: 600;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
   transition: transform 0.15s;
@@ -275,13 +293,13 @@ function goBack() {
   align-items: flex-start;
   gap: 12rpx;
   padding: 20rpx 24rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
 }
 .tip-text {
   flex: 1;
   font-size: 22rpx;
-  color: #86909c;
+  color: var(--text-tertiary);
   line-height: 1.6;
 }
 </style>

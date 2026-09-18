@@ -1,199 +1,234 @@
+import { appFeedback } from '@jiujiu/shared'
 /**
- * APP 自更新（#7）· 仅 Android
+ * Android 更新检查协调器。
  *
- * 流程：
- *   onLaunch / 手动检查 → GET /api/v1/m/app/latest?platform=merchant →
- *   versionCode > 当前 → 弹更新提示（changelog / 下载 / 跳过 / 忽略本版本） →
- *   下载 APK（plus.downloader 流式 + 进度） → 调起系统安装器
- *
- * iOS / H5：当前业务只做 Android，发现新版本时仅 toast 提示「请去 App Store」。
- *
- * 「忽略此版本」 → 存 storage：ignored_update_versionCode
- *   下次启动时若 latest.versionCode === ignored 则不再弹；
- *   再有更新就自动清掉。
+ * 这里只负责公开接口检查、并发防重和打开独立更新中心；下载、权限与安装由
+ * pages/update/index.vue 承担。这样未登录、登录中和业务页面共用同一条可靠链路。
  */
-import { appService, type AppPlatform } from '../services/app'
+import { ref } from 'vue'
+import { shouldPresentAppUpdate } from '@jiujiu/shared/utils'
+import { appService, type AppPlatform, type AppRelease } from '../services/app'
 
-const IGNORE_KEY = 'ignored_update_versionCode'
+const CONTEXT_KEY = 'jiujiu_merchant_update_context'
+const LEGACY_IGNORE_KEYS = ['ignored_update_version_code', 'ignored_update_versionCode']
+const UPDATE_PAGE = '/pages/update/index'
 
-interface RuntimeVersion {
+export type UpdateCheckResult = 'continue' | 'opened' | 'blocked'
+export type UpdateCheckSource = 'startup' | 'foreground' | 'poll' | 'manual'
+
+export interface UpdateCheckOptions {
+  silent?: boolean
+  source?: UpdateCheckSource
+  /** 启动页打开更新中心后，“稍后更新”应进入的页面。 */
+  nextRoute?: string
+}
+
+export interface RuntimeVersion {
   versionCode: number
   version: string
   os: 'android' | 'ios' | 'other'
 }
 
-function readRuntimeVersion(): RuntimeVersion {
+export interface UpdateContext {
+  platform: AppPlatform
+  latest: AppRelease
+  runtime: RuntimeVersion
+  source: UpdateCheckSource
+  nextRoute?: string
+  returnRoute?: string
+  createdAt: number
+}
+
+let checkInFlight: Promise<UpdateCheckResult> | null = null
+let inFlightSource: UpdateCheckSource | null = null
+let dismissedVersionThisSession = 0
+let updatePageOpening = false
+export const availableAppUpdate = ref<AppRelease | null>(null)
+
+export function readRuntimeVersion(): RuntimeVersion {
   try {
     const sys = uni.getSystemInfoSync() as any
-    const os =
-      (sys.platform || '').toLowerCase() === 'android'
-        ? 'android'
-        : (sys.platform || '').toLowerCase() === 'ios'
-          ? 'ios'
-          : 'other'
-    const version = sys.appVersion || sys.appVersionName || '0.0.0'
+    const platform = String(sys.platform || '').toLowerCase()
+    const os = platform === 'android' ? 'android' : platform === 'ios' ? 'ios' : 'other'
+    let version = String(sys.appVersion || sys.appVersionName || '0.0.0')
     let versionCode = Number(sys.appVersionCode) || 0
-    // App-plus：通过 plus.runtime 取更准确的 versionCode
     try {
-      if (typeof plus !== 'undefined' && plus?.runtime?.versionCode) {
+      if (typeof plus !== 'undefined' && plus?.runtime) {
+        version = String(plus.runtime.version || version)
         versionCode = Number(plus.runtime.versionCode) || versionCode
       }
-    } catch {}
+    } catch {
+      // 非 App-plus 环境使用 systemInfo。
+    }
     return { versionCode, version, os }
   } catch {
     return { versionCode: 0, version: '0.0.0', os: 'other' }
   }
 }
 
-function getIgnored(): number {
+export function formatUpdateBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '未知'
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+function clearLegacyIgnoredVersion() {
   try {
-    return Number(uni.getStorageSync(IGNORE_KEY)) || 0
+    LEGACY_IGNORE_KEYS.forEach((key) => uni.removeStorageSync(key))
   } catch {
-    return 0
+    // 历史脏数据不影响当前检查。
   }
 }
-function setIgnored(code: number) {
+
+function currentRoute(): string {
   try {
-    uni.setStorageSync(IGNORE_KEY, String(code))
-  } catch {}
-}
-function clearIgnoredIfStale(latestCode: number) {
-  const ig = getIgnored()
-  if (ig && ig < latestCode) setIgnored(0)
+    const pages = getCurrentPages?.() || []
+    const top = pages[pages.length - 1] as any
+    return String(top?.route || top?.$page?.route || '')
+  } catch {
+    return ''
+  }
 }
 
-/**
- * 下载并安装 APK（plus.downloader 实现）
- * - 流式下载，可中途看进度
- * - 失败时直接打开浏览器下载（用户自行安装）
- */
-function downloadAndInstall(url: string, onProgress?: (pct: number) => void): Promise<void> {
-  return new Promise((resolve, reject) => {
-    try {
-      if (typeof plus === 'undefined' || !plus.downloader) {
-        reject(new Error('plus.downloader 不可用'))
-        return
-      }
-      const dtask = plus.downloader.createDownload(
-        url,
-        { method: 'GET' },
-        (d: any, status: number) => {
-          if (status === 200) {
-            try {
-              plus.runtime.install(
-                d.filename,
-                { force: false },
-                () => resolve(),
-                (err: any) => reject(new Error(err?.message || '安装失败')),
-              )
-            } catch (e: any) {
-              reject(e)
-            }
-          } else {
-            reject(new Error(`下载失败 status=${status}`))
-          }
-        },
-      )
-      dtask.addEventListener('statechanged', (task: any) => {
-        if (task.state === 3 && task.totalSize > 0 && onProgress) {
-          onProgress(Math.round((task.downloadedSize / task.totalSize) * 100))
-        }
-      })
-      dtask.start()
-    } catch (e: any) {
-      reject(e)
-    }
+function saveContext(context: UpdateContext) {
+  try {
+    uni.setStorageSync(CONTEXT_KEY, JSON.stringify(context))
+  } catch {
+    // 同进程仍可通过页面重新检查；storage 失败不暴露敏感数据。
+  }
+}
+
+export function readUpdateContext(): UpdateContext | null {
+  try {
+    const raw = uni.getStorageSync(CONTEXT_KEY)
+    if (!raw) return null
+    const value = (typeof raw === 'string' ? JSON.parse(raw) : raw) as UpdateContext
+    if (!value?.latest?.url || !value.latest.versionCode || value.platform !== 'merchant') return null
+    return value
+  } catch {
+    return null
+  }
+}
+
+export function clearUpdateContext() {
+  try {
+    uni.removeStorageSync(CONTEXT_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export function dismissUpdateForSession(versionCode: number) {
+  dismissedVersionThisSession = Math.max(0, Number(versionCode) || 0)
+  clearUpdateContext()
+}
+
+function showMessage(title: string, content: string) {
+  return new Promise<void>((resolve) => {
+    appFeedback.showModal({
+      title,
+      content,
+      showCancel: false,
+      confirmText: '知道了',
+      complete: () => resolve(),
+    })
   })
 }
 
-/** 显示更新弹窗 */
-function showUpdatePrompt(
-  url: string,
-  version: string,
-  versionCode: number,
-  changelog: string,
-  force: boolean,
-) {
-  const content = `最新版本：v${version}\n` + (changelog ? `\n更新内容：\n${changelog}\n` : '\n')
+function openUpdateCenter(context: UpdateContext): Promise<UpdateCheckResult> {
+  if (currentRoute().includes('pages/update/')) return Promise.resolve('opened')
+  if (updatePageOpening) return Promise.resolve('opened')
+  updatePageOpening = true
+  saveContext(context)
 
-  uni.showModal({
-    title: force ? '需要更新（强制）' : '发现新版本',
-    content,
-    showCancel: !force,
-    confirmText: '立即下载',
-    cancelText: '忽略本版本',
-    success: async (res) => {
-      if (res.confirm) {
-        uni.showLoading({ title: '准备下载…', mask: true })
-        try {
-          await downloadAndInstall(url, (pct) => {
-            uni.showLoading({ title: `下载 ${pct}%`, mask: true })
-          })
-          uni.hideLoading()
-        } catch (e: any) {
-          uni.hideLoading()
-          uni.showModal({
-            title: '下载失败',
-            content: `${e?.message || '未知错误'}\n是否用系统浏览器下载？`,
-            confirmText: '去浏览器',
-            success: (rr) => {
-              if (rr.confirm) {
-                try {
-                  plus.runtime.openURL(url)
-                } catch {}
-              }
-            },
-          })
-        }
-      } else if (res.cancel && !force) {
-        setIgnored(versionCode)
-        uni.showToast({ title: `已忽略 v${version}`, icon: 'none' })
-      }
-    },
-  })
-}
-
-/**
- * 检查更新
- *  - silent=true：没新版时不提示（用于启动时静默检查）
- *  - silent=false：没新版会 toast「已是最新版本」（用于"我的-检查更新"按钮）
- */
-export async function checkAppUpdate(
-  platform: AppPlatform,
-  opts: { silent?: boolean } = {},
-): Promise<void> {
-  const silent = opts.silent ?? true
-  const rt = readRuntimeVersion()
-  try {
-    const latest = await appService.getLatest(platform)
-    if (!latest?.url || !latest.versionCode) {
-      if (!silent) uni.showToast({ title: '已是最新版本', icon: 'none' })
-      return
+  return new Promise((resolve) => {
+    const done = (result: UpdateCheckResult) => {
+      updatePageOpening = false
+      resolve(result)
     }
-    if (latest.versionCode <= rt.versionCode) {
-      if (!silent) uni.showToast({ title: `已是最新版本 v${rt.version}`, icon: 'success' })
-      return
-    }
-    // 有新版本：先把比本版本旧的"忽略记录"清掉
-    clearIgnoredIfStale(latest.versionCode)
-    if (getIgnored() === latest.versionCode && !latest.force) {
-      // 用户已忽略本版本，且非强制 → 不打扰
-      return
-    }
-    if (rt.os !== 'android') {
-      if (!silent) {
-        uni.showModal({
-          title: '发现新版本',
-          content: `v${latest.version}\n\niOS 用户请前往 App Store 更新。`,
-          showCancel: false,
+    uni.navigateTo({
+      url: UPDATE_PAGE,
+      success: () => done('opened'),
+      fail: () => {
+        uni.redirectTo({
+          url: UPDATE_PAGE,
+          success: () => done('opened'),
+          fail: () => done(context.latest.force ? 'blocked' : 'continue'),
         })
-      }
-      return
+      },
+    })
+  })
+}
+
+async function runCheck(
+  platform: AppPlatform,
+  options: UpdateCheckOptions,
+): Promise<UpdateCheckResult> {
+  const silent = options.silent ?? true
+  const source = options.source ?? 'startup'
+  const runtime = readRuntimeVersion()
+
+  try {
+    clearLegacyIgnoredVersion()
+    const latest = await appService.getLatest(platform)
+    if (!latest?.url || !latest.versionCode || latest.versionCode <= runtime.versionCode) {
+      availableAppUpdate.value = null
+      if (!silent) appFeedback.showToast({ title: `已是最新版本 v${runtime.version}`, icon: 'success' })
+      return 'continue'
     }
-    showUpdatePrompt(latest.url, latest.version, latest.versionCode, latest.changelog, latest.force)
-  } catch (e: any) {
+
+    availableAppUpdate.value = latest
+    if (!shouldPresentAppUpdate({
+      currentVersionCode: runtime.versionCode,
+      latestVersionCode: latest.versionCode,
+      force: !!latest.force,
+      source,
+      dismissedVersionCode: dismissedVersionThisSession,
+    })) {
+      return 'continue'
+    }
+
+    if (runtime.os !== 'android') {
+      if (!silent) await showMessage('发现新版本', `最新版本 v${latest.version}\n当前仅支持 Android 安装包更新。`)
+      return 'continue'
+    }
+
+    const route = currentRoute()
+    return await openUpdateCenter({
+      platform,
+      latest,
+      runtime,
+      source,
+      nextRoute: options.nextRoute,
+      returnRoute: route ? `/${route}` : undefined,
+      createdAt: Date.now(),
+    })
+  } catch (error: any) {
     if (!silent) {
-      uni.showToast({ title: e?.message || '检查更新失败', icon: 'none' })
+      await showMessage('检查更新失败', error?.message || '暂时无法获取版本信息，请检查网络后重试。')
     }
+    return 'continue'
   }
+}
+
+/** 同一时刻只执行一次公开版本检查。 */
+export function checkAppUpdate(
+  platform: AppPlatform,
+  options: UpdateCheckOptions = {},
+): Promise<UpdateCheckResult> {
+  if (checkInFlight) {
+    if (options.source === 'manual' && inFlightSource !== 'manual') {
+      return checkInFlight.then((result) => {
+        if (result !== 'continue') return result
+        return checkAppUpdate(platform, options)
+      })
+    }
+    return checkInFlight
+  }
+  inFlightSource = options.source ?? 'startup'
+  checkInFlight = runCheck(platform, options).finally(() => {
+    checkInFlight = null
+    inFlightSource = null
+  })
+  return checkInFlight
 }

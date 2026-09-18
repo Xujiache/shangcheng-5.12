@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-03 · 商户列表（tabbar 入口）
  * 还原 原型图/platform-app.jsx::PA_MerchantList
@@ -11,11 +12,6 @@ import { onShow } from '@dcloudio/uni-app'
 import { merchantService } from '../../../services'
 import type { Merchant, MerchantType } from '@jiujiu/shared/types'
 import { formatWan } from '@jiujiu/shared/utils'
-import NavBar from '../../../components/nav-bar/nav-bar.vue'
-import Icon from '../../../components/icon/icon.vue'
-import EmptyState from '../../../components/empty-state/empty-state.vue'
-import TabBar from '../../../components/tab-bar/tab-bar.vue'
-
 type TabKey = 'all' | 'factory' | 'store' | 'disabled'
 
 const tab = ref<TabKey>('all')
@@ -155,7 +151,7 @@ watch(tab, () => {
 })
 
 function viewDetail(m: Merchant) {
-  uni.showModal({
+  appFeedback.showModal({
     title: m.name,
     content: `类型: ${typeMetaOf(m.type).label}\n主体: ${m.legalName || '—'}\n联系人: ${m.contact || '—'} ${m.contactPhone || ''}\n地区: ${m.region || '—'}\n累计 GMV: ¥${formatWan(m.totalGmv ?? 0)}\n信用: ${m.credit ?? 'B'}级`,
     showCancel: false,
@@ -164,7 +160,7 @@ function viewDetail(m: Merchant) {
 
 function togglePause(m: Merchant) {
   const isActive = m.status === 'active'
-  uni.showModal({
+  appFeedback.showModal({
     title: isActive ? '停用商户' : '恢复商户',
     content: isActive
       ? `停用「${m.name}」后将无法登录商家端，已上架商品下架。`
@@ -174,11 +170,11 @@ function togglePause(m: Merchant) {
         if (isActive) {
           await merchantService.pause(m.id)
           m.status = 'disabled'
-          uni.showToast({ title: '已停用', icon: 'success' })
+          appFeedback.showToast({ title: '已停用', icon: 'success' })
         } else {
           await merchantService.resume(m.id)
           m.status = 'active'
-          uni.showToast({ title: '已恢复', icon: 'success' })
+          appFeedback.showToast({ title: '已恢复', icon: 'success' })
         }
       }
     },
@@ -209,13 +205,29 @@ onShow(() => {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
     <!-- 顶部彩色条 -->
     <view class="top-bar" :style="{ paddingTop: statusBarHeight }">
       <view class="top-row">
         <text class="top-title">商户管理</text>
         <view class="audit-btn" @click="goAudit">
-          <Icon name="check-circle" :size="28" color="#fff" />
+          <wd-icon :name="$jwIcon('check-circle')" size="14px" color="#fff"  />
           <text>入驻审核</text>
         </view>
       </view>
@@ -245,8 +257,8 @@ onShow(() => {
     <!-- 搜索 + Tab -->
     <view class="header">
       <view class="search-bar">
-        <Icon name="search" :size="32" color="var(--text-tertiary)" />
-        <input v-model="keyword" class="search-input" placeholder="搜索商户名称 / 联系人" />
+        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
+        <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索商户名称 / 联系人"  />
       </view>
       <view class="tabs">
         <view
@@ -316,16 +328,15 @@ onShow(() => {
         </view>
       </view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && filtered.length === 0"
-        title="暂无商户"
-        :desc="keyword ? '尝试其他关键词' : '该分类下还没有商户'"
-        icon="home-shop"
-      />
+       image="content" :tip="['暂无商户', keyword ? '尝试其他关键词' : '该分类下还没有商户'].filter(Boolean).join(' · ')" />
     </view>
 
-    <TabBar current="merchant" />
+    <PrimaryLiquidTabBar flavor="platform" active="merchant" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

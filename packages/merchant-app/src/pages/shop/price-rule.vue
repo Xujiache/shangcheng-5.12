@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 店铺价格显示规则（店铺级 · 改一次全店生效）
  *
@@ -12,8 +13,6 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
 import { profileService } from '../../services/profile'
 
 const STORAGE_KEY = 'jj_shop_price_visibility_v1'
@@ -95,11 +94,11 @@ function debouncedPush() {
 function persistAndToast(tierName: string) {
   writeLocalStorage(rule.value)
   debouncedPush()
-  uni.showToast({ title: `${tierName} · 已保存`, icon: 'success' })
+  appFeedback.showToast({ title: `${tierName} · 已保存`, icon: 'success' })
 }
 
 function resetDefault() {
-  uni.showModal({
+  appFeedback.showModal({
     title: '恢复默认规则',
     content: '将所有规则改回默认：访客禁止 / 普通客户看零售价 / 授权门店看批发价 / 会员看会员价',
     success: (r) => {
@@ -107,7 +106,7 @@ function resetDefault() {
         rule.value = { ...DEFAULT }
         writeLocalStorage(rule.value)
         debouncedPush()
-        uni.showToast({ title: '已恢复默认', icon: 'success' })
+        appFeedback.showToast({ title: '已恢复默认', icon: 'success' })
       }
     },
   })
@@ -125,14 +124,30 @@ onShow(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="价格显示规则" />
+    <wd-navbar title="价格显示规则"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 顶部说明卡 -->
     <view class="hero">
       <view class="hero-inner">
         <view class="hero-icon">
-          <Icon name="tag" :size="44" color="#fff" />
+          <wd-icon :name="$jwIcon('tag')" size="22px" color="#fff"  />
         </view>
         <view class="hero-text">
           <view class="hero-title">
@@ -163,7 +178,7 @@ onShow(load)
       -->
       <view class="rule-row guest-row">
         <view class="rule-icon" style="background: rgba(156, 163, 175, 0.12); color: #9ca3af">
-          <Icon name="user-line" :size="32" color="#9ca3af" />
+          <wd-icon :name="$jwIcon('user-line')" size="16px" color="#9ca3af"  />
         </view>
         <view class="rule-main">
           <text class="rule-label">未登录访客</text>
@@ -179,23 +194,21 @@ onShow(load)
           <text class="guest-state" :class="{ on: rule.guestAllow }">
             {{ rule.guestAllow ? '允许' : '禁止' }}
           </text>
-          <switch
-            :checked="rule.guestAllow"
-            color="#FF4D2D"
+          <wd-switch :model-value="rule.guestAllow" active-color="var(--brand-primary)"
             @change="
               (e: any) => {
-                rule.guestAllow = e.detail.value
+                rule.guestAllow = e.value
                 persistAndToast('未登录访客')
               }
             "
-          />
+           />
         </view>
       </view>
 
       <!-- 普通客户 -->
       <view class="rule-row">
         <view class="rule-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6">
-          <Icon name="biz-me" :size="32" color="#3b82f6" />
+          <wd-icon :name="$jwIcon('biz-me')" size="16px" color="#3b82f6"  />
         </view>
         <view class="rule-main">
           <text class="rule-label">普通客户</text>
@@ -232,7 +245,7 @@ onShow(load)
       <!-- 授权门店 -->
       <view class="rule-row">
         <view class="rule-icon" style="background: rgba(255, 77, 45, 0.12); color: #ff4d2d">
-          <Icon name="home-shop" :size="32" color="#ff4d2d" />
+          <wd-icon :name="$jwIcon('home-shop')" size="16px" color="#ff4d2d"  />
         </view>
         <view class="rule-main">
           <text class="rule-label">授权门店</text>
@@ -269,7 +282,7 @@ onShow(load)
       <!-- 会员客户 -->
       <view class="rule-row">
         <view class="rule-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7">
-          <Icon name="crown" :size="32" color="#a855f7" />
+          <wd-icon :name="$jwIcon('crown')" size="16px" color="#a855f7"  />
         </view>
         <view class="rule-main">
           <text class="rule-label">会员客户</text>
@@ -305,12 +318,14 @@ onShow(load)
     </view>
 
     <view class="reset-row" @click="resetDefault">
-      <Icon name="refresh" :size="28" color="#909399" />
+      <wd-icon :name="$jwIcon('refresh')" size="14px" color="#909399"  />
       <text>恢复默认规则</text>
     </view>
 
     <view style="height: 80rpx" />
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -401,7 +416,7 @@ onShow(load)
 
 .card {
   margin: 16rpx 24rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   box-shadow: var(--shadow-sm, 0 2rpx 8rpx rgba(0, 0, 0, 0.04));
   overflow: hidden;
@@ -451,7 +466,7 @@ onShow(load)
 .rule-pills {
   display: flex;
   gap: 4rpx;
-  background: #f5f6f8;
+  background: var(--bg-page);
   padding: 4rpx;
   border-radius: 999rpx;
   flex-shrink: 0;
@@ -471,7 +486,7 @@ onShow(load)
   color: #909399;
   padding: 4rpx 12rpx;
   border-radius: 999rpx;
-  background: #f5f6f8;
+  background: var(--bg-page);
   transition: all 0.2s ease;
 
   &.on {
@@ -498,7 +513,7 @@ onShow(load)
 .reset-row {
   margin: 24rpx;
   padding: 28rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   display: flex;
   align-items: center;

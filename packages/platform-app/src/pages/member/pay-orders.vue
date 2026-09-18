@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-09 · 会员缴费订单
  * 还原 原型图/platform-app.jsx::PA_PayOrders
@@ -8,10 +9,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { memberService } from '../../services'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TabKey = 'all' | 'paid' | 'pending' | 'refunding' | 'refunded'
 
 interface PayOrderItem {
@@ -75,7 +72,7 @@ async function load() {
 }
 
 function viewDetail(o: PayOrderItem) {
-  uni.showModal({
+  appFeedback.showModal({
     title: o.no,
     content: `商户: ${o.merchantName}\n套餐: ${o.planName}\n金额: ¥${formatPrice(o.amount)}\n支付方式: ${PAY_METHOD_LABEL[o.payMethod]?.label || o.payMethod}\n状态: ${STATUS_META[o.status]?.label}\n${o.paidAt ? '支付时间: ' + formatDate(o.paidAt) : ''}`,
     showCancel: false,
@@ -87,7 +84,7 @@ function viewDetail(o: PayOrderItem) {
  * 后端把 paymentRecord.status 置 refunded（实际打款流程在另一个 worker 处理）。
  */
 async function approveRefund(o: PayOrderItem) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '同意退款',
     content: `确认同意「${o.merchantName}」¥${formatPrice(o.amount)} 退款？提交后无法撤回。`,
     confirmColor: '#FF3B30',
@@ -96,9 +93,9 @@ async function approveRefund(o: PayOrderItem) {
       try {
         await memberService.approveRefund(o.id)
         o.status = 'refunded'
-        uni.showToast({ title: '已同意退款', icon: 'success' })
+        appFeedback.showToast({ title: '已同意退款', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -109,7 +106,7 @@ async function approveRefund(o: PayOrderItem) {
  * 后端把 paymentRecord.status 回写为 paid + 记录 refundReason。
  */
 function rejectRefund(o: PayOrderItem) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '驳回退款',
     editable: true,
     placeholderText: '请输入驳回原因',
@@ -119,9 +116,9 @@ function rejectRefund(o: PayOrderItem) {
       try {
         await memberService.rejectRefund(o.id, reason)
         o.status = 'paid'
-        uni.showToast({ title: '已驳回', icon: 'success' })
+        appFeedback.showToast({ title: '已驳回', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -134,7 +131,7 @@ function rejectRefund(o: PayOrderItem) {
 function changeStatus(o: PayOrderItem) {
   const options: PayOrderItem['status'][] = ['pending', 'paid', 'refunding', 'refunded']
   const labels = options.map((s) => STATUS_META[s].label)
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: labels,
     success: async (r) => {
       const next = options[r.tapIndex]
@@ -142,19 +139,19 @@ function changeStatus(o: PayOrderItem) {
       try {
         await memberService.updatePayStatus(o.id, next)
         o.status = next
-        uni.showToast({ title: '状态已更新', icon: 'success' })
+        appFeedback.showToast({ title: '状态已更新', icon: 'success' })
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '更新失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '更新失败', icon: 'none' })
       }
     },
   })
 }
 
 function exportCsv() {
-  uni.showLoading({ title: '导出中…' })
+  appFeedback.showLoading({ title: '导出中…' })
   setTimeout(() => {
-    uni.hideLoading()
-    uni.showToast({ title: '已导出 CSV', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: '已导出 CSV', icon: 'success' })
   }, 800)
 }
 
@@ -162,8 +159,26 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="会员缴费订单" right-icon="doc" @right="exportCsv" />
+    <wd-navbar title="会员缴费订单" @click-right="exportCsv"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('doc')" size="22px" /></template>
+    </wd-navbar>
 
     <!-- 顶部统计 -->
     <view class="hero">
@@ -248,15 +263,14 @@ onMounted(load)
         </view>
       </view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && filtered.length === 0"
-        :title="`暂无${TABS.find(t => t.key === tab)?.label}订单`"
-        desc="商户购买套餐后会在这里显示"
-        icon="wallet"
-      />
+       image="content" :tip="[`暂无${TABS.find(t => t.key === tab)?.label}订单`, '商户购买套餐后会在这里显示'].filter(Boolean).join(' · ')" />
       <view style="height: 40rpx;" />
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

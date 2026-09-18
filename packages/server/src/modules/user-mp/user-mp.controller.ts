@@ -9,6 +9,7 @@ import { BindPhoneDto, BindWechatDto } from './dto/bind.dto'
 import { SubmitBookingDto } from './dto/booking.dto'
 import { RefundOrderDto } from './dto/refund.dto'
 import { AddressDto } from './dto/address.dto'
+import { MerchantApplyDto } from './dto/merchant-apply.dto'
 
 @ApiTags('用户端 user-mp')
 @Controller('u')
@@ -240,8 +241,9 @@ export class UserMpController {
   }
 
   // 入驻
-  @Post('merchant-apply') merchantApply(@CurrentUser() u: AuthUser, @Body() dto: any) {
-    return this.svc.merchantApply(u?.sub || null, dto)
+  @Post('merchant-apply')
+  merchantApply(@CurrentUser() u: AuthUser, @Body() dto: MerchantApplyDto) {
+    return this.svc.merchantApply(u || null, dto)
   }
 
   /**

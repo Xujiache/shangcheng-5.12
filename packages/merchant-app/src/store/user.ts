@@ -5,15 +5,31 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, UserSession } from '@jiujiu/shared/types'
 import { http } from '../utils/request'
+import { AUTH_TOKENS_UPDATED_EVENT, type AuthTokensUpdatedPayload } from '../utils/auth-events'
+import { destroyChatSocket, refreshChatSocketToken } from '../composables/useChatSocket'
 
 const STORAGE_KEY = 'jiujiu_user'
 const TOKEN_KEY = 'jiujiu_token'
 const REFRESH_KEY = 'jiujiu_refresh_token'
+let tokenEventBound = false
 
 export const useUserStore = defineStore('user', () => {
   const user = ref<User | null>(null)
   const accessToken = ref<string>('')
   const refreshToken = ref<string>('')
+
+  if (!tokenEventBound) {
+    try {
+      uni.$on(AUTH_TOKENS_UPDATED_EVENT, (payload: AuthTokensUpdatedPayload) => {
+        accessToken.value = payload.accessToken || ''
+        refreshToken.value = payload.refreshToken || ''
+        refreshChatSocketToken(accessToken.value)
+      })
+      tokenEventBound = true
+    } catch {
+      // storage 仍是最终数据源，下一次 hydrate 会完成同步。
+    }
+  }
 
   /** 初始化：从本地恢复 */
   function hydrate() {
@@ -21,11 +37,13 @@ export const useUserStore = defineStore('user', () => {
       const t = uni.getStorageSync(TOKEN_KEY)
       const rt = uni.getStorageSync(REFRESH_KEY)
       const u = uni.getStorageSync(STORAGE_KEY)
-      if (t) accessToken.value = t
-      if (rt) refreshToken.value = rt
-      if (u) user.value = typeof u === 'string' ? JSON.parse(u) : u
+      accessToken.value = typeof t === 'string' ? t : ''
+      refreshToken.value = typeof rt === 'string' ? rt : ''
+      user.value = u ? (typeof u === 'string' ? JSON.parse(u) : u) : null
     } catch {
-      // ignore
+      accessToken.value = ''
+      refreshToken.value = ''
+      user.value = null
     }
   }
 
@@ -41,6 +59,7 @@ export const useUserStore = defineStore('user', () => {
     } catch {
       // ignore
     }
+    refreshChatSocketToken(session.accessToken)
   }
 
   /**
@@ -80,6 +99,7 @@ export const useUserStore = defineStore('user', () => {
     } catch {
       // ignore
     }
+    destroyChatSocket()
   }
 
   const isLogin = computed(() => !!accessToken.value)

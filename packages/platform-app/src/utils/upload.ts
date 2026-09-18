@@ -1,3 +1,4 @@
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 文件上传公共 helper · platform-app
  *
@@ -183,7 +184,7 @@ export function pickAndUploadImage(options: PickedImageOptions = {}): Promise<st
           return
         }
         const token = getToken()
-        uni.showLoading({ title: '上传中…', mask: true })
+        appFeedback.showLoading({ title: '上传中…', mask: true })
         uni.uploadFile({
           url: BASE_URL + '/api/v1/files/upload',
           filePath: tempPath,
@@ -191,7 +192,7 @@ export function pickAndUploadImage(options: PickedImageOptions = {}): Promise<st
           formData: { bizType },
           header: token ? { Authorization: `Bearer ${token}` } : {},
           success: (res) => {
-            uni.hideLoading()
+            appFeedback.hideLoading()
             try {
               const raw = (res as { data: string | object }).data
               const body: any = typeof raw === 'string' ? JSON.parse(raw) : raw
@@ -207,7 +208,7 @@ export function pickAndUploadImage(options: PickedImageOptions = {}): Promise<st
             }
           },
           fail: (err: any) => {
-            uni.hideLoading()
+            appFeedback.hideLoading()
             reject(err instanceof Error ? err : new Error(err?.errMsg || '上传失败,请检查网络'))
           },
         })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-10 · 权限管理(移动端全量实现)
  *
@@ -26,9 +27,6 @@ import { permissionService } from '../../services'
 import type { AdminUser, AdminRole, AdminRoleDto, AdminUserDto } from '../../services'
 import { useAdminStore } from '../../store/admin'
 import { formatDate } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
 import FormSheet from '../../components/form-sheet/form-sheet.vue'
 
 type TabKey = 'roles' | 'admins'
@@ -114,7 +112,7 @@ async function load() {
     roles.value = roleList
     admins.value = adminList
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -172,7 +170,7 @@ async function submitRoleSheet() {
   roleSubmitting.value = true
   try {
     if (!roleForm.name.trim()) {
-      uni.showToast({ title: '请填写角色名称', icon: 'none' })
+      appFeedback.showToast({ title: '请填写角色名称', icon: 'none' })
       return
     }
     const dto: AdminRoleDto = {
@@ -186,14 +184,14 @@ async function submitRoleSheet() {
     } else {
       await permissionService.saveRole(dto)
     }
-    uni.showToast({
+    appFeedback.showToast({
       title: roleSheetMode.value === 'edit' ? '已保存' : '已创建',
       icon: 'success',
     })
     roleSheetOpen.value = false
     await load()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '提交失败', icon: 'none' })
   } finally {
     roleSubmitting.value = false
   }
@@ -204,10 +202,10 @@ function viewMembers(r: AdminRole) {
   // 旧实现比对 a.role(user.role 字段)会永远是空集合。
   const members = admins.value.filter((a) => a.roleName === r.name)
   if (members.length === 0) {
-    uni.showToast({ title: '暂无成员', icon: 'none' })
+    appFeedback.showToast({ title: '暂无成员', icon: 'none' })
     return
   }
-  uni.showModal({
+  appFeedback.showModal({
     title: `${r.name} · ${members.length} 名成员`,
     content: members.map((m) => `${m.nickname} (${m.username})`).join('\n'),
     showCancel: false,
@@ -215,7 +213,7 @@ function viewMembers(r: AdminRole) {
 }
 
 function openRoleActions(r: AdminRole) {
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['查看成员', '编辑角色 (名称 / 权限)', '删除角色'],
     success: async (s) => {
       try {
@@ -224,7 +222,7 @@ function openRoleActions(r: AdminRole) {
         } else if (s.tapIndex === 1) {
           openEditRole(r)
         } else if (s.tapIndex === 2) {
-          uni.showModal({
+          appFeedback.showModal({
             title: '删除角色',
             content: `确认删除角色「${r.name}」？该角色下的成员将变为无权限状态。`,
             confirmColor: '#FF3B30',
@@ -233,15 +231,15 @@ function openRoleActions(r: AdminRole) {
               try {
                 await permissionService.deleteRole(r.id)
                 roles.value = roles.value.filter((x) => x.id !== r.id)
-                uni.showToast({ title: '已删除', icon: 'success' })
+                appFeedback.showToast({ title: '已删除', icon: 'success' })
               } catch (e: any) {
-                uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+                appFeedback.showToast({ title: e?.message || '删除失败', icon: 'none' })
               }
             },
           })
         }
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -322,11 +320,11 @@ async function submitAdminSheet() {
   try {
     if (adminSheetMode.value === 'create') {
       if (!adminForm.username.trim()) {
-        uni.showToast({ title: '请填写账号', icon: 'none' })
+        appFeedback.showToast({ title: '请填写账号', icon: 'none' })
         return
       }
       if (!adminForm.password || adminForm.password.length < 8) {
-        uni.showToast({ title: '密码至少 8 位', icon: 'none' })
+        appFeedback.showToast({ title: '密码至少 8 位', icon: 'none' })
         return
       }
       const dto: AdminUserDto = {
@@ -340,7 +338,7 @@ async function submitAdminSheet() {
       await permissionService.createAdminUser(dto)
       adminSheetOpen.value = false
       const initial = adminForm.password
-      uni.showModal({
+      appFeedback.showModal({
         title: '账号已创建',
         content: `账号:${dto.username}\n初始密码:${initial}\n\n请立即通知本人,本提示关闭后无法再次查看。`,
         showCancel: false,
@@ -353,12 +351,12 @@ async function submitAdminSheet() {
         username: adminForm.username,
         nickname: adminForm.nickname,
       })
-      uni.showToast({ title: '已保存', icon: 'success' })
+      appFeedback.showToast({ title: '已保存', icon: 'success' })
       adminSheetOpen.value = false
       await load()
     }
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '提交失败', icon: 'none' })
   } finally {
     adminSubmitting.value = false
   }
@@ -389,25 +387,25 @@ async function submitResetPassword() {
   if (resetSubmitting.value) return
   if (!resetTarget.value) return
   if (!resetForm.password || resetForm.password.length < 8) {
-    uni.showToast({ title: '密码至少 8 位', icon: 'none' })
+    appFeedback.showToast({ title: '密码至少 8 位', icon: 'none' })
     return
   }
   if (resetForm.password !== resetForm.confirm) {
-    uni.showToast({ title: '两次输入不一致', icon: 'none' })
+    appFeedback.showToast({ title: '两次输入不一致', icon: 'none' })
     return
   }
   resetSubmitting.value = true
   try {
     await permissionService.resetAdminPassword(resetTarget.value.id, resetForm.password)
     resetSheetOpen.value = false
-    uni.showModal({
+    appFeedback.showModal({
       title: '密码已重置',
       content: `账号:${resetTarget.value.username}\n新密码:${resetForm.password}\n\n请立即复制并通知本人,本提示关闭后无法再次查看。`,
       showCancel: false,
       confirmText: '我已记下',
     })
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '重置失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '重置失败', icon: 'none' })
   } finally {
     resetSubmitting.value = false
   }
@@ -421,7 +419,7 @@ function openAdminActions(a: AdminUser) {
   if (isSuperAdmin.value && a.id !== adminStore.admin?.id) {
     items.splice(1, 0, '重置密码')
   }
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: items,
     success: async (s) => {
       // 因为可能动态插入"重置密码", 这里按 itemList 实际索引判断
@@ -434,9 +432,9 @@ function openAdminActions(a: AdminUser) {
         } else if (action === '停用账号' || action === '恢复账号') {
           await permissionService.toggleAdmin(a.id)
           a.status = a.status === 'active' ? 'disabled' : 'active'
-          uni.showToast({ title: a.status === 'active' ? '已恢复' : '已停用', icon: 'success' })
+          appFeedback.showToast({ title: a.status === 'active' ? '已恢复' : '已停用', icon: 'success' })
         } else if (action === '删除管理员') {
-          uni.showModal({
+          appFeedback.showModal({
             title: '删除管理员',
             content: `确认删除「${a.nickname}」？删除后此账号无法登录平台。`,
             confirmColor: '#FF3B30',
@@ -445,15 +443,15 @@ function openAdminActions(a: AdminUser) {
               try {
                 await permissionService.deleteAdmin(a.id)
                 admins.value = admins.value.filter((x) => x.id !== a.id)
-                uni.showToast({ title: '已删除', icon: 'success' })
+                appFeedback.showToast({ title: '已删除', icon: 'success' })
               } catch (e: any) {
-                uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+                appFeedback.showToast({ title: e?.message || '删除失败', icon: 'none' })
               }
             },
           })
         }
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -477,8 +475,26 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="权限管理" right-icon="plus" @right="onNavRightTap" />
+    <wd-navbar title="权限管理" @click-right="onNavRightTap"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+    </wd-navbar>
 
     <view class="tabs">
       <view
@@ -497,7 +513,7 @@ onMounted(load)
       <view class="stats">
         <view class="stat-item">
           <view class="s-icon">
-            <Icon name="lock" :size="28" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('lock')" size="14px" color="var(--brand-primary)"  />
           </view>
           <view class="s-info">
             <text class="s-num">{{ roles.length }}</text>
@@ -507,7 +523,7 @@ onMounted(load)
         <view class="s-divider" />
         <view class="stat-item">
           <view class="s-icon">
-            <Icon name="user" :size="28" color="#A855F7" />
+            <wd-icon :name="$jwIcon('user')" size="14px" color="#A855F7"  />
           </view>
           <view class="s-info">
             <text class="s-num">{{ admins.length }}</text>
@@ -517,7 +533,7 @@ onMounted(load)
         <view class="s-divider" />
         <view class="stat-item">
           <view class="s-icon">
-            <Icon name="check-circle" :size="28" color="#52C41A" />
+            <wd-icon :name="$jwIcon('check-circle')" size="14px" color="#52C41A"  />
           </view>
           <view class="s-info">
             <text class="s-num">{{ admins.filter((a) => a.status === 'active').length }}</text>
@@ -530,7 +546,7 @@ onMounted(load)
       <view v-if="tab === 'roles'" class="list">
         <view class="quick-toolbar">
           <view class="qt-btn primary" @click="openCreateRole">
-            <Icon name="plus" :size="24" color="#fff" />
+            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
             <text>新建角色</text>
           </view>
         </view>
@@ -570,19 +586,16 @@ onMounted(load)
           </view>
         </view>
 
-        <EmptyState
+        <wd-status-tip
           v-if="!loading && roles.length === 0"
-          title="暂无角色"
-          desc="点击「新建角色」配置权限"
-          icon="lock"
-        />
+         image="content" :tip="['暂无角色', '点击「新建角色」配置权限'].filter(Boolean).join(' · ')" />
       </view>
 
       <!-- 管理员 -->
       <view v-else class="list">
         <view class="quick-toolbar">
           <view class="qt-btn primary" @click="openCreateAdmin">
-            <Icon name="plus" :size="24" color="#fff" />
+            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
             <text>新建管理员</text>
           </view>
         </view>
@@ -615,16 +628,13 @@ onMounted(load)
             <text class="last-login">最近登录 · {{ formatLastLogin(a.lastLoginAt) }}</text>
           </view>
           <view class="more-btn" @click="openAdminActions(a)">
-            <Icon name="more-v" :size="32" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('more-v')" size="16px" color="var(--text-tertiary)"  />
           </view>
         </view>
 
-        <EmptyState
+        <wd-status-tip
           v-if="!loading && admins.length === 0"
-          title="暂无管理员"
-          desc="点击「新建管理员」添加账号"
-          icon="user"
-        />
+         image="content" :tip="['暂无管理员', '点击「新建管理员」添加账号'].filter(Boolean).join(' · ')" />
       </view>
 
       <view style="height: 40rpx" />
@@ -642,22 +652,22 @@ onMounted(load)
     >
       <view class="form-row">
         <text class="form-label">角色名称<text class="required">*</text></text>
-        <input
+        <wd-input no-border
           v-model="roleForm.name"
           class="form-input"
           placeholder="如:运营经理 / 审核员 / 客服"
           maxlength="20"
-        />
+         />
       </view>
       <view class="form-row">
         <text class="form-label">角色描述</text>
-        <textarea
+        <wd-textarea no-border
           v-model="roleForm.desc"
           class="form-textarea"
           placeholder="该角色的职责简述,可选"
           maxlength="100"
           :auto-height="true"
-        />
+         />
       </view>
       <view class="form-row">
         <text class="form-label">权限项<text class="required">*</text></text>
@@ -668,11 +678,10 @@ onMounted(load)
             :class="['perm-chip', roleForm.permissions.includes(opt.value) ? 'active' : '']"
             @click="togglePerm(opt.value)"
           >
-            <Icon
-              :name="roleForm.permissions.includes(opt.value) ? 'check-circle' : 'circle'"
-              :size="24"
+            <wd-icon
+              :name="$jwIcon(roleForm.permissions.includes(opt.value) ? 'check-circle' : 'circle')" size="12px"
               :color="roleForm.permissions.includes(opt.value) ? '#FF4D2D' : '#C9CDD4'"
-            />
+             />
             <text>{{ opt.label }}</text>
           </view>
         </view>
@@ -692,41 +701,41 @@ onMounted(load)
     >
       <view v-if="adminSheetMode === 'create'" class="form-row">
         <text class="form-label">账号(登录名)<text class="required">*</text></text>
-        <input
+        <wd-input no-border
           v-model="adminForm.username"
           class="form-input"
           placeholder="英文 / 数字, 唯一"
           maxlength="40"
-        />
+         />
       </view>
       <view class="form-row">
         <text class="form-label">{{ adminSheetMode === 'create' ? '昵称' : '昵称' }}</text>
-        <input
+        <wd-input no-border
           v-model="adminForm.nickname"
           class="form-input"
           placeholder="留空将使用账号作为昵称"
           maxlength="20"
-        />
+         />
       </view>
       <view v-if="adminSheetMode === 'create'" class="form-row">
         <text class="form-label">邮箱</text>
-        <input
+        <wd-input no-border
           v-model="adminForm.email"
           class="form-input"
           type="text"
           placeholder="可选,用于密码找回"
           maxlength="100"
-        />
+         />
       </view>
       <view v-if="adminSheetMode === 'create'" class="form-row">
         <text class="form-label">手机号</text>
-        <input
+        <wd-input no-border
           v-model="adminForm.phone"
           class="form-input"
           type="number"
           placeholder="可选"
           maxlength="20"
-        />
+         />
       </view>
       <view class="form-row">
         <text class="form-label">用户角色 (user.role)<text class="required">*</text></text>
@@ -744,13 +753,13 @@ onMounted(load)
       </view>
       <view v-if="adminSheetMode === 'create'" class="form-row">
         <text class="form-label">初始密码 (至少 8 位)<text class="required">*</text></text>
-        <input
+        <wd-input no-border
           v-model="adminForm.password"
           class="form-input"
           type="text"
           placeholder="账号创建后立即通知本人, 首次登录请改"
           maxlength="40"
-        />
+         />
         <text v-if="adminForm.password && adminForm.password.length < 8" class="form-hint err">
           密码长度不足
         </text>
@@ -774,23 +783,23 @@ onMounted(load)
       </view>
       <view class="form-row">
         <text class="form-label">新密码 (至少 8 位)<text class="required">*</text></text>
-        <input
+        <wd-input no-border
           v-model="resetForm.password"
           class="form-input"
           type="text"
           placeholder="建议混合字母+数字+符号"
           maxlength="40"
-        />
+         />
       </view>
       <view class="form-row">
         <text class="form-label">确认密码<text class="required">*</text></text>
-        <input
+        <wd-input no-border
           v-model="resetForm.confirm"
           class="form-input"
           type="text"
           placeholder="再次输入新密码"
           maxlength="40"
-        />
+         />
         <text
           v-if="resetForm.confirm && resetForm.password !== resetForm.confirm"
           class="form-hint err"
@@ -800,6 +809,8 @@ onMounted(load)
       </view>
     </FormSheet>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -1133,10 +1144,10 @@ onMounted(load)
   line-height: 80rpx;
   padding: 0 24rpx;
   font-size: 26rpx;
-  background: #f7f8fa;
-  border: 1rpx solid #e5e6eb;
+  background: var(--bg-page);
+  border: 1rpx solid var(--border-light);
   border-radius: 16rpx;
-  color: #1d2129;
+  color: var(--text-primary);
 }
 .form-textarea {
   width: 100%;
@@ -1144,10 +1155,10 @@ onMounted(load)
   min-height: 120rpx;
   padding: 16rpx 24rpx;
   font-size: 26rpx;
-  background: #f7f8fa;
-  border: 1rpx solid #e5e6eb;
+  background: var(--bg-page);
+  border: 1rpx solid var(--border-light);
   border-radius: 16rpx;
-  color: #1d2129;
+  color: var(--text-primary);
   line-height: 1.5;
 }
 .form-hint {
@@ -1165,11 +1176,11 @@ onMounted(load)
   border-left: 4rpx solid #1296db;
   border-radius: 0 12rpx 12rpx 0;
   font-size: 22rpx;
-  color: #4e5969;
+  color: var(--text-secondary);
   line-height: 1.6;
   .bold {
     font-weight: 700;
-    color: #1d2129;
+    color: var(--text-primary);
   }
 }
 .seg-group {
@@ -1178,8 +1189,8 @@ onMounted(load)
   gap: 12rpx;
   .seg-item {
     padding: 12rpx 24rpx;
-    background: #f7f8fa;
-    border: 1rpx solid #e5e6eb;
+    background: var(--bg-page);
+    border: 1rpx solid var(--border-light);
     border-radius: 999rpx;
     font-size: 24rpx;
     color: var(--text-secondary);
@@ -1200,8 +1211,8 @@ onMounted(load)
     align-items: center;
     gap: 8rpx;
     padding: 14rpx 20rpx;
-    background: #f7f8fa;
-    border: 1rpx solid #e5e6eb;
+    background: var(--bg-page);
+    border: 1rpx solid var(--border-light);
     border-radius: 16rpx;
     font-size: 24rpx;
     color: var(--text-secondary);

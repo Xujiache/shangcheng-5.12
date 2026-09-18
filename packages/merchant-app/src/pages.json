@@ -1,9 +1,32 @@
 {
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^wd-(.*)": "wot-design-uni/components/wd-$1/wd-$1.vue"
+    }
+  },
   "pages": [
-    { "path": "pages/auth/login", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
+    {
+      "path": "pages/startup/index",
+      "style": { "navigationBarTitleText": "", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/auth/login",
+      "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" }
+    },
     { "path": "pages/auth/apply", "style": { "navigationBarTitleText": "商家入驻" } },
-    { "path": "pages/auth/set-password", "style": { "navigationBarTitleText": "设置密码", "navigationStyle": "custom" } },
-    { "path": "pages/tabbar/home/index", "style": { "navigationBarTitleText": "经纬科技 · 商家版" } },
+    {
+      "path": "pages/auth/set-password",
+      "style": { "navigationBarTitleText": "设置密码", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/tabbar/home/index",
+      "style": {
+        "navigationBarTitleText": "经纬科技 · 商家版",
+        "enablePullDownRefresh": true,
+        "backgroundColor": "#F5F6F8"
+      }
+    },
     { "path": "pages/tabbar/product/index", "style": { "navigationBarTitleText": "商品" } },
     { "path": "pages/tabbar/order/index", "style": { "navigationBarTitleText": "订单" } },
     { "path": "pages/tabbar/stats/index", "style": { "navigationBarTitleText": "数据" } },
@@ -20,7 +43,22 @@
     { "path": "pages/staff/index", "style": { "navigationBarTitleText": "员工管理" } },
     { "path": "pages/shop/decorate", "style": { "navigationBarTitleText": "店铺装修" } },
     { "path": "pages/marketing/index", "style": { "navigationBarTitleText": "营销中心" } },
-    { "path": "pages/chat/index", "style": { "navigationBarTitleText": "在线客服" } },
+    { "path": "pages/chat/sessions", "style": { "navigationBarTitleText": "客户消息" } },
+    {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "在线客服",
+        "navigationStyle": "custom",
+        "app-plus": {
+          "softinputMode": "adjustResize",
+          "bounce": "none"
+        }
+      }
+    },
+    {
+      "path": "pages/update/index",
+      "style": { "navigationBarTitleText": "", "navigationStyle": "custom" }
+    },
     { "path": "pages/plaza/index", "style": { "navigationBarTitleText": "选品广场" } },
     { "path": "pages/plaza/factory", "style": { "navigationBarTitleText": "厂家详情" } },
     { "path": "pages/member/index", "style": { "navigationBarTitleText": "会员开通" } },
@@ -35,19 +73,5 @@
     "navigationBarTitleText": "经纬科技",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F7F8FA"
-  },
-  "tabBar": {
-    "custom": true,
-    "color": "#86909C",
-    "selectedColor": "#FF4D2D",
-    "backgroundColor": "#FFFFFF",
-    "borderStyle": "white",
-    "list": [
-      { "pagePath": "pages/tabbar/home/index", "text": "首页", "iconPath": "static/tabbar/home.png", "selectedIconPath": "static/tabbar/home-active.png" },
-      { "pagePath": "pages/tabbar/product/index", "text": "商品", "iconPath": "static/tabbar/product.png", "selectedIconPath": "static/tabbar/product-active.png" },
-      { "pagePath": "pages/tabbar/order/index", "text": "订单", "iconPath": "static/tabbar/order.png", "selectedIconPath": "static/tabbar/order-active.png" },
-      { "pagePath": "pages/tabbar/stats/index", "text": "数据", "iconPath": "static/tabbar/stats.png", "selectedIconPath": "static/tabbar/stats-active.png" },
-      { "pagePath": "pages/tabbar/me/index", "text": "我的", "iconPath": "static/tabbar/me.png", "selectedIconPath": "static/tabbar/me-active.png" }
-    ]
   }
 }

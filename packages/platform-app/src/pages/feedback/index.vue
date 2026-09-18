@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback, delegateWotUploadChoose } from '@jiujiu/shared'
 /**
  * PA · 意见反馈
  *
@@ -21,9 +22,6 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { feedbackService, type FeedbackDto } from '../../services'
 import { useAdminStore } from '../../store/admin'
 import { BASE_URL, PLATFORM_TOKEN_KEY } from '../../utils/request'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-
 const DRAFT_KEY = 'jiujiu_platform_feedback_draft'
 const LOCAL_FALLBACK_KEY = 'jiujiu_platform_feedback_local'
 
@@ -101,7 +99,7 @@ function clearDraft() {
 function chooseImage() {
   const remain = 3 - images.value.length
   if (remain <= 0) {
-    uni.showToast({ title: '最多上传 3 张', icon: 'none' })
+    appFeedback.showToast({ title: '最多上传 3 张', icon: 'none' })
     return
   }
   uni.chooseImage({
@@ -112,7 +110,7 @@ function chooseImage() {
       const paths = (res as { tempFilePaths: string[] }).tempFilePaths || []
       if (paths.length === 0) return
       uploading.value = true
-      uni.showLoading({ title: '上传中…', mask: true })
+      appFeedback.showLoading({ title: '上传中…', mask: true })
       try {
         for (const p of paths) {
           if (images.value.length >= 3) break
@@ -120,9 +118,9 @@ function chooseImage() {
           if (url) images.value.push(url)
         }
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '部分图片上传失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '部分图片上传失败', icon: 'none' })
       } finally {
-        uni.hideLoading()
+        appFeedback.hideLoading()
         uploading.value = false
       }
     },
@@ -194,7 +192,7 @@ function pushLocal(dto: FeedbackDto) {
 async function submit() {
   if (!canSubmit.value) {
     if (contentLen.value < 10) {
-      uni.showToast({ title: '请至少写 10 个字哦', icon: 'none' })
+      appFeedback.showToast({ title: '请至少写 10 个字哦', icon: 'none' })
     }
     return
   }
@@ -205,17 +203,17 @@ async function submit() {
     contact: contact.value.trim() || undefined,
     images: images.value.length ? [...images.value] : undefined,
   }
-  uni.showLoading({ title: '提交中…', mask: true })
+  appFeedback.showLoading({ title: '提交中…', mask: true })
   try {
     await feedbackService.submit(dto)
-    uni.hideLoading()
-    uni.showToast({ title: '已提交,感谢您的反馈', icon: 'success' })
+    appFeedback.hideLoading()
+    appFeedback.showToast({ title: '已提交,感谢您的反馈', icon: 'success' })
     clearDraft()
     setTimeout(() => uni.navigateBack({ delta: 1, fail: () => {} }), 800)
   } catch {
     pushLocal(dto)
-    uni.hideLoading()
-    uni.showToast({
+    appFeedback.hideLoading()
+    appFeedback.showToast({
       title: '已收到您的反馈,我们将尽快处理',
       icon: 'none',
       duration: 1800,
@@ -236,14 +234,30 @@ onBeforeUnmount(saveDraft)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="意见反馈" />
+    <wd-navbar title="意见反馈"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <scroll-view scroll-y class="scroll">
       <!-- 顶部说明 -->
       <view class="banner">
         <view class="banner-icon">
-          <Icon name="thumb-up" :size="36" color="#fff" />
+          <wd-icon :name="$jwIcon('thumb-up')" size="18px" color="#fff"  />
         </view>
         <view class="banner-text">
           <text class="bt-title">您的反馈,我们用心倾听</text>
@@ -265,11 +279,11 @@ onBeforeUnmount(saveDraft)
             @click="type = opt.key"
           >
             <view class="t-icon" :style="{ background: opt.tint + '18' }">
-              <Icon :name="opt.icon" :size="32" :color="opt.tint" />
+              <wd-icon :name="$jwIcon(opt.icon)" size="16px" :color="opt.tint"  />
             </view>
             <text class="t-label">{{ opt.label }}</text>
             <view v-if="type === opt.key" class="t-check">
-              <Icon name="check" :size="20" color="#fff" />
+              <wd-icon :name="$jwIcon('check')" size="10px" color="#fff"  />
             </view>
           </view>
         </view>
@@ -281,14 +295,14 @@ onBeforeUnmount(saveDraft)
           <text class="card-title">反馈内容</text>
           <text :class="['card-req', contentLen >= 10 ? 'ok' : '']"> {{ contentLen }}/10+ </text>
         </view>
-        <textarea
+        <wd-textarea no-border
           v-model="content"
           class="content-input"
           placeholder="请详细描述您遇到的问题/建议（至少 10 字）"
           maxlength="500"
           auto-height
           :cursor-spacing="20"
-        />
+         />
       </view>
 
       <!-- 联系方式 -->
@@ -297,12 +311,12 @@ onBeforeUnmount(saveDraft)
           <text class="card-title">联系方式</text>
           <text class="card-req opt">选填</text>
         </view>
-        <input
+        <wd-input no-border
           v-model="contact"
           class="contact-input"
           placeholder="手机 / 微信 / 邮箱（默认使用账号手机号）"
           maxlength="64"
-        />
+         />
       </view>
 
       <!-- 截图上传 -->
@@ -311,26 +325,18 @@ onBeforeUnmount(saveDraft)
           <text class="card-title">附件截图</text>
           <text class="card-req opt">最多 3 张 · 选填</text>
         </view>
-        <view class="img-grid">
-          <view v-for="(url, i) in images" :key="url + i" class="img-cell">
-            <image :src="url" mode="aspectFill" class="thumb" @click="previewImage(i)" />
-            <view class="img-del" @click="removeImage(i)">
-              <Icon name="close" :size="20" color="#fff" />
-            </view>
-          </view>
-          <view v-if="images.length < 3" class="img-add" @click="chooseImage">
-            <Icon
-              :name="uploading ? 'refresh' : 'image-plus'"
-              :size="40"
-              color="var(--text-tertiary)"
-            />
-            <text>{{ uploading ? '上传中…' : '添加图片' }}</text>
-          </view>
-        </view>
+        <wd-upload
+          :file-list="images.map((url) => ({ url }))"
+          :limit="3"
+          :disabled="uploading"
+          :before-choose="(option: any) => delegateWotUploadChoose(option, chooseImage)"
+          image-mode="aspectFill"
+          @remove="removeImage($event.index)"
+        />
       </view>
 
       <view class="tip">
-        <Icon name="info" :size="22" color="var(--text-tertiary)" />
+        <wd-icon :name="$jwIcon('info')" size="11px" color="var(--text-tertiary)"  />
         <text>反馈内容会同步至运营团队,处理结果将在 1-3 个工作日内回复</text>
       </view>
 
@@ -344,6 +350,8 @@ onBeforeUnmount(saveDraft)
       </view>
     </view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

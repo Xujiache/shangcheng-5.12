@@ -167,14 +167,23 @@ export interface ChatSessionItem {
   online: boolean
 }
 
+export type ChatSessionDetail = Omit<ChatSessionItem, 'lastMessage'> & {
+  lastMessage?: ChatSessionItem['lastMessage']
+}
+
 export interface ChatMessageItem {
   id: string
   sessionId: string
   sender: 'user' | 'merchant' | 'system'
-  type: 'text' | 'image' | 'product' | 'order' | 'system'
+  type: 'text' | 'quick' | 'image' | 'product' | 'order' | 'system' | string
   content: string
   createdAt: string
   read: boolean
+}
+
+export interface ChatMessagePageParams {
+  cursor?: string
+  pageSize?: number
 }
 
 export interface QuickReplyItem {
@@ -187,14 +196,23 @@ export const chatService = {
   sessions() {
     return http.get<ChatSessionItem[]>('/api/v1/m/chat/sessions')
   },
-  messages(sessionId: string) {
-    return http.get<ChatMessageItem[]>(`/api/v1/m/chat/sessions/${sessionId}/messages`)
+  session(sessionId: string) {
+    return http.get<ChatSessionDetail>(`/api/v1/m/chat/sessions/${sessionId}`)
+  },
+  messages(sessionId: string, params: ChatMessagePageParams = {}) {
+    return http.get<ChatMessageItem[]>(
+      `/api/v1/m/chat/sessions/${sessionId}/messages`,
+      params as Record<string, unknown>,
+    )
   },
   quickReplies() {
     return http.get<QuickReplyItem[]>('/api/v1/m/chat/quick-replies')
   },
   send(sessionId: string, data: { type: string; content: string }) {
     return http.post<ChatMessageItem>(`/api/v1/m/chat/sessions/${sessionId}/messages`, data)
+  },
+  markRead(sessionId: string) {
+    return http.post<{ ok: boolean }>(`/api/v1/m/chat/sessions/${sessionId}/read`, {})
   },
 }
 

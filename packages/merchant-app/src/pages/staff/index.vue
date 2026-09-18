@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * MA-16 · 员工管理
  *
@@ -8,12 +9,6 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { staffService } from '../../services/store'
 import type { Staff } from '@jiujiu/shared/types'
 import { formatPrice, maskPhone } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Tabs from '../../components/tabs/tabs.vue'
-import StatusTag from '../../components/status-tag/status-tag.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-import Icon from '../../components/icon/icon.vue'
-
 type Tab = 'all' | 'sales' | 'cs' | 'manager'
 
 const tab = ref<Tab>('all')
@@ -65,7 +60,7 @@ function openEdit(s: Staff) {
 
 async function saveStaff() {
   if (!editing.name || !editing.phone) {
-    uni.showToast({ title: '请填写姓名和手机号', icon: 'none' })
+    appFeedback.showToast({ title: '请填写姓名和手机号', icon: 'none' })
     return
   }
   if (editing.id) {
@@ -83,13 +78,13 @@ async function saveStaff() {
       permissions: PERMS_PRESET.slice(0, 3),
     })
   }
-  uni.showToast({ title: editing.id ? '已更新' : '已邀请', icon: 'success' })
+  appFeedback.showToast({ title: editing.id ? '已更新' : '已邀请', icon: 'success' })
   showEditor.value = false
   load()
 }
 
 function offboard(s: Staff) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '员工离职',
     content: `确认「${s.name}」已离职？离职后将无法登录后台。`,
     confirmColor: '#FF3B30',
@@ -97,7 +92,7 @@ function offboard(s: Staff) {
       if (r.confirm) {
         s.status = 'left'
         await staffService.update(s.id, { status: 'left' })
-        uni.showToast({ title: '已离职' })
+        appFeedback.showToast({ title: '已离职' })
       }
     },
   })
@@ -111,8 +106,24 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="员工管理" right-text="＋ 邀请" @right="openInvite" />
+    <wd-navbar title="员工管理" right-text="＋ 邀请" @click-right="openInvite"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
 
     <!-- 顶部概览 -->
     <view class="hero">
@@ -128,7 +139,15 @@ onMounted(load)
     </view>
 
     <view class="header">
-      <Tabs v-model="tab" :items="TABS" variant="underline" />
+      <wd-tabs v-model="tab"  color="var(--brand-primary)">
+        <wd-tab
+          v-for="item in TABS"
+          :key="item.key"
+          :name="item.key"
+          :title="item.label"
+          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+        />
+      </wd-tabs>
     </view>
 
     <view class="list">
@@ -138,13 +157,13 @@ onMounted(load)
           <view class="info">
             <view class="name-row">
               <text class="name">{{ s.name }}</text>
-              <StatusTag :text="ROLE_LABEL[s.role].text" :tone="ROLE_LABEL[s.role].tone" />
-              <StatusTag v-if="s.status === 'left'" text="已离职" tone="default" />
+              <wd-tag  :type="$jwTagType(ROLE_LABEL[s.role].tone)" :plain="true" round>{{ ROLE_LABEL[s.role].text }}</wd-tag>
+              <wd-tag v-if="s.status === 'left'"  :type="$jwTagType('default')" :plain="true" round>{{ "已离职" }}</wd-tag>
             </view>
             <text class="phone">{{ maskPhone(s.phone) }}</text>
           </view>
           <view class="phone-btn" @click="callStaff(s)">
-            <Icon name="phone" :size="32" color="var(--brand-primary)" />
+            <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--brand-primary)"  />
           </view>
         </view>
 
@@ -172,14 +191,14 @@ onMounted(load)
         </view>
       </view>
 
-      <EmptyState v-if="list.length === 0" title="暂无员工" desc="点击右上角邀请" />
+      <wd-status-tip v-if="list.length === 0"  image="content" :tip="['暂无员工', '点击右上角邀请'].filter(Boolean).join(' · ')" />
     </view>
 
     <view class="safe-bottom" />
 
     <!-- 邀请/编辑浮层 -->
-    <view v-if="showEditor" class="mask" @click="showEditor = false">
-      <view class="sheet" @click.stop>
+    <wd-popup v-model="showEditor" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
+      <view class="sheet-content">
         <view class="sheet-head">
           <text>{{ editing.id ? '编辑员工' : '邀请新员工' }}</text>
           <text class="close" @click="showEditor = false">✕</text>
@@ -187,11 +206,11 @@ onMounted(load)
         <view class="form">
           <view class="form-row">
             <text class="form-label required">姓名</text>
-            <input v-model="editing.name" class="form-input" placeholder="员工真实姓名" />
+            <wd-input no-border v-model="editing.name" class="form-input" placeholder="员工真实姓名"  />
           </view>
           <view class="form-row">
             <text class="form-label required">手机号</text>
-            <input v-model="editing.phone" class="form-input" placeholder="手机号 · 登录账号" maxlength="11" />
+            <wd-input no-border v-model="editing.phone" class="form-input" placeholder="手机号 · 登录账号" maxlength="11"  />
           </view>
           <view class="form-row">
             <text class="form-label">角色</text>
@@ -206,12 +225,14 @@ onMounted(load)
           </view>
         </view>
         <view class="sheet-footer">
-          <view class="sf-btn ghost" @click="showEditor = false">取消</view>
-          <view class="sf-btn primary" @click="saveStaff">{{ editing.id ? '保存' : '邀请' }}</view>
+          <wd-button block plain size="large" @click="showEditor = false">取消</wd-button>
+          <wd-button block type="primary" size="large" @click="saveStaff">{{ editing.id ? '保存' : '邀请' }}</wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

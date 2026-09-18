@@ -1,3 +1,4 @@
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 腾讯位置服务（地图 / 导航 / POI / 静态图）
  *
@@ -9,6 +10,8 @@
  *
  * key 由 .env.production 注入 `VITE_TENCENT_MAP_KEY`
  */
+
+import { stringifyQuery } from '@jiujiu/shared/utils'
 
 const KEY = (import.meta.env.VITE_TENCENT_MAP_KEY as string) || ''
 const APP = '经纬科技商城'
@@ -32,19 +35,20 @@ export function useTencentMap() {
   function staticImageUrl(opts: StaticMapOpts): string {
     const { center, zoom = 14, size = { w: 600, h: 400 }, markers = [] } = opts
     const base = 'https://apis.map.qq.com/ws/staticmap/v2/'
-    const params = new URLSearchParams()
-    params.set('key', KEY)
-    params.set('size', `${size.w}*${size.h}`)
-    params.set('center', `${center.lat},${center.lng}`)
-    params.set('zoom', String(zoom))
-    params.set('scale', '2')
+    const params: Record<string, string> = {
+      key: KEY,
+      size: `${size.w}*${size.h}`,
+      center: `${center.lat},${center.lng}`,
+      zoom: String(zoom),
+      scale: '2',
+    }
     if (markers.length) {
       // 腾讯静态图 markers 语法： size:large|color:0xFF4D2D|label:1|lat,lng|lat,lng...
       const m = ['size:large', 'color:0xFF4D2D'].join('|') +
         '|' + markers.map((p) => `${p.lat},${p.lng}`).join('|')
-      params.set('markers', m)
+      params.markers = m
     }
-    return `${base}?${params.toString()}`
+    return `${base}?${stringifyQuery(params)}`
   }
 
   /** 调起导航 */
@@ -55,7 +59,7 @@ export function useTencentMap() {
       longitude: p.lng,
       name: p.name || '门店',
       address: p.address || '',
-      fail: () => uni.showToast({ title: '打开地图失败', icon: 'none' }),
+      fail: () => appFeedback.showToast({ title: '打开地图失败', icon: 'none' }),
     })
     return
     // #endif
@@ -75,7 +79,7 @@ export function useTencentMap() {
     } catch {
       /* fall through */
     }
-    uni.showToast({ title: '请在腾讯地图打开', icon: 'none' })
+    appFeedback.showToast({ title: '请在腾讯地图打开', icon: 'none' })
   }
 
   /** 在地图里查看一个点（marker 模式，不强制规划路线） */

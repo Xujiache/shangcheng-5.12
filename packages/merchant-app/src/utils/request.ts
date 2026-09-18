@@ -1,3 +1,4 @@
+import { appFeedback } from '@jiujiu/shared'
 /**
  * 网络请求 · 商家端
  *
@@ -6,6 +7,8 @@
  * 401 / 2001 / 2002 → 节流 toast + 清 storage + 跳 /pages/auth/login
  */
 import type { ApiResult } from '@jiujiu/shared/types'
+import { appendQuery } from '@jiujiu/shared/utils'
+import { emitAuthTokensUpdated } from './auth-events'
 
 // 后端统一入口 https://ewsn.top —— 不再支持本地 server,
 // .env 缺失 / uni-app mp-weixin 注入失败 / build 模式不匹配等任何场景,
@@ -19,16 +22,9 @@ export interface RequestOptions {
   params?: Record<string, unknown>
   headers?: Record<string, string>
   silent?: boolean
-}
-
-function buildUrl(url: string, params?: Record<string, unknown>): string {
-  if (!params || Object.keys(params).length === 0) return url
-  const usp = new URLSearchParams()
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) usp.append(k, String(v))
-  })
-  const q = usp.toString()
-  return q ? `${url}${url.includes('?') ? '&' : '?'}${q}` : url
+  timeout?: number
+  /** none=公开请求：不携带 token，也绝不触发 refresh/清理登录态。 */
+  auth?: 'auto' | 'none'
 }
 
 /**
@@ -74,7 +70,7 @@ function getRefreshToken(): string | null {
 
 async function realRequest<T>(url: string, options: RequestOptions): Promise<ApiResult<T>> {
   guardNamespace(url)
-  const token = getToken()
+  const token = options.auth === 'none' ? null : getToken()
   return new Promise((resolve, reject) => {
     uni.request({
       url: BASE_URL + url,
@@ -85,6 +81,7 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers ?? {}),
       },
+      timeout: options.timeout,
       success: (res) => {
         const status = (res as any).statusCode as number
         if (status === 401) {
@@ -112,13 +109,14 @@ async function realRequest<T>(url: string, options: RequestOptions): Promise<Api
  *
  * 失败一定要返回 false，让上层走 handleUnauthorized 流程。
  */
-let refreshPromise: Promise<boolean> | null = null
-function tryRefresh(): Promise<boolean> {
+type RefreshResult = 'success' | 'invalid' | 'unavailable'
+let refreshPromise: Promise<RefreshResult> | null = null
+function tryRefresh(): Promise<RefreshResult> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
     const rt = getRefreshToken()
-    if (!rt) return false
-    return await new Promise<boolean>((resolve) => {
+    if (!rt) return 'invalid'
+    return await new Promise<RefreshResult>((resolve) => {
       uni.request({
         url: BASE_URL + '/api/v1/auth/refresh',
         method: 'POST',
@@ -130,15 +128,22 @@ function tryRefresh(): Promise<boolean> {
             if (data?.code === 0 && data.data?.accessToken && data.data?.refreshToken) {
               uni.setStorageSync(TOKEN_KEY, data.data.accessToken)
               uni.setStorageSync(REFRESH_KEY, data.data.refreshToken)
-              resolve(true)
+              emitAuthTokensUpdated(data.data)
+              resolve('success')
+              return
+            }
+            const status = Number((res as any).statusCode) || 0
+            if (status === 401 || data?.code === 2001 || data?.code === 2002) {
+              resolve('invalid')
               return
             }
           } catch {
             /* ignore */
           }
-          resolve(false)
+          // 服务器 5xx、网关异常或非预期响应不能证明 refresh token 已失效。
+          resolve('unavailable')
         },
-        fail: () => resolve(false),
+        fail: () => resolve('unavailable'),
       })
     })
   })()
@@ -162,12 +167,13 @@ function handleUnauthorized(message: string) {
     uni.removeStorageSync('jiujiu_token')
     uni.removeStorageSync('jiujiu_refresh_token')
     uni.removeStorageSync('jiujiu_user')
+    emitAuthTokensUpdated({ accessToken: '', refreshToken: '' })
   } catch {
     /* ignore */
   }
 
   if (recent) return
-  uni.showToast({ title: message || '登录已过期，请重新登录', icon: 'none', duration: 1500 })
+  appFeedback.showToast({ title: message || '登录已过期，请重新登录', icon: 'none', duration: 1500 })
 
   setTimeout(() => {
     try {
@@ -187,26 +193,38 @@ function isAuthExpired(code: number) {
   return code === 401 || code === 2001 || code === 2002
 }
 
+function isAccountInvalid(code: number, message: string) {
+  return isAuthExpired(code) || (code === 2003 && /禁用|停用/.test(message || ''))
+}
+
 export async function request<T = unknown>(url: string, options: RequestOptions = {}): Promise<T> {
-  const fullUrl = buildUrl(url, options.params)
+  const fullUrl = appendQuery(url, options.params)
   let result = await realRequest<T>(fullUrl, options)
 
   // 鉴权失败 → 尝试用 refresh token 静默续签后重试一次
   // /auth/refresh 自身失败不再递归
-  if (result.code !== 0 && isAuthExpired(result.code) && !url.includes('/auth/refresh')) {
-    const ok = await tryRefresh()
-    if (ok) {
+  if (
+    options.auth !== 'none' &&
+    result.code !== 0 &&
+    isAuthExpired(result.code) &&
+    !url.includes('/auth/refresh')
+  ) {
+    const refreshResult = await tryRefresh()
+    if (refreshResult === 'success') {
       result = await realRequest<T>(fullUrl, options)
+    } else if (refreshResult === 'unavailable') {
+      // 网络/网关故障不删除仍可能有效的 refresh token，稍后可以继续静默续签。
+      throw new Error('网络异常，暂时无法恢复登录状态，请稍后重试')
     }
   }
 
   if (result.code !== 0) {
-    if (isAuthExpired(result.code)) {
+    if (isAccountInvalid(result.code, result.message) && options.auth !== 'none') {
       handleUnauthorized(result.message)
       throw new Error(result.message || '登录已过期')
     }
     if (!options.silent) {
-      uni.showToast({ title: result.message || '请求失败', icon: 'none', duration: 2000 })
+      appFeedback.showToast({ title: result.message || '请求失败', icon: 'none', duration: 2000 })
     }
     throw new Error(result.message)
   }

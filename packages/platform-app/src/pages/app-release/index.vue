@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · APP 发布管理（自更新）
  *
@@ -14,9 +15,6 @@ import { ref, computed, onMounted } from 'vue'
 import { appReleaseService } from '../../services'
 import type { AppRelease, AppReleasePlatform } from '../../services'
 import { formatDate } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
 import { pickApk, uploadApk } from '../../utils/upload'
 
 const MAX_APK_SIZE_MB = 200
@@ -37,7 +35,7 @@ async function load() {
     list.value = Array.isArray(rows) ? rows : []
   } catch (e: any) {
     list.value = []
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -63,7 +61,7 @@ function formatSize(bytes?: number): string {
 }
 
 function confirmRemove(row: AppRelease) {
-  uni.showModal({
+  appFeedback.showModal({
     title: '删除发布',
     content: `确认删除「${row.platform === 'merchant' ? '商家端' : '平台端'} v${row.version} (build ${row.versionCode})」？\n已下载用户不受影响，但启动检查将不再推送此版本。`,
     confirmColor: '#FF3B30',
@@ -71,10 +69,10 @@ function confirmRemove(row: AppRelease) {
       if (!r.confirm) return
       try {
         await appReleaseService.remove(row.id)
-        uni.showToast({ title: '已删除', icon: 'success' })
+        appFeedback.showToast({ title: '已删除', icon: 'success' })
         await load()
       } catch (e: any) {
-        uni.showToast({ title: e?.message || '删除失败', icon: 'none' })
+        appFeedback.showToast({ title: e?.message || '删除失败', icon: 'none' })
       }
     },
   })
@@ -84,7 +82,7 @@ function copyUrl(row: AppRelease) {
   if (!row.url) return
   uni.setClipboardData({
     data: row.url,
-    success: () => uni.showToast({ title: '链接已复制', icon: 'success' }),
+    success: () => appFeedback.showToast({ title: '链接已复制', icon: 'success' }),
   })
 }
 
@@ -146,7 +144,7 @@ async function chooseApk() {
     const picked = await pickApk()
     const sizeMb = picked.size / 1024 / 1024
     if (picked.size > MAX_APK_SIZE_MB * 1024 * 1024) {
-      uni.showModal({
+      appFeedback.showModal({
         title: '文件过大',
         content: `所选文件 ${sizeMb.toFixed(1)}MB,超过移动端上传上限 ${MAX_APK_SIZE_MB}MB。\n请改用 PC 后台「APP 发布管理」上传。`,
         showCancel: false,
@@ -159,7 +157,7 @@ async function chooseApk() {
     form.value.fileSize = picked.size
   } catch (e: any) {
     if (e?.message && !/cancel/i.test(e.message)) {
-      uni.showToast({ title: e.message, icon: 'none' })
+      appFeedback.showToast({ title: e.message, icon: 'none' })
     }
   }
 }
@@ -185,7 +183,7 @@ function validateForm(): string | null {
 async function submitUpload() {
   const err = validateForm()
   if (err) {
-    uni.showToast({ title: err, icon: 'none' })
+    appFeedback.showToast({ title: err, icon: 'none' })
     return
   }
   uploading.value = true
@@ -202,7 +200,7 @@ async function submitUpload() {
         uploadProgress.value = p
       },
     })
-    uni.showToast({ title: '上传成功', icon: 'success' })
+    appFeedback.showToast({ title: '上传成功', icon: 'success' })
     uploadOpen.value = false
     // 切到对应 tab 让列表立刻可见
     if (form.value.platform !== tab.value) {
@@ -210,7 +208,7 @@ async function submitUpload() {
     }
     await load()
   } catch (e: any) {
-    uni.showModal({
+    appFeedback.showModal({
       title: '上传失败',
       content: e?.message || '请检查网络或 APK 文件后重试',
       showCancel: false,
@@ -224,8 +222,26 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="APP 发布管理" right-icon="refresh" @right="load" />
+    <wd-navbar title="APP 发布管理" @click-right="load"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+    </wd-navbar>
 
     <!-- 平台 tab -->
     <view class="tabs">
@@ -253,11 +269,11 @@ onMounted(load)
       </view>
       <view class="latest-meta">
         <view class="meta-item">
-          <Icon name="package" :size="22" color="rgba(255,255,255,0.85)" />
+          <wd-icon :name="$jwIcon('package')" size="11px" color="rgba(255,255,255,0.85)"  />
           <text>{{ formatSize(latest.size) }}</text>
         </view>
         <view class="meta-item">
-          <Icon name="clock" :size="22" color="rgba(255,255,255,0.85)" />
+          <wd-icon :name="$jwIcon('clock')" size="11px" color="rgba(255,255,255,0.85)"  />
           <text>{{ formatDate(latest.publishedAt) }}</text>
         </view>
       </view>
@@ -284,11 +300,11 @@ onMounted(load)
 
         <view class="row-meta">
           <view class="meta-chip">
-            <Icon name="package" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ formatSize(row.size) }}</text>
           </view>
           <view class="meta-chip ellipsis" @click="copyUrl(row)">
-            <Icon name="share" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('share')" size="11px" color="var(--text-tertiary)"  />
             <text class="url-text">{{ row.url || '—' }}</text>
           </view>
         </view>
@@ -299,27 +315,24 @@ onMounted(load)
         </view>
       </view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && list.length === 0"
-        title="暂无发布记录"
-        desc="新版本由 PC 后台上传后将出现在这里"
-        icon="package"
-      />
+       image="content" :tip="['暂无发布记录', '新版本由 PC 后台上传后将出现在这里'].filter(Boolean).join(' · ')" />
       <view style="height: 160rpx" />
     </scroll-view>
 
     <view class="fab" @click="openUploadSheet">
-      <Icon name="plus" :size="36" color="#fff" />
+      <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff"  />
       <text>上传 APK</text>
     </view>
 
     <!-- 上传 APK Sheet -->
-    <view v-if="uploadOpen" class="sheet-mask" @click="closeUploadSheet">
-      <view class="sheet" @click.stop>
+    <wd-popup v-model="uploadOpen" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal @close="closeUploadSheet">
+      <view class="sheet-content">
         <view class="sheet-head">
           <text class="sheet-title">上传 APK 发布</text>
           <view class="sheet-close" @click="closeUploadSheet">
-            <Icon name="close" :size="32" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('close')" size="16px" color="var(--text-tertiary)"  />
           </view>
         </view>
 
@@ -327,41 +340,38 @@ onMounted(load)
           <!-- 平台 -->
           <view class="field">
             <text class="field-label">目标平台</text>
-            <view class="seg-group">
-              <view
-                v-for="p in PLATFORM_TABS"
-                :key="p.key"
-                :class="['seg', form.platform === p.key ? 'active' : '']"
-                :style="form.platform === p.key ? { background: p.tint, borderColor: p.tint } : {}"
-                @click="setUploadPlatform(p.key)"
-              >
-                <text>{{ p.label }}</text>
-              </view>
-            </view>
+            <wd-segmented
+              :value="form.platform"
+              :options="PLATFORM_TABS.map((p) => ({ value: p.key, payload: p }))"
+              size="large"
+              @change="setUploadPlatform(String($event.value) as AppReleasePlatform)"
+            >
+              <template #label="{ option }">{{ option.payload?.label }}</template>
+            </wd-segmented>
           </view>
 
           <!-- version -->
           <view class="field">
             <text class="field-label">版本号 (x.y.z)</text>
-            <input
+            <wd-input no-border
               v-model="form.version"
               class="field-input"
               placeholder="例: 1.2.0"
               maxlength="20"
               :disabled="uploading"
-            />
+             />
           </view>
 
           <!-- versionCode -->
           <view class="field">
             <text class="field-label">versionCode (递增正整数)</text>
-            <input
+            <wd-input no-border
               v-model.number="form.versionCode"
               class="field-input mono"
               type="number"
               :placeholder="latest ? `>${latest.versionCode}` : '120'"
               :disabled="uploading"
-            />
+             />
             <text v-if="latest && form.platform === latest.platform" class="field-hint">
               线上最新 v{{ latest.version }} · build {{ latest.versionCode }}
             </text>
@@ -370,14 +380,14 @@ onMounted(load)
           <!-- changelog -->
           <view class="field">
             <text class="field-label">更新说明</text>
-            <textarea
+            <wd-textarea no-border
               v-model="form.changelog"
               class="field-textarea"
               placeholder="本次更新内容,端上弹窗会显示给用户"
               maxlength="400"
               :disabled="uploading"
               auto-height
-            />
+             />
           </view>
 
           <!-- force -->
@@ -386,19 +396,14 @@ onMounted(load)
               <text class="field-label" style="margin-bottom: 0">强制更新</text>
               <text class="field-hint" style="margin-top: 2rpx">开启后用户无法跳过</text>
             </view>
-            <view
-              :class="['switch', form.force ? 'on' : '']"
-              @click="!uploading && (form.force = !form.force)"
-            >
-              <view class="thumb" />
-            </view>
+            <wd-switch v-model="form.force" :disabled="uploading" active-color="var(--brand-primary)" />
           </view>
 
           <!-- 文件 -->
           <view class="field">
             <text class="field-label">APK 文件 (≤{{ MAX_APK_SIZE_MB }}MB)</text>
             <view class="file-picker" @click="chooseApk">
-              <Icon name="package" :size="44" color="var(--brand-primary)" />
+              <wd-icon :name="$jwIcon('package')" size="22px" color="var(--brand-primary)"  />
               <view class="fp-info">
                 <text v-if="!form.filePath" class="fp-tip">点击选择 .apk 文件</text>
                 <template v-else>
@@ -406,7 +411,7 @@ onMounted(load)
                   <text class="fp-size">{{ formatSize(form.fileSize) }}</text>
                 </template>
               </view>
-              <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
             </view>
           </view>
 
@@ -422,19 +427,22 @@ onMounted(load)
         </scroll-view>
 
         <view class="sheet-foot">
-          <view :class="['sheet-btn ghost', uploading ? 'disabled' : '']" @click="closeUploadSheet"
-            >取消</view
-          >
-          <view
-            :class="['sheet-btn primary', uploading ? 'disabled' : '']"
+          <wd-button block plain size="large" :disabled="uploading" @click="closeUploadSheet">取消</wd-button>
+          <wd-button
+            block
+            type="primary"
+            size="large"
+            :loading="uploading"
             @click="!uploading && submitUpload()"
           >
             {{ uploading ? `上传中 ${uploadProgress}%` : '开始上传' }}
-          </view>
+          </wd-button>
         </view>
       </view>
-    </view>
+    </wd-popup>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
@@ -822,7 +830,7 @@ onMounted(load)
     border-color: var(--brand-primary);
     .thumb {
       left: 38rpx;
-      background: #fff;
+      background: var(--bg-card);
     }
   }
 }

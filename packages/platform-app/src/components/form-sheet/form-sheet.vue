@@ -23,8 +23,6 @@
  *   - 内容区用 slot,调用方完全控制表单结构
  *   - 大屏(平板/H5 PC)上自动收窄到 720rpx 居中,移动端铺满
  */
-import Icon from '../icon/icon.vue'
-
 withDefaults(
   defineProps<{
     open: boolean
@@ -66,13 +64,20 @@ function onConfirm() {
 </script>
 
 <template>
-  <view v-if="open" class="form-sheet-mask" @click="onMaskTap">
-    <view class="form-sheet-card" @click.stop>
+  <wd-popup
+    :model-value="open"
+    position="bottom"
+    custom-class="form-sheet-popup"
+    safe-area-inset-bottom
+    root-portal
+    @close="onMaskTap"
+  >
+    <view class="form-sheet-card">
       <view class="form-sheet-handle" />
       <view class="form-sheet-head">
         <text class="form-sheet-title">{{ title }}</text>
         <view class="form-sheet-close" @click="onCancel">
-          <Icon name="close" :size="32" color="#86909C" />
+          <wd-icon :name="$jwIcon('close')" size="16px" color="#86909C"  />
         </view>
       </view>
 
@@ -87,18 +92,22 @@ function onConfirm() {
       </scroll-view>
 
       <view class="form-sheet-footer">
-        <view class="form-sheet-btn ghost" @click="onCancel">{{ cancelText }}</view>
-        <view
+        <wd-button block plain size="large" @click="onCancel">{{ cancelText }}</wd-button>
+        <wd-button
           v-if="!hideConfirm"
-          :class="['form-sheet-btn', 'primary', loading || disabled ? 'is-disabled' : '']"
+          block
+          type="primary"
+          size="large"
+          :loading="loading"
+          :disabled="disabled"
           @click="!loading && !disabled && onConfirm()"
         >
           <text v-if="!loading">{{ confirmText }}</text>
           <text v-else>提交中…</text>
-        </view>
+        </wd-button>
       </view>
     </view>
-  </view>
+  </wd-popup>
 </template>
 
 <style lang="scss" scoped>
@@ -123,7 +132,7 @@ function onConfirm() {
 .form-sheet-card {
   width: 100%;
   max-width: 720rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 36rpx 36rpx 0 0;
   max-height: 86vh;
   display: flex;
@@ -156,7 +165,7 @@ function onConfirm() {
   .form-sheet-title {
     font-size: 32rpx;
     font-weight: 800;
-    color: #1d2129;
+    color: var(--text-primary);
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -178,8 +187,8 @@ function onConfirm() {
   gap: 16rpx;
   padding: 16rpx 32rpx 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #f2f3f5;
-  background: #fff;
+  border-top: 1rpx solid var(--border-light);
+  background: var(--bg-card);
   flex-shrink: 0;
 }
 .form-sheet-btn {
@@ -192,9 +201,9 @@ function onConfirm() {
   font-weight: 700;
   letter-spacing: 2rpx;
   &.ghost {
-    background: #f7f8fa;
-    color: #4e5969;
-    border: 1rpx solid #e5e6eb;
+    background: var(--bg-page);
+    color: var(--text-secondary);
+    border: 1rpx solid var(--border-light);
   }
   &.primary {
     background: linear-gradient(135deg, #ff7a4e, #ff4d2d);

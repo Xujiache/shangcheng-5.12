@@ -10,7 +10,7 @@
       <div>
         <h2 class="m-0 text-xl font-semibold">APP 发布管理</h2>
         <p class="mt-1 text-sm text-g-500">
-          上传商家版 / 平台版 Android APK；端上启动时自动比对 versionCode 触发更新弹窗
+          上传 Android APK 或登记鸿蒙 AppGallery 版本；端上按 versionCode 自动提示更新
         </p>
       </div>
       <ElButton type="primary" :icon="UploadFilled" @click="openCreate"> 新建发布 </ElButton>
@@ -19,6 +19,7 @@
     <ElTabs v-model="active" class="pf-tabs" @tab-change="reload">
       <ElTabPane label="商家版 APP" name="merchant" />
       <ElTabPane label="平台版 APP" name="platform" />
+      <ElTabPane label="鸿蒙商家版" name="merchant-harmony" />
     </ElTabs>
 
     <ElCard shadow="never" class="pf-card">
@@ -57,10 +58,10 @@
       </ElTable>
     </ElCard>
 
-    <!-- 创建发布弹窗 -->
+    <!-- 创建发布弹窗：Android 上传 APK，鸿蒙登记 AppGallery HTTPS 地址 -->
     <ElDialog
       v-model="dialogOpen"
-      :title="`新建 ${active === 'merchant' ? '商家版' : '平台版'} 发布`"
+      :title="`新建 ${active === 'merchant' ? '商家版' : active === 'platform' ? '平台版' : '鸿蒙商家版'} 发布`"
       width="560px"
       :close-on-click-modal="!uploading"
     >
@@ -88,7 +89,13 @@
           <ElSwitch v-model="form.force" />
           <div class="text-xs text-g-500 ml-3 inline"> 开启后端上无法跳过此版本 </div>
         </ElFormItem>
-        <ElFormItem label="APK 文件" required>
+        <ElFormItem v-if="active === 'merchant-harmony'" label="AppGallery" required>
+          <ElInput v-model="form.storeUrl" placeholder="https://appgallery.huawei.com/app/detail?id=..." />
+          <div class="text-xs text-g-500 mt-1">
+            填写已通过审核的 AppGallery HTTPS 详情页；鸿蒙端会调用系统更新服务并以此地址兜底。
+          </div>
+        </ElFormItem>
+        <ElFormItem v-else label="APK 文件" required>
           <ElUpload
             ref="uploadRef"
             :auto-upload="false"
@@ -107,7 +114,7 @@
             </template>
           </ElUpload>
         </ElFormItem>
-        <ElFormItem v-if="uploading" label="上传进度">
+        <ElFormItem v-if="uploading && active !== 'merchant-harmony'" label="上传进度">
           <ElProgress :percentage="uploadPct" :stroke-width="14" />
         </ElFormItem>
       </ElForm>
@@ -150,7 +157,8 @@
     version: '',
     versionCode: 1,
     changelog: '',
-    force: false
+    force: false,
+    storeUrl: ''
   })
 
   const maxVersionCode = computed(() => list.value.reduce((m, r) => Math.max(m, r.versionCode), 0))
@@ -169,7 +177,8 @@
       version: '',
       versionCode: maxVersionCode.value + 1,
       changelog: '',
-      force: false
+      force: false,
+      storeUrl: ''
     }
     pickedFile.value = null
     uploadPct.value = 0
@@ -193,7 +202,11 @@
       ElMessage.warning(`versionCode 必须 > 当前最大版本（${maxVersionCode.value}）`)
       return
     }
-    if (!pickedFile.value) {
+    if (active.value === 'merchant-harmony' && !/^https:\/\//i.test(form.value.storeUrl.trim())) {
+      ElMessage.warning('请填写有效的 HTTPS AppGallery 地址')
+      return
+    }
+    if (active.value !== 'merchant-harmony' && !pickedFile.value) {
       ElMessage.warning('请选择 APK 文件')
       return
     }
@@ -202,13 +215,14 @@
     uploadPct.value = 0
     try {
       await uploadAppRelease(
-        pickedFile.value,
+        active.value === 'merchant-harmony' ? null : pickedFile.value,
         {
           platform: active.value,
           version: form.value.version.trim(),
           versionCode: form.value.versionCode,
           changelog: form.value.changelog.trim(),
-          force: form.value.force
+          force: form.value.force,
+          storeUrl: form.value.storeUrl.trim()
         },
         (pct) => (uploadPct.value = pct)
       )

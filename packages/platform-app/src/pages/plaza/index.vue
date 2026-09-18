@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA-06 · 选品广场推送
  * 还原 原型图/platform-app.jsx::PA_Plaza
@@ -10,10 +11,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { plazaService } from '../../services'
 import { formatPrice } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type TabKey = 'products' | 'factories' | 'records'
 
 type PlazaItemStatus = 'pushing' | 'pending' | 'offline' | 'active' | 'rejected'
@@ -172,7 +169,7 @@ function startBatch() {
 
 function batchPush() {
   if (selectedIds.value.size === 0) {
-    uni.showToast({ title: '请先勾选商品', icon: 'none' })
+    appFeedback.showToast({ title: '请先勾选商品', icon: 'none' })
     return
   }
   const ids = Array.from(selectedIds.value).join(',')
@@ -208,7 +205,7 @@ async function offlineOne(item: PlazaItem) {
   if (tab.value !== 'products') return
   if (togglingId.value) return
   const confirmed = await new Promise<boolean>((resolve) => {
-    uni.showModal({
+    appFeedback.showModal({
       title: '下架商品',
       content: `确定要从选品广场下架「${item.name}」吗?\n下架后商家端选品广场将不再展示此商品,商家自身的商品库存/上架状态不受影响。`,
       confirmText: '确认下架',
@@ -225,10 +222,10 @@ async function offlineOne(item: PlazaItem) {
   if (idx >= 0) items.value[idx] = { ...items.value[idx], status: 'offline' }
   try {
     await plazaService.setProductOnline(item.id, false)
-    uni.showToast({ title: '已下架', icon: 'success' })
+    appFeedback.showToast({ title: '已下架', icon: 'success' })
   } catch (e: any) {
     if (idx >= 0) items.value[idx] = { ...items.value[idx], status: prevStatus }
-    uni.showToast({ title: e?.message || '下架失败,已回滚', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '下架失败,已回滚', icon: 'none' })
   } finally {
     togglingId.value = null
   }
@@ -244,10 +241,10 @@ async function onlineOne(item: PlazaItem) {
   if (idx >= 0) items.value[idx] = { ...items.value[idx], status: 'pushing' }
   try {
     await plazaService.setProductOnline(item.id, true)
-    uni.showToast({ title: '已上架', icon: 'success' })
+    appFeedback.showToast({ title: '已上架', icon: 'success' })
   } catch (e: any) {
     if (idx >= 0) items.value[idx] = { ...items.value[idx], status: prevStatus }
-    uni.showToast({ title: e?.message || '上架失败,已回滚', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '上架失败,已回滚', icon: 'none' })
   } finally {
     togglingId.value = null
   }
@@ -264,13 +261,13 @@ function editItem(item: PlazaItem) {
   if (tab.value === 'products') {
     const isOnline = item.status === 'pushing' || item.status === 'active'
     const items_ = ['复制商品 ID', '新建推送', isOnline ? '从广场下架' : '上架到广场']
-    uni.showActionSheet({
+    appFeedback.showActionSheet({
       itemList: items_,
       success: (r) => {
         if (r.tapIndex === 0) {
           uni.setClipboardData({
             data: item.id,
-            success: () => uni.showToast({ title: 'ID 已复制', icon: 'success' }),
+            success: () => appFeedback.showToast({ title: 'ID 已复制', icon: 'success' }),
           })
         } else if (r.tapIndex === 1) {
           pushOne(item)
@@ -283,13 +280,13 @@ function editItem(item: PlazaItem) {
     return
   }
   if (tab.value === 'factories') {
-    uni.showActionSheet({
+    appFeedback.showActionSheet({
       itemList: ['复制厂家 ID', '新建推送'],
       success: (r) => {
         if (r.tapIndex === 0) {
           uni.setClipboardData({
             data: item.id,
-            success: () => uni.showToast({ title: 'ID 已复制', icon: 'success' }),
+            success: () => appFeedback.showToast({ title: 'ID 已复制', icon: 'success' }),
           })
         } else if (r.tapIndex === 1) {
           pushOne(item)
@@ -299,13 +296,13 @@ function editItem(item: PlazaItem) {
     return
   }
   // records tab
-  uni.showActionSheet({
+  appFeedback.showActionSheet({
     itemList: ['复制记录 ID'],
     success: (r) => {
       if (r.tapIndex === 0) {
         uni.setClipboardData({
           data: item.id,
-          success: () => uni.showToast({ title: 'ID 已复制', icon: 'success' }),
+          success: () => appFeedback.showToast({ title: 'ID 已复制', icon: 'success' }),
         })
       }
     },
@@ -320,8 +317,26 @@ onMounted(load)
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="选品广场推送" right-icon="plus" @right="goCreate" />
+    <wd-navbar title="选品广场推送" @click-right="goCreate"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+    </wd-navbar>
 
     <view class="tabs">
       <view
@@ -355,8 +370,8 @@ onMounted(load)
       <!-- 搜索 + 批量 -->
       <view class="filter-bar">
         <view class="search-bar">
-          <Icon name="search" :size="28" color="var(--text-tertiary)" />
-          <input v-model="keyword" class="search-input" placeholder="搜索商品 / 厂家" />
+          <wd-icon :name="$jwIcon('search')" size="14px" color="var(--text-tertiary)"  />
+          <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索商品 / 厂家"  />
         </view>
         <view
           :class="['batch-btn', batchMode ? 'on' : '']"
@@ -378,13 +393,12 @@ onMounted(load)
         >
           <view class="card-body">
             <view v-if="batchMode" class="check">
-              <Icon
+              <wd-icon
                 v-if="selectedIds.has(x.id)"
-                name="check-circle"
-                :size="40"
+                :name="$jwIcon('check-circle')" size="20px"
                 color="var(--brand-primary)"
-              />
-              <Icon v-else name="circle" :size="40" color="var(--text-tertiary)" />
+               />
+              <wd-icon v-else :name="$jwIcon('circle')" size="20px" color="var(--text-tertiary)"  />
             </view>
             <image :src="x.image" mode="aspectFill" class="img" />
             <view class="info">
@@ -450,17 +464,16 @@ onMounted(load)
           </view>
         </view>
 
-        <EmptyState
+        <wd-status-tip
           v-if="!loading && filtered.length === 0"
-          title="暂无商品"
-          desc="点击右上角创建推送"
-          icon="biz-plaza"
-        />
+         image="content" :tip="['暂无商品', '点击右上角创建推送'].filter(Boolean).join(' · ')" />
       </view>
 
       <view style="height: 40rpx" />
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

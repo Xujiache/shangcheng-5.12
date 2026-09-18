@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appFeedback } from '@jiujiu/shared'
 /**
  * PA · 选品广场推送记录
  *
@@ -16,10 +17,6 @@ import { ref, computed, onMounted } from 'vue'
 import { plazaService } from '../../services'
 import type { PlazaPushRow } from '../../services'
 import { formatDate } from '@jiujiu/shared/utils'
-import NavBar from '../../components/nav-bar/nav-bar.vue'
-import Icon from '../../components/icon/icon.vue'
-import EmptyState from '../../components/empty-state/empty-state.vue'
-
 type StatusTab = 'all' | 'draft' | 'pending' | 'active' | 'offline' | 'ended'
 
 const STATUS_META: Record<string, { label: string; tint: string }> = {
@@ -70,7 +67,7 @@ async function load(reset = false) {
     if (rows.length < pageSize) noMore.value = true
     else page.value += 1
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+    appFeedback.showToast({ title: e?.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -106,8 +103,26 @@ function onScrollToLower() {
 </script>
 
 <template>
+  <wd-config-provider
+    :theme="$jwTheme.resolvedTheme"
+    :theme-vars="$jwTheme.themeVars"
+    custom-class="jw-theme-root"
+  >
+    <wd-toast selector="global" />
+    <wd-message-box selector="global" />
+    <wd-action-sheet
+      :model-value="$jwFeedbackState.actionVisible"
+      :actions="$jwFeedbackState.actionItems"
+      cancel-text="取消"
+      root-portal
+      @update:model-value="$jwFeedbackState.setActionVisible"
+      @select="$jwFeedbackState.selectAction"
+      @cancel="$jwFeedbackState.cancelAction"
+    />
   <view class="page">
-    <NavBar title="广场推送记录" right-icon="plus" @right="goCreate" />
+    <wd-navbar title="广场推送记录" @click-right="goCreate"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
+      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+    </wd-navbar>
 
     <!-- 状态 tab -->
     <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
@@ -150,11 +165,11 @@ function onScrollToLower() {
             <text class="count">×{{ targetCount(row) }}</text>
           </view>
           <view class="meta-row" v-if="row.positions && row.positions.length > 0">
-            <Icon name="location-pin" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('location-pin')" size="11px" color="var(--text-tertiary)"  />
             <text class="ellipsis">{{ row.positions.join(' / ') }}</text>
           </view>
           <view class="meta-row">
-            <Icon name="clock" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('clock')" size="11px" color="var(--text-tertiary)"  />
             <text>
               {{ formatDate(row.scheduledStart) }}
               → {{ formatDate(row.scheduledEnd) }}
@@ -164,15 +179,15 @@ function onScrollToLower() {
 
         <view class="ft">
           <view class="stat-chip">
-            <Icon name="eye" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('eye')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ row.impressions }} 曝光</text>
           </view>
           <view class="stat-chip">
-            <Icon name="tag" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('tag')" size="11px" color="var(--text-tertiary)"  />
             <text>{{ row.clicks }} 点击</text>
           </view>
           <view class="stat-chip" v-if="row.weight">
-            <Icon name="star" :size="22" color="var(--text-tertiary)" />
+            <wd-icon :name="$jwIcon('star')" size="11px" color="var(--text-tertiary)"  />
             <text>权重 {{ row.weight }}</text>
           </view>
         </view>
@@ -181,15 +196,14 @@ function onScrollToLower() {
       <view v-if="loading" class="loading">加载中…</view>
       <view v-else-if="noMore && list.length > 0" class="no-more">— 没有更多了 —</view>
 
-      <EmptyState
+      <wd-status-tip
         v-if="!loading && list.length === 0"
-        title="暂无推送记录"
-        :desc="tab === 'all' ? '点击右上角 + 立刻发起一次推送' : '当前筛选下无记录，切换其它状态看看'"
-        icon="biz-plaza"
-      />
+       image="content" :tip="['暂无推送记录', tab === 'all' ? '点击右上角 + 立刻发起一次推送' : '当前筛选下无记录，切换其它状态看看'].filter(Boolean).join(' · ')" />
       <view style="height: 40rpx" />
     </scroll-view>
   </view>
+
+  </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>

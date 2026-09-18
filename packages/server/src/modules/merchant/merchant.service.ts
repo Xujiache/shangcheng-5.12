@@ -7,6 +7,18 @@ import { withdrawNo, refundNo, membershipNo } from '../../common/utils/id.util'
 import { WxPayService } from '../payment/wxpay.service'
 import { ChatGateway } from '../chat/chat.gateway'
 import { ContentSecurityService } from '../content-security/content-security.service'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import {
+  getInternalTestMerchantIds,
+  isInternalTestMerchant,
+} from '../../common/utils/internal-test-merchant.util'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const BUSINESS_TIMEZONE = 'Asia/Shanghai'
 
 const QUOTA_KEYS = ['pushSlots', 'banner', 'impression'] as const
 type QuotaKey = (typeof QUOTA_KEYS)[number]
@@ -166,100 +178,155 @@ export class MerchantService {
   /**
    * 商家首页 Dashboard
    *
-   * 修复 P1-22：之前 findMany 把整张 Order 表（按时间窗口）拉到内存里再 reduce，
-   * 商家订单上量后会 OOM。这里改成：
-   *   - aggregate { _count, _sum } 拿今天 / 昨天的订单数 + 总销售
-   *   - groupBy by:['userId'] 拿"新客户"去重数（用 _count）
-   *   - 7 天趋势走 raw findMany 但仅 select payAmount + createdAt 两列，载荷比 findMany * 全列小一个数量级
-   *   - 待办计数继续走 count（已经是聚合）
+   * 经营口径统一按 paidAt 统计，避免把待付款/已取消订单计入成交额。
+   * 北京时间日界线在服务端显式换算，不依赖宿主机时区。
+   * legacy 字段继续返回，供已发布 APP 向后兼容；新版使用 workbench。
    */
   async dashboard(merchantId: string) {
-    const today0 = new Date()
-    today0.setHours(0, 0, 0, 0)
-    const yesterday0 = new Date(today0.getTime() - 86400_000)
-    const weekStart = new Date(Date.now() - 7 * 86400_000)
+    const now = dayjs().tz(BUSINESS_TIMEZONE)
+    const todayStart = now.startOf('day')
+    const tomorrowStart = todayStart.add(1, 'day')
+    const yesterdayStart = todayStart.subtract(1, 'day')
+    const trendStart = todayStart.subtract(6, 'day')
 
     const [
-      todayAgg,
-      yesterdayAgg,
-      weekDayBuckets,
-      todayCustomerCount,
-      yesterdayCustomerCount,
-      topProds,
+      paidTodayAgg,
+      paidYesterdayAgg,
+      paidTrendOrders,
+      paidTodayCustomers,
+      paidYesterdayCustomers,
       pendingShipment,
       pendingRefund,
       pendingStoreAuth,
+      unreadMessagesAgg,
+      rejectedProducts,
+      auditingProducts,
     ] = await Promise.all([
       this.prisma.order.aggregate({
-        where: { merchantId, createdAt: { gte: today0 } },
+        where: {
+          merchantId,
+          paidAt: { gte: todayStart.toDate(), lt: tomorrowStart.toDate() },
+        },
         _count: { _all: true },
         _sum: { payAmount: true },
       }),
       this.prisma.order.aggregate({
-        where: { merchantId, createdAt: { gte: yesterday0, lt: today0 } },
+        where: {
+          merchantId,
+          paidAt: { gte: yesterdayStart.toDate(), lt: todayStart.toDate() },
+        },
         _count: { _all: true },
         _sum: { payAmount: true },
       }),
-      // 7 天趋势只取需要的字段，减小回包
       this.prisma.order.findMany({
-        where: { merchantId, createdAt: { gte: weekStart } },
-        select: { createdAt: true, payAmount: true },
-      }),
-      // 去重新客户：先 groupBy userId 再取 length（Prisma 没有 countDistinct）
-      this.prisma.order.groupBy({
-        by: ['userId'],
-        where: { merchantId, createdAt: { gte: today0 } },
+        where: {
+          merchantId,
+          paidAt: { gte: trendStart.toDate(), lt: tomorrowStart.toDate() },
+        },
+        select: { paidAt: true, payAmount: true },
       }),
       this.prisma.order.groupBy({
         by: ['userId'],
-        where: { merchantId, createdAt: { gte: yesterday0, lt: today0 } },
+        where: {
+          merchantId,
+          paidAt: { gte: todayStart.toDate(), lt: tomorrowStart.toDate() },
+        },
       }),
-      this.prisma.product.findMany({
-        where: { merchantId },
-        orderBy: { sales: 'desc' },
-        take: 3,
-        select: { id: true, images: true, priceRetailMin: true },
+      this.prisma.order.groupBy({
+        by: ['userId'],
+        where: {
+          merchantId,
+          paidAt: { gte: yesterdayStart.toDate(), lt: todayStart.toDate() },
+        },
       }),
       this.prisma.order.count({ where: { merchantId, status: 'pending_shipment' } }),
       this.prisma.refund.count({ where: { merchantId, status: 'pending' } }),
       this.prisma.store.count({ where: { merchantId, status: 'pending' } }),
+      this.prisma.chatSession.aggregate({
+        where: { merchantId },
+        _sum: { unreadCount: true },
+      }),
+      this.prisma.product.count({ where: { merchantId, status: 'rejected' } }),
+      this.prisma.product.count({ where: { merchantId, status: 'auditing' } }),
     ])
 
-    const todayOrders = todayAgg._count?._all ?? 0
-    const yesterdayOrders = yesterdayAgg._count?._all ?? 0
-    const todaySales = Number(todayAgg._sum?.payAmount ?? 0)
-    const yesterdaySales = Number(yesterdayAgg._sum?.payAmount ?? 0)
-    const newCustomersToday = todayCustomerCount.length
-    const newCustomersYesterday = yesterdayCustomerCount.length
+    const paidAmount = Math.round(Number(paidTodayAgg._sum?.payAmount ?? 0) * 100) / 100
+    const yesterdayPaidAmount =
+      Math.round(Number(paidYesterdayAgg._sum?.payAmount ?? 0) * 100) / 100
+    const paidOrders = paidTodayAgg._count?._all ?? 0
+    const yesterdayPaidOrders = paidYesterdayAgg._count?._all ?? 0
+    const paidCustomers = paidTodayCustomers.length
+    const yesterdayPaidCustomers = paidYesterdayCustomers.length
+    const unreadMessages = unreadMessagesAgg._sum?.unreadCount ?? 0
+
+    const percentChange = (current: number, previous: number): number | null => {
+      if (previous === 0) return null
+      return Math.round(((current - previous) / previous) * 1000) / 10
+    }
+
+    const trend7d = Array.from({ length: 7 }).map((_, index) => {
+      const date = trendStart.add(index, 'day').format('YYYY-MM-DD')
+      const amount = paidTrendOrders
+        .filter(
+          (order) =>
+            order.paidAt && dayjs(order.paidAt).tz(BUSINESS_TIMEZONE).format('YYYY-MM-DD') === date,
+        )
+        .reduce((sum, order) => sum + Number(order.payAmount), 0)
+      return { date, paidAmount: Math.round(amount * 100) / 100 }
+    })
+
+    // 旧版首页仍展示 plazaHighlights；这里改用真实选品广场数据，
+    // 不再把当前商家的自有热销商品伪装成广场货源。
+    let plazaHighlights: Array<{ productId: string; productImage: string; price: number }> = []
+    try {
+      const plazaPage = await this.plazaProducts(merchantId, { page: 1, pageSize: 3 })
+      plazaHighlights = plazaPage.list.map((product: any) => ({
+        productId: product.productId,
+        productImage: product.productImage,
+        price: Number(product.startPrice),
+      }))
+    } catch {
+      // 广场属于首页次要区域，异常不能阻塞经营数据。
+    }
 
     return {
       today: {
-        orders: todayOrders,
-        ordersDelta: todayOrders - yesterdayOrders,
-        newCustomers: newCustomersToday,
-        newCustomersDelta: newCustomersToday - newCustomersYesterday,
-        sales: Math.round(todaySales),
-        salesDelta: Math.round(todaySales - yesterdaySales),
+        orders: paidOrders,
+        ordersDelta: paidOrders - yesterdayPaidOrders,
+        newCustomers: paidCustomers,
+        newCustomersDelta: paidCustomers - yesterdayPaidCustomers,
+        sales: paidAmount,
+        salesDelta: Math.round((paidAmount - yesterdayPaidAmount) * 100) / 100,
       },
-      weekSales: Array.from({ length: 7 }).map((_, i) => {
-        const d = new Date(Date.now() - (6 - i) * 86400_000)
-        d.setHours(0, 0, 0, 0)
-        const sum = weekDayBuckets
-          .filter((o) => o.createdAt >= d && o.createdAt < new Date(d.getTime() + 86400_000))
-          .reduce((s, o) => s + Number(o.payAmount), 0)
-        return Math.round(sum)
-      }),
+      weekSales: trend7d.map((item) => item.paidAmount),
       todos: {
         pendingShipment,
         pendingRefund,
         pendingStoreAuth,
-        pendingStaff: 0,
       },
-      plazaHighlights: topProds.map((p) => ({
-        productId: p.id,
-        productImage: p.images[0] || '',
-        price: Number(p.priceRetailMin),
-      })),
+      plazaHighlights,
+      workbench: {
+        updatedAt: now.toISOString(),
+        overview: {
+          paidAmount,
+          paidOrders,
+          paidCustomers,
+          versusYesterday: {
+            paidAmountPct: percentChange(paidAmount, yesterdayPaidAmount),
+            paidOrdersPct: percentChange(paidOrders, yesterdayPaidOrders),
+            paidCustomersPct: percentChange(paidCustomers, yesterdayPaidCustomers),
+          },
+        },
+        trend7d,
+        actions: {
+          pendingShipment,
+          pendingRefund,
+          unreadMessages,
+          rejectedProducts,
+          auditingProducts,
+          pendingStoreAuth,
+        },
+      },
     }
   }
   async stats(merchantId: string, q: any) {
@@ -761,6 +828,14 @@ export class MerchantService {
     ])
     return buildPage(list.map(decimalToNumber), total, page, pageSize)
   }
+  async refundDetail(merchantId: string, id: string) {
+    const item = await this.prisma.refund.findFirst({
+      where: { id, merchantId },
+      include: { order: true, orderItem: true },
+    })
+    if (!item) throw new BizException(BizCode.NOT_FOUND, '售后单不存在')
+    return decimalToNumber(item)
+  }
   /**
    * 商家同意退款
    *
@@ -1119,6 +1194,30 @@ export class MerchantService {
     }
   }
   async saveCommissionRules(merchantId: string, dto: any) {
+    if (Array.isArray(dto.productRules)) {
+      const productIds = Array.from(
+        new Set(
+          dto.productRules
+            .map((rule: any) => (typeof rule?.productId === 'string' ? rule.productId : ''))
+            .filter(Boolean),
+        ),
+      ) as string[]
+      if (productIds.length) {
+        const owned = await this.prisma.product.count({
+          where: { id: { in: productIds }, merchantId },
+        })
+        if (owned !== productIds.length) {
+          throw new BizException(BizCode.INVALID_PARAMS, '佣金规则包含无权管理的商品')
+        }
+        await this.prisma.commissionRule.deleteMany({
+          where: { merchantId, productId: { not: null, notIn: productIds } },
+        })
+      } else {
+        await this.prisma.commissionRule.deleteMany({
+          where: { merchantId, productId: { not: null } },
+        })
+      }
+    }
     if (dto.default) {
       // 默认规则以 productId=null 落库。Postgres 下 NULL 在唯一键里互不冲突，且
       // upsert(where productId:'') 永远匹配不到 null 行 → 之前每次保存都 INSERT 一条新默认规则。
@@ -1471,6 +1570,11 @@ export class MerchantService {
   async createStore(merchantId: string, dto: any) {
     return this.prisma.store.create({ data: { ...dto, merchantId } })
   }
+  async getStore(merchantId: string, id: string) {
+    const store = await this.prisma.store.findFirst({ where: { id, merchantId } })
+    if (!store) throw new BizException(BizCode.NOT_FOUND, '门店不存在或无权限')
+    return store
+  }
   /**
    * 更新门店信息（admin-pc / merchant-app 编辑场景）
    *
@@ -1511,13 +1615,53 @@ export class MerchantService {
     }
   }
   async saveStoreAuth(merchantId: string, id: string, dto: any) {
-    await this.prisma.store.updateMany({
-      where: { id, merchantId },
+    const store = await this.prisma.store.findFirst({ where: { id, merchantId }, select: { id: true } })
+    if (!store) throw new BizException(BizCode.NOT_FOUND, '门店不存在或无权限')
+
+    const level = ['A', 'B', 'C'].includes(dto?.level) ? dto.level : 'C'
+    const tierWhitelist = ['retail', 'wholesale', 'member']
+    const visiblePriceTiers: string[] = Array.isArray(dto?.visiblePriceTiers)
+      ? [...new Set<string>(dto.visiblePriceTiers.filter((tier: unknown): tier is string =>
+          typeof tier === 'string' && tierWhitelist.includes(tier),
+        ))]
+      : []
+    if (visiblePriceTiers.length === 0) {
+      throw new BizException(BizCode.INVALID_PARAMS, '请至少选择一种可见价格')
+    }
+    const authValidFrom = dto?.authValidFrom ? new Date(dto.authValidFrom) : null
+    const authValidTo = dto?.authValidTo ? new Date(dto.authValidTo) : null
+    if (!authValidFrom || !authValidTo || Number.isNaN(authValidFrom.getTime()) ||
+      Number.isNaN(authValidTo.getTime()) || authValidTo < authValidFrom) {
+      throw new BizException(BizCode.INVALID_PARAMS, '授权有效期不正确')
+    }
+    const productPolicies: Array<{
+      categoryId: string
+      categoryName: string
+      enabled: boolean
+      markupPercent: number
+    }> = Array.isArray(dto?.productPolicies)
+      ? dto.productPolicies.map((policy: any) => ({
+          categoryId: String(policy?.categoryId || ''),
+          categoryName: typeof policy?.categoryName === 'string' ? policy.categoryName : '',
+          enabled: policy?.enabled === true,
+          markupPercent: Math.max(0, Math.min(100, Number(policy?.markupPercent) || 0)),
+        })).filter((policy: any) => policy.categoryId)
+      : []
+    const authConfig = {
+      level,
+      visiblePriceTiers,
+      productPolicies,
+      authValidFrom: dto.authValidFrom,
+      authValidTo: dto.authValidTo,
+    }
+    await this.prisma.store.update({
+      where: { id },
       data: {
-        level: dto.level,
-        authValidFrom: dto.authValidFrom ? new Date(dto.authValidFrom) : null,
-        authValidTo: dto.authValidTo ? new Date(dto.authValidTo) : null,
-        authConfig: dto,
+        level,
+        status: 'active',
+        authValidFrom,
+        authValidTo,
+        authConfig,
       },
     })
     return { ok: true }
@@ -1845,19 +1989,7 @@ export class MerchantService {
     // 查 server.sockets.adapter.rooms 即可知道该用户当前还有没有连接。
     // try/catch 防 gateway 暂时未初始化（启动 race），失败一律视为 offline。
     const onlineMap = new Map<string, boolean>()
-    try {
-      const io: any = (this.chat as any)?.server
-      const rooms: Map<string, Set<string>> | undefined = io?.sockets?.adapter?.rooms
-      if (rooms) {
-        for (const s of sessions) {
-          const room = `user:${s.userId}`
-          const set = rooms.get(room)
-          onlineMap.set(s.userId, !!(set && set.size > 0))
-        }
-      }
-    } catch {
-      // 在线状态不是必要数据；查询失败统一按 offline 返回，绝不阻塞列表
-    }
+    for (const s of sessions) onlineMap.set(s.userId, this.chat.isUserOnline(s.userId))
 
     return sessions.map((s) => {
       const last = lastBySession.get(s.id)
@@ -1882,31 +2014,111 @@ export class MerchantService {
       }
     })
   }
-  async chatMessages(merchantId: string, sessionId: string) {
-    const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, merchantId } })
-    if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
-    const msgs = await this.prisma.chatMessage.findMany({
-      where: { sessionId },
-      orderBy: { createdAt: 'asc' },
-      take: 200,
+
+  async chatSession(merchantId: string, sessionId: string) {
+    const session = await this.prisma.chatSession.findFirst({
+      where: { id: sessionId, merchantId },
+      include: { user: true },
     })
-    return msgs
+    if (!session) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    return {
+      id: session.id,
+      userId: session.userId,
+      userName: session.user.nickname,
+      userAvatar: session.user.avatar,
+      lastMessageAt: session.lastMessageAt,
+      unreadCount: session.unreadCount,
+      status: session.status,
+      online: this.chat.isUserOnline(session.userId),
+    }
+  }
+
+  async chatMessages(
+    merchantId: string,
+    sessionId: string,
+    query: { cursor?: string; pageSize?: string | number } = {},
+  ) {
+    const session = await this.prisma.chatSession.findFirst({
+      where: { id: sessionId, merchantId },
+      select: { id: true },
+    })
+    if (!session) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+
+    const requestedSize = Number(query.pageSize)
+    // 旧客户端不传分页参数时仍最多读取最新 200 条；新版每次加载 30 条。
+    const pageSize = Number.isInteger(requestedSize)
+      ? Math.min(200, Math.max(1, requestedSize))
+      : 200
+    const cursor = String(query.cursor || '').trim()
+    if (cursor) {
+      const cursorRow = await this.prisma.chatMessage.findFirst({
+        where: { id: cursor, sessionId },
+        select: { id: true },
+      })
+      if (!cursorRow) throw new BizException(BizCode.INVALID_PARAMS, '消息游标无效')
+    }
+
+    const rows = await this.prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: pageSize,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    })
+    return rows.reverse()
   }
   async chatSend(merchantId: string, sessionId: string, type: string, content: string) {
     const s = await this.prisma.chatSession.findFirst({ where: { id: sessionId, merchantId } })
     if (!s) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    const normalizedType = String(type || 'text').toLowerCase()
+    const normalizedContent = String(content || '').trim()
+    if (!['text', 'image', 'quick', 'product', 'order'].includes(normalizedType)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '不支持的消息类型')
+    }
+    if (!normalizedContent) throw new BizException(BizCode.INVALID_PARAMS, '消息内容不能为空')
+    if (normalizedContent.length > 1000) {
+      throw new BizException(BizCode.INVALID_PARAMS, '消息不能超过1000个字符')
+    }
+    if (normalizedType === 'text' || normalizedType === 'quick') {
+      await this.assertMerchantTextSafe(normalizedContent)
+    }
     const m = await this.prisma.chatMessage.create({
-      data: { sessionId, sender: 'merchant', type, content, read: false },
+      data: {
+        sessionId,
+        sender: 'merchant',
+        type: normalizedType,
+        content: normalizedContent,
+        read: false,
+      },
     })
     await this.prisma.chatSession.update({
       where: { id: sessionId },
-      data: { lastMessageAt: new Date() },
+      data: { lastMessageAt: m.createdAt },
     })
     // 同步推送给房间(用户端 + 商家其他在线设备);HTTP 链路之前只写 DB,用户要等下次轮询才看得到 → P1 体验断点
     try {
-      this.chat.emitChatMessage(sessionId, m)
+      this.chat.emitChatMessage(sessionId, m, s)
     } catch {}
     return m
+  }
+
+  async chatRead(merchantId: string, sessionId: string) {
+    const session = await this.prisma.chatSession.findFirst({
+      where: { id: sessionId, merchantId },
+      select: { id: true },
+    })
+    if (!session) throw new BizException(BizCode.NOT_FOUND, '会话不存在')
+    await this.prisma.$transaction([
+      this.prisma.chatMessage.updateMany({
+        where: { sessionId, sender: 'user', read: false },
+        data: { read: true },
+      }),
+      this.prisma.chatSession.update({
+        where: { id: sessionId },
+        data: { unreadCount: 0 },
+      }),
+    ])
+    this.chat.emitReadReceipt(sessionId, 'merchant')
+    return { ok: true }
   }
   async quickReplies(merchantId: string) {
     return this.prisma.quickReply.findMany({ where: { merchantId }, orderBy: { sort: 'asc' } })
@@ -1926,13 +2138,19 @@ export class MerchantService {
    */
   async plazaProducts(merchantId: string, q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const where: any = { status: 'active' }
     if (q.factoryId) {
+      if (internalMerchantIds.includes(String(q.factoryId))) {
+        return buildPage([], 0, page, pageSize)
+      }
       where.merchantId = q.factoryId
-    } else if (merchantId) {
-      where.merchantId = { not: merchantId }
+    } else {
+      const excluded = Array.from(new Set([merchantId, ...internalMerchantIds].filter(Boolean)))
+      if (excluded.length) where.merchantId = { notIn: excluded }
     }
     if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
+    if (q.tags) where.tags = { has: String(q.tags) }
     const [list, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -2020,7 +2238,13 @@ export class MerchantService {
     merchantId: string,
     q: { region?: string; category?: string; minRating?: number; keyword?: string } = {},
   ) {
-    const where: any = { type: 'factory', status: 'active', id: { not: merchantId } }
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
+    const excluded = Array.from(new Set([merchantId, ...internalMerchantIds].filter(Boolean)))
+    const where: any = {
+      type: 'factory',
+      status: 'active',
+      ...(excluded.length ? { id: { notIn: excluded } } : {}),
+    }
     if (q.region) where.region = { contains: q.region, mode: 'insensitive' }
     if (q.category) where.categories = { has: q.category }
     if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
@@ -2040,6 +2264,36 @@ export class MerchantService {
       }
     }
 
+    const factoryIds = factories.map((factory) => factory.id)
+    const [productGroups, agencyGroups, followConfig] = factoryIds.length
+      ? await Promise.all([
+          this.prisma.product.groupBy({
+            by: ['merchantId'],
+            where: { merchantId: { in: factoryIds }, status: 'active' },
+            _count: { _all: true },
+          }),
+          this.prisma.agencyApplication.groupBy({
+            by: ['factoryMerchantId'],
+            where: { factoryMerchantId: { in: factoryIds }, status: 'approved' },
+            _count: { _all: true },
+          }),
+          merchantId
+            ? this.prisma.systemConfig.findUnique({ where: { key: `shop:${merchantId}:follow` } })
+            : Promise.resolve(null),
+        ])
+      : [[], [], null]
+    const productCounts = new Map(productGroups.map((group) => [group.merchantId, group._count._all]))
+    const agencyCounts = new Map(
+      agencyGroups.map((group) => [group.factoryMerchantId, group._count._all]),
+    )
+    const followedIds = new Set<string>(
+      Array.isArray((followConfig?.value as any)?.followed)
+        ? ((followConfig?.value as any).followed as unknown[]).filter(
+            (id): id is string => typeof id === 'string',
+          )
+        : [],
+    )
+
     const minRating = typeof q.minRating === 'number' ? q.minRating : 0
     const result = factories
       .map((f) => {
@@ -2053,6 +2307,10 @@ export class MerchantService {
           gmv: Number(f.totalGmv || 0),
           rating: typeof ex.rating === 'number' ? ex.rating : 5,
           ratingCount: typeof ex.ratingCount === 'number' ? ex.ratingCount : 0,
+          years: Math.max(1, new Date().getFullYear() - f.createdAt.getFullYear() + 1),
+          productCount: productCounts.get(f.id) || 0,
+          agencyCount: agencyCounts.get(f.id) || 0,
+          followed: followedIds.has(f.id),
           tags: [],
         }
       })
@@ -2061,9 +2319,24 @@ export class MerchantService {
   }
 
   async plazaFactory(merchantId: string, id: string) {
+    if (id !== merchantId && (await isInternalTestMerchant(this.prisma, id))) {
+      throw new BizException(BizCode.NOT_FOUND, '工厂不存在')
+    }
     const f = await this.prisma.merchant.findUnique({ where: { id } })
     if (!f) throw new BizException(BizCode.NOT_FOUND, '工厂不存在')
     const ex = await this.getProfileExtras(id)
+    const [productCount, agencyCount, followConfig] = await Promise.all([
+      this.prisma.product.count({ where: { merchantId: id, status: 'active' } }),
+      this.prisma.agencyApplication.count({
+        where: { factoryMerchantId: id, status: 'approved' },
+      }),
+      merchantId
+        ? this.prisma.systemConfig.findUnique({ where: { key: `shop:${merchantId}:follow` } })
+        : Promise.resolve(null),
+    ])
+    const followed = Array.isArray((followConfig?.value as any)?.followed)
+      ? ((followConfig?.value as any).followed as unknown[]).includes(id)
+      : false
     return {
       id: f.id,
       name: f.name,
@@ -2079,6 +2352,8 @@ export class MerchantService {
         address: f.address,
         workTime: '9:00-18:00',
       },
+      contactName: f.contact,
+      contactPhone: f.contactPhone,
       desc: ex.description || '',
       categories: f.categories,
       qualifications: f.qualifications.map((q, i) => ({ id: String(i), name: '资质', image: q })),
@@ -2086,6 +2361,11 @@ export class MerchantService {
       gmv: Number(f.totalGmv || 0),
       rating: typeof ex.rating === 'number' ? ex.rating : 5,
       ratingCount: typeof ex.ratingCount === 'number' ? ex.ratingCount : 0,
+      years: Math.max(1, new Date().getFullYear() - f.createdAt.getFullYear() + 1),
+      productCount,
+      agencyCount,
+      monthGmv: Number(f.totalGmv || 0),
+      followed,
     }
   }
 
@@ -2113,6 +2393,12 @@ export class MerchantService {
 
   /** 用户评价厂家（1-5 分）。简化版：取累积平均，不存逐条评分明细。 */
   async rateMerchant(targetMerchantId: string, _raterMerchantId: string, score: number) {
+    if (
+      targetMerchantId !== _raterMerchantId &&
+      (await isInternalTestMerchant(this.prisma, targetMerchantId))
+    ) {
+      throw new BizException(BizCode.NOT_FOUND, '工厂不存在')
+    }
     if (!Number.isFinite(score) || score < 1 || score > 5) {
       throw new BizException(BizCode.INVALID_PARAMS, '评分必须在 1-5 之间')
     }
@@ -2147,6 +2433,9 @@ export class MerchantService {
     if (id === merchantId) {
       throw new BizException(BizCode.INVALID_PARAMS, '不能关注自己')
     }
+    if (await isInternalTestMerchant(this.prisma, id)) {
+      throw new BizException(BizCode.NOT_FOUND, '工厂不存在')
+    }
 
     const key = `shop:${merchantId}:follow`
     const cfg = await this.prisma.systemConfig.findUnique({ where: { key } })
@@ -2176,8 +2465,12 @@ export class MerchantService {
       ? ((cfg?.value as any).followed as any[]).filter((x) => typeof x === 'string')
       : []
     if (followed.length === 0) return { list: [], total: 0 }
+    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
     const factories = await this.prisma.merchant.findMany({
-      where: { id: { in: followed }, status: 'active' },
+      where: {
+        id: { in: followed, ...(internalMerchantIds.length ? { notIn: internalMerchantIds } : {}) },
+        status: 'active',
+      },
     })
     return {
       list: factories.map((f) => ({
@@ -2191,6 +2484,12 @@ export class MerchantService {
     }
   }
   async applyAgency(merchantId: string, dto: any) {
+    if (
+      dto.factoryId !== merchantId &&
+      (await isInternalTestMerchant(this.prisma, dto.factoryId))
+    ) {
+      throw new BizException(BizCode.NOT_FOUND, '工厂不存在')
+    }
     const app = await this.prisma.agencyApplication.create({
       data: {
         merchantId,
@@ -2275,26 +2574,62 @@ export class MerchantService {
     id: string,
     dto: { myRetailPrice?: number; markupRatio?: number; status?: string },
   ) {
-    // 支持复合 id "applicationId:productId"
-    const appId = id.includes(':') ? id.split(':')[0] : id
+    // 列表按商品展开，因此复合 id 必须只修改目标商品。旧实现只截取
+    // applicationId，导致一张申请中的其它商品被一并改价或下架。
+    const [appId, productId = ''] = id.split(':', 2)
     const app = await this.prisma.agencyApplication.findFirst({ where: { id: appId, merchantId } })
     if (!app) throw new BizException(BizCode.NOT_FOUND, '代理申请不存在')
+    if (productId && !app.productIds.includes(productId)) {
+      throw new BizException(BizCode.NOT_FOUND, '代理商品不存在')
+    }
     const data: any = {}
     if (typeof dto.markupRatio === 'number') data.markupPercent = dto.markupRatio
     if (dto.status && ['pending', 'approved', 'rejected', 'offline'].includes(dto.status)) {
       data.status = dto.status
     }
-    if (Object.keys(data).length) {
-      await this.prisma.agencyApplication.update({ where: { id: appId }, data })
+    if (!Object.keys(data).length) return { ok: true }
+
+    if (productId && app.productIds.length > 1) {
+      const next = await this.prisma.$transaction(async (tx: any) => {
+        await tx.agencyApplication.update({
+          where: { id: appId },
+          data: { productIds: app.productIds.filter((candidate) => candidate !== productId) },
+        })
+        return tx.agencyApplication.create({
+          data: {
+            merchantId: app.merchantId,
+            factoryMerchantId: app.factoryMerchantId,
+            productIds: [productId],
+            markupPercent: app.markupPercent,
+            autoSyncPrice: app.autoSyncPrice,
+            message: app.message,
+            status: app.status,
+            ...data,
+          },
+        })
+      })
+      return { ok: true, id: `${next.id}:${productId}` }
     }
+
+    await this.prisma.agencyApplication.update({ where: { id: appId }, data })
     return { ok: true }
   }
 
   async cancelAgencyApplication(merchantId: string, id: string) {
-    const appId = id.includes(':') ? id.split(':')[0] : id
+    const [appId, productId = ''] = id.split(':', 2)
     const app = await this.prisma.agencyApplication.findFirst({ where: { id: appId, merchantId } })
     if (!app) throw new BizException(BizCode.NOT_FOUND, '代理申请不存在')
-    await this.prisma.agencyApplication.delete({ where: { id: appId } })
+    if (productId && !app.productIds.includes(productId)) {
+      throw new BizException(BizCode.NOT_FOUND, '代理商品不存在')
+    }
+    if (productId && app.productIds.length > 1) {
+      await this.prisma.agencyApplication.update({
+        where: { id: appId },
+        data: { productIds: app.productIds.filter((candidate) => candidate !== productId) },
+      })
+    } else {
+      await this.prisma.agencyApplication.delete({ where: { id: appId } })
+    }
     return { ok: true }
   }
 
@@ -2323,6 +2658,8 @@ export class MerchantService {
       avatar: extras.avatar || '',
       rating: typeof extras.rating === 'number' ? extras.rating : 5,
       ratingCount: typeof extras.ratingCount === 'number' ? extras.ratingCount : 0,
+      latitude: typeof extras.latitude === 'number' ? extras.latitude : null,
+      longitude: typeof extras.longitude === 'number' ? extras.longitude : null,
     }
   }
 
@@ -2332,6 +2669,8 @@ export class MerchantService {
     avatar?: string
     rating?: number
     ratingCount?: number
+    latitude?: number
+    longitude?: number
   }> {
     const cfg = await this.prisma.systemConfig.findUnique({
       where: { key: `shop:${merchantId}:profile-extras` },
@@ -2348,6 +2687,7 @@ export class MerchantService {
     if (typeof dto.contactName === 'string') data.contact = dto.contactName
     if (typeof dto.contactPhone === 'string') data.contactPhone = dto.contactPhone
     if (typeof dto.address === 'string') data.address = dto.address
+    if (typeof dto.region === 'string') data.region = dto.region
     if (Array.isArray(dto.categories)) data.categories = dto.categories
     if (Object.keys(data).length) {
       await this.prisma.merchant.update({ where: { id: merchantId }, data })
@@ -2357,6 +2697,8 @@ export class MerchantService {
     if (typeof dto.email === 'string') extras.email = dto.email
     if (typeof dto.description === 'string') extras.description = dto.description
     if (typeof dto.avatar === 'string') extras.avatar = dto.avatar
+    if (typeof dto.latitude === 'number' && Number.isFinite(dto.latitude)) extras.latitude = dto.latitude
+    if (typeof dto.longitude === 'number' && Number.isFinite(dto.longitude)) extras.longitude = dto.longitude
     if (Object.keys(extras).length) {
       const key = `shop:${merchantId}:profile-extras`
       const prior = await this.prisma.systemConfig.findUnique({ where: { key } })
@@ -2537,18 +2879,25 @@ export class MerchantService {
       }),
     )
   }
-  async membershipNotices(merchantId: string) {
+  async membershipNotices(merchantId: string, language: string = 'zh-CN') {
     const q = await this.quota(merchantId)
+    const english = language.toLowerCase().startsWith('en')
     const notices: any[] = []
     if (q.pushSlotsLimit > 0 && q.pushSlotsUsed >= q.pushSlotsLimit * 0.8) {
       notices.push({
         type: 'warn',
-        text: `广场推荐次数已用 ${q.pushSlotsUsed}/${q.pushSlotsLimit}`,
+        text: english
+          ? `Featured plaza slots used: ${q.pushSlotsUsed}/${q.pushSlotsLimit}`
+          : `广场推荐次数已用 ${q.pushSlotsUsed}/${q.pushSlotsLimit}`,
         link: '/merchant/member',
       })
     }
     if (q.bannerLimit > 0 && q.bannerUsed >= q.bannerLimit) {
-      notices.push({ type: 'error', text: 'Banner 配额已用尽', link: '/merchant/member' })
+      notices.push({
+        type: 'error',
+        text: english ? 'Banner quota has been fully used' : 'Banner 配额已用尽',
+        link: '/merchant/member',
+      })
     }
     return notices
   }
@@ -2565,7 +2914,24 @@ export class MerchantService {
    *   前端用 uni.requestPayment(miniPay) 调起支付，并轮询 /membership/payments/:no/status
    *   直到 status='paid' 才显示激活成功。
    */
-  async subscribe(merchantId: string, userId: string, dto: { planId: string; payMethod?: string }) {
+  async subscribe(
+    merchantId: string,
+    userId: string,
+    dto: {
+      planId: string
+      payMethod?: string
+      clientPlatform?: 'mp-weixin' | 'android'
+    },
+  ) {
+    if (dto.clientPlatform && !['mp-weixin', 'android'].includes(dto.clientPlatform)) {
+      throw new BizException(BizCode.INVALID_PARAMS, '不支持的支付客户端')
+    }
+    // 首版 Android 正式包暂不接微信 App 支付。必须在创建 PaymentRecord 之前拒绝，
+    // 避免客户端误用小程序 JSAPI 参数并留下永远 pending 的资金记录。
+    if (dto.clientPlatform === 'android') {
+      throw new BizException(BizCode.BUSINESS_ERROR, 'Android 支付即将开放')
+    }
+
     const plan = await this.prisma.memberPlan.findUnique({ where: { id: dto.planId } })
     if (!plan) throw new BizException(BizCode.NOT_FOUND, '套餐不存在')
     if (plan.status !== 'active') {
@@ -2626,6 +2992,7 @@ export class MerchantService {
       ok: true,
       paymentNo,
       recordId: record.id,
+      paymentMode: 'miniapp' as const,
       miniPay,
     }
   }
