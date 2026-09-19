@@ -396,9 +396,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       void this.harmonyPush?.sendToMerchant(merchantId, {
         topic: 'refunds',
         title: status === 'pending' ? '收到新的售后申请' : '售后状态更新',
-        body: payload?.no
-          ? `售后单 ${payload.no} 有新的处理动态`
-          : '有一笔售后申请需要查看',
+        body: payload?.no ? `售后单 ${payload.no} 有新的处理动态` : '有一笔售后申请需要查看',
         data: { route: 'after-sale-detail', id, status },
         appMessageId: id ? `refund-${status}-${id}` : undefined,
       })
@@ -467,7 +465,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       void this.prisma.chatSession
         .findUnique({ where: { id: sessionId }, select: { merchantId: true } })
         .then((session) => {
-          if (session?.merchantId) this.harmonyRealtime?.emitMerchant(session.merchantId, 'chat.read', payload)
+          if (session?.merchantId)
+            this.harmonyRealtime?.emitMerchant(session.merchantId, 'chat.read', payload)
         })
         .catch(() => {})
     } catch (e: any) {

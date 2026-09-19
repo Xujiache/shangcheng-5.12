@@ -12,10 +12,7 @@ import {
   LEGAL_AGREEMENTS_KEY,
   type LegalAgreements,
 } from './legal.defaults'
-import {
-  DEFAULT_LEGAL_AGREEMENTS_EN,
-  LEGAL_AGREEMENTS_EN_KEY,
-} from './legal.defaults.en'
+import { DEFAULT_LEGAL_AGREEMENTS_EN, LEGAL_AGREEMENTS_EN_KEY } from './legal.defaults.en'
 import {
   MERCHANT_HARMONY_LEGAL_EN_KEY,
   MERCHANT_HARMONY_LEGAL_KEY,

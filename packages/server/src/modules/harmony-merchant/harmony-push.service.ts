@@ -207,10 +207,7 @@ export class HarmonyPushService {
         account.key_id || account.keyId || process.env.HUAWEI_PUSH_KEY_ID || '',
       ).trim()
       const subAccount = String(
-        account.sub_account ||
-          account.subAccount ||
-          process.env.HUAWEI_PUSH_SUB_ACCOUNT ||
-          '',
+        account.sub_account || account.subAccount || process.env.HUAWEI_PUSH_SUB_ACCOUNT || '',
       ).trim()
       const privateKey = String(
         account.private_key || account.privateKey || process.env.HUAWEI_PUSH_PRIVATE_KEY || '',
@@ -308,7 +305,9 @@ export class HarmonyPushService {
     for (const [key, value] of Object.entries(message.data || {})) {
       if (value !== undefined && value !== null) clickData[key] = String(value).slice(0, 512)
     }
-    const appMessageId = String(message.appMessageId || '').trim().slice(0, 128)
+    const appMessageId = String(message.appMessageId || '')
+      .trim()
+      .slice(0, 128)
     if (appMessageId) clickData.eventId = appMessageId
 
     const notification: Record<string, unknown> = {

@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { HttpAdapterHost } from '@nestjs/core'
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy, Optional } from '@nestjs/common'
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+  Optional,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { IncomingMessage } from 'http'
 import { Duplex } from 'stream'
@@ -78,11 +84,7 @@ export class HarmonyRealtimeService implements OnApplicationBootstrap, OnModuleD
     }
   }
 
-  emitChatMessage(
-    sessionId: string,
-    merchantId: string,
-    message: Record<string, unknown>,
-  ) {
+  emitChatMessage(sessionId: string, merchantId: string, message: Record<string, unknown>) {
     this.emitMerchant(merchantId, 'chat.message', { sessionId, message })
   }
 
@@ -121,7 +123,12 @@ export class HarmonyRealtimeService implements OnApplicationBootstrap, OnModuleD
       return
     }
     if (!state) {
-      this.send(socket, 'error', { code: 'UNAUTHORIZED', message: '请先发送 auth 首帧' }, envelope.requestId)
+      this.send(
+        socket,
+        'error',
+        { code: 'UNAUTHORIZED', message: '请先发送 auth 首帧' },
+        envelope.requestId,
+      )
       return
     }
     if (envelope.requestId) {
@@ -130,7 +137,8 @@ export class HarmonyRealtimeService implements OnApplicationBootstrap, OnModuleD
         return
       }
       state.requestIds.add(envelope.requestId)
-      if (state.requestIds.size > 200) state.requestIds.delete(state.requestIds.values().next().value as string)
+      if (state.requestIds.size > 200)
+        state.requestIds.delete(state.requestIds.values().next().value as string)
     }
 
     try {
@@ -141,7 +149,12 @@ export class HarmonyRealtimeService implements OnApplicationBootstrap, OnModuleD
         case 'ack':
           return
         case 'chat.join':
-          await this.joinSession(socket, state, String(envelope.data?.sessionId || ''), envelope.requestId)
+          await this.joinSession(
+            socket,
+            state,
+            String(envelope.data?.sessionId || ''),
+            envelope.requestId,
+          )
           return
         case 'chat.leave': {
           const sessionId = String(envelope.data?.sessionId || '')
@@ -159,7 +172,12 @@ export class HarmonyRealtimeService implements OnApplicationBootstrap, OnModuleD
           await this.sendChat(socket, state, envelope)
           return
         default:
-          this.send(socket, 'error', { code: 'UNKNOWN_EVENT', message: '不支持的事件' }, envelope.requestId)
+          this.send(
+            socket,
+            'error',
+            { code: 'UNKNOWN_EVENT', message: '不支持的事件' },
+            envelope.requestId,
+          )
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : '实时操作失败'

@@ -341,8 +341,12 @@ export class HarmonyIapService {
   }
 
   private async handleV3Notification(notification: JsonObject) {
-    const notificationType = String(notification.notificationType || '').trim().toUpperCase()
-    const version = String(notification.notificationVersion || '').trim().toLowerCase()
+    const notificationType = String(notification.notificationType || '')
+      .trim()
+      .toUpperCase()
+    const version = String(notification.notificationVersion || '')
+      .trim()
+      .toLowerCase()
     const requestId = String(notification.notificationRequestId || '').trim()
     const signedTime = Number(notification.signedTime || 0)
     const metadata = this.asObject(notification.notificationMetaData)
@@ -366,7 +370,9 @@ export class HarmonyIapService {
       String(process.env.HUAWEI_IAP_PACKAGE_NAME || '').trim() || 'top.ewsn.jingwei.merchant'
     const applicationId = String(metadata.applicationId || '').trim()
     const packageName = String(metadata.packageName || '').trim()
-    const environment = String(metadata.environment || '').trim().toUpperCase()
+    const environment = String(metadata.environment || '')
+      .trim()
+      .toUpperCase()
     const purchaseToken = String(metadata.purchaseToken || '').trim()
     const purchaseOrderId = String(metadata.purchaseOrderId || '').trim()
     const providerType = Number(metadata.type)
@@ -471,12 +477,17 @@ export class HarmonyIapService {
 
   private async handleLegacySignedNotification(object: JsonObject) {
     const signedPayload = String(
-      object.signedPayload || object.jwsNotification || object.notification || object.purchaseData || '',
+      object.signedPayload ||
+        object.jwsNotification ||
+        object.notification ||
+        object.purchaseData ||
+        '',
     )
     if (!signedPayload) throw new BizException(BizCode.INVALID_PARAMS, '缺少通知签名载荷')
     const payload = this.jws.verifyCompactJws(signedPayload)
     const token = this.findString(payload, 'purchaseToken')
-    const providerOrderId = this.findString(payload, 'purchaseOrderId') || this.findString(payload, 'orderId')
+    const providerOrderId =
+      this.findString(payload, 'purchaseOrderId') || this.findString(payload, 'orderId')
     if (!token && !providerOrderId) {
       throw new BizException(BizCode.INVALID_PARAMS, '通知缺少交易标识')
     }
@@ -555,10 +566,7 @@ export class HarmonyIapService {
     purchaseOrderId: string,
     verified: VerifiedHuaweiPurchase,
   ) {
-    if (
-      verified.purchaseToken !== purchaseToken ||
-      verified.providerOrderId !== purchaseOrderId
-    ) {
+    if (verified.purchaseToken !== purchaseToken || verified.providerOrderId !== purchaseOrderId) {
       throw new BadGatewayException('华为 IAP 查询结果与通知交易不一致')
     }
   }
@@ -674,10 +682,7 @@ export class HarmonyIapService {
         ? [
             this.prisma.paymentRecord.updateMany({
               where: {
-                OR: [
-                  { no: order.orderNo },
-                  { providerOrderId: verified.providerOrderId },
-                ],
+                OR: [{ no: order.orderNo }, { providerOrderId: verified.providerOrderId }],
               },
               data: { status: 'refunded' },
             }),

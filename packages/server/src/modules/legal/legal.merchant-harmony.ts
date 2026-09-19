@@ -24,7 +24,8 @@ function contactZh(contact: PublicLegalContact): string {
   if (clean(contact.phone)) rows.push(`- 客服电话：${clean(contact.phone)}`)
   if (clean(contact.email)) rows.push(`- 客服邮箱：${clean(contact.email)}`)
   if (clean(contact.hours)) rows.push(`- 服务时间：${clean(contact.hours)}`)
-  if (rows.length === 0) rows.push('- 联系方式：请在应用“我的 → 联系我们”中查看平台当前公开联系方式')
+  if (rows.length === 0)
+    rows.push('- 联系方式：请在应用“我的 → 联系我们”中查看平台当前公开联系方式')
   return rows.join('\n')
 }
 
@@ -33,7 +34,8 @@ function contactEn(contact: PublicLegalContact): string {
   if (clean(contact.phone)) rows.push(`- Support phone: ${clean(contact.phone)}`)
   if (clean(contact.email)) rows.push(`- Support email: ${clean(contact.email)}`)
   if (clean(contact.hours)) rows.push(`- Service hours: ${clean(contact.hours)}`)
-  if (rows.length === 0) rows.push('- Contact: see My > Contact us in the app for the current public contact details')
+  if (rows.length === 0)
+    rows.push('- Contact: see My > Contact us in the app for the current public contact details')
   return rows.join('\n')
 }
 

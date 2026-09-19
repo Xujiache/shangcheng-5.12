@@ -55,10 +55,7 @@ export class LegalPublicController {
   /** 三端登录页 / 设置页弹窗读取 */
   @Public()
   @Get('agreements')
-  list(
-    @Headers('accept-language') language?: string,
-    @Query('platform') platform?: string,
-  ) {
+  list(@Headers('accept-language') language?: string, @Query('platform') platform?: string) {
     return this.svc.list(language, platform)
   }
 
@@ -74,15 +71,19 @@ export class LegalPublicController {
   ): Promise<void> {
     const language = requestedLanguage || acceptedLanguage || 'zh-CN'
     const agreements = await this.svc.merchantHarmonyList(language)
-    const section = kind === 'privacy' ? agreements.privacy
-      : kind === 'collect' ? agreements.collect
-        : agreements.user
+    const section =
+      kind === 'privacy'
+        ? agreements.privacy
+        : kind === 'collect'
+          ? agreements.collect
+          : agreements.user
     response
       .status(200)
       .set({
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
-        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+        'Content-Security-Policy':
+          "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
         'X-Content-Type-Options': 'nosniff',
       })
       .send(legalHtml(section.title, section.body, language))

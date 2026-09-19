@@ -222,10 +222,7 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.listRefunds(mid, q)
   }
-  @Get('refunds/:id') async refundDetail(
-    @CurrentUser() u: AuthUser,
-    @Param('id') id: string,
-  ) {
+  @Get('refunds/:id') async refundDetail(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.refundDetail(mid, id)
   }
@@ -506,10 +503,7 @@ export class MerchantController {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.chatSessions(mid)
   }
-  @Get('chat/sessions/:id') async chatSession(
-    @CurrentUser() u: AuthUser,
-    @Param('id') id: string,
-  ) {
+  @Get('chat/sessions/:id') async chatSession(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.chatSession(mid, id)
   }

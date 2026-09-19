@@ -90,7 +90,10 @@
           <div class="text-xs text-g-500 ml-3 inline"> 开启后端上无法跳过此版本 </div>
         </ElFormItem>
         <ElFormItem v-if="active === 'merchant-harmony'" label="AppGallery" required>
-          <ElInput v-model="form.storeUrl" placeholder="https://appgallery.huawei.com/app/detail?id=..." />
+          <ElInput
+            v-model="form.storeUrl"
+            placeholder="https://appgallery.huawei.com/app/detail?id=..."
+          />
           <div class="text-xs text-g-500 mt-1">
             填写已通过审核的 AppGallery HTTPS 详情页；鸿蒙端会调用系统更新服务并以此地址兜底。
           </div>

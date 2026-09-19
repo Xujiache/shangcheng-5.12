@@ -1615,23 +1615,36 @@ export class MerchantService {
     }
   }
   async saveStoreAuth(merchantId: string, id: string, dto: any) {
-    const store = await this.prisma.store.findFirst({ where: { id, merchantId }, select: { id: true } })
+    const store = await this.prisma.store.findFirst({
+      where: { id, merchantId },
+      select: { id: true },
+    })
     if (!store) throw new BizException(BizCode.NOT_FOUND, '门店不存在或无权限')
 
     const level = ['A', 'B', 'C'].includes(dto?.level) ? dto.level : 'C'
     const tierWhitelist = ['retail', 'wholesale', 'member']
     const visiblePriceTiers: string[] = Array.isArray(dto?.visiblePriceTiers)
-      ? [...new Set<string>(dto.visiblePriceTiers.filter((tier: unknown): tier is string =>
-          typeof tier === 'string' && tierWhitelist.includes(tier),
-        ))]
+      ? [
+          ...new Set<string>(
+            dto.visiblePriceTiers.filter(
+              (tier: unknown): tier is string =>
+                typeof tier === 'string' && tierWhitelist.includes(tier),
+            ),
+          ),
+        ]
       : []
     if (visiblePriceTiers.length === 0) {
       throw new BizException(BizCode.INVALID_PARAMS, '请至少选择一种可见价格')
     }
     const authValidFrom = dto?.authValidFrom ? new Date(dto.authValidFrom) : null
     const authValidTo = dto?.authValidTo ? new Date(dto.authValidTo) : null
-    if (!authValidFrom || !authValidTo || Number.isNaN(authValidFrom.getTime()) ||
-      Number.isNaN(authValidTo.getTime()) || authValidTo < authValidFrom) {
+    if (
+      !authValidFrom ||
+      !authValidTo ||
+      Number.isNaN(authValidFrom.getTime()) ||
+      Number.isNaN(authValidTo.getTime()) ||
+      authValidTo < authValidFrom
+    ) {
       throw new BizException(BizCode.INVALID_PARAMS, '授权有效期不正确')
     }
     const productPolicies: Array<{
@@ -1640,12 +1653,14 @@ export class MerchantService {
       enabled: boolean
       markupPercent: number
     }> = Array.isArray(dto?.productPolicies)
-      ? dto.productPolicies.map((policy: any) => ({
-          categoryId: String(policy?.categoryId || ''),
-          categoryName: typeof policy?.categoryName === 'string' ? policy.categoryName : '',
-          enabled: policy?.enabled === true,
-          markupPercent: Math.max(0, Math.min(100, Number(policy?.markupPercent) || 0)),
-        })).filter((policy: any) => policy.categoryId)
+      ? dto.productPolicies
+          .map((policy: any) => ({
+            categoryId: String(policy?.categoryId || ''),
+            categoryName: typeof policy?.categoryName === 'string' ? policy.categoryName : '',
+            enabled: policy?.enabled === true,
+            markupPercent: Math.max(0, Math.min(100, Number(policy?.markupPercent) || 0)),
+          }))
+          .filter((policy: any) => policy.categoryId)
       : []
     const authConfig = {
       level,
@@ -2282,7 +2297,9 @@ export class MerchantService {
             : Promise.resolve(null),
         ])
       : [[], [], null]
-    const productCounts = new Map(productGroups.map((group) => [group.merchantId, group._count._all]))
+    const productCounts = new Map(
+      productGroups.map((group) => [group.merchantId, group._count._all]),
+    )
     const agencyCounts = new Map(
       agencyGroups.map((group) => [group.factoryMerchantId, group._count._all]),
     )
@@ -2697,8 +2714,10 @@ export class MerchantService {
     if (typeof dto.email === 'string') extras.email = dto.email
     if (typeof dto.description === 'string') extras.description = dto.description
     if (typeof dto.avatar === 'string') extras.avatar = dto.avatar
-    if (typeof dto.latitude === 'number' && Number.isFinite(dto.latitude)) extras.latitude = dto.latitude
-    if (typeof dto.longitude === 'number' && Number.isFinite(dto.longitude)) extras.longitude = dto.longitude
+    if (typeof dto.latitude === 'number' && Number.isFinite(dto.latitude))
+      extras.latitude = dto.latitude
+    if (typeof dto.longitude === 'number' && Number.isFinite(dto.longitude))
+      extras.longitude = dto.longitude
     if (Object.keys(extras).length) {
       const key = `shop:${merchantId}:profile-extras`
       const prior = await this.prisma.systemConfig.findUnique({ where: { key } })

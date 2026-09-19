@@ -72,7 +72,9 @@ function asBoolean(value: unknown, fallback: boolean): boolean {
   if (typeof value === 'boolean') return value
   if (value === 1 || value === '1') return true
   if (value === 0 || value === '0') return false
-  const normalized = String(value ?? '').trim().toUpperCase()
+  const normalized = String(value ?? '')
+    .trim()
+    .toUpperCase()
   if (['TRUE', 'ACTIVE', 'ENABLED', 'ON'].includes(normalized)) return true
   if (['FALSE', 'INACTIVE', 'DISABLED', 'OFF'].includes(normalized)) return false
   return fallback
@@ -154,7 +156,8 @@ export class HuaweiIapJwsService {
     if (!jws) throw new BizException(BizCode.PAY_FAILED, '华为支付结果缺少签名凭证')
     const payload = this.verifyCompactJws(jws)
     const subscription = asObject(payload.lastSubscriptionStatus)
-    const order = asObject(subscription?.lastPurchaseOrder) || asObject(payload.purchaseOrder) || payload
+    const order =
+      asObject(subscription?.lastPurchaseOrder) || asObject(payload.purchaseOrder) || payload
 
     if (productType === 'subscription') {
       const status = subscription?.status ?? payload.status
@@ -164,7 +167,15 @@ export class HuaweiIapJwsService {
     } else {
       const state = order.purchaseStatus ?? order.purchaseState ?? order.status
       const normalized = String(state ?? '').toUpperCase()
-      if (!(state === 0 || state === 1 || normalized === 'SUCCESS' || normalized === 'PAID' || normalized === 'PURCHASED')) {
+      if (
+        !(
+          state === 0 ||
+          state === 1 ||
+          normalized === 'SUCCESS' ||
+          normalized === 'PAID' ||
+          normalized === 'PURCHASED'
+        )
+      ) {
         throw new BizException(BizCode.PAY_FAILED, '商品订单当前未支付')
       }
     }
@@ -215,7 +226,9 @@ export class HuaweiIapJwsService {
     }
 
     const rawStatus = subscription.status ?? payload.status
-    const normalizedStatus = String(rawStatus ?? '').trim().toUpperCase()
+    const normalizedStatus = String(rawStatus ?? '')
+      .trim()
+      .toUpperCase()
     const active = rawStatus === 1 || rawStatus === '1' || normalizedStatus === 'ACTIVE'
     const autoRenewValue = firstValue(payload, [
       ['lastSubscriptionStatus', 'autoRenewStatus'],
@@ -273,7 +286,9 @@ export class HuaweiIapJwsService {
       throw new BizException(BizCode.PAY_FAILED, '华为订单状态缺少商品或订单标识')
     }
     const rawState = order.purchaseStatus ?? order.purchaseState ?? order.status
-    const normalized = String(rawState ?? '').trim().toUpperCase()
+    const normalized = String(rawState ?? '')
+      .trim()
+      .toUpperCase()
     const refundValue = firstValue(order, [['refundStatus'], ['refunded']])
     const refundTime = firstNumber(order, [['refundTime'], ['refundedAt']])
     const refunded =
