@@ -1,0 +1,122 @@
+.format__body {
+  padding-bottom: 80px;
+}
+.format__intro {
+  margin: 14px 0 6px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+.format__note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 5px 0;
+}
+.format__error {
+  margin: 10px 0;
+  color: #b94739;
+  font-size: 13px;
+  word-break: break-all;
+}
+.format__title {
+  margin: 24px 0 12px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+.format__actions,
+.format__file-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.format__actions button {
+  flex: 1;
+  margin: 0;
+}
+.format__empty {
+  padding: 20px;
+  text-align: center;
+}
+.format__file,
+.format__job,
+.format__form {
+  padding: 14px;
+  margin: 9px 0;
+}
+.format__file-main,
+.format__job-top,
+.format__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.format__file-main,
+.format__job-top {
+  font-size: 13px;
+  color: var(--text);
+}
+.format__file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.format__file-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  color: var(--accent);
+  font-size: 12px;
+}
+.format__file-actions text {
+  padding: 5px 2px;
+}
+.format__row {
+  min-height: 46px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.format__row input {
+  flex: 1;
+  text-align: right;
+}
+.format__form button {
+  margin-top: 14px;
+}
+.format__asset {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.format__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+}
+.format__preview {
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+.format__preview-scroll {
+  height: 60vh;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.format__preview video,
+.format__preview audio {
+  width: 100%;
+}

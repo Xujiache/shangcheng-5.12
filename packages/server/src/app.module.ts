@@ -16,6 +16,7 @@ import { PaymentModule } from './modules/payment/payment.module'
 import { LegalModule } from './modules/legal/legal.module'
 import { AppReleaseModule } from './modules/app-release/app-release.module'
 import { LedgerModule } from './modules/ledger/ledger.module'
+import { ConversionModule } from './modules/ledger-conversion/conversion.module'
 import { ContentSecurityModule } from './modules/content-security/content-security.module'
 import { JwtAuthGuard } from './common/guards/jwt.guard'
 import { HarmonyRealtimeModule } from './modules/harmony-merchant/harmony-realtime.module'
@@ -77,6 +78,7 @@ import { HarmonyMerchantModule } from './modules/harmony-merchant/harmony-mercha
     AppReleaseModule,
     HarmonyMerchantModule,
     LedgerModule,
+    ConversionModule,
   ],
   controllers: [HealthController],
   providers: [

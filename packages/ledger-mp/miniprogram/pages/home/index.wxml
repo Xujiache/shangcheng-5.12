@@ -64,6 +64,13 @@
         <view class="home__tool-t">记工</view>
         <view class="home__tool-s">日工明细</view>
       </view>
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toFormat">
+        <view class="home__tool-icon">
+          <lz-icon name="download" size="23" color="accent" />
+        </view>
+        <view class="home__tool-t">格式转换</view>
+        <view class="home__tool-s">文件处理</view>
+      </view>
     </view>
 
     <block>

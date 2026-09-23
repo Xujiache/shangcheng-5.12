@@ -1,0 +1,73 @@
+<lz-bg />
+<view class="format">
+  <lz-header title="格式转换" />
+  <view class="lz-page format__body">
+    <view class="format__intro">登录后免费使用 · 不限累计次数</view>
+    <view class="format__note">上传原件和转换结果在服务器保留 30 天；可提前删除。</view>
+    <view class="format__note">{{limitHint}}</view>
+
+    <view wx:if="{{error}}" class="format__error">{{error}}</view>
+    <button wx:if="{{loading}}" class="lz-btn lz-btn--ghost" loading="true">正在读取转换能力</button>
+    <view wx:elif="{{!capabilities.available}}" class="lz-card format__empty">
+      <view>转换服务尚未开放</view>
+      <view class="format__note">仅经过 Linux 验证的格式会在这里显示。</view>
+      <button class="lz-btn lz-btn--ghost" bindtap="refresh">重试</button>
+    </view>
+    <block wx:else>
+      <view class="format__title">选择文件</view>
+      <view class="format__actions">
+        <button class="lz-btn lz-btn--ghost" bindtap="chooseMessage" disabled="{{busy}}">微信文件</button>
+        <button class="lz-btn lz-btn--ghost" bindtap="chooseMedia" disabled="{{busy}}">相册 / 拍摄</button>
+      </view>
+      <view class="format__note">可分次添加；批量文件按下方顺序转换或合并。</view>
+      <view wx:for="{{files}}" wx:for-item="file" wx:for-index="index" wx:key="path" class="lz-card format__file">
+        <view class="format__file-main"><text class="format__file-name">{{file.name}}</text><text>{{file.size}} B</text></view>
+        <view class="format__file-actions">
+          <text data-index="{{index}}" data-direction="-1" bindtap="moveFile">上移</text>
+          <text data-index="{{index}}" data-direction="1" bindtap="moveFile">下移</text>
+          <text data-index="{{index}}" bindtap="removeFile">移除</text>
+        </view>
+      </view>
+      <view wx:if="{{files.length}}" class="lz-card format__form">
+        <view class="format__row" bindtap="chooseOperation"><text>目标格式</text><text>{{operation ? operation.label : '暂无可用转换方式'}} ›</text></view>
+        <view wx:for="{{operation.options}}" wx:for-item="option" wx:key="*this" class="format__row">
+          <text>{{option}}</text><input data-key="{{option}}" value="{{optionValues[option]}}" bindinput="onOptionInput" placeholder="输入选项" />
+        </view>
+        <view wx:if="{{busy}}" class="format__note">{{busyText}} · {{uploadPercent}}%</view>
+        <button class="lz-btn lz-btn--primary" bindtap="start" disabled="{{busy || !operation}}" loading="{{busy}}">开始转换</button>
+      </view>
+    </block>
+
+    <view class="format__title">最近任务</view>
+    <view wx:if="{{!jobs.length}}" class="format__note">暂无转换记录</view>
+    <view wx:for="{{jobs}}" wx:for-item="job" wx:key="id" class="lz-card format__job">
+      <view class="format__job-top"><text>{{job.operationId}}</text><text>{{job.statusLabel}} · {{job.progress}}%</text></view>
+      <view class="format__note">{{job.createdLabel}} · {{job.uploads.length}} 个文件</view>
+      <view wx:if="{{job.error}}" class="format__error">{{job.error}}</view>
+      <view class="format__file-actions">
+        <text wx:if="{{job.status === 'queued' || job.status === 'running'}}" data-id="{{job.id}}" data-action="cancel" bindtap="jobAction">取消</text>
+        <text wx:if="{{job.status === 'failed'}}" data-id="{{job.id}}" data-action="retry" bindtap="jobAction">重试</text>
+        <text wx:if="{{job.status !== 'running'}}" data-id="{{job.id}}" data-action="delete" bindtap="jobAction">删除</text>
+      </view>
+      <view wx:for="{{job.assets}}" wx:for-item="asset" wx:key="id" class="format__asset">
+        <view class="format__file-name">{{asset.fileName}}</view>
+        <view class="format__file-actions">
+          <text data-job="{{job.id}}" data-asset="{{asset.id}}" bindtap="loadAsset">下载</text>
+          <text data-job="{{job.id}}" data-asset="{{asset.id}}" bindtap="openAsset">预览</text>
+          <text data-job="{{job.id}}" data-asset="{{asset.id}}" bindtap="shareAsset">转发</text>
+          <text data-job="{{job.id}}" data-asset="{{asset.id}}" bindtap="saveAsset">保存</text>
+        </view>
+      </view>
+    </view>
+    <button wx:if="{{hasMore}}" class="lz-btn lz-btn--ghost" bindtap="loadMore">加载更多记录</button>
+  </view>
+</view>
+
+<view wx:if="{{previewText || previewVideo || previewAudio}}" class="format__overlay" bindtap="closePreview">
+  <view class="format__preview" catchtap="noop">
+    <view class="format__file-actions" bindtap="closePreview">关闭</view>
+    <scroll-view wx:if="{{previewText}}" scroll-y class="format__preview-scroll"><text selectable>{{previewText}}</text></scroll-view>
+    <video wx:if="{{previewVideo}}" src="{{previewVideo}}" controls autoplay />
+    <audio wx:if="{{previewAudio}}" src="{{previewAudio}}" controls autoplay />
+  </view>
+</view>
