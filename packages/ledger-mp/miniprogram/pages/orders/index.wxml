@@ -9,6 +9,7 @@
   </view>
 
   <view class="lz-page lz-page--pad-bottom">
+    <view wx:if="{{stale}}" class="ord__stale">离线旧数据 · 联网后下拉刷新</view>
     <block>
     <view wx:if="{{readOnly}}" class="ord__readonly">
       <lz-icon name="info" size="17" color="accent" />

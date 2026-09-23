@@ -9,7 +9,8 @@ Page({
   data: {
     content: '',
     contact: '',
-    images: [] as string[], // 已上传公网 URL
+    images: [] as string[], // 预览 URL（私有图为短时地址）
+    imageRefs: [] as string[], // 提交时使用所有权校验过的私有引用；兼容旧版公网 URL
     canSubmit: false,
     submitting: false,
     uploading: false,
@@ -43,7 +44,7 @@ Page({
       },
     })
   },
-  // 逐张上传到对象存储，拿回公网 URL（uploadFile 不走 request 层，需手动处理登录失效）
+  // 逐张上传；私有图的短时 URL 仅用于预览，持久化使用 key。
   uploadSeq(files: string[]) {
     this.setData({ uploading: true })
     let i = 0
@@ -61,7 +62,10 @@ Page({
           try {
             const body = JSON.parse(up.data)
             if (body && body.code === 0 && body.data && body.data.url) {
-              this.setData({ images: this.data.images.concat(body.data.url) })
+              this.setData({
+                images: this.data.images.concat(files[i]),
+                imageRefs: this.data.imageRefs.concat(body.data.key || body.data.url),
+              })
             } else if (
               up.statusCode === 401 ||
               (body && (body.code === 2001 || body.code === 2002))
@@ -90,8 +94,10 @@ Page({
   removeImage(e: any) {
     const idx = Number(e.currentTarget.dataset.index)
     const images = this.data.images.slice()
+    const imageRefs = this.data.imageRefs.slice()
     images.splice(idx, 1)
-    this.setData({ images })
+    imageRefs.splice(idx, 1)
+    this.setData({ images, imageRefs })
   },
   previewImage(e: any) {
     const idx = Number(e.currentTarget.dataset.index)
@@ -113,7 +119,7 @@ Page({
       await feedbackApi.submit({
         content: this.data.content.trim(),
         contact: this.data.contact.trim() || undefined,
-        images: this.data.images.length ? this.data.images : undefined,
+        images: this.data.imageRefs.length ? this.data.imageRefs : undefined,
       })
       wx.showToast({ title: '已提交', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 600)

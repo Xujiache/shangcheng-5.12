@@ -38,6 +38,31 @@
     "pages/delete-account/index",
     "pages/doc/index"
   ],
+  "subPackages": [
+    {
+      "root": "subpackages/orders",
+      "pages": ["pages/order-detail/index", "pages/order-edit/index", "pages/order-items/index"]
+    },
+    {
+      "root": "subpackages/tools",
+      "pages": [
+        "pages/triangle-tool/index",
+        "pages/arc-tool/index",
+        "pages/cut/index",
+        "pages/cut-result/index"
+      ]
+    },
+    {
+      "root": "subpackages/settings",
+      "pages": [
+        "pages/settings/index",
+        "pages/appearance/index",
+        "pages/privacy/index",
+        "pages/data-backup/index",
+        "pages/cost-categories/index"
+      ]
+    }
+  ],
   "window": {
     "navigationStyle": "custom",
     "backgroundColor": "#EBF0ED",

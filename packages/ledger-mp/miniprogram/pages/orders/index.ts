@@ -1,4 +1,5 @@
 import { meApi, orderApi } from '../../api/index'
+import { wasStale } from '../../utils/request'
 import { maskMoney, yuan } from '../../utils/format'
 import {
   getHideAmount,
@@ -10,7 +11,7 @@ import {
   setMembership,
 } from '../../utils/store'
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 20
 const SEG_DEF: Array<[string, string]> = [
   ['profile', 'c1'],
   ['glass', 'c2'],
@@ -34,6 +35,7 @@ Page({
     summary: { count: 0, profit: '¥0', avg: '¥0' },
     loading: true,
     loadError: false, // 网络/加载失败：区别于"暂无订单"空态
+    stale: false,
     hasMore: false,
     loadingMore: false,
     readOnly: !hasActiveMembership(),
@@ -169,6 +171,7 @@ Page({
           avg: hide ? maskMoney(s.avgProfit || 0) : yuan(s.avgProfit || 0),
         },
         hasMore: list.length < count,
+        stale: wasStale(res),
         loading: false,
       })
     } catch (e) {
@@ -203,7 +206,11 @@ Page({
       const list = this.data.list.concat(more)
       const s = res.summary || {}
       const count = s.count || this.data.summary.count
-      this.setData({ list, hasMore: fetched.length > 0 && list.length < count })
+      this.setData({
+        list,
+        hasMore: fetched.length > 0 && list.length < count,
+        stale: this.data.stale || wasStale(res),
+      })
     } catch (e) {
       wx.showToast({ title: '加载失败，请重试', icon: 'none' })
     } finally {

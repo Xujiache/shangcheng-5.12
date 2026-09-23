@@ -12,6 +12,7 @@ import { LedgerController } from './ledger.controller'
 import { LedgerBizController } from './ledger-biz.controller'
 import { LedgerAdminController } from './ledger-admin.controller'
 import { LedgerPayController } from './ledger-pay.controller'
+import { LedgerFeedbackMediaController } from './ledger-feedback-media.controller'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
 
@@ -27,6 +28,7 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
     LedgerBizController,
     LedgerAdminController,
     LedgerPayController,
+    LedgerFeedbackMediaController,
   ],
   providers: [
     LedgerAuthService,

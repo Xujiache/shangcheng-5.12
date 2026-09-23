@@ -16,6 +16,7 @@
   </view>
 
   <view class="lz-page lz-page--pad-bottom">
+    <view wx:if="{{stale}}" class="home__stale">离线旧数据 · 联网后下拉刷新</view>
     <view wx:if="{{welcomeBannerVisible}}" class="home__welcome">
       <view class="home__welcome-icon">
         <lz-icon name="crown" size="20" color="white" />

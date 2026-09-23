@@ -2,6 +2,13 @@
   min-height: 100vh;
   background: transparent;
 }
+.ord__stale {
+  padding: 8px 12px;
+  color: var(--accent-text);
+  background: var(--surface);
+  border-radius: 10px;
+  font-size: 12px;
+}
 .ord__hd {
   display: flex;
   align-items: center;

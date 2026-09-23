@@ -110,13 +110,19 @@ export class LedgerPayService {
       this.logger.warn(`[ledger pay] 找不到订单 outTradeNo=${outTradeNo}`)
       return false
     }
+    // 无法证明实付金额时拒绝入账；零金额、NaN 和未锁定正数金额均不可发放会员。
+    if (!Number.isSafeInteger(paidFen) || paidFen <= 0 || order.amountFen <= 0) {
+      this.logger.warn(`[ledger pay] 回调金额无效 outTradeNo=${outTradeNo}`)
+      return false
+    }
     // 幂等：已入账直接 ACK
     if (order.status === 'paid' || order.grantedAt) {
       this.logger.log(`[ledger pay] 幂等命中 outTradeNo=${outTradeNo}`)
       return true
     }
+    if (order.status !== 'pending') return false
     // 金额防篡改：回调金额必须与下单锁定金额一致
-    if (Number.isFinite(paidFen) && paidFen > 0 && paidFen !== order.amountFen) {
+    if (paidFen !== order.amountFen) {
       this.logger.error(
         `[ledger pay] 金额不一致 outTradeNo=${outTradeNo} expect=${order.amountFen} got=${paidFen}`,
       )

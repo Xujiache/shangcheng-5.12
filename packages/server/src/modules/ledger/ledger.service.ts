@@ -32,6 +32,7 @@ import {
 import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
 import { CreateLedgerWorkLogDto, UpdateLedgerWorkLogDto, WorkLogQueryDto } from './dto/work-log.dto'
 import { ContentSecurityService } from '../content-security/content-security.service'
+import { FilesService } from '../files/files.service'
 
 /** input/summary JSON 序列化后体积上限（字节），超出拒绝，防滥用。 */
 const CUT_JSON_MAX = 20_000
@@ -101,6 +102,7 @@ export class LedgerService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly contentSecurity?: ContentSecurityService,
+    @Optional() private readonly files?: FilesService,
   ) {}
 
   private async assertLedgerTextSafe(content: string, scene: number) {
@@ -302,12 +304,28 @@ export class LedgerService {
       if (to && !isNaN(to.getTime())) range.lte = to
       if (Object.keys(range).length) where.date = range
     }
+    const pmin = q.profitMin != null && q.profitMin !== '' ? Number(q.profitMin) : null
+    const pmax = q.profitMax != null && q.profitMax !== '' ? Number(q.profitMax) : null
+    // 增量字段回填并逐单核验后才切读路径；存在空值时自动沿用旧实现，不漏历史单。
+    if (
+      process.env.LEDGER_FAST_READS === '1' &&
+      (pmin === null || Number.isFinite(pmin)) &&
+      (pmax === null || Number.isFinite(pmax)) &&
+      Number.isInteger(Number(q.page || 1)) &&
+      Number.isInteger(Number(q.pageSize || 50)) &&
+      !(await this.prisma.ledgerOrder.count({
+        where: {
+          userId,
+          OR: [{ revenueAmount: null }, { costAmount: null }, { profitAmount: null }],
+        },
+      }))
+    ) {
+      return this.listOrdersFast(where, q, pmin, pmax)
+    }
     const rows = await this.prisma.ledgerOrder.findMany({ where, orderBy: { date: 'desc' } })
     let list = rows.map((r) => this.mapOrder(r as OrderRow))
 
     // 利润区间筛选（派生字段，内存过滤）
-    const pmin = q.profitMin != null && q.profitMin !== '' ? Number(q.profitMin) : null
-    const pmax = q.profitMax != null && q.profitMax !== '' ? Number(q.profitMax) : null
     if (pmin != null) list = list.filter((o) => o.profit >= pmin)
     if (pmax != null) list = list.filter((o) => o.profit <= pmax)
 
@@ -327,6 +345,49 @@ export class LedgerService {
     )
     return {
       list: items,
+      total,
+      page,
+      pageSize,
+      summary: { count: total, ...sums, avgProfit: total ? Math.round(sums.profit / total) : 0 },
+    }
+  }
+
+  private async listOrdersFast(
+    where: any,
+    q: OrderQueryDto,
+    pmin: number | null,
+    pmax: number | null,
+  ) {
+    if (pmin !== null || pmax !== null) {
+      where.profitAmount = {
+        ...(pmin !== null ? { gte: Math.ceil(pmin) } : {}),
+        ...(pmax !== null ? { lte: Math.floor(pmax) } : {}),
+      }
+    }
+    const page = Math.max(1, Number(q.page) || 1)
+    const pageSize = Math.min(200, Math.max(1, Number(q.pageSize) || 50))
+    const [rows, aggregate] = await Promise.all([
+      this.prisma.ledgerOrder.findMany({
+        where,
+        orderBy:
+          q.sort === 'profit' ? [{ profitAmount: 'desc' }, { date: 'desc' }] : { date: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.ledgerOrder.aggregate({
+        where,
+        _count: { _all: true },
+        _sum: { total: true, costAmount: true, profitAmount: true },
+      }),
+    ])
+    const total = aggregate._count._all
+    const sums = {
+      revenue: aggregate._sum.total || 0, // 兼容旧列表：汇总 revenue 为订单总价，不含 extras。
+      cost: Number(aggregate._sum.costAmount || 0),
+      profit: Number(aggregate._sum.profitAmount || 0),
+    }
+    return {
+      list: rows.map((r) => this.mapOrder(r as OrderRow)),
       total,
       page,
       pageSize,
@@ -369,28 +430,30 @@ export class LedgerService {
     if (!(total > 0)) throw new BizException(BizCode.INVALID_PARAMS, '订单总价需大于 0')
     const date = new Date(dto.date)
     if (isNaN(date.getTime())) throw new BizException(BizCode.INVALID_PARAMS, '日期格式不正确')
-    const o = await this.prisma.ledgerOrder.create({
-      data: {
-        userId,
-        customerId,
-        customerName,
-        date,
-        total,
-        received: Math.max(0, Math.round(dto.received || 0)),
-        costProfile: Math.max(0, Math.round(dto.costProfile || 0)),
-        costGlass: Math.max(0, Math.round(dto.costGlass || 0)),
-        costHardware: Math.max(0, Math.round(dto.costHardware || 0)),
-        costLabor: Math.max(0, Math.round(dto.costLabor || 0)),
-        costScreen: Math.max(0, Math.round(dto.costScreen || 0)),
-        extras: sanitizeExtras(dto.extras) as any,
-        customCosts: sanitizeCustomCosts(dto.customCosts) as any,
-        items: items as any,
-        discount,
-        recycle,
-        deposit,
-        note: dto.note?.trim() || null,
-      },
-    })
+    const data: any = {
+      userId,
+      customerId,
+      customerName,
+      date,
+      total,
+      received: Math.max(0, Math.round(dto.received || 0)),
+      costProfile: Math.max(0, Math.round(dto.costProfile || 0)),
+      costGlass: Math.max(0, Math.round(dto.costGlass || 0)),
+      costHardware: Math.max(0, Math.round(dto.costHardware || 0)),
+      costLabor: Math.max(0, Math.round(dto.costLabor || 0)),
+      costScreen: Math.max(0, Math.round(dto.costScreen || 0)),
+      extras: sanitizeExtras(dto.extras) as any,
+      customCosts: sanitizeCustomCosts(dto.customCosts) as any,
+      items: items as any,
+      discount,
+      recycle,
+      deposit,
+      note: dto.note?.trim() || null,
+    }
+    data.revenueAmount = BigInt(revenueOf(data))
+    data.costAmount = BigInt(totalCost(data))
+    data.profitAmount = data.revenueAmount - data.costAmount
+    const o = await this.prisma.ledgerOrder.create({ data })
     const mapped = this.mapOrder(o as OrderRow)
     // 录单成功 → 写入一条真实的应用内通知（消息中心由业务事件驱动，无假数据）
     await this.pushNotification(
@@ -443,6 +506,10 @@ export class LedgerService {
       const rec = data.recycle !== undefined ? data.recycle : exist.recycle
       data.total = orderTotalFromItems(finalItems, disc, rec)
     }
+    const financial = { ...exist, ...data }
+    data.revenueAmount = BigInt(revenueOf(financial))
+    data.costAmount = BigInt(totalCost(financial))
+    data.profitAmount = data.revenueAmount - data.costAmount
     const o = await this.prisma.ledgerOrder.update({ where: { id, userId }, data })
     return this.mapOrder(o as OrderRow)
   }
@@ -456,6 +523,17 @@ export class LedgerService {
 
   // ── 客户 ──────────────────────────────────────────────────
   async listCustomers(userId: string) {
+    if (
+      process.env.LEDGER_FAST_READS === '1' &&
+      !(await this.prisma.ledgerOrder.count({
+        where: {
+          userId,
+          OR: [{ revenueAmount: null }, { costAmount: null }, { profitAmount: null }],
+        },
+      }))
+    ) {
+      return this.listCustomersFast(userId)
+    }
     const [customers, orders] = await Promise.all([
       this.prisma.ledgerCustomer.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
       this.prisma.ledgerOrder.findMany({ where: { userId } }),
@@ -499,6 +577,57 @@ export class LedgerService {
       c.cost += totalCost(o as any)
       const d = ymd(o.date)
       if (d > c.lastDate) c.lastDate = d
+    })
+    return Array.from(map.values())
+      .map((c) => ({ ...c, margin: c.revenue ? c.profit / c.revenue : 0 }))
+      .sort((a, b) => b.profit - a.profit)
+  }
+
+  private async listCustomersFast(userId: string) {
+    const [customers, groups] = await Promise.all([
+      this.prisma.ledgerCustomer.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+      this.prisma.ledgerOrder.groupBy({
+        by: ['customerName'],
+        where: { userId },
+        _count: { _all: true },
+        _sum: { total: true, profitAmount: true, costAmount: true },
+        _max: { date: true },
+      }),
+    ])
+    const map = new Map<string, any>()
+    customers.forEach((c) =>
+      map.set(c.name, {
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        address: c.address,
+        note: c.note,
+        count: 0,
+        revenue: 0,
+        profit: 0,
+        cost: 0,
+        lastDate: '',
+      }),
+    )
+    groups.forEach((g) => {
+      const c = map.get(g.customerName) || {
+        id: null,
+        name: g.customerName,
+        phone: null,
+        address: null,
+        note: null,
+        count: 0,
+        revenue: 0,
+        profit: 0,
+        cost: 0,
+        lastDate: '',
+      }
+      c.count = g._count._all
+      c.revenue = g._sum.total || 0
+      c.profit = Number(g._sum.profitAmount || 0)
+      c.cost = Number(g._sum.costAmount || 0)
+      c.lastDate = g._max.date ? ymd(g._max.date) : ''
+      map.set(g.customerName, c)
     })
     return Array.from(map.values())
       .map((c) => ({ ...c, margin: c.revenue ? c.profit / c.revenue : 0 }))
@@ -783,9 +912,11 @@ export class LedgerService {
     const now = new Date()
     const Y = now.getFullYear()
     const M = now.getMonth() + 1
+    // 本方法仅展示当年趋势；使用与 JS getFullYear 相同的服务端时区划界。
+    const yearRange = { gte: new Date(Y, 0, 1), lt: new Date(Y + 1, 0, 1) }
     const [all, setting] = await Promise.all([
       this.prisma.ledgerOrder.findMany({
-        where: { userId },
+        where: { userId, date: yearRange },
         // 仅取本方法消费到的列：id/customerName/date（展示）+ total（营收）
         // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf 用）。
         select: {
@@ -909,7 +1040,7 @@ export class LedgerService {
     // 仅取消费到的列：date（分桶）+ total（营收）
     // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 及 costLabor 直接用）。
     const all = await this.prisma.ledgerOrder.findMany({
-      where: { userId },
+      where: { userId, date: { gte: new Date(Y, 0, 1), lt: new Date(Y + 1, 0, 1) } },
       select: {
         date: true,
         total: true,
@@ -969,10 +1100,19 @@ export class LedgerService {
    * - year:  近 5 年逐年
    */
   async series(userId: string, granularity = 'month') {
+    const now = new Date()
+    const Y = now.getFullYear()
+    const from =
+      granularity === 'year'
+        ? new Date(Y - 4, 0, 1)
+        : granularity === 'day'
+          ? new Date(Y, now.getMonth(), 1)
+          : new Date(Y, 0, 1)
+    const until = granularity === 'day' ? new Date(Y, now.getMonth() + 1, 1) : new Date(Y + 1, 0, 1)
     // 仅取消费到的列：date（分桶）+ total（营收）
     // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 用）。
     const all = await this.prisma.ledgerOrder.findMany({
-      where: { userId },
+      where: { userId, date: { gte: from, lt: until } },
       select: {
         date: true,
         total: true,
@@ -985,8 +1125,6 @@ export class LedgerService {
         customCosts: true,
       },
     })
-    const now = new Date()
-    const Y = now.getFullYear()
     const bucket = (rows: typeof all, label: string) => ({
       label,
       count: rows.length,
@@ -1214,9 +1352,14 @@ export class LedgerService {
     const content = String(dto.content || '').trim()
     if (!content) throw new BizException(BizCode.INVALID_PARAMS, '请填写反馈内容')
     await this.assertLedgerTextSafe(content, 2)
-    const images = Array.isArray(dto.images)
-      ? dto.images.filter((u) => typeof u === 'string' && /^https?:\/\//.test(u)).slice(0, 9)
+    const submitted = Array.isArray(dto.images)
+      ? dto.images.filter((u) => typeof u === 'string').slice(0, 9)
       : []
+    if (process.env.NODE_ENV === 'production' && !this.files)
+      throw new BizException(BizCode.BUSINESS_ERROR, '反馈图片权限服务未初始化')
+    const images = this.files
+      ? await this.files.normalizeFeedbackImages(userId, submitted)
+      : submitted.filter((u) => /^https?:\/\//.test(u))
     const fb = await this.prisma.ledgerFeedback.create({
       data: {
         userId,

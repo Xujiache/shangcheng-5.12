@@ -57,7 +57,7 @@ export class LedgerController {
   @Post('avatar')
   @ApiConsumes('multipart/form-data')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   async uploadAvatar(@CurrentLedgerUser() user: LedgerAuthUser, @UploadedFile() file: any) {
     if (!file) throw new BizException(BizCode.INVALID_PARAMS, '请选择图片')
     const { url } = await this.files.upload(file, 'avatar', user.id, 'ledger')
@@ -107,13 +107,15 @@ export class LedgerController {
   }
 
   // ── 意见反馈 ──
-  /** 反馈附图上传（多端通用，复用对象存储），返回公网 URL。 */
+  /** 反馈附图：灰度开关开启后写独立私有桶，旧客户端仍能使用返回的短时 URL。 */
   @Post('feedback-media')
   @ApiConsumes('multipart/form-data')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   async uploadFeedbackMedia(@CurrentLedgerUser() user: LedgerAuthUser, @UploadedFile() file: any) {
     if (!file) throw new BizException(BizCode.INVALID_PARAMS, '请选择图片')
+    if (process.env.LEDGER_PRIVATE_FEEDBACK === '1')
+      return this.files.uploadPrivateFeedback(file, user.id)
     const { url } = await this.files.upload(file, 'feedback', user.id, 'ledger')
     return { url }
   }

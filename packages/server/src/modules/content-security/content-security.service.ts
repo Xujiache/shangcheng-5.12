@@ -98,6 +98,11 @@ export class ContentSecurityService {
     return token
   }
 
+  /** 与虚拟支付查单共享 ledger 小程序 access_token，避免各模块重复刷新。 */
+  async ledgerAccessToken(): Promise<string | null> {
+    return this.getAccessToken('ledger')
+  }
+
   private assertWechatResult(payload: any, kind: '文本' | '图片') {
     if (payload?.errcode && Number(payload.errcode) !== 0) {
       this.logger.warn(

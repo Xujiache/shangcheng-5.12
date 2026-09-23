@@ -2,7 +2,13 @@ import { Injectable, Logger } from '@nestjs/common'
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizException, BizCode } from '../../common/exceptions/biz.exception'
-import { sanitizeExtras, sanitizeCustomCosts, sanitizeOrderItems } from './ledger.constants'
+import {
+  sanitizeExtras,
+  sanitizeCustomCosts,
+  sanitizeOrderItems,
+  revenueOf,
+  totalCost,
+} from './ledger.constants'
 
 // 导出包对称密钥：优先专用 env，缺省回退 JWT_SECRET 派生（务必生产配置 LEDGER_EXPORT_SECRET）
 const EXPORT_SECRET =
@@ -220,28 +226,30 @@ export class LedgerExtraService {
       const customerId =
         customerName && nameMap.has(customerName) ? nameMap.get(customerName)! : null
       const d = o?.date ? new Date(o.date) : new Date()
-      await this.prisma.ledgerOrder.create({
-        data: {
-          userId,
-          customerId,
-          customerName,
-          date: isNaN(d.getTime()) ? new Date() : d,
-          total: int(o.total),
-          received: int(o.received),
-          deposit: int(o.deposit),
-          discount: int(o.discount),
-          recycle: int(o.recycle),
-          costProfile: int(o.costProfile),
-          costGlass: int(o.costGlass),
-          costHardware: int(o.costHardware),
-          costLabor: int(o.costLabor),
-          costScreen: int(o.costScreen),
-          extras: sanitizeExtras(o.extras) as any,
-          customCosts: sanitizeCustomCosts(o.customCosts) as any,
-          items: sanitizeOrderItems(o.items) as any,
-          note: o.note ? String(o.note).slice(0, 500) : null,
-        },
-      })
+      const orderData: any = {
+        userId,
+        customerId,
+        customerName,
+        date: isNaN(d.getTime()) ? new Date() : d,
+        total: int(o.total),
+        received: int(o.received),
+        deposit: int(o.deposit),
+        discount: int(o.discount),
+        recycle: int(o.recycle),
+        costProfile: int(o.costProfile),
+        costGlass: int(o.costGlass),
+        costHardware: int(o.costHardware),
+        costLabor: int(o.costLabor),
+        costScreen: int(o.costScreen),
+        extras: sanitizeExtras(o.extras) as any,
+        customCosts: sanitizeCustomCosts(o.customCosts) as any,
+        items: sanitizeOrderItems(o.items) as any,
+        note: o.note ? String(o.note).slice(0, 500) : null,
+      }
+      orderData.revenueAmount = BigInt(revenueOf(orderData))
+      orderData.costAmount = BigInt(totalCost(orderData))
+      orderData.profitAmount = orderData.revenueAmount - orderData.costAmount
+      await this.prisma.ledgerOrder.create({ data: orderData })
       orderAdded++
     }
     return { ok: true, customers: custAdded, orders: orderAdded }

@@ -1,0 +1,121 @@
+<lz-bg />
+<view class="oi">
+  <lz-header title="报价明细" subtitle="产品 · 尺寸 · 金额" />
+
+  <view class="oi__body">
+    <!-- 新增产品（新项目置顶）-->
+    <view class="oi__additem" bindtap="addItem" hover-class="oi__tap">
+      <lz-icon name="plus" size="18" color="white" /><text>新增产品</text>
+    </view>
+
+    <!-- 产品项 -->
+    <view wx:for="{{items}}" wx:key="_k" class="oi__item">
+      <view class="oi__item-hd">
+        <input class="oi__name" value="{{item.name}}" placeholder="请输入产品名称（如：推拉窗）" placeholder-class="ph" maxlength="40" data-idx="{{index}}" data-field="name" bindinput="onItemInput" />
+        <view class="oi__item-del" data-idx="{{index}}" bindtap="delItem" hover-class="oi__tap">
+          <lz-icon name="trash" size="16" color="#9bab9f" />
+        </view>
+      </view>
+
+      <view class="oi__subrow">
+        <view class="oi__sub-f">
+          <text class="oi__sub-l">备注</text>
+          <input class="oi__sub-in" value="{{item.note}}" placeholder="备注 / 颜色，如灰色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-field="note" bindinput="onItemInput" />
+        </view>
+        <view class="oi__sub-f">
+          <text class="oi__sub-l">起算面积</text>
+          <input class="oi__sub-in oi__sub-in--num" type="digit" value="{{item.baseAreaStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="baseAreaStr" bindinput="onItemInput" />
+          <text class="oi__unit">㎡</text>
+        </view>
+      </view>
+
+      <!-- 尺寸（每条尺寸可挂任意多条备注）-->
+      <view wx:for="{{item.sizes}}" wx:for-item="sz" wx:for-index="sidx" wx:key="_k" class="oi__size">
+        <view class="oi__swipe">
+          <view class="oi__swipe-del" data-idx="{{index}}" data-sidx="{{sidx}}" catchtap="delSize">删除</view>
+          <view class="oi__swipe-content {{sz._open ? 'oi__swipe-content--open' : ''}}" data-idx="{{index}}" data-sidx="{{sidx}}" bindtouchstart="onSwipeStart" bindtouchend="onSwipeEnd">
+            <view class="oi__size-fields">
+              <input class="oi__size-in" type="number" value="{{sz.wStr}}" placeholder="宽mm" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="wStr" bindinput="onSizeInput" />
+              <text class="oi__size-op">×</text>
+              <input class="oi__size-in" type="number" value="{{sz.hStr}}" placeholder="高mm" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="hStr" bindinput="onSizeInput" />
+              <text class="oi__size-op">×</text>
+              <input class="oi__size-cnt" type="number" value="{{sz.countStr}}" placeholder="樘" placeholder-class="ph" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="countStr" bindinput="onSizeInput" />
+              <text class="oi__size-eq">= {{sz.areaText || '0'}}㎡{{sz.clamped ? ' 起算' : ''}}</text>
+              <input class="oi__size-note" value="{{sz.noteStr}}" placeholder="位置 / 颜色" placeholder-class="ph" maxlength="30" data-idx="{{index}}" data-sidx="{{sidx}}" data-field="noteStr" bindinput="onSizeInput" />
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="oi__sizebar">
+        <view class="oi__addsize" data-idx="{{index}}" bindtap="addSize" hover-class="oi__tap">
+          <lz-icon name="plus" size="14" color="#2E9E78" stroke="2.2" /><text>新增尺寸</text>
+        </view>
+        <text wx:if="{{item.sizes.length}}" class="oi__swipe-hint">← 左滑删除尺寸</text>
+      </view>
+
+      <!-- 数量/面积 × 单价（小计单独一行，避免挤在一行被截断）-->
+      <view class="oi__qtyrow">
+        <text class="oi__qty-l">{{item.hasSizes ? '面积' : '数量'}}</text>
+        <text wx:if="{{item.hasSizes}}" class="oi__qty-auto">{{item.qtyAutoText}}㎡</text>
+        <input wx:else class="oi__qty-in" type="digit" value="{{item.qtyStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="qtyStr" bindinput="onItemInput" />
+        <text class="oi__qty-op">× 单价</text>
+        <input class="oi__price-in" type="digit" value="{{item.unitPriceStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" data-field="unitPriceStr" bindinput="onItemInput" bindblur="onPriceBlur" />
+        <text class="oi__unit">{{item.hasSizes ? '元/㎡' : '元/件'}}</text>
+      </view>
+      <view class="oi__subrow2">
+        <text class="oi__sub2-l">小计</text>
+        <view class="oi__sub2-box">
+          <text class="oi__cur">¥</text>
+          <input class="oi__sub2-in" type="digit" value="{{item.subtotalStr}}" placeholder="{{item.subtotalAuto}}" placeholder-class="ph" data-idx="{{index}}" data-field="subtotalStr" bindinput="onItemInput" bindblur="onSubtotalBlur" />
+        </view>
+      </view>
+      <view wx:if="{{item.subtotalHint}}" class="oi__sub2-hint">{{item.subtotalHint}} · 清空可恢复自动</view>
+    </view>
+
+    <view wx:if="{{!items.length}}" class="oi__empty">点上方「新增产品」开始录入门窗明细</view>
+
+    <!-- 金额汇总 -->
+    <view class="oi__card oi__totals">
+      <view class="oi__t-row">
+        <text class="oi__t-l">金额</text>
+        <text class="oi__t-v">{{amountText}}</text>
+      </view>
+      <view class="oi__t-row">
+        <text class="oi__t-l">优惠</text>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{discountStr}}" placeholder="0" placeholder-class="ph" data-field="discountStr" bindinput="onDiscount" bindblur="onMoneyBlur" /></view>
+      </view>
+      <view class="oi__t-row">
+        <text class="oi__t-l">回收</text>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{recycleStr}}" placeholder="0" placeholder-class="ph" data-field="recycleStr" bindinput="onRecycle" bindblur="onMoneyBlur" /></view>
+      </view>
+      <view class="oi__t-row oi__t-row--main">
+        <text class="oi__t-l">总价</text>
+        <text class="oi__t-v oi__t-v--main">{{totalText}}</text>
+      </view>
+      <view class="oi__t-row">
+        <text class="oi__t-l">定金</text>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{depositStr}}" placeholder="0" placeholder-class="ph" data-field="depositStr" bindinput="onDeposit" bindblur="onMoneyBlur" /></view>
+      </view>
+      <view class="oi__t-row">
+        <text class="oi__t-l">收款</text>
+        <view class="oi__t-input"><text class="oi__cur">¥</text><input type="digit" value="{{receivedStr}}" placeholder="0" placeholder-class="ph" data-field="receivedStr" bindinput="onReceived" bindblur="onMoneyBlur" /></view>
+      </view>
+      <view class="oi__t-row oi__t-row--last">
+        <text class="oi__t-l">未收</text>
+        <text class="oi__t-v">{{unpaidText}}</text>
+      </view>
+      <view wx:if="{{depositOver}}" class="oi__t-warn">定金 + 收款已超过总价</view>
+    </view>
+
+    <!-- 订单备注 -->
+    <view class="oi__card">
+      <view class="oi__note-l">订单备注</view>
+      <textarea class="oi__note" value="{{note}}" placeholder="整单说明（选填）" placeholder-class="ph" maxlength="200" auto-height bindinput="onNote" />
+    </view>
+  </view>
+
+  <view class="oi__bar">
+    <button class="oi__save" bindtap="save">完成</button>
+    <text class="oi__bar-hint">保存订单后，可在订单详情分享图片 / PDF 报价单</text>
+  </view>
+</view>

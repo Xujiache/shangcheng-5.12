@@ -1,4 +1,5 @@
 import { statsApi, notificationApi, adApi, changelogApi, meApi } from '../../api/index'
+import { wasStale } from '../../utils/request'
 import { fmtDate, yuan, maskMoney } from '../../utils/format'
 import {
   getHideAmount,
@@ -44,6 +45,7 @@ Page({
     seriesTitle: '各月',
     loading: true,
     loadError: false, // 网络/加载失败：区别于"暂无数据"空态
+    stale: false,
     unread: false,
     ovYear: new Date().getFullYear(),
     donut: [] as any[],
@@ -108,6 +110,8 @@ Page({
       this.load()
       return
     }
+    // 历史统计为只读接口；与会员状态并行，不让首屏等待串行 RTT。
+    this.load()
     try {
       const membership = (await meApi.refreshMembership()) as MembershipStatus
       setMembership(membership)
@@ -117,15 +121,9 @@ Page({
         welcomeDaysLeft: Math.max(0, membership.daysLeft || 0),
         welcomeExpiresLabel: fmtDate(membership.expiresAt),
       })
-      if (membership.active) {
-        this.load()
-      } else {
-        // 到期账号留在首页，不触发经营接口闸门；页面保持默认/已有数据。
-        this.setData({ loading: false, loadError: false })
-      }
+      // 到期账号仍可读取历史统计；写操作继续由服务端会员守卫拒绝。
     } catch (e) {
-      // 会员状态刷新失败时仍尝试按原流程加载，避免临时网络问题造成整页空白。
-      this.load()
+      // 统计请求已独立发出，会员状态失败不阻塞首屏。
     }
   },
   enterGuestMode() {
@@ -305,6 +303,7 @@ Page({
         goalPct: Math.min(100, Math.round((gp || 0) * 100)),
         loading: false,
         loadError: false,
+        stale: wasStale(sr) || wasStale(ov),
       })
       ;(this as any)._loaded = true
     } catch (e) {

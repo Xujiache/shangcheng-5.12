@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { createHash, createHmac } from 'crypto'
+import { Injectable, Logger, Optional } from '@nestjs/common'
+import { createHash, createHmac, timingSafeEqual } from 'crypto'
 import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { LedgerAuthService } from './ledger-auth.service'
 import { LedgerPayService } from './ledger-pay.service'
 import { ledgerPlanPriceFen, normalizeLedgerConfig } from './ledger.constants'
+import { ContentSecurityService } from '../content-security/content-security.service'
 
 const genTradeSuffix = customAlphabet('ACDEFGHJKLMNPQRSTUVWXYZ23456789', 10)
 
@@ -35,6 +36,7 @@ export class LedgerXpayService {
     private readonly prisma: PrismaService,
     private readonly auth: LedgerAuthService,
     private readonly pay: LedgerPayService,
+    @Optional() private readonly contentSecurity?: ContentSecurityService,
   ) {}
 
   private offerId(): string {
@@ -151,14 +153,65 @@ export class LedgerXpayService {
   verifyPushSignature(signature?: string, timestamp?: string, nonce?: string): boolean {
     const token = process.env.LEDGER_WX_PUSH_TOKEN || ''
     if (!token || !signature || !timestamp || !nonce) return false
+    if (!/^\d{10}$/.test(timestamp) || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300)
+      return false
+    if (!/^[a-f0-9]{40}$/i.test(signature)) return false
     const sha1 = createHash('sha1').update([token, timestamp, nonce].sort().join('')).digest('hex')
-    return sha1 === signature
+    const received = Buffer.from(signature, 'hex')
+    const expected = Buffer.from(sha1, 'hex')
+    return received.length === expected.length && timingSafeEqual(received, expected)
+  }
+
+  /** 推送 URL 签名不覆盖报文；发放前必须向微信查单确认真实付款。 */
+  private async confirmedPayment(
+    outTradeNo: string,
+  ): Promise<{ paidFen: number; txid: string } | null> {
+    const order = await this.prisma.ledgerPaymentOrder.findUnique({ where: { outTradeNo } })
+    if (!order || order.status !== 'pending' || order.amountFen <= 0) return null
+    const user = await this.prisma.ledgerUser.findUnique({ where: { id: order.userId } })
+    if (!user?.wxOpenid || !this.contentSecurity) return null
+    const token = await this.contentSecurity.ledgerAccessToken()
+    if (!token) return null
+    const body = JSON.stringify({ openid: user.wxOpenid, env: this.env(), order_id: outTradeNo })
+    const sig = this.hmac(this.appKey(), '/xpay/query_order&' + body)
+    let response: Response
+    try {
+      response = await fetch(
+        `https://api.weixin.qq.com/xpay/query_order?access_token=${encodeURIComponent(token)}&pay_sig=${sig}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          signal: AbortSignal.timeout(10_000),
+        },
+      )
+    } catch {
+      this.logger.warn('[ledger xpay] 微信查单不可用，延后发放')
+      return null
+    }
+    const result: any = await response.json().catch(() => null)
+    const paidFen = result?.order?.paid_fee
+    if (
+      !response.ok ||
+      result?.errcode !== 0 ||
+      result?.order?.order_id !== outTradeNo ||
+      ![2, 3, 4].includes(result?.order?.status) ||
+      !Number.isSafeInteger(paidFen) ||
+      paidFen <= 0 ||
+      paidFen !== order.amountFen ||
+      result?.order?.order_fee !== order.amountFen ||
+      result?.order?.env_type !== this.env() + 1
+    ) {
+      this.logger.warn(`[ledger xpay] 微信查单未确认付款 outTradeNo=${outTradeNo}`)
+      return null
+    }
+    return { paidFen, txid: String(result.order.wxpay_order_id || result.order.wx_order_id || '') }
   }
 
   /**
-   * 发货回调（xpay_goods_deliver_notify）：取 outTradeNo + 实付金额 → 复用 pay.handleNotify
+   * 发货回调（xpay_goods_deliver_notify）：用 outTradeNo 查微信权威订单 → 复用 pay.handleNotify
    * 幂等发放会员。返回 true=已处理。
-   * ⚠️ 回调字段名以官方文档为准（多写几种大小写兜底）；金额取不到时传 0，handleNotify 会按下单锁定额发放。
+   * URL 签名未绑定请求体，绝不能直接信任回调自报的金额与支付状态。
    */
   async handleDeliverNotify(payload: any): Promise<boolean> {
     const outTradeNo: string =
@@ -167,11 +220,10 @@ export class LedgerXpayService {
       this.logger.warn('[ledger xpay] 发货回调缺 outTradeNo')
       return false
     }
-    const txid: string =
-      payload?.WeChatPayInfo?.TransactionId || payload?.transaction_id || payload?.OrderId || ''
-    const paidFen = Number(
-      payload?.GoodsInfo?.ActualPrice ?? payload?.goods_price ?? payload?.Amount ?? 0,
-    )
-    return this.pay.handleNotify(outTradeNo, txid, paidFen)
+    const local = await this.prisma.ledgerPaymentOrder.findUnique({ where: { outTradeNo } })
+    if (local?.status === 'paid' || local?.grantedAt) return true
+    const confirmed = await this.confirmedPayment(outTradeNo)
+    if (!confirmed) return false
+    return this.pay.handleNotify(outTradeNo, confirmed.txid, confirmed.paidFen)
   }
 }

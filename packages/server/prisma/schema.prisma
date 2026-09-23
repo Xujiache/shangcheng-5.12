@@ -1149,6 +1149,9 @@ model LedgerOrder {
   customerName String // 冗余客户名（兼容快速录入 / 客户删档）
   date         DateTime
   total        Int             @default(0) // 订单总价（元）
+  revenueAmount BigInt?        // 营收=总价+卖旧门窗收入；回填完成后用于查询
+  costAmount    BigInt?        // 成本=固定五类+自定义成本
+  profitAmount  BigInt?        // 利润=营收-成本
   extraIncome  Int             @default(0) // [废弃] 旧版额外收入，已不计入利润/营收；保留列避免历史数据丢失
   received     Int             @default(0) // 收款（元）：定金之外后续已收金额；未收 = 总价 − 定金 − 收款
   costProfile  Int             @default(0) // 型材
@@ -1167,6 +1170,7 @@ model LedgerOrder {
   updatedAt    DateTime        @updatedAt
 
   @@index([userId, date])
+  @@index([userId, profitAmount, date])
   @@index([customerId])
 }
 

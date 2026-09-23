@@ -1,0 +1,50 @@
+<lz-bg />
+<view class="pv">
+  <lz-header title="隐私与安全" />
+
+  <view class="lz-page" style="padding-bottom: 40px;">
+    <view class="lz-section-label">隐私保护</view>
+    <view class="lz-card lz-card--flush">
+      <view wx:for="{{items}}" wx:key="key" class="lz-row {{index === items.length - 1 ? 'lz-row--last' : ''}}">
+        <view class="lz-row__icon pv__row-icon">
+          <image class="pv__icon-image" src="{{item.iconSrc}}" mode="aspectFit" />
+        </view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">{{item.label}}</view>
+          <view class="lz-row__sub">{{item.sub}}</view>
+        </view>
+        <view
+          class="tg {{item.on ? 'tg--on' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onToggle"
+          hover-class="tap-active"
+        >
+          <view class="tg__knob"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="lz-section-label" style="margin-top: var(--gap);">协议与账户</view>
+    <view class="lz-card lz-card--flush">
+      <view
+        wx:for="{{links}}"
+        wx:key="page"
+        class="lz-row {{index === links.length - 1 ? 'lz-row--last' : ''}}"
+        data-page="{{item.page}}"
+        bindtap="toLink"
+        hover-class="tap-active"
+      >
+        <view class="lz-row__icon pv__row-icon">
+          <image class="pv__icon-image" src="{{item.iconSrc}}" mode="aspectFit" />
+        </view>
+        <view class="lz-row__main">
+          <view class="lz-row__label">{{item.label}}</view>
+          <view class="lz-row__sub">{{item.sub}}</view>
+        </view>
+        <lz-icon name="chevron" size="16" color="faint" />
+      </view>
+    </view>
+
+    <view class="pv__note">我们仅在本地与加密云端保存您的经营数据，绝不向第三方共享。</view>
+  </view>
+</view>

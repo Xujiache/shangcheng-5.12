@@ -61,11 +61,10 @@ export class LedgerPayController {
     @Req() req: RawBodyRequest<Request>,
   ) {
     const rawBuf = req.rawBody
-    const raw = rawBuf
-      ? Buffer.isBuffer(rawBuf)
-        ? rawBuf.toString('utf8')
-        : String(rawBuf)
-      : JSON.stringify(body)
+    if (!rawBuf || !Buffer.isBuffer(rawBuf) || !rawBuf.length) {
+      return { code: 'FAIL', message: '原始报文缺失' }
+    }
+    const raw = rawBuf.toString('utf8')
     const ok = await this.wxpay.verifyNotify(headers, raw)
     if (!ok) return { code: 'FAIL', message: '签名验证失败' }
 
@@ -106,7 +105,7 @@ export class LedgerPayController {
   @Get('xpay/deliver-notify')
   xpayVerify(@Query() q: Record<string, string>): string {
     const ok = this.xpay.verifyPushSignature(q.signature, q.timestamp, q.nonce)
-    this.logger.log(`[ledger xpay verify] ${ok ? 'OK' : 'FAIL'} q=${JSON.stringify(q)}`)
+    this.logger.log(`[ledger xpay verify] ${ok ? 'OK' : 'FAIL'}`)
     return ok ? q.echostr || '' : 'signature mismatch'
   }
 
@@ -114,7 +113,7 @@ export class LedgerPayController {
    * 虚拟支付「发货回调」(xpay_goods_deliver_notify)，经微信「消息推送」通道下发（POST）。
    * 公开 + SkipResponseWrap。明文模式：用 Token 校验 signature → 复用 handleNotify 幂等发放会员。
    * 非 xpay 事件（如订阅消息回执）直接回 "success" 忽略，避免微信重试。
-   * ⚠️ 联调核对：发货事件字段名 / ack 格式以官方《小程序虚拟支付接入指引》为准（日志已留原文）。
+   * ⚠️ 联调核对：发货事件字段名 / ack 格式以官方《小程序虚拟支付接入指引》为准。
    */
   @SkipResponseWrap()
   @Throttle({ default: { limit: 200, ttl: 60_000 } })
@@ -125,16 +124,12 @@ export class LedgerPayController {
     @Req() req: RawBodyRequest<Request>,
   ) {
     const rawBuf = req.rawBody
-    const raw = rawBuf
-      ? Buffer.isBuffer(rawBuf)
-        ? rawBuf.toString('utf8')
-        : String(rawBuf)
-      : JSON.stringify(body)
-    // 联调期：打印回调原文 + query，便于一次性核对发货事件字段名（联调通过后可降级或移除）
-    this.logger.log(`[ledger xpay deliver] q=${JSON.stringify(q)} body=${raw}`)
+    if (!rawBuf || !Buffer.isBuffer(rawBuf) || !rawBuf.length) {
+      return { ErrCode: 1, ErrMsg: 'raw body missing' }
+    }
     // 消息推送验签（明文模式：Token + timestamp + nonce）
     if (!this.xpay.verifyPushSignature(q.signature, q.timestamp, q.nonce)) {
-      return { errcode: 1, errmsg: 'sign verify failed' }
+      return { ErrCode: 1, ErrMsg: 'sign verify failed' }
     }
     // 只处理发货事件；其它消息推送事件直接 ACK 忽略
     const event = String(body?.Event || body?.event || '')
@@ -144,10 +139,12 @@ export class LedgerPayController {
     if (!isDeliver) return 'success'
     try {
       const ok = await this.xpay.handleDeliverNotify(body)
-      return ok ? { errcode: 0, errmsg: 'OK' } : { errcode: 1, errmsg: 'order not found' }
+      return ok
+        ? { ErrCode: 0, ErrMsg: 'success' }
+        : { ErrCode: 1, ErrMsg: 'payment not confirmed' }
     } catch (e: any) {
       this.logger.error(`[ledger xpay deliver] 处理失败: ${e?.message || e}`)
-      return { errcode: 1, errmsg: e?.message || 'process failed' }
+      return { ErrCode: 1, ErrMsg: 'process failed' }
     }
   }
 }

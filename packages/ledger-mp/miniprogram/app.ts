@@ -9,6 +9,10 @@ const GUEST_ALLOWED_ROUTES = new Set([
   'pages/arc-tool/index',
   'pages/cut/index',
   'pages/cut-result/index',
+  'subpackages/tools/pages/triangle-tool/index',
+  'subpackages/tools/pages/arc-tool/index',
+  'subpackages/tools/pages/cut/index',
+  'subpackages/tools/pages/cut-result/index',
   // 登录页必须允许查看用户协议和隐私政策。
   'pages/doc/index',
 ])
@@ -63,6 +67,7 @@ App<IAppOption>({
     wx.reLaunch({ url: '/pages/lock/index' })
   },
   setToken(token: string) {
+    if (this.globalData.token !== token) clearAllCache()
     this.globalData.token = token
     wx.setStorageSync(TOKEN_KEY, token)
   },

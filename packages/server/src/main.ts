@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
+import type { Request, Response, NextFunction } from 'express'
 
 /**
  * 解析允许的 CORS 源列表。
@@ -50,22 +51,18 @@ async function bootstrap() {
     credentials: true,
   })
 
-  // 安全响应头：HSTS / X-Content-Type-Options / X-Frame-Options 等
-  // helmet 是可选依赖（package.json 暂未列入），缺失时不阻塞启动；
-  // 待运维执行 `pnpm --filter @jiujiu/server add helmet` 后自动生效。
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const helmet = require('helmet')
-    // 默认配置已是合理基线；如未来要嵌微信支付收银台/小程序 webview 等需要放宽 CSP，
-    // 可在这里传入 { contentSecurityPolicy: false } 或自定义 directives。
-    app.use(helmet())
-    Logger.log('[security] helmet 已启用', 'Bootstrap')
-  } catch (e: any) {
-    Logger.warn(
-      `[security] helmet 未安装（${e?.code || e?.message || 'MODULE_NOT_FOUND'}），跳过；运行 \`pnpm --filter @jiujiu/server add helmet\` 后重启生效`,
-      'Bootstrap',
-    )
-  }
+  // API 安全头必须生效，不依赖可选包；HSTS 仅在生产 TLS 入口下发。
+  app.getHttpAdapter().getInstance().disable('x-powered-by')
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.setHeader('X-Frame-Options', 'DENY')
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+    if (configService.get<string>('NODE_ENV') === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000')
+    }
+    if (req.path.startsWith('/api/v1/l/')) res.setHeader('Cache-Control', 'private, no-store')
+    next()
+  })
 
   // 为 WebSocket Gateway 启用 socket.io IoAdapter，namespace 走 /ws/chat
   app.useWebSocketAdapter(new IoAdapter(app))

@@ -166,6 +166,19 @@ describe('LedgerPayService.handleNotify', () => {
     expect(prisma.ledgerMembership.update).not.toHaveBeenCalled()
   })
 
+  it.each([0, -1, NaN, Infinity])('无有效实付金额 %s → 拒绝且不发放', async (paidFen) => {
+    prisma.ledgerPaymentOrder.findUnique.mockResolvedValueOnce(pendingOrder())
+    expect(await service.handleNotify('LMEM-X', 'tx', paidFen)).toBe(false)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    expect(prisma.ledgerMembership.update).not.toHaveBeenCalled()
+  })
+
+  it('非 pending 的失败订单不能通过重复通知发放', async () => {
+    prisma.ledgerPaymentOrder.findUnique.mockResolvedValueOnce(pendingOrder({ status: 'failed' }))
+    expect(await service.handleNotify('LMEM-X', 'tx', 2900)).toBe(false)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
   it('用例8：成功 → 开通会员（≈now+30d）+ 写日志 + 标记 grantedAt', async () => {
     prisma.ledgerPaymentOrder.findUnique.mockResolvedValueOnce(pendingOrder())
     prisma.ledgerMembership.findUnique.mockResolvedValueOnce(null) // 无会员行 → 自动建

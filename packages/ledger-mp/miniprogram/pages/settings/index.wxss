@@ -1,1 +1,1 @@
-/* 设置总入口：沿用全局 lz-card / lz-row 原语，无额外样式 */
+.redirect { padding: 40rpx; color: #5C6B64; text-align: center; }

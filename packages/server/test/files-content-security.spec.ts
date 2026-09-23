@@ -16,10 +16,10 @@ describe('FilesService 内容安全上传闸门', () => {
     const service = new FilesService({ uploadedFile: { create } } as any, contentSecurity as any)
     ;(service as any).client = { putObject }
     const file = {
-      buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+      buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
       originalname: 'banner.png',
       mimetype: 'image/png',
-      size: 4,
+      size: 8,
     }
 
     await service.upload(file, 'ledger-ad', 'admin-1')

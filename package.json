@@ -9,6 +9,11 @@
     "pnpm": ">=8.8.0"
   },
   "packageManager": "pnpm@9.0.0",
+  "pnpm": {
+    "overrides": {
+      "@nestjs/platform-express>multer": "2.4.0"
+    }
+  },
   "workspaces": [
     "packages/*"
   ],

@@ -24,6 +24,9 @@ function buildPrisma() {
       update: jest.fn(async (..._a: any[]) => ({}) as any),
       delete: jest.fn(async (..._a: any[]) => ({}) as any),
       updateMany: jest.fn(async (..._a: any[]) => ({ count: 0 }) as any),
+      count: jest.fn(async (..._a: any[]) => 0),
+      aggregate: jest.fn(async (..._a: any[]) => ({ _count: { _all: 0 }, _sum: {} }) as any),
+      groupBy: jest.fn(async (..._a: any[]) => [] as any),
     },
     ledgerCustomer: {
       findMany: jest.fn(async (..._a: any[]) => [] as any),
@@ -214,6 +217,51 @@ describe('LedgerService.listOrders（内存过滤/排序/分页/汇总）', () =
     expect(res.summary.count).toBe(3)
     expect(res.summary.profit).toBe(9000)
   })
+
+  it('回填完成后按数据库筛选、分页、聚合，列表营收口径仍为 total', async () => {
+    const oldFlag = process.env.LEDGER_FAST_READS
+    process.env.LEDGER_FAST_READS = '1'
+    try {
+      prisma.ledgerOrder.count.mockResolvedValueOnce(0)
+      prisma.ledgerOrder.findMany.mockResolvedValueOnce([
+        orderRow({ total: 300, costProfile: 100, extras: [{ type: 'old-window', amount: 50 }] }),
+      ] as any)
+      prisma.ledgerOrder.aggregate.mockResolvedValueOnce({
+        _count: { _all: 1 },
+        _sum: { total: 300, costAmount: 100, profitAmount: 250 },
+      } as any)
+      const res = await service.listOrders('u1', {
+        profitMin: '200',
+        sort: 'profit',
+        page: '1',
+        pageSize: '20',
+      } as any)
+      const query = prisma.ledgerOrder.findMany.mock.calls[0][0] as any
+      expect(query.where).toMatchObject({ userId: 'u1', profitAmount: { gte: 200 } })
+      expect(query.take).toBe(20)
+      expect(query.skip).toBe(0)
+      expect(res.list[0].profit).toBe(250)
+      expect(res.summary).toMatchObject({ count: 1, revenue: 300, cost: 100, profit: 250 })
+    } finally {
+      if (oldFlag === undefined) delete process.env.LEDGER_FAST_READS
+      else process.env.LEDGER_FAST_READS = oldFlag
+    }
+  })
+
+  it('历史空派生字段仍回退旧路径，不漏单', async () => {
+    const oldFlag = process.env.LEDGER_FAST_READS
+    process.env.LEDGER_FAST_READS = '1'
+    try {
+      prisma.ledgerOrder.count.mockResolvedValueOnce(1)
+      prisma.ledgerOrder.findMany.mockResolvedValueOnce([orderRow({ total: 500 })] as any)
+      const res = await service.listOrders('u1', {} as any)
+      expect(res.total).toBe(1)
+      expect(prisma.ledgerOrder.aggregate).not.toHaveBeenCalled()
+    } finally {
+      if (oldFlag === undefined) delete process.env.LEDGER_FAST_READS
+      else process.env.LEDGER_FAST_READS = oldFlag
+    }
+  })
 })
 
 describe('LedgerService 可配置成本统计', () => {
@@ -338,6 +386,11 @@ describe('LedgerService.createOrder（校验 + 明细优先 + 通知）', () => 
 
     const createArg = prisma.ledgerOrder.create.mock.calls[0][0] as any
     expect(createArg.data.total).toBe(800)
+    expect(createArg.data).toMatchObject({
+      revenueAmount: 800n,
+      costAmount: 0n,
+      profitAmount: 800n,
+    })
     expect(res.total).toBe(800)
 
     // 录单成功 → 写入一条 order 类型通知
@@ -421,6 +474,23 @@ describe('LedgerService.updateOrder（明细驱动 total 重算）', () => {
 
     const updateArg = prisma.ledgerOrder.update.mock.calls[0][0] as any
     expect(updateArg.data.total).toBe(1700)
+  })
+
+  it('修改成本时按原公式同步双写派生金额，卖旧窗收入不算成本', async () => {
+    prisma.ledgerOrder.findFirst.mockResolvedValueOnce(
+      orderRow({
+        total: 500,
+        extras: [{ type: 'old-window', amount: 100 }],
+        customCosts: [{ name: '运费', amount: 50 }],
+        costProfile: 20,
+      }) as any,
+    )
+    prisma.ledgerOrder.update.mockImplementationOnce(async (args: any) =>
+      orderRow({ ...args.data }),
+    )
+    await service.updateOrder('u1', 'o1', { costGlass: 30 } as any)
+    const data = (prisma.ledgerOrder.update.mock.calls[0][0] as any).data
+    expect(data).toMatchObject({ revenueAmount: 600n, costAmount: 100n, profitAmount: 500n })
   })
 })
 

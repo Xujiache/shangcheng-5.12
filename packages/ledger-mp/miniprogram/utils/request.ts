@@ -1,8 +1,36 @@
 import { API_BASE, TOKEN_KEY } from '../config'
 // ── 读接口本地缓存（原 utils/cache 内联进来：避免新增文件被 DevTools 增量编译漏掉）──
 const CACHE_PREFIX = 'lc:' // ledger read-cache 命名空间
-const CACHE_VERSION = 1 // 缓存结构版本；改结构时 +1，旧缓存自动作废
+const CACHE_VERSION = 2 // 缓存结构版本；改结构时 +1，旧缓存自动作废
 const CACHE_MAX_BYTES = 256 * 1024 // 单条上限（wx 单 key 上限 1MB，留足余量）
+const inFlight = new Map<string, Promise<any>>()
+let cacheEpoch = 0
+const staleResponses = new WeakSet<object>()
+function stale<T>(data: T): T {
+  if (data && typeof data === 'object') staleResponses.add(data)
+  return data
+}
+export function wasStale(data: unknown): boolean {
+  return !!data && typeof data === 'object' && staleResponses.has(data)
+}
+// 不把原始 token 放进 storage key；两段独立 32-bit 摘要仅用于缓存隔离。
+function tokenScope(token: string): string {
+  if (!token) return 'guest'
+  let a = 2166136261
+  let b = 5381
+  for (let i = 0; i < token.length; i++) {
+    a = Math.imul(a ^ token.charCodeAt(i), 16777619)
+    b = Math.imul(b, 33) ^ token.charCodeAt(i)
+  }
+  return (a >>> 0).toString(16) + '-' + (b >>> 0).toString(16)
+}
+function currentScope(): string {
+  const app = getApp<IAppOption>()
+  return tokenScope(app?.globalData?.token || wx.getStorageSync(TOKEN_KEY) || '')
+}
+function scopedKey(key: string): string {
+  return currentScope() + ':' + key
+}
 interface CacheEntry<T> {
   v: number
   t: number
@@ -41,7 +69,7 @@ function readExpiredOrderCache<T>(url: string, cacheKey: string): T | null {
   try {
     const keys = (wx.getStorageInfoSync().keys || []) as string[]
     for (const key of keys) {
-      if (key.indexOf(CACHE_PREFIX + '/l/orders?') !== 0) continue
+      if (key.indexOf(CACHE_PREFIX + currentScope() + ':/l/orders?') !== 0) continue
       const raw = wx.getStorageSync(key) as CacheEntry<any>
       const row = raw?.data?.list?.find((item: any) => item && item.id === id)
       if (row) return row as T
@@ -53,13 +81,15 @@ function readExpiredOrderCache<T>(url: string, cacheKey: string): T | null {
 }
 /** 按前缀失效相关缓存（写接口成功后调用） */
 export function invalidateCache(prefixes: string | string[]): void {
+  cacheEpoch++
+  inFlight.clear()
   const list = Array.isArray(prefixes) ? prefixes : [prefixes]
   try {
     const keys = (wx.getStorageInfoSync().keys || []) as string[]
     keys.forEach((k) => {
       if (k.indexOf(CACHE_PREFIX) !== 0) return
       const sub = k.slice(CACHE_PREFIX.length)
-      if (list.some((p) => sub.indexOf(p) === 0)) wx.removeStorageSync(k)
+      if (list.some((p) => sub.indexOf(scopedKey(p)) === 0)) wx.removeStorageSync(k)
     })
   } catch (e) {
     /* ignore */
@@ -67,6 +97,8 @@ export function invalidateCache(prefixes: string | string[]): void {
 }
 /** 清空本端全部读缓存（退出登录/换账号时调用） */
 export function clearAllCache(): void {
+  cacheEpoch++
+  inFlight.clear()
   try {
     const keys = (wx.getStorageInfoSync().keys || []) as string[]
     keys.forEach((k) => {
@@ -144,16 +176,23 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
   const url = API_BASE + '/api/v1' + opts.url + buildQuery(opts.params)
   // 读缓存：仅 GET 生效；键默认取 路径+查询串
   const method = opts.method || 'GET'
-  const useCache = method === 'GET' && !!opts.cache
-  const cacheKey = opts.cacheKey || opts.url + buildQuery(opts.params)
+  const sensitive = /^\/l\/(auth|me(?:\/|$)|membership(?:\/|$)|pay(?:\/|$)|xpay(?:\/|$))/.test(
+    opts.url,
+  )
+  const useCache = method === 'GET' && !!opts.cache && !sensitive && !!token
+  const cacheKey = tokenScope(token) + ':' + (opts.cacheKey || opts.url + buildQuery(opts.params))
+  const epoch = cacheEpoch
+  const isObsolete = () => epoch !== cacheEpoch || tokenScope(token) !== currentScope()
+  const dedupeKey = method === 'GET' ? `${tokenScope(token)}:${opts.auth !== false}:${url}` : ''
+  if (dedupeKey && inFlight.has(dedupeKey)) return inFlight.get(dedupeKey) as Promise<T>
 
-  return new Promise<T>((resolve, reject) => {
+  const pending = new Promise<T>((resolve, reject) => {
     // 已知离线且有缓存：直接回退，省去等待网络超时
     if (useCache && app?.globalData?.online === false) {
       const c = readCache<T>(cacheKey)
       if (c) {
         markOffline(opts.silent)
-        resolve(c.data)
+        resolve(stale(c.data))
         return
       }
     }
@@ -164,12 +203,16 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
       header,
       timeout: 15000,
       success: (res) => {
+        if (isObsolete()) {
+          reject(new Error('请求会话已变化'))
+          return
+        }
         const body = res.data as ApiShell<T>
         const httpOk = res.statusCode >= 200 && res.statusCode < 300
         if (body && typeof body === 'object' && 'code' in body) {
           if (body.code === 0) {
             if (app?.globalData) app.globalData.online = true
-            if (useCache) writeCache(cacheKey, body.data)
+            if (useCache && epoch === cacheEpoch) writeCache(cacheKey, body.data)
             resolve(body.data)
             return
           }
@@ -182,7 +225,7 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
             if (method === 'GET' && opts.url.indexOf('/l/orders') === 0) {
               const cached = readExpiredOrderCache<T>(opts.url, cacheKey)
               if (cached) {
-                resolve(cached)
+                resolve(stale(cached))
                 return
               }
             }
@@ -207,7 +250,7 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
         }
         if (httpOk) {
           if (app?.globalData) app.globalData.online = true
-          if (useCache) writeCache(cacheKey, body as any)
+          if (useCache && epoch === cacheEpoch) writeCache(cacheKey, body as any)
           resolve(body as any)
           return
         }
@@ -220,7 +263,7 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
           const c = readCache<T>(cacheKey)
           if (c) {
             markOffline(opts.silent)
-            resolve(c.data)
+            resolve(stale(c.data))
             return
           }
         }
@@ -232,12 +275,16 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
         reject(e)
       },
       fail: (e) => {
+        if (isObsolete()) {
+          reject(new Error('请求会话已变化'))
+          return
+        }
         // 网络连接失败（无网/超时）：有缓存则回退上次数据
         if (useCache) {
           const c = readCache<T>(cacheKey)
           if (c) {
             markOffline(opts.silent)
-            resolve(c.data)
+            resolve(stale(c.data))
             return
           }
         }
@@ -247,6 +294,12 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
       },
     })
   })
+  if (!dedupeKey) return pending
+  const tracked = pending.finally(() => {
+    if (inFlight.get(dedupeKey) === tracked) inFlight.delete(dedupeKey)
+  })
+  inFlight.set(dedupeKey, tracked)
+  return tracked
 }
 
 export const http = {

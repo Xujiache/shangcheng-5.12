@@ -1,0 +1,197 @@
+<lz-bg />
+<view class="oe">
+  <lz-header title="{{editing ? '编辑订单' : '新增订单'}}">
+    <view slot="right" class="oe__cancel" bindtap="onCancel">取消</view>
+  </lz-header>
+
+  <view wx:if="{{!loadError}}" class="oe__body">
+    <!-- 基本信息 + 金额（一张白卡）-->
+    <view class="oe__card">
+      <view class="oe__row">
+        <text class="oe__row-l">姓名</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" value="{{customerName}}" placeholder="客户姓名（必填）" placeholder-class="ph" maxlength="40" confirm-type="done" bindinput="onCustomerName" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">电话</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" type="number" value="{{customerPhone}}" placeholder="联系电话（选填）" placeholder-class="ph" maxlength="20" confirm-type="done" bindinput="onCustomerPhone" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">地址</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" value="{{customerAddress}}" placeholder="安装地址（选填）" placeholder-class="ph" maxlength="120" confirm-type="done" bindinput="onCustomerAddress" />
+        </view>
+      </view>
+      <view class="oe__row">
+        <text class="oe__row-l">备注</text>
+        <view class="oe__row-r">
+          <input class="oe__cust-in" value="{{customerNote}}" placeholder="客户备注（选填）" placeholder-class="ph" maxlength="200" confirm-type="done" bindinput="onCustomerNote" />
+        </view>
+      </view>
+      <picker mode="date" value="{{date}}" bindchange="onDate">
+        <view class="oe__row oe__row--last">
+          <text class="oe__row-l">日期</text>
+          <view class="oe__row-r">
+            <text class="oe__date">{{date}}</text>
+            <lz-icon name="chevron" size="16" color="#9bab9f" />
+          </view>
+        </view>
+      </picker>
+
+      <!-- 金额区：左 报价明细 软按钮 + 右 总价/收款/未收（点任一格进报价明细页改）-->
+      <view class="oe__amtarea">
+        <view class="oe__editbtn" bindtap="toAmount" hover-class="oe__editbtn--tap">
+          <lz-icon name="pencil" size="22" color="#1F7D5E" />
+          <text class="oe__editbtn-t">报价明细</text>
+        </view>
+        <view class="oe__amtcol">
+          <!-- 订单总价：无明细可在本页直接输入；有明细则由报价明细自动算，点击进明细页改 -->
+          <view wx:if="{{items.length}}" class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
+            <text class="oe__amtbox-l">订单总价</text>
+            <view class="oe__amtbox-r">
+              <text class="oe__amtbox-cur">¥</text>
+              <text class="oe__amtbox-v oe__amtbox-v--main">{{total || 0}}</text>
+              <lz-icon name="chevron" size="14" color="#9bab9f" />
+            </view>
+          </view>
+          <view wx:else class="oe__amtbox oe__amtbox--edit">
+            <text class="oe__amtbox-l">订单总价</text>
+            <view class="oe__amtbox-r">
+              <text class="oe__amtbox-cur">¥</text>
+              <input class="oe__amtbox-in oe__amtbox-in--main" type="digit" value="{{totalStr}}" placeholder="0" placeholder-class="ph" bindinput="onTotalInput" bindblur="onTotalBlur" />
+            </view>
+          </view>
+          <!-- 收款：本页直接输入 -->
+          <view class="oe__amtbox oe__amtbox--edit">
+            <text class="oe__amtbox-l">收款</text>
+            <view class="oe__amtbox-r">
+              <text class="oe__amtbox-cur">¥</text>
+              <input class="oe__amtbox-in" type="digit" value="{{receivedStr}}" placeholder="0" placeholder-class="ph" bindinput="onReceivedInput" bindblur="onReceivedBlur" />
+            </view>
+          </view>
+          <!-- 未收：自动算（点击进报价明细可设定金/明细）-->
+          <view class="oe__amtbox" bindtap="toAmount" hover-class="oe__amtbox--tap">
+            <text class="oe__amtbox-l">未收</text>
+            <view class="oe__amtbox-r">
+              <text class="oe__amtbox-cur">¥</text>
+              <text class="oe__amtbox-v">{{unpaid || 0}}</text>
+              <lz-icon name="chevron" size="14" color="#9bab9f" />
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 成本明细 -->
+    <view class="oe__sec">
+      <view class="oe__sechead">
+        <view>
+          <text class="oe__sec-t">成本明细</text>
+          <view class="oe__sec-hint">名称和顺序可按行业自由设置</view>
+        </view>
+        <view class="oe__cost-actions">
+          <view class="oe__addbtn" bindtap="addCustomCost" hover-class="oe__tap">
+            <lz-icon name="plus" size="14" color="#2E9E78" stroke="2.2" /><text>临时项</text>
+          </view>
+          <view class="oe__managebtn" bindtap="manageCostCategories" hover-class="oe__tap">
+            <text>管理/排序</text><lz-icon name="chevron" size="12" color="#0E7C66" />
+          </view>
+        </view>
+      </view>
+      <view class="oe__grid">
+        <view wx:for="{{customCosts}}" wx:key="_k" class="oe__costcard">
+          <view class="oe__costcard-hd">
+            <view class="oe__dot oe__dot--{{item.color}}"></view>
+            <text wx:if="{{item.isTemplate}}" class="oe__costcard-n">{{item.name}}</text>
+            <input
+              wx:else
+              class="oe__costcard-namein"
+              value="{{item.name}}"
+              placeholder="成本名称"
+              placeholder-class="ph"
+              maxlength="20"
+              data-idx="{{index}}"
+              bindinput="onCustomName"
+            />
+            <view class="lz-flex1"></view>
+            <view wx:if="{{!item.isTemplate}}" class="oe__costcard-x" data-idx="{{index}}" bindtap="delCustomCost" hover-class="oe__tap">
+              <lz-icon name="trash" size="12" color="#9bab9f" stroke="2.1" />
+            </view>
+          </view>
+          <view class="oe__costcard-amt">
+            <text class="oe__cur">¥</text>
+            <input class="oe__amt-in oe__amt-in--lg" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onCustomAmt" bindblur="onCustomAmtBlur" />
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{!customCosts.length}}" class="oe__cost-empty" bindtap="manageCostCategories">
+        <lz-icon name="plus" size="17" color="#2E9E78" stroke="2.2" />
+        <text>添加你的第一个常用成本分类</text>
+      </view>
+    </view>
+
+    <!-- 其他开销 -->
+    <view class="oe__sec">
+      <view class="oe__sechead">
+        <text class="oe__sec-t">卖旧门窗（加利润）</text>
+        <view class="oe__addbtn" bindtap="addExtra" hover-class="oe__tap">
+          <lz-icon name="plus" size="15" color="#2E9E78" stroke="2.2" /><text>添加</text>
+        </view>
+      </view>
+      <view class="oe__card">
+        <block wx:if="{{extras.length}}">
+          <view wx:for="{{extras}}" wx:key="_k" class="oe__listrow {{index === extras.length - 1 ? 'oe__listrow--last' : ''}}">
+            <picker mode="selector" range="{{extraTypes}}" value="{{item.typeIdx}}" data-idx="{{index}}" bindchange="onExtraType">
+              <view class="oe__extype">{{item.type}}<lz-icon name="chevron" size="13" color="#9bab9f" /></view>
+            </picker>
+            <view class="lz-flex1"></view>
+            <text class="oe__cur">¥</text>
+            <input class="oe__amt-in oe__amt-in--ex" type="digit" value="{{item.amountStr}}" placeholder="0" placeholder-class="ph" data-idx="{{index}}" bindinput="onExtraAmt" bindblur="onExtraAmtBlur" />
+            <view class="oe__listdel" data-idx="{{index}}" bindtap="delExtra" hover-class="oe__tap">
+              <lz-icon name="trash" size="15" color="#9bab9f" />
+            </view>
+          </view>
+        </block>
+        <view wx:else class="oe__empty">暂无卖旧门窗，点击右上角添加</view>
+      </view>
+    </view>
+
+    <!-- 备注 -->
+    <view class="oe__card">
+      <view class="oe__noterow">
+        <text class="oe__row-l">备注</text>
+        <input class="oe__noteinput" value="{{note}}" placeholder="项目说明（选填）" placeholder-class="ph" maxlength="200" bindinput="onNote" />
+      </view>
+    </view>
+
+    <!-- 预计利润（主色卡）-->
+    <view class="oe__profit">
+      <view class="oe__profit-l">
+        <text class="oe__profit-cap">预计利润</text>
+        <view class="oe__profit-v {{profitNeg ? 'oe__profit-v--neg' : ''}}">{{profitText}}</view>
+      </view>
+      <view class="oe__profit-pill">
+        <text class="oe__profit-pill-l">利润率</text>
+        <text class="oe__profit-pill-v">{{marginPct}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑态加载失败：带重试，避免在空表单上保存把真实订单清零 -->
+  <view wx:else class="oe__body">
+    <view class="oe__card" style="padding: 26px 18px; text-align: center;">
+      <view style="font-size: 14px; color: #6c7d75; margin-bottom: 16px;">加载失败，请检查网络后重试</view>
+      <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retryLoad">重试</button>
+    </view>
+  </view>
+
+  <!-- 底部保存栏（固定）-->
+  <view wx:if="{{!loadError}}" class="oe__bar">
+    <button class="oe__save {{canSave && !saving ? '' : 'oe__save--disabled'}}" bindtap="save">
+      <lz-icon name="check" size="20" color="white" /> {{saving ? '保存中…' : (editing ? '保存修改' : '保存订单')}}
+    </button>
+  </view>
+</view>

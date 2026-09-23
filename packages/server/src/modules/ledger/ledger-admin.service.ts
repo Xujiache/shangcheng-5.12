@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
+import { FilesService } from '../files/files.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
   LEDGER_PLAN_DAYS,
@@ -24,7 +25,10 @@ import {
  */
 @Injectable()
 export class LedgerAdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly files?: FilesService,
+  ) {}
 
   private mapUser(u: any) {
     return {
@@ -244,7 +248,11 @@ export class LedgerAdminService {
       contact: f.contact,
       status: f.status,
       reply: f.reply,
-      images: (f.images as any) || [],
+      images: (Array.isArray(f.images) ? f.images : []).map((image: unknown) =>
+        typeof image === 'string' && image.startsWith('feedback-private:')
+          ? this.files?.feedbackViewUrl(image.slice('feedback-private:'.length)) || ''
+          : image,
+      ),
       createdAt: f.createdAt,
     }))
     return { list, total, page, pageSize }
