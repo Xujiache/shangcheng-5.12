@@ -92,7 +92,7 @@ export class FilesService implements OnModuleInit {
     file: MulterFile,
     bizType: string,
     ownerId?: string,
-    contentScope: WechatContentScope = 'mall',
+    contentScope: WechatContentScope = bizType === 'ledger-ad' ? 'ledger' : 'mall',
   ) {
     if (!file) throw new BizException(BizCode.INVALID_PARAMS, '未上传文件')
     this.validateFile(file)
@@ -135,7 +135,7 @@ export class FilesService implements OnModuleInit {
     files: MulterFile[],
     bizType: string,
     ownerId?: string,
-    contentScope: WechatContentScope = 'mall',
+    contentScope: WechatContentScope = bizType === 'ledger-ad' ? 'ledger' : 'mall',
   ) {
     const out: any[] = []
     for (const f of files) out.push(await this.upload(f, bizType, ownerId, contentScope))
