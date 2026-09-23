@@ -5,22 +5,36 @@
 ## 已落地代码
 
 - 36 个历史路由、4 个 Tab 保留；12 个订单/工具/设置页面搬入 3 个分包，旧路径用跳转页透传查询参数。10 张只由设置分包使用的图片随分包移动，未删素材。主包**源文件**体积由 1,585,870 B 降至 1,047,559 B（-33.9%）；这不是开发者工具实际编译包，也不是启动时间。三个分包源文件分别为 94,224 B、77,169 B、376,231 B。
+- 全量 PNG 用 Pillow 无损 `optimize=True` 试压，854,505 B 原图无可缩小文件；3 张 JPEG 已是小体积压缩图。未做有损重编码，避免在缺少真机视觉对比时改变素材。
 - 首页会员请求与只读统计并行；同一 token/URL 的并发 GET 合并；订单首批 50→20，滚动分页、总数和汇总接口不变。GET 缓存按 token 摘要隔离，写入/退出/换号失效；会员、认证与支付不缓存；首页和订单页明确显示离线旧数据。
 - 订单新增 nullable `BIGINT` 营收/成本/利润派生列，新建、修改、导入双写；历史回填调用现有 `revenueOf/totalCost`，保留 `extraIncome` 废弃口径。`LEDGER_FAST_READS=1` 且该账号无空派生值时，列表利润筛选/排序/分页/汇总及客户列表聚合下推数据库；空值自动回退旧路径。列表/客户汇总的 `revenue` 仍为 `total`，不含 extras；单订单利润仍含 extras。统计查询只取实际展示的日期窗。
 - 支付回调原始报文缺失、验签失败、实付金额无效/非正数时不发放；失败订单不能重入发放，重复通知保留幂等。虚拟支付推送增加 ±5 分钟时间戳与恒时签名比较；因推送 URL 签名不覆盖报文，发放前再调用微信 `/xpay/query_order`，确认微信订单号、已支付状态、正数且与锁单一致的订单额/实付额和环境；查单失败则不发放并要求重试。停止记录完整回调和查询参数。
 - ledger 图片先校验实际魔数、声明 MIME、字节数/大小，再做内容安全检测；反馈图新增独立私有桶、按所有权保存引用、1 小时签名读地址。`LEDGER_PRIVATE_FEEDBACK` 默认关闭，必须先配置桶并迁移/核验历史图，再收紧旧公开 `feedback/` 前缀匿名读取；不能撤销广告/头像仍需的公开读取。
 - API 不依赖可选 helmet 即下发 `nosniff`、`X-Frame-Options`、`Referrer-Policy`，生产下发 HSTS；ledger API `private, no-store`，隐藏 `X-Powered-By`。仓库生产 Compose 改为必填数据库/Redis/MinIO 密码，端口仍只绑定回环；**未修改现网**。
-- 生产依赖审计发现 Nest 上传链路实际解析 `multer@2.0.2`，命中可经 multipart 触发的高危 DoS（`GHSA-wc9g-mqfw-jrwm` 等）；只对 `@nestjs/platform-express>multer` 增加 pnpm override 至 `2.4.0`，并用 `pnpm why multer` 确认后端实际解析为 `2.4.0`。其余 monorepo 审计结果不能直接当作 ledger 可达漏洞，未做无依据的全仓升级。
+- 生产依赖审计发现 Nest 上传链路实际解析 `multer@2.0.2`，命中可经 multipart 触发的高危 DoS（`GHSA-wc9g-mqfw-jrwm` 等）；只对 `@nestjs/platform-express>multer` 增加 pnpm override 至 `2.4.0`，并用 `pnpm why multer` 确认后端实际解析为 `2.4.0`。共享服务的 WebSocket 链路另将服务端 `socket.io-parser` 固定至 `4.2.7`、`ws` 更新至 `8.21.x`；`pnpm audit --prod` 中残余同名告警路径均在非本次范围的 `merchant-app`/`user-mp`，没有据此升级其它端。其余 monorepo 审计结果不能直接当作 ledger 可达漏洞，未做无依据的全仓升级。
 
 ## 当前现网只读核验（2026-09-23 21:59 UTC）
 
 `https://ewsn.top/health` 返回 200、`@jiujiu/server` 版本 `0.0.1`，不含 commit/build ID，故**不能确认现网代码与仓库一致**。`http://ewsn.top/health` 返回 301 到 HTTPS；TLS 校验通过；`curl` 协商为 HTTP/1.1。响应仍有 `X-Powered-By: Express`，未见 HSTS 或 `nosniff`；不可信 Origin 请求 `/api/v1/l/auth/config` 未获 `Access-Control-Allow-Origin`。仓库的 `deploy/docker-compose.production.yml` 只起依赖，不能当作现网有效配置。未获得现网 Nginx/PM2/容器/证书续期/对象权限/密钥来源与线上 1 千、1 万单账号，因此未改生产配置、未声称 P0/P1 清零。
 
-本机 Docker daemon 对 `docker ps` 无响应（命令已中断），因此未启动临时 PostgreSQL、未执行 SQL/回填集成验证；临时容器 `codex-ledger-check-20260924` 是否创建也无法确认，待 daemon 恢复后仅核查该名称，避免触碰其他容器。
+本机 Docker daemon 对 `docker ps` 无响应（命令已中断）；改用本机 PostgreSQL 17 创建**独立临时库** `127.0.0.1:55433/ledger_verify`。空库先以 `db:push:test` 建立当前结构，再在临时库移除三列及索引模拟旧表；`deploy/ledger-order-amounts.sql`、独立的 `deploy/ledger-order-amounts-index.sql` 均成功。3 个手工构造旧订单回填前有 3 个 mismatch，分批回填后 0；其中含废弃 `extraIncome=999` 的订单仍按旧公式得营收 1050、成本 125、利润 925。随后用 `scripts/verify-ledger-fast-reads.ts --seed` 构造独立 1 千/1 万单账号，分批回填 11,000 单并 `--verify` 得 0 mismatch；`--compare` 对 5 种订单查询、客户汇总及 overview/monthlySeries/series 的新旧结果逐项一致。以上是本地合成数据，不代表线上存量数据已经迁移。
 
-尚未执行：微信开发者工具实际编译/瀑布图与真机视觉对比、静态图片压缩、1 千/1 万单真实 PostgreSQL 对账与 p95 基线/复测、Wi‑Fi/4G p75、现网 Nginx 压缩/HTTP/2/连接复用/证书/对象策略与凭据轮换。上述项目不是本地单测通过的替代项，生产配置需另行审批。
+该临时库上交替预热后各测 30 次，1 万单首批订单本地调用 p95 旧 746.1 ms、新 22.0 ms（-97.1%）；overview 旧 360.5 ms、新 23.0 ms（-93.6%）。测试未经过生产网络/API，不能替代预发布或线上 p95、微信真机 p75。
 
-本地验证：`@jiujiu/server` build/typecheck/lint、Prisma schema validate、迁移/回填脚本独立 TypeScript 检查通过；Jest 37 套 399 例通过；`@jiujiu/ledger-mp` typecheck、`test:routes`、`test:request` 通过；`git diff --check` 通过。以上均不是实际微信编译、数据库回填或线上性能验收。
+合成数据复测仅在独立本机 `ledger_verify` 库执行；脚本同时检查回环地址和 `LEDGER_VERIFY_DATASET=1`，`--seed` 会清空其两个固定测试账号的订单：
+```powershell
+$env:DATABASE_URL='postgresql://ledger_test@127.0.0.1:55433/ledger_verify?schema=public'
+$env:LEDGER_VERIFY_DATASET='1'
+pnpm --filter @jiujiu/server exec tsx scripts/verify-ledger-fast-reads.ts --seed
+pnpm --filter @jiujiu/server exec tsx scripts/backfill-ledger-order-amounts.ts --apply --batch-size=200
+pnpm --filter @jiujiu/server exec tsx scripts/backfill-ledger-order-amounts.ts --verify
+pnpm --filter @jiujiu/server exec tsx scripts/verify-ledger-fast-reads.ts --compare
+pnpm --filter @jiujiu/server exec tsx scripts/verify-ledger-fast-reads.ts --bench
+```
+
+尚未执行：微信开发者工具实际编译/瀑布图与真机视觉对比、静态图片压缩、生产/预发布 1 千/1 万单**真实存量**对账与 p95 基线/复测、Wi‑Fi/4G p75、现网 Nginx 压缩/HTTP/2/连接复用/证书/对象策略与凭据轮换。上述项目不是本地单测或合成数据通过的替代项，生产配置需另行审批。
+
+本地验证：`@jiujiu/server` build/typecheck/lint、Prisma schema validate、迁移/回填脚本独立 TypeScript 检查通过；Jest 37 套 399 例通过；`@jiujiu/ledger-mp` typecheck、`test:routes`、`test:request` 通过；`git diff --check` 通过；增量 SQL/回填/新旧查询和本地合成性能已按上文在隔离 PostgreSQL 实测。以上均不是实际微信编译、生产数据对账或线上性能验收。
 
 ## 预发布顺序（每一步留存日志与行数）
 
