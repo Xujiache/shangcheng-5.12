@@ -321,221 +321,239 @@ async function submit() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="新建推送" right-text="查看记录" @click-right="goPushList"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="新建推送"
+        right-text="查看记录"
+        @click-right="goPushList"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 推送对象 -->
-      <view class="card">
-        <text class="label">推送对象</text>
-        <view class="chip-row">
-          <view
-            :class="['chip', subjectType === 'product' ? 'active' : '']"
-            @click="subjectType = 'product'"
-            >商品</view
-          >
-          <view
-            :class="['chip', subjectType === 'factory' ? 'active' : '']"
-            @click="subjectType = 'factory'"
-            >厂家</view
-          >
-        </view>
-      </view>
-
-      <!-- 选择内容 -->
-      <view class="card">
-        <view class="card-head">
-          <text class="label">选择内容(已选 {{ products.length }} 件)</text>
-          <view class="add-btn" @click="openPicker">
-            <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)"  />
-            <text>添加商品</text>
+      <scroll-view scroll-y class="scroll">
+        <!-- 推送对象 -->
+        <view class="card">
+          <text class="label">推送对象</text>
+          <view class="chip-row">
+            <view
+              :class="['chip', subjectType === 'product' ? 'active' : '']"
+              @click="subjectType = 'product'"
+              >商品</view
+            >
+            <view
+              :class="['chip', subjectType === 'factory' ? 'active' : '']"
+              @click="subjectType = 'factory'"
+              >厂家</view
+            >
           </view>
         </view>
-        <view v-if="products.length === 0" class="empty-hint">
-          点击右上角「添加商品」从全平台已上架商品中挑选
-        </view>
-        <view v-else class="product-list">
-          <view v-for="p in products.slice(0, 3)" :key="p.id" class="p-row">
-            <image v-if="p.image" :src="p.image" class="p-img" mode="aspectFill" />
-            <view v-else class="p-dot" />
-            <view class="p-info">
-              <text class="p-name">{{ p.name }}</text>
-              <text v-if="p.merchant" class="p-merchant">{{ p.merchant }}</text>
-            </view>
-            <text v-if="typeof p.price === 'number' && p.price > 0" class="p-price">
-              ¥{{ formatPrice(p.price) }}
-            </text>
-            <view class="remove" @click="removeProduct(p.id)">
-              <wd-icon :name="$jwIcon('close')" size="11px" color="var(--text-tertiary)"  />
+
+        <!-- 选择内容 -->
+        <view class="card">
+          <view class="card-head">
+            <text class="label">选择内容(已选 {{ products.length }} 件)</text>
+            <view class="add-btn" @click="openPicker">
+              <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)" />
+              <text>添加商品</text>
             </view>
           </view>
-          <view v-if="products.length > 3" class="more">
-            … 还有 {{ products.length - 3 }} 件 ›
+          <view v-if="products.length === 0" class="empty-hint">
+            点击右上角「添加商品」从全平台已上架商品中挑选
+          </view>
+          <view v-else class="product-list">
+            <view v-for="p in products.slice(0, 3)" :key="p.id" class="p-row">
+              <image v-if="p.image" :src="p.image" class="p-img" mode="aspectFill" />
+              <view v-else class="p-dot" />
+              <view class="p-info">
+                <text class="p-name">{{ p.name }}</text>
+                <text v-if="p.merchant" class="p-merchant">{{ p.merchant }}</text>
+              </view>
+              <text v-if="typeof p.price === 'number' && p.price > 0" class="p-price">
+                ¥{{ formatPrice(p.price) }}
+              </text>
+              <view class="remove" @click="removeProduct(p.id)">
+                <wd-icon :name="$jwIcon('close')" size="11px" color="var(--text-tertiary)" />
+              </view>
+            </view>
+            <view v-if="products.length > 3" class="more">
+              … 还有 {{ products.length - 3 }} 件 ›
+            </view>
           </view>
         </view>
-      </view>
 
-      <!-- 推送位置 -->
-      <view class="card">
-        <text class="label">推送位置(已选 {{ positions.length }} 个)</text>
-        <view class="chip-row wrap">
-          <view
-            v-for="p in POSITIONS"
-            :key="p"
-            :class="['chip', positions.includes(p) ? 'active' : '']"
-            @click="togglePosition(p)"
-            >{{ p }}</view
-          >
-        </view>
-      </view>
-
-      <!-- 标签 -->
-      <view class="card">
-        <text class="label">标签(已选 {{ tags.length }})</text>
-        <view class="chip-row wrap">
-          <view
-            v-for="t in ALL_TAGS"
-            :key="t"
-            :class="['chip', tags.includes(t) ? 'active' : '']"
-            @click="toggleTag(t)"
-            >{{ t }}</view
-          >
-          <view class="chip add" @click="addCustomTag">
-            <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)"  />
-            <text>自定义</text>
+        <!-- 推送位置 -->
+        <view class="card">
+          <text class="label">推送位置(已选 {{ positions.length }} 个)</text>
+          <view class="chip-row wrap">
+            <view
+              v-for="p in POSITIONS"
+              :key="p"
+              :class="['chip', positions.includes(p) ? 'active' : '']"
+              @click="togglePosition(p)"
+              >{{ p }}</view
+            >
           </view>
         </view>
-      </view>
 
-      <!-- 投放对象 -->
-      <view class="card">
-        <text class="label">投放对象</text>
-        <view class="chip-row">
-          <view
-            v-for="a in AUDIENCE_OPTS"
-            :key="a.key"
-            :class="['chip', audience === a.key ? 'active' : '']"
-            @click="audience = a.key"
-            >{{ a.label }}</view
-          >
-        </view>
-      </view>
-
-      <!-- 排期 + 权重 + 加价 + 佣金 -->
-      <view class="card">
-        <view class="config-row" @click="chooseSchedule">
-          <text class="r-label">排期</text>
-          <view class="r-value">
-            <text class="time">{{ scheduleStart }} → {{ scheduleEnd }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
+        <!-- 标签 -->
+        <view class="card">
+          <text class="label">标签(已选 {{ tags.length }})</text>
+          <view class="chip-row wrap">
+            <view
+              v-for="t in ALL_TAGS"
+              :key="t"
+              :class="['chip', tags.includes(t) ? 'active' : '']"
+              @click="toggleTag(t)"
+              >{{ t }}</view
+            >
+            <view class="chip add" @click="addCustomTag">
+              <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)" />
+              <text>自定义</text>
+            </view>
           </view>
         </view>
-        <view class="config-row" @click="changeWeight">
-          <text class="r-label">排序权重</text>
-          <view class="r-value">
-            <text class="num">{{ weight }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
+
+        <!-- 投放对象 -->
+        <view class="card">
+          <text class="label">投放对象</text>
+          <view class="chip-row">
+            <view
+              v-for="a in AUDIENCE_OPTS"
+              :key="a.key"
+              :class="['chip', audience === a.key ? 'active' : '']"
+              @click="audience = a.key"
+              >{{ a.label }}</view
+            >
           </view>
         </view>
-        <view class="config-row" @click="changeMarkup">
-          <text class="r-label">建议加价</text>
-          <view class="r-value">
-            <text>{{ markupRange }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
+
+        <!-- 排期 + 权重 + 加价 + 佣金 -->
+        <view class="card">
+          <view class="config-row" @click="chooseSchedule">
+            <text class="r-label">排期</text>
+            <view class="r-value">
+              <text class="time">{{ scheduleStart }} → {{ scheduleEnd }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <view class="config-row" @click="changeWeight">
+            <text class="r-label">排序权重</text>
+            <view class="r-value">
+              <text class="num">{{ weight }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <view class="config-row" @click="changeMarkup">
+            <text class="r-label">建议加价</text>
+            <view class="r-value">
+              <text>{{ markupRange }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <view class="config-row" @click="changeCommission">
+            <text class="r-label">建议佣金</text>
+            <view class="r-value">
+              <text class="num">{{ commission }}%</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
           </view>
         </view>
-        <view class="config-row" @click="changeCommission">
-          <text class="r-label">建议佣金</text>
-          <view class="r-value">
-            <text class="num">{{ commission }}%</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
+
+        <!-- 推送语 -->
+        <view class="card">
+          <text class="label">推送语</text>
+          <wd-input
+            no-border
+            v-model="pushText"
+            class="push-input"
+            placeholder="平台精选 · 厂家直供 · 一键代理"
+          />
         </view>
-      </view>
 
-      <!-- 推送语 -->
-      <view class="card">
-        <text class="label">推送语</text>
-        <wd-input no-border v-model="pushText" class="push-input" placeholder="平台精选 · 厂家直供 · 一键代理"  />
-      </view>
-
-      <view style="height: 180rpx" />
-    </scroll-view>
-
-    <view class="ft">
-      <view :class="['ft-btn ghost', saving ? 'loading' : '']" @click="saveDraft">
-        {{ saving ? '保存中…' : '存草稿' }}
-      </view>
-      <view :class="['ft-btn primary', submitting ? 'loading' : '']" @click="submit">
-        {{ submitting ? '推送中…' : '立即推送' }}
-      </view>
-    </view>
-
-    <!-- 商品选择器 (全屏 sheet) -->
-    <view v-if="pickerOpen" class="picker">
-      <view class="picker-head">
-        <view class="picker-cancel" @click="closePicker">取消</view>
-        <text class="picker-title">选择商品</text>
-        <view class="picker-confirm" @click="confirmPicker"> 确定({{ pickerSelected.size }}) </view>
-      </view>
-
-      <view class="picker-search">
-        <wd-icon :name="$jwIcon('search')" size="14px" color="var(--text-tertiary)"  />
-        <wd-input no-border
-          v-model="pickerKeyword"
-          class="picker-search-input"
-          placeholder="搜索商品名 / 商家 / ID"
-         />
-        <view v-if="pickerKeyword" class="picker-search-clear" @click="pickerKeyword = ''">
-          <wd-icon :name="$jwIcon('close')" size="11px" color="var(--text-tertiary)"  />
-        </view>
-      </view>
-
-      <scroll-view scroll-y class="picker-list">
-        <view v-if="pickerLoading" class="picker-empty">
-          <text>加载中…</text>
-        </view>
-        <view v-else-if="filteredPicker.length === 0" class="picker-empty">
-          <wd-icon :name="$jwIcon('search')" size="30px" color="var(--text-tertiary)"  />
-          <text>{{ pickerKeyword ? '没有匹配的商品' : '暂无可推送的商品' }}</text>
-        </view>
-        <view
-          v-for="p in filteredPicker"
-          v-else
-          :key="p.id"
-          :class="['picker-item', pickerSelected.has(p.id) ? 'selected' : '']"
-          @click="togglePick(p.id)"
-        >
-          <view class="picker-check">
-            <wd-icon
-              v-if="pickerSelected.has(p.id)"
-              :name="$jwIcon('check-circle')" size="20px"
-              color="var(--brand-primary)"
-             />
-            <wd-icon v-else :name="$jwIcon('circle')" size="20px" color="var(--text-tertiary)"  />
-          </view>
-          <image v-if="p.image" :src="p.image" class="picker-item-img" mode="aspectFill" />
-          <view v-else class="picker-item-img placeholder">
-            <wd-icon :name="$jwIcon('package')" size="16px" color="var(--text-tertiary)"  />
-          </view>
-          <view class="picker-item-info">
-            <text class="picker-item-name">{{ p.name }}</text>
-            <text v-if="p.merchant" class="picker-item-merchant">{{ p.merchant }}</text>
-            <text v-if="typeof p.price === 'number' && p.price > 0" class="picker-item-price">
-              ¥{{ formatPrice(p.price) }}
-            </text>
-          </view>
-        </view>
-        <view style="height: 60rpx" />
+        <view style="height: 180rpx" />
       </scroll-view>
 
-      <view class="picker-footer">
-        <text class="picker-footer-tip">已选 {{ pickerSelected.size }} 件商品</text>
-        <view class="picker-footer-btn" @click="confirmPicker">确定加入推送</view>
+      <view class="ft">
+        <view :class="['ft-btn ghost', saving ? 'loading' : '']" @click="saveDraft">
+          {{ saving ? '保存中…' : '存草稿' }}
+        </view>
+        <view :class="['ft-btn primary', submitting ? 'loading' : '']" @click="submit">
+          {{ submitting ? '推送中…' : '立即推送' }}
+        </view>
+      </view>
+
+      <!-- 商品选择器 (全屏 sheet) -->
+      <view v-if="pickerOpen" class="picker">
+        <view class="picker-head">
+          <view class="picker-cancel" @click="closePicker">取消</view>
+          <text class="picker-title">选择商品</text>
+          <view class="picker-confirm" @click="confirmPicker">
+            确定({{ pickerSelected.size }})
+          </view>
+        </view>
+
+        <view class="picker-search">
+          <wd-icon :name="$jwIcon('search')" size="14px" color="var(--text-tertiary)" />
+          <wd-input
+            no-border
+            v-model="pickerKeyword"
+            class="picker-search-input"
+            placeholder="搜索商品名 / 商家 / ID"
+          />
+          <view v-if="pickerKeyword" class="picker-search-clear" @click="pickerKeyword = ''">
+            <wd-icon :name="$jwIcon('close')" size="11px" color="var(--text-tertiary)" />
+          </view>
+        </view>
+
+        <scroll-view scroll-y class="picker-list">
+          <view v-if="pickerLoading" class="picker-empty">
+            <text>加载中…</text>
+          </view>
+          <view v-else-if="filteredPicker.length === 0" class="picker-empty">
+            <wd-icon :name="$jwIcon('search')" size="30px" color="var(--text-tertiary)" />
+            <text>{{ pickerKeyword ? '没有匹配的商品' : '暂无可推送的商品' }}</text>
+          </view>
+          <view
+            v-for="p in filteredPicker"
+            v-else
+            :key="p.id"
+            :class="['picker-item', pickerSelected.has(p.id) ? 'selected' : '']"
+            @click="togglePick(p.id)"
+          >
+            <view class="picker-check">
+              <wd-icon
+                v-if="pickerSelected.has(p.id)"
+                :name="$jwIcon('check-circle')"
+                size="20px"
+                color="var(--brand-primary)"
+              />
+              <wd-icon v-else :name="$jwIcon('circle')" size="20px" color="var(--text-tertiary)" />
+            </view>
+            <image v-if="p.image" :src="p.image" class="picker-item-img" mode="aspectFill" />
+            <view v-else class="picker-item-img placeholder">
+              <wd-icon :name="$jwIcon('package')" size="16px" color="var(--text-tertiary)" />
+            </view>
+            <view class="picker-item-info">
+              <text class="picker-item-name">{{ p.name }}</text>
+              <text v-if="p.merchant" class="picker-item-merchant">{{ p.merchant }}</text>
+              <text v-if="typeof p.price === 'number' && p.price > 0" class="picker-item-price">
+                ¥{{ formatPrice(p.price) }}
+              </text>
+            </view>
+          </view>
+          <view style="height: 60rpx" />
+        </scroll-view>
+
+        <view class="picker-footer">
+          <text class="picker-footer-tip">已选 {{ pickerSelected.size }} 件商品</text>
+          <view class="picker-footer-btn" @click="confirmPicker">确定加入推送</view>
+        </view>
       </view>
     </view>
-  </view>
-
   </wd-config-provider>
 </template>
 

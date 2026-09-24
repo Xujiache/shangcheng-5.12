@@ -157,9 +157,11 @@ function pickAddressOnMap() {
   })
   return
   // #endif
+  // #ifndef MP-WEIXIN
   showMapPick.value = true
   mapPickKeyword.value = form.address || form.shopName || ''
   doMapSearch()
+  // #endif
 }
 
 async function doMapSearch() {
@@ -247,245 +249,283 @@ onMounted(loadProfile)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- Hero · 渐变 + 头像 + 头部信息 -->
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
-      <view class="hero-top">
-        <view class="back-btn" @click="goBack">
-          <wd-icon :name="$jwIcon('back')" size="16px" color="#fff"  />
+    <view class="page">
+      <!-- Hero · 渐变 + 头像 + 头部信息 -->
+      <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+        <view class="hero-top">
+          <view class="back-btn" @click="goBack">
+            <wd-icon :name="$jwIcon('back')" size="16px" color="#fff" />
+          </view>
+          <text class="hero-title">个人信息</text>
+          <view class="back-btn placeholder" />
         </view>
-        <text class="hero-title">个人信息</text>
-        <view class="back-btn placeholder" />
+        <wd-upload
+          :file-list="[]"
+          :limit="1"
+          :disabled="uploadingAvatar"
+          :before-choose="(option: any) => delegateWotUploadChoose(option, chooseAvatar)"
+          custom-class="avatar-upload"
+        >
+          <view class="avatar-block">
+            <view class="avatar-ring">
+              <image v-if="form.avatar" :src="form.avatar" class="avatar-img" mode="aspectFill" />
+              <view v-else class="avatar avatar-placeholder">
+                <text>{{ form.shopName.slice(0, 1) || '?' }}</text>
+              </view>
+              <view class="avatar-edit-badge">
+                <wd-icon :name="$jwIcon('camera')" size="11px" color="#fff" />
+              </view>
+            </view>
+            <text class="hero-name">{{ form.shopName || '未命名店铺' }}</text>
+            <text class="hero-no">商户号 {{ form.merchantNo || '--' }}</text>
+          </view>
+        </wd-upload>
       </view>
-      <wd-upload
-        :file-list="[]"
-        :limit="1"
-        :disabled="uploadingAvatar"
-        :before-choose="(option: any) => delegateWotUploadChoose(option, chooseAvatar)"
-        custom-class="avatar-upload"
+
+      <!-- 基础信息 -->
+      <view class="card">
+        <view class="section-head">
+          <view class="section-bar" />
+          <text class="section-title">基础信息</text>
+        </view>
+
+        <view class="field-block">
+          <text class="label">店名</text>
+          <view class="field">
+            <view class="prefix"
+              ><wd-icon :name="$jwIcon('biz-shop-decorate')" size="16px" color="#86909c"
+            /></view>
+            <wd-input
+              no-border
+              v-model="form.shopName"
+              class="input"
+              placeholder="请输入店名"
+              placeholder-class="ph"
+              maxlength="40"
+            />
+          </view>
+        </view>
+
+        <view class="field-block">
+          <text class="label">商户号</text>
+          <view class="field field-readonly">
+            <view class="prefix"
+              ><wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#c9cdd4"
+            /></view>
+            <text class="readonly-text">{{ form.merchantNo || '--' }}</text>
+            <text class="readonly-hint">系统生成</text>
+          </view>
+        </view>
+
+        <view class="field-block">
+          <text class="label">联系人</text>
+          <view class="field">
+            <view class="prefix"
+              ><wd-icon :name="$jwIcon('biz-me')" size="16px" color="#86909c"
+            /></view>
+            <wd-input
+              no-border
+              v-model="form.contactName"
+              class="input"
+              placeholder="请输入联系人"
+              placeholder-class="ph"
+              maxlength="20"
+            />
+          </view>
+        </view>
+
+        <view class="field-block">
+          <text class="label">联系手机</text>
+          <view class="field">
+            <view class="prefix"
+              ><wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"
+            /></view>
+            <wd-input
+              no-border
+              v-model="form.contactPhone"
+              class="input"
+              placeholder="例：13912345678"
+              placeholder-class="ph"
+              maxlength="20"
+              type="number"
+            />
+          </view>
+        </view>
+
+        <view class="field-block">
+          <text class="label">邮箱</text>
+          <view class="field">
+            <view class="prefix"
+              ><wd-icon :name="$jwIcon('mail')" size="16px" color="#86909c"
+            /></view>
+            <wd-input
+              no-border
+              v-model="form.email"
+              class="input"
+              placeholder="例：contact@example.com"
+              placeholder-class="ph"
+              maxlength="60"
+            />
+          </view>
+        </view>
+      </view>
+
+      <!-- 经营信息 -->
+      <view class="card">
+        <view class="section-head">
+          <view class="section-bar" />
+          <text class="section-title">经营信息</text>
+        </view>
+
+        <view class="field-block">
+          <text class="label">
+            经营品类
+            <text class="label-hint">（多选）</text>
+          </text>
+          <view class="cat-selector" @click="showCategoryPicker = true">
+            <view v-if="form.categories.length" class="cat-tags">
+              <view v-for="c in form.categories" :key="c" class="cat-chip">{{
+                displayCategory(c)
+              }}</view>
+            </view>
+            <text v-else class="cat-placeholder">点击选择经营品类</text>
+            <wd-icon :name="$jwIcon('forward')" size="12px" color="#c9cdd4" />
+          </view>
+        </view>
+
+        <view class="field-block">
+          <text class="label">联系地址</text>
+          <view class="field">
+            <view class="prefix"
+              ><wd-icon :name="$jwIcon('location')" size="16px" color="#86909c"
+            /></view>
+            <wd-input
+              no-border
+              v-model="form.address"
+              class="input"
+              placeholder="详细地址"
+              placeholder-class="ph"
+              maxlength="100"
+            />
+          </view>
+          <view class="map-btn" @click="pickAddressOnMap">
+            <wd-icon :name="$jwIcon('location')" size="14px" color="#FF4D2D" />
+            <text>在地图上选位置 / 搜索 POI</text>
+            <wd-icon :name="$jwIcon('forward')" size="11px" color="#FF4D2D" />
+          </view>
+        </view>
+
+        <view class="field-block">
+          <text class="label">店铺简介</text>
+          <view class="textarea-wrap">
+            <wd-textarea
+              no-border
+              v-model="form.description"
+              class="textarea"
+              placeholder="一句话介绍你的店铺，让客户更了解你"
+              placeholder-class="ph"
+              :maxlength="160"
+              auto-height
+            />
+            <text class="count">{{ form.description.length }} / 160</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 浮动保存按钮 -->
+      <view class="save-dock">
+        <wd-button
+          class="btn-save"
+          :class="{ 'btn-save--active': hasChange }"
+          :disabled="!hasChange"
+          @click="saveProfile"
+          type="primary"
+          size="large"
+          block
+        >
+          {{ hasChange ? '保存修改' : '未做修改' }}
+        </wd-button>
+      </view>
+      <view class="safe-bottom" />
+
+      <!-- 经营品类多选弹层 -->
+      <wd-popup
+        v-model="showCategoryPicker"
+        position="bottom"
+        custom-class="picker"
+        safe-area-inset-bottom
+        root-portal
       >
-      <view class="avatar-block">
-        <view class="avatar-ring">
-          <image v-if="form.avatar" :src="form.avatar" class="avatar-img" mode="aspectFill" />
-          <view v-else class="avatar avatar-placeholder">
-            <text>{{ form.shopName.slice(0, 1) || '?' }}</text>
+        <view class="picker-content">
+          <view class="picker-head">
+            <text class="picker-title">选择经营品类（多选）</text>
+            <text class="picker-close" @click="showCategoryPicker = false">完成</text>
           </view>
-          <view class="avatar-edit-badge">
-            <wd-icon :name="$jwIcon('camera')" size="11px" color="#fff"  />
-          </view>
-        </view>
-        <text class="hero-name">{{ form.shopName || '未命名店铺' }}</text>
-        <text class="hero-no">商户号 {{ form.merchantNo || '--' }}</text>
-      </view>
-      </wd-upload>
-    </view>
-
-    <!-- 基础信息 -->
-    <view class="card">
-      <view class="section-head">
-        <view class="section-bar" />
-        <text class="section-title">基础信息</text>
-      </view>
-
-      <view class="field-block">
-        <text class="label">店名</text>
-        <view class="field">
-          <view class="prefix"><wd-icon :name="$jwIcon('biz-shop-decorate')" size="16px" color="#86909c"  /></view>
-          <wd-input no-border
-            v-model="form.shopName"
-            class="input"
-            placeholder="请输入店名"
-            placeholder-class="ph"
-            maxlength="40"
-           />
-        </view>
-      </view>
-
-      <view class="field-block">
-        <text class="label">商户号</text>
-        <view class="field field-readonly">
-          <view class="prefix"><wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#c9cdd4"  /></view>
-          <text class="readonly-text">{{ form.merchantNo || '--' }}</text>
-          <text class="readonly-hint">系统生成</text>
-        </view>
-      </view>
-
-      <view class="field-block">
-        <text class="label">联系人</text>
-        <view class="field">
-          <view class="prefix"><wd-icon :name="$jwIcon('biz-me')" size="16px" color="#86909c"  /></view>
-          <wd-input no-border
-            v-model="form.contactName"
-            class="input"
-            placeholder="请输入联系人"
-            placeholder-class="ph"
-            maxlength="20"
-           />
-        </view>
-      </view>
-
-      <view class="field-block">
-        <text class="label">联系手机</text>
-        <view class="field">
-          <view class="prefix"><wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"  /></view>
-          <wd-input no-border
-            v-model="form.contactPhone"
-            class="input"
-            placeholder="例：13912345678"
-            placeholder-class="ph"
-            maxlength="20"
-            type="number"
-           />
-        </view>
-      </view>
-
-      <view class="field-block">
-        <text class="label">邮箱</text>
-        <view class="field">
-          <view class="prefix"><wd-icon :name="$jwIcon('mail')" size="16px" color="#86909c"  /></view>
-          <wd-input no-border
-            v-model="form.email"
-            class="input"
-            placeholder="例：contact@example.com"
-            placeholder-class="ph"
-            maxlength="60"
-           />
-        </view>
-      </view>
-    </view>
-
-    <!-- 经营信息 -->
-    <view class="card">
-      <view class="section-head">
-        <view class="section-bar" />
-        <text class="section-title">经营信息</text>
-      </view>
-
-      <view class="field-block">
-        <text class="label">
-          经营品类
-          <text class="label-hint">（多选）</text>
-        </text>
-        <view class="cat-selector" @click="showCategoryPicker = true">
-          <view v-if="form.categories.length" class="cat-tags">
-            <view v-for="c in form.categories" :key="c" class="cat-chip">{{
-              displayCategory(c)
-            }}</view>
-          </view>
-          <text v-else class="cat-placeholder">点击选择经营品类</text>
-          <wd-icon :name="$jwIcon('forward')" size="12px" color="#c9cdd4"  />
-        </view>
-      </view>
-
-      <view class="field-block">
-        <text class="label">联系地址</text>
-        <view class="field">
-          <view class="prefix"><wd-icon :name="$jwIcon('location')" size="16px" color="#86909c"  /></view>
-          <wd-input no-border
-            v-model="form.address"
-            class="input"
-            placeholder="详细地址"
-            placeholder-class="ph"
-            maxlength="100"
-           />
-        </view>
-        <view class="map-btn" @click="pickAddressOnMap">
-          <wd-icon :name="$jwIcon('location')" size="14px" color="#FF4D2D"  />
-          <text>在地图上选位置 / 搜索 POI</text>
-          <wd-icon :name="$jwIcon('forward')" size="11px" color="#FF4D2D"  />
-        </view>
-      </view>
-
-      <view class="field-block">
-        <text class="label">店铺简介</text>
-        <view class="textarea-wrap">
-          <wd-textarea no-border
-            v-model="form.description"
-            class="textarea"
-            placeholder="一句话介绍你的店铺，让客户更了解你"
-            placeholder-class="ph"
-            :maxlength="160"
-            auto-height
-           />
-          <text class="count">{{ form.description.length }} / 160</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 浮动保存按钮 -->
-    <view class="save-dock">
-      <wd-button
-        class="btn-save"
-        :class="{ 'btn-save--active': hasChange }"
-        :disabled="!hasChange"
-        @click="saveProfile"
-       type="primary" size="large" block>
-        {{ hasChange ? '保存修改' : '未做修改' }}
-      </wd-button>
-    </view>
-    <view class="safe-bottom" />
-
-    <!-- 经营品类多选弹层 -->
-    <wd-popup v-model="showCategoryPicker" position="bottom" custom-class="picker" safe-area-inset-bottom root-portal>
-      <view class="picker-content">
-        <view class="picker-head">
-          <text class="picker-title">选择经营品类（多选）</text>
-          <text class="picker-close" @click="showCategoryPicker = false">完成</text>
-        </view>
-        <view class="picker-body">
-          <view
-            v-for="c in CATEGORY_OPTIONS"
-            :key="c"
-            class="picker-item"
-            :class="{ 'picker-item--active': form.categories.includes(c) }"
-            @click="toggleCategory(c)"
-          >
-            <text>{{ c }}</text>
-            <wd-icon v-if="form.categories.includes(c)" :name="$jwIcon('check')" size="14px" color="#FF4D2D"  />
-          </view>
-        </view>
-      </view>
-    </wd-popup>
-
-    <!-- #ifndef MP-WEIXIN -->
-    <wd-popup v-model="showMapPick" position="bottom" custom-class="mpick-sheet" safe-area-inset-bottom root-portal>
-      <view class="mpick-content">
-        <view class="mpick-head">
-          <text class="mpick-title">地图选址</text>
-          <text class="mpick-close" @click="showMapPick = false">关闭</text>
-        </view>
-        <view class="mpick-search">
-          <wd-input no-border
-            v-model="mapPickKeyword"
-            class="mpick-input"
-            placeholder="输入小区 / 楼宇 / 地址关键词"
-            confirm-type="search"
-            @confirm="doMapSearch"
-           />
-          <wd-button type="primary" size="small" @click="doMapSearch">搜索</wd-button>
-        </view>
-        <scroll-view scroll-y class="mpick-list">
-          <view v-if="!mapPickResults.length" class="mpick-empty">
-            <text>输入关键词后点搜索</text>
-          </view>
-          <view
-            v-for="(r, i) in mapPickResults"
-            :key="`${r.lat}-${r.lng}-${i}`"
-            class="mpick-item"
-            @click="pickMapResult(r)"
-          >
-            <wd-icon :name="$jwIcon('location-pin')" size="16px" color="#FF4D2D"  />
-            <view class="mpick-item-info">
-              <text class="mpick-item-name">{{ r.name || '未命名' }}</text>
-              <text class="mpick-item-addr">{{ r.address || '' }}</text>
+          <view class="picker-body">
+            <view
+              v-for="c in CATEGORY_OPTIONS"
+              :key="c"
+              class="picker-item"
+              :class="{ 'picker-item--active': form.categories.includes(c) }"
+              @click="toggleCategory(c)"
+            >
+              <text>{{ c }}</text>
+              <wd-icon
+                v-if="form.categories.includes(c)"
+                :name="$jwIcon('check')"
+                size="14px"
+                color="#FF4D2D"
+              />
             </view>
           </view>
-        </scroll-view>
-      </view>
-    </wd-popup>
-    <!-- #endif -->
-  </view>
+        </view>
+      </wd-popup>
 
+      <!-- #ifndef MP-WEIXIN -->
+      <wd-popup
+        v-model="showMapPick"
+        position="bottom"
+        custom-class="mpick-sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="mpick-content">
+          <view class="mpick-head">
+            <text class="mpick-title">地图选址</text>
+            <text class="mpick-close" @click="showMapPick = false">关闭</text>
+          </view>
+          <view class="mpick-search">
+            <wd-input
+              no-border
+              v-model="mapPickKeyword"
+              class="mpick-input"
+              placeholder="输入小区 / 楼宇 / 地址关键词"
+              confirm-type="search"
+              @confirm="doMapSearch"
+            />
+            <wd-button type="primary" size="small" @click="doMapSearch">搜索</wd-button>
+          </view>
+          <scroll-view scroll-y class="mpick-list">
+            <view v-if="!mapPickResults.length" class="mpick-empty">
+              <text>输入关键词后点搜索</text>
+            </view>
+            <view
+              v-for="(r, i) in mapPickResults"
+              :key="`${r.lat}-${r.lng}-${i}`"
+              class="mpick-item"
+              @click="pickMapResult(r)"
+            >
+              <wd-icon :name="$jwIcon('location-pin')" size="16px" color="#FF4D2D" />
+              <view class="mpick-item-info">
+                <text class="mpick-item-name">{{ r.name || '未命名' }}</text>
+                <text class="mpick-item-addr">{{ r.address || '' }}</text>
+              </view>
+            </view>
+          </scroll-view>
+        </view>
+      </wd-popup>
+      <!-- #endif -->
+    </view>
   </wd-config-provider>
 </template>
 

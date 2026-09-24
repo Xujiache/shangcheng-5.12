@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "application": {
+    "name": "经纬科技-商家端",
+    "bundleName": "top.ewsn.jingwei.merchant",
+    "versionName": "1.0.0",
+    "versionCode": 1000000,
+    "defaultLanguage": "zh-CN",
+    "category": "商务",
+    "pricing": "免费，包含应用内购买",
+    "deviceTypes": ["phone", "tablet", "2in1"]
+  },
+  "operator": {
+    "name": "辽宁经纬建筑装饰有限公司",
+    "supportEmail": "jwewsn@163.com",
+    "supportSource": "GET https://ewsn.top/api/v1/u/system/settings"
+  },
+  "privacy": {
+    "privacyPolicyUrl": "https://ewsn.top/api/v1/u/legal/merchant-harmony/privacy",
+    "dataSubjectRightsUrl": "https://ewsn.top/api/v1/u/legal/merchant-harmony/privacy",
+    "collectionListUrl": "https://ewsn.top/api/v1/u/legal/merchant-harmony/collect",
+    "termsUrl": "https://ewsn.top/api/v1/u/legal/merchant-harmony/user"
+  },
+  "localized": {
+    "zh-CN": {
+      "name": "经纬科技-商家端",
+      "briefIntroduction": "门窗商家的原生经营工作台",
+      "fullIntroduction": "经纬科技-商家端是面向门窗行业厂家、门店及其授权员工的 HarmonyOS 原生经营工具。商家可以查看今日实付与七日趋势，处理待发货、退款、商品审核、门店授权和客户消息；管理商品、规格、尺寸计价、库存、订单、物流、售后、客户、门店、员工、营销活动、佣金、店铺装修与价格规则；使用在线客服与客户沟通，并在选品广场申请代理和维护代理商品。应用支持浅色、深色与跟随系统，适配手机、折叠屏、平板和 2in1 设备。位置、相机、照片和通知均在用户主动触发相应功能后按需使用；会员购买、消息推送、地图定位和版本更新使用 HarmonyOS 与华为官方能力。",
+      "newFeatures": "首个 HarmonyOS NEXT 原生正式版本：完整提供工作台、商品、订单、售后、客户、门店、员工、营销、客服、选品、会员、设置和 AppGallery 更新能力；支持手机、折叠屏和平板以及中英文、浅深色模式。"
+    },
+    "en-US": {
+      "name": "Jingwei Merchant",
+      "briefIntroduction": "Native operations workspace for windows and doors merchants",
+      "fullIntroduction": "Jingwei Merchant is a native HarmonyOS operations workspace for authorized windows and doors manufacturers, stores and staff. It provides paid-sales analytics, actionable work queues, products and SKUs, dimensional pricing, inventory, orders, fulfilment, after-sales, customers, stores, staff, campaigns, commission, shop presentation, customer chat, sourcing and agency-product management. The interface supports system, light and dark appearance and adapts to phones, foldables, tablets and 2in1 devices. Location, camera, selected photos and notifications are used only after the user invokes and authorizes the corresponding feature. Membership purchases, push notifications, maps and updates use HarmonyOS and Huawei platform capabilities.",
+      "newFeatures": "First native HarmonyOS NEXT release with the complete merchant workbench, commerce, customer service, sourcing, membership and settings feature set, plus adaptive layouts, English/Chinese and light/dark appearance."
+    }
+  },
+  "assetCapture": {
+    "source": "signed release running on accepted HarmonyOS NEXT devices",
+    "phoneScreenshotsRequired": 4,
+    "expandedDeviceScreenshotsRequired": 4,
+    "status": "external-device-evidence-required"
+  },
+  "review": {
+    "testAccount": "provided through the private AppGallery reviewer channel",
+    "specialInstructions": "The account must be a bound active merchant. IAP review uses the Huawei sandbox and must not trigger real payment, SMS, refund or logistics actions."
+  }
+}

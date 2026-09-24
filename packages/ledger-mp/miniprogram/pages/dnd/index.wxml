@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="dnd">
+<view class="dnd lz-route-scene {{_routeMotion}}">
   <lz-header title="免打扰" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -40,3 +40,5 @@
     <view class="dnd__note">免打扰期间，订单、报表与系统通知将不再提醒，期间消息仍会保留在消息中心。</view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

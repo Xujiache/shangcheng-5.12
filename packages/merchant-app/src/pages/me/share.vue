@@ -97,56 +97,55 @@ function goBack() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
-      <view class="hero-top">
-        <view class="back-btn" @click="goBack">
-          <wd-icon :name="$jwIcon('back')" size="16px" color="#fff"  />
+    <view class="page">
+      <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+        <view class="hero-top">
+          <view class="back-btn" @click="goBack">
+            <wd-icon :name="$jwIcon('back')" size="16px" color="#fff" />
+          </view>
+          <text class="hero-title">分享 APP</text>
+          <view class="back-btn placeholder" />
         </view>
-        <text class="hero-title">分享 APP</text>
-        <view class="back-btn placeholder" />
+        <text class="hero-sub">扫码或复制链接，让朋友直接下载商家版</text>
       </view>
-      <text class="hero-sub">扫码或复制链接，让朋友直接下载商家版</text>
-    </view>
 
-    <view class="card">
-      <view class="qr-wrap">
-        <image v-if="qrUrl" class="qr" :src="qrUrl" mode="aspectFit" />
-        <view v-else class="qr placeholder">
-          <text>加载二维码…</text>
+      <view class="card">
+        <view class="qr-wrap">
+          <image v-if="qrUrl" class="qr" :src="qrUrl" mode="aspectFit" />
+          <view v-else class="qr placeholder">
+            <text>加载二维码…</text>
+          </view>
+        </view>
+        <text class="brand">经纬科技 · 商家版</text>
+        <text class="version">当前版本 v{{ version }}</text>
+        <view class="url-row">
+          <text class="url-text" :user-select="true">{{ downloadUrl }}</text>
         </view>
       </view>
-      <text class="brand">经纬科技 · 商家版</text>
-      <text class="version">当前版本 v{{ version }}</text>
-      <view class="url-row">
-        <text class="url-text" :user-select="true">{{ downloadUrl }}</text>
+
+      <view class="actions">
+        <view class="action-btn primary" @click="copyLink">
+          <wd-icon :name="$jwIcon('doc')" size="18px" color="#fff" />
+          <text>复制链接</text>
+        </view>
+        <view class="action-btn" @click="systemShare">
+          <wd-icon :name="$jwIcon('share')" size="18px" color="#FF4D2D" />
+          <text>系统分享</text>
+        </view>
+        <view class="action-btn" @click="saveQr">
+          <wd-icon :name="$jwIcon('image-plus')" size="18px" color="#FF4D2D" />
+          <text>保存二维码</text>
+        </view>
+      </view>
+
+      <view class="tip">
+        <wd-icon :name="$jwIcon('info')" size="14px" color="#86909c" />
+        <text class="tip-text">
+          分享给好友后，对方使用浏览器扫码或点击链接即可下载 APK 安装包。 iOS
+          暂不支持自动安装，建议引导对方前往 App Store。
+        </text>
       </view>
     </view>
-
-    <view class="actions">
-      <view class="action-btn primary" @click="copyLink">
-        <wd-icon :name="$jwIcon('doc')" size="18px" color="#fff"  />
-        <text>复制链接</text>
-      </view>
-      <view class="action-btn" @click="systemShare">
-        <wd-icon :name="$jwIcon('share')" size="18px" color="#FF4D2D"  />
-        <text>系统分享</text>
-      </view>
-      <view class="action-btn" @click="saveQr">
-        <wd-icon :name="$jwIcon('image-plus')" size="18px" color="#FF4D2D"  />
-        <text>保存二维码</text>
-      </view>
-    </view>
-
-    <view class="tip">
-      <wd-icon :name="$jwIcon('info')" size="14px" color="#86909c"  />
-      <text class="tip-text">
-        分享给好友后，对方使用浏览器扫码或点击链接即可下载 APK 安装包。 iOS
-        暂不支持自动安装，建议引导对方前往 App Store。
-      </text>
-    </view>
-  </view>
-
   </wd-config-provider>
 </template>
 

@@ -155,87 +155,107 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="消息中心"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="消息中心"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- Tabs -->
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
-      >
-        <text class="tab-label">{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
-
-    <!-- 顶部条：未读统计 + 标记全部已读 -->
-    <view class="top-bar">
-      <view class="top-left">
-        <wd-icon :name="$jwIcon('bell')" size="14px" color="var(--brand-primary)"  />
-        <text v-if="unreadCount > 0" class="unread-tip">{{ unreadCount }} 条未读</text>
-        <text v-else class="unread-tip empty">暂无未读</text>
-      </view>
-      <view :class="['mark-btn', unreadCount === 0 ? 'disabled' : '']" @click="markAllRead">
-        <wd-icon :name="$jwIcon('check')" size="12px" :color="unreadCount === 0 ? '#C9CDD4' : '#FF4D2D'"  />
-        <text>标记全部已读</text>
-      </view>
-    </view>
-
-    <scroll-view scroll-y class="scroll">
-      <view v-if="loading" class="loading">
-        <text>加载中…</text>
-      </view>
-
-      <view v-else-if="loadError" class="empty-wrap">
-        <wd-status-tip
-         image="content" :tip="['暂无通知', '加载失败,可能是后端通知服务暂未启用'].filter(Boolean).join(' · ')" />
-        <view class="retry-btn" @click="load">
-          <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D"  />
-          <text>点击重试</text>
+      <!-- Tabs -->
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
+        >
+          <text class="tab-label">{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
         </view>
       </view>
 
-      <view v-else-if="filteredList.length === 0" class="empty-wrap">
-        <wd-status-tip  image="content" :tip="['该分类下暂无消息', ''].filter(Boolean).join(' · ')" />
+      <!-- 顶部条：未读统计 + 标记全部已读 -->
+      <view class="top-bar">
+        <view class="top-left">
+          <wd-icon :name="$jwIcon('bell')" size="14px" color="var(--brand-primary)" />
+          <text v-if="unreadCount > 0" class="unread-tip">{{ unreadCount }} 条未读</text>
+          <text v-else class="unread-tip empty">暂无未读</text>
+        </view>
+        <view :class="['mark-btn', unreadCount === 0 ? 'disabled' : '']" @click="markAllRead">
+          <wd-icon
+            :name="$jwIcon('check')"
+            size="12px"
+            :color="unreadCount === 0 ? '#C9CDD4' : '#FF4D2D'"
+          />
+          <text>标记全部已读</text>
+        </view>
       </view>
 
-      <view v-else class="list">
-        <view
-          v-for="m in filteredList"
-          :key="m.id"
-          :class="['msg-card', m.unread ? 'unread' : '']"
-          @click="openDetail(m)"
-        >
-          <view class="m-icon" :style="{ background: TYPE_META[m.type].tintSoft }">
-            <wd-icon :name="$jwIcon(TYPE_META[m.type].icon)" size="16px" :color="TYPE_META[m.type].tint"  />
-            <view v-if="m.unread" class="dot" />
+      <scroll-view scroll-y class="scroll">
+        <view v-if="loading" class="loading">
+          <text>加载中…</text>
+        </view>
+
+        <view v-else-if="loadError" class="empty-wrap">
+          <wd-status-tip
+            image="content"
+            :tip="['暂无通知', '加载失败,可能是后端通知服务暂未启用'].filter(Boolean).join(' · ')"
+          />
+          <view class="retry-btn" @click="load">
+            <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D" />
+            <text>点击重试</text>
           </view>
-          <view class="m-body">
-            <view class="m-head">
-              <text class="m-title">{{ m.title }}</text>
-              <view
-                class="m-type-tag"
-                :style="{ background: TYPE_META[m.type].tintSoft, color: TYPE_META[m.type].tint }"
-              >
-                {{ TYPE_META[m.type].label }}
+        </view>
+
+        <view v-else-if="filteredList.length === 0" class="empty-wrap">
+          <wd-status-tip
+            image="content"
+            :tip="['该分类下暂无消息', ''].filter(Boolean).join(' · ')"
+          />
+        </view>
+
+        <view v-else class="list">
+          <view
+            v-for="m in filteredList"
+            :key="m.id"
+            :class="['msg-card', m.unread ? 'unread' : '']"
+            @click="openDetail(m)"
+          >
+            <view class="m-icon" :style="{ background: TYPE_META[m.type].tintSoft }">
+              <wd-icon
+                :name="$jwIcon(TYPE_META[m.type].icon)"
+                size="16px"
+                :color="TYPE_META[m.type].tint"
+              />
+              <view v-if="m.unread" class="dot" />
+            </view>
+            <view class="m-body">
+              <view class="m-head">
+                <text class="m-title">{{ m.title }}</text>
+                <view
+                  class="m-type-tag"
+                  :style="{ background: TYPE_META[m.type].tintSoft, color: TYPE_META[m.type].tint }"
+                >
+                  {{ TYPE_META[m.type].label }}
+                </view>
+              </view>
+              <text class="m-content">{{ m.content }}</text>
+              <view class="m-foot">
+                <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)" />
+                <text class="m-time">{{ relTime(m.createdAt) }}</text>
               </view>
             </view>
-            <text class="m-content">{{ m.content }}</text>
-            <view class="m-foot">
-              <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)"  />
-              <text class="m-time">{{ relTime(m.createdAt) }}</text>
-            </view>
           </view>
+
+          <view class="end-tip">— 已显示全部 {{ filteredList.length }} 条 —</view>
         </view>
-
-        <view class="end-tip">— 已显示全部 {{ filteredList.length }} 条 —</view>
-      </view>
-    </scroll-view>
-  </view>
-
+      </scroll-view>
+    </view>
   </wd-config-provider>
 </template>
 

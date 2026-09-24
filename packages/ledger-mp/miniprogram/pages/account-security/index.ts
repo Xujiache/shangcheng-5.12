@@ -1,6 +1,7 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { getUser } from '../../utils/store'
 
-Page({
+MotionPage({
   data: {
     accountCode: '—',
   },
@@ -10,6 +11,6 @@ Page({
     this.setData({ accountCode: (u && u.accountCode) || '—' })
   },
   toDelete() {
-    wx.navigateTo({ url: '/pages/delete-account/index' })
+    navigation.navigateTo({ url: '/pages/delete-account/index' })
   },
 })

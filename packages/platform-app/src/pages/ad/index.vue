@@ -578,401 +578,422 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="广告管理" @click-right="onNavRightTap"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
-    </wd-navbar>
-
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
+    <view class="page">
+      <wd-navbar
+        title="广告管理"
+        @click-right="onNavRightTap"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
       >
-        <text>{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
+        <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 顶部统计 -->
-      <view class="stats-card">
-        <view class="stat-item">
-          <text class="stat-num">{{ totalStats.activeSlots }}</text>
-          <text class="stat-label">投放中</text>
-        </view>
-        <view class="stat-divider" />
-        <view class="stat-item">
-          <text class="stat-num">{{ totalStats.totalCreatives }}</text>
-          <text class="stat-label">创意数</text>
-        </view>
-        <view class="stat-divider" />
-        <view class="stat-item">
-          <text class="stat-num">{{ formatWan(totalStats.totalImpressions) }}</text>
-          <text class="stat-label">总曝光</text>
-        </view>
-        <view class="stat-divider" />
-        <view class="stat-item">
-          <text class="stat-num">{{ totalStats.avgCtr }}%</text>
-          <text class="stat-label">平均 CTR</text>
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
+        >
+          <text>{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
         </view>
       </view>
 
-      <!-- Tab: 广告位 -->
-      <view v-if="tab === 'slots'" class="list">
-        <view class="quick-toolbar">
-          <view class="qt-btn primary" @click="openCreateSlot">
-            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
-            <text>新建广告位</text>
+      <scroll-view scroll-y class="scroll">
+        <!-- 顶部统计 -->
+        <view class="stats-card">
+          <view class="stat-item">
+            <text class="stat-num">{{ totalStats.activeSlots }}</text>
+            <text class="stat-label">投放中</text>
           </view>
-          <view class="qt-btn ghost" @click="quickToggleAll">
-            <wd-icon :name="$jwIcon('refresh')" size="11px" color="#FF4D2D"  />
-            <text>批量暂停/恢复</text>
+          <view class="stat-divider" />
+          <view class="stat-item">
+            <text class="stat-num">{{ totalStats.totalCreatives }}</text>
+            <text class="stat-label">创意数</text>
           </view>
-        </view>
-
-        <view v-for="s in slots" :key="s.id" class="card">
-          <view class="card-head">
-            <text class="name">{{ s.name }}</text>
-            <view
-              class="status-tag"
-              :style="{
-                color: STATUS_META[s.status]?.tint,
-                background: (STATUS_META[s.status]?.tint || '#86909C') + '14',
-              }"
-            >
-              {{ STATUS_META[s.status]?.label || s.status }}
-            </view>
+          <view class="stat-divider" />
+          <view class="stat-item">
+            <text class="stat-num">{{ formatWan(totalStats.totalImpressions) }}</text>
+            <text class="stat-label">总曝光</text>
           </view>
-          <view class="meta">
-            <wd-icon :name="$jwIcon('navigation')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ s.scene || '未设场景' }} · 目标 {{ TARGET_LABEL[s.target] || s.target }}</text>
-          </view>
-          <view v-if="s.startAt && s.endAt" class="meta">
-            <wd-icon :name="$jwIcon('calendar')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ s.startAt }} ~ {{ s.endAt }}</text>
-          </view>
-
-          <view class="preview">
-            <image v-if="s.preview" :src="s.preview" mode="aspectFill" class="preview-img" />
-            <view v-else class="preview-bg">
-              <wd-icon :name="$jwIcon('megaphone')" size="28px" color="rgba(255,77,45,0.3)"  />
-              <text class="preview-text">未上传预览图</text>
-            </view>
-          </view>
-
-          <view class="metrics">
-            <view class="metric">
-              <text class="m-label">曝光</text>
-              <text class="m-value">{{ formatWan(s.impressions) }}</text>
-            </view>
-            <view class="metric">
-              <text class="m-label">点击率</text>
-              <text class="m-value">{{ s.ctr }}%</text>
-            </view>
-            <view class="metric">
-              <text class="m-label">创意</text>
-              <text class="m-value">{{ s.creativeCount }}</text>
-            </view>
-          </view>
-
-          <view class="actions">
-            <view class="btn ghost" @click="viewStats(s)">数据</view>
-            <view class="btn primary" @click="openSlotActions(s)">编辑</view>
+          <view class="stat-divider" />
+          <view class="stat-item">
+            <text class="stat-num">{{ totalStats.avgCtr }}%</text>
+            <text class="stat-label">平均 CTR</text>
           </view>
         </view>
 
-        <wd-status-tip
-          v-if="!loading && slots.length === 0"
-         image="content" :tip="['暂无广告位', '点击「新建广告位」开始投放'].filter(Boolean).join(' · ')" />
-      </view>
+        <!-- Tab: 广告位 -->
+        <view v-if="tab === 'slots'" class="list">
+          <view class="quick-toolbar">
+            <view class="qt-btn primary" @click="openCreateSlot">
+              <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff" />
+              <text>新建广告位</text>
+            </view>
+            <view class="qt-btn ghost" @click="quickToggleAll">
+              <wd-icon :name="$jwIcon('refresh')" size="11px" color="#FF4D2D" />
+              <text>批量暂停/恢复</text>
+            </view>
+          </view>
 
-      <!-- Tab: 创意 -->
-      <view v-else-if="tab === 'create'" class="list">
-        <view class="quick-toolbar">
-          <view class="qt-btn primary" @click="openCreateCreative">
-            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
-            <text>新建创意</text>
-          </view>
-        </view>
+          <view v-for="s in slots" :key="s.id" class="card">
+            <view class="card-head">
+              <text class="name">{{ s.name }}</text>
+              <view
+                class="status-tag"
+                :style="{
+                  color: STATUS_META[s.status]?.tint,
+                  background: (STATUS_META[s.status]?.tint || '#86909C') + '14',
+                }"
+              >
+                {{ STATUS_META[s.status]?.label || s.status }}
+              </view>
+            </view>
+            <view class="meta">
+              <wd-icon :name="$jwIcon('navigation')" size="11px" color="var(--text-tertiary)" />
+              <text
+                >{{ s.scene || '未设场景' }} · 目标 {{ TARGET_LABEL[s.target] || s.target }}</text
+              >
+            </view>
+            <view v-if="s.startAt && s.endAt" class="meta">
+              <wd-icon :name="$jwIcon('calendar')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ s.startAt }} ~ {{ s.endAt }}</text>
+            </view>
 
-        <view v-for="c in creatives" :key="c.id" class="creative-card">
-          <image v-if="c.image" :src="c.image" mode="aspectFill" class="creative-img" />
-          <view v-else class="creative-img placeholder">
-            <wd-icon :name="$jwIcon('image-plus')" size="20px" color="#C9CDD4"  />
-          </view>
-          <view class="creative-info">
-            <text class="c-title">{{ c.title }}</text>
-            <text class="c-meta">点击 {{ c.clicks }} · 曝光 {{ formatWan(c.impressions) }}</text>
-            <text class="c-meta">归属:{{ slotNameOf(c.slotId) }}</text>
-            <view class="c-status" :style="{ color: STATUS_META[c.status]?.tint }">
-              {{ STATUS_META[c.status]?.label }}
+            <view class="preview">
+              <image v-if="s.preview" :src="s.preview" mode="aspectFill" class="preview-img" />
+              <view v-else class="preview-bg">
+                <wd-icon :name="$jwIcon('megaphone')" size="28px" color="rgba(255,77,45,0.3)" />
+                <text class="preview-text">未上传预览图</text>
+              </view>
             </view>
-            <view v-if="c.status === 'pending'" class="c-audit-row">
-              <view class="audit-btn reject" @click.stop="rejectCreative(c)">驳回</view>
-              <view class="audit-btn primary" @click.stop="approveCreative(c)">通过</view>
-            </view>
-          </view>
-          <view class="more-btn" @click.stop="openCreativeActions(c)">
-            <wd-icon :name="$jwIcon('more-v')" size="16px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-        <wd-status-tip
-          v-if="!loading && creatives.length === 0"
-         image="content" :tip="['暂无创意', '点击「新建创意」上传素材'].filter(Boolean).join(' · ')" />
-      </view>
 
-      <!-- Tab: 数据 -->
-      <view v-else class="list">
-        <view class="big-stat-card">
-          <text class="bs-title">本月广告数据</text>
-          <view class="bs-grid">
-            <view class="bs-item">
-              <text class="bs-num">{{ formatWan(totalStats.totalImpressions) }}</text>
-              <text class="bs-label">总曝光</text>
+            <view class="metrics">
+              <view class="metric">
+                <text class="m-label">曝光</text>
+                <text class="m-value">{{ formatWan(s.impressions) }}</text>
+              </view>
+              <view class="metric">
+                <text class="m-label">点击率</text>
+                <text class="m-value">{{ s.ctr }}%</text>
+              </view>
+              <view class="metric">
+                <text class="m-label">创意</text>
+                <text class="m-value">{{ s.creativeCount }}</text>
+              </view>
             </view>
-            <view class="bs-item">
-              <text class="bs-num">{{ totalStats.avgCtr }}%</text>
-              <text class="bs-label">平均 CTR</text>
+
+            <view class="actions">
+              <view class="btn ghost" @click="viewStats(s)">数据</view>
+              <view class="btn primary" @click="openSlotActions(s)">编辑</view>
             </view>
           </view>
-        </view>
-        <view class="card">
-          <text class="rank-title">各广告位曝光排行</text>
-          <view
-            v-for="(s, i) in [...slots].sort((a, b) => b.impressions - a.impressions)"
-            :key="s.id"
-            class="rank-row"
-          >
-            <view :class="['rank-num', i < 3 ? `rank-${i + 1}` : '']">{{ i + 1 }}</view>
-            <text class="rank-name">{{ s.name }}</text>
-            <text class="rank-val">{{ formatWan(s.impressions) }}</text>
-          </view>
+
           <wd-status-tip
             v-if="!loading && slots.length === 0"
-           image="content" :tip="['暂无数据', '先创建几个广告位'].filter(Boolean).join(' · ')" />
+            image="content"
+            :tip="['暂无广告位', '点击「新建广告位」开始投放'].filter(Boolean).join(' · ')"
+          />
         </view>
-      </view>
 
-      <view style="height: 40rpx" />
-    </scroll-view>
+        <!-- Tab: 创意 -->
+        <view v-else-if="tab === 'create'" class="list">
+          <view class="quick-toolbar">
+            <view class="qt-btn primary" @click="openCreateCreative">
+              <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff" />
+              <text>新建创意</text>
+            </view>
+          </view>
 
-    <!-- 广告位 sheet (create / edit-asset / edit-time) -->
-    <FormSheet
-      :open="slotSheetOpen"
-      :title="slotSheetTitle"
-      :confirm-text="slotSheetMode === 'create' ? '创建' : '保存'"
-      :loading="slotSubmitting"
-      :disabled="slotSheetConfirmDisabled"
-      @close="slotSheetOpen = false"
-      @confirm="submitSlotSheet"
-    >
-      <!-- 通用字段 -->
-      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
-        <text class="form-label">广告位名称<text class="required">*</text></text>
-        <wd-input no-border
-          v-model="slotForm.name"
-          class="form-input"
-          placeholder="如:首页 Banner / 商品详情顶部"
-          maxlength="40"
-         />
-      </view>
-      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
-        <text class="form-label">投放对象</text>
-        <view class="seg-group">
-          <view
-            v-for="opt in TARGET_OPTIONS"
-            :key="opt.value"
-            :class="['seg-item', slotForm.target === opt.value ? 'active' : '']"
-            @click="slotForm.target = opt.value"
+          <view v-for="c in creatives" :key="c.id" class="creative-card">
+            <image v-if="c.image" :src="c.image" mode="aspectFill" class="creative-img" />
+            <view v-else class="creative-img placeholder">
+              <wd-icon :name="$jwIcon('image-plus')" size="20px" color="#C9CDD4" />
+            </view>
+            <view class="creative-info">
+              <text class="c-title">{{ c.title }}</text>
+              <text class="c-meta">点击 {{ c.clicks }} · 曝光 {{ formatWan(c.impressions) }}</text>
+              <text class="c-meta">归属:{{ slotNameOf(c.slotId) }}</text>
+              <view class="c-status" :style="{ color: STATUS_META[c.status]?.tint }">
+                {{ STATUS_META[c.status]?.label }}
+              </view>
+              <view v-if="c.status === 'pending'" class="c-audit-row">
+                <view class="audit-btn reject" @click.stop="rejectCreative(c)">驳回</view>
+                <view class="audit-btn primary" @click.stop="approveCreative(c)">通过</view>
+              </view>
+            </view>
+            <view class="more-btn" @click.stop="openCreativeActions(c)">
+              <wd-icon :name="$jwIcon('more-v')" size="16px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <wd-status-tip
+            v-if="!loading && creatives.length === 0"
+            image="content"
+            :tip="['暂无创意', '点击「新建创意」上传素材'].filter(Boolean).join(' · ')"
+          />
+        </view>
+
+        <!-- Tab: 数据 -->
+        <view v-else class="list">
+          <view class="big-stat-card">
+            <text class="bs-title">本月广告数据</text>
+            <view class="bs-grid">
+              <view class="bs-item">
+                <text class="bs-num">{{ formatWan(totalStats.totalImpressions) }}</text>
+                <text class="bs-label">总曝光</text>
+              </view>
+              <view class="bs-item">
+                <text class="bs-num">{{ totalStats.avgCtr }}%</text>
+                <text class="bs-label">平均 CTR</text>
+              </view>
+            </view>
+          </view>
+          <view class="card">
+            <text class="rank-title">各广告位曝光排行</text>
+            <view
+              v-for="(s, i) in [...slots].sort((a, b) => b.impressions - a.impressions)"
+              :key="s.id"
+              class="rank-row"
+            >
+              <view :class="['rank-num', i < 3 ? `rank-${i + 1}` : '']">{{ i + 1 }}</view>
+              <text class="rank-name">{{ s.name }}</text>
+              <text class="rank-val">{{ formatWan(s.impressions) }}</text>
+            </view>
+            <wd-status-tip
+              v-if="!loading && slots.length === 0"
+              image="content"
+              :tip="['暂无数据', '先创建几个广告位'].filter(Boolean).join(' · ')"
+            />
+          </view>
+        </view>
+
+        <view style="height: 40rpx" />
+      </scroll-view>
+
+      <!-- 广告位 sheet (create / edit-asset / edit-time) -->
+      <FormSheet
+        :open="slotSheetOpen"
+        :title="slotSheetTitle"
+        :confirm-text="slotSheetMode === 'create' ? '创建' : '保存'"
+        :loading="slotSubmitting"
+        :disabled="slotSheetConfirmDisabled"
+        @close="slotSheetOpen = false"
+        @confirm="submitSlotSheet"
+      >
+        <!-- 通用字段 -->
+        <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+          <text class="form-label">广告位名称<text class="required">*</text></text>
+          <wd-input
+            no-border
+            v-model="slotForm.name"
+            class="form-input"
+            placeholder="如:首页 Banner / 商品详情顶部"
+            maxlength="40"
+          />
+        </view>
+        <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+          <text class="form-label">投放对象</text>
+          <view class="seg-group">
+            <view
+              v-for="opt in TARGET_OPTIONS"
+              :key="opt.value"
+              :class="['seg-item', slotForm.target === opt.value ? 'active' : '']"
+              @click="slotForm.target = opt.value"
+            >
+              {{ opt.label }}
+            </view>
+          </view>
+        </view>
+        <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+          <text class="form-label">场景描述</text>
+          <wd-input
+            no-border
+            v-model="slotForm.scene"
+            class="form-input"
+            placeholder="可选,如「首页轮播大图」"
+            maxlength="40"
+          />
+        </view>
+        <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
+          <text class="form-label">预览图(目标 URL 落地图)</text>
+          <wd-upload
+            :file-list="[]"
+            :limit="1"
+            :disabled="slotSubmitting"
+            :before-choose="(option: any) => delegateWotUploadChoose(option, onPickSlotPreview)"
           >
-            {{ opt.label }}
+            <view class="upload-box">
+              <image
+                v-if="slotForm.preview"
+                :src="slotForm.preview"
+                class="upload-preview"
+                mode="aspectFill"
+              />
+              <view v-else class="upload-placeholder">
+                <wd-icon :name="$jwIcon('image-plus')" size="24px" color="#C9CDD4" />
+                <text class="upload-hint">点击选图上传</text>
+              </view>
+            </view>
+          </wd-upload>
+          <view v-if="slotForm.preview" class="upload-actions">
+            <text class="link-action" @click="slotForm.preview = ''">移除</text>
+            <text class="link-action" @click="onPickSlotPreview">重新上传</text>
           </view>
         </view>
-      </view>
-      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
-        <text class="form-label">场景描述</text>
-        <wd-input no-border
-          v-model="slotForm.scene"
-          class="form-input"
-          placeholder="可选,如「首页轮播大图」"
-          maxlength="40"
-         />
-      </view>
-      <view v-if="slotSheetMode !== 'edit-time'" class="form-row">
-        <text class="form-label">预览图(目标 URL 落地图)</text>
-        <wd-upload
-          :file-list="[]"
-          :limit="1"
-          :disabled="slotSubmitting"
-          :before-choose="(option: any) => delegateWotUploadChoose(option, onPickSlotPreview)"
-        >
-        <view class="upload-box">
-          <image
-            v-if="slotForm.preview"
-            :src="slotForm.preview"
-            class="upload-preview"
-            mode="aspectFill"
-          />
-          <view v-else class="upload-placeholder">
-            <wd-icon :name="$jwIcon('image-plus')" size="24px" color="#C9CDD4"  />
-            <text class="upload-hint">点击选图上传</text>
-          </view>
-        </view>
-        </wd-upload>
-        <view v-if="slotForm.preview" class="upload-actions">
-          <text class="link-action" @click="slotForm.preview = ''">移除</text>
-          <text class="link-action" @click="onPickSlotPreview">重新上传</text>
-        </view>
-      </view>
 
-      <!-- 修改时段:仅日期范围 -->
-      <view v-if="slotSheetMode === 'edit-time'" class="form-tip">
-        投放时段持久化至系统配置 (system_settings.business.adSlotMeta), 后端 AdSlot
-        主表后续加字段后会自动迁移读写。
-      </view>
-      <view v-if="slotSheetMode === 'edit-time'" class="form-row">
-        <text class="form-label">开始日期<text class="required">*</text></text>
-        <wd-datetime-picker
-          type="date"
-          title="选择开始日期"
-          :model-value="dateStringToTimestamp(slotForm.startAt)"
-          @confirm="slotForm.startAt = timestampToDateString($event.value)"
-        >
-          <view class="form-input picker">
-            <text>{{ slotForm.startAt || '请选择' }}</text>
-            <wd-icon :name="$jwIcon('calendar')" size="14px" color="#86909C"  />
-          </view>
-        </wd-datetime-picker>
-      </view>
-      <view v-if="slotSheetMode === 'edit-time'" class="form-row">
-        <text class="form-label">结束日期<text class="required">*</text></text>
-        <wd-datetime-picker
-          type="date"
-          title="选择结束日期"
-          :model-value="dateStringToTimestamp(slotForm.endAt)"
-          :min-date="dateStringToTimestamp(slotForm.startAt)"
-          @confirm="slotForm.endAt = timestampToDateString($event.value)"
-        >
-          <view class="form-input picker">
-            <text>{{ slotForm.endAt || '请选择' }}</text>
-            <wd-icon :name="$jwIcon('calendar')" size="14px" color="#86909C"  />
-          </view>
-        </wd-datetime-picker>
-      </view>
-    </FormSheet>
-
-    <!-- 创意 sheet (create / edit) -->
-    <FormSheet
-      :open="creativeSheetOpen"
-      :title="creativeSheetTitle"
-      :confirm-text="creativeSheetMode === 'create' ? '创建' : '保存'"
-      :loading="creativeSubmitting"
-      :disabled="creativeSheetConfirmDisabled"
-      @close="creativeSheetOpen = false"
-      @confirm="submitCreativeSheet"
-    >
-      <view class="form-row">
-        <text class="form-label">创意标题<text class="required">*</text></text>
-        <wd-input no-border
-          v-model="creativeForm.title"
-          class="form-input"
-          placeholder="如:双11 全场五折"
-          maxlength="40"
-         />
-      </view>
-      <view class="form-row">
-        <text class="form-label">归属广告位<text class="required">*</text></text>
-        <wd-picker
-          :model-value="creativeForm.slotId"
-          :columns="slots.map((slot) => ({ label: slot.name, value: slot.id }))"
-          :disabled="creativeSheetMode === 'edit'"
-          title="选择广告位"
-          @confirm="creativeForm.slotId = String($event.value || '')"
-        >
-          <view :class="['form-input', 'picker', creativeSheetMode === 'edit' ? 'disabled' : '']">
-            <text>{{ slotNameOf(creativeForm.slotId) || '请选择广告位' }}</text>
-            <wd-icon :name="$jwIcon('chevron-down')" size="14px" color="#86909C"  />
-          </view>
-        </wd-picker>
-      </view>
-      <view class="form-row">
-        <text class="form-label">创意图<text class="required">*</text></text>
-        <wd-upload
-          :file-list="[]"
-          :limit="1"
-          :disabled="creativeSubmitting"
-          :before-choose="(option: any) => delegateWotUploadChoose(option, onPickCreativeImage)"
-        >
-        <view class="upload-box">
-          <image
-            v-if="creativeForm.image"
-            :src="creativeForm.image"
-            class="upload-preview"
-            mode="aspectFill"
-          />
-          <view v-else class="upload-placeholder">
-            <wd-icon :name="$jwIcon('image-plus')" size="24px" color="#C9CDD4"  />
-            <text class="upload-hint">点击选图上传</text>
-          </view>
+        <!-- 修改时段:仅日期范围 -->
+        <view v-if="slotSheetMode === 'edit-time'" class="form-tip">
+          投放时段持久化至系统配置 (system_settings.business.adSlotMeta), 后端 AdSlot
+          主表后续加字段后会自动迁移读写。
         </view>
-        </wd-upload>
-        <view v-if="creativeForm.image" class="upload-actions">
-          <text class="link-action" @click="creativeForm.image = ''">移除</text>
-          <text class="link-action" @click="onPickCreativeImage">重新上传</text>
-        </view>
-      </view>
-      <view class="form-row">
-        <text class="form-label">点击跳转链接</text>
-        <wd-input no-border
-          v-model="creativeForm.link"
-          class="form-input"
-          placeholder="https:// 或 /pages/xxx"
-          maxlength="200"
-         />
-      </view>
-      <view class="form-row form-row-half">
-        <view class="half-col">
-          <text class="form-label">开始日期</text>
+        <view v-if="slotSheetMode === 'edit-time'" class="form-row">
+          <text class="form-label">开始日期<text class="required">*</text></text>
           <wd-datetime-picker
             type="date"
             title="选择开始日期"
-            :model-value="dateStringToTimestamp(creativeForm.startAt)"
-            @confirm="creativeForm.startAt = timestampToDateString($event.value)"
+            :model-value="dateStringToTimestamp(slotForm.startAt)"
+            @confirm="slotForm.startAt = timestampToDateString($event.value)"
           >
             <view class="form-input picker">
-              <text>{{ creativeForm.startAt }}</text>
+              <text>{{ slotForm.startAt || '请选择' }}</text>
+              <wd-icon :name="$jwIcon('calendar')" size="14px" color="#86909C" />
             </view>
           </wd-datetime-picker>
         </view>
-        <view class="half-col">
-          <text class="form-label">结束日期</text>
+        <view v-if="slotSheetMode === 'edit-time'" class="form-row">
+          <text class="form-label">结束日期<text class="required">*</text></text>
           <wd-datetime-picker
             type="date"
             title="选择结束日期"
-            :model-value="dateStringToTimestamp(creativeForm.endAt)"
-            :min-date="dateStringToTimestamp(creativeForm.startAt)"
-            @confirm="creativeForm.endAt = timestampToDateString($event.value)"
+            :model-value="dateStringToTimestamp(slotForm.endAt)"
+            :min-date="dateStringToTimestamp(slotForm.startAt)"
+            @confirm="slotForm.endAt = timestampToDateString($event.value)"
           >
             <view class="form-input picker">
-              <text>{{ creativeForm.endAt }}</text>
+              <text>{{ slotForm.endAt || '请选择' }}</text>
+              <wd-icon :name="$jwIcon('calendar')" size="14px" color="#86909C" />
             </view>
           </wd-datetime-picker>
         </view>
-      </view>
-      <view class="form-row">
-        <text class="form-label">预算(元)</text>
-        <wd-input no-border
-          v-model.number="creativeForm.budget"
-          class="form-input"
-          type="number"
-          placeholder="0 表示不设上限"
-         />
-      </view>
-    </FormSheet>
-  </view>
+      </FormSheet>
 
+      <!-- 创意 sheet (create / edit) -->
+      <FormSheet
+        :open="creativeSheetOpen"
+        :title="creativeSheetTitle"
+        :confirm-text="creativeSheetMode === 'create' ? '创建' : '保存'"
+        :loading="creativeSubmitting"
+        :disabled="creativeSheetConfirmDisabled"
+        @close="creativeSheetOpen = false"
+        @confirm="submitCreativeSheet"
+      >
+        <view class="form-row">
+          <text class="form-label">创意标题<text class="required">*</text></text>
+          <wd-input
+            no-border
+            v-model="creativeForm.title"
+            class="form-input"
+            placeholder="如:双11 全场五折"
+            maxlength="40"
+          />
+        </view>
+        <view class="form-row">
+          <text class="form-label">归属广告位<text class="required">*</text></text>
+          <wd-picker
+            :model-value="creativeForm.slotId"
+            :columns="slots.map((slot) => ({ label: slot.name, value: slot.id }))"
+            :disabled="creativeSheetMode === 'edit'"
+            title="选择广告位"
+            @confirm="creativeForm.slotId = String($event.value || '')"
+          >
+            <view :class="['form-input', 'picker', creativeSheetMode === 'edit' ? 'disabled' : '']">
+              <text>{{ slotNameOf(creativeForm.slotId) || '请选择广告位' }}</text>
+              <wd-icon :name="$jwIcon('chevron-down')" size="14px" color="#86909C" />
+            </view>
+          </wd-picker>
+        </view>
+        <view class="form-row">
+          <text class="form-label">创意图<text class="required">*</text></text>
+          <wd-upload
+            :file-list="[]"
+            :limit="1"
+            :disabled="creativeSubmitting"
+            :before-choose="(option: any) => delegateWotUploadChoose(option, onPickCreativeImage)"
+          >
+            <view class="upload-box">
+              <image
+                v-if="creativeForm.image"
+                :src="creativeForm.image"
+                class="upload-preview"
+                mode="aspectFill"
+              />
+              <view v-else class="upload-placeholder">
+                <wd-icon :name="$jwIcon('image-plus')" size="24px" color="#C9CDD4" />
+                <text class="upload-hint">点击选图上传</text>
+              </view>
+            </view>
+          </wd-upload>
+          <view v-if="creativeForm.image" class="upload-actions">
+            <text class="link-action" @click="creativeForm.image = ''">移除</text>
+            <text class="link-action" @click="onPickCreativeImage">重新上传</text>
+          </view>
+        </view>
+        <view class="form-row">
+          <text class="form-label">点击跳转链接</text>
+          <wd-input
+            no-border
+            v-model="creativeForm.link"
+            class="form-input"
+            placeholder="https:// 或 /pages/xxx"
+            maxlength="200"
+          />
+        </view>
+        <view class="form-row form-row-half">
+          <view class="half-col">
+            <text class="form-label">开始日期</text>
+            <wd-datetime-picker
+              type="date"
+              title="选择开始日期"
+              :model-value="dateStringToTimestamp(creativeForm.startAt)"
+              @confirm="creativeForm.startAt = timestampToDateString($event.value)"
+            >
+              <view class="form-input picker">
+                <text>{{ creativeForm.startAt }}</text>
+              </view>
+            </wd-datetime-picker>
+          </view>
+          <view class="half-col">
+            <text class="form-label">结束日期</text>
+            <wd-datetime-picker
+              type="date"
+              title="选择结束日期"
+              :model-value="dateStringToTimestamp(creativeForm.endAt)"
+              :min-date="dateStringToTimestamp(creativeForm.startAt)"
+              @confirm="creativeForm.endAt = timestampToDateString($event.value)"
+            >
+              <view class="form-input picker">
+                <text>{{ creativeForm.endAt }}</text>
+              </view>
+            </wd-datetime-picker>
+          </view>
+        </view>
+        <view class="form-row">
+          <text class="form-label">预算(元)</text>
+          <wd-input
+            no-border
+            v-model.number="creativeForm.budget"
+            class="form-input"
+            type="number"
+            placeholder="0 表示不设上限"
+          />
+        </view>
+      </FormSheet>
+    </view>
   </wd-config-provider>
 </template>
 

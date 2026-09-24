@@ -1,0 +1,23 @@
+{
+  "source": "actual WXML/WXSS rendered in Chromium, not WeChat",
+  "checks": [
+    "list @ 320: no horizontal overflow",
+    "dashboard @ 320: no horizontal overflow",
+    "detail @ 320: no horizontal overflow",
+    "form @ 320: no horizontal overflow",
+    "inline @ 320: no horizontal overflow",
+    "list @ 390: no horizontal overflow",
+    "dashboard @ 390: no horizontal overflow",
+    "detail @ 390: no horizontal overflow",
+    "form @ 390: no horizontal overflow",
+    "inline @ 390: no horizontal overflow",
+    "list @ 430: no horizontal overflow",
+    "dashboard @ 430: no horizontal overflow",
+    "detail @ 430: no horizontal overflow",
+    "form @ 430: no horizontal overflow",
+    "inline @ 430: no horizontal overflow"
+  ],
+  "reducedMotion": "passed",
+  "pageErrors": [],
+  "nativeVerified": false
+}

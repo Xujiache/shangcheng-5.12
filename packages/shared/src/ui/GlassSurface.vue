@@ -53,9 +53,15 @@ const surfaceClass = computed(() => [
     box-shadow var(--motion-normal, 200ms) ease,
     border-color var(--motion-normal, 200ms) ease;
 
-  &--card { border-radius: var(--radius-2xl, 20px); }
-  &--modal { border-radius: var(--radius-3xl, 24px); }
-  &--floating { border-radius: 999px; }
+  &--card {
+    border-radius: var(--radius-2xl, 20px);
+  }
+  &--modal {
+    border-radius: var(--radius-3xl, 24px);
+  }
+  &--floating {
+    border-radius: 999px;
+  }
   &--navbar,
   &--tabbar {
     border-radius: 0;
@@ -93,7 +99,9 @@ const surfaceClass = computed(() => [
   background: var(--surface-solid, #fff);
 }
 
-.jw-glass-surface__liquid { z-index: -2; }
+.jw-glass-surface__liquid {
+  z-index: -2;
+}
 
 .jw-glass-surface__highlight {
   z-index: -1;
@@ -110,6 +118,8 @@ const surfaceClass = computed(() => [
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .jw-glass-surface { transition: none; }
+  .jw-glass-surface {
+    transition: none;
+  }
 }
 </style>

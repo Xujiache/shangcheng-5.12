@@ -21,6 +21,7 @@ import { CreateLedgerCustomerDto, UpdateLedgerCustomerDto } from './dto/customer
 import { UpdateLedgerGoalDto } from './dto/misc.dto'
 import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
 import { CreateLedgerWorkLogDto, UpdateLedgerWorkLogDto, WorkLogQueryDto } from './dto/work-log.dto'
+import { WorkbookService } from './workbook/workbook.service'
 
 /**
  * 门窗利账 App · 业务（/api/v1/l/*，需登录 + 会员有效）。
@@ -31,7 +32,10 @@ import { CreateLedgerWorkLogDto, UpdateLedgerWorkLogDto, WorkLogQueryDto } from 
 @UseGuards(LedgerJwtGuard, LedgerMembershipGuard)
 @Controller('l')
 export class LedgerBizController {
-  constructor(private readonly svc: LedgerService) {}
+  constructor(
+    private readonly svc: LedgerService,
+    private readonly workbook: WorkbookService,
+  ) {}
 
   // ── 订单 ──
   @Get('orders')
@@ -93,11 +97,11 @@ export class LedgerBizController {
   // ── 记工（独立日工台账）──
   @Get('work-logs')
   listWorkLogs(@CurrentLedgerUser() u: LedgerAuthUser, @Query() q: WorkLogQueryDto) {
-    return this.svc.listWorkLogs(u.id, q)
+    return this.workbook.legacyList(u.id, q.month)
   }
   @Post('work-logs')
   createWorkLog(@CurrentLedgerUser() u: LedgerAuthUser, @Body() dto: CreateLedgerWorkLogDto) {
-    return this.svc.createWorkLog(u.id, dto)
+    return this.workbook.legacyWrite(u.id, undefined, dto)
   }
   @Patch('work-logs/:id')
   updateWorkLog(
@@ -105,11 +109,11 @@ export class LedgerBizController {
     @Param('id') id: string,
     @Body() dto: UpdateLedgerWorkLogDto,
   ) {
-    return this.svc.updateWorkLog(u.id, id, dto)
+    return this.workbook.legacyWrite(u.id, id, dto)
   }
   @Delete('work-logs/:id')
   deleteWorkLog(@CurrentLedgerUser() u: LedgerAuthUser, @Param('id') id: string) {
-    return this.svc.deleteWorkLog(u.id, id)
+    return this.workbook.legacyWrite(u.id, id, {}, true)
   }
 
   // ── 统计 ──

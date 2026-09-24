@@ -142,102 +142,151 @@ onMounted(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar :title="storeName + ' · 授权'" right-text="保存" @click-right="save"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        :title="storeName + ' · 授权'"
+        right-text="保存"
+        @click-right="save"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="body">
-      <!-- 等级 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "门店等级" }}</text></view></view></template>
-        <view class="level-list">
-          <view
-            v-for="l in LEVELS"
-            :key="l.key"
-            :class="['level-card', { active: config.level === l.key }]"
-            @click="pickLevel(l.key)"
+      <view class="body">
+        <!-- 等级 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '门店等级' }}</text></view
+              ></view
+            ></template
           >
-            <view class="level-badge">{{ l.key }}</view>
-            <view class="level-info">
-              <text class="level-name">{{ l.label }}</text>
-              <text class="level-desc">{{ l.desc }}</text>
-            </view>
-            <text v-if="config.level === l.key" class="tick">✓</text>
-          </view>
-        </view>
-      </wd-card>
-
-      <!-- 可见价格类型 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "可见价格" }}</text><text class="jw-section-sub">门店登录后可看到的价格类型</text></view></view></template>
-        <view class="tier-row">
-          <view
-            v-for="t in PRICE_TIERS"
-            :key="t.key"
-            :class="['tier-card', { active: config.visiblePriceTiers.includes(t.key) }]"
-            @click="togglePriceTier(t.key)"
-          >
-            <view class="tier-color" :style="{ background: t.color }" />
-            <text class="tier-label">{{ t.label }}</text>
-            <text class="tier-check">{{ config.visiblePriceTiers.includes(t.key) ? '✓' : '+' }}</text>
-          </view>
-        </view>
-      </wd-card>
-
-      <!-- 可上架商品 + 加价规则 -->
-      <wd-card
-       type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ `可上架商品 · ${enabledCount} / ${totalCount}` }}</text></view><wd-button type="text" size="small" @click="selectAll(enabledCount !== totalCount)">{{ enabledCount === totalCount ? '取消全选' : '全选' }}</wd-button></view></template>
-        <view class="policy-list">
-          <view v-for="p in config.productPolicies" :key="p.categoryId" class="policy-row">
-            <view class="policy-left">
-              <wd-switch :model-value="p.enabled" active-color="var(--brand-primary)" @change="togglePolicy(p)" style="transform: scale(0.8)"  />
-              <text class="policy-name" :class="{ disabled: !p.enabled }">{{ p.categoryName }}</text>
-            </view>
-            <view v-if="p.enabled" class="policy-markup">
-              <text class="markup-label">加价</text>
-              <view class="markup-step" @click="adjustMarkup(p, -5)">−</view>
-              <view class="markup-value">
-                <text>{{ p.markupPercent }}</text>
-                <text class="unit">%</text>
+          <view class="level-list">
+            <view
+              v-for="l in LEVELS"
+              :key="l.key"
+              :class="['level-card', { active: config.level === l.key }]"
+              @click="pickLevel(l.key)"
+            >
+              <view class="level-badge">{{ l.key }}</view>
+              <view class="level-info">
+                <text class="level-name">{{ l.label }}</text>
+                <text class="level-desc">{{ l.desc }}</text>
               </view>
-              <view class="markup-step" @click="adjustMarkup(p, 5)">＋</view>
+              <text v-if="config.level === l.key" class="tick">✓</text>
             </view>
-            <view v-else class="policy-disabled-tip">未启用</view>
           </view>
-        </view>
-      </wd-card>
+        </wd-card>
 
-      <!-- 有效期 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "授权有效期" }}</text></view></view></template>
-        <view class="valid-row">
-          <view class="valid-block">
-            <text class="valid-label">开始</text>
-            <text class="valid-value">{{ config.authValidFrom }}</text>
-          </view>
-          <text class="valid-arrow">→</text>
-          <wd-datetime-picker
-            type="date"
-            title="选择授权到期日"
-            :model-value="dateStringToTimestamp(config.authValidTo)"
-            :min-date="dateStringToTimestamp(config.authValidFrom)"
-            @confirm="pickValidTo($event.value)"
+        <!-- 可见价格类型 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '可见价格' }}</text
+                ><text class="jw-section-sub">门店登录后可看到的价格类型</text></view
+              ></view
+            ></template
           >
-            <view class="valid-block clickable">
-              <text class="valid-label">结束</text>
-              <text class="valid-value">{{ config.authValidTo }}</text>
+          <view class="tier-row">
+            <view
+              v-for="t in PRICE_TIERS"
+              :key="t.key"
+              :class="['tier-card', { active: config.visiblePriceTiers.includes(t.key) }]"
+              @click="togglePriceTier(t.key)"
+            >
+              <view class="tier-color" :style="{ background: t.color }" />
+              <text class="tier-label">{{ t.label }}</text>
+              <text class="tier-check">{{
+                config.visiblePriceTiers.includes(t.key) ? '✓' : '+'
+              }}</text>
             </view>
-          </wd-datetime-picker>
-        </view>
-        <view class="valid-tip">
-          <text>到期后门店自动失去授权，可手动续期</text>
-        </view>
-      </wd-card>
+          </view>
+        </wd-card>
 
-      <view class="safe-bottom" />
+        <!-- 可上架商品 + 加价规则 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{
+                  `可上架商品 · ${enabledCount} / ${totalCount}`
+                }}</text></view
+              ><wd-button
+                type="text"
+                size="small"
+                @click="selectAll(enabledCount !== totalCount)"
+                >{{ enabledCount === totalCount ? '取消全选' : '全选' }}</wd-button
+              ></view
+            ></template
+          >
+          <view class="policy-list">
+            <view v-for="p in config.productPolicies" :key="p.categoryId" class="policy-row">
+              <view class="policy-left">
+                <wd-switch
+                  :model-value="p.enabled"
+                  active-color="var(--brand-primary)"
+                  @change="togglePolicy(p)"
+                  style="transform: scale(0.8)"
+                />
+                <text class="policy-name" :class="{ disabled: !p.enabled }">{{
+                  p.categoryName
+                }}</text>
+              </view>
+              <view v-if="p.enabled" class="policy-markup">
+                <text class="markup-label">加价</text>
+                <view class="markup-step" @click="adjustMarkup(p, -5)">−</view>
+                <view class="markup-value">
+                  <text>{{ p.markupPercent }}</text>
+                  <text class="unit">%</text>
+                </view>
+                <view class="markup-step" @click="adjustMarkup(p, 5)">＋</view>
+              </view>
+              <view v-else class="policy-disabled-tip">未启用</view>
+            </view>
+          </view>
+        </wd-card>
+
+        <!-- 有效期 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '授权有效期' }}</text></view
+              ></view
+            ></template
+          >
+          <view class="valid-row">
+            <view class="valid-block">
+              <text class="valid-label">开始</text>
+              <text class="valid-value">{{ config.authValidFrom }}</text>
+            </view>
+            <text class="valid-arrow">→</text>
+            <wd-datetime-picker
+              type="date"
+              title="选择授权到期日"
+              :model-value="dateStringToTimestamp(config.authValidTo)"
+              :min-date="dateStringToTimestamp(config.authValidFrom)"
+              @confirm="pickValidTo($event.value)"
+            >
+              <view class="valid-block clickable">
+                <text class="valid-label">结束</text>
+                <text class="valid-value">{{ config.authValidTo }}</text>
+              </view>
+            </wd-datetime-picker>
+          </view>
+          <view class="valid-tip">
+            <text>到期后门店自动失去授权，可手动续期</text>
+          </view>
+        </wd-card>
+
+        <view class="safe-bottom" />
+      </view>
     </view>
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -286,8 +335,15 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .level-name { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-    .level-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .level-name {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .level-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
   .tick {
     color: var(--brand-primary);
@@ -331,7 +387,10 @@ onMounted(() => {
     font-size: 28rpx;
     color: var(--text-tertiary);
   }
-  &.active .tier-check { color: var(--brand-primary); font-weight: 700; }
+  &.active .tier-check {
+    color: var(--brand-primary);
+    font-weight: 700;
+  }
 }
 .policy-list {
   display: flex;
@@ -343,7 +402,9 @@ onMounted(() => {
   justify-content: space-between;
   padding: 16rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .policy-left {
   display: flex;
@@ -353,14 +414,20 @@ onMounted(() => {
   .policy-name {
     font-size: 26rpx;
     color: var(--text-primary);
-    &.disabled { color: var(--text-tertiary); text-decoration: line-through; }
+    &.disabled {
+      color: var(--text-tertiary);
+      text-decoration: line-through;
+    }
   }
 }
 .policy-markup {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  .markup-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .markup-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .markup-step {
     width: 48rpx;
     height: 48rpx;
@@ -379,10 +446,17 @@ onMounted(() => {
     font-weight: 700;
     color: var(--brand-primary);
     font-family: var(--font-family-base);
-    .unit { font-size: 20rpx; color: var(--text-tertiary); margin-left: 2rpx; }
+    .unit {
+      font-size: 20rpx;
+      color: var(--text-tertiary);
+      margin-left: 2rpx;
+    }
   }
 }
-.policy-disabled-tip { font-size: 22rpx; color: var(--text-tertiary); }
+.policy-disabled-tip {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
 .valid-row {
   display: flex;
   align-items: center;
@@ -401,7 +475,10 @@ onMounted(() => {
     background: var(--brand-primary-ghost);
     border: 1rpx solid var(--brand-primary);
   }
-  .valid-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .valid-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .valid-value {
     font-size: 26rpx;
     font-weight: 700;
@@ -421,5 +498,7 @@ onMounted(() => {
   font-size: 22rpx;
   color: var(--text-secondary);
 }
-.safe-bottom { height: 80rpx; }
+.safe-bottom {
+  height: 80rpx;
+}
 </style>

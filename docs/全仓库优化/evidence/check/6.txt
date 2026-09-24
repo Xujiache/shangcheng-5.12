@@ -1,0 +1,19 @@
+
+> jiujiu-mall@0.0.1 typecheck D:\工作\工作\工作（客户）\经纬智能科技\代码
+> pnpm -r typecheck
+
+Scope: 7 of 8 workspace projects
+packages/shared typecheck$ tsc --noEmit
+packages/ledger-mp typecheck$ tsc --noEmit
+packages/shared typecheck: Done
+packages/ledger-mp typecheck: Done
+packages/merchant-app typecheck$ vue-tsc --noEmit
+packages/platform-app typecheck$ vue-tsc --noEmit
+packages/admin-pc typecheck$ vue-tsc --noEmit
+packages/server typecheck$ tsc --noEmit
+packages/platform-app typecheck: Done
+packages/user-mp typecheck$ vue-tsc --noEmit
+packages/merchant-app typecheck: Done
+packages/server typecheck: Done
+packages/user-mp typecheck: Done
+packages/admin-pc typecheck: Done

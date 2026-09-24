@@ -26,7 +26,11 @@ function hasStoredSession(): boolean {
 }
 
 function isPublicRoute(route: string): boolean {
-  return route.includes('pages/startup/') || route.includes('pages/auth/') || route.includes('pages/update/')
+  return (
+    route.includes('pages/startup/') ||
+    route.includes('pages/auth/') ||
+    route.includes('pages/update/')
+  )
 }
 
 function currentRoute(): string {
@@ -111,5 +115,4 @@ page {
 ::-webkit-scrollbar {
   display: none;
 }
-
 </style>

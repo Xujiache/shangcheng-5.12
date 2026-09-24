@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "9a91ab63215086de13e2c2c4c5682cc6a35d25117f32c1c6e454e89d1bbeb58d",
+  "mode": "build",
+  "startedAt": "2026-09-08T20:15:00.178Z",
+  "status": "passed",
+  "steps": [
+    {
+      "command": ["pnpm.cmd", "build:shared"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 7141,
+      "artifact": "docs/全仓库优化/evidence/build/0.txt",
+      "sha256": "4ec5e5219e74e35ec30dd51e1a8851758e4d51abe8e6d2370c15fed07b049c07"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "prisma:generate"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 4398,
+      "artifact": "docs/全仓库优化/evidence/build/1.txt",
+      "sha256": "ab78f7e15aab5688fcf08364e0b9ddd248f79eef6234799271a7615eb911a073"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "build"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 14023,
+      "artifact": "docs/全仓库优化/evidence/build/2.txt",
+      "sha256": "40cfda24235813fcc50c89ab9e223e0e9dbf49a4e02758de70643dae9e37d459"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/admin-pc", "build"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 98216,
+      "artifact": "docs/全仓库优化/evidence/build/3.txt",
+      "sha256": "72876c2800113c590e5f01dd2f01effcead19ffaf078145bcc3dbcbaf6197df3"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/user-mp", "build:h5"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 21641,
+      "artifact": "docs/全仓库优化/evidence/build/4.txt",
+      "sha256": "6ccb3566e7acd19bae47043f179eff5635f5927e7685e9d5bd49692f4f9c3221"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/user-mp", "build:mp-weixin"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 17417,
+      "artifact": "docs/全仓库优化/evidence/build/5.txt",
+      "sha256": "5d827752d7c1938eda4ae4f9589444a9f92a8445366e09120928a8aa8b8bb277"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/user-mp", "build:app"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 15054,
+      "artifact": "docs/全仓库优化/evidence/build/6.txt",
+      "sha256": "3a12e7b2dc9dced9be2736ab4908fce2507cee045664f2014038e52a06f905e1"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/merchant-app", "build:h5"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 24543,
+      "artifact": "docs/全仓库优化/evidence/build/7.txt",
+      "sha256": "24de66f966e13dcc4f55c722f714809bf8a745f3bf92ef635c608c9b690094ca"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/merchant-app", "build:mp-weixin"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 19060,
+      "artifact": "docs/全仓库优化/evidence/build/8.txt",
+      "sha256": "678df12d3ef5b1a55f63403779fd681612ce321bb546a48f2553dc0dad645df8"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/merchant-app", "build:app"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 17155,
+      "artifact": "docs/全仓库优化/evidence/build/9.txt",
+      "sha256": "4f48d3625e1e67ec57b6b65bf325784d76973100c8cfe7d9b4ea2a7795a1e87f"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/platform-app", "build:h5"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 22333,
+      "artifact": "docs/全仓库优化/evidence/build/10.txt",
+      "sha256": "c3524c5d05a274b5eedc822399ba863fcbbea2f6b9a5bea360b8b4c2754f4b57"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/platform-app", "build:app"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 14888,
+      "artifact": "docs/全仓库优化/evidence/build/11.txt",
+      "sha256": "492e21a97d209d7e627d969d71eadd3b939a98f2696204deb62b3cc894e45a40"
+    },
+    {
+      "command": ["C:\\Program Files\\nodejs\\node.exe", "scripts/verify-workbook-templates.cjs"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 400,
+      "artifact": "docs/全仓库优化/evidence/build/12.txt",
+      "sha256": "8441d5f496191f497b50074b7736936faacc869b6feada47dff870325443ff56"
+    }
+  ],
+  "finishedAt": "2026-09-08T20:19:38.625Z",
+  "archivedFrom": ".quality/build/report.json"
+}

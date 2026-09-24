@@ -103,7 +103,8 @@ export function readUpdateContext(): UpdateContext | null {
     const raw = uni.getStorageSync(CONTEXT_KEY)
     if (!raw) return null
     const value = (typeof raw === 'string' ? JSON.parse(raw) : raw) as UpdateContext
-    if (!value?.latest?.url || !value.latest.versionCode || value.platform !== 'merchant') return null
+    if (!value?.latest?.url || !value.latest.versionCode || value.platform !== 'merchant')
+      return null
     return value
   } catch {
     return null
@@ -173,23 +174,30 @@ async function runCheck(
     const latest = await appService.getLatest(platform)
     if (!latest?.url || !latest.versionCode || latest.versionCode <= runtime.versionCode) {
       availableAppUpdate.value = null
-      if (!silent) appFeedback.showToast({ title: `已是最新版本 v${runtime.version}`, icon: 'success' })
+      if (!silent)
+        appFeedback.showToast({ title: `已是最新版本 v${runtime.version}`, icon: 'success' })
       return 'continue'
     }
 
     availableAppUpdate.value = latest
-    if (!shouldPresentAppUpdate({
-      currentVersionCode: runtime.versionCode,
-      latestVersionCode: latest.versionCode,
-      force: !!latest.force,
-      source,
-      dismissedVersionCode: dismissedVersionThisSession,
-    })) {
+    if (
+      !shouldPresentAppUpdate({
+        currentVersionCode: runtime.versionCode,
+        latestVersionCode: latest.versionCode,
+        force: !!latest.force,
+        source,
+        dismissedVersionCode: dismissedVersionThisSession,
+      })
+    ) {
       return 'continue'
     }
 
     if (runtime.os !== 'android') {
-      if (!silent) await showMessage('发现新版本', `最新版本 v${latest.version}\n当前仅支持 Android 安装包更新。`)
+      if (!silent)
+        await showMessage(
+          '发现新版本',
+          `最新版本 v${latest.version}\n当前仅支持 Android 安装包更新。`,
+        )
       return 'continue'
     }
 
@@ -205,7 +213,10 @@ async function runCheck(
     })
   } catch (error: any) {
     if (!silent) {
-      await showMessage('检查更新失败', error?.message || '暂时无法获取版本信息，请检查网络后重试。')
+      await showMessage(
+        '检查更新失败',
+        error?.message || '暂时无法获取版本信息，请检查网络后重试。',
+      )
     }
     return 'continue'
   }

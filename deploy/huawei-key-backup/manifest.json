@@ -1,0 +1,22 @@
+{
+  "format": "jingwei-encrypted-backup-manifest-v1",
+  "cipher": "AES-256-GCM",
+  "bundleSha256": "6b6fab9160e0cdc028607926b0f0bf18462194882070b7e4cb8628b7fd083f1e",
+  "fileCount": 13,
+  "files": [
+    "push/huawei-push-service-account.json",
+    "push/huawei-push-initial-backup.json",
+    "push/huawei-push-registration-response.json",
+    "push/huawei-push-private.pem",
+    "push/huawei-push-public.pem",
+    "push/huawei-push.local.env",
+    "deveco/build-profile.configured.json5",
+    "deveco/debug.p12",
+    "deveco/debug.cer",
+    "deveco/debug.p7b",
+    "deveco/debug.csr",
+    "verification/debug-verified-chain.cer",
+    "verification/debug-verified-profile.p7b"
+  ],
+  "includesPlaintextKeys": false
+}

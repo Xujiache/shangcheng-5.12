@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common'
 import { Request, Response } from 'express'
-import { nanoid } from 'nanoid'
+import { requestTraceId } from '../trace'
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -18,7 +18,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const req = ctx.getRequest<Request>()
     const res = ctx.getResponse<Response>()
 
-    const traceId = (req.headers['x-trace-id'] as string) || `t-${nanoid(10)}`
+    const traceId = requestTraceId(req)
     let status = HttpStatus.INTERNAL_SERVER_ERROR
     let code = 1000
     let message = '内部错误'
@@ -30,12 +30,27 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = response
       } else if (typeof response === 'object' && response !== null) {
         const r = response as Record<string, unknown>
-        message = (r.message as string) || message
+        message = Array.isArray(r.message)
+          ? r.message.filter((value): value is string => typeof value === 'string').join('；') ||
+            message
+          : typeof r.message === 'string'
+            ? r.message
+            : message
         code = (r.code as number) || status
       }
     } else if (exception instanceof Error) {
-      message = exception.message
-      this.logger.error(exception.stack)
+      message = '服务暂时不可用，请稍后重试'
+      // Keep call sites for diagnosis, not the message (which can contain credentials).
+      const stack = exception.stack
+        ?.split('\n')
+        .slice(1)
+        .filter(
+          (line) =>
+            /^\s+at /.test(line) && !/https?:\/\/|postgres(?:ql)?:\/\/|redis:\/\//i.test(line),
+        )
+        .slice(0, 12)
+        .join('\n')
+      this.logger.error({ traceId, error: exception.name, stack })
     }
 
     // 微信支付 v3 回调：要求顶层 { code: 'SUCCESS'|'FAIL', message }

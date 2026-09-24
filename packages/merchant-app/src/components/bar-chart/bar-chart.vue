@@ -34,7 +34,7 @@ const max = computed(() => Math.max(...props.data, 1))
         :key="i"
         class="bar"
         :style="{
-          height: ((v / max) * 100) + '%',
+          height: (v / max) * 100 + '%',
           background: i === highlightIndex ? accentColor : color,
         }"
       >
@@ -74,7 +74,9 @@ const max = computed(() => Math.max(...props.data, 1))
       opacity: 0;
       transition: opacity 0.2s;
     }
-    &:hover .bar-value { opacity: 1; }
+    &:hover .bar-value {
+      opacity: 1;
+    }
   }
   .labels {
     display: flex;

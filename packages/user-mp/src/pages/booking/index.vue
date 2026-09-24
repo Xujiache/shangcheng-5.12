@@ -36,7 +36,11 @@ function chooseAddress() {
         itemList: ['北京市朝阳区望京 SOHO', '上海市浦东新区陆家嘴', '广东省深圳市福田', '手动填写'],
         success: (r) => {
           if (r.tapIndex < 3) {
-            form.value.address = ['北京市朝阳区望京 SOHO', '上海市浦东新区陆家嘴', '广东省深圳市福田'][r.tapIndex]
+            form.value.address = [
+              '北京市朝阳区望京 SOHO',
+              '上海市浦东新区陆家嘴',
+              '广东省深圳市福田',
+            ][r.tapIndex]
           } else {
             uni.showModal({
               title: '预约地址',
@@ -100,7 +104,8 @@ function chooseTime() {
 
 async function submit() {
   if (!form.value.name) return uni.showToast({ title: '请填写联系人', icon: 'none' })
-  if (!/^1[3-9]\d{9}$/.test(form.value.phone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
+  if (!/^1[3-9]\d{9}$/.test(form.value.phone))
+    return uni.showToast({ title: '手机号格式错误', icon: 'none' })
   if (!form.value.address) return uni.showToast({ title: '请选择预约地址', icon: 'none' })
   if (!form.value.appointAt) return uni.showToast({ title: '请选择预约时间', icon: 'none' })
 
@@ -144,7 +149,13 @@ async function submit() {
       </view>
       <view class="row">
         <text class="label">手机号</text>
-        <input v-model="form.phone" class="input" type="number" maxlength="11" placeholder="请输入手机号" />
+        <input
+          v-model="form.phone"
+          class="input"
+          type="number"
+          maxlength="11"
+          placeholder="请输入手机号"
+        />
       </view>
       <view class="row link" @click="chooseAddress">
         <text class="label">预约地址</text>
@@ -171,7 +182,8 @@ async function submit() {
             :key="s"
             :class="['chip', form.space === s ? 'active' : '']"
             @click="form.space = s"
-          >{{ s }}</view>
+            >{{ s }}</view
+          >
         </view>
       </view>
       <view class="row col">
@@ -212,7 +224,7 @@ async function submit() {
     width: 96rpx;
     height: 96rpx;
     border-radius: 24rpx;
-    background: rgba(255,77,45,0.1);
+    background: rgba(255, 77, 45, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -222,8 +234,15 @@ async function submit() {
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .hero-title { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-    .hero-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .hero-title {
+      font-size: 30rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .hero-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .form {
@@ -239,7 +258,9 @@ async function submit() {
   gap: 16rpx;
   border-bottom: 1rpx dashed var(--border-light);
   padding: 24rpx 0;
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   &.col {
     flex-direction: column;
     align-items: stretch;
@@ -262,9 +283,13 @@ async function submit() {
     font-size: 28rpx;
     color: var(--text-primary);
     text-align: right;
-    &.placeholder { color: var(--text-tertiary); }
+    &.placeholder {
+      color: var(--text-tertiary);
+    }
   }
-  &.link { cursor: pointer; }
+  &.link {
+    cursor: pointer;
+  }
 }
 .time-row {
   display: flex;
@@ -288,7 +313,7 @@ async function submit() {
       background: $brand-gradient;
       border-color: transparent;
       color: #fff;
-      box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+      box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
     }
   }
 }
@@ -317,9 +342,14 @@ async function submit() {
     border-radius: 999rpx;
     font-size: 32rpx;
     font-weight: 700;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
-    &.loading { opacity: 0.7; }
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+    &.loading {
+      opacity: 0.7;
+    }
   }
-  .tip { font-size: 22rpx; color: var(--text-tertiary); }
+  .tip {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 </style>

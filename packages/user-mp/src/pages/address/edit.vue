@@ -26,12 +26,13 @@ const form = reactive({
   isDefault: false,
 })
 
-const isValid = computed(() => (
-  form.name.trim().length >= 2 &&
-  /^1[3-9]\d{9}$/.test(form.phone) &&
-  form.region.trim().length >= 2 &&
-  form.detail.trim().length >= 4
-))
+const isValid = computed(
+  () =>
+    form.name.trim().length >= 2 &&
+    /^1[3-9]\d{9}$/.test(form.phone) &&
+    form.region.trim().length >= 2 &&
+    form.detail.trim().length >= 4,
+)
 
 onLoad(async (options) => {
   if (options?.id) {
@@ -46,7 +47,9 @@ onLoad(async (options) => {
         form.detail = target.detail
         form.isDefault = target.isDefault
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 })
 
@@ -89,10 +92,12 @@ function pickOnMap() {
   })
   return undefined
   // #endif
+  // #ifndef MP-WEIXIN
 
   showMapPick.value = true
   mapPickKeyword.value = form.detail || form.region || ''
   doSearch()
+  // #endif
 }
 
 async function doSearch() {
@@ -109,7 +114,14 @@ function pickResult(item: { lat: number; lng: number; name?: string; address?: s
 }
 
 function chooseRegion() {
-  const items = ['上海市浦东新区', '上海市黄浦区', '北京市朝阳区', '广东省深圳市福田区', '浙江省杭州市西湖区', '其它（手动输入）']
+  const items = [
+    '上海市浦东新区',
+    '上海市黄浦区',
+    '北京市朝阳区',
+    '广东省深圳市福田区',
+    '浙江省杭州市西湖区',
+    '其它（手动输入）',
+  ]
   uni.showActionSheet({
     itemList: items,
     success: (r) => {
@@ -119,7 +131,9 @@ function chooseRegion() {
           editable: true,
           placeholderText: '省/市/区',
           content: form.region,
-          success: (mr) => { if (mr.confirm) form.region = mr.content || '' },
+          success: (mr) => {
+            if (mr.confirm) form.region = mr.content || ''
+          },
         })
       } else {
         form.region = items[r.tapIndex]
@@ -141,12 +155,20 @@ function chooseRegion() {
       <view class="divider" />
       <view class="field">
         <text class="label">手机号</text>
-        <input v-model="form.phone" class="input" type="number" maxlength="11" placeholder="11 位手机号" />
+        <input
+          v-model="form.phone"
+          class="input"
+          type="number"
+          maxlength="11"
+          placeholder="11 位手机号"
+        />
       </view>
       <view class="divider" />
       <view class="field row" @click="chooseRegion">
         <text class="label">所在地区</text>
-        <text :class="['value', !form.region && 'placeholder']">{{ form.region || '请选择省/市/区' }}</text>
+        <text :class="['value', !form.region && 'placeholder']">{{
+          form.region || '请选择省/市/区'
+        }}</text>
         <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />
       </view>
       <view class="divider" />
@@ -221,7 +243,9 @@ function chooseRegion() {
         :class="{ disabled: !isValid || submitting }"
         :disabled="!isValid || submitting"
         @click="submit"
-      >{{ submitting ? '保存中…' : '保 存' }}</button>
+      >
+        {{ submitting ? '保存中…' : '保 存' }}
+      </button>
     </view>
   </view>
 </template>
@@ -229,7 +253,7 @@ function chooseRegion() {
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background: #F7F8FA;
+  background: #f7f8fa;
   display: flex;
   flex-direction: column;
 }
@@ -245,7 +269,9 @@ function chooseRegion() {
   min-height: 96rpx;
   padding: 16rpx 0;
   gap: 24rpx;
-  &.row { align-items: center; }
+  &.row {
+    align-items: center;
+  }
   .label {
     width: 160rpx;
     font-size: 26rpx;
@@ -269,11 +295,18 @@ function chooseRegion() {
     flex: 1;
     font-size: 28rpx;
     color: var(--text-primary);
-    &.placeholder { color: var(--text-tertiary); }
+    &.placeholder {
+      color: var(--text-tertiary);
+    }
   }
 }
-.divider { height: 1rpx; background: var(--border-light); }
-.toggle { padding: 24rpx 0; }
+.divider {
+  height: 1rpx;
+  background: var(--border-light);
+}
+.toggle {
+  padding: 24rpx 0;
+}
 .switch {
   width: 88rpx;
   height: 48rpx;
@@ -289,12 +322,14 @@ function chooseRegion() {
     height: 40rpx;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.15);
+    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
     transition: left 0.2s;
   }
   &.on {
-    background: linear-gradient(135deg, #FF6B45, #FF4D2D);
-    .thumb { left: 44rpx; }
+    background: linear-gradient(135deg, #ff6b45, #ff4d2d);
+    .thumb {
+      left: 44rpx;
+    }
   }
 }
 .ft {
@@ -306,19 +341,22 @@ function chooseRegion() {
   width: 100%;
   height: 88rpx;
   line-height: 88rpx;
-  background: linear-gradient(135deg, #FF6B45, #FF4D2D);
+  background: linear-gradient(135deg, #ff6b45, #ff4d2d);
   color: #fff;
   border-radius: 999rpx;
   font-size: 30rpx;
   font-weight: 700;
   border: none;
   letter-spacing: 8rpx;
-  box-shadow: 0 8rpx 24rpx rgba(255,77,45,0.35);
-  &.disabled, &[disabled] {
+  box-shadow: 0 8rpx 24rpx rgba(255, 77, 45, 0.35);
+  &.disabled,
+  &[disabled] {
     opacity: 0.5;
     box-shadow: none;
   }
-  &::after { border: none; }
+  &::after {
+    border: none;
+  }
 }
 
 /* ============ 地图选址弹层 ============ */
@@ -345,8 +383,16 @@ function chooseRegion() {
   padding: 24rpx 32rpx;
   border-bottom: 1rpx solid #f0f2f5;
 }
-.mpick-title { font-size: 30rpx; font-weight: 700; color: #303133; }
-.mpick-close { font-size: 26rpx; color: #ff4d2d; font-weight: 600; }
+.mpick-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #303133;
+}
+.mpick-close {
+  font-size: 26rpx;
+  color: #ff4d2d;
+  font-weight: 600;
+}
 .mpick-search {
   display: flex;
   gap: 12rpx;
@@ -388,9 +434,24 @@ function chooseRegion() {
   gap: 16rpx;
   padding: 24rpx 32rpx;
   border-bottom: 1rpx solid #f5f6f8;
-  &:active { background: #fafbfc; }
+  &:active {
+    background: #fafbfc;
+  }
 }
-.mpick-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
-.mpick-item-name { font-size: 28rpx; font-weight: 600; color: #303133; }
-.mpick-item-addr { font-size: 22rpx; color: #909399; }
+.mpick-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.mpick-item-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #303133;
+}
+.mpick-item-addr {
+  font-size: 22rpx;
+  color: #909399;
+}
 </style>

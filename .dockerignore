@@ -28,3 +28,8 @@ deploy/data
 *.key
 *.p12
 *.pfx
+
+.quality
+**/.workbook-test
+docs
+native

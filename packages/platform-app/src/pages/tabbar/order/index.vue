@@ -167,88 +167,94 @@ onShow(applyInitTabFromStorage)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="top" :style="{ paddingTop: statusBarHeight }">
-      <view class="top-title">
-        <text>平台订单</text>
-        <text class="meta">{{ stats.total }} 笔订单</text>
+    <view class="page">
+      <view class="top" :style="{ paddingTop: statusBarHeight }">
+        <view class="top-title">
+          <text>平台订单</text>
+          <text class="meta">{{ stats.total }} 笔订单</text>
+        </view>
+        <view class="kpis">
+          <view class="k">
+            <text class="k-num">¥{{ formatWan(stats.gmv) }}</text>
+            <text class="k-label">本期 GMV</text>
+          </view>
+          <view class="k">
+            <text class="k-num">{{ stats.today }}</text>
+            <text class="k-label">今日订单</text>
+          </view>
+          <view class="k">
+            <text class="k-num">{{ stats.complaint }}</text>
+            <text class="k-label">售后投诉</text>
+          </view>
+        </view>
       </view>
-      <view class="kpis">
-        <view class="k">
-          <text class="k-num">¥{{ formatWan(stats.gmv) }}</text>
-          <text class="k-label">本期 GMV</text>
-        </view>
-        <view class="k">
-          <text class="k-num">{{ stats.today }}</text>
-          <text class="k-label">今日订单</text>
-        </view>
-        <view class="k">
-          <text class="k-num">{{ stats.complaint }}</text>
-          <text class="k-label">售后投诉</text>
-        </view>
-      </view>
-    </view>
 
-    <view class="search-wrap">
-      <view class="search-bar">
-        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
-        <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索订单号 / 收货人"  />
-      </view>
-    </view>
-
-    <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
-      <view class="tabs">
-        <view
-          v-for="t in TABS"
-          :key="t.key"
-          :class="['tab', tab === t.key ? 'active' : '']"
-          @click="tab = t.key"
-        >
-          <text>{{ t.label }}</text>
+      <view class="search-wrap">
+        <view class="search-bar">
+          <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)" />
+          <wd-input
+            no-border
+            v-model="keyword"
+            class="search-input"
+            placeholder="搜索订单号 / 收货人"
+          />
         </view>
       </view>
-    </scroll-view>
 
-    <view class="body">
-      <view v-for="o in filtered" :key="o.id" class="card" @click="goDetail(o)">
-        <view class="card-head">
-          <text class="no">{{ o.no }}</text>
+      <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
+        <view class="tabs">
           <view
-            class="status"
-            :style="{
-              color: STATUS_META[o.status]?.tint,
-              background: (STATUS_META[o.status]?.tint || '#86909C') + '14',
-            }"
+            v-for="t in TABS"
+            :key="t.key"
+            :class="['tab', tab === t.key ? 'active' : '']"
+            @click="tab = t.key"
           >
-            {{ STATUS_META[o.status]?.label || o.status }}
+            <text>{{ t.label }}</text>
           </view>
         </view>
-        <view class="info">
-          <view class="addr">
-            <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ o.address?.name }} · {{ o.address?.region }}</text>
+      </scroll-view>
+
+      <view class="body">
+        <view v-for="o in filtered" :key="o.id" class="card" @click="goDetail(o)">
+          <view class="card-head">
+            <text class="no">{{ o.no }}</text>
+            <view
+              class="status"
+              :style="{
+                color: STATUS_META[o.status]?.tint,
+                background: (STATUS_META[o.status]?.tint || '#86909C') + '14',
+              }"
+            >
+              {{ STATUS_META[o.status]?.label || o.status }}
+            </view>
           </view>
-          <view class="qty">
-            <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ o.items?.length ?? 0 }} 件商品</text>
+          <view class="info">
+            <view class="addr">
+              <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ o.address?.name }} · {{ o.address?.region }}</text>
+            </view>
+            <view class="qty">
+              <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ o.items?.length ?? 0 }} 件商品</text>
+            </view>
+          </view>
+          <view class="ft">
+            <text class="time">{{ formatDate(o.createdAt) }}</text>
+            <view class="amount">
+              <text class="cur">¥</text>
+              <text class="num">{{ formatPrice(o.payAmount) }}</text>
+            </view>
           </view>
         </view>
-        <view class="ft">
-          <text class="time">{{ formatDate(o.createdAt) }}</text>
-          <view class="amount">
-            <text class="cur">¥</text>
-            <text class="num">{{ formatPrice(o.payAmount) }}</text>
-          </view>
-        </view>
+        <wd-status-tip
+          v-if="!loading && filtered.length === 0"
+          image="content"
+          :tip="['暂无订单', '订单产生后会同步到这里'].filter(Boolean).join(' · ')"
+        />
       </view>
-      <wd-status-tip
-        v-if="!loading && filtered.length === 0"
-       image="content" :tip="['暂无订单', '订单产生后会同步到这里'].filter(Boolean).join(' · ')" />
+
+      <PrimaryLiquidTabBar flavor="platform" active="order" />
     </view>
-
-    <PrimaryLiquidTabBar flavor="platform" active="order" />
-  </view>
-
   </wd-config-provider>
 </template>
 

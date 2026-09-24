@@ -1,0 +1,11 @@
+{
+  "modelVersion": "7.0.0",
+  "name": "jingwei-merchant-harmony",
+  "version": "1.0.0",
+  "description": "经纬科技商家端 HarmonyOS NEXT 原生应用",
+  "dependencies": {},
+  "devDependencies": {
+    "@ohos/hypium": "1.0.24",
+    "@ohos/hamock": "1.0.0"
+  }
+}

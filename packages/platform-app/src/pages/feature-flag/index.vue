@@ -130,7 +130,8 @@ function remove(f: FeatureFlag) {
 async function reset() {
   appFeedback.showModal({
     title: '重置灰度配置',
-    content: '将所有开关的灰度恢复为 100%、清空白名单、移除所有商户级别的 override；不会影响 enable/disable 本身。',
+    content:
+      '将所有开关的灰度恢复为 100%、清空白名单、移除所有商户级别的 override；不会影响 enable/disable 本身。',
     success: async (r) => {
       if (!r.confirm) return
       try {
@@ -164,110 +165,152 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="商家端功能开关" @click-right="reset"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
-    </wd-navbar>
+    <view class="page">
+      <wd-navbar
+        title="商家端功能开关"
+        @click-right="reset"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      >
+        <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 顶部提示 -->
-      <view class="tip-strip">
-        <wd-icon :name="$jwIcon('info')" size="13px" color="var(--brand-primary)"  />
-        <text>控制商家 APP 后台的按钮 / 图标 / 菜单显隐 · 立即生效</text>
-      </view>
-
-      <!-- 总览卡 -->
-      <view class="hero">
-        <view class="hero-stat">
-          <text class="num">{{ enabledCount }}</text>
-          <text class="total">/ {{ totalCount }}</text>
+      <scroll-view scroll-y class="scroll">
+        <!-- 顶部提示 -->
+        <view class="tip-strip">
+          <wd-icon :name="$jwIcon('info')" size="13px" color="var(--brand-primary)" />
+          <text>控制商家 APP 后台的按钮 / 图标 / 菜单显隐 · 立即生效</text>
         </view>
-        <view class="hero-info">
-          <text class="label">已开启开关</text>
-          <view class="progress">
-            <view class="bar" :style="{ width: (totalCount ? (enabledCount / totalCount * 100).toFixed(0) : 0) + '%' }" />
+
+        <!-- 总览卡 -->
+        <view class="hero">
+          <view class="hero-stat">
+            <text class="num">{{ enabledCount }}</text>
+            <text class="total">/ {{ totalCount }}</text>
           </view>
-        </view>
-      </view>
-
-      <!-- 各 group 列表 -->
-      <view v-for="(list, g) in grouped" :key="g" class="card">
-        <view class="card-head">
-          <text class="card-title">{{ GROUP_LABEL[g] || g }}</text>
-          <text class="card-count">{{ list.length }} 项</text>
-        </view>
-        <view v-for="f in list" :key="f.id" class="row" @longpress="remove(f)">
-          <view class="row-info">
-            <view class="row-title-row">
-              <text class="row-title">{{ f.label }}</text>
-              <view :class="['aud-chip', f.audience]">{{ AUDIENCE_LABEL[f.audience] }}</view>
+          <view class="hero-info">
+            <text class="label">已开启开关</text>
+            <view class="progress">
+              <view
+                class="bar"
+                :style="{
+                  width: (totalCount ? ((enabledCount / totalCount) * 100).toFixed(0) : 0) + '%',
+                }"
+              />
             </view>
-            <text class="row-key">{{ f.key }}</text>
           </view>
-          <wd-switch :model-value="f.defaultEnabled" active-color="var(--brand-primary)" @click.stop="toggle(f)"  />
         </view>
-        <view v-if="list.length === 0" class="row-empty">暂无规则，点右下角"+"新增</view>
+
+        <!-- 各 group 列表 -->
+        <view v-for="(list, g) in grouped" :key="g" class="card">
+          <view class="card-head">
+            <text class="card-title">{{ GROUP_LABEL[g] || g }}</text>
+            <text class="card-count">{{ list.length }} 项</text>
+          </view>
+          <view v-for="f in list" :key="f.id" class="row" @longpress="remove(f)">
+            <view class="row-info">
+              <view class="row-title-row">
+                <text class="row-title">{{ f.label }}</text>
+                <view :class="['aud-chip', f.audience]">{{ AUDIENCE_LABEL[f.audience] }}</view>
+              </view>
+              <text class="row-key">{{ f.key }}</text>
+            </view>
+            <wd-switch
+              :model-value="f.defaultEnabled"
+              active-color="var(--brand-primary)"
+              @click.stop="toggle(f)"
+            />
+          </view>
+          <view v-if="list.length === 0" class="row-empty">暂无规则，点右下角"+"新增</view>
+        </view>
+
+        <view class="footer-tip">长按规则可删除 · 改动立即生效</view>
+        <view style="height: 160rpx" />
+      </scroll-view>
+
+      <!-- 浮动新增按钮 -->
+      <view class="add-fab" @click="openAdd">
+        <wd-icon :name="$jwIcon('plus')" size="20px" color="#fff" />
+        <text>新增规则</text>
       </view>
 
-      <view class="footer-tip">长按规则可删除 · 改动立即生效</view>
-      <view style="height: 160rpx" />
-    </scroll-view>
+      <!-- 新增弹层 -->
+      <wd-popup
+        v-model="showAdd"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text class="sheet-title">新增功能开关</text>
+            <text class="sheet-close" @click="showAdd = false">取消</text>
+          </view>
 
-    <!-- 浮动新增按钮 -->
-    <view class="add-fab" @click="openAdd">
-      <wd-icon :name="$jwIcon('plus')" size="20px" color="#fff"  />
-      <text>新增规则</text>
+          <view class="form-row">
+            <text class="form-label">规则名称</text>
+            <wd-input
+              no-border
+              v-model="addForm.label"
+              class="form-input"
+              placeholder="例：上传到选品广场"
+              maxlength="40"
+            />
+          </view>
+          <view class="form-row">
+            <text class="form-label">key</text>
+            <wd-input
+              no-border
+              v-model="addForm.key"
+              class="form-input"
+              placeholder="例：role.button.uploadToPlaza"
+              maxlength="80"
+            />
+
+            <text class="form-hint">规范：group.subkey.name；最后一段为商家端读取的短键</text>
+          </view>
+          <view class="form-row">
+            <text class="form-label">分组</text>
+            <view class="form-chips">
+              <view
+                v-for="g in ['home_entry', 'role_button', 'side_menu']"
+                :key="g"
+                :class="['form-chip', addForm.group === g && 'on']"
+                @click="addForm.group = g as any"
+                >{{ GROUP_LABEL[g] }}</view
+              >
+            </view>
+          </view>
+          <view class="form-row">
+            <text class="form-label">受众</text>
+            <view class="form-chips">
+              <view
+                v-for="a in ['all', 'factory', 'store', 'specific']"
+                :key="a"
+                :class="['form-chip', addForm.audience === a && 'on']"
+                @click="addForm.audience = a as any"
+                >{{ AUDIENCE_LABEL[a] }}</view
+              >
+            </view>
+          </view>
+          <view class="form-row">
+            <text class="form-label">默认开启</text>
+            <wd-switch
+              :model-value="addForm.defaultEnabled"
+              active-color="var(--brand-primary)"
+              @click.stop="addForm.defaultEnabled = !addForm.defaultEnabled"
+            />
+          </view>
+
+          <wd-button block type="primary" size="large" @click="submitAdd">确定新增</wd-button>
+        </view>
+      </wd-popup>
     </view>
-
-    <!-- 新增弹层 -->
-    <wd-popup v-model="showAdd" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text class="sheet-title">新增功能开关</text>
-          <text class="sheet-close" @click="showAdd = false">取消</text>
-        </view>
-
-        <view class="form-row">
-          <text class="form-label">规则名称</text>
-          <wd-input no-border v-model="addForm.label" class="form-input" placeholder="例：上传到选品广场" maxlength="40"  />
-        </view>
-        <view class="form-row">
-          <text class="form-label">key</text>
-          <wd-input no-border v-model="addForm.key" class="form-input" placeholder="例：role.button.uploadToPlaza" maxlength="80"  />
-          <text class="form-hint">规范：group.subkey.name；最后一段为商家端读取的短键</text>
-        </view>
-        <view class="form-row">
-          <text class="form-label">分组</text>
-          <view class="form-chips">
-            <view
-              v-for="g in ['home_entry', 'role_button', 'side_menu']"
-              :key="g"
-              :class="['form-chip', addForm.group === g && 'on']"
-              @click="addForm.group = g as any"
-            >{{ GROUP_LABEL[g] }}</view>
-          </view>
-        </view>
-        <view class="form-row">
-          <text class="form-label">受众</text>
-          <view class="form-chips">
-            <view
-              v-for="a in ['all', 'factory', 'store', 'specific']"
-              :key="a"
-              :class="['form-chip', addForm.audience === a && 'on']"
-              @click="addForm.audience = a as any"
-            >{{ AUDIENCE_LABEL[a] }}</view>
-          </view>
-        </view>
-        <view class="form-row">
-          <text class="form-label">默认开启</text>
-          <wd-switch :model-value="addForm.defaultEnabled" active-color="var(--brand-primary)" @click.stop="addForm.defaultEnabled = !addForm.defaultEnabled"  />
-        </view>
-
-        <wd-button block type="primary" size="large" @click="submitAdd">确定新增</wd-button>
-      </view>
-    </wd-popup>
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -278,7 +321,10 @@ onMounted(load)
   display: flex;
   flex-direction: column;
 }
-.scroll { flex: 1; height: 0; }
+.scroll {
+  flex: 1;
+  height: 0;
+}
 
 .tip-strip {
   margin: 16rpx 24rpx 0;
@@ -305,24 +351,42 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   gap: 4rpx;
-  .num { font-size: 56rpx; font-weight: 800; }
-  .total { font-size: 24rpx; opacity: 0.8; }
+  .num {
+    font-size: 56rpx;
+    font-weight: 800;
+  }
+  .total {
+    font-size: 24rpx;
+    opacity: 0.8;
+  }
 }
-.hero-info { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }
-.hero-info .label { font-size: 22rpx; opacity: 0.85; }
+.hero-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.hero-info .label {
+  font-size: 22rpx;
+  opacity: 0.85;
+}
 .progress {
   height: 8rpx;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 999rpx;
   overflow: hidden;
-  .bar { height: 100%; background: var(--bg-card); border-radius: 999rpx; }
+  .bar {
+    height: 100%;
+    background: var(--bg-card);
+    border-radius: 999rpx;
+  }
 }
 
 .card {
   margin: 24rpx;
   background: var(--bg-card);
   border-radius: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 .card-head {
@@ -330,8 +394,15 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  .card-title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-  .card-count { font-size: 22rpx; color: var(--text-tertiary); }
+  .card-title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .card-count {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
 }
 .row {
   display: flex;
@@ -339,12 +410,33 @@ onMounted(load)
   gap: 16rpx;
   padding: 20rpx 24rpx;
   border-top: 1rpx solid var(--border-light);
-  &:active { background: #fafbfc; }
+  &:active {
+    background: #fafbfc;
+  }
 }
-.row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
-.row-title-row { display: flex; align-items: center; gap: 8rpx; }
-.row-title { font-size: 28rpx; color: var(--text-primary); font-weight: 500; }
-.row-key { font-size: 20rpx; color: #909399; font-family: var(--font-family-base, monospace); }
+.row-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.row-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.row-title {
+  font-size: 28rpx;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.row-key {
+  font-size: 20rpx;
+  color: #909399;
+  font-family: var(--font-family-base, monospace);
+}
+
 .row-empty {
   padding: 32rpx 24rpx;
   text-align: center;
@@ -360,9 +452,18 @@ onMounted(load)
   font-weight: 600;
   background: var(--bg-page);
   color: var(--text-secondary);
-  &.factory { background: rgba(255, 77, 45, 0.1); color: #ff4d2d; }
-  &.store { background: rgba(82, 196, 26, 0.1); color: #52c41a; }
-  &.specific { background: rgba(114, 46, 209, 0.1); color: #722ED1; }
+  &.factory {
+    background: rgba(255, 77, 45, 0.1);
+    color: #ff4d2d;
+  }
+  &.store {
+    background: rgba(82, 196, 26, 0.1);
+    color: #52c41a;
+  }
+  &.specific {
+    background: rgba(114, 46, 209, 0.1);
+    color: #722ed1;
+  }
 }
 
 .footer-tip {
@@ -387,7 +488,9 @@ onMounted(load)
   border-radius: 999rpx;
   box-shadow: 0 10rpx 28rpx rgba(255, 77, 45, 0.4);
   z-index: 80;
-  &:active { transform: scale(0.97); }
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 .mask {
@@ -413,16 +516,31 @@ onMounted(load)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  .sheet-title { font-size: 32rpx; font-weight: 800; color: var(--text-primary); }
-  .sheet-close { font-size: 26rpx; color: var(--text-tertiary); }
+  .sheet-title {
+    font-size: 32rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .sheet-close {
+    font-size: 26rpx;
+    color: var(--text-tertiary);
+  }
 }
 .form-row {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
-.form-label { font-size: 24rpx; color: var(--text-secondary); font-weight: 600; }
-.form-hint { font-size: 20rpx; color: #c0c4cc; }
+.form-label {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.form-hint {
+  font-size: 20rpx;
+  color: #c0c4cc;
+}
+
 .form-input {
   height: 88rpx;
   padding: 0 20rpx;
@@ -459,6 +577,8 @@ onMounted(load)
   font-weight: 700;
   border-radius: 999rpx;
   box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.35);
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>

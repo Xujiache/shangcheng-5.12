@@ -5,7 +5,7 @@
   "description": "经纬科技（商家 + 平台 + 超管一体化控制台）",
   "type": "module",
   "engines": {
-    "node": ">=20.19.0",
+    "node": ">=24.19.0 <25",
     "pnpm": ">=8.8.0"
   },
   "scripts": {
@@ -19,7 +19,9 @@
     "lint:lint-staged": "lint-staged",
     "prepare": "husky",
     "commit": "git-cz",
-    "clean:dev": "tsx scripts/clean-dev.ts"
+    "clean:dev": "tsx scripts/clean-dev.ts",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run --config ../../vitest.config.mts"
   },
   "config": {
     "commitizen": {

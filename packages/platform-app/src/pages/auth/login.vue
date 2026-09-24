@@ -99,76 +99,84 @@ async function manualCheckUpdate() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="bg-deco" />
+    <view class="page">
+      <view class="bg-deco" />
 
-    <view class="header">
-      <view class="logo">经纬科技</view>
-      <text class="title">平台管理后台</text>
-      <text class="subtitle">Powered by 经纬科技 · Platform Console</text>
-    </view>
-
-    <GlassSurface class="card" variant="card" effect="auto">
-      <view class="card-head">
-        <text class="card-title">管理员登录</text>
-        <text class="card-tip">仅授权人员可访问</text>
+      <view class="header">
+        <view class="logo">经纬科技</view>
+        <text class="title">平台管理后台</text>
+        <text class="subtitle">Powered by 经纬科技 · Platform Console</text>
       </view>
 
-      <view class="field">
-        <view class="label-row">
-          <text class="label">账号</text>
+      <GlassSurface class="card" variant="card" effect="auto">
+        <view class="card-head">
+          <text class="card-title">管理员登录</text>
+          <text class="card-tip">仅授权人员可访问</text>
         </view>
-        <view class="input-wrap">
-          <text class="prefix-icon">@</text>
-          <wd-input no-border v-model="username" class="input" placeholder="邮箱 / 工号"  />
-        </view>
-      </view>
 
-      <view class="field">
-        <view class="label-row">
-          <text class="label">密码</text>
-          <text class="forgot">忘记密码</text>
+        <view class="field">
+          <view class="label-row">
+            <text class="label">账号</text>
+          </view>
+          <view class="input-wrap">
+            <text class="prefix-icon">@</text>
+            <wd-input no-border v-model="username" class="input" placeholder="邮箱 / 工号" />
+          </view>
         </view>
-        <view class="input-wrap">
-          <text class="prefix-icon">密</text>
-          <wd-input no-border v-model="password" class="input" show-password placeholder="6 位以上"  />
-          <text class="suffix-toggle" @click="showPwd = !showPwd">{{
-            showPwd ? '隐藏' : '显示'
-          }}</text>
-        </view>
-      </view>
 
-      <view class="agree-row">
-        <view :class="['check', agreed && 'on']" @click="agreed = !agreed" />
-        <text class="agree-text">
-          我已阅读并同意
-          <text class="hl" @click.stop="openAgreement('user')">《管理员守则》</text>
-          、
-          <text class="hl" @click.stop="openAgreement('privacy')">《隐私政策》</text>
-          及
-          <text class="hl" @click.stop="openAgreement('collect')">《信息收集清单》</text>
+        <view class="field">
+          <view class="label-row">
+            <text class="label">密码</text>
+            <text class="forgot">忘记密码</text>
+          </view>
+          <view class="input-wrap">
+            <text class="prefix-icon">密</text>
+            <wd-input
+              no-border
+              v-model="password"
+              class="input"
+              show-password
+              placeholder="6 位以上"
+            />
+            <text class="suffix-toggle" @click="showPwd = !showPwd">{{
+              showPwd ? '隐藏' : '显示'
+            }}</text>
+          </view>
+        </view>
+
+        <view class="agree-row">
+          <view :class="['check', agreed && 'on']" @click="agreed = !agreed" />
+          <text class="agree-text">
+            我已阅读并同意
+            <text class="hl" @click.stop="openAgreement('user')">《管理员守则》</text>
+            、
+            <text class="hl" @click.stop="openAgreement('privacy')">《隐私政策》</text>
+            及
+            <text class="hl" @click.stop="openAgreement('collect')">《信息收集清单》</text>
+          </text>
+        </view>
+
+        <wd-button
+          :class="['submit', (!canSubmit || loading) && 'disabled']"
+          :disabled="!canSubmit || loading"
+          @click="onLogin"
+          type="primary"
+          size="large"
+          block
+        >
+          {{ loading ? '登录中…' : '登 录' }}
+        </wd-button>
+      </GlassSurface>
+
+      <view class="footer">
+        <text class="update-link" @click="manualCheckUpdate">
+          {{ checkingUpdate ? '正在检查更新…' : '检查更新' }}
         </text>
+        <text class="copyright">© 2026 经纬科技 · 平台管理</text>
       </view>
 
-      <wd-button
-        :class="['submit', (!canSubmit || loading) && 'disabled']"
-        :disabled="!canSubmit || loading"
-        @click="onLogin"
-       type="primary" size="large" block>
-        {{ loading ? '登录中…' : '登 录' }}
-      </wd-button>
-    </GlassSurface>
-
-    <view class="footer">
-      <text class="update-link" @click="manualCheckUpdate">
-        {{ checkingUpdate ? '正在检查更新…' : '检查更新' }}
-      </text>
-      <text class="copyright">© 2026 经纬科技 · 平台管理</text>
+      <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
     </view>
-
-    <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
-  </view>
-
   </wd-config-provider>
 </template>
 

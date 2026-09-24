@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi } from '../../api/index'
 import { fmtDate } from '../../utils/format'
 import { getUser, logout } from '../../utils/store'
@@ -38,7 +39,7 @@ const PLAN_FALLBACK = [
   { key: 'year', label: '年卡', days: 365, price: '¥268' },
 ]
 
-Page({
+MotionPage({
   data: {
     gate: false,
     accountCode: '',
@@ -177,7 +178,7 @@ Page({
       confirmText: '去留言',
       cancelText: '我知道了',
       success: (r) => {
-        if (r.confirm) wx.navigateTo({ url: '/pages/feedback/index' })
+        if (r.confirm) navigation.navigateTo({ url: '/pages/feedback/index' })
       },
       // 弹窗期间管理员可能已开通，关闭后刷新状态
       complete: () => this.load(),
@@ -254,7 +255,9 @@ Page({
   // 微信回调异步开通：轮询会员状态，命中 active 即停（最多 ~6s）
   async pollMembership() {
     for (let i = 0; i < 6; i++) {
-      await new Promise((r) => setTimeout(r, 1000))
+      await new Promise((r) => {
+        setTimeout(r, 1000)
+      })
       try {
         const res: any = await meApi.refreshMembership()
         this.applyMembership(res)
@@ -265,7 +268,7 @@ Page({
     }
   },
   enterApp() {
-    wx.switchTab({ url: '/pages/home/index' })
+    navigation.switchTab({ url: '/pages/home/index' })
   },
   onLogout() {
     wx.showModal({

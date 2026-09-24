@@ -105,35 +105,35 @@ async function loadStats() {
       merchantService
         .list({ pageSize: 1 })
         .catch(
-        () =>
-          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
-            ReturnType<typeof merchantService.list>
-          >,
-      ),
+          () =>
+            ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+              ReturnType<typeof merchantService.list>
+            >,
+        ),
       merchantService
         .list({ type: 'factory', pageSize: 1 })
         .catch(
-        () =>
-          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
-            ReturnType<typeof merchantService.list>
-          >,
-      ),
+          () =>
+            ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+              ReturnType<typeof merchantService.list>
+            >,
+        ),
       merchantService
         .list({ type: 'store', pageSize: 1 })
         .catch(
-        () =>
-          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
-            ReturnType<typeof merchantService.list>
-          >,
-      ),
+          () =>
+            ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+              ReturnType<typeof merchantService.list>
+            >,
+        ),
       merchantService
         .list({ status: 'disabled', pageSize: 1 })
         .catch(
-        () =>
-          ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
-            ReturnType<typeof merchantService.list>
-          >,
-      ),
+          () =>
+            ({ total: 0, list: [], page: 1, pageSize: 1 }) as Awaited<
+              ReturnType<typeof merchantService.list>
+            >,
+        ),
     ])
     stats.value = {
       total: total.total ?? 0,
@@ -221,121 +221,131 @@ onShow(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- 顶部彩色条 -->
-    <view class="top-bar" :style="{ paddingTop: statusBarHeight }">
-      <view class="top-row">
-        <text class="top-title">商户管理</text>
-        <view class="audit-btn" @click="goAudit">
-          <wd-icon :name="$jwIcon('check-circle')" size="14px" color="#fff"  />
-          <text>入驻审核</text>
-        </view>
-      </view>
-      <view class="top-stats">
-        <view class="ts-item">
-          <text class="ts-num">{{ stats.total }}</text>
-          <text class="ts-label">商户总数</text>
-        </view>
-        <view class="ts-divider" />
-        <view class="ts-item">
-          <text class="ts-num">{{ stats.factory }}</text>
-          <text class="ts-label">厂家</text>
-        </view>
-        <view class="ts-divider" />
-        <view class="ts-item">
-          <text class="ts-num">{{ stats.store }}</text>
-          <text class="ts-label">门店</text>
-        </view>
-        <view class="ts-divider" />
-        <view class="ts-item">
-          <text class="ts-num">{{ stats.disabled }}</text>
-          <text class="ts-label">已停用</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 搜索 + Tab -->
-    <view class="header">
-      <view class="search-bar">
-        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
-        <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索商户名称 / 联系人"  />
-      </view>
-      <view class="tabs">
-        <view
-          v-for="t in TABS"
-          :key="t.key"
-          :class="['tab', tab === t.key ? 'active' : '']"
-          @click="tab = t.key"
-        >
-          <text>{{ t.label }}</text>
-          <view v-if="tab === t.key" class="indicator" />
-        </view>
-      </view>
-    </view>
-
-    <!-- 全局功能开关条 -->
-    <view class="switch-bar">
-      <view class="sw-info">
-        <view class="sw-dot" />
-        <text class="sw-label">厂家 & 门店按钮图标 显示开关</text>
-      </view>
-      <view
-        :class="['sw-toggle', showBtnSwitch ? 'on' : '']"
-        @click="showBtnSwitch = !showBtnSwitch"
-      >
-        <view class="sw-thumb" />
-        <text class="sw-text">{{ showBtnSwitch ? '常开' : '关闭' }}</text>
-      </view>
-    </view>
-
-    <view class="body">
-      <view v-for="m in filtered" :key="m.id" class="card">
-        <view class="card-head">
-          <view class="avatar" :style="{ background: typeMetaOf(m.type).tint }">
-            <text>{{ avatarOf(m) }}</text>
-          </view>
-          <view class="head-info">
-            <view class="head-top">
-              <text class="name">{{ m.name }}</text>
-              <view
-                class="type-tag"
-                :style="{
-                  color: typeMetaOf(m.type).tint,
-                  background: typeMetaOf(m.type).tint + '14',
-                }"
-              >
-                {{ typeMetaOf(m.type).label }}
-              </view>
-              <view v-if="m.status === 'disabled'" class="status-tag">已停用</view>
-            </view>
-            <text class="meta">{{ planOf(m) }} · 累计 GMV ¥{{ formatWan(m.totalGmv ?? 0) }}</text>
-            <view class="badge-row">
-              <view v-if="m.credit" class="badge">信用 {{ m.credit }} 级</view>
-              <view v-if="m.level" class="badge">{{ m.level }} 级商户</view>
-              <view v-if="(m.rejectRate ?? 0) < 5" class="badge ok">低驳回率</view>
-            </view>
+    <view class="page">
+      <!-- 顶部彩色条 -->
+      <view class="top-bar" :style="{ paddingTop: statusBarHeight }">
+        <view class="top-row">
+          <text class="top-title">商户管理</text>
+          <view class="audit-btn" @click="goAudit">
+            <wd-icon :name="$jwIcon('check-circle')" size="14px" color="#fff" />
+            <text>入驻审核</text>
           </view>
         </view>
+        <view class="top-stats">
+          <view class="ts-item">
+            <text class="ts-num">{{ stats.total }}</text>
+            <text class="ts-label">商户总数</text>
+          </view>
+          <view class="ts-divider" />
+          <view class="ts-item">
+            <text class="ts-num">{{ stats.factory }}</text>
+            <text class="ts-label">厂家</text>
+          </view>
+          <view class="ts-divider" />
+          <view class="ts-item">
+            <text class="ts-num">{{ stats.store }}</text>
+            <text class="ts-label">门店</text>
+          </view>
+          <view class="ts-divider" />
+          <view class="ts-item">
+            <text class="ts-num">{{ stats.disabled }}</text>
+            <text class="ts-label">已停用</text>
+          </view>
+        </view>
+      </view>
 
-        <view class="actions">
-          <view class="btn ghost" @click="viewDetail(m)">详情</view>
+      <!-- 搜索 + Tab -->
+      <view class="header">
+        <view class="search-bar">
+          <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)" />
+          <wd-input
+            no-border
+            v-model="keyword"
+            class="search-input"
+            placeholder="搜索商户名称 / 联系人"
+          />
+        </view>
+        <view class="tabs">
           <view
-            :class="['btn', m.status === 'disabled' ? 'primary' : 'dark']"
-            @click="togglePause(m)"
+            v-for="t in TABS"
+            :key="t.key"
+            :class="['tab', tab === t.key ? 'active' : '']"
+            @click="tab = t.key"
           >
-            {{ m.status === 'disabled' ? '恢复' : '停用' }}
+            <text>{{ t.label }}</text>
+            <view v-if="tab === t.key" class="indicator" />
           </view>
         </view>
       </view>
 
-      <wd-status-tip
-        v-if="!loading && filtered.length === 0"
-       image="content" :tip="['暂无商户', keyword ? '尝试其他关键词' : '该分类下还没有商户'].filter(Boolean).join(' · ')" />
+      <!-- 全局功能开关条 -->
+      <view class="switch-bar">
+        <view class="sw-info">
+          <view class="sw-dot" />
+          <text class="sw-label">厂家 & 门店按钮图标 显示开关</text>
+        </view>
+        <view
+          :class="['sw-toggle', showBtnSwitch ? 'on' : '']"
+          @click="showBtnSwitch = !showBtnSwitch"
+        >
+          <view class="sw-thumb" />
+          <text class="sw-text">{{ showBtnSwitch ? '常开' : '关闭' }}</text>
+        </view>
+      </view>
+
+      <view class="body">
+        <view v-for="m in filtered" :key="m.id" class="card">
+          <view class="card-head">
+            <view class="avatar" :style="{ background: typeMetaOf(m.type).tint }">
+              <text>{{ avatarOf(m) }}</text>
+            </view>
+            <view class="head-info">
+              <view class="head-top">
+                <text class="name">{{ m.name }}</text>
+                <view
+                  class="type-tag"
+                  :style="{
+                    color: typeMetaOf(m.type).tint,
+                    background: typeMetaOf(m.type).tint + '14',
+                  }"
+                >
+                  {{ typeMetaOf(m.type).label }}
+                </view>
+                <view v-if="m.status === 'disabled'" class="status-tag">已停用</view>
+              </view>
+              <text class="meta">{{ planOf(m) }} · 累计 GMV ¥{{ formatWan(m.totalGmv ?? 0) }}</text>
+              <view class="badge-row">
+                <view v-if="m.credit" class="badge">信用 {{ m.credit }} 级</view>
+                <view v-if="m.level" class="badge">{{ m.level }} 级商户</view>
+                <view v-if="(m.rejectRate ?? 0) < 5" class="badge ok">低驳回率</view>
+              </view>
+            </view>
+          </view>
+
+          <view class="actions">
+            <view class="btn ghost" @click="viewDetail(m)">详情</view>
+            <view
+              :class="['btn', m.status === 'disabled' ? 'primary' : 'dark']"
+              @click="togglePause(m)"
+            >
+              {{ m.status === 'disabled' ? '恢复' : '停用' }}
+            </view>
+          </view>
+        </view>
+
+        <wd-status-tip
+          v-if="!loading && filtered.length === 0"
+          image="content"
+          :tip="
+            ['暂无商户', keyword ? '尝试其他关键词' : '该分类下还没有商户']
+              .filter(Boolean)
+              .join(' · ')
+          "
+        />
+      </view>
+
+      <PrimaryLiquidTabBar flavor="platform" active="merchant" />
     </view>
-
-    <PrimaryLiquidTabBar flavor="platform" active="merchant" />
-  </view>
-
   </wd-config-provider>
 </template>
 

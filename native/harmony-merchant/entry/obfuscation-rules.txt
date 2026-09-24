@@ -1,0 +1,16 @@
+# API responses, Harmony Kit objects and IBest component options are consumed by
+# their external property names. Renaming properties would make a release build
+# behave differently from a debug build, so only top-level symbols are obfuscated.
+-enable-toplevel-obfuscation
+-remove-comments
+-remove-log
+-keep-property-name code
+-keep-property-name data
+-keep-property-name message
+-keep-property-name msg
+-keep-property-name traceId
+-keep-property-name accessToken
+-keep-property-name refreshToken
+-keep-property-name merchantApplication
+-keep-property-name merchantId
+-keep-property-name versionCode

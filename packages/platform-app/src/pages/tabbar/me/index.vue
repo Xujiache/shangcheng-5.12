@@ -22,7 +22,12 @@ function openPhoneChangeSheet() {
   securityOpen.value = true
 }
 import { useAdminStore } from '../../../store/admin'
-import { merchantService, productAuditService, ticketService, systemService } from '../../../services'
+import {
+  merchantService,
+  productAuditService,
+  ticketService,
+  systemService,
+} from '../../../services'
 import { platformAuthService } from '../../../services/auth'
 import type { SystemSettings } from '../../../services'
 import { checkAppUpdate, readRuntimeVersion } from '../../../composables/useAppUpdate'
@@ -99,9 +104,7 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 /** 头像/昵称/用户名 优先后端实时数据,fallback 到本地登录态 */
-const meNickname = computed(
-  () => userInfo.value?.nickname || adminStore.nickname || '管理员',
-)
+const meNickname = computed(() => userInfo.value?.nickname || adminStore.nickname || '管理员')
 const meUsername = computed(() => userInfo.value?.username || '—')
 const meRoleKey = computed(() => userInfo.value?.role || '')
 const meRoleLabel = computed(() => ROLE_LABEL[meRoleKey.value] || meRoleKey.value || '管理员')
@@ -364,8 +367,7 @@ function openHelp() {
 function openAbout() {
   appFeedback.showModal({
     title: '关于平台',
-    content:
-      `经纬科技 · 商城平台管理端\n当前版本：v${appVersion.value}\n\n用于商户审核、订单总览、会员套餐、广告管理等平台运营事务。`,
+    content: `经纬科技 · 商城平台管理端\n当前版本：v${appVersion.value}\n\n用于商户审核、订单总览、会员套餐、广告管理等平台运营事务。`,
     showCancel: false,
     confirmText: '我知道了',
   })
@@ -434,156 +436,155 @@ function viewProfile() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="status" :style="{ height: statusBarHeight }" />
+    <view class="page">
+      <view class="status" :style="{ height: statusBarHeight }" />
 
-    <!-- 头像区 -->
-    <view class="hero">
-      <view class="hero-row" @click="viewProfile">
-        <view class="avatar-wrap">
-          <image
-            v-if="adminStore.avatar"
-            :src="adminStore.avatar"
-            class="avatar"
-            mode="aspectFill"
-          />
-          <view v-else class="avatar fallback">
-            {{ (adminStore.nickname || 'A')[0] }}
-          </view>
-        </view>
-        <view class="info">
-          <view class="name-row">
-            <text class="nick">{{ meNickname }}</text>
-            <view class="role-badge">
-              <wd-icon :name="$jwIcon('crown')" size="10px" color="#fff"  />
-              <text>{{ meRoleLabel }}</text>
+      <!-- 头像区 -->
+      <view class="hero">
+        <view class="hero-row" @click="viewProfile">
+          <view class="avatar-wrap">
+            <image
+              v-if="adminStore.avatar"
+              :src="adminStore.avatar"
+              class="avatar"
+              mode="aspectFill"
+            />
+            <view v-else class="avatar fallback">
+              {{ (adminStore.nickname || 'A')[0] }}
             </view>
           </view>
-          <text class="sub">{{ meRoleLabel }} · {{ meUsername }}</text>
-          <text v-if="lastLoginText" class="last-login">{{ lastLoginText }}</text>
+          <view class="info">
+            <view class="name-row">
+              <text class="nick">{{ meNickname }}</text>
+              <view class="role-badge">
+                <wd-icon :name="$jwIcon('crown')" size="10px" color="#fff" />
+                <text>{{ meRoleLabel }}</text>
+              </view>
+            </view>
+            <text class="sub">{{ meRoleLabel }} · {{ meUsername }}</text>
+            <text v-if="lastLoginText" class="last-login">{{ lastLoginText }}</text>
+          </view>
+          <wd-icon :name="$jwIcon('chevron-right')" size="16px" color="rgba(255,255,255,0.7)" />
         </view>
-        <wd-icon :name="$jwIcon('chevron-right')" size="16px" color="rgba(255,255,255,0.7)"  />
+
+        <view class="stat-row">
+          <view v-for="s in STAT_CARDS" :key="s.key" class="stat-item" @click="onStatTap(s)">
+            <view class="stat-icon" :style="{ background: 'rgba(255,255,255,0.2)' }">
+              <wd-icon :name="$jwIcon(s.icon)" size="12px" color="#fff" />
+            </view>
+            <view class="stat-info">
+              <text class="s-num">{{ s.value }}</text>
+              <text class="s-label">{{ s.label }}</text>
+            </view>
+          </view>
+        </view>
       </view>
 
-      <view class="stat-row">
-        <view v-for="s in STAT_CARDS" :key="s.key" class="stat-item" @click="onStatTap(s)">
-          <view class="stat-icon" :style="{ background: 'rgba(255,255,255,0.2)' }">
-            <wd-icon :name="$jwIcon(s.icon)" size="12px" color="#fff"  />
-          </view>
-          <view class="stat-info">
-            <text class="s-num">{{ s.value }}</text>
-            <text class="s-label">{{ s.label }}</text>
+      <view class="body">
+        <!-- 业务管理 -->
+        <view class="card">
+          <text class="card-title">业务管理</text>
+          <view class="manage-grid">
+            <view
+              v-for="e in MANAGE_ENTRIES"
+              :key="e.key"
+              class="manage-cell"
+              @click="goManageEntry(e)"
+            >
+              <view class="m-icon" :style="{ background: e.tint + '18' }">
+                <wd-icon :name="$jwIcon(e.icon)" size="20px" :color="e.tint" />
+              </view>
+              <text class="m-label">{{ e.label }}</text>
+              <text class="m-desc">{{ e.desc }}</text>
+            </view>
           </view>
         </view>
-      </view>
-    </view>
 
-    <view class="body">
-      <!-- 业务管理 -->
-      <view class="card">
-        <text class="card-title">业务管理</text>
-        <view class="manage-grid">
+        <!-- 系统设置 -->
+        <view class="card">
+          <text class="card-title">系统</text>
           <view
-            v-for="e in MANAGE_ENTRIES"
+            v-for="(e, i) in SYSTEM_ENTRIES"
             :key="e.key"
-            class="manage-cell"
-            @click="goManageEntry(e)"
+            class="sys-row"
+            :class="{ 'with-divider': i < SYSTEM_ENTRIES.length - 1 }"
+            @click="goSystemEntry(e)"
           >
-            <view class="m-icon" :style="{ background: e.tint + '18' }">
-              <wd-icon :name="$jwIcon(e.icon)" size="20px" :color="e.tint"  />
+            <view class="sys-icon">
+              <wd-icon :name="$jwIcon(e.icon)" size="16px" color="var(--brand-primary)" />
             </view>
-            <text class="m-label">{{ e.label }}</text>
-            <text class="m-desc">{{ e.desc }}</text>
+            <text class="sys-label">{{ e.label }}</text>
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
           </view>
+        </view>
+
+        <!-- 账号安全 -->
+        <view class="card">
+          <view class="sys-row with-divider" @click="openPasswordSheet">
+            <view class="sys-icon">
+              <wd-icon :name="$jwIcon('lock')" size="16px" color="#5b8def" />
+            </view>
+            <text class="sys-label">修改密码</text>
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+          </view>
+          <view class="sys-row" @click="openPhoneChangeSheet">
+            <view class="sys-icon">
+              <wd-icon :name="$jwIcon('phone')" size="16px" color="#FF4D2D" />
+            </view>
+            <text class="sys-label">修改手机号</text>
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+          </view>
+        </view>
+
+        <view class="card appearance-card">
+          <text class="card-title">外观</text>
+          <text class="appearance-tip">可跟随系统自动切换浅色与深色模式</text>
+          <wd-segmented
+            :value="appTheme.mode"
+            :options="THEME_OPTIONS"
+            size="large"
+            vibrate-short
+            @change="changeTheme"
+          >
+            <template #label="{ option }">{{ option.payload?.label }}</template>
+          </wd-segmented>
+        </view>
+
+        <!-- 其他 -->
+        <view class="card">
+          <view class="sys-row with-divider" @click="openHelp">
+            <view class="sys-icon">
+              <wd-icon :name="$jwIcon('help')" size="16px" color="#52C41A" />
+            </view>
+            <text class="sys-label">帮助中心</text>
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+          </view>
+          <view class="sys-row" @click="openAbout">
+            <view class="sys-icon">
+              <wd-icon :name="$jwIcon('info')" size="16px" color="#1296DB" />
+            </view>
+            <text class="sys-label">关于平台</text>
+            <text class="sys-meta">v{{ appVersion }}</text>
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+          </view>
+        </view>
+
+        <!-- 退出 -->
+        <view class="logout-btn" @click="logout">
+          <wd-icon :name="$jwIcon('arrow-right')" size="14px" color="#FF3B30" />
+          <text>退出登录</text>
         </view>
       </view>
 
-      <!-- 系统设置 -->
-      <view class="card">
-        <text class="card-title">系统</text>
-        <view
-          v-for="(e, i) in SYSTEM_ENTRIES"
-          :key="e.key"
-          class="sys-row"
-          :class="{ 'with-divider': i < SYSTEM_ENTRIES.length - 1 }"
-          @click="goSystemEntry(e)"
-        >
-          <view class="sys-icon">
-            <wd-icon :name="$jwIcon(e.icon)" size="16px" color="var(--brand-primary)"  />
-          </view>
-          <text class="sys-label">{{ e.label }}</text>
-          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-        </view>
-      </view>
+      <PrimaryLiquidTabBar flavor="platform" active="me" />
 
-      <!-- 账号安全 -->
-      <view class="card">
-        <view class="sys-row with-divider" @click="openPasswordSheet">
-          <view class="sys-icon">
-            <wd-icon :name="$jwIcon('lock')" size="16px" color="#5b8def"  />
-          </view>
-          <text class="sys-label">修改密码</text>
-          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-        </view>
-        <view class="sys-row" @click="openPhoneChangeSheet">
-          <view class="sys-icon">
-            <wd-icon :name="$jwIcon('phone')" size="16px" color="#FF4D2D"  />
-          </view>
-          <text class="sys-label">修改手机号</text>
-          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-        </view>
-      </view>
-
-      <view class="card appearance-card">
-        <text class="card-title">外观</text>
-        <text class="appearance-tip">可跟随系统自动切换浅色与深色模式</text>
-        <wd-segmented
-          :value="appTheme.mode"
-          :options="THEME_OPTIONS"
-          size="large"
-          vibrate-short
-          @change="changeTheme"
-        >
-          <template #label="{ option }">{{ option.payload?.label }}</template>
-        </wd-segmented>
-      </view>
-
-      <!-- 其他 -->
-      <view class="card">
-        <view class="sys-row with-divider" @click="openHelp">
-          <view class="sys-icon">
-            <wd-icon :name="$jwIcon('help')" size="16px" color="#52C41A"  />
-          </view>
-          <text class="sys-label">帮助中心</text>
-          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-        </view>
-        <view class="sys-row" @click="openAbout">
-          <view class="sys-icon">
-            <wd-icon :name="$jwIcon('info')" size="16px" color="#1296DB"  />
-          </view>
-          <text class="sys-label">关于平台</text>
-          <text class="sys-meta">v{{ appVersion }}</text>
-          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-        </view>
-      </view>
-
-      <!-- 退出 -->
-      <view class="logout-btn" @click="logout">
-        <wd-icon :name="$jwIcon('arrow-right')" size="14px" color="#FF3B30"  />
-        <text>退出登录</text>
-      </view>
+      <AccountSecurity
+        :open="securityOpen"
+        :mode="securityMode"
+        :current-phone="(userInfo as any)?.phone || ''"
+        @close="securityOpen = false"
+      />
     </view>
-
-    <PrimaryLiquidTabBar flavor="platform" active="me" />
-
-    <AccountSecurity
-      :open="securityOpen"
-      :mode="securityMode"
-      :current-phone="(userInfo as any)?.phone || ''"
-      @close="securityOpen = false"
-    />
-  </view>
-
   </wd-config-provider>
 </template>
 

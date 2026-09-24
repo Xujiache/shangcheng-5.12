@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="pv">
+<view class="pv lz-route-scene {{_routeMotion}}">
   <lz-header title="隐私与安全" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -48,3 +48,5 @@
     <view class="pv__note">我们仅在本地与加密云端保存您的经营数据，绝不向第三方共享。</view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

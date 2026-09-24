@@ -2,7 +2,7 @@
 # Build: 构建 server + 4 个前端（admin-pc / user-mp / merchant-app / platform-app）
 #        并把产物作为 artifact 上传到本次 workflow run，方便手动取产物或对接发布。
 #
-# 触发：push 到 main。PR 期间不构建（PR 阶段只跑 CI 静态检查省时间）。
+# 触发：所有开发分支 push、PR 和手动运行。
 #
 # 产物分布：
 #   - packages/server/dist            ← nest build（NestJS 后端）
@@ -12,14 +12,15 @@
 #   - packages/merchant-app/dist/build/h5
 #   - packages/platform-app/dist/build/h5
 #
-# 注：uni-app 默认会把 build:h5 输出到 `dist/build/h5/`；mp-weixin / app 构建
-# 需要 HBuilderX 或开通对应平台账号，CI 暂不接入。
+# uni-app H5、微信资源包及 App 中间资源均构建；签名安装包、开发者工具运行、
+# 真机和鸿蒙 SDK 构建由独立设备验收完成，不能用本工作流替代。
 # ----------------------------------------------------------------------------
 name: Build
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
+  pull_request: {}
   workflow_dispatch: {}
 
 concurrency:
@@ -38,7 +39,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.node-version'
           cache: pnpm
 
       - name: Install dependencies
@@ -69,7 +70,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.node-version'
           cache: pnpm
 
       - name: Install dependencies
@@ -89,7 +90,7 @@ jobs:
           retention-days: 7
 
   build-uniapps:
-    name: Build ${{ matrix.app }} (uni-app H5)
+    name: Build ${{ matrix.app }} (${{ matrix.target }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -98,12 +99,16 @@ jobs:
           - user-mp
           - merchant-app
           - platform-app
+        target: [h5, app, mp-weixin]
+        exclude:
+          - app: platform-app
+            target: mp-weixin
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.node-version'
           cache: pnpm
 
       - name: Install dependencies
@@ -112,15 +117,14 @@ jobs:
       - name: Build @jiujiu/shared
         run: pnpm --filter @jiujiu/shared build
 
-      - name: Build ${{ matrix.app }} (H5)
-        # uni-app 默认 H5 构建：mp-weixin / app 端构建需要平台 SDK & 账号，CI 暂略
-        run: pnpm --filter @jiujiu/${{ matrix.app }} build:h5
+      - name: Build ${{ matrix.app }} (${{ matrix.target }})
+        run: pnpm --filter @jiujiu/${{ matrix.app }} build:${{ matrix.target }}
 
       - name: Upload ${{ matrix.app }} dist
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-dist
+          name: ${{ matrix.app }}-${{ matrix.target }}-dist
           # uni-app 默认 H5 产物：dist/build/h5
           path: packages/${{ matrix.app }}/dist
           retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: error

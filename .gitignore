@@ -67,6 +67,7 @@ wxpay_public_key.pem
 
 # Test
 coverage/
+.quality/
 .nyc_output/
 
 # Prisma
@@ -81,3 +82,4 @@ deploy/data/
 # Misc
 *.local
 native/android/local.properties
+**/.workbook-test/

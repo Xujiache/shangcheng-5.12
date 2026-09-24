@@ -140,191 +140,200 @@ onShow(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="价格显示规则"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="价格显示规则"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 顶部说明卡 -->
-    <view class="hero">
-      <view class="hero-inner">
-        <view class="hero-icon">
-          <wd-icon :name="$jwIcon('tag')" size="22px" color="#fff"  />
-        </view>
-        <view class="hero-text">
-          <view class="hero-title">
-            价格显示规则
-            <text class="hero-pill">核心</text>
+      <!-- 顶部说明卡 -->
+      <view class="hero">
+        <view class="hero-inner">
+          <view class="hero-icon">
+            <wd-icon :name="$jwIcon('tag')" size="22px" color="#fff" />
           </view>
-          <text class="hero-sub">
-            按对方身份显示对应价格。决定客户能否看到价格、能看到什么价。 改一次，<text
-              class="hero-em"
-              >全店所有商品立即生效</text
-            >。
-          </text>
+          <view class="hero-text">
+            <view class="hero-title">
+              价格显示规则
+              <text class="hero-pill">核心</text>
+            </view>
+            <text class="hero-sub">
+              按对方身份显示对应价格。决定客户能否看到价格、能看到什么价。 改一次，<text
+                class="hero-em"
+                >全店所有商品立即生效</text
+              >。
+            </text>
+          </view>
+        </view>
+        <view class="hero-summary">
+          <text v-for="s in summary" :key="s" class="hero-pill-soft">{{ s }}</text>
         </view>
       </view>
-      <view class="hero-summary">
-        <text v-for="s in summary" :key="s" class="hero-pill-soft">{{ s }}</text>
-      </view>
-    </view>
 
-    <!-- 规则列表 -->
-    <view class="card">
-      <!--
+      <!-- 规则列表 -->
+      <view class="card">
+        <!--
         未登录访客 ——
         与下面 3 行的"价格档"选择不同,访客只有"是否能进店"二态:
           关 → 访客被挡在门外,小程序首页提示"请先登录"
           开 → 访客可浏览商品,价格按【普通客户】那行规则显示
         所以这里是 switch 而非 segmented pills,UI 不对称是刻意的。
       -->
-      <view class="rule-row guest-row">
-        <view class="rule-icon" style="background: rgba(156, 163, 175, 0.12); color: #9ca3af">
-          <wd-icon :name="$jwIcon('user-line')" size="16px" color="#9ca3af"  />
+        <view class="rule-row guest-row">
+          <view class="rule-icon" style="background: rgba(156, 163, 175, 0.12); color: #9ca3af">
+            <wd-icon :name="$jwIcon('user-line')" size="16px" color="#9ca3af" />
+          </view>
+          <view class="rule-main">
+            <text class="rule-label">未登录访客</text>
+            <text class="rule-hint">
+              {{
+                rule.guestAllow
+                  ? '允许浏览 · 价格按【普通客户】规则显示'
+                  : '禁止进入 · 必须先登录小程序才能看店'
+              }}
+            </text>
+          </view>
+          <view class="guest-switch">
+            <text class="guest-state" :class="{ on: rule.guestAllow }">
+              {{ rule.guestAllow ? '允许' : '禁止' }}
+            </text>
+            <wd-switch
+              :model-value="rule.guestAllow"
+              active-color="var(--brand-primary)"
+              @change="
+                (e: any) => {
+                  rule.guestAllow = e.value
+                  persistAndToast('未登录访客')
+                }
+              "
+            />
+          </view>
         </view>
-        <view class="rule-main">
-          <text class="rule-label">未登录访客</text>
-          <text class="rule-hint">
-            {{
-              rule.guestAllow
-                ? '允许浏览 · 价格按【普通客户】规则显示'
-                : '禁止进入 · 必须先登录小程序才能看店'
-            }}
-          </text>
+
+        <!-- 普通客户 -->
+        <view class="rule-row">
+          <view class="rule-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6">
+            <wd-icon :name="$jwIcon('biz-me')" size="16px" color="#3b82f6" />
+          </view>
+          <view class="rule-main">
+            <text class="rule-label">普通客户</text>
+            <text class="rule-hint">已登录但未授权门店</text>
+          </view>
+          <view class="rule-pills">
+            <view
+              class="pill"
+              :class="{ active: rule.customerPrice === 'retail' }"
+              @click="
+                () => {
+                  rule.customerPrice = 'retail'
+                  persistAndToast('普通客户')
+                }
+              "
+            >
+              显示零售价
+            </view>
+            <view
+              class="pill"
+              :class="{ active: rule.customerPrice === 'hidden' }"
+              @click="
+                () => {
+                  rule.customerPrice = 'hidden'
+                  persistAndToast('普通客户')
+                }
+              "
+            >
+              不显示价格
+            </view>
+          </view>
         </view>
-        <view class="guest-switch">
-          <text class="guest-state" :class="{ on: rule.guestAllow }">
-            {{ rule.guestAllow ? '允许' : '禁止' }}
-          </text>
-          <wd-switch :model-value="rule.guestAllow" active-color="var(--brand-primary)"
-            @change="
-              (e: any) => {
-                rule.guestAllow = e.value
-                persistAndToast('未登录访客')
-              }
-            "
-           />
+
+        <!-- 授权门店 -->
+        <view class="rule-row">
+          <view class="rule-icon" style="background: rgba(255, 77, 45, 0.12); color: #ff4d2d">
+            <wd-icon :name="$jwIcon('home-shop')" size="16px" color="#ff4d2d" />
+          </view>
+          <view class="rule-main">
+            <text class="rule-label">授权门店</text>
+            <text class="rule-hint">已申请代理 / 加盟门店</text>
+          </view>
+          <view class="rule-pills">
+            <view
+              class="pill"
+              :class="{ active: rule.agencyPrice === 'wholesale' }"
+              @click="
+                () => {
+                  rule.agencyPrice = 'wholesale'
+                  persistAndToast('授权门店')
+                }
+              "
+            >
+              批发价
+            </view>
+            <view
+              class="pill"
+              :class="{ active: rule.agencyPrice === 'retail' }"
+              @click="
+                () => {
+                  rule.agencyPrice = 'retail'
+                  persistAndToast('授权门店')
+                }
+              "
+            >
+              零售价
+            </view>
+          </view>
+        </view>
+
+        <!-- 会员客户 -->
+        <view class="rule-row">
+          <view class="rule-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7">
+            <wd-icon :name="$jwIcon('crown')" size="16px" color="#a855f7" />
+          </view>
+          <view class="rule-main">
+            <text class="rule-label">会员客户</text>
+            <text class="rule-hint">付费 / 邀请制会员</text>
+          </view>
+          <view class="rule-pills">
+            <view
+              class="pill"
+              :class="{ active: rule.memberPrice === 'member' }"
+              @click="
+                () => {
+                  rule.memberPrice = 'member'
+                  persistAndToast('会员客户')
+                }
+              "
+            >
+              会员价
+            </view>
+            <view
+              class="pill"
+              :class="{ active: rule.memberPrice === 'retail' }"
+              @click="
+                () => {
+                  rule.memberPrice = 'retail'
+                  persistAndToast('会员客户')
+                }
+              "
+            >
+              零售价
+            </view>
+          </view>
         </view>
       </view>
 
-      <!-- 普通客户 -->
-      <view class="rule-row">
-        <view class="rule-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6">
-          <wd-icon :name="$jwIcon('biz-me')" size="16px" color="#3b82f6"  />
-        </view>
-        <view class="rule-main">
-          <text class="rule-label">普通客户</text>
-          <text class="rule-hint">已登录但未授权门店</text>
-        </view>
-        <view class="rule-pills">
-          <view
-            class="pill"
-            :class="{ active: rule.customerPrice === 'retail' }"
-            @click="
-              () => {
-                rule.customerPrice = 'retail'
-                persistAndToast('普通客户')
-              }
-            "
-          >
-            显示零售价
-          </view>
-          <view
-            class="pill"
-            :class="{ active: rule.customerPrice === 'hidden' }"
-            @click="
-              () => {
-                rule.customerPrice = 'hidden'
-                persistAndToast('普通客户')
-              }
-            "
-          >
-            不显示价格
-          </view>
-        </view>
+      <view class="reset-row" @click="resetDefault">
+        <wd-icon :name="$jwIcon('refresh')" size="14px" color="#909399" />
+        <text>恢复默认规则</text>
       </view>
 
-      <!-- 授权门店 -->
-      <view class="rule-row">
-        <view class="rule-icon" style="background: rgba(255, 77, 45, 0.12); color: #ff4d2d">
-          <wd-icon :name="$jwIcon('home-shop')" size="16px" color="#ff4d2d"  />
-        </view>
-        <view class="rule-main">
-          <text class="rule-label">授权门店</text>
-          <text class="rule-hint">已申请代理 / 加盟门店</text>
-        </view>
-        <view class="rule-pills">
-          <view
-            class="pill"
-            :class="{ active: rule.agencyPrice === 'wholesale' }"
-            @click="
-              () => {
-                rule.agencyPrice = 'wholesale'
-                persistAndToast('授权门店')
-              }
-            "
-          >
-            批发价
-          </view>
-          <view
-            class="pill"
-            :class="{ active: rule.agencyPrice === 'retail' }"
-            @click="
-              () => {
-                rule.agencyPrice = 'retail'
-                persistAndToast('授权门店')
-              }
-            "
-          >
-            零售价
-          </view>
-        </view>
-      </view>
-
-      <!-- 会员客户 -->
-      <view class="rule-row">
-        <view class="rule-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7">
-          <wd-icon :name="$jwIcon('crown')" size="16px" color="#a855f7"  />
-        </view>
-        <view class="rule-main">
-          <text class="rule-label">会员客户</text>
-          <text class="rule-hint">付费 / 邀请制会员</text>
-        </view>
-        <view class="rule-pills">
-          <view
-            class="pill"
-            :class="{ active: rule.memberPrice === 'member' }"
-            @click="
-              () => {
-                rule.memberPrice = 'member'
-                persistAndToast('会员客户')
-              }
-            "
-          >
-            会员价
-          </view>
-          <view
-            class="pill"
-            :class="{ active: rule.memberPrice === 'retail' }"
-            @click="
-              () => {
-                rule.memberPrice = 'retail'
-                persistAndToast('会员客户')
-              }
-            "
-          >
-            零售价
-          </view>
-        </view>
-      </view>
+      <view style="height: 80rpx" />
     </view>
-
-    <view class="reset-row" @click="resetDefault">
-      <wd-icon :name="$jwIcon('refresh')" size="14px" color="#909399"  />
-      <text>恢复默认规则</text>
-    </view>
-
-    <view style="height: 80rpx" />
-  </view>
-
   </wd-config-provider>
 </template>
 

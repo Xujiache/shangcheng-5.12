@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="mc">
+<view class="mc lz-route-scene {{_routeMotion}}">
   <lz-header title="消息中心">
     <view wx:if="{{hasUnread}}" slot="right" class="mc__readall" hover-class="tap-active" bindtap="onReadAll">全部已读</view>
   </lz-header>
@@ -33,5 +33,8 @@
       </view>
     </view>
     <view wx:elif="{{!loading}}" class="lz-empty">暂无消息</view>
+    <lz-skeleton wx:else variant="list" />
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

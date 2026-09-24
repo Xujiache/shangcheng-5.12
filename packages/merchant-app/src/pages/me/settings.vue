@@ -175,144 +175,161 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="系统设置"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
-    <view class="card">
-      <view class="card-title">通知</view>
-      <view class="row" @click="toggleNotify('notify')">
-        <view class="row-info">
-          <text class="row-label">推送通知</text>
-          <text class="row-sub">关闭后不再收到任何推送</text>
+    <view class="page">
+      <wd-navbar
+        title="系统设置"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
+      <view class="card">
+        <view class="card-title">通知</view>
+        <view class="row" @click="toggleNotify('notify')">
+          <view class="row-info">
+            <text class="row-label">推送通知</text>
+            <text class="row-sub">关闭后不再收到任何推送</text>
+          </view>
+          <wd-switch
+            :model-value="prefs.notify"
+            active-color="var(--brand-primary)"
+            @click.stop="toggleNotify('notify')"
+          />
         </view>
-        <wd-switch :model-value="prefs.notify" active-color="var(--brand-primary)" @click.stop="toggleNotify('notify')"  />
-      </view>
-      <view
-        class="row"
-        :class="{ 'row-disabled': !prefs.notify }"
-        @click="prefs.notify && toggleNotify('notifyOrder')"
-      >
-        <view class="row-info">
-          <text class="row-label">新订单提醒</text>
-          <text class="row-sub">有新订单时震动 + 弹窗</text>
-        </view>
-        <wd-switch :model-value="prefs.notifyOrder && prefs.notify"
-          :disabled="!prefs.notify" active-color="var(--brand-primary)"
-          @click.stop="prefs.notify && toggleNotify('notifyOrder')"
-         />
-      </view>
-      <view
-        class="row"
-        :class="{ 'row-disabled': !prefs.notify }"
-        @click="prefs.notify && toggleNotify('notifyAfterSale')"
-      >
-        <view class="row-info">
-          <text class="row-label">售后提醒</text>
-          <text class="row-sub">退款 / 售后申请时提醒</text>
-        </view>
-        <wd-switch :model-value="prefs.notifyAfterSale && prefs.notify"
-          :disabled="!prefs.notify" active-color="var(--brand-primary)"
-          @click.stop="prefs.notify && toggleNotify('notifyAfterSale')"
-         />
-      </view>
-      <view
-        class="row"
-        :class="{ 'row-disabled': !prefs.notify }"
-        @click="prefs.notify && toggleNotify('notifyChat')"
-      >
-        <view class="row-info">
-          <text class="row-label">客服消息</text>
-          <text class="row-sub">客户咨询时声音提示</text>
-        </view>
-        <wd-switch :model-value="prefs.notifyChat && prefs.notify"
-          :disabled="!prefs.notify" active-color="var(--brand-primary)"
-          @click.stop="prefs.notify && toggleNotify('notifyChat')"
-         />
-      </view>
-    </view>
-
-    <view class="card">
-      <view class="card-title">账号安全</view>
-      <view class="row" @click="openPasswordSheet">
-        <view class="row-info">
-          <text class="row-label">登录密码</text>
-          <text class="row-sub">修改账号登录密码</text>
-        </view>
-        <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
-      </view>
-      <view class="row" @click="openPhoneChangeSheet">
-        <view class="row-info">
-          <text class="row-label">{{ currentPhone ? '更换手机号' : '绑定手机号' }}</text>
-          <text class="row-sub">{{ currentPhone || '未绑定' }}</text>
-        </view>
-        <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
-      </view>
-    </view>
-
-    <view class="card">
-      <view class="card-title">外观与语言</view>
-      <view class="appearance-row">
-        <view class="row-info">
-          <text class="row-label">外观模式</text>
-          <text class="row-sub">跟随系统或手动切换浅色、深色</text>
-        </view>
-        <wd-segmented
-          :value="appTheme.mode"
-          :options="THEME_OPTIONS"
-          size="small"
-          vibrate-short
-          @change="changeTheme"
+        <view
+          class="row"
+          :class="{ 'row-disabled': !prefs.notify }"
+          @click="prefs.notify && toggleNotify('notifyOrder')"
         >
-          <template #label="{ option }">{{ option.payload?.label }}</template>
-        </wd-segmented>
-      </view>
-      <view class="row" @click="chooseLanguage">
-        <view class="row-info">
-          <text class="row-label">语言</text>
-          <text class="row-sub">{{ prefs.language === 'zh-CN' ? '简体中文' : 'English' }}</text>
+          <view class="row-info">
+            <text class="row-label">新订单提醒</text>
+            <text class="row-sub">有新订单时震动 + 弹窗</text>
+          </view>
+          <wd-switch
+            :model-value="prefs.notifyOrder && prefs.notify"
+            :disabled="!prefs.notify"
+            active-color="var(--brand-primary)"
+            @click.stop="prefs.notify && toggleNotify('notifyOrder')"
+          />
         </view>
-        <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
+        <view
+          class="row"
+          :class="{ 'row-disabled': !prefs.notify }"
+          @click="prefs.notify && toggleNotify('notifyAfterSale')"
+        >
+          <view class="row-info">
+            <text class="row-label">售后提醒</text>
+            <text class="row-sub">退款 / 售后申请时提醒</text>
+          </view>
+          <wd-switch
+            :model-value="prefs.notifyAfterSale && prefs.notify"
+            :disabled="!prefs.notify"
+            active-color="var(--brand-primary)"
+            @click.stop="prefs.notify && toggleNotify('notifyAfterSale')"
+          />
+        </view>
+        <view
+          class="row"
+          :class="{ 'row-disabled': !prefs.notify }"
+          @click="prefs.notify && toggleNotify('notifyChat')"
+        >
+          <view class="row-info">
+            <text class="row-label">客服消息</text>
+            <text class="row-sub">客户咨询时声音提示</text>
+          </view>
+          <wd-switch
+            :model-value="prefs.notifyChat && prefs.notify"
+            :disabled="!prefs.notify"
+            active-color="var(--brand-primary)"
+            @click.stop="prefs.notify && toggleNotify('notifyChat')"
+          />
+        </view>
       </view>
+
+      <view class="card">
+        <view class="card-title">账号安全</view>
+        <view class="row" @click="openPasswordSheet">
+          <view class="row-info">
+            <text class="row-label">登录密码</text>
+            <text class="row-sub">修改账号登录密码</text>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)" />
+        </view>
+        <view class="row" @click="openPhoneChangeSheet">
+          <view class="row-info">
+            <text class="row-label">{{ currentPhone ? '更换手机号' : '绑定手机号' }}</text>
+            <text class="row-sub">{{ currentPhone || '未绑定' }}</text>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)" />
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="card-title">外观与语言</view>
+        <view class="appearance-row">
+          <view class="row-info">
+            <text class="row-label">外观模式</text>
+            <text class="row-sub">跟随系统或手动切换浅色、深色</text>
+          </view>
+          <wd-segmented
+            :value="appTheme.mode"
+            :options="THEME_OPTIONS"
+            size="small"
+            vibrate-short
+            @change="changeTheme"
+          >
+            <template #label="{ option }">{{ option.payload?.label }}</template>
+          </wd-segmented>
+        </view>
+        <view class="row" @click="chooseLanguage">
+          <view class="row-info">
+            <text class="row-label">语言</text>
+            <text class="row-sub">{{ prefs.language === 'zh-CN' ? '简体中文' : 'English' }}</text>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)" />
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="card-title">存储</view>
+        <view class="row" @click="clearCache">
+          <view class="row-info">
+            <text class="row-label">清除缓存</text>
+            <text class="row-sub">当前占用 {{ cacheSize }}</text>
+          </view>
+          <wd-icon :name="$jwIcon('trash')" size="14px" color="var(--text-tertiary)" />
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="card-title">关于</view>
+        <view class="row" @click="goAgreement">
+          <view class="row-info">
+            <text class="row-label">用户协议 · 隐私政策</text>
+            <text class="row-sub">查看完整法律文本</text>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)" />
+        </view>
+        <view class="row" @click="goAbout">
+          <view class="row-info">
+            <text class="row-label">关于我们</text>
+            <text class="row-sub">v0.1.0</text>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)" />
+        </view>
+      </view>
+
+      <view class="safe-bottom" />
+
+      <AccountSecurity
+        :open="securityOpen"
+        :mode="securityMode"
+        :current-phone="currentPhone"
+        @close="securityOpen = false"
+      />
     </view>
-
-    <view class="card">
-      <view class="card-title">存储</view>
-      <view class="row" @click="clearCache">
-        <view class="row-info">
-          <text class="row-label">清除缓存</text>
-          <text class="row-sub">当前占用 {{ cacheSize }}</text>
-        </view>
-        <wd-icon :name="$jwIcon('trash')" size="14px" color="var(--text-tertiary)"  />
-      </view>
-    </view>
-
-    <view class="card">
-      <view class="card-title">关于</view>
-      <view class="row" @click="goAgreement">
-        <view class="row-info">
-          <text class="row-label">用户协议 · 隐私政策</text>
-          <text class="row-sub">查看完整法律文本</text>
-        </view>
-        <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
-      </view>
-      <view class="row" @click="goAbout">
-        <view class="row-info">
-          <text class="row-label">关于我们</text>
-          <text class="row-sub">v0.1.0</text>
-        </view>
-        <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
-      </view>
-    </view>
-
-    <view class="safe-bottom" />
-
-    <AccountSecurity
-      :open="securityOpen"
-      :mode="securityMode"
-      :current-phone="currentPhone"
-      @close="securityOpen = false"
-    />
-  </view>
-
   </wd-config-provider>
 </template>
 

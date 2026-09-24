@@ -137,7 +137,8 @@ export function createUniAppTheme(options?: { legacyDarkStorageKey?: string }) {
     },
     getSystemTheme: readSystemTheme,
     onSystemThemeChange(listener) {
-      const handler = (event: { theme?: string }) => listener(event?.theme === 'dark' ? 'dark' : 'light')
+      const handler = (event: { theme?: string }) =>
+        listener(event?.theme === 'dark' ? 'dark' : 'light')
       try {
         uniApi?.onThemeChange?.(handler)
       } catch {

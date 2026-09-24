@@ -1,0 +1,112 @@
+{
+  "wechat-android": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "wechat-ios": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "uni-app-packages": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "harmony-31-features": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "third-party-flows": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "performance": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "backup-restore": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "deployment-rollback": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "privacy-review": {
+    "status": "blocked",
+    "commit": "",
+    "fingerprint": "",
+    "finishedAt": "",
+    "artifact": "",
+    "sha256": "",
+    "reviewer": "",
+    "environment": "",
+    "reason": "尚无当前版本的正式验收证据"
+  },
+  "full-scope-regression": {
+    "artifact": "",
+    "reviewer": "",
+    "commit": "",
+    "fingerprint": "",
+    "sha256": "",
+    "reason": "全范围业务重构与逐项回归尚未完成，不能以第一批工程检查代替",
+    "environment": "",
+    "status": "blocked",
+    "finishedAt": ""
+  }
+}

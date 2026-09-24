@@ -1,3 +1,4 @@
+import { navigation } from './page-transition'
 import { TOKEN_KEY } from '../config'
 
 export function app(): IAppOption | undefined {
@@ -16,7 +17,7 @@ export function goToLogin() {
   const pages = getCurrentPages()
   const current = pages[pages.length - 1]
   if (current && current.route === 'pages/login/index') return
-  wx.navigateTo({ url: '/pages/login/index' })
+  navigation.navigateTo({ url: '/pages/login/index' })
 }
 
 let loginPrompting = false
@@ -100,7 +101,7 @@ export function requireMembership(
     confirmText: '查看会员',
     cancelText: '继续查看',
     success: (res) => {
-      if (res.confirm) wx.navigateTo({ url: '/pages/membership/index' })
+      if (res.confirm) navigation.navigateTo({ url: '/pages/membership/index' })
     },
     complete: () => {
       membershipPrompting = false
@@ -111,7 +112,7 @@ export function requireMembership(
 
 export function logout() {
   app()?.clearAuth?.()
-  wx.reLaunch({ url: '/pages/home/index' })
+  navigation.reLaunch({ url: '/pages/home/index' })
 }
 
 /* ---- 邀请码：分享落地页先暂存，首次微信登录成功后清理 ---- */

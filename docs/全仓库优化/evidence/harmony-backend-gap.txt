@@ -1,0 +1,20 @@
+{
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "9a91ab63215086de13e2c2c4c5682cc6a35d25117f32c1c6e454e89d1bbeb58d",
+  "status": "blocked",
+  "requiredTests": 12,
+  "missingTests": [
+    "test/harmony-iap.service.spec.ts",
+    "test/huawei-iap-jws.service.spec.ts",
+    "test/huawei-iap-server.service.spec.ts",
+    "test/harmony-push.service.spec.ts",
+    "test/harmony-realtime.service.spec.ts",
+    "test/app-release-harmony.spec.ts",
+    "test/harmony-module-bootstrap.spec.ts",
+    "test/legal.service.spec.ts",
+    "test/merchant-plaza.spec.ts",
+    "test/merchant-chat.spec.ts"
+  ],
+  "accountSmokeCommandPresent": false,
+  "notes": "仅本地前置核对，不访问正式地址；存在测试不等于测试通过或真机验收"
+}

@@ -1,8 +1,9 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { customerApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
 
-Page({
+MotionPage({
   data: { list: [] as any[], loading: true, loadError: false },
 
   _seq: 0,
@@ -47,7 +48,7 @@ Page({
   async toDetail(e: any) {
     const { id, name } = e.currentTarget.dataset
     if (id) {
-      wx.navigateTo({ url: '/pages/customer-detail/index?id=' + id })
+      navigation.navigateTo({ url: '/pages/customer-detail/index?id=' + id })
       return
     }
     // 无档客户（订单自动生成）：自动建档 + 关联同名历史订单后，进入完整详情
@@ -57,7 +58,7 @@ Page({
       const c: any = await customerApi.ensureByName(name)
       wx.hideLoading()
       if (c && c.id) {
-        wx.navigateTo({ url: '/pages/customer-detail/index?id=' + c.id })
+        navigation.navigateTo({ url: '/pages/customer-detail/index?id=' + c.id })
       } else {
         wx.showToast({ title: '建档失败，请重试', icon: 'none' })
       }
@@ -67,6 +68,6 @@ Page({
     }
   },
   toAdd() {
-    wx.navigateTo({ url: '/pages/customer-edit/index' })
+    navigation.navigateTo({ url: '/pages/customer-edit/index' })
   },
 })

@@ -1,0 +1,72 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:ff44c35e-93dd-4ae4-9db4-36b8a2cb21bf",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "bom-ref": "pkg:generic/top.ewsn.jingwei.merchant@1.0.0",
+      "name": "jingwei-merchant-harmony",
+      "version": "1.0.0",
+      "purl": "pkg:generic/top.ewsn.jingwei.merchant@1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/ibestservices/ibest-ui@2.2.7",
+      "group": "@ibestservices",
+      "name": "ibest-ui",
+      "version": "2.2.7",
+      "scope": "required",
+      "licenses": [
+        { "license": { "id": "MIT" } }
+      ],
+      "purl": "pkg:generic/ibestservices/ibest-ui@2.2.7",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/ibestservices/ibest-ui/tree/1444c0fb082c97dd7e767b633df0e058ea503c79"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/ohos/hypium@1.0.24",
+      "group": "@ohos",
+      "name": "hypium",
+      "version": "1.0.24",
+      "scope": "optional",
+      "licenses": [
+        { "license": { "id": "Apache-2.0" } }
+      ],
+      "purl": "pkg:generic/ohos/hypium@1.0.24",
+      "externalReferences": [
+        { "type": "vcs", "url": "https://gitee.com/openharmony/testfwk_arkxtest" }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/ohos/hamock@1.0.0",
+      "group": "@ohos",
+      "name": "hamock",
+      "version": "1.0.0",
+      "scope": "optional",
+      "licenses": [
+        { "license": { "id": "Apache-2.0" } }
+      ],
+      "purl": "pkg:generic/ohos/hamock@1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:generic/top.ewsn.jingwei.merchant@1.0.0",
+      "dependsOn": [
+        "pkg:generic/ibestservices/ibest-ui@2.2.7",
+        "pkg:generic/ohos/hypium@1.0.24",
+        "pkg:generic/ohos/hamock@1.0.0"
+      ]
+    }
+  ]
+}

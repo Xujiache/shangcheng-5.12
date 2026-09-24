@@ -1,0 +1,120 @@
+@import '../../../utils/workbook/page.wxss';
+@import '../../../utils/workbook/filter.wxss';
+
+.records-view-switch {
+  width: 168px;
+  margin: 14px 0 16px;
+}
+
+/* 覆盖微信原生按钮的默认定宽，让主操作与悬浮容器完整贴合。 */
+.wb-fixed > .wb-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  height: 44px;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: inherit;
+}
+
+.records-calendar {
+  padding: 18px 14px 14px;
+}
+
+.records-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  column-gap: 3px;
+  row-gap: 6px;
+}
+
+.records-calendar__weekday {
+  padding-bottom: 7px;
+  text-align: center;
+  font-size: 12px;
+  color: #809187;
+}
+
+.records-calendar__weekend {
+  color: #a1aea6;
+}
+
+.records-calendar__day,
+.records-calendar__blank {
+  height: 46px;
+  min-width: 0;
+}
+
+.records-calendar__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #304a3e;
+}
+
+.records-calendar__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.records-calendar__count {
+  height: 12px;
+  max-width: 100%;
+  font-size: 9px;
+  line-height: 12px;
+  color: #0e7c66;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 只强调日期数字，保留整格的点击范围和下方标注位置。 */
+.records-calendar__day--today .records-calendar__number {
+  border-color: #b8dace;
+  color: #0e7c66;
+  font-weight: 600;
+}
+
+.records-calendar__day--selected .records-calendar__number {
+  background: #0e7c66;
+  border-color: #0e7c66;
+  color: #fff;
+  font-weight: 600;
+}
+
+.records-calendar__day--pressed {
+  opacity: 0.7;
+}
+
+.records-calendar__hint {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f3f1;
+  text-align: center;
+  font-size: 11px;
+  line-height: 18px;
+  color: #899a90;
+}
+
+/* Flat, top-anchored filter navigation: no native button sizing in the toolbar. */
+.records-toolbar {
+  padding-bottom: 12px;
+}
+.records-toolbar .records-view-switch {
+  width: 142px;
+  margin: 0;
+  flex-shrink: 0;
+}

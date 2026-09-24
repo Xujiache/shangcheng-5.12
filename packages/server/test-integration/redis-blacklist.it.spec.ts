@@ -7,26 +7,25 @@
 //   3. 多实例一致性：实例 A revoke，实例 B（全新对象 = 模拟另一台机器）能看到
 //      —— 这正是从进程内 Map 迁到 Redis 要换取的核心保证
 //
-// 运行前置：设置 REDIS_URL 指向一次性本地 Redis，例如 redis://localhost:6390。
-// 未设置 REDIS_URL 时整个套件跳过（不影响纯数据库类集成测试的执行）。
+// 运行前置：设置 REDIS_URL 指向一次性本地 Redis，例如 redis://localhost:6390/15。
+// 全量验收缺少 Redis 必须失败；纯 PostgreSQL 验证请显式选择其他测试文件。
 // ----------------------------------------------------------------------------
 import { RefreshTokenBlacklistService } from '../src/modules/auth/refresh-token-blacklist.service'
 
-const maybe = process.env.REDIS_URL ? describe : describe.skip
-
-maybe('RefreshTokenBlacklistService × Redis 集成', () => {
+describe('RefreshTokenBlacklistService × Redis 集成', () => {
   let serviceA: RefreshTokenBlacklistService
   let serviceB: RefreshTokenBlacklistService
 
   beforeEach(() => {
+    if (!process.env.REDIS_URL) throw new Error('Redis integration requires explicit REDIS_URL')
     // 两个独立实例：各自持有独立的内存 L1 和 Redis 连接，等价于两台后端机器
     serviceA = new RefreshTokenBlacklistService()
     serviceB = new RefreshTokenBlacklistService()
   })
 
   afterEach(async () => {
-    await serviceA.onModuleDestroy()
-    await serviceB.onModuleDestroy()
+    await serviceA?.onModuleDestroy()
+    await serviceB?.onModuleDestroy()
   })
 
   it('revoke 后 isRevoked 返回 true（写穿 Redis）', async () => {

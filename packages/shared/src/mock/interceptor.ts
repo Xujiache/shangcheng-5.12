@@ -100,7 +100,9 @@ export async function mockMatch<T = unknown>(req: MockRequest): Promise<ApiResul
         headers: req.headers ?? {},
       }
       if (route.delay) {
-        await new Promise((r) => setTimeout(r, route.delay))
+        await new Promise((r) => {
+          setTimeout(r, route.delay)
+        })
       }
       const data = await route.handler(ctx)
       return {

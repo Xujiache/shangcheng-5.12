@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { MerchantService } from './merchant.service'
+import { MerchantAnalyticsService } from './merchant-analytics.service'
 import { OrderShareService, ShareField } from './order-share.service'
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
@@ -30,6 +31,7 @@ export class MerchantController {
   constructor(
     private readonly svc: MerchantService,
     private readonly orderShare: OrderShareService,
+    private readonly analytics: MerchantAnalyticsService,
   ) {}
 
   // ============ Dashboard ============
@@ -40,6 +42,11 @@ export class MerchantController {
   @Get('stats') async stats(@CurrentUser() u: AuthUser, @Query() q: any) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.stats(mid, q)
+  }
+
+  @Get('stats/overview') async statsOverview(@CurrentUser() u: AuthUser, @Query() q: unknown) {
+    const mid = await this.svc.ensureMerchantId(u)
+    return this.analytics.overview(mid, q)
   }
 
   // ============ 商品 ============
@@ -567,6 +574,10 @@ export class MerchantController {
       keyword: q?.keyword,
     })
   }
+  @Get('plaza/filter-options') async plazaFilterOptions(@CurrentUser() u: AuthUser) {
+    const mid = await this.svc.ensureMerchantId(u).catch(() => '')
+    return this.svc.plazaFilterOptions(mid)
+  }
   @Get('plaza/factories/:id') async plazaFactory(
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
@@ -661,20 +672,26 @@ export class MerchantController {
   }
 
   // ============ 会员 ============
-  @Get('membership/plans') memberPlans() {
-    return this.svc.memberPlans()
+  @Get('membership/plans') memberPlans(@Headers('accept-language') language?: string) {
+    return this.svc.memberPlans(language)
   }
-  @Get('membership') async myMembership(@CurrentUser() u: AuthUser) {
+  @Get('membership') async myMembership(
+    @CurrentUser() u: AuthUser,
+    @Headers('accept-language') language?: string,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
-    return this.svc.myMembership(mid)
+    return this.svc.myMembership(mid, language)
   }
   @Get('membership/quota') async quota(@CurrentUser() u: AuthUser) {
     const mid = await this.svc.ensureMerchantId(u)
     return this.svc.quota(mid)
   }
-  @Get('membership/payments') async payments(@CurrentUser() u: AuthUser) {
+  @Get('membership/payments') async payments(
+    @CurrentUser() u: AuthUser,
+    @Headers('accept-language') language?: string,
+  ) {
     const mid = await this.svc.ensureMerchantId(u)
-    return this.svc.myPayments(mid)
+    return this.svc.myPayments(mid, language)
   }
   @Get('membership/notices') async notices(
     @CurrentUser() u: AuthUser,

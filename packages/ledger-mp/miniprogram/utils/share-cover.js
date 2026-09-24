@@ -66,7 +66,10 @@ function drawShareCover(canvas, opts) {
       canvas.width = W
       canvas.height = H
       var ctx = canvas.getContext('2d')
-      if (!ctx) return reject(new Error('no ctx'))
+      if (!ctx) {
+        reject(new Error('no ctx'))
+        return
+      }
 
       var g = ctx.createLinearGradient(0, 0, W, H)
       g.addColorStop(0, '#0E7C66')

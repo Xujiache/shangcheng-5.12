@@ -15,7 +15,9 @@ export const useFeatureFlagStore = defineStore('featureFlag', () => {
 
   async function fetchFlags() {
     try {
-      const data = await http.get<ResolvedFeatureFlags>('/api/v1/m/feature-flags', undefined, { silent: true })
+      const data = await http.get<ResolvedFeatureFlags>('/api/v1/m/feature-flags', undefined, {
+        silent: true,
+      })
       flags.value = data
     } catch {
       // 失败时保持默认（全部启用），避免阻塞用户操作

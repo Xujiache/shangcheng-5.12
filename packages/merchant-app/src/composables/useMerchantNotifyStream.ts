@@ -56,13 +56,27 @@ function bindOnce(sock: ChatSocket) {
   if (boundSock === sock) return
   boundSock = sock
   sock.on('order:new', (data: MerchantNewOrderPayload) => {
-    orderHandlers.forEach((h) => { try { h(data) } catch (e) { console.warn('[notify] order:new handler error:', e) } })
+    orderHandlers.forEach((h) => {
+      try {
+        h(data)
+      } catch (e) {
+        console.warn('[notify] order:new handler error:', e)
+      }
+    })
   })
   sock.on('order:update', (data: any) => {
-    orderUpdateHandlers.forEach((h) => { try { h(data) } catch {} })
+    orderUpdateHandlers.forEach((h) => {
+      try {
+        h(data)
+      } catch {}
+    })
   })
   sock.on('refund:new', (data: MerchantRefundPayload) => {
-    refundHandlers.forEach((h) => { try { h(data) } catch {} })
+    refundHandlers.forEach((h) => {
+      try {
+        h(data)
+      } catch {}
+    })
   })
 }
 
@@ -75,14 +89,26 @@ export function useMerchantNotifyStream(token: string) {
     async ensureConnected() {
       await sock.connect()
     },
-    onNewOrder(h: Handler<MerchantNewOrderPayload>) { orderHandlers.add(h) },
-    offNewOrder(h: Handler<MerchantNewOrderPayload>) { orderHandlers.delete(h) },
+    onNewOrder(h: Handler<MerchantNewOrderPayload>) {
+      orderHandlers.add(h)
+    },
+    offNewOrder(h: Handler<MerchantNewOrderPayload>) {
+      orderHandlers.delete(h)
+    },
 
-    onOrderUpdate(h: Handler<any>) { orderUpdateHandlers.add(h) },
-    offOrderUpdate(h: Handler<any>) { orderUpdateHandlers.delete(h) },
+    onOrderUpdate(h: Handler<any>) {
+      orderUpdateHandlers.add(h)
+    },
+    offOrderUpdate(h: Handler<any>) {
+      orderUpdateHandlers.delete(h)
+    },
 
-    onRefund(h: Handler<MerchantRefundPayload>) { refundHandlers.add(h) },
-    offRefund(h: Handler<MerchantRefundPayload>) { refundHandlers.delete(h) },
+    onRefund(h: Handler<MerchantRefundPayload>) {
+      refundHandlers.add(h)
+    },
+    offRefund(h: Handler<MerchantRefundPayload>) {
+      refundHandlers.delete(h)
+    },
 
     /** 暴露底层 socket 给需要做自定义事件的页面使用 */
     socket: sock,

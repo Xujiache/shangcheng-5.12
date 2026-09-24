@@ -737,12 +737,14 @@ model MemberPlan {
   type              String // basic / ad / addon
   code              String   @unique
   name              String
+  nameEn            String?
   price             Decimal  @db.Decimal(10, 2)
   originalPrice     Decimal? @db.Decimal(10, 2)
   period            String   @default("monthly") // monthly / yearly / weekly / daily / oneoff
   periodCount       Int      @default(1)
   hot               Boolean  @default(false)
   rights            Json     @default("[]") // 权益数组
+  rightsEn          Json? // 英文权益数组；商家端按 Accept-Language 返回
   constraints       Json? // 配额约束 { pushSlots, bannerLimit, impressionLimit, adSlotPriority, ... }
   trialDays         Int?
   // HarmonyOS NEXT / Huawei IAP 商品映射。未配置时服务端拒绝创建真实订单，
@@ -1070,6 +1072,9 @@ model LedgerUser {
   workLogs      LedgerWorkLog[]
   conversionJobs    LedgerConversionJob[]
   conversionUploads LedgerConversionUpload[]
+  workbook      LedgerWorkbook?
+  workbookOperations LedgerWorkbookOperation[]
+  workbookAttachments LedgerWorkbookAttachment[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
@@ -1271,6 +1276,42 @@ model LedgerWorkLog {
   updatedAt  DateTime   @updatedAt
 
   @@index([userId, workDate])
+}
+
+// Workbook is an account-scoped transactional document. All entity references and
+// financial invariants are validated by the identical native/server domain module.
+model LedgerWorkbook {
+  userId    String   @id
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revision  Int      @default(0)
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model LedgerWorkbookOperation {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  user        LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operationId String
+  revision    Int
+  digest      String
+  operation   Json
+  createdAt   DateTime @default(now())
+  @@unique([userId, operationId])
+  @@index([userId, revision])
+}
+
+// Never published to the public avatar/CDN bucket. Download requires ledger JWT.
+model LedgerWorkbookAttachment {
+  id        String
+  userId    String
+  user      LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mime      String
+  size      Int
+  digest    String
+  content   Bytes
+  createdAt DateTime @default(now())
+  @@id([userId, id])
 }
 
 // 首页广告 banner（#2）。后台 admin-pc 维护，App 首页轮播。

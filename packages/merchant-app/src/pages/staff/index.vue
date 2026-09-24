@@ -14,14 +14,21 @@ type Tab = 'all' | 'sales' | 'cs' | 'manager'
 const tab = ref<Tab>('all')
 const list = ref<Staff[]>([])
 
-const ROLE_LABEL: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const ROLE_LABEL: Record<
+  string,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   sales: { text: '销售员', tone: 'primary' },
   cs: { text: '客服', tone: 'info' },
   manager: { text: '店长', tone: 'warning' },
 }
 
 const TABS = computed(() => [
-  { key: 'all' as Tab, label: '全部', badge: list.value.filter((s) => s.status === 'active').length },
+  {
+    key: 'all' as Tab,
+    label: '全部',
+    badge: list.value.filter((s) => s.status === 'active').length,
+  },
   { key: 'sales' as Tab, label: '销售员' },
   { key: 'cs' as Tab, label: '客服' },
   { key: 'manager' as Tab, label: '店长' },
@@ -36,13 +43,27 @@ const total = computed(() => list.value.filter((s) => s.status === 'active').len
 const topPerf = computed(() => Math.max(...list.value.map((s) => s.monthlyPerformance ?? 0), 1))
 
 const showEditor = ref(false)
-const editing = reactive<{ id?: string; name: string; phone: string; role: 'sales' | 'cs' | 'manager' }>({
+const editing = reactive<{
+  id?: string
+  name: string
+  phone: string
+  role: 'sales' | 'cs' | 'manager'
+}>({
   name: '',
   phone: '',
   role: 'sales',
 })
 
-const PERMS_PRESET = ['product:read', 'product:write', 'order:read', 'order:write', 'customer:read', 'customer:write', 'chat:write', 'stats:read']
+const PERMS_PRESET = [
+  'product:read',
+  'product:write',
+  'order:read',
+  'order:write',
+  'customer:read',
+  'customer:write',
+  'chat:write',
+  'stats:read',
+]
 
 async function load() {
   const data = await staffService.list({ pageSize: 30 })
@@ -122,121 +143,177 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="员工管理" right-text="＋ 邀请" @click-right="openInvite"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="员工管理"
+        right-text="＋ 邀请"
+        @click-right="openInvite"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 顶部概览 -->
-    <view class="hero">
-      <view class="hero-stat">
-        <text class="hero-value">{{ total }}</text>
-        <text class="hero-label">在职员工</text>
+      <!-- 顶部概览 -->
+      <view class="hero">
+        <view class="hero-stat">
+          <text class="hero-value">{{ total }}</text>
+          <text class="hero-label">在职员工</text>
+        </view>
+        <view class="divider" />
+        <view class="hero-stat">
+          <text class="hero-value">{{
+            formatPrice(list.reduce((s, x) => s + (x.monthlyPerformance ?? 0), 0))
+          }}</text>
+          <text class="hero-label">本月业绩</text>
+        </view>
       </view>
-      <view class="divider" />
-      <view class="hero-stat">
-        <text class="hero-value">{{ formatPrice(list.reduce((s, x) => s + (x.monthlyPerformance ?? 0), 0)) }}</text>
-        <text class="hero-label">本月业绩</text>
+
+      <view class="header">
+        <wd-tabs v-model="tab" color="var(--brand-primary)">
+          <wd-tab
+            v-for="item in TABS"
+            :key="item.key"
+            :name="item.key"
+            :title="item.label"
+            :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+          />
+        </wd-tabs>
       </view>
-    </view>
 
-    <view class="header">
-      <wd-tabs v-model="tab"  color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
-        />
-      </wd-tabs>
-    </view>
-
-    <view class="list">
-      <view v-for="s in filtered" :key="s.id" class="card">
-        <view class="card-head">
-          <view class="avatar">{{ s.name.slice(-1) }}</view>
-          <view class="info">
-            <view class="name-row">
-              <text class="name">{{ s.name }}</text>
-              <wd-tag  :type="$jwTagType(ROLE_LABEL[s.role].tone)" :plain="true" round>{{ ROLE_LABEL[s.role].text }}</wd-tag>
-              <wd-tag v-if="s.status === 'left'"  :type="$jwTagType('default')" :plain="true" round>{{ "已离职" }}</wd-tag>
+      <view class="list">
+        <view v-for="s in filtered" :key="s.id" class="card">
+          <view class="card-head">
+            <view class="avatar">{{ s.name.slice(-1) }}</view>
+            <view class="info">
+              <view class="name-row">
+                <text class="name">{{ s.name }}</text>
+                <wd-tag :type="$jwTagType(ROLE_LABEL[s.role].tone)" :plain="true" round>{{
+                  ROLE_LABEL[s.role].text
+                }}</wd-tag>
+                <wd-tag
+                  v-if="s.status === 'left'"
+                  :type="$jwTagType('default')"
+                  :plain="true"
+                  round
+                  >{{ '已离职' }}</wd-tag
+                >
+              </view>
+              <text class="phone">{{ maskPhone(s.phone) }}</text>
             </view>
-            <text class="phone">{{ maskPhone(s.phone) }}</text>
+            <view class="phone-btn" @click="callStaff(s)">
+              <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--brand-primary)" />
+            </view>
           </view>
-          <view class="phone-btn" @click="callStaff(s)">
-            <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--brand-primary)"  />
-          </view>
-        </view>
 
-        <view v-if="s.status === 'active'" class="perf">
-          <view class="perf-info">
-            <text class="perf-label">本月业绩</text>
-            <text class="perf-value">{{ formatPrice(s.monthlyPerformance ?? 0) }}</text>
-          </view>
-          <view class="perf-bar">
-            <view class="perf-fill" :style="{ width: ((s.monthlyPerformance ?? 0) / topPerf * 100) + '%' }"></view>
-          </view>
-        </view>
-
-        <view class="perms">
-          <text class="perms-label">权限</text>
-          <view class="perms-list">
-            <text v-for="p in s.permissions.slice(0, 4)" :key="p" class="perm-pill">{{ p.replace(':', ' · ') }}</text>
-            <text v-if="s.permissions.length > 4" class="perm-more">+{{ s.permissions.length - 4 }}</text>
-          </view>
-        </view>
-
-        <view class="card-actions">
-          <view class="action ghost" @click="openEdit(s)">编辑</view>
-          <view v-if="s.status === 'active'" class="action danger" @click="offboard(s)">离职</view>
-        </view>
-      </view>
-
-      <wd-status-tip v-if="list.length === 0"  image="content" :tip="['暂无员工', '点击右上角邀请'].filter(Boolean).join(' · ')" />
-    </view>
-
-    <view class="safe-bottom" />
-
-    <!-- 邀请/编辑浮层 -->
-    <wd-popup v-model="showEditor" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text>{{ editing.id ? '编辑员工' : '邀请新员工' }}</text>
-          <text class="close" @click="showEditor = false">✕</text>
-        </view>
-        <view class="form">
-          <view class="form-row">
-            <text class="form-label required">姓名</text>
-            <wd-input no-border v-model="editing.name" class="form-input" placeholder="员工真实姓名"  />
-          </view>
-          <view class="form-row">
-            <text class="form-label required">手机号</text>
-            <wd-input no-border v-model="editing.phone" class="form-input" placeholder="手机号 · 登录账号" maxlength="11"  />
-          </view>
-          <view class="form-row">
-            <text class="form-label">角色</text>
-            <view class="role-row">
+          <view v-if="s.status === 'active'" class="perf">
+            <view class="perf-info">
+              <text class="perf-label">本月业绩</text>
+              <text class="perf-value">{{ formatPrice(s.monthlyPerformance ?? 0) }}</text>
+            </view>
+            <view class="perf-bar">
               <view
-                v-for="r in ['sales', 'cs', 'manager'] as const"
-                :key="r"
-                :class="['role-opt', { active: editing.role === r }]"
-                @click="editing.role = r"
-              >{{ ROLE_LABEL[r].text }}</view>
+                class="perf-fill"
+                :style="{ width: ((s.monthlyPerformance ?? 0) / topPerf) * 100 + '%' }"
+              ></view>
             </view>
           </view>
-        </view>
-        <view class="sheet-footer">
-          <wd-button block plain size="large" @click="showEditor = false">取消</wd-button>
-          <wd-button block type="primary" size="large" @click="saveStaff">{{ editing.id ? '保存' : '邀请' }}</wd-button>
-        </view>
-      </view>
-    </wd-popup>
-  </view>
 
+          <view class="perms">
+            <text class="perms-label">权限</text>
+            <view class="perms-list">
+              <text v-for="p in s.permissions.slice(0, 4)" :key="p" class="perm-pill">{{
+                p.replace(':', ' · ')
+              }}</text>
+              <text v-if="s.permissions.length > 4" class="perm-more"
+                >+{{ s.permissions.length - 4 }}</text
+              >
+            </view>
+          </view>
+
+          <view class="card-actions">
+            <view class="action ghost" @click="openEdit(s)">编辑</view>
+            <view v-if="s.status === 'active'" class="action danger" @click="offboard(s)"
+              >离职</view
+            >
+          </view>
+        </view>
+
+        <wd-status-tip
+          v-if="list.length === 0"
+          image="content"
+          :tip="['暂无员工', '点击右上角邀请'].filter(Boolean).join(' · ')"
+        />
+      </view>
+
+      <view class="safe-bottom" />
+
+      <!-- 邀请/编辑浮层 -->
+      <wd-popup
+        v-model="showEditor"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text>{{ editing.id ? '编辑员工' : '邀请新员工' }}</text>
+            <text class="close" @click="showEditor = false">✕</text>
+          </view>
+          <view class="form">
+            <view class="form-row">
+              <text class="form-label required">姓名</text>
+              <wd-input
+                no-border
+                v-model="editing.name"
+                class="form-input"
+                placeholder="员工真实姓名"
+              />
+            </view>
+            <view class="form-row">
+              <text class="form-label required">手机号</text>
+              <wd-input
+                no-border
+                v-model="editing.phone"
+                class="form-input"
+                placeholder="手机号 · 登录账号"
+                maxlength="11"
+              />
+            </view>
+            <view class="form-row">
+              <text class="form-label">角色</text>
+              <view class="role-row">
+                <view
+                  v-for="r in ['sales', 'cs', 'manager'] as const"
+                  :key="r"
+                  :class="['role-opt', { active: editing.role === r }]"
+                  @click="editing.role = r"
+                  >{{ ROLE_LABEL[r].text }}</view
+                >
+              </view>
+            </view>
+          </view>
+          <view class="sheet-footer">
+            <wd-button block plain size="large" @click="showEditor = false">取消</wd-button>
+            <wd-button block type="primary" size="large" @click="saveStaff">{{
+              editing.id ? '保存' : '邀请'
+            }}</wd-button>
+          </view>
+        </view>
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 
 <style lang="scss" scoped>
-.page { min-height: 100vh; background: var(--bg-page); padding-bottom: 40rpx; }
+.page {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-bottom: 40rpx;
+}
 .hero {
   background: var(--brand-gradient);
   color: #fff;
@@ -263,7 +340,7 @@ onMounted(load)
   .divider {
     width: 2rpx;
     height: 56rpx;
-    background: rgba(255,255,255,0.3);
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 .header {
@@ -273,7 +350,12 @@ onMounted(load)
   z-index: 5;
   border-bottom: 1rpx solid var(--border-light);
 }
-.list { padding: 16rpx 24rpx; display: flex; flex-direction: column; gap: 16rpx; }
+.list {
+  padding: 16rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
 .card {
   background: var(--bg-card);
   border-radius: 16rpx;
@@ -308,7 +390,11 @@ onMounted(load)
       align-items: center;
       gap: 8rpx;
       flex-wrap: wrap;
-      .name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+      .name {
+        font-size: 28rpx;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
     }
     .phone {
       font-size: 22rpx;
@@ -337,7 +423,10 @@ onMounted(load)
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    .perf-label { font-size: 22rpx; color: var(--text-tertiary); }
+    .perf-label {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
     .perf-value {
       font-size: 28rpx;
       font-weight: 700;
@@ -396,13 +485,24 @@ onMounted(load)
     padding: 8rpx 24rpx;
     border-radius: 999rpx;
     font-size: 24rpx;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
-    &.danger { background: transparent; color: var(--status-error); border: 1rpx solid var(--status-error); }
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    &.danger {
+      background: transparent;
+      color: var(--status-error);
+      border: 1rpx solid var(--status-error);
+    }
   }
 }
 .mask {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999;
-  display: flex; align-items: flex-end;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
 }
 .sheet {
   width: 100%;
@@ -411,11 +511,16 @@ onMounted(load)
   padding: 24rpx;
 }
 .sheet-head {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding-bottom: 16rpx;
   border-bottom: 1rpx solid var(--border-light);
-  font-size: 30rpx; font-weight: 700;
-  .close { color: var(--text-tertiary); }
+  font-size: 30rpx;
+  font-weight: 700;
+  .close {
+    color: var(--text-tertiary);
+  }
 }
 .form {
   padding-top: 16rpx;
@@ -432,7 +537,11 @@ onMounted(load)
     width: 140rpx;
     font-size: 26rpx;
     color: var(--text-secondary);
-    &.required::before { content: '*'; color: var(--status-error); margin-right: 4rpx; }
+    &.required::before {
+      content: '*';
+      color: var(--status-error);
+      margin-right: 4rpx;
+    }
   }
   .form-input {
     flex: 1;
@@ -464,15 +573,28 @@ onMounted(load)
   }
 }
 .sheet-footer {
-  display: flex; gap: 12rpx;
+  display: flex;
+  gap: 12rpx;
   padding: 16rpx 0 24rpx;
   .sf-btn {
-    flex: 1; height: 80rpx; border-radius: 999rpx;
-    text-align: center; line-height: 80rpx;
-    font-size: 26rpx; font-weight: 600;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
-    &.primary { background: var(--brand-gradient); color: #fff; }
+    flex: 1;
+    height: 80rpx;
+    border-radius: 999rpx;
+    text-align: center;
+    line-height: 80rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    &.primary {
+      background: var(--brand-gradient);
+      color: #fff;
+    }
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

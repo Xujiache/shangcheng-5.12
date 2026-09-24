@@ -22,7 +22,12 @@ const props = withDefaults(
 const MERCHANT_TABS: PrimaryTabItem[] = [
   { key: 'home', label: '首页', icon: 'home', route: '/pages/tabbar/home/index' },
   { key: 'product', label: '商品', icon: 'goods', route: '/pages/tabbar/product/index' },
-  { key: 'order', label: '订单', icon: 'a-order-adjustmentcolumn', route: '/pages/tabbar/order/index' },
+  {
+    key: 'order',
+    label: '订单',
+    icon: 'a-order-adjustmentcolumn',
+    route: '/pages/tabbar/order/index',
+  },
   { key: 'stats', label: '数据', icon: 'chart-bar', route: '/pages/tabbar/stats/index' },
   { key: 'me', label: '我的', icon: 'user-circle', route: '/pages/tabbar/me/index' },
 ]
@@ -30,7 +35,12 @@ const MERCHANT_TABS: PrimaryTabItem[] = [
 const PLATFORM_TABS: PrimaryTabItem[] = [
   { key: 'home', label: '首页', icon: 'home', route: '/pages/tabbar/home/index' },
   { key: 'merchant', label: '商户', icon: 'shop', route: '/pages/tabbar/merchant/index' },
-  { key: 'order', label: '订单', icon: 'a-order-adjustmentcolumn', route: '/pages/tabbar/order/index' },
+  {
+    key: 'order',
+    label: '订单',
+    icon: 'a-order-adjustmentcolumn',
+    route: '/pages/tabbar/order/index',
+  },
   { key: 'stats', label: '数据', icon: 'chart-bar', route: '/pages/tabbar/stats/index' },
   { key: 'me', label: '我的', icon: 'user-circle', route: '/pages/tabbar/me/index' },
 ]
@@ -56,9 +66,7 @@ let lastNavigationAt = 0
 
 const indicatorPositionStyle = computed(() => ({
   transform: `translate3d(${visualIndex.value * 100}%, 0, 0)`,
-  transition: dragging.value
-    ? 'none'
-    : 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+  transition: dragging.value ? 'none' : 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)',
 }))
 
 const indicatorShapeStyle = computed(() => {
@@ -84,7 +92,8 @@ const placeholderStyle = computed(() => ({ height: `${80 + safeBottom.value}px` 
 
 function resolveSafeBottom() {
   try {
-    const info = typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
     const direct = Number(info.safeAreaInsets?.bottom || 0)
     const derived = Math.max(0, Number(info.screenHeight || 0) - Number(info.safeArea?.bottom || 0))
     safeBottom.value = Math.min(48, Math.max(direct, derived))
@@ -165,12 +174,10 @@ function onTouchMove(event: any) {
   lastX = x
   lastAt = now
 
-  const width = barWidth.value > 8 ? barWidth.value : Number(uni.getSystemInfoSync().windowWidth || 375) - 32
+  const width =
+    barWidth.value > 8 ? barWidth.value : Number(uni.getSystemInfoSync().windowWidth || 375) - 32
   const slotWidth = Math.max(1, (width - 8) / tabs.value.length)
-  visualIndex.value = Math.max(
-    0,
-    Math.min(tabs.value.length - 1, startIndex + delta / slotWidth),
-  )
+  visualIndex.value = Math.max(0, Math.min(tabs.value.length - 1, startIndex + delta / slotWidth))
 }
 
 function finishTouch(cancelled = false) {
@@ -221,10 +228,7 @@ onMounted(() => {
       </view>
 
       <view class="jw-primary-tabbar__items">
-        <template
-          v-for="(item, index) in tabs"
-          :key="item.key"
-        >
+        <template v-for="item in tabs" :key="item.key">
           <!--
             普通点击交给 uni-app 原生 navigator 处理，避免 App-vue 某些复杂页面
             的 service/view 事件映射丢失后出现“看得到、点不动”。拖动选项仍由
@@ -242,12 +246,7 @@ onMounted(() => {
             <wd-icon :name="item.icon" size="21px" />
             <text class="jw-primary-tabbar__label">{{ item.label }}</text>
           </navigator>
-          <view
-            v-else
-            class="jw-primary-tabbar__item is-active"
-            role="tab"
-            :aria-selected="true"
-          >
+          <view v-else class="jw-primary-tabbar__item is-active" role="tab" :aria-selected="true">
             <wd-icon :name="item.icon" size="21px" />
             <text class="jw-primary-tabbar__label">{{ item.label }}</text>
           </view>
@@ -358,7 +357,13 @@ onMounted(() => {
 
 .jw-primary-tabbar__indicator-lens {
   background:
-    linear-gradient(90deg, rgba(0, 145, 255, 0.08), transparent 28%, transparent 72%, rgba(72, 180, 255, 0.12)),
+    linear-gradient(
+      90deg,
+      rgba(0, 145, 255, 0.08),
+      transparent 28%,
+      transparent 72%,
+      rgba(72, 180, 255, 0.12)
+    ),
     radial-gradient(circle at 30% 12%, rgba(255, 255, 255, 0.72), transparent 42%);
 }
 

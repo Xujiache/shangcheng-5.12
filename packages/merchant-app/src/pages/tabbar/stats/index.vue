@@ -152,161 +152,177 @@ const periodText = computed(() =>
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- 顶栏 -->
-    <view class="topbar" :style="{ paddingTop: heroPaddingTop }">
-      <view class="title-row">
-        <text class="page-title">数据统计</text>
-        <wd-datetime-picker
-          type="date"
-          title="选择统计日期"
-          :model-value="dateStringToTimestamp(customDate)"
-          @confirm="pickDate($event.value)"
-        >
-          <view class="cal-btn">
-            <wd-icon :name="$jwIcon('calendar')" size="18px" color="#fff"  />
-          </view>
-        </wd-datetime-picker>
-      </view>
-      <wd-tabs
-        v-model="period"
-        class="period-tabs"
-        @change="(k: string) => changePeriod(k as Period)"
-       color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
-        />
-      </wd-tabs>
-    </view>
-
-    <view class="body">
-      <!-- 概览：白色卡片包裹 3 KPI -->
-      <view v-if="stats" class="overview-card">
-        <view class="overview-head">
-          <text class="overview-title">{{ periodText }} 概览</text>
-          <view class="overview-direction" :class="direction">
-            <wd-icon
-              :name="$jwIcon(direction === 'down' ? 'arrow-down' : 'arrow-up')" size="10px"
-              :color="direction === 'down' ? '#FF3B30' : '#52C41A'"
-             />
-            <text>{{
-              direction === 'down' ? '环比下降' : direction === 'up' ? '环比上升' : '持平'
-            }}</text>
-          </view>
-        </view>
-        <view class="overview-grid">
-          <view class="ov-item primary">
-            <text class="ov-label">总销售额</text>
-            <text class="ov-value">{{ formatPrice(totalSales) }}</text>
-            <view class="ov-bar primary-bar" />
-          </view>
-          <view class="ov-divider" />
-          <view class="ov-item">
-            <text class="ov-label">订单数</text>
-            <text class="ov-value">{{ orderCount }}</text>
-            <view class="ov-bar success-bar" />
-          </view>
-          <view class="ov-divider" />
-          <view class="ov-item">
-            <text class="ov-label">客单价</text>
-            <text class="ov-value">{{ formatPrice(avgOrderValue) }}</text>
-            <view class="ov-bar warning-bar" />
-          </view>
-          <view class="ov-divider" />
-          <view class="ov-item">
-            <text class="ov-label">TOP 商品销量</text>
-            <text class="ov-value">{{ topProductsSales }}</text>
-            <view class="ov-bar info-bar" />
-          </view>
-        </view>
-      </view>
-
-      <!-- 销售趋势 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "销售趋势" }}</text><text class="jw-section-sub">{{ periodText }}</text></view></view></template>
-        <view class="trend-wrap">
-          <LineChart v-if="values.length" :data="values" :labels="labels" :height="320" />
-        </view>
-      </wd-card>
-
-      <!-- 热销 TOP 10 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "热销商品 TOP 10" }}</text></view><wd-button type="text" size="small" @click="goAllProducts">{{ "查看全部" }}</wd-button></view></template>
-        <view class="top-list">
-          <view v-for="(p, i) in topProducts" :key="p.productId" class="top-row">
-            <view :class="['rank', i < 3 ? `rank-${i + 1}` : 'rank-rest']">
-              {{ i + 1 }}
+    <view class="page">
+      <!-- 顶栏 -->
+      <view class="topbar" :style="{ paddingTop: heroPaddingTop }">
+        <view class="title-row">
+          <text class="page-title">数据统计</text>
+          <wd-datetime-picker
+            type="date"
+            title="选择统计日期"
+            :model-value="dateStringToTimestamp(customDate)"
+            @confirm="pickDate($event.value)"
+          >
+            <view class="cal-btn">
+              <wd-icon :name="$jwIcon('calendar')" size="18px" color="#fff" />
             </view>
-            <view class="top-info">
-              <text class="top-name">{{ p.name }}</text>
-              <view class="top-bar">
-                <view
-                  class="top-bar-fill"
-                  :style="{ width: (p.sales / (topProducts[0]?.sales || 1)) * 100 + '%' }"
+          </wd-datetime-picker>
+        </view>
+        <wd-tabs
+          v-model="period"
+          class="period-tabs"
+          @change="(k: string) => changePeriod(k as Period)"
+          color="var(--brand-primary)"
+        >
+          <wd-tab
+            v-for="item in TABS"
+            :key="item.key"
+            :name="item.key"
+            :title="item.label"
+            :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+          />
+        </wd-tabs>
+      </view>
+
+      <view class="body">
+        <!-- 概览：白色卡片包裹 3 KPI -->
+        <view v-if="stats" class="overview-card">
+          <view class="overview-head">
+            <text class="overview-title">{{ periodText }} 概览</text>
+            <view class="overview-direction" :class="direction">
+              <wd-icon
+                :name="$jwIcon(direction === 'down' ? 'arrow-down' : 'arrow-up')"
+                size="10px"
+                :color="direction === 'down' ? '#FF3B30' : '#52C41A'"
+              />
+              <text>{{
+                direction === 'down' ? '环比下降' : direction === 'up' ? '环比上升' : '持平'
+              }}</text>
+            </view>
+          </view>
+          <view class="overview-grid">
+            <view class="ov-item primary">
+              <text class="ov-label">总销售额</text>
+              <text class="ov-value">{{ formatPrice(totalSales) }}</text>
+              <view class="ov-bar primary-bar" />
+            </view>
+            <view class="ov-divider" />
+            <view class="ov-item">
+              <text class="ov-label">订单数</text>
+              <text class="ov-value">{{ orderCount }}</text>
+              <view class="ov-bar success-bar" />
+            </view>
+            <view class="ov-divider" />
+            <view class="ov-item">
+              <text class="ov-label">客单价</text>
+              <text class="ov-value">{{ formatPrice(avgOrderValue) }}</text>
+              <view class="ov-bar warning-bar" />
+            </view>
+            <view class="ov-divider" />
+            <view class="ov-item">
+              <text class="ov-label">TOP 商品销量</text>
+              <text class="ov-value">{{ topProductsSales }}</text>
+              <view class="ov-bar info-bar" />
+            </view>
+          </view>
+        </view>
+
+        <!-- 销售趋势 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '销售趋势' }}</text
+                ><text class="jw-section-sub">{{ periodText }}</text></view
+              ></view
+            ></template
+          >
+          <view class="trend-wrap">
+            <LineChart v-if="values.length" :data="values" :labels="labels" :height="320" />
+          </view>
+        </wd-card>
+
+        <!-- 热销 TOP 10 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '热销商品 TOP 10' }}</text></view
+              ><wd-button type="text" size="small" @click="goAllProducts">{{
+                '查看全部'
+              }}</wd-button></view
+            ></template
+          >
+          <view class="top-list">
+            <view v-for="(p, i) in topProducts" :key="p.productId" class="top-row">
+              <view :class="['rank', i < 3 ? `rank-${i + 1}` : 'rank-rest']">
+                {{ i + 1 }}
+              </view>
+              <view class="top-info">
+                <text class="top-name">{{ p.name }}</text>
+                <view class="top-bar">
+                  <view
+                    class="top-bar-fill"
+                    :style="{ width: (p.sales / (topProducts[0]?.sales || 1)) * 100 + '%' }"
+                  />
+                </view>
+              </view>
+              <text class="top-sales">售 {{ p.sales }}</text>
+            </view>
+          </view>
+        </wd-card>
+
+        <!-- 商品分析 + 客户分析 双栏 -->
+        <view class="duo">
+          <view class="duo-card">
+            <view class="duo-head">
+              <text class="duo-title">商品分析</text>
+              <wd-icon :name="$jwIcon('biz-product')" size="14px" color="var(--text-tertiary)" />
+            </view>
+            <text class="duo-sub">分类销量分布</text>
+            <view class="duo-chart">
+              <BarChart :data="catValues" :labels="catLabels" :height="180" />
+            </view>
+          </view>
+          <view class="duo-card">
+            <view class="duo-head">
+              <text class="duo-title">客户分析</text>
+              <wd-icon :name="$jwIcon('biz-customer')" size="14px" color="var(--text-tertiary)" />
+            </view>
+            <view class="customer-analysis">
+              <view class="ca-donut">
+                <DonutChart
+                  :segments="donutSegments"
+                  :size="160"
+                  center-label="新客占比"
+                  :center-value="`${newRatio}%`"
+                  :hide-legend="true"
                 />
               </view>
-            </view>
-            <text class="top-sales">售 {{ p.sales }}</text>
-          </view>
-        </view>
-      </wd-card>
-
-      <!-- 商品分析 + 客户分析 双栏 -->
-      <view class="duo">
-        <view class="duo-card">
-          <view class="duo-head">
-            <text class="duo-title">商品分析</text>
-            <wd-icon :name="$jwIcon('biz-product')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-          <text class="duo-sub">分类销量分布</text>
-          <view class="duo-chart">
-            <BarChart :data="catValues" :labels="catLabels" :height="180" />
-          </view>
-        </view>
-        <view class="duo-card">
-          <view class="duo-head">
-            <text class="duo-title">客户分析</text>
-            <wd-icon :name="$jwIcon('biz-customer')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-          <view class="customer-analysis">
-            <view class="ca-donut">
-              <DonutChart
-                :segments="donutSegments"
-                :size="160"
-                center-label="新客占比"
-                :center-value="`${newRatio}%`"
-                :hide-legend="true"
-              />
-            </view>
-            <view class="ca-legend">
-              <view class="legend-row">
-                <view class="legend-dot" style="background: #ff4d2d" />
-                <text class="legend-label">新客户</text>
-                <text class="legend-value">{{ newRatio }}%</text>
-              </view>
-              <view class="legend-row">
-                <view class="legend-dot" style="background: #1f2937" />
-                <text class="legend-label">老客户</text>
-                <text class="legend-value">{{ 100 - newRatio }}%</text>
+              <view class="ca-legend">
+                <view class="legend-row">
+                  <view class="legend-dot" style="background: #ff4d2d" />
+                  <text class="legend-label">新客户</text>
+                  <text class="legend-value">{{ newRatio }}%</text>
+                </view>
+                <view class="legend-row">
+                  <view class="legend-dot" style="background: #1f2937" />
+                  <text class="legend-label">老客户</text>
+                  <text class="legend-value">{{ 100 - newRatio }}%</text>
+                </view>
               </view>
             </view>
           </view>
         </view>
+
+        <view v-if="loading" class="loading">
+          <text>刷新中…</text>
+        </view>
+        <view class="safe-bottom" />
       </view>
 
-      <view v-if="loading" class="loading">
-        <text>刷新中…</text>
-      </view>
-      <view class="safe-bottom" />
+      <PrimaryLiquidTabBar flavor="merchant" active="stats" />
     </view>
-
-    <PrimaryLiquidTabBar flavor="merchant" active="stats" />
-  </view>
-
   </wd-config-provider>
 </template>
 

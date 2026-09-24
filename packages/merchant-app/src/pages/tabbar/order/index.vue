@@ -352,115 +352,128 @@ onUnload(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="header" :style="{ paddingTop: heroPaddingTop }">
-      <view class="title-row">
-        <text class="page-title">订单管理</text>
-        <text class="page-sub">共 {{ total }} 笔</text>
-      </view>
-      <view class="search-wrap">
-        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
-        <wd-input no-border
-          v-model="keyword"
-          class="search-input"
-          placeholder="搜索订单号 / 客户姓名 / 手机号"
-          confirm-type="search"
-          @confirm="onSearch"
-         />
-        <view v-if="keyword" class="clear" @click="clearSearch">
-          <wd-icon :name="$jwIcon('close')" size="12px" color="var(--text-tertiary)"  />
+    <view class="page">
+      <view class="header" :style="{ paddingTop: heroPaddingTop }">
+        <view class="title-row">
+          <text class="page-title">订单管理</text>
+          <text class="page-sub">共 {{ total }} 笔</text>
         </view>
-      </view>
-      <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
-        <view class="tabs-inline">
-          <view
-            v-for="t in TABS"
-            :key="t.key"
-            :class="['tab-item', tab === t.key && 'active']"
-            @click="selectTab(t.key)"
-          >
-            <text class="tab-text">{{ t.label }}</text>
-            <text v-if="t.badge && t.badge > 0" class="tab-badge">{{
-              t.badge > 99 ? '99+' : t.badge
-            }}</text>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
-    <view class="list">
-      <wd-card
-        v-for="o in list"
-        :key="o.id"
-        custom-class="order-card"
-        @click="goDetail(o)"
-      >
-        <view class="order-head">
-          <view class="order-head-left">
-            <text class="order-no">{{ o.no }}</text>
-            <text class="order-customer">· {{ o.address.name }}</text>
-          </view>
-          <wd-tag :type="$jwTagType(ORDER_STATUS[o.status].tone)" plain round>
-            {{ ORDER_STATUS[o.status].text }}
-          </wd-tag>
-        </view>
-        <view v-if="o.items?.[0]" class="order-item">
-          <wd-img
-            :src="o.items[0].productImage"
-            width="120rpx"
-            height="120rpx"
-            radius="8rpx"
-            mode="aspectFill"
-            enable-preview
+        <view class="search-wrap">
+          <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)" />
+          <wd-input
+            no-border
+            v-model="keyword"
+            class="search-input"
+            placeholder="搜索订单号 / 客户姓名 / 手机号"
+            confirm-type="search"
+            @confirm="onSearch"
           />
-          <view class="order-item-info">
-            <text class="order-item-name">{{ o.items[0].productName }}</text>
-            <text class="order-item-spec">{{ o.items[0].specsLabel }} · ×{{ o.items[0].quantity }}</text>
-            <text v-if="o.items.length > 1" class="order-more">共 {{ o.items.length }} 件商品</text>
-          </view>
-          <view class="order-price-wrap">
-            <text class="order-price">{{ formatPrice(o.payAmount) }}</text>
-            <text class="order-time">{{ formatDateTime(o.createdAt).slice(5, 16) }}</text>
+          <view v-if="keyword" class="clear" @click="clearSearch">
+            <wd-icon :name="$jwIcon('close')" size="12px" color="var(--text-tertiary)" />
           </view>
         </view>
-        <template #footer>
-          <view class="order-actions" @click.stop>
-            <wd-button size="small" plain @click="onAction('detail', o)">详情</wd-button>
-            <wd-button
-              v-if="o.status === 'pending_shipment'"
-              size="small"
-              type="primary"
-              @click="onAction('ship', o)"
-            >发货</wd-button>
-            <wd-button v-if="o.status === 'shipped'" size="small" plain @click="onAction('tracking', o)">
-              查物流
-            </wd-button>
-            <wd-button v-if="o.status === 'after_sale'" size="small" plain @click="onAction('refund', o)">
-              处理售后
-            </wd-button>
+        <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
+          <view class="tabs-inline">
+            <view
+              v-for="t in TABS"
+              :key="t.key"
+              :class="['tab-item', tab === t.key && 'active']"
+              @click="selectTab(t.key)"
+            >
+              <text class="tab-text">{{ t.label }}</text>
+              <text v-if="t.badge && t.badge > 0" class="tab-badge">{{
+                t.badge > 99 ? '99+' : t.badge
+              }}</text>
+            </view>
           </view>
-        </template>
-      </wd-card>
-      <wd-status-tip
-        v-if="!loading && list.length === 0"
-       image="content" :tip="['暂无订单', '切换标签或调整搜索条件'].filter(Boolean).join(' · ')" />
-      <view v-if="hasMore && list.length > 0" class="loadmore" @click="loadMore">
-        加载更多 ›
+        </scroll-view>
       </view>
-      <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
-    </view>
 
-    <view class="safe-bottom" />
+      <view class="list">
+        <wd-card v-for="o in list" :key="o.id" custom-class="order-card" @click="goDetail(o)">
+          <view class="order-head">
+            <view class="order-head-left">
+              <text class="order-no">{{ o.no }}</text>
+              <text class="order-customer">· {{ o.address.name }}</text>
+            </view>
+            <wd-tag :type="$jwTagType(ORDER_STATUS[o.status].tone)" plain round>
+              {{ ORDER_STATUS[o.status].text }}
+            </wd-tag>
+          </view>
+          <view v-if="o.items?.[0]" class="order-item">
+            <wd-img
+              :src="o.items[0].productImage"
+              width="120rpx"
+              height="120rpx"
+              radius="8rpx"
+              mode="aspectFill"
+              enable-preview
+            />
+            <view class="order-item-info">
+              <text class="order-item-name">{{ o.items[0].productName }}</text>
+              <text class="order-item-spec"
+                >{{ o.items[0].specsLabel }} · ×{{ o.items[0].quantity }}</text
+              >
+              <text v-if="o.items.length > 1" class="order-more"
+                >共 {{ o.items.length }} 件商品</text
+              >
+            </view>
+            <view class="order-price-wrap">
+              <text class="order-price">{{ formatPrice(o.payAmount) }}</text>
+              <text class="order-time">{{ formatDateTime(o.createdAt).slice(5, 16) }}</text>
+            </view>
+          </view>
+          <template #footer>
+            <view class="order-actions" @click.stop>
+              <wd-button size="small" plain @click="onAction('detail', o)">详情</wd-button>
+              <wd-button
+                v-if="o.status === 'pending_shipment'"
+                size="small"
+                type="primary"
+                @click="onAction('ship', o)"
+                >发货</wd-button
+              >
+              <wd-button
+                v-if="o.status === 'shipped'"
+                size="small"
+                plain
+                @click="onAction('tracking', o)"
+              >
+                查物流
+              </wd-button>
+              <wd-button
+                v-if="o.status === 'after_sale'"
+                size="small"
+                plain
+                @click="onAction('refund', o)"
+              >
+                处理售后
+              </wd-button>
+            </view>
+          </template>
+        </wd-card>
+        <wd-status-tip
+          v-if="!loading && list.length === 0"
+          image="content"
+          :tip="['暂无订单', '切换标签或调整搜索条件'].filter(Boolean).join(' · ')"
+        />
+        <view v-if="hasMore && list.length > 0" class="loadmore" @click="loadMore">
+          加载更多 ›
+        </view>
+        <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
+      </view>
 
-    <!-- 发货弹窗：快递公司下拉 + 运单号输入 -->
-    <wd-popup
-      v-model="shipDialog.visible"
-      position="bottom"
-      custom-class="ship-sheet"
-      safe-area-inset-bottom
-      :close-on-click-modal="!shipDialog.submitting"
-      @close="closeShipDialog"
-    >
+      <view class="safe-bottom" />
+
+      <!-- 发货弹窗：快递公司下拉 + 运单号输入 -->
+      <wd-popup
+        v-model="shipDialog.visible"
+        position="bottom"
+        custom-class="ship-sheet"
+        safe-area-inset-bottom
+        :close-on-click-modal="!shipDialog.submitting"
+        @close="closeShipDialog"
+      >
         <view class="ship-head">
           <text class="ship-title">填写物流信息</text>
           <wd-icon name="close" size="20px" color="var(--text-tertiary)" @click="closeShipDialog" />
@@ -474,32 +487,30 @@ onUnload(() => {
             align-right
             @confirm="onShipCompanyChange($event.value)"
           />
+
           <view class="ship-field">
             <text class="ship-label">运单号</text>
-            <wd-input no-border
+            <wd-input
+              no-border
               v-model="shipDialog.trackingNumber"
               class="ship-input"
               placeholder="请输入或粘贴运单号"
               maxlength="40"
-             />
+            />
           </view>
         </view>
         <view class="ship-actions">
-          <wd-button block plain :disabled="shipDialog.submitting" @click="closeShipDialog">取消</wd-button>
-          <wd-button
-            block
-            type="primary"
-            :loading="shipDialog.submitting"
-            @click="confirmShip"
+          <wd-button block plain :disabled="shipDialog.submitting" @click="closeShipDialog"
+            >取消</wd-button
           >
+          <wd-button block type="primary" :loading="shipDialog.submitting" @click="confirmShip">
             {{ shipDialog.submitting ? '提交中…' : '确认发货' }}
           </wd-button>
         </view>
-    </wd-popup>
+      </wd-popup>
 
-    <PrimaryLiquidTabBar flavor="merchant" active="order" />
-  </view>
-
+      <PrimaryLiquidTabBar flavor="merchant" active="order" />
+    </view>
   </wd-config-provider>
 </template>
 

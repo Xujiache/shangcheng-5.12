@@ -180,100 +180,119 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="门店管理" right-text="邀请"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="门店管理"
+        right-text="邀请"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 顶部统计 -->
-    <view class="hero">
-      <view class="hero-stat">
-        <text class="hero-value">{{ stats.total }}</text>
-        <text class="hero-label">合作门店</text>
+      <!-- 顶部统计 -->
+      <view class="hero">
+        <view class="hero-stat">
+          <text class="hero-value">{{ stats.total }}</text>
+          <text class="hero-label">合作门店</text>
+        </view>
+        <view class="divider" />
+        <view class="hero-stat">
+          <text class="hero-value">{{ stats.active }}</text>
+          <text class="hero-label">已授权</text>
+        </view>
+        <view class="divider" />
+        <view class="hero-stat">
+          <text class="hero-value">{{ stats.pending }}</text>
+          <text class="hero-label">待审核</text>
+        </view>
       </view>
-      <view class="divider" />
-      <view class="hero-stat">
-        <text class="hero-value">{{ stats.active }}</text>
-        <text class="hero-label">已授权</text>
-      </view>
-      <view class="divider" />
-      <view class="hero-stat">
-        <text class="hero-value">{{ stats.pending }}</text>
-        <text class="hero-label">待审核</text>
-      </view>
-    </view>
 
-    <!-- 搜索 + Tab -->
-    <view class="header">
-      <view class="search-wrap">
-        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
-        <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索门店名称 / 联系人"  />
+      <!-- 搜索 + Tab -->
+      <view class="header">
+        <view class="search-wrap">
+          <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)" />
+          <wd-input
+            no-border
+            v-model="keyword"
+            class="search-input"
+            placeholder="搜索门店名称 / 联系人"
+          />
+        </view>
+        <wd-tabs v-model="tab" color="var(--brand-primary)">
+          <wd-tab
+            v-for="item in TABS"
+            :key="item.key"
+            :name="item.key"
+            :title="item.label"
+            :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+          />
+        </wd-tabs>
       </view>
-      <wd-tabs v-model="tab"  color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
-        />
-      </wd-tabs>
-    </view>
 
-    <!-- 列表 -->
-    <view class="list">
-      <view v-for="s in filtered" :key="s.id" class="card">
-        <view class="card-head">
-          <view :class="['level-badge']" :style="{ background: LEVEL_COLOR[s.level] }">
-            <text class="level-text">{{ s.level }}</text>
-          </view>
-          <view class="store-info">
-            <text class="store-name">{{ s.name }}</text>
-            <view class="store-meta">
-              <view class="meta-region">
-                <wd-icon :name="$jwIcon('location')" size="11px" color="var(--text-tertiary)"  />
-                <text>{{ s.region }}</text>
+      <!-- 列表 -->
+      <view class="list">
+        <view v-for="s in filtered" :key="s.id" class="card">
+          <view class="card-head">
+            <view :class="['level-badge']" :style="{ background: LEVEL_COLOR[s.level] }">
+              <text class="level-text">{{ s.level }}</text>
+            </view>
+            <view class="store-info">
+              <text class="store-name">{{ s.name }}</text>
+              <view class="store-meta">
+                <view class="meta-region">
+                  <wd-icon :name="$jwIcon('location')" size="11px" color="var(--text-tertiary)" />
+                  <text>{{ s.region }}</text>
+                </view>
+                <wd-tag :type="$jwTagType(STATUS_LABEL[s.status].tone)" :plain="true" round>{{
+                  STATUS_LABEL[s.status].text
+                }}</wd-tag>
               </view>
-              <wd-tag  :type="$jwTagType(STATUS_LABEL[s.status].tone)" :plain="true" round>{{ STATUS_LABEL[s.status].text }}</wd-tag>
             </view>
           </view>
+
+          <view class="card-body">
+            <view class="row">
+              <text class="row-label">联系人</text>
+              <text class="row-value">{{ s.contact }} · {{ s.phone }}</text>
+            </view>
+            <view class="row">
+              <text class="row-label">地址</text>
+              <text class="row-value">{{ s.address }}</text>
+            </view>
+            <view v-if="s.status === 'active'" class="row">
+              <text class="row-label">授权有效期</text>
+              <text class="row-value">{{ s.authValidFrom }} ~ {{ s.authValidTo }}</text>
+            </view>
+          </view>
+
+          <view class="card-actions">
+            <view v-if="s.status === 'pending'" class="action ghost" @click="reject(s)">驳回</view>
+            <view v-if="s.status === 'pending'" class="action primary" @click="approve(s)"
+              >通过</view
+            >
+            <view v-if="s.status === 'active'" class="action ghost" @click="callStore(s)">
+              <wd-icon :name="$jwIcon('phone')" size="12px" color="var(--text-primary)" />
+              <text>联系</text>
+            </view>
+            <view v-if="s.status === 'active'" class="action primary" @click="goAuth(s)"
+              >授权设置</view
+            >
+            <view v-if="s.status === 'cancelled'" class="action ghost">查看记录</view>
+          </view>
         </view>
 
-        <view class="card-body">
-          <view class="row">
-            <text class="row-label">联系人</text>
-            <text class="row-value">{{ s.contact }} · {{ s.phone }}</text>
-          </view>
-          <view class="row">
-            <text class="row-label">地址</text>
-            <text class="row-value">{{ s.address }}</text>
-          </view>
-          <view v-if="s.status === 'active'" class="row">
-            <text class="row-label">授权有效期</text>
-            <text class="row-value">{{ s.authValidFrom }} ~ {{ s.authValidTo }}</text>
-          </view>
-        </view>
-
-        <view class="card-actions">
-          <view v-if="s.status === 'pending'" class="action ghost" @click="reject(s)">驳回</view>
-          <view v-if="s.status === 'pending'" class="action primary" @click="approve(s)">通过</view>
-          <view v-if="s.status === 'active'" class="action ghost" @click="callStore(s)">
-            <wd-icon :name="$jwIcon('phone')" size="12px" color="var(--text-primary)"  />
-            <text>联系</text>
-          </view>
-          <view v-if="s.status === 'active'" class="action primary" @click="goAuth(s)"
-            >授权设置</view
-          >
-          <view v-if="s.status === 'cancelled'" class="action ghost">查看记录</view>
-        </view>
+        <wd-status-tip
+          v-if="!loading && filtered.length === 0"
+          image="content"
+          :tip="['暂无门店', '可邀请门店或调整筛选条件'].filter(Boolean).join(' · ')"
+        />
       </view>
 
-      <wd-status-tip
-        v-if="!loading && filtered.length === 0"
-       image="content" :tip="['暂无门店', '可邀请门店或调整筛选条件'].filter(Boolean).join(' · ')" />
+      <view class="safe-bottom" />
     </view>
-
-    <view class="safe-bottom" />
-  </view>
-
   </wd-config-provider>
 </template>
 

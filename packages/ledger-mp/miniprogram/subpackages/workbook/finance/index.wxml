@@ -1,0 +1,161 @@
+<view class="wb {{!formType&&tab!=='payments'?'finance--action':''}} lz-route-scene {{_routeMotion}}"
+  ><workbook-header title="工资结算" subtitle="先对账，再结算，分次发薪有据可查" back /><view
+    class="wb-body"
+    ><view class="finance-tabs"
+      ><lz-segmented options="{{tabs}}" value="{{tab}}" bindchange="tab"
+    /></view>
+    <view wx:if="{{formType}}" class="wb-card"
+      ><view class="wb-title">{{formType==='settlements'?'新建结算单':formType==='advances'?'记录借支 / 预付':formType==='payments'?'记录工资支付':'工资补差'}}</view
+      ><view class="wb-field"
+        ><text>工人 *</text
+        ><picker
+          range="{{workers}}"
+          range-key="name"
+          value="{{workerIndex}}"
+          data-field="workerIndex"
+          bindchange="picker"
+          disabled="{{formType==='payments'}}"
+          ><view class="wb-select"
+            >{{workers[workerIndex].name}} <workbook-icon name="arrow-down" size="14" /></view></picker
+      ></view>
+      <block wx:if="{{formType==='settlements'}}"
+        ><view class="wb-field"
+          ><text>工地范围</text
+          ><picker
+            range="{{projects}}"
+            range-key="name"
+            value="{{projectIndex}}"
+            data-field="projectIndex"
+            bindchange="picker"
+            ><view class="wb-select"
+              >{{projects[projectIndex].name}} <workbook-icon name="arrow-down" size="14" /></view></picker></view
+        ><view class="wb-grid"
+          ><view class="wb-field"
+            ><text>开始</text
+            ><picker mode="date" value="{{from}}" data-field="from" bindchange="field"
+              ><view class="wb-select">{{from}}</view></picker
+            ></view
+          ><view class="wb-field"
+            ><text>结束</text
+            ><picker mode="date" value="{{to}}" data-field="to" bindchange="field"
+              ><view class="wb-select">{{to}}</view></picker
+            ></view
+          ></view
+        ><view class="wb-row wb-section"
+          ><text>待结算记录</text><text class="wb-link" bindtap="selectAll">全选</text></view
+        ><checkbox-group bindchange="select"
+          ><label wx:for="{{candidates}}" wx:key="id" class="wb-check"
+            ><view class="wb-generated-checkbox"
+              ><checkbox value="{{item.id}}" checked="{{item.chosen}}" color="#0e7c66" /><view
+                class="wb-generated-checkbox-visual"
+                ><workbook-icon wx:if="{{item.chosen}}" name="check" size="18" /></view></view
+            ><view class="wb-flex"
+              ><view>{{item.workDate}} {{item.collection==='adjustments'?'补差':''}}</view
+              ><view class="wb-muted">{{item.project}}</view></view
+            ><text>{{item.amount}}</text></label
+          ></checkbox-group
+        ><view wx:if="{{!candidates.length}}" class="wb-empty">该范围暂无待结算记录</view
+        ><view class="wb-row"
+          ><view class="wb-muted">使用借支抵扣 可用 {{available}}</view
+          ><switch checked="{{useAdvance}}" bindchange="useAdvance" color="#0e7c66" /></view
+        ><view class="wb-sep" /><view class="wb-row"
+          ><text>应计</text><text>{{preview}}</text></view
+        ><view class="wb-row"><text>借支抵扣</text><text>{{offset}}</text></view
+        ><view class="wb-row"
+          ><text class="wb-label">待支付</text><text class="wb-title">{{due}}</text></view
+        ></block
+      >
+      <block wx:else
+        ><view wx:if="{{formType==='adjustments'}}" class="wb-field"
+          ><text>工地</text
+          ><picker
+            range="{{projects}}"
+            range-key="name"
+            value="{{projectIndex}}"
+            data-field="projectIndex"
+            bindchange="picker"
+            ><view class="wb-select"
+              >{{projects[projectIndex].name}} <workbook-icon name="arrow-down" size="14" /></view></picker></view
+        ><view class="wb-grid"
+          ><view class="wb-field"
+            ><text>{{formType==='adjustments'?'补差金额（可填负数）':'金额'}}（元）</text
+            ><input
+              type="{{formType==='adjustments'?'text':'digit'}}"
+              value="{{amount}}"
+              data-field="amount"
+              bindinput="field" /></view
+          ><view class="wb-field"
+            ><text>日期</text
+            ><picker mode="date" value="{{date}}" data-field="date" bindchange="field"
+              ><view class="wb-select">{{date}}</view></picker
+            ></view
+          ></view
+        ><view wx:if="{{formType!=='adjustments'}}" class="wb-field"
+          ><text>付款方式（仅记录，不实际转账）</text
+          ><input
+            value="{{method}}"
+            data-field="method"
+            bindinput="field"
+            maxlength="30" /></view
+        ><view class="wb-field"
+          ><text>{{formType==='adjustments'?'补差原因 *':'备注'}}</text
+          ><textarea
+            value="{{note}}"
+            data-field="note"
+            bindinput="field"
+            maxlength="500"
+          /></view></block
+      ><view class="wb-actions"
+        ><button class="wb-btn wb-btn--soft" bindtap="cancel">取消</button
+        ><button class="wb-btn" disabled="{{saving}}" bindtap="save">
+          <view wx:if="{{saving}}" class="wb-generated-loading"
+            ><workbook-icon name="loading" size="16" /></view
+          >{{saving?'保存中…':'确认保存'}}
+        </button></view
+      ></view
+    >
+    <block wx:else
+      ><view wx:if="{{tab==='payments'}}" class="wb-warn"
+        >请从结算单的“发薪”入口记录付款；超出结算余额的预付款请记为借支。</view
+      ><view class="wb-card" style="margin-top: 14px"
+        ><view wx:if="{{!list.length}}" class="wb-empty">暂无记录</view
+        ><view wx:for="{{list}}" wx:key="id" class="wb-list-row"
+          ><view class="wb-row"
+            ><view class="wb-flex"
+              ><view class="wb-list-title"
+                >{{item.name}}
+                <text wx:if="{{item.voided}}" class="wb-tag wb-tag--warm">已作废</text></view
+              ><view class="wb-muted">{{item.dateText}}</view
+              ><view class="wb-muted">{{item.project}} {{item.note}}</view
+              ><view wx:if="{{item.voided}}" class="wb-muted"
+                >作废原因：{{item.voidReason}}</view
+              ></view
+            ><text class="wb-list-title">{{item.amount}}</text></view
+          ><view wx:if="{{!item.voided && (tab==='settlements'||tab==='advances')}}" class="wb-muted">{{tab==='settlements'?'待付':'未抵扣'}} {{item.remaining}}</view
+          ><view wx:if="{{!item.voided && tab!=='adjustments'}}" class="wb-actions"
+            ><button
+              wx:if="{{tab==='settlements' && item.remaining!=='¥0.00'}}"
+              class="wb-btn wb-btn--soft wb-btn--small"
+              data-id="{{item.id}}"
+              bindtap="pay"
+            >
+              发薪</button
+            ><button
+              class="wb-btn wb-btn--danger wb-btn--small"
+              data-id="{{item.id}}"
+              bindtap="void"
+            >
+              作废
+            </button></view
+          ></view
+        ></view
+      ></block
+    > </view
+  ><view wx:if="{{!formType && tab!=='payments'}}" class="wb-fixed finance-primary-action"
+    ><button class="wb-btn" style="width: 100%" bindtap="start">
+      <workbook-icon name="plus" size="17" /> {{tab==='settlements'?'新建结算单':tab==='advances'?'记录借支 / 预付':'记一笔补差'}}
+    </button></view
+  ><workbook-nav active="finance"
+/></view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

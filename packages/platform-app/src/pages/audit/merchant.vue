@@ -115,85 +115,103 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="商户入驻审核"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="商户入驻审核"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
-      >
-        <text class="tab-label">{{ t.label }}</text>
-        <text class="tab-count">({{ counts[t.key] }})</text>
-        <view v-if="tab === t.key" class="indicator" />
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
+        >
+          <text class="tab-label">{{ t.label }}</text>
+          <text class="tab-count">({{ counts[t.key] }})</text>
+          <view v-if="tab === t.key" class="indicator" />
+        </view>
       </view>
-    </view>
 
-    <scroll-view scroll-y class="scroll">
-      <view
-        v-for="m in filtered"
-        :key="m.id"
-        class="card"
-      >
-        <view class="card-head">
-          <view class="head-left">
-            <text class="name">{{ m.name }}</text>
-            <view
-              class="type-tag"
-              :style="{ color: typeMetaOf(m.type).tint, background: typeMetaOf(m.type).tint + '14' }"
-            >
-              {{ typeMetaOf(m.type).label }}
+      <scroll-view scroll-y class="scroll">
+        <view v-for="m in filtered" :key="m.id" class="card">
+          <view class="card-head">
+            <view class="head-left">
+              <text class="name">{{ m.name }}</text>
+              <view
+                class="type-tag"
+                :style="{
+                  color: typeMetaOf(m.type).tint,
+                  background: typeMetaOf(m.type).tint + '14',
+                }"
+              >
+                {{ typeMetaOf(m.type).label }}
+              </view>
+            </view>
+            <text class="time">{{ formatDate(m.createdAt) }}</text>
+          </view>
+
+          <view class="meta-rows">
+            <view class="meta">
+              <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ m.contact }} · {{ m.contactPhone }}</text>
+            </view>
+            <view class="meta">
+              <wd-icon :name="$jwIcon('location-pin')" size="11px" color="var(--text-tertiary)" />
+              <text class="ellipsis">{{ m.region }}</text>
+            </view>
+            <view class="meta">
+              <wd-icon :name="$jwIcon('tag')" size="11px" color="var(--text-tertiary)" />
+              <text class="ellipsis">{{ (m.categories || []).slice(0, 4).join(' / ') }}</text>
             </view>
           </view>
-          <text class="time">{{ formatDate(m.createdAt) }}</text>
-        </view>
 
-        <view class="meta-rows">
-          <view class="meta">
-            <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ m.contact }} · {{ m.contactPhone }}</text>
+          <!-- 资质图 -->
+          <view class="qual-row">
+            <view
+              v-for="(q, i) in (m.qualifications || []).slice(0, 3)"
+              :key="i"
+              class="qual-img-wrap"
+            >
+              <image :src="q" mode="aspectFill" class="qual-img" />
+            </view>
+            <text v-if="(m.qualifications || []).length > 3" class="qual-more"
+              >+{{ (m.qualifications || []).length - 3 }} 张</text
+            >
           </view>
-          <view class="meta">
-            <wd-icon :name="$jwIcon('location-pin')" size="11px" color="var(--text-tertiary)"  />
-            <text class="ellipsis">{{ m.region }}</text>
+
+          <view v-if="m.status === 'rejected' && m.rejectReason" class="reject-reason">
+            <wd-icon :name="$jwIcon('close-circle')" size="11px" color="#FF3B30" />
+            <text>驳回原因：{{ m.rejectReason }}</text>
           </view>
-          <view class="meta">
-            <wd-icon :name="$jwIcon('tag')" size="11px" color="var(--text-tertiary)"  />
-            <text class="ellipsis">{{ (m.categories || []).slice(0, 4).join(' / ') }}</text>
+
+          <view class="actions">
+            <view class="btn ghost" @click="viewDetail(m)">查看详情</view>
+            <template v-if="m.status === 'pending'">
+              <view class="btn ghost" @click="reject(m)">驳回</view>
+              <view class="btn primary" @click="approve(m)">通过</view>
+            </template>
           </view>
         </view>
 
-        <!-- 资质图 -->
-        <view class="qual-row">
-          <view v-for="(q, i) in (m.qualifications || []).slice(0, 3)" :key="i" class="qual-img-wrap">
-            <image :src="q" mode="aspectFill" class="qual-img" />
-          </view>
-          <text v-if="(m.qualifications || []).length > 3" class="qual-more">+{{ (m.qualifications || []).length - 3 }} 张</text>
-        </view>
-
-        <view v-if="m.status === 'rejected' && m.rejectReason" class="reject-reason">
-          <wd-icon :name="$jwIcon('close-circle')" size="11px" color="#FF3B30"  />
-          <text>驳回原因：{{ m.rejectReason }}</text>
-        </view>
-
-        <view class="actions">
-          <view class="btn ghost" @click="viewDetail(m)">查看详情</view>
-          <template v-if="m.status === 'pending'">
-            <view class="btn ghost" @click="reject(m)">驳回</view>
-            <view class="btn primary" @click="approve(m)">通过</view>
-          </template>
-        </view>
-      </view>
-
-      <wd-status-tip
-        v-if="!loading && filtered.length === 0"
-       image="content" :tip="[`暂无${TABS.find(t => t.key === tab)?.label}商户`, '审核进度会实时同步到首页待办'].filter(Boolean).join(' · ')" />
-      <view style="height: 40rpx;" />
-    </scroll-view>
-  </view>
-
+        <wd-status-tip
+          v-if="!loading && filtered.length === 0"
+          image="content"
+          :tip="
+            [`暂无${TABS.find((t) => t.key === tab)?.label}商户`, '审核进度会实时同步到首页待办']
+              .filter(Boolean)
+              .join(' · ')
+          "
+        />
+        <view style="height: 40rpx" />
+      </scroll-view>
+    </view>
   </wd-config-provider>
 </template>
 
@@ -325,7 +343,11 @@ onMounted(load)
   overflow: hidden;
   background: var(--bg-page);
   flex-shrink: 0;
-  .qual-img { width: 100%; height: 100%; display: block; }
+  .qual-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 }
 .qual-more {
   font-size: 22rpx;
@@ -336,10 +358,10 @@ onMounted(load)
   align-items: flex-start;
   gap: 8rpx;
   padding: 12rpx;
-  background: rgba(255,59,48,0.08);
+  background: rgba(255, 59, 48, 0.08);
   border-radius: 12rpx;
   font-size: 22rpx;
-  color: #FF3B30;
+  color: #ff3b30;
   line-height: 1.4;
 }
 .actions {
@@ -363,7 +385,7 @@ onMounted(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 </style>

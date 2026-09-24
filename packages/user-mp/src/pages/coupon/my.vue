@@ -139,16 +139,16 @@ onShow(load)
               <text v-else-if="c.status === 'expired'" class="sub">已过期</text>
             </view>
             <view v-if="c.status === 'unused'" class="use-btn" @click="goShop">去使用</view>
-            <view v-else class="stamp">{{
-              c.status === 'used' ? '已使用' : '已过期'
-            }}</view>
+            <view v-else class="stamp">{{ c.status === 'used' ? '已使用' : '已过期' }}</view>
           </view>
         </view>
       </view>
 
       <view v-else-if="!loading" class="empty-wrap">
         <EmptyState
-          :title="tab === 'unused' ? '暂无可用优惠券' : tab === 'used' ? '没有使用记录' : '暂无过期券'"
+          :title="
+            tab === 'unused' ? '暂无可用优惠券' : tab === 'used' ? '没有使用记录' : '暂无过期券'
+          "
           :desc="tab === 'unused' ? '先去领券中心领几张吧' : ''"
           icon="discount"
         />

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "application": "top.ewsn.jingwei.merchant",
+  "lastAudited": "2026-08-30",
+  "operator": "辽宁经纬建筑装饰有限公司",
+  "dataHandling": [
+    {
+      "id": "account-authentication",
+      "data": ["手机号", "短信验证结果", "密码哈希", "access token", "refresh token", "最小用户会话快照"],
+      "purpose": ["账号创建与登录", "会话续期", "账号安全"],
+      "condition": "使用账号服务所必要；明文密码不存储",
+      "storage": ["中国大陆服务端", "HarmonyOS Asset Store"]
+    },
+    {
+      "id": "merchant-identity",
+      "data": ["主体名称", "统一社会信用代码", "法定代表人", "联系人", "电话", "邮箱", "地区与地址", "经营品类", "资质图片", "商家头像与简介"],
+      "purpose": ["商家申请审核", "经营资质管理", "商家资料展示"],
+      "condition": "申请商家身份或主动完善资料时",
+      "storage": ["中国大陆服务端"]
+    },
+    {
+      "id": "commerce-operations",
+      "data": ["商品与SKU", "价格与库存", "订单", "收货人姓名电话地址", "物流", "退款与售后凭证", "客户分组与授权", "门店与员工", "营销与佣金"],
+      "purpose": ["经营管理", "订单履约", "售后与争议处理", "财务对账"],
+      "condition": "使用相应经营功能时",
+      "storage": ["中国大陆服务端", "应用私有加密RDB中的最近工作台离线快照"]
+    },
+    {
+      "id": "customer-communications",
+      "data": ["客服文字消息", "快捷回复", "用户主动选择的图片", "已读与输入状态"],
+      "purpose": ["客户沟通", "实时消息", "纠纷追溯"],
+      "condition": "使用客服功能时",
+      "storage": ["中国大陆服务端"]
+    },
+    {
+      "id": "selected-media",
+      "data": ["本次拍摄或系统照片选择器选中的图片"],
+      "purpose": ["商品、头像、资质、客服或售后上传"],
+      "condition": "用户主动拍摄或选择；不读取整个相册",
+      "storage": ["应用临时目录", "中国大陆对象存储"]
+    },
+    {
+      "id": "location",
+      "data": ["用户授权的精确或大致位置", "选定坐标", "地址关键词与解析结果"],
+      "purpose": ["商家与门店地图选址", "地址解析与地图展示"],
+      "condition": "用户主动使用地图选址并授权",
+      "storage": ["中国大陆服务端"]
+    },
+    {
+      "id": "push-notifications",
+      "data": ["Huawei Push token", "AAID", "语言", "订单/售后/客服通知偏好", "投递事件ID"],
+      "purpose": ["业务通知", "深链跳转", "重复消息去重"],
+      "condition": "用户允许通知后；可按分类关闭",
+      "storage": ["华为 Push Kit", "中国大陆服务端", "应用私有Preferences"]
+    },
+    {
+      "id": "iap-membership",
+      "data": ["Huawei IAP商品ID", "订单号", "签名购买凭证", "订阅状态", "金额", "核验结果"],
+      "purpose": ["会员开通", "续费与恢复购买", "取消退款与对账"],
+      "condition": "用户发起华为应用内购买时",
+      "storage": ["华为 IAP Kit", "中国大陆服务端"]
+    },
+    {
+      "id": "network-security",
+      "data": ["IP地址", "请求时间", "接口结果", "必要的安全审计日志"],
+      "purpose": ["网络通信", "攻击防护", "故障排查", "履行安全义务"],
+      "condition": "提供联网服务所必要",
+      "storage": ["中国大陆服务端"]
+    }
+  ],
+  "systemPermissions": [
+    { "name": "ohos.permission.INTERNET", "purpose": "访问生产接口、上传文件、实时消息和华为服务" },
+    { "name": "ohos.permission.GET_NETWORK_INFO", "purpose": "判断网络可用性和弱网状态" },
+    { "name": "ohos.permission.LOCATION", "purpose": "用户主动地图选址时获取精确位置" },
+    { "name": "ohos.permission.APPROXIMATELY_LOCATION", "purpose": "用户仅允许大致位置时完成选址降级" },
+    { "name": "ohos.permission.CAMERA", "purpose": "用户主动拍摄商品、资质、聊天或售后图片" },
+    { "name": "ohos.permission.VIBRATE", "purpose": "已启用业务提醒到达前台时提供轻微触感" }
+  ],
+  "processors": [
+    { "name": "Huawei Push Kit", "purpose": "订单、售后和客服通知" },
+    { "name": "Huawei IAP Kit", "purpose": "会员购买和订阅管理" },
+    { "name": "Huawei Map/Site/Location Kit", "purpose": "地图选址、搜索和地址解析" },
+    { "name": "Huawei AppGallery", "purpose": "应用分发与更新" },
+    { "name": "平台签约短信服务", "purpose": "验证码投递" },
+    { "name": "平台签约对象存储与基础云服务", "purpose": "上传文件和业务数据承载" }
+  ],
+  "notCollected": [
+    "通讯录",
+    "短信内容",
+    "通话记录",
+    "麦克风音频",
+    "Wi-Fi列表",
+    "IMEI",
+    "OAID",
+    "完整相册",
+    "个性化广告标识与广告画像"
+  ],
+  "userControls": [
+    "应用内修改个人资料、密码和手机号",
+    "应用内按订单、售后、客服关闭通知",
+    "HarmonyOS系统设置撤回相机、位置和通知权限",
+    "通过公开客服渠道申请访问、复制、更正、删除或账号注销"
+  ]
+}

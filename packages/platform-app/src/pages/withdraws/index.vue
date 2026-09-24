@@ -216,114 +216,121 @@ const tabCount = computed(() => total.value)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="提现审核"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="提现审核"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 状态 tab -->
-    <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
-      <view class="tabs">
-        <view
-          v-for="t in TABS"
-          :key="t.key"
-          :class="['tab', tab === t.key ? 'active' : '']"
-          @click="setTab(t.key)"
-        >
-          <text>{{ t.label }}</text>
-          <text v-if="tab === t.key && tabCount > 0" class="tab-count">{{ tabCount }}</text>
-        </view>
-      </view>
-    </scroll-view>
-
-    <!-- 加载/错误 -->
-    <view v-if="loading" class="state">
-      <text class="state-text">加载中…</text>
-    </view>
-    <view v-else-if="errorMsg" class="state error">
-      <text class="state-emoji">⚠️</text>
-      <text class="state-text">{{ errorMsg }}</text>
-      <view class="state-btn" @click="load">重试</view>
-    </view>
-
-    <!-- 空态 -->
-    <view v-else-if="list.length === 0" class="state empty">
-      <text class="state-emoji">💸</text>
-      <text class="state-text">暂无{{ TABS.find((t) => t.key === tab)?.label || '' }}申请</text>
-    </view>
-
-    <!-- 列表 -->
-    <view v-else class="list">
-      <view v-for="row in list" :key="row.id" class="card">
-        <!-- 头部:状态 + 金额 -->
-        <view class="card-head">
+      <!-- 状态 tab -->
+      <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
+        <view class="tabs">
           <view
-            class="status-tag"
-            :style="{
-              color: STATUS_META[row.status]?.color || '#86909C',
-              background: STATUS_META[row.status]?.bg || 'rgba(134,144,156,0.1)',
-            }"
-            >{{ STATUS_META[row.status]?.label || row.status || '未知' }}</view
+            v-for="t in TABS"
+            :key="t.key"
+            :class="['tab', tab === t.key ? 'active' : '']"
+            @click="setTab(t.key)"
           >
-          <view class="amount">
-            <text class="amount-cur">¥</text>
-            <text class="amount-num">{{ Number(row.amount).toFixed(2) }}</text>
+            <text>{{ t.label }}</text>
+            <text v-if="tab === t.key && tabCount > 0" class="tab-count">{{ tabCount }}</text>
           </view>
         </view>
+      </scroll-view>
 
-        <!-- 商家信息 -->
-        <view class="info-row">
-          <text class="info-label">商家</text>
-          <text class="info-value">{{ row.merchantName || row.merchantId }}</text>
-        </view>
-        <view v-if="row.applicantName" class="info-row">
-          <text class="info-label">申请人</text>
-          <text class="info-value">{{ row.applicantName }}</text>
-        </view>
-        <view v-if="row.method" class="info-row">
-          <text class="info-label">渠道</text>
-          <text class="info-value">{{ row.method }}</text>
-        </view>
-        <view v-if="row.account" class="info-row" @click="copyAccount(row)">
-          <text class="info-label">账号</text>
-          <view class="account-wrap">
-            <text class="info-value">{{ row.account }}</text>
-            <text class="copy-tip">复制</text>
+      <!-- 加载/错误 -->
+      <view v-if="loading" class="state">
+        <text class="state-text">加载中…</text>
+      </view>
+      <view v-else-if="errorMsg" class="state error">
+        <text class="state-emoji">⚠️</text>
+        <text class="state-text">{{ errorMsg }}</text>
+        <view class="state-btn" @click="load">重试</view>
+      </view>
+
+      <!-- 空态 -->
+      <view v-else-if="list.length === 0" class="state empty">
+        <text class="state-emoji">💸</text>
+        <text class="state-text">暂无{{ TABS.find((t) => t.key === tab)?.label || '' }}申请</text>
+      </view>
+
+      <!-- 列表 -->
+      <view v-else class="list">
+        <view v-for="row in list" :key="row.id" class="card">
+          <!-- 头部:状态 + 金额 -->
+          <view class="card-head">
+            <view
+              class="status-tag"
+              :style="{
+                color: STATUS_META[row.status]?.color || '#86909C',
+                background: STATUS_META[row.status]?.bg || 'rgba(134,144,156,0.1)',
+              }"
+              >{{ STATUS_META[row.status]?.label || row.status || '未知' }}</view
+            >
+            <view class="amount">
+              <text class="amount-cur">¥</text>
+              <text class="amount-num">{{ Number(row.amount).toFixed(2) }}</text>
+            </view>
           </view>
-        </view>
-        <view class="info-row">
-          <text class="info-label">申请时间</text>
-          <text class="info-value">{{ formatDate(row.createdAt) }}</text>
-        </view>
-        <view v-if="row.reviewedAt" class="info-row">
-          <text class="info-label">审批时间</text>
-          <text class="info-value">{{ formatDate(row.reviewedAt) }}</text>
-        </view>
-        <view v-if="row.paidAt" class="info-row">
-          <text class="info-label">打款时间</text>
-          <text class="info-value">{{ formatDate(row.paidAt) }}</text>
-        </view>
-        <view v-if="row.reason" class="info-row reason">
-          <text class="info-label">驳回原因</text>
-          <text class="info-value reason-text">{{ row.reason }}</text>
-        </view>
-        <view v-if="row.remark" class="info-row">
-          <text class="info-label">备注</text>
-          <text class="info-value">{{ row.remark }}</text>
-        </view>
 
-        <!-- 操作按钮 -->
-        <view v-if="row.status === 'pending'" class="actions">
-          <view class="btn ghost reject" @click="onReject(row)">驳回</view>
-          <view class="btn primary approve" @click="onApprove(row)">通过</view>
-        </view>
-        <view v-else-if="row.status === 'approved'" class="actions">
-          <view class="btn primary pay" @click="onMarkPaid(row)">标记已打款</view>
+          <!-- 商家信息 -->
+          <view class="info-row">
+            <text class="info-label">商家</text>
+            <text class="info-value">{{ row.merchantName || row.merchantId }}</text>
+          </view>
+          <view v-if="row.applicantName" class="info-row">
+            <text class="info-label">申请人</text>
+            <text class="info-value">{{ row.applicantName }}</text>
+          </view>
+          <view v-if="row.method" class="info-row">
+            <text class="info-label">渠道</text>
+            <text class="info-value">{{ row.method }}</text>
+          </view>
+          <view v-if="row.account" class="info-row" @click="copyAccount(row)">
+            <text class="info-label">账号</text>
+            <view class="account-wrap">
+              <text class="info-value">{{ row.account }}</text>
+              <text class="copy-tip">复制</text>
+            </view>
+          </view>
+          <view class="info-row">
+            <text class="info-label">申请时间</text>
+            <text class="info-value">{{ formatDate(row.createdAt) }}</text>
+          </view>
+          <view v-if="row.reviewedAt" class="info-row">
+            <text class="info-label">审批时间</text>
+            <text class="info-value">{{ formatDate(row.reviewedAt) }}</text>
+          </view>
+          <view v-if="row.paidAt" class="info-row">
+            <text class="info-label">打款时间</text>
+            <text class="info-value">{{ formatDate(row.paidAt) }}</text>
+          </view>
+          <view v-if="row.reason" class="info-row reason">
+            <text class="info-label">驳回原因</text>
+            <text class="info-value reason-text">{{ row.reason }}</text>
+          </view>
+          <view v-if="row.remark" class="info-row">
+            <text class="info-label">备注</text>
+            <text class="info-value">{{ row.remark }}</text>
+          </view>
+
+          <!-- 操作按钮 -->
+          <view v-if="row.status === 'pending'" class="actions">
+            <view class="btn ghost reject" @click="onReject(row)">驳回</view>
+            <view class="btn primary approve" @click="onApprove(row)">通过</view>
+          </view>
+          <view v-else-if="row.status === 'approved'" class="actions">
+            <view class="btn primary pay" @click="onMarkPaid(row)">标记已打款</view>
+          </view>
         </view>
       </view>
+
+      <view class="safe-bottom" />
     </view>
-
-    <view class="safe-bottom" />
-  </view>
-
   </wd-config-provider>
 </template>
 

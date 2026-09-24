@@ -31,11 +31,18 @@ withDefaults(
   color: var(--text-primary);
   font-weight: 500;
   white-space: nowrap;
-  &.size-sm { padding: 4rpx 12rpx; font-size: 20rpx; }
-  &.size-md { padding: 8rpx 20rpx; font-size: 24rpx; }
-  &.tone-primary, &.is-selected {
+  &.size-sm {
+    padding: 4rpx 12rpx;
+    font-size: 20rpx;
+  }
+  &.size-md {
+    padding: 8rpx 20rpx;
+    font-size: 24rpx;
+  }
+  &.tone-primary,
+  &.is-selected {
     border-color: var(--brand-primary);
-    background: rgba(255,77,45,0.08);
+    background: rgba(255, 77, 45, 0.08);
     color: var(--brand-primary);
   }
   &.tone-accent {
@@ -49,14 +56,14 @@ withDefaults(
     color: var(--text-secondary);
   }
   &.tone-pop {
-    border-color: #FFD89B;
-    background: linear-gradient(90deg, #FFF4E5, #FFE4C7);
-    color: #B25900;
+    border-color: #ffd89b;
+    background: linear-gradient(90deg, #fff4e5, #ffe4c7);
+    color: #b25900;
   }
   &.tone-gold {
-    background: linear-gradient(135deg, #FFD89B, #FFB300);
+    background: linear-gradient(135deg, #ffd89b, #ffb300);
     border-color: transparent;
-    color: #5C2D00;
+    color: #5c2d00;
   }
 }
 </style>

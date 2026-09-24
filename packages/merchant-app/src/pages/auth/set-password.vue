@@ -83,67 +83,78 @@ function logout() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
-      <view class="blob blob-1" />
-      <view class="blob blob-2" />
-      <view class="hero-title">设置登录密码</view>
-      <view class="hero-sub">请设置 6-32 位密码，之后使用「手机号 + 密码」登录商家工作台</view>
-      <view v-if="phoneHint" class="hero-phone">
-        <wd-icon :name="$jwIcon('phone')" size="11px" color="rgba(255,255,255,0.9)"  />
-        <text>{{ phoneHint }}</text>
+    <view class="page">
+      <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+        <view class="blob blob-1" />
+        <view class="blob blob-2" />
+        <view class="hero-title">设置登录密码</view>
+        <view class="hero-sub">请设置 6-32 位密码，之后使用「手机号 + 密码」登录商家工作台</view>
+
+        <view v-if="phoneHint" class="hero-phone">
+          <wd-icon :name="$jwIcon('phone')" size="11px" color="rgba(255,255,255,0.9)" />
+          <text>{{ phoneHint }}</text>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="card-head">
+          <text class="card-title">新密码</text>
+          <text class="card-lead">6-32 位，建议字母 + 数字组合</text>
+        </view>
+
+        <view class="field">
+          <view class="prefix">
+            <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c" />
+          </view>
+          <wd-input
+            no-border
+            v-model="password"
+            class="input"
+            show-password
+            placeholder="请输入新密码"
+            placeholder-class="ph"
+            maxlength="32"
+          />
+          <view class="suffix" @click="showPwd = !showPwd">
+            <wd-icon :name="$jwIcon(showPwd ? 'eye' : 'eye-off')" size="14px" color="#86909c" />
+          </view>
+        </view>
+
+        <view class="field">
+          <view class="prefix">
+            <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c" />
+          </view>
+          <wd-input
+            no-border
+            v-model="confirm"
+            class="input"
+            show-password
+            placeholder="请再次输入新密码"
+            placeholder-class="ph"
+            maxlength="32"
+          />
+          <view class="suffix" @click="showConfirm = !showConfirm">
+            <wd-icon :name="$jwIcon(showConfirm ? 'eye' : 'eye-off')" size="14px" color="#86909c" />
+          </view>
+        </view>
+
+        <wd-button
+          class="primary"
+          :disabled="!canSubmit || submitting"
+          @click="submit"
+          type="primary"
+          size="large"
+          block
+        >
+          <text v-if="!submitting">设置密码并进入商家工作台</text>
+          <text v-else>设置中…</text>
+        </wd-button>
+
+        <view class="quit" @click="logout">
+          <text>暂不设置 · 退出登录</text>
+        </view>
       </view>
     </view>
-
-    <view class="card">
-      <view class="card-head">
-        <text class="card-title">新密码</text>
-        <text class="card-lead">6-32 位，建议字母 + 数字组合</text>
-      </view>
-
-      <view class="field">
-        <view class="prefix">
-          <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
-        </view>
-        <wd-input no-border
-          v-model="password"
-          class="input" show-password
-          placeholder="请输入新密码"
-          placeholder-class="ph"
-          maxlength="32"
-         />
-        <view class="suffix" @click="showPwd = !showPwd">
-          <wd-icon :name="$jwIcon(showPwd ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
-        </view>
-      </view>
-
-      <view class="field">
-        <view class="prefix">
-          <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
-        </view>
-        <wd-input no-border
-          v-model="confirm"
-          class="input" show-password
-          placeholder="请再次输入新密码"
-          placeholder-class="ph"
-          maxlength="32"
-         />
-        <view class="suffix" @click="showConfirm = !showConfirm">
-          <wd-icon :name="$jwIcon(showConfirm ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
-        </view>
-      </view>
-
-      <wd-button class="primary" :disabled="!canSubmit || submitting" @click="submit" type="primary" size="large" block>
-        <text v-if="!submitting">设置密码并进入商家工作台</text>
-        <text v-else>设置中…</text>
-      </wd-button>
-
-      <view class="quit" @click="logout">
-        <text>暂不设置 · 退出登录</text>
-      </view>
-    </view>
-  </view>
-
   </wd-config-provider>
 </template>
 

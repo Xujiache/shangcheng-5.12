@@ -62,6 +62,7 @@ let _singleton: InternalSock | null = null
 
 function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
   let authToken = token
+
   const connected = ref(false)
   let io: any = null
   const msgHandlers: ChatMessageHandler[] = []
@@ -187,6 +188,7 @@ function createSocket(token: string, role: 'user' | 'merchant'): InternalSock {
       sock._token = nextToken
       if (io?.connected && nextToken) io.emit('auth', { token: nextToken, role })
     },
+
     connected,
     connect,
     disconnect,

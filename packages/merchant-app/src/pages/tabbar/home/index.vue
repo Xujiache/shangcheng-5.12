@@ -339,195 +339,207 @@ onPullDownRefresh(refreshAll)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="topbar" :style="{ paddingTop: heroPaddingTop }">
-      <view class="shop-identity">
-        <view class="shop-avatar">
-          <image v-if="shopAvatar" :src="shopAvatar" class="avatar-image" mode="aspectFill" />
-          <text v-else class="avatar-letter">{{ shopName.slice(0, 1) }}</text>
+    <view class="page">
+      <view class="topbar" :style="{ paddingTop: heroPaddingTop }">
+        <view class="shop-identity">
+          <view class="shop-avatar">
+            <image v-if="shopAvatar" :src="shopAvatar" class="avatar-image" mode="aspectFill" />
+            <text v-else class="avatar-letter">{{ shopName.slice(0, 1) }}</text>
+          </view>
+          <view class="shop-copy">
+            <view class="shop-title-row">
+              <text class="shop-name">{{ shopName }}</text>
+              <view class="type-chip">{{ merchantType }}</view>
+            </view>
+            <view class="member-chip" @click="goMember">
+              <wd-icon :name="$jwIcon('crown')" size="9px" color="#A66A16" />
+              <text>{{ memberLabel }}</text>
+              <wd-icon :name="$jwIcon('forward')" size="7px" color="#A66A16" />
+            </view>
+          </view>
         </view>
-        <view class="shop-copy">
-          <view class="shop-title-row">
-            <text class="shop-name">{{ shopName }}</text>
-            <view class="type-chip">{{ merchantType }}</view>
-          </view>
-          <view class="member-chip" @click="goMember">
-            <wd-icon :name="$jwIcon('crown')" size="9px" color="#A66A16"  />
-            <text>{{ memberLabel }}</text>
-            <wd-icon :name="$jwIcon('forward')" size="7px" color="#A66A16"  />
-          </view>
+        <view class="message-button" @click="goChat(unreadMessages > 0)">
+          <wd-icon :name="$jwIcon('biz-chat')" size="19px" color="#1F2329" />
+          <text v-if="unreadMessages > 0" class="message-badge">{{
+            countText(unreadMessages)
+          }}</text>
         </view>
       </view>
-      <view class="message-button" @click="goChat(unreadMessages > 0)">
-        <wd-icon :name="$jwIcon('biz-chat')" size="19px" color="#1F2329"  />
-        <text v-if="unreadMessages > 0" class="message-badge">{{ countText(unreadMessages) }}</text>
-      </view>
-    </view>
 
-    <view class="content">
-      <template v-if="workbench">
-        <view class="business-card">
-          <view class="section-head compact">
-            <view class="section-title-row">
-              <text class="section-title">今日经营</text>
-              <text class="data-caption">实付数据</text>
+      <view class="content">
+        <template v-if="workbench">
+          <view class="business-card">
+            <view class="section-head compact">
+              <view class="section-title-row">
+                <text class="section-title">今日经营</text>
+                <text class="data-caption">实付数据</text>
+              </view>
+              <view class="updated-at">
+                <text>{{ updatedTime }} 更新</text>
+                <wd-icon :name="$jwIcon('refresh')" size="11px" color="#86909C" />
+              </view>
             </view>
-            <view class="updated-at">
-              <text>{{ updatedTime }} 更新</text>
-              <wd-icon :name="$jwIcon('refresh')" size="11px" color="#86909C"  />
+            <view class="overview-grid">
+              <view
+                v-for="item in overviewItems"
+                :key="item.key"
+                class="overview-item"
+                @click="item.onClick"
+              >
+                <text class="overview-label">{{ item.label }}</text>
+                <text class="overview-value">{{ item.value }}</text>
+                <text :class="['overview-compare', comparisonTone(item.comparison)]">
+                  {{ comparisonText(item.comparison) }}
+                </text>
+              </view>
             </view>
           </view>
-          <view class="overview-grid">
+
+          <view class="todo-card">
+            <view class="section-head compact">
+              <view class="section-title-row">
+                <text class="section-title">待处理</text>
+                <text v-if="pendingTotal > 0" class="total-chip">{{
+                  countText(pendingTotal)
+                }}</text>
+              </view>
+              <text class="todo-hint">及时处理有助于提升服务体验</text>
+            </view>
+            <view class="todo-grid">
+              <view
+                v-for="item in todoItems"
+                :key="item.key"
+                class="todo-item"
+                @click="item.onClick"
+              >
+                <text :class="['todo-count', item.count > 0 && 'active']">{{
+                  countText(item.count)
+                }}</text>
+                <text class="todo-label">{{ item.label }}</text>
+              </view>
+            </view>
+          </view>
+        </template>
+
+        <view v-else-if="dashboardLoading" class="dashboard-skeleton">
+          <view class="skeleton-line title" />
+          <view class="skeleton-row">
+            <view v-for="index in 3" :key="index" class="skeleton-stat" />
+          </view>
+          <view class="skeleton-line short" />
+        </view>
+
+        <view v-else-if="dashboardError" class="dashboard-error">
+          <view class="error-icon"
+            ><wd-icon :name="$jwIcon('refresh')" size="17px" color="#FF4D2D"
+          /></view>
+          <view class="error-copy">
+            <text class="error-title">经营数据加载失败</text>
+            <text class="error-desc">请检查网络后重试，其他功能仍可正常使用</text>
+          </view>
+          <view class="retry-button" @click="loadDashboard">重试</view>
+        </view>
+
+        <view class="panel tools-panel">
+          <view class="section-head">
+            <text class="section-title">常用工具</text>
+          </view>
+          <view class="tool-grid">
             <view
-              v-for="item in overviewItems"
-              :key="item.key"
-              class="overview-item"
-              @click="item.onClick"
+              v-for="entry in visibleEntries"
+              :key="entry.key"
+              class="tool-item"
+              @click="goEntry(entry.to)"
             >
-              <text class="overview-label">{{ item.label }}</text>
-              <text class="overview-value">{{ item.value }}</text>
-              <text :class="['overview-compare', comparisonTone(item.comparison)]">
-                {{ comparisonText(item.comparison) }}
-              </text>
+              <view :class="['tool-icon', `tone-${entry.tone}`]">
+                <wd-icon :name="$jwIcon(entry.icon)" size="19px" :color="entry.color" />
+              </view>
+              <text class="tool-label">{{ entry.label }}</text>
             </view>
           </view>
         </view>
 
-        <view class="todo-card">
-          <view class="section-head compact">
-            <view class="section-title-row">
-              <text class="section-title">待处理</text>
-              <text v-if="pendingTotal > 0" class="total-chip">{{ countText(pendingTotal) }}</text>
+        <view v-if="workbench" class="panel trend-panel">
+          <view class="section-head">
+            <view>
+              <text class="section-title">近七日成交</text>
+              <view class="trend-total-row">
+                <text class="trend-total">{{ formatPrice(trendTotal) }}</text>
+                <text class="trend-caption">实付成交额</text>
+              </view>
             </view>
-            <text class="todo-hint">及时处理有助于提升服务体验</text>
+            <view class="section-action" @click="safeSwitchTab('/pages/tabbar/stats/index')">
+              <text>查看数据</text>
+              <wd-icon :name="$jwIcon('forward')" size="9px" color="#86909C" />
+            </view>
           </view>
-          <view class="todo-grid">
-            <view v-for="item in todoItems" :key="item.key" class="todo-item" @click="item.onClick">
-              <text :class="['todo-count', item.count > 0 && 'active']">{{
-                countText(item.count)
-              }}</text>
-              <text class="todo-label">{{ item.label }}</text>
-            </view>
+          <view class="chart-wrap">
+            <BarChart
+              :data="trendValues"
+              :labels="trendLabels"
+              :height="190"
+              :highlight-index="trendPeakIndex"
+            />
           </view>
         </view>
-      </template>
 
-      <view v-else-if="dashboardLoading" class="dashboard-skeleton">
-        <view class="skeleton-line title" />
-        <view class="skeleton-row">
-          <view v-for="index in 3" :key="index" class="skeleton-stat" />
+        <view class="panel plaza-panel">
+          <view class="section-head">
+            <view>
+              <view class="plaza-title-row">
+                <text class="section-title">选品机会</text>
+                <text class="opportunity-chip">厂家直供</text>
+              </view>
+              <text class="section-subtitle">发现真实货源，快速扩充在售商品</text>
+            </view>
+            <view class="section-action" @click="goPlaza">
+              <text>进入广场</text>
+              <wd-icon :name="$jwIcon('forward')" size="9px" color="#86909C" />
+            </view>
+          </view>
+
+          <view v-if="plazaLoading" class="plaza-skeleton-row">
+            <view v-for="index in 3" :key="index" class="plaza-skeleton" />
+          </view>
+          <view v-else-if="plazaProducts.length" class="plaza-grid">
+            <view
+              v-for="product in plazaProducts"
+              :key="product.productId"
+              class="plaza-product"
+              @click="goPlazaFactory(product.factoryId)"
+            >
+              <view class="product-image-wrap">
+                <image
+                  v-if="product.productImage"
+                  :src="product.productImage"
+                  class="product-image"
+                  mode="aspectFill"
+                />
+                <view v-else class="image-empty"
+                  ><wd-icon :name="$jwIcon('biz-product')" size="17px" color="#C9CDD4"
+                /></view>
+              </view>
+              <text class="product-name">{{ product.productName }}</text>
+              <text class="product-price">{{ formatPrice(product.startPrice) }}起</text>
+            </view>
+          </view>
+          <view v-else class="plaza-empty" @click="goPlaza">
+            <view class="plaza-empty-icon"
+              ><wd-icon :name="$jwIcon('biz-plaza')" size="19px" color="#FF4D2D"
+            /></view>
+            <view class="plaza-empty-copy">
+              <text class="plaza-empty-title">去选品广场看看</text>
+              <text class="plaza-empty-desc">当前暂无推荐，仍可浏览全部厂家和商品</text>
+            </view>
+            <wd-icon :name="$jwIcon('forward')" size="11px" color="#86909C" />
+          </view>
         </view>
-        <view class="skeleton-line short" />
+
+        <view class="safe-bottom" />
       </view>
 
-      <view v-else-if="dashboardError" class="dashboard-error">
-        <view class="error-icon"><wd-icon :name="$jwIcon('refresh')" size="17px" color="#FF4D2D"  /></view>
-        <view class="error-copy">
-          <text class="error-title">经营数据加载失败</text>
-          <text class="error-desc">请检查网络后重试，其他功能仍可正常使用</text>
-        </view>
-        <view class="retry-button" @click="loadDashboard">重试</view>
-      </view>
-
-      <view class="panel tools-panel">
-        <view class="section-head">
-          <text class="section-title">常用工具</text>
-        </view>
-        <view class="tool-grid">
-          <view
-            v-for="entry in visibleEntries"
-            :key="entry.key"
-            class="tool-item"
-            @click="goEntry(entry.to)"
-          >
-            <view :class="['tool-icon', `tone-${entry.tone}`]">
-              <wd-icon :name="$jwIcon(entry.icon)" size="19px" :color="entry.color"  />
-            </view>
-            <text class="tool-label">{{ entry.label }}</text>
-          </view>
-        </view>
-      </view>
-
-      <view v-if="workbench" class="panel trend-panel">
-        <view class="section-head">
-          <view>
-            <text class="section-title">近七日成交</text>
-            <view class="trend-total-row">
-              <text class="trend-total">{{ formatPrice(trendTotal) }}</text>
-              <text class="trend-caption">实付成交额</text>
-            </view>
-          </view>
-          <view class="section-action" @click="safeSwitchTab('/pages/tabbar/stats/index')">
-            <text>查看数据</text>
-            <wd-icon :name="$jwIcon('forward')" size="9px" color="#86909C"  />
-          </view>
-        </view>
-        <view class="chart-wrap">
-          <BarChart
-            :data="trendValues"
-            :labels="trendLabels"
-            :height="190"
-            :highlight-index="trendPeakIndex"
-          />
-        </view>
-      </view>
-
-      <view class="panel plaza-panel">
-        <view class="section-head">
-          <view>
-            <view class="plaza-title-row">
-              <text class="section-title">选品机会</text>
-              <text class="opportunity-chip">厂家直供</text>
-            </view>
-            <text class="section-subtitle">发现真实货源，快速扩充在售商品</text>
-          </view>
-          <view class="section-action" @click="goPlaza">
-            <text>进入广场</text>
-            <wd-icon :name="$jwIcon('forward')" size="9px" color="#86909C"  />
-          </view>
-        </view>
-
-        <view v-if="plazaLoading" class="plaza-skeleton-row">
-          <view v-for="index in 3" :key="index" class="plaza-skeleton" />
-        </view>
-        <view v-else-if="plazaProducts.length" class="plaza-grid">
-          <view
-            v-for="product in plazaProducts"
-            :key="product.productId"
-            class="plaza-product"
-            @click="goPlazaFactory(product.factoryId)"
-          >
-            <view class="product-image-wrap">
-              <image
-                v-if="product.productImage"
-                :src="product.productImage"
-                class="product-image"
-                mode="aspectFill"
-              />
-              <view v-else class="image-empty"
-                ><wd-icon :name="$jwIcon('biz-product')" size="17px" color="#C9CDD4"
-               /></view>
-            </view>
-            <text class="product-name">{{ product.productName }}</text>
-            <text class="product-price">{{ formatPrice(product.startPrice) }}起</text>
-          </view>
-        </view>
-        <view v-else class="plaza-empty" @click="goPlaza">
-          <view class="plaza-empty-icon"><wd-icon :name="$jwIcon('biz-plaza')" size="19px" color="#FF4D2D"  /></view>
-          <view class="plaza-empty-copy">
-            <text class="plaza-empty-title">去选品广场看看</text>
-            <text class="plaza-empty-desc">当前暂无推荐，仍可浏览全部厂家和商品</text>
-          </view>
-          <wd-icon :name="$jwIcon('forward')" size="11px" color="#86909C"  />
-        </view>
-      </view>
-
-      <view class="safe-bottom" />
+      <PrimaryLiquidTabBar flavor="merchant" active="home" />
     </view>
-
-    <PrimaryLiquidTabBar flavor="merchant" active="home" />
-  </view>
-
   </wd-config-provider>
 </template>
 

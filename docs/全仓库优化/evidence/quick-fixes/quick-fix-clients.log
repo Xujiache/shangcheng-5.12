@@ -1,0 +1,57 @@
+Scope: 4 of 8 workspace projects
+
+> @jiujiu/shared@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\shared
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/shared
+
+ ✓ test/session.test.ts (6 tests) 12ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  05:30:43
+   Duration  550ms (transform 68ms, setup 0ms, collect 70ms, tests 12ms, environment 0ms, prepare 186ms)
+
+
+> @jiujiu/user-mp@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\user-mp
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/user-mp
+
+ ✓ test/request.test.ts (10 tests) 834ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  05:30:45
+   Duration  1.45s (transform 190ms, setup 0ms, collect 81ms, tests 834ms, environment 0ms, prepare 195ms)
+
+
+> @jiujiu/merchant-app@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\merchant-app
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/merchant-app
+
+ ✓ test/request.test.ts (10 tests) 835ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  05:30:48
+   Duration  1.44s (transform 203ms, setup 0ms, collect 91ms, tests 835ms, environment 0ms, prepare 190ms)
+
+
+> @jiujiu/platform-app@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\platform-app
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/platform-app
+
+ ✓ test/request.test.ts (10 tests) 826ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  05:30:51
+   Duration  1.40s (transform 198ms, setup 0ms, collect 81ms, tests 826ms, environment 0ms, prepare 180ms)
+

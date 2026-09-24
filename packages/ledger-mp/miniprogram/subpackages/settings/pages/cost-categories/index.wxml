@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="cc">
+<view class="cc lz-route-scene {{_routeMotion}}">
   <lz-header title="成本分类" />
 
   <view class="cc__body">
@@ -13,6 +13,7 @@
       </view>
     </view>
 
+    <lz-skeleton wx:if="{{loading}}" variant="inline" label="正在更新分类" />
     <view class="cc__head">
       <view>
         <view class="cc__head-title">常用成本</view>
@@ -68,3 +69,5 @@
     </button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

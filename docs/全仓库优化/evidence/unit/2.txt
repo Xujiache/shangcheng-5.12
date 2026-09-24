@@ -1,0 +1,214 @@
+Scope: 7 of 8 workspace projects
+
+> @jiujiu/ledger-mp@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\ledger-mp
+> tsx scripts/verify-workbook.ts && tsx scripts/verify-workbook-flow.ts && pnpm test:nesting && cd ../.. && node scripts/verify-page-transitions.cjs && node scripts/verify-workbook-icons.cjs
+
+PASS decimal parsing and integer rounding
+PASS day/hour/piece/fixed and attendance earnings
+PASS historical rates do not follow worker changes
+PASS strict references, dates, text and prototype-safe IDs
+PASS one entry cannot be settled twice or changed after settlement
+PASS advance allocation, partial payments, and overdraft rejection
+PASS void audit preserves original amount and releases locks only after payments void
+PASS signed adjustments enter earnings without mixing units
+PASS stale versions reject rather than overwrite
+PASS deleted rows restored and archive never cascades
+PASS durable journal survives restart and deduplicates a double click
+PASS failed chunk/head writes preserve the last committed ledger
+PASS guest/account isolation and recoverable previous manifest
+PASS backup validation and mirrored domain stay consistent
+PASS local date does not convert to UTC date
+10000 records domain ms: 165
+PASS 10000 offline records retain exact totals and distinct IDs
+Workbook checks passed: 16
+PASS calendar blanks, selection, segmented views, month switching and leap February
+PASS profile editor pay-mode buttons/units, invalid selection, inline validation, busy guards, field allowlist and clean form reset
+PASS archive-page segmented views, first-use/filtered empty, search reset, archive/recover and card display fields
+PASS top dropdown anchor, grouped selection, option search, draft-preserving tab switch, toggle and cancel
+PASS filter draft/cancel/apply/reset, per-condition removal, preview count, invalid dates, cross-month list, status and keyboard layout
+PASS overview guest offline refresh, month validation, display fields and management/first-entry navigation
+PASS finance shared segmented control: all four tabs and invalid-value guard
+PASS custom highlight draft/cancel/confirm, inclusive range calendar, reversed/same-day selection, pending guard, leap day, month boundaries and shortcuts
+PASS automatic export dialog, close/reopen, shared file identity, duplicate-click guard, cancellation and failure/retry
+PASS export format selection/dispatch, busy and draft guards, personal preview, CSV generation, empty report and immutable output scope
+PASS report lightweight date controls and integrated card tabs via native tap events
+PASS reports sections, shared top filters, draft/cancel/apply, invalid dates, date presets, unit/amount summaries and actual CSV export handler
+PASS unavailable cloud route is separate from local totals and stale-page response is ignored
+PASS native-page guest offline entry → advance → settlement → payment → CSV → backup → import → lost-ACK retry → expiry → renewal → logout isolation
+{"requestsDuringGuestFlow":0,"cloudRevision":2,"guestEarnedFen":15013,"accountEarnedFen":15113,"accountDueFen":6013,"backedUpCollections":9}
+
+> @jiujiu/ledger-mp@0.0.1 test:nesting D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\ledger-mp
+> tsx scripts/verify-nesting.ts
+
+nesting verification passed
+PASS native route dispatch has no animation delay; fast navigation never flashes a loader
+PASS slow native navigation shows delayed rail then hint; ready clears both
+PASS double tap shares native promise and eventChannel; unrelated callbacks/events are not swallowed
+PASS failure releases feedback and rejects awaiters; retry starts immediately
+PASS cached return keeps amount, inputs and scroll; app foreground does not replay motion
+PASS hide/unload prevents timer writes; stale callback cannot dismiss a newer navigation
+PASS watchdog only removes cosmetic feedback; late native success still resolves
+PASS lifecycle arguments, this, async results and thrown errors are preserved
+PASS motion preference and preparation feedback do not interfere with navigation
+PASS loading components respect motion preference, deduplicate updates and stop hidden-page animation
+PASS real customer/order editors guard unfinished loads, release errors and support retry without blank saves
+PASS all registered pages use shared motion/feedback; native fixed positioning is not transformed
+{"passed":12,"checks":["native route dispatch has no animation delay; fast navigation never flashes a loader","slow native navigation shows delayed rail then hint; ready clears both","double tap shares native promise and eventChannel; unrelated callbacks/events are not swallowed","failure releases feedback and rejects awaiters; retry starts immediately","cached return keeps amount, inputs and scroll; app foreground does not replay motion","hide/unload prevents timer writes; stale callback cannot dismiss a newer navigation","watchdog only removes cosmetic feedback; late native success still resolves","lifecycle arguments, this, async results and thrown errors are preserved","motion preference and preparation feedback do not interfere with navigation","loading components respect motion preference, deduplicate updates and stop hidden-page animation","real customer/order editors guard unfinished loads, release errors and support retry without blank saves","all registered pages use shared motion/feedback; native fixed positioning is not transformed"],"routes":41,"realDeviceVerified":false}
+{
+  "status": "passed",
+  "icons": 30,
+  "iconNodes": 85,
+  "iconBytes": 191490,
+  "mainSourceBytes": 1904198,
+  "pageCoverage": {
+    "pages/work-log/index.wxml": 13,
+    "subpackages/workbook/edit/index.wxml": 9,
+    "subpackages/workbook/finance/index.wxml": 6,
+    "subpackages/workbook/people/index.wxml": 14,
+    "subpackages/workbook/records/index.wxml": 11,
+    "subpackages/workbook/reports/index.wxml": 30,
+    "components/workbook-header/index.wxml": 1,
+    "components/workbook-nav/index.wxml": 1,
+    "components/workbook-icon/index.wxml": 0
+  },
+  "sourceProvenance": "All 30 original PNGs contain gpt-image version 2.0 in C2PA softwareAgent metadata",
+  "runtimeScreenshotVerified": false
+}
+
+> @jiujiu/shared@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\shared
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/shared
+
+ ✓ test/session.test.ts (4 tests) 12ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:14:27
+   Duration  630ms (transform 78ms, setup 0ms, collect 76ms, tests 12ms, environment 0ms, prepare 212ms)
+
+
+> @jiujiu/admin-pc@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\admin-pc
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/admin-pc
+
+ ✓ test/logo.test.ts (1 test) 34ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:14:29
+   Duration  1.71s (transform 123ms, setup 0ms, collect 330ms, tests 34ms, environment 808ms, prepare 209ms)
+
+
+> @jiujiu/merchant-app@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\merchant-app
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/merchant-app
+
+ ✓ test/request.test.ts (7 tests) 531ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:14:33
+   Duration  1.07s (transform 186ms, setup 0ms, collect 84ms, tests 531ms, environment 0ms, prepare 176ms)
+
+
+> @jiujiu/platform-app@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\platform-app
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/platform-app
+
+ ✓ test/request.test.ts (7 tests) 544ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:14:35
+   Duration  1.18s (transform 201ms, setup 0ms, collect 84ms, tests 544ms, environment 1ms, prepare 200ms)
+
+
+> @jiujiu/server@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\server
+> jest --runInBand
+
+PASS test/health.spec.ts
+PASS test/auth.service.spec.ts
+[Nest] 54568  - 2026/09/09 05:14:42   DEBUG [AuthService] [auth.logout] refresh token verify failed (treated as already invalid): jwt malformed
+PASS test/member-localization.controller.spec.ts
+[Nest] 54568  - 2026/09/09 05:14:44   ERROR [PaymentController] [wxpay notify] 解密失败：bad ciphertext
+[Nest] 54568  - 2026/09/09 05:14:44   ERROR [PaymentController] [wxpay notify] 业务处理失败 no=ORD-1: db write conflict
+PASS test/payment.controller.spec.ts
+[Nest] 54568  - 2026/09/09 05:14:44     LOG [PaymentController] [wxpay notify] 会员激活成功 no=MEM123 txid=TX-MEM
+[Nest] 54568  - 2026/09/09 05:14:44     LOG [PaymentController] [wxpay notify] 会员幂等命中 no=MEM123（PaymentRecord 已 paid）
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [PaymentController] [wxpay notify] 找不到 PaymentRecord no=MEM123
+[Nest] 54568  - 2026/09/09 05:14:44     LOG [PaymentController] [wxpay notify] 幂等命中（wxTransactionId） txid=TX-1
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [PaymentController] [wxpay notify] 找不到 Order no=ORD-1
+[Nest] 54568  - 2026/09/09 05:14:44     LOG [PaymentController] [wxpay notify] 幂等命中（orderId） orderId=order-1
+[Nest] 54568  - 2026/09/09 05:14:44     LOG [PaymentController] [wxpay notify] 订单入账成功 no=ORD-1 txid=TX-1
+[Nest] 54568  - 2026/09/09 05:14:44     LOG [PaymentController] [wxpay notify] 订单入账成功 no=ORD-1 txid=TX-1
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [PaymentController] [wxpay notify] emit order:update 失败 orderId=order-1: socket down
+PASS test/files-content-security.spec.ts
+[Nest] 54568  - 2026/09/09 05:14:44   ERROR [WxPayService] [wxpay notify] 微信支付未配置（缺商户号/API V3 密钥/证书），拒绝处理回调
+[Nest] 54568  - 2026/09/09 05:14:44   ERROR [WxPayService] [wxpay notify] 缺少微信支付公钥文件：C:\Users\Administrator\AppData\Local\Temp\wxpay-test-Uv6OmI\missing-pub.pem，拒绝回调
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [WxPayService] [wxpay notify] 缺少必需的微信支付签名头
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [WxPayService] [wxpay notify] Wechatpay-Timestamp 不是有效数字：not-a-number
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [WxPayService] [wxpay notify] 时间戳超出 ±5min 窗口（skew=400.7s），疑似回放，拒绝
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [WxPayService] [wxpay notify] Wechatpay-Serial 不匹配本地公钥 ID。expected=PUB_KEY_ID_LOCAL got=PUB_KEY_ID_REMOTE_DIFFERENT
+[Nest] 54568  - 2026/09/09 05:14:44    WARN [WxPayService] [wxpay notify] 签名验证失败
+PASS test/wxpay.service.spec.ts
+PASS test/member-plan-platform.spec.ts
+PASS test/cart.service.spec.ts
+PASS test/usermp-order.spec.ts
+PASS test/member-localization.spec.ts
+PASS test/chat.gateway.spec.ts
+PASS test/jwt-write-boundary.spec.ts
+PASS test/jwt-guard.spec.ts
+PASS test/roles.guard.spec.ts
+[Nest] 54568  - 2026/09/09 05:14:47   ERROR [LedgerPayService] [ledger pay] 金额不一致 outTradeNo=LMEM-X expect=2900 got=100
+PASS test/ledger-pay.spec.ts
+[Nest] 54568  - 2026/09/09 05:14:47    WARN [LedgerPayService] [ledger pay] 找不到订单 outTradeNo=LMEM-X
+[Nest] 54568  - 2026/09/09 05:14:47     LOG [LedgerPayService] [ledger pay] 幂等命中 outTradeNo=LMEM-X
+[Nest] 54568  - 2026/09/09 05:14:47     LOG [LedgerPayService] [ledger pay] 开通成功 outTradeNo=LMEM-X txid=tx-success
+PASS test/ledger-work-log.spec.ts
+PASS test/ledger-cutplan.spec.ts
+PASS test/ledger-membership-access.spec.ts
+PASS test/ledger-auth.spec.ts
+PASS test/ledger-service.spec.ts
+PASS test/ledger-admin.spec.ts
+PASS test/order-share.service.spec.ts
+PASS test/content-security.service.spec.ts
+[Nest] 54568  - 2026/09/09 05:14:50   ERROR [GlobalExceptionFilter] Object:
+{
+  "traceId": "t-89202b1a-b110-4f90-bb06-16e221983c97",
+  "error": "Error"
+}
+
+[Nest] 54568  - 2026/09/09 05:14:49    WARN [ContentSecurityService] [content-security] 文本未通过: suggest=risky label=100
+PASS test/trace.spec.ts
+PASS test/ledger-constants.spec.ts
+PASS test/image-thumbnail.util.spec.ts
+PASS test/common-utils.spec.ts
+PASS test/plaza-filter-options.util.spec.ts
+
+Test Suites: 28 passed, 28 total
+Tests:       329 passed, 329 total
+Snapshots:   0 total
+Time:        12.053 s
+Ran all test suites.
+
+> @jiujiu/user-mp@0.0.1 test D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\user-mp
+> vitest run --config ../../vitest.config.mts
+
+
+ RUN  v3.2.7 D:/工作/工作/工作（客户）/经纬智能科技/代码/packages/user-mp
+
+ ✓ test/request.test.ts (7 tests) 521ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:14:51
+   Duration  1.10s (transform 171ms, setup 0ms, collect 77ms, tests 521ms, environment 1ms, prepare 191ms)
+

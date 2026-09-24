@@ -315,249 +315,288 @@ onMounted(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="营销中心" right-text="数据"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="营销中心"
+        right-text="数据"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 工具入口 -->
-    <view class="tools">
-      <view
-        v-for="t in TOOLS"
-        :key="t.key"
-        class="tool-card"
-        :style="{ background: `linear-gradient(135deg, ${t.accent}, ${t.accent}DD)` }"
+      <!-- 工具入口 -->
+      <view class="tools">
+        <view
+          v-for="t in TOOLS"
+          :key="t.key"
+          class="tool-card"
+          :style="{ background: `linear-gradient(135deg, ${t.accent}, ${t.accent}DD)` }"
+        >
+          <view class="tool-icon">
+            <wd-icon :name="$jwIcon(t.icon)" size="24px" color="#fff" />
+          </view>
+          <view class="tool-info">
+            <text class="tool-label">{{ t.label }}</text>
+            <text class="tool-desc">{{ t.desc }}</text>
+          </view>
+          <view class="tool-count">
+            <text class="count-value">{{ t.count() }}</text>
+            <text class="count-label">{{ t.countLabel }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 概览三宫格 - 仅保留有可点击工具的优惠券统计 -->
+      <view v-if="overview" class="stats">
+        <view class="stat">
+          <text class="stat-value">{{ overview.coupons.total }}</text>
+          <text class="stat-label">优惠券总数</text>
+        </view>
+        <view class="stat">
+          <text class="stat-value">{{ overview.coupons.active }}</text>
+          <text class="stat-label">进行中</text>
+        </view>
+        <view class="stat">
+          <text class="stat-value">{{ overview.coupons.totalReceived }}</text>
+          <text class="stat-label">已被领取</text>
+        </view>
+      </view>
+
+      <!-- 优惠券列表 -->
+      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+        <template #title
+          ><view class="jw-section-heading"
+            ><view class="jw-section-copy"
+              ><text class="jw-section-title">{{ '我的优惠券' }}</text></view
+            ><wd-button type="text" size="small" @click="createCoupon">{{
+              '创建'
+            }}</wd-button></view
+          ></template
+        >
+        <template #default>
+          <wd-tabs v-model="couponTab" @change="loadCoupons" color="var(--brand-primary)">
+            <wd-tab
+              v-for="item in COUPON_TABS"
+              :key="item.key"
+              :name="item.key"
+              :title="item.label"
+              :badge-props="
+                (item as any).badge ? { value: (item as any).badge, max: 99 } : undefined
+              "
+            />
+          </wd-tabs>
+          <view class="coupon-list">
+            <view
+              v-for="c in coupons"
+              :key="c.id"
+              :class="['coupon', `t-${c.status}`]"
+              @click="manageCoupon(c)"
+            >
+              <view class="cp-left">
+                <view class="cp-amount">
+                  <text class="cp-num">{{ couponBigValue(c) }}</text>
+                  <text class="cp-unit">{{ couponBigUnit(c) }}</text>
+                </view>
+                <text class="cp-thresh">{{
+                  c.threshold ? `满 ${c.threshold} 可用` : '无门槛'
+                }}</text>
+              </view>
+              <view class="cp-divider">
+                <view class="cp-dot" v-for="i in 6" :key="i"></view>
+              </view>
+              <view class="cp-right">
+                <view class="cp-head">
+                  <text class="cp-name">{{ c.name }}</text>
+                  <wd-tag :type="$jwTagType(STATUS_LABEL[c.status].tone)" :plain="true" round>{{
+                    STATUS_LABEL[c.status].text
+                  }}</wd-tag>
+                </view>
+                <text class="cp-type">{{ couponValueText(c) }}</text>
+                <view class="cp-stats">
+                  <text>领 {{ c.received }} / {{ c.stock }}</text>
+                  <text>用 {{ c.used }}</text>
+                </view>
+                <text v-if="c.validFrom" class="cp-valid"
+                  >{{ formatDate(c.validFrom) }} ~ {{ formatDate(c.validTo) }}</text
+                >
+              </view>
+            </view>
+            <wd-status-tip
+              v-if="!loading && coupons.length === 0"
+              image="content"
+              :tip="['暂无优惠券', '点击右上角创建'].filter(Boolean).join(' · ')"
+            />
+          </view>
+        </template>
+      </wd-card>
+
+      <view class="safe-bottom" />
+
+      <!-- 优惠券 创建 / 编辑 弹窗 -->
+      <wd-popup
+        v-model="formVisible"
+        position="bottom"
+        custom-class="cp-sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="closeForm"
       >
-        <view class="tool-icon">
-          <wd-icon :name="$jwIcon(t.icon)" size="24px" color="#fff"  />
-        </view>
-        <view class="tool-info">
-          <text class="tool-label">{{ t.label }}</text>
-          <text class="tool-desc">{{ t.desc }}</text>
-        </view>
-        <view class="tool-count">
-          <text class="count-value">{{ t.count() }}</text>
-          <text class="count-label">{{ t.countLabel }}</text>
-        </view>
-      </view>
-    </view>
+        <view class="cp-content">
+          <view class="cp-head">
+            <text class="cp-title">{{ form.id ? '编辑优惠券' : '创建优惠券' }}</text>
+            <text class="cp-close" @click="closeForm">✕</text>
+          </view>
 
-    <!-- 概览三宫格 - 仅保留有可点击工具的优惠券统计 -->
-    <view v-if="overview" class="stats">
-      <view class="stat">
-        <text class="stat-value">{{ overview.coupons.total }}</text>
-        <text class="stat-label">优惠券总数</text>
-      </view>
-      <view class="stat">
-        <text class="stat-value">{{ overview.coupons.active }}</text>
-        <text class="stat-label">进行中</text>
-      </view>
-      <view class="stat">
-        <text class="stat-value">{{ overview.coupons.totalReceived }}</text>
-        <text class="stat-label">已被领取</text>
-      </view>
-    </view>
-
-    <!-- 优惠券列表 -->
-    <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "我的优惠券" }}</text></view><wd-button type="text" size="small" @click="createCoupon">{{ "创建" }}</wd-button></view></template>
-      <template #default>
-        <wd-tabs v-model="couponTab" @change="loadCoupons"  color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in COUPON_TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
-        />
-      </wd-tabs>
-        <view class="coupon-list">
-          <view
-            v-for="c in coupons"
-            :key="c.id"
-            :class="['coupon', `t-${c.status}`]"
-            @click="manageCoupon(c)"
-          >
-            <view class="cp-left">
-              <view class="cp-amount">
-                <text class="cp-num">{{ couponBigValue(c) }}</text>
-                <text class="cp-unit">{{ couponBigUnit(c) }}</text>
-              </view>
-              <text class="cp-thresh">{{ c.threshold ? `满 ${c.threshold} 可用` : '无门槛' }}</text>
-            </view>
-            <view class="cp-divider">
-              <view class="cp-dot" v-for="i in 6" :key="i"></view>
-            </view>
-            <view class="cp-right">
-              <view class="cp-head">
-                <text class="cp-name">{{ c.name }}</text>
-                <wd-tag
-                 :type="$jwTagType(STATUS_LABEL[c.status].tone)" :plain="true" round>{{ STATUS_LABEL[c.status].text }}</wd-tag>
-              </view>
-              <text class="cp-type">{{ couponValueText(c) }}</text>
-              <view class="cp-stats">
-                <text>领 {{ c.received }} / {{ c.stock }}</text>
-                <text>用 {{ c.used }}</text>
-              </view>
-              <text v-if="c.validFrom" class="cp-valid"
-                >{{ formatDate(c.validFrom) }} ~ {{ formatDate(c.validTo) }}</text
+          <scroll-view scroll-y class="cp-scroll">
+            <!-- 类型 -->
+            <view class="cp-block">
+              <text class="cp-label">类型</text>
+              <wd-segmented
+                :value="form.type"
+                :options="COUPON_TYPES.map((item) => ({ value: item.value, payload: item }))"
+                size="large"
+                @change="pickType(String($event.value) as MarketingCoupon['type'])"
               >
+                <template #label="{ option }">{{ option.payload?.label }}</template>
+              </wd-segmented>
             </view>
-          </view>
-          <wd-status-tip
-            v-if="!loading && coupons.length === 0"
-           image="content" :tip="['暂无优惠券', '点击右上角创建'].filter(Boolean).join(' · ')" />
-        </view>
-      </template>
-    </wd-card>
 
-    <view class="safe-bottom" />
+            <!-- 名称 -->
+            <view class="cp-row">
+              <text class="row-label required">名称</text>
+              <wd-input
+                no-border
+                v-model="form.name"
+                class="row-input"
+                placeholder="如 春节满 200 减 30"
+                maxlength="30"
+              />
+            </view>
 
-    <!-- 优惠券 创建 / 编辑 弹窗 -->
-    <wd-popup v-model="formVisible" position="bottom" custom-class="cp-sheet" safe-area-inset-bottom root-portal @close="closeForm">
-      <view class="cp-content">
-        <view class="cp-head">
-          <text class="cp-title">{{ form.id ? '编辑优惠券' : '创建优惠券' }}</text>
-          <text class="cp-close" @click="closeForm">✕</text>
-        </view>
+            <!-- 满减 -->
+            <template v-if="form.type === 'fullReduce'">
+              <view class="cp-row">
+                <text class="row-label required">满</text>
+                <wd-input
+                  no-border
+                  v-model.number="form.threshold"
+                  type="digit"
+                  class="row-input"
+                  placeholder="使用门槛"
+                />
+                <text class="row-suffix">元可用</text>
+              </view>
+              <view class="cp-row">
+                <text class="row-label required">减</text>
+                <wd-input
+                  no-border
+                  v-model.number="form.amount"
+                  type="digit"
+                  class="row-input"
+                  placeholder="优惠金额"
+                />
+                <text class="row-suffix">元</text>
+              </view>
+            </template>
 
-        <scroll-view scroll-y class="cp-scroll">
-          <!-- 类型 -->
-          <view class="cp-block">
-            <text class="cp-label">类型</text>
-            <wd-segmented
-              :value="form.type"
-              :options="COUPON_TYPES.map((item) => ({ value: item.value, payload: item }))"
-              size="large"
-              @change="pickType(String($event.value) as MarketingCoupon['type'])"
+            <!-- 折扣 -->
+            <template v-else-if="form.type === 'discount'">
+              <view class="cp-row">
+                <text class="row-label required">折扣</text>
+                <wd-input
+                  no-border
+                  v-model.number="form.discountPercent"
+                  type="digit"
+                  class="row-input"
+                  placeholder="1-99"
+                />
+                <text class="row-suffix">% 优惠（90 = 9 折）</text>
+              </view>
+            </template>
+
+            <!-- 固定金额 -->
+            <template v-else>
+              <view class="cp-row">
+                <text class="row-label required">面值</text>
+                <wd-input
+                  no-border
+                  v-model.number="form.amount"
+                  type="digit"
+                  class="row-input"
+                  placeholder="券面金额"
+                />
+                <text class="row-suffix">元</text>
+              </view>
+            </template>
+
+            <!-- 发行量 -->
+            <view class="cp-row">
+              <text class="row-label required">发行量</text>
+              <wd-input
+                no-border
+                v-model.number="form.stock"
+                type="number"
+                class="row-input"
+                placeholder="总发行数"
+              />
+              <text class="row-suffix">张</text>
+            </view>
+
+            <!-- 每人限领 -->
+            <view class="cp-row">
+              <text class="row-label">每人限领</text>
+              <wd-input
+                no-border
+                v-model.number="form.perUserLimit"
+                type="number"
+                class="row-input"
+                placeholder="默认 1 张"
+              />
+              <text class="row-suffix">张</text>
+            </view>
+
+            <!-- 有效期 -->
+            <view class="cp-row">
+              <text class="row-label required">开始日期</text>
+              <wd-datetime-picker
+                type="date"
+                title="选择开始日期"
+                :model-value="dateStringToTimestamp(form.validFrom)"
+                custom-class="row-input picker"
+                @confirm="onDateFrom($event.value)"
+              >
+                <view class="picker-text">{{ form.validFrom || '请选择' }}</view>
+              </wd-datetime-picker>
+            </view>
+            <view class="cp-row">
+              <text class="row-label required">结束日期</text>
+              <wd-datetime-picker
+                type="date"
+                title="选择结束日期"
+                :model-value="dateStringToTimestamp(form.validTo)"
+                :min-date="dateStringToTimestamp(form.validFrom)"
+                custom-class="row-input picker"
+                @confirm="onDateTo($event.value)"
+              >
+                <view class="picker-text">{{ form.validTo || '请选择' }}</view>
+              </wd-datetime-picker>
+            </view>
+          </scroll-view>
+
+          <view class="cp-footer">
+            <wd-button block plain size="large" :disabled="formSaving" @click="closeForm"
+              >取消</wd-button
             >
-              <template #label="{ option }">{{ option.payload?.label }}</template>
-            </wd-segmented>
+            <wd-button block type="primary" size="large" :loading="formSaving" @click="submitForm">
+              {{ formSaving ? '保存中…' : form.id ? '保存修改' : '创建' }}
+            </wd-button>
           </view>
-
-          <!-- 名称 -->
-          <view class="cp-row">
-            <text class="row-label required">名称</text>
-            <wd-input no-border
-              v-model="form.name"
-              class="row-input"
-              placeholder="如 春节满 200 减 30"
-              maxlength="30"
-             />
-          </view>
-
-          <!-- 满减 -->
-          <template v-if="form.type === 'fullReduce'">
-            <view class="cp-row">
-              <text class="row-label required">满</text>
-              <wd-input no-border
-                v-model.number="form.threshold"
-                type="digit"
-                class="row-input"
-                placeholder="使用门槛"
-               />
-              <text class="row-suffix">元可用</text>
-            </view>
-            <view class="cp-row">
-              <text class="row-label required">减</text>
-              <wd-input no-border
-                v-model.number="form.amount"
-                type="digit"
-                class="row-input"
-                placeholder="优惠金额"
-               />
-              <text class="row-suffix">元</text>
-            </view>
-          </template>
-
-          <!-- 折扣 -->
-          <template v-else-if="form.type === 'discount'">
-            <view class="cp-row">
-              <text class="row-label required">折扣</text>
-              <wd-input no-border
-                v-model.number="form.discountPercent"
-                type="digit"
-                class="row-input"
-                placeholder="1-99"
-               />
-              <text class="row-suffix">% 优惠（90 = 9 折）</text>
-            </view>
-          </template>
-
-          <!-- 固定金额 -->
-          <template v-else>
-            <view class="cp-row">
-              <text class="row-label required">面值</text>
-              <wd-input no-border
-                v-model.number="form.amount"
-                type="digit"
-                class="row-input"
-                placeholder="券面金额"
-               />
-              <text class="row-suffix">元</text>
-            </view>
-          </template>
-
-          <!-- 发行量 -->
-          <view class="cp-row">
-            <text class="row-label required">发行量</text>
-            <wd-input no-border
-              v-model.number="form.stock"
-              type="number"
-              class="row-input"
-              placeholder="总发行数"
-             />
-            <text class="row-suffix">张</text>
-          </view>
-
-          <!-- 每人限领 -->
-          <view class="cp-row">
-            <text class="row-label">每人限领</text>
-            <wd-input no-border
-              v-model.number="form.perUserLimit"
-              type="number"
-              class="row-input"
-              placeholder="默认 1 张"
-             />
-            <text class="row-suffix">张</text>
-          </view>
-
-          <!-- 有效期 -->
-          <view class="cp-row">
-            <text class="row-label required">开始日期</text>
-            <wd-datetime-picker
-              type="date"
-              title="选择开始日期"
-              :model-value="dateStringToTimestamp(form.validFrom)"
-              custom-class="row-input picker"
-              @confirm="onDateFrom($event.value)"
-            >
-              <view class="picker-text">{{ form.validFrom || '请选择' }}</view>
-            </wd-datetime-picker>
-          </view>
-          <view class="cp-row">
-            <text class="row-label required">结束日期</text>
-            <wd-datetime-picker
-              type="date"
-              title="选择结束日期"
-              :model-value="dateStringToTimestamp(form.validTo)"
-              :min-date="dateStringToTimestamp(form.validFrom)"
-              custom-class="row-input picker"
-              @confirm="onDateTo($event.value)"
-            >
-              <view class="picker-text">{{ form.validTo || '请选择' }}</view>
-            </wd-datetime-picker>
-          </view>
-        </scroll-view>
-
-        <view class="cp-footer">
-          <wd-button block plain size="large" :disabled="formSaving" @click="closeForm">取消</wd-button>
-          <wd-button block type="primary" size="large" :loading="formSaving" @click="submitForm">
-            {{ formSaving ? '保存中…' : form.id ? '保存修改' : '创建' }}
-          </wd-button>
         </view>
-      </view>
-    </wd-popup>
-  </view>
-
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 

@@ -332,397 +332,434 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="系统设置"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="系统设置"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <scroll-view scroll-y class="scroll" v-if="settings && summary">
-      <!-- 站点信息卡 -->
-      <view class="hero">
-        <view class="site-logo">
-          <image v-if="summary.site.logo" :src="summary.site.logo" class="logo-img" />
-          <text v-else class="logo-letter">{{ (summary.site.name || '平')[0] }}</text>
-        </view>
-        <view class="site-info">
-          <text class="site-name">{{ summary.site.name || '未设置平台名' }}</text>
-          <text class="site-icp">{{ summary.site.icp || '尚未配置 ICP 备案号' }}</text>
-          <text class="site-tag">平台版本 · v1.0.0</text>
-        </view>
-      </view>
-
-      <!-- 基础设置 -->
-      <view class="card" @click="openSheet('base')">
-        <view class="card-title">
-          <wd-icon :name="$jwIcon('gear')" size="14px" color="var(--brand-primary)"  />
-          <text>基础设置</text>
-          <view class="edit-tag">编辑</view>
-        </view>
-        <view class="row">
-          <text class="r-label">平台名称</text>
-          <view class="r-value">
-            <text>{{ summary.site.name || '—' }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
+      <scroll-view scroll-y class="scroll" v-if="settings && summary">
+        <!-- 站点信息卡 -->
+        <view class="hero">
+          <view class="site-logo">
+            <image v-if="summary.site.logo" :src="summary.site.logo" class="logo-img" />
+            <text v-else class="logo-letter">{{ (summary.site.name || '平')[0] }}</text>
           </view>
-        </view>
-        <view class="row">
-          <text class="r-label">平台 Logo</text>
-          <view class="r-value">
-            <text>{{ summary.site.logo ? '已上传' : '未上传' }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
+          <view class="site-info">
+            <text class="site-name">{{ summary.site.name || '未设置平台名' }}</text>
+            <text class="site-icp">{{ summary.site.icp || '尚未配置 ICP 备案号' }}</text>
+            <text class="site-tag">平台版本 · v1.0.0</text>
           </view>
-        </view>
-        <view class="row">
-          <text class="r-label">客服电话</text>
-          <view class="r-value">
-            <text class="value-mono">{{ summary.service.phone || '—' }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">ICP 备案号</text>
-          <view class="r-value">
-            <text class="value-mono">{{ summary.site.icp || '—' }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-      </view>
-
-      <!-- 支付配置 -->
-      <view class="card" @click="openSheet('payment')">
-        <view class="card-title">
-          <wd-icon :name="$jwIcon('wallet')" size="14px" color="#FAAD14"  />
-          <text>支付配置</text>
-          <view class="edit-tag">编辑</view>
-        </view>
-        <view class="row">
-          <text class="r-label">微信支付</text>
-          <view class="r-value">
-            <text
-              :class="[
-                'value-status',
-                summary.paymentOn > 0 && settings.payment.wechat.enabled ? 'on' : 'warn',
-              ]"
-              >{{ settings.payment.wechat.enabled ? '已启用' : '未启用' }}</text
-            >
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">支付宝</text>
-          <view class="r-value">
-            <text :class="['value-status', settings.payment.alipay.enabled ? 'on' : 'warn']">{{
-              settings.payment.alipay.enabled ? '已启用' : '未启用'
-            }}</text>
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">余额支付</text>
-          <view class="r-value">
-            <text :class="['value-status', settings.payment.balance.enabled ? 'on' : 'warn']">{{
-              settings.payment.balance.enabled ? '已启用' : '未启用'
-            }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-      </view>
-
-      <!-- 业务规则 -->
-      <view class="card" @click="openSheet('business')">
-        <view class="card-title">
-          <wd-icon :name="$jwIcon('package')" size="14px" color="#A855F7"  />
-          <text>业务规则</text>
-          <view class="edit-tag">编辑</view>
-        </view>
-        <view class="row">
-          <text class="r-label">商户自动审批</text>
-          <view class="r-value">
-            <text
-              :class="['value-status', summary.business.newMerchantAutoApprove ? 'on' : 'warn']"
-              >{{ summary.business.newMerchantAutoApprove ? '已开启' : '未开启' }}</text
-            >
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">商品自动审批</text>
-          <view class="r-value">
-            <text
-              :class="['value-status', summary.business.newProductAutoApprove ? 'on' : 'warn']"
-              >{{ summary.business.newProductAutoApprove ? '已开启' : '未开启' }}</text
-            >
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">平台抽佣比例</text>
-          <view class="r-value">
-            <text class="value-num accent">{{ summary.business.platformCommissionRate }}%</text>
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">提现门槛</text>
-          <view class="r-value">
-            <text class="value-num">¥{{ summary.business.withdrawMinAmount }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-      </view>
-
-      <!-- 安全策略 -->
-      <view class="card" @click="openSheet('security')">
-        <view class="card-title">
-          <wd-icon :name="$jwIcon('lock')" size="14px" color="#FF3B30"  />
-          <text>安全策略</text>
-          <view class="edit-tag">编辑</view>
-        </view>
-        <view class="row">
-          <text class="r-label">密码最小长度</text>
-          <view class="r-value">
-            <text class="value-num">{{ summary.security.passwordPolicy.minLength }} 位</text>
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">必须含大写字母</text>
-          <view class="r-value">
-            <text
-              :class="[
-                'value-status',
-                summary.security.passwordPolicy.requireUppercase ? 'on' : 'warn',
-              ]"
-              >{{ summary.security.passwordPolicy.requireUppercase ? '是' : '否' }}</text
-            >
-          </view>
-        </view>
-        <view class="row">
-          <text class="r-label">IP 白名单</text>
-          <view class="r-value">
-            <text
-              :class="['value-status', summary.security.ipWhitelist.length > 0 ? 'on' : 'warn']"
-              >{{
-                summary.security.ipWhitelist.length > 0
-                  ? summary.security.ipWhitelist.length + ' 条已启用'
-                  : '未启用'
-              }}</text
-            >
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-      </view>
-
-      <!-- 操作日志(独立页面) -->
-      <view class="card" @click="viewLogs">
-        <view class="card-title">
-          <wd-icon :name="$jwIcon('doc')" size="14px" color="#52C41A"  />
-          <text>操作日志</text>
-        </view>
-        <view class="row">
-          <text class="r-label">查看平台操作流水</text>
-          <view class="r-value">
-            <text class="hint">登录 / 配置变更 / 审核操作</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-      </view>
-
-      <view style="height: 60rpx" />
-    </scroll-view>
-
-    <!-- 编辑底部 sheet -->
-    <wd-popup
-      :model-value="!!activeSheet"
-      position="bottom"
-      custom-class="sheet"
-      safe-area-inset-bottom
-      root-portal
-      @close="closeSheet"
-    >
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text class="sheet-title">{{ sheetTitle }}</text>
-          <wd-button size="small" type="primary" :loading="saving" @click="saveSheet">
-            {{ saving ? '保存中…' : '保存' }}
-          </wd-button>
         </view>
 
-        <!-- 基础设置 sheet -->
-        <view v-if="activeSheet === 'base'" class="sheet-body">
-          <view class="form-block">
-            <text class="form-label">平台 Logo</text>
-            <view class="logo-edit">
-              <wd-upload
-                :file-list="[]"
-                :limit="1"
-                :disabled="uploadingLogo"
-                :before-choose="(option: any) => delegateWotUploadChoose(option, chooseLogo)"
+        <!-- 基础设置 -->
+        <view class="card" @click="openSheet('base')">
+          <view class="card-title">
+            <wd-icon :name="$jwIcon('gear')" size="14px" color="var(--brand-primary)" />
+            <text>基础设置</text>
+            <view class="edit-tag">编辑</view>
+          </view>
+          <view class="row">
+            <text class="r-label">平台名称</text>
+            <view class="r-value">
+              <text>{{ summary.site.name || '—' }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">平台 Logo</text>
+            <view class="r-value">
+              <text>{{ summary.site.logo ? '已上传' : '未上传' }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">客服电话</text>
+            <view class="r-value">
+              <text class="value-mono">{{ summary.service.phone || '—' }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">ICP 备案号</text>
+            <view class="r-value">
+              <text class="value-mono">{{ summary.site.icp || '—' }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+        </view>
+
+        <!-- 支付配置 -->
+        <view class="card" @click="openSheet('payment')">
+          <view class="card-title">
+            <wd-icon :name="$jwIcon('wallet')" size="14px" color="#FAAD14" />
+            <text>支付配置</text>
+            <view class="edit-tag">编辑</view>
+          </view>
+          <view class="row">
+            <text class="r-label">微信支付</text>
+            <view class="r-value">
+              <text
+                :class="[
+                  'value-status',
+                  summary.paymentOn > 0 && settings.payment.wechat.enabled ? 'on' : 'warn',
+                ]"
+                >{{ settings.payment.wechat.enabled ? '已启用' : '未启用' }}</text
               >
-              <view class="logo-thumb">
-                <image v-if="draft.site.logo" :src="draft.site.logo" class="logo-thumb-img" />
-                <view v-else class="logo-thumb-empty">
-                  <wd-icon :name="$jwIcon('image-plus')" size="20px" color="var(--text-tertiary)"  />
-                  <text>点击上传</text>
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">支付宝</text>
+            <view class="r-value">
+              <text :class="['value-status', settings.payment.alipay.enabled ? 'on' : 'warn']">{{
+                settings.payment.alipay.enabled ? '已启用' : '未启用'
+              }}</text>
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">余额支付</text>
+            <view class="r-value">
+              <text :class="['value-status', settings.payment.balance.enabled ? 'on' : 'warn']">{{
+                settings.payment.balance.enabled ? '已启用' : '未启用'
+              }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+        </view>
+
+        <!-- 业务规则 -->
+        <view class="card" @click="openSheet('business')">
+          <view class="card-title">
+            <wd-icon :name="$jwIcon('package')" size="14px" color="#A855F7" />
+            <text>业务规则</text>
+            <view class="edit-tag">编辑</view>
+          </view>
+          <view class="row">
+            <text class="r-label">商户自动审批</text>
+            <view class="r-value">
+              <text
+                :class="['value-status', summary.business.newMerchantAutoApprove ? 'on' : 'warn']"
+                >{{ summary.business.newMerchantAutoApprove ? '已开启' : '未开启' }}</text
+              >
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">商品自动审批</text>
+            <view class="r-value">
+              <text
+                :class="['value-status', summary.business.newProductAutoApprove ? 'on' : 'warn']"
+                >{{ summary.business.newProductAutoApprove ? '已开启' : '未开启' }}</text
+              >
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">平台抽佣比例</text>
+            <view class="r-value">
+              <text class="value-num accent">{{ summary.business.platformCommissionRate }}%</text>
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">提现门槛</text>
+            <view class="r-value">
+              <text class="value-num">¥{{ summary.business.withdrawMinAmount }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+        </view>
+
+        <!-- 安全策略 -->
+        <view class="card" @click="openSheet('security')">
+          <view class="card-title">
+            <wd-icon :name="$jwIcon('lock')" size="14px" color="#FF3B30" />
+            <text>安全策略</text>
+            <view class="edit-tag">编辑</view>
+          </view>
+          <view class="row">
+            <text class="r-label">密码最小长度</text>
+            <view class="r-value">
+              <text class="value-num">{{ summary.security.passwordPolicy.minLength }} 位</text>
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">必须含大写字母</text>
+            <view class="r-value">
+              <text
+                :class="[
+                  'value-status',
+                  summary.security.passwordPolicy.requireUppercase ? 'on' : 'warn',
+                ]"
+                >{{ summary.security.passwordPolicy.requireUppercase ? '是' : '否' }}</text
+              >
+            </view>
+          </view>
+          <view class="row">
+            <text class="r-label">IP 白名单</text>
+            <view class="r-value">
+              <text
+                :class="['value-status', summary.security.ipWhitelist.length > 0 ? 'on' : 'warn']"
+                >{{
+                  summary.security.ipWhitelist.length > 0
+                    ? summary.security.ipWhitelist.length + ' 条已启用'
+                    : '未启用'
+                }}</text
+              >
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+        </view>
+
+        <!-- 操作日志(独立页面) -->
+        <view class="card" @click="viewLogs">
+          <view class="card-title">
+            <wd-icon :name="$jwIcon('doc')" size="14px" color="#52C41A" />
+            <text>操作日志</text>
+          </view>
+          <view class="row">
+            <text class="r-label">查看平台操作流水</text>
+            <view class="r-value">
+              <text class="hint">登录 / 配置变更 / 审核操作</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+        </view>
+
+        <view style="height: 60rpx" />
+      </scroll-view>
+
+      <!-- 编辑底部 sheet -->
+      <wd-popup
+        :model-value="!!activeSheet"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="closeSheet"
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text class="sheet-title">{{ sheetTitle }}</text>
+            <wd-button size="small" type="primary" :loading="saving" @click="saveSheet">
+              {{ saving ? '保存中…' : '保存' }}
+            </wd-button>
+          </view>
+
+          <!-- 基础设置 sheet -->
+          <view v-if="activeSheet === 'base'" class="sheet-body">
+            <view class="form-block">
+              <text class="form-label">平台 Logo</text>
+              <view class="logo-edit">
+                <wd-upload
+                  :file-list="[]"
+                  :limit="1"
+                  :disabled="uploadingLogo"
+                  :before-choose="(option: any) => delegateWotUploadChoose(option, chooseLogo)"
+                >
+                  <view class="logo-thumb">
+                    <image v-if="draft.site.logo" :src="draft.site.logo" class="logo-thumb-img" />
+                    <view v-else class="logo-thumb-empty">
+                      <wd-icon
+                        :name="$jwIcon('image-plus')"
+                        size="20px"
+                        color="var(--text-tertiary)"
+                      />
+                      <text>点击上传</text>
+                    </view>
+                  </view>
+                </wd-upload>
+                <view class="logo-actions">
+                  <view class="mini-btn ghost" @click="chooseLogo">
+                    {{ uploadingLogo ? '上传中…' : '更换' }}
+                  </view>
+                  <view v-if="draft.site.logo" class="mini-btn danger-ghost" @click="clearLogo">
+                    移除
+                  </view>
                 </view>
               </view>
-              </wd-upload>
-              <view class="logo-actions">
-                <view class="mini-btn ghost" @click="chooseLogo">
-                  {{ uploadingLogo ? '上传中…' : '更换' }}
-                </view>
-                <view v-if="draft.site.logo" class="mini-btn danger-ghost" @click="clearLogo">
-                  移除
-                </view>
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">平台名称</text>
+              <wd-input
+                no-border
+                v-model="draft.site.name"
+                class="form-input"
+                placeholder="例如：经纬科技"
+                maxlength="40"
+              />
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">客服电话</text>
+              <wd-input
+                no-border
+                v-model="draft.service.phone"
+                class="form-input"
+                placeholder="例如：400-888-8888"
+                type="text"
+              />
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">客服邮箱</text>
+              <wd-input
+                no-border
+                v-model="draft.service.email"
+                class="form-input"
+                placeholder="support@example.com"
+                type="text"
+              />
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">ICP 备案号</text>
+              <wd-input
+                no-border
+                v-model="draft.site.icp"
+                class="form-input"
+                placeholder="例如：京 ICP 备 12345678 号"
+              />
+            </view>
+          </view>
+
+          <!-- 支付配置 sheet -->
+          <view v-else-if="activeSheet === 'payment'" class="sheet-body">
+            <view class="pay-edit-row">
+              <view class="pay-icon" style="background: #3cb244">
+                <wd-icon :name="$jwIcon('wechat')" size="16px" color="#fff" />
               </view>
+              <view class="pay-edit-info">
+                <text class="pay-edit-name">微信支付</text>
+                <text class="pay-edit-desc">官方接口 · 实时到账</text>
+              </view>
+              <wd-switch
+                v-model="draft.payment.wechat.enabled"
+                active-color="var(--brand-primary)"
+              />
+            </view>
+            <view class="pay-edit-row">
+              <view class="pay-icon" style="background: #1296db">
+                <wd-icon :name="$jwIcon('apple-pay')" size="16px" color="#fff" />
+              </view>
+              <view class="pay-edit-info">
+                <text class="pay-edit-name">支付宝</text>
+                <text class="pay-edit-desc">官方接口 · 实时到账</text>
+              </view>
+              <wd-switch
+                v-model="draft.payment.alipay.enabled"
+                active-color="var(--brand-primary)"
+              />
+            </view>
+            <view class="pay-edit-row">
+              <view class="pay-icon" style="background: #ff7a45">
+                <wd-icon :name="$jwIcon('wallet')" size="16px" color="#fff" />
+              </view>
+              <view class="pay-edit-info">
+                <text class="pay-edit-name">余额支付</text>
+                <text class="pay-edit-desc">商户余额钱包</text>
+              </view>
+              <wd-switch
+                v-model="draft.payment.balance.enabled"
+                active-color="var(--brand-primary)"
+              />
+            </view>
+            <text class="form-hint">
+              * 关闭通道后,新订单不再展示对应支付方式,已生成的交易不受影响。
+            </text>
+          </view>
+
+          <!-- 业务规则 sheet -->
+          <view v-else-if="activeSheet === 'business'" class="sheet-body">
+            <view class="form-row-switch">
+              <view class="form-row-info">
+                <text class="form-row-title">新商户自动审批</text>
+                <text class="form-row-desc">开启后,商户注册立即生效,跳过人工审核</text>
+              </view>
+              <wd-switch
+                v-model="draft.business.newMerchantAutoApprove"
+                active-color="var(--brand-primary)"
+              />
+            </view>
+            <view class="form-row-switch">
+              <view class="form-row-info">
+                <text class="form-row-title">新商品自动审批</text>
+                <text class="form-row-desc">开启后,商家上架商品立即可见,平台事后抽检</text>
+              </view>
+              <wd-switch
+                v-model="draft.business.newProductAutoApprove"
+                active-color="var(--brand-primary)"
+              />
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">平台抽佣比例（%）</text>
+              <wd-input
+                no-border
+                v-model.number="draft.business.platformCommissionRate"
+                class="form-input"
+                type="number"
+                placeholder="0 - 50"
+              />
+              <text class="form-hint">每笔交易完成后,从商户应收金额中扣除该比例作为平台收入。</text>
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">提现最低额度（元）</text>
+              <wd-input
+                no-border
+                v-model.number="draft.business.withdrawMinAmount"
+                class="form-input"
+                type="number"
+                placeholder="例如：100"
+              />
+              <text class="form-hint">商户单次提现金额必须 ≥ 此门槛。</text>
             </view>
           </view>
 
-          <view class="form-block">
-            <text class="form-label">平台名称</text>
-            <wd-input no-border
-              v-model="draft.site.name"
-              class="form-input"
-              placeholder="例如：经纬科技"
-              maxlength="40"
-             />
-          </view>
+          <!-- 安全策略 sheet -->
+          <view v-else-if="activeSheet === 'security'" class="sheet-body">
+            <view class="form-block">
+              <text class="form-label">密码最小长度</text>
+              <wd-input
+                no-border
+                v-model.number="draft.security.passwordPolicy.minLength"
+                class="form-input"
+                type="number"
+                placeholder="6 - 32"
+              />
+              <text class="form-hint">商户/管理员登录密码长度下限,推荐 ≥ 8。</text>
+            </view>
 
-          <view class="form-block">
-            <text class="form-label">客服电话</text>
-            <wd-input no-border
-              v-model="draft.service.phone"
-              class="form-input"
-              placeholder="例如：400-888-8888"
-              type="text"
-             />
-          </view>
+            <view class="form-row-switch">
+              <view class="form-row-info">
+                <text class="form-row-title">密码必须含大写字母</text>
+                <text class="form-row-desc">开启后,新建/修改密码必须含至少 1 个大写字母</text>
+              </view>
+              <wd-switch
+                v-model="draft.security.passwordPolicy.requireUppercase"
+                active-color="var(--brand-primary)"
+              />
+            </view>
 
-          <view class="form-block">
-            <text class="form-label">客服邮箱</text>
-            <wd-input no-border
-              v-model="draft.service.email"
-              class="form-input"
-              placeholder="support@example.com"
-              type="text"
-             />
-          </view>
-
-          <view class="form-block">
-            <text class="form-label">ICP 备案号</text>
-            <wd-input no-border
-              v-model="draft.site.icp"
-              class="form-input"
-              placeholder="例如：京 ICP 备 12345678 号"
-             />
+            <view class="form-block">
+              <text class="form-label">IP 白名单（一行一条 IP/CIDR）</text>
+              <wd-textarea
+                no-border
+                v-model="ipWhitelistText"
+                class="form-textarea"
+                placeholder="留空 = 不启用白名单&#10;示例：&#10;192.168.1.0/24&#10;203.0.113.5"
+                :auto-height="true"
+              />
+              <text class="form-hint">非白名单 IP 调用后台 API 将被拒绝(留空则不启用)。</text>
+            </view>
           </view>
         </view>
-
-        <!-- 支付配置 sheet -->
-        <view v-else-if="activeSheet === 'payment'" class="sheet-body">
-          <view class="pay-edit-row">
-            <view class="pay-icon" style="background: #3cb244">
-              <wd-icon :name="$jwIcon('wechat')" size="16px" color="#fff"  />
-            </view>
-            <view class="pay-edit-info">
-              <text class="pay-edit-name">微信支付</text>
-              <text class="pay-edit-desc">官方接口 · 实时到账</text>
-            </view>
-            <wd-switch v-model="draft.payment.wechat.enabled" active-color="var(--brand-primary)" />
-          </view>
-          <view class="pay-edit-row">
-            <view class="pay-icon" style="background: #1296db">
-              <wd-icon :name="$jwIcon('apple-pay')" size="16px" color="#fff"  />
-            </view>
-            <view class="pay-edit-info">
-              <text class="pay-edit-name">支付宝</text>
-              <text class="pay-edit-desc">官方接口 · 实时到账</text>
-            </view>
-            <wd-switch v-model="draft.payment.alipay.enabled" active-color="var(--brand-primary)" />
-          </view>
-          <view class="pay-edit-row">
-            <view class="pay-icon" style="background: #ff7a45">
-              <wd-icon :name="$jwIcon('wallet')" size="16px" color="#fff"  />
-            </view>
-            <view class="pay-edit-info">
-              <text class="pay-edit-name">余额支付</text>
-              <text class="pay-edit-desc">商户余额钱包</text>
-            </view>
-            <wd-switch v-model="draft.payment.balance.enabled" active-color="var(--brand-primary)" />
-          </view>
-          <text class="form-hint">
-            * 关闭通道后,新订单不再展示对应支付方式,已生成的交易不受影响。
-          </text>
-        </view>
-
-        <!-- 业务规则 sheet -->
-        <view v-else-if="activeSheet === 'business'" class="sheet-body">
-          <view class="form-row-switch">
-            <view class="form-row-info">
-              <text class="form-row-title">新商户自动审批</text>
-              <text class="form-row-desc">开启后,商户注册立即生效,跳过人工审核</text>
-            </view>
-            <wd-switch v-model="draft.business.newMerchantAutoApprove" active-color="var(--brand-primary)" />
-          </view>
-          <view class="form-row-switch">
-            <view class="form-row-info">
-              <text class="form-row-title">新商品自动审批</text>
-              <text class="form-row-desc">开启后,商家上架商品立即可见,平台事后抽检</text>
-            </view>
-            <wd-switch v-model="draft.business.newProductAutoApprove" active-color="var(--brand-primary)" />
-          </view>
-
-          <view class="form-block">
-            <text class="form-label">平台抽佣比例（%）</text>
-            <wd-input no-border
-              v-model.number="draft.business.platformCommissionRate"
-              class="form-input"
-              type="number"
-              placeholder="0 - 50"
-             />
-            <text class="form-hint">每笔交易完成后,从商户应收金额中扣除该比例作为平台收入。</text>
-          </view>
-
-          <view class="form-block">
-            <text class="form-label">提现最低额度（元）</text>
-            <wd-input no-border
-              v-model.number="draft.business.withdrawMinAmount"
-              class="form-input"
-              type="number"
-              placeholder="例如：100"
-             />
-            <text class="form-hint">商户单次提现金额必须 ≥ 此门槛。</text>
-          </view>
-        </view>
-
-        <!-- 安全策略 sheet -->
-        <view v-else-if="activeSheet === 'security'" class="sheet-body">
-          <view class="form-block">
-            <text class="form-label">密码最小长度</text>
-            <wd-input no-border
-              v-model.number="draft.security.passwordPolicy.minLength"
-              class="form-input"
-              type="number"
-              placeholder="6 - 32"
-             />
-            <text class="form-hint">商户/管理员登录密码长度下限,推荐 ≥ 8。</text>
-          </view>
-
-          <view class="form-row-switch">
-            <view class="form-row-info">
-              <text class="form-row-title">密码必须含大写字母</text>
-              <text class="form-row-desc">开启后,新建/修改密码必须含至少 1 个大写字母</text>
-            </view>
-            <wd-switch v-model="draft.security.passwordPolicy.requireUppercase" active-color="var(--brand-primary)" />
-          </view>
-
-          <view class="form-block">
-            <text class="form-label">IP 白名单（一行一条 IP/CIDR）</text>
-            <wd-textarea no-border
-              v-model="ipWhitelistText"
-              class="form-textarea"
-              placeholder="留空 = 不启用白名单&#10;示例：&#10;192.168.1.0/24&#10;203.0.113.5"
-              :auto-height="true"
-             />
-            <text class="form-hint">非白名单 IP 调用后台 API 将被拒绝(留空则不启用)。</text>
-          </view>
-        </view>
-      </view>
-    </wd-popup>
-  </view>
-
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "gitRevision": "",
+  "appPackSha256": "",
+  "featureSurfaces": [
+    { "id": 1, "status": "pending", "evidence": "" },
+    { "id": 2, "status": "pending", "evidence": "" },
+    { "id": 3, "status": "pending", "evidence": "" },
+    { "id": 4, "status": "pending", "evidence": "" },
+    { "id": 5, "status": "pending", "evidence": "" },
+    { "id": 6, "status": "pending", "evidence": "" },
+    { "id": 7, "status": "pending", "evidence": "" },
+    { "id": 8, "status": "pending", "evidence": "" },
+    { "id": 9, "status": "pending", "evidence": "" },
+    { "id": 10, "status": "pending", "evidence": "" },
+    { "id": 11, "status": "pending", "evidence": "" },
+    { "id": 12, "status": "pending", "evidence": "" },
+    { "id": 13, "status": "pending", "evidence": "" },
+    { "id": 14, "status": "pending", "evidence": "" },
+    { "id": 15, "status": "pending", "evidence": "" },
+    { "id": 16, "status": "pending", "evidence": "" },
+    { "id": 17, "status": "pending", "evidence": "" },
+    { "id": 18, "status": "pending", "evidence": "" },
+    { "id": 19, "status": "pending", "evidence": "" },
+    { "id": 20, "status": "pending", "evidence": "" },
+    { "id": 21, "status": "pending", "evidence": "" },
+    { "id": 22, "status": "pending", "evidence": "" },
+    { "id": 23, "status": "pending", "evidence": "" },
+    { "id": 24, "status": "pending", "evidence": "" },
+    { "id": 25, "status": "pending", "evidence": "" },
+    { "id": 26, "status": "pending", "evidence": "" },
+    { "id": 27, "status": "pending", "evidence": "" },
+    { "id": 28, "status": "pending", "evidence": "" },
+    { "id": 29, "status": "pending", "evidence": "" },
+    { "id": 30, "status": "pending", "evidence": "" },
+    { "id": 31, "status": "pending", "evidence": "" }
+  ],
+  "systemCapabilities": [
+    { "id": "permissions", "status": "pending", "evidence": "" },
+    { "id": "map-location-site", "status": "pending", "evidence": "" },
+    { "id": "push-deeplink", "status": "pending", "evidence": "" },
+    { "id": "iap-lifecycle", "status": "pending", "evidence": "" },
+    { "id": "update-appgallery", "status": "pending", "evidence": "" },
+    { "id": "theme-layout-accessibility", "status": "pending", "evidence": "" }
+  ],
+  "performance": {
+    "firstFrame": { "status": "pending", "milliseconds": null, "evidence": "" },
+    "navigation50": { "status": "pending", "evidence": "" },
+    "memory": {
+      "status": "pending",
+      "growthPercent": null,
+      "growthMiB": null,
+      "evidence": ""
+    }
+  },
+  "approvedAt": "",
+  "approvedBy": ""
+}

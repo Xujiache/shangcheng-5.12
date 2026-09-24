@@ -210,7 +210,13 @@ async function onRevoke() {
       <!-- 顶部摘要 -->
       <view class="head">
         <view class="head-title">分享订单</view>
-        <wd-button size="small" type="success" :disabled="!canSubmit" :loading="loading" @click="onShare">
+        <wd-button
+          size="small"
+          type="success"
+          :disabled="!canSubmit"
+          :loading="loading"
+          @click="onShare"
+        >
           {{ loading ? '生成中…' : '分享' }}
         </wd-button>
       </view>
@@ -266,13 +272,14 @@ async function onRevoke() {
           <text class="block-tip">链接过期后无法访问</text>
         </view>
         <view class="duration-row">
-          <wd-input no-border
+          <wd-input
+            no-border
             v-model.number="expiresInDays"
             type="number"
             class="duration-input"
             :placeholder="'30'"
             :maxlength="3"
-           />
+          />
           <text class="duration-unit">天</text>
           <text class="duration-hint">(0 为永久可见)</text>
         </view>
@@ -294,13 +301,14 @@ async function onRevoke() {
           <text>微信分享简介</text>
           <text class="block-tip">显示在分享卡片下方</text>
         </view>
-        <wd-textarea no-border
+        <wd-textarea
+          no-border
           v-model="intro"
           class="intro-input"
           placeholder="例如:请查看您的家装订单详情"
           :maxlength="40"
           :auto-height="true"
-         />
+        />
         <view class="intro-meta">
           <text class="intro-count">{{ intro.length }}/40</text>
         </view>

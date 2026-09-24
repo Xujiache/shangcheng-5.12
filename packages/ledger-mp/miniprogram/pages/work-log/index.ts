@@ -1,196 +1,157 @@
-import { workLogApi } from '../../api/index'
-import { yuan } from '../../utils/format'
-import { goToLogin, isLoggedIn } from '../../utils/store'
-
-const roundQuantity = (value: any) => Math.round(Number(value) * 100) / 100
-const today = () => new Date().toISOString().slice(0, 10)
-const monthOf = () => today().slice(0, 7)
-const quantityText = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(2))
-
-Page({
+import { MotionPage, navigation } from '../../utils/page-transition'
+import { localDate, money, quantity, rows, summary, validDate } from '../../utils/workbook/domain'
+import {
+  maybeImportGuest,
+  repository,
+  reportError,
+  errorText,
+  scope,
+  syncWorkbook,
+} from '../../utils/workbook/client'
+MotionPage({
   data: {
-    month: monthOf(),
-    date: today(),
-    workerName: '',
-    jobType: '',
-    unit: 'day' as 'day' | 'hour',
-    units: [
-      { value: 'day', label: '按工天' },
-      { value: 'hour', label: '按工时' },
-    ],
-    quantityStr: '',
-    unitPriceStr: '',
-    note: '',
-    amountText: '¥0',
-    loading: true,
-    loadError: false,
-    saving: false,
-    editingId: '',
-    groups: [] as any[],
-    totalAmountText: '¥0',
-    dayQuantityText: '0',
-    hourQuantityText: '0',
-    count: 0,
+    month: localDate().slice(0, 7),
+    earned: '¥0.00',
+    paid: '¥0.00',
+    due: '¥0.00',
+    settled: '¥0.00',
+    advance: '¥0.00',
+    days: '0',
+    hours: '0',
+    pieces: '0',
+    recordCount: 0,
+    workerCount: 0,
+    projectCount: 0,
+    recent: [] as any[],
+    storageLabel: '本机免费 · 数据保存在当前设备',
+    error: '',
+    pending: 0,
+    cloudNotice: '',
+    cloudDetail: '',
+    cloudBusy: false,
   },
-
-  onShow() {
-    if (!isLoggedIn()) {
-      goToLogin()
+  showVersion: 0,
+  async onShow() {
+    const version = (this.showVersion || 0) + 1
+    this.showVersion = version
+    this.setData({ cloudNotice: '', cloudDetail: '', cloudBusy: false })
+    this.refresh()
+    let account = ''
+    let cloudEnabled = false
+    try {
+      account = scope()
+      await maybeImportGuest()
+      if (version !== this.showVersion || scope() !== account) return
+      this.refresh()
+      cloudEnabled = repository().read().cloudEnabled
+    } catch (e) {
+      if (version === this.showVersion) this.setData({ error: errorText(e) })
       return
     }
-    this.load()
-  },
-
-  async load(done?: () => void) {
-    if (!isLoggedIn()) return
-    this.setData({ loading: true, loadError: false })
+    if (!cloudEnabled) return
+    this.setData({ cloudBusy: true })
     try {
-      const res: any = await workLogApi.list(this.data.month)
-      const groups: any[] = []
-      ;(res.list || []).forEach((row: any) => {
-        let group = groups.find((item) => item.date === row.workDate)
-        if (!group) {
-          group = { date: row.workDate, rows: [] }
-          groups.push(group)
-        }
-        group.rows.push({
-          ...row,
-          quantityText: quantityText(Number(row.quantity) || 0),
-          amountText: yuan(Number(row.amount) || 0),
-          unitText: row.unit === 'hour' ? '工时' : '工天',
-          avatarChar: String(row.workerName || '工').slice(0, 1),
-          subText: [
-            row.jobType,
-            `${quantityText(Number(row.quantity) || 0)} ${row.unit === 'hour' ? '小时' : '天'}`,
-            `¥${row.unitPrice}/${row.unit === 'hour' ? '时' : '天'}`,
-          ]
-            .filter(Boolean)
-            .join(' · '),
-        })
-      })
-      const summary = res.summary || {}
+      await syncWorkbook()
+      if (version !== this.showVersion || scope() !== account) return
+      this.refresh()
+    } catch (e) {
+      if (version !== this.showVersion || scope() !== account) return
+      const detail = errorText(e)
       this.setData({
-        groups,
-        count: Number(summary.count) || 0,
-        totalAmountText: yuan(Number(summary.totalAmount) || 0),
-        dayQuantityText: quantityText(Number(summary.dayQuantity) || 0),
-        hourQuantityText: quantityText(Number(summary.hourQuantity) || 0),
-        loading: false,
+        cloudDetail: detail,
+        cloudNotice: /Cannot GET|404/.test(detail)
+          ? '云同步服务暂不可用，本机记工不受影响'
+          : /冲突/.test(detail)
+            ? '云同步存在冲突，请到数据管理处理'
+            : '云同步未完成，可继续本机记工',
       })
-    } catch {
-      this.setData({ loading: false, loadError: true })
     } finally {
-      if (done) done()
+      if (version === this.showVersion) this.setData({ cloudBusy: false })
     }
   },
-
-  onMonth(e: any) {
-    this.setData({ month: e.detail.value }, () => this.load())
+  onHide() {
+    this.showVersion = (this.showVersion || 0) + 1
   },
-  onDate(e: any) {
-    this.setData({ date: e.detail.value })
+  refresh() {
+    try {
+      const repo = repository(),
+        s = repo.read(),
+        month = this.data.month
+      const [year, m] = month.split('-').map(Number)
+      const totals = summary(s.book, { from: month + '-01', to: localDate(new Date(year, m, 0)) })
+      this.setData({
+        earned: money(totals.earned),
+        paid: money(totals.paid),
+        due: money(totals.due),
+        settled: money(totals.settled),
+        advance: money(totals.advance),
+        days: quantity(totals.days),
+        hours: quantity(totals.hours),
+        pieces: quantity(totals.pieces),
+        recordCount: totals.count,
+        workerCount: rows(s.book, 'workers').filter((w) => w.status === 'active').length,
+        projectCount: rows(s.book, 'projects').filter((p) => p.status === 'active').length,
+        recent: rows(s.book, 'entries')
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          .slice(0, 5)
+          .map((e) => ({
+            ...e,
+            name: s.book.workers[e.workerId]?.name || '未命名工人',
+            initial: (s.book.workers[e.workerId]?.name || '工').slice(0, 1),
+            project: s.book.projects[e.projectId]?.name || '未分配工地',
+            amount: money(e.amountFen),
+          })),
+        pending: s.pending.length,
+        storageLabel:
+          scope() === 'guest'
+            ? '本机免费 · 无需登录'
+            : s.cloudEnabled
+              ? '本机台账 · 云同步已开启'
+              : '本机台账 · 云同步未开启',
+        error: repo.recovered ? '已恢复上一份完整台账，请先导出备份并核对最新记录。' : '',
+      })
+    } catch (e) {
+      this.setData({ error: errorText(e) })
+    }
   },
-  onUnit(e: any) {
-    this.setData({ unit: e.detail.value as 'day' | 'hour' }, () => this.recalc())
+  monthChange(e: any) {
+    if (!validDate(e.detail.value + '-01')) return
+    this.setData({ month: e.detail.value })
+    this.refresh()
   },
-  onInput(e: any) {
-    const field = String(e.currentTarget.dataset.field || '')
-    if (!field) return
-    this.setData({ [field]: e.detail.value }, () => this.recalc())
-  },
-  recalc() {
-    const quantity = Math.max(0, roundQuantity(this.data.quantityStr) || 0)
-    const unitPrice = Math.max(0, Math.round(Number(this.data.unitPriceStr) || 0))
-    this.setData({ amountText: yuan(Math.round(quantity * unitPrice)) })
-  },
-  clearEditor() {
-    this.setData({
-      date: today(),
-      workerName: '',
-      jobType: '',
-      unit: 'day',
-      quantityStr: '',
-      unitPriceStr: '',
-      note: '',
-      amountText: '¥0',
-      editingId: '',
-    })
+  go(e: any) {
+    const page = e.currentTarget.dataset.page
+    if (['people', 'finance', 'records', 'reports'].includes(page))
+      navigation.navigateTo({ url: '/subpackages/workbook/' + page + '/index' })
   },
   edit(e: any) {
-    const id = String(e.currentTarget.dataset.id || '')
-    let row: any = null
-    this.data.groups.some((group: any) => {
-      row = group.rows.find((item: any) => item.id === id)
-      return !!row
+    navigation.navigateTo({
+      url: '/subpackages/workbook/edit/index?id=' + encodeURIComponent(e.currentTarget.dataset.id),
     })
-    if (!row) return
-    this.setData({
-      editingId: row.id,
-      date: row.workDate,
-      workerName: row.workerName,
-      jobType: row.jobType || '',
-      unit: row.unit,
-      quantityStr: quantityText(Number(row.quantity) || 0),
-      unitPriceStr: row.unitPrice ? String(row.unitPrice) : '',
-      note: row.note || '',
-      amountText: yuan(Number(row.amount) || 0),
+  },
+  add() {
+    navigation.navigateTo({ url: '/subpackages/workbook/edit/index' })
+  },
+  firstEntry() {
+    navigation.navigateTo({
+      url: this.data.workerCount
+        ? '/subpackages/workbook/edit/index'
+        : '/subpackages/workbook/people/index',
     })
-    wx.pageScrollTo({ scrollTop: 0, duration: 250 })
   },
-  async save() {
-    if (this.data.saving) return
-    const workerName = this.data.workerName.trim()
-    const quantity = roundQuantity(this.data.quantityStr)
-    const unitPrice = Math.round(Number(this.data.unitPriceStr) || 0)
-    if (!workerName) {
-      wx.showToast({ title: '请填写工人姓名', icon: 'none' })
-      return
-    }
-    if (!(quantity > 0)) {
-      wx.showToast({ title: '请填写有效工量', icon: 'none' })
-      return
-    }
-    const payload = {
-      workDate: this.data.date,
-      workerName,
-      jobType: this.data.jobType.trim() || undefined,
-      unit: this.data.unit,
-      quantity,
-      unitPrice: Math.max(0, unitPrice),
-      note: this.data.note.trim() || undefined,
-    }
-    this.setData({ saving: true })
-    try {
-      if (this.data.editingId) await workLogApi.update(this.data.editingId, payload)
-      else await workLogApi.create(payload)
-      wx.showToast({ title: this.data.editingId ? '已更新' : '已记工', icon: 'success' })
-      this.clearEditor()
-      this.load()
-    } catch {
-      this.setData({ saving: false })
-    }
-  },
-  remove(e: any) {
-    const id = String(e.currentTarget.dataset.id || '')
-    if (!id) return
+  cloudInfo() {
     wx.showModal({
-      title: '删除记工记录',
-      content: '删除后无法恢复，是否继续？',
-      confirmColor: '#C8442B',
-      success: async (result) => {
-        if (!result.confirm) return
-        try {
-          await workLogApi.remove(id)
-          if (this.data.editingId === id) this.clearEditor()
-          wx.showToast({ title: '已删除', icon: 'success' })
-          this.load()
-        } catch {
-          /* request 层已提示 */
-        }
-      },
+      title: '云同步状态',
+      content: this.data.cloudDetail || '本机功能免费，云同步需在数据管理中主动开启。',
+      showCancel: false,
     })
   },
-  retry() {
-    this.load()
+  async pull() {
+    try {
+      await syncWorkbook(true)
+      this.refresh()
+    } catch (e) {
+      reportError(e)
+    }
   },
 })

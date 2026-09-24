@@ -1,3 +1,4 @@
+import { MotionPage } from '../../../utils/page-transition'
 import { Capabilities, conversionApi, chunkUpload, downloadAsset, Job, Operation } from '../api'
 import { isLoggedIn, requireLogin } from '../../../utils/store'
 
@@ -32,34 +33,34 @@ function displayJob(job: Job, localPaths: Record<string, string> = {}): Job {
 }
 
 function readPart(filePath: string, position: number, length: number): Promise<ArrayBuffer> {
-  return new Promise((resolve, reject) =>
+  return new Promise((resolve, reject) => {
     wx.getFileSystemManager().readFile({
       filePath,
       position,
       length,
       success: (res) => resolve(res.data as ArrayBuffer),
       fail: (error) => reject(new Error(error.errMsg)),
-    }),
-  )
+    })
+  })
 }
 function writePart(data: ArrayBuffer): Promise<string> {
   const path = `${wx.env.USER_DATA_PATH}/conversion-part-${Date.now()}-${Math.random().toString(36).slice(2)}.bin`
-  return new Promise((resolve, reject) =>
+  return new Promise((resolve, reject) => {
     wx.getFileSystemManager().writeFile({
       filePath: path,
       data,
       success: () => resolve(path),
       fail: (error) => reject(new Error(error.errMsg)),
-    }),
-  )
+    })
+  })
 }
 function unlink(path: string): Promise<void> {
-  return new Promise((resolve) =>
-    wx.getFileSystemManager().unlink({ filePath: path, complete: () => resolve() }),
-  )
+  return new Promise((resolve) => {
+    wx.getFileSystemManager().unlink({ filePath: path, complete: () => resolve() })
+  })
 }
 
-Page({
+MotionPage({
   data: {
     loading: true,
     capabilities: null as Capabilities | null,
@@ -315,14 +316,14 @@ Page({
       if (action === 'cancel') await conversionApi.cancel(id)
       if (action === 'retry') await conversionApi.retry(id)
       if (action === 'delete') {
-        const confirmed = await new Promise<boolean>((resolve) =>
+        const confirmed = await new Promise<boolean>((resolve) => {
           wx.showModal({
             title: '删除任务和文件？',
             content: '删除后无法恢复。',
             success: (res) => resolve(res.confirm),
             fail: () => resolve(false),
-          }),
-        )
+          })
+        })
         if (!confirmed) return
         await conversionApi.remove(id)
         this.setData({ jobs: this.data.jobs.filter((job) => job.id !== id) })

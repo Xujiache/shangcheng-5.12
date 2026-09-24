@@ -8,8 +8,12 @@
 1. 准备一个**一次性**本地 Postgres（如 Docker），并设置环境变量（PowerShell 示例）：
 
    ```powershell
+   $env:ALLOW_DATABASE_TESTS = '1'
    $env:DATABASE_URL = "postgresql://test:test@localhost:5440/qa?schema=public"
+   $env:REDIS_URL = 'redis://localhost:6379/15'
    ```
+
+   `NODE_ENV=production`、非本机地址、非测试库名，以及 Redis 默认库 0 均会被安全闸拒绝。不得复用已有业务库。
 
 2. 推送 schema 建表（不重新生成 client）：
 

@@ -1,0 +1,6 @@
+<view class="route-feedback {{busy?'route-feedback--visible':''}} {{moving?'route-feedback--moving':''}}" style="top:{{top}}px" aria-hidden="{{!busy}}">
+  <view class="route-feedback__track">
+    <view class="route-feedback__light"></view>
+  </view>
+  <view class="route-feedback__note {{slow?'route-feedback__note--visible':''}}">正在打开页面…</view>
+</view>

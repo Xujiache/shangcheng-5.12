@@ -2,7 +2,16 @@
  * 商家 / 门店 / 员工 Mock
  */
 import type { Merchant, Store, Staff } from '../../types/merchant'
-import { faker, chineseName, chinaPhone, CITIES, BUSINESS_CATEGORIES, pickN, chance, placeholderImage } from '../faker'
+import {
+  faker,
+  chineseName,
+  chinaPhone,
+  CITIES,
+  BUSINESS_CATEGORIES,
+  pickN,
+  chance,
+  placeholderImage,
+} from '../faker'
 import { genId } from '../../utils/id'
 
 /** 商家 */
@@ -15,7 +24,10 @@ export function genMerchant(opts?: { type?: 'factory' | 'store' }): Merchant {
     id: genId(),
     userId: genId(),
     type,
-    name: type === 'factory' ? `${city}经纬科技` : `${city}${faker.helpers.arrayElement(['望京', '国贸', '南山', '天府'])}店`,
+    name:
+      type === 'factory'
+        ? `${city}经纬科技`
+        : `${city}${faker.helpers.arrayElement(['望京', '国贸', '南山', '天府'])}店`,
     legalName: `${city}${chineseName().slice(0, 1)}${type === 'factory' ? '家具有限公司' : '商贸有限公司'}`,
     creditCode: '91' + faker.string.alphanumeric({ length: 16, casing: 'upper' }),
     legalRep: chineseName(),
@@ -24,7 +36,9 @@ export function genMerchant(opts?: { type?: 'factory' | 'store' }): Merchant {
     region: `${city} · ${faker.helpers.arrayElement(['朝阳', '海淀', '丰台', '南山', '天府'])}`,
     address: faker.location.streetAddress(),
     businessLicense: placeholderImage(600, 800),
-    qualifications: Array.from({ length: faker.number.int({ min: 2, max: 4 }) }).map(() => placeholderImage(600, 800)),
+    qualifications: Array.from({ length: faker.number.int({ min: 2, max: 4 }) }).map(() =>
+      placeholderImage(600, 800),
+    ),
     categories: pickN(BUSINESS_CATEGORIES, faker.number.int({ min: 1, max: 3 })),
     status: faker.helpers.arrayElement(['pending', 'active', 'active', 'active'] as const),
     level: faker.helpers.arrayElement(['A', 'B', 'C'] as const),

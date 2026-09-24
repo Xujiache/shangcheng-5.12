@@ -112,7 +112,9 @@ async function pollPaymentStatus(
     } catch {
       /* 单次失败忽略，下次再试 */
     }
-    await new Promise((r) => setTimeout(r, intervalMs))
+    await new Promise((r) => {
+      setTimeout(r, intervalMs)
+    })
   }
   return 'timeout'
 }
@@ -280,163 +282,172 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="开通会员" class="nav-on-dark"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" custom-style="background: transparent;" />
+    <view class="page">
+      <wd-navbar
+        title="开通会员"
+        class="nav-on-dark"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+        custom-style="background: transparent;"
+      />
 
-    <view class="header">
-      <text class="hero-title">解锁全部经营能力</text>
-      <text class="hero-sub">商品 · 客户 · 门店 · 数据 · 营销 一站式管理</text>
-    </view>
-
-    <view class="body">
-      <!-- 当前订阅状态卡 -->
-      <view
-        v-if="currentMembership"
-        :class="['membership-card', currentMembership.expiringSoon && 'warning']"
-      >
-        <view class="mc-head">
-          <view class="mc-tag">
-            <text>{{ currentMembership.status === 'trial' ? '试用中' : '已开通' }}</text>
-          </view>
-          <text class="mc-name">{{ currentMembership.plan?.name || '会员套餐' }}</text>
-        </view>
-        <view class="mc-days">
-          <text class="mc-num">{{ Math.max(0, currentMembership.remainingDays) }}</text>
-          <text class="mc-unit">天</text>
-          <text class="mc-label">剩余</text>
-        </view>
-        <view class="mc-progress">
-          <view class="mc-bar" :style="{ width: currentMembership.usedPercent + '%' }" />
-        </view>
-        <view class="mc-meta">
-          <text>开始 {{ formatDate(currentMembership.startAt) }}</text>
-          <text>到期 {{ formatDate(currentMembership.endAt) }}</text>
-        </view>
-        <view v-if="currentMembership.expiringSoon" class="mc-warning">
-          ⚠️ 即将到期，请尽快续费以免影响经营
-        </view>
+      <view class="header">
+        <text class="hero-title">解锁全部经营能力</text>
+        <text class="hero-sub">商品 · 客户 · 门店 · 数据 · 营销 一站式管理</text>
       </view>
 
-      <!-- 支付状态轮询超时 → 让用户主动再查一轮 -->
-      <view v-if="showRefreshBtn" class="pay-refresh">
-        <text class="pay-refresh-tip">支付已发起但暂未确认到账</text>
-        <view class="pay-refresh-btn" @click="refreshPayStatus">刷新状态</view>
-      </view>
-      <view v-if="androidPaymentPending" class="android-payment-pending">
-        <text class="android-payment-pending__title">Android 支付即将开放</text>
-        <text class="android-payment-pending__desc"
-          >当前可查看套餐与会员状态，购买功能将在接入微信 App 支付后开放。</text
-        >
-      </view>
-      <!-- 基础套餐：月费 / 年费 -->
-      <view class="plans">
+      <view class="body">
+        <!-- 当前订阅状态卡 -->
         <view
-          v-for="p in basicPlans"
-          :key="p.id"
-          :class="['plan-card', { active: selectedCode === p.code, hot: p.hot }]"
-          @click="pickPlan(p.code as 'monthly' | 'yearly')"
+          v-if="currentMembership"
+          :class="['membership-card', currentMembership.expiringSoon && 'warning']"
         >
-          <view v-if="p.hot" class="hot-badge">最划算</view>
-          <view class="plan-head">
-            <text class="plan-name">{{ p.name }}</text>
-            <text v-if="p.originalPrice" class="plan-original">¥{{ p.originalPrice }}</text>
+          <view class="mc-head">
+            <view class="mc-tag">
+              <text>{{ currentMembership.status === 'trial' ? '试用中' : '已开通' }}</text>
+            </view>
+            <text class="mc-name">{{ currentMembership.plan?.name || '会员套餐' }}</text>
           </view>
-          <view class="plan-price">
-            <text class="price-symbol">¥</text>
-            <text class="price-value">{{ p.price }}</text>
-            <text class="price-unit">/{{ p.period === 'monthly' ? '月' : '年' }}</text>
+          <view class="mc-days">
+            <text class="mc-num">{{ Math.max(0, currentMembership.remainingDays) }}</text>
+            <text class="mc-unit">天</text>
+            <text class="mc-label">剩余</text>
           </view>
-          <text class="plan-tip">{{
-            p.code === 'yearly' ? '日均不到 2.5 元' : '7 天无理由可退'
-          }}</text>
-          <view class="radio">
-            <text>{{ selectedCode === p.code ? '●' : '○' }}</text>
+          <view class="mc-progress">
+            <view class="mc-bar" :style="{ width: currentMembership.usedPercent + '%' }" />
+          </view>
+          <view class="mc-meta">
+            <text>开始 {{ formatDate(currentMembership.startAt) }}</text>
+            <text>到期 {{ formatDate(currentMembership.endAt) }}</text>
+          </view>
+          <view v-if="currentMembership.expiringSoon" class="mc-warning">
+            ⚠️ 即将到期，请尽快续费以免影响经营
           </view>
         </view>
-      </view>
 
-      <!-- 权益对比 -->
-      <view class="section">
-        <text class="section-title">权益对比</text>
-        <view class="compare-table">
-          <view class="compare-row compare-head">
-            <text class="col-name">权益</text>
-            <text class="col-cell">月费</text>
-            <text class="col-cell highlight">年费</text>
-          </view>
-          <view v-for="r in ALL_RIGHTS" :key="r.key" class="compare-row">
-            <text class="col-name">{{ r.label }}</text>
-            <text class="col-cell">{{ r.monthly ? '✓' : '—' }}</text>
-            <text class="col-cell highlight">{{ r.yearly ? '✓' : '—' }}</text>
-          </view>
+        <!-- 支付状态轮询超时 → 让用户主动再查一轮 -->
+        <view v-if="showRefreshBtn" class="pay-refresh">
+          <text class="pay-refresh-tip">支付已发起但暂未确认到账</text>
+          <view class="pay-refresh-btn" @click="refreshPayStatus">刷新状态</view>
         </view>
-      </view>
-
-      <!-- 推广套餐 -->
-      <view class="section">
-        <view class="section-head">
-          <text class="section-title">广告推广套餐</text>
-          <text class="section-sub">选品广场曝光提升 · 与基础会员独立计费</text>
-        </view>
-        <view class="ad-grid">
-          <view
-            v-for="p in adPlans"
-            :key="p.id"
-            :class="['ad-card', { hot: p.hot }]"
-            @click="buyAddon(p)"
+        <view v-if="androidPaymentPending" class="android-payment-pending">
+          <text class="android-payment-pending__title">Android 支付即将开放</text>
+          <text class="android-payment-pending__desc"
+            >当前可查看套餐与会员状态，购买功能将在接入微信 App 支付后开放。</text
           >
-            <view v-if="p.hot" class="ad-hot">HOT</view>
-            <text class="ad-name">{{ p.name }}</text>
-            <view class="ad-price">
-              <text class="ad-symbol">¥</text>
-              <text class="ad-value">{{ p.price }}</text>
-              <text class="ad-unit">/{{ p.period === 'monthly' ? '月' : '年' }}</text>
+        </view>
+        <!-- 基础套餐：月费 / 年费 -->
+        <view class="plans">
+          <view
+            v-for="p in basicPlans"
+            :key="p.id"
+            :class="['plan-card', { active: selectedCode === p.code, hot: p.hot }]"
+            @click="pickPlan(p.code as 'monthly' | 'yearly')"
+          >
+            <view v-if="p.hot" class="hot-badge">最划算</view>
+            <view class="plan-head">
+              <text class="plan-name">{{ p.name }}</text>
+              <text v-if="p.originalPrice" class="plan-original">¥{{ p.originalPrice }}</text>
             </view>
-            <view class="ad-rights">
-              <text v-for="(r, i) in p.rights" :key="i" class="ad-right">• {{ r }}</text>
+            <view class="plan-price">
+              <text class="price-symbol">¥</text>
+              <text class="price-value">{{ p.price }}</text>
+              <text class="price-unit">/{{ p.period === 'monthly' ? '月' : '年' }}</text>
+            </view>
+            <text class="plan-tip">{{
+              p.code === 'yearly' ? '日均不到 2.5 元' : '7 天无理由可退'
+            }}</text>
+            <view class="radio">
+              <text>{{ selectedCode === p.code ? '●' : '○' }}</text>
             </view>
           </view>
         </view>
-      </view>
 
-      <!-- 增值单项 -->
-      <view class="section">
-        <text class="section-title">增值单项</text>
-        <view class="addon-list">
-          <view v-for="p in addonPlans" :key="p.id" class="addon-row" @click="buyAddon(p)">
-            <view class="addon-info">
-              <text class="addon-name">{{ p.name }}</text>
-              <text class="addon-desc">{{ p.rights[0] }}</text>
+        <!-- 权益对比 -->
+        <view class="section">
+          <text class="section-title">权益对比</text>
+          <view class="compare-table">
+            <view class="compare-row compare-head">
+              <text class="col-name">权益</text>
+              <text class="col-cell">月费</text>
+              <text class="col-cell highlight">年费</text>
             </view>
-            <view class="addon-action">
-              <text class="addon-price">{{ formatPrice(p.price) }}</text>
-              <wd-tag  :type="$jwTagType('primary')" :plain="false" round>{{ "购买" }}</wd-tag>
+            <view v-for="r in ALL_RIGHTS" :key="r.key" class="compare-row">
+              <text class="col-name">{{ r.label }}</text>
+              <text class="col-cell">{{ r.monthly ? '✓' : '—' }}</text>
+              <text class="col-cell highlight">{{ r.yearly ? '✓' : '—' }}</text>
             </view>
           </view>
         </view>
+
+        <!-- 推广套餐 -->
+        <view class="section">
+          <view class="section-head">
+            <text class="section-title">广告推广套餐</text>
+            <text class="section-sub">选品广场曝光提升 · 与基础会员独立计费</text>
+          </view>
+          <view class="ad-grid">
+            <view
+              v-for="p in adPlans"
+              :key="p.id"
+              :class="['ad-card', { hot: p.hot }]"
+              @click="buyAddon(p)"
+            >
+              <view v-if="p.hot" class="ad-hot">HOT</view>
+              <text class="ad-name">{{ p.name }}</text>
+              <view class="ad-price">
+                <text class="ad-symbol">¥</text>
+                <text class="ad-value">{{ p.price }}</text>
+                <text class="ad-unit">/{{ p.period === 'monthly' ? '月' : '年' }}</text>
+              </view>
+              <view class="ad-rights">
+                <text v-for="(r, i) in p.rights" :key="i" class="ad-right">• {{ r }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 增值单项 -->
+        <view class="section">
+          <text class="section-title">增值单项</text>
+          <view class="addon-list">
+            <view v-for="p in addonPlans" :key="p.id" class="addon-row" @click="buyAddon(p)">
+              <view class="addon-info">
+                <text class="addon-name">{{ p.name }}</text>
+                <text class="addon-desc">{{ p.rights[0] }}</text>
+              </view>
+              <view class="addon-action">
+                <text class="addon-price">{{ formatPrice(p.price) }}</text>
+                <wd-tag :type="$jwTagType('primary')" :plain="false" round>{{ '购买' }}</wd-tag>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="safe-bottom" />
       </view>
 
-      <view class="safe-bottom" />
-    </view>
-
-    <!-- 底部 CTA -->
-    <view class="footer" v-if="selected">
-      <view class="footer-meta">
-        <text class="f-price">{{ formatPrice(selected.price) }}</text>
-        <text class="f-unit">/{{ selected.period === 'monthly' ? '月' : '年' }}</text>
-        <text v-if="selected.originalPrice" class="f-original"
-          >原价 ¥{{ selected.originalPrice }}</text
+      <!-- 底部 CTA -->
+      <view class="footer" v-if="selected">
+        <view class="footer-meta">
+          <text class="f-price">{{ formatPrice(selected.price) }}</text>
+          <text class="f-unit">/{{ selected.period === 'monthly' ? '月' : '年' }}</text>
+          <text v-if="selected.originalPrice" class="f-original"
+            >原价 ¥{{ selected.originalPrice }}</text
+          >
+        </view>
+        <view
+          :class="['footer-btn', { 'footer-btn--disabled': androidPaymentPending }]"
+          @click="subscribe"
         >
-      </view>
-      <view
-        :class="['footer-btn', { 'footer-btn--disabled': androidPaymentPending }]"
-        @click="subscribe"
-      >
-        <text>{{ androidPaymentPending ? '支付即将开放' : '立即开通' }}</text>
+          <text>{{ androidPaymentPending ? '支付即将开放' : '立即开通' }}</text>
+        </view>
       </view>
     </view>
-  </view>
-
   </wd-config-provider>
 </template>
 

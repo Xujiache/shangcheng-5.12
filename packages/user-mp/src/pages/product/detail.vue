@@ -782,9 +782,15 @@ onShareTimeline(() => ({
           <image :src="product.images?.[0]" mode="aspectFill" class="sku-img" />
           <view class="sku-info">
             <view class="sku-price-row">
-              <text v-if="headerPriceDisplay.prefix" class="sku-cur">{{ headerPriceDisplay.prefix }}</text>
-              <text v-if="headerPriceDisplay.amount" class="sku-price">{{ headerPriceDisplay.amount }}</text>
-              <text v-if="headerPriceDisplay.hint" class="sku-price-hint">{{ headerPriceDisplay.hint }}</text>
+              <text v-if="headerPriceDisplay.prefix" class="sku-cur">{{
+                headerPriceDisplay.prefix
+              }}</text>
+              <text v-if="headerPriceDisplay.amount" class="sku-price">{{
+                headerPriceDisplay.amount
+              }}</text>
+              <text v-if="headerPriceDisplay.hint" class="sku-price-hint">{{
+                headerPriceDisplay.hint
+              }}</text>
             </view>
             <text class="sku-selected">{{ selectedSpecSummary }}</text>
           </view>
@@ -899,10 +905,7 @@ onShareTimeline(() => ({
             <Icon name="info" :size="20" color="var(--text-tertiary)" />
             <text>配送方式:{{ shippingPromise }}</text>
           </view>
-          <view
-            :class="['confirm-btn', { disabled: !skuReadyToConfirm }]"
-            @click="confirmSku"
-          >
+          <view :class="['confirm-btn', { disabled: !skuReadyToConfirm }]" @click="confirmSku">
             {{ confirmBtnLabel }}
           </view>
         </view>

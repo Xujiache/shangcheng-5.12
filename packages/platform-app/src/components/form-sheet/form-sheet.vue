@@ -77,7 +77,7 @@ function onConfirm() {
       <view class="form-sheet-head">
         <text class="form-sheet-title">{{ title }}</text>
         <view class="form-sheet-close" @click="onCancel">
-          <wd-icon :name="$jwIcon('close')" size="16px" color="#86909C"  />
+          <wd-icon :name="$jwIcon('close')" size="16px" color="#86909C" />
         </view>
       </view>
 

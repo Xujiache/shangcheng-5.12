@@ -19,9 +19,39 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 const BUSINESS_TIMEZONE = 'Asia/Shanghai'
+import { thumbnailUrlFor } from '../files/image-thumbnail.util'
+import { excludedPlazaMerchantIds, filterOptionValues } from './plaza-filter-options.util'
 
 const QUOTA_KEYS = ['pushSlots', 'banner', 'impression'] as const
 type QuotaKey = (typeof QUOTA_KEYS)[number]
+
+type LocalizableMemberPlan = {
+  name: string
+  nameEn?: string | null
+  rights: unknown
+  rightsEn?: unknown
+}
+
+export function isEnglishLocale(language?: string): boolean {
+  return String(language || '')
+    .toLowerCase()
+    .startsWith('en')
+}
+
+export function localizeMemberPlan<T extends LocalizableMemberPlan>(plan: T, language?: string): T {
+  if (!isEnglishLocale(language)) return plan
+  const nameEn = String(plan.nameEn || '').trim()
+  const rightsEn = Array.isArray(plan.rightsEn)
+    ? plan.rightsEn.filter(
+        (item): item is string => typeof item === 'string' && item.trim().length > 0,
+      )
+    : []
+  return {
+    ...plan,
+    name: nameEn || plan.name,
+    rights: rightsEn.length > 0 ? rightsEn : plan.rights,
+  }
+}
 
 /**
  * Product 表第一类字段白名单 —— 防止前端误传 schema 不认的字段（如 freeShipping）
@@ -432,7 +462,17 @@ export class MerchantService {
       this.prisma.product.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
       this.prisma.product.count({ where }),
     ])
-    return buildPage(list.map(decimalToNumber), total, page, pageSize)
+    return buildPage(
+      list.map((item) => ({
+        ...decimalToNumber(item),
+        imageThumbnailUrl: this.imageThumb(
+          Array.isArray(item.images) ? String(item.images[0] || '') : '',
+        ),
+      })),
+      total,
+      page,
+      pageSize,
+    )
   }
   async productDetail(merchantId: string, id: string) {
     const p = await this.prisma.product.findFirst({
@@ -2140,6 +2180,14 @@ export class MerchantService {
   }
 
   // ========== 选品广场 ==========
+  private async internalTestMerchantIds(): Promise<string[]> {
+    return getInternalTestMerchantIds(this.prisma)
+  }
+
+  private imageThumb(url: string): string | undefined {
+    return thumbnailUrlFor(url, process.env.S3_PUBLIC_URL || 'http://localhost:9000/jiujiu-mall')
+  }
+
   /**
    * 选品广场商品列表
    *
@@ -2153,19 +2201,17 @@ export class MerchantService {
    */
   async plazaProducts(merchantId: string, q: any) {
     const { skip, take, page, pageSize } = parsePage(q)
-    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
+    const internalIds = await this.internalTestMerchantIds()
     const where: any = { status: 'active' }
     if (q.factoryId) {
-      if (internalMerchantIds.includes(String(q.factoryId))) {
-        return buildPage([], 0, page, pageSize)
-      }
+      if (internalIds.includes(String(q.factoryId))) return buildPage([], 0, page, pageSize)
       where.merchantId = q.factoryId
     } else {
-      const excluded = Array.from(new Set([merchantId, ...internalMerchantIds].filter(Boolean)))
-      if (excluded.length) where.merchantId = { notIn: excluded }
+      where.merchantId = { notIn: excludedPlazaMerchantIds(merchantId, internalIds) }
     }
     if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
     if (q.tags) where.tags = { has: String(q.tags) }
+
     const [list, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -2228,6 +2274,7 @@ export class MerchantService {
         productId: p.id,
         productName: p.name,
         productImage: p.images[0] || '',
+        productImageThumb: this.imageThumb(p.images[0] || ''),
         factoryName: p.merchant.name,
         factoryId: p.merchantId,
         startPrice: Number(p.priceWholesaleMin || p.priceRetailMin),
@@ -2253,17 +2300,35 @@ export class MerchantService {
     merchantId: string,
     q: { region?: string; category?: string; minRating?: number; keyword?: string } = {},
   ) {
-    const internalMerchantIds = await getInternalTestMerchantIds(this.prisma)
-    const excluded = Array.from(new Set([merchantId, ...internalMerchantIds].filter(Boolean)))
+    const internalIds = await this.internalTestMerchantIds()
     const where: any = {
       type: 'factory',
       status: 'active',
-      ...(excluded.length ? { id: { notIn: excluded } } : {}),
+      id: { notIn: excludedPlazaMerchantIds(merchantId, internalIds) },
     }
     if (q.region) where.region = { contains: q.region, mode: 'insensitive' }
     if (q.category) where.categories = { has: q.category }
     if (q.keyword) where.name = { contains: q.keyword, mode: 'insensitive' }
-    const factories = await this.prisma.merchant.findMany({ where, take: 100 })
+    const factories = await this.prisma.merchant.findMany({
+      where,
+      take: 100,
+      include: { _count: { select: { products: { where: { status: 'active' } } } } },
+    })
+    const agencyRows = factories.length
+      ? await this.prisma.agencyApplication.findMany({
+          where: {
+            factoryMerchantId: { in: factories.map((factory) => factory.id) },
+            status: 'approved',
+          },
+          select: { factoryMerchantId: true, merchantId: true },
+        })
+      : []
+    const agencies = new Map<string, Set<string>>()
+    for (const row of agencyRows) {
+      const set = agencies.get(row.factoryMerchantId) || new Set<string>()
+      set.add(row.merchantId)
+      agencies.set(row.factoryMerchantId, set)
+    }
 
     // 评分 / 头像 从 profile-extras 批量读
     const extrasMap = new Map<
@@ -2279,30 +2344,9 @@ export class MerchantService {
       }
     }
 
-    const factoryIds = factories.map((factory) => factory.id)
-    const [productGroups, agencyGroups, followConfig] = factoryIds.length
-      ? await Promise.all([
-          this.prisma.product.groupBy({
-            by: ['merchantId'],
-            where: { merchantId: { in: factoryIds }, status: 'active' },
-            _count: { _all: true },
-          }),
-          this.prisma.agencyApplication.groupBy({
-            by: ['factoryMerchantId'],
-            where: { factoryMerchantId: { in: factoryIds }, status: 'approved' },
-            _count: { _all: true },
-          }),
-          merchantId
-            ? this.prisma.systemConfig.findUnique({ where: { key: `shop:${merchantId}:follow` } })
-            : Promise.resolve(null),
-        ])
-      : [[], [], null]
-    const productCounts = new Map(
-      productGroups.map((group) => [group.merchantId, group._count._all]),
-    )
-    const agencyCounts = new Map(
-      agencyGroups.map((group) => [group.factoryMerchantId, group._count._all]),
-    )
+    const followConfig = merchantId
+      ? await this.prisma.systemConfig.findUnique({ where: { key: `shop:${merchantId}:follow` } })
+      : null
     const followedIds = new Set<string>(
       Array.isArray((followConfig?.value as any)?.followed)
         ? ((followConfig?.value as any).followed as unknown[]).filter(
@@ -2319,20 +2363,75 @@ export class MerchantService {
           id: f.id,
           name: f.name,
           logo: ex.avatar || '',
+          logoThumb: this.imageThumb(ex.avatar || ''),
           region: f.region,
           categories: f.categories,
           gmv: Number(f.totalGmv || 0),
           rating: typeof ex.rating === 'number' ? ex.rating : 5,
           ratingCount: typeof ex.ratingCount === 'number' ? ex.ratingCount : 0,
           years: Math.max(1, new Date().getFullYear() - f.createdAt.getFullYear() + 1),
-          productCount: productCounts.get(f.id) || 0,
-          agencyCount: agencyCounts.get(f.id) || 0,
+          productCount: f._count.products,
+          agencyCount: agencies.get(f.id)?.size || 0,
           followed: followedIds.has(f.id),
+
           tags: [],
         }
       })
       .filter((x) => x.rating >= minRating)
     return result
+  }
+
+  async plazaFilterOptions(merchantId: string) {
+    const internalIds = await this.internalTestMerchantIds()
+    const excludedIds = excludedPlazaMerchantIds(merchantId, internalIds)
+    const [products, factories] = await Promise.all([
+      this.prisma.product.findMany({
+        where: {
+          status: 'active',
+          merchantId: { notIn: excludedIds },
+          merchant: { is: { type: 'factory', status: 'active' } },
+        },
+        select: { id: true, tags: true },
+        take: 1000,
+      }),
+      this.prisma.merchant.findMany({
+        where: { type: 'factory', status: 'active', id: { notIn: excludedIds } },
+        select: { region: true, categories: true },
+        take: 1000,
+      }),
+    ])
+    const onlineCfgs = products.length
+      ? await this.prisma.systemConfig.findMany({
+          where: { key: { in: products.map((product) => `plaza:product:${product.id}`) } },
+        })
+      : []
+    const offlineIds = new Set(
+      onlineCfgs
+        .filter((cfg) => !(cfg.value as any)?.online)
+        .map((cfg) => cfg.key.replace('plaza:product:', '')),
+    )
+    const productTags = Array.from(
+      new Set(
+        products
+          .filter((product) => !offlineIds.has(product.id))
+          .flatMap((product) => product.tags),
+      ),
+    ).filter(Boolean)
+    const regions = Array.from(new Set(factories.map((factory) => factory.region).filter(Boolean)))
+    const categories = Array.from(
+      new Set(factories.flatMap((factory) => factory.categories)),
+    ).filter(Boolean)
+    return {
+      productTags: filterOptionValues(productTags),
+      regions: filterOptionValues(regions),
+      categories: filterOptionValues(categories),
+      ratingOptions: [
+        { value: '0', label: '不限' },
+        { value: '3', label: '3分及以上' },
+        { value: '4', label: '4分及以上' },
+        { value: '5', label: '5分' },
+      ],
+    }
   }
 
   async plazaFactory(merchantId: string, id: string) {
@@ -2358,6 +2457,7 @@ export class MerchantService {
       id: f.id,
       name: f.name,
       logo: ex.avatar || '',
+      logoThumb: this.imageThumb(ex.avatar || ''),
       banner: ex.avatar || '',
       region: f.region,
       address: f.address,
@@ -2805,20 +2905,19 @@ export class MerchantService {
   }
 
   // ========== 会员 ==========
-  async memberPlans() {
-    return decimalToNumber(
-      await this.prisma.memberPlan.findMany({
-        where: { status: 'active' },
-        orderBy: { sort: 'asc' },
-      }),
-    )
+  async memberPlans(language?: string) {
+    const plans = await this.prisma.memberPlan.findMany({
+      where: { status: 'active' },
+      orderBy: { sort: 'asc' },
+    })
+    return decimalToNumber(plans.map((plan) => localizeMemberPlan(plan, language)))
   }
   /**
    * 当前订阅;同时给出嵌套和扁平字段,兼容多端:
    *   - merchant-app 用 m.plan.* (嵌套)
    *   - admin-pc/PC 视图用 planName/planType/price/merchantName/totalDays/subscribedAt (扁平)
    */
-  async myMembership(merchantId: string) {
+  async myMembership(merchantId: string, language?: string) {
     const m = await this.prisma.merchantMembership.findFirst({
       where: { merchantId, status: { in: ['trial', 'active'] } },
       orderBy: { createdAt: 'desc' },
@@ -2826,11 +2925,13 @@ export class MerchantService {
     })
     if (!m) return null
     const totalDays = Math.max(1, Math.ceil((m.endAt.getTime() - m.startAt.getTime()) / 86400000))
+    const plan = m.plan ? localizeMemberPlan(m.plan, language) : null
     return decimalToNumber({
       ...m,
-      planName: m.plan?.name ?? '',
-      planType: m.plan?.type ?? '',
-      price: m.plan ? Number(m.plan.price) : 0,
+      plan,
+      planName: plan?.name ?? '',
+      planType: plan?.type ?? '',
+      price: plan ? Number(plan.price) : 0,
       merchantName: m.merchant?.name ?? '',
       totalDays,
       subscribedAt: m.createdAt,
@@ -2885,22 +2986,27 @@ export class MerchantService {
     }
   }
   /** 缴费记录;加 payMethod 别名兼容 admin-pc 视图 */
-  async myPayments(merchantId: string) {
+  async myPayments(merchantId: string, language?: string) {
     const list = await this.prisma.paymentRecord.findMany({
       where: { merchantId },
+      include: { plan: true },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
-    return list.map((r) =>
-      decimalToNumber({
-        ...r,
-        payMethod: r.paymentMethod,
-      }),
-    )
+    return list.map((record) => {
+      const { plan, ...payment } = record
+      const localizedPlan = plan ? localizeMemberPlan(plan, language) : null
+      return decimalToNumber({
+        ...payment,
+        planName: localizedPlan?.name || payment.planName,
+        payMethod: payment.paymentMethod,
+      })
+    })
   }
-  async membershipNotices(merchantId: string, language: string = 'zh-CN') {
+  async membershipNotices(merchantId: string, language?: string) {
     const q = await this.quota(merchantId)
-    const english = language.toLowerCase().startsWith('en')
+    const english = isEnglishLocale(language)
+
     const notices: any[] = []
     if (q.pushSlotsLimit > 0 && q.pushSlotsUsed >= q.pushSlotsLimit * 0.8) {
       notices.push({

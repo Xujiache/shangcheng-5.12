@@ -93,7 +93,11 @@ function goCreate() {
   uni.navigateTo({ url: '/pages/plaza/push' })
 }
 
-const totalLabel = computed(() => (tab.value === 'all' ? `共 ${total.value} 条` : `${total.value} 条 ${STATUS_META[tab.value]?.label || ''}`))
+const totalLabel = computed(() =>
+  tab.value === 'all'
+    ? `共 ${total.value} 条`
+    : `${total.value} 条 ${STATUS_META[tab.value]?.label || ''}`,
+)
 
 onMounted(() => load(true))
 
@@ -119,90 +123,109 @@ function onScrollToLower() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="广场推送记录" @click-right="goCreate"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
-    </wd-navbar>
+    <view class="page">
+      <wd-navbar
+        title="广场推送记录"
+        @click-right="goCreate"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      >
+        <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+      </wd-navbar>
 
-    <!-- 状态 tab -->
-    <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
-      <view class="tabs">
-        <view
-          v-for="t in TABS"
-          :key="t.key"
-          :class="['tab', tab === t.key ? 'active' : '']"
-          @click="switchTab(t.key)"
-        >
-          <text>{{ t.label }}</text>
-        </view>
-      </view>
-    </scroll-view>
-
-    <view class="total-bar">
-      <text>{{ totalLabel }}</text>
-    </view>
-
-    <scroll-view scroll-y class="scroll" @scrolltolower="onScrollToLower">
-      <view v-for="row in list" :key="row.id" class="card">
-        <view class="card-head">
-          <text class="title">{{ titleOf(row) }}</text>
+      <!-- 状态 tab -->
+      <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
+        <view class="tabs">
           <view
-            class="status"
-            :style="{
-              color: STATUS_META[row.status]?.tint || '#86909C',
-              background: (STATUS_META[row.status]?.tint || '#86909C') + '14',
-            }"
+            v-for="t in TABS"
+            :key="t.key"
+            :class="['tab', tab === t.key ? 'active' : '']"
+            @click="switchTab(t.key)"
           >
-            {{ STATUS_META[row.status]?.label || row.status }}
+            <text>{{ t.label }}</text>
           </view>
         </view>
+      </scroll-view>
 
-        <view class="meta">
-          <view class="meta-row">
-            <view class="type-chip" :class="row.targetType">
-              {{ row.targetType === 'product' ? '商品推送' : '厂家推送' }}
-            </view>
-            <text class="count">×{{ targetCount(row) }}</text>
-          </view>
-          <view class="meta-row" v-if="row.positions && row.positions.length > 0">
-            <wd-icon :name="$jwIcon('location-pin')" size="11px" color="var(--text-tertiary)"  />
-            <text class="ellipsis">{{ row.positions.join(' / ') }}</text>
-          </view>
-          <view class="meta-row">
-            <wd-icon :name="$jwIcon('clock')" size="11px" color="var(--text-tertiary)"  />
-            <text>
-              {{ formatDate(row.scheduledStart) }}
-              → {{ formatDate(row.scheduledEnd) }}
-            </text>
-          </view>
-        </view>
-
-        <view class="ft">
-          <view class="stat-chip">
-            <wd-icon :name="$jwIcon('eye')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ row.impressions }} 曝光</text>
-          </view>
-          <view class="stat-chip">
-            <wd-icon :name="$jwIcon('tag')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ row.clicks }} 点击</text>
-          </view>
-          <view class="stat-chip" v-if="row.weight">
-            <wd-icon :name="$jwIcon('star')" size="11px" color="var(--text-tertiary)"  />
-            <text>权重 {{ row.weight }}</text>
-          </view>
-        </view>
+      <view class="total-bar">
+        <text>{{ totalLabel }}</text>
       </view>
 
-      <view v-if="loading" class="loading">加载中…</view>
-      <view v-else-if="noMore && list.length > 0" class="no-more">— 没有更多了 —</view>
+      <scroll-view scroll-y class="scroll" @scrolltolower="onScrollToLower">
+        <view v-for="row in list" :key="row.id" class="card">
+          <view class="card-head">
+            <text class="title">{{ titleOf(row) }}</text>
+            <view
+              class="status"
+              :style="{
+                color: STATUS_META[row.status]?.tint || '#86909C',
+                background: (STATUS_META[row.status]?.tint || '#86909C') + '14',
+              }"
+            >
+              {{ STATUS_META[row.status]?.label || row.status }}
+            </view>
+          </view>
 
-      <wd-status-tip
-        v-if="!loading && list.length === 0"
-       image="content" :tip="['暂无推送记录', tab === 'all' ? '点击右上角 + 立刻发起一次推送' : '当前筛选下无记录，切换其它状态看看'].filter(Boolean).join(' · ')" />
-      <view style="height: 40rpx" />
-    </scroll-view>
-  </view>
+          <view class="meta">
+            <view class="meta-row">
+              <view class="type-chip" :class="row.targetType">
+                {{ row.targetType === 'product' ? '商品推送' : '厂家推送' }}
+              </view>
+              <text class="count">×{{ targetCount(row) }}</text>
+            </view>
+            <view class="meta-row" v-if="row.positions && row.positions.length > 0">
+              <wd-icon :name="$jwIcon('location-pin')" size="11px" color="var(--text-tertiary)" />
+              <text class="ellipsis">{{ row.positions.join(' / ') }}</text>
+            </view>
+            <view class="meta-row">
+              <wd-icon :name="$jwIcon('clock')" size="11px" color="var(--text-tertiary)" />
+              <text>
+                {{ formatDate(row.scheduledStart) }}
+                → {{ formatDate(row.scheduledEnd) }}
+              </text>
+            </view>
+          </view>
 
+          <view class="ft">
+            <view class="stat-chip">
+              <wd-icon :name="$jwIcon('eye')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ row.impressions }} 曝光</text>
+            </view>
+            <view class="stat-chip">
+              <wd-icon :name="$jwIcon('tag')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ row.clicks }} 点击</text>
+            </view>
+            <view class="stat-chip" v-if="row.weight">
+              <wd-icon :name="$jwIcon('star')" size="11px" color="var(--text-tertiary)" />
+              <text>权重 {{ row.weight }}</text>
+            </view>
+          </view>
+        </view>
+
+        <view v-if="loading" class="loading">加载中…</view>
+        <view v-else-if="noMore && list.length > 0" class="no-more">— 没有更多了 —</view>
+
+        <wd-status-tip
+          v-if="!loading && list.length === 0"
+          image="content"
+          :tip="
+            [
+              '暂无推送记录',
+              tab === 'all'
+                ? '点击右上角 + 立刻发起一次推送'
+                : '当前筛选下无记录，切换其它状态看看',
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          "
+        />
+        <view style="height: 40rpx" />
+      </scroll-view>
+    </view>
   </wd-config-provider>
 </template>
 
@@ -309,8 +332,14 @@ function onScrollToLower() {
   border-radius: 6rpx;
   font-size: 20rpx;
   font-weight: 700;
-  &.product { background: rgba(255, 77, 45, 0.1); color: #FF4D2D; }
-  &.factory { background: rgba(18, 150, 219, 0.1); color: #1296DB; }
+  &.product {
+    background: rgba(255, 77, 45, 0.1);
+    color: #ff4d2d;
+  }
+  &.factory {
+    background: rgba(18, 150, 219, 0.1);
+    color: #1296db;
+  }
 }
 .ft {
   display: flex;

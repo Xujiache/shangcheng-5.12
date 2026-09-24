@@ -256,188 +256,192 @@ onShow(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- 顶部 Hero（双大字关键指标） -->
-    <view class="hero" :style="{ paddingTop: statusBarHeight }">
-      <view class="hero-top">
-        <view class="hero-greet">
-          <text class="hello">你好,{{ adminStore.nickname }}</text>
-          <text class="role">平台管理 · 经纬科技</text>
-        </view>
-        <view class="notify-btn" @click="goNotify">
-          <wd-icon :name="$jwIcon('bell')" size="18px" color="#fff"  />
-          <view v-if="TOTAL_TODOS > 0" class="notify-dot">{{
-            TOTAL_TODOS > 99 ? '99+' : TOTAL_TODOS
-          }}</view>
-        </view>
-      </view>
-
-      <view class="hero-stats">
-        <view class="hero-stat">
-          <text class="hs-label">今日新订单</text>
-          <view class="hs-num-row">
-            <text class="hs-num">{{ heroToday.orders }}</text>
-            <view
-              v-if="dashboard"
-              :class="['hs-delta', heroToday.ordersDelta >= 0 ? 'up' : 'down']"
-            >
-              <wd-icon
-                :name="$jwIcon(heroToday.ordersDelta >= 0 ? 'arrow-up' : 'arrow-down')" size="10px"
-                color="#fff"
-               />
-              <text>{{ heroToday.ordersDelta >= 0 ? '+' : '' }}{{ heroToday.ordersDelta }}</text>
-            </view>
+    <view class="page">
+      <!-- 顶部 Hero（双大字关键指标） -->
+      <view class="hero" :style="{ paddingTop: statusBarHeight }">
+        <view class="hero-top">
+          <view class="hero-greet">
+            <text class="hello">你好,{{ adminStore.nickname }}</text>
+            <text class="role">平台管理 · 经纬科技</text>
+          </view>
+          <view class="notify-btn" @click="goNotify">
+            <wd-icon :name="$jwIcon('bell')" size="18px" color="#fff" />
+            <view v-if="TOTAL_TODOS > 0" class="notify-dot">{{
+              TOTAL_TODOS > 99 ? '99+' : TOTAL_TODOS
+            }}</view>
           </view>
         </view>
-        <view class="hs-divider" />
-        <view class="hero-stat">
-          <text class="hs-label">今日 GMV</text>
-          <view class="hs-num-row">
-            <text class="hs-cur">¥</text>
-            <text class="hs-num">{{ heroToday.gmv }}</text>
-            <view v-if="dashboard" :class="['hs-delta', heroToday.gmvDelta >= 0 ? 'up' : 'down']">
-              <wd-icon
-                :name="$jwIcon(heroToday.gmvDelta >= 0 ? 'arrow-up' : 'arrow-down')" size="10px"
-                color="#fff"
-               />
-              <text>{{ heroToday.gmvDelta }}%</text>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
 
-    <view class="body">
-      <!-- 错误态：load 失败 -->
-      <view v-if="errorMsg && !dashboard" class="err-block">
-        <wd-icon :name="$jwIcon('info')" size="28px" color="#FF7A45"  />
-        <text class="err-title">加载失败</text>
-        <text class="err-msg">{{ errorMsg }}</text>
-        <view class="err-btn" @click="load">点击重试</view>
-      </view>
-
-      <!-- 平台概览 4 张异色卡（克制留白） -->
-      <view class="section">
-        <view class="section-head">
-          <text class="section-title">平台概览</text>
-          <text class="section-meta" v-if="dashboard">实时</text>
-        </view>
-        <view class="ov-grid">
-          <view
-            v-for="c in OVERVIEW_CARDS"
-            :key="c.key"
-            class="ov-card"
-            :style="{ background: c.tintSoft }"
-          >
-            <view class="ov-icon-wrap" :style="{ background: c.tint }">
-              <wd-icon :name="$jwIcon(c.icon)" size="14px" color="#fff"  />
-            </view>
-            <text class="ov-label">{{ c.label }}</text>
-            <text class="ov-value" :style="{ color: c.tint }">{{ c.value }}</text>
-            <view v-if="dashboard" :class="['ov-delta', (c.delta ?? 0) >= 0 ? 'up' : 'down']">
-              <wd-icon
-                :name="$jwIcon((c.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down')" size="7px"
-                :color="(c.delta ?? 0) >= 0 ? '#52C41A' : '#FF3B30'"
-               />
-              <text
-                >{{ (c.delta ?? 0) >= 0 ? '+' : '' }}{{ c.delta ?? 0
-                }}{{ c.isPct ? '%' : '' }}</text
+        <view class="hero-stats">
+          <view class="hero-stat">
+            <text class="hs-label">今日新订单</text>
+            <view class="hs-num-row">
+              <text class="hs-num">{{ heroToday.orders }}</text>
+              <view
+                v-if="dashboard"
+                :class="['hs-delta', heroToday.ordersDelta >= 0 ? 'up' : 'down']"
               >
+                <wd-icon
+                  :name="$jwIcon(heroToday.ordersDelta >= 0 ? 'arrow-up' : 'arrow-down')"
+                  size="10px"
+                  color="#fff"
+                />
+                <text>{{ heroToday.ordersDelta >= 0 ? '+' : '' }}{{ heroToday.ordersDelta }}</text>
+              </view>
+            </view>
+          </view>
+          <view class="hs-divider" />
+          <view class="hero-stat">
+            <text class="hs-label">今日 GMV</text>
+            <view class="hs-num-row">
+              <text class="hs-cur">¥</text>
+              <text class="hs-num">{{ heroToday.gmv }}</text>
+              <view v-if="dashboard" :class="['hs-delta', heroToday.gmvDelta >= 0 ? 'up' : 'down']">
+                <wd-icon
+                  :name="$jwIcon(heroToday.gmvDelta >= 0 ? 'arrow-up' : 'arrow-down')"
+                  size="10px"
+                  color="#fff"
+                />
+                <text>{{ heroToday.gmvDelta }}%</text>
+              </view>
             </view>
           </view>
         </view>
       </view>
 
-      <!-- mini-line chart：仅有数据时显示 -->
-      <view v-if="trend" class="section trend-card">
-        <view class="section-head">
-          <text class="section-title">近 7 日注册趋势</text>
-          <text class="trend-meta">合计 {{ trend.total }} 人</text>
+      <view class="body">
+        <!-- 错误态：load 失败 -->
+        <view v-if="errorMsg && !dashboard" class="err-block">
+          <wd-icon :name="$jwIcon('info')" size="28px" color="#FF7A45" />
+          <text class="err-title">加载失败</text>
+          <text class="err-msg">{{ errorMsg }}</text>
+          <view class="err-btn" @click="load">点击重试</view>
         </view>
-        <view class="mini-line-wrap">
-          <svg viewBox="0 0 100 32" preserveAspectRatio="none" class="mini-svg">
-            <defs>
-              <linearGradient id="ml-g" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.28" />
-                <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
-              </linearGradient>
-              <linearGradient id="ml-line" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#FF7A45" />
-                <stop offset="100%" stop-color="#FF4D2D" />
-              </linearGradient>
-            </defs>
-            <polygon :points="trend.area" fill="url(#ml-g)" />
-            <polyline
-              :points="trend.line"
-              fill="none"
-              stroke="url(#ml-line)"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <circle
-              v-for="(p, i) in trend.points"
-              :key="i"
-              :cx="p.x"
-              :cy="p.y"
-              r="0.85"
-              fill="#FF4D2D"
-            />
-          </svg>
-        </view>
-        <view class="trend-x">
-          <text v-for="(p, i) in trend.points" :key="i">{{ p.date.slice(-5) }}</text>
-        </view>
-      </view>
 
-      <!-- 待办（精简紧凑卡） -->
-      <view class="section todo-card">
-        <view class="section-head">
-          <view class="todo-head-left">
-            <wd-icon :name="$jwIcon('lightning')" size="14px" color="#FF4D2D"  />
-            <text class="section-title">待办事项</text>
+        <!-- 平台概览 4 张异色卡（克制留白） -->
+        <view class="section">
+          <view class="section-head">
+            <text class="section-title">平台概览</text>
+            <text class="section-meta" v-if="dashboard">实时</text>
           </view>
-          <view v-if="TOTAL_TODOS > 0" class="todo-total">{{ TOTAL_TODOS }} 项</view>
-          <text v-else class="todo-empty-tag">已清空</text>
-        </view>
-        <view class="todo-list">
-          <view v-for="t in TODO_LIST" :key="t.key" class="todo-row" @click="goTodo(t)">
-            <text class="todo-label">{{ t.label }}</text>
-            <view v-if="t.count > 0" class="todo-badge">{{ t.count > 99 ? '99+' : t.count }}</view>
-            <text v-else class="todo-clear">已清空</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="12px" color="#C9CDD4"  />
-          </view>
-        </view>
-      </view>
-
-      <!-- 4 大核心快捷入口（大方块） -->
-      <view class="section">
-        <view class="section-head">
-          <text class="section-title">快捷入口</text>
-        </view>
-        <view class="entries-grid">
-          <view
-            v-for="e in QUICK_ENTRIES"
-            :key="e.key"
-            class="entry-card"
-            :style="{ background: e.tintSoft }"
-            @click="goEntry(e)"
-          >
-            <view class="entry-icon" :style="{ background: e.tint }">
-              <wd-icon :name="$jwIcon(e.icon)" size="18px" color="#fff"  />
-            </view>
-            <view class="entry-text">
-              <text class="entry-label">{{ e.label }}</text>
-              <text class="entry-desc">{{ e.desc }}</text>
+          <view class="ov-grid">
+            <view
+              v-for="c in OVERVIEW_CARDS"
+              :key="c.key"
+              class="ov-card"
+              :style="{ background: c.tintSoft }"
+            >
+              <view class="ov-icon-wrap" :style="{ background: c.tint }">
+                <wd-icon :name="$jwIcon(c.icon)" size="14px" color="#fff" />
+              </view>
+              <text class="ov-label">{{ c.label }}</text>
+              <text class="ov-value" :style="{ color: c.tint }">{{ c.value }}</text>
+              <view v-if="dashboard" :class="['ov-delta', (c.delta ?? 0) >= 0 ? 'up' : 'down']">
+                <wd-icon
+                  :name="$jwIcon((c.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down')"
+                  size="7px"
+                  :color="(c.delta ?? 0) >= 0 ? '#52C41A' : '#FF3B30'"
+                />
+                <text
+                  >{{ (c.delta ?? 0) >= 0 ? '+' : '' }}{{ c.delta ?? 0
+                  }}{{ c.isPct ? '%' : '' }}</text
+                >
+              </view>
             </view>
           </view>
         </view>
+
+        <!-- mini-line chart：仅有数据时显示 -->
+        <view v-if="trend" class="section trend-card">
+          <view class="section-head">
+            <text class="section-title">近 7 日注册趋势</text>
+            <text class="trend-meta">合计 {{ trend.total }} 人</text>
+          </view>
+          <view class="mini-line-wrap">
+            <svg viewBox="0 0 100 32" preserveAspectRatio="none" class="mini-svg">
+              <defs>
+                <linearGradient id="ml-g" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="ml-line" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#FF7A45" />
+                  <stop offset="100%" stop-color="#FF4D2D" />
+                </linearGradient>
+              </defs>
+              <polygon :points="trend.area" fill="url(#ml-g)" />
+              <polyline
+                :points="trend.line"
+                fill="none"
+                stroke="url(#ml-line)"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <circle
+                v-for="(p, i) in trend.points"
+                :key="i"
+                :cx="p.x"
+                :cy="p.y"
+                r="0.85"
+                fill="#FF4D2D"
+              />
+            </svg>
+          </view>
+          <view class="trend-x">
+            <text v-for="(p, i) in trend.points" :key="i">{{ p.date.slice(-5) }}</text>
+          </view>
+        </view>
+
+        <!-- 待办（精简紧凑卡） -->
+        <view class="section todo-card">
+          <view class="section-head">
+            <view class="todo-head-left">
+              <wd-icon :name="$jwIcon('lightning')" size="14px" color="#FF4D2D" />
+              <text class="section-title">待办事项</text>
+            </view>
+            <view v-if="TOTAL_TODOS > 0" class="todo-total">{{ TOTAL_TODOS }} 项</view>
+            <text v-else class="todo-empty-tag">已清空</text>
+          </view>
+          <view class="todo-list">
+            <view v-for="t in TODO_LIST" :key="t.key" class="todo-row" @click="goTodo(t)">
+              <text class="todo-label">{{ t.label }}</text>
+              <view v-if="t.count > 0" class="todo-badge">{{
+                t.count > 99 ? '99+' : t.count
+              }}</view>
+              <text v-else class="todo-clear">已清空</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="12px" color="#C9CDD4" />
+            </view>
+          </view>
+        </view>
+
+        <!-- 4 大核心快捷入口（大方块） -->
+        <view class="section">
+          <view class="section-head">
+            <text class="section-title">快捷入口</text>
+          </view>
+          <view class="entries-grid">
+            <view
+              v-for="e in QUICK_ENTRIES"
+              :key="e.key"
+              class="entry-card"
+              :style="{ background: e.tintSoft }"
+              @click="goEntry(e)"
+            >
+              <view class="entry-icon" :style="{ background: e.tint }">
+                <wd-icon :name="$jwIcon(e.icon)" size="18px" color="#fff" />
+              </view>
+              <view class="entry-text">
+                <text class="entry-label">{{ e.label }}</text>
+                <text class="entry-desc">{{ e.desc }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
       </view>
+
+      <PrimaryLiquidTabBar flavor="platform" active="home" />
     </view>
-
-    <PrimaryLiquidTabBar flavor="platform" active="home" />
-  </view>
-
   </wd-config-provider>
 </template>
 

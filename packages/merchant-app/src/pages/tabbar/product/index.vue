@@ -35,7 +35,9 @@ const TABS = computed(() => [
 const STATUS_OPTIONS = computed(() =>
   TABS.value.map((item) => ({
     value: item.key,
-    payload: { label: item.key === 'all' && item.badge ? `${item.label} ${item.badge}` : item.label },
+    payload: {
+      label: item.key === 'all' && item.badge ? `${item.label} ${item.badge}` : item.label,
+    },
   })),
 )
 
@@ -249,132 +251,137 @@ onShow(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!--
+    <view class="page">
+      <!--
       固定导航优先挂载，避免商品异步列表插入大量节点后 App-vue 的事件映射发生偏移。
       底部空间由页面末尾的 primary-nav-spacer 单独预留。
     -->
-    <PrimaryLiquidTabBar flavor="merchant" active="product" :reserve-space="false" />
+      <PrimaryLiquidTabBar flavor="merchant" active="product" :reserve-space="false" />
 
-    <!-- 顶部固定区 -->
-    <view class="header" :style="{ paddingTop: heroPaddingTop }">
-      <view class="search-row">
-        <view class="search-wrap">
-          <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
-          <wd-input no-border
-            v-model="keyword"
-            class="search-input"
-            placeholder="搜索商品名 / 编号"
-            confirm-type="search"
-            @confirm="onSearch"
-           />
-          <view v-if="keyword" class="clear" @click="clearSearch">
-            <wd-icon :name="$jwIcon('close')" size="12px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-        <view class="add-btn" @click="goAdd">
-          <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff"  />
-        </view>
-      </view>
-      <wd-segmented
-        :value="status"
-        :options="STATUS_OPTIONS"
-        class="status-tabs"
-        size="small"
-        @change="onStatusChange($event.value)"
-      >
-        <template #label="{ option }">{{ option.payload?.label }}</template>
-      </wd-segmented>
-      <view class="action-row">
-        <view class="action-links">
-          <view class="link" @click="goCategory">
-            <wd-icon :name="$jwIcon('filter')" size="12px" color="var(--brand-primary)"  />
-            <text>分类管理</text>
-          </view>
-          <view class="link" @click="goAgencyList">
-            <wd-icon :name="$jwIcon('biz-plaza')" size="12px" color="var(--brand-primary)"  />
-            <text>代理商品</text>
-          </view>
-          <view class="link" @click="goPriceRule">
-            <wd-icon :name="$jwIcon('tag')" size="12px" color="var(--brand-primary)"  />
-            <text>价格规则</text>
-          </view>
-        </view>
-        <text class="link link-text" @click="toggleBatch">{{
-          batchMode ? '取消批量' : '批量操作'
-        }}</text>
-      </view>
-    </view>
-
-    <!-- 商品列表 -->
-    <view class="list">
-      <wd-card
-        v-for="p in list"
-        :key="p.id"
-        custom-class="product-card"
-        @click="goDetail(p)"
-      >
-        <view class="product-main">
-          <wd-checkbox
-            v-if="batchMode"
-            :model-value="selected.has(p.id)"
-            shape="circle"
-            @click.stop="toggle(p.id)"
-          />
-          <wd-img
-            :src="p.images[0]"
-            width="160rpx"
-            height="160rpx"
-            radius="12rpx"
-            mode="aspectFill"
-            enable-preview
-          />
-          <view class="product-info">
-            <view class="product-head">
-              <text class="product-name">{{ p.name }}</text>
-              <wd-tag :type="$jwTagType(statusOf(p).tone)" plain round>{{ statusOf(p).text }}</wd-tag>
-            </view>
-            <text class="product-sku">编号 {{ p.id.slice(-6).toUpperCase() }}</text>
-            <view class="product-price-row">
-              <text class="product-price">{{ formatPrice(p.priceRetailMin) }}</text>
-              <text class="product-stock">库存 {{ p.totalStock }}</text>
-            </view>
-            <view class="card-tags">
-              <wd-tag v-for="t in p.tags" :key="t" type="primary" plain>{{ t }}</wd-tag>
-              <text class="card-sales">销量 {{ p.sales }}</text>
+      <!-- 顶部固定区 -->
+      <view class="header" :style="{ paddingTop: heroPaddingTop }">
+        <view class="search-row">
+          <view class="search-wrap">
+            <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)" />
+            <wd-input
+              no-border
+              v-model="keyword"
+              class="search-input"
+              placeholder="搜索商品名 / 编号"
+              confirm-type="search"
+              @confirm="onSearch"
+            />
+            <view v-if="keyword" class="clear" @click="clearSearch">
+              <wd-icon :name="$jwIcon('close')" size="12px" color="var(--text-tertiary)" />
             </view>
           </view>
-        </view>
-        <template v-if="!batchMode" #footer>
-          <view class="card-actions" @click.stop>
-            <wd-button size="small" plain icon="edit" @click="editProduct(p, $event)">编辑</wd-button>
-            <wd-button size="small" plain icon="more" @click="moreActions(p, $event)">更多</wd-button>
+          <view class="add-btn" @click="goAdd">
+            <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff" />
           </view>
-        </template>
-      </wd-card>
-      <wd-status-tip v-if="!loading && list.length === 0"  image="content" :tip="['暂无商品', '点击右上角 ＋ 添加'].filter(Boolean).join(' · ')" />
-      <view v-if="hasMore && list.length > 0" class="loadmore" @click="loadMore">
-        <text>加载更多 ›</text>
+        </view>
+        <wd-segmented
+          :value="status"
+          :options="STATUS_OPTIONS"
+          class="status-tabs"
+          size="small"
+          @change="onStatusChange($event.value)"
+        >
+          <template #label="{ option }">{{ option.payload?.label }}</template>
+        </wd-segmented>
+        <view class="action-row">
+          <view class="action-links">
+            <view class="link" @click="goCategory">
+              <wd-icon :name="$jwIcon('filter')" size="12px" color="var(--brand-primary)" />
+              <text>分类管理</text>
+            </view>
+            <view class="link" @click="goAgencyList">
+              <wd-icon :name="$jwIcon('biz-plaza')" size="12px" color="var(--brand-primary)" />
+              <text>代理商品</text>
+            </view>
+            <view class="link" @click="goPriceRule">
+              <wd-icon :name="$jwIcon('tag')" size="12px" color="var(--brand-primary)" />
+              <text>价格规则</text>
+            </view>
+          </view>
+          <text class="link link-text" @click="toggleBatch">{{
+            batchMode ? '取消批量' : '批量操作'
+          }}</text>
+        </view>
       </view>
-      <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
+
+      <!-- 商品列表 -->
+      <view class="list">
+        <wd-card v-for="p in list" :key="p.id" custom-class="product-card" @click="goDetail(p)">
+          <view class="product-main">
+            <wd-checkbox
+              v-if="batchMode"
+              :model-value="selected.has(p.id)"
+              shape="circle"
+              @click.stop="toggle(p.id)"
+            />
+            <wd-img
+              :src="p.images[0]"
+              width="160rpx"
+              height="160rpx"
+              radius="12rpx"
+              mode="aspectFill"
+              enable-preview
+            />
+            <view class="product-info">
+              <view class="product-head">
+                <text class="product-name">{{ p.name }}</text>
+                <wd-tag :type="$jwTagType(statusOf(p).tone)" plain round>{{
+                  statusOf(p).text
+                }}</wd-tag>
+              </view>
+              <text class="product-sku">编号 {{ p.id.slice(-6).toUpperCase() }}</text>
+              <view class="product-price-row">
+                <text class="product-price">{{ formatPrice(p.priceRetailMin) }}</text>
+                <text class="product-stock">库存 {{ p.totalStock }}</text>
+              </view>
+              <view class="card-tags">
+                <wd-tag v-for="t in p.tags" :key="t" type="primary" plain>{{ t }}</wd-tag>
+                <text class="card-sales">销量 {{ p.sales }}</text>
+              </view>
+            </view>
+          </view>
+          <template v-if="!batchMode" #footer>
+            <view class="card-actions" @click.stop>
+              <wd-button size="small" plain icon="edit" @click="editProduct(p, $event)"
+                >编辑</wd-button
+              >
+              <wd-button size="small" plain icon="more" @click="moreActions(p, $event)"
+                >更多</wd-button
+              >
+            </view>
+          </template>
+        </wd-card>
+        <wd-status-tip
+          v-if="!loading && list.length === 0"
+          image="content"
+          :tip="['暂无商品', '点击右上角 ＋ 添加'].filter(Boolean).join(' · ')"
+        />
+        <view v-if="hasMore && list.length > 0" class="loadmore" @click="loadMore">
+          <text>加载更多 ›</text>
+        </view>
+        <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
+      </view>
+
+      <!-- 批量操作栏 -->
+      <view v-if="batchMode" class="batch-bar">
+        <view class="select-all" @click="selectAll">
+          <text class="check">{{ allSelected ? '●' : '○' }}</text>
+          <text>全选 ({{ selected.size }})</text>
+        </view>
+        <view class="batch-actions">
+          <view class="batch-btn online" @click="batchOnline">上架</view>
+          <view class="batch-btn offline" @click="batchOffline">下架</view>
+          <view class="batch-btn danger" @click="batchRemove">删除</view>
+        </view>
+      </view>
+
+      <view class="primary-nav-spacer" />
     </view>
-
-    <!-- 批量操作栏 -->
-    <view v-if="batchMode" class="batch-bar">
-      <view class="select-all" @click="selectAll">
-        <text class="check">{{ allSelected ? '●' : '○' }}</text>
-        <text>全选 ({{ selected.size }})</text>
-      </view>
-      <view class="batch-actions">
-        <view class="batch-btn online" @click="batchOnline">上架</view>
-        <view class="batch-btn offline" @click="batchOffline">下架</view>
-        <view class="batch-btn danger" @click="batchRemove">删除</view>
-      </view>
-    </view>
-
-    <view class="primary-nav-spacer" />
-  </view>
-
   </wd-config-provider>
 </template>
 

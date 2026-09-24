@@ -373,7 +373,9 @@ async function bindWechat() {
         </view>
         <view class="bind-info">
           <text class="bind-name">{{ boundPhone ? '更换手机号' : '绑定手机号' }}</text>
-          <text class="bind-sub">{{ boundPhone ? '需要原手机号 + 新手机号双验证' : '验证后即可作为登录方式' }}</text>
+          <text class="bind-sub">{{
+            boundPhone ? '需要原手机号 + 新手机号双验证' : '验证后即可作为登录方式'
+          }}</text>
         </view>
         <view class="bind-tag">{{ boundPhone ? '更换' : '绑定' }}</view>
         <Icon name="chevron-right" :size="28" color="var(--text-tertiary)" />

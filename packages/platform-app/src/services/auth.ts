@@ -35,9 +35,15 @@ export const platformAuthService = {
     return http.post<{ ok: boolean }>('/api/v1/auth/sms-code', { phone })
   },
   changePassword(payload: { oldPassword: string; newPassword: string }) {
-    return http.post<{ ok: boolean }>('/api/v1/auth/change-password', payload as unknown as Record<string, unknown>)
+    return http.post<{ ok: boolean }>(
+      '/api/v1/auth/change-password',
+      payload as unknown as Record<string, unknown>,
+    )
   },
   changePhone(payload: { oldSmsCode?: string; newPhone: string; newSmsCode: string }) {
-    return http.post<{ ok: boolean; phone: string }>('/api/v1/auth/change-phone', payload as unknown as Record<string, unknown>)
+    return http.post<{ ok: boolean; phone: string }>(
+      '/api/v1/auth/change-phone',
+      payload as unknown as Record<string, unknown>,
+    )
   },
 }

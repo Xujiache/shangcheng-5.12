@@ -81,7 +81,9 @@ export function wotIconName(name: unknown): string {
   return WOT_ICON_ALIASES[normalized] ?? normalized
 }
 
-export function wotTagType(tone: unknown): 'default' | 'primary' | 'success' | 'warning' | 'danger' {
+export function wotTagType(
+  tone: unknown,
+): 'default' | 'primary' | 'success' | 'warning' | 'danger' {
   if (tone === 'error') return 'danger'
   if (tone === 'info') return 'primary'
   if (tone === 'highlight') return 'warning'

@@ -242,291 +242,305 @@ onShow(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- 顶部 sticky 渐变条 -->
-    <view class="top-bar" :style="{ paddingTop: statusBarHeight }">
-      <view class="top-row">
-        <view class="top-title-block">
-          <text class="top-title">数据中心</text>
-          <text class="top-time">{{ todayString }} · 北京时间</text>
-        </view>
-        <view class="export-btn" @click="exportReport">
-          <wd-icon :name="$jwIcon('doc')" size="12px" color="#fff"  />
-          <text>导出</text>
-        </view>
-      </view>
-      <view class="periods">
-        <view
-          v-for="p in PERIODS"
-          :key="p.key"
-          :class="['period', period === p.key ? 'active' : '']"
-          @click="period = p.key"
-          >{{ p.label }}</view
-        >
-      </view>
-    </view>
-
-    <!-- 主内容区(自然文档流,绝不塌陷) -->
-    <view class="body">
-      <!-- 顶层错误态 -->
-      <view v-if="dashboardError && !dashboard" class="err-card">
-        <text class="err-emoji">⚠️</text>
-        <text class="err-title">加载失败</text>
-        <text class="err-msg">{{ dashboardError }}</text>
-        <view class="err-btn" @click="retryAll">点击重试</view>
-      </view>
-
-      <!-- 骨架屏 -->
-      <view v-if="dashboardLoading && !dashboard && !dashboardError" class="kpi-grid">
-        <view v-for="i in 4" :key="i" class="kpi-card skel">
-          <view class="skel-icon" />
-          <view class="skel-line w50" />
-          <view class="skel-line w70 tall" />
-          <view class="skel-line w40" />
-        </view>
-      </view>
-
-      <!-- 4 KPI 卡片(异色 + 渐变背景) -->
-      <view v-if="dashboard" class="kpi-grid">
-        <view v-for="k in KPI_CARDS" :key="k.key" class="kpi-card" :style="{ background: k.bg }">
-          <view class="kpi-head">
-            <view class="kpi-icon" :style="{ background: '#fff', color: k.tint }">
-              <wd-icon :name="$jwIcon(k.icon)" size="14px" :color="k.tint"  />
-            </view>
-            <view :class="['kpi-delta', (k.delta ?? 0) >= 0 ? 'up' : 'down']">
-              <wd-icon
-                :name="$jwIcon((k.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down')" size="7px"
-                :color="(k.delta ?? 0) >= 0 ? '#16A34A' : '#DC2626'"
-               />
-              <text>{{ (k.delta ?? 0) >= 0 ? '+' : '' }}{{ k.delta ?? 0 }}{{ k.unit }}</text>
-            </view>
+    <view class="page">
+      <!-- 顶部 sticky 渐变条 -->
+      <view class="top-bar" :style="{ paddingTop: statusBarHeight }">
+        <view class="top-row">
+          <view class="top-title-block">
+            <text class="top-title">数据中心</text>
+            <text class="top-time">{{ todayString }} · 北京时间</text>
           </view>
-          <text class="kpi-label">{{ k.label }}</text>
-          <view class="kpi-value-row">
-            <text v-if="k.money" class="kpi-cur">¥</text>
-            <text class="kpi-value" :style="{ color: k.tint }">{{ formatWan(k.value) }}</text>
+          <view class="export-btn" @click="exportReport">
+            <wd-icon :name="$jwIcon('doc')" size="12px" color="#fff" />
+            <text>导出</text>
           </view>
         </view>
-      </view>
-
-      <!-- 销售趋势 -->
-      <view class="chart-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">销售趋势</text>
-          </view>
-          <text class="meta">{{ PERIOD_LABEL[period] }}</text>
-        </view>
-        <view v-if="statsError && !stats" class="inline-err">
-          <text class="inline-err-msg">{{ statsError }}</text>
-          <view class="inline-err-btn" @click="loadStats">重试</view>
-        </view>
-        <view v-else-if="statsLoading && !stats" class="chart-skel" />
-        <view v-else-if="stats && stats.salesTrend.length > 0" class="trend-wrap">
-          <!-- View-based 柱状图(每点一根细条)。原 <svg> 在 uniapp App / mp-weixin 端
-               会让整页(连同 TabBar)空白塌陷,只在 H5 上能正常显示;换成 view 后全平台稳定。 -->
-          <view class="bars bars-sales">
-            <view
-              v-for="(p, i) in salesTrendPoints.dots"
-              :key="i"
-              class="bar bar-sales"
-              :style="{ height: ((44 - p.y) / 40 * 100).toFixed(1) + '%' }"
-            />
-          </view>
-        </view>
-        <view v-else class="empty-chart">
-          <text class="empty-emoji">📊</text>
-          <text class="empty-text">{{ PERIOD_LABEL[period] }} 暂无数据</text>
-        </view>
-      </view>
-
-      <!-- TOP 商家 -->
-      <view v-if="stats && stats.topMerchants && stats.topMerchants.length > 0" class="chart-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">TOP {{ Math.min(stats.topMerchants.length, 10) }} 商家</text>
-          </view>
-          <text class="meta">{{ PERIOD_LABEL[period] }} GMV</text>
-        </view>
-        <view class="list">
+        <view class="periods">
           <view
-            v-for="(m, i) in stats.topMerchants.slice(0, 10)"
-            :key="m.merchantId"
-            class="list-row"
+            v-for="p in PERIODS"
+            :key="p.key"
+            :class="['period', period === p.key ? 'active' : '']"
+            @click="period = p.key"
+            >{{ p.label }}</view
           >
-            <view
-              :class="['rank-mini', i === 0 && 'rank-1', i === 1 && 'rank-2', i === 2 && 'rank-3']"
-              >{{ i + 1 }}</view
-            >
-            <text class="list-name">{{ m.name }}</text>
-            <view class="list-bar-wrap">
+        </view>
+      </view>
+
+      <!-- 主内容区(自然文档流,绝不塌陷) -->
+      <view class="body">
+        <!-- 顶层错误态 -->
+        <view v-if="dashboardError && !dashboard" class="err-card">
+          <text class="err-emoji">⚠️</text>
+          <text class="err-title">加载失败</text>
+          <text class="err-msg">{{ dashboardError }}</text>
+          <view class="err-btn" @click="retryAll">点击重试</view>
+        </view>
+
+        <!-- 骨架屏 -->
+        <view v-if="dashboardLoading && !dashboard && !dashboardError" class="kpi-grid">
+          <view v-for="i in 4" :key="i" class="kpi-card skel">
+            <view class="skel-icon" />
+            <view class="skel-line w50" />
+            <view class="skel-line w70 tall" />
+            <view class="skel-line w40" />
+          </view>
+        </view>
+
+        <!-- 4 KPI 卡片(异色 + 渐变背景) -->
+        <view v-if="dashboard" class="kpi-grid">
+          <view v-for="k in KPI_CARDS" :key="k.key" class="kpi-card" :style="{ background: k.bg }">
+            <view class="kpi-head">
+              <view class="kpi-icon" :style="{ background: '#fff', color: k.tint }">
+                <wd-icon :name="$jwIcon(k.icon)" size="14px" :color="k.tint" />
+              </view>
+              <view :class="['kpi-delta', (k.delta ?? 0) >= 0 ? 'up' : 'down']">
+                <wd-icon
+                  :name="$jwIcon((k.delta ?? 0) >= 0 ? 'arrow-up' : 'arrow-down')"
+                  size="7px"
+                  :color="(k.delta ?? 0) >= 0 ? '#16A34A' : '#DC2626'"
+                />
+                <text>{{ (k.delta ?? 0) >= 0 ? '+' : '' }}{{ k.delta ?? 0 }}{{ k.unit }}</text>
+              </view>
+            </view>
+            <text class="kpi-label">{{ k.label }}</text>
+            <view class="kpi-value-row">
+              <text v-if="k.money" class="kpi-cur">¥</text>
+              <text class="kpi-value" :style="{ color: k.tint }">{{ formatWan(k.value) }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 销售趋势 -->
+        <view class="chart-card">
+          <view class="card-head">
+            <view class="card-title-row">
+              <view class="title-dot" />
+              <text class="title">销售趋势</text>
+            </view>
+            <text class="meta">{{ PERIOD_LABEL[period] }}</text>
+          </view>
+          <view v-if="statsError && !stats" class="inline-err">
+            <text class="inline-err-msg">{{ statsError }}</text>
+            <view class="inline-err-btn" @click="loadStats">重试</view>
+          </view>
+          <view v-else-if="statsLoading && !stats" class="chart-skel" />
+          <view v-else-if="stats && stats.salesTrend.length > 0" class="trend-wrap">
+            <!-- View-based 柱状图(每点一根细条)。原 <svg> 在 uniapp App / mp-weixin 端
+               会让整页(连同 TabBar)空白塌陷,只在 H5 上能正常显示;换成 view 后全平台稳定。 -->
+            <view class="bars bars-sales">
               <view
-                class="list-bar"
-                :style="{ width: ((m.sales / maxMerchantSales) * 100).toFixed(0) + '%' }"
+                v-for="(p, i) in salesTrendPoints.dots"
+                :key="i"
+                class="bar bar-sales"
+                :style="{ height: (((44 - p.y) / 40) * 100).toFixed(1) + '%' }"
               />
             </view>
-            <text class="list-val">¥{{ formatWan(m.sales) }}</text>
+          </view>
+          <view v-else class="empty-chart">
+            <text class="empty-emoji">📊</text>
+            <text class="empty-text">{{ PERIOD_LABEL[period] }} 暂无数据</text>
           </view>
         </view>
-      </view>
 
-      <!-- 用户注册趋势 -->
-      <view v-if="dashboard" class="chart-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">用户注册趋势</text>
+        <!-- TOP 商家 -->
+        <view
+          v-if="stats && stats.topMerchants && stats.topMerchants.length > 0"
+          class="chart-card"
+        >
+          <view class="card-head">
+            <view class="card-title-row">
+              <view class="title-dot" />
+              <text class="title">TOP {{ Math.min(stats.topMerchants.length, 10) }} 商家</text>
+            </view>
+            <text class="meta">{{ PERIOD_LABEL[period] }} GMV</text>
           </view>
-          <text class="meta">近 14 天</text>
-        </view>
-        <view v-if="trendPoints.dots.length > 0" class="trend-wrap">
-          <!-- 见上方注释:原 <svg> 在 App / 小程序端会塌陷整页,换成 view 柱状图 -->
-          <view class="bars bars-reg">
+          <view class="list">
             <view
-              v-for="(p, i) in trendPoints.dots"
-              :key="i"
-              class="bar bar-reg"
-              :style="{ height: ((44 - p.y) / 40 * 100).toFixed(1) + '%' }"
-            />
-          </view>
-        </view>
-        <view v-else class="empty-chart">
-          <text class="empty-emoji">👥</text>
-          <text class="empty-text">暂无注册数据</text>
-        </view>
-      </view>
-
-      <!-- 商户类型分布 -->
-      <view v-if="dashboard" class="chart-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">商户类型构成</text>
-          </view>
-          <text class="meta">{{ merchantTotal }} 家</text>
-        </view>
-        <view class="pie-row">
-          <view class="pie-item factory">
-            <view
-              class="pie-bar"
-              :style="{
-                width:
-                  ((dashboard.merchantTypeDistribution.factory / merchantTotal) * 100).toFixed(0) +
-                  '%',
-              }"
-            />
-            <view class="p-dot factory-dot" />
-            <text class="p-label">厂家</text>
-            <text class="p-pct"
-              >{{
-                Math.round((dashboard.merchantTypeDistribution.factory / merchantTotal) * 100)
-              }}%</text
+              v-for="(m, i) in stats.topMerchants.slice(0, 10)"
+              :key="m.merchantId"
+              class="list-row"
             >
-            <text class="p-num">{{ dashboard.merchantTypeDistribution.factory }}</text>
-          </view>
-          <view class="pie-item store">
-            <view
-              class="pie-bar"
-              :style="{
-                width:
-                  ((dashboard.merchantTypeDistribution.store / merchantTotal) * 100).toFixed(0) +
-                  '%',
-              }"
-            />
-            <view class="p-dot store-dot" />
-            <text class="p-label">门店</text>
-            <text class="p-pct"
-              >{{
-                Math.round((dashboard.merchantTypeDistribution.store / merchantTotal) * 100)
-              }}%</text
-            >
-            <text class="p-num">{{ dashboard.merchantTypeDistribution.store }}</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 类目销售排行 -->
-      <view
-        v-if="dashboard && dashboard.categorySales && dashboard.categorySales.length > 0"
-        class="chart-card"
-      >
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">类目销售排行</text>
-          </view>
-          <text class="meta">TOP {{ dashboard.categorySales.length }}</text>
-        </view>
-        <view class="list">
-          <view v-for="(c, i) in dashboard.categorySales" :key="c.category" class="list-row">
-            <view
-              :class="['rank-mini', i === 0 && 'rank-1', i === 1 && 'rank-2', i === 2 && 'rank-3']"
-              >{{ i + 1 }}</view
-            >
-            <text class="list-name">{{ c.category }}</text>
-            <view class="list-bar-wrap">
               <view
-                class="list-bar orange"
-                :style="{ width: ((c.value / maxCategory) * 100).toFixed(0) + '%' }"
+                :class="[
+                  'rank-mini',
+                  i === 0 && 'rank-1',
+                  i === 1 && 'rank-2',
+                  i === 2 && 'rank-3',
+                ]"
+                >{{ i + 1 }}</view
+              >
+              <text class="list-name">{{ m.name }}</text>
+              <view class="list-bar-wrap">
+                <view
+                  class="list-bar"
+                  :style="{ width: ((m.sales / maxMerchantSales) * 100).toFixed(0) + '%' }"
+                />
+              </view>
+              <text class="list-val">¥{{ formatWan(m.sales) }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 用户注册趋势 -->
+        <view v-if="dashboard" class="chart-card">
+          <view class="card-head">
+            <view class="card-title-row">
+              <view class="title-dot" />
+              <text class="title">用户注册趋势</text>
+            </view>
+            <text class="meta">近 14 天</text>
+          </view>
+          <view v-if="trendPoints.dots.length > 0" class="trend-wrap">
+            <!-- 见上方注释:原 <svg> 在 App / 小程序端会塌陷整页,换成 view 柱状图 -->
+            <view class="bars bars-reg">
+              <view
+                v-for="(p, i) in trendPoints.dots"
+                :key="i"
+                class="bar bar-reg"
+                :style="{ height: (((44 - p.y) / 40) * 100).toFixed(1) + '%' }"
               />
             </view>
-            <text class="list-val">¥{{ formatWan(c.value) }}</text>
+          </view>
+          <view v-else class="empty-chart">
+            <text class="empty-emoji">👥</text>
+            <text class="empty-text">暂无注册数据</text>
+          </view>
+        </view>
+
+        <!-- 商户类型分布 -->
+        <view v-if="dashboard" class="chart-card">
+          <view class="card-head">
+            <view class="card-title-row">
+              <view class="title-dot" />
+              <text class="title">商户类型构成</text>
+            </view>
+            <text class="meta">{{ merchantTotal }} 家</text>
+          </view>
+          <view class="pie-row">
+            <view class="pie-item factory">
+              <view
+                class="pie-bar"
+                :style="{
+                  width:
+                    ((dashboard.merchantTypeDistribution.factory / merchantTotal) * 100).toFixed(
+                      0,
+                    ) + '%',
+                }"
+              />
+              <view class="p-dot factory-dot" />
+              <text class="p-label">厂家</text>
+              <text class="p-pct"
+                >{{
+                  Math.round((dashboard.merchantTypeDistribution.factory / merchantTotal) * 100)
+                }}%</text
+              >
+              <text class="p-num">{{ dashboard.merchantTypeDistribution.factory }}</text>
+            </view>
+            <view class="pie-item store">
+              <view
+                class="pie-bar"
+                :style="{
+                  width:
+                    ((dashboard.merchantTypeDistribution.store / merchantTotal) * 100).toFixed(0) +
+                    '%',
+                }"
+              />
+              <view class="p-dot store-dot" />
+              <text class="p-label">门店</text>
+              <text class="p-pct"
+                >{{
+                  Math.round((dashboard.merchantTypeDistribution.store / merchantTotal) * 100)
+                }}%</text
+              >
+              <text class="p-num">{{ dashboard.merchantTypeDistribution.store }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 类目销售排行 -->
+        <view
+          v-if="dashboard && dashboard.categorySales && dashboard.categorySales.length > 0"
+          class="chart-card"
+        >
+          <view class="card-head">
+            <view class="card-title-row">
+              <view class="title-dot" />
+              <text class="title">类目销售排行</text>
+            </view>
+            <text class="meta">TOP {{ dashboard.categorySales.length }}</text>
+          </view>
+          <view class="list">
+            <view v-for="(c, i) in dashboard.categorySales" :key="c.category" class="list-row">
+              <view
+                :class="[
+                  'rank-mini',
+                  i === 0 && 'rank-1',
+                  i === 1 && 'rank-2',
+                  i === 2 && 'rank-3',
+                ]"
+                >{{ i + 1 }}</view
+              >
+              <text class="list-name">{{ c.category }}</text>
+              <view class="list-bar-wrap">
+                <view
+                  class="list-bar orange"
+                  :style="{ width: ((c.value / maxCategory) * 100).toFixed(0) + '%' }"
+                />
+              </view>
+              <text class="list-val">¥{{ formatWan(c.value) }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 会员套餐分布 -->
+        <view v-if="dashboard" class="chart-card">
+          <view class="card-head">
+            <view class="card-title-row">
+              <view class="title-dot" />
+              <text class="title">会员订阅分布</text>
+            </view>
+            <text class="meta">{{ memberTotal }} 家订阅</text>
+          </view>
+          <view class="member-dist">
+            <view class="md-item">
+              <view class="md-circle yearly">
+                <text class="md-num">{{ dashboard.memberPlanDistribution.yearly }}</text>
+                <text class="md-pct"
+                  >{{
+                    Math.round((dashboard.memberPlanDistribution.yearly / memberTotal) * 100)
+                  }}%</text
+                >
+              </view>
+              <text class="md-label">VIP 年费</text>
+            </view>
+            <view class="md-item">
+              <view class="md-circle monthly">
+                <text class="md-num">{{ dashboard.memberPlanDistribution.monthly }}</text>
+                <text class="md-pct"
+                  >{{
+                    Math.round((dashboard.memberPlanDistribution.monthly / memberTotal) * 100)
+                  }}%</text
+                >
+              </view>
+              <text class="md-label">月费</text>
+            </view>
+            <view class="md-item">
+              <view class="md-circle trial">
+                <text class="md-num">{{ dashboard.memberPlanDistribution.trial }}</text>
+                <text class="md-pct"
+                  >{{
+                    Math.round((dashboard.memberPlanDistribution.trial / memberTotal) * 100)
+                  }}%</text
+                >
+              </view>
+              <text class="md-label">试用</text>
+            </view>
           </view>
         </view>
       </view>
 
-      <!-- 会员套餐分布 -->
-      <view v-if="dashboard" class="chart-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <view class="title-dot" />
-            <text class="title">会员订阅分布</text>
-          </view>
-          <text class="meta">{{ memberTotal }} 家订阅</text>
-        </view>
-        <view class="member-dist">
-          <view class="md-item">
-            <view class="md-circle yearly">
-              <text class="md-num">{{ dashboard.memberPlanDistribution.yearly }}</text>
-              <text class="md-pct"
-                >{{
-                  Math.round((dashboard.memberPlanDistribution.yearly / memberTotal) * 100)
-                }}%</text
-              >
-            </view>
-            <text class="md-label">VIP 年费</text>
-          </view>
-          <view class="md-item">
-            <view class="md-circle monthly">
-              <text class="md-num">{{ dashboard.memberPlanDistribution.monthly }}</text>
-              <text class="md-pct"
-                >{{
-                  Math.round((dashboard.memberPlanDistribution.monthly / memberTotal) * 100)
-                }}%</text
-              >
-            </view>
-            <text class="md-label">月费</text>
-          </view>
-          <view class="md-item">
-            <view class="md-circle trial">
-              <text class="md-num">{{ dashboard.memberPlanDistribution.trial }}</text>
-              <text class="md-pct"
-                >{{
-                  Math.round((dashboard.memberPlanDistribution.trial / memberTotal) * 100)
-                }}%</text
-              >
-            </view>
-            <text class="md-label">试用</text>
-          </view>
-        </view>
-      </view>
+      <PrimaryLiquidTabBar flavor="platform" active="stats" />
     </view>
-
-    <PrimaryLiquidTabBar flavor="platform" active="stats" />
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -777,10 +791,10 @@ onShow(() => {
   transition: height 0.3s ease;
 }
 .bar-sales {
-  background: linear-gradient(180deg, #FF4D2D, #F59E0B);
+  background: linear-gradient(180deg, #ff4d2d, #f59e0b);
 }
 .bar-reg {
-  background: linear-gradient(180deg, #A855F7, #EC4899);
+  background: linear-gradient(180deg, #a855f7, #ec4899);
 }
 
 /* === 卡内错误 === */

@@ -140,7 +140,11 @@ async function save() {
   // 防御：banners 必须全部是 http(s) URL，避免本地 tempFilePaths 被写库
   const bad = config.banners.find((b) => !/^https?:\/\//i.test(b.image))
   if (bad) {
-    appFeedback.showToast({ title: '存在未上传完成的 Banner，请重新选择', icon: 'none', duration: 2000 })
+    appFeedback.showToast({
+      title: '存在未上传完成的 Banner，请重新选择',
+      icon: 'none',
+      duration: 2000,
+    })
     return
   }
   try {
@@ -174,152 +178,188 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="店铺装修" right-text="保存" @click-right="save"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="店铺装修"
+        right-text="保存"
+        @click-right="save"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 顶部 mini 预览 -->
-    <view class="preview-wrap">
-      <view class="preview-phone" :style="{ '--theme': config.themeColor, fontFamily }">
-        <view class="phone-status">
-          <text>9:41</text>
-          <text>5G</text>
-        </view>
-        <view
-          class="phone-header"
-          :style="{
-            background: `linear-gradient(135deg, ${config.themeColor}, ${config.themeColor}AA)`,
-          }"
-        >
-          <view class="ph-name">经纬科技 · 旗舰店</view>
-          <view class="ph-search">搜索商品</view>
-        </view>
-        <swiper
-          v-if="previewBanners.length > 0"
-          class="phone-banner"
-          :autoplay="true"
-          :indicator-dots="true"
-          :indicator-color="'rgba(255,255,255,0.4)'"
-          :indicator-active-color="config.themeColor"
-          :interval="2500"
-          :duration="500"
-          :circular="true"
-        >
-          <swiper-item v-for="(b, i) in previewBanners" :key="i">
-            <image :src="b.image" mode="aspectFill" class="banner-img" />
-          </swiper-item>
-        </swiper>
-        <view v-else class="phone-banner phone-banner-empty">尚未添加 Banner</view>
-        <view class="phone-tabs">
-          <view class="ph-tab active" :style="{ color: config.themeColor }">推荐</view>
-          <view class="ph-tab">新品</view>
-          <view class="ph-tab">热销</view>
-          <view class="ph-tab">活动</view>
-        </view>
-        <view :class="['phone-grid', `layout-${config.productLayout}`]">
-          <view v-for="(p, i) in previewProducts" :key="i" class="ph-prod">
-            <image :src="p.image" class="ph-prod-img" mode="aspectFill" />
-            <view class="ph-prod-info">
-              <text class="ph-prod-name">{{ p.name }}</text>
-              <text class="ph-prod-price" :style="{ color: config.themeColor }"
-                >¥{{ p.price }}</text
-              >
+      <!-- 顶部 mini 预览 -->
+      <view class="preview-wrap">
+        <view class="preview-phone" :style="{ '--theme': config.themeColor, fontFamily }">
+          <view class="phone-status">
+            <text>9:41</text>
+            <text>5G</text>
+          </view>
+          <view
+            class="phone-header"
+            :style="{
+              background: `linear-gradient(135deg, ${config.themeColor}, ${config.themeColor}AA)`,
+            }"
+          >
+            <view class="ph-name">经纬科技 · 旗舰店</view>
+            <view class="ph-search">搜索商品</view>
+          </view>
+          <swiper
+            v-if="previewBanners.length > 0"
+            class="phone-banner"
+            :autoplay="true"
+            :indicator-dots="true"
+            :indicator-color="'rgba(255,255,255,0.4)'"
+            :indicator-active-color="config.themeColor"
+            :interval="2500"
+            :duration="500"
+            :circular="true"
+          >
+            <swiper-item v-for="(b, i) in previewBanners" :key="i">
+              <image :src="b.image" mode="aspectFill" class="banner-img" />
+            </swiper-item>
+          </swiper>
+          <view v-else class="phone-banner phone-banner-empty">尚未添加 Banner</view>
+          <view class="phone-tabs">
+            <view class="ph-tab active" :style="{ color: config.themeColor }">推荐</view>
+            <view class="ph-tab">新品</view>
+            <view class="ph-tab">热销</view>
+            <view class="ph-tab">活动</view>
+          </view>
+          <view :class="['phone-grid', `layout-${config.productLayout}`]">
+            <view v-for="(p, i) in previewProducts" :key="i" class="ph-prod">
+              <image :src="p.image" class="ph-prod-img" mode="aspectFill" />
+              <view class="ph-prod-info">
+                <text class="ph-prod-name">{{ p.name }}</text>
+                <text class="ph-prod-price" :style="{ color: config.themeColor }"
+                  >¥{{ p.price }}</text
+                >
+              </view>
+            </view>
+            <view v-if="previewProducts.length === 0" class="phone-grid-empty">
+              发布商品后预览将自动加载
             </view>
           </view>
-          <view v-if="previewProducts.length === 0" class="phone-grid-empty">
-            发布商品后预览将自动加载
-          </view>
         </view>
+        <view class="preview-cta" @click="preview">在客户端实时预览 ›</view>
       </view>
-      <view class="preview-cta" @click="preview">在客户端实时预览 ›</view>
-    </view>
 
-    <view class="body">
-      <!-- 主题色 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "主题色" }}</text><text class="jw-section-sub">{{ config.themeColor }}</text></view></view></template>
-        <view class="palette">
-          <view
-            v-for="c in COLOR_PALETTE"
-            :key="c.value"
-            :class="['palette-item', { active: config.themeColor === c.value }]"
-            :style="{ background: c.value }"
-            @click="pickColor(c.value)"
+      <view class="body">
+        <!-- 主题色 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '主题色' }}</text
+                ><text class="jw-section-sub">{{ config.themeColor }}</text></view
+              ></view
+            ></template
           >
-            <text v-if="config.themeColor === c.value" class="tick">✓</text>
-          </view>
-        </view>
-      </wd-card>
-
-      <!-- 字体 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "字体风格" }}</text></view></view></template>
-        <view class="font-grid">
-          <view
-            v-for="f in FONTS"
-            :key="f.value"
-            :class="['font-card', { active: config.fontStyle === f.value }]"
-            @click="pickFont(f.value)"
-          >
-            <text :class="['font-sample', `font-${f.value}`]">{{ f.sample }}</text>
-            <text class="font-label">{{ f.label }}</text>
-            <text class="font-desc">{{ f.desc }}</text>
-          </view>
-        </view>
-      </wd-card>
-
-      <!-- Banner -->
-      <wd-card
-       type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ `首页 Banner · ${config.banners.length} / 5` }}</text><text class="jw-section-sub">{{ uploading ? '上传中…' : '支持轮播' }}</text></view></view></template>
-        <view class="banner-grid">
-          <view v-for="(b, i) in config.banners" :key="i" class="banner-cell">
-            <image :src="b.image" class="banner-cell-img" mode="aspectFill" />
-            <view class="banner-del" @click="removeBanner(i)">✕</view>
-            <view v-if="i === 0" class="banner-main">首张</view>
-          </view>
-          <wd-upload
-            v-if="config.banners.length < 5"
-            :file-list="[]"
-            :limit="1"
-            :disabled="uploading"
-            :before-choose="(option: any) => delegateWotUploadChoose(option, addBanner)"
-          >
-          <view :class="['banner-add', uploading ? 'is-uploading' : '']">
-            <text class="add-icon">{{ uploading ? '⌛' : '＋' }}</text>
-            <text class="add-text">{{ uploading ? '上传中…' : '上传 Banner' }}</text>
-            <text class="add-tip">建议 750×360</text>
-          </view>
-          </wd-upload>
-        </view>
-      </wd-card>
-
-      <!-- 展示风格 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "商品展示风格" }}</text></view></view></template>
-        <view class="layout-grid">
-          <view
-            v-for="l in LAYOUTS"
-            :key="l.value"
-            :class="['layout-card', { active: config.productLayout === l.value }]"
-            @click="pickLayout(l.value)"
-          >
-            <view :class="['layout-mock', `mock-${l.value}`]">
-              <view
-                class="mock-block"
-                v-for="i in l.value === 'singleLarge' ? 2 : 4"
-                :key="i"
-              ></view>
+          <view class="palette">
+            <view
+              v-for="c in COLOR_PALETTE"
+              :key="c.value"
+              :class="['palette-item', { active: config.themeColor === c.value }]"
+              :style="{ background: c.value }"
+              @click="pickColor(c.value)"
+            >
+              <text v-if="config.themeColor === c.value" class="tick">✓</text>
             </view>
-            <text class="layout-label">{{ l.label }}</text>
-            <text class="layout-desc">{{ l.desc }}</text>
           </view>
-        </view>
-      </wd-card>
+        </wd-card>
 
-      <view class="safe-bottom" />
+        <!-- 字体 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '字体风格' }}</text></view
+              ></view
+            ></template
+          >
+          <view class="font-grid">
+            <view
+              v-for="f in FONTS"
+              :key="f.value"
+              :class="['font-card', { active: config.fontStyle === f.value }]"
+              @click="pickFont(f.value)"
+            >
+              <text :class="['font-sample', `font-${f.value}`]">{{ f.sample }}</text>
+              <text class="font-label">{{ f.label }}</text>
+              <text class="font-desc">{{ f.desc }}</text>
+            </view>
+          </view>
+        </wd-card>
+
+        <!-- Banner -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{
+                  `首页 Banner · ${config.banners.length} / 5`
+                }}</text
+                ><text class="jw-section-sub">{{ uploading ? '上传中…' : '支持轮播' }}</text></view
+              ></view
+            ></template
+          >
+          <view class="banner-grid">
+            <view v-for="(b, i) in config.banners" :key="i" class="banner-cell">
+              <image :src="b.image" class="banner-cell-img" mode="aspectFill" />
+              <view class="banner-del" @click="removeBanner(i)">✕</view>
+              <view v-if="i === 0" class="banner-main">首张</view>
+            </view>
+            <wd-upload
+              v-if="config.banners.length < 5"
+              :file-list="[]"
+              :limit="1"
+              :disabled="uploading"
+              :before-choose="(option: any) => delegateWotUploadChoose(option, addBanner)"
+            >
+              <view :class="['banner-add', uploading ? 'is-uploading' : '']">
+                <text class="add-icon">{{ uploading ? '⌛' : '＋' }}</text>
+                <text class="add-text">{{ uploading ? '上传中…' : '上传 Banner' }}</text>
+                <text class="add-tip">建议 750×360</text>
+              </view>
+            </wd-upload>
+          </view>
+        </wd-card>
+
+        <!-- 展示风格 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '商品展示风格' }}</text></view
+              ></view
+            ></template
+          >
+          <view class="layout-grid">
+            <view
+              v-for="l in LAYOUTS"
+              :key="l.value"
+              :class="['layout-card', { active: config.productLayout === l.value }]"
+              @click="pickLayout(l.value)"
+            >
+              <view :class="['layout-mock', `mock-${l.value}`]">
+                <view
+                  class="mock-block"
+                  v-for="i in l.value === 'singleLarge' ? 2 : 4"
+                  :key="i"
+                ></view>
+              </view>
+              <text class="layout-label">{{ l.label }}</text>
+              <text class="layout-desc">{{ l.desc }}</text>
+            </view>
+          </view>
+        </wd-card>
+
+        <view class="safe-bottom" />
+      </view>
     </view>
-  </view>
-
   </wd-config-provider>
 </template>
 

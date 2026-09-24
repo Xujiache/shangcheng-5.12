@@ -142,133 +142,155 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="工单管理" @click-right="load"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
-    </wd-navbar>
-
-    <!-- 状态 Tab -->
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="switchTab(t.key)"
+    <view class="page">
+      <wd-navbar
+        title="工单管理"
+        @click-right="load"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
       >
-        <text class="tab-label">{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
+        <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <view class="section-head">
-        <text class="section-title">{{ TABS.find((t) => t.key === tab)?.label }}工单</text>
-        <text class="section-count">共 {{ total }} 条</text>
-      </view>
-
-      <view v-for="t in filtered" :key="t.id" class="card" @click="openHandle(t)">
-        <view class="card-head">
-          <view :class="['priority-tag', 'p-' + t.priority]">{{ priorityLabel(t.priority) }}</view>
-          <text class="title">{{ t.title }}</text>
-          <view :class="['status-tag', 's-' + t.status]">{{ statusLabel(t.status) }}</view>
-        </view>
-
-        <text class="content">{{ t.content || '(无正文)' }}</text>
-
-        <view class="meta-row">
-          <view class="meta-chip">
-            <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ t.fromUserName }}</text>
-          </view>
-          <view class="meta-chip">
-            <wd-icon :name="$jwIcon('clock')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ formatDateTime(t.createdAt) }}</text>
-          </view>
-        </view>
-
-        <view v-if="t.reply" class="reply-block">
-          <text class="reply-label">回复</text>
-          <text class="reply-text">{{ t.reply }}</text>
+      <!-- 状态 Tab -->
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="switchTab(t.key)"
+        >
+          <text class="tab-label">{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
         </view>
       </view>
 
-      <wd-status-tip
-        v-if="!loading && filtered.length === 0"
-       image="content" :tip="[`暂无${TABS.find((t) => t.key === tab)?.label}工单`, '新工单由用户端 / 商家端提交后会出现在这里'].filter(Boolean).join(' · ')" />
-      <view style="height: 80rpx" />
-    </scroll-view>
+      <scroll-view scroll-y class="scroll">
+        <view class="section-head">
+          <text class="section-title">{{ TABS.find((t) => t.key === tab)?.label }}工单</text>
+          <text class="section-count">共 {{ total }} 条</text>
+        </view>
 
-    <!-- 处理 Sheet -->
-    <wd-popup
-      :model-value="handleOpen && !!current"
-      position="bottom"
-      custom-class="sheet"
-      safe-area-inset-bottom
-      root-portal
-      @close="closeHandle"
-    >
-      <view v-if="current" class="sheet-content">
-        <view class="sheet-head">
-          <text class="sheet-title">处理工单</text>
-          <view class="sheet-close" @click="closeHandle">
-            <wd-icon :name="$jwIcon('close')" size="16px" color="var(--text-tertiary)"  />
+        <view v-for="t in filtered" :key="t.id" class="card" @click="openHandle(t)">
+          <view class="card-head">
+            <view :class="['priority-tag', 'p-' + t.priority]">{{
+              priorityLabel(t.priority)
+            }}</view>
+            <text class="title">{{ t.title }}</text>
+            <view :class="['status-tag', 's-' + t.status]">{{ statusLabel(t.status) }}</view>
+          </view>
+
+          <text class="content">{{ t.content || '(无正文)' }}</text>
+
+          <view class="meta-row">
+            <view class="meta-chip">
+              <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ t.fromUserName }}</text>
+            </view>
+            <view class="meta-chip">
+              <wd-icon :name="$jwIcon('clock')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ formatDateTime(t.createdAt) }}</text>
+            </view>
+          </view>
+
+          <view v-if="t.reply" class="reply-block">
+            <text class="reply-label">回复</text>
+            <text class="reply-text">{{ t.reply }}</text>
           </view>
         </view>
 
-        <scroll-view scroll-y class="sheet-body">
-          <view class="info-card">
-            <text class="info-title">{{ current.title }}</text>
-            <text class="info-meta"
-              >{{ current.fromUserName }} · {{ formatDateTime(current.createdAt) }}</text
+        <wd-status-tip
+          v-if="!loading && filtered.length === 0"
+          image="content"
+          :tip="
+            [
+              `暂无${TABS.find((t) => t.key === tab)?.label}工单`,
+              '新工单由用户端 / 商家端提交后会出现在这里',
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          "
+        />
+        <view style="height: 80rpx" />
+      </scroll-view>
+
+      <!-- 处理 Sheet -->
+      <wd-popup
+        :model-value="handleOpen && !!current"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="closeHandle"
+      >
+        <view v-if="current" class="sheet-content">
+          <view class="sheet-head">
+            <text class="sheet-title">处理工单</text>
+            <view class="sheet-close" @click="closeHandle">
+              <wd-icon :name="$jwIcon('close')" size="16px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+
+          <scroll-view scroll-y class="sheet-body">
+            <view class="info-card">
+              <text class="info-title">{{ current.title }}</text>
+              <text class="info-meta"
+                >{{ current.fromUserName }} · {{ formatDateTime(current.createdAt) }}</text
+              >
+              <text class="info-content">{{ current.content || '(无正文)' }}</text>
+            </view>
+
+            <view class="field">
+              <text class="field-label">回复内容</text>
+              <wd-textarea
+                no-border
+                v-model="replyText"
+                class="field-textarea"
+                placeholder="请输入回复内容(关闭工单时必填)"
+                maxlength="500"
+                auto-height
+                :disabled="handling"
+              />
+            </view>
+
+            <view class="field">
+              <text class="field-label">目标状态</text>
+              <wd-segmented
+                :value="targetStatus"
+                :options="[
+                  { value: 'open', payload: { label: '待处理' } },
+                  { value: 'handling', payload: { label: '处理中' } },
+                  { value: 'closed', payload: { label: '已关闭' } },
+                ]"
+                size="large"
+                @change="setTargetStatus(String($event.value) as TicketStatus)"
+              >
+                <template #label="{ option }">{{ option.payload?.label }}</template>
+              </wd-segmented>
+            </view>
+          </scroll-view>
+
+          <view class="sheet-foot">
+            <wd-button block plain size="large" :disabled="handling" @click="closeHandle"
+              >取消</wd-button
             >
-            <text class="info-content">{{ current.content || '(无正文)' }}</text>
-          </view>
-
-          <view class="field">
-            <text class="field-label">回复内容</text>
-            <wd-textarea no-border
-              v-model="replyText"
-              class="field-textarea"
-              placeholder="请输入回复内容(关闭工单时必填)"
-              maxlength="500"
-              auto-height
-              :disabled="handling"
-             />
-          </view>
-
-          <view class="field">
-            <text class="field-label">目标状态</text>
-            <wd-segmented
-              :value="targetStatus"
-              :options="[
-                { value: 'open', payload: { label: '待处理' } },
-                { value: 'handling', payload: { label: '处理中' } },
-                { value: 'closed', payload: { label: '已关闭' } },
-              ]"
+            <wd-button
+              block
+              type="primary"
               size="large"
-              @change="setTargetStatus(String($event.value) as TicketStatus)"
+              :loading="handling"
+              @click="!handling && submitHandle()"
             >
-              <template #label="{ option }">{{ option.payload?.label }}</template>
-            </wd-segmented>
+              {{ handling ? '提交中…' : '提交处理' }}
+            </wd-button>
           </view>
-        </scroll-view>
-
-        <view class="sheet-foot">
-          <wd-button block plain size="large" :disabled="handling" @click="closeHandle">取消</wd-button>
-          <wd-button
-            block
-            type="primary"
-            size="large"
-            :loading="handling"
-            @click="!handling && submitHandle()"
-          >
-            {{ handling ? '提交中…' : '提交处理' }}
-          </wd-button>
         </view>
-      </view>
-    </wd-popup>
-  </view>
-
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 

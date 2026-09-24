@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "72700fdecfb7459b181e1c0409b7ea77418f1977cf632a573f77e8232f9f2aa2",
+  "mode": "build",
+  "startedAt": "2026-09-08T20:07:31.973Z",
+  "status": "source-changed",
+  "steps": [
+    {
+      "command": ["pnpm.cmd", "build:shared"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 6972,
+      "artifact": ".quality/build/0.log",
+      "sha256": "82a3f610c31eab1e30c617cc1c3f069815767c6581ac3864d89df1e2fc399c12"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "prisma:generate"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 4285,
+      "artifact": ".quality/build/1.log",
+      "sha256": "f13fecba0a54efa5dd21dcb18aa37beb4c209c41f9c68746a4ec2530efab07bc"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "build"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 13575,
+      "artifact": ".quality/build/2.log",
+      "sha256": "40cfda24235813fcc50c89ab9e223e0e9dbf49a4e02758de70643dae9e37d459"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/admin-pc", "build"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 95968,
+      "artifact": ".quality/build/3.log",
+      "sha256": "6d8c98085ea61719a160f1c804799d9c78aa07be1fc370c1826c37cac9f497a9"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/user-mp", "build:h5"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 21563,
+      "artifact": ".quality/build/4.log",
+      "sha256": "6ccb3566e7acd19bae47043f179eff5635f5927e7685e9d5bd49692f4f9c3221"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/user-mp", "build:mp-weixin"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 18463,
+      "artifact": ".quality/build/5.log",
+      "sha256": "5d827752d7c1938eda4ae4f9589444a9f92a8445366e09120928a8aa8b8bb277"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/user-mp", "build:app"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 15327,
+      "artifact": ".quality/build/6.log",
+      "sha256": "3a12e7b2dc9dced9be2736ab4908fce2507cee045664f2014038e52a06f905e1"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/merchant-app", "build:h5"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 22959,
+      "artifact": ".quality/build/7.log",
+      "sha256": "e689dfac572537dc1de14f0d8e2c93b4e0c24f52e3f2e0f9c587bf1b86307ce7"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/merchant-app", "build:mp-weixin"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 19584,
+      "artifact": ".quality/build/8.log",
+      "sha256": "678df12d3ef5b1a55f63403779fd681612ce321bb546a48f2553dc0dad645df8"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/merchant-app", "build:app"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 16274,
+      "artifact": ".quality/build/9.log",
+      "sha256": "4f48d3625e1e67ec57b6b65bf325784d76973100c8cfe7d9b4ea2a7795a1e87f"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/platform-app", "build:h5"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 22096,
+      "artifact": ".quality/build/10.log",
+      "sha256": "a8609dc1d2ab95aed2c7733407a2dbf2b9a605971a1a62e5f75ced9aeaece001"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/platform-app", "build:app"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 15224,
+      "artifact": ".quality/build/11.log",
+      "sha256": "492e21a97d209d7e627d969d71eadd3b939a98f2696204deb62b3cc894e45a40"
+    },
+    {
+      "command": ["C:\\Program Files\\nodejs\\node.exe", "scripts/verify-workbook-templates.cjs"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 390,
+      "artifact": ".quality/build/12.log",
+      "sha256": "8441d5f496191f497b50074b7736936faacc869b6feada47dff870325443ff56"
+    }
+  ],
+  "finishedAt": "2026-09-08T20:12:06.881Z"
+}

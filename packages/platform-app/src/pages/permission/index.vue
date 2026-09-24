@@ -432,7 +432,10 @@ function openAdminActions(a: AdminUser) {
         } else if (action === '停用账号' || action === '恢复账号') {
           await permissionService.toggleAdmin(a.id)
           a.status = a.status === 'active' ? 'disabled' : 'active'
-          appFeedback.showToast({ title: a.status === 'active' ? '已恢复' : '已停用', icon: 'success' })
+          appFeedback.showToast({
+            title: a.status === 'active' ? '已恢复' : '已停用',
+            icon: 'success',
+          })
         } else if (action === '删除管理员') {
           appFeedback.showModal({
             title: '删除管理员',
@@ -491,325 +494,349 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="权限管理" @click-right="onNavRightTap"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
-    </wd-navbar>
-
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
+    <view class="page">
+      <wd-navbar
+        title="权限管理"
+        @click-right="onNavRightTap"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
       >
-        <text>{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
+        <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 顶部统计 -->
-      <view class="stats">
-        <view class="stat-item">
-          <view class="s-icon">
-            <wd-icon :name="$jwIcon('lock')" size="14px" color="var(--brand-primary)"  />
-          </view>
-          <view class="s-info">
-            <text class="s-num">{{ roles.length }}</text>
-            <text class="s-label">角色</text>
-          </view>
-        </view>
-        <view class="s-divider" />
-        <view class="stat-item">
-          <view class="s-icon">
-            <wd-icon :name="$jwIcon('user')" size="14px" color="#A855F7"  />
-          </view>
-          <view class="s-info">
-            <text class="s-num">{{ admins.length }}</text>
-            <text class="s-label">管理员</text>
-          </view>
-        </view>
-        <view class="s-divider" />
-        <view class="stat-item">
-          <view class="s-icon">
-            <wd-icon :name="$jwIcon('check-circle')" size="14px" color="#52C41A"  />
-          </view>
-          <view class="s-info">
-            <text class="s-num">{{ admins.filter((a) => a.status === 'active').length }}</text>
-            <text class="s-label">在线</text>
-          </view>
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
+        >
+          <text>{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
         </view>
       </view>
 
-      <!-- 角色 -->
-      <view v-if="tab === 'roles'" class="list">
-        <view class="quick-toolbar">
-          <view class="qt-btn primary" @click="openCreateRole">
-            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
-            <text>新建角色</text>
-          </view>
-        </view>
-        <view v-for="r in roles" :key="r.id" class="card">
-          <view class="card-head">
-            <view class="role-badge" :style="{ background: ROLE_TINT[r.name] || '#86909C' }">
-              <text>{{ r.name[0] }}</text>
+      <scroll-view scroll-y class="scroll">
+        <!-- 顶部统计 -->
+        <view class="stats">
+          <view class="stat-item">
+            <view class="s-icon">
+              <wd-icon :name="$jwIcon('lock')" size="14px" color="var(--brand-primary)" />
             </view>
-            <view class="card-info">
+            <view class="s-info">
+              <text class="s-num">{{ roles.length }}</text>
+              <text class="s-label">角色</text>
+            </view>
+          </view>
+          <view class="s-divider" />
+          <view class="stat-item">
+            <view class="s-icon">
+              <wd-icon :name="$jwIcon('user')" size="14px" color="#A855F7" />
+            </view>
+            <view class="s-info">
+              <text class="s-num">{{ admins.length }}</text>
+              <text class="s-label">管理员</text>
+            </view>
+          </view>
+          <view class="s-divider" />
+          <view class="stat-item">
+            <view class="s-icon">
+              <wd-icon :name="$jwIcon('check-circle')" size="14px" color="#52C41A" />
+            </view>
+            <view class="s-info">
+              <text class="s-num">{{ admins.filter((a) => a.status === 'active').length }}</text>
+              <text class="s-label">在线</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 角色 -->
+        <view v-if="tab === 'roles'" class="list">
+          <view class="quick-toolbar">
+            <view class="qt-btn primary" @click="openCreateRole">
+              <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff" />
+              <text>新建角色</text>
+            </view>
+          </view>
+          <view v-for="r in roles" :key="r.id" class="card">
+            <view class="card-head">
+              <view class="role-badge" :style="{ background: ROLE_TINT[r.name] || '#86909C' }">
+                <text>{{ r.name[0] }}</text>
+              </view>
+              <view class="card-info">
+                <view class="info-head">
+                  <text class="name">{{ r.name }}</text>
+                  <view
+                    class="count-tag"
+                    :style="{
+                      color: ROLE_TINT[r.name] || '#86909C',
+                      background: (ROLE_TINT[r.name] || '#86909C') + '14',
+                    }"
+                  >
+                    {{ memberCountOf(r.name) }} 人
+                  </view>
+                </view>
+                <text class="desc">{{ r.desc || '未填描述' }}</text>
+                <view class="perms">
+                  <view v-for="p in r.permissions.slice(0, 4)" :key="p" class="perm">
+                    {{ labelOfPermission(p) }}
+                  </view>
+                  <text v-if="r.permissions.length > 4" class="perm-more"
+                    >+{{ r.permissions.length - 4 }}</text
+                  >
+                </view>
+              </view>
+            </view>
+            <view class="actions">
+              <view class="btn ghost" @click="viewMembers(r)">成员</view>
+              <view class="btn ghost" @click="openEditRole(r)">编辑</view>
+              <view class="btn primary" @click="openRoleActions(r)">更多</view>
+            </view>
+          </view>
+
+          <wd-status-tip
+            v-if="!loading && roles.length === 0"
+            image="content"
+            :tip="['暂无角色', '点击「新建角色」配置权限'].filter(Boolean).join(' · ')"
+          />
+        </view>
+
+        <!-- 管理员 -->
+        <view v-else class="list">
+          <view class="quick-toolbar">
+            <view class="qt-btn primary" @click="openCreateAdmin">
+              <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff" />
+              <text>新建管理员</text>
+            </view>
+          </view>
+          <view v-for="a in admins" :key="a.id" class="admin-card">
+            <image v-if="a.avatar" :src="a.avatar" class="admin-avatar" mode="aspectFill" />
+            <view v-else class="admin-avatar fallback">{{ a.nickname[0] }}</view>
+            <view class="admin-info">
               <view class="info-head">
-                <text class="name">{{ r.name }}</text>
+                <text class="name">{{ a.nickname }}</text>
+                <view :class="['status-tag', a.status]">
+                  {{ a.status === 'active' ? '在线' : '已停用' }}
+                </view>
+              </view>
+              <view class="meta-row">
+                <text class="meta-label">账号</text>
+                <text class="meta-value">{{ a.username }}</text>
+              </view>
+              <view class="meta-row">
+                <text class="meta-label">角色</text>
                 <view
-                  class="count-tag"
+                  class="role-mini"
                   :style="{
-                    color: ROLE_TINT[r.name] || '#86909C',
-                    background: (ROLE_TINT[r.name] || '#86909C') + '14',
+                    color: ROLE_TINT[a.roleName || a.role] || '#86909C',
+                    background: (ROLE_TINT[a.roleName || a.role] || '#86909C') + '14',
                   }"
                 >
-                  {{ memberCountOf(r.name) }} 人
+                  {{ a.roleName || a.role }}
                 </view>
               </view>
-              <text class="desc">{{ r.desc || '未填描述' }}</text>
-              <view class="perms">
-                <view v-for="p in r.permissions.slice(0, 4)" :key="p" class="perm">
-                  {{ labelOfPermission(p) }}
-                </view>
-                <text v-if="r.permissions.length > 4" class="perm-more"
-                  >+{{ r.permissions.length - 4 }}</text
-                >
-              </view>
+              <text class="last-login">最近登录 · {{ formatLastLogin(a.lastLoginAt) }}</text>
+            </view>
+            <view class="more-btn" @click="openAdminActions(a)">
+              <wd-icon :name="$jwIcon('more-v')" size="16px" color="var(--text-tertiary)" />
             </view>
           </view>
-          <view class="actions">
-            <view class="btn ghost" @click="viewMembers(r)">成员</view>
-            <view class="btn ghost" @click="openEditRole(r)">编辑</view>
-            <view class="btn primary" @click="openRoleActions(r)">更多</view>
-          </view>
+
+          <wd-status-tip
+            v-if="!loading && admins.length === 0"
+            image="content"
+            :tip="['暂无管理员', '点击「新建管理员」添加账号'].filter(Boolean).join(' · ')"
+          />
         </view>
 
-        <wd-status-tip
-          v-if="!loading && roles.length === 0"
-         image="content" :tip="['暂无角色', '点击「新建角色」配置权限'].filter(Boolean).join(' · ')" />
-      </view>
+        <view style="height: 40rpx" />
+      </scroll-view>
 
-      <!-- 管理员 -->
-      <view v-else class="list">
-        <view class="quick-toolbar">
-          <view class="qt-btn primary" @click="openCreateAdmin">
-            <wd-icon :name="$jwIcon('plus')" size="12px" color="#fff"  />
-            <text>新建管理员</text>
-          </view>
+      <!-- 角色 sheet -->
+      <FormSheet
+        :open="roleSheetOpen"
+        :title="roleSheetMode === 'create' ? '新建角色' : '编辑角色'"
+        :confirm-text="roleSheetMode === 'create' ? '创建' : '保存'"
+        :loading="roleSubmitting"
+        :disabled="roleSheetConfirmDisabled"
+        @close="roleSheetOpen = false"
+        @confirm="submitRoleSheet"
+      >
+        <view class="form-row">
+          <text class="form-label">角色名称<text class="required">*</text></text>
+          <wd-input
+            no-border
+            v-model="roleForm.name"
+            class="form-input"
+            placeholder="如:运营经理 / 审核员 / 客服"
+            maxlength="20"
+          />
         </view>
-        <view v-for="a in admins" :key="a.id" class="admin-card">
-          <image v-if="a.avatar" :src="a.avatar" class="admin-avatar" mode="aspectFill" />
-          <view v-else class="admin-avatar fallback">{{ a.nickname[0] }}</view>
-          <view class="admin-info">
-            <view class="info-head">
-              <text class="name">{{ a.nickname }}</text>
-              <view :class="['status-tag', a.status]">
-                {{ a.status === 'active' ? '在线' : '已停用' }}
-              </view>
-            </view>
-            <view class="meta-row">
-              <text class="meta-label">账号</text>
-              <text class="meta-value">{{ a.username }}</text>
-            </view>
-            <view class="meta-row">
-              <text class="meta-label">角色</text>
-              <view
-                class="role-mini"
-                :style="{
-                  color: ROLE_TINT[a.roleName || a.role] || '#86909C',
-                  background: (ROLE_TINT[a.roleName || a.role] || '#86909C') + '14',
-                }"
-              >
-                {{ a.roleName || a.role }}
-              </view>
-            </view>
-            <text class="last-login">最近登录 · {{ formatLastLogin(a.lastLoginAt) }}</text>
-          </view>
-          <view class="more-btn" @click="openAdminActions(a)">
-            <wd-icon :name="$jwIcon('more-v')" size="16px" color="var(--text-tertiary)"  />
-          </view>
+        <view class="form-row">
+          <text class="form-label">角色描述</text>
+          <wd-textarea
+            no-border
+            v-model="roleForm.desc"
+            class="form-textarea"
+            placeholder="该角色的职责简述,可选"
+            maxlength="100"
+            :auto-height="true"
+          />
         </view>
+        <view class="form-row">
+          <text class="form-label">权限项<text class="required">*</text></text>
+          <view class="perm-grid">
+            <view
+              v-for="opt in PERMISSION_OPTIONS"
+              :key="opt.value"
+              :class="['perm-chip', roleForm.permissions.includes(opt.value) ? 'active' : '']"
+              @click="togglePerm(opt.value)"
+            >
+              <wd-icon
+                :name="
+                  $jwIcon(roleForm.permissions.includes(opt.value) ? 'check-circle' : 'circle')
+                "
+                size="12px"
+                :color="roleForm.permissions.includes(opt.value) ? '#FF4D2D' : '#C9CDD4'"
+              />
+              <text>{{ opt.label }}</text>
+            </view>
+          </view>
+          <text class="form-hint">已选 {{ roleForm.permissions.length }} 项</text>
+        </view>
+      </FormSheet>
 
-        <wd-status-tip
-          v-if="!loading && admins.length === 0"
-         image="content" :tip="['暂无管理员', '点击「新建管理员」添加账号'].filter(Boolean).join(' · ')" />
-      </view>
+      <!-- 管理员 sheet (create / edit-role) -->
+      <FormSheet
+        :open="adminSheetOpen"
+        :title="adminSheetTitle"
+        :confirm-text="adminSheetMode === 'create' ? '创建' : '保存'"
+        :loading="adminSubmitting"
+        :disabled="adminSheetConfirmDisabled"
+        @close="adminSheetOpen = false"
+        @confirm="submitAdminSheet"
+      >
+        <view v-if="adminSheetMode === 'create'" class="form-row">
+          <text class="form-label">账号(登录名)<text class="required">*</text></text>
+          <wd-input
+            no-border
+            v-model="adminForm.username"
+            class="form-input"
+            placeholder="英文 / 数字, 唯一"
+            maxlength="40"
+          />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ adminSheetMode === 'create' ? '昵称' : '昵称' }}</text>
+          <wd-input
+            no-border
+            v-model="adminForm.nickname"
+            class="form-input"
+            placeholder="留空将使用账号作为昵称"
+            maxlength="20"
+          />
+        </view>
+        <view v-if="adminSheetMode === 'create'" class="form-row">
+          <text class="form-label">邮箱</text>
+          <wd-input
+            no-border
+            v-model="adminForm.email"
+            class="form-input"
+            type="text"
+            placeholder="可选,用于密码找回"
+            maxlength="100"
+          />
+        </view>
+        <view v-if="adminSheetMode === 'create'" class="form-row">
+          <text class="form-label">手机号</text>
+          <wd-input
+            no-border
+            v-model="adminForm.phone"
+            class="form-input"
+            type="number"
+            placeholder="可选"
+            maxlength="20"
+          />
+        </view>
+        <view class="form-row">
+          <text class="form-label">用户角色 (user.role)<text class="required">*</text></text>
+          <view class="seg-group">
+            <view
+              v-for="opt in USER_ROLE_OPTIONS"
+              :key="opt.value"
+              :class="['seg-item', adminForm.role === opt.value ? 'active' : '']"
+              @click="adminForm.role = opt.value"
+            >
+              {{ opt.label }}
+            </view>
+          </view>
+          <text class="form-hint">super-admin 不在此创建, 需走数据库或后端 root 流程</text>
+        </view>
+        <view v-if="adminSheetMode === 'create'" class="form-row">
+          <text class="form-label">初始密码 (至少 8 位)<text class="required">*</text></text>
+          <wd-input
+            no-border
+            v-model="adminForm.password"
+            class="form-input"
+            type="text"
+            placeholder="账号创建后立即通知本人, 首次登录请改"
+            maxlength="40"
+          />
+          <text v-if="adminForm.password && adminForm.password.length < 8" class="form-hint err">
+            密码长度不足
+          </text>
+        </view>
+      </FormSheet>
 
-      <view style="height: 40rpx" />
-    </scroll-view>
-
-    <!-- 角色 sheet -->
-    <FormSheet
-      :open="roleSheetOpen"
-      :title="roleSheetMode === 'create' ? '新建角色' : '编辑角色'"
-      :confirm-text="roleSheetMode === 'create' ? '创建' : '保存'"
-      :loading="roleSubmitting"
-      :disabled="roleSheetConfirmDisabled"
-      @close="roleSheetOpen = false"
-      @confirm="submitRoleSheet"
-    >
-      <view class="form-row">
-        <text class="form-label">角色名称<text class="required">*</text></text>
-        <wd-input no-border
-          v-model="roleForm.name"
-          class="form-input"
-          placeholder="如:运营经理 / 审核员 / 客服"
-          maxlength="20"
-         />
-      </view>
-      <view class="form-row">
-        <text class="form-label">角色描述</text>
-        <wd-textarea no-border
-          v-model="roleForm.desc"
-          class="form-textarea"
-          placeholder="该角色的职责简述,可选"
-          maxlength="100"
-          :auto-height="true"
-         />
-      </view>
-      <view class="form-row">
-        <text class="form-label">权限项<text class="required">*</text></text>
-        <view class="perm-grid">
-          <view
-            v-for="opt in PERMISSION_OPTIONS"
-            :key="opt.value"
-            :class="['perm-chip', roleForm.permissions.includes(opt.value) ? 'active' : '']"
-            @click="togglePerm(opt.value)"
+      <!-- 重置密码 sheet (仅 super-admin) -->
+      <FormSheet
+        :open="resetSheetOpen"
+        title="重置管理员密码"
+        confirm-text="重置"
+        :loading="resetSubmitting"
+        :disabled="resetConfirmDisabled"
+        @close="resetSheetOpen = false"
+        @confirm="submitResetPassword"
+      >
+        <view v-if="resetTarget" class="form-tip">
+          即将为
+          <text class="bold">「{{ resetTarget.nickname }} ({{ resetTarget.username }})」</text>
+          重置密码,新密码仅显示一次,请立即通知本人。
+        </view>
+        <view class="form-row">
+          <text class="form-label">新密码 (至少 8 位)<text class="required">*</text></text>
+          <wd-input
+            no-border
+            v-model="resetForm.password"
+            class="form-input"
+            type="text"
+            placeholder="建议混合字母+数字+符号"
+            maxlength="40"
+          />
+        </view>
+        <view class="form-row">
+          <text class="form-label">确认密码<text class="required">*</text></text>
+          <wd-input
+            no-border
+            v-model="resetForm.confirm"
+            class="form-input"
+            type="text"
+            placeholder="再次输入新密码"
+            maxlength="40"
+          />
+          <text
+            v-if="resetForm.confirm && resetForm.password !== resetForm.confirm"
+            class="form-hint err"
           >
-            <wd-icon
-              :name="$jwIcon(roleForm.permissions.includes(opt.value) ? 'check-circle' : 'circle')" size="12px"
-              :color="roleForm.permissions.includes(opt.value) ? '#FF4D2D' : '#C9CDD4'"
-             />
-            <text>{{ opt.label }}</text>
-          </view>
+            两次输入不一致
+          </text>
         </view>
-        <text class="form-hint">已选 {{ roleForm.permissions.length }} 项</text>
-      </view>
-    </FormSheet>
-
-    <!-- 管理员 sheet (create / edit-role) -->
-    <FormSheet
-      :open="adminSheetOpen"
-      :title="adminSheetTitle"
-      :confirm-text="adminSheetMode === 'create' ? '创建' : '保存'"
-      :loading="adminSubmitting"
-      :disabled="adminSheetConfirmDisabled"
-      @close="adminSheetOpen = false"
-      @confirm="submitAdminSheet"
-    >
-      <view v-if="adminSheetMode === 'create'" class="form-row">
-        <text class="form-label">账号(登录名)<text class="required">*</text></text>
-        <wd-input no-border
-          v-model="adminForm.username"
-          class="form-input"
-          placeholder="英文 / 数字, 唯一"
-          maxlength="40"
-         />
-      </view>
-      <view class="form-row">
-        <text class="form-label">{{ adminSheetMode === 'create' ? '昵称' : '昵称' }}</text>
-        <wd-input no-border
-          v-model="adminForm.nickname"
-          class="form-input"
-          placeholder="留空将使用账号作为昵称"
-          maxlength="20"
-         />
-      </view>
-      <view v-if="adminSheetMode === 'create'" class="form-row">
-        <text class="form-label">邮箱</text>
-        <wd-input no-border
-          v-model="adminForm.email"
-          class="form-input"
-          type="text"
-          placeholder="可选,用于密码找回"
-          maxlength="100"
-         />
-      </view>
-      <view v-if="adminSheetMode === 'create'" class="form-row">
-        <text class="form-label">手机号</text>
-        <wd-input no-border
-          v-model="adminForm.phone"
-          class="form-input"
-          type="number"
-          placeholder="可选"
-          maxlength="20"
-         />
-      </view>
-      <view class="form-row">
-        <text class="form-label">用户角色 (user.role)<text class="required">*</text></text>
-        <view class="seg-group">
-          <view
-            v-for="opt in USER_ROLE_OPTIONS"
-            :key="opt.value"
-            :class="['seg-item', adminForm.role === opt.value ? 'active' : '']"
-            @click="adminForm.role = opt.value"
-          >
-            {{ opt.label }}
-          </view>
-        </view>
-        <text class="form-hint">super-admin 不在此创建, 需走数据库或后端 root 流程</text>
-      </view>
-      <view v-if="adminSheetMode === 'create'" class="form-row">
-        <text class="form-label">初始密码 (至少 8 位)<text class="required">*</text></text>
-        <wd-input no-border
-          v-model="adminForm.password"
-          class="form-input"
-          type="text"
-          placeholder="账号创建后立即通知本人, 首次登录请改"
-          maxlength="40"
-         />
-        <text v-if="adminForm.password && adminForm.password.length < 8" class="form-hint err">
-          密码长度不足
-        </text>
-      </view>
-    </FormSheet>
-
-    <!-- 重置密码 sheet (仅 super-admin) -->
-    <FormSheet
-      :open="resetSheetOpen"
-      title="重置管理员密码"
-      confirm-text="重置"
-      :loading="resetSubmitting"
-      :disabled="resetConfirmDisabled"
-      @close="resetSheetOpen = false"
-      @confirm="submitResetPassword"
-    >
-      <view v-if="resetTarget" class="form-tip">
-        即将为
-        <text class="bold">「{{ resetTarget.nickname }} ({{ resetTarget.username }})」</text>
-        重置密码,新密码仅显示一次,请立即通知本人。
-      </view>
-      <view class="form-row">
-        <text class="form-label">新密码 (至少 8 位)<text class="required">*</text></text>
-        <wd-input no-border
-          v-model="resetForm.password"
-          class="form-input"
-          type="text"
-          placeholder="建议混合字母+数字+符号"
-          maxlength="40"
-         />
-      </view>
-      <view class="form-row">
-        <text class="form-label">确认密码<text class="required">*</text></text>
-        <wd-input no-border
-          v-model="resetForm.confirm"
-          class="form-input"
-          type="text"
-          placeholder="再次输入新密码"
-          maxlength="40"
-         />
-        <text
-          v-if="resetForm.confirm && resetForm.password !== resetForm.confirm"
-          class="form-hint err"
-        >
-          两次输入不一致
-        </text>
-      </view>
-    </FormSheet>
-  </view>
-
+      </FormSheet>
+    </view>
   </wd-config-provider>
 </template>
 

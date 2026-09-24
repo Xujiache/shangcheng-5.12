@@ -133,7 +133,14 @@ export const mockRoutes: MockRoute[] = [
   {
     method: 'POST',
     path: '/api/v1/m/categories',
-    handler: ({ body }) => ({ id: 'mc-' + Date.now(), createdAt: '', updatedAt: '', sort: 0, type: 'merchant', ...(body || {}) }),
+    handler: ({ body }) => ({
+      id: 'mc-' + Date.now(),
+      createdAt: '',
+      updatedAt: '',
+      sort: 0,
+      type: 'merchant',
+      ...(body || {}),
+    }),
   },
   {
     method: 'PUT',
@@ -161,11 +168,56 @@ export const mockRoutes: MockRoute[] = [
     method: 'GET',
     path: '/api/v1/m/categories',
     handler: () => [
-      { id: 'mc-1', parentId: null, name: '北欧系列', sort: 0, type: 'merchant', merchantId: 'm-self', createdAt: '', updatedAt: '' },
-      { id: 'mc-2', parentId: null, name: '新中式', sort: 1, type: 'merchant', merchantId: 'm-self', createdAt: '', updatedAt: '' },
-      { id: 'mc-3', parentId: null, name: '极简风', sort: 2, type: 'merchant', merchantId: 'm-self', createdAt: '', updatedAt: '' },
-      { id: 'mc-3-1', parentId: 'mc-3', name: '极简家具', sort: 0, type: 'merchant', merchantId: 'm-self', createdAt: '', updatedAt: '' },
-      { id: 'mc-3-2', parentId: 'mc-3', name: '极简灯具', sort: 1, type: 'merchant', merchantId: 'm-self', createdAt: '', updatedAt: '' },
+      {
+        id: 'mc-1',
+        parentId: null,
+        name: '北欧系列',
+        sort: 0,
+        type: 'merchant',
+        merchantId: 'm-self',
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: 'mc-2',
+        parentId: null,
+        name: '新中式',
+        sort: 1,
+        type: 'merchant',
+        merchantId: 'm-self',
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: 'mc-3',
+        parentId: null,
+        name: '极简风',
+        sort: 2,
+        type: 'merchant',
+        merchantId: 'm-self',
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: 'mc-3-1',
+        parentId: 'mc-3',
+        name: '极简家具',
+        sort: 0,
+        type: 'merchant',
+        merchantId: 'm-self',
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: 'mc-3-2',
+        parentId: 'mc-3',
+        name: '极简灯具',
+        sort: 1,
+        type: 'merchant',
+        merchantId: 'm-self',
+        createdAt: '',
+        updatedAt: '',
+      },
     ],
   },
 
@@ -207,7 +259,11 @@ export const mockRoutes: MockRoute[] = [
       const phoneMatch = text.match(/1[3-9]\d{9}/)
       const phone = phoneMatch?.[0]
       const rest = phone ? text.replace(phone, ' ') : text
-      const tokens = rest.replace(/[\s,，；;|]+/g, ' ').trim().split(' ').filter(Boolean)
+      const tokens = rest
+        .replace(/[\s,，；;|]+/g, ' ')
+        .trim()
+        .split(' ')
+        .filter(Boolean)
       const name = tokens.find((t) => t.length <= 4 && /^[一-龥]+$/.test(t))
       const region = tokens.filter((t) => /(省|市|区|县)/.test(t)).join(' ')
       const detail = tokens.filter((t) => t !== name && !/(省|市|区|县)/.test(t)).join(' ')
@@ -227,7 +283,7 @@ export const mockRoutes: MockRoute[] = [
         phone: u.phone,
         kind: i % 5 === 0 ? 'promoter' : i % 5 === 1 ? 'member' : 'normal',
         priceTier: i % 4 === 0 ? 'wholesale' : i % 4 === 1 ? 'member' : 'retail',
-        orderCount: 1 + (i * 7) % 30,
+        orderCount: 1 + ((i * 7) % 30),
         totalSpent: (i * 891) % 50000,
         lastOrderAt: new Date(Date.now() - i * 86400000).toISOString(),
         priceAuthorized: i % 3 !== 0,
@@ -235,7 +291,8 @@ export const mockRoutes: MockRoute[] = [
         groupTag: ['新客', '活跃', '高净值', '休眠'][i % 4],
       }))
       let filtered = list
-      if (query.kind && query.kind !== 'all') filtered = filtered.filter((x) => x.kind === query.kind)
+      if (query.kind && query.kind !== 'all')
+        filtered = filtered.filter((x) => x.kind === query.kind)
       return paginate(filtered, query)
     },
   },
@@ -298,7 +355,11 @@ export const mockRoutes: MockRoute[] = [
   {
     method: 'GET',
     path: '/api/v1/p/audit/merchants',
-    handler: ({ query }) => paginate(POOL.merchants.filter((m) => m.status === 'pending'), query),
+    handler: ({ query }) =>
+      paginate(
+        POOL.merchants.filter((m) => m.status === 'pending'),
+        query,
+      ),
   },
 
   // ============ 选品广场 ============
@@ -388,7 +449,8 @@ export const mockRoutes: MockRoute[] = [
   {
     method: 'GET',
     path: '/api/v1/m/stats',
-    handler: ({ query }) => genMerchantStats((query.period as 'today' | 'week' | 'month' | 'year') ?? 'week'),
+    handler: ({ query }) =>
+      genMerchantStats((query.period as 'today' | 'week' | 'month' | 'year') ?? 'week'),
   },
   {
     method: 'GET',
@@ -423,7 +485,11 @@ export const mockRoutes: MockRoute[] = [
   {
     method: 'GET',
     path: '/api/v1/m/stores',
-    handler: ({ query }) => paginate(POOL.merchants.slice(0, 8).map((m) => genStore(m.id)), query),
+    handler: ({ query }) =>
+      paginate(
+        POOL.merchants.slice(0, 8).map((m) => genStore(m.id)),
+        query,
+      ),
   },
   {
     method: 'GET',
@@ -451,7 +517,11 @@ export const mockRoutes: MockRoute[] = [
   {
     method: 'GET',
     path: '/api/v1/m/staffs',
-    handler: ({ query }) => paginate(Array.from({ length: 8 }).map(() => genStaff(POOL.merchants[0].id)), query),
+    handler: ({ query }) =>
+      paginate(
+        Array.from({ length: 8 }).map(() => genStaff(POOL.merchants[0].id)),
+        query,
+      ),
   },
   {
     method: 'POST',
@@ -496,14 +566,85 @@ export const mockRoutes: MockRoute[] = [
     path: '/api/v1/m/marketing/coupons',
     handler: ({ query }) => {
       const list = [
-        { id: 'c-1', name: '满 500 减 50', type: 'fullReduce', amount: 50, threshold: 500, stock: 1000, received: 432, used: 198, validFrom: '2026-05-01', validTo: '2026-06-30', perUserLimit: 1, scope: 'all', status: 'active' },
-        { id: 'c-2', name: '新客券 9 折', type: 'discount', discountPercent: 90, threshold: 0, stock: 500, received: 312, used: 89, validFrom: '2026-05-01', validTo: '2026-12-31', perUserLimit: 1, scope: 'all', status: 'active' },
-        { id: 'c-3', name: '会员日 100 元券', type: 'fixed', amount: 100, threshold: 1000, stock: 200, received: 200, used: 156, validFrom: '2026-04-15', validTo: '2026-05-15', perUserLimit: 1, scope: 'all', status: 'ended' },
-        { id: 'c-4', name: '岩板茶几专享 200', type: 'fullReduce', amount: 200, threshold: 2000, stock: 100, received: 12, used: 3, validFrom: '2026-05-08', validTo: '2026-06-08', perUserLimit: 1, scope: 'product', status: 'active' },
-        { id: 'c-5', name: '草稿券', type: 'fullReduce', amount: 30, threshold: 200, stock: 0, received: 0, used: 0, validFrom: '', validTo: '', perUserLimit: 1, scope: 'all', status: 'pending' },
+        {
+          id: 'c-1',
+          name: '满 500 减 50',
+          type: 'fullReduce',
+          amount: 50,
+          threshold: 500,
+          stock: 1000,
+          received: 432,
+          used: 198,
+          validFrom: '2026-05-01',
+          validTo: '2026-06-30',
+          perUserLimit: 1,
+          scope: 'all',
+          status: 'active',
+        },
+        {
+          id: 'c-2',
+          name: '新客券 9 折',
+          type: 'discount',
+          discountPercent: 90,
+          threshold: 0,
+          stock: 500,
+          received: 312,
+          used: 89,
+          validFrom: '2026-05-01',
+          validTo: '2026-12-31',
+          perUserLimit: 1,
+          scope: 'all',
+          status: 'active',
+        },
+        {
+          id: 'c-3',
+          name: '会员日 100 元券',
+          type: 'fixed',
+          amount: 100,
+          threshold: 1000,
+          stock: 200,
+          received: 200,
+          used: 156,
+          validFrom: '2026-04-15',
+          validTo: '2026-05-15',
+          perUserLimit: 1,
+          scope: 'all',
+          status: 'ended',
+        },
+        {
+          id: 'c-4',
+          name: '岩板茶几专享 200',
+          type: 'fullReduce',
+          amount: 200,
+          threshold: 2000,
+          stock: 100,
+          received: 12,
+          used: 3,
+          validFrom: '2026-05-08',
+          validTo: '2026-06-08',
+          perUserLimit: 1,
+          scope: 'product',
+          status: 'active',
+        },
+        {
+          id: 'c-5',
+          name: '草稿券',
+          type: 'fullReduce',
+          amount: 30,
+          threshold: 200,
+          stock: 0,
+          received: 0,
+          used: 0,
+          validFrom: '',
+          validTo: '',
+          perUserLimit: 1,
+          scope: 'all',
+          status: 'pending',
+        },
       ]
       let filtered = list
-      if (query.status && query.status !== 'all') filtered = filtered.filter((x) => x.status === query.status)
+      if (query.status && query.status !== 'all')
+        filtered = filtered.filter((x) => x.status === query.status)
       return paginate(filtered, query)
     },
   },
@@ -527,7 +668,14 @@ export const mockRoutes: MockRoute[] = [
         id: 'cs-' + i,
         userName: name,
         userAvatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name)}`,
-        lastMessage: ['这款沙发有现货吗？', '请问发货时间？', '能给个优惠吗？', '好的我看下', '订单 #20240518', '已收到，谢谢'][i],
+        lastMessage: [
+          '这款沙发有现货吗？',
+          '请问发货时间？',
+          '能给个优惠吗？',
+          '好的我看下',
+          '订单 #20240518',
+          '已收到，谢谢',
+        ][i],
         lastMessageAt: new Date(Date.now() - i * 1800 * 1000).toISOString(),
         unreadCount: i < 3 ? Math.max(1, 4 - i) : 0,
         online: i < 4,
@@ -540,12 +688,60 @@ export const mockRoutes: MockRoute[] = [
     handler: ({ params }) => {
       const now = Date.now()
       return [
-        { id: 'm1', sessionId: params.id, sender: 'user', type: 'text', content: '老板在吗？', createdAt: new Date(now - 3600 * 1000).toISOString(), read: true },
-        { id: 'm2', sessionId: params.id, sender: 'merchant', type: 'text', content: '在的，有什么可以帮您？', createdAt: new Date(now - 3500 * 1000).toISOString(), read: true },
-        { id: 'm3', sessionId: params.id, sender: 'user', type: 'text', content: '这款实木沙发 1.8 米的还有货吗？', createdAt: new Date(now - 3400 * 1000).toISOString(), read: true },
-        { id: 'm4', sessionId: params.id, sender: 'user', type: 'image', content: 'https://picsum.photos/seed/chat-img/400/400', createdAt: new Date(now - 3380 * 1000).toISOString(), read: true },
-        { id: 'm5', sessionId: params.id, sender: 'merchant', type: 'text', content: '有的，原木色 / 胡桃木色都有，今天下单明天发货。', createdAt: new Date(now - 3000 * 1000).toISOString(), read: true },
-        { id: 'm6', sessionId: params.id, sender: 'user', type: 'text', content: '能给个优惠吗？', createdAt: new Date(now - 600 * 1000).toISOString(), read: false },
+        {
+          id: 'm1',
+          sessionId: params.id,
+          sender: 'user',
+          type: 'text',
+          content: '老板在吗？',
+          createdAt: new Date(now - 3600 * 1000).toISOString(),
+          read: true,
+        },
+        {
+          id: 'm2',
+          sessionId: params.id,
+          sender: 'merchant',
+          type: 'text',
+          content: '在的，有什么可以帮您？',
+          createdAt: new Date(now - 3500 * 1000).toISOString(),
+          read: true,
+        },
+        {
+          id: 'm3',
+          sessionId: params.id,
+          sender: 'user',
+          type: 'text',
+          content: '这款实木沙发 1.8 米的还有货吗？',
+          createdAt: new Date(now - 3400 * 1000).toISOString(),
+          read: true,
+        },
+        {
+          id: 'm4',
+          sessionId: params.id,
+          sender: 'user',
+          type: 'image',
+          content: 'https://picsum.photos/seed/chat-img/400/400',
+          createdAt: new Date(now - 3380 * 1000).toISOString(),
+          read: true,
+        },
+        {
+          id: 'm5',
+          sessionId: params.id,
+          sender: 'merchant',
+          type: 'text',
+          content: '有的，原木色 / 胡桃木色都有，今天下单明天发货。',
+          createdAt: new Date(now - 3000 * 1000).toISOString(),
+          read: true,
+        },
+        {
+          id: 'm6',
+          sessionId: params.id,
+          sender: 'user',
+          type: 'text',
+          content: '能给个优惠吗？',
+          createdAt: new Date(now - 600 * 1000).toISOString(),
+          read: false,
+        },
       ]
     },
   },
@@ -564,7 +760,13 @@ export const mockRoutes: MockRoute[] = [
   {
     method: 'POST',
     path: '/api/v1/m/chat/sessions/:id/messages',
-    handler: ({ body }) => ({ id: 'm-' + Date.now(), sender: 'merchant', read: true, createdAt: new Date().toISOString(), ...(body || {}) }),
+    handler: ({ body }) => ({
+      id: 'm-' + Date.now(),
+      sender: 'merchant',
+      read: true,
+      createdAt: new Date().toISOString(),
+      ...(body || {}),
+    }),
   },
 
   // ============ 选品广场（商家） ============
@@ -574,9 +776,35 @@ export const mockRoutes: MockRoute[] = [
     handler: () => {
       return Array.from({ length: 12 }).map((_, i) => ({
         id: 'f-' + i,
-        name: ['佛山经纬科技', '南方睡眠科技', '岩板工厂', '创智办公', '简约灯具厂', '北欧家具源头', '美式工坊', '法式定制厂', '极简实验室', '布艺世家', '德意家居', '中山照明'][i],
+        name: [
+          '佛山经纬科技',
+          '南方睡眠科技',
+          '岩板工厂',
+          '创智办公',
+          '简约灯具厂',
+          '北欧家具源头',
+          '美式工坊',
+          '法式定制厂',
+          '极简实验室',
+          '布艺世家',
+          '德意家居',
+          '中山照明',
+        ][i],
         logo: `https://api.dicebear.com/9.x/initials/svg?seed=${i}`,
-        region: ['佛山', '深圳', '佛山', '广州', '中山', '佛山', '深圳', '上海', '杭州', '佛山', '苏州', '中山'][i],
+        region: [
+          '佛山',
+          '深圳',
+          '佛山',
+          '广州',
+          '中山',
+          '佛山',
+          '深圳',
+          '上海',
+          '杭州',
+          '佛山',
+          '苏州',
+          '中山',
+        ][i],
         years: 5 + (i % 15),
         productCount: 50 + i * 13,
         agencyCount: 30 + i * 7,

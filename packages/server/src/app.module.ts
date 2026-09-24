@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { APP_GUARD } from '@nestjs/core'
 import { PrismaModule } from './prisma/prisma.module'
 import { HealthController } from './health.controller'
+import { HealthService } from './health.service'
 import { AuthModule } from './modules/auth/auth.module'
 import { FilesModule } from './modules/files/files.module'
 import { UserMpModule } from './modules/user-mp/user-mp.module'
@@ -82,6 +83,7 @@ import { HarmonyMerchantModule } from './modules/harmony-merchant/harmony-mercha
   ],
   controllers: [HealthController],
   providers: [
+    HealthService,
     // 全局守卫按数组顺序执行：JWT 鉴权先于限流，
     // 这样匿名滥用请求会被 JWT 的 @Public/Unauthorized 优先处理，
     // 已登录用户再走 IP 限流策略（避免限流提前触发让登录页都打不开）

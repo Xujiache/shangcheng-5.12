@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { goalApi, statsApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
@@ -7,7 +8,7 @@ function clampPct(realized: number, target: number): number {
   return Math.min(100, Math.max(0, Math.round((realized / target) * 100)))
 }
 
-Page({
+MotionPage({
   data: {
     loading: true,
     loadError: false, // 网络/加载失败：失败时隐藏表单，避免把未知现有目标保存覆盖成 0
@@ -102,7 +103,7 @@ Page({
     try {
       await goalApi.set({ monthly, yearly })
       wx.showToast({ title: '已保存', icon: 'success' })
-      setTimeout(() => wx.navigateBack(), 600)
+      setTimeout(() => navigation.navigateBack(), 600)
     } catch (e) {
       this.setData({ saving: false })
     }

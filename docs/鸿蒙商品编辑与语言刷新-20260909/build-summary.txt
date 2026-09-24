@@ -1,0 +1,18 @@
+> hvigor [32mFinished :entry:default@CreateModuleInfo... after 2 ms [39m
+> hvigor [32mFinished :entry:default@PreCheckSyscap... after 1 ms [39m
+> hvigor [32mFinished :entry:default@GeneratePkgSdkInfo... after 4 ms [39m
+> hvigor [32mFinished :entry:default@ProcessIntegratedHsp... after 2 ms [39m
+> hvigor [32mFinished :entry:default@SyscapTransform... after 21 ms [39m
+> hvigor [32mFinished :entry:default@ProcessStartupConfig... after 3 ms [39m
+> hvigor [32mFinished :entry:default@ConfigureCmake... after 1 ms [39m
+> hvigor [32mFinished :entry:default@BuildNativeWithCmake... after 1 ms [39m
+> hvigor [32mFinished :entry:default@BuildNativeWithNinja... after 1 ms [39m
+> hvigor [32mFinished :entry:default@BuildJS... after 3 ms [39m
+> hvigor [32mFinished :entry:default@CompileArkTS... after 13 s 805 ms [39m
+> hvigor [32mFinished :entry:default@ProcessCompiledResources... after 1 ms [39m
+> hvigor [32mFinished :entry:default@PackageHap... after 970 ms [39m
+> hvigor [32mFinished :entry:default@PackingCheck... after 10 ms [39m
+> hvigor [32mFinished :entry:default@SignHap... after 4 s 5 ms [39m
+> hvigor [32mFinished :entry:default@CollectDebugSymbol... after 3 ms [39m
+> hvigor [32mFinished :entry:assembleHap... after 1 ms [39m
+> hvigor [32mBUILD SUCCESSFUL in 26 s 170 ms [39m

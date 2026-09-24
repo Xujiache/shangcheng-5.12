@@ -144,89 +144,101 @@ onMounted(() => load(true))
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="操作日志" @click-right="load(true)"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
-    </wd-navbar>
+    <view class="page">
+      <wd-navbar
+        title="操作日志"
+        @click-right="load(true)"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      >
+        <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+      </wd-navbar>
 
-    <!-- 类型筛选 -->
-    <view class="filter-card">
-      <view class="filter-label">类型</view>
-      <view class="seg-group">
-        <view
-          v-for="t in TYPE_TABS"
-          :key="t.key"
-          :class="['seg', typeFilter === t.key ? 'active' : '']"
-          @click="typeFilter = t.key"
-        >
-          {{ t.label }}
-        </view>
-      </view>
-    </view>
-
-    <!-- 状态筛选 -->
-    <view class="filter-card">
-      <view class="filter-label">状态</view>
-      <scroll-view scroll-x class="status-scroll">
+      <!-- 类型筛选 -->
+      <view class="filter-card">
+        <view class="filter-label">类型</view>
         <view class="seg-group">
           <view
-            v-for="t in STATUS_TABS"
+            v-for="t in TYPE_TABS"
             :key="t.key"
-            :class="['seg', statusFilter === t.key ? 'active' : '']"
-            @click="statusFilter = t.key"
+            :class="['seg', typeFilter === t.key ? 'active' : '']"
+            @click="typeFilter = t.key"
           >
             {{ t.label }}
           </view>
         </view>
+      </view>
+
+      <!-- 状态筛选 -->
+      <view class="filter-card">
+        <view class="filter-label">状态</view>
+        <scroll-view scroll-x class="status-scroll">
+          <view class="seg-group">
+            <view
+              v-for="t in STATUS_TABS"
+              :key="t.key"
+              :class="['seg', statusFilter === t.key ? 'active' : '']"
+              @click="statusFilter = t.key"
+            >
+              {{ t.label }}
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <scroll-view scroll-y class="scroll" @scrolltolower="loadMore">
+        <view class="section-head">
+          <text class="section-title">日志列表</text>
+          <text class="section-count">共 {{ total }} 条</text>
+        </view>
+
+        <view v-for="r in list" :key="r.id" class="row">
+          <view class="row-head">
+            <view :class="['type-chip', 'type-' + r.type]">{{ typeLabel(r.type) }}</view>
+            <view :class="['status-chip', statusClass(r.status)]">{{ statusLabel(r.status) }}</view>
+            <text class="time">{{ formatDateTime(r.reviewedAt || r.createdAt) }}</text>
+          </view>
+
+          <view class="row-line">
+            <text class="line-label">目标 ID</text>
+            <text class="line-value mono" @click="copy(r.targetId)">{{ r.targetId }}</text>
+          </view>
+
+          <view class="row-line">
+            <text class="line-label">操作人</text>
+            <text class="line-value">
+              {{ r.auditor ? r.auditor.nickname || r.auditor.username : '系统(自动)' }}
+            </text>
+          </view>
+
+          <view v-if="r.reason" class="row-line reason-line">
+            <text class="line-label">原因</text>
+            <text class="line-value">{{ r.reason }}</text>
+          </view>
+
+          <view class="row-tags">
+            <view v-if="r.autoApproved" class="tag">自动通过</view>
+            <view v-if="r.sampleChecked" class="tag warn">已抽检</view>
+          </view>
+        </view>
+
+        <wd-status-tip
+          v-if="!loading && list.length === 0"
+          image="content"
+          :tip="
+            ['暂无操作日志', '审核 / 抽检 / 自动通过等动作会在这里留痕'].filter(Boolean).join(' · ')
+          "
+        />
+
+        <view v-if="loading && list.length > 0" class="loading-tip">加载中…</view>
+        <view v-else-if="!hasMore && list.length > 0" class="loading-tip">— 已经到底了 —</view>
+        <view style="height: 60rpx" />
       </scroll-view>
     </view>
-
-    <scroll-view scroll-y class="scroll" @scrolltolower="loadMore">
-      <view class="section-head">
-        <text class="section-title">日志列表</text>
-        <text class="section-count">共 {{ total }} 条</text>
-      </view>
-
-      <view v-for="r in list" :key="r.id" class="row">
-        <view class="row-head">
-          <view :class="['type-chip', 'type-' + r.type]">{{ typeLabel(r.type) }}</view>
-          <view :class="['status-chip', statusClass(r.status)]">{{ statusLabel(r.status) }}</view>
-          <text class="time">{{ formatDateTime(r.reviewedAt || r.createdAt) }}</text>
-        </view>
-
-        <view class="row-line">
-          <text class="line-label">目标 ID</text>
-          <text class="line-value mono" @click="copy(r.targetId)">{{ r.targetId }}</text>
-        </view>
-
-        <view class="row-line">
-          <text class="line-label">操作人</text>
-          <text class="line-value">
-            {{ r.auditor ? r.auditor.nickname || r.auditor.username : '系统(自动)' }}
-          </text>
-        </view>
-
-        <view v-if="r.reason" class="row-line reason-line">
-          <text class="line-label">原因</text>
-          <text class="line-value">{{ r.reason }}</text>
-        </view>
-
-        <view class="row-tags">
-          <view v-if="r.autoApproved" class="tag">自动通过</view>
-          <view v-if="r.sampleChecked" class="tag warn">已抽检</view>
-        </view>
-      </view>
-
-      <wd-status-tip
-        v-if="!loading && list.length === 0"
-       image="content" :tip="['暂无操作日志', '审核 / 抽检 / 自动通过等动作会在这里留痕'].filter(Boolean).join(' · ')" />
-
-      <view v-if="loading && list.length > 0" class="loading-tip">加载中…</view>
-      <view v-else-if="!hasMore && list.length > 0" class="loading-tip">— 已经到底了 —</view>
-      <view style="height: 60rpx" />
-    </scroll-view>
-  </view>
-
   </wd-config-provider>
 </template>
 

@@ -13,11 +13,7 @@ import { appFeedback } from '@jiujiu/shared'
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import {
-  refundService,
-  type RefundRow,
-  type RefundStatus,
-} from '../../services'
+import { refundService, type RefundRow, type RefundStatus } from '../../services'
 import { formatPrice, formatDate } from '@jiujiu/shared/utils'
 type TabKey = 'all' | RefundStatus
 
@@ -84,9 +80,7 @@ function viewDetail(r: RefundRow) {
     `原因: ${r.reason}`,
     r.description ? `描述: ${r.description}` : '',
     `申请金额: ¥${formatPrice(r.applyAmount)}`,
-    typeof r.refundAmount === 'number'
-      ? `实际退款: ¥${formatPrice(r.refundAmount)}`
-      : '',
+    typeof r.refundAmount === 'number' ? `实际退款: ¥${formatPrice(r.refundAmount)}` : '',
     `提交时间: ${formatDate(r.createdAt)}`,
     r.merchantReply ? `\n商家回复: ${r.merchantReply}` : '',
   ].filter(Boolean)
@@ -163,87 +157,100 @@ onShow(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="售后/退款审核"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="售后/退款审核"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- Tab -->
-    <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
-      <view class="tabs">
-        <view
-          v-for="t in TABS"
-          :key="t.key"
-          :class="['tab', tab === t.key ? 'active' : '']"
-          @click="tab = t.key"
-        >
-          <text>{{ t.label }}</text>
+      <!-- Tab -->
+      <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
+        <view class="tabs">
+          <view
+            v-for="t in TABS"
+            :key="t.key"
+            :class="['tab', tab === t.key ? 'active' : '']"
+            @click="tab = t.key"
+          >
+            <text>{{ t.label }}</text>
+          </view>
         </view>
-      </view>
-    </scroll-view>
+      </scroll-view>
 
-    <view class="summary">
-      <wd-icon :name="$jwIcon('info')" size="12px" color="var(--brand-primary)"  />
-      <text>共 {{ total }} 条 · 当前页待处理 {{ pendingCount }} 条</text>
+      <view class="summary">
+        <wd-icon :name="$jwIcon('info')" size="12px" color="var(--brand-primary)" />
+        <text>共 {{ total }} 条 · 当前页待处理 {{ pendingCount }} 条</text>
+      </view>
+
+      <scroll-view scroll-y class="scroll">
+        <view v-if="loading" class="state">加载中…</view>
+
+        <view v-else-if="loadError" class="state-wrap">
+          <wd-status-tip
+            image="content"
+            :tip="['加载失败', errorMsg || '请检查网络后重试'].filter(Boolean).join(' · ')"
+          />
+
+          <text class="state-hint">
+            若后端 `/p/refunds` 接口尚未实现,请联系平台技术(Agent E)补全。
+          </text>
+          <view class="retry-btn" @click="load">
+            <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D" />
+            <text>点击重试</text>
+          </view>
+        </view>
+
+        <view v-else-if="list.length === 0" class="state-wrap">
+          <wd-status-tip
+            image="content"
+            :tip="['暂无退款申请', '该分类下还没有售后单'].filter(Boolean).join(' · ')"
+          />
+        </view>
+
+        <view v-else class="list">
+          <view v-for="r in list" :key="r.id" class="card" @click="viewDetail(r)">
+            <view class="card-head">
+              <text class="no">{{ r.no }}</text>
+              <view
+                class="status"
+                :style="{
+                  color: STATUS_META[r.status]?.tint,
+                  background: (STATUS_META[r.status]?.tint || '#86909C') + '14',
+                }"
+              >
+                {{ STATUS_META[r.status]?.label || r.status }}
+              </view>
+            </view>
+            <view class="info">
+              <view class="info-row">
+                <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)" />
+                <text>{{ r.userName || r.userId }} · {{ r.merchantName || r.merchantId }}</text>
+              </view>
+              <view class="info-row">
+                <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)" />
+                <text>{{ TYPE_LABEL[r.type] || r.type }} · {{ r.reason }}</text>
+              </view>
+            </view>
+            <view class="ft">
+              <text class="time">{{ formatDate(r.createdAt) }}</text>
+              <view class="amount">
+                <text class="cur">¥</text>
+                <text class="num">{{ formatPrice(r.applyAmount) }}</text>
+              </view>
+            </view>
+            <view v-if="r.status === 'pending'" class="actions">
+              <view class="btn ghost" @click.stop="reject(r)">驳回</view>
+              <view class="btn primary" @click.stop="approve(r)">同意</view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
     </view>
-
-    <scroll-view scroll-y class="scroll">
-      <view v-if="loading" class="state">加载中…</view>
-
-      <view v-else-if="loadError" class="state-wrap">
-        <wd-status-tip
-         image="content" :tip="['加载失败', errorMsg || '请检查网络后重试'].filter(Boolean).join(' · ')" />
-        <text class="state-hint">
-          若后端 `/p/refunds` 接口尚未实现,请联系平台技术(Agent E)补全。
-        </text>
-        <view class="retry-btn" @click="load">
-          <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D"  />
-          <text>点击重试</text>
-        </view>
-      </view>
-
-      <view v-else-if="list.length === 0" class="state-wrap">
-        <wd-status-tip  image="content" :tip="['暂无退款申请', '该分类下还没有售后单'].filter(Boolean).join(' · ')" />
-      </view>
-
-      <view v-else class="list">
-        <view v-for="r in list" :key="r.id" class="card" @click="viewDetail(r)">
-          <view class="card-head">
-            <text class="no">{{ r.no }}</text>
-            <view
-              class="status"
-              :style="{
-                color: STATUS_META[r.status]?.tint,
-                background: (STATUS_META[r.status]?.tint || '#86909C') + '14',
-              }"
-            >
-              {{ STATUS_META[r.status]?.label || r.status }}
-            </view>
-          </view>
-          <view class="info">
-            <view class="info-row">
-              <wd-icon :name="$jwIcon('user')" size="11px" color="var(--text-tertiary)"  />
-              <text>{{ r.userName || r.userId }} · {{ r.merchantName || r.merchantId }}</text>
-            </view>
-            <view class="info-row">
-              <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)"  />
-              <text>{{ TYPE_LABEL[r.type] || r.type }} · {{ r.reason }}</text>
-            </view>
-          </view>
-          <view class="ft">
-            <text class="time">{{ formatDate(r.createdAt) }}</text>
-            <view class="amount">
-              <text class="cur">¥</text>
-              <text class="num">{{ formatPrice(r.applyAmount) }}</text>
-            </view>
-          </view>
-          <view v-if="r.status === 'pending'" class="actions">
-            <view class="btn ghost" @click.stop="reject(r)">驳回</view>
-            <view class="btn primary" @click.stop="approve(r)">同意</view>
-          </view>
-        </view>
-      </view>
-    </scroll-view>
-  </view>
-
   </wd-config-provider>
 </template>
 

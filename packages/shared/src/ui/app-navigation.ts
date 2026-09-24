@@ -24,7 +24,8 @@ export function createUniNavigation(flavor: AppFlavor) {
     back(fallback = home) {
       uniApi?.navigateBack?.({
         delta: 1,
-        fail: () => uniApi?.switchTab?.({ url: fallback, fail: () => uniApi?.reLaunch?.({ url: fallback }) }),
+        fail: () =>
+          uniApi?.switchTab?.({ url: fallback, fail: () => uniApi?.reLaunch?.({ url: fallback }) }),
       })
     },
     switchTab(keyOrRoute: string) {

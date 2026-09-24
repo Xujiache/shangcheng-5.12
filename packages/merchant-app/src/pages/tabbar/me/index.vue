@@ -117,9 +117,7 @@ const SETTING_GROUPS: { title: string; items: SettingItem[] }[] = [
   },
   {
     title: '经营',
-    items: [
-      { icon: 'wallet', label: '佣金设置', action: 'commission', tint: 'orange' },
-    ],
+    items: [{ icon: 'wallet', label: '佣金设置', action: 'commission', tint: 'orange' }],
   },
   {
     title: '应用',
@@ -197,84 +195,79 @@ function logout() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- 顶部：紧凑版（去掉了多余的 gear 按钮）-->
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
-      <view class="hero-inner" @click="handle('profile')">
-        <view class="avatar-wrap">
-          <image v-if="avatar" :src="avatar" class="avatar-img" mode="aspectFill" />
-          <view v-else class="avatar avatar-placeholder">
-            <text>{{ shopName.slice(0, 1) }}</text>
-          </view>
-        </view>
-        <view class="info">
-          <text class="name">{{ shopName }}</text>
-          <text class="merchant-no">商户号 {{ merchantNo }}</text>
-          <view class="tags">
-            <view class="rating-tag">
-              <wd-icon :name="$jwIcon('star-fill')" size="11px" color="#FFD43B"  />
-              <text class="rating-num">{{ rating.toFixed(1) }}</text>
-              <text class="rating-count" v-if="ratingCount > 0">({{ ratingCount }})</text>
-            </view>
-            <wd-tag  :type="$jwTagType('highlight')" :plain="false" round>{{ "VIP" }}</wd-tag>
-          </view>
-        </view>
-        <wd-icon :name="$jwIcon('forward')" size="16px" color="rgba(255,255,255,0.7)"  />
-      </view>
-    </view>
-
-    <!-- 会员卡 -->
-    <view class="member-card" @click="goMember">
-      <view class="member-row">
-        <view class="member-left">
-          <view class="m-title-row">
-            <wd-icon :name="$jwIcon('crown')" size="16px" color="#5C2A00"  />
-            <text class="m-title">会员开通</text>
-          </view>
-          <text class="m-sub">{{ memberSub }}</text>
-        </view>
-        <view class="m-btn">
-          <text>续费 / 升级</text>
-          <wd-icon :name="$jwIcon('forward')" size="10px" color="#FFD89B"  />
-        </view>
-      </view>
-    </view>
-
-    <!-- 设置（分组卡片） -->
-    <view
-      v-for="group in SETTING_GROUPS"
-      :key="group.title"
-      class="settings-group"
-    >
-      <text class="group-title">{{ group.title }}</text>
-      <view class="settings-card">
-        <view
-          v-for="it in group.items"
-          :key="it.label"
-          class="setting-row"
-          @click="handle(it.action)"
-        >
-          <view class="row-left">
-            <view class="row-icon-wrap" :class="`tint-${it.tint}`">
-              <wd-icon :name="$jwIcon(it.icon)" size="16px" color="#fff"  />
-            </view>
-            <view class="row-text">
-              <text class="row-label">{{ it.label }}</text>
-              <text v-if="it.sub" class="row-sub">{{ it.sub() }}</text>
+    <view class="page">
+      <!-- 顶部：紧凑版（去掉了多余的 gear 按钮）-->
+      <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+        <view class="hero-inner" @click="handle('profile')">
+          <view class="avatar-wrap">
+            <image v-if="avatar" :src="avatar" class="avatar-img" mode="aspectFill" />
+            <view v-else class="avatar avatar-placeholder">
+              <text>{{ shopName.slice(0, 1) }}</text>
             </view>
           </view>
-          <wd-icon :name="$jwIcon('forward')" size="11px" color="var(--text-tertiary)"  />
+          <view class="info">
+            <text class="name">{{ shopName }}</text>
+            <text class="merchant-no">商户号 {{ merchantNo }}</text>
+            <view class="tags">
+              <view class="rating-tag">
+                <wd-icon :name="$jwIcon('star-fill')" size="11px" color="#FFD43B" />
+                <text class="rating-num">{{ rating.toFixed(1) }}</text>
+                <text class="rating-count" v-if="ratingCount > 0">({{ ratingCount }})</text>
+              </view>
+              <wd-tag :type="$jwTagType('highlight')" :plain="false" round>{{ 'VIP' }}</wd-tag>
+            </view>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="16px" color="rgba(255,255,255,0.7)" />
         </view>
       </view>
+
+      <!-- 会员卡 -->
+      <view class="member-card" @click="goMember">
+        <view class="member-row">
+          <view class="member-left">
+            <view class="m-title-row">
+              <wd-icon :name="$jwIcon('crown')" size="16px" color="#5C2A00" />
+              <text class="m-title">会员开通</text>
+            </view>
+            <text class="m-sub">{{ memberSub }}</text>
+          </view>
+          <view class="m-btn">
+            <text>续费 / 升级</text>
+            <wd-icon :name="$jwIcon('forward')" size="10px" color="#FFD89B" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 设置（分组卡片） -->
+      <view v-for="group in SETTING_GROUPS" :key="group.title" class="settings-group">
+        <text class="group-title">{{ group.title }}</text>
+        <view class="settings-card">
+          <view
+            v-for="it in group.items"
+            :key="it.label"
+            class="setting-row"
+            @click="handle(it.action)"
+          >
+            <view class="row-left">
+              <view class="row-icon-wrap" :class="`tint-${it.tint}`">
+                <wd-icon :name="$jwIcon(it.icon)" size="16px" color="#fff" />
+              </view>
+              <view class="row-text">
+                <text class="row-label">{{ it.label }}</text>
+                <text v-if="it.sub" class="row-sub">{{ it.sub() }}</text>
+              </view>
+            </view>
+            <wd-icon :name="$jwIcon('forward')" size="11px" color="var(--text-tertiary)" />
+          </view>
+        </view>
+      </view>
+
+      <view class="logout" @click="logout"><text>退出登录</text></view>
+      <view class="version">经纬科技 · 商家版 v{{ appVersion }}</view>
+      <view class="safe-bottom" />
+
+      <PrimaryLiquidTabBar flavor="merchant" active="me" />
     </view>
-
-    <view class="logout" @click="logout"><text>退出登录</text></view>
-    <view class="version">经纬科技 · 商家版 v{{ appVersion }}</view>
-    <view class="safe-bottom" />
-
-    <PrimaryLiquidTabBar flavor="merchant" active="me" />
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -292,7 +285,9 @@ function logout() {
   display: flex;
   align-items: center;
   gap: 20rpx;
-  &:active { opacity: 0.92; }
+  &:active {
+    opacity: 0.92;
+  }
 }
 .avatar-wrap {
   width: 112rpx;
@@ -300,10 +295,14 @@ function logout() {
   flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
-  border: 4rpx solid rgba(255,255,255,0.4);
-  background: rgba(255,255,255,0.2);
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
 }
-.avatar-img { width: 100%; height: 100%; display: block; }
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 .avatar {
   width: 100%;
   height: 100%;
@@ -321,33 +320,47 @@ function logout() {
   display: flex;
   flex-direction: column;
   gap: 6rpx;
-  .name { font-size: 34rpx; font-weight: 700; color: #fff; }
+  .name {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #fff;
+  }
   .merchant-no {
     font-size: 22rpx;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255, 255, 255, 0.85);
     font-family: var(--font-family-base);
   }
-  .tags { display: flex; gap: 8rpx; margin-top: 4rpx; flex-wrap: wrap; align-items: center; }
+  .tags {
+    display: flex;
+    gap: 8rpx;
+    margin-top: 4rpx;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 }
 .rating-tag {
   display: inline-flex;
   align-items: center;
   gap: 4rpx;
   padding: 4rpx 12rpx;
-  background: rgba(255,255,255,0.22);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 600;
   color: #fff;
-  .rating-count { font-size: 18rpx; opacity: 0.8; margin-left: 2rpx; }
+  .rating-count {
+    font-size: 18rpx;
+    opacity: 0.8;
+    margin-left: 2rpx;
+  }
 }
 
 .member-card {
   margin: -32rpx 24rpx 0;
-  background: linear-gradient(135deg, #FFE8B3 0%, #FFC078 100%);
+  background: linear-gradient(135deg, #ffe8b3 0%, #ffc078 100%);
   border-radius: 20rpx;
   padding: 20rpx;
-  box-shadow: 0 8rpx 24rpx rgba(255,140,60,0.22);
+  box-shadow: 0 8rpx 24rpx rgba(255, 140, 60, 0.22);
   position: relative;
   z-index: 2;
 }
@@ -357,21 +370,32 @@ function logout() {
   justify-content: space-between;
   gap: 16rpx;
 }
-.member-left { flex: 1; }
+.member-left {
+  flex: 1;
+}
 .m-title-row {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  .m-title { font-size: 28rpx; font-weight: 700; color: #5C2A00; }
+  .m-title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #5c2a00;
+  }
 }
-.m-sub { display: block; margin-top: 4rpx; font-size: 22rpx; color: rgba(92,42,0,0.65); }
+.m-sub {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: rgba(92, 42, 0, 0.65);
+}
 .m-btn {
   display: flex;
   align-items: center;
   gap: 4rpx;
   padding: 10rpx 18rpx;
-  background: #5C2A00;
-  color: #FFD89B;
+  background: #5c2a00;
+  color: #ffd89b;
   border-radius: 999rpx;
   font-size: 22rpx;
 }
@@ -399,10 +423,20 @@ function logout() {
   justify-content: space-between;
   padding: 20rpx 24rpx;
   border-bottom: 1rpx solid var(--border-light);
-  &:last-child { border-bottom: none; }
-  &:active { background: var(--bg-hover); }
+  &:last-child {
+    border-bottom: none;
+  }
+  &:active {
+    background: var(--bg-hover);
+  }
 }
-.row-left { display: flex; align-items: center; gap: 18rpx; flex: 1; min-width: 0; }
+.row-left {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  flex: 1;
+  min-width: 0;
+}
 .row-icon-wrap {
   width: 64rpx;
   height: 64rpx;
@@ -412,12 +446,30 @@ function logout() {
   justify-content: center;
   flex-shrink: 0;
 }
-.tint-orange { background: linear-gradient(135deg, #FF8A65, #FF5722); box-shadow: 0 4rpx 10rpx rgba(255, 87, 34, 0.25); }
-.tint-blue   { background: linear-gradient(135deg, #4FC3F7, #1E88E5); box-shadow: 0 4rpx 10rpx rgba(30, 136, 229, 0.25); }
-.tint-green  { background: linear-gradient(135deg, #81C784, #43A047); box-shadow: 0 4rpx 10rpx rgba(67, 160, 71, 0.25); }
-.tint-purple { background: linear-gradient(135deg, #BA68C8, #8E24AA); box-shadow: 0 4rpx 10rpx rgba(142, 36, 170, 0.25); }
-.tint-pink   { background: linear-gradient(135deg, #F06292, #E91E63); box-shadow: 0 4rpx 10rpx rgba(233, 30, 99, 0.25); }
-.tint-gray   { background: linear-gradient(135deg, #B0BEC5, #607D8B); box-shadow: 0 4rpx 10rpx rgba(96, 125, 139, 0.22); }
+.tint-orange {
+  background: linear-gradient(135deg, #ff8a65, #ff5722);
+  box-shadow: 0 4rpx 10rpx rgba(255, 87, 34, 0.25);
+}
+.tint-blue {
+  background: linear-gradient(135deg, #4fc3f7, #1e88e5);
+  box-shadow: 0 4rpx 10rpx rgba(30, 136, 229, 0.25);
+}
+.tint-green {
+  background: linear-gradient(135deg, #81c784, #43a047);
+  box-shadow: 0 4rpx 10rpx rgba(67, 160, 71, 0.25);
+}
+.tint-purple {
+  background: linear-gradient(135deg, #ba68c8, #8e24aa);
+  box-shadow: 0 4rpx 10rpx rgba(142, 36, 170, 0.25);
+}
+.tint-pink {
+  background: linear-gradient(135deg, #f06292, #e91e63);
+  box-shadow: 0 4rpx 10rpx rgba(233, 30, 99, 0.25);
+}
+.tint-gray {
+  background: linear-gradient(135deg, #b0bec5, #607d8b);
+  box-shadow: 0 4rpx 10rpx rgba(96, 125, 139, 0.22);
+}
 .row-text {
   flex: 1;
   display: flex;
@@ -425,8 +477,15 @@ function logout() {
   gap: 4rpx;
   min-width: 0;
 }
-.row-label { font-size: 28rpx; color: var(--text-primary); font-weight: 500; }
-.row-sub { font-size: 20rpx; color: var(--text-tertiary); }
+.row-label {
+  font-size: 28rpx;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.row-sub {
+  font-size: 20rpx;
+  color: var(--text-tertiary);
+}
 
 .logout {
   margin: 32rpx 24rpx 0;
@@ -438,7 +497,9 @@ function logout() {
   color: var(--status-error);
   font-weight: 600;
   box-shadow: var(--shadow-sm);
-  &:active { background: rgba(255,77,45,0.04); }
+  &:active {
+    background: rgba(255, 77, 45, 0.04);
+  }
 }
 .version {
   margin-top: 28rpx;
@@ -447,5 +508,7 @@ function logout() {
   color: var(--text-tertiary);
   letter-spacing: 1rpx;
 }
-.safe-bottom { height: 80rpx; }
+.safe-bottom {
+  height: 80rpx;
+}
 </style>

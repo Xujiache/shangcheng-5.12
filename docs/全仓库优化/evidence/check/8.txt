@@ -1,0 +1,1 @@
+Secret-boundary audit passed: 248 repository source files checked; signing and AGC credentials remain external.

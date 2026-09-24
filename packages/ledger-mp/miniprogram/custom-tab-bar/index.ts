@@ -1,3 +1,4 @@
+import { navigation, beginNavigationFeedback } from '../utils/page-transition'
 import { meApi } from '../api/index'
 import {
   getGlass,
@@ -74,7 +75,7 @@ Component({
       const previous = this.data.selected
       this.setData({ switching: true })
       this.selectTab(index)
-      wx.switchTab({
+      navigation.switchTab({
         url: this.data.tabs[index].url,
         fail: () => {
           this.selectTab(previous)
@@ -93,6 +94,7 @@ Component({
         return
       }
       adding = true
+      const finishFeedback = beginNavigationFeedback()
       try {
         const membership = (await meApi.refreshMembership()) as MembershipStatus
         setMembership(membership)
@@ -100,10 +102,11 @@ Component({
           requireMembership('会员已到期，历史订单仍可查看，但新增订单需要续费。')
           return
         }
-        wx.navigateTo({ url: '/pages/order-edit/index' })
+        navigation.navigateTo({ url: '/pages/order-edit/index' })
       } catch (e) {
         // request 层已经给出网络提示；状态不明时不开放写入口。
       } finally {
+        finishFeedback()
         setTimeout(() => (adding = false), 600)
       }
     },

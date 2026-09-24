@@ -253,208 +253,230 @@ function goEditProduct(a: AgencyApp) {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="代理商品"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="代理商品"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 申请成功提示条 -->
-    <view v-if="showSuccessHint" class="success-banner">
-      <view class="sb-icon">
-        <wd-icon :name="$jwIcon('check-circle')" size="18px" color="#fff"  />
+      <!-- 申请成功提示条 -->
+      <view v-if="showSuccessHint" class="success-banner">
+        <view class="sb-icon">
+          <wd-icon :name="$jwIcon('check-circle')" size="18px" color="#fff" />
+        </view>
+        <view class="sb-info">
+          <text class="sb-title">代理申请已提交</text>
+          <text class="sb-desc">厂家审核通过后，商品将出现在「已通过」中，可直接上架销售</text>
+        </view>
+        <view class="sb-close" @click="showSuccessHint = false">
+          <wd-icon :name="$jwIcon('close')" size="14px" color="rgba(255,255,255,0.85)" />
+        </view>
       </view>
-      <view class="sb-info">
-        <text class="sb-title">代理申请已提交</text>
-        <text class="sb-desc">厂家审核通过后，商品将出现在「已通过」中，可直接上架销售</text>
-      </view>
-      <view class="sb-close" @click="showSuccessHint = false">
-        <wd-icon :name="$jwIcon('close')" size="14px" color="rgba(255,255,255,0.85)"  />
-      </view>
-    </view>
 
-    <!-- 顶部统计 -->
-    <view class="stats">
-      <view class="stat">
-        <text class="num">{{ stats.total }}</text>
-        <text class="label">代理商品</text>
+      <!-- 顶部统计 -->
+      <view class="stats">
+        <view class="stat">
+          <text class="num">{{ stats.total }}</text>
+          <text class="label">代理商品</text>
+        </view>
+        <view class="divider" />
+        <view class="stat">
+          <text class="num accent">{{ stats.pending }}</text>
+          <text class="label">待审核</text>
+        </view>
+        <view class="divider" />
+        <view class="stat">
+          <text class="num success">{{ stats.approved }}</text>
+          <text class="label">已通过</text>
+        </view>
+        <view class="divider" />
+        <view class="stat">
+          <text class="num">{{ stats.byFactory }}</text>
+          <text class="label">合作厂家</text>
+        </view>
       </view>
-      <view class="divider" />
-      <view class="stat">
-        <text class="num accent">{{ stats.pending }}</text>
-        <text class="label">待审核</text>
-      </view>
-      <view class="divider" />
-      <view class="stat">
-        <text class="num success">{{ stats.approved }}</text>
-        <text class="label">已通过</text>
-      </view>
-      <view class="divider" />
-      <view class="stat">
-        <text class="num">{{ stats.byFactory }}</text>
-        <text class="label">合作厂家</text>
-      </view>
-    </view>
 
-    <!-- Tab -->
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
+      <!-- Tab -->
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
+        >
+          <text>{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
+        </view>
+      </view>
+
+      <!-- 列表 -->
+      <scroll-view scroll-y class="scroll">
+        <view v-for="a in filtered" :key="a.id" class="card">
+          <view class="card-head" @click="gotoDetail(a)">
+            <image :src="a.productImage" mode="aspectFill" class="img" />
+            <view class="info">
+              <view class="name-row">
+                <text class="name">{{ a.productName }}</text>
+                <view
+                  class="status"
+                  :style="{
+                    color: STATUS_META[a.status].tint,
+                    background: STATUS_META[a.status].tint + '14',
+                  }"
+                >
+                  {{ STATUS_META[a.status].label }}
+                </view>
+              </view>
+              <view class="factory">
+                <wd-icon :name="$jwIcon('home-shop')" size="11px" color="var(--text-tertiary)" />
+                <text>{{ a.factoryName }}</text>
+              </view>
+              <view class="price-row">
+                <view class="p-item">
+                  <text class="p-label">出厂价</text>
+                  <text class="p-value">{{ formatPrice(a.startPrice) }}</text>
+                </view>
+                <view class="p-divider" />
+                <view class="p-item">
+                  <text class="p-label">我的零售</text>
+                  <text class="p-value accent">{{ formatPrice(a.retailPrice) }}</text>
+                </view>
+                <view class="markup">+{{ a.markupPercent }}%</view>
+              </view>
+              <view class="extra-row">
+                <text class="time">申请于 {{ formatDate(a.appliedAt) }}</text>
+                <text v-if="a.autoSyncPrice" class="sync-tag">
+                  <wd-icon :name="$jwIcon('refresh')" size="9px" color="#52C41A" />
+                  价格自动同步
+                </text>
+              </view>
+            </view>
+          </view>
+
+          <view class="card-actions" @click.stop>
+            <template v-if="a.status === 'pending'">
+              <view class="btn ghost" @click="cancelApply(a)">取消申请</view>
+              <view class="btn primary" @click="adjustMarkup(a)">调整加价</view>
+            </template>
+            <template v-else-if="a.status === 'approved'">
+              <view class="btn ghost" @click="takeOffline(a)">下架</view>
+              <view class="btn ghost" @click="adjustMarkup(a)">调整加价</view>
+              <view class="btn primary" @click="goEditProduct(a)">编辑商品</view>
+            </template>
+            <template v-else-if="a.status === 'offline'">
+              <view class="btn ghost" @click="cancelApply(a)">删除</view>
+              <view class="btn primary" @click="relaunch(a)">重新上架</view>
+            </template>
+            <template v-else-if="a.status === 'rejected'">
+              <view class="btn ghost" @click="cancelApply(a)">删除</view>
+              <view class="btn primary" @click="gotoDetail(a)">查看厂家</view>
+            </template>
+          </view>
+        </view>
+
+        <view v-if="filtered.length === 0 && !loading" class="agency-empty">
+          <wd-status-tip
+            image="content"
+            :tip="
+              [tab === 'all' ? '还没有代理商品' : '当前分类暂无商品', '去选品广场申请代理厂家商品']
+                .filter(Boolean)
+                .join(' · ')
+            "
+          />
+          <wd-button type="primary" size="small" plain @click="goPlaza">去选品广场</wd-button>
+        </view>
+
+        <view style="height: 40rpx" />
+      </scroll-view>
+
+      <!-- 加价弹窗（% 加价率 / ¥ 固定金额） -->
+      <wd-popup
+        v-model="markupDialog.open"
+        position="bottom"
+        custom-class="mk-sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="closeMarkupDialog"
       >
-        <text>{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
+        <view class="mk-content">
+          <view class="mk-head">
+            <text class="mk-title">调整加价</text>
+            <view class="mk-close" @click="closeMarkupDialog">
+              <wd-icon :name="$jwIcon('close')" size="16px" color="#909399" />
+            </view>
+          </view>
+          <view class="mk-body">
+            <view class="mk-target" v-if="markupDialog.target">
+              <image
+                :src="markupDialog.target.productImage"
+                mode="aspectFill"
+                class="mk-target-img"
+              />
+              <view class="mk-target-info">
+                <text class="mk-target-name">{{ markupDialog.target.productName }}</text>
+                <text class="mk-target-price">出厂价 ¥{{ markupDialog.target.startPrice }}</text>
+              </view>
+            </view>
 
-    <!-- 列表 -->
-    <scroll-view scroll-y class="scroll">
-      <view v-for="a in filtered" :key="a.id" class="card">
-        <view class="card-head" @click="gotoDetail(a)">
-          <image :src="a.productImage" mode="aspectFill" class="img" />
-          <view class="info">
-            <view class="name-row">
-              <text class="name">{{ a.productName }}</text>
-              <view
-                class="status"
-                :style="{ color: STATUS_META[a.status].tint, background: STATUS_META[a.status].tint + '14' }"
+            <view class="mk-label">加价（输入任意正数）</view>
+            <view class="mk-input-row">
+              <wd-input
+                no-border
+                v-model="markupDialog.valueStr"
+                type="digit"
+                class="mk-input"
+                placeholder="输入加价数值"
+              />
+              <wd-segmented
+                :value="markupDialog.mode"
+                :options="[
+                  { value: 'ratio', payload: { label: '% 加价率' } },
+                  { value: 'amount', payload: { label: '¥ 固定金额' } },
+                ]"
+                size="large"
+                @change="markupDialog.mode = String($event.value) as 'ratio' | 'amount'"
               >
-                {{ STATUS_META[a.status].label }}
+                <template #label="{ option }">{{ option.payload?.label }}</template>
+              </wd-segmented>
+            </view>
+            <text class="mk-hint">
+              {{
+                markupDialog.mode === 'ratio'
+                  ? '示例：输入 30 → 零售价 = 出厂价 × 1.30'
+                  : '示例：输入 100 → 零售价 = 出厂价 + ¥100，方便心算'
+              }}
+            </text>
+
+            <view v-if="markupPreview" class="mk-preview">
+              <view class="mk-preview-row">
+                <text class="mk-preview-label">出厂价</text>
+                <text class="mk-preview-value">¥{{ markupDialog.target?.startPrice }}</text>
+              </view>
+              <view class="mk-preview-arrow">↓</view>
+              <view class="mk-preview-row mk-preview-row--accent">
+                <text class="mk-preview-label">新零售价</text>
+                <text class="mk-preview-value mk-preview-value--big"
+                  >¥{{ markupPreview.newRetail }}</text
+                >
+              </view>
+              <view class="mk-preview-row mk-preview-row--small">
+                <text class="mk-preview-label">实际加价率</text>
+                <text class="mk-preview-value">+{{ markupPreview.derivedRatio }}%</text>
               </view>
             </view>
-            <view class="factory">
-              <wd-icon :name="$jwIcon('home-shop')" size="11px" color="var(--text-tertiary)"  />
-              <text>{{ a.factoryName }}</text>
-            </view>
-            <view class="price-row">
-              <view class="p-item">
-                <text class="p-label">出厂价</text>
-                <text class="p-value">{{ formatPrice(a.startPrice) }}</text>
-              </view>
-              <view class="p-divider" />
-              <view class="p-item">
-                <text class="p-label">我的零售</text>
-                <text class="p-value accent">{{ formatPrice(a.retailPrice) }}</text>
-              </view>
-              <view class="markup">+{{ a.markupPercent }}%</view>
-            </view>
-            <view class="extra-row">
-              <text class="time">申请于 {{ formatDate(a.appliedAt) }}</text>
-              <text v-if="a.autoSyncPrice" class="sync-tag">
-                <wd-icon :name="$jwIcon('refresh')" size="9px" color="#52C41A"  />
-                价格自动同步
-              </text>
-            </view>
+          </view>
+          <view class="mk-footer">
+            <wd-button block plain size="large" @click="closeMarkupDialog">取消</wd-button>
+            <wd-button block type="primary" size="large" @click="confirmMarkup">确定</wd-button>
           </view>
         </view>
-
-        <view class="card-actions" @click.stop>
-          <template v-if="a.status === 'pending'">
-            <view class="btn ghost" @click="cancelApply(a)">取消申请</view>
-            <view class="btn primary" @click="adjustMarkup(a)">调整加价</view>
-          </template>
-          <template v-else-if="a.status === 'approved'">
-            <view class="btn ghost" @click="takeOffline(a)">下架</view>
-            <view class="btn ghost" @click="adjustMarkup(a)">调整加价</view>
-            <view class="btn primary" @click="goEditProduct(a)">编辑商品</view>
-          </template>
-          <template v-else-if="a.status === 'offline'">
-            <view class="btn ghost" @click="cancelApply(a)">删除</view>
-            <view class="btn primary" @click="relaunch(a)">重新上架</view>
-          </template>
-          <template v-else-if="a.status === 'rejected'">
-            <view class="btn ghost" @click="cancelApply(a)">删除</view>
-            <view class="btn primary" @click="gotoDetail(a)">查看厂家</view>
-          </template>
-        </view>
-      </view>
-
-      <view v-if="filtered.length === 0 && !loading" class="agency-empty">
-        <wd-status-tip
-          image="content"
-          :tip="[tab === 'all' ? '还没有代理商品' : '当前分类暂无商品', '去选品广场申请代理厂家商品'].filter(Boolean).join(' · ')"
-        />
-        <wd-button type="primary" size="small" plain @click="goPlaza">去选品广场</wd-button>
-      </view>
-      <view style="height: 40rpx" />
-    </scroll-view>
-
-    <!-- 加价弹窗（% 加价率 / ¥ 固定金额） -->
-    <wd-popup
-      v-model="markupDialog.open"
-      position="bottom"
-      custom-class="mk-sheet"
-      safe-area-inset-bottom
-      root-portal
-      @close="closeMarkupDialog"
-    >
-      <view class="mk-content">
-        <view class="mk-head">
-          <text class="mk-title">调整加价</text>
-          <view class="mk-close" @click="closeMarkupDialog">
-            <wd-icon :name="$jwIcon('close')" size="16px" color="#909399"  />
-          </view>
-        </view>
-        <view class="mk-body">
-          <view class="mk-target" v-if="markupDialog.target">
-            <image :src="markupDialog.target.productImage" mode="aspectFill" class="mk-target-img" />
-            <view class="mk-target-info">
-              <text class="mk-target-name">{{ markupDialog.target.productName }}</text>
-              <text class="mk-target-price">出厂价 ¥{{ markupDialog.target.startPrice }}</text>
-            </view>
-          </view>
-
-          <view class="mk-label">加价（输入任意正数）</view>
-          <view class="mk-input-row">
-            <wd-input no-border
-              v-model="markupDialog.valueStr"
-              type="digit"
-              class="mk-input"
-              placeholder="输入加价数值"
-             />
-            <wd-segmented
-              :value="markupDialog.mode"
-              :options="[
-                { value: 'ratio', payload: { label: '% 加价率' } },
-                { value: 'amount', payload: { label: '¥ 固定金额' } },
-              ]"
-              size="large"
-              @change="markupDialog.mode = String($event.value) as 'ratio' | 'amount'"
-            >
-              <template #label="{ option }">{{ option.payload?.label }}</template>
-            </wd-segmented>
-          </view>
-          <text class="mk-hint">
-            {{
-              markupDialog.mode === 'ratio'
-                ? '示例：输入 30 → 零售价 = 出厂价 × 1.30'
-                : '示例：输入 100 → 零售价 = 出厂价 + ¥100，方便心算'
-            }}
-          </text>
-
-          <view v-if="markupPreview" class="mk-preview">
-            <view class="mk-preview-row">
-              <text class="mk-preview-label">出厂价</text>
-              <text class="mk-preview-value">¥{{ markupDialog.target?.startPrice }}</text>
-            </view>
-            <view class="mk-preview-arrow">↓</view>
-            <view class="mk-preview-row mk-preview-row--accent">
-              <text class="mk-preview-label">新零售价</text>
-              <text class="mk-preview-value mk-preview-value--big">¥{{ markupPreview.newRetail }}</text>
-            </view>
-            <view class="mk-preview-row mk-preview-row--small">
-              <text class="mk-preview-label">实际加价率</text>
-              <text class="mk-preview-value">+{{ markupPreview.derivedRatio }}%</text>
-            </view>
-          </view>
-        </view>
-        <view class="mk-footer">
-          <wd-button block plain size="large" @click="closeMarkupDialog">取消</wd-button>
-          <wd-button block type="primary" size="large" @click="confirmMarkup">确定</wd-button>
-        </view>
-      </view>
-    </wd-popup>
-  </view>
-
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 
@@ -469,7 +491,7 @@ function goEditProduct(a: AgencyApp) {
 .success-banner {
   margin: 16rpx 24rpx 0;
   padding: 16rpx 20rpx;
-  background: linear-gradient(135deg, #52C41A, #95E063);
+  background: linear-gradient(135deg, #52c41a, #95e063);
   color: #fff;
   border-radius: 16rpx;
   display: flex;
@@ -503,11 +525,20 @@ function goEditProduct(a: AgencyApp) {
       line-height: 1.4;
     }
   }
-  .sb-close { padding: 4rpx; flex-shrink: 0; }
+  .sb-close {
+    padding: 4rpx;
+    flex-shrink: 0;
+  }
 }
 @keyframes slide-in {
-  from { opacity: 0; transform: translateY(-12rpx); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stats {
@@ -531,10 +562,17 @@ function goEditProduct(a: AgencyApp) {
     color: var(--text-primary);
     line-height: 1;
     font-family: var(--font-family-base);
-    &.accent { color: #FAAD14; }
-    &.success { color: #52C41A; }
+    &.accent {
+      color: #faad14;
+    }
+    &.success {
+      color: #52c41a;
+    }
   }
-  .label { font-size: 20rpx; color: var(--text-tertiary); }
+  .label {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+  }
 }
 .divider {
   width: 1rpx;
@@ -662,7 +700,9 @@ function goEditProduct(a: AgencyApp) {
       font-weight: 800;
       color: var(--text-primary);
       font-family: var(--font-family-base);
-      &.accent { color: var(--brand-primary); }
+      &.accent {
+        color: var(--brand-primary);
+      }
     }
   }
   .p-divider {
@@ -674,7 +714,7 @@ function goEditProduct(a: AgencyApp) {
     margin-left: auto;
     padding: 4rpx 12rpx;
     background: rgba(82, 196, 26, 0.1);
-    color: #52C41A;
+    color: #52c41a;
     border-radius: 999rpx;
     font-size: 20rpx;
     font-weight: 800;
@@ -696,7 +736,7 @@ function goEditProduct(a: AgencyApp) {
     align-items: center;
     gap: 4rpx;
     font-size: 18rpx;
-    color: #52C41A;
+    color: #52c41a;
     font-weight: 600;
   }
 }
@@ -722,7 +762,7 @@ function goEditProduct(a: AgencyApp) {
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
 }
 
@@ -735,7 +775,7 @@ function goEditProduct(a: AgencyApp) {
   font-size: 26rpx;
   font-weight: 700;
   display: inline-block;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
 }
 
 /* ============ 加价弹窗 ============ */
@@ -750,8 +790,12 @@ function goEditProduct(a: AgencyApp) {
 }
 
 @keyframes mk-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .mk-sheet {
@@ -765,8 +809,12 @@ function goEditProduct(a: AgencyApp) {
 }
 
 @keyframes mk-slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .mk-head {

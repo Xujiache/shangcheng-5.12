@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { statsApi, notificationApi, adApi, changelogApi, meApi } from '../../api/index'
 import { wasStale } from '../../utils/request'
 import { fmtDate, yuan, maskMoney } from '../../utils/format'
@@ -23,12 +24,11 @@ const COLORMAP: Record<string, string> = {
 // 头部大数对应的「当前周期」文案：日=今日 / 月=本月 / 年=本年（与所选单位一致）
 const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', year: '本年' }
 
-Page({
+MotionPage({
   _cover: '',
   data: {
     loggedIn: isLoggedIn(),
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
-    tabMotion: false,
     hdPad: 30, // 顶部留白 = 状态栏高度 + 10
     hdRight: 18, // 右侧留白：动态避让微信原生胶囊（onShow 计算）
     fxMax: false, // 性能模式：开启 hero 触摸流光（每帧 setData，默认关）
@@ -82,7 +82,7 @@ Page({
   },
   onShow() {
     const loggedIn = isLoggedIn()
-    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
+    this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
     const sb = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
@@ -354,9 +354,9 @@ Page({
     ]
     const path = link.split('?')[0]
     if (TABS.indexOf(path) >= 0) {
-      wx.switchTab({ url: path })
+      navigation.switchTab({ url: path })
     } else {
-      wx.navigateTo({
+      navigation.navigateTo({
         url: link,
         fail: () => wx.showToast({ title: '无法打开该页面', icon: 'none' }),
       })
@@ -366,44 +366,43 @@ Page({
     goToLogin()
   },
   toAbout() {
-    wx.navigateTo({ url: '/pages/about/index' })
+    navigation.navigateTo({ url: '/pages/about/index' })
   },
   toDoc(e: any) {
-    wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
+    navigation.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
   },
   toCut() {
-    wx.navigateTo({ url: '/pages/cut/index' })
+    navigation.navigateTo({ url: '/pages/cut/index' })
   },
   toWorkLog() {
-    if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/work-log/index' })
+    navigation.navigateTo({ url: '/pages/work-log/index' })
   },
   toFormat() {
     if (!requireLogin('登录后可免费使用格式转换，转换文件保留 30 天。')) return
-    wx.navigateTo({ url: '/subpackages/format/index/index' })
+    navigation.navigateTo({ url: '/subpackages/format/index/index' })
   },
   toTriangleTool() {
-    wx.navigateTo({ url: '/pages/triangle-tool/index' })
+    navigation.navigateTo({ url: '/pages/triangle-tool/index' })
   },
   toArcTool() {
-    wx.navigateTo({ url: '/pages/arc-tool/index' })
+    navigation.navigateTo({ url: '/pages/arc-tool/index' })
   },
 
   toCost() {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/cost-analysis/index' })
+    navigation.navigateTo({ url: '/pages/cost-analysis/index' })
   },
   toGoal() {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/goal/index' })
+    navigation.navigateTo({ url: '/pages/goal/index' })
   },
   toMsg() {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/message-center/index' })
+    navigation.navigateTo({ url: '/pages/message-center/index' })
   },
   toOrder(e: any) {
     if (!requireLogin()) return
-    wx.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
+    navigation.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
   },
   // 开启「转发给朋友」/「分享到朋友圈」
   onShareAppMessage() {

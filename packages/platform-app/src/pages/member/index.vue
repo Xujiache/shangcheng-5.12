@@ -440,460 +440,495 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="会员管理" @click-right="addPlan"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
-    </wd-navbar>
-
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="onTabChange(t.key)"
+    <view class="page">
+      <wd-navbar
+        title="会员管理"
+        @click-right="addPlan"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
       >
-        <text>{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
+        <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 会员套餐 -->
-      <view v-if="tab === 'basic'">
-        <view class="section-head">
-          <text class="section-title">会员套餐(基础功能)</text>
-          <text class="section-count">{{ planCount.basic }} 个套餐</text>
-        </view>
-
-        <view v-for="p in basicPlans" :key="p.id" class="plan-card basic">
-          <view class="plan-head">
-            <view class="plan-title">
-              <text class="name">{{ p.name }}</text>
-              <view v-if="p.hot" class="hot-tag">HOT</view>
-            </view>
-            <view :class="['status-tag', p.status === 'active' ? 'on' : 'off']">
-              {{ p.status === 'active' ? '已启用' : '已停用' }}
-            </view>
-          </view>
-
-          <view class="price-row">
-            <text class="price-cur">¥</text>
-            <text class="price-num">{{ formatPrice(p.price) }}</text>
-            <text class="price-unit">/ {{ PERIOD_LABEL[p.period] || p.period }}</text>
-            <text v-if="p.originalPrice" class="price-original">{{
-              formatPrice(p.originalPrice)
-            }}</text>
-          </view>
-
-          <view class="rights">
-            <view v-for="(r, i) in p.rights" :key="i" class="r-row">
-              <wd-icon :name="$jwIcon('check')" size="11px" color="#52C41A"  />
-              <text>{{ r }}</text>
-            </view>
-          </view>
-
-          <view class="actions">
-            <view class="link-btn" @click="toggleSubscriptions(p.id)">
-              <text>{{ expandedPlanId === p.id ? '收起订阅商家' : '查看订阅商家' }}</text>
-              <wd-icon
-                :name="$jwIcon(expandedPlanId === p.id ? 'chevron-up' : 'chevron-down')" size="11px"
-                color="var(--text-tertiary)"
-               />
-            </view>
-            <view class="btn ghost" @click="openEditSheet(p)">编辑</view>
-          </view>
-
-          <!-- 订阅商家展开区 -->
-          <view v-if="expandedPlanId === p.id" class="sub-list">
-            <view v-if="subscriptionLoadingId === p.id" class="sub-empty">加载中…</view>
-            <view v-else-if="!subscriptionCache.get(p.id)?.length" class="sub-empty">
-              暂无商家订阅
-            </view>
-            <view v-else class="sub-rows">
-              <view class="sub-head-row">
-                <text class="sub-col name">商家</text>
-                <text class="sub-col status">状态</text>
-                <text class="sub-col date">到期</text>
-              </view>
-              <view v-for="s in subscriptionCache.get(p.id)" :key="s.id" class="sub-row">
-                <text class="sub-col name">{{ s.merchantName || '—' }}</text>
-                <text
-                  class="sub-col status"
-                  :style="{ color: SUB_STATUS_LABEL[s.status]?.tone || '#909399' }"
-                >
-                  {{ SUB_STATUS_LABEL[s.status]?.label || s.status }}
-                </text>
-                <text class="sub-col date">{{ formatSubDate(s.endAt) }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 试用期配置 -->
-        <view class="card trial-card" @click="changeTrial">
-          <view class="trial-icon">
-            <wd-icon :name="$jwIcon('gift')" size="18px" color="#52C41A"  />
-          </view>
-          <view class="trial-info">
-            <text class="trial-label">新商户试用期</text>
-            <text class="trial-desc">新注册商户自动赠送基础套餐</text>
-          </view>
-          <text class="trial-value">
-            {{
-              trialDays === null
-                ? '暂无配置'
-                : trialDays > 0
-                  ? `${trialDays} 天`
-                  : '已关闭'
-            }}
-          </text>
-          <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-        </view>
-
-        <view class="add-plan" @click="openCreateSheet('basic')">
-          <wd-icon :name="$jwIcon('plus')" size="14px" color="#fff"  />
-          <text>新增会员套餐</text>
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="onTabChange(t.key)"
+        >
+          <text>{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
         </view>
       </view>
 
-      <!-- 广告推送套餐 -->
-      <view v-else-if="tab === 'ad'">
-        <view class="section-head">
-          <view class="head-title-row">
-            <text class="section-title">广告推送套餐</text>
-            <view class="new-tag">新</view>
-          </view>
-          <text class="section-desc">帮商户在选品广场/首页 Banner 获得曝光位,错峰出售</text>
-        </view>
-
-        <view v-for="p in adPlans" :key="p.id" :class="['plan-card', 'ad', p.hot ? 'is-hot' : '']">
-          <view v-if="p.hot" class="hot-ribbon">HOT</view>
-          <view class="plan-head">
-            <view class="plan-title">
-              <text class="name">{{ p.name }}</text>
-            </view>
-            <view :class="['status-tag', p.status === 'active' ? 'on' : 'off']">
-              {{ p.status === 'active' ? '已启用' : '已停用' }}
-            </view>
+      <scroll-view scroll-y class="scroll">
+        <!-- 会员套餐 -->
+        <view v-if="tab === 'basic'">
+          <view class="section-head">
+            <text class="section-title">会员套餐(基础功能)</text>
+            <text class="section-count">{{ planCount.basic }} 个套餐</text>
           </view>
 
-          <view class="price-row">
-            <text class="price-cur">¥</text>
-            <text class="price-num">{{ formatPrice(p.price) }}</text>
-            <text class="price-unit">/ {{ PERIOD_LABEL[p.period] || p.period }}</text>
-          </view>
-
-          <view class="rights">
-            <view v-for="(r, i) in p.rights" :key="i" class="r-row">
-              <view class="dot" />
-              <text>{{ r }}</text>
-            </view>
-            <view v-if="p.constraints" class="constraint-grid">
-              <view v-if="p.constraints.pushSlots" class="c-item">
-                <text class="c-label">推送位</text>
-                <text class="c-value">{{ p.constraints.pushSlots }}</text>
+          <view v-for="p in basicPlans" :key="p.id" class="plan-card basic">
+            <view class="plan-head">
+              <view class="plan-title">
+                <text class="name">{{ p.name }}</text>
+                <view v-if="p.hot" class="hot-tag">HOT</view>
               </view>
-              <view v-if="p.constraints.weightLimit" class="c-item">
-                <text class="c-label">权重上限</text>
-                <text class="c-value">{{ p.constraints.weightLimit }}</text>
-              </view>
-              <view v-if="p.constraints.bannerLimit" class="c-item">
-                <text class="c-label">Banner</text>
-                <text class="c-value">{{ p.constraints.bannerLimit }}</text>
-              </view>
-              <view v-if="p.constraints.impressionLimit" class="c-item">
-                <text class="c-label">月曝光</text>
-                <text class="c-value">{{ p.constraints.impressionLimit }}</text>
+              <view :class="['status-tag', p.status === 'active' ? 'on' : 'off']">
+                {{ p.status === 'active' ? '已启用' : '已停用' }}
               </view>
             </view>
-          </view>
 
-          <view class="actions">
-            <view class="link-btn" @click="toggleSubscriptions(p.id)">
-              <text>{{ expandedPlanId === p.id ? '收起订阅商家' : '查看订阅商家' }}</text>
-              <wd-icon
-                :name="$jwIcon(expandedPlanId === p.id ? 'chevron-up' : 'chevron-down')" size="11px"
-                color="var(--text-tertiary)"
-               />
+            <view class="price-row">
+              <text class="price-cur">¥</text>
+              <text class="price-num">{{ formatPrice(p.price) }}</text>
+              <text class="price-unit">/ {{ PERIOD_LABEL[p.period] || p.period }}</text>
+              <text v-if="p.originalPrice" class="price-original">{{
+                formatPrice(p.originalPrice)
+              }}</text>
             </view>
-            <view class="btn ghost" @click="openEditSheet(p)">编辑</view>
-          </view>
 
-          <view v-if="expandedPlanId === p.id" class="sub-list">
-            <view v-if="subscriptionLoadingId === p.id" class="sub-empty">加载中…</view>
-            <view v-else-if="!subscriptionCache.get(p.id)?.length" class="sub-empty">
-              暂无商家订阅
-            </view>
-            <view v-else class="sub-rows">
-              <view class="sub-head-row">
-                <text class="sub-col name">商家</text>
-                <text class="sub-col status">状态</text>
-                <text class="sub-col date">到期</text>
-              </view>
-              <view v-for="s in subscriptionCache.get(p.id)" :key="s.id" class="sub-row">
-                <text class="sub-col name">{{ s.merchantName || '—' }}</text>
-                <text
-                  class="sub-col status"
-                  :style="{ color: SUB_STATUS_LABEL[s.status]?.tone || '#909399' }"
-                >
-                  {{ SUB_STATUS_LABEL[s.status]?.label || s.status }}
-                </text>
-                <text class="sub-col date">{{ formatSubDate(s.endAt) }}</text>
+            <view class="rights">
+              <view v-for="(r, i) in p.rights" :key="i" class="r-row">
+                <wd-icon :name="$jwIcon('check')" size="11px" color="#52C41A" />
+                <text>{{ r }}</text>
               </view>
             </view>
-          </view>
-        </view>
 
-        <!-- 增值单项 -->
-        <view class="card" v-if="addonItems.length > 0">
-          <view class="card-head-row">
-            <wd-icon :name="$jwIcon('gift')" size="14px" color="var(--brand-primary)"  />
-            <text class="card-title">增值单项购买</text>
-          </view>
-          <view class="addon-list">
-            <view
-              v-for="a in addonItems"
-              :key="a.id"
-              class="addon-row"
-              @click="openEditSheet(plans.find((x) => x.id === a.id)!)"
-            >
-              <view class="addon-icon">
-                <wd-icon :name="$jwIcon(a.icon)" size="12px" color="var(--brand-primary)"  />
+            <view class="actions">
+              <view class="link-btn" @click="toggleSubscriptions(p.id)">
+                <text>{{ expandedPlanId === p.id ? '收起订阅商家' : '查看订阅商家' }}</text>
+                <wd-icon
+                  :name="$jwIcon(expandedPlanId === p.id ? 'chevron-up' : 'chevron-down')"
+                  size="11px"
+                  color="var(--text-tertiary)"
+                />
               </view>
-              <text class="addon-label">{{ a.label }}</text>
-              <text class="addon-price">¥{{ a.price }}</text>
-              <wd-icon :name="$jwIcon('chevron-right')" size="11px" color="var(--text-tertiary)"  />
+              <view class="btn ghost" @click="openEditSheet(p)">编辑</view>
             </view>
-          </view>
-        </view>
 
-        <view class="add-plan" @click="openCreateSheet('ad')">
-          <wd-icon :name="$jwIcon('plus')" size="14px" color="#fff"  />
-          <text>新增广告推送套餐</text>
-        </view>
-      </view>
-
-      <!-- 会员状态 -->
-      <view v-else-if="tab === 'status'">
-        <view class="card status-card">
-          <text class="card-title">会员订阅概况</text>
-          <view class="status-grid">
-            <view class="s-item">
-              <text class="s-num">{{ statusOverview.yearly }}</text>
-              <text class="s-label">VIP 年费</text>
-            </view>
-            <view class="s-item">
-              <text class="s-num">{{ statusOverview.monthly }}</text>
-              <text class="s-label">月费</text>
-            </view>
-            <view class="s-item">
-              <text class="s-num">{{ statusOverview.trial }}</text>
-              <text class="s-label">试用</text>
-            </view>
-            <view class="s-item">
-              <text class="s-num">{{ statusOverview.expiringSoon }}</text>
-              <text class="s-label">7 天内到期</text>
-            </view>
-          </view>
-          <text class="hint">数据来源:当前所有套餐订阅记录实时聚合</text>
-        </view>
-      </view>
-
-      <view style="height: 40rpx" />
-    </scroll-view>
-
-    <!-- 套餐编辑底部 sheet -->
-    <wd-popup v-model="planSheetOpen" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal @close="closePlanSheet">
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text class="sheet-title">{{ planSheetTitle }}</text>
-          <wd-button size="small" type="primary" :loading="planSheetSaving" @click="savePlanSheet">
-            {{ planSheetSaving ? '保存中…' : '保存' }}
-          </wd-button>
-        </view>
-
-        <scroll-view scroll-y class="sheet-body">
-          <view class="form-block">
-            <text class="form-label">套餐名称</text>
-            <wd-input no-border
-              v-model="planDraft.name"
-              class="form-input"
-              placeholder="例如：VIP 年费会员"
-              maxlength="40"
-             />
-          </view>
-
-          <view class="form-block">
-            <text class="form-label">类型</text>
-            <view class="chip-row">
-              <view
-                v-for="t in ['basic', 'ad', 'addon'] as MemberPlanType[]"
-                :key="t"
-                :class="[
-                  'chip',
-                  planDraft.type === t ? 'active' : '',
-                  planSheetEditing ? 'locked' : '',
-                ]"
-                @click="!planSheetEditing && (planDraft.type = t)"
-              >
-                {{ TYPE_LABEL[t] }}
+            <!-- 订阅商家展开区 -->
+            <view v-if="expandedPlanId === p.id" class="sub-list">
+              <view v-if="subscriptionLoadingId === p.id" class="sub-empty">加载中…</view>
+              <view v-else-if="!subscriptionCache.get(p.id)?.length" class="sub-empty">
+                暂无商家订阅
               </view>
-            </view>
-            <text v-if="planSheetEditing" class="form-hint"
-              >类型创建后不可修改,避免订阅数据错位。</text
-            >
-          </view>
-
-          <view class="form-block">
-            <text class="form-label">计费周期</text>
-            <view class="chip-row wrap">
-              <view
-                v-for="opt in PERIOD_OPTIONS"
-                :key="opt.key"
-                :class="['chip', planDraft.period === opt.key ? 'active' : '']"
-                @click="planDraft.period = opt.key"
-              >
-                {{ opt.label }}
+              <view v-else class="sub-rows">
+                <view class="sub-head-row">
+                  <text class="sub-col name">商家</text>
+                  <text class="sub-col status">状态</text>
+                  <text class="sub-col date">到期</text>
+                </view>
+                <view v-for="s in subscriptionCache.get(p.id)" :key="s.id" class="sub-row">
+                  <text class="sub-col name">{{ s.merchantName || '—' }}</text>
+                  <text
+                    class="sub-col status"
+                    :style="{ color: SUB_STATUS_LABEL[s.status]?.tone || '#909399' }"
+                  >
+                    {{ SUB_STATUS_LABEL[s.status]?.label || s.status }}
+                  </text>
+                  <text class="sub-col date">{{ formatSubDate(s.endAt) }}</text>
+                </view>
               </view>
             </view>
           </view>
 
-          <view class="form-row-grid">
-            <view class="grid-col">
-              <text class="form-label">周期数</text>
-              <wd-input no-border
-                v-model.number="planDraft.periodCount"
-                class="form-input"
-                type="number"
-                placeholder="1"
-               />
-              <text class="form-hint">如「12 个月年费」填 12</text>
+          <!-- 试用期配置 -->
+          <view class="card trial-card" @click="changeTrial">
+            <view class="trial-icon">
+              <wd-icon :name="$jwIcon('gift')" size="18px" color="#52C41A" />
             </view>
-            <view class="grid-col">
-              <text class="form-label">价格 (¥)</text>
-              <wd-input no-border
-                v-model.number="planDraft.price"
-                class="form-input"
-                type="number"
-                placeholder="0.00"
-               />
+            <view class="trial-info">
+              <text class="trial-label">新商户试用期</text>
+              <text class="trial-desc">新注册商户自动赠送基础套餐</text>
             </view>
-          </view>
-
-          <view class="form-block">
-            <text class="form-label">原价 (¥，可选)</text>
-            <wd-input no-border :model-value="planDraft.originalPrice ?? ''"
-              class="form-input"
-              type="number"
-              placeholder="留空则不显示删除线价"
-              @input="
-                (e: any) => {
-                  const v = Number(e.detail.value)
-                  planDraft.originalPrice = Number.isFinite(v) && v > 0 ? v : null
-                }
-              "
-             />
-          </view>
-
-          <view v-if="showTrialDaysField" class="form-block">
-            <text class="form-label">套餐试用天数</text>
-            <wd-input no-border
-              v-model.number="planDraft.trialDays"
-              class="form-input"
-              type="number"
-              placeholder="0 表示无套餐内试用"
-             />
-            <text class="form-hint">
-              此处是「该套餐促销试用」,与全局「新商户试用期」不同(后者在套餐外侧设置)。
+            <text class="trial-value">
+              {{ trialDays === null ? '暂无配置' : trialDays > 0 ? `${trialDays} 天` : '已关闭' }}
             </text>
+            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
           </view>
 
-          <view class="form-block">
-            <text class="form-label">权益列表(每行一条)</text>
-            <wd-textarea no-border
-              v-model="planDraft.rightsText"
-              class="form-textarea"
-              placeholder="例如：&#10;无限商品上架&#10;开通直播带货&#10;5 个员工账号"
-              :auto-height="true"
-              :maxlength="800"
-             />
+          <view class="add-plan" @click="openCreateSheet('basic')">
+            <wd-icon :name="$jwIcon('plus')" size="14px" color="#fff" />
+            <text>新增会员套餐</text>
           </view>
+        </view>
 
-          <view v-if="showConstraintsBlock" class="form-block">
-            <text class="form-label">广告位配额</text>
-            <view class="quota-grid">
-              <view class="quota-item">
-                <text class="quota-label">推送位</text>
-                <wd-input no-border
-                  v-model.number="planDraft.constraints.pushSlots"
-                  class="form-input"
-                  type="number"
-                  placeholder="0"
-                 />
-              </view>
-              <view class="quota-item">
-                <text class="quota-label">权重上限</text>
-                <wd-input no-border
-                  v-model.number="planDraft.constraints.weightLimit"
-                  class="form-input"
-                  type="number"
-                  placeholder="0-100"
-                 />
-              </view>
-              <view class="quota-item">
-                <text class="quota-label">Banner 数</text>
-                <wd-input no-border
-                  v-model.number="planDraft.constraints.bannerLimit"
-                  class="form-input"
-                  type="number"
-                  placeholder="0"
-                 />
-              </view>
-              <view class="quota-item">
-                <text class="quota-label">月曝光</text>
-                <wd-input no-border
-                  v-model.number="planDraft.constraints.impressionLimit"
-                  class="form-input"
-                  type="number"
-                  placeholder="0"
-                 />
-              </view>
+        <!-- 广告推送套餐 -->
+        <view v-else-if="tab === 'ad'">
+          <view class="section-head">
+            <view class="head-title-row">
+              <text class="section-title">广告推送套餐</text>
+              <view class="new-tag">新</view>
             </view>
-          </view>
-
-          <view class="form-row-switch">
-            <view class="form-row-info">
-              <text class="form-row-title">标记为 HOT</text>
-              <text class="form-row-desc">在卡片上展示 HOT 角标,吸引商户点击</text>
-            </view>
-            <wd-switch v-model="planDraft.hot" active-color="var(--brand-primary)" />
-          </view>
-
-          <view class="form-row-switch">
-            <view class="form-row-info">
-              <text class="form-row-title">上架状态</text>
-              <text class="form-row-desc">下架后商户无法新订阅,已订阅商家不受影响</text>
-            </view>
-            <wd-switch
-              :model-value="planDraft.status === 'active'"
-              active-color="var(--brand-primary)"
-              @change="planDraft.status = $event.value ? 'active' : 'disabled'"
-            />
+            <text class="section-desc">帮商户在选品广场/首页 Banner 获得曝光位,错峰出售</text>
           </view>
 
           <view
-            v-if="planSheetEditing && planDraft.id"
-            class="delete-row"
-            @click="confirmDeletePlan"
+            v-for="p in adPlans"
+            :key="p.id"
+            :class="['plan-card', 'ad', p.hot ? 'is-hot' : '']"
           >
-            <wd-icon :name="$jwIcon('trash')" size="12px" color="#F5222D"  />
-            <text>{{ planSheetDeleting ? '删除中…' : '删除该套餐' }}</text>
-          </view>
-        </scroll-view>
-      </view>
-    </wd-popup>
-  </view>
+            <view v-if="p.hot" class="hot-ribbon">HOT</view>
+            <view class="plan-head">
+              <view class="plan-title">
+                <text class="name">{{ p.name }}</text>
+              </view>
+              <view :class="['status-tag', p.status === 'active' ? 'on' : 'off']">
+                {{ p.status === 'active' ? '已启用' : '已停用' }}
+              </view>
+            </view>
 
+            <view class="price-row">
+              <text class="price-cur">¥</text>
+              <text class="price-num">{{ formatPrice(p.price) }}</text>
+              <text class="price-unit">/ {{ PERIOD_LABEL[p.period] || p.period }}</text>
+            </view>
+
+            <view class="rights">
+              <view v-for="(r, i) in p.rights" :key="i" class="r-row">
+                <view class="dot" />
+                <text>{{ r }}</text>
+              </view>
+              <view v-if="p.constraints" class="constraint-grid">
+                <view v-if="p.constraints.pushSlots" class="c-item">
+                  <text class="c-label">推送位</text>
+                  <text class="c-value">{{ p.constraints.pushSlots }}</text>
+                </view>
+                <view v-if="p.constraints.weightLimit" class="c-item">
+                  <text class="c-label">权重上限</text>
+                  <text class="c-value">{{ p.constraints.weightLimit }}</text>
+                </view>
+                <view v-if="p.constraints.bannerLimit" class="c-item">
+                  <text class="c-label">Banner</text>
+                  <text class="c-value">{{ p.constraints.bannerLimit }}</text>
+                </view>
+                <view v-if="p.constraints.impressionLimit" class="c-item">
+                  <text class="c-label">月曝光</text>
+                  <text class="c-value">{{ p.constraints.impressionLimit }}</text>
+                </view>
+              </view>
+            </view>
+
+            <view class="actions">
+              <view class="link-btn" @click="toggleSubscriptions(p.id)">
+                <text>{{ expandedPlanId === p.id ? '收起订阅商家' : '查看订阅商家' }}</text>
+                <wd-icon
+                  :name="$jwIcon(expandedPlanId === p.id ? 'chevron-up' : 'chevron-down')"
+                  size="11px"
+                  color="var(--text-tertiary)"
+                />
+              </view>
+              <view class="btn ghost" @click="openEditSheet(p)">编辑</view>
+            </view>
+
+            <view v-if="expandedPlanId === p.id" class="sub-list">
+              <view v-if="subscriptionLoadingId === p.id" class="sub-empty">加载中…</view>
+              <view v-else-if="!subscriptionCache.get(p.id)?.length" class="sub-empty">
+                暂无商家订阅
+              </view>
+              <view v-else class="sub-rows">
+                <view class="sub-head-row">
+                  <text class="sub-col name">商家</text>
+                  <text class="sub-col status">状态</text>
+                  <text class="sub-col date">到期</text>
+                </view>
+                <view v-for="s in subscriptionCache.get(p.id)" :key="s.id" class="sub-row">
+                  <text class="sub-col name">{{ s.merchantName || '—' }}</text>
+                  <text
+                    class="sub-col status"
+                    :style="{ color: SUB_STATUS_LABEL[s.status]?.tone || '#909399' }"
+                  >
+                    {{ SUB_STATUS_LABEL[s.status]?.label || s.status }}
+                  </text>
+                  <text class="sub-col date">{{ formatSubDate(s.endAt) }}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 增值单项 -->
+          <view class="card" v-if="addonItems.length > 0">
+            <view class="card-head-row">
+              <wd-icon :name="$jwIcon('gift')" size="14px" color="var(--brand-primary)" />
+              <text class="card-title">增值单项购买</text>
+            </view>
+            <view class="addon-list">
+              <view
+                v-for="a in addonItems"
+                :key="a.id"
+                class="addon-row"
+                @click="openEditSheet(plans.find((x) => x.id === a.id)!)"
+              >
+                <view class="addon-icon">
+                  <wd-icon :name="$jwIcon(a.icon)" size="12px" color="var(--brand-primary)" />
+                </view>
+                <text class="addon-label">{{ a.label }}</text>
+                <text class="addon-price">¥{{ a.price }}</text>
+                <wd-icon
+                  :name="$jwIcon('chevron-right')"
+                  size="11px"
+                  color="var(--text-tertiary)"
+                />
+              </view>
+            </view>
+          </view>
+
+          <view class="add-plan" @click="openCreateSheet('ad')">
+            <wd-icon :name="$jwIcon('plus')" size="14px" color="#fff" />
+            <text>新增广告推送套餐</text>
+          </view>
+        </view>
+
+        <!-- 会员状态 -->
+        <view v-else-if="tab === 'status'">
+          <view class="card status-card">
+            <text class="card-title">会员订阅概况</text>
+            <view class="status-grid">
+              <view class="s-item">
+                <text class="s-num">{{ statusOverview.yearly }}</text>
+                <text class="s-label">VIP 年费</text>
+              </view>
+              <view class="s-item">
+                <text class="s-num">{{ statusOverview.monthly }}</text>
+                <text class="s-label">月费</text>
+              </view>
+              <view class="s-item">
+                <text class="s-num">{{ statusOverview.trial }}</text>
+                <text class="s-label">试用</text>
+              </view>
+              <view class="s-item">
+                <text class="s-num">{{ statusOverview.expiringSoon }}</text>
+                <text class="s-label">7 天内到期</text>
+              </view>
+            </view>
+            <text class="hint">数据来源:当前所有套餐订阅记录实时聚合</text>
+          </view>
+        </view>
+
+        <view style="height: 40rpx" />
+      </scroll-view>
+
+      <!-- 套餐编辑底部 sheet -->
+      <wd-popup
+        v-model="planSheetOpen"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="closePlanSheet"
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text class="sheet-title">{{ planSheetTitle }}</text>
+            <wd-button
+              size="small"
+              type="primary"
+              :loading="planSheetSaving"
+              @click="savePlanSheet"
+            >
+              {{ planSheetSaving ? '保存中…' : '保存' }}
+            </wd-button>
+          </view>
+
+          <scroll-view scroll-y class="sheet-body">
+            <view class="form-block">
+              <text class="form-label">套餐名称</text>
+              <wd-input
+                no-border
+                v-model="planDraft.name"
+                class="form-input"
+                placeholder="例如：VIP 年费会员"
+                maxlength="40"
+              />
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">类型</text>
+              <view class="chip-row">
+                <view
+                  v-for="t in ['basic', 'ad', 'addon'] as MemberPlanType[]"
+                  :key="t"
+                  :class="[
+                    'chip',
+                    planDraft.type === t ? 'active' : '',
+                    planSheetEditing ? 'locked' : '',
+                  ]"
+                  @click="!planSheetEditing && (planDraft.type = t)"
+                >
+                  {{ TYPE_LABEL[t] }}
+                </view>
+              </view>
+              <text v-if="planSheetEditing" class="form-hint"
+                >类型创建后不可修改,避免订阅数据错位。</text
+              >
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">计费周期</text>
+              <view class="chip-row wrap">
+                <view
+                  v-for="opt in PERIOD_OPTIONS"
+                  :key="opt.key"
+                  :class="['chip', planDraft.period === opt.key ? 'active' : '']"
+                  @click="planDraft.period = opt.key"
+                >
+                  {{ opt.label }}
+                </view>
+              </view>
+            </view>
+
+            <view class="form-row-grid">
+              <view class="grid-col">
+                <text class="form-label">周期数</text>
+                <wd-input
+                  no-border
+                  v-model.number="planDraft.periodCount"
+                  class="form-input"
+                  type="number"
+                  placeholder="1"
+                />
+                <text class="form-hint">如「12 个月年费」填 12</text>
+              </view>
+              <view class="grid-col">
+                <text class="form-label">价格 (¥)</text>
+                <wd-input
+                  no-border
+                  v-model.number="planDraft.price"
+                  class="form-input"
+                  type="number"
+                  placeholder="0.00"
+                />
+              </view>
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">原价 (¥，可选)</text>
+              <wd-input
+                no-border
+                :model-value="planDraft.originalPrice ?? ''"
+                class="form-input"
+                type="number"
+                placeholder="留空则不显示删除线价"
+                @input="
+                  (e: any) => {
+                    const v = Number(e.detail.value)
+                    planDraft.originalPrice = Number.isFinite(v) && v > 0 ? v : null
+                  }
+                "
+              />
+            </view>
+
+            <view v-if="showTrialDaysField" class="form-block">
+              <text class="form-label">套餐试用天数</text>
+              <wd-input
+                no-border
+                v-model.number="planDraft.trialDays"
+                class="form-input"
+                type="number"
+                placeholder="0 表示无套餐内试用"
+              />
+              <text class="form-hint">
+                此处是「该套餐促销试用」,与全局「新商户试用期」不同(后者在套餐外侧设置)。
+              </text>
+            </view>
+
+            <view class="form-block">
+              <text class="form-label">权益列表(每行一条)</text>
+              <wd-textarea
+                no-border
+                v-model="planDraft.rightsText"
+                class="form-textarea"
+                placeholder="例如：&#10;无限商品上架&#10;开通直播带货&#10;5 个员工账号"
+                :auto-height="true"
+                :maxlength="800"
+              />
+            </view>
+
+            <view v-if="showConstraintsBlock" class="form-block">
+              <text class="form-label">广告位配额</text>
+              <view class="quota-grid">
+                <view class="quota-item">
+                  <text class="quota-label">推送位</text>
+                  <wd-input
+                    no-border
+                    v-model.number="planDraft.constraints.pushSlots"
+                    class="form-input"
+                    type="number"
+                    placeholder="0"
+                  />
+                </view>
+                <view class="quota-item">
+                  <text class="quota-label">权重上限</text>
+                  <wd-input
+                    no-border
+                    v-model.number="planDraft.constraints.weightLimit"
+                    class="form-input"
+                    type="number"
+                    placeholder="0-100"
+                  />
+                </view>
+                <view class="quota-item">
+                  <text class="quota-label">Banner 数</text>
+                  <wd-input
+                    no-border
+                    v-model.number="planDraft.constraints.bannerLimit"
+                    class="form-input"
+                    type="number"
+                    placeholder="0"
+                  />
+                </view>
+                <view class="quota-item">
+                  <text class="quota-label">月曝光</text>
+                  <wd-input
+                    no-border
+                    v-model.number="planDraft.constraints.impressionLimit"
+                    class="form-input"
+                    type="number"
+                    placeholder="0"
+                  />
+                </view>
+              </view>
+            </view>
+
+            <view class="form-row-switch">
+              <view class="form-row-info">
+                <text class="form-row-title">标记为 HOT</text>
+                <text class="form-row-desc">在卡片上展示 HOT 角标,吸引商户点击</text>
+              </view>
+              <wd-switch v-model="planDraft.hot" active-color="var(--brand-primary)" />
+            </view>
+
+            <view class="form-row-switch">
+              <view class="form-row-info">
+                <text class="form-row-title">上架状态</text>
+                <text class="form-row-desc">下架后商户无法新订阅,已订阅商家不受影响</text>
+              </view>
+              <wd-switch
+                :model-value="planDraft.status === 'active'"
+                active-color="var(--brand-primary)"
+                @change="planDraft.status = $event.value ? 'active' : 'disabled'"
+              />
+            </view>
+
+            <view
+              v-if="planSheetEditing && planDraft.id"
+              class="delete-row"
+              @click="confirmDeletePlan"
+            >
+              <wd-icon :name="$jwIcon('trash')" size="12px" color="#F5222D" />
+              <text>{{ planSheetDeleting ? '删除中…' : '删除该套餐' }}</text>
+            </view>
+          </scroll-view>
+        </view>
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 

@@ -333,99 +333,119 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="选品广场推送" @click-right="goCreate"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
-    </wd-navbar>
-
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
+    <view class="page">
+      <wd-navbar
+        title="选品广场推送"
+        @click-right="goCreate"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
       >
-        <text>{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
+        <template #right><wd-icon :name="$jwIcon('plus')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 数据三宫格 -->
-      <view class="stats-grid">
-        <view class="stat-card">
-          <text class="s-label">在推商品</text>
-          <text class="s-value">{{ stats.pushing }}</text>
-        </view>
-        <view class="stat-card">
-          <text class="s-label">在推厂家</text>
-          <text class="s-value">{{ stats.factories }}</text>
-        </view>
-        <view class="stat-card">
-          <text class="s-label">代理申请</text>
-          <text class="s-value">{{ stats.totalAgency }}</text>
-        </view>
-      </view>
-
-      <!-- 搜索 + 批量 -->
-      <view class="filter-bar">
-        <view class="search-bar">
-          <wd-icon :name="$jwIcon('search')" size="14px" color="var(--text-tertiary)"  />
-          <wd-input no-border v-model="keyword" class="search-input" placeholder="搜索商品 / 厂家"  />
-        </view>
+      <view class="tabs">
         <view
-          :class="['batch-btn', batchMode ? 'on' : '']"
-          @click="batchMode ? batchPush() : startBatch()"
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
         >
-          {{ batchMode ? `推送(${selectedIds.size})` : '批量' }}
+          <text>{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
         </view>
-        <view v-if="batchMode" class="cancel-btn" @click="startBatch">取消</view>
       </view>
 
-      <!-- 列表 -->
-      <view class="list">
-        <view
-          v-for="x in filtered"
-          :key="x.id"
-          class="card"
-          :class="{ selected: selectedIds.has(x.id) }"
-          @click="batchMode ? toggleSelect(x.id) : null"
-        >
-          <view class="card-body">
-            <view v-if="batchMode" class="check">
-              <wd-icon
-                v-if="selectedIds.has(x.id)"
-                :name="$jwIcon('check-circle')" size="20px"
-                color="var(--brand-primary)"
-               />
-              <wd-icon v-else :name="$jwIcon('circle')" size="20px" color="var(--text-tertiary)"  />
-            </view>
-            <image :src="x.image" mode="aspectFill" class="img" />
-            <view class="info">
-              <view class="info-head">
-                <text class="name">{{ x.name }}</text>
-                <view
-                  class="status-tag"
-                  :style="{
-                    color: statusMeta(x.status).tint,
-                    background: statusMeta(x.status).tint + '14',
-                  }"
-                >
-                  {{ statusMeta(x.status).label }}
-                </view>
-              </view>
-              <text class="factory">{{ x.factory }}</text>
-              <view class="price-row">
-                <text class="price">{{ formatPrice(x.price) }}</text>
-                <view :class="['tag', `tone-${x.tagTone}`]">{{ x.tag }}</view>
-              </view>
-              <text class="agency">{{ x.agencyCount > 0 ? `代理 ${x.agencyCount}` : '—' }}</text>
-            </view>
+      <scroll-view scroll-y class="scroll">
+        <!-- 数据三宫格 -->
+        <view class="stats-grid">
+          <view class="stat-card">
+            <text class="s-label">在推商品</text>
+            <text class="s-value">{{ stats.pushing }}</text>
           </view>
+          <view class="stat-card">
+            <text class="s-label">在推厂家</text>
+            <text class="s-value">{{ stats.factories }}</text>
+          </view>
+          <view class="stat-card">
+            <text class="s-label">代理申请</text>
+            <text class="s-value">{{ stats.totalAgency }}</text>
+          </view>
+        </view>
 
-          <view class="actions" @click.stop>
-            <view class="btn ghost" @click="editItem(x)">编辑</view>
-            <!--
+        <!-- 搜索 + 批量 -->
+        <view class="filter-bar">
+          <view class="search-bar">
+            <wd-icon :name="$jwIcon('search')" size="14px" color="var(--text-tertiary)" />
+            <wd-input
+              no-border
+              v-model="keyword"
+              class="search-input"
+              placeholder="搜索商品 / 厂家"
+            />
+          </view>
+          <view
+            :class="['batch-btn', batchMode ? 'on' : '']"
+            @click="batchMode ? batchPush() : startBatch()"
+          >
+            {{ batchMode ? `推送(${selectedIds.size})` : '批量' }}
+          </view>
+          <view v-if="batchMode" class="cancel-btn" @click="startBatch">取消</view>
+        </view>
+
+        <!-- 列表 -->
+        <view class="list">
+          <view
+            v-for="x in filtered"
+            :key="x.id"
+            class="card"
+            :class="{ selected: selectedIds.has(x.id) }"
+            @click="batchMode ? toggleSelect(x.id) : null"
+          >
+            <view class="card-body">
+              <view v-if="batchMode" class="check">
+                <wd-icon
+                  v-if="selectedIds.has(x.id)"
+                  :name="$jwIcon('check-circle')"
+                  size="20px"
+                  color="var(--brand-primary)"
+                />
+                <wd-icon
+                  v-else
+                  :name="$jwIcon('circle')"
+                  size="20px"
+                  color="var(--text-tertiary)"
+                />
+              </view>
+              <image :src="x.image" mode="aspectFill" class="img" />
+              <view class="info">
+                <view class="info-head">
+                  <text class="name">{{ x.name }}</text>
+                  <view
+                    class="status-tag"
+                    :style="{
+                      color: statusMeta(x.status).tint,
+                      background: statusMeta(x.status).tint + '14',
+                    }"
+                  >
+                    {{ statusMeta(x.status).label }}
+                  </view>
+                </view>
+                <text class="factory">{{ x.factory }}</text>
+                <view class="price-row">
+                  <text class="price">{{ formatPrice(x.price) }}</text>
+                  <view :class="['tag', `tone-${x.tagTone}`]">{{ x.tag }}</view>
+                </view>
+                <text class="agency">{{ x.agencyCount > 0 ? `代理 ${x.agencyCount}` : '—' }}</text>
+              </view>
+            </view>
+
+            <view class="actions" @click.stop>
+              <view class="btn ghost" @click="editItem(x)">编辑</view>
+              <!--
               动作按钮根据 tab + status 渲染,只在后端真实支持的组合上启用对应能力:
 
               products tab(后端有 setPlazaProductOnline 接口):
@@ -439,40 +459,41 @@ onMounted(load)
               records tab:
                 - 仅"编辑"按钮(代理申请记录是只读流水)
             -->
-            <template v-if="tab === 'products'">
-              <template v-if="x.status === 'offline'">
+              <template v-if="tab === 'products'">
+                <template v-if="x.status === 'offline'">
+                  <view
+                    :class="['btn ghost', togglingId === x.id ? 'loading' : '']"
+                    @click="onlineOne(x)"
+                  >
+                    {{ togglingId === x.id ? '处理中…' : '上架' }}
+                  </view>
+                  <view class="btn primary" @click="pushOne(x)">推送</view>
+                </template>
                 <view
-                  :class="['btn ghost', togglingId === x.id ? 'loading' : '']"
-                  @click="onlineOne(x)"
+                  v-else-if="x.status === 'pushing' || x.status === 'active'"
+                  :class="['btn dark', togglingId === x.id ? 'loading' : '']"
+                  @click="offlineOne(x)"
                 >
-                  {{ togglingId === x.id ? '处理中…' : '上架' }}
+                  {{ togglingId === x.id ? '处理中…' : '下架' }}
                 </view>
-                <view class="btn primary" @click="pushOne(x)">推送</view>
+                <view v-else class="btn primary" @click="pushOne(x)">推送</view>
               </template>
-              <view
-                v-else-if="x.status === 'pushing' || x.status === 'active'"
-                :class="['btn dark', togglingId === x.id ? 'loading' : '']"
-                @click="offlineOne(x)"
-              >
-                {{ togglingId === x.id ? '处理中…' : '下架' }}
+              <view v-else-if="tab === 'factories'" class="btn primary" @click="pushOne(x)">
+                推送
               </view>
-              <view v-else class="btn primary" @click="pushOne(x)">推送</view>
-            </template>
-            <view v-else-if="tab === 'factories'" class="btn primary" @click="pushOne(x)">
-              推送
             </view>
           </view>
+
+          <wd-status-tip
+            v-if="!loading && filtered.length === 0"
+            image="content"
+            :tip="['暂无商品', '点击右上角创建推送'].filter(Boolean).join(' · ')"
+          />
         </view>
 
-        <wd-status-tip
-          v-if="!loading && filtered.length === 0"
-         image="content" :tip="['暂无商品', '点击右上角创建推送'].filter(Boolean).join(' · ')" />
-      </view>
-
-      <view style="height: 40rpx" />
-    </scroll-view>
-  </view>
-
+        <view style="height: 40rpx" />
+      </scroll-view>
+    </view>
   </wd-config-provider>
 </template>
 

@@ -1,0 +1,27 @@
+{
+  "environment": {
+    "runtime": "v24.19.0",
+    "platform": "win32",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2673 v3 @ 2.40GHz",
+    "cores": 48
+  },
+  "evidenceLevel": "desktop pure domain only; not WeChat device, storage, network or release performance acceptance",
+  "samples": 20,
+  "output": [
+    {
+      "entries": 1000,
+      "operationP95Ms": 10.56,
+      "summaryP95Ms": 1
+    },
+    {
+      "entries": 5000,
+      "operationP95Ms": 47.53,
+      "summaryP95Ms": 8.66
+    },
+    {
+      "entries": 10000,
+      "operationP95Ms": 102.29,
+      "summaryP95Ms": 10.87
+    }
+  ]
+}

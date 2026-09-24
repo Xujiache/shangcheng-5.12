@@ -238,210 +238,240 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="APP 发布管理" @click-right="load"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
-    </wd-navbar>
-
-    <!-- 平台 tab -->
-    <view class="tabs">
-      <view
-        v-for="t in PLATFORM_TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="switchTab(t.key)"
+    <view class="page">
+      <wd-navbar
+        title="APP 发布管理"
+        @click-right="load"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
       >
-        <text class="tab-label">{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" :style="{ background: t.tint }" />
-      </view>
-    </view>
+        <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+      </wd-navbar>
 
-    <!-- 最新版本卡 -->
-    <view v-if="latest" class="latest-card">
-      <view class="latest-head">
-        <view class="latest-badge">最新</view>
-        <text class="latest-platform">{{ tab === 'merchant' ? '商家端' : '平台端' }}</text>
-      </view>
-      <view class="latest-ver">
-        <text class="ver">v{{ latest.version }}</text>
-        <text class="build">build {{ latest.versionCode }}</text>
-        <view v-if="latest.force" class="force-tag">强更</view>
-      </view>
-      <view class="latest-meta">
-        <view class="meta-item">
-          <wd-icon :name="$jwIcon('package')" size="11px" color="rgba(255,255,255,0.85)"  />
-          <text>{{ formatSize(latest.size) }}</text>
-        </view>
-        <view class="meta-item">
-          <wd-icon :name="$jwIcon('clock')" size="11px" color="rgba(255,255,255,0.85)"  />
-          <text>{{ formatDate(latest.publishedAt) }}</text>
-        </view>
-      </view>
-      <text v-if="latest.changelog" class="latest-log">{{ latest.changelog }}</text>
-    </view>
-
-    <scroll-view scroll-y class="scroll">
-      <view class="section-head">
-        <text class="section-title">历史版本</text>
-        <text class="section-count">{{ list.length }} 个</text>
-      </view>
-
-      <view v-for="row in list" :key="row.id" class="row">
-        <view class="row-head">
-          <view class="row-left">
-            <text class="row-ver">v{{ row.version }}</text>
-            <text class="row-build">#{{ row.versionCode }}</text>
-            <view v-if="row.force" class="force-tag small">强更</view>
-          </view>
-          <text class="row-time">{{ formatDate(row.publishedAt) }}</text>
-        </view>
-
-        <text v-if="row.changelog" class="row-log">{{ row.changelog }}</text>
-
-        <view class="row-meta">
-          <view class="meta-chip">
-            <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)"  />
-            <text>{{ formatSize(row.size) }}</text>
-          </view>
-          <view class="meta-chip ellipsis" @click="copyUrl(row)">
-            <wd-icon :name="$jwIcon('share')" size="11px" color="var(--text-tertiary)"  />
-            <text class="url-text">{{ row.url || '—' }}</text>
-          </view>
-        </view>
-
-        <view class="row-actions">
-          <view class="btn ghost" @click="copyUrl(row)">复制链接</view>
-          <view class="btn danger" @click="confirmRemove(row)">删除</view>
+      <!-- 平台 tab -->
+      <view class="tabs">
+        <view
+          v-for="t in PLATFORM_TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="switchTab(t.key)"
+        >
+          <text class="tab-label">{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" :style="{ background: t.tint }" />
         </view>
       </view>
 
-      <wd-status-tip
-        v-if="!loading && list.length === 0"
-       image="content" :tip="['暂无发布记录', '新版本由 PC 后台上传后将出现在这里'].filter(Boolean).join(' · ')" />
-      <view style="height: 160rpx" />
-    </scroll-view>
-
-    <view class="fab" @click="openUploadSheet">
-      <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff"  />
-      <text>上传 APK</text>
-    </view>
-
-    <!-- 上传 APK Sheet -->
-    <wd-popup v-model="uploadOpen" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal @close="closeUploadSheet">
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text class="sheet-title">上传 APK 发布</text>
-          <view class="sheet-close" @click="closeUploadSheet">
-            <wd-icon :name="$jwIcon('close')" size="16px" color="var(--text-tertiary)"  />
+      <!-- 最新版本卡 -->
+      <view v-if="latest" class="latest-card">
+        <view class="latest-head">
+          <view class="latest-badge">最新</view>
+          <text class="latest-platform">{{ tab === 'merchant' ? '商家端' : '平台端' }}</text>
+        </view>
+        <view class="latest-ver">
+          <text class="ver">v{{ latest.version }}</text>
+          <text class="build">build {{ latest.versionCode }}</text>
+          <view v-if="latest.force" class="force-tag">强更</view>
+        </view>
+        <view class="latest-meta">
+          <view class="meta-item">
+            <wd-icon :name="$jwIcon('package')" size="11px" color="rgba(255,255,255,0.85)" />
+            <text>{{ formatSize(latest.size) }}</text>
+          </view>
+          <view class="meta-item">
+            <wd-icon :name="$jwIcon('clock')" size="11px" color="rgba(255,255,255,0.85)" />
+            <text>{{ formatDate(latest.publishedAt) }}</text>
           </view>
         </view>
+        <text v-if="latest.changelog" class="latest-log">{{ latest.changelog }}</text>
+      </view>
 
-        <scroll-view scroll-y class="sheet-body">
-          <!-- 平台 -->
-          <view class="field">
-            <text class="field-label">目标平台</text>
-            <wd-segmented
-              :value="form.platform"
-              :options="PLATFORM_TABS.map((p) => ({ value: p.key, payload: p }))"
-              size="large"
-              @change="setUploadPlatform(String($event.value) as AppReleasePlatform)"
-            >
-              <template #label="{ option }">{{ option.payload?.label }}</template>
-            </wd-segmented>
-          </view>
+      <scroll-view scroll-y class="scroll">
+        <view class="section-head">
+          <text class="section-title">历史版本</text>
+          <text class="section-count">{{ list.length }} 个</text>
+        </view>
 
-          <!-- version -->
-          <view class="field">
-            <text class="field-label">版本号 (x.y.z)</text>
-            <wd-input no-border
-              v-model="form.version"
-              class="field-input"
-              placeholder="例: 1.2.0"
-              maxlength="20"
-              :disabled="uploading"
-             />
-          </view>
-
-          <!-- versionCode -->
-          <view class="field">
-            <text class="field-label">versionCode (递增正整数)</text>
-            <wd-input no-border
-              v-model.number="form.versionCode"
-              class="field-input mono"
-              type="number"
-              :placeholder="latest ? `>${latest.versionCode}` : '120'"
-              :disabled="uploading"
-             />
-            <text v-if="latest && form.platform === latest.platform" class="field-hint">
-              线上最新 v{{ latest.version }} · build {{ latest.versionCode }}
-            </text>
-          </view>
-
-          <!-- changelog -->
-          <view class="field">
-            <text class="field-label">更新说明</text>
-            <wd-textarea no-border
-              v-model="form.changelog"
-              class="field-textarea"
-              placeholder="本次更新内容,端上弹窗会显示给用户"
-              maxlength="400"
-              :disabled="uploading"
-              auto-height
-             />
-          </view>
-
-          <!-- force -->
-          <view class="field row">
+        <view v-for="row in list" :key="row.id" class="row">
+          <view class="row-head">
             <view class="row-left">
-              <text class="field-label" style="margin-bottom: 0">强制更新</text>
-              <text class="field-hint" style="margin-top: 2rpx">开启后用户无法跳过</text>
+              <text class="row-ver">v{{ row.version }}</text>
+              <text class="row-build">#{{ row.versionCode }}</text>
+              <view v-if="row.force" class="force-tag small">强更</view>
             </view>
-            <wd-switch v-model="form.force" :disabled="uploading" active-color="var(--brand-primary)" />
+            <text class="row-time">{{ formatDate(row.publishedAt) }}</text>
           </view>
 
-          <!-- 文件 -->
-          <view class="field">
-            <text class="field-label">APK 文件 (≤{{ MAX_APK_SIZE_MB }}MB)</text>
-            <view class="file-picker" @click="chooseApk">
-              <wd-icon :name="$jwIcon('package')" size="22px" color="var(--brand-primary)"  />
-              <view class="fp-info">
-                <text v-if="!form.filePath" class="fp-tip">点击选择 .apk 文件</text>
-                <template v-else>
-                  <text class="fp-name">{{ form.fileName }}</text>
-                  <text class="fp-size">{{ formatSize(form.fileSize) }}</text>
-                </template>
-              </view>
-              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
+          <text v-if="row.changelog" class="row-log">{{ row.changelog }}</text>
+
+          <view class="row-meta">
+            <view class="meta-chip">
+              <wd-icon :name="$jwIcon('package')" size="11px" color="var(--text-tertiary)" />
+              <text>{{ formatSize(row.size) }}</text>
+            </view>
+            <view class="meta-chip ellipsis" @click="copyUrl(row)">
+              <wd-icon :name="$jwIcon('share')" size="11px" color="var(--text-tertiary)" />
+              <text class="url-text">{{ row.url || '—' }}</text>
             </view>
           </view>
 
-          <!-- 进度 -->
-          <view v-if="uploading" class="progress-card">
-            <view class="progress-bar"
-              ><view class="progress-fill" :style="{ width: uploadProgress + '%' }"
-            /></view>
-            <text class="progress-text">上传中 {{ uploadProgress }}%</text>
+          <view class="row-actions">
+            <view class="btn ghost" @click="copyUrl(row)">复制链接</view>
+            <view class="btn danger" @click="confirmRemove(row)">删除</view>
           </view>
-
-          <view style="height: 24rpx" />
-        </scroll-view>
-
-        <view class="sheet-foot">
-          <wd-button block plain size="large" :disabled="uploading" @click="closeUploadSheet">取消</wd-button>
-          <wd-button
-            block
-            type="primary"
-            size="large"
-            :loading="uploading"
-            @click="!uploading && submitUpload()"
-          >
-            {{ uploading ? `上传中 ${uploadProgress}%` : '开始上传' }}
-          </wd-button>
         </view>
-      </view>
-    </wd-popup>
-  </view>
 
+        <wd-status-tip
+          v-if="!loading && list.length === 0"
+          image="content"
+          :tip="['暂无发布记录', '新版本由 PC 后台上传后将出现在这里'].filter(Boolean).join(' · ')"
+        />
+        <view style="height: 160rpx" />
+      </scroll-view>
+
+      <view class="fab" @click="openUploadSheet">
+        <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff" />
+        <text>上传 APK</text>
+      </view>
+
+      <!-- 上传 APK Sheet -->
+      <wd-popup
+        v-model="uploadOpen"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="closeUploadSheet"
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text class="sheet-title">上传 APK 发布</text>
+            <view class="sheet-close" @click="closeUploadSheet">
+              <wd-icon :name="$jwIcon('close')" size="16px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+
+          <scroll-view scroll-y class="sheet-body">
+            <!-- 平台 -->
+            <view class="field">
+              <text class="field-label">目标平台</text>
+              <wd-segmented
+                :value="form.platform"
+                :options="PLATFORM_TABS.map((p) => ({ value: p.key, payload: p }))"
+                size="large"
+                @change="setUploadPlatform(String($event.value) as AppReleasePlatform)"
+              >
+                <template #label="{ option }">{{ option.payload?.label }}</template>
+              </wd-segmented>
+            </view>
+
+            <!-- version -->
+            <view class="field">
+              <text class="field-label">版本号 (x.y.z)</text>
+              <wd-input
+                no-border
+                v-model="form.version"
+                class="field-input"
+                placeholder="例: 1.2.0"
+                maxlength="20"
+                :disabled="uploading"
+              />
+            </view>
+
+            <!-- versionCode -->
+            <view class="field">
+              <text class="field-label">versionCode (递增正整数)</text>
+              <wd-input
+                no-border
+                v-model.number="form.versionCode"
+                class="field-input mono"
+                type="number"
+                :placeholder="latest ? `>${latest.versionCode}` : '120'"
+                :disabled="uploading"
+              />
+              <text v-if="latest && form.platform === latest.platform" class="field-hint">
+                线上最新 v{{ latest.version }} · build {{ latest.versionCode }}
+              </text>
+            </view>
+
+            <!-- changelog -->
+            <view class="field">
+              <text class="field-label">更新说明</text>
+              <wd-textarea
+                no-border
+                v-model="form.changelog"
+                class="field-textarea"
+                placeholder="本次更新内容,端上弹窗会显示给用户"
+                maxlength="400"
+                :disabled="uploading"
+                auto-height
+              />
+            </view>
+
+            <!-- force -->
+            <view class="field row">
+              <view class="row-left">
+                <text class="field-label" style="margin-bottom: 0">强制更新</text>
+                <text class="field-hint" style="margin-top: 2rpx">开启后用户无法跳过</text>
+              </view>
+              <wd-switch
+                v-model="form.force"
+                :disabled="uploading"
+                active-color="var(--brand-primary)"
+              />
+            </view>
+
+            <!-- 文件 -->
+            <view class="field">
+              <text class="field-label">APK 文件 (≤{{ MAX_APK_SIZE_MB }}MB)</text>
+              <view class="file-picker" @click="chooseApk">
+                <wd-icon :name="$jwIcon('package')" size="22px" color="var(--brand-primary)" />
+                <view class="fp-info">
+                  <text v-if="!form.filePath" class="fp-tip">点击选择 .apk 文件</text>
+                  <template v-else>
+                    <text class="fp-name">{{ form.fileName }}</text>
+                    <text class="fp-size">{{ formatSize(form.fileSize) }}</text>
+                  </template>
+                </view>
+                <wd-icon
+                  :name="$jwIcon('chevron-right')"
+                  size="14px"
+                  color="var(--text-tertiary)"
+                />
+              </view>
+            </view>
+
+            <!-- 进度 -->
+            <view v-if="uploading" class="progress-card">
+              <view class="progress-bar"
+                ><view class="progress-fill" :style="{ width: uploadProgress + '%' }"
+              /></view>
+              <text class="progress-text">上传中 {{ uploadProgress }}%</text>
+            </view>
+
+            <view style="height: 24rpx" />
+          </scroll-view>
+
+          <view class="sheet-foot">
+            <wd-button block plain size="large" :disabled="uploading" @click="closeUploadSheet"
+              >取消</wd-button
+            >
+            <wd-button
+              block
+              type="primary"
+              size="large"
+              :loading="uploading"
+              @click="!uploading && submitUpload()"
+            >
+              {{ uploading ? `上传中 ${uploadProgress}%` : '开始上传' }}
+            </wd-button>
+          </view>
+        </view>
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 

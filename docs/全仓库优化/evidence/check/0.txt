@@ -1,0 +1,36 @@
+
+> jiujiu-mall@0.0.1 build:shared D:\工作\工作\工作（客户）\经纬智能科技\代码
+> pnpm --filter @jiujiu/shared build
+
+
+> @jiujiu/shared@0.0.1 build D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\shared
+> tsup
+
+CLI Building entry: {"index":"src/index.ts","tokens/index":"src/tokens/index.ts","types/index":"src/types/index.ts","mock/index":"src/mock/index.ts","utils/index":"src/utils/index.ts"}
+CLI Using tsconfig: tsconfig.json
+CLI tsup v8.5.1
+CLI Using tsup config: D:\工作\工作\工作（客户）\经纬智能科技\代码\packages\shared\tsup.config.ts
+CLI Target: es2022
+CLI Cleaning output folder
+ESM Build start
+ESM You have emitDecoratorMetadata enabled but @swc/core was not installed, skipping swc plugin
+ESM dist\utils\index.js      10.06 KB
+ESM dist\tokens\index.js     4.05 KB
+ESM dist\index.js            69.79 KB
+ESM dist\mock\index.js       55.96 KB
+ESM dist\types\index.js      1.05 KB
+ESM dist\utils\index.js.map  24.48 KB
+ESM dist\tokens\index.js.map 9.50 KB
+ESM dist\index.js.map        149.06 KB
+ESM dist\mock\index.js.map   115.46 KB
+ESM dist\types\index.js.map  2.59 KB
+ESM ⚡️ Build success in 503ms
+DTS Build start
+DTS ⚡️ Build success in 3272ms
+DTS dist\index.d.ts          3.54 KB
+DTS dist\tokens\index.d.ts   11.97 KB
+DTS dist\types\index.d.ts    7.34 KB
+DTS dist\mock\index.d.ts     5.39 KB
+DTS dist\utils\index.d.ts    5.08 KB
+DTS dist\order-5wR76scj.d.ts 12.46 KB
+DTS dist\stats-dMUOIGn6.d.ts 10.98 KB

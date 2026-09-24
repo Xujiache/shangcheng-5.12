@@ -380,7 +380,9 @@ async function main() {
         await processJob(id)
       } catch (error) {
         console.error('[conversion-worker] loop:', error)
-        await new Promise((resolveSleep) => setTimeout(resolveSleep, 3000))
+        await new Promise((resolveSleep) => {
+          setTimeout(resolveSleep, 3000)
+        })
       }
     }
   } finally {

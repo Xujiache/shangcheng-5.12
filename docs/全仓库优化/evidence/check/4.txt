@@ -1,0 +1,6 @@
+
+> jiujiu-mall@0.0.1 format:check D:\工作\工作\工作（客户）\经纬智能科技\代码
+> prettier --check "packages/*/src/**/*.{ts,vue}" "packages/ledger-mp/miniprogram/**/*.ts" "scripts/quality/*.mjs" "scripts/db/*.mjs"
+
+Checking formatting...
+All matched files use Prettier code style!

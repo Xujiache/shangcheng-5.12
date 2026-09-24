@@ -111,169 +111,222 @@ onMounted(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page" v-if="detail">
-    <wd-navbar :title="detail.name" class="nav-on-dark"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" custom-style="background: transparent;" />
+    <view class="page" v-if="detail">
+      <wd-navbar
+        :title="detail.name"
+        class="nav-on-dark"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+        custom-style="background: transparent;"
+      />
 
-    <!-- Banner + 头部 -->
-    <view class="hero">
-      <image :src="detail.banner" class="hero-banner" mode="aspectFill" />
-      <view class="hero-mask" />
-      <view class="hero-info">
-        <image :src="detail.logo" class="hero-logo" />
-        <view class="hero-name-row">
-          <text class="hero-name">{{ detail.name }}</text>
-          <view class="hero-tags">
-            <wd-tag v-for="t in detail.tags" :key="t"  :type="$jwTagType('highlight')" :plain="false" round>{{ t }}</wd-tag>
+      <!-- Banner + 头部 -->
+      <view class="hero">
+        <image :src="detail.banner" class="hero-banner" mode="aspectFill" />
+        <view class="hero-mask" />
+        <view class="hero-info">
+          <image :src="detail.logo" class="hero-logo" />
+          <view class="hero-name-row">
+            <text class="hero-name">{{ detail.name }}</text>
+            <view class="hero-tags">
+              <wd-tag
+                v-for="t in detail.tags"
+                :key="t"
+                :type="$jwTagType('highlight')"
+                :plain="false"
+                round
+                >{{ t }}</wd-tag
+              >
+            </view>
+          </view>
+          <view class="hero-meta">
+            <wd-icon :name="$jwIcon('location')" size="12px" color="rgba(255,255,255,0.85)" />
+            <text>{{ detail.region }}</text>
+            <text>· 经营 {{ detail.years }} 年</text>
+            <text>· 已为 {{ detail.agencyCount }} 家代理</text>
           </view>
         </view>
-        <view class="hero-meta">
-          <wd-icon :name="$jwIcon('location')" size="12px" color="rgba(255,255,255,0.85)"  />
-          <text>{{ detail.region }}</text>
-          <text>· 经营 {{ detail.years }} 年</text>
-          <text>· 已为 {{ detail.agencyCount }} 家代理</text>
+      </view>
+
+      <!-- 数据三宫格 -->
+      <view class="stats">
+        <view class="stat">
+          <text class="stat-value">{{ detail.productCount }}</text>
+          <text class="stat-label">在售商品</text>
+        </view>
+        <view class="divider" />
+        <view class="stat">
+          <text class="stat-value">{{ detail.agencyCount }}</text>
+          <text class="stat-label">代理门店</text>
+        </view>
+        <view class="divider" />
+        <view class="stat">
+          <text class="stat-value">{{ formatWan(detail.monthGmv) }}</text>
+          <text class="stat-label">月成交 GMV</text>
         </view>
       </view>
-    </view>
 
-    <!-- 数据三宫格 -->
-    <view class="stats">
-      <view class="stat">
-        <text class="stat-value">{{ detail.productCount }}</text>
-        <text class="stat-label">在售商品</text>
-      </view>
-      <view class="divider" />
-      <view class="stat">
-        <text class="stat-value">{{ detail.agencyCount }}</text>
-        <text class="stat-label">代理门店</text>
-      </view>
-      <view class="divider" />
-      <view class="stat">
-        <text class="stat-value">{{ formatWan(detail.monthGmv) }}</text>
-        <text class="stat-label">月成交 GMV</text>
-      </view>
-    </view>
-
-    <view class="body">
-      <!-- 厂家介绍 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "厂家介绍" }}</text></view></view></template>
-        <text class="desc">{{ detail.desc }}</text>
-        <view class="addr-row">
-          <wd-icon :name="$jwIcon('location')" size="14px" color="var(--text-secondary)"  />
-          <text class="addr-text">{{ detail.address }}</text>
-        </view>
-      </wd-card>
-
-      <!-- 资质 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ `资质证照 · ${detail.qualifications.length} 项` }}</text></view></view></template>
-        <view class="quali-grid">
-          <view
-            v-for="(q, i) in detail.qualifications"
-            :key="q.name"
-            class="quali-cell"
-            @click="previewQualification(detail.qualifications.map(x => x.image), i)"
+      <view class="body">
+        <!-- 厂家介绍 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '厂家介绍' }}</text></view
+              ></view
+            ></template
           >
-            <image :src="q.image" class="quali-img" mode="aspectFill" />
-            <text class="quali-name">{{ q.name }}</text>
+          <text class="desc">{{ detail.desc }}</text>
+          <view class="addr-row">
+            <wd-icon :name="$jwIcon('location')" size="14px" color="var(--text-secondary)" />
+            <text class="addr-text">{{ detail.address }}</text>
+          </view>
+        </wd-card>
+
+        <!-- 资质 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{
+                  `资质证照 · ${detail.qualifications.length} 项`
+                }}</text></view
+              ></view
+            ></template
+          >
+          <view class="quali-grid">
+            <view
+              v-for="(q, i) in detail.qualifications"
+              :key="q.name"
+              class="quali-cell"
+              @click="
+                previewQualification(
+                  detail.qualifications.map((x) => x.image),
+                  i,
+                )
+              "
+            >
+              <image :src="q.image" class="quali-img" mode="aspectFill" />
+              <text class="quali-name">{{ q.name }}</text>
+            </view>
+          </view>
+        </wd-card>
+
+        <!-- 商品 grid -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '主推商品' }}</text></view
+              ><wd-button type="text" size="small">{{ '查看全部' }}</wd-button></view
+            ></template
+          >
+          <view v-if="products.length === 0" class="empty">该厂家暂无在售商品</view>
+          <view v-else class="product-grid">
+            <view v-for="p in products" :key="p.productId" class="prod">
+              <view class="prod-img-wrap">
+                <image :src="p.productImage" class="prod-img" mode="aspectFill" />
+                <view v-if="p.isPlatformPushed" class="prod-push">推送</view>
+              </view>
+              <text class="prod-name">{{ p.productName }}</text>
+              <view class="prod-foot">
+                <text class="prod-price">¥{{ p.startPrice }} 起</text>
+                <text class="prod-agency">{{ p.agencyCount }} 代理</text>
+              </view>
+            </view>
+          </view>
+        </wd-card>
+
+        <view class="safe-bottom" />
+      </view>
+
+      <!-- 底部固定 -->
+      <view class="footer">
+        <view class="f-icon-btn" @click="toggleFollow">
+          <wd-icon
+            :name="$jwIcon(detail.followed ? 'star-fill' : 'star')"
+            size="18px"
+            :color="detail.followed ? '#FFAA33' : 'var(--text-secondary)'"
+          />
+          <text class="f-icon-label">{{ detail.followed ? '已关注' : '关注' }}</text>
+        </view>
+        <view class="f-icon-btn" @click="callFactory">
+          <wd-icon :name="$jwIcon('phone')" size="18px" color="var(--brand-primary)" />
+          <text class="f-icon-label">联系</text>
+        </view>
+        <view class="f-cta" @click="openAgency">申请代理</view>
+      </view>
+
+      <!-- 申请代理弹层 -->
+      <wd-popup
+        v-model="showAgency"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text class="sheet-title">申请代理</text>
+            <view class="sheet-close" @click="showAgency = false">
+              <wd-icon :name="$jwIcon('close')" size="16px" color="#909399" />
+            </view>
+          </view>
+          <text class="sheet-sub">提交后由厂家审核，通过后即可代理其全部主推商品</text>
+
+          <view class="sheet-section">
+            <text class="sheet-label">统一加价幅度</text>
+            <view class="markup-row">
+              <view class="markup-step" @click="adjustMarkup(-5)">
+                <wd-icon :name="$jwIcon('minus')" size="20px" color="var(--brand-primary)" />
+              </view>
+              <view class="markup-value">
+                <text class="num">{{ agencyForm.markupPercent }}</text>
+                <text class="unit">%</text>
+              </view>
+              <view class="markup-step" @click="adjustMarkup(5)">
+                <wd-icon :name="$jwIcon('plus')" size="20px" color="var(--brand-primary)" />
+              </view>
+            </view>
+            <text class="markup-tip">厂家建议 10% ~ 25%</text>
+          </view>
+
+          <view class="sheet-section">
+            <view class="opt-row">
+              <view class="opt-info">
+                <text class="opt-name">价格自动同步</text>
+                <text class="opt-desc">厂家调价时自动同步到本店</text>
+              </view>
+              <wd-switch
+                :model-value="agencyForm.autoSyncPrice"
+                active-color="var(--brand-primary)"
+                @change="(e: any) => (agencyForm.autoSyncPrice = e.value)"
+              />
+            </view>
+          </view>
+
+          <view class="sheet-section">
+            <text class="sheet-label">申请留言</text>
+            <wd-textarea
+              no-border
+              v-model="agencyForm.message"
+              class="ag-textarea"
+              placeholder="可填写门店情况、预计销量等 · 提升通过率"
+              maxlength="120"
+            />
+          </view>
+
+          <view class="sheet-footer">
+            <wd-button block plain size="large" @click="showAgency = false">取消</wd-button>
+            <wd-button block type="primary" size="large" @click="submitAgency">提交申请</wd-button>
           </view>
         </view>
-      </wd-card>
-
-      <!-- 商品 grid -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "主推商品" }}</text></view><wd-button type="text" size="small">{{ "查看全部" }}</wd-button></view></template>
-        <view v-if="products.length === 0" class="empty">该厂家暂无在售商品</view>
-        <view v-else class="product-grid">
-          <view v-for="p in products" :key="p.productId" class="prod">
-            <view class="prod-img-wrap">
-              <image :src="p.productImage" class="prod-img" mode="aspectFill" />
-              <view v-if="p.isPlatformPushed" class="prod-push">推送</view>
-            </view>
-            <text class="prod-name">{{ p.productName }}</text>
-            <view class="prod-foot">
-              <text class="prod-price">¥{{ p.startPrice }} 起</text>
-              <text class="prod-agency">{{ p.agencyCount }} 代理</text>
-            </view>
-          </view>
-        </view>
-      </wd-card>
-
-      <view class="safe-bottom" />
+      </wd-popup>
     </view>
-
-    <!-- 底部固定 -->
-    <view class="footer">
-      <view class="f-icon-btn" @click="toggleFollow">
-        <wd-icon
-          :name="$jwIcon(detail.followed ? 'star-fill' : 'star')" size="18px"
-          :color="detail.followed ? '#FFAA33' : 'var(--text-secondary)'"
-         />
-        <text class="f-icon-label">{{ detail.followed ? '已关注' : '关注' }}</text>
-      </view>
-      <view class="f-icon-btn" @click="callFactory">
-        <wd-icon :name="$jwIcon('phone')" size="18px" color="var(--brand-primary)"  />
-        <text class="f-icon-label">联系</text>
-      </view>
-      <view class="f-cta" @click="openAgency">申请代理</view>
-    </view>
-
-    <!-- 申请代理弹层 -->
-    <wd-popup v-model="showAgency" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text class="sheet-title">申请代理</text>
-          <view class="sheet-close" @click="showAgency = false">
-            <wd-icon :name="$jwIcon('close')" size="16px" color="#909399"  />
-          </view>
-        </view>
-        <text class="sheet-sub">提交后由厂家审核，通过后即可代理其全部主推商品</text>
-
-        <view class="sheet-section">
-          <text class="sheet-label">统一加价幅度</text>
-          <view class="markup-row">
-            <view class="markup-step" @click="adjustMarkup(-5)">
-              <wd-icon :name="$jwIcon('minus')" size="20px" color="var(--brand-primary)"  />
-            </view>
-            <view class="markup-value">
-              <text class="num">{{ agencyForm.markupPercent }}</text>
-              <text class="unit">%</text>
-            </view>
-            <view class="markup-step" @click="adjustMarkup(5)">
-              <wd-icon :name="$jwIcon('plus')" size="20px" color="var(--brand-primary)"  />
-            </view>
-          </view>
-          <text class="markup-tip">厂家建议 10% ~ 25%</text>
-        </view>
-
-        <view class="sheet-section">
-          <view class="opt-row">
-            <view class="opt-info">
-              <text class="opt-name">价格自动同步</text>
-              <text class="opt-desc">厂家调价时自动同步到本店</text>
-            </view>
-            <wd-switch :model-value="agencyForm.autoSyncPrice" active-color="var(--brand-primary)" @change="(e: any) => agencyForm.autoSyncPrice = e.value"  />
-          </view>
-        </view>
-
-        <view class="sheet-section">
-          <text class="sheet-label">申请留言</text>
-          <wd-textarea no-border
-            v-model="agencyForm.message"
-            class="ag-textarea"
-            placeholder="可填写门店情况、预计销量等 · 提升通过率"
-            maxlength="120"
-           />
-        </view>
-
-        <view class="sheet-footer">
-          <wd-button block plain size="large" @click="showAgency = false">取消</wd-button>
-          <wd-button block type="primary" size="large" @click="submitAgency">提交申请</wd-button>
-        </view>
-      </view>
-    </wd-popup>
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -286,7 +339,7 @@ onMounted(() => {
 .nav-on-dark :deep(.title),
 .nav-on-dark :deep(.back-icon) {
   color: #fff !important;
-  text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.3);
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
 }
 .nav-on-dark {
   border-bottom: none !important;
@@ -307,7 +360,7 @@ onMounted(() => {
 .hero-mask {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7));
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.7));
 }
 .hero-info {
   position: absolute;
@@ -440,7 +493,10 @@ onMounted(() => {
   border-radius: 12rpx;
   overflow: hidden;
 }
-.prod-img { width: 100%; height: 100%; }
+.prod-img {
+  width: 100%;
+  height: 100%;
+}
 .prod-push {
   position: absolute;
   top: 6rpx;
@@ -482,7 +538,7 @@ onMounted(() => {
   align-items: center;
   background: var(--bg-card);
   padding: 12rpx 24rpx calc(12rpx + env(safe-area-inset-bottom));
-  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
   gap: 16rpx;
 }
 .f-icon-btn {
@@ -506,13 +562,15 @@ onMounted(() => {
   line-height: 88rpx;
   font-size: 30rpx;
   font-weight: 700;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.4);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.4);
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: flex-end;
+  display: flex;
+  align-items: flex-end;
 }
 .sheet {
   width: 100%;
@@ -529,8 +587,15 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  .sheet-title { font-size: 32rpx; font-weight: 700; color: var(--text-primary); }
-  .sheet-close { font-size: 28rpx; color: var(--text-tertiary); }
+  .sheet-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .sheet-close {
+    font-size: 28rpx;
+    color: var(--text-tertiary);
+  }
 }
 .sheet-sub {
   font-size: 22rpx;
@@ -542,7 +607,9 @@ onMounted(() => {
 .sheet-section {
   padding: 12rpx 0;
   border-bottom: 1rpx solid var(--border-light);
-  &:last-of-type { border-bottom: none; }
+  &:last-of-type {
+    border-bottom: none;
+  }
 }
 .sheet-label {
   display: block;
@@ -600,8 +667,15 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 4rpx;
-    .opt-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); }
-    .opt-desc { font-size: 22rpx; color: var(--text-tertiary); }
+    .opt-name {
+      font-size: 26rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .opt-desc {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .ag-textarea {
@@ -626,12 +700,17 @@ onMounted(() => {
   line-height: 88rpx;
   font-size: 28rpx;
   font-weight: 700;
-  &.ghost { background: var(--bg-hover); color: var(--text-primary); }
+  &.ghost {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.4);
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.4);
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

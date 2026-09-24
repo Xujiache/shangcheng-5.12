@@ -175,101 +175,118 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="会员缴费订单" @click-right="exportCsv"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('doc')" size="22px" /></template>
-    </wd-navbar>
-
-    <!-- 顶部统计 -->
-    <view class="hero">
-      <view class="hero-main">
-        <text class="hero-label">本月总收入</text>
-        <view class="hero-amount">
-          <text class="cur">¥</text>
-          <text class="num">{{ formatPrice(stats.totalIncome) }}</text>
-        </view>
-        <text class="hero-sub">来自 {{ stats.totalCount }} 笔已支付订单</text>
-      </view>
-      <view class="hero-side">
-        <view class="hs-item">
-          <text class="hs-num">{{ stats.pendingCount }}</text>
-          <text class="hs-label">待支付</text>
-        </view>
-        <view class="hs-item">
-          <text class="hs-num">{{ stats.refundCount }}</text>
-          <text class="hs-label">退款中</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- Tab -->
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
+    <view class="page">
+      <wd-navbar
+        title="会员缴费订单"
+        @click-right="exportCsv"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
       >
-        <text>{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" />
-      </view>
-    </view>
+        <template #right><wd-icon :name="$jwIcon('doc')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <view v-for="o in filtered" :key="o.id" class="card" @click="viewDetail(o)">
-        <view class="card-head">
-          <view class="head-left">
-            <text class="head-label">订单号</text>
-            <text class="no">{{ o.no }}</text>
+      <!-- 顶部统计 -->
+      <view class="hero">
+        <view class="hero-main">
+          <text class="hero-label">本月总收入</text>
+          <view class="hero-amount">
+            <text class="cur">¥</text>
+            <text class="num">{{ formatPrice(stats.totalIncome) }}</text>
           </view>
-          <view
-            class="status-tag"
-            :style="{ color: STATUS_META[o.status].tint, background: STATUS_META[o.status].tint + '14' }"
-          >
-            {{ STATUS_META[o.status].label }}
+          <text class="hero-sub">来自 {{ stats.totalCount }} 笔已支付订单</text>
+        </view>
+        <view class="hero-side">
+          <view class="hs-item">
+            <text class="hs-num">{{ stats.pendingCount }}</text>
+            <text class="hs-label">待支付</text>
+          </view>
+          <view class="hs-item">
+            <text class="hs-num">{{ stats.refundCount }}</text>
+            <text class="hs-label">退款中</text>
           </view>
         </view>
+      </view>
 
-        <view class="info-row">
-          <view class="merchant">
-            <view class="avatar">{{ o.merchantName[0] }}</view>
-            <view class="m-info">
-              <text class="m-name">{{ o.merchantName }}</text>
-              <text class="m-plan">{{ o.planName }}</text>
+      <!-- Tab -->
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
+        >
+          <text>{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" />
+        </view>
+      </view>
+
+      <scroll-view scroll-y class="scroll">
+        <view v-for="o in filtered" :key="o.id" class="card" @click="viewDetail(o)">
+          <view class="card-head">
+            <view class="head-left">
+              <text class="head-label">订单号</text>
+              <text class="no">{{ o.no }}</text>
+            </view>
+            <view
+              class="status-tag"
+              :style="{
+                color: STATUS_META[o.status].tint,
+                background: STATUS_META[o.status].tint + '14',
+              }"
+            >
+              {{ STATUS_META[o.status].label }}
             </view>
           </view>
-          <view class="amount">
-            <text class="a-cur">¥</text>
-            <text class="a-num">{{ formatPrice(o.amount) }}</text>
+
+          <view class="info-row">
+            <view class="merchant">
+              <view class="avatar">{{ o.merchantName[0] }}</view>
+              <view class="m-info">
+                <text class="m-name">{{ o.merchantName }}</text>
+                <text class="m-plan">{{ o.planName }}</text>
+              </view>
+            </view>
+            <view class="amount">
+              <text class="a-cur">¥</text>
+              <text class="a-num">{{ formatPrice(o.amount) }}</text>
+            </view>
+          </view>
+
+          <view class="ft-row">
+            <view class="pay-method" v-if="o.payMethod">
+              <view class="pm-dot" :style="{ background: PAY_METHOD_LABEL[o.payMethod]?.tint }" />
+              <text>{{ PAY_METHOD_LABEL[o.payMethod]?.label }}支付</text>
+            </view>
+            <text v-if="o.paidAt" class="time">{{ formatDate(o.paidAt) }}</text>
+            <text v-else class="time pending-text">未支付</text>
+          </view>
+
+          <!-- 退款审批 + 状态变更 -->
+          <view class="op-row" @click.stop>
+            <template v-if="o.status === 'refunding'">
+              <view class="op-btn danger" @click="rejectRefund(o)">驳回退款</view>
+              <view class="op-btn primary" @click="approveRefund(o)">同意退款</view>
+            </template>
+            <view class="op-btn ghost" @click="changeStatus(o)">改状态</view>
           </view>
         </view>
 
-        <view class="ft-row">
-          <view class="pay-method" v-if="o.payMethod">
-            <view class="pm-dot" :style="{ background: PAY_METHOD_LABEL[o.payMethod]?.tint }" />
-            <text>{{ PAY_METHOD_LABEL[o.payMethod]?.label }}支付</text>
-          </view>
-          <text v-if="o.paidAt" class="time">{{ formatDate(o.paidAt) }}</text>
-          <text v-else class="time pending-text">未支付</text>
-        </view>
-
-        <!-- 退款审批 + 状态变更 -->
-        <view class="op-row" @click.stop>
-          <template v-if="o.status === 'refunding'">
-            <view class="op-btn danger" @click="rejectRefund(o)">驳回退款</view>
-            <view class="op-btn primary" @click="approveRefund(o)">同意退款</view>
-          </template>
-          <view class="op-btn ghost" @click="changeStatus(o)">改状态</view>
-        </view>
-      </view>
-
-      <wd-status-tip
-        v-if="!loading && filtered.length === 0"
-       image="content" :tip="[`暂无${TABS.find(t => t.key === tab)?.label}订单`, '商户购买套餐后会在这里显示'].filter(Boolean).join(' · ')" />
-      <view style="height: 40rpx;" />
-    </scroll-view>
-  </view>
-
+        <wd-status-tip
+          v-if="!loading && filtered.length === 0"
+          image="content"
+          :tip="
+            [`暂无${TABS.find((t) => t.key === tab)?.label}订单`, '商户购买套餐后会在这里显示']
+              .filter(Boolean)
+              .join(' · ')
+          "
+        />
+        <view style="height: 40rpx" />
+      </scroll-view>
+    </view>
   </wd-config-provider>
 </template>
 
@@ -284,13 +301,13 @@ onMounted(load)
 .hero {
   margin: 16rpx 24rpx 0;
   padding: 24rpx;
-  background: linear-gradient(135deg, #FF4D2D, #FAAD14);
+  background: linear-gradient(135deg, #ff4d2d, #faad14);
   color: #fff;
   border-radius: 20rpx;
   display: flex;
   gap: 16rpx;
   align-items: stretch;
-  box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.25);
+  box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.25);
 }
 .hero-main {
   flex: 1;
@@ -305,8 +322,15 @@ onMounted(load)
     display: flex;
     align-items: baseline;
     font-family: var(--font-family-base);
-    .cur { font-size: 28rpx; font-weight: 800; }
-    .num { font-size: 56rpx; font-weight: 800; line-height: 1; }
+    .cur {
+      font-size: 28rpx;
+      font-weight: 800;
+    }
+    .num {
+      font-size: 56rpx;
+      font-weight: 800;
+      line-height: 1;
+    }
   }
   .hero-sub {
     font-size: 20rpx;
@@ -319,7 +343,7 @@ onMounted(load)
   justify-content: space-around;
   gap: 12rpx;
   padding: 8rpx 16rpx;
-  border-left: 1rpx solid rgba(255,255,255,0.3);
+  border-left: 1rpx solid rgba(255, 255, 255, 0.3);
 }
 .hs-item {
   text-align: right;
@@ -471,8 +495,15 @@ onMounted(load)
   gap: 2rpx;
   color: var(--brand-primary);
   font-family: var(--font-family-base);
-  .a-cur { font-size: 22rpx; font-weight: 800; }
-  .a-num { font-size: 36rpx; font-weight: 800; line-height: 1; }
+  .a-cur {
+    font-size: 22rpx;
+    font-weight: 800;
+  }
+  .a-num {
+    font-size: 36rpx;
+    font-weight: 800;
+    line-height: 1;
+  }
 }
 .ft-row {
   display: flex;
@@ -497,7 +528,7 @@ onMounted(load)
     color: var(--text-tertiary);
     font-family: var(--font-family-base);
     &.pending-text {
-      color: #FAAD14;
+      color: #faad14;
       font-weight: 600;
     }
   }
@@ -524,12 +555,12 @@ onMounted(load)
   &.primary {
     background: var(--brand-gradient);
     color: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(255,77,45,0.3);
+    box-shadow: 0 2rpx 8rpx rgba(255, 77, 45, 0.3);
   }
   &.danger {
     background: var(--bg-card);
-    border: 1rpx solid rgba(255,59,48,0.4);
-    color: #FF3B30;
+    border: 1rpx solid rgba(255, 59, 48, 0.4);
+    color: #ff3b30;
   }
 }
 </style>

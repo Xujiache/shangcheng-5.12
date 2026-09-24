@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { statsApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount, glassCardStyle, goToLogin, isLoggedIn } from '../../utils/store'
@@ -14,11 +15,10 @@ interface MonthRow {
   otherCost: number
 }
 
-Page({
+MotionPage({
   data: {
     headerSubtitle: `${CURRENT_YEAR}年 · 全年统计`,
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
-    tabMotion: false,
     tab: 'profit',
     tabs: [
       { value: 'profit', label: '利润统计' },
@@ -56,7 +56,7 @@ Page({
       goToLogin()
       return
     }
-    this.setData({ glassCard: glassCardStyle(), tabMotion: !this.data.tabMotion }) // 刷新卡片并重播 Tab 进入过渡
+    this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(2) : tb.setData({ selected: 2 })
     this.setData({
@@ -195,6 +195,6 @@ Page({
     goToLogin()
   },
   toHome() {
-    wx.switchTab({ url: '/pages/home/index' })
+    navigation.switchTab({ url: '/pages/home/index' })
   },
 })

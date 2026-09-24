@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "workbook-icon": "/components/workbook-icon/index"
+  }
+}

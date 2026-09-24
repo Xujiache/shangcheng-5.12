@@ -9,19 +9,20 @@
     "smoke:harmony-account": "node scripts/smoke-harmony-merchant-account.mjs",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/src/main",
-    "lint": "prettier --check \"src/**/*.ts\"",
-    "test": "jest",
+    "start:prod": "node dist/main.js",
+    "lint": "eslint src --config ../../eslint.config.mjs",
+    "test": "jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:integration": "jest --config jest.integration.config.js --runInBand",
+    "test:integration": "node ../../scripts/db/test-target.mjs --with-redis && jest --config jest.integration.config.js --runInBand && node --test ../../scripts/db/migrate.integration.mjs",
     "typecheck": "tsc --noEmit",
-    "db:push:test": "prisma db push --skip-generate",
+    "db:push:test": "node ../../scripts/db/test-target.mjs && prisma db push --skip-generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
     "test-account:provision": "node --env-file=.env --import tsx scripts/provision-full-test-merchant.ts",
-    "android:publish": "tsx scripts/publish-android-release.ts"
+    "android:publish": "tsx scripts/publish-android-release.ts",
+    "images:thumbnails:backfill": "tsx scripts/backfill-image-thumbnails.ts"
   },
   "dependencies": {
     "@jiujiu/shared": "workspace:*",
@@ -41,16 +42,19 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "dayjs": "^1.11.13",
+    "helmet": "8.1.0",
     "ioredis": "^5.4.1",
     "minio": "^8.0.0",
     "nanoid": "^5.0.7",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pg": "8.16.3",
     "pino": "^9.4.0",
     "pino-http": "^10.3.0",
     "pino-pretty": "^11.2.2",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
+    "sharp": "0.34.3",
     "socket.io": "^4.8.3",
     "undici": "^6",
     "ws": "^8.21.0"
@@ -74,5 +78,13 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.3",
     "typescript": "~5.6.3"
-  }
+  },
+  "engines": {
+    "node": ">=24.19.0 <25"
+  },
+  "files": [
+    "dist",
+    "prisma",
+    "package.json"
+  ]
 }

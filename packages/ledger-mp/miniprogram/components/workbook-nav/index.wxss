@@ -1,0 +1,33 @@
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid #e5ece8;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 24px rgba(19, 74, 55, 0.04);
+}
+.item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: #7a8982;
+  font-size: 11px;
+  padding: 4px 0;
+}
+.selected {
+  color: #0e7c66;
+  font-weight: 700;
+}
+
+.item {
+  border-radius: 12px;
+}
+.selected {
+  background: #eff8f2;
+}

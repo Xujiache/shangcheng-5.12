@@ -16,7 +16,10 @@ const merchantList = ref<Category[]>([])
 const expanded = ref<Set<string>>(new Set())
 
 const showEditor = ref(false)
-const editing = ref<{ id?: string; name: string; parentId: string | null }>({ name: '', parentId: null })
+const editing = ref<{ id?: string; name: string; parentId: string | null }>({
+  name: '',
+  parentId: null,
+})
 
 const TABS = [
   { key: 'merchant' as Tab, label: '厂家自定义' },
@@ -174,96 +177,127 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="分类管理" right-text="完成" @click-right="uni.navigateBack()"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="分类管理"
+        right-text="完成"
+        @click-right="uni.navigateBack()"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="header">
-      <wd-tabs v-model="tab"  color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
-        />
-      </wd-tabs>
-      <view v-if="tab === 'merchant'" class="add-row" @click="openAdd(null)">
-        <text class="add-icon">＋</text>
-        <text>新增顶级分类</text>
-      </view>
-    </view>
-
-    <view class="tree" v-if="currentRoots.length">
-      <view v-for="root in currentRoots" :key="root.id" class="tree-root">
-        <view class="row root-row" @click="toggleExpand(root.id)">
-          <view class="row-left">
-            <text class="caret">{{ childrenOf(root.id).length ? (isExpanded(root.id) ? '▼' : '▶') : '·' }}</text>
-            <text class="row-name">{{ root.name }}</text>
-            <wd-tag v-if="tab === 'merchant'"  :type="$jwTagType('info')" :plain="true" round>{{ "自定义" }}</wd-tag>
-            <text class="row-count">{{ childrenOf(root.id).length }} 子项</text>
-          </view>
-          <view class="row-actions" @click.stop>
-            <text v-if="tab === 'merchant'" class="act" @click="moveUp(root)">↑</text>
-            <text v-if="tab === 'merchant'" class="act" @click="moveDown(root)">↓</text>
-            <text v-if="tab === 'merchant'" class="act" @click="openAdd(root.id)">＋</text>
-            <text v-if="tab === 'merchant'" class="act" @click="openEdit(root)">✎</text>
-            <text v-if="tab === 'merchant'" class="act danger" @click="removeCat(root)">✕</text>
-          </view>
+      <view class="header">
+        <wd-tabs v-model="tab" color="var(--brand-primary)">
+          <wd-tab
+            v-for="item in TABS"
+            :key="item.key"
+            :name="item.key"
+            :title="item.label"
+            :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+          />
+        </wd-tabs>
+        <view v-if="tab === 'merchant'" class="add-row" @click="openAdd(null)">
+          <text class="add-icon">＋</text>
+          <text>新增顶级分类</text>
         </view>
-        <view v-if="isExpanded(root.id)" class="sub-list">
-          <view v-for="sub in childrenOf(root.id)" :key="sub.id" class="row sub-row">
+      </view>
+
+      <view class="tree" v-if="currentRoots.length">
+        <view v-for="root in currentRoots" :key="root.id" class="tree-root">
+          <view class="row root-row" @click="toggleExpand(root.id)">
             <view class="row-left">
-              <text class="indent">└</text>
-              <text class="row-name">{{ sub.name }}</text>
+              <text class="caret">{{
+                childrenOf(root.id).length ? (isExpanded(root.id) ? '▼' : '▶') : '·'
+              }}</text>
+              <text class="row-name">{{ root.name }}</text>
+              <wd-tag v-if="tab === 'merchant'" :type="$jwTagType('info')" :plain="true" round>{{
+                '自定义'
+              }}</wd-tag>
+              <text class="row-count">{{ childrenOf(root.id).length }} 子项</text>
             </view>
-            <view class="row-actions">
-              <text v-if="tab === 'merchant'" class="act" @click="moveUp(sub)">↑</text>
-              <text v-if="tab === 'merchant'" class="act" @click="moveDown(sub)">↓</text>
-              <text v-if="tab === 'merchant'" class="act" @click="openEdit(sub)">✎</text>
-              <text v-if="tab === 'merchant'" class="act danger" @click="removeCat(sub)">✕</text>
+            <view class="row-actions" @click.stop>
+              <text v-if="tab === 'merchant'" class="act" @click="moveUp(root)">↑</text>
+              <text v-if="tab === 'merchant'" class="act" @click="moveDown(root)">↓</text>
+              <text v-if="tab === 'merchant'" class="act" @click="openAdd(root.id)">＋</text>
+              <text v-if="tab === 'merchant'" class="act" @click="openEdit(root)">✎</text>
+              <text v-if="tab === 'merchant'" class="act danger" @click="removeCat(root)">✕</text>
             </view>
           </view>
-          <view v-if="tab === 'merchant'" class="sub-add" @click="openAdd(root.id)">
-            ＋ 新增子分类
+          <view v-if="isExpanded(root.id)" class="sub-list">
+            <view v-for="sub in childrenOf(root.id)" :key="sub.id" class="row sub-row">
+              <view class="row-left">
+                <text class="indent">└</text>
+                <text class="row-name">{{ sub.name }}</text>
+              </view>
+              <view class="row-actions">
+                <text v-if="tab === 'merchant'" class="act" @click="moveUp(sub)">↑</text>
+                <text v-if="tab === 'merchant'" class="act" @click="moveDown(sub)">↓</text>
+                <text v-if="tab === 'merchant'" class="act" @click="openEdit(sub)">✎</text>
+                <text v-if="tab === 'merchant'" class="act danger" @click="removeCat(sub)">✕</text>
+              </view>
+            </view>
+            <view v-if="tab === 'merchant'" class="sub-add" @click="openAdd(root.id)">
+              ＋ 新增子分类
+            </view>
           </view>
         </view>
       </view>
-    </view>
-    <wd-status-tip v-else  image="content" :tip="['暂无分类', '点击上方按钮新增'].filter(Boolean).join(' · ')" />
+      <wd-status-tip
+        v-else
+        image="content"
+        :tip="['暂无分类', '点击上方按钮新增'].filter(Boolean).join(' · ')"
+      />
 
-    <view v-if="tab === 'platform'" class="tip">
-      <text>平台分类由后台统一维护，商家不可编辑</text>
-    </view>
-
-    <!-- 编辑浮层 -->
-    <wd-popup v-model="showEditor" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text>{{ editing.id ? '编辑分类' : '新增分类' }}</text>
-          <text class="close" @click="showEditor = false">✕</text>
-        </view>
-        <view class="sheet-body">
-          <view class="form-row">
-            <text class="form-label">分类名称</text>
-            <wd-input no-border v-model="editing.name" class="form-input" placeholder="不超过 10 字" maxlength="10"  />
-          </view>
-          <view class="form-row" v-if="editing.parentId">
-            <text class="form-label">上级</text>
-            <text class="form-text">{{ merchantList.find(c => c.id === editing.parentId)?.name || '—' }}</text>
-          </view>
-          <view class="form-row" v-else>
-            <text class="form-label">类型</text>
-            <text class="form-text">顶级分类</text>
-          </view>
-        </view>
-        <view class="sheet-footer">
-          <wd-button block plain size="large" @click="showEditor = false">取消</wd-button>
-          <wd-button block type="primary" size="large" @click="saveCategory">保存</wd-button>
-        </view>
+      <view v-if="tab === 'platform'" class="tip">
+        <text>平台分类由后台统一维护，商家不可编辑</text>
       </view>
-    </wd-popup>
-  </view>
 
+      <!-- 编辑浮层 -->
+      <wd-popup
+        v-model="showEditor"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text>{{ editing.id ? '编辑分类' : '新增分类' }}</text>
+            <text class="close" @click="showEditor = false">✕</text>
+          </view>
+          <view class="sheet-body">
+            <view class="form-row">
+              <text class="form-label">分类名称</text>
+              <wd-input
+                no-border
+                v-model="editing.name"
+                class="form-input"
+                placeholder="不超过 10 字"
+                maxlength="10"
+              />
+            </view>
+            <view class="form-row" v-if="editing.parentId">
+              <text class="form-label">上级</text>
+              <text class="form-text">{{
+                merchantList.find((c) => c.id === editing.parentId)?.name || '—'
+              }}</text>
+            </view>
+            <view class="form-row" v-else>
+              <text class="form-label">类型</text>
+              <text class="form-text">顶级分类</text>
+            </view>
+          </view>
+          <view class="sheet-footer">
+            <wd-button block plain size="large" @click="showEditor = false">取消</wd-button>
+            <wd-button block type="primary" size="large" @click="saveCategory">保存</wd-button>
+          </view>
+        </view>
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 
@@ -290,7 +324,9 @@ onMounted(load)
   color: #fff;
   border-radius: 999rpx;
   font-size: 22rpx;
-  .add-icon { font-size: 24rpx; }
+  .add-icon {
+    font-size: 24rpx;
+  }
 }
 .tree {
   padding: 16rpx 24rpx;
@@ -309,8 +345,12 @@ onMounted(load)
   align-items: center;
   padding: 20rpx 24rpx;
   border-bottom: 1rpx solid var(--border-light);
-  &.root-row { background: var(--bg-page); }
-  &:last-child { border-bottom: none; }
+  &.root-row {
+    background: var(--bg-page);
+  }
+  &:last-child {
+    border-bottom: none;
+  }
   .row-left {
     flex: 1;
     display: flex;
@@ -327,8 +367,16 @@ onMounted(load)
       color: var(--text-tertiary);
       font-size: 22rpx;
     }
-    .row-name { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-    .row-count { margin-left: auto; font-size: 20rpx; color: var(--text-tertiary); }
+    .row-name {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .row-count {
+      margin-left: auto;
+      font-size: 20rpx;
+      color: var(--text-tertiary);
+    }
   }
   .row-actions {
     display: flex;
@@ -342,7 +390,9 @@ onMounted(load)
       line-height: 48rpx;
       font-size: 24rpx;
       color: var(--text-secondary);
-      &.danger { color: var(--status-error); }
+      &.danger {
+        color: var(--status-error);
+      }
     }
   }
 }
@@ -352,7 +402,10 @@ onMounted(load)
 .sub-row {
   padding-left: 56rpx;
   background: var(--bg-card);
-  .row-name { font-size: 26rpx; font-weight: 500; }
+  .row-name {
+    font-size: 26rpx;
+    font-weight: 500;
+  }
 }
 .sub-add {
   padding: 16rpx 56rpx;
@@ -367,10 +420,13 @@ onMounted(load)
   color: var(--text-tertiary);
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0 48rpx;
 }
 .sheet {
@@ -380,19 +436,33 @@ onMounted(load)
   overflow: hidden;
 }
 .sheet-head {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 24rpx;
   border-bottom: 1rpx solid var(--border-light);
-  font-size: 30rpx; font-weight: 700;
-  .close { font-size: 28rpx; color: var(--text-tertiary); }
+  font-size: 30rpx;
+  font-weight: 700;
+  .close {
+    font-size: 28rpx;
+    color: var(--text-tertiary);
+  }
 }
 .sheet-body {
   padding: 24rpx;
-  display: flex; flex-direction: column; gap: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 .form-row {
-  display: flex; align-items: center; gap: 16rpx;
-  .form-label { width: 120rpx; font-size: 26rpx; color: var(--text-secondary); }
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  .form-label {
+    width: 120rpx;
+    font-size: 26rpx;
+    color: var(--text-secondary);
+  }
   .form-input {
     flex: 1;
     background: var(--bg-page);
@@ -401,17 +471,32 @@ onMounted(load)
     font-size: 26rpx;
     color: var(--text-primary);
   }
-  .form-text { flex: 1; font-size: 26rpx; color: var(--text-primary); }
+  .form-text {
+    flex: 1;
+    font-size: 26rpx;
+    color: var(--text-primary);
+  }
 }
 .sheet-footer {
-  display: flex; gap: 12rpx;
+  display: flex;
+  gap: 12rpx;
   padding: 16rpx 24rpx 24rpx;
   .btn {
-    flex: 1; height: 80rpx; border-radius: 999rpx;
-    text-align: center; line-height: 80rpx;
-    font-size: 26rpx; font-weight: 600;
-    &.ghost { background: var(--bg-hover); color: var(--text-primary); }
-    &.primary { background: var(--brand-gradient); color: #fff; }
+    flex: 1;
+    height: 80rpx;
+    border-radius: 999rpx;
+    text-align: center;
+    line-height: 80rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    &.ghost {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    &.primary {
+      background: var(--brand-gradient);
+      color: #fff;
+    }
   }
 }
 </style>

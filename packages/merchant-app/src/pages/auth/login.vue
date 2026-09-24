@@ -263,183 +263,192 @@ async function manualCheckUpdate() {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- Hero · 暖色渐变 + 双层光晕 -->
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
-      <view class="blob blob-1" />
-      <view class="blob blob-2" />
-      <view class="blob blob-3" />
+    <view class="page">
+      <!-- Hero · 暖色渐变 + 双层光晕 -->
+      <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+        <view class="blob blob-1" />
+        <view class="blob blob-2" />
+        <view class="blob blob-3" />
 
-      <view class="brand">
-        <view class="logo-mark">
-          <view class="logo-inner">
-            <text class="logo-letter">经</text>
+        <view class="brand">
+          <view class="logo-mark">
+            <view class="logo-inner">
+              <text class="logo-letter">经</text>
+            </view>
+          </view>
+          <view class="brand-text">
+            <text class="brand-name">经纬科技</text>
+            <text class="brand-tag">商家工作台</text>
           </view>
         </view>
-        <view class="brand-text">
-          <text class="brand-name">经纬科技</text>
-          <text class="brand-tag">商家工作台</text>
+
+        <view class="lead-text">
+          <text class="lead-title">让家居建材生意更轻松</text>
+          <text class="lead-sub">厂家直供 · 门店一体 · 数据闭环</text>
+        </view>
+
+        <view class="pills">
+          <view class="pill">
+            <wd-icon :name="$jwIcon('biz-store')" size="11px" color="#fff" />
+            <text class="pill-text">厂家直供</text>
+          </view>
+          <view class="pill">
+            <wd-icon :name="$jwIcon('biz-staff')" size="11px" color="#fff" />
+            <text class="pill-text">多角色协作</text>
+          </view>
+          <view class="pill">
+            <wd-icon :name="$jwIcon('biz-stats')" size="11px" color="#fff" />
+            <text class="pill-text">实时经营</text>
+          </view>
         </view>
       </view>
 
-      <view class="lead-text">
-        <text class="lead-title">让家居建材生意更轻松</text>
-        <text class="lead-sub">厂家直供 · 门店一体 · 数据闭环</text>
+      <!-- 入驻成功横幅 -->
+      <view v-if="justApplied" class="status-banner">
+        <view class="apply-banner-icon">
+          <wd-icon :name="$jwIcon('check')" size="14px" color="#fff" />
+        </view>
+        <view class="apply-banner-text">
+          <text class="apply-banner-title">入驻申请已提交</text>
+          <text class="apply-banner-sub"
+            >申请已进入审核流程，审核通过后可直接使用手机号和设置好的密码登录</text
+          >
+        </view>
+        <view class="apply-banner-close" @click="dismissApplyBanner">
+          <wd-icon :name="$jwIcon('close')" size="12px" color="#fff" />
+        </view>
       </view>
 
-      <view class="pills">
-        <view class="pill">
-          <wd-icon :name="$jwIcon('biz-store')" size="11px" color="#fff"  />
-          <text class="pill-text">厂家直供</text>
+      <!-- 登录卡片 -->
+      <GlassSurface class="card" variant="card" effect="auto">
+        <view class="login-head">
+          <text class="login-title">{{ mode === 'password' ? '手机号登录' : '验证码登录' }}</text>
+          <text class="login-sub">
+            {{ mode === 'password' ? '请输入注册手机号和密码' : '验证码登录仅适用于已有商家账号' }}
+          </text>
         </view>
-        <view class="pill">
-          <wd-icon :name="$jwIcon('biz-staff')" size="11px" color="#fff"  />
-          <text class="pill-text">多角色协作</text>
-        </view>
-        <view class="pill">
-          <wd-icon :name="$jwIcon('biz-stats')" size="11px" color="#fff"  />
-          <text class="pill-text">实时经营</text>
-        </view>
-      </view>
-    </view>
 
-    <!-- 入驻成功横幅 -->
-    <view v-if="justApplied" class="status-banner">
-      <view class="apply-banner-icon">
-        <wd-icon :name="$jwIcon('check')" size="14px" color="#fff"  />
-      </view>
-      <view class="apply-banner-text">
-        <text class="apply-banner-title">入驻申请已提交</text>
-        <text class="apply-banner-sub"
-          >申请已进入审核流程，审核通过后可直接使用手机号和设置好的密码登录</text
+        <view class="form">
+          <view class="field">
+            <view class="prefix">
+              <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c" />
+            </view>
+            <wd-input
+              no-border
+              v-model="phone"
+              class="input"
+              type="number"
+              maxlength="11"
+              placeholder="请输入手机号"
+              placeholder-class="ph"
+            />
+          </view>
+          <view v-if="mode === 'password'" class="field">
+            <view class="prefix">
+              <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c" />
+            </view>
+            <wd-input
+              no-border
+              v-model="password"
+              class="input"
+              show-password
+              maxlength="32"
+              placeholder="请输入 6-32 位密码"
+              placeholder-class="ph"
+            />
+            <view class="suffix" @click="showPwd = !showPwd">
+              <wd-icon :name="$jwIcon(showPwd ? 'eye' : 'eye-off')" size="16px" color="#86909c" />
+            </view>
+          </view>
+          <view v-else class="field">
+            <view class="prefix">
+              <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c" />
+            </view>
+            <wd-input
+              no-border
+              v-model="smsCode"
+              class="input"
+              type="number"
+              maxlength="6"
+              placeholder="短信验证码"
+              placeholder-class="ph"
+            />
+            <view
+              :class="['code-btn', (countdown > 0 || sending) && 'disabled']"
+              @click="onSendCode"
+            >
+              {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
+            </view>
+          </view>
+        </view>
+
+        <!-- 协议 -->
+        <view class="agree-row">
+          <view :class="['check', agreed && 'on']" @click="agreed = !agreed">
+            <wd-icon v-if="agreed" :name="$jwIcon('check')" size="10px" color="#fff" />
+          </view>
+          <text class="agree-text">
+            已阅读并同意
+            <text class="hl" @click="openAgreement('user')">《商家入驻协议》</text>、
+            <text class="hl" @click="openAgreement('privacy')">《隐私政策》</text>及
+            <text class="hl" @click="openAgreement('collect')">《信息收集清单》</text>
+          </text>
+        </view>
+
+        <!-- 提交 -->
+        <wd-button
+          class="submit"
+          :class="{ disabled: !canSubmit || loading }"
+          :disabled="!canSubmit || loading"
+          @click="onLogin"
+          type="primary"
+          size="large"
+          block
         >
+          <text v-if="loading">登录中…</text>
+          <text v-else>登 录</text>
+        </wd-button>
+
+        <view class="mode-link" @click="switchMode">
+          {{ mode === 'password' ? '忘记密码？使用验证码登录' : '返回手机号密码登录' }}
+        </view>
+
+        <!-- 分割 -->
+        <view class="divider">
+          <view class="line" />
+          <text class="dtext">还未成为商家？</text>
+          <view class="line" />
+        </view>
+
+        <!-- 入驻引导 -->
+        <view class="apply-banner" @click="goApply">
+          <view class="apply-left">
+            <view class="apply-icon">
+              <wd-icon :name="$jwIcon('biz-shop-decorate')" size="18px" color="#FF4D2D" />
+            </view>
+            <view class="apply-info">
+              <text class="apply-title">立即申请入驻</text>
+              <text class="apply-sub">最快 1 个工作日审核</text>
+            </view>
+          </view>
+          <wd-icon :name="$jwIcon('forward')" size="14px" color="#FF4D2D" />
+        </view>
+      </GlassSurface>
+
+      <!-- 页脚 -->
+      <view class="footer">
+        <view class="update-link" @click="manualCheckUpdate">
+          {{ checkingUpdate ? '正在检查更新…' : '检查更新' }}
+        </view>
+        <view class="footer-row">
+          <text class="meta">© 2026 经纬科技</text>
+          <text class="dot-divider">·</text>
+          <text class="meta">商家版</text>
+        </view>
       </view>
-      <view class="apply-banner-close" @click="dismissApplyBanner">
-        <wd-icon :name="$jwIcon('close')" size="12px" color="#fff"  />
-      </view>
+
+      <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
     </view>
-
-    <!-- 登录卡片 -->
-    <GlassSurface class="card" variant="card" effect="auto">
-      <view class="login-head">
-        <text class="login-title">{{ mode === 'password' ? '手机号登录' : '验证码登录' }}</text>
-        <text class="login-sub">
-          {{ mode === 'password' ? '请输入注册手机号和密码' : '验证码登录仅适用于已有商家账号' }}
-        </text>
-      </view>
-
-      <view class="form">
-        <view class="field">
-          <view class="prefix">
-            <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"  />
-          </view>
-          <wd-input no-border
-            v-model="phone"
-            class="input"
-            type="number"
-            maxlength="11"
-            placeholder="请输入手机号"
-            placeholder-class="ph"
-           />
-        </view>
-        <view v-if="mode === 'password'" class="field">
-          <view class="prefix">
-            <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
-          </view>
-          <wd-input no-border
-            v-model="password"
-            class="input" show-password
-            maxlength="32"
-            placeholder="请输入 6-32 位密码"
-            placeholder-class="ph"
-           />
-          <view class="suffix" @click="showPwd = !showPwd">
-            <wd-icon :name="$jwIcon(showPwd ? 'eye' : 'eye-off')" size="16px" color="#86909c"  />
-          </view>
-        </view>
-        <view v-else class="field">
-          <view class="prefix">
-            <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c"  />
-          </view>
-          <wd-input no-border
-            v-model="smsCode"
-            class="input"
-            type="number"
-            maxlength="6"
-            placeholder="短信验证码"
-            placeholder-class="ph"
-           />
-          <view :class="['code-btn', (countdown > 0 || sending) && 'disabled']" @click="onSendCode">
-            {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
-          </view>
-        </view>
-      </view>
-
-      <!-- 协议 -->
-      <view class="agree-row">
-        <view :class="['check', agreed && 'on']" @click="agreed = !agreed">
-          <wd-icon v-if="agreed" :name="$jwIcon('check')" size="10px" color="#fff"  />
-        </view>
-        <text class="agree-text">
-          已阅读并同意
-          <text class="hl" @click="openAgreement('user')">《商家入驻协议》</text>、
-          <text class="hl" @click="openAgreement('privacy')">《隐私政策》</text>及
-          <text class="hl" @click="openAgreement('collect')">《信息收集清单》</text>
-        </text>
-      </view>
-
-      <!-- 提交 -->
-      <wd-button
-        class="submit"
-        :class="{ disabled: !canSubmit || loading }"
-        :disabled="!canSubmit || loading"
-        @click="onLogin"
-       type="primary" size="large" block>
-        <text v-if="loading">登录中…</text>
-        <text v-else>登 录</text>
-      </wd-button>
-
-      <view class="mode-link" @click="switchMode">
-        {{ mode === 'password' ? '忘记密码？使用验证码登录' : '返回手机号密码登录' }}
-      </view>
-
-      <!-- 分割 -->
-      <view class="divider">
-        <view class="line" />
-        <text class="dtext">还未成为商家？</text>
-        <view class="line" />
-      </view>
-
-      <!-- 入驻引导 -->
-      <view class="apply-banner" @click="goApply">
-        <view class="apply-left">
-          <view class="apply-icon">
-            <wd-icon :name="$jwIcon('biz-shop-decorate')" size="18px" color="#FF4D2D"  />
-          </view>
-          <view class="apply-info">
-            <text class="apply-title">立即申请入驻</text>
-            <text class="apply-sub">最快 1 个工作日审核</text>
-          </view>
-        </view>
-        <wd-icon :name="$jwIcon('forward')" size="14px" color="#FF4D2D"  />
-      </view>
-    </GlassSurface>
-
-    <!-- 页脚 -->
-    <view class="footer">
-      <view class="update-link" @click="manualCheckUpdate">
-        {{ checkingUpdate ? '正在检查更新…' : '检查更新' }}
-      </view>
-      <view class="footer-row">
-        <text class="meta">© 2026 经纬科技</text>
-        <text class="dot-divider">·</text>
-        <text class="meta">商家版</text>
-      </view>
-    </view>
-
-    <AgreementSheet :open="agreementOpen" :type="agreementKind" @close="agreementOpen = false" />
-  </view>
-
   </wd-config-provider>
 </template>
 

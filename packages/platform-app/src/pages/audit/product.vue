@@ -263,128 +263,155 @@ onMounted(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="商品审核" @click-right="showConfigDetail = !showConfigDetail"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('gear')" size="22px" /></template>
-    </wd-navbar>
+    <view class="page">
+      <wd-navbar
+        title="商品审核"
+        @click-right="showConfigDetail = !showConfigDetail"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      >
+        <template #right><wd-icon :name="$jwIcon('gear')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 自动通过开关 -->
-      <view v-if="config" class="auto-card">
-        <view class="auto-head">
-          <view class="auto-title">
-            <view class="auto-emoji">
-              <wd-icon :name="$jwIcon('lightning')" size="18px" color="#FF4D2D"  />
+      <scroll-view scroll-y class="scroll">
+        <!-- 自动通过开关 -->
+        <view v-if="config" class="auto-card">
+          <view class="auto-head">
+            <view class="auto-title">
+              <view class="auto-emoji">
+                <wd-icon :name="$jwIcon('lightning')" size="18px" color="#FF4D2D" />
+              </view>
+              <view class="auto-text">
+                <text class="t1">自动通过 · 免审核</text>
+                <text class="t2">满足条件的商品提交后无需人工审核，直接上架</text>
+              </view>
             </view>
-            <view class="auto-text">
-              <text class="t1">自动通过 · 免审核</text>
-              <text class="t2">满足条件的商品提交后无需人工审核，直接上架</text>
+            <view :class="['toggle', config.autoApprove ? 'on' : '']" @click="toggleAutoApprove">
+              <view class="thumb" />
+              <text class="text">{{ config.autoApprove ? '已开启' : '关闭' }}</text>
             </view>
           </view>
-          <view :class="['toggle', config.autoApprove ? 'on' : '']" @click="toggleAutoApprove">
-            <view class="thumb" />
-            <text class="text">{{ config.autoApprove ? '已开启' : '关闭' }}</text>
+        </view>
+
+        <!-- 免审条件 -->
+        <view v-if="config" class="cond-card">
+          <view class="cond-head">
+            <text class="title">免审条件（满足任一即可）</text>
+            <text class="sub"
+              >{{ config.conditions.filter((c) => c.enabled).length }} /
+              {{ config.conditions.length }}</text
+            >
+          </view>
+          <view class="cond-list">
+            <view
+              v-for="c in config.conditions"
+              :key="c.key"
+              class="cond-row"
+              @click="toggleCondition(c.key)"
+            >
+              <view class="cond-check">
+                <wd-icon
+                  v-if="c.enabled"
+                  :name="$jwIcon('check-circle')"
+                  size="18px"
+                  color="var(--brand-primary)"
+                />
+                <wd-icon
+                  v-else
+                  :name="$jwIcon('circle')"
+                  size="18px"
+                  color="var(--text-tertiary)"
+                />
+              </view>
+              <text class="cond-label">{{ c.label }}</text>
+              <view :class="['cond-state', c.enabled ? 'on' : 'off']">
+                {{ c.enabled ? '已启用' : '未启用' }}
+              </view>
+            </view>
+          </view>
+          <view class="sampling" @click="changeSamplingRate">
+            <text class="s-label">抽检比例</text>
+            <view class="s-value">
+              <text>{{ config.samplingRate }}% 随机抽检</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
           </view>
         </view>
-      </view>
 
-      <!-- 免审条件 -->
-      <view v-if="config" class="cond-card">
-        <view class="cond-head">
-          <text class="title">免审条件（满足任一即可）</text>
-          <text class="sub"
-            >{{ config.conditions.filter((c) => c.enabled).length }} /
-            {{ config.conditions.length }}</text
-          >
-        </view>
-        <view class="cond-list">
+        <!-- Tab -->
+        <view class="tabs">
           <view
-            v-for="c in config.conditions"
-            :key="c.key"
-            class="cond-row"
-            @click="toggleCondition(c.key)"
+            v-for="t in TABS"
+            :key="t.key"
+            :class="['tab', tab === t.key ? 'active' : '']"
+            @click="tab = t.key"
           >
-            <view class="cond-check">
-              <wd-icon v-if="c.enabled" :name="$jwIcon('check-circle')" size="18px" color="var(--brand-primary)"  />
-              <wd-icon v-else :name="$jwIcon('circle')" size="18px" color="var(--text-tertiary)"  />
-            </view>
-            <text class="cond-label">{{ c.label }}</text>
-            <view :class="['cond-state', c.enabled ? 'on' : 'off']">
-              {{ c.enabled ? '已启用' : '未启用' }}
-            </view>
+            <text class="tab-label">{{ t.label }}</text>
+            <text class="tab-count">{{ counts[t.key] }}</text>
+            <view v-if="tab === t.key" class="indicator" />
           </view>
         </view>
-        <view class="sampling" @click="changeSamplingRate">
-          <text class="s-label">抽检比例</text>
-          <view class="s-value">
-            <text>{{ config.samplingRate }}% 随机抽检</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-      </view>
 
-      <!-- Tab -->
-      <view class="tabs">
-        <view
-          v-for="t in TABS"
-          :key="t.key"
-          :class="['tab', tab === t.key ? 'active' : '']"
-          @click="tab = t.key"
-        >
-          <text class="tab-label">{{ t.label }}</text>
-          <text class="tab-count">{{ counts[t.key] }}</text>
-          <view v-if="tab === t.key" class="indicator" />
-        </view>
-      </view>
-
-      <!-- 商品卡 -->
-      <view class="list">
-        <view v-for="p in filtered" :key="p.id" class="card">
-          <view class="card-row">
-            <image :src="p.image" mode="aspectFill" class="img" />
-            <view class="info">
-              <view class="info-head">
-                <text class="name">{{ p.name }}</text>
-                <view :class="['status-tag', p.status]">
-                  {{
-                    p.status === 'pending'
-                      ? '待审'
-                      : p.status === 'active'
-                        ? p.autoApproved
-                          ? '自动通过'
-                          : '已通过'
-                        : '已驳回'
-                  }}
+        <!-- 商品卡 -->
+        <view class="list">
+          <view v-for="p in filtered" :key="p.id" class="card">
+            <view class="card-row">
+              <image :src="p.image" mode="aspectFill" class="img" />
+              <view class="info">
+                <view class="info-head">
+                  <text class="name">{{ p.name }}</text>
+                  <view :class="['status-tag', p.status]">
+                    {{
+                      p.status === 'pending'
+                        ? '待审'
+                        : p.status === 'active'
+                          ? p.autoApproved
+                            ? '自动通过'
+                            : '已通过'
+                          : '已驳回'
+                    }}
+                  </view>
+                </view>
+                <text class="meta">{{ p.merchant }} · {{ p.category }}</text>
+                <view class="price-row">
+                  <text class="price">{{ formatPrice(p.price) }}</text>
+                  <text class="time">提交 {{ formatDate(p.submittedAt) }}</text>
                 </view>
               </view>
-              <text class="meta">{{ p.merchant }} · {{ p.category }}</text>
-              <view class="price-row">
-                <text class="price">{{ formatPrice(p.price) }}</text>
-                <text class="time">提交 {{ formatDate(p.submittedAt) }}</text>
-              </view>
+            </view>
+            <view class="actions">
+              <view class="btn ghost" @click="viewDetail(p)">详情</view>
+              <template v-if="p.status === 'active'">
+                <view class="btn ghost" @click="spotCheck(p)">抽检</view>
+              </template>
+              <template v-else-if="p.status === 'pending'">
+                <view class="btn ghost" @click="reject(p)">驳回</view>
+                <view class="btn primary" @click="approve(p)">通过</view>
+              </template>
             </view>
           </view>
-          <view class="actions">
-            <view class="btn ghost" @click="viewDetail(p)">详情</view>
-            <template v-if="p.status === 'active'">
-              <view class="btn ghost" @click="spotCheck(p)">抽检</view>
-            </template>
-            <template v-else-if="p.status === 'pending'">
-              <view class="btn ghost" @click="reject(p)">驳回</view>
-              <view class="btn primary" @click="approve(p)">通过</view>
-            </template>
-          </view>
+
+          <wd-status-tip
+            v-if="!loading && filtered.length === 0"
+            image="content"
+            :tip="
+              [
+                `暂无${TABS.find((t) => t.key === tab)?.label}商品`,
+                '开启自动通过可减少人工审核工作量',
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            "
+          />
         </view>
 
-        <wd-status-tip
-          v-if="!loading && filtered.length === 0"
-         image="content" :tip="[`暂无${TABS.find((t) => t.key === tab)?.label}商品`, '开启自动通过可减少人工审核工作量'].filter(Boolean).join(' · ')" />
-      </view>
-
-      <view style="height: 40rpx" />
-    </scroll-view>
-  </view>
-
+        <view style="height: 40rpx" />
+      </scroll-view>
+    </view>
   </wd-config-provider>
 </template>
 

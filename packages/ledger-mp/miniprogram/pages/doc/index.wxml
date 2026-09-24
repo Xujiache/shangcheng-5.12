@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="doc">
+<view class="doc lz-route-scene {{_routeMotion}}">
   <lz-header title="{{title}}" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -13,3 +13,5 @@
     <view class="doc__foot">最终解释权归门窗利账运营方所有。</view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

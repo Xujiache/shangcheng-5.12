@@ -46,9 +46,13 @@ export function nowBeijingMs(): number {
 }
 
 /** 金额格式化（带千分位）*/
-export function formatMoney(value: number | string | null | undefined, options?: { prefix?: string; fraction?: number }): string {
+export function formatMoney(
+  value: number | string | null | undefined,
+  options?: { prefix?: string; fraction?: number },
+): string {
   const num = typeof value === 'string' ? parseFloat(value) : (value as number)
-  if (value === null || value === undefined || isNaN(num as number)) return options?.prefix ? `${options.prefix}0.00` : '0.00'
+  if (value === null || value === undefined || isNaN(num as number))
+    return options?.prefix ? `${options.prefix}0.00` : '0.00'
   const fraction = options?.fraction ?? 2
   const formatted = (num as number).toFixed(fraction).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return options?.prefix ? `${options.prefix}${formatted}` : formatted

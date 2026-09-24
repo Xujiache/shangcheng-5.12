@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "9a91ab63215086de13e2c2c4c5682cc6a35d25117f32c1c6e454e89d1bbeb58d",
+  "mode": "integration",
+  "startedAt": "2026-09-08T20:20:02.825Z",
+  "status": "passed",
+  "steps": [
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "scripts/db/test-target.mjs",
+        "--with-redis"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 126,
+      "artifact": "docs/全仓库优化/evidence/integration/0.txt",
+      "sha256": "191b36162a94b7fa8e6fae57bed32210f3ed956a7edf1096d47c0929f3e7abb3"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "test:integration"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 21923,
+      "artifact": "docs/全仓库优化/evidence/integration/1.txt",
+      "sha256": "959b463c01cec84bfbbdf522674c6fda0bdecf805d67fd0d4e334054c5194710"
+    }
+  ],
+  "finishedAt": "2026-09-08T20:20:27.084Z",
+  "archivedFrom": ".quality/integration/report.json"
+}

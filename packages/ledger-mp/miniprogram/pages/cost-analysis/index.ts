@@ -1,3 +1,4 @@
+import { MotionPage } from '../../utils/page-transition'
 import { statsApi } from '../../api/index'
 import { yuan, maskMoney } from '../../utils/format'
 import { getHideAmount } from '../../utils/store'
@@ -18,7 +19,7 @@ interface Slice {
   value: number
 }
 
-Page({
+MotionPage({
   data: {
     loading: true,
     loadError: false, // 网络/加载失败：区别于"暂无成本数据"空态

@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { authApi } from '../../api/index'
 import { getLogo, setLogo } from '../../utils/store'
 
@@ -14,7 +15,7 @@ function readVersion(): string {
   }
 }
 
-Page({
+MotionPage({
   data: {
     appVersion: FALLBACK_VERSION,
     logoUrl: getLogo(),
@@ -35,13 +36,13 @@ Page({
   },
   toDoc(e: any) {
     const key = e.currentTarget.dataset.key
-    wx.navigateTo({ url: '/pages/doc/index?key=' + key })
+    navigation.navigateTo({ url: '/pages/doc/index?key=' + key })
   },
   toFeedback() {
-    wx.navigateTo({ url: '/pages/feedback/index' })
+    navigation.navigateTo({ url: '/pages/feedback/index' })
   },
   toChangelog() {
-    wx.navigateTo({ url: '/pages/changelog/index' })
+    navigation.navigateTo({ url: '/pages/changelog/index' })
   },
   // 检查更新：微信平台真实更新流程（onCheckForUpdate → 自动下载 → onUpdateReady → applyUpdate）
   onCheckUpdate() {

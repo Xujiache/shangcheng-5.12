@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="gl">
+<view class="gl lz-route-scene {{_routeMotion}}">
   <lz-header title="经营目标" subtitle="设定月度 / 年度利润目标" back="{{true}}" />
 
   <view class="lz-page lz-page--pad-bottom">
@@ -9,6 +9,7 @@
       <button class="lz-btn lz-btn--ghost lz-btn--lg" bindtap="retry">重试</button>
     </view>
 
+    <lz-skeleton wx:elif="{{loading}}" variant="form" />
     <block wx:else>
       <!-- 当前进度 -->
       <view class="lz-section-label">当前进度 · {{ovYear}}年</view>
@@ -78,3 +79,5 @@
     </button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

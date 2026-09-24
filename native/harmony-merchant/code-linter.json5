@@ -1,0 +1,12 @@
+{
+  "files": ["**/*.ets"],
+  "ignore": ["**/oh_modules/**", "**/build/**"],
+  "ruleSet": ["plugin:@typescript-eslint/recommended"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": 2,
+    "@typescript-eslint/no-unused-vars": [2, {
+      "argsIgnorePattern": "^_",
+      "caughtErrorsIgnorePattern": "^_"
+    }]
+  }
+}

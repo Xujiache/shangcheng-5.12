@@ -42,7 +42,7 @@ const subtotal = computed(() => lines.value.reduce((s, l) => s + l.price * l.qty
 const payAmount = computed(() => Math.max(0, subtotal.value - couponDiscount.value))
 
 onLoad((options) => {
-  fromSku.value = options?.fromSku === '1' || options?.fromSku === 1 as any
+  fromSku.value = options?.fromSku === '1' || options?.fromSku === (1 as any)
   cartStore.hydrate() // 确保 buyNow 从 storage 恢复（H5 刷新场景）
 })
 
@@ -60,17 +60,23 @@ onShow(async () => {
       const picked = list.find((a) => a.id === sid)
       if (picked) address.value = picked
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 })
 
 async function loadInitial() {
   try {
     address.value = await addressService.defaultAddress()
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   try {
     const r = await couponService.list()
     couponList.value = (r?.list || []).filter((c) => c.status === 'active')
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /** 当前订单所属商户（用于过滤掉其它商户的券，避免选了别家券下单被后端拒） */
@@ -97,7 +103,7 @@ function discountOf(c: Coupon, sub: number): number {
   if (c.type === 'fixed') return Number(c.amount || 0)
   // discountPercent 是 0~1 区间的小数（0.85 = 85 折，即支付 85%）
   // 折扣金额 = subtotal * (1 - discountPercent)
-  if (c.type === 'discount') return Math.round((sub * (1 - (c.discountPercent || 1))) * 100) / 100
+  if (c.type === 'discount') return Math.round(sub * (1 - (c.discountPercent || 1)) * 100) / 100
   return 0
 }
 
@@ -127,7 +133,9 @@ function chooseShipping() {
 function chooseCoupon() {
   // 构造选项：可用券 + 不使用 + 未达门槛券（灰色提示）
   const usable = availableCoupons.value
-  const unavailable = merchantCoupons.value.filter((c) => c.threshold && subtotal.value < c.threshold)
+  const unavailable = merchantCoupons.value.filter(
+    (c) => c.threshold && subtotal.value < c.threshold,
+  )
   const items = [
     ...usable.map((c) => `${couponLabel(c)}  -¥${discountOf(c, subtotal.value)}`),
     ...unavailable.map((c) => `${couponLabel(c)}  ✗ 还差 ¥${c.threshold! - subtotal.value}`),
@@ -197,7 +205,9 @@ async function submit() {
     // 立即购买：清 buyNow；购物车结算：清已勾选
     if (fromSku.value) cartStore.clearBuyNow()
     else cartStore.clearSelected()
-    uni.redirectTo({ url: `/pages/order/pay?orderId=${result.orderId}&orderNo=${result.orderNo}&amount=${result.payAmount}` })
+    uni.redirectTo({
+      url: `/pages/order/pay?orderId=${result.orderId}&orderNo=${result.orderNo}&amount=${result.payAmount}`,
+    })
   } finally {
     submitting.value = false
   }
@@ -283,7 +293,7 @@ async function submit() {
         </view>
       </view>
 
-      <view style="height: 180rpx;" />
+      <view style="height: 180rpx" />
     </scroll-view>
 
     <!-- 底部合计 -->
@@ -306,7 +316,10 @@ async function submit() {
   flex-direction: column;
   background: var(--bg-page);
 }
-.scroll { flex: 1; height: 0; }
+.scroll {
+  flex: 1;
+  height: 0;
+}
 
 .address-card {
   margin: 24rpx;
@@ -322,18 +335,39 @@ async function submit() {
     display: flex;
     align-items: center;
     gap: 8rpx;
-    .addr-title { flex: 1; font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-    .addr-change { font-size: 24rpx; color: var(--brand-primary); }
+    .addr-title {
+      flex: 1;
+      font-size: 28rpx;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .addr-change {
+      font-size: 24rpx;
+      color: var(--brand-primary);
+    }
   }
   .addr-name {
     display: flex;
     align-items: baseline;
     gap: 16rpx;
-    .name { font-size: 28rpx; font-weight: 700; }
-    .phone { font-size: 26rpx; color: var(--text-secondary); }
+    .name {
+      font-size: 28rpx;
+      font-weight: 700;
+    }
+    .phone {
+      font-size: 26rpx;
+      color: var(--text-secondary);
+    }
   }
-  .addr-detail { font-size: 24rpx; color: var(--text-tertiary); line-height: 1.4; }
-  .addr-empty { font-size: 26rpx; color: var(--text-tertiary); }
+  .addr-detail {
+    font-size: 24rpx;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+  }
+  .addr-empty {
+    font-size: 26rpx;
+    color: var(--text-tertiary);
+  }
 }
 
 .goods-card {
@@ -349,7 +383,9 @@ async function submit() {
   gap: 16rpx;
   padding: 24rpx 0;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
   .goods-img {
     width: 140rpx;
     height: 140rpx;
@@ -370,7 +406,10 @@ async function submit() {
       overflow: hidden;
       color: var(--text-primary);
     }
-    .spec { font-size: 22rpx; color: var(--text-tertiary); }
+    .spec {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
     .row {
       margin-top: auto;
       display: flex;
@@ -382,7 +421,10 @@ async function submit() {
         color: var(--brand-primary);
         font-family: $font-family-base;
       }
-      .qty { font-size: 24rpx; color: var(--text-tertiary); }
+      .qty {
+        font-size: 24rpx;
+        color: var(--text-tertiary);
+      }
     }
   }
 }
@@ -404,17 +446,29 @@ async function submit() {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  .opt-label { width: 160rpx; font-size: 26rpx; color: var(--text-tertiary); }
+  .opt-label {
+    width: 160rpx;
+    font-size: 26rpx;
+    color: var(--text-tertiary);
+  }
   .opt-value {
     flex: 1;
     font-size: 26rpx;
     color: var(--text-primary);
     text-align: right;
-    &.accent { color: var(--brand-primary); font-weight: 700; }
-    &.placeholder { color: var(--text-tertiary); }
+    &.accent {
+      color: var(--brand-primary);
+      font-weight: 700;
+    }
+    &.placeholder {
+      color: var(--text-tertiary);
+    }
   }
 }
-.opt-divider { height: 1rpx; background: var(--border-light); }
+.opt-divider {
+  height: 1rpx;
+  background: var(--border-light);
+}
 
 .amount-card {
   margin: 16rpx 24rpx;
@@ -428,9 +482,17 @@ async function submit() {
     display: flex;
     justify-content: space-between;
     font-size: 24rpx;
-    .k { color: var(--text-tertiary); }
-    .v { color: var(--text-primary); font-family: $font-family-base; }
-    .v.accent { color: var(--brand-primary); font-weight: 700; }
+    .k {
+      color: var(--text-tertiary);
+    }
+    .v {
+      color: var(--text-primary);
+      font-family: $font-family-base;
+    }
+    .v.accent {
+      color: var(--brand-primary);
+      font-weight: 700;
+    }
   }
 }
 
@@ -446,13 +508,16 @@ async function submit() {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.04);
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.04);
   .ft-total {
     flex: 1;
     display: flex;
     align-items: baseline;
     gap: 8rpx;
-    .ft-label { font-size: 22rpx; color: var(--text-tertiary); }
+    .ft-label {
+      font-size: 22rpx;
+      color: var(--text-tertiary);
+    }
     .ft-value {
       font-size: 40rpx;
       font-weight: 800;
@@ -469,8 +534,10 @@ async function submit() {
     color: #fff;
     font-size: 30rpx;
     font-weight: 700;
-    box-shadow: 0 4rpx 16rpx rgba(255,77,45,0.3);
-    &.loading { opacity: 0.7; }
+    box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
+    &.loading {
+      opacity: 0.7;
+    }
   }
 }
 </style>

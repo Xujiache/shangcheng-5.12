@@ -1,3 +1,4 @@
+import { MotionPage, navigation } from '../../utils/page-transition'
 import { authApi, meApi } from '../../api/index'
 import {
   setAuth,
@@ -28,7 +29,7 @@ function getWechatLoginCode(): Promise<string> {
   })
 }
 
-Page({
+MotionPage({
   data: {
     loading: false,
     // 仅已有 token 时显示静默校验；游客主动进入登录页时直接展示登录选项，避免闪屏。
@@ -83,10 +84,10 @@ Page({
     return false
   },
   onDoc(e: any) {
-    wx.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
+    navigation.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
   },
   continueAsGuest() {
-    wx.switchTab({ url: '/pages/home/index' })
+    navigation.switchTab({ url: '/pages/home/index' })
   },
   openPrivacyContract() {
     const openPrivacyContract = (wx as any).openPrivacyContract
@@ -133,15 +134,15 @@ Page({
       const pages = getCurrentPages()
       const current = pages[pages.length - 1]
       if (!current || current.route !== 'pages/lock/index') {
-        wx.reLaunch({ url: '/pages/lock/index' })
+        navigation.reLaunch({ url: '/pages/lock/index' })
       }
       return
     }
     if (m && m.active && m.expiringSoon) {
       wx.showToast({ title: `会员剩 ${m.daysLeft} 天即将到期`, icon: 'none' })
-      setTimeout(() => wx.switchTab({ url: '/pages/home/index' }), 800)
+      setTimeout(() => navigation.switchTab({ url: '/pages/home/index' }), 800)
     } else {
-      wx.switchTab({ url: '/pages/home/index' })
+      navigation.switchTab({ url: '/pages/home/index' })
     }
   },
 })

@@ -150,7 +150,7 @@ function close() {
         <view class="head">
           <text class="title">{{ current?.title || KIND_LABEL[type] }}</text>
           <view class="close" @click="close">
-            <wd-icon :name="$jwIcon('close')" size="16px" color="#909399"  />
+            <wd-icon :name="$jwIcon('close')" size="16px" color="#909399" />
           </view>
         </view>
         <text v-if="current?.updatedAt" class="updated">最近更新：{{ current.updatedAt }}</text>

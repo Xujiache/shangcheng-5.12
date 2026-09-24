@@ -173,148 +173,197 @@ onBeforeUnmount(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="佣金设置" :right-text="navRightText" @click-right="manualFlush"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="佣金设置"
+        :right-text="navRightText"
+        @click-right="manualFlush"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="body">
-      <!-- 总开关 -->
-      <view class="hero">
-        <view class="hero-info">
-          <text class="hero-title">分销佣金</text>
-          <text class="hero-desc">客户分享购买后，自动结算佣金到推广者账户</text>
+      <view class="body">
+        <!-- 总开关 -->
+        <view class="hero">
+          <view class="hero-info">
+            <text class="hero-title">分销佣金</text>
+            <text class="hero-desc">客户分享购买后，自动结算佣金到推广者账户</text>
+          </view>
+          <wd-switch
+            :model-value="ruleDefault.enabled"
+            active-color="var(--brand-primary)"
+            @change="(e: any) => (ruleDefault.enabled = e.value)"
+          />
         </view>
-        <wd-switch :model-value="ruleDefault.enabled" active-color="var(--brand-primary)"
-          @change="(e: any) => (ruleDefault.enabled = e.value)"
-         />
-      </view>
 
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "默认佣金比例" }}</text><text class="jw-section-sub">全店通用</text></view></view></template>
-        <view class="rate-row">
-          <view class="rate-info">
-            <text class="rate-label">一级佣金</text>
-            <text class="rate-tip">直接推广者获得</text>
-          </view>
-          <view class="rate-control">
-            <view class="step-btn" @click="adjust('level1Percent', -0.5)">
-              <wd-icon :name="$jwIcon('minus')" size="16px" color="var(--brand-primary)"  />
-            </view>
-            <view class="rate-value">
-              <text class="value-num">{{ ruleDefault.level1Percent }}</text>
-              <text class="value-unit">%</text>
-            </view>
-            <view class="step-btn" @click="adjust('level1Percent', 0.5)">
-              <wd-icon :name="$jwIcon('plus')" size="16px" color="var(--brand-primary)"  />
-            </view>
-          </view>
-        </view>
-        <view class="rate-row">
-          <view class="rate-info">
-            <text class="rate-label">二级佣金</text>
-            <text class="rate-tip">推广者的上级获得</text>
-          </view>
-          <view class="rate-control">
-            <view class="step-btn" @click="adjust('level2Percent', -0.5)">
-              <wd-icon :name="$jwIcon('minus')" size="16px" color="var(--brand-primary)"  />
-            </view>
-            <view class="rate-value">
-              <text class="value-num">{{ ruleDefault.level2Percent }}</text>
-              <text class="value-unit">%</text>
-            </view>
-            <view class="step-btn" @click="adjust('level2Percent', 0.5)">
-              <wd-icon :name="$jwIcon('plus')" size="16px" color="var(--brand-primary)"  />
-            </view>
-          </view>
-        </view>
-        <view class="total-tip">
-          <text>累计 </text>
-          <text class="total-num"
-            >{{ ruleDefault.level1Percent + ruleDefault.level2Percent }}%</text
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '默认佣金比例' }}</text
+                ><text class="jw-section-sub">全店通用</text></view
+              ></view
+            ></template
           >
-          <text>，需小于商品毛利率</text>
-        </view>
-      </wd-card>
-
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "高级选项" }}</text></view></view></template>
-        <view class="opt-row">
-          <view class="opt-info">
-            <text class="opt-name">对分佣客户可见</text>
-            <text class="opt-desc">在客户端展示推广佣金详情</text>
-          </view>
-          <wd-switch :model-value="ruleDefault.visibleToPromoter" active-color="var(--brand-primary)"
-            @change="(e: any) => (ruleDefault.visibleToPromoter = e.value)"
-           />
-        </view>
-        <view class="opt-row">
-          <view class="opt-info">
-            <text class="opt-name">允许线下结算</text>
-            <text class="opt-desc">不通过系统自动结算，由商家私下转账</text>
-          </view>
-          <wd-switch :model-value="ruleDefault.allowOffline" active-color="var(--brand-primary)"
-            @change="(e: any) => (ruleDefault.allowOffline = e.value)"
-           />
-        </view>
-      </wd-card>
-
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "商品自定义" }}</text><text class="jw-section-sub">{{ `${productRules.length} 件商品` }}</text></view><wd-button type="text" size="small">{{ "新增" }}</wd-button></view></template>
-        <view class="prod-list">
-          <view v-for="p in productRules" :key="p.productId" class="prod-row">
-            <image class="prod-img" :src="p.productImage" mode="aspectFill" />
-            <view class="prod-info">
-              <text class="prod-name">{{ p.productName }}</text>
-              <view class="prod-rate">
-                <wd-tag  :type="$jwTagType('primary')" :plain="true" round>{{ `一级 ${p.level1Percent}%` }}</wd-tag>
-                <wd-tag  :type="$jwTagType('info')" :plain="true" round>{{ `二级 ${p.level2Percent}%` }}</wd-tag>
+          <view class="rate-row">
+            <view class="rate-info">
+              <text class="rate-label">一级佣金</text>
+              <text class="rate-tip">直接推广者获得</text>
+            </view>
+            <view class="rate-control">
+              <view class="step-btn" @click="adjust('level1Percent', -0.5)">
+                <wd-icon :name="$jwIcon('minus')" size="16px" color="var(--brand-primary)" />
+              </view>
+              <view class="rate-value">
+                <text class="value-num">{{ ruleDefault.level1Percent }}</text>
+                <text class="value-unit">%</text>
+              </view>
+              <view class="step-btn" @click="adjust('level1Percent', 0.5)">
+                <wd-icon :name="$jwIcon('plus')" size="16px" color="var(--brand-primary)" />
               </view>
             </view>
-            <view class="prod-actions">
-              <view class="action" @click="openEdit(p)">编辑</view>
-              <view class="action danger" @click="removeProductRule(p)">移除</view>
+          </view>
+          <view class="rate-row">
+            <view class="rate-info">
+              <text class="rate-label">二级佣金</text>
+              <text class="rate-tip">推广者的上级获得</text>
+            </view>
+            <view class="rate-control">
+              <view class="step-btn" @click="adjust('level2Percent', -0.5)">
+                <wd-icon :name="$jwIcon('minus')" size="16px" color="var(--brand-primary)" />
+              </view>
+              <view class="rate-value">
+                <text class="value-num">{{ ruleDefault.level2Percent }}</text>
+                <text class="value-unit">%</text>
+              </view>
+              <view class="step-btn" @click="adjust('level2Percent', 0.5)">
+                <wd-icon :name="$jwIcon('plus')" size="16px" color="var(--brand-primary)" />
+              </view>
             </view>
           </view>
-        </view>
-        <view v-if="productRules.length === 0" class="empty">
-          <text>暂无自定义规则，所有商品使用默认比例</text>
-        </view>
-      </wd-card>
+          <view class="total-tip">
+            <text>累计 </text>
+            <text class="total-num"
+              >{{ ruleDefault.level1Percent + ruleDefault.level2Percent }}%</text
+            >
+            <text>，需小于商品毛利率</text>
+          </view>
+        </wd-card>
 
-      <view class="safe-bottom" />
-    </view>
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '高级选项' }}</text></view
+              ></view
+            ></template
+          >
+          <view class="opt-row">
+            <view class="opt-info">
+              <text class="opt-name">对分佣客户可见</text>
+              <text class="opt-desc">在客户端展示推广佣金详情</text>
+            </view>
+            <wd-switch
+              :model-value="ruleDefault.visibleToPromoter"
+              active-color="var(--brand-primary)"
+              @change="(e: any) => (ruleDefault.visibleToPromoter = e.value)"
+            />
+          </view>
+          <view class="opt-row">
+            <view class="opt-info">
+              <text class="opt-name">允许线下结算</text>
+              <text class="opt-desc">不通过系统自动结算，由商家私下转账</text>
+            </view>
+            <wd-switch
+              :model-value="ruleDefault.allowOffline"
+              active-color="var(--brand-primary)"
+              @change="(e: any) => (ruleDefault.allowOffline = e.value)"
+            />
+          </view>
+        </wd-card>
 
-    <!-- 编辑浮层 -->
-    <wd-popup
-      :model-value="!!editing"
-      position="bottom"
-      custom-class="edit-sheet"
-      safe-area-inset-bottom
-      root-portal
-      @close="editing = null"
-    >
-      <view v-if="editing" class="edit-content">
-        <view class="edit-head">
-          <text>{{ editing.productName }}</text>
-          <text class="close" @click="editing = null">✕</text>
-        </view>
-        <view class="edit-row">
-          <text class="edit-label">一级佣金</text>
-          <wd-input no-border v-model.number="editing.level1Percent" type="digit" class="edit-input"  />
-          <text class="edit-unit">%</text>
-        </view>
-        <view class="edit-row">
-          <text class="edit-label">二级佣金</text>
-          <wd-input no-border v-model.number="editing.level2Percent" type="digit" class="edit-input"  />
-          <text class="edit-unit">%</text>
-        </view>
-        <view class="edit-footer">
-          <wd-button block plain size="large" @click="editing = null">取消</wd-button>
-          <wd-button block type="primary" size="large" @click="saveEdit">保存</wd-button>
-        </view>
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '商品自定义' }}</text
+                ><text class="jw-section-sub">{{ `${productRules.length} 件商品` }}</text></view
+              ><wd-button type="text" size="small">{{ '新增' }}</wd-button></view
+            ></template
+          >
+          <view class="prod-list">
+            <view v-for="p in productRules" :key="p.productId" class="prod-row">
+              <image class="prod-img" :src="p.productImage" mode="aspectFill" />
+              <view class="prod-info">
+                <text class="prod-name">{{ p.productName }}</text>
+                <view class="prod-rate">
+                  <wd-tag :type="$jwTagType('primary')" :plain="true" round>{{
+                    `一级 ${p.level1Percent}%`
+                  }}</wd-tag>
+                  <wd-tag :type="$jwTagType('info')" :plain="true" round>{{
+                    `二级 ${p.level2Percent}%`
+                  }}</wd-tag>
+                </view>
+              </view>
+              <view class="prod-actions">
+                <view class="action" @click="openEdit(p)">编辑</view>
+                <view class="action danger" @click="removeProductRule(p)">移除</view>
+              </view>
+            </view>
+          </view>
+          <view v-if="productRules.length === 0" class="empty">
+            <text>暂无自定义规则，所有商品使用默认比例</text>
+          </view>
+        </wd-card>
+
+        <view class="safe-bottom" />
       </view>
-    </wd-popup>
-  </view>
 
+      <!-- 编辑浮层 -->
+      <wd-popup
+        :model-value="!!editing"
+        position="bottom"
+        custom-class="edit-sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="editing = null"
+      >
+        <view v-if="editing" class="edit-content">
+          <view class="edit-head">
+            <text>{{ editing.productName }}</text>
+            <text class="close" @click="editing = null">✕</text>
+          </view>
+          <view class="edit-row">
+            <text class="edit-label">一级佣金</text>
+            <wd-input
+              no-border
+              v-model.number="editing.level1Percent"
+              type="digit"
+              class="edit-input"
+            />
+            <text class="edit-unit">%</text>
+          </view>
+          <view class="edit-row">
+            <text class="edit-label">二级佣金</text>
+            <wd-input
+              no-border
+              v-model.number="editing.level2Percent"
+              type="digit"
+              class="edit-input"
+            />
+            <text class="edit-unit">%</text>
+          </view>
+          <view class="edit-footer">
+            <wd-button block plain size="large" @click="editing = null">取消</wd-button>
+            <wd-button block type="primary" size="large" @click="saveEdit">保存</wd-button>
+          </view>
+        </view>
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 

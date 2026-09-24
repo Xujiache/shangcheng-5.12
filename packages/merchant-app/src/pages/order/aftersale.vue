@@ -145,88 +145,104 @@ onMounted(() => load(true))
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="售后处理"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="售后处理"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="header">
-      <wd-tabs v-model="tab" @change="load(true)"  color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
-        />
-      </wd-tabs>
-    </view>
-
-    <view class="list">
-      <view v-for="r in list" :key="r.id" class="refund-card">
-        <view class="head">
-          <view class="head-left">
-            <text class="no">{{ r.no }}</text>
-            <wd-tag
-             :type="$jwTagType(r.type === 'refund_with_return' ? 'warning' : 'info')" :plain="true" round>{{ r.type === 'refund_with_return' ? '退货退款' : '仅退款' }}</wd-tag>
-          </view>
-          <wd-tag  :type="$jwTagType(STATUS_LABEL[r.status].tone)" :plain="false" round>{{ STATUS_LABEL[r.status].text }}</wd-tag>
-        </view>
-
-        <view class="body">
-          <view class="row">
-            <text class="row-label">退款原因</text>
-            <text class="row-value">{{ r.reason }}</text>
-          </view>
-          <view v-if="r.description" class="row">
-            <text class="row-label">详细说明</text>
-            <text class="row-value">{{ r.description }}</text>
-          </view>
-          <view class="row">
-            <text class="row-label">申请金额</text>
-            <text class="row-value primary">{{ formatPrice(r.applyAmount) }}</text>
-          </view>
-          <view class="row">
-            <text class="row-label">申请时间</text>
-            <text class="row-value">{{ formatDateTime(r.createdAt) }}</text>
-          </view>
-        </view>
-
-        <view v-if="r.evidence?.length" class="evidences">
-          <text class="evidence-title">凭证</text>
-          <view class="evidence-row">
-            <image
-              v-for="(img, i) in r.evidence"
-              :key="i"
-              class="evidence-img"
-              :src="img"
-              mode="aspectFill"
-              @click="previewEvidence(r.evidence, i)"
-            />
-          </view>
-        </view>
-
-        <view v-if="r.status === 'pending'" class="actions">
-          <view class="btn ghost" @click="reject(r)">拒绝</view>
-          <view class="btn primary" @click="agree(r)">同意退款</view>
-        </view>
-        <view v-else-if="r.status === 'agreed' || r.status === 'in_progress'" class="actions">
-          <view class="btn ghost">联系客户</view>
-          <view class="btn primary">查看进度</view>
-        </view>
-        <view v-else class="actions">
-          <view class="btn ghost">查看详情</view>
-        </view>
+      <view class="header">
+        <wd-tabs v-model="tab" @change="load(true)" color="var(--brand-primary)">
+          <wd-tab
+            v-for="item in TABS"
+            :key="item.key"
+            :name="item.key"
+            :title="item.label"
+            :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+          />
+        </wd-tabs>
       </view>
 
-      <wd-status-tip
-        v-if="!loading && list.length === 0"
-       image="content" :tip="['暂无售后单', '切换标签查看其他状态'].filter(Boolean).join(' · ')" />
-      <view v-if="hasMore && list.length > 0" class="loadmore" @click="loadMore">加载更多 ›</view>
-      <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
+      <view class="list">
+        <view v-for="r in list" :key="r.id" class="refund-card">
+          <view class="head">
+            <view class="head-left">
+              <text class="no">{{ r.no }}</text>
+              <wd-tag
+                :type="$jwTagType(r.type === 'refund_with_return' ? 'warning' : 'info')"
+                :plain="true"
+                round
+                >{{ r.type === 'refund_with_return' ? '退货退款' : '仅退款' }}</wd-tag
+              >
+            </view>
+            <wd-tag :type="$jwTagType(STATUS_LABEL[r.status].tone)" :plain="false" round>{{
+              STATUS_LABEL[r.status].text
+            }}</wd-tag>
+          </view>
+
+          <view class="body">
+            <view class="row">
+              <text class="row-label">退款原因</text>
+              <text class="row-value">{{ r.reason }}</text>
+            </view>
+            <view v-if="r.description" class="row">
+              <text class="row-label">详细说明</text>
+              <text class="row-value">{{ r.description }}</text>
+            </view>
+            <view class="row">
+              <text class="row-label">申请金额</text>
+              <text class="row-value primary">{{ formatPrice(r.applyAmount) }}</text>
+            </view>
+            <view class="row">
+              <text class="row-label">申请时间</text>
+              <text class="row-value">{{ formatDateTime(r.createdAt) }}</text>
+            </view>
+          </view>
+
+          <view v-if="r.evidence?.length" class="evidences">
+            <text class="evidence-title">凭证</text>
+            <view class="evidence-row">
+              <image
+                v-for="(img, i) in r.evidence"
+                :key="i"
+                class="evidence-img"
+                :src="img"
+                mode="aspectFill"
+                @click="previewEvidence(r.evidence, i)"
+              />
+            </view>
+          </view>
+
+          <view v-if="r.status === 'pending'" class="actions">
+            <view class="btn ghost" @click="reject(r)">拒绝</view>
+            <view class="btn primary" @click="agree(r)">同意退款</view>
+          </view>
+          <view v-else-if="r.status === 'agreed' || r.status === 'in_progress'" class="actions">
+            <view class="btn ghost">联系客户</view>
+            <view class="btn primary">查看进度</view>
+          </view>
+          <view v-else class="actions">
+            <view class="btn ghost">查看详情</view>
+          </view>
+        </view>
+
+        <wd-status-tip
+          v-if="!loading && list.length === 0"
+          image="content"
+          :tip="['暂无售后单', '切换标签查看其他状态'].filter(Boolean).join(' · ')"
+        />
+        <view v-if="hasMore && list.length > 0" class="loadmore" @click="loadMore">加载更多 ›</view>
+
+        <view v-else-if="list.length > 0" class="end">— 没有更多了 —</view>
+      </view>
+
+      <view class="safe-bottom" />
     </view>
-
-    <view class="safe-bottom" />
-  </view>
-
   </wd-config-provider>
 </template>
 

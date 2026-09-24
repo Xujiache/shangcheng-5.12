@@ -15,6 +15,8 @@ import { LedgerPayController } from './ledger-pay.controller'
 import { LedgerFeedbackMediaController } from './ledger-feedback-media.controller'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
+import { WorkbookService } from './workbook/workbook.service'
+import { WorkbookController } from './workbook/workbook.controller'
 
 /**
  * 门窗利账（ledger）模块 —— 记账小程序后端域，与商城零耦合。
@@ -23,6 +25,7 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
 @Module({
   imports: [FilesModule],
   controllers: [
+    WorkbookController,
     LedgerAuthController,
     LedgerController,
     LedgerBizController,
@@ -31,6 +34,7 @@ import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
     LedgerFeedbackMediaController,
   ],
   providers: [
+    WorkbookService,
     LedgerAuthService,
     LedgerService,
     LedgerAdminService,

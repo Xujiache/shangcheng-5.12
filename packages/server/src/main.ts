@@ -7,7 +7,9 @@ import { ConfigService } from '@nestjs/config'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
-import type { Request, Response, NextFunction } from 'express'
+import { json, type Request, type Response, type NextFunction } from 'express'
+import helmet from 'helmet'
+import { requestTraceId } from './common/trace'
 
 /**
  * 解析允许的 CORS 源列表。
@@ -51,25 +53,31 @@ async function bootstrap() {
     credentials: true,
   })
 
-  // API 安全头必须生效，不依赖可选包；HSTS 仅在生产 TLS 入口下发。
+  // Workbook sync needs 8 MB JSON; payment callback still uses rawBody for signature verification.
+  app.use('/api/v1/l/workbook/sync', json({ limit: '8mb' }))
   app.getHttpAdapter().getInstance().disable('x-powered-by')
+  app.use(
+    helmet({
+      hsts: configService.get<string>('NODE_ENV') === 'production' ? { maxAge: 31536000 } : false,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }),
+  )
   app.use((req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff')
-    res.setHeader('X-Frame-Options', 'DENY')
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-    if (configService.get<string>('NODE_ENV') === 'production') {
-      res.setHeader('Strict-Transport-Security', 'max-age=31536000')
-    }
+    res.setHeader('X-Trace-Id', requestTraceId(req))
     if (req.path.startsWith('/api/v1/l/')) res.setHeader('Cache-Control', 'private, no-store')
     next()
   })
+  app.enableShutdownHooks()
 
   // 为 WebSocket Gateway 启用 socket.io IoAdapter，namespace 走 /ws/chat
   app.useWebSocketAdapter(new IoAdapter(app))
 
   // 全局前缀（exclude 旧 admin-pc 兼容路径）
   app.setGlobalPrefix('api/v1', {
-    exclude: [{ path: 'health', method: RequestMethod.GET }],
+    exclude: ['health', 'health/live', 'health/ready'].map((path) => ({
+      path,
+      method: RequestMethod.GET,
+    })),
   })
 
   app.useGlobalPipes(

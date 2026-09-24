@@ -1,0 +1,11 @@
+PASS test/refresh-receipts.spec.ts
+[Nest] 52740  - 2026/09/09 05:30:38    WARN [RefreshTokenBlacklistService] [refresh-blacklist] Redis isRevoked unavailable; request rejected
+PASS test/auth.service.spec.ts
+[Nest] 52740  - 2026/09/09 05:30:41   DEBUG [AuthService] [auth.logout] invalid or expired credential
+PASS test/trace.spec.ts
+
+Test Suites: 3 passed, 3 total
+Tests:       24 passed, 24 total
+Snapshots:   0 total
+Time:        4.498 s
+Ran all test suites matching /auth.service.spec.ts|refresh-receipts.spec.ts|trace.spec.ts/i.

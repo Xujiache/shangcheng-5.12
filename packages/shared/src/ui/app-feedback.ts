@@ -108,7 +108,11 @@ export const appFeedback = {
       pendingToasts.push({ ...normalized, duration: 0, mask: true })
       return
     }
-    toastApi.loading({ ...toToastPayload(normalized), duration: 0, cover: normalized.mask !== false })
+    toastApi.loading({
+      ...toToastPayload(normalized),
+      duration: 0,
+      cover: normalized.mask !== false,
+    })
   },
   hideLoading() {
     toastApi?.close()

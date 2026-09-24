@@ -634,7 +634,8 @@ async function loadProduct() {
 async function submit(status: 'draft' | 'submit') {
   if (!form.name) return appFeedback.showToast({ title: '请填写商品名称', icon: 'none' })
   if (!form.categoryId) return appFeedback.showToast({ title: '请选择分类', icon: 'none' })
-  if (form.images.length === 0) return appFeedback.showToast({ title: '请上传至少一张主图', icon: 'none' })
+  if (form.images.length === 0)
+    return appFeedback.showToast({ title: '请上传至少一张主图', icon: 'none' })
   // 防御:所有图片(主图/详情图/SKU 图)必须全是 http(s) URL,否则后端拿到本地 tempFilePath 会落库脏数据
   const isHttpUrl = (u: string) => /^https?:\/\//i.test(u)
   const badMain = form.images.find((u) => !isHttpUrl(u))
@@ -756,474 +757,515 @@ onMounted(async () => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar :title="isEdit ? '编辑商品' : '添加商品'" right-text="预览"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        :title="isEdit ? '编辑商品' : '添加商品'"
+        right-text="预览"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="body">
-      <!-- 商品主图 -->
-      <view class="section">
-        <view class="section-head">
-          <text class="title">商品主图</text>
-          <text class="sub">{{ form.images.length }} / {{ MAIN_MAX }} · 首张为主图，长按编辑</text>
-        </view>
-        <view class="image-grid">
-          <view
-            v-for="(img, i) in form.images"
-            :key="`m-${i}`"
-            class="img-cell"
-            @click="showImageMenu(i, 'images')"
-          >
-            <image :src="img" class="img" mode="aspectFill" />
-            <view v-if="i === 0" class="img-main">主图</view>
-            <view class="img-idx">{{ i + 1 }}</view>
-            <view class="img-actions">
-              <view class="img-btn" @click.stop="previewImage(i, 'images')">
-                <wd-icon :name="$jwIcon('eye')" size="11px" color="#fff"  />
-              </view>
-              <view class="img-btn danger" @click.stop="removeImage(i, 'images')">
-                <wd-icon :name="$jwIcon('close')" size="11px" color="#fff"  />
-              </view>
-            </view>
-            <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'images')">
-              <wd-icon :name="$jwIcon('chevron-up')" size="11px" color="#fff"  />
-            </view>
-            <view
-              v-if="i < form.images.length - 1"
-              class="img-move down"
-              @click.stop="moveImage(i, 1, 'images')"
+      <view class="body">
+        <!-- 商品主图 -->
+        <view class="section">
+          <view class="section-head">
+            <text class="title">商品主图</text>
+            <text class="sub"
+              >{{ form.images.length }} / {{ MAIN_MAX }} · 首张为主图，长按编辑</text
             >
-              <wd-icon :name="$jwIcon('chevron-down')" size="11px" color="#fff"  />
-            </view>
           </view>
-          <wd-upload
-            v-if="form.images.length < MAIN_MAX"
-            :file-list="[]"
-            :limit="1"
-            :disabled="uploading"
-            :before-choose="(option: any) => delegateWotUploadChoose(option, () => chooseImage('images'))"
-          >
-          <view class="img-add">
-            <wd-icon :name="$jwIcon('plus')" size="24px" color="var(--text-tertiary)"  />
-            <text class="add-text">上传主图</text>
-          </view>
-          </wd-upload>
-        </view>
-      </view>
-
-      <!-- 基本信息：标题 / 分类 / 简介 -->
-      <view class="section">
-        <view class="row">
-          <text class="row-label required">商品标题</text>
-          <wd-input no-border
-            v-model="form.name"
-            class="row-input"
-            placeholder="必填，最多 30 字"
-            maxlength="30"
-           />
-        </view>
-        <view class="row">
-          <text class="row-label required">商品分类</text>
-          <view class="row-picker" @click="showCatPicker = true">
-            <text :class="['picker-text', !selectedCategoryName ? 'placeholder' : '']">
-              {{ selectedCategoryName || '选择分类' }}
-            </text>
-            <text class="arrow">›</text>
-          </view>
-        </view>
-        <view class="row align-top">
-          <text class="row-label">商品简介</text>
-          <wd-textarea no-border
-            v-model="form.description"
-            class="row-textarea"
-            placeholder="可选 · 一句话描述商品卖点"
-            maxlength="80"
-           />
-        </view>
-      </view>
-
-      <!-- 商品详情图 -->
-      <view class="section">
-        <view class="section-head">
-          <text class="title">商品详情图</text>
-          <text class="sub"
-            >{{ form.detailImages.length }} / {{ DETAIL_MAX }} · 按顺序展示在商品详情页</text
-          >
-        </view>
-        <view class="image-grid">
-          <view
-            v-for="(img, i) in form.detailImages"
-            :key="`d-${i}`"
-            class="img-cell"
-            @click="showImageMenu(i, 'detailImages')"
-          >
-            <image :src="img" class="img" mode="aspectFill" />
-            <view class="img-idx">{{ i + 1 }}</view>
-            <view class="img-actions">
-              <view class="img-btn" @click.stop="previewImage(i, 'detailImages')">
-                <wd-icon :name="$jwIcon('eye')" size="11px" color="#fff"  />
-              </view>
-              <view class="img-btn danger" @click.stop="removeImage(i, 'detailImages')">
-                <wd-icon :name="$jwIcon('close')" size="11px" color="#fff"  />
-              </view>
-            </view>
-            <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'detailImages')">
-              <wd-icon :name="$jwIcon('chevron-up')" size="11px" color="#fff"  />
-            </view>
+          <view class="image-grid">
             <view
-              v-if="i < form.detailImages.length - 1"
-              class="img-move down"
-              @click.stop="moveImage(i, 1, 'detailImages')"
+              v-for="(img, i) in form.images"
+              :key="`m-${i}`"
+              class="img-cell"
+              @click="showImageMenu(i, 'images')"
             >
-              <wd-icon :name="$jwIcon('chevron-down')" size="11px" color="#fff"  />
-            </view>
-          </view>
-          <wd-upload
-            v-if="form.detailImages.length < DETAIL_MAX"
-            :file-list="[]"
-            :limit="1"
-            :disabled="uploading"
-            :before-choose="(option: any) => delegateWotUploadChoose(option, () => chooseImage('detailImages'))"
-          >
-          <view class="img-add">
-            <wd-icon :name="$jwIcon('plus')" size="24px" color="var(--text-tertiary)"  />
-            <text class="add-text">上传详情图</text>
-          </view>
-          </wd-upload>
-        </view>
-      </view>
-
-      <!-- 定价模式（FX-5）-->
-      <view class="section">
-        <view class="section-head">
-          <text class="title">定价模式</text>
-          <wd-tag
-           :type="$jwTagType('primary')" :plain="false" round>{{ form.pricingMode === 'standard' ? '标准' : '按尺寸' }}</wd-tag>
-        </view>
-        <view class="mode-row">
-          <view
-            :class="['mode-card', { active: form.pricingMode === 'standard' }]"
-            @click="switchPricingMode('standard')"
-          >
-            <view class="mode-icon">
-              <wd-icon :name="$jwIcon('package')" size="16px" color="var(--brand-primary)"  />
-            </view>
-            <text class="mode-title">标准定价</text>
-            <text class="mode-desc">按 SKU 规格分别定价</text>
-          </view>
-          <view
-            :class="['mode-card', { active: form.pricingMode === 'by-size' }]"
-            @click="switchPricingMode('by-size')"
-          >
-            <view class="mode-icon">
-              <wd-icon :name="$jwIcon('ruler')" size="16px" color="var(--brand-primary)"  />
-            </view>
-            <text class="mode-title">按尺寸定价</text>
-            <text class="mode-desc">每平方米单价 · 客户定制</text>
-          </view>
-        </view>
-
-        <!-- 按尺寸定价配置 -->
-        <view v-if="form.pricingMode === 'by-size'" class="by-size-block">
-          <view class="bs-row">
-            <text class="bs-label required">每平米单价（元）</text>
-            <wd-input no-border
-              v-model.number="form.pricePerSqm"
-              type="digit"
-              class="bs-input"
-              placeholder="如 480"
-             />
-            <text class="bs-unit">元 / m²</text>
-          </view>
-          <view class="bs-row">
-            <text class="bs-label">起售费（固定）</text>
-            <wd-input no-border
-              v-model.number="form.baseFee"
-              type="digit"
-              class="bs-input"
-              placeholder="可选，如 50"
-             />
-            <text class="bs-unit">元</text>
-          </view>
-          <view class="bs-row">
-            <text class="bs-label">尺寸单位</text>
-            <view class="unit-toggle">
-              <view
-                :class="['ut-btn', form.sizeUnit === 'cm' ? 'active' : '']"
-                @click="form.sizeUnit = 'cm'"
-                >cm</view
-              >
-              <view
-                :class="['ut-btn', form.sizeUnit === 'm' ? 'active' : '']"
-                @click="form.sizeUnit = 'm'"
-                >m</view
-              >
-            </view>
-          </view>
-          <view class="bs-row">
-            <text class="bs-label">最小尺寸</text>
-            <wd-input no-border
-              v-model.number="form.minLength"
-              type="number"
-              class="bs-input dim"
-              :placeholder="`最小长(${form.sizeUnit})`"
-             />
-            <text class="bs-x">×</text>
-            <wd-input no-border
-              v-model.number="form.minWidth"
-              type="number"
-              class="bs-input dim"
-              :placeholder="`最小宽(${form.sizeUnit})`"
-             />
-          </view>
-          <view class="bs-row">
-            <text class="bs-label">最大尺寸</text>
-            <wd-input no-border
-              v-model.number="form.maxLength"
-              type="number"
-              class="bs-input dim"
-              :placeholder="`最大长(${form.sizeUnit})`"
-             />
-            <text class="bs-x">×</text>
-            <wd-input no-border
-              v-model.number="form.maxWidth"
-              type="number"
-              class="bs-input dim"
-              :placeholder="`最大宽(${form.sizeUnit})`"
-             />
-          </view>
-
-          <!-- 实时预览 -->
-          <view class="bs-preview">
-            <text class="preview-label">价格预览（以最小尺寸）</text>
-            <view class="preview-formula">
-              <text class="formula-part"
-                >{{ form.minLength }}{{ form.sizeUnit }} × {{ form.minWidth
-                }}{{ form.sizeUnit }}</text
-              >
-              <text class="formula-eq">=</text>
-              <text class="formula-part accent">{{ sizeExampleArea }} m²</text>
-              <text class="formula-eq">×</text>
-              <text class="formula-part">¥{{ form.pricePerSqm || 0 }}</text>
-              <text v-if="form.baseFee > 0" class="formula-eq">+</text>
-              <text v-if="form.baseFee > 0" class="formula-part">¥{{ form.baseFee }}</text>
-              <text class="formula-eq">=</text>
-            </view>
-            <view class="preview-total">
-              <text class="total-cur">¥</text>
-              <text class="total-num">{{ sizeExamplePrice }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- 物流 -->
-      <view class="section">
-        <text class="title">物流方式</text>
-        <view class="ship-row">
-          <view
-            v-for="s in [
-              { k: 'factory', l: '厂家直发' },
-              { k: 'local', l: '本地配送' },
-              { k: 'pickup', l: '门店自提' },
-            ]"
-            :key="s.k"
-            :class="[
-              'ship-pill',
-              { active: form.shipping.includes(s.k as 'factory' | 'local' | 'pickup') },
-            ]"
-            @click="toggleShipping(s.k as 'factory' | 'local' | 'pickup')"
-            >{{ s.l }}</view
-          >
-        </view>
-      </view>
-
-      <!-- 自定义规格 (FX-6) -->
-      <view class="section">
-        <view class="section-head">
-          <text class="title">商品规格</text>
-          <view class="add-spec" @click="addSpecGroup">
-            <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)"  />
-            <text>添加规格</text>
-          </view>
-        </view>
-
-        <view v-for="(g, gi) in specGroups" :key="gi" class="spec-group">
-          <view class="sg-head">
-            <view class="sg-name-edit" @click="renameSpec(gi)">
-              <text class="sg-name">{{ g.name }}</text>
-              <wd-icon :name="$jwIcon('edit')" size="9px" color="var(--text-tertiary)"  />
-            </view>
-            <view class="sg-remove" v-if="specGroups.length > 1" @click="removeSpecGroup(gi)">
-              <wd-icon :name="$jwIcon('trash')" size="11px" color="var(--text-tertiary)"  />
-            </view>
-          </view>
-          <view class="sg-values">
-            <view
-              v-for="(v, vi) in g.values"
-              :key="vi"
-              class="sg-value"
-              @click="editSpecValue(gi, vi)"
-            >
-              <text>{{ v }}</text>
-              <view class="sg-value-x" @click.stop="removeSpecValue(gi, vi)">
-                <wd-icon :name="$jwIcon('close')" size="9px" color="#fff"  />
-              </view>
-            </view>
-            <view class="sg-add-value" @click="addSpecValue(gi)">
-              <wd-icon :name="$jwIcon('plus')" size="10px" color="var(--brand-primary)"  />
-              <text>添加值</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- SKU 矩阵 -->
-      <view v-if="form.pricingMode === 'standard'" class="section">
-        <view class="section-head">
-          <text class="title">SKU 价格与库存</text>
-          <text class="sub">{{ skus.length }} 条</text>
-        </view>
-        <view v-if="skus.length === 0" class="sku-empty"> 请先在上方为每个规格添加至少一个值 </view>
-        <view v-else class="sku-actions">
-          <view class="sku-action" @click="batchFillPrice">
-            <wd-icon :name="$jwIcon('lightning')" size="11px" color="var(--brand-primary)"  />
-            <text>批量填价</text>
-          </view>
-          <view class="sku-action" @click="batchFillStock">
-            <wd-icon :name="$jwIcon('package')" size="11px" color="var(--brand-primary)"  />
-            <text>批量填库存</text>
-          </view>
-        </view>
-        <view class="sku-list">
-          <view v-for="(s, i) in skus" :key="i" class="sku-card">
-            <view class="sku-head">
-              <!-- SKU 代表图(可选);点击上传/替换,长按删除 -->
-              <view
-                class="sku-thumb"
-                @click="chooseSkuImage(i)"
-                @longpress="s.image ? removeSkuImage(i) : null"
-              >
-                <image v-if="s.image" :src="s.image" class="sku-thumb-img" mode="aspectFill" />
-                <view v-else class="sku-thumb-empty">
-                  <wd-icon :name="$jwIcon('plus')" size="14px" color="var(--text-tertiary)"  />
-                  <text>SKU 图</text>
+              <image :src="img" class="img" mode="aspectFill" />
+              <view v-if="i === 0" class="img-main">主图</view>
+              <view class="img-idx">{{ i + 1 }}</view>
+              <view class="img-actions">
+                <view class="img-btn" @click.stop="previewImage(i, 'images')">
+                  <wd-icon :name="$jwIcon('eye')" size="11px" color="#fff" />
+                </view>
+                <view class="img-btn danger" @click.stop="removeImage(i, 'images')">
+                  <wd-icon :name="$jwIcon('close')" size="11px" color="#fff" />
                 </view>
               </view>
-              <view class="sku-no">
-                <text class="sku-idx">#{{ i + 1 }}</text>
-                <view class="sku-spec-tags">
-                  <view v-for="(sp, idx) in s.specs" :key="idx" class="sku-spec-tag">
-                    <text class="ssp-name">{{ specGroups[idx]?.name }}</text>
-                    <text class="ssp-val">{{ sp }}</text>
+              <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'images')">
+                <wd-icon :name="$jwIcon('chevron-up')" size="11px" color="#fff" />
+              </view>
+              <view
+                v-if="i < form.images.length - 1"
+                class="img-move down"
+                @click.stop="moveImage(i, 1, 'images')"
+              >
+                <wd-icon :name="$jwIcon('chevron-down')" size="11px" color="#fff" />
+              </view>
+            </view>
+            <wd-upload
+              v-if="form.images.length < MAIN_MAX"
+              :file-list="[]"
+              :limit="1"
+              :disabled="uploading"
+              :before-choose="
+                (option: any) => delegateWotUploadChoose(option, () => chooseImage('images'))
+              "
+            >
+              <view class="img-add">
+                <wd-icon :name="$jwIcon('plus')" size="24px" color="var(--text-tertiary)" />
+                <text class="add-text">上传主图</text>
+              </view>
+            </wd-upload>
+          </view>
+        </view>
+
+        <!-- 基本信息：标题 / 分类 / 简介 -->
+        <view class="section">
+          <view class="row">
+            <text class="row-label required">商品标题</text>
+            <wd-input
+              no-border
+              v-model="form.name"
+              class="row-input"
+              placeholder="必填，最多 30 字"
+              maxlength="30"
+            />
+          </view>
+          <view class="row">
+            <text class="row-label required">商品分类</text>
+            <view class="row-picker" @click="showCatPicker = true">
+              <text :class="['picker-text', !selectedCategoryName ? 'placeholder' : '']">
+                {{ selectedCategoryName || '选择分类' }}
+              </text>
+              <text class="arrow">›</text>
+            </view>
+          </view>
+          <view class="row align-top">
+            <text class="row-label">商品简介</text>
+            <wd-textarea
+              no-border
+              v-model="form.description"
+              class="row-textarea"
+              placeholder="可选 · 一句话描述商品卖点"
+              maxlength="80"
+            />
+          </view>
+        </view>
+
+        <!-- 商品详情图 -->
+        <view class="section">
+          <view class="section-head">
+            <text class="title">商品详情图</text>
+            <text class="sub"
+              >{{ form.detailImages.length }} / {{ DETAIL_MAX }} · 按顺序展示在商品详情页</text
+            >
+          </view>
+          <view class="image-grid">
+            <view
+              v-for="(img, i) in form.detailImages"
+              :key="`d-${i}`"
+              class="img-cell"
+              @click="showImageMenu(i, 'detailImages')"
+            >
+              <image :src="img" class="img" mode="aspectFill" />
+              <view class="img-idx">{{ i + 1 }}</view>
+              <view class="img-actions">
+                <view class="img-btn" @click.stop="previewImage(i, 'detailImages')">
+                  <wd-icon :name="$jwIcon('eye')" size="11px" color="#fff" />
+                </view>
+                <view class="img-btn danger" @click.stop="removeImage(i, 'detailImages')">
+                  <wd-icon :name="$jwIcon('close')" size="11px" color="#fff" />
+                </view>
+              </view>
+              <view v-if="i > 0" class="img-move up" @click.stop="moveImage(i, -1, 'detailImages')">
+                <wd-icon :name="$jwIcon('chevron-up')" size="11px" color="#fff" />
+              </view>
+              <view
+                v-if="i < form.detailImages.length - 1"
+                class="img-move down"
+                @click.stop="moveImage(i, 1, 'detailImages')"
+              >
+                <wd-icon :name="$jwIcon('chevron-down')" size="11px" color="#fff" />
+              </view>
+            </view>
+            <wd-upload
+              v-if="form.detailImages.length < DETAIL_MAX"
+              :file-list="[]"
+              :limit="1"
+              :disabled="uploading"
+              :before-choose="
+                (option: any) => delegateWotUploadChoose(option, () => chooseImage('detailImages'))
+              "
+            >
+              <view class="img-add">
+                <wd-icon :name="$jwIcon('plus')" size="24px" color="var(--text-tertiary)" />
+                <text class="add-text">上传详情图</text>
+              </view>
+            </wd-upload>
+          </view>
+        </view>
+
+        <!-- 定价模式（FX-5）-->
+        <view class="section">
+          <view class="section-head">
+            <text class="title">定价模式</text>
+            <wd-tag :type="$jwTagType('primary')" :plain="false" round>{{
+              form.pricingMode === 'standard' ? '标准' : '按尺寸'
+            }}</wd-tag>
+          </view>
+          <view class="mode-row">
+            <view
+              :class="['mode-card', { active: form.pricingMode === 'standard' }]"
+              @click="switchPricingMode('standard')"
+            >
+              <view class="mode-icon">
+                <wd-icon :name="$jwIcon('package')" size="16px" color="var(--brand-primary)" />
+              </view>
+              <text class="mode-title">标准定价</text>
+              <text class="mode-desc">按 SKU 规格分别定价</text>
+            </view>
+            <view
+              :class="['mode-card', { active: form.pricingMode === 'by-size' }]"
+              @click="switchPricingMode('by-size')"
+            >
+              <view class="mode-icon">
+                <wd-icon :name="$jwIcon('ruler')" size="16px" color="var(--brand-primary)" />
+              </view>
+              <text class="mode-title">按尺寸定价</text>
+              <text class="mode-desc">每平方米单价 · 客户定制</text>
+            </view>
+          </view>
+
+          <!-- 按尺寸定价配置 -->
+          <view v-if="form.pricingMode === 'by-size'" class="by-size-block">
+            <view class="bs-row">
+              <text class="bs-label required">每平米单价（元）</text>
+              <wd-input
+                no-border
+                v-model.number="form.pricePerSqm"
+                type="digit"
+                class="bs-input"
+                placeholder="如 480"
+              />
+              <text class="bs-unit">元 / m²</text>
+            </view>
+            <view class="bs-row">
+              <text class="bs-label">起售费（固定）</text>
+              <wd-input
+                no-border
+                v-model.number="form.baseFee"
+                type="digit"
+                class="bs-input"
+                placeholder="可选，如 50"
+              />
+              <text class="bs-unit">元</text>
+            </view>
+            <view class="bs-row">
+              <text class="bs-label">尺寸单位</text>
+              <view class="unit-toggle">
+                <view
+                  :class="['ut-btn', form.sizeUnit === 'cm' ? 'active' : '']"
+                  @click="form.sizeUnit = 'cm'"
+                  >cm</view
+                >
+                <view
+                  :class="['ut-btn', form.sizeUnit === 'm' ? 'active' : '']"
+                  @click="form.sizeUnit = 'm'"
+                  >m</view
+                >
+              </view>
+            </view>
+            <view class="bs-row">
+              <text class="bs-label">最小尺寸</text>
+              <wd-input
+                no-border
+                v-model.number="form.minLength"
+                type="number"
+                class="bs-input dim"
+                :placeholder="`最小长(${form.sizeUnit})`"
+              />
+              <text class="bs-x">×</text>
+              <wd-input
+                no-border
+                v-model.number="form.minWidth"
+                type="number"
+                class="bs-input dim"
+                :placeholder="`最小宽(${form.sizeUnit})`"
+              />
+            </view>
+            <view class="bs-row">
+              <text class="bs-label">最大尺寸</text>
+              <wd-input
+                no-border
+                v-model.number="form.maxLength"
+                type="number"
+                class="bs-input dim"
+                :placeholder="`最大长(${form.sizeUnit})`"
+              />
+              <text class="bs-x">×</text>
+              <wd-input
+                no-border
+                v-model.number="form.maxWidth"
+                type="number"
+                class="bs-input dim"
+                :placeholder="`最大宽(${form.sizeUnit})`"
+              />
+            </view>
+
+            <!-- 实时预览 -->
+            <view class="bs-preview">
+              <text class="preview-label">价格预览（以最小尺寸）</text>
+              <view class="preview-formula">
+                <text class="formula-part"
+                  >{{ form.minLength }}{{ form.sizeUnit }} × {{ form.minWidth
+                  }}{{ form.sizeUnit }}</text
+                >
+                <text class="formula-eq">=</text>
+                <text class="formula-part accent">{{ sizeExampleArea }} m²</text>
+                <text class="formula-eq">×</text>
+                <text class="formula-part">¥{{ form.pricePerSqm || 0 }}</text>
+                <text v-if="form.baseFee > 0" class="formula-eq">+</text>
+                <text v-if="form.baseFee > 0" class="formula-part">¥{{ form.baseFee }}</text>
+                <text class="formula-eq">=</text>
+              </view>
+              <view class="preview-total">
+                <text class="total-cur">¥</text>
+                <text class="total-num">{{ sizeExamplePrice }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 物流 -->
+        <view class="section">
+          <text class="title">物流方式</text>
+          <view class="ship-row">
+            <view
+              v-for="s in [
+                { k: 'factory', l: '厂家直发' },
+                { k: 'local', l: '本地配送' },
+                { k: 'pickup', l: '门店自提' },
+              ]"
+              :key="s.k"
+              :class="[
+                'ship-pill',
+                { active: form.shipping.includes(s.k as 'factory' | 'local' | 'pickup') },
+              ]"
+              @click="toggleShipping(s.k as 'factory' | 'local' | 'pickup')"
+              >{{ s.l }}</view
+            >
+          </view>
+        </view>
+
+        <!-- 自定义规格 (FX-6) -->
+        <view class="section">
+          <view class="section-head">
+            <text class="title">商品规格</text>
+            <view class="add-spec" @click="addSpecGroup">
+              <wd-icon :name="$jwIcon('plus')" size="11px" color="var(--brand-primary)" />
+              <text>添加规格</text>
+            </view>
+          </view>
+
+          <view v-for="(g, gi) in specGroups" :key="gi" class="spec-group">
+            <view class="sg-head">
+              <view class="sg-name-edit" @click="renameSpec(gi)">
+                <text class="sg-name">{{ g.name }}</text>
+                <wd-icon :name="$jwIcon('edit')" size="9px" color="var(--text-tertiary)" />
+              </view>
+              <view class="sg-remove" v-if="specGroups.length > 1" @click="removeSpecGroup(gi)">
+                <wd-icon :name="$jwIcon('trash')" size="11px" color="var(--text-tertiary)" />
+              </view>
+            </view>
+            <view class="sg-values">
+              <view
+                v-for="(v, vi) in g.values"
+                :key="vi"
+                class="sg-value"
+                @click="editSpecValue(gi, vi)"
+              >
+                <text>{{ v }}</text>
+                <view class="sg-value-x" @click.stop="removeSpecValue(gi, vi)">
+                  <wd-icon :name="$jwIcon('close')" size="9px" color="#fff" />
+                </view>
+              </view>
+              <view class="sg-add-value" @click="addSpecValue(gi)">
+                <wd-icon :name="$jwIcon('plus')" size="10px" color="var(--brand-primary)" />
+                <text>添加值</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- SKU 矩阵 -->
+        <view v-if="form.pricingMode === 'standard'" class="section">
+          <view class="section-head">
+            <text class="title">SKU 价格与库存</text>
+            <text class="sub">{{ skus.length }} 条</text>
+          </view>
+          <view v-if="skus.length === 0" class="sku-empty">
+            请先在上方为每个规格添加至少一个值
+          </view>
+          <view v-else class="sku-actions">
+            <view class="sku-action" @click="batchFillPrice">
+              <wd-icon :name="$jwIcon('lightning')" size="11px" color="var(--brand-primary)" />
+              <text>批量填价</text>
+            </view>
+            <view class="sku-action" @click="batchFillStock">
+              <wd-icon :name="$jwIcon('package')" size="11px" color="var(--brand-primary)" />
+              <text>批量填库存</text>
+            </view>
+          </view>
+          <view class="sku-list">
+            <view v-for="(s, i) in skus" :key="i" class="sku-card">
+              <view class="sku-head">
+                <!-- SKU 代表图(可选);点击上传/替换,长按删除 -->
+                <view
+                  class="sku-thumb"
+                  @click="chooseSkuImage(i)"
+                  @longpress="s.image ? removeSkuImage(i) : null"
+                >
+                  <image v-if="s.image" :src="s.image" class="sku-thumb-img" mode="aspectFill" />
+                  <view v-else class="sku-thumb-empty">
+                    <wd-icon :name="$jwIcon('plus')" size="14px" color="var(--text-tertiary)" />
+                    <text>SKU 图</text>
                   </view>
                 </view>
+                <view class="sku-no">
+                  <text class="sku-idx">#{{ i + 1 }}</text>
+                  <view class="sku-spec-tags">
+                    <view v-for="(sp, idx) in s.specs" :key="idx" class="sku-spec-tag">
+                      <text class="ssp-name">{{ specGroups[idx]?.name }}</text>
+                      <text class="ssp-val">{{ sp }}</text>
+                    </view>
+                  </view>
+                </view>
+                <wd-switch
+                  :model-value="s.active"
+                  @change="(e: any) => (s.active = e.value)"
+                  style="transform: scale(0.7)"
+                />
               </view>
-              <wd-switch :model-value="s.active"
-                @change="(e: any) => (s.active = e.value)"
-                style="transform: scale(0.7)"
-               />
-            </view>
-            <view class="sku-grid">
-              <view class="sku-field">
-                <text class="field-label">库存</text>
-                <wd-input no-border v-model.number="s.stock" type="number" class="field-input" placeholder="0"  />
-              </view>
-              <view class="sku-field">
-                <text class="field-label" style="color: #1296db">批发价</text>
-                <wd-input no-border
-                  v-model.number="s.priceWholesale"
-                  type="digit"
-                  class="field-input"
-                  placeholder="¥0"
-                 />
-              </view>
-              <view class="sku-field">
-                <text class="field-label" style="color: var(--brand-primary)">零售价</text>
-                <wd-input no-border
-                  v-model.number="s.priceRetail"
-                  type="digit"
-                  class="field-input"
-                  placeholder="¥0"
-                 />
-              </view>
-              <view class="sku-field">
-                <text class="field-label" style="color: #a855f7">会员价</text>
-                <wd-input no-border
-                  v-model.number="s.priceMember"
-                  type="digit"
-                  class="field-input"
-                  placeholder="¥0"
-                 />
+              <view class="sku-grid">
+                <view class="sku-field">
+                  <text class="field-label">库存</text>
+                  <wd-input
+                    no-border
+                    v-model.number="s.stock"
+                    type="number"
+                    class="field-input"
+                    placeholder="0"
+                  />
+                </view>
+                <view class="sku-field">
+                  <text class="field-label" style="color: #1296db">批发价</text>
+                  <wd-input
+                    no-border
+                    v-model.number="s.priceWholesale"
+                    type="digit"
+                    class="field-input"
+                    placeholder="¥0"
+                  />
+                </view>
+                <view class="sku-field">
+                  <text class="field-label" style="color: var(--brand-primary)">零售价</text>
+                  <wd-input
+                    no-border
+                    v-model.number="s.priceRetail"
+                    type="digit"
+                    class="field-input"
+                    placeholder="¥0"
+                  />
+                </view>
+                <view class="sku-field">
+                  <text class="field-label" style="color: #a855f7">会员价</text>
+                  <wd-input
+                    no-border
+                    v-model.number="s.priceMember"
+                    type="digit"
+                    class="field-input"
+                    placeholder="¥0"
+                  />
+                </view>
               </view>
             </view>
           </view>
+          <view v-if="skus.length > 0" class="sku-summary">
+            <text class="sum-label">总库存</text>
+            <text class="sum-value">{{ totalStock }}</text>
+            <text class="sum-label" style="margin-left: 24rpx">批发价区间</text>
+            <text class="sum-value">{{ priceWholesaleRange || '—' }}</text>
+          </view>
         </view>
-        <view v-if="skus.length > 0" class="sku-summary">
-          <text class="sum-label">总库存</text>
-          <text class="sum-value">{{ totalStock }}</text>
-          <text class="sum-label" style="margin-left: 24rpx">批发价区间</text>
-          <text class="sum-value">{{ priceWholesaleRange || '—' }}</text>
+
+        <!-- 价格显示规则说明（迁移到店铺设置 · 全局生效，不再单品配置） -->
+        <view class="section">
+          <view class="section-head">
+            <text class="title">价格显示规则</text>
+            <wd-tag :type="$jwTagType('default')" :plain="true" round>{{ '全局' }}</wd-tag>
+          </view>
+          <view class="rule-migrated" @click="goPriceRule">
+            <view class="rule-mig-icon">
+              <wd-icon :name="$jwIcon('wallet')" size="16px" color="#FF4D2D" />
+            </view>
+            <view class="rule-mig-info">
+              <text class="rule-mig-title">价格显示规则已全局化</text>
+              <text class="rule-mig-sub">所有商品共用一套规则，到「店铺 → 价格规则」修改</text>
+            </view>
+            <wd-icon :name="$jwIcon('forward')" size="11px" color="#FF4D2D" />
+          </view>
+        </view>
+
+        <view class="safe-bottom" />
+      </view>
+
+      <!-- 底部 -->
+      <view class="footer">
+        <view class="footer-btn ghost" @click="submit('draft')">存草稿</view>
+        <view class="footer-btn primary" @click="submit('submit')">
+          {{ isEdit ? '保存修改' : '提交审核' }}
         </view>
       </view>
 
-      <!-- 价格显示规则说明（迁移到店铺设置 · 全局生效，不再单品配置） -->
-      <view class="section">
-        <view class="section-head">
-          <text class="title">价格显示规则</text>
-          <wd-tag  :type="$jwTagType('default')" :plain="true" round>{{ "全局" }}</wd-tag>
-        </view>
-        <view class="rule-migrated" @click="goPriceRule">
-          <view class="rule-mig-icon">
-            <wd-icon :name="$jwIcon('wallet')" size="16px" color="#FF4D2D"  />
+      <!-- 分类选择浮层 -->
+      <wd-popup
+        v-model="showCatPicker"
+        position="bottom"
+        custom-class="cat-sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="cat-content">
+          <view class="cat-head">
+            <text>选择分类</text>
+            <text class="cat-close" @click="showCatPicker = false">✕</text>
           </view>
-          <view class="rule-mig-info">
-            <text class="rule-mig-title">价格显示规则已全局化</text>
-            <text class="rule-mig-sub">所有商品共用一套规则，到「店铺 → 价格规则」修改</text>
-          </view>
-          <wd-icon :name="$jwIcon('forward')" size="11px" color="#FF4D2D"  />
+          <scroll-view scroll-y class="cat-scroll">
+            <view
+              v-for="c in platformCats.filter((x) => x.parentId === null)"
+              :key="c.id"
+              class="cat-group"
+            >
+              <text class="cat-group-title">{{ c.name }}</text>
+              <view class="cat-sub-list">
+                <view
+                  v-for="s in platformCats.filter((x) => x.parentId === c.id)"
+                  :key="s.id"
+                  :class="['cat-sub', { active: form.categoryId === s.id }]"
+                  @click="pickCategory(s)"
+                  >{{ s.name }}</view
+                >
+              </view>
+            </view>
+          </scroll-view>
         </view>
-      </view>
-
-      <view class="safe-bottom" />
+      </wd-popup>
     </view>
-
-    <!-- 底部 -->
-    <view class="footer">
-      <view class="footer-btn ghost" @click="submit('draft')">存草稿</view>
-      <view class="footer-btn primary" @click="submit('submit')">
-        {{ isEdit ? '保存修改' : '提交审核' }}
-      </view>
-    </view>
-
-    <!-- 分类选择浮层 -->
-    <wd-popup v-model="showCatPicker" position="bottom" custom-class="cat-sheet" safe-area-inset-bottom root-portal>
-      <view class="cat-content">
-        <view class="cat-head">
-          <text>选择分类</text>
-          <text class="cat-close" @click="showCatPicker = false">✕</text>
-        </view>
-        <scroll-view scroll-y class="cat-scroll">
-          <view
-            v-for="c in platformCats.filter((x) => x.parentId === null)"
-            :key="c.id"
-            class="cat-group"
-          >
-            <text class="cat-group-title">{{ c.name }}</text>
-            <view class="cat-sub-list">
-              <view
-                v-for="s in platformCats.filter((x) => x.parentId === c.id)"
-                :key="s.id"
-                :class="['cat-sub', { active: form.categoryId === s.id }]"
-                @click="pickCategory(s)"
-                >{{ s.name }}</view
-              >
-            </view>
-          </view>
-        </scroll-view>
-      </view>
-    </wd-popup>
-  </view>
-
   </wd-config-provider>
 </template>
 

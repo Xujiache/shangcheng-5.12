@@ -108,83 +108,91 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="法律协议管理"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="法律协议管理"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="tabs">
-      <view
-        v-for="t in TABS"
-        :key="t.key"
-        :class="['tab', tab === t.key ? 'active' : '']"
-        @click="tab = t.key"
-      >
-        <text class="tab-label">{{ t.label }}</text>
-        <view v-if="tab === t.key" class="indicator" :style="{ background: t.tint }" />
-      </view>
-    </view>
-
-    <scroll-view scroll-y class="scroll" v-if="current">
-      <!-- 元信息卡 -->
-      <view class="meta-card">
-        <view class="meta-row" @click="onTitleEdit">
-          <view class="m-key">
-            <wd-icon :name="$jwIcon('tag')" size="13px" color="var(--brand-primary)"  />
-            <text>标题</text>
-          </view>
-          <view class="m-val">
-            <text class="m-val-text">{{ current.title }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
-        </view>
-        <view class="meta-row" @click="onUpdatedAtEdit">
-          <view class="m-key">
-            <wd-icon :name="$jwIcon('clock')" size="13px" color="var(--brand-primary)"  />
-            <text>生效日期</text>
-          </view>
-          <view class="m-val">
-            <text class="m-val-text mono">{{ current.updatedAt }}</text>
-            <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)"  />
-          </view>
+      <view class="tabs">
+        <view
+          v-for="t in TABS"
+          :key="t.key"
+          :class="['tab', tab === t.key ? 'active' : '']"
+          @click="tab = t.key"
+        >
+          <text class="tab-label">{{ t.label }}</text>
+          <view v-if="tab === t.key" class="indicator" :style="{ background: t.tint }" />
         </view>
       </view>
 
-      <!-- 正文编辑卡 -->
-      <view class="body-card">
-        <view class="body-head">
-          <text class="body-title">正文（Markdown）</text>
-          <text class="body-len">{{ current.body.length }} 字</text>
+      <scroll-view scroll-y class="scroll" v-if="current">
+        <!-- 元信息卡 -->
+        <view class="meta-card">
+          <view class="meta-row" @click="onTitleEdit">
+            <view class="m-key">
+              <wd-icon :name="$jwIcon('tag')" size="13px" color="var(--brand-primary)" />
+              <text>标题</text>
+            </view>
+            <view class="m-val">
+              <text class="m-val-text">{{ current.title }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
+          <view class="meta-row" @click="onUpdatedAtEdit">
+            <view class="m-key">
+              <wd-icon :name="$jwIcon('clock')" size="13px" color="var(--brand-primary)" />
+              <text>生效日期</text>
+            </view>
+            <view class="m-val">
+              <text class="m-val-text mono">{{ current.updatedAt }}</text>
+              <wd-icon :name="$jwIcon('chevron-right')" size="14px" color="var(--text-tertiary)" />
+            </view>
+          </view>
         </view>
-        <wd-textarea no-border
-          v-model="current.body"
-          class="body-input"
-          placeholder="支持 Markdown：# 标题、**加粗**、- 列表、表格等"
-          auto-height
-          :show-confirm-bar="false"
-          :cursor-spacing="20"
-          maxlength="-1"
-         />
+
+        <!-- 正文编辑卡 -->
+        <view class="body-card">
+          <view class="body-head">
+            <text class="body-title">正文（Markdown）</text>
+            <text class="body-len">{{ current.body.length }} 字</text>
+          </view>
+          <wd-textarea
+            no-border
+            v-model="current.body"
+            class="body-input"
+            placeholder="支持 Markdown：# 标题、**加粗**、- 列表、表格等"
+            auto-height
+            :show-confirm-bar="false"
+            :cursor-spacing="20"
+            maxlength="-1"
+          />
+        </view>
+
+        <view class="tip">
+          <wd-icon :name="$jwIcon('info')" size="11px" color="var(--text-tertiary)" />
+          <text>三段协议合并保存，公开接口 /u/agreements 即刻返回最新内容</text>
+        </view>
+
+        <view style="height: 200rpx" />
+      </scroll-view>
+
+      <view v-else-if="!loading" class="empty">
+        <text>暂无协议数据</text>
       </view>
 
-      <view class="tip">
-        <wd-icon :name="$jwIcon('info')" size="11px" color="var(--text-tertiary)"  />
-        <text>三段协议合并保存，公开接口 /u/agreements 即刻返回最新内容</text>
+      <!-- 底部保存栏 -->
+      <view class="ft" v-if="data">
+        <view :class="['ft-btn', saving ? 'loading' : '']" @click="save">
+          {{ saving ? '保存中…' : '保存全部修改' }}
+        </view>
       </view>
-
-      <view style="height: 200rpx" />
-    </scroll-view>
-
-    <view v-else-if="!loading" class="empty">
-      <text>暂无协议数据</text>
     </view>
-
-    <!-- 底部保存栏 -->
-    <view class="ft" v-if="data">
-      <view :class="['ft-btn', saving ? 'loading' : '']" @click="save">
-        {{ saving ? '保存中…' : '保存全部修改' }}
-      </view>
-    </view>
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -243,7 +251,9 @@ onMounted(load)
   padding: 24rpx 0;
   gap: 16rpx;
   border-bottom: 1rpx dashed var(--border-light);
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 .m-key {
   display: flex;
@@ -268,7 +278,10 @@ onMounted(load)
     font-size: 26rpx;
     color: var(--text-primary);
     font-weight: 600;
-    &.mono { font-family: var(--font-family-base); font-weight: 500; }
+    &.mono {
+      font-family: var(--font-family-base);
+      font-weight: 500;
+    }
   }
 }
 .body-card {
@@ -285,8 +298,16 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  .body-title { font-size: 26rpx; font-weight: 700; color: var(--text-primary); }
-  .body-len { font-size: 20rpx; color: var(--text-tertiary); font-family: var(--font-family-base); }
+  .body-title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .body-len {
+    font-size: 20rpx;
+    color: var(--text-tertiary);
+    font-family: var(--font-family-base);
+  }
 }
 .body-input {
   width: 100%;
@@ -333,6 +354,8 @@ onMounted(load)
   color: #fff;
   background: var(--brand-gradient);
   box-shadow: 0 4rpx 16rpx rgba(255, 77, 45, 0.3);
-  &.loading { opacity: 0.7; }
+  &.loading {
+    opacity: 0.7;
+  }
 }
 </style>

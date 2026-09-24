@@ -1,0 +1,9 @@
+{
+  "string": [
+    { "name": "module_desc", "value": "Jingwei Merchant native business module" },
+    { "name": "entry_desc", "value": "Jingwei Merchant Workbench" },
+    { "name": "location_reason", "value": "Used to select merchant locations and provide map navigation" },
+    { "name": "camera_reason", "value": "Used to capture product, qualification and after-sales evidence" }
+  ]
+}
+

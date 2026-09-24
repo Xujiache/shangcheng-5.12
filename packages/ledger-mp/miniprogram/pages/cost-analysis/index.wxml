@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="ca">
+<view class="ca lz-route-scene {{_routeMotion}}">
   <lz-header title="成本分析" subtitle="{{ovYear}}年 · 成本构成" back="{{true}}" />
 
   <view class="lz-page lz-page--pad-bottom">
@@ -48,9 +48,11 @@
       </view>
     </block>
 
-    <view wx:elif="{{loading}}" class="lz-empty">加载中…</view>
+    <lz-skeleton wx:elif="{{loading}}" variant="dashboard" />
     <view wx:else class="lz-card">
       <view class="lz-empty">本年暂无成本数据，记一笔订单后自动统计</view>
     </view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

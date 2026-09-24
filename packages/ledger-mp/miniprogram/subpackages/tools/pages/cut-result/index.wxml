@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="cut">
+<view class="cut lz-route-scene {{_routeMotion}}">
   <lz-header title="下料结果" subtitle="{{subt}}" />
   <view class="lz-page lz-page--pad-bottom">
     <block wx:if="{{summary}}">
@@ -77,3 +77,5 @@
     <view wx:else class="lz-empty">计算中…</view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

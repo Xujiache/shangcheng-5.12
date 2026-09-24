@@ -49,7 +49,9 @@ async function loadVisibility() {
   try {
     const data = await profileService.getPlazaVisibility()
     visibility.value = data.scope
-  } catch { /* keep default */ }
+  } catch {
+    /* keep default */
+  }
 }
 
 async function setVisibility(scope: 'stores' | 'public') {
@@ -57,13 +59,18 @@ async function setVisibility(scope: 'stores' | 'public') {
   try {
     await profileService.setPlazaVisibility(scope)
     visibility.value = scope
-    appFeedback.showToast({ title: scope === 'public' ? '已设为所有人可看' : '已设为仅门店可看', icon: 'success' })
+    appFeedback.showToast({
+      title: scope === 'public' ? '已设为所有人可看' : '已设为仅门店可看',
+      icon: 'success',
+    })
   } catch (e: any) {
     appFeedback.showToast({ title: e?.message || '保存失败', icon: 'none' })
   }
 }
 
-function openUpload() { showUploadSheet.value = true }
+function openUpload() {
+  showUploadSheet.value = true
+}
 function pickUploadMyProducts() {
   showUploadSheet.value = false
   uni.navigateTo({ url: '/pages/product/add' })
@@ -105,7 +112,9 @@ const filteredProducts = computed(() => {
   }
   if (keyword.value) {
     const kw = keyword.value.toLowerCase()
-    list = list.filter((p) => p.productName.toLowerCase().includes(kw) || p.factoryName.includes(keyword.value))
+    list = list.filter(
+      (p) => p.productName.toLowerCase().includes(kw) || p.factoryName.includes(keyword.value),
+    )
   }
   return list
 })
@@ -114,13 +123,14 @@ const leftColumn = computed(() => filteredProducts.value.filter((_, i) => i % 2 
 const rightColumn = computed(() => filteredProducts.value.filter((_, i) => i % 2 === 1))
 
 async function loadProducts() {
-  const data = await plazaService.products({ pageSize: 30 }) as { list: PlazaProductCard[] }
+  const data = (await plazaService.products({ pageSize: 30 })) as { list: PlazaProductCard[] }
   products.value = data.list
 }
 async function loadFactories() {
   const params: any = {}
   if (filterRegion.value && filterRegion.value !== '全部') params.region = filterRegion.value
-  if (filterCategory.value && filterCategory.value !== '全部') params.category = filterCategory.value
+  if (filterCategory.value && filterCategory.value !== '全部')
+    params.category = filterCategory.value
   if (filterMinRating.value > 0) params.minRating = filterMinRating.value
   if (keyword.value) params.keyword = keyword.value
   factories.value = await plazaService.factories(params)
@@ -185,277 +195,349 @@ onMounted(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <view class="header" :style="{ background: 'var(--brand-gradient)', paddingTop: heroPaddingTop }">
-      <view class="head-row">
-        <text class="head-title">选品广场</text>
-        <text class="head-sub">平台精选 · 厂家直供</text>
+    <view class="page">
+      <view
+        class="header"
+        :style="{ background: 'var(--brand-gradient)', paddingTop: heroPaddingTop }"
+      >
+        <view class="head-row">
+          <text class="head-title">选品广场</text>
+          <text class="head-sub">平台精选 · 厂家直供</text>
+        </view>
+        <view class="search-wrap">
+          <wd-icon :name="$jwIcon('search')" size="16px" color="rgba(255,255,255,0.85)" />
+          <wd-input
+            no-border
+            v-model="keyword"
+            class="search-input"
+            placeholder="搜索商品 / 厂家"
+            placeholder-style="color:rgba(255,255,255,0.6)"
+          />
+        </view>
+        <view class="tabs-row">
+          <wd-tabs v-model="tab" color="var(--brand-primary)">
+            <wd-tab
+              v-for="item in TABS"
+              :key="item.key"
+              :name="item.key"
+              :title="item.label"
+              :badge-props="
+                (item as any).badge ? { value: (item as any).badge, max: 99 } : undefined
+              "
+            />
+          </wd-tabs>
+        </view>
       </view>
-      <view class="search-wrap">
-        <wd-icon :name="$jwIcon('search')" size="16px" color="rgba(255,255,255,0.85)"  />
-        <wd-input no-border
-          v-model="keyword"
-          class="search-input"
-          placeholder="搜索商品 / 厂家"
-          placeholder-style="color:rgba(255,255,255,0.6)"
-         />
-      </view>
-      <view class="tabs-row">
-        <wd-tabs v-model="tab"  color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+
+      <!-- 商品 Tab -->
+      <view v-if="tab === 'products'" class="content">
+        <scroll-view scroll-x class="tag-scroll" :show-scrollbar="false">
+          <view class="tag-row">
+            <view
+              v-for="t in FILTER_TAGS"
+              :key="t"
+              :class="['tag-pill', { active: activeTag === t }]"
+              @click="activeTag = t"
+              >{{ t }}</view
+            >
+          </view>
+        </scroll-view>
+
+        <view class="waterfall">
+          <view class="col">
+            <view
+              v-for="p in leftColumn"
+              :key="p.productId"
+              class="card"
+              @click="goFactory(p.factoryId)"
+            >
+              <view class="card-img-wrap">
+                <image :src="p.productImage" mode="aspectFill" class="card-img" />
+                <view v-if="p.isPlatformPushed" class="pushed-badge">平台推送</view>
+              </view>
+              <view class="card-body">
+                <text class="card-name">{{ p.productName }}</text>
+                <text class="card-factory">{{ p.factoryName }}</text>
+                <view class="card-meta">
+                  <view class="meta-price">
+                    <text class="symbol">¥</text>
+                    <text class="value">{{ p.startPrice }}</text>
+                    <text class="suffix">起</text>
+                  </view>
+                  <text class="agency-count">{{ p.agencyCount }} 家代理</text>
+                </view>
+                <view class="suggest-row">
+                  <text class="s-tag">加 ¥{{ p.suggestMarkupMin }}~{{ p.suggestMarkupMax }}</text>
+                  <text class="s-tag s-comm">佣 {{ p.suggestCommission }}%</text>
+                </view>
+                <view class="card-tags">
+                  <text v-for="t in p.tags" :key="t" class="card-tag">{{ t }}</text>
+                </view>
+                <view class="card-action" @click.stop="applyAgency(p)">申请代理</view>
+              </view>
+            </view>
+          </view>
+          <view class="col">
+            <view
+              v-for="p in rightColumn"
+              :key="p.productId"
+              class="card"
+              @click="goFactory(p.factoryId)"
+            >
+              <view class="card-img-wrap">
+                <image :src="p.productImage" mode="aspectFill" class="card-img" />
+                <view v-if="p.isPlatformPushed" class="pushed-badge">平台推送</view>
+              </view>
+              <view class="card-body">
+                <text class="card-name">{{ p.productName }}</text>
+                <text class="card-factory">{{ p.factoryName }}</text>
+                <view class="card-meta">
+                  <view class="meta-price">
+                    <text class="symbol">¥</text>
+                    <text class="value">{{ p.startPrice }}</text>
+                    <text class="suffix">起</text>
+                  </view>
+                  <text class="agency-count">{{ p.agencyCount }} 家代理</text>
+                </view>
+                <view class="suggest-row">
+                  <text class="s-tag">加 ¥{{ p.suggestMarkupMin }}~{{ p.suggestMarkupMax }}</text>
+                  <text class="s-tag s-comm">佣 {{ p.suggestCommission }}%</text>
+                </view>
+                <view class="card-tags">
+                  <text v-for="t in p.tags" :key="t" class="card-tag">{{ t }}</text>
+                </view>
+                <view class="card-action" @click.stop="applyAgency(p)">申请代理</view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <wd-status-tip
+          v-if="filteredProducts.length === 0"
+          image="content"
+          :tip="
+            [
+              '暂无可代理的商品',
+              '选品广场只显示其他厂家上架的商品。当前没有匹配项,试试调整筛选或稍后再来',
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          "
         />
-      </wd-tabs>
       </view>
-    </view>
 
-    <!-- 商品 Tab -->
-    <view v-if="tab === 'products'" class="content">
-      <scroll-view scroll-x class="tag-scroll" :show-scrollbar="false">
-        <view class="tag-row">
+      <!-- 厂家 Tab -->
+      <view v-else-if="tab === 'factories'" class="content">
+        <!-- 筛选条 -->
+        <view class="filter-bar">
           <view
-            v-for="t in FILTER_TAGS"
-            :key="t"
-            :class="['tag-pill', { active: activeTag === t }]"
-            @click="activeTag = t"
-          >{{ t }}</view>
+            :class="['filter-chip', filterRegion !== '全部' && 'on']"
+            @click="showFilterPanel = 'region'"
+          >
+            <text>{{ filterRegion === '全部' ? '地区' : filterRegion }}</text>
+            <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)" />
+          </view>
+          <view
+            :class="['filter-chip', filterCategory !== '全部' && 'on']"
+            @click="showFilterPanel = 'category'"
+          >
+            <text>{{ filterCategory === '全部' ? '品类' : filterCategory }}</text>
+            <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)" />
+          </view>
+          <view
+            :class="['filter-chip', filterMinRating > 0 && 'on']"
+            @click="showFilterPanel = 'rating'"
+          >
+            <text>{{ filterMinRating > 0 ? `${filterMinRating}★+` : '评分' }}</text>
+            <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)" />
+          </view>
         </view>
-      </scroll-view>
 
-      <view class="waterfall">
-        <view class="col">
-          <view v-for="p in leftColumn" :key="p.productId" class="card" @click="goFactory(p.factoryId)">
-            <view class="card-img-wrap">
-              <image :src="p.productImage" mode="aspectFill" class="card-img" />
-              <view v-if="p.isPlatformPushed" class="pushed-badge">平台推送</view>
+        <view class="factory-list">
+          <view v-for="f in factories" :key="f.id" class="factory-card" @click="goFactory(f.id)">
+            <view class="factory-logo-wrap">
+              <image v-if="f.logo" :src="f.logo" mode="aspectFill" class="factory-logo" />
+              <view v-else class="factory-logo factory-logo-empty">
+                <text>{{ f.name.slice(0, 1) }}</text>
+              </view>
             </view>
-            <view class="card-body">
-              <text class="card-name">{{ p.productName }}</text>
-              <text class="card-factory">{{ p.factoryName }}</text>
-              <view class="card-meta">
-                <view class="meta-price">
-                  <text class="symbol">¥</text>
-                  <text class="value">{{ p.startPrice }}</text>
-                  <text class="suffix">起</text>
+            <view class="factory-info">
+              <view class="factory-name-row">
+                <text class="factory-name">{{ f.name }}</text>
+                <view class="rating-pill" @click.stop="rateFactory(f)">
+                  <wd-icon :name="$jwIcon('star-fill')" size="10px" color="#FFD43B" />
+                  <text>{{ (f.rating ?? 5).toFixed(1) }}</text>
+                  <text v-if="(f.ratingCount ?? 0) > 0" class="rating-count"
+                    >({{ f.ratingCount }})</text
+                  >
                 </view>
-                <text class="agency-count">{{ p.agencyCount }} 家代理</text>
               </view>
-              <view class="suggest-row">
-                <text class="s-tag">加 ¥{{ p.suggestMarkupMin }}~{{ p.suggestMarkupMax }}</text>
-                <text class="s-tag s-comm">佣 {{ p.suggestCommission }}%</text>
+              <view class="factory-meta">
+                <wd-icon :name="$jwIcon('location')" size="11px" color="var(--text-tertiary)" />
+                <text>{{ f.region }}</text>
+                <text v-if="f.categories?.length"
+                  >· {{ f.categories.slice(0, 2).join(' / ') }}</text
+                >
               </view>
-              <view class="card-tags">
-                <text v-for="t in p.tags" :key="t" class="card-tag">{{ t }}</text>
+              <view class="factory-stats">
+                <text class="fs-item"
+                  >¥{{ Math.round((f.gmv || 0) / 10000) }}<span class="fs-label">万 GMV</span></text
+                >
+                <view class="factory-rate-btn" @click.stop="rateFactory(f)">给厂家评分</view>
               </view>
-              <view class="card-action" @click.stop="applyAgency(p)">申请代理</view>
             </view>
           </view>
-        </view>
-        <view class="col">
-          <view v-for="p in rightColumn" :key="p.productId" class="card" @click="goFactory(p.factoryId)">
-            <view class="card-img-wrap">
-              <image :src="p.productImage" mode="aspectFill" class="card-img" />
-              <view v-if="p.isPlatformPushed" class="pushed-badge">平台推送</view>
-            </view>
-            <view class="card-body">
-              <text class="card-name">{{ p.productName }}</text>
-              <text class="card-factory">{{ p.factoryName }}</text>
-              <view class="card-meta">
-                <view class="meta-price">
-                  <text class="symbol">¥</text>
-                  <text class="value">{{ p.startPrice }}</text>
-                  <text class="suffix">起</text>
-                </view>
-                <text class="agency-count">{{ p.agencyCount }} 家代理</text>
-              </view>
-              <view class="suggest-row">
-                <text class="s-tag">加 ¥{{ p.suggestMarkupMin }}~{{ p.suggestMarkupMax }}</text>
-                <text class="s-tag s-comm">佣 {{ p.suggestCommission }}%</text>
-              </view>
-              <view class="card-tags">
-                <text v-for="t in p.tags" :key="t" class="card-tag">{{ t }}</text>
-              </view>
-              <view class="card-action" @click.stop="applyAgency(p)">申请代理</view>
-            </view>
-          </view>
+          <wd-status-tip
+            v-if="factories.length === 0"
+            image="content"
+            :tip="['没找到匹配厂家', '试试调整筛选条件'].filter(Boolean).join(' · ')"
+          />
         </view>
       </view>
 
-      <wd-status-tip
-        v-if="filteredProducts.length === 0"
-       image="content" :tip="['暂无可代理的商品', '选品广场只显示其他厂家上架的商品。当前没有匹配项,试试调整筛选或稍后再来'].filter(Boolean).join(' · ')" />
+      <!-- 我的代理 -->
+      <view v-else class="content">
+        <wd-status-tip
+          image="content"
+          :tip="['暂无代理', '去商品 Tab 申请代理感兴趣的商品'].filter(Boolean).join(' · ')"
+        />
+      </view>
+
+      <view class="safe-bottom" />
+
+      <!-- 筛选下拉面板 -->
+      <wd-popup
+        :model-value="!!showFilterPanel"
+        position="bottom"
+        custom-class="filter-panel"
+        safe-area-inset-bottom
+        root-portal
+        @close="showFilterPanel = null"
+      >
+        <view class="filter-content">
+          <view v-if="showFilterPanel === 'region'">
+            <view class="filter-row">
+              <view
+                v-for="r in REGIONS"
+                :key="r"
+                :class="['filter-item', filterRegion === r && 'on']"
+                @click="pickFilter('region', r)"
+                >{{ r }}</view
+              >
+            </view>
+          </view>
+          <view v-else-if="showFilterPanel === 'category'">
+            <view class="filter-row">
+              <view
+                v-for="c in CATEGORIES"
+                :key="c"
+                :class="['filter-item', filterCategory === c && 'on']"
+                @click="pickFilter('category', c)"
+                >{{ c }}</view
+              >
+            </view>
+          </view>
+          <view v-else-if="showFilterPanel === 'rating'">
+            <view class="filter-row">
+              <view
+                v-for="r in RATINGS"
+                :key="r.value"
+                :class="['filter-item', filterMinRating === r.value && 'on']"
+                @click="pickFilter('rating', r.value)"
+                >{{ r.label }}</view
+              >
+            </view>
+          </view>
+        </view>
+      </wd-popup>
+
+      <!-- 上传产品 FAB（受平台 roleButton.uploadToPlaza 控制；默认开） -->
+      <view v-if="showUploadFab" class="upload-fab" @click="openUpload">
+        <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff" />
+        <text>上传产品</text>
+      </view>
+
+      <!-- 上传 / 规则 sheet -->
+      <wd-popup
+        v-model="showUploadSheet"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="sheet-content">
+          <view class="sheet-head">
+            <text class="sheet-title">上传产品</text>
+            <text class="sheet-close" @click="showUploadSheet = false">关闭</text>
+          </view>
+          <view class="sheet-action" @click="pickUploadMyProducts">
+            <view class="action-icon action-icon-primary">
+              <wd-icon :name="$jwIcon('image-plus')" size="18px" color="#fff" />
+            </view>
+            <view class="action-info">
+              <text class="action-title">我的上传</text>
+              <text class="action-sub">把我的商品同步到选品广场</text>
+            </view>
+            <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)" />
+          </view>
+          <view class="sheet-action" @click="pickVisibilityRules">
+            <view class="action-icon action-icon-ghost">
+              <wd-icon :name="$jwIcon('eye')" size="18px" color="#fff" />
+            </view>
+            <view class="action-info">
+              <text class="action-title">产品显示规则</text>
+              <text class="action-sub"
+                >当前：{{ visibility === 'public' ? '所有人可看' : '仅门店可看' }}</text
+              >
+            </view>
+            <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)" />
+          </view>
+        </view>
+      </wd-popup>
+
+      <!-- 显示规则弹层 -->
+      <wd-popup
+        v-model="showVisibilityDialog"
+        position="bottom"
+        custom-class="vis-dialog"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="vis-content">
+          <view class="sheet-head">
+            <text class="sheet-title">产品显示规则</text>
+            <text class="sheet-close" @click="showVisibilityDialog = false">完成</text>
+          </view>
+          <text class="vis-hint">设置我上传到选品广场的产品对谁可见。</text>
+          <view
+            class="vis-option"
+            :class="{ on: visibility === 'stores' }"
+            @click="setVisibility('stores')"
+          >
+            <view class="vis-radio">
+              <view v-if="visibility === 'stores'" class="vis-dot" />
+            </view>
+            <view class="vis-info">
+              <text class="vis-title">仅门店可看</text>
+              <text class="vis-sub">只有审核通过的合作门店能在广场看到</text>
+            </view>
+          </view>
+          <view
+            class="vis-option"
+            :class="{ on: visibility === 'public' }"
+            @click="setVisibility('public')"
+          >
+            <view class="vis-radio">
+              <view v-if="visibility === 'public'" class="vis-dot" />
+            </view>
+            <view class="vis-info">
+              <text class="vis-title">所有人可看</text>
+              <text class="vis-sub">所有商家及客户都能看到（默认设置）</text>
+            </view>
+          </view>
+        </view>
+      </wd-popup>
     </view>
-
-    <!-- 厂家 Tab -->
-    <view v-else-if="tab === 'factories'" class="content">
-      <!-- 筛选条 -->
-      <view class="filter-bar">
-        <view :class="['filter-chip', filterRegion !== '全部' && 'on']" @click="showFilterPanel = 'region'">
-          <text>{{ filterRegion === '全部' ? '地区' : filterRegion }}</text>
-          <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)"  />
-        </view>
-        <view :class="['filter-chip', filterCategory !== '全部' && 'on']" @click="showFilterPanel = 'category'">
-          <text>{{ filterCategory === '全部' ? '品类' : filterCategory }}</text>
-          <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)"  />
-        </view>
-        <view :class="['filter-chip', filterMinRating > 0 && 'on']" @click="showFilterPanel = 'rating'">
-          <text>{{ filterMinRating > 0 ? `${filterMinRating}★+` : '评分' }}</text>
-          <wd-icon :name="$jwIcon('chevron-down')" size="9px" color="var(--text-tertiary)"  />
-        </view>
-      </view>
-
-      <view class="factory-list">
-        <view v-for="f in factories" :key="f.id" class="factory-card" @click="goFactory(f.id)">
-          <view class="factory-logo-wrap">
-            <image v-if="f.logo" :src="f.logo" mode="aspectFill" class="factory-logo" />
-            <view v-else class="factory-logo factory-logo-empty">
-              <text>{{ f.name.slice(0, 1) }}</text>
-            </view>
-          </view>
-          <view class="factory-info">
-            <view class="factory-name-row">
-              <text class="factory-name">{{ f.name }}</text>
-              <view class="rating-pill" @click.stop="rateFactory(f)">
-                <wd-icon :name="$jwIcon('star-fill')" size="10px" color="#FFD43B"  />
-                <text>{{ (f.rating ?? 5).toFixed(1) }}</text>
-                <text v-if="(f.ratingCount ?? 0) > 0" class="rating-count">({{ f.ratingCount }})</text>
-              </view>
-            </view>
-            <view class="factory-meta">
-              <wd-icon :name="$jwIcon('location')" size="11px" color="var(--text-tertiary)"  />
-              <text>{{ f.region }}</text>
-              <text v-if="f.categories?.length">· {{ f.categories.slice(0, 2).join(' / ') }}</text>
-            </view>
-            <view class="factory-stats">
-              <text class="fs-item">¥{{ Math.round((f.gmv || 0) / 10000) }}<span class="fs-label">万 GMV</span></text>
-              <view class="factory-rate-btn" @click.stop="rateFactory(f)">给厂家评分</view>
-            </view>
-          </view>
-        </view>
-        <wd-status-tip v-if="factories.length === 0"  image="content" :tip="['没找到匹配厂家', '试试调整筛选条件'].filter(Boolean).join(' · ')" />
-      </view>
-    </view>
-
-    <!-- 我的代理 -->
-    <view v-else class="content">
-      <wd-status-tip  image="content" :tip="['暂无代理', '去商品 Tab 申请代理感兴趣的商品'].filter(Boolean).join(' · ')" />
-    </view>
-
-    <view class="safe-bottom" />
-
-    <!-- 筛选下拉面板 -->
-    <wd-popup
-      :model-value="!!showFilterPanel"
-      position="bottom"
-      custom-class="filter-panel"
-      safe-area-inset-bottom
-      root-portal
-      @close="showFilterPanel = null"
-    >
-      <view class="filter-content">
-        <view v-if="showFilterPanel === 'region'">
-          <view class="filter-row">
-            <view
-              v-for="r in REGIONS"
-              :key="r"
-              :class="['filter-item', filterRegion === r && 'on']"
-              @click="pickFilter('region', r)"
-            >{{ r }}</view>
-          </view>
-        </view>
-        <view v-else-if="showFilterPanel === 'category'">
-          <view class="filter-row">
-            <view
-              v-for="c in CATEGORIES"
-              :key="c"
-              :class="['filter-item', filterCategory === c && 'on']"
-              @click="pickFilter('category', c)"
-            >{{ c }}</view>
-          </view>
-        </view>
-        <view v-else-if="showFilterPanel === 'rating'">
-          <view class="filter-row">
-            <view
-              v-for="r in RATINGS"
-              :key="r.value"
-              :class="['filter-item', filterMinRating === r.value && 'on']"
-              @click="pickFilter('rating', r.value)"
-            >{{ r.label }}</view>
-          </view>
-        </view>
-      </view>
-    </wd-popup>
-
-    <!-- 上传产品 FAB（受平台 roleButton.uploadToPlaza 控制；默认开） -->
-    <view v-if="showUploadFab" class="upload-fab" @click="openUpload">
-      <wd-icon :name="$jwIcon('plus')" size="18px" color="#fff"  />
-      <text>上传产品</text>
-    </view>
-
-    <!-- 上传 / 规则 sheet -->
-    <wd-popup v-model="showUploadSheet" position="bottom" custom-class="sheet" safe-area-inset-bottom root-portal>
-      <view class="sheet-content">
-        <view class="sheet-head">
-          <text class="sheet-title">上传产品</text>
-          <text class="sheet-close" @click="showUploadSheet = false">关闭</text>
-        </view>
-        <view class="sheet-action" @click="pickUploadMyProducts">
-          <view class="action-icon action-icon-primary">
-            <wd-icon :name="$jwIcon('image-plus')" size="18px" color="#fff"  />
-          </view>
-          <view class="action-info">
-            <text class="action-title">我的上传</text>
-            <text class="action-sub">把我的商品同步到选品广场</text>
-          </view>
-          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
-        </view>
-        <view class="sheet-action" @click="pickVisibilityRules">
-          <view class="action-icon action-icon-ghost">
-            <wd-icon :name="$jwIcon('eye')" size="18px" color="#fff"  />
-          </view>
-          <view class="action-info">
-            <text class="action-title">产品显示规则</text>
-            <text class="action-sub">当前：{{ visibility === 'public' ? '所有人可看' : '仅门店可看' }}</text>
-          </view>
-          <wd-icon :name="$jwIcon('forward')" size="12px" color="var(--text-tertiary)"  />
-        </view>
-      </view>
-    </wd-popup>
-
-    <!-- 显示规则弹层 -->
-    <wd-popup v-model="showVisibilityDialog" position="bottom" custom-class="vis-dialog" safe-area-inset-bottom root-portal>
-      <view class="vis-content">
-        <view class="sheet-head">
-          <text class="sheet-title">产品显示规则</text>
-          <text class="sheet-close" @click="showVisibilityDialog = false">完成</text>
-        </view>
-        <text class="vis-hint">设置我上传到选品广场的产品对谁可见。</text>
-        <view class="vis-option" :class="{ on: visibility === 'stores' }" @click="setVisibility('stores')">
-          <view class="vis-radio">
-            <view v-if="visibility === 'stores'" class="vis-dot" />
-          </view>
-          <view class="vis-info">
-            <text class="vis-title">仅门店可看</text>
-            <text class="vis-sub">只有审核通过的合作门店能在广场看到</text>
-          </view>
-        </view>
-        <view class="vis-option" :class="{ on: visibility === 'public' }" @click="setVisibility('public')">
-          <view class="vis-radio">
-            <view v-if="visibility === 'public'" class="vis-dot" />
-          </view>
-          <view class="vis-info">
-            <text class="vis-title">所有人可看</text>
-            <text class="vis-sub">所有商家及客户都能看到（默认设置）</text>
-          </view>
-        </view>
-      </view>
-    </wd-popup>
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -471,26 +553,44 @@ onMounted(() => {
     display: flex;
     align-items: baseline;
     gap: 12rpx;
-    .head-title { font-size: 36rpx; font-weight: 700; }
-    .head-sub { font-size: 22rpx; opacity: 0.85; }
+    .head-title {
+      font-size: 36rpx;
+      font-weight: 700;
+    }
+    .head-sub {
+      font-size: 22rpx;
+      opacity: 0.85;
+    }
   }
   .search-wrap {
     margin-top: 16rpx;
     display: flex;
     align-items: center;
     gap: 8rpx;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 999rpx;
     padding: 0 16rpx 0 20rpx;
     height: 72rpx;
-    .search-input { flex: 1; height: 100%; font-size: 26rpx; color: #fff; }
+    .search-input {
+      flex: 1;
+      height: 100%;
+      font-size: 26rpx;
+      color: #fff;
+    }
   }
   .tabs-row {
     margin-top: 16rpx;
-    :deep(.tab-text) { color: rgba(255,255,255,0.85); }
+    :deep(.tab-text) {
+      color: rgba(255, 255, 255, 0.85);
+    }
     :deep(.tab.active) {
-      .tab-text { color: #fff; font-weight: 700; }
-      &::after { background: var(--bg-card); }
+      .tab-text {
+        color: #fff;
+        font-weight: 700;
+      }
+      &::after {
+        background: var(--bg-card);
+      }
     }
   }
 }
@@ -545,7 +645,10 @@ onMounted(() => {
   width: 100%;
   aspect-ratio: 1;
 }
-.card-img { width: 100%; height: 100%; }
+.card-img {
+  width: 100%;
+  height: 100%;
+}
 .pushed-badge {
   position: absolute;
   top: 8rpx;
@@ -555,7 +658,7 @@ onMounted(() => {
   color: #fff;
   font-size: 18rpx;
   border-radius: 6rpx;
-  box-shadow: 0 2rpx 6rpx rgba(255,77,45,0.4);
+  box-shadow: 0 2rpx 6rpx rgba(255, 77, 45, 0.4);
 }
 .card-body {
   padding: 12rpx;
@@ -585,9 +688,19 @@ onMounted(() => {
 .meta-price {
   color: var(--brand-primary);
   font-family: var(--font-family-base);
-  .symbol { font-size: 18rpx; font-weight: 600; }
-  .value { font-size: 30rpx; font-weight: 700; }
-  .suffix { font-size: 18rpx; color: var(--text-tertiary); margin-left: 4rpx; }
+  .symbol {
+    font-size: 18rpx;
+    font-weight: 600;
+  }
+  .value {
+    font-size: 30rpx;
+    font-weight: 700;
+  }
+  .suffix {
+    font-size: 18rpx;
+    color: var(--text-tertiary);
+    margin-left: 4rpx;
+  }
 }
 .agency-count {
   font-size: 18rpx;
@@ -660,7 +773,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  .factory-name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+  .factory-name {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
   .pushed-mini {
     padding: 1rpx 6rpx;
     background: var(--brand-primary);
@@ -704,7 +821,9 @@ onMounted(() => {
     border-radius: 4rpx;
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 
 /* ============ v2 新增：筛选 / 评分 / 上传 / 显示规则 ============ */
 .filter-bar {
@@ -770,7 +889,10 @@ onMounted(() => {
   overflow: hidden;
   background: var(--bg-page);
 }
-.factory-logo { width: 100%; height: 100%; }
+.factory-logo {
+  width: 100%;
+  height: 100%;
+}
 .factory-logo-empty {
   display: flex;
   align-items: center;
@@ -793,7 +915,11 @@ onMounted(() => {
   font-size: 22rpx;
   font-weight: 700;
   flex-shrink: 0;
-  .rating-count { font-size: 18rpx; opacity: 0.7; font-weight: 400; }
+  .rating-count {
+    font-size: 18rpx;
+    opacity: 0.7;
+    font-weight: 400;
+  }
 }
 .factory-rate-btn {
   margin-left: auto;
@@ -803,7 +929,9 @@ onMounted(() => {
   border-radius: 999rpx;
   font-size: 22rpx;
   font-weight: 600;
-  &:active { opacity: 0.85; }
+  &:active {
+    opacity: 0.85;
+  }
 }
 
 .upload-fab {
@@ -821,7 +949,9 @@ onMounted(() => {
   border-radius: 999rpx;
   box-shadow: 0 10rpx 28rpx rgba(255, 77, 45, 0.4);
   z-index: 80;
-  &:active { transform: scale(0.97); }
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 .sheet-mask {
@@ -855,8 +985,16 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12rpx 4rpx 4rpx;
-  .sheet-title { font-size: 32rpx; font-weight: 800; color: var(--text-primary); }
-  .sheet-close { font-size: 26rpx; color: #ff4d2d; font-weight: 600; }
+  .sheet-title {
+    font-size: 32rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .sheet-close {
+    font-size: 26rpx;
+    color: #ff4d2d;
+    font-weight: 600;
+  }
 }
 .sheet-action {
   display: flex;
@@ -865,7 +1003,9 @@ onMounted(() => {
   padding: 20rpx 12rpx;
   border-radius: 16rpx;
   background: var(--bg-page);
-  &:active { background: #ebedf0; }
+  &:active {
+    background: #ebedf0;
+  }
 }
 .action-icon {
   width: 80rpx;
@@ -876,13 +1016,35 @@ onMounted(() => {
   justify-content: center;
   flex-shrink: 0;
 }
-.action-icon-primary { background: linear-gradient(135deg, #ff7a4e, #ff4d2d); }
-.action-icon-ghost { background: linear-gradient(135deg, #5b8def, #3370ff); }
-.action-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
-.action-title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-.action-sub { font-size: 22rpx; color: var(--text-tertiary); }
+.action-icon-primary {
+  background: linear-gradient(135deg, #ff7a4e, #ff4d2d);
+}
+.action-icon-ghost {
+  background: linear-gradient(135deg, #5b8def, #3370ff);
+}
+.action-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.action-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.action-sub {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
 
-.vis-hint { font-size: 24rpx; color: var(--text-tertiary); padding: 0 4rpx; }
+.vis-hint {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+  padding: 0 4rpx;
+}
+
 .vis-option {
   display: flex;
   align-items: flex-start;
@@ -914,8 +1076,23 @@ onMounted(() => {
     background: #ff4d2d;
   }
 }
-.vis-option.on .vis-radio { border-color: #ff4d2d; }
-.vis-info { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
-.vis-title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-.vis-sub { font-size: 22rpx; color: var(--text-tertiary); line-height: 1.5; }
+.vis-option.on .vis-radio {
+  border-color: #ff4d2d;
+}
+.vis-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.vis-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.vis-sub {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
 </style>

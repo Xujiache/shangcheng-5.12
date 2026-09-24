@@ -34,7 +34,11 @@ const title = computed(() => (props.mode === 'password' ? '修改密码' : '修�
 const pwd = reactive({ old: '', new: '', new2: '', show: false, submitting: false })
 
 function resetPwd() {
-  pwd.old = ''; pwd.new = ''; pwd.new2 = ''; pwd.show = false; pwd.submitting = false
+  pwd.old = ''
+  pwd.new = ''
+  pwd.new2 = ''
+  pwd.show = false
+  pwd.submitting = false
 }
 
 async function submitPwd() {
@@ -65,17 +69,23 @@ const ph = reactive({
   newPhone: '',
   oldCode: '',
   newCode: '',
-  oldSending: false, oldCountdown: 0,
-  newSending: false, newCountdown: 0,
+  oldSending: false,
+  oldCountdown: 0,
+  newSending: false,
+  newCountdown: 0,
   submitting: false,
 })
 
 const needOldCode = computed(() => !!props.currentPhone)
 
 function resetPh() {
-  ph.newPhone = ''; ph.oldCode = ''; ph.newCode = ''
-  ph.oldSending = false; ph.oldCountdown = 0
-  ph.newSending = false; ph.newCountdown = 0
+  ph.newPhone = ''
+  ph.oldCode = ''
+  ph.newCode = ''
+  ph.oldSending = false
+  ph.oldCountdown = 0
+  ph.newSending = false
+  ph.newCountdown = 0
   ph.submitting = false
 }
 
@@ -239,17 +249,15 @@ function close() {
                 ph.oldCountdown > 0
                   ? `${ph.oldCountdown}s 后重发`
                   : ph.oldSending
-                  ? '发送中…'
-                  : '获取验证码'
+                    ? '发送中…'
+                    : '获取验证码'
               }}
             </view>
           </view>
         </view>
 
         <view class="field-block">
-          <text class="block-title">
-            {{ needOldCode ? '第 2 步：' : '' }}填写新手机号
-          </text>
+          <text class="block-title"> {{ needOldCode ? '第 2 步：' : '' }}填写新手机号 </text>
           <view class="field">
             <text class="label">新手机号</text>
             <input
@@ -277,8 +285,8 @@ function close() {
                 ph.newCountdown > 0
                   ? `${ph.newCountdown}s 后重发`
                   : ph.newSending
-                  ? '发送中…'
-                  : '获取验证码'
+                    ? '发送中…'
+                    : '获取验证码'
               }}
             </view>
           </view>
@@ -316,8 +324,14 @@ function close() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  .title { font-size: 32rpx; font-weight: 800; color: #1d2129; }
-  .close { padding: 8rpx; }
+  .title {
+    font-size: 32rpx;
+    font-weight: 800;
+    color: #1d2129;
+  }
+  .close {
+    padding: 8rpx;
+  }
 }
 .body {
   display: flex;
@@ -346,9 +360,15 @@ function close() {
   border-radius: 12rpx;
   border: 2rpx solid #ebedf0;
   gap: 12rpx;
-  &.readonly { background: #fafbfc; }
-  &.code-field { padding-right: 8rpx; }
-  &:focus-within { border-color: rgba(255, 77, 45, 0.4); }
+  &.readonly {
+    background: #fafbfc;
+  }
+  &.code-field {
+    padding-right: 8rpx;
+  }
+  &:focus-within {
+    border-color: rgba(255, 77, 45, 0.4);
+  }
 }
 .label {
   flex-shrink: 0;
@@ -377,7 +397,10 @@ function close() {
   font-size: 22rpx;
   font-weight: 600;
   white-space: nowrap;
-  &.disabled { background: #f0f0f0; color: #86909c; }
+  &.disabled {
+    background: #f0f0f0;
+    color: #86909c;
+  }
 }
 .show-toggle {
   align-self: flex-end;
@@ -397,7 +420,11 @@ function close() {
   border-radius: 999rpx;
   box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.32);
   letter-spacing: 4rpx;
-  &.disabled { opacity: 0.6; }
-  &:active { transform: scale(0.98); }
+  &.disabled {
+    opacity: 0.6;
+  }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>

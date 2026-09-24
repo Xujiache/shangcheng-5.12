@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="dm">
+<view class="dm lz-route-scene {{_routeMotion}}">
   <lz-header title="数据管理" />
 
   <view class="lz-page" style="padding-bottom: 40px;">
@@ -90,3 +90,5 @@
     </view>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

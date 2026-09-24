@@ -1,0 +1,15 @@
+✔ database guard rejects remote, real local databases and Redis DB zero (2.567ms)
+✔ dry run never creates tables or inserts tracking rows (3.0773ms)
+✔ a modified executed SQL version is rejected before any mutation (3.4198ms)
+✔ concurrent migration fails fast without touching schema (1.8242ms)
+✔ release rejects missing, stale, failed, fabricated and modified evidence (1.626ms)
+✔ checks H5, WeChat and App branches with preserved line numbers (2.3364ms)
+✔ supports nested HTML directives and fails closed on unsupported conditions (0.9326ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1188.2613

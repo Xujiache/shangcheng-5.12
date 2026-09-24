@@ -1,5 +1,5 @@
 <lz-bg />
-<view class="format">
+<view class="format lz-route-scene {{_routeMotion}}">
   <lz-header title="格式转换" />
   <view class="lz-page format__body">
     <view class="format__intro">登录后免费使用 · 不限累计次数</view>
@@ -62,6 +62,8 @@
     <button wx:if="{{hasMore}}" class="lz-btn lz-btn--ghost" bindtap="loadMore">加载更多记录</button>
   </view>
 </view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />
 
 <view wx:if="{{previewText || previewVideo || previewAudio}}" class="format__overlay" bindtap="closePreview">
   <view class="format__preview" catchtap="noop">

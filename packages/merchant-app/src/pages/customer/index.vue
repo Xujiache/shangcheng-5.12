@@ -24,13 +24,19 @@ const TABS = computed(() => [
   { key: 'normal' as Tab, label: '普通客户' },
 ])
 
-const TIER_LABEL: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const TIER_LABEL: Record<
+  string,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   wholesale: { text: '批发价', tone: 'success' },
   member: { text: '会员价', tone: 'primary' },
   retail: { text: '零售价', tone: 'default' },
 }
 
-const KIND_LABEL: Record<string, { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+const KIND_LABEL: Record<
+  string,
+  { text: string; tone: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default' }
+> = {
   promoter: { text: '分佣', tone: 'warning' },
   member: { text: '会员', tone: 'primary' },
   normal: { text: '普通', tone: 'default' },
@@ -96,112 +102,143 @@ onMounted(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="客户管理"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="客户管理"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view class="header">
-      <view class="search-wrap">
-        <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)"  />
-        <wd-input no-border
-          v-model="keyword"
-          class="search-input"
-          placeholder="搜索昵称 / 手机号"
-          confirm-type="search"
-          @confirm="load"
-         />
+      <view class="header">
+        <view class="search-wrap">
+          <wd-icon :name="$jwIcon('search')" size="16px" color="var(--text-tertiary)" />
+          <wd-input
+            no-border
+            v-model="keyword"
+            class="search-input"
+            placeholder="搜索昵称 / 手机号"
+            confirm-type="search"
+            @confirm="load"
+          />
+        </view>
+        <wd-tabs v-model="tab" @change="load" color="var(--brand-primary)">
+          <wd-tab
+            v-for="item in TABS"
+            :key="item.key"
+            :name="item.key"
+            :title="item.label"
+            :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+          />
+        </wd-tabs>
       </view>
-      <wd-tabs v-model="tab" @change="load"  color="var(--brand-primary)">
-        <wd-tab
-          v-for="item in TABS"
-          :key="item.key"
-          :name="item.key"
-          :title="item.label"
-          :badge-props="(item as any).badge ? { value: (item as any).badge, max: 99 } : undefined"
+
+      <view class="list">
+        <view v-for="c in list" :key="c.id" class="card">
+          <view class="card-head">
+            <image class="avatar" :src="c.avatar" mode="aspectFill" />
+            <view class="head-info">
+              <view class="name-row">
+                <text class="name">{{ c.nickname }}</text>
+                <wd-tag :type="$jwTagType(KIND_LABEL[c.kind].tone)" :plain="true" round>{{
+                  KIND_LABEL[c.kind].text
+                }}</wd-tag>
+                <wd-tag v-if="c.groupTag" :type="$jwTagType('info')" :plain="true" round>{{
+                  c.groupTag
+                }}</wd-tag>
+              </view>
+              <text class="phone">{{ maskPhone(c.phone) }}</text>
+            </view>
+            <view class="phone-call" @click="callCustomer(c)">
+              <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--brand-primary)" />
+            </view>
+          </view>
+
+          <view class="stats">
+            <view class="stat">
+              <text class="stat-value">{{ c.orderCount }}</text>
+              <text class="stat-label">订单数</text>
+            </view>
+            <view class="stat">
+              <text class="stat-value">{{ formatPrice(c.totalSpent) }}</text>
+              <text class="stat-label">累计消费</text>
+            </view>
+            <view class="stat">
+              <text class="stat-value">{{
+                c.lastOrderAt ? formatRelative(c.lastOrderAt) : '—'
+              }}</text>
+              <text class="stat-label">最近下单</text>
+            </view>
+          </view>
+
+          <view class="card-foot">
+            <view class="foot-left">
+              <text class="foot-label">价格层级</text>
+              <view class="tier-pill" @click="openTierPicker(c)">
+                <wd-tag :type="$jwTagType(TIER_LABEL[c.priceTier].tone)" :plain="false" round>{{
+                  TIER_LABEL[c.priceTier].text
+                }}</wd-tag>
+
+                <text class="caret">›</text>
+              </view>
+            </view>
+            <view class="foot-right">
+              <text class="foot-label">价格授权</text>
+              <wd-switch
+                :model-value="c.priceAuthorized"
+                active-color="var(--brand-primary)"
+                @change="toggleAuth(c)"
+              />
+            </view>
+          </view>
+        </view>
+
+        <wd-status-tip
+          v-if="!loading && list.length === 0"
+          image="content"
+          :tip="['暂无客户', '切换标签或调整搜索'].filter(Boolean).join(' · ')"
         />
-      </wd-tabs>
-    </view>
-
-    <view class="list">
-      <view v-for="c in list" :key="c.id" class="card">
-        <view class="card-head">
-          <image class="avatar" :src="c.avatar" mode="aspectFill" />
-          <view class="head-info">
-            <view class="name-row">
-              <text class="name">{{ c.nickname }}</text>
-              <wd-tag  :type="$jwTagType(KIND_LABEL[c.kind].tone)" :plain="true" round>{{ KIND_LABEL[c.kind].text }}</wd-tag>
-              <wd-tag v-if="c.groupTag"  :type="$jwTagType('info')" :plain="true" round>{{ c.groupTag }}</wd-tag>
-            </view>
-            <text class="phone">{{ maskPhone(c.phone) }}</text>
-          </view>
-          <view class="phone-call" @click="callCustomer(c)">
-            <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--brand-primary)"  />
-          </view>
-        </view>
-
-        <view class="stats">
-          <view class="stat">
-            <text class="stat-value">{{ c.orderCount }}</text>
-            <text class="stat-label">订单数</text>
-          </view>
-          <view class="stat">
-            <text class="stat-value">{{ formatPrice(c.totalSpent) }}</text>
-            <text class="stat-label">累计消费</text>
-          </view>
-          <view class="stat">
-            <text class="stat-value">{{ c.lastOrderAt ? formatRelative(c.lastOrderAt) : '—' }}</text>
-            <text class="stat-label">最近下单</text>
-          </view>
-        </view>
-
-        <view class="card-foot">
-          <view class="foot-left">
-            <text class="foot-label">价格层级</text>
-            <view class="tier-pill" @click="openTierPicker(c)">
-              <wd-tag  :type="$jwTagType(TIER_LABEL[c.priceTier].tone)" :plain="false" round>{{ TIER_LABEL[c.priceTier].text }}</wd-tag>
-              <text class="caret">›</text>
-            </view>
-          </view>
-          <view class="foot-right">
-            <text class="foot-label">价格授权</text>
-            <wd-switch :model-value="c.priceAuthorized" active-color="var(--brand-primary)" @change="toggleAuth(c)"  />
-          </view>
-        </view>
       </view>
 
-      <wd-status-tip v-if="!loading && list.length === 0"  image="content" :tip="['暂无客户', '切换标签或调整搜索'].filter(Boolean).join(' · ')" />
-    </view>
+      <view class="safe-bottom" />
 
-    <view class="safe-bottom" />
-
-    <!-- 价格层级选择 -->
-    <wd-popup
-      :model-value="!!showTierPicker"
-      position="bottom"
-      custom-class="sheet"
-      safe-area-inset-bottom
-      root-portal
-      @close="showTierPicker = null"
-    >
-      <view v-if="showTierPicker" class="sheet-content">
-        <view class="sheet-head">为「{{ showTierPicker.nickname }}」设置价格层级</view>
-        <view class="sheet-options">
-          <view
-            v-for="t in ['retail', 'wholesale', 'member'] as const"
-            :key="t"
-            :class="['opt', { active: showTierPicker.priceTier === t }]"
-            @click="pickTier(t)"
-          >
-            <text class="opt-title">{{ TIER_LABEL[t].text }}</text>
-            <text class="opt-desc">
-              {{ t === 'retail' ? '默认零售价' : t === 'wholesale' ? '批发价（已授权门店）' : '会员价' }}
-            </text>
-            <text v-if="showTierPicker.priceTier === t" class="opt-tick">✓</text>
+      <!-- 价格层级选择 -->
+      <wd-popup
+        :model-value="!!showTierPicker"
+        position="bottom"
+        custom-class="sheet"
+        safe-area-inset-bottom
+        root-portal
+        @close="showTierPicker = null"
+      >
+        <view v-if="showTierPicker" class="sheet-content">
+          <view class="sheet-head">为「{{ showTierPicker.nickname }}」设置价格层级</view>
+          <view class="sheet-options">
+            <view
+              v-for="t in ['retail', 'wholesale', 'member'] as const"
+              :key="t"
+              :class="['opt', { active: showTierPicker.priceTier === t }]"
+              @click="pickTier(t)"
+            >
+              <text class="opt-title">{{ TIER_LABEL[t].text }}</text>
+              <text class="opt-desc">
+                {{
+                  t === 'retail'
+                    ? '默认零售价'
+                    : t === 'wholesale'
+                      ? '批发价（已授权门店）'
+                      : '会员价'
+                }}
+              </text>
+              <text v-if="showTierPicker.priceTier === t" class="opt-tick">✓</text>
+            </view>
           </view>
         </view>
-      </view>
-    </wd-popup>
-  </view>
-
+      </wd-popup>
+    </view>
   </wd-config-provider>
 </template>
 
@@ -228,7 +265,11 @@ onMounted(load)
   padding: 0 16rpx 0 20rpx;
   height: 72rpx;
   margin-bottom: 12rpx;
-  .search-input { flex: 1; height: 100%; font-size: 26rpx; }
+  .search-input {
+    flex: 1;
+    height: 100%;
+    font-size: 26rpx;
+  }
 }
 .list {
   padding: 16rpx 24rpx;
@@ -265,7 +306,11 @@ onMounted(load)
       align-items: center;
       gap: 8rpx;
       flex-wrap: wrap;
-      .name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+      .name {
+        font-size: 28rpx;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
     }
     .phone {
       font-size: 22rpx;
@@ -313,24 +358,33 @@ onMounted(load)
   align-items: center;
   padding-top: 16rpx;
   border-top: 1rpx dashed var(--border-light);
-  .foot-left, .foot-right {
+  .foot-left,
+  .foot-right {
     display: flex;
     align-items: center;
     gap: 12rpx;
   }
-  .foot-label { font-size: 22rpx; color: var(--text-tertiary); }
+  .foot-label {
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .tier-pill {
     display: flex;
     align-items: center;
     gap: 4rpx;
-    .caret { font-size: 24rpx; color: var(--text-tertiary); }
+    .caret {
+      font-size: 24rpx;
+      color: var(--text-tertiary);
+    }
   }
 }
 .mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: flex; align-items: flex-end;
+  display: flex;
+  align-items: flex-end;
 }
 .sheet {
   width: 100%;
@@ -362,8 +416,16 @@ onMounted(load)
     background: var(--brand-primary-ghost);
     border-color: var(--brand-primary);
   }
-  .opt-title { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
-  .opt-desc { margin-top: 4rpx; font-size: 22rpx; color: var(--text-tertiary); }
+  .opt-title {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .opt-desc {
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    color: var(--text-tertiary);
+  }
   .opt-tick {
     position: absolute;
     top: 24rpx;
@@ -373,5 +435,7 @@ onMounted(load)
     font-weight: 700;
   }
 }
-.safe-bottom { height: 40rpx; }
+.safe-bottom {
+  height: 40rpx;
+}
 </style>

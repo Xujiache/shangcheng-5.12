@@ -1,0 +1,301 @@
+<page-meta page-style="{{advanced?'overflow: hidden;':''}}" />
+<view class="wb lz-route-scene {{_routeMotion}}">
+  <workbook-header title="记工明细" subtitle="日历查看 · 多维筛选 · 批量补记" back />
+  <view class="wb-body">
+    <view class="wb-row records-toolbar">
+      <picker mode="date" fields="month" value="{{month}}" bindchange="month"
+        ><view class="wb-title">{{month}} <workbook-icon name="arrow-down" size="14" /></view
+      ></picker>
+      <view class="records-view-switch"
+        ><lz-segmented options="{{viewOptions}}" value="{{view}}" bindchange="view"
+      /></view>
+    </view>
+    <view class="records-filter-bar">
+      <view
+        class="records-filter-tab {{(advanced&&filterGroup==='workers')||workerIndex?'records-filter-tab--active':''}} {{advanced&&filterGroup==='workers'?'records-filter-tab--open':''}}"
+        data-group="workers"
+        bindtap="advanced"
+        aria-role="button"
+        aria-label="工人筛选"
+        hover-class="records-filter-tab--pressed"
+        ><text>工人</text
+        ><view class="records-filter-arrow"><workbook-icon name="{{advanced&&filterGroup==='workers'?'arrow-up':'arrow-down'}}" size="14" /></view
+      ></view>
+      <view
+        class="records-filter-tab {{(advanced&&filterGroup==='projects')||projectIndex?'records-filter-tab--active':''}} {{advanced&&filterGroup==='projects'?'records-filter-tab--open':''}}"
+        data-group="projects"
+        bindtap="advanced"
+        aria-role="button"
+        aria-label="工地筛选"
+        hover-class="records-filter-tab--pressed"
+        ><text>工地</text
+        ><view class="records-filter-arrow"
+          ><workbook-icon name="{{advanced&&filterGroup==='projects'?'arrow-up':'arrow-down'}}" size="14" /></view
+      ></view>
+      <view
+        class="records-filter-tab {{(advanced&&filterGroup==='status')||statusIndex?'records-filter-tab--active':''}} {{advanced&&filterGroup==='status'?'records-filter-tab--open':''}}"
+        data-group="status"
+        bindtap="advanced"
+        aria-role="button"
+        aria-label="结算筛选"
+        hover-class="records-filter-tab--pressed"
+        ><text>结算</text
+        ><view class="records-filter-arrow"
+          ><workbook-icon name="{{advanced&&filterGroup==='status'?'arrow-up':'arrow-down'}}" size="14" /></view
+      ></view>
+      <view
+        class="records-filter-tab {{(advanced&&filterGroup==='more')||filterCount?'records-filter-tab--active':''}} {{advanced&&filterGroup==='more'?'records-filter-tab--open':''}}"
+        data-group="more"
+        bindtap="advanced"
+        aria-role="button"
+        aria-label="筛选筛选"
+        hover-class="records-filter-tab--pressed"
+        ><text>筛选</text
+        ><view class="records-filter-arrow"
+          ><workbook-icon name="{{advanced&&filterGroup==='more'?'arrow-up':'arrow-down'}}" size="14" /></view
+        ><text wx:if="{{filterCount}}" class="records-filter-badge">{{filterCount}}</text></view
+      >
+    </view>
+    <view wx:if="{{filterTags.length}}" class="records-filter-tags">
+      <view
+        wx:for="{{filterTags}}"
+        wx:key="key"
+        class="records-filter-tag"
+        data-key="{{item.key}}"
+        bindtap="removeFilter"
+        aria-role="button"
+        aria-label="移除筛选：{{item.label}}"
+      >
+        <text class="records-filter-tag__label">{{item.label}}</text
+        ><workbook-icon name="close" size="12" color="accent" />
+      </view>
+    </view>
+    <view wx:if="{{view==='calendar'}}" class="wb-card records-calendar">
+      <view class="records-calendar__grid">
+        <view
+          wx:for="{{week}}"
+          wx:key="*this"
+          class="records-calendar__weekday {{index===0||index===6?'records-calendar__weekend':''}}"
+          >{{item}}</view
+        >
+        <block wx:for="{{cells}}" wx:key="id">
+          <!-- 占位单元不参与选中判断，也不绑定点击事件。 -->
+          <view wx:if="{{!item.date}}" class="records-calendar__blank" aria-hidden="true"></view>
+          <view
+            wx:else
+            class="records-calendar__day {{item.today?'records-calendar__day--today':''}} {{selectedDate===item.date?'records-calendar__day--selected':''}}"
+            data-date="{{item.date}}"
+            bindtap="day"
+            hover-class="records-calendar__day--pressed"
+            aria-role="button"
+            aria-label="{{item.date}}，{{item.count}}笔记工{{selectedDate===item.date?'，已选中':''}}"
+          >
+            <view class="records-calendar__number">{{item.day}}</view>
+            <view class="records-calendar__count"
+              ><text wx:if="{{item.count}}">{{item.count}}笔</text
+              ><text wx:elif="{{item.today}}">今天</text></view
+            >
+          </view>
+        </block>
+      </view>
+      <view class="records-calendar__hint">{{selectedDate?'已选 '+selectedDate+' · 再点一次查看整月':'点击日期查看当天记录'}}</view>
+    </view>
+    <view class="wb-row wb-section"
+      ><text>{{count}} 笔记工</text><text>{{amount}}</text></view
+    ><view class="wb-card"
+      ><view wx:if="{{!list.length}}" class="wb-empty">当前条件下暂无记录，试试调整筛选。</view
+      ><block wx:for="{{list}}" wx:key="id"
+        ><view wx:if="{{item.showDate}}" class="wb-date-label">{{item.workDate}}</view
+        ><view class="wb-list-row wb-row" data-id="{{item.id}}" bindtap="edit"
+          ><view class="wb-flex"
+            ><view class="wb-list-title"
+              >{{item.name}} <text class="wb-tag {{item.settled?'':'wb-tag--warm'}}">{{item.settled?'已结算':'待结算'}}</text></view
+            ><view class="wb-muted">{{item.project}} · {{item.tags}}</view
+            ><view class="wb-muted">{{item.detail}}</view></view
+          ><text class="wb-list-title">{{item.amount}}</text></view
+        ></block
+      ><button wx:if="{{hasMore}}" class="wb-btn wb-btn--soft" bindtap="more">
+        加载更多
+      </button></view
+    > </view
+  ><view class="wb-fixed"
+    ><button class="wb-btn" bindtap="add">
+      <workbook-icon name="plus" size="17" /> 记一笔 / 批量记工
+    </button></view
+  ><workbook-nav active="records" />
+  <!-- 顶部下拉筛选：紧接筛选栏，保留草稿，确认后统一应用。 -->
+  <block wx:if="{{advanced}}">
+    <view
+      class="records-filter-mask"
+      style="top: {{filterTop}}px"
+      bindtap="closeFilters"
+      catchtouchmove="noop"
+    ></view>
+    <view
+      class="records-filter-panel"
+      style="top: {{filterTop}}px; height: {{sheetHeight}}px"
+      catchtap="noop"
+    >
+      <scroll-view
+        scroll-y
+        enhanced
+        show-scrollbar="{{false}}"
+        class="records-filter-scroll"
+      >
+        <view class="records-filter-content">
+          <block wx:if="{{filterGroup==='workers'||filterGroup==='projects'}}">
+            <view class="records-filter-label"
+              >{{filterGroup==='workers'?'选择工人':'选择工地'}}<text class="records-filter-label__hint"
+                >可与其他条件组合</text
+              ></view
+            >
+            <view class="records-filter-search">
+              <workbook-icon name="search" size="17" color="muted" /><input
+                value="{{optionSearch}}"
+                bindinput="optionField"
+                bindkeyboardheightchange="keyboard"
+                bindblur="keyboardBlur"
+                adjust-position="{{false}}"
+                maxlength="60"
+                placeholder="{{filterGroup==='workers'?'搜索工人姓名 / 编号':'搜索工地名称 / 编号'}}"
+                placeholder-class="records-filter-placeholder"
+              />
+            </view>
+            <view class="records-filter-choices">
+              <view
+                wx:for="{{choices}}"
+                wx:key="index"
+                class="records-filter-choice {{(filterGroup==='workers'?draft.workerIndex:draft.projectIndex)===item.index?'records-filter-choice--active':''}}"
+                data-field="{{filterGroup==='workers'?'workerIndex':'projectIndex'}}"
+                data-index="{{item.index}}"
+                bindtap="chooseOption"
+                hover-class="tap-active"
+                ><text class="records-filter-choice__name">{{item.name}}</text
+                ><text wx:if="{{item.code}}" class="records-filter-choice__code"
+                  >{{item.code}}</text
+                ></view
+              >
+            </view>
+            <view wx:if="{{choices.length===1&&optionSearch}}" class="records-filter-note"
+              >没有匹配项，可以选择全部或修改搜索词</view
+            >
+          </block>
+          <block wx:if="{{filterGroup==='status'}}">
+            <view class="records-filter-label">结算状态</view>
+            <view class="records-filter-options">
+              <view
+                wx:for="{{statuses}}"
+                wx:key="*this"
+                class="records-filter-option {{draft.statusIndex===index?'records-filter-option--active':''}}"
+                data-index="{{index}}"
+                bindtap="draftStatus"
+                hover-class="tap-active"
+                >{{item}}</view
+              >
+            </view>
+            <view class="records-filter-note">仅筛选记工的结算状态，不改变工资和付款记录</view>
+          </block>
+          <block wx:if="{{filterGroup==='more'}}">
+            <view class="records-filter-label">关键词</view>
+            <view class="records-filter-search">
+              <workbook-icon name="search" size="17" color="muted" />
+              <input
+                value="{{draft.search}}"
+                data-field="search"
+                bindinput="draftField"
+                bindkeyboardheightchange="keyboard"
+                bindblur="keyboardBlur"
+                adjust-position="{{false}}"
+                maxlength="100"
+                confirm-type="done"
+                placeholder="姓名、工地、标签或备注"
+                placeholder-class="records-filter-placeholder"
+              />
+              <view
+                wx:if="{{draft.search}}"
+                class="records-filter-search__clear"
+                bindtap="clearSearch"
+                aria-role="button"
+                aria-label="清空搜索"
+                ><workbook-icon name="close" size="15" color="muted"
+              /></view>
+            </view>
+            <view class="records-filter-section">
+              <view class="records-filter-label"
+                >日期范围<text class="records-filter-label__hint">{{draftRange==='custom'?'自定义范围':month+' 为当前月份'}}</text></view
+              >
+              <view class="records-filter-options"
+                ><view
+                  wx:for="{{rangeOptions}}"
+                  wx:key="value"
+                  class="records-filter-option {{draftRange===item.value?'records-filter-option--active':''}}"
+                  data-range="{{item.value}}"
+                  bindtap="quickRange"
+                  hover-class="tap-active"
+                  >{{item.label}}</view
+                ></view
+              >
+              <view class="records-filter-dates">
+                <picker
+                  mode="date"
+                  value="{{draft.from}}"
+                  data-field="from"
+                  bindchange="draftField"
+                  ><view class="records-filter-date"
+                    ><text class="records-filter-date__label">开始日期</text
+                    ><text>{{draft.from}}</text></view
+                  ></picker
+                >
+                <text class="records-filter-date__divider">—</text>
+                <picker mode="date" value="{{draft.to}}" data-field="to" bindchange="draftField"
+                  ><view class="records-filter-date"
+                    ><text class="records-filter-date__label">结束日期</text
+                    ><text>{{draft.to}}</text></view
+                  ></picker
+                >
+              </view>
+              <view wx:if="{{filterError}}" class="records-filter-error">{{filterError}}</view>
+            </view>
+            <view class="records-filter-section">
+              <view class="records-filter-label">工种</view>
+              <view class="records-filter-choices"
+                ><view
+                  wx:for="{{jobs}}"
+                  wx:key="*this"
+                  class="records-filter-choice {{draft.jobIndex===index?'records-filter-choice--active':''}}"
+                  data-field="jobIndex"
+                  data-index="{{index}}"
+                  bindtap="chooseOption"
+                  hover-class="tap-active"
+                  ><text class="records-filter-choice__name">{{item}}</text></view
+                ></view
+              >
+            </view>
+            <view class="records-filter-note">工人与工地可从上方栏目选择，条件会一起生效</view>
+          </block>
+        </view>
+      </scroll-view>
+      <view class="records-filter-footer" catchtouchmove="noop">
+        <button
+          class="records-filter-reset"
+          style="width: 52px"
+          bindtap="resetFilters"
+          hover-class="tap-active"
+        >
+          <workbook-icon name="reset" size="18" color="muted" /><text>重置</text>
+        </button>
+        <button
+          class="records-filter-apply"
+          style="width: 0; flex: 1"
+          bindtap="applyFilters"
+          disabled="{{!!filterError}}"
+          hover-class="tap-active"
+        >
+          确定（{{draftCount}} 笔记工）
+        </button>
+      </view>
+    </view>
+  </block>
+</view>
+
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

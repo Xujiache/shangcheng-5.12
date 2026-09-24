@@ -71,12 +71,18 @@ export function reloadShopPriceRule() {
  *   - rule:   GET /u/shops/:merchantId/price-rule (公开)
  *   - myTier: GET /u/shops/:merchantId/my-tier   (需登录;未登录跳过)
  */
-export async function fetchShopPriceRuleByMerchant(merchantId: string): Promise<ShopPriceRule | null> {
+export async function fetchShopPriceRuleByMerchant(
+  merchantId: string,
+): Promise<ShopPriceRule | null> {
   if (!merchantId) return null
   currentMerchantId.value = merchantId
 
   try {
-    const data = await http.get<ShopPriceRule>(`/api/v1/u/shops/${merchantId}/price-rule`, undefined, { silent: true })
+    const data = await http.get<ShopPriceRule>(
+      `/api/v1/u/shops/${merchantId}/price-rule`,
+      undefined,
+      { silent: true },
+    )
     if (data) {
       rule.value = { ...DEFAULT, ...data }
       try {
@@ -231,7 +237,7 @@ export function pickPriceByKind(
     priceMemberMin?: number
     priceMemberMax?: number
   },
-  kind: PriceKind
+  kind: PriceKind,
 ): number {
   switch (kind) {
     case 'wholesale':

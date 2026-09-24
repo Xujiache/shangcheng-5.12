@@ -1,0 +1,55 @@
+.lz-hd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 18px;
+  padding-right: 18px;
+  padding-bottom: 12px;
+  min-height: 44px;
+}
+/* 液态玻璃标题栏：半透明渐变镜面 + 顶部高光边（关闭则透明、沿用页面渐变背景）*/
+.lz-hd--glass {
+  background: var(--glass-nav-bg);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--glass-rim),
+    0 6px 18px rgba(8, 24, 18, 0.06);
+}
+.lz-hd__back {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lz-hd__titles {
+  flex: 1;
+  min-width: 0;
+}
+.lz-hd__title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.lz-hd__title--lg {
+  font-size: 26px;
+}
+.lz-hd__sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.lz-hd__right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "commit": "461c097cb90ebbd77b8cdc91339343fa23a74fa6",
+  "fingerprint": "1c417aba3dd2b0aeed9617afec63de0596ff12d792003bf6c7054fe31e5e95cd",
+  "mode": "integration",
+  "startedAt": "2026-09-08T20:11:07.294Z",
+  "status": "source-changed",
+  "steps": [
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "scripts/db/test-target.mjs",
+        "--with-redis"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 103,
+      "artifact": ".quality/integration/0.log",
+      "sha256": "191b36162a94b7fa8e6fae57bed32210f3ed956a7edf1096d47c0929f3e7abb3"
+    },
+    {
+      "command": ["pnpm.cmd", "--filter", "@jiujiu/server", "test:integration"],
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 22862,
+      "artifact": ".quality/integration/1.log",
+      "sha256": "9038b55e438492046958dd541538cd3be9ed2e69bf5aa8a8a053a2fe373e0878"
+    }
+  ],
+  "finishedAt": "2026-09-08T20:11:32.558Z"
+}

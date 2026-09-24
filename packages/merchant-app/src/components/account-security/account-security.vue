@@ -33,7 +33,11 @@ const title = computed(() => (props.mode === 'password' ? '修改密码' : '修�
 const pwd = reactive({ old: '', new: '', new2: '', show: false, submitting: false })
 
 function resetPwd() {
-  pwd.old = ''; pwd.new = ''; pwd.new2 = ''; pwd.show = false; pwd.submitting = false
+  pwd.old = ''
+  pwd.new = ''
+  pwd.new2 = ''
+  pwd.show = false
+  pwd.submitting = false
 }
 
 async function submitPwd() {
@@ -64,17 +68,23 @@ const ph = reactive({
   newPhone: '',
   oldCode: '',
   newCode: '',
-  oldSending: false, oldCountdown: 0,
-  newSending: false, newCountdown: 0,
+  oldSending: false,
+  oldCountdown: 0,
+  newSending: false,
+  newCountdown: 0,
   submitting: false,
 })
 
 const needOldCode = computed(() => !!props.currentPhone)
 
 function resetPh() {
-  ph.newPhone = ''; ph.oldCode = ''; ph.newCode = ''
-  ph.oldSending = false; ph.oldCountdown = 0
-  ph.newSending = false; ph.newCountdown = 0
+  ph.newPhone = ''
+  ph.oldCode = ''
+  ph.newCode = ''
+  ph.oldSending = false
+  ph.oldCountdown = 0
+  ph.newSending = false
+  ph.newCountdown = 0
   ph.submitting = false
 }
 
@@ -176,7 +186,7 @@ function close() {
       <view class="head">
         <text class="title">{{ title }}</text>
         <view class="close" @click="close">
-          <wd-icon :name="$jwIcon('close')" size="16px" color="#909399"  />
+          <wd-icon :name="$jwIcon('close')" size="16px" color="#909399" />
         </view>
       </view>
 
@@ -184,30 +194,36 @@ function close() {
       <view v-if="mode === 'password'" class="body">
         <view class="field">
           <text class="label">当前密码</text>
-          <wd-input no-border
+          <wd-input
+            no-border
             v-model="pwd.old"
-            class="input" show-password
+            class="input"
+            show-password
             placeholder="留空表示首次设置"
             maxlength="40"
-           />
+          />
         </view>
         <view class="field">
           <text class="label">新密码</text>
-          <wd-input no-border
+          <wd-input
+            no-border
             v-model="pwd.new"
-            class="input" show-password
+            class="input"
+            show-password
             placeholder="至少 6 位"
             maxlength="40"
-           />
+          />
         </view>
         <view class="field">
           <text class="label">确认新密码</text>
-          <wd-input no-border
+          <wd-input
+            no-border
             v-model="pwd.new2"
-            class="input" show-password
+            class="input"
+            show-password
             placeholder="再输入一次新密码"
             maxlength="40"
-           />
+          />
         </view>
         <view class="show-toggle" @click="pwd.show = !pwd.show">
           <text>{{ pwd.show ? '隐藏密码' : '显示密码' }}</text>
@@ -227,13 +243,14 @@ function close() {
           </view>
           <view class="field code-field">
             <text class="label">验证码</text>
-            <wd-input no-border
+            <wd-input
+              no-border
               v-model="ph.oldCode"
               class="input"
               type="number"
               maxlength="6"
               placeholder="原手机验证码"
-             />
+            />
             <view
               :class="['code-btn', (ph.oldCountdown > 0 || ph.oldSending) && 'disabled']"
               @click="sendOldCode"
@@ -242,36 +259,36 @@ function close() {
                 ph.oldCountdown > 0
                   ? `${ph.oldCountdown}s 后重发`
                   : ph.oldSending
-                  ? '发送中…'
-                  : '获取验证码'
+                    ? '发送中…'
+                    : '获取验证码'
               }}
             </view>
           </view>
         </view>
 
         <view class="field-block">
-          <text class="block-title">
-            {{ needOldCode ? '第 2 步：' : '' }}填写新手机号
-          </text>
+          <text class="block-title"> {{ needOldCode ? '第 2 步：' : '' }}填写新手机号 </text>
           <view class="field">
             <text class="label">新手机号</text>
-            <wd-input no-border
+            <wd-input
+              no-border
               v-model="ph.newPhone"
               class="input"
               type="number"
               maxlength="11"
               placeholder="11 位手机号"
-             />
+            />
           </view>
           <view class="field code-field">
             <text class="label">验证码</text>
-            <wd-input no-border
+            <wd-input
+              no-border
               v-model="ph.newCode"
               class="input"
               type="number"
               maxlength="6"
               placeholder="新手机验证码"
-             />
+            />
             <view
               :class="['code-btn', (ph.newCountdown > 0 || ph.newSending) && 'disabled']"
               @click="sendNewCode"
@@ -280,8 +297,8 @@ function close() {
                 ph.newCountdown > 0
                   ? `${ph.newCountdown}s 后重发`
                   : ph.newSending
-                  ? '发送中…'
-                  : '获取验证码'
+                    ? '发送中…'
+                    : '获取验证码'
               }}
             </view>
           </view>
@@ -319,8 +336,14 @@ function close() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  .title { font-size: 32rpx; font-weight: 800; color: var(--text-primary); }
-  .close { padding: 8rpx; }
+  .title {
+    font-size: 32rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .close {
+    padding: 8rpx;
+  }
 }
 .body {
   display: flex;
@@ -349,9 +372,15 @@ function close() {
   border-radius: 12rpx;
   border: 2rpx solid #ebedf0;
   gap: 12rpx;
-  &.readonly { background: #fafbfc; }
-  &.code-field { padding-right: 8rpx; }
-  &:focus-within { border-color: rgba(255, 77, 45, 0.4); }
+  &.readonly {
+    background: #fafbfc;
+  }
+  &.code-field {
+    padding-right: 8rpx;
+  }
+  &:focus-within {
+    border-color: rgba(255, 77, 45, 0.4);
+  }
 }
 .label {
   flex-shrink: 0;
@@ -380,7 +409,10 @@ function close() {
   font-size: 22rpx;
   font-weight: 600;
   white-space: nowrap;
-  &.disabled { background: #f0f0f0; color: var(--text-tertiary); }
+  &.disabled {
+    background: #f0f0f0;
+    color: var(--text-tertiary);
+  }
 }
 .show-toggle {
   align-self: flex-end;
@@ -400,7 +432,11 @@ function close() {
   border-radius: 999rpx;
   box-shadow: 0 10rpx 24rpx rgba(255, 77, 45, 0.32);
   letter-spacing: 4rpx;
-  &.disabled { opacity: 0.6; }
-  &:active { transform: scale(0.98); }
+  &.disabled {
+    opacity: 0.6;
+  }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>

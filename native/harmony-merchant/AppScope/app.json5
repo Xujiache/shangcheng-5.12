@@ -1,0 +1,11 @@
+{
+  "app": {
+    "bundleName": "top.ewsn.jingwei.merchant",
+    "vendor": "辽宁经纬建筑装饰有限公司",
+    "versionCode": 1000000,
+    "versionName": "1.0.0",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name"
+  }
+}
+

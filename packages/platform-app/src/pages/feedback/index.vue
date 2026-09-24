@@ -250,107 +250,116 @@ onBeforeUnmount(saveDraft)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="意见反馈"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="意见反馈"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <scroll-view scroll-y class="scroll">
-      <!-- 顶部说明 -->
-      <view class="banner">
-        <view class="banner-icon">
-          <wd-icon :name="$jwIcon('thumb-up')" size="18px" color="#fff"  />
+      <scroll-view scroll-y class="scroll">
+        <!-- 顶部说明 -->
+        <view class="banner">
+          <view class="banner-icon">
+            <wd-icon :name="$jwIcon('thumb-up')" size="18px" color="#fff" />
+          </view>
+          <view class="banner-text">
+            <text class="bt-title">您的反馈,我们用心倾听</text>
+            <text class="bt-desc">提交后由平台运营/产品同步处理,可在「我的-工单」追溯进度</text>
+          </view>
         </view>
-        <view class="banner-text">
-          <text class="bt-title">您的反馈,我们用心倾听</text>
-          <text class="bt-desc">提交后由平台运营/产品同步处理,可在「我的-工单」追溯进度</text>
-        </view>
-      </view>
 
-      <!-- 反馈类型 -->
-      <view class="card">
-        <view class="card-head">
-          <text class="card-title">反馈类型</text>
-          <text class="card-req">必选</text>
-        </view>
-        <view class="type-grid">
-          <view
-            v-for="opt in TYPE_OPTIONS"
-            :key="opt.key"
-            :class="['type-card', type === opt.key ? 'active' : '']"
-            @click="type = opt.key"
-          >
-            <view class="t-icon" :style="{ background: opt.tint + '18' }">
-              <wd-icon :name="$jwIcon(opt.icon)" size="16px" :color="opt.tint"  />
-            </view>
-            <text class="t-label">{{ opt.label }}</text>
-            <view v-if="type === opt.key" class="t-check">
-              <wd-icon :name="$jwIcon('check')" size="10px" color="#fff"  />
+        <!-- 反馈类型 -->
+        <view class="card">
+          <view class="card-head">
+            <text class="card-title">反馈类型</text>
+            <text class="card-req">必选</text>
+          </view>
+          <view class="type-grid">
+            <view
+              v-for="opt in TYPE_OPTIONS"
+              :key="opt.key"
+              :class="['type-card', type === opt.key ? 'active' : '']"
+              @click="type = opt.key"
+            >
+              <view class="t-icon" :style="{ background: opt.tint + '18' }">
+                <wd-icon :name="$jwIcon(opt.icon)" size="16px" :color="opt.tint" />
+              </view>
+              <text class="t-label">{{ opt.label }}</text>
+              <view v-if="type === opt.key" class="t-check">
+                <wd-icon :name="$jwIcon('check')" size="10px" color="#fff" />
+              </view>
             </view>
           </view>
         </view>
-      </view>
 
-      <!-- 反馈内容 -->
-      <view class="card">
-        <view class="card-head">
-          <text class="card-title">反馈内容</text>
-          <text :class="['card-req', contentLen >= 10 ? 'ok' : '']"> {{ contentLen }}/10+ </text>
+        <!-- 反馈内容 -->
+        <view class="card">
+          <view class="card-head">
+            <text class="card-title">反馈内容</text>
+            <text :class="['card-req', contentLen >= 10 ? 'ok' : '']"> {{ contentLen }}/10+ </text>
+          </view>
+          <wd-textarea
+            no-border
+            v-model="content"
+            class="content-input"
+            placeholder="请详细描述您遇到的问题/建议（至少 10 字）"
+            maxlength="500"
+            auto-height
+            :cursor-spacing="20"
+          />
         </view>
-        <wd-textarea no-border
-          v-model="content"
-          class="content-input"
-          placeholder="请详细描述您遇到的问题/建议（至少 10 字）"
-          maxlength="500"
-          auto-height
-          :cursor-spacing="20"
-         />
-      </view>
 
-      <!-- 联系方式 -->
-      <view class="card">
-        <view class="card-head">
-          <text class="card-title">联系方式</text>
-          <text class="card-req opt">选填</text>
+        <!-- 联系方式 -->
+        <view class="card">
+          <view class="card-head">
+            <text class="card-title">联系方式</text>
+            <text class="card-req opt">选填</text>
+          </view>
+          <wd-input
+            no-border
+            v-model="contact"
+            class="contact-input"
+            placeholder="手机 / 微信 / 邮箱（默认使用账号手机号）"
+            maxlength="64"
+          />
         </view>
-        <wd-input no-border
-          v-model="contact"
-          class="contact-input"
-          placeholder="手机 / 微信 / 邮箱（默认使用账号手机号）"
-          maxlength="64"
-         />
-      </view>
 
-      <!-- 截图上传 -->
-      <view class="card">
-        <view class="card-head">
-          <text class="card-title">附件截图</text>
-          <text class="card-req opt">最多 3 张 · 选填</text>
+        <!-- 截图上传 -->
+        <view class="card">
+          <view class="card-head">
+            <text class="card-title">附件截图</text>
+            <text class="card-req opt">最多 3 张 · 选填</text>
+          </view>
+          <wd-upload
+            :file-list="images.map((url) => ({ url }))"
+            :limit="3"
+            :disabled="uploading"
+            :before-choose="(option: any) => delegateWotUploadChoose(option, chooseImage)"
+            image-mode="aspectFill"
+            @remove="removeImage($event.index)"
+          />
         </view>
-        <wd-upload
-          :file-list="images.map((url) => ({ url }))"
-          :limit="3"
-          :disabled="uploading"
-          :before-choose="(option: any) => delegateWotUploadChoose(option, chooseImage)"
-          image-mode="aspectFill"
-          @remove="removeImage($event.index)"
-        />
-      </view>
 
-      <view class="tip">
-        <wd-icon :name="$jwIcon('info')" size="11px" color="var(--text-tertiary)"  />
-        <text>反馈内容会同步至运营团队,处理结果将在 1-3 个工作日内回复</text>
-      </view>
+        <view class="tip">
+          <wd-icon :name="$jwIcon('info')" size="11px" color="var(--text-tertiary)" />
+          <text>反馈内容会同步至运营团队,处理结果将在 1-3 个工作日内回复</text>
+        </view>
 
-      <view style="height: 220rpx" />
-    </scroll-view>
+        <view style="height: 220rpx" />
+      </scroll-view>
 
-    <!-- 底部提交 -->
-    <view class="ft">
-      <view :class="['ft-btn', !canSubmit ? 'disabled' : '']" @click="submit">
-        {{ submitting ? '提交中…' : '提交反馈' }}
+      <!-- 底部提交 -->
+      <view class="ft">
+        <view :class="['ft-btn', !canSubmit ? 'disabled' : '']" @click="submit">
+          {{ submitting ? '提交中…' : '提交反馈' }}
+        </view>
       </view>
     </view>
-  </view>
-
   </wd-config-provider>
 </template>
 

@@ -206,164 +206,178 @@ onMounted(refresh)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="订单分享数据" @click-right="refresh"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
-    </wd-navbar>
+    <view class="page">
+      <wd-navbar
+        title="订单分享数据"
+        @click-right="refresh"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      >
+        <template #right><wd-icon :name="$jwIcon('refresh')" size="22px" /></template>
+      </wd-navbar>
 
-    <scroll-view scroll-y class="scroll" @scrolltolower="loadMore">
-      <!-- KPI 4 卡 -->
-      <view class="kpi-grid">
-        <view
-          v-for="c in KPI_CARDS"
-          :key="c.key"
-          class="kpi-card"
-          :style="{ background: c.tintSoft }"
-        >
-          <view class="kpi-icon" :style="{ background: c.tint }">
-            <wd-icon :name="$jwIcon(c.icon)" size="14px" color="#fff"  />
+      <scroll-view scroll-y class="scroll" @scrolltolower="loadMore">
+        <!-- KPI 4 卡 -->
+        <view class="kpi-grid">
+          <view
+            v-for="c in KPI_CARDS"
+            :key="c.key"
+            class="kpi-card"
+            :style="{ background: c.tintSoft }"
+          >
+            <view class="kpi-icon" :style="{ background: c.tint }">
+              <wd-icon :name="$jwIcon(c.icon)" size="14px" color="#fff" />
+            </view>
+            <text class="kpi-label">{{ c.label }}</text>
+            <text class="kpi-value" :style="{ color: c.tint }">{{ c.value }}</text>
           </view>
-          <text class="kpi-label">{{ c.label }}</text>
-          <text class="kpi-value" :style="{ color: c.tint }">{{ c.value }}</text>
         </view>
-      </view>
 
-      <!-- 7 日趋势 -->
-      <view v-if="trend" class="trend-card">
-        <view class="trend-head">
-          <text class="trend-title">近 7 日新建分享</text>
-          <text class="trend-meta">合计 {{ trend.total }} 个</text>
+        <!-- 7 日趋势 -->
+        <view v-if="trend" class="trend-card">
+          <view class="trend-head">
+            <text class="trend-title">近 7 日新建分享</text>
+            <text class="trend-meta">合计 {{ trend.total }} 个</text>
+          </view>
+          <view class="mini-line-wrap">
+            <svg viewBox="0 0 100 32" preserveAspectRatio="none" class="mini-svg">
+              <defs>
+                <linearGradient id="ss-g" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="ss-line" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#FF7A45" />
+                  <stop offset="100%" stop-color="#FF4D2D" />
+                </linearGradient>
+              </defs>
+              <polygon :points="trend.area" fill="url(#ss-g)" />
+              <polyline
+                :points="trend.line"
+                fill="none"
+                stroke="url(#ss-line)"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <circle
+                v-for="(p, i) in trend.points"
+                :key="i"
+                :cx="p.x"
+                :cy="p.y"
+                r="0.85"
+                fill="#FF4D2D"
+              />
+            </svg>
+          </view>
+          <view class="trend-x">
+            <text v-for="(p, i) in trend.points" :key="i">{{ p.date }}</text>
+          </view>
         </view>
-        <view class="mini-line-wrap">
-          <svg viewBox="0 0 100 32" preserveAspectRatio="none" class="mini-svg">
-            <defs>
-              <linearGradient id="ss-g" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#FF4D2D" stop-opacity="0.28" />
-                <stop offset="100%" stop-color="#FF4D2D" stop-opacity="0" />
-              </linearGradient>
-              <linearGradient id="ss-line" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#FF7A45" />
-                <stop offset="100%" stop-color="#FF4D2D" />
-              </linearGradient>
-            </defs>
-            <polygon :points="trend.area" fill="url(#ss-g)" />
-            <polyline
-              :points="trend.line"
-              fill="none"
-              stroke="url(#ss-line)"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+
+        <!-- Top 商家 -->
+        <view v-if="stats && stats.topMerchants && stats.topMerchants.length" class="top-card">
+          <view class="block-head">
+            <wd-icon :name="$jwIcon('crown')" size="14px" color="#FAAD14" />
+            <text class="block-title">分享 Top 商家</text>
+            <text class="block-meta">TOP {{ stats.topMerchants.length }}</text>
+          </view>
+          <view class="top-list">
+            <view v-for="(m, i) in stats.topMerchants" :key="m.merchantId" class="top-row">
+              <view :class="['rank', i < 3 ? 'gold' : '']">{{ i + 1 }}</view>
+              <text class="top-name">{{ m.name }}</text>
+              <view class="top-nums">
+                <text class="num-share">{{ m.shareCount }} 次分享</text>
+                <text class="num-view">{{ m.viewCount }} 浏览</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 列表 -->
+        <view class="list-card">
+          <view class="block-head">
+            <wd-icon :name="$jwIcon('share')" size="14px" color="var(--brand-primary)" />
+            <text class="block-title">分享明细</text>
+            <text class="block-meta">{{ total }} 条</text>
+          </view>
+
+          <view v-if="loadingList" class="loading">
+            <text>加载中…</text>
+          </view>
+
+          <view v-else-if="errorMsg" class="err-block">
+            <wd-icon :name="$jwIcon('info')" size="28px" color="#FF7A45" />
+            <text class="err-title">加载失败</text>
+            <text class="err-msg">{{ errorMsg }}</text>
+            <view class="err-btn" @click="refresh">点击重试</view>
+          </view>
+
+          <view v-else-if="list.length === 0" class="empty-wrap">
+            <wd-status-tip
+              image="content"
+              :tip="
+                ['暂无分享记录', '商家通过 merchant-app 发起订单分享后,数据将出现在这里']
+                  .filter(Boolean)
+                  .join(' · ')
+              "
             />
-            <circle
-              v-for="(p, i) in trend.points"
-              :key="i"
-              :cx="p.x"
-              :cy="p.y"
-              r="0.85"
-              fill="#FF4D2D"
-            />
-          </svg>
-        </view>
-        <view class="trend-x">
-          <text v-for="(p, i) in trend.points" :key="i">{{ p.date }}</text>
-        </view>
-      </view>
+          </view>
 
-      <!-- Top 商家 -->
-      <view v-if="stats && stats.topMerchants && stats.topMerchants.length" class="top-card">
-        <view class="block-head">
-          <wd-icon :name="$jwIcon('crown')" size="14px" color="#FAAD14"  />
-          <text class="block-title">分享 Top 商家</text>
-          <text class="block-meta">TOP {{ stats.topMerchants.length }}</text>
-        </view>
-        <view class="top-list">
-          <view v-for="(m, i) in stats.topMerchants" :key="m.merchantId" class="top-row">
-            <view :class="['rank', i < 3 ? 'gold' : '']">{{ i + 1 }}</view>
-            <text class="top-name">{{ m.name }}</text>
-            <view class="top-nums">
-              <text class="num-share">{{ m.shareCount }} 次分享</text>
-              <text class="num-view">{{ m.viewCount }} 浏览</text>
+          <view v-else class="rows">
+            <view v-for="row in list" :key="row.shareCode" class="row" @click="onClickRow(row)">
+              <view class="r-top">
+                <text class="r-no">{{ row.orderNo || row.orderId }}</text>
+                <view
+                  class="r-status"
+                  :style="{ background: shareStatusOf(row).bg, color: shareStatusOf(row).tint }"
+                >
+                  {{ shareStatusOf(row).label }}
+                </view>
+              </view>
+              <view class="r-merchant">
+                <wd-icon :name="$jwIcon('home-shop')" size="11px" color="var(--text-tertiary)" />
+                <text>{{ row.merchantName }}</text>
+              </view>
+              <view v-if="row.visibleFields && row.visibleFields.length" class="r-tags">
+                <view v-for="f in row.visibleFields" :key="f" class="tag">
+                  {{ FIELD_LABELS[f] || f }}
+                </view>
+              </view>
+              <view class="r-foot">
+                <view class="r-foot-item">
+                  <wd-icon :name="$jwIcon('eye')" size="10px" color="var(--text-tertiary)" />
+                  <text>{{ row.viewCount }} 浏览</text>
+                </view>
+                <view class="r-foot-item">
+                  <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)" />
+                  <text>过期 {{ expiresLabel(row.expiresAt) }}</text>
+                </view>
+                <view class="r-foot-item">
+                  <wd-icon :name="$jwIcon('calendar')" size="10px" color="var(--text-tertiary)" />
+                  <text>{{ createdLabel(row.createdAt) }}</text>
+                </view>
+              </view>
+              <view class="r-actions" @click.stop="onCopyShareUrl(row)">
+                <wd-icon :name="$jwIcon('share')" size="11px" color="var(--brand-primary)" />
+                <text>复制分享链接</text>
+              </view>
+            </view>
+
+            <view v-if="loadingMore" class="loading-more">加载更多…</view>
+            <view v-else-if="list.length >= total" class="end-tip">
+              — 已显示全部 {{ total }} 条 —
             </view>
           </view>
         </view>
-      </view>
 
-      <!-- 列表 -->
-      <view class="list-card">
-        <view class="block-head">
-          <wd-icon :name="$jwIcon('share')" size="14px" color="var(--brand-primary)"  />
-          <text class="block-title">分享明细</text>
-          <text class="block-meta">{{ total }} 条</text>
-        </view>
-
-        <view v-if="loadingList" class="loading">
-          <text>加载中…</text>
-        </view>
-
-        <view v-else-if="errorMsg" class="err-block">
-          <wd-icon :name="$jwIcon('info')" size="28px" color="#FF7A45"  />
-          <text class="err-title">加载失败</text>
-          <text class="err-msg">{{ errorMsg }}</text>
-          <view class="err-btn" @click="refresh">点击重试</view>
-        </view>
-
-        <view v-else-if="list.length === 0" class="empty-wrap">
-          <wd-status-tip
-           image="content" :tip="['暂无分享记录', '商家通过 merchant-app 发起订单分享后,数据将出现在这里'].filter(Boolean).join(' · ')" />
-        </view>
-
-        <view v-else class="rows">
-          <view v-for="row in list" :key="row.shareCode" class="row" @click="onClickRow(row)">
-            <view class="r-top">
-              <text class="r-no">{{ row.orderNo || row.orderId }}</text>
-              <view
-                class="r-status"
-                :style="{ background: shareStatusOf(row).bg, color: shareStatusOf(row).tint }"
-              >
-                {{ shareStatusOf(row).label }}
-              </view>
-            </view>
-            <view class="r-merchant">
-              <wd-icon :name="$jwIcon('home-shop')" size="11px" color="var(--text-tertiary)"  />
-              <text>{{ row.merchantName }}</text>
-            </view>
-            <view v-if="row.visibleFields && row.visibleFields.length" class="r-tags">
-              <view v-for="f in row.visibleFields" :key="f" class="tag">
-                {{ FIELD_LABELS[f] || f }}
-              </view>
-            </view>
-            <view class="r-foot">
-              <view class="r-foot-item">
-                <wd-icon :name="$jwIcon('eye')" size="10px" color="var(--text-tertiary)"  />
-                <text>{{ row.viewCount }} 浏览</text>
-              </view>
-              <view class="r-foot-item">
-                <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)"  />
-                <text>过期 {{ expiresLabel(row.expiresAt) }}</text>
-              </view>
-              <view class="r-foot-item">
-                <wd-icon :name="$jwIcon('calendar')" size="10px" color="var(--text-tertiary)"  />
-                <text>{{ createdLabel(row.createdAt) }}</text>
-              </view>
-            </view>
-            <view class="r-actions" @click.stop="onCopyShareUrl(row)">
-              <wd-icon :name="$jwIcon('share')" size="11px" color="var(--brand-primary)"  />
-              <text>复制分享链接</text>
-            </view>
-          </view>
-
-          <view v-if="loadingMore" class="loading-more">加载更多…</view>
-          <view v-else-if="list.length >= total" class="end-tip">
-            — 已显示全部 {{ total }} 条 —
-          </view>
-        </view>
-      </view>
-
-      <view style="height: 48rpx" />
-    </scroll-view>
-  </view>
-
+        <view style="height: 48rpx" />
+      </scroll-view>
+    </view>
   </wd-config-provider>
 </template>
 

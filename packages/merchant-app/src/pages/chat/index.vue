@@ -40,11 +40,13 @@ function readBottomInset() {
     const directInset = Number(info?.safeAreaInsets?.bottom || 0)
     const screenHeight = Number(info?.screenHeight || 0)
     const safeAreaBottom = Number(info?.safeArea?.bottom || 0)
-    const derivedInset = screenHeight && safeAreaBottom
-      ? Math.max(0, screenHeight - safeAreaBottom)
-      : 0
+    const derivedInset =
+      screenHeight && safeAreaBottom ? Math.max(0, screenHeight - safeAreaBottom) : 0
     const isAndroid = String(info?.platform || '').toLowerCase() === 'android'
-    bottomInset.value = Math.min(48, Math.max(0, directInset || derivedInset || (isAndroid ? 16 : 0)))
+    bottomInset.value = Math.min(
+      48,
+      Math.max(0, directInset || derivedInset || (isAndroid ? 16 : 0)),
+    )
   } catch {
     bottomInset.value = 0
   }
@@ -190,7 +192,8 @@ function uploadFile(path: string) {
       header: userStore.accessToken ? { Authorization: `Bearer ${userStore.accessToken}` } : {},
       success: (response: any) => {
         try {
-          const payload = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+          const payload =
+            typeof response.data === 'string' ? JSON.parse(response.data) : response.data
           if (payload?.code === 0 && payload?.data?.url) resolve(String(payload.data.url))
           else reject(new Error(payload?.message || '图片上传失败'))
         } catch (error) {
@@ -325,49 +328,65 @@ onUnload(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="chat-page">
-    <wd-navbar  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar">
-      <template #title><view class="jw-navbar-title"><text>{{ session?.userName || '在线客服' }}</text><text class="jw-navbar-sub">{{ session?.status === 'closed' ? '会话已关闭' : session?.online ? '在线' : '离线' }}</text></view></template>
-    </wd-navbar>
+    <view class="chat-page">
+      <wd-navbar
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      >
+        <template #title
+          ><view class="jw-navbar-title"
+            ><text>{{ session?.userName || '在线客服' }}</text
+            ><text class="jw-navbar-sub">{{
+              session?.status === 'closed' ? '会话已关闭' : session?.online ? '在线' : '离线'
+            }}</text></view
+          ></template
+        >
+      </wd-navbar>
 
-    <view v-if="loading" class="loading-page">
-      <view class="loading-dot" />
-      <text>正在加载消息</text>
+      <view v-if="loading" class="loading-page">
+        <view class="loading-dot" />
+        <text>正在加载消息</text>
+      </view>
+
+      <view v-else-if="failed" class="failed-page">
+        <wd-status-tip
+          image="content"
+          :tip="['消息加载失败', '请检查网络后重试'].filter(Boolean).join(' · ')"
+        />
+        <view class="retry-button" @click="loadInitial">重新加载</view>
+      </view>
+
+      <template v-else>
+        <ChatMessageList
+          ref="messageListRef"
+          :messages="messages"
+          :loading-older="loadingOlder"
+          :has-more="hasMore"
+          :user-name="session?.userName || '客户'"
+          :user-avatar="session?.userAvatar || ''"
+          :shop-name="shopName"
+          :shop-avatar="shopAvatar"
+          @load-older="loadOlder"
+          @retry="retry"
+          @dismiss-composer="dismissComposer"
+        />
+
+        <ChatComposer
+          ref="composerRef"
+          v-model="inputText"
+          :quick-replies="quickReplies"
+          :bottom-inset="bottomInset"
+          :disabled="session?.status === 'closed'"
+          @send="sendText"
+          @choose-image="chooseImage"
+          @layout-change="handleComposerLayout"
+        />
+      </template>
     </view>
-
-    <view v-else-if="failed" class="failed-page">
-      <wd-status-tip  image="content" :tip="['消息加载失败', '请检查网络后重试'].filter(Boolean).join(' · ')" />
-      <view class="retry-button" @click="loadInitial">重新加载</view>
-    </view>
-
-    <template v-else>
-      <ChatMessageList
-        ref="messageListRef"
-        :messages="messages"
-        :loading-older="loadingOlder"
-        :has-more="hasMore"
-        :user-name="session?.userName || '客户'"
-        :user-avatar="session?.userAvatar || ''"
-        :shop-name="shopName"
-        :shop-avatar="shopAvatar"
-        @load-older="loadOlder"
-        @retry="retry"
-        @dismiss-composer="dismissComposer"
-      />
-
-      <ChatComposer
-        ref="composerRef"
-        v-model="inputText"
-        :quick-replies="quickReplies"
-        :bottom-inset="bottomInset"
-        :disabled="session?.status === 'closed'"
-        @send="sendText"
-        @choose-image="chooseImage"
-        @layout-change="handleComposerLayout"
-      />
-    </template>
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -383,8 +402,39 @@ onUnload(() => {
   overflow: hidden;
   background: #f1f3f5;
 }
-.loading-page, .failed-page { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 24rpx; }
-.loading-dot { width: 34rpx; height: 34rpx; margin-bottom: 18rpx; border: 4rpx solid #ffd5cc; border-top-color: #ff4d2d; border-radius: 50%; animation: rotate .8s linear infinite; }
-.retry-button { min-width: 176rpx; height: 68rpx; display: flex; align-items: center; justify-content: center; border: 1rpx solid #ff4d2d; border-radius: 34rpx; color: #ff4d2d; font-size: 25rpx; }
-@keyframes rotate { to { transform: rotate(360deg); } }
+.loading-page,
+.failed-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 24rpx;
+}
+.loading-dot {
+  width: 34rpx;
+  height: 34rpx;
+  margin-bottom: 18rpx;
+  border: 4rpx solid #ffd5cc;
+  border-top-color: #ff4d2d;
+  border-radius: 50%;
+  animation: rotate 0.8s linear infinite;
+}
+.retry-button {
+  min-width: 176rpx;
+  height: 68rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid #ff4d2d;
+  border-radius: 34rpx;
+  color: #ff4d2d;
+  font-size: 25rpx;
+}
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

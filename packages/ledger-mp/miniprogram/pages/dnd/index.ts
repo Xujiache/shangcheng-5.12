@@ -1,6 +1,7 @@
+import { MotionPage } from '../../utils/page-transition'
 import { settingApi } from '../../api/index'
 
-Page({
+MotionPage({
   data: {
     enabled: false,
     start: '22:00',

@@ -162,7 +162,10 @@ function applyParsed() {
 
 function copyOrderNo() {
   if (!order.value) return
-  uni.setClipboardData({ data: order.value.no, success: () => appFeedback.showToast({ title: '已复制' }) })
+  uni.setClipboardData({
+    data: order.value.no,
+    success: () => appFeedback.showToast({ title: '已复制' }),
+  })
 }
 
 function copyAddress() {
@@ -219,207 +222,253 @@ onMounted(() => {
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="订单详情" right-text="分享" @click-right="openShare"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="订单详情"
+        right-text="分享"
+        @click-right="openShare"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <view v-if="order" class="body">
-      <!-- 状态条 -->
-      <view :class="['status-bar', `status-${order.status}`]">
-        <view class="status-info">
-          <view class="status-title-row">
-            <wd-icon :name="$jwIcon('biz-order')" size="16px" color="#fff"  />
-            <text class="status-title">{{ statusInfo.text }}</text>
+      <view v-if="order" class="body">
+        <!-- 状态条 -->
+        <view :class="['status-bar', `status-${order.status}`]">
+          <view class="status-info">
+            <view class="status-title-row">
+              <wd-icon :name="$jwIcon('biz-order')" size="16px" color="#fff" />
+              <text class="status-title">{{ statusInfo.text }}</text>
+            </view>
+            <text class="status-desc">{{ statusInfo.desc }}</text>
           </view>
-          <text class="status-desc">{{ statusInfo.desc }}</text>
+          <text v-if="order.status === 'pending_payment'" class="status-countdown">
+            剩余 {{ Math.floor((order.expiresIn ?? 0) / 60) }} 分
+          </text>
         </view>
-        <text v-if="order.status === 'pending_payment'" class="status-countdown">
-          剩余 {{ Math.floor((order.expiresIn ?? 0) / 60) }} 分
-        </text>
-      </view>
 
-      <!-- 收货地址 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "收货地址" }}</text></view></view></template>
-        <template #default>
-          <view class="addr">
-            <view class="addr-info">
-              <view class="addr-line1">
-                <text class="addr-name">{{ order.address.name }}</text>
-                <text class="addr-phone">{{ order.address.phone }}</text>
+        <!-- 收货地址 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '收货地址' }}</text></view
+              ></view
+            ></template
+          >
+          <template #default>
+            <view class="addr">
+              <view class="addr-info">
+                <view class="addr-line1">
+                  <text class="addr-name">{{ order.address.name }}</text>
+                  <text class="addr-phone">{{ order.address.phone }}</text>
+                </view>
+                <text class="addr-detail"
+                  >{{ order.address.region }} {{ order.address.detail }}</text
+                >
               </view>
-              <text class="addr-detail">{{ order.address.region }} {{ order.address.detail }}</text>
-            </view>
-            <view class="addr-actions">
-              <view class="addr-btn primary" @click="openParse">
-                <wd-icon :name="$jwIcon('doc')" size="11px" color="#fff"  />
-                <text>一键识别</text>
-              </view>
-              <view class="addr-btn" @click="copyAddress">
-                <text>复制</text>
-              </view>
-            </view>
-          </view>
-        </template>
-      </wd-card>
-
-      <!-- 商品 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "商品信息" }}</text><text class="jw-section-sub">{{ `共 ${order.items?.length ?? 0} 件` }}</text></view></view></template>
-        <view class="items">
-          <view v-for="it in order.items" :key="it.id" class="item">
-            <image class="item-img" :src="it.productImage" mode="aspectFill" />
-            <view class="item-info">
-              <text class="item-name">{{ it.productName }}</text>
-              <text class="item-spec">{{ it.specsLabel }}</text>
-              <view class="item-price-row">
-                <text class="item-price">{{ formatPrice(it.unitPrice) }}</text>
-                <text class="item-qty">× {{ it.quantity }}</text>
+              <view class="addr-actions">
+                <view class="addr-btn primary" @click="openParse">
+                  <wd-icon :name="$jwIcon('doc')" size="11px" color="#fff" />
+                  <text>一键识别</text>
+                </view>
+                <view class="addr-btn" @click="copyAddress">
+                  <text>复制</text>
+                </view>
               </view>
             </view>
-          </view>
-        </view>
-      </wd-card>
+          </template>
+        </wd-card>
 
-      <!-- 金额表 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "费用明细" }}</text></view></view></template>
-        <view class="fees">
-          <view class="fee-row">
-            <text class="fee-label">商品总额</text>
-            <text class="fee-value">{{ formatPrice(order.totalAmount) }}</text>
+        <!-- 商品 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '商品信息' }}</text
+                ><text class="jw-section-sub">{{ `共 ${order.items?.length ?? 0} 件` }}</text></view
+              ></view
+            ></template
+          >
+          <view class="items">
+            <view v-for="it in order.items" :key="it.id" class="item">
+              <image class="item-img" :src="it.productImage" mode="aspectFill" />
+              <view class="item-info">
+                <text class="item-name">{{ it.productName }}</text>
+                <text class="item-spec">{{ it.specsLabel }}</text>
+                <view class="item-price-row">
+                  <text class="item-price">{{ formatPrice(it.unitPrice) }}</text>
+                  <text class="item-qty">× {{ it.quantity }}</text>
+                </view>
+              </view>
+            </view>
           </view>
-          <view v-if="order.discountAmount > 0" class="fee-row">
-            <text class="fee-label">优惠</text>
-            <text class="fee-value discount">− {{ formatPrice(order.discountAmount) }}</text>
+        </wd-card>
+
+        <!-- 金额表 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '费用明细' }}</text></view
+              ></view
+            ></template
+          >
+          <view class="fees">
+            <view class="fee-row">
+              <text class="fee-label">商品总额</text>
+              <text class="fee-value">{{ formatPrice(order.totalAmount) }}</text>
+            </view>
+            <view v-if="order.discountAmount > 0" class="fee-row">
+              <text class="fee-label">优惠</text>
+              <text class="fee-value discount">− {{ formatPrice(order.discountAmount) }}</text>
+            </view>
+            <view class="fee-row">
+              <text class="fee-label">运费</text>
+              <text class="fee-value">{{
+                order.shippingFee === 0 ? '包邮' : formatPrice(order.shippingFee)
+              }}</text>
+            </view>
+            <view class="fee-row total">
+              <text class="fee-label">实付金额</text>
+              <text class="fee-value primary">{{ formatPrice(order.payAmount) }}</text>
+            </view>
           </view>
-          <view class="fee-row">
-            <text class="fee-label">运费</text>
-            <text class="fee-value">{{
-              order.shippingFee === 0 ? '包邮' : formatPrice(order.shippingFee)
+        </wd-card>
+
+        <!-- 订单信息 -->
+        <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
+          <template #title
+            ><view class="jw-section-heading"
+              ><view class="jw-section-copy"
+                ><text class="jw-section-title">{{ '订单信息' }}</text></view
+              ></view
+            ></template
+          >
+          <view class="meta-row" @click="copyOrderNo">
+            <text class="meta-label">订单编号</text>
+            <view class="meta-value">
+              <text>{{ order.no }}</text>
+              <text class="copy">复制</text>
+            </view>
+          </view>
+          <view class="meta-row">
+            <text class="meta-label">下单时间</text>
+            <text class="meta-value">{{ formatDateTime(order.createdAt) }}</text>
+          </view>
+          <view v-if="order.paidAt" class="meta-row">
+            <text class="meta-label">付款时间</text>
+            <text class="meta-value">{{ formatDateTime(order.paidAt) }}</text>
+          </view>
+          <view v-if="order.shippedAt" class="meta-row">
+            <text class="meta-label">发货时间</text>
+            <text class="meta-value">{{ formatDateTime(order.shippedAt) }}</text>
+          </view>
+          <view class="meta-row">
+            <text class="meta-label">配送方式</text>
+            <text class="meta-value">{{
+              { factory: '厂家直发', local: '本地配送', pickup: '门店自提' }[order.shippingMethod]
             }}</text>
           </view>
-          <view class="fee-row total">
-            <text class="fee-label">实付金额</text>
-            <text class="fee-value primary">{{ formatPrice(order.payAmount) }}</text>
+          <view v-if="order.remark" class="meta-row">
+            <text class="meta-label">买家备注</text>
+            <text class="meta-value">{{ order.remark }}</text>
           </view>
-        </view>
-      </wd-card>
+        </wd-card>
 
-      <!-- 订单信息 -->
-      <wd-card type="rectangle" custom-class="jw-section-card" custom-style="">
-        <template #title><view class="jw-section-heading"><view class="jw-section-copy"><text class="jw-section-title">{{ "订单信息" }}</text></view></view></template>
-        <view class="meta-row" @click="copyOrderNo">
-          <text class="meta-label">订单编号</text>
-          <view class="meta-value">
-            <text>{{ order.no }}</text>
-            <text class="copy">复制</text>
-          </view>
-        </view>
-        <view class="meta-row">
-          <text class="meta-label">下单时间</text>
-          <text class="meta-value">{{ formatDateTime(order.createdAt) }}</text>
-        </view>
-        <view v-if="order.paidAt" class="meta-row">
-          <text class="meta-label">付款时间</text>
-          <text class="meta-value">{{ formatDateTime(order.paidAt) }}</text>
-        </view>
-        <view v-if="order.shippedAt" class="meta-row">
-          <text class="meta-label">发货时间</text>
-          <text class="meta-value">{{ formatDateTime(order.shippedAt) }}</text>
-        </view>
-        <view class="meta-row">
-          <text class="meta-label">配送方式</text>
-          <text class="meta-value">{{
-            { factory: '厂家直发', local: '本地配送', pickup: '门店自提' }[order.shippingMethod]
-          }}</text>
-        </view>
-        <view v-if="order.remark" class="meta-row">
-          <text class="meta-label">买家备注</text>
-          <text class="meta-value">{{ order.remark }}</text>
-        </view>
-      </wd-card>
-
-      <view class="safe-bottom" />
-    </view>
-
-    <!-- 底部操作 -->
-    <view v-if="order" class="footer">
-      <view class="f-btn ghost" @click="callCustomer">
-        <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--text-primary)"  />
-        <text>联系客户</text>
+        <view class="safe-bottom" />
       </view>
-      <view v-if="order.status === 'pending_shipment'" class="f-btn primary" @click="ship"
-        >发货</view
-      >
-      <view
-        v-else-if="order.status === 'shipped'"
-        class="f-btn primary"
-        @click="appFeedback.showToast({ title: '物流跟踪', icon: 'none' })"
-        >查看物流</view
-      >
-      <view
-        v-else-if="order.status === 'after_sale'"
-        class="f-btn primary"
-        @click="uni.navigateTo({ url: `/pages/order/aftersale?orderId=${order.id}` })"
-        >处理售后</view
-      >
-      <view v-else class="f-btn ghost" @click="appFeedback.showToast({ title: '打印订单', icon: 'none' })"
-        >打印订单</view
-      >
-    </view>
 
-    <!-- 一键识别弹窗 -->
-    <wd-popup v-model="showParseDialog" position="bottom" custom-class="parse-sheet" safe-area-inset-bottom root-portal>
-      <view class="parse-content">
-        <view class="parse-head">
-          <text class="parse-title">一键识别地址</text>
-          <text class="parse-close" @click="showParseDialog = false">✕</text>
+      <!-- 底部操作 -->
+      <view v-if="order" class="footer">
+        <view class="f-btn ghost" @click="callCustomer">
+          <wd-icon :name="$jwIcon('phone')" size="16px" color="var(--text-primary)" />
+          <text>联系客户</text>
         </view>
-        <view class="parse-tip">粘贴客户发来的"姓名 + 手机号 + 地址"，自动拆分</view>
-        <wd-textarea no-border
-          v-model="parseInput"
-          class="parse-input"
-          placeholder="示例：张三 13800138000 浙江省杭州市西湖区文三路 100 号 西溪国际 3 幢 502"
-          maxlength="200"
-         />
-        <view class="parse-actions">
-          <wd-button block type="primary" size="large" @click="doParse">立即识别</wd-button>
-        </view>
-
-        <view v-if="parsedResult" class="parse-result">
-          <view class="parse-result-head">识别结果</view>
-          <view class="parse-grid">
-            <view class="parse-cell">
-              <text class="cell-label">姓名</text>
-              <text class="cell-value">{{ parsedResult.name || '—' }}</text>
-            </view>
-            <view class="parse-cell">
-              <text class="cell-label">手机</text>
-              <text class="cell-value">{{ parsedResult.phone || '—' }}</text>
-            </view>
-            <view class="parse-cell full">
-              <text class="cell-label">地区</text>
-              <text class="cell-value">{{ parsedResult.region || '—' }}</text>
-            </view>
-            <view class="parse-cell full">
-              <text class="cell-label">详细</text>
-              <text class="cell-value">{{ parsedResult.detail || '—' }}</text>
-            </view>
-          </view>
-          <wd-button block plain type="primary" @click="applyParsed">应用到订单地址</wd-button>
-        </view>
+        <view v-if="order.status === 'pending_shipment'" class="f-btn primary" @click="ship"
+          >发货</view
+        >
+        <view
+          v-else-if="order.status === 'shipped'"
+          class="f-btn primary"
+          @click="appFeedback.showToast({ title: '物流跟踪', icon: 'none' })"
+          >查看物流</view
+        >
+        <view
+          v-else-if="order.status === 'after_sale'"
+          class="f-btn primary"
+          @click="uni.navigateTo({ url: `/pages/order/aftersale?orderId=${order.id}` })"
+          >处理售后</view
+        >
+        <view
+          v-else
+          class="f-btn ghost"
+          @click="appFeedback.showToast({ title: '打印订单', icon: 'none' })"
+          >打印订单</view
+        >
       </view>
-    </wd-popup>
 
-    <!-- 订单分享配置 sheet -->
-    <ShareSheet
-      :open="showShareSheet"
-      :order="order"
-      @close="showShareSheet = false"
-      @shared="onShared"
-    />
-  </view>
+      <!-- 一键识别弹窗 -->
+      <wd-popup
+        v-model="showParseDialog"
+        position="bottom"
+        custom-class="parse-sheet"
+        safe-area-inset-bottom
+        root-portal
+      >
+        <view class="parse-content">
+          <view class="parse-head">
+            <text class="parse-title">一键识别地址</text>
+            <text class="parse-close" @click="showParseDialog = false">✕</text>
+          </view>
+          <view class="parse-tip">粘贴客户发来的"姓名 + 手机号 + 地址"，自动拆分</view>
+          <wd-textarea
+            no-border
+            v-model="parseInput"
+            class="parse-input"
+            placeholder="示例：张三 13800138000 浙江省杭州市西湖区文三路 100 号 西溪国际 3 幢 502"
+            maxlength="200"
+          />
+          <view class="parse-actions">
+            <wd-button block type="primary" size="large" @click="doParse">立即识别</wd-button>
+          </view>
 
+          <view v-if="parsedResult" class="parse-result">
+            <view class="parse-result-head">识别结果</view>
+            <view class="parse-grid">
+              <view class="parse-cell">
+                <text class="cell-label">姓名</text>
+                <text class="cell-value">{{ parsedResult.name || '—' }}</text>
+              </view>
+              <view class="parse-cell">
+                <text class="cell-label">手机</text>
+                <text class="cell-value">{{ parsedResult.phone || '—' }}</text>
+              </view>
+              <view class="parse-cell full">
+                <text class="cell-label">地区</text>
+                <text class="cell-value">{{ parsedResult.region || '—' }}</text>
+              </view>
+              <view class="parse-cell full">
+                <text class="cell-label">详细</text>
+                <text class="cell-value">{{ parsedResult.detail || '—' }}</text>
+              </view>
+            </view>
+            <wd-button block plain type="primary" @click="applyParsed">应用到订单地址</wd-button>
+          </view>
+        </view>
+      </wd-popup>
+
+      <!-- 订单分享配置 sheet -->
+      <ShareSheet
+        :open="showShareSheet"
+        :order="order"
+        @close="showShareSheet = false"
+        @shared="onShared"
+      />
+    </view>
   </wd-config-provider>
 </template>
 

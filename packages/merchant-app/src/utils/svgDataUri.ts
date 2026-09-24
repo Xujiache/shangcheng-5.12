@@ -67,7 +67,7 @@ function asciiToBase64(str: string): string {
 
     const e1 = c1 >> 2
     const e2 = ((c1 & 0x3) << 4) | (isNaN(c2) ? 0 : c2 >> 4)
-    const e3 = isNaN(c2) ? 64 : (((c2 & 0xf) << 2) | (isNaN(c3) ? 0 : c3 >> 6))
+    const e3 = isNaN(c2) ? 64 : ((c2 & 0xf) << 2) | (isNaN(c3) ? 0 : c3 >> 6)
     const e4 = isNaN(c3) ? 64 : c3 & 0x3f
 
     out += B64_CHARS[e1] + B64_CHARS[e2]

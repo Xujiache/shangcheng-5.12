@@ -165,6 +165,7 @@ async function submit() {
     }
     password.value = ''
     confirmPassword.value = ''
+
     step.value = 'done'
   } catch (e: any) {
     const message = e?.message || '提交失败'
@@ -227,362 +228,423 @@ const STEPS = [
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <!-- Hero -->
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
-      <view class="blob blob-1" />
-      <view class="blob blob-2" />
-      <view class="hero-top">
-        <view class="back-btn" @click="backToLogin">
-          <wd-icon :name="$jwIcon('back')" size="16px" color="#fff"  />
-        </view>
-        <view class="hero-titles">
-          <text class="hero-title">商家入驻</text>
-          <text class="hero-sub">加入经纬科技 · 解锁经营全链路</text>
-        </view>
-      </view>
-
-      <!-- Stepper -->
-      <view class="stepper">
-        <view v-for="(s, i) in STEPS" :key="s.key" class="step-item">
-          <view class="step-row">
-            <view :class="['dot', i <= stepIndex && 'reached', i === stepIndex && 'active']">
-              <wd-icon v-if="i < stepIndex" :name="$jwIcon('check')" size="10px" color="#FF4D2D"  />
-              <text v-else class="dot-num">{{ i + 1 }}</text>
-            </view>
-            <view v-if="i < STEPS.length - 1" :class="['bar', i < stepIndex && 'reached']" />
+    <view class="page">
+      <!-- Hero -->
+      <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+        <view class="blob blob-1" />
+        <view class="blob blob-2" />
+        <view class="hero-top">
+          <view class="back-btn" @click="backToLogin">
+            <wd-icon :name="$jwIcon('back')" size="16px" color="#fff" />
           </view>
-          <text :class="['step-label', i <= stepIndex && 'reached']">{{ s.label }}</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="content">
-      <!-- Step 1: 手机号 -->
-      <view v-if="step === 'phone'" class="card">
-        <view class="card-head">
-          <text class="card-title">验证手机号</text>
-          <text class="card-lead">为保证账号安全，请先验证手机号</text>
-        </view>
-
-        <view class="form">
-          <view class="field">
-            <view class="prefix">
-              <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"  />
-            </view>
-            <wd-input no-border
-              v-model="phone"
-              class="input"
-              type="number"
-              maxlength="11"
-              placeholder="11 位手机号"
-              placeholder-class="ph"
-             />
-          </view>
-          <view class="field">
-            <view class="prefix">
-              <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c"  />
-            </view>
-            <wd-input no-border
-              v-model="smsCode"
-              class="input"
-              type="number"
-              maxlength="6"
-              placeholder="4-6 位验证码"
-              placeholder-class="ph"
-             />
-            <view :class="['code-btn', (countdown > 0 || sending) && 'disabled']" @click="sendCode">
-              {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
-            </view>
+          <view class="hero-titles">
+            <text class="hero-title">商家入驻</text>
+            <text class="hero-sub">加入经纬科技 · 解锁经营全链路</text>
           </view>
         </view>
 
-        <wd-button class="submit" :disabled="verifyLoading" @click="verifyPhone" type="primary" size="large" block>
-          {{ verifyLoading ? '验证中…' : '下一步' }}
-        </wd-button>
-        <view class="link" @click="backToLogin">已有账号？返回登录</view>
-      </view>
-
-      <!-- Step 2: 设置并确认密码 -->
-      <view v-else-if="step === 'password'" class="card">
-        <view class="card-head">
-          <text class="card-title">设置登录密码</text>
-          <text class="card-lead">设置 6-32 位密码，审核通过后可用手机号和密码登录</text>
-        </view>
-
-        <view class="form">
-          <view class="field">
-            <view class="prefix">
-              <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
-            </view>
-            <wd-input no-border
-              v-model="password"
-              class="input" show-password
-              maxlength="32"
-              placeholder="请输入新密码"
-              placeholder-class="ph"
-             />
-            <view class="suffix" @click="showPassword = !showPassword">
-              <wd-icon :name="$jwIcon(showPassword ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
-            </view>
-          </view>
-
-          <view class="field">
-            <view class="prefix">
-              <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c"  />
-            </view>
-            <wd-input no-border
-              v-model="confirmPassword"
-              class="input" show-password
-              maxlength="32"
-              placeholder="请再次输入新密码"
-              placeholder-class="ph"
-             />
-            <view class="suffix" @click="showConfirmPassword = !showConfirmPassword">
-              <wd-icon :name="$jwIcon(showConfirmPassword ? 'eye' : 'eye-off')" size="14px" color="#86909c"  />
-            </view>
-          </view>
-        </view>
-
-        <view v-if="confirmPassword && confirmPassword !== password" class="password-error">
-          两次输入的密码不一致
-        </view>
-        <wd-button class="submit" :disabled="!passwordValid" @click="confirmNewPassword" type="primary" size="large" block>
-          下一步
-        </wd-button>
-        <view class="link" @click="step = 'phone'">返回重新验证手机号</view>
-      </view>
-
-      <!-- Step 3: 表单 -->
-      <template v-else-if="step === 'form'">
-        <!-- 主体信息 -->
-        <view class="card">
-          <view class="section-head">
-            <view class="section-bar" />
-            <text class="section-title">主体信息</text>
-            <text class="section-tag">必填</text>
-          </view>
-
-          <view class="field-block">
-            <text class="label">主体类型</text>
-            <view class="seg">
-              <view
-                :class="['seg-item', form.type === 'store' && 'active']"
-                @click="form.type = 'store'"
-              >
+        <!-- Stepper -->
+        <view class="stepper">
+          <view v-for="(s, i) in STEPS" :key="s.key" class="step-item">
+            <view class="step-row">
+              <view :class="['dot', i <= stepIndex && 'reached', i === stepIndex && 'active']">
                 <wd-icon
-                  :name="$jwIcon('biz-store')" size="14px"
-                  :color="form.type === 'store' ? '#FF4D2D' : '#86909c'"
-                 />
-                <text>门店</text>
+                  v-if="i < stepIndex"
+                  :name="$jwIcon('check')"
+                  size="10px"
+                  color="#FF4D2D"
+                />
+                <text v-else class="dot-num">{{ i + 1 }}</text>
               </view>
-              <view
-                :class="['seg-item', form.type === 'factory' && 'active']"
-                @click="form.type = 'factory'"
-              >
-                <wd-icon
-                  :name="$jwIcon('biz-product')" size="14px"
-                  :color="form.type === 'factory' ? '#FF4D2D' : '#86909c'"
-                 />
-                <text>厂家</text>
-              </view>
+              <view v-if="i < STEPS.length - 1" :class="['bar', i < stepIndex && 'reached']" />
             </view>
-          </view>
-
-          <view class="field-block">
-            <text class="label">店铺名 / 工厂名</text>
-            <view class="field">
-              <view class="prefix">
-                <wd-icon :name="$jwIcon('biz-shop-decorate')" size="16px" color="#86909c"  />
-              </view>
-              <wd-input no-border
-                v-model="form.name"
-                class="input"
-                placeholder="例：经纬科技"
-                placeholder-class="ph"
-               />
-            </view>
-          </view>
-
-          <view class="field-block">
-            <text class="label">营业执照法定名称</text>
-            <view class="field">
-              <view class="prefix">
-                <wd-icon :name="$jwIcon('doc')" size="16px" color="#86909c"  />
-              </view>
-              <wd-input no-border
-                v-model="form.legalName"
-                class="input"
-                placeholder="营业执照上的全称"
-                placeholder-class="ph"
-               />
-            </view>
-          </view>
-
-          <view class="field-block">
-            <text class="label">统一社会信用代码</text>
-            <view class="field">
-              <view class="prefix">
-                <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c"  />
-              </view>
-              <wd-input no-border
-                v-model="form.creditCode"
-                class="input"
-                placeholder="18 位社会信用代码"
-                placeholder-class="ph"
-               />
-            </view>
-          </view>
-
-          <view class="field-block">
-            <text class="label">法定代表人</text>
-            <view class="field">
-              <view class="prefix">
-                <wd-icon :name="$jwIcon('biz-me')" size="16px" color="#86909c"  />
-              </view>
-              <wd-input no-border
-                v-model="form.legalRep"
-                class="input"
-                placeholder="姓名"
-                placeholder-class="ph"
-               />
-            </view>
+            <text :class="['step-label', i <= stepIndex && 'reached']">{{ s.label }}</text>
           </view>
         </view>
+      </view>
 
-        <!-- 联系方式 -->
-        <view class="card">
-          <view class="section-head">
-            <view class="section-bar" />
-            <text class="section-title">联系方式</text>
-            <text class="section-tag">必填</text>
+      <view class="content">
+        <!-- Step 1: 手机号 -->
+        <view v-if="step === 'phone'" class="card">
+          <view class="card-head">
+            <text class="card-title">验证手机号</text>
+            <text class="card-lead">为保证账号安全，请先验证手机号</text>
           </view>
 
-          <view class="field-block">
-            <text class="label">联系人</text>
+          <view class="form">
             <view class="field">
               <view class="prefix">
-                <wd-icon :name="$jwIcon('biz-staff')" size="16px" color="#86909c"  />
+                <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c" />
               </view>
-              <wd-input no-border
-                v-model="form.contact"
-                class="input"
-                placeholder="联系人姓名"
-                placeholder-class="ph"
-               />
-            </view>
-          </view>
-
-          <view class="field-block">
-            <text class="label">联系电话</text>
-            <view class="field">
-              <view class="prefix">
-                <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c"  />
-              </view>
-              <wd-input no-border
-                v-model="form.contactPhone"
+              <wd-input
+                no-border
+                v-model="phone"
                 class="input"
                 type="number"
                 maxlength="11"
                 placeholder="11 位手机号"
                 placeholder-class="ph"
-               />
+              />
             </view>
-          </view>
-
-          <view class="field-block">
-            <text class="label">所在地区</text>
             <view class="field">
               <view class="prefix">
-                <wd-icon :name="$jwIcon('location')" size="16px" color="#86909c"  />
+                <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c" />
               </view>
-              <wd-input no-border
-                v-model="form.region"
+              <wd-input
+                no-border
+                v-model="smsCode"
                 class="input"
-                placeholder="例：上海市浦东新区"
+                type="number"
+                maxlength="6"
+                placeholder="4-6 位验证码"
                 placeholder-class="ph"
-               />
-            </view>
-          </view>
-
-          <view class="field-block">
-            <text class="label">详细地址</text>
-            <view class="field">
-              <view class="prefix">
-                <wd-icon :name="$jwIcon('biz-home')" size="16px" color="#86909c"  />
-              </view>
-              <wd-input no-border
-                v-model="form.address"
-                class="input"
-                placeholder="街道、门牌号"
-                placeholder-class="ph"
-               />
-            </view>
-          </view>
-        </view>
-
-        <!-- 经营信息 -->
-        <view class="card">
-          <view class="section-head">
-            <view class="section-bar" />
-            <text class="section-title">经营信息</text>
-            <text class="section-tag">必填</text>
-          </view>
-
-          <view class="field-block">
-            <text class="label">
-              主营品类
-              <text class="label-hint">（多选）</text>
-            </text>
-            <view class="chips">
+              />
               <view
-                v-for="c in CATS"
-                :key="c"
-                :class="['chip', form.categories.includes(c) && 'active']"
-                @click="toggleCat(c)"
+                :class="['code-btn', (countdown > 0 || sending) && 'disabled']"
+                @click="sendCode"
               >
-                <wd-icon v-if="form.categories.includes(c)" :name="$jwIcon('check')" size="11px" color="#FF4D2D"  />
-                <text>{{ c }}</text>
+                {{ countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码' }}
               </view>
             </view>
           </view>
-        </view>
 
-        <!-- 提交 -->
-        <view class="submit-wrap">
-          <wd-button class="submit" :disabled="submitting || !formValid" @click="submit" type="primary" size="large" block>
-            {{ submitting ? '提交中…' : '提交申请' }}
+          <wd-button
+            class="submit"
+            :disabled="verifyLoading"
+            @click="verifyPhone"
+            type="primary"
+            size="large"
+            block
+          >
+            {{ verifyLoading ? '验证中…' : '下一步' }}
           </wd-button>
-          <text class="submit-hint">提交即视为同意《商家入驻协议》</text>
+          <view class="link" @click="backToLogin">已有账号？返回登录</view>
         </view>
-      </template>
 
-      <!-- Step 4: 完成 -->
-      <view v-else class="card done">
-        <view class="done-icon">
-          <wd-icon :name="$jwIcon('check')" size="34px" color="#fff"  />
-        </view>
-        <text class="done-title">入驻申请已提交</text>
-        <text class="done-sub"
-          >平台审核约 1 个工作日，审核通过后可使用手机号和密码登录商家工作台。</text
-        >
-
-        <view class="done-meta">
-          <view class="meta-row">
-            <wd-icon :name="$jwIcon('clock')" size="14px" color="#FF4D2D"  />
-            <text class="meta-text">预计审核时长 ≤ 24 小时</text>
+        <!-- Step 2: 设置并确认密码 -->
+        <view v-else-if="step === 'password'" class="card">
+          <view class="card-head">
+            <text class="card-title">设置登录密码</text>
+            <text class="card-lead">设置 6-32 位密码，审核通过后可用手机号和密码登录</text>
           </view>
-          <view class="meta-row">
-            <wd-icon :name="$jwIcon('bell')" size="14px" color="#FF4D2D"  />
-            <text class="meta-text">结果将以短信和站内消息通知</text>
+
+          <view class="form">
+            <view class="field">
+              <view class="prefix">
+                <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c" />
+              </view>
+              <wd-input
+                no-border
+                v-model="password"
+                class="input"
+                show-password
+                maxlength="32"
+                placeholder="请输入新密码"
+                placeholder-class="ph"
+              />
+              <view class="suffix" @click="showPassword = !showPassword">
+                <wd-icon
+                  :name="$jwIcon(showPassword ? 'eye' : 'eye-off')"
+                  size="14px"
+                  color="#86909c"
+                />
+              </view>
+            </view>
+
+            <view class="field">
+              <view class="prefix">
+                <wd-icon :name="$jwIcon('lock')" size="16px" color="#86909c" />
+              </view>
+              <wd-input
+                no-border
+                v-model="confirmPassword"
+                class="input"
+                show-password
+                maxlength="32"
+                placeholder="请再次输入新密码"
+                placeholder-class="ph"
+              />
+              <view class="suffix" @click="showConfirmPassword = !showConfirmPassword">
+                <wd-icon
+                  :name="$jwIcon(showConfirmPassword ? 'eye' : 'eye-off')"
+                  size="14px"
+                  color="#86909c"
+                />
+              </view>
+            </view>
           </view>
+
+          <view v-if="confirmPassword && confirmPassword !== password" class="password-error">
+            两次输入的密码不一致
+          </view>
+          <wd-button
+            class="submit"
+            :disabled="!passwordValid"
+            @click="confirmNewPassword"
+            type="primary"
+            size="large"
+            block
+          >
+            下一步
+          </wd-button>
+          <view class="link" @click="step = 'phone'">返回重新验证手机号</view>
         </view>
 
-        <wd-button class="submit" @click="backToLogin" type="primary" size="large" block>返回登录</wd-button>
+        <!-- Step 3: 表单 -->
+        <template v-else-if="step === 'form'">
+          <!-- 主体信息 -->
+          <view class="card">
+            <view class="section-head">
+              <view class="section-bar" />
+              <text class="section-title">主体信息</text>
+              <text class="section-tag">必填</text>
+            </view>
+
+            <view class="field-block">
+              <text class="label">主体类型</text>
+              <view class="seg">
+                <view
+                  :class="['seg-item', form.type === 'store' && 'active']"
+                  @click="form.type = 'store'"
+                >
+                  <wd-icon
+                    :name="$jwIcon('biz-store')"
+                    size="14px"
+                    :color="form.type === 'store' ? '#FF4D2D' : '#86909c'"
+                  />
+
+                  <text>门店</text>
+                </view>
+                <view
+                  :class="['seg-item', form.type === 'factory' && 'active']"
+                  @click="form.type = 'factory'"
+                >
+                  <wd-icon
+                    :name="$jwIcon('biz-product')"
+                    size="14px"
+                    :color="form.type === 'factory' ? '#FF4D2D' : '#86909c'"
+                  />
+
+                  <text>厂家</text>
+                </view>
+              </view>
+            </view>
+
+            <view class="field-block">
+              <text class="label">店铺名 / 工厂名</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('biz-shop-decorate')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.name"
+                  class="input"
+                  placeholder="例：经纬科技"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+
+            <view class="field-block">
+              <text class="label">营业执照法定名称</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('doc')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.legalName"
+                  class="input"
+                  placeholder="营业执照上的全称"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+
+            <view class="field-block">
+              <text class="label">统一社会信用代码</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('biz-receipt')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.creditCode"
+                  class="input"
+                  placeholder="18 位社会信用代码"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+
+            <view class="field-block">
+              <text class="label">法定代表人</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('biz-me')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.legalRep"
+                  class="input"
+                  placeholder="姓名"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+          </view>
+
+          <!-- 联系方式 -->
+          <view class="card">
+            <view class="section-head">
+              <view class="section-bar" />
+              <text class="section-title">联系方式</text>
+              <text class="section-tag">必填</text>
+            </view>
+
+            <view class="field-block">
+              <text class="label">联系人</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('biz-staff')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.contact"
+                  class="input"
+                  placeholder="联系人姓名"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+
+            <view class="field-block">
+              <text class="label">联系电话</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('phone')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.contactPhone"
+                  class="input"
+                  type="number"
+                  maxlength="11"
+                  placeholder="11 位手机号"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+
+            <view class="field-block">
+              <text class="label">所在地区</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('location')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.region"
+                  class="input"
+                  placeholder="例：上海市浦东新区"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+
+            <view class="field-block">
+              <text class="label">详细地址</text>
+              <view class="field">
+                <view class="prefix">
+                  <wd-icon :name="$jwIcon('biz-home')" size="16px" color="#86909c" />
+                </view>
+                <wd-input
+                  no-border
+                  v-model="form.address"
+                  class="input"
+                  placeholder="街道、门牌号"
+                  placeholder-class="ph"
+                />
+              </view>
+            </view>
+          </view>
+
+          <!-- 经营信息 -->
+          <view class="card">
+            <view class="section-head">
+              <view class="section-bar" />
+              <text class="section-title">经营信息</text>
+              <text class="section-tag">必填</text>
+            </view>
+
+            <view class="field-block">
+              <text class="label">
+                主营品类
+                <text class="label-hint">（多选）</text>
+              </text>
+              <view class="chips">
+                <view
+                  v-for="c in CATS"
+                  :key="c"
+                  :class="['chip', form.categories.includes(c) && 'active']"
+                  @click="toggleCat(c)"
+                >
+                  <wd-icon
+                    v-if="form.categories.includes(c)"
+                    :name="$jwIcon('check')"
+                    size="11px"
+                    color="#FF4D2D"
+                  />
+                  <text>{{ c }}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 提交 -->
+          <view class="submit-wrap">
+            <wd-button
+              class="submit"
+              :disabled="submitting || !formValid"
+              @click="submit"
+              type="primary"
+              size="large"
+              block
+            >
+              {{ submitting ? '提交中…' : '提交申请' }}
+            </wd-button>
+            <text class="submit-hint">提交即视为同意《商家入驻协议》</text>
+          </view>
+        </template>
+
+        <!-- Step 4: 完成 -->
+        <view v-else class="card done">
+          <view class="done-icon">
+            <wd-icon :name="$jwIcon('check')" size="34px" color="#fff" />
+          </view>
+          <text class="done-title">入驻申请已提交</text>
+          <text class="done-sub"
+            >平台审核约 1 个工作日，审核通过后可使用手机号和密码登录商家工作台。</text
+          >
+
+          <view class="done-meta">
+            <view class="meta-row">
+              <wd-icon :name="$jwIcon('clock')" size="14px" color="#FF4D2D" />
+              <text class="meta-text">预计审核时长 ≤ 24 小时</text>
+            </view>
+            <view class="meta-row">
+              <wd-icon :name="$jwIcon('bell')" size="14px" color="#FF4D2D" />
+              <text class="meta-text">结果将以短信和站内消息通知</text>
+            </view>
+          </view>
+
+          <wd-button class="submit" @click="backToLogin" type="primary" size="large" block
+            >返回登录</wd-button
+          >
+        </view>
       </view>
     </view>
-  </view>
-
   </wd-config-provider>
 </template>
 
@@ -590,6 +652,7 @@ const STEPS = [
 .page {
   min-height: 100vh;
   background: var(--bg-page);
+
   padding-bottom: 48rpx;
   box-sizing: border-box;
 }
@@ -829,6 +892,7 @@ const STEPS = [
   height: 96rpx;
   padding: 0 24rpx;
   background: var(--bg-page);
+
   border: 2rpx solid #f0f1f4;
   border-radius: 20rpx;
   transition:
@@ -907,6 +971,7 @@ const STEPS = [
 }
 .seg-item.active {
   background: var(--bg-card);
+
   color: #ff4d2d;
   font-weight: 700;
   box-shadow: 0 4rpx 12rpx rgba(255, 77, 45, 0.15);
@@ -924,6 +989,7 @@ const STEPS = [
   gap: 6rpx;
   padding: 16rpx 28rpx;
   background: var(--bg-page);
+
   border: 2rpx solid #f0f1f4;
   border-radius: 999rpx;
   font-size: 26rpx;

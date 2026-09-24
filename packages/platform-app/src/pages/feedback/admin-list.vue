@@ -148,109 +148,128 @@ onShow(load)
       @select="$jwFeedbackState.selectAction"
       @cancel="$jwFeedbackState.cancelAction"
     />
-  <view class="page">
-    <wd-navbar title="反馈队列"  @click-left="$jwNav.back()" left-arrow fixed placeholder safe-area-inset-top custom-class="jw-glass-navbar" />
+    <view class="page">
+      <wd-navbar
+        title="反馈队列"
+        @click-left="$jwNav.back()"
+        left-arrow
+        fixed
+        placeholder
+        safe-area-inset-top
+        custom-class="jw-glass-navbar"
+      />
 
-    <!-- 类型 tab -->
-    <scroll-view scroll-x class="type-scroll" :show-scrollbar="false">
-      <view class="type-tabs">
+      <!-- 类型 tab -->
+      <scroll-view scroll-x class="type-scroll" :show-scrollbar="false">
+        <view class="type-tabs">
+          <view
+            v-for="t in TYPE_TABS"
+            :key="t.key"
+            :class="['type-tab', typeFilter === t.key ? 'active' : '']"
+            @click="onTypeChange(t.key)"
+          >
+            <text>{{ t.label }}</text>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 状态 tab -->
+      <view class="status-tabs">
         <view
-          v-for="t in TYPE_TABS"
-          :key="t.key"
-          :class="['type-tab', typeFilter === t.key ? 'active' : '']"
-          @click="onTypeChange(t.key)"
+          v-for="s in STATUS_TABS"
+          :key="s.key"
+          :class="['status-tab', statusFilter === s.key ? 'active' : '']"
+          @click="onStatusChange(s.key)"
         >
-          <text>{{ t.label }}</text>
+          {{ s.label }}
         </view>
       </view>
-    </scroll-view>
 
-    <!-- 状态 tab -->
-    <view class="status-tabs">
-      <view
-        v-for="s in STATUS_TABS"
-        :key="s.key"
-        :class="['status-tab', statusFilter === s.key ? 'active' : '']"
-        @click="onStatusChange(s.key)"
-      >
-        {{ s.label }}
+      <!-- 汇总 -->
+      <view class="summary">
+        <wd-icon :name="$jwIcon('message')" size="12px" color="var(--brand-primary)" />
+        <text>{{ headerSummary }}</text>
       </view>
+
+      <scroll-view scroll-y class="scroll">
+        <view v-if="loading" class="state">加载中…</view>
+
+        <view v-else-if="loadError" class="state-wrap">
+          <wd-status-tip
+            image="content"
+            :tip="['加载失败', '请检查网络后重试'].filter(Boolean).join(' · ')"
+          />
+          <view class="retry-btn" @click="load">
+            <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D" />
+            <text>点击重试</text>
+          </view>
+        </view>
+
+        <view v-else-if="list.length === 0" class="state-wrap">
+          <wd-status-tip
+            image="content"
+            :tip="['暂无反馈', '商家或用户提交反馈后会在这里展示'].filter(Boolean).join(' · ')"
+          />
+        </view>
+
+        <view v-else class="list">
+          <view v-for="f in list" :key="f.id" class="card" @click="openDetail(f)">
+            <view class="card-head">
+              <view
+                class="type-tag"
+                :style="{
+                  color: TYPE_META[f.type]?.tint || '#86909C',
+                  background: (TYPE_META[f.type]?.tint || '#86909C') + '14',
+                }"
+              >
+                <wd-icon
+                  :name="$jwIcon(TYPE_META[f.type]?.icon || 'message')"
+                  size="10px"
+                  :color="TYPE_META[f.type]?.tint || '#86909C'"
+                />
+                <text>{{ TYPE_META[f.type]?.label || f.type }}</text>
+              </view>
+              <view
+                class="status-tag"
+                :style="{
+                  color: STATUS_META[f.status]?.tint || '#86909C',
+                  background: (STATUS_META[f.status]?.tint || '#86909C') + '14',
+                }"
+              >
+                {{ STATUS_META[f.status]?.label || f.status }}
+              </view>
+            </view>
+            <text class="content">{{ f.content }}</text>
+            <view v-if="f.images && f.images.length" class="img-row">
+              <image
+                v-for="(url, i) in f.images.slice(0, 3)"
+                :key="url + i"
+                :src="url"
+                mode="aspectFill"
+                class="thumb"
+                @click.stop="previewImages(f, i)"
+              />
+              <view v-if="f.images.length > 3" class="thumb more">+{{ f.images.length - 3 }}</view>
+            </view>
+            <view class="foot">
+              <view class="contact">
+                <wd-icon
+                  v-if="f.contact"
+                  :name="$jwIcon('user')"
+                  size="10px"
+                  color="var(--text-tertiary)"
+                />
+                <text v-if="f.contact">{{ f.contact }}</text>
+              </view>
+              <view class="time">
+                <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)" />
+                <text>{{ relTime(f.createdAt) }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
     </view>
-
-    <!-- 汇总 -->
-    <view class="summary">
-      <wd-icon :name="$jwIcon('message')" size="12px" color="var(--brand-primary)"  />
-      <text>{{ headerSummary }}</text>
-    </view>
-
-    <scroll-view scroll-y class="scroll">
-      <view v-if="loading" class="state">加载中…</view>
-
-      <view v-else-if="loadError" class="state-wrap">
-        <wd-status-tip  image="content" :tip="['加载失败', '请检查网络后重试'].filter(Boolean).join(' · ')" />
-        <view class="retry-btn" @click="load">
-          <wd-icon :name="$jwIcon('refresh')" size="12px" color="#FF4D2D"  />
-          <text>点击重试</text>
-        </view>
-      </view>
-
-      <view v-else-if="list.length === 0" class="state-wrap">
-        <wd-status-tip  image="content" :tip="['暂无反馈', '商家或用户提交反馈后会在这里展示'].filter(Boolean).join(' · ')" />
-      </view>
-
-      <view v-else class="list">
-        <view v-for="f in list" :key="f.id" class="card" @click="openDetail(f)">
-          <view class="card-head">
-            <view
-              class="type-tag"
-              :style="{
-                color: TYPE_META[f.type]?.tint || '#86909C',
-                background: (TYPE_META[f.type]?.tint || '#86909C') + '14',
-              }"
-            >
-              <wd-icon
-                :name="$jwIcon(TYPE_META[f.type]?.icon || 'message')" size="10px"
-                :color="TYPE_META[f.type]?.tint || '#86909C'"
-               />
-              <text>{{ TYPE_META[f.type]?.label || f.type }}</text>
-            </view>
-            <view
-              class="status-tag"
-              :style="{
-                color: STATUS_META[f.status]?.tint || '#86909C',
-                background: (STATUS_META[f.status]?.tint || '#86909C') + '14',
-              }"
-            >
-              {{ STATUS_META[f.status]?.label || f.status }}
-            </view>
-          </view>
-          <text class="content">{{ f.content }}</text>
-          <view v-if="f.images && f.images.length" class="img-row">
-            <image
-              v-for="(url, i) in f.images.slice(0, 3)"
-              :key="url + i"
-              :src="url"
-              mode="aspectFill"
-              class="thumb"
-              @click.stop="previewImages(f, i)"
-            />
-            <view v-if="f.images.length > 3" class="thumb more">+{{ f.images.length - 3 }}</view>
-          </view>
-          <view class="foot">
-            <view class="contact">
-              <wd-icon v-if="f.contact" :name="$jwIcon('user')" size="10px" color="var(--text-tertiary)"  />
-              <text v-if="f.contact">{{ f.contact }}</text>
-            </view>
-            <view class="time">
-              <wd-icon :name="$jwIcon('clock')" size="10px" color="var(--text-tertiary)"  />
-              <text>{{ relTime(f.createdAt) }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-    </scroll-view>
-  </view>
-
   </wd-config-provider>
 </template>
 

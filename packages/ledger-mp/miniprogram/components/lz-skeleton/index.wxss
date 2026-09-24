@@ -1,0 +1,136 @@
+.sk {
+  position: relative;
+  overflow: hidden;
+  padding: 2px 0;
+  color: #81988d;
+}
+.sk-card {
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+  margin-bottom: 12px;
+  border: 1px solid #e6eee9;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.85);
+}
+.sk-card:last-child {
+  margin-bottom: 0;
+}
+.sk-line,
+.sk-avatar,
+.sk-amount,
+.sk-end,
+.sk-input {
+  background: linear-gradient(100deg, #e9f0eb, #f1f6f2);
+  border-radius: 6px;
+}
+.sk-line {
+  height: 10px;
+  width: 100%;
+}
+.sk-short {
+  width: 44%;
+}
+.sk-title {
+  width: 66%;
+  height: 13px;
+}
+.sk-subtitle {
+  width: 44%;
+  height: 8px;
+  margin-top: 10px;
+}
+.sk-amount {
+  width: 47%;
+  height: 32px;
+  margin: 23px 0 27px;
+  border-radius: 8px;
+}
+.sk-stats {
+  display: flex;
+  gap: 24px;
+  border-top: 1px solid #eff3ef;
+  padding-top: 20px;
+}
+.sk-stats > view {
+  flex: 1;
+}
+.sk-stats .sk-short {
+  margin-top: 11px;
+}
+.sk-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sk-copy {
+  flex: 1;
+  min-width: 0;
+}
+.sk-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  flex-shrink: 0;
+}
+.sk-end {
+  width: 42px;
+  height: 13px;
+}
+.sk-bottom {
+  margin-top: 20px;
+  width: 86%;
+  height: 7px;
+}
+.sk-input {
+  height: 42px;
+  margin-top: 16px;
+  border-radius: 10px;
+}
+.sk--moving .sk-card::after,
+.sk--inline.sk--moving::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 55%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-140%);
+  animation: skShimmer 1.8s ease-in-out 160ms infinite;
+}
+.sk--inline {
+  padding: 12px 0;
+}
+.sk-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 11px;
+}
+.sk-inline .sk-line {
+  width: 42px;
+  height: 5px;
+}
+.sk--inline.sk--moving::after {
+  width: 30%;
+}
+@keyframes skShimmer {
+  0%,
+  15% {
+    transform: translateX(-140%);
+  }
+  85%,
+  100% {
+    transform: translateX(260%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk--moving .sk-card::after,
+  .sk--inline.sk--moving::after {
+    animation: none;
+    display: none;
+  }
+}
