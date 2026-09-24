@@ -285,16 +285,9 @@
   justify-content: flex-start;
   gap: 10px;
   margin-top: 6px;
-  padding: 8px 12px;
+  padding: 4px 12px;
   border-top: 1px solid var(--border);
   border-radius: 0;
-}
-.home__tool-icon--format {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 10px;
-  background: rgba(14, 124, 102, 0.1);
 }
 .home__tool-info {
   flex: 1;
