@@ -1,3 +1,5 @@
+import { SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { KeyboardAvoidMode } from '@kit.ArkUI';
 import {
   IBestButton,
@@ -5,7 +7,6 @@ import {
   IBestDialogUtil,
   IBestField,
   IBestImagePreview,
-  IBestNavBar,
   IBestToast
 } from '@ibestservices/ibest-ui';
 import { common } from '@kit.AbilityKit';
@@ -341,7 +342,7 @@ struct ProductEditPage {
     try {
       const urls = await FileUploadService.chooseAndUploadImages(1, 'product');
       if (this.current() && epoch === this.skuEpoch && urls.length > 0) this.skuImage = urls[0];
-    } catch (error) { if (this.current() && epoch === this.skuEpoch) IBestToast.show(error instanceof Error ? error.message
+    } catch (error) { if (this.current() && epoch === this.skuEpoch) IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language)
       : I18n.text(this.language, '规格图片上传失败', 'Option image upload failed')); }
     finally { if (this.current() && epoch === this.skuEpoch) this.skuUploading = false; }
   }
@@ -355,7 +356,7 @@ struct ProductEditPage {
       const url = await FileUploadService.captureAndUploadImage(context, 'product');
       if (this.current() && epoch === this.skuEpoch && url) this.skuImage = url;
     } catch (error) {
-      if (this.current() && epoch === this.skuEpoch) IBestToast.show(error instanceof Error ? error.message
+      if (this.current() && epoch === this.skuEpoch) IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '规格图片拍摄上传失败', 'Failed to capture and upload option image'));
     } finally {
       if (this.current() && epoch === this.skuEpoch) this.skuUploading = false;
@@ -535,7 +536,7 @@ struct ProductEditPage {
       IBestToast.show(nextStatus === 'draft' ? I18n.text(this.language, '草稿已保存', 'Draft saved') : I18n.text(this.language, '已提交审核', 'Submitted for review'));
       AppRouter.back();
     } catch (error) {
-      if (this.current()) IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '保存失败，内容已保留，请重试', 'Save failed. Your changes are kept. Try again.'));
+      if (this.current()) IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '保存失败，内容已保留，请重试', 'Save failed. Your changes are kept. Try again.'));
     } finally { this.session.finishSave(); if (this.current()) this.saving = false; }
   }
 
@@ -727,7 +728,7 @@ struct ProductEditPage {
             .fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
           ProductMediaEditor({ items: $detailDraft, detail: true, busy: this.uploading, onAdd: () => this.addImageMenu(true),
             onPreview: (i: number) => this.previewImage(i, true), onMenu: (i: number) => this.imageMenu(i, true), onRetry: (i: number) => this.failedImageMenu(i, true) });
-        }.width('100%').padding(18);
+        }.width('100%').padding(16);
       }.layoutWeight(1).width('100%').align(Alignment.Top);
       this.panelFooter('完成', 'Done', () => this.closeDetails(true), () => this.closeDetails(false));
     }.height('92%').width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 }).clip(true);
@@ -770,7 +771,7 @@ struct ProductEditPage {
               ResilientRemoteImage({ originalUrl: sku.image || '', widthValue: 56, heightValue: 56 });
               Column({ space: 6 }) {
                 Text(sku.specsLabel).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
-                if (!sku.active) Text(I18n.text(this.language, '已停用', 'Disabled')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                if (!sku.active) Text(I18n.text(this.language, '已停用', 'Disabled')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
                 Text(I18n.text(this.language, `零售 ¥${Number(sku.priceRetail).toFixed(2)} · 库存 ${sku.stock}`, `Retail ¥${Number(sku.priceRetail).toFixed(2)} · Stock ${sku.stock}`))
                   .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
               }.layoutWeight(1).alignItems(HorizontalAlign.Start);
@@ -823,7 +824,7 @@ struct ProductEditPage {
               : I18n.text(this.language, '将所有 SKU 的库存设为此整数，不是增加库存。', 'Replace every SKU stock with this whole number; this does not add stock.'))
               .fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
           }
-        }.width('100%').padding(18);
+        }.width('100%').padding(16);
       }.layoutWeight(1).width('100%').align(Alignment.Top).scrollBar(BarState.Off);
       this.panelFooter(this.directSku ? '应用到商品' : '保存修改', this.directSku ? 'Apply to product' : 'Save changes', () => { if (this.skuEditorVisible) this.saveSku(); else if (this.specEditorVisible) this.saveSpecGroup(); else this.applyBatch(); }, () => this.closeInner());
     }.height('92%').width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 }).clip(true);
@@ -833,7 +834,7 @@ struct ProductEditPage {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({ title: this.params.id ? I18n.text(this.language, '编辑商品', 'Edit product') : I18n.text(this.language, '新增商品', 'Add product'),
+          SecondaryHeader({ title: this.params.id ? I18n.text(this.language, '编辑商品', 'Edit product') : I18n.text(this.language, '新增商品', 'Add product'),
             isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => this.requestBack() });
           if (this.loading) {
             Column({ space: 16 }) {

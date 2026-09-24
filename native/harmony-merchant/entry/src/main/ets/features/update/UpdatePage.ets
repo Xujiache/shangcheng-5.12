@@ -1,6 +1,8 @@
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
 import { updateManager } from '@kit.AppGalleryKit';
-import { IBestButton, IBestNavBar, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestButton, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
 import { AppConfig } from '../../core/config/AppConfig';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { ApiError } from '../../core/network/ApiClient';
@@ -18,6 +20,11 @@ export function UpdateBuilder(_: string) {
 
 @Component
 struct UpdatePage {
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -34,17 +41,19 @@ struct UpdatePage {
   @State private storeUrl: string = '';
   @State private openingStore: boolean = false;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     this.check();
   }
 
   private async check(): Promise<void> {
+    const pageTicket = this.pageScope.begin('check');
+    this.pageError = '';
     this.checking = true;
     this.errorMessage = '';
     this.genericError = false;
     this.noPublishedRelease = false;
     try {
-      const release: HarmonyRelease | null = await UpdateRepository.latest();
+      const release: HarmonyRelease | null = await this.pageScope.read(UpdateRepository.latest(), pageTicket);
       if (!release) {
         this.latestVersion = AppConfig.CLIENT_VERSION;
         this.latestCode = AppConfig.CLIENT_VERSION_CODE;
@@ -64,10 +73,14 @@ struct UpdatePage {
       this.forceUpdate = release.force;
       this.storeUrl = UpdatePolicy.storeUrl(release, AppConfig.APP_GALLERY_URL);
     } catch (error) {
-      this.errorMessage = error instanceof ApiError ? error.message : '';
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      this.errorMessage = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : '';
       this.genericError = !(error instanceof ApiError);
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.checking = false;
+    }
     }
   }
 
@@ -124,10 +137,11 @@ struct UpdatePage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '版本中心', 'Update center'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, onRetry: () => this.check() });
         Column({ space: 16 }) {
           if (this.checking) {
             Column() { MerchantIcon({ name: 'upgrade', color: DesignTokens.brand(this.darkMode), iconSize: 34 }); }
@@ -140,7 +154,7 @@ struct UpdatePage {
             Text(I18n.text(this.language, '检查更新遇到问题', 'Unable to check for updates'))
               .fontSize(18).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
             Text(this.visibleError()).fontSize(14).fontColor(DesignTokens.muted(this.darkMode));
-            IBestButton({ text: I18n.text(this.language, '重新检查', 'Check again'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.check() });
+            IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重新检查', 'Check again'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.check() });
           } else {
             Column() { MerchantIcon({ name: 'upgrade', color: DesignTokens.brand(this.darkMode), iconSize: 34 }); }
               .width(68).height(68).justifyContent(FlexAlign.Center)
@@ -164,7 +178,7 @@ struct UpdatePage {
             Text(this.visibleChangelog())
               .fontSize(15).fontColor(DesignTokens.text(this.darkMode)).lineHeight(24).width('100%')
               .padding(14).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(14);
-            IBestButton({
+            IBestButton({ btnHeight: 44,
               text: this.hasNewVersion()
                 ? I18n.text(this.language, '前往 AppGallery 更新', 'Update in AppGallery')
                 : I18n.text(this.language, '已是最新版本', 'Up to date'),
@@ -179,7 +193,7 @@ struct UpdatePage {
         .width('92%')
         .constraintSize({ maxWidth: 620 })
         .justifyContent(FlexAlign.Start)
-        .padding({ left: 24, right: 24, top: 24, bottom: this.safeBottom + 24 })
+        .padding({ left: 24, right: 24, top: 12, bottom: this.safeBottom + 24 })
         .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_XL)
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
         .margin({ top: 18, bottom: this.safeBottom + 18 });

@@ -1,4 +1,7 @@
-import { IBestButton, IBestDialogUtil, IBestEmpty, IBestField, IBestNavBar, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
+import { IBestButton, IBestDialogUtil, IBestEmpty, IBestField, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { ApiError } from '../../core/network/ApiClient';
 import { DesignTokens } from '../../core/theme/DesignTokens';
@@ -12,6 +15,26 @@ export function MarketingBuilder(_: string) { MarketingPage(); }
 
 @Component
 struct MarketingPage {
+  private visibleFilter: string = '';
+
+  private handleBack(): void {
+    if (this.editorVisible) { this.closeLocalEditor(); return; }
+
+    this.leaveGuard.request(this.language, false, false, () => AppRouter.back());
+  }
+
+  private editStamp: string = '';
+  private localStamp(): string { return JSON.stringify([this.editingId, this.name, this.type, this.amount, this.discountPercent, this.threshold, this.stock, this.perUserLimit, this.validFrom, this.validTo]); }
+  private closeLocalEditor(): void {
+    this.leaveGuard.request(this.language, this.formSaving || Boolean(this.actionId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -36,39 +59,50 @@ struct MarketingPage {
   @State private actionId: string = '';
   private requestEpoch: number = 0;
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
   private async load(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
+    const filterKey = `${this.activityKind}:${this.couponStatus}`;
+    if (filterKey !== this.visibleFilter) { this.coupons = []; this.activities = []; this.visibleFilter = filterKey; }
     const epoch = ++this.requestEpoch;
     const requestedKind = this.activityKind;
     const requestedStatus = this.couponStatus;
     this.loading = true;
     try {
-      const result = await BusinessRepository.marketingOverview();
+      const result = await this.pageScope.read(BusinessRepository.marketingOverview(), pageTicket);
       if (epoch === this.requestEpoch) this.overview = result;
-    } catch (_) {}
+    } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);}
     try {
       if (requestedKind === 'coupon') {
-        const result = await BusinessRepository.coupons(requestedStatus === 'all' ? '' : requestedStatus, 1);
+        const result = await this.pageScope.read(BusinessRepository.coupons(requestedStatus === 'all' ? '' : requestedStatus, 1), pageTicket);
         if (epoch === this.requestEpoch) this.coupons = result.list;
       } else {
-        const result = await BusinessRepository.marketingActivities(requestedKind);
+        const result = await this.pageScope.read(BusinessRepository.marketingActivities(requestedKind), pageTicket);
         if (epoch === this.requestEpoch) this.activities = result.list;
       }
     }
     catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       if (epoch === this.requestEpoch) {
-        IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '营销数据加载失败', 'Failed to load marketing data'));
+        IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '营销数据加载失败', 'Failed to load marketing data'));
       }
     }
-    finally { if (epoch === this.requestEpoch) this.loading = false; }
+    finally {
+      if (this.pageScope.accepts(pageTicket)) { if (epoch === this.requestEpoch) this.loading = false; }
+    }
   }
   private open(item?: MarketingCoupon): void {
     this.editingId = item?.id || ''; this.name = item?.name || ''; this.type = item?.type || 'fullReduce';
     this.amount = item?.amount ? `${item.amount}` : ''; this.threshold = item?.threshold ? `${item.threshold}` : '';
     this.discountPercent = item?.discountPercent ? `${item.discountPercent}` : '90';
     this.stock = item ? `${item.stock}` : '100'; this.perUserLimit = item ? `${item.perUserLimit}` : '1';
-    this.validFrom = item?.validFrom.slice(0, 10) || ''; this.validTo = item?.validTo.slice(0, 10) || '';
-    this.editorVisible = true;
+    this.validFrom = item?.validFrom?.slice(0, 10) || ''; this.validTo = item?.validTo?.slice(0, 10) || '';
+    this.editStamp = this.localStamp(); this.editorVisible = true;
   }
   private duplicate(item: MarketingCoupon): void {
     this.open(item);
@@ -76,11 +110,12 @@ struct MarketingPage {
     this.name = I18n.text(this.language, `${item.name} 副本`, `${item.name} copy`);
   }
   private async save(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.formSaving) return;
     const amount = Number(this.amount), discountPercent = Number(this.discountPercent);
     const stock = Number(this.stock), threshold = Number(this.threshold || '0'), perUserLimit = Number(this.perUserLimit);
     if (!this.name.trim() || !Number.isFinite(stock) || stock < 1 || !Number.isFinite(perUserLimit) || perUserLimit < 1 ||
-      !this.validFrom || !this.validTo || this.validTo < this.validFrom) {
+      !SecondaryPolicy.validBusinessDate(this.validFrom) || !SecondaryPolicy.validBusinessDate(this.validTo) || this.validTo < this.validFrom) {
       IBestToast.show(I18n.text(this.language, '请完整填写优惠券信息', 'Complete all coupon details')); return;
     }
     if ((this.type === 'fullReduce' && (!Number.isFinite(amount) || amount <= 0 || threshold <= amount)) ||
@@ -97,33 +132,47 @@ struct MarketingPage {
       perUserLimit: Math.floor(perUserLimit), scope: 'all'
     };
     this.formSaving = true;
+    const mutationTicket = this.pageScope.begin('save');
     try {
-      if (this.editingId) await BusinessRepository.updateCoupon(this.editingId, body);
-      else await BusinessRepository.createCoupon(body);
+      if (this.editingId) await this.pageScope.read(BusinessRepository.updateCoupon(this.editingId, body), mutationTicket);
+      else await this.pageScope.read(BusinessRepository.createCoupon(body), mutationTicket);
       this.editorVisible = false;
       IBestToast.show(I18n.text(this.language, '优惠券已保存', 'Coupon saved'));
-      await this.load();
+      await this.pageScope.read(this.load(), mutationTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '保存失败', 'Failed to save'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '保存失败', 'Failed to save'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.formSaving = false;
+    }
     }
   }
   private async toggle(item: MarketingCoupon): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.actionId || this.formSaving) return;
     this.actionId = item.id;
-    try { await BusinessRepository.toggleCoupon(item.id, item.status !== 'active'); await this.load(); }
-    catch (error) { IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '操作失败', 'Operation failed')); }
-    finally { this.actionId = ''; }
+    const mutationTicket = this.pageScope.begin('toggle');
+    try { await this.pageScope.read(BusinessRepository.toggleCoupon(item.id, item.status !== 'active'), mutationTicket); await this.pageScope.read(this.load(), mutationTicket); }
+    catch (error) {
+      if (!this.pageScope.accepts(mutationTicket)) return; IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '操作失败', 'Operation failed')); }
+    finally {
+      if (this.pageScope.accepts(mutationTicket)) { this.actionId = ''; }
+    }
   }
   private remove(item: MarketingCoupon): void { IBestDialogUtil.open({ title: I18n.text(this.language, '删除优惠券', 'Delete coupon'), message: I18n.text(this.language, `确定删除“${item.name}”吗？`, `Delete “${item.name}”?`), showCancelButton: true,
       cancelButtonText: I18n.text(this.language, '取消', 'Cancel'), confirmButtonText: I18n.text(this.language, '确认', 'Confirm'), confirmButtonColor: DesignTokens.danger(this.darkMode), onConfirm: () => { this.deleteCoupon(item.id); } }); }
   private async deleteCoupon(id: string): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.actionId || this.formSaving) return;
     this.actionId = id;
-    try { await BusinessRepository.deleteCoupon(id); await this.load(); }
-    catch (error) { IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '删除失败', 'Failed to delete')); }
-    finally { this.actionId = ''; }
+    const mutationTicket = this.pageScope.begin('deleteCoupon');
+    try { await this.pageScope.read(BusinessRepository.deleteCoupon(id), mutationTicket); await this.pageScope.read(this.load(), mutationTicket); }
+    catch (error) {
+      if (!this.pageScope.accepts(mutationTicket)) return; IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '删除失败', 'Failed to delete')); }
+    finally {
+      if (this.pageScope.accepts(mutationTicket)) { this.actionId = ''; }
+    }
   }
 
   private selectKind(kind: string): void {
@@ -132,7 +181,7 @@ struct MarketingPage {
     this.load();
   }
 
-  @Builder private metric(value: number, label: string) { Column({ space: 5 }) { Text(`${value}`).fontSize(21).fontWeight(FontWeight.Bold); Text(label).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1); }
+  @Builder private metric(value: number, label: string) { Column({ space: 5 }) { Text(`${value}`).fontSize(21).fontWeight(FontWeight.Bold); Text(label).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1); }
   @Builder
   private couponCard(item: MarketingCoupon) {
     Row({ space: 12 }) {
@@ -144,7 +193,7 @@ struct MarketingPage {
         Text(item.threshold
           ? I18n.text(this.language, `满¥${item.threshold}可用`, `Spend ¥${item.threshold}`)
           : I18n.text(this.language, '无门槛', 'No minimum'))
-          .fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
+          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
       }.width(76);
       Column({ space: 5 }) {
         Row({ space: 6 }) {
@@ -160,21 +209,21 @@ struct MarketingPage {
         Text(I18n.text(this.language,
           `库存 ${item.stock}  领取 ${item.received}  使用 ${item.used}  每人限 ${item.perUserLimit}`,
           `Stock ${item.stock}  Claimed ${item.received}  Used ${item.used}  Limit ${item.perUserLimit}`))
-          .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         Text(I18n.text(this.language, `${item.validFrom.slice(0, 10)} 至 ${item.validTo.slice(0, 10)}`,
           `${item.validFrom.slice(0, 10)} to ${item.validTo.slice(0, 10)}`))
-          .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         Row({ space: 6 }) {
           Blank();
           if (item.status !== 'ended') {
-            IBestButton({ text: item.status === 'active' ? I18n.text(this.language, '暂停', 'Pause') : I18n.text(this.language, '启用', 'Enable'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.toggle(item) });
+            IBestButton({ btnHeight: 44, text: item.status === 'active' ? I18n.text(this.language, '暂停', 'Pause') : I18n.text(this.language, '启用', 'Enable'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.toggle(item) });
           }
-          IBestButton({ text: I18n.text(this.language, '复制', 'Copy'), plain: true, onBtnClick: () => this.duplicate(item) });
-          IBestButton({ text: I18n.text(this.language, '编辑', 'Edit'), plain: true, onBtnClick: () => this.open(item) });
-          IBestButton({ text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', onBtnClick: () => this.remove(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '复制', 'Copy'), plain: true, onBtnClick: () => this.duplicate(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '编辑', 'Edit'), plain: true, onBtnClick: () => this.open(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', onBtnClick: () => this.remove(item) });
         }.width('100%');
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
   }
 
   @Builder
@@ -196,27 +245,28 @@ struct MarketingPage {
           Text(I18n.text(this.language, `活动价 ¥${Number(item.price).toFixed(2)}`, `Offer price ¥${Number(item.price).toFixed(2)}`)).fontSize(13).fontColor(DesignTokens.brand(this.darkMode)).width('100%');
         }
         if (item.kind === 'flashSale') {
-          Text(I18n.text(this.language, `库存 ${item.stock || 0} · 已售 ${item.sold || 0}`, `Stock ${item.stock || 0} · Sold ${item.sold || 0}`)).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+          Text(I18n.text(this.language, `库存 ${item.stock || 0} · 已售 ${item.sold || 0}`, `Stock ${item.stock || 0} · Sold ${item.sold || 0}`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
         } else {
-          Text(I18n.text(this.language, `${item.groupSize || 0} 人成团 · ${item.validHours || 0} 小时有效`, `${item.groupSize || 0} people · Valid for ${item.validHours || 0} hours`)).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+          Text(I18n.text(this.language, `${item.groupSize || 0} 人成团 · ${item.validHours || 0} 小时有效`, `${item.groupSize || 0} people · Valid for ${item.validHours || 0} hours`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
         }
         if (item.validFrom && item.validTo) {
           Text(I18n.text(this.language, `${item.validFrom.slice(0, 16).replace('T', ' ')} 至 ${item.validTo.slice(0, 16).replace('T', ' ')}`,
             `${item.validFrom.slice(0, 16).replace('T', ' ')} to ${item.validTo.slice(0, 16).replace('T', ' ')}`))
-            .fontSize(10).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
         }
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
   }
 
   build() {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({ title: I18n.text(this.language, '营销中心', 'Marketing'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back() });
+          SecondaryHeader({ title: I18n.text(this.language, '营销中心', 'Marketing'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => this.handleBack() });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
           if (this.loading) Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }.layoutWeight(1).justifyContent(FlexAlign.Center);
           else Scroll() { Column({ space: 14 }) {
-            if (this.overview) Row() { this.metric(this.overview.coupons.active, I18n.text(this.language, '生效优惠券', 'Active coupons')); this.metric(this.overview.coupons.totalReceived || 0, I18n.text(this.language, '累计领取', 'Total claimed')); this.metric(this.overview.flashSales.active, I18n.text(this.language, '限时活动', 'Flash sales')); this.metric(this.overview.groupBuys.active, I18n.text(this.language, '团购活动', 'Group buys')); }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+            if (this.overview) Row() { this.metric(this.overview.coupons.active, I18n.text(this.language, '生效优惠券', 'Active coupons')); this.metric(this.overview.coupons.totalReceived || 0, I18n.text(this.language, '累计领取', 'Total claimed')); this.metric(this.overview.flashSales.active, I18n.text(this.language, '限时活动', 'Flash sales')); this.metric(this.overview.groupBuys.active, I18n.text(this.language, '团购活动', 'Group buys')); }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
             Row({ space: 8 }) {
               ForEach(['coupon', 'flashSale', 'groupBuy'], (kind: string) => {
                 Text(kind === 'coupon' ? I18n.text(this.language, '优惠券', 'Coupons') : kind === 'flashSale' ? I18n.text(this.language, '限时活动', 'Flash sales') : I18n.text(this.language, '团购活动', 'Group buys'))
@@ -227,7 +277,7 @@ struct MarketingPage {
               }, (kind: string) => kind);
             }.width('100%');
             if (this.activityKind === 'coupon') {
-              Row() { Text(I18n.text(this.language, '我的优惠券', 'My coupons')).fontSize(18).fontWeight(FontWeight.Bold); Blank(); IBestButton({ text: I18n.text(this.language, '新增优惠券', 'Add coupon'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.open() }); }.width('100%');
+              Row() { Text(I18n.text(this.language, '我的优惠券', 'My coupons')).fontSize(18).fontWeight(FontWeight.Bold); Blank(); IBestButton({ btnHeight: 44, text: I18n.text(this.language, '新增优惠券', 'Add coupon'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.open() }); }.width('100%');
               Row({ space: 8 }) {
                 ForEach(['all', 'active', 'pending', 'ended'], (status: string) => {
                   Text(status === 'all' ? I18n.text(this.language, '全部', 'All') : status === 'active' ? I18n.text(this.language, '进行中', 'Active') : status === 'pending' ? I18n.text(this.language, '未开始', 'Upcoming') : I18n.text(this.language, '已结束', 'Ended'))
@@ -276,13 +326,13 @@ struct MarketingPage {
             IBestField({ value: $validFrom, label: I18n.text(this.language, '开始日期', 'Start date'), placeholder: 'YYYY-MM-DD' });
             IBestField({ value: $validTo, label: I18n.text(this.language, '结束日期', 'End date'), placeholder: 'YYYY-MM-DD' });
             Row({ space: 10 }) {
-              IBestButton({ text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', disabled: this.formSaving, onBtnClick: () => this.editorVisible = false });
-              IBestButton({ text: I18n.text(this.language, '保存', 'Save'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', loading: this.formSaving, disabled: this.formSaving, onBtnClick: () => this.save() });
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', disabled: this.formSaving, onBtnClick: () => this.closeLocalEditor() });
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '保存', 'Save'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', loading: this.formSaving, disabled: this.formSaving, onBtnClick: () => this.save() });
             }.width('100%');
-          }.width('100%').padding({ left: 20, right: 20, top: 22, bottom: this.safeBottom + 22 })
+          }.width('100%').padding({ left: 16, right: 16, top: 22, bottom: this.safeBottom + 22 })
             .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 });
         }
       }.width('100%').height('100%');
-    }.hideTitleBar(true);
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

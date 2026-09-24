@@ -1,4 +1,6 @@
-import { IBestButton, IBestEmpty, IBestNavBar, IBestSearch, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
+import { IBestButton, IBestEmpty, IBestSearch, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { FilterRouteParams, IdRouteParams } from '../../core/navigation/RouteParams';
 import { ApiError } from '../../core/network/ApiClient';
@@ -20,6 +22,9 @@ export function ChatSessionsBuilder(_: string, raw: Object) {
 
 @Component
 struct ChatSessionsPage {
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   params: FilterRouteParams = new FilterRouteParams();
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -32,7 +37,7 @@ struct ChatSessionsPage {
   @State private errorMessage: string = '';
   private unsubscribe?: () => void;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     this.unreadOnly = this.params.status === 'unread';
     this.unsubscribe = HarmonyRealtime.shared().subscribe(
       (event: RealtimeEnvelope): void => this.onRealtime(event)
@@ -40,7 +45,7 @@ struct ChatSessionsPage {
     this.load(false);
   }
 
-  aboutToDisappear(): void {
+  aboutToDisappear(): void { this.pageScope.dispose();
     this.unsubscribe?.();
     this.unsubscribe = undefined;
   }
@@ -77,17 +82,24 @@ struct ChatSessionsPage {
   }
 
   private async load(fromRefresh: boolean): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     if (fromRefresh) this.refreshing = true;
     else if (this.sessions.length === 0) this.loading = true;
     this.errorMessage = '';
     try {
-      this.sessions = this.sortSessions(await BusinessRepository.chatSessions());
+      this.sessions = this.sortSessions(await this.pageScope.read(BusinessRepository.chatSessions(), pageTicket));
     } catch (error) {
-      this.errorMessage = error instanceof ApiError ? error.message : 'i18n:conversations-load';
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      this.errorMessage = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : 'i18n:conversations-load';
       if (fromRefresh) IBestToast.show(I18n.state(this.language, this.errorMessage));
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.loading = false;
       this.refreshing = false;
+    }
     }
   }
 
@@ -148,30 +160,31 @@ struct ChatSessionsPage {
       Column({ space: 6 }) {
         Row() {
           Text(item.userName).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).maxLines(1);
-          Text(this.timeLabel(item.lastMessageAt)).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          Text(this.timeLabel(item.lastMessageAt)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }.width('100%');
         Row({ space: 7 }) {
           Text(this.preview(item)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode))
             .layoutWeight(1).maxLines(1);
           if (item.status === 'closed') IBestTag({ text: I18n.text(this.language, '已关闭', 'Closed'), plain: true });
           if (item.unreadCount > 0) {
-            Text(item.unreadCount > 99 ? '99+' : `${item.unreadCount}`).fontSize(10).fontColor(Color.White)
+            Text(item.unreadCount > 99 ? '99+' : `${item.unreadCount}`).fontSize(12).fontColor(Color.White)
               .textAlign(TextAlign.Center).padding({ left: 6, right: 6, top: 2, bottom: 2 })
               .backgroundColor(DesignTokens.danger(this.darkMode)).borderRadius(10);
           }
         }.width('100%');
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16)
       .onClick(() => this.open(item));
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '客户消息', 'Customer messages'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode),
           onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load(false) });
         IBestSearch({
           value: $keyword, placeholder: I18n.text(this.language, '搜索客户或消息', 'Search customers or messages'), isRound: true,
           outBgColor: DesignTokens.page(this.darkMode), innerBgColor: DesignTokens.card(this.darkMode)
@@ -192,7 +205,7 @@ struct ChatSessionsPage {
         } else if (this.errorMessage && this.sessions.length === 0) {
           Column({ space: 12 }) {
             Text(I18n.state(this.language, this.errorMessage)).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
-            IBestButton({ text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.load(false) });
+            IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.load(false) });
           }.layoutWeight(1).justifyContent(FlexAlign.Center);
         } else {
           Refresh({ refreshing: $$this.refreshing }) {

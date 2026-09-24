@@ -1,8 +1,11 @@
+import { SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SessionStore } from '../../core/storage/SessionStore';
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { geoLocationManager } from '@kit.LocationKit';
 import { MapComponent, map, mapCommon, site } from '@kit.MapKit';
-import { IBestButton, IBestNavBar, IBestSearch, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestButton, IBestSearch, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { DesignTokens } from '../../core/theme/DesignTokens';
 import { MerchantIcon } from '../../core/theme/MerchantIcon';
@@ -23,6 +26,9 @@ export function LocationPickerBuilder(_: string) { LocationPickerPage(); }
 
 @Component
 struct LocationPickerPage {
+  private selectionToken: string = '';
+  private selectionOwner: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -69,6 +75,8 @@ struct LocationPickerPage {
   };
 
   aboutToAppear(): void {
+    this.selectionToken = AppStorage.get<string>('locationRequestToken') || '';
+    this.selectionOwner = SessionStore.shared().user?.id || '';
     const savedLatitude = AppStorage.get<number>('pickedLatitude') || 0;
     const savedLongitude = AppStorage.get<number>('pickedLongitude') || 0;
     const hasSavedLocation = AppStorage.get<boolean>('pickedLocationSet') || false;
@@ -130,7 +138,7 @@ struct LocationPickerPage {
       }
       await this.reverseGeocode();
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '当前位置获取失败', 'Failed to get current location'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '当前位置获取失败', 'Failed to get current location'));
     } finally { this.locating = false; }
   }
 
@@ -210,7 +218,7 @@ struct LocationPickerPage {
     } catch (error) {
       if (epoch !== this.searchEpoch) return;
       this.searchResults = [];
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '地点搜索失败', 'Place search failed'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '地点搜索失败', 'Place search failed'));
     } finally {
       if (epoch === this.searchEpoch) this.searching = false;
     }
@@ -241,6 +249,7 @@ struct LocationPickerPage {
   }
 
   private confirm(): void {
+    if (!this.selectionToken || this.selectionToken !== AppStorage.get<string>('locationRequestToken') || this.selectionOwner !== (SessionStore.shared().user?.id || '')) { AppRouter.back(); return; }
     if (this.resolvingAddress) {
       IBestToast.show(I18n.text(this.language, '正在确认地址，请稍候', 'Confirming the address. Please wait.'));
       return;
@@ -254,6 +263,7 @@ struct LocationPickerPage {
     AppStorage.setOrCreate<number>('pickedLatitude', this.latitude);
     AppStorage.setOrCreate<number>('pickedLongitude', this.longitude);
     AppStorage.setOrCreate<boolean>('pickedLocationSet', true);
+    AppStorage.setOrCreate('pickedLocationToken', this.selectionToken);
     AppStorage.setOrCreate<number>('locationEpoch', (AppStorage.get<number>('locationEpoch') || 0) + 1);
     AppRouter.back();
   }
@@ -261,7 +271,7 @@ struct LocationPickerPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '地图选址', 'Choose location'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), titleColor: DesignTokens.text(this.darkMode),
           leftIconColor: DesignTokens.text(this.darkMode), onLeftClick: () => AppRouter.back()
@@ -299,7 +309,7 @@ struct LocationPickerPage {
                       Column({ space: 3 }) {
                         Text(item.name).fontSize(14).fontWeight(FontWeight.Medium)
                           .fontColor(DesignTokens.text(this.darkMode)).width('100%').maxLines(1);
-                        Text(item.address).fontSize(11).fontColor(DesignTokens.muted(this.darkMode))
+                        Text(item.address).fontSize(12).fontColor(DesignTokens.muted(this.darkMode))
                           .width('100%').maxLines(2);
                       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
                     }.width('100%').padding({ left: 12, right: 12, top: 9, bottom: 9 })
@@ -326,8 +336,8 @@ struct LocationPickerPage {
             Column({ space: 8 }) {
               Text(I18n.text(this.language, '地图服务尚未配置', 'Map service is not configured')).fontSize(16).fontWeight(FontWeight.Medium);
               Text(I18n.text(this.language, '仍可使用系统定位与地址解析', 'System location and address lookup remain available')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
-            }.padding(18).backgroundColor(DesignTokens.elevatedSurface(this.darkMode))
-              .borderRadius(DesignTokens.RADIUS_LARGE).zIndex(3);
+            }.padding(16).backgroundColor(DesignTokens.elevatedSurface(this.darkMode))
+              .borderRadius(16).zIndex(3);
           }
 
           Column({ space: 10 }) {

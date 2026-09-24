@@ -1,5 +1,8 @@
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import {
-  IBestButton, IBestDialogUtil, IBestEmpty, IBestField, IBestNavBar, IBestTag, IBestToast
+  IBestButton, IBestDialogUtil, IBestEmpty, IBestField, IBestTag, IBestToast
 } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { ApiError } from '../../core/network/ApiClient';
@@ -13,6 +16,24 @@ export function CategoryManagerBuilder(_: string) { CategoryPage(); }
 
 @Component
 struct CategoryPage {
+  private handleBack(): void {
+    if (this.editorVisible) { this.closeLocalEditor(); return; }
+
+    this.leaveGuard.request(this.language, false, false, () => AppRouter.back());
+  }
+
+  private editStamp: string = '';
+  private localStamp(): string { return JSON.stringify([this.editingId, this.editingName, this.editingParentId]); }
+  private closeLocalEditor(): void {
+    this.leaveGuard.request(this.language, this.saving || Boolean(this.workingId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -28,21 +49,27 @@ struct CategoryPage {
   @State private saving: boolean = false;
   @State private workingId: string = '';
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
   private async load(): Promise<void> {
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     this.loading = true;
     this.errorMessage = '';
     let merchantLoaded: boolean = false;
     try {
-      this.categories = await ProductRepository.merchantCategories();
+      this.categories = await this.pageScope.read(ProductRepository.merchantCategories(), pageTicket);
       merchantLoaded = true;
     } catch (error) {
-      this.errorMessage = error instanceof ApiError ? error.message : 'i18n:category-load';
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      this.errorMessage = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : 'i18n:category-load';
     }
     try {
-      this.platformCategories = await ProductRepository.platformCategories();
+      this.platformCategories = await this.pageScope.read(ProductRepository.platformCategories(), pageTicket);
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       if (merchantLoaded) {
         IBestToast.show(I18n.text(this.language,
           '平台标准分类暂时无法加载，自定义分类仍可管理',
@@ -70,7 +97,7 @@ struct CategoryPage {
     this.editingId = item?.id || '';
     this.editingName = item?.name || '';
     this.editingParentId = item?.parentId || parentId;
-    this.editorVisible = true;
+    this.editStamp = this.localStamp(); this.editorVisible = true;
   }
 
   private async save(): Promise<void> {
@@ -95,7 +122,7 @@ struct CategoryPage {
       IBestToast.show(I18n.text(this.language, '分类已保存', 'Category saved'));
       await this.load();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '保存失败', 'Failed to save'));
     } finally {
       this.saving = false;
@@ -124,7 +151,7 @@ struct CategoryPage {
       IBestToast.show(I18n.text(this.language, '已删除', 'Deleted'));
       await this.load();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '删除失败', 'Failed to delete'));
     } finally {
       this.workingId = '';
@@ -145,7 +172,7 @@ struct CategoryPage {
       await ProductRepository.sortCategories(siblings.map((current: CategoryItem): string => current.id));
       await this.load();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '排序保存失败', 'Failed to save order'));
     } finally {
       this.workingId = '';
@@ -164,10 +191,10 @@ struct CategoryPage {
   @Builder
   private controls(item: CategoryItem) {
     Row({ space: 5 }) {
-      IBestButton({ text: '↑', plain: true, disabled: this.workingId.length > 0 || this.saving || this.siblingIndex(item) <= 0, onBtnClick: () => this.move(item, -1) });
-      IBestButton({ text: '↓', plain: true, disabled: this.workingId.length > 0 || this.saving || this.siblingIndex(item) >= this.siblingCount(item) - 1, onBtnClick: () => this.move(item, 1) });
-      IBestButton({ text: I18n.text(this.language, '编辑', 'Edit'), plain: true, color: DesignTokens.brand(this.darkMode), disabled: this.workingId.length > 0 || this.saving, onBtnClick: () => this.openEditor(item) });
-      IBestButton({ text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', loading: this.workingId === item.id, disabled: this.workingId.length > 0 || this.saving, onBtnClick: () => this.confirmDelete(item) });
+      IBestButton({ btnHeight: 44, text: '↑', plain: true, disabled: this.workingId.length > 0 || this.saving || this.siblingIndex(item) <= 0, onBtnClick: () => this.move(item, -1) });
+      IBestButton({ btnHeight: 44, text: '↓', plain: true, disabled: this.workingId.length > 0 || this.saving || this.siblingIndex(item) >= this.siblingCount(item) - 1, onBtnClick: () => this.move(item, 1) });
+      IBestButton({ btnHeight: 44, text: I18n.text(this.language, '编辑', 'Edit'), plain: true, color: DesignTokens.brand(this.darkMode), disabled: this.workingId.length > 0 || this.saving, onBtnClick: () => this.openEditor(item) });
+      IBestButton({ btnHeight: 44, text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', loading: this.workingId === item.id, disabled: this.workingId.length > 0 || this.saving, onBtnClick: () => this.confirmDelete(item) });
     }
   }
 
@@ -181,7 +208,7 @@ struct CategoryPage {
             IBestTag({ text: I18n.text(this.language, '一级', 'Primary'), plain: true, color: DesignTokens.brand(this.darkMode) });
           }
           Text(I18n.text(this.language, `${this.children(this.categories, item.id).length} 个子分类`,
-            `${this.children(this.categories, item.id).length} subcategories`)).fontSize(11)
+            `${this.children(this.categories, item.id).length} subcategories`)).fontSize(12)
             .fontColor(DesignTokens.muted(this.darkMode));
         }.layoutWeight(1).alignItems(HorizontalAlign.Start);
         this.controls(item);
@@ -194,11 +221,11 @@ struct CategoryPage {
         }.width('100%').padding({ top: 8, bottom: 8, left: 8 })
           .border({ width: { top: 1 }, color: DesignTokens.border(this.darkMode) });
       }, (child: CategoryItem) => child.id);
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '添加子分类', 'Add subcategory'), plain: true, color: DesignTokens.brand(this.darkMode),
         btnWidth: '100%', onBtnClick: () => this.openEditor(undefined, item.id)
       });
-    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
   }
 
   @Builder
@@ -208,11 +235,11 @@ struct CategoryPage {
         Text(item.name).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1);
         Text(I18n.text(this.language, `${this.children(this.platformCategories, item.id).length} 个二级分类`,
           `${this.children(this.platformCategories, item.id).length} secondary categories`))
-          .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
       }.width('100%');
       Flex({ wrap: FlexWrap.Wrap }) {
         ForEach(this.children(this.platformCategories, item.id), (child: CategoryItem) => {
-          Text(child.name).fontSize(11).padding({ left: 9, right: 9, top: 6, bottom: 6 })
+          Text(child.name).fontSize(12).padding({ left: 9, right: 9, top: 6, bottom: 6 })
             .margin({ right: 6, bottom: 6 }).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(14);
         }, (child: CategoryItem) => child.id);
       }.width('100%');
@@ -227,7 +254,7 @@ struct CategoryPage {
           : this.editingParentId ? I18n.text(this.language, '新增子分类', 'Add subcategory')
             : I18n.text(this.language, '新增一级分类', 'Add primary category'))
           .fontSize(20).fontWeight(FontWeight.Bold).layoutWeight(1);
-        Text(I18n.text(this.language, '关闭', 'Close')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).onClick(() => this.editorVisible = false);
+        Text(I18n.text(this.language, '关闭', 'Close')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).onClick(() => this.closeLocalEditor());
       }.width('100%');
       if (this.editingParentId) {
         Row() {
@@ -236,24 +263,25 @@ struct CategoryPage {
         }.width('100%');
       }
       IBestField({ value: $editingName, label: I18n.text(this.language, '分类名称', 'Category name'), placeholder: I18n.text(this.language, '不超过10个字', 'Up to 10 characters'), maxlength: 10, hasBorder: false });
-      IBestButton({ text: I18n.text(this.language, '保存', 'Save'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '100%', loading: this.saving, disabled: this.saving || this.workingId.length > 0, onBtnClick: () => this.save() });
-    }.width('100%').padding({ left: 20, right: 20, top: 22, bottom: this.safeBottom + 22 });
+      IBestButton({ btnHeight: 44, text: I18n.text(this.language, '保存', 'Save'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '100%', loading: this.saving, disabled: this.saving || this.workingId.length > 0, onBtnClick: () => this.save() });
+    }.width('100%').padding({ left: 16, right: 16, top: 22, bottom: this.safeBottom + 22 });
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '商品分类', 'Product categories'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode),
-          onLeftClick: () => AppRouter.back()
+          onLeftClick: () => this.handleBack()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
         if (this.loading) {
           Column() { LoadingProgress().width(32).height(32).color(DesignTokens.brand(this.darkMode)); }
             .layoutWeight(1).justifyContent(FlexAlign.Center);
         } else if (this.errorMessage) {
           Column({ space: 12 }) {
             IBestEmpty({ description: I18n.state(this.language, this.errorMessage), emptyImage: 'network' });
-            IBestButton({ text: I18n.text(this.language, '重试', 'Retry'), color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.load() });
+            IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重试', 'Retry'), color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.load() });
           }.layoutWeight(1).justifyContent(FlexAlign.Center);
         } else {
           Scroll() {
@@ -261,16 +289,16 @@ struct CategoryPage {
               Row() {
                 Column({ space: 3 }) {
                   Text(I18n.text(this.language, '自定义分类', 'Custom categories')).fontSize(18).fontWeight(FontWeight.Bold);
-                  Text(I18n.text(this.language, '支持两级分类与同级排序', 'Two levels with custom ordering')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                  Text(I18n.text(this.language, '支持两级分类与同级排序', 'Two levels with custom ordering')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
                 }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-                IBestButton({ text: I18n.text(this.language, '新增一级', 'Add primary'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.openEditor() });
+                IBestButton({ btnHeight: 44, text: I18n.text(this.language, '新增一级', 'Add primary'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.openEditor() });
               }.width('100%');
               if (this.roots(this.categories).length === 0) IBestEmpty({ description: I18n.text(this.language, '暂无自定义分类', 'No custom categories') });
               ForEach(this.roots(this.categories), (item: CategoryItem) => { this.customRoot(item); }, (item: CategoryItem) => item.id);
               Row() {
                 Column({ space: 3 }) {
                   Text(I18n.text(this.language, '平台标准分类', 'Platform categories')).fontSize(18).fontWeight(FontWeight.Bold);
-                  Text(I18n.text(this.language, '只读，用于商品审核和商城统一归类', 'Read-only categories used for review and storefront consistency')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                  Text(I18n.text(this.language, '只读，用于商品审核和商城统一归类', 'Read-only categories used for review and storefront consistency')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
                 }.layoutWeight(1).alignItems(HorizontalAlign.Start);
                 Text(this.showPlatform ? I18n.text(this.language, '收起', 'Collapse') : I18n.text(this.language, '查看全部', 'View all')).fontSize(13).fontColor(DesignTokens.brand(this.darkMode))
                   .onClick(() => this.showPlatform = !this.showPlatform);
@@ -284,8 +312,8 @@ struct CategoryPage {
       }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode))
         .bindSheet(this.editorVisible, this.editor(), {
           height: SheetSize.MEDIUM,
-          onWillDismiss: () => { this.editorVisible = false; }
+          onWillDismiss: () => { this.closeLocalEditor(); }
         });
-    }.hideTitleBar(true);
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

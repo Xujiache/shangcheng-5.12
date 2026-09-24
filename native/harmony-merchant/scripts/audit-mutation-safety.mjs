@@ -14,13 +14,13 @@ const guardedContracts = [
   ['entry/src/main/ets/features/auth/SetPasswordPage.ets', ['if (this.submitting) return;']],
   ['entry/src/main/ets/features/auth/ChangePhonePage.ets', ['if (this.saving) return;', 'this.sendingOld || this.oldCountdown > 0', 'if (this.sendingNew || this.newCountdown > 0) return;']],
   ['entry/src/main/ets/features/product/ProductListPage.ets', ['if (this.processingBatch) return;', 'this.processingBatch = true']],
-  ['entry/src/main/ets/features/product/ProductEditPage.ets', ['if (this.saving) return;', 'if (this.uploading || this.saving) return;', 'if (this.skuUploading || this.saving) return;', 'if (this.uploading || this.skuUploading)']],
+  ['entry/src/main/ets/features/product/ProductEditPage.ets', ['if (this.saving) return;', 'if (this.uploading || this.saving) return;', 'if (this.skuUploading || this.saving) return;', 'if (!this.current() || this.loading || this.loadFailed || this.saving || this.uploading || this.skuUploading) return;']],
   ['entry/src/main/ets/features/product/CategoryPage.ets', ['if (this.saving || this.workingId) return;', 'if (this.workingId || this.saving) return;']],
-  ['entry/src/main/ets/features/order/OrderDetailPage.ets', ['if (this.submitting) return;', 'if (this.parsing || this.submitting) return;']],
+  ['entry/src/main/ets/features/order/OrderDetailPage.ets', ['if (this.submitting) return;', 'if (!this.current() || this.parsing || this.submitting) return;']],
   ['entry/src/main/ets/features/order/AfterSalePage.ets', ['if (!this.selected || this.submitting) return;']],
   ['entry/src/main/ets/features/order/AfterSaleDetailPage.ets', ['if (!this.item || this.submitting) return;']],
   ['entry/src/main/ets/features/business/CustomerPage.ets', ['if (this.processingId) return;']],
-  ['entry/src/main/ets/features/business/CommissionPage.ets', ['if (this.saving) {', 'this.dirty = true;']],
+  ['entry/src/main/ets/features/business/CommissionPage.ets', ['if (this.saving) {', 'this.dirty = this.fingerprint() !== this.savedRules;', 'if (!this.loaded || !this.dirty || this.verifying || this.loading) return;']],
   ['entry/src/main/ets/features/business/StorePage.ets', ['if (this.processingId) return;']],
   ['entry/src/main/ets/features/business/StoreAuthPage.ets', ['if (this.saving) return;']],
   ['entry/src/main/ets/features/business/StaffPage.ets', ['if (this.saving || this.actionId) return;', 'if (this.actionId || this.saving) return;']],
@@ -32,7 +32,7 @@ const guardedContracts = [
   ['entry/src/main/ets/features/plaza/AgencyPage.ets', ['if (this.saving) return;', 'if (this.actionId || this.saving) return;']],
   ['entry/src/main/ets/features/member/MembershipPage.ets', ['if (this.purchasing || this.restoring)', 'this.purchasing = plan.id', 'this.restoring = true']],
   ['entry/src/main/ets/features/profile/ProfilePage.ets', ['if (this.uploading || this.saving) return;', 'if (this.saving) return;', 'if (this.uploading) {']],
-  ['entry/src/main/ets/features/business/PriceRulePage.ets', ['if (this.saving || !this.dirty) return;', 'if (this.dirty) this.flushSave();']],
+  ['entry/src/main/ets/features/business/PriceRulePage.ets', ['if (this.saving || !this.dirty) return;', 'if (!this.loaded || this.verifying || this.loading) return;', 'SecondarySaveBar(', 'this.dirty = JSON.stringify(this.currentRule()) !== this.savedRule;']],
   ['entry/src/main/ets/pages/Index.ets', ['UpdatePolicy.canCheck(this.updateChecking', 'if (this.initializing) return;', 'if (this.updateOpening) return;']]
 ]
 

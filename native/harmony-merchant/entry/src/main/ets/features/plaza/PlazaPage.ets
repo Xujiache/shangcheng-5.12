@@ -1,5 +1,7 @@
+import { PageReadScope, PageSearch, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import {
-  IBestButton, IBestDialogUtil, IBestEmpty, IBestNavBar, IBestSearch, IBestTag, IBestToast
+  IBestButton, IBestDialogUtil, IBestEmpty, IBestSearch, IBestTag, IBestToast
 } from '@ibestservices/ibest-ui';
 import { LengthMetrics } from '@kit.ArkUI';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -19,6 +21,21 @@ export function PlazaBuilder(_: string) { PlazaPage(); }
 
 @Component
 struct PlazaPage {
+  private pageSearch: PageSearch = new PageSearch();
+  private submitSearch(): void { this.pageSearch.cancel(); this.load(); }
+  @State private draftScope: string = 'stores';
+  @State private visibilityReady: boolean = false;
+  private visibleFilter: string = '';
+  private handleBack(): void {
+    if (this.savingVisibility || this.applyingProductId || this.ratingFactoryId) return;
+    if (this.showFilters || this.showVisibility) { this.showFilters = false; this.showVisibility = false; return; }
+    AppRouter.back();
+  }
+  aboutToDisappear(): void { this.pageSearch.cancel(); this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -49,16 +66,21 @@ struct PlazaPage {
   @State private savingVisibility: boolean = false;
   private requestEpoch: number = 0;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     this.load();
     this.loadVisibility();
     this.loadFilterOptions();
   }
 
   private async loadFilterOptions(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('loadFilterOptions');
+    this.pageError = '';
     try {
-      this.filterOptions = await BusinessRepository.plazaFilterOptions();
+      this.filterOptions = await this.pageScope.read(BusinessRepository.plazaFilterOptions(), pageTicket);
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       this.filterOptions = {
         productTags: [
           { value: I18n.contract('🔥本周热推'), label: I18n.contract('🔥本周热推') },
@@ -85,75 +107,102 @@ struct PlazaPage {
   }
 
   private async loadVisibility(): Promise<void> {
-    try { this.plazaScope = (await BusinessRepository.plazaVisibility()).scope; } catch (_) { }
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('loadVisibility');
+    this.pageError = '';
+    try { this.plazaScope = (await this.pageScope.read(BusinessRepository.plazaVisibility(), pageTicket)).scope; this.visibilityReady = true; } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_); }
   }
 
   private async saveVisibility(scope: string): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (scope === this.plazaScope || this.savingVisibility) return;
+    if (!this.visibilityReady) return;
     this.savingVisibility = true;
+    const mutationTicket = this.pageScope.begin('saveVisibility');
     try {
-      const result = await BusinessRepository.savePlazaVisibility(scope);
+      const result = await this.pageScope.read(BusinessRepository.savePlazaVisibility(scope), mutationTicket);
       this.plazaScope = result.scope;
       this.showVisibility = false;
       IBestToast.show(scope === 'public'
         ? I18n.text(this.language, '广场商品已对所有客户可见', 'Products are visible to all customers')
         : I18n.text(this.language, '广场商品仅授权门店可见', 'Products are visible only to authorised stores'));
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '可见范围保存失败', 'Failed to save visibility'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.savingVisibility = false;
+    }
     }
   }
 
   private async load(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     const epoch = ++this.requestEpoch;
     const requestedMode = this.mode;
+    const condition = JSON.stringify([this.mode, this.keyword.trim(), this.region, this.category, this.minRating, this.activeTag]);
+    if (condition !== this.visibleFilter) { this.products = []; this.factories = []; this.total = 0; this.page = 1; }
+    this.visibleFilter = condition;
     this.loading = true;
-    this.page = 1;
     try {
       if (requestedMode === 'products') {
-        const result = await BusinessRepository.plazaProducts(this.keyword.trim(), 1, '', this.activeTag);
+        const result = await this.pageScope.read(BusinessRepository.plazaProducts(this.keyword.trim(), 1, '', this.activeTag), pageTicket);
         if (epoch !== this.requestEpoch) return;
-        this.products = result.list;
+        this.products = result.list; this.page = 1;
         this.total = result.total;
       } else {
-        const result = await BusinessRepository.plazaFactories(
+        const result = await this.pageScope.read(BusinessRepository.plazaFactories(
           this.keyword.trim(), this.region.trim(), this.category.trim(), this.minRating
-        );
+        ), pageTicket);
         if (epoch !== this.requestEpoch) return;
         this.factories = result;
       }
     } catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       if (epoch === this.requestEpoch) {
-        IBestToast.show(error instanceof ApiError ? error.message
+        IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
           : I18n.text(this.language, '选品数据加载失败', 'Failed to load sourcing data'));
       }
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       if (epoch === this.requestEpoch) this.loading = false;
+    }
     }
   }
 
   private async loadMore(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.mode !== 'products' || this.loadingMore || this.products.length >= this.total) return;
+    const pageTicket = this.pageScope.begin('loadMore');
+    this.pageError = '';
     const epoch = this.requestEpoch;
     this.loadingMore = true;
     try {
       const next = this.page + 1;
-      const result: PageResult<PlazaProduct> = await BusinessRepository.plazaProducts(
+      const result: PageResult<PlazaProduct> = await this.pageScope.read(BusinessRepository.plazaProducts(
         this.keyword.trim(), next, '', this.activeTag
-      );
+      ), pageTicket);
       if (epoch !== this.requestEpoch) return;
       this.products = this.products.concat(result.list);
       this.page = next;
       this.total = result.total;
     } catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       if (epoch === this.requestEpoch) {
-        IBestToast.show(error instanceof ApiError ? error.message
+        IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
           : I18n.text(this.language, '加载更多失败', 'Failed to load more'));
       }
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.loadingMore = false;
+    }
     }
   }
 
@@ -184,6 +233,7 @@ struct PlazaPage {
   }
 
   private applyFilters(): void {
+    if (this.activeTag === this.draftTag && this.region === this.draftRegion && this.category === this.draftCategory && this.minRating === this.draftMinRating) { this.showFilters = false; return; }
     this.activeTag = this.draftTag;
     this.region = this.draftRegion;
     this.category = this.draftCategory;
@@ -212,6 +262,7 @@ struct PlazaPage {
   }
 
   private async apply(item: PlazaProduct): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.applyingProductId) return;
     const body: AgencyRequest = {
       factoryId: item.factoryId,
@@ -221,31 +272,40 @@ struct PlazaPage {
       message: ''
     };
     this.applyingProductId = item.productId;
+    const mutationTicket = this.pageScope.begin('apply');
     try {
-      await BusinessRepository.applyAgency(body);
+      await this.pageScope.read(BusinessRepository.applyAgency(body), mutationTicket);
       IBestToast.show(I18n.text(this.language, '已提交，待厂家审核', 'Submitted for factory review'));
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '申请失败', 'Request failed'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.applyingProductId = '';
+    }
     }
   }
 
   private async rateFactory(item: PlazaFactory, score: number): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.ratingFactoryId) return;
     this.ratingFactoryId = item.id;
+    const mutationTicket = this.pageScope.begin('rateFactory');
     try {
-      const result = await BusinessRepository.rateFactory(item.id, score);
+      const result = await this.pageScope.read(BusinessRepository.rateFactory(item.id, score), mutationTicket);
       item.rating = result.rating;
       item.ratingCount = result.ratingCount;
       this.factories = this.factories.slice();
       IBestToast.show(I18n.text(this.language, `已评价 ${score} 星`, `Rated ${score} stars`));
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '评价失败', 'Failed to submit rating'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.ratingFactoryId = '';
+    }
     }
   }
 
@@ -266,17 +326,17 @@ struct PlazaPage {
         }.width('100%');
         Text(item.factoryName).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%').maxLines(1);
         if ((item.tags || []).length > 0) {
-          Text((item.tags || []).slice(0, 2).join(' · ')).fontSize(10).fontColor(DesignTokens.brand(this.darkMode)).maxLines(1).width('100%');
+          Text((item.tags || []).slice(0, 2).join(' · ')).fontSize(12).fontColor(DesignTokens.brand(this.darkMode)).maxLines(1).width('100%');
         }
         Row() {
           Column({ space: 2 }) {
             Text(I18n.text(this.language, `¥${item.startPrice.toFixed(2)} 起`, `From ¥${item.startPrice.toFixed(2)}`))
               .fontSize(16).fontWeight(FontWeight.Bold).fontColor(DesignTokens.brand(this.darkMode));
             Text(I18n.text(this.language, `${item.agencyCount} 位商家代理`, `${item.agencyCount} agents`))
-              .fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
           }.alignItems(HorizontalAlign.Start);
           Blank();
-          IBestButton({
+          IBestButton({ btnHeight: 44,
             text: this.applyingProductId === item.productId
               ? I18n.text(this.language, '提交中', 'Submitting') : I18n.text(this.language, '申请代理', 'Apply'),
             type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), buttonSize: 'small',
@@ -286,7 +346,7 @@ struct PlazaPage {
         }.width('100%');
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
     }.width('100%').padding(13).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -308,7 +368,7 @@ struct PlazaPage {
         Row() {
           Text(I18n.text(this.language, `${item.productCount || 0} 商品 · ${item.agencyCount || 0} 代理`,
             `${item.productCount || 0} products · ${item.agencyCount || 0} agents`))
-            .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
           Blank();
           Row({ space: 3 }) {
             ForEach([1, 2, 3, 4, 5], (score: number) => {
@@ -321,7 +381,7 @@ struct PlazaPage {
       }.layoutWeight(1).alignItems(HorizontalAlign.Start)
         .onClick(() => AppRouter.push('FactoryDetail', new IdRouteParams(item.id)));
     }.width('100%').padding(13).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -329,7 +389,7 @@ struct PlazaPage {
     Text(this.optionLabel(option)).fontSize(12).fontColor(selected ? DesignTokens.onBrand(this.darkMode) : DesignTokens.text(this.darkMode))
       .padding({ left: 13, right: 13, top: 8, bottom: 8 })
       .backgroundColor(selected ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode))
-      .borderRadius(17).onClick(onSelect);
+      .constraintSize({ minHeight: 44 }).borderRadius(10).onClick(onSelect);
   }
 
   @Builder
@@ -369,7 +429,7 @@ struct PlazaPage {
         this.optionGroup(I18n.text(this.language, '最低评分', 'Minimum rating'), this.filterOptions.ratingOptions,
           `${this.draftMinRating}`, (value: string): void => { this.draftMinRating = Number(value || '0'); });
       }
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '查看结果', 'View results'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
         btnWidth: '100%', onBtnClick: () => this.applyFilters()
       });
@@ -390,19 +450,23 @@ struct PlazaPage {
       Text(I18n.text(this.language, '该设置独立于货源筛选，仅影响其他客户查看你的商品。',
         'This only controls who can see your products.'))
         .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '仅授权门店', 'Authorised stores'),
-        type: this.plazaScope === 'stores' ? 'primary' : 'default', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
-        plain: this.plazaScope !== 'stores', btnWidth: '100%', loading: this.savingVisibility,
-        onBtnClick: () => this.saveVisibility('stores')
+        type: this.draftScope === 'stores' ? 'primary' : 'default', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
+        plain: this.draftScope !== 'stores', btnWidth: '100%', loading: this.savingVisibility,
+        onBtnClick: () => { this.draftScope = 'stores'; }
       });
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '所有客户', 'All customers'),
-        type: this.plazaScope === 'public' ? 'primary' : 'default', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
-        plain: this.plazaScope !== 'public', btnWidth: '100%', loading: this.savingVisibility,
-        onBtnClick: () => this.saveVisibility('public')
+        type: this.draftScope === 'public' ? 'primary' : 'default', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
+        plain: this.draftScope !== 'public', btnWidth: '100%', loading: this.savingVisibility,
+        onBtnClick: () => { this.draftScope = 'public'; }
       });
-    }.width('100%').padding(18).backgroundColor(DesignTokens.surface(this.darkMode))
+      IBestButton({ btnHeight: 48, text: I18n.text(this.language, '保存可见范围', 'Save visibility'),
+        type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
+        btnWidth: '100%', loading: this.savingVisibility, disabled: !this.visibilityReady || this.savingVisibility,
+        onBtnClick: () => { if (this.draftScope === this.plazaScope) this.showVisibility = false; else this.saveVisibility(this.draftScope); } });
+    }.width('100%').padding(16).backgroundColor(DesignTokens.surface(this.darkMode))
       .borderRadius({ bottomLeft: 22, bottomRight: 22 })
       .shadow({ color: this.darkMode ? '#76000000' : '#24000000', radius: 20, offsetY: 8 });
   }
@@ -419,7 +483,7 @@ struct PlazaPage {
               Column().width('55%').height(12).borderRadius(6).backgroundColor(DesignTokens.subtle(this.darkMode));
               Column().width('70%').height(18).borderRadius(8).backgroundColor(DesignTokens.subtle(this.darkMode));
             }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-          }.width('100%').padding(13).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+          }.width('100%').padding(13).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
         });
       }.width('100%').padding({ left: 16, right: 16, top: 8 });
     } else if ((this.mode === 'products' && this.products.length === 0) ||
@@ -468,16 +532,16 @@ struct PlazaPage {
           .onClick(() => this.showFilters ? this.showFilters = false : this.openFilters());
       }.width('100%');
       Row({ space: 10 }) {
-        IBestButton({
+        IBestButton({ btnHeight: 44,
           text: I18n.text(this.language, '发布我的商品', 'Publish product'), plain: true,
           color: DesignTokens.brand(this.darkMode), btnWidth: '48%',
           onBtnClick: () => AppRouter.push('ProductEdit', new IdRouteParams())
         });
-        IBestButton({
+        IBestButton({ btnHeight: 44,
           text: I18n.text(this.language, '可见范围', 'Visibility'), plain: true,
           color: DesignTokens.brand(this.darkMode), btnWidth: '48%', onBtnClick: () => {
             this.showFilters = false;
-            this.showVisibility = true;
+            this.draftScope = this.plazaScope; this.showVisibility = true;
           }
         });
       }.width('100%');
@@ -487,17 +551,18 @@ struct PlazaPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '厂家选品', 'Factory sourcing'), isShowRight: true,
           rightLabel: I18n.text(this.language, '我的代理', 'My agency'), isShowStatusBar: true,
-          navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back(),
+          navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => this.handleBack(),
           onRightClick: () => AppRouter.push('AgencyProducts')
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
         IBestSearch({
           value: $keyword, placeholder: I18n.text(this.language, '搜索商品或厂家', 'Search products or factories'),
           isRound: true, outBgColor: DesignTokens.page(this.darkMode), innerBgColor: DesignTokens.card(this.darkMode),
           showRightButton: true, rightButtonText: I18n.text(this.language, '搜索', 'Search'),
-          onSearch: () => this.load(), onRightButtonClick: () => this.load()
+          onInput: () => this.pageSearch.schedule(() => this.load()), onSearch: () => this.submitSearch(), onRightButtonClick: () => this.submitSearch()
         });
         this.controlBar();
         Stack({ alignContent: Alignment.Top }) {
@@ -510,14 +575,6 @@ struct PlazaPage {
           }
         }.width('100%').layoutWeight(1);
       }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
-    }.hideTitleBar(true).onBackPressed((): boolean => {
-      if (this.showFilters || this.showVisibility) {
-        this.showFilters = false;
-        this.showVisibility = false;
-        return true;
-      }
-      AppRouter.back();
-      return true;
-    });
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

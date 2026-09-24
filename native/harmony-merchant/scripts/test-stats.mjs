@@ -18,6 +18,7 @@ function compile(source, context = {}, dependencies = {}) {
   return exports
 }
 const models = compile(read('StatsModels'))
+const { SecondaryBackHandler } = compile(fs.readFileSync(path.join(base, '../../core/ui/SecondaryPolicy.ets'), 'utf8'))
 const { StatsSelection: Selection } = models
 const { StatsPolicy: Policy, StatsRequests: Requests } = compile(
   read('StatsPolicy'),
@@ -36,6 +37,7 @@ function controller(name, anchor, extra = {}) {
     StatsPolicy: Policy,
     StatsRequests: Requests,
     StatsSelection: Selection,
+    SecondaryBackHandler,
     Scroller: class {},
     ...extra,
   })[name]

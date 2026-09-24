@@ -1,6 +1,8 @@
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { MenuCopy, MenuHeading, MenuRow } from './LocalizedMenu';
 import { common } from '@kit.AbilityKit';
-import { IBestDialogUtil, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestDialogUtil, IBestToast } from '@ibestservices/ibest-ui';
 import { AppConfig } from '../../core/config/AppConfig';
 import { PhoneService } from '../../core/device/PhoneService';
 import { I18n } from '../../core/i18n/I18n';
@@ -20,6 +22,11 @@ export function SettingsBuilder(_: string) { SettingsPage(); }
 
 @Component
 struct SettingsPage {
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageProp('windowWidth') private windowWidth: number = 390;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -29,7 +36,7 @@ struct SettingsPage {
   @State private publicSettings: PublicSystemSettings | null = null;
   @State private loggingOut: boolean = false;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     this.refreshCacheSize();
     this.loadPublicSettings();
   }
@@ -39,7 +46,11 @@ struct SettingsPage {
   }
 
   private async loadPublicSettings(): Promise<void> {
-    try { this.publicSettings = await PublicSettingsRepository.load(); } catch (_) {}
+    const pageTicket = this.pageScope.begin('loadPublicSettings');
+    this.pageError = '';
+    try { this.publicSettings = await this.pageScope.read(PublicSettingsRepository.load(), pageTicket); } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);}
   }
 
   private refreshCacheSize(): void {
@@ -165,7 +176,7 @@ struct SettingsPage {
           () => AppRouter.push('AccountSecurity'), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
-        .borderRadius(DesignTokens.RADIUS_LARGE).clip(true);
+        .borderRadius(16).clip(true);
     }.width('100%');
   }
 
@@ -182,7 +193,7 @@ struct SettingsPage {
           () => AppRouter.push('NotificationSettings'), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
-        .borderRadius(DesignTokens.RADIUS_LARGE).clip(true);
+        .borderRadius(16).clip(true);
     }.width('100%');
   }
 
@@ -201,7 +212,7 @@ struct SettingsPage {
           () => AppRouter.push('Agreements', new AgreementRouteParams('collect')), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
-        .borderRadius(DesignTokens.RADIUS_LARGE).clip(true);
+        .borderRadius(16).clip(true);
     }.width('100%');
   }
 
@@ -220,7 +231,7 @@ struct SettingsPage {
           () => this.contactSupport(), false);
       }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
         .border({ width: 1, color: DesignTokens.border(this.darkMode) })
-        .borderRadius(DesignTokens.RADIUS_LARGE).clip(true);
+        .borderRadius(16).clip(true);
     }.width('100%');
   }
 
@@ -231,17 +242,18 @@ struct SettingsPage {
       Text(I18n.text(this.language, '退出登录', 'Sign out')).fontSize(14).fontWeight(FontWeight.Medium)
         .fontColor(DesignTokens.danger(this.darkMode));
     }.width('100%').height(52).justifyContent(FlexAlign.Center)
-      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)
+      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16)
       .border({ width: 1, color: DesignTokens.border(this.darkMode) }).onClick(() => this.confirmLogout());
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '设置', 'Settings'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, onRetry: () => this.loadPublicSettings() });
         Scroll() {
           Column({ space: 16 }) {
             if (this.windowWidth >= 600) {
@@ -259,7 +271,7 @@ struct SettingsPage {
             Text(I18n.text(this.language,
               '设置更改会保存到本机；通知偏好会同步到服务端。',
               'Settings are saved on this device. Notification preferences sync with the server.'))
-              .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center).width('100%');
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center).width('100%');
           }.width('100%').constraintSize({ maxWidth: 960 }).padding({
             left: this.windowWidth >= 720 ? 24 : 14, right: this.windowWidth >= 720 ? 24 : 14,
             top: 14, bottom: this.safeBottom + 24

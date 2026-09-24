@@ -1,3 +1,4 @@
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { IBestNavBar } from '@ibestservices/ibest-ui';
 import { I18n } from '../../core/i18n/I18n';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -92,10 +93,10 @@ struct AppearanceSettingsPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({ title: I18n.text(this.language, '主题与语言', 'Theme and language'), isShowStatusBar: true,
+        SecondaryHeader({ title: I18n.text(this.language, '主题与语言', 'Theme and language'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back() });
         Scroll() {
-          Column({ space: 24 }) {
+          Column({ space: 12 }) {
             Row({ space: 14 }) {
               Image($r('app.media.commerce_appearance_lite')).width(48).height(48).objectFit(ImageFit.Contain);
               Column({ space: 5 }) {
@@ -133,7 +134,7 @@ struct AppearanceSettingsPage {
                 .layoutWeight(1).lineHeight(19);
             }.width('100%').padding(14).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(14)
               .onClick((): void => { if (this.saveState === 'failed') AppearanceService.retryPersistence(); });
-          }.width('100%').constraintSize({ maxWidth: 680 }).padding({ left: 20, right: 20, top: 24, bottom: this.safeBottom + 24 });
+          }.width('100%').constraintSize({ maxWidth: 680 }).padding({ left: 16, right: 16, top: 12, bottom: this.safeBottom + 24 });
         }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
       }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
     }.hideTitleBar(true);

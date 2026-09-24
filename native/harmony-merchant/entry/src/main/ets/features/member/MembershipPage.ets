@@ -1,5 +1,7 @@
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
-import { IBestButton, IBestNavBar, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestButton, IBestTag, IBestToast } from '@ibestservices/ibest-ui';
 import { HuaweiIapService } from '../../core/iap/HuaweiIapService';
 import { IapTransactionPolicy } from '../../core/iap/IapTransactionPolicy';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -17,6 +19,11 @@ export function MembershipBuilder(_: string) { MembershipPage(); }
 
 @Component
 struct MembershipPage {
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') @Watch('onLanguageChanged') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -30,7 +37,7 @@ struct MembershipPage {
   @State private restoring: boolean = false;
   private requestEpoch: number = 0;
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
   private onLanguageChanged(): void { this.load(); }
 
@@ -39,40 +46,54 @@ struct MembershipPage {
   }
 
   private async load(): Promise<void> {
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     const epoch = ++this.requestEpoch;
     this.loading = true;
     let failedSections: number = 0;
     try {
-      const plans = await BusinessRepository.memberPlans();
+      const plans = await this.pageScope.read(BusinessRepository.memberPlans(), pageTicket);
       if (epoch === this.requestEpoch) this.plans = plans;
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       failedSections += 1;
     }
     try {
-      const membership = await BusinessRepository.membership();
+      const membership = await this.pageScope.read(BusinessRepository.membership(), pageTicket);
       if (epoch === this.requestEpoch) this.membership = membership;
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       failedSections += 1;
     }
     try {
-      const quota = await BusinessRepository.quota();
+      const quota = await this.pageScope.read(BusinessRepository.quota(), pageTicket);
       if (epoch === this.requestEpoch) this.quota = quota;
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       failedSections += 1;
     }
     try {
-      const notices = await BusinessRepository.membershipNotices();
+      const notices = await this.pageScope.read(BusinessRepository.membershipNotices(), pageTicket);
       if (epoch === this.requestEpoch) this.notices = notices;
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       failedSections += 1;
     }
     try {
-      const payments = await BusinessRepository.payments();
+      const payments = await this.pageScope.read(BusinessRepository.payments(), pageTicket);
       if (epoch === this.requestEpoch) this.payments = payments;
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       failedSections += 1;
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       if (epoch === this.requestEpoch) this.loading = false;
+    }
     }
     if (epoch === this.requestEpoch && failedSections > 0) {
       IBestToast.show(I18n.text(this.language,
@@ -109,7 +130,7 @@ struct MembershipPage {
         : I18n.text(this.language, '权益已激活，请稍后点击恢复购买完成确认', 'Benefits are active. Use Restore Purchases later to finish confirmation.'));
       await this.load();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : error instanceof Error ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : error instanceof Error ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '购买未完成', 'Purchase was not completed'));
     } finally {
       this.purchasing = '';
@@ -143,7 +164,7 @@ struct MembershipPage {
           `恢复完成：成功 ${restored} 条，待处理 ${failed} 条`,
           `Restore completed: ${restored} succeeded, ${failed} pending`));
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '恢复购买失败', 'Failed to restore purchases'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '恢复购买失败', 'Failed to restore purchases'));
     } finally {
       this.restoring = false;
     }
@@ -156,7 +177,7 @@ struct MembershipPage {
       await HuaweiIapService.manageSubscriptions(this.context());
       await this.load();
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '无法打开华为订阅管理', 'Unable to open Huawei subscription management'));
     } finally {
       this.purchasing = '';
@@ -224,7 +245,7 @@ struct MembershipPage {
       Text(`¥${item.price.toFixed(2)} / ${this.periodLabel(item)}`)
         .fontSize(23).fontWeight(FontWeight.Bold).fontColor(DesignTokens.brand(this.darkMode)).width('100%');
       if (item.originalPrice && item.originalPrice > item.price) {
-        Text(I18n.text(this.language, `原价 ¥${item.originalPrice.toFixed(2)}`, `Regular ¥${item.originalPrice.toFixed(2)}`)).fontSize(11)
+        Text(I18n.text(this.language, `原价 ¥${item.originalPrice.toFixed(2)}`, `Regular ¥${item.originalPrice.toFixed(2)}`)).fontSize(12)
           .fontColor(DesignTokens.muted(this.darkMode)).decoration({ type: TextDecorationType.LineThrough });
       }
       ForEach(this.planRights(item), (feature: string) => {
@@ -233,7 +254,7 @@ struct MembershipPage {
           Text(feature).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
         }.width('100%');
       }, (feature: string) => feature);
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: this.membership?.planId === item.id
           ? I18n.text(this.language, '续费', 'Renew')
           : I18n.text(this.language, '立即开通', 'Subscribe'), type: 'primary',
@@ -242,13 +263,13 @@ struct MembershipPage {
         onBtnClick: () => this.purchase(item)
       });
     }.width('100%').alignItems(HorizontalAlign.Start).padding(16)
-      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '会员中心', 'Membership'), isShowRight: true,
           rightLabel: this.restoring
             ? I18n.text(this.language, '恢复中…', 'Restoring…')
@@ -256,6 +277,7 @@ struct MembershipPage {
           isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back(),
           onRightClick: () => this.restorePurchases()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
         if (this.loading) {
           Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }
             .layoutWeight(1).justifyContent(FlexAlign.Center);
@@ -298,7 +320,7 @@ struct MembershipPage {
                       .fontSize(12).fontColor(DesignTokens.brand(this.darkMode)).width('100%');
                   }
                   if (this.membership.autoRenew) {
-                    IBestButton({
+                    IBestButton({ btnHeight: 44,
                       text: I18n.text(this.language, '管理自动续费', 'Manage auto-renewal'),
                       plain: true, color: DesignTokens.brand(this.darkMode), btnWidth: '100%',
                       loading: this.purchasing === '__manage__',
@@ -306,8 +328,8 @@ struct MembershipPage {
                       onBtnClick: () => this.manageSubscription()
                     });
                   }
-                }.width('100%').padding(18).backgroundColor(DesignTokens.brandTint(this.darkMode))
-                  .borderRadius(DesignTokens.RADIUS_LARGE);
+                }.width('100%').padding(16).backgroundColor(DesignTokens.brandTint(this.darkMode))
+                  .borderRadius(16);
               }
               if (this.quota) {
                 Column({ space: 8 }) {
@@ -326,7 +348,7 @@ struct MembershipPage {
                   Progress({ value: this.quota.impressionUsed, total: Math.max(1, this.quota.impressionLimit) })
                     .color(DesignTokens.brand(this.darkMode)).width('100%');
                 }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-                  .borderRadius(DesignTokens.RADIUS_LARGE);
+                  .borderRadius(16);
               }
               if (this.plansOf('basic').length > 0) {
                 Text(I18n.text(this.language, '基础会员', 'Core membership')).fontSize(18).fontWeight(FontWeight.Bold).width('100%');
@@ -349,7 +371,7 @@ struct MembershipPage {
                 Row() {
                   Column({ space: 4 }) {
                     Text(item.planName).fontSize(14).fontWeight(FontWeight.Medium);
-                    Text(item.createdAt.slice(0, 10)).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                    Text(item.createdAt.slice(0, 10)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
                   }.layoutWeight(1).alignItems(HorizontalAlign.Start);
                   Text(`¥${item.amount.toFixed(2)}`).fontSize(14);
                   IBestTag({ text: this.statusLabel(item.status), plain: true, color: DesignTokens.brand(this.darkMode) });

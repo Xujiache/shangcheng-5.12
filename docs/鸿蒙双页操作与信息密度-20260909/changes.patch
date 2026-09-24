@@ -1,0 +1,749 @@
+--- before/entry/src/main/ets/features/product/ProductEditPage.ets
++++ after/entry/src/main/ets/features/product/ProductEditPage.ets
+@@ -22,7 +22,7 @@
+ import { ProductImageItem, ProductImageQueue } from './ProductImageQueue';
+ import { ProductEditPolicy, ProductEditSession, ProductFieldError } from './ProductEditPolicy';
+ import { ProductMediaEditor } from './ProductMediaEditor';
+-import { EditorHeading, EditorActionRow, EditorChoice } from './ProductEditorControls';
++import { EditorHeading, EditorActionRow, EditorChoice, EditorNumberField } from './ProductEditorControls';
+ import { ResilientRemoteImage } from '../../core/ui/ResilientRemoteImage';
+ import { SessionStore } from '../../core/storage/SessionStore';
+ 
+@@ -46,6 +46,8 @@
+   @State private categoryId: string = '';
+   @State private merchantCategoryId: string = '';
+   @State private description: string = '';
++  @State private descriptionExpanded: boolean = false;
++  @State private directSku: boolean = false;
+   @State private images: ProductImageItem[] = [];
+   @State private detailImages: ProductImageItem[] = [];
+   @State private shippingFactory: boolean = true;
+@@ -361,12 +363,12 @@
+   }
+ 
+   private saveSku(): void {
+-    if (this.skuUploading || this.saving) return;
++    if (!this.current() || this.skuUploading || this.saving) return;
+     const retail = Number(this.skuRetail);
+     const wholesale = Number(this.skuWholesale);
+     const member = Number(this.skuMember);
+     const stock = Number(this.skuStock);
+-    if (!Number.isFinite(retail) || retail < 0 ||
++    if ([this.skuRetail, this.skuWholesale, this.skuMember, this.skuStock].some((value: string) => !value.trim()) || !Number.isFinite(retail) || retail < 0 ||
+       !Number.isFinite(wholesale) || wholesale < 0 || !Number.isFinite(member) || member < 0 ||
+       !Number.isInteger(stock) || stock < 0) {
+       IBestToast.show(I18n.text(this.language, '请完整填写规格与价格库存', 'Complete the option, prices and stock')); return;
+@@ -382,7 +384,9 @@
+     const next = this.editorSkus.slice();
+     if (this.skuEditIndex >= 0) next[this.skuEditIndex] = sku; else next.push(sku);
+     this.editorSkus = next;
+-    this.skuEditorVisible = false;
++    // A direct edit has a single confirmation; matrix edits remain isolated until the parent panel is confirmed.
++    if (this.directSku) this.skus = ProductEditPolicy.cloneSkus(next);
++    this.directSku = false; this.skuEpoch += 1; this.skuEditorVisible = false;
+   }
+ 
+   private openSpecEditor(index: number = -1): void {
+@@ -554,14 +558,28 @@
+     if (commit) this.detailImages = this.detailDraft.slice();
+     this.mediaOperation += 1; this.mediaQueue.cancel(); this.uploading = false; this.detailVisible = false;
+   }
+-  private openOptions(): void { this.editorSkus = ProductEditPolicy.cloneSkus(this.skus); this.editorGroups = ProductEditPolicy.cloneGroups(this.specGroups); this.optionsVisible = true; }
++  private openPricing(): void {
++    if (!this.current() || this.loading || this.saving) return;
++    if (this.skus.length !== 1) { this.openOptions(); return; }
++    this.editorSkus = ProductEditPolicy.cloneSkus(this.skus);
++    this.editorGroups = ProductEditPolicy.cloneGroups(this.specGroups);
++    this.directSku = true; this.openSku(0);
++  }
++  private openOptions(): void { this.directSku = false; this.editorSkus = ProductEditPolicy.cloneSkus(this.skus); this.editorGroups = ProductEditPolicy.cloneGroups(this.specGroups); this.optionsVisible = true; }
+   private acceptOptions(): void { this.skus = ProductEditPolicy.cloneSkus(this.editorSkus); this.specGroups = ProductEditPolicy.cloneGroups(this.editorGroups); this.optionsVisible = false; }
+-  private closeInner(): void { this.skuEpoch += 1; this.skuUploading = false; this.skuEditorVisible = false; this.specEditorVisible = false; this.batchEditorVisible = false; }
++  private closeInner(): void { this.directSku = false; this.skuEpoch += 1; this.skuUploading = false; this.skuEditorVisible = false; this.specEditorVisible = false; this.batchEditorVisible = false; }
+   private openCategory(store: boolean): void { this.categoryStore = store; this.categoryDraft = store ? this.merchantCategoryId : this.categoryId; this.categorySearch = ''; this.categoryVisible = true; }
+   private acceptCategory(): void { if (!this.categoryStore && !this.categoryDraft) return; if (this.categoryStore) this.merchantCategoryId = this.categoryDraft; else this.categoryId = this.categoryDraft; this.categoryVisible = false; }
+   private categoryName(store: boolean): string { return (store ? this.merchantCategories : this.categories).find((item: CategoryItem) => item.id === (store ? this.merchantCategoryId : this.categoryId))?.name || ''; }
+   private filteredCategories(): CategoryItem[] { const q = this.categorySearch.trim().toLocaleLowerCase(); return (this.categoryStore ? this.merchantCategories : this.categories).filter((item: CategoryItem) => item.name.toLocaleLowerCase().includes(q)); }
+-  private priceSummary(): string { const prices = this.skus.map((sku: ProductSku) => Number(sku.priceRetail)); return prices.length ? `¥${Math.min(...prices).toFixed(2)} · ${this.skus.length} SKU` : ''; }
++  private priceSummary(): string {
++    const active = this.skus.filter((sku: ProductSku) => sku.active !== false);
++    const prices = active.map((sku: ProductSku) => Number(sku.priceRetail)).filter((value: number) => Number.isFinite(value));
++    const stock = active.reduce((sum: number, sku: ProductSku) => sum + (Number(sku.stock) || 0), 0);
++    const price = this.pricingMode === 'by-size' ? `${this.skus.length} SKU`
++      : `${I18n.text(this.language, '零售', 'Retail')} ${prices.length ? `¥${Math.min(...prices).toFixed(2)}` : '—'}`;
++    return `${price} · ${I18n.text(this.language, '可售库存', 'Stock')} ${stock}`;
++  }
+ 
+ 
+   @Builder private fieldErrors(field: string) {
+@@ -571,69 +589,90 @@
+   }
+ 
+   @Builder private imagesSection() {
+-    Column({ space: 16 }) {
+-      EditorHeading({ zh: '商品图片', en: 'Product images', step: '01' });
++    Column({ space: 8 }) {
++      Row({ space: 8 }) {
++        EditorHeading({ zh: '商品图片', en: 'Product images', step: '01' }).layoutWeight(1);
++        Text(`${this.images.length}/10`).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++      }.width('100%');
+       ProductMediaEditor({ items: $images, busy: this.uploading || this.saving, onAdd: () => this.addImageMenu(false),
+         onPreview: (i: number) => this.previewImage(i, false), onMenu: (i: number) => this.imageMenu(i, false), onRetry: (i: number) => this.failedImageMenu(i, false) });
+       this.fieldErrors('images');
+-      EditorActionRow({ zh: '详情图片', en: 'Detail images', value: `${this.detailImages.length}/20`, action: () => this.openDetails() });
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++      EditorActionRow({ zh: '详情图片', en: 'Detail images', inline: true, value: `${this.detailImages.length}/20`, action: () => this.openDetails() });
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+   }
+ 
+   @Builder private basicSection() {
+-    Column({ space: 12 }) {
++    Column({ space: 8 }) {
+       EditorHeading({ zh: '基础信息', en: 'Basic information', step: '02' });
+       Text(I18n.text(this.language, '商品名称 *', 'Product name *')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+       TextInput({ text: this.name, placeholder: I18n.text(this.language, '填写清晰、易识别的商品名称', 'Enter a clear product name') })
+-        .height(50).fontSize(15).padding(12).borderRadius(12).backgroundColor(DesignTokens.subtle(this.darkMode))
++        .height(48).fontSize(15).padding(12).borderRadius(10).backgroundColor(DesignTokens.subtle(this.darkMode))
+         .fontColor(DesignTokens.text(this.darkMode)).onChange((value: string) => { this.name = value; });
+       this.fieldErrors('name');
+-      EditorActionRow({ zh: '平台分类 *', en: 'Platform category *', value: this.categoryName(false), hintZh: '请选择商品所属分类', hintEn: 'Choose a category', action: () => this.openCategory(false) });
+-      this.fieldErrors('category');
+-      EditorActionRow({ zh: '店铺分类', en: 'Store category', value: this.categoryName(true), hintZh: '选填 · 不归类', hintEn: 'Optional · Uncategorized', action: () => this.openCategory(true) });
+-      Text(I18n.text(this.language, '商品描述', 'Description')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+-      TextArea({ text: this.description, placeholder: I18n.text(this.language, '介绍材质、用途和商品特点', 'Describe materials, uses and features') })
+-        .height(120).fontSize(14).padding(14).backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode))
+-        .borderRadius(12).onChange((value: string) => { this.description = value; });
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++      Column() {
++        EditorActionRow({ zh: '平台分类 *', en: 'Platform category *', inline: true, value: this.categoryName(false), hintZh: '请选择', hintEn: 'Select', action: () => this.openCategory(false) });
++        this.fieldErrors('category');
++        EditorActionRow({ zh: '店铺分类', en: 'Store category', inline: true, value: this.categoryName(true), hintZh: '选填 · 不归类', hintEn: 'Optional', action: () => this.openCategory(true) });
++        EditorActionRow({ zh: this.descriptionExpanded ? '收起商品描述' : '商品描述', en: this.descriptionExpanded ? 'Hide description' : 'Description', inline: true,
++          value: this.descriptionExpanded ? '' : this.description, hintZh: this.descriptionExpanded ? '收起' : '选填', hintEn: this.descriptionExpanded ? 'Collapse' : 'Optional',
++          action: () => { this.descriptionExpanded = !this.descriptionExpanded; } });
++      }.width('100%');
++      if (this.descriptionExpanded) TextArea({ text: this.description, placeholder: I18n.text(this.language, '介绍材质、用途和商品特点', 'Describe materials, uses and features') })
++        .height(96).fontSize(14).padding(12).backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode))
++        .borderRadius(10).onChange((value: string) => { this.description = value; });
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+   }
+ 
+   @Builder private pricingSection() {
+-    Column({ space: 12 }) {
++    Column({ space: 10 }) {
+       EditorHeading({ zh: '价格与库存', en: 'Pricing and inventory', step: '03' });
+-      EditorChoice({ zh: '按规格定价', en: 'Price by SKU', selected: this.pricingMode === 'standard', action: () => this.switchPricingMode('standard') });
+-      EditorChoice({ zh: '按尺寸计价', en: 'Price by size', selected: this.pricingMode === 'by-size', action: () => this.switchPricingMode('by-size') });
++      Row({ space: 8 }) {
++        EditorChoice({ zh: '按规格', en: 'Per SKU', selected: this.pricingMode === 'standard', action: () => this.switchPricingMode('standard') }).layoutWeight(1);
++        EditorChoice({ zh: '按尺寸', en: 'By size', selected: this.pricingMode === 'by-size', action: () => this.switchPricingMode('by-size') }).layoutWeight(1);
++      }.width('100%');
+       if (this.pricingMode === 'by-size') {
+-        IBestField({ value: $pricePerSqm, label: I18n.text(this.language, '每平方米价格', 'Price / m²'), placeholder: '0.00', type: 'decimal' });
+-        IBestField({ value: $baseFee, label: I18n.text(this.language, '基础费用', 'Base fee'), placeholder: '0.00', type: 'decimal' });
++        Row({ space: 12 }) {
++          EditorNumberField({ value: $pricePerSqm, zh: '单价（元/㎡）', en: 'Price / m²' }).layoutWeight(1);
++          EditorNumberField({ value: $baseFee, zh: '基础费用（元）', en: 'Base fee' }).layoutWeight(1);
++        }.width('100%');
+         Row({ space: 8 }) {
++          Text(I18n.text(this.language, '尺寸单位', 'Unit')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
+           EditorChoice({ zh: '厘米 cm', en: 'cm', selected: this.sizeUnit === 'cm', action: () => { this.sizeUnit = 'cm'; } }).layoutWeight(1);
+           EditorChoice({ zh: '米 m', en: 'm', selected: this.sizeUnit === 'm', action: () => { this.sizeUnit = 'm'; } }).layoutWeight(1);
+         }.width('100%');
+-        IBestField({ value: $minLength, label: I18n.text(this.language, '最小长度', 'Min. length'), type: 'decimal' });
+-        IBestField({ value: $maxLength, label: I18n.text(this.language, '最大长度', 'Max. length'), type: 'decimal' });
+-        IBestField({ value: $minWidth, label: I18n.text(this.language, '最小宽度', 'Min. width'), type: 'decimal' });
+-        IBestField({ value: $maxWidth, label: I18n.text(this.language, '最大宽度', 'Max. width'), type: 'decimal' });
++        Row({ space: 12 }) {
++          EditorNumberField({ value: $minLength, zh: '最小长度', en: 'Min. length' }).layoutWeight(1);
++          EditorNumberField({ value: $maxLength, zh: '最大长度', en: 'Max. length' }).layoutWeight(1);
++        }.width('100%');
++        Row({ space: 12 }) {
++          EditorNumberField({ value: $minWidth, zh: '最小宽度', en: 'Min. width' }).layoutWeight(1);
++          EditorNumberField({ value: $maxWidth, zh: '最大宽度', en: 'Max. width' }).layoutWeight(1);
++        }.width('100%');
+         Text(I18n.text(this.language, '成交价 = 长 × 宽折算平方米 × 单价 + 基础费用', 'Price = area in m² × unit rate + base fee'))
+           .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+         this.fieldErrors('size');
+       }
+-      EditorActionRow({ zh: '规格、价格与库存', en: 'Options, prices and stock', value: this.priceSummary(), hintZh: '设置规格与库存', hintEn: 'Configure options and stock', action: () => this.openOptions() });
+-      this.fieldErrors('skus');
+-      EditorActionRow({ zh: '全店价格展示规则', en: 'Store-wide price visibility', hintZh: '管理不同客户看到的价格', hintEn: 'Manage prices shown to customer tiers', action: () => AppRouter.push('PriceRule') });
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++      Column() {
++        EditorActionRow({ zh: '编辑价格与库存', en: 'Edit prices and stock', value: this.priceSummary(), action: () => this.openPricing() });
++        this.fieldErrors('skus');
++        EditorActionRow({ zh: '规格管理', en: 'Manage options', inline: true, value: `${this.specGroups.length} ${I18n.text(this.language, '组', 'groups')} · ${this.skus.length} SKU`, action: () => this.openOptions() });
++        EditorActionRow({ zh: '全店价格展示', en: 'Price visibility', inline: true, hintZh: '全店通用', hintEn: 'Store-wide', action: () => AppRouter.push('PriceRule') });
++      }.width('100%');
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+   }
+ 
+   @Builder private shippingSection() {
+-    Column({ space: 12 }) {
++    Column({ space: 8 }) {
+       EditorHeading({ zh: '配送设置', en: 'Delivery', step: '04' });
+-      Text(I18n.text(this.language, '至少选择一种，可同时支持多种方式', 'Choose one or more delivery methods'))
++      Text(I18n.text(this.language, '至少选择一种，可多选', 'Choose one or more methods'))
+         .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+-      EditorChoice({ zh: '厂家直发', en: 'Factory shipping', selected: this.shippingFactory, action: () => { this.shippingFactory = !this.shippingFactory; } });
+-      EditorChoice({ zh: '同城配送', en: 'Local delivery', selected: this.shippingLocal, action: () => { this.shippingLocal = !this.shippingLocal; } });
+-      EditorChoice({ zh: '到店自提', en: 'Store pickup', selected: this.shippingPickup, action: () => { this.shippingPickup = !this.shippingPickup; } });
++      Column({ space: 4 }) {
++        EditorChoice({ zh: '厂家直发', en: 'Factory shipping', selected: this.shippingFactory, action: () => { this.shippingFactory = !this.shippingFactory; } });
++        EditorChoice({ zh: '同城配送', en: 'Local delivery', selected: this.shippingLocal, action: () => { this.shippingLocal = !this.shippingLocal; } });
++        EditorChoice({ zh: '到店自提', en: 'Store pickup', selected: this.shippingPickup, action: () => { this.shippingPickup = !this.shippingPickup; } });
++      }.width('100%');
+       this.fieldErrors('shipping');
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+   }
+ 
+   @Builder private panelHeader(zh: string, en: string, close: () => void) {
+@@ -746,11 +785,20 @@
+ 
+   @Builder private innerPanel() {
+     Column() {
+-      this.panelHeader(this.skuEditorVisible ? '编辑 SKU' : this.specEditorVisible ? '编辑规格组' : '批量设置',
+-        this.skuEditorVisible ? 'Edit SKU' : this.specEditorVisible ? 'Edit option group' : 'Bulk edit', () => this.closeInner());
++      this.panelHeader(this.skuEditorVisible ? (this.directSku ? '价格与库存' : '编辑 SKU') : this.specEditorVisible ? '编辑规格组' : '批量设置',
++        this.skuEditorVisible ? (this.directSku ? 'Prices and stock' : 'Edit SKU') : this.specEditorVisible ? 'Edit option group' : 'Bulk edit', () => this.closeInner());
+       Scroll() {
+         Column({ space: 16 }) {
+           if (this.skuEditorVisible) {
++            Text(this.skuLabel).fontSize(16).fontWeight(FontWeight.Medium).width('100%').fontColor(DesignTokens.text(this.darkMode));
++            Row({ space: 12 }) {
++              EditorNumberField({ value: $skuRetail, zh: '零售价（元）', en: 'Retail price' }).layoutWeight(1);
++              EditorNumberField({ value: $skuStock, zh: '库存', en: 'Stock', integer: true }).layoutWeight(1);
++            }.width('100%');
++            Row({ space: 12 }) {
++              EditorNumberField({ value: $skuWholesale, zh: '批发价（元）', en: 'Wholesale price' }).layoutWeight(1);
++              EditorNumberField({ value: $skuMember, zh: '会员价（元）', en: 'Member price' }).layoutWeight(1);
++            }.width('100%');
+             Row({ space: 14 }) {
+               ResilientRemoteImage({ originalUrl: this.skuImage, widthValue: 84, heightValue: 84 });
+               Column({ space: 4 }) {
+@@ -761,11 +809,6 @@
+               }.layoutWeight(1).enabled(!this.skuUploading);
+             }.width('100%');
+             if (this.skuUploading) Text(I18n.text(this.language, '图片上传中…', 'Uploading image…')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+-            Text(this.skuLabel).fontSize(16).fontWeight(FontWeight.Medium).width('100%').fontColor(DesignTokens.text(this.darkMode));
+-            IBestField({ value: $skuRetail, label: I18n.text(this.language, '零售价', 'Retail price'), placeholder: '0.00', type: 'decimal' });
+-            IBestField({ value: $skuWholesale, label: I18n.text(this.language, '批发价', 'Wholesale price'), placeholder: '0.00', type: 'decimal' });
+-            IBestField({ value: $skuMember, label: I18n.text(this.language, '会员价', 'Member price'), placeholder: '0.00', type: 'decimal' });
+-            IBestField({ value: $skuStock, label: I18n.text(this.language, '库存', 'Stock'), placeholder: '0', type: 'number' });
+             EditorChoice({ zh: '启用此 SKU', en: 'Enable this SKU', selected: this.skuActive, action: () => { this.skuActive = !this.skuActive; } });
+           } else if (this.specEditorVisible) {
+             IBestField({ value: $specName, label: I18n.text(this.language, '规格名称', 'Option name'), placeholder: I18n.text(this.language, '例如：颜色', 'Example: Colour') });
+@@ -782,7 +825,7 @@
+           }
+         }.width('100%').padding(18);
+       }.layoutWeight(1).width('100%').align(Alignment.Top).scrollBar(BarState.Off);
+-      this.panelFooter('保存修改', 'Save changes', () => { if (this.skuEditorVisible) this.saveSku(); else if (this.specEditorVisible) this.saveSpecGroup(); else this.applyBatch(); }, () => this.closeInner());
++      this.panelFooter(this.directSku ? '应用到商品' : '保存修改', this.directSku ? 'Apply to product' : 'Save changes', () => { if (this.skuEditorVisible) this.saveSku(); else if (this.specEditorVisible) this.saveSpecGroup(); else this.applyBatch(); }, () => this.closeInner());
+     }.height('92%').width('100%').backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 }).clip(true);
+   }
+ 
+@@ -804,7 +847,7 @@
+               Button(I18n.text(this.language, '重新加载', 'Retry')).onClick(() => this.initialize());
+             }.layoutWeight(1).justifyContent(FlexAlign.Center);
+           } else {
+-            List({ space: 14, scroller: this.scroller }) {
++            List({ space: 10, scroller: this.scroller }) {
+               ListItem() { this.imagesSection(); }
+               ListItem() { this.basicSection(); }
+               ListItem() { this.pricingSection(); }
+@@ -822,7 +865,7 @@
+               .opacity(this.saving || this.uploading ? 0.55 : 1);
+           }
+         }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode))
+-          .enabled(!this.categoryVisible && !this.optionsVisible && !this.detailVisible);
++          .enabled(!this.categoryVisible && !this.optionsVisible && !this.detailVisible && !this.skuEditorVisible && !this.specEditorVisible && !this.batchEditorVisible);
+         if (this.categoryVisible || this.optionsVisible || this.detailVisible) {
+           Column().width('100%').height('100%').backgroundColor('#66000000').onClick(() => this.requestBack());
+           if (this.categoryVisible) this.categoryPanel();
+--- before/entry/src/main/ets/features/product/ProductMediaEditor.ets
++++ after/entry/src/main/ets/features/product/ProductMediaEditor.ets
+@@ -18,52 +18,59 @@
+   @Builder private picture(item: ProductImageItem, size: number) {
+     ResilientRemoteImage({ originalUrl: item.preview || item.url, widthValue: size, heightValue: size, radius: 12 });
+   }
++  @Builder private addTile() {
++    Button({ type: ButtonType.Normal }) {
++      Column({ space: 8 }) {
++        MerchantIcon({ name: 'add-o', iconSize: 24, color: DesignTokens.brand(this.darkMode) });
++        Text(I18n.text(this.language, '添加图片', 'Add image')).fontSize(13).fontColor(DesignTokens.text(this.darkMode));
++        Text(`${this.items.length}/${this.detail ? 20 : 10}`).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++      }.width('100%');
++    }.width(88).height(88).borderRadius(12).backgroundColor(DesignTokens.subtle(this.darkMode))
++      .enabled(!this.busy).onClick(this.onAdd);
++  }
+   build() {
+-    Column({ space: 14 }) {
+-      if (!this.detail && this.items.length > 0) {
+-        Row({ space: 16 }) {
+-          this.picture(this.items[0], 116);
+-          Column({ space: 10 }) {
+-            Text(I18n.text(this.language, '商品封面', 'Cover image')).fontSize(16).fontWeight(FontWeight.Medium)
+-              .fontColor(DesignTokens.text(this.darkMode));
+-            Text(I18n.text(this.language, '第一张图片将展示在商品列表', 'The first image appears in your product list'))
+-              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+-            Text(I18n.text(this.language, '预览大图', 'Preview')).fontSize(13).fontColor(DesignTokens.brand(this.darkMode))
+-              .padding({ top: 10, bottom: 10 }).onClick(() => this.onPreview(0));
+-          }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+-        }.width('100%');
+-      }
++    Column({ space: 6 }) {
+       if (this.items.length > 0) {
+         Scroll() {
+-          Row({ space: 12 }) {
++          Row({ space: 10 }) {
+             ForEach(this.items, (item: ProductImageItem, index: number) => {
+-              Column({ space: 4 }) {
+-                Stack({ alignContent: Alignment.Center }) {
+-                  this.picture(item, 80);
+-                  if (item.state === 'uploading' || item.state === 'queued') LoadingProgress().width(24).height(24).color(DesignTokens.brand(this.darkMode));
++              Column() {
++                Stack({ alignContent: Alignment.TopStart }) {
++                  this.picture(item, 88);
++                  if (!this.detail && index === 0) Text(I18n.text(this.language, '封面', 'Cover')).fontSize(11)
++                    .fontColor(DesignTokens.onBrand(this.darkMode)).backgroundColor(DesignTokens.brand(this.darkMode))
++                    .padding({ left: 6, right: 6, top: 3, bottom: 3 }).borderRadius({ topLeft: 12, bottomRight: 8 });
++                  if (item.state === 'uploading' || item.state === 'queued') {
++                    Column() { LoadingProgress().width(24).height(24).color(DesignTokens.brand(this.darkMode)); }
++                      .width(88).height(88).justifyContent(FlexAlign.Center).backgroundColor('#44000000').borderRadius(12);
++                  }
+                 }.onClick(() => this.onPreview(index));
+                 Button({ type: ButtonType.Normal }) {
+                   Row({ space: 4 }) {
+-                    Text(item.state === 'failed' ? I18n.text(this.language, '重试', 'Retry')
+-                      : I18n.text(this.language, '管理', 'Manage')).fontSize(12).fontColor(item.state === 'failed' ? DesignTokens.danger(this.darkMode) : DesignTokens.text(this.darkMode));
+-                    MerchantIcon({ name: item.state === 'failed' ? 'replay' : 'more-o', iconSize: 14 , color: DesignTokens.muted(this.darkMode) });
++                    Text(item.state === 'failed' ? I18n.text(this.language, '重试', 'Retry') : I18n.text(this.language, '管理', 'Manage'))
++                      .fontSize(13).fontColor(item.state === 'failed' ? DesignTokens.danger(this.darkMode) : DesignTokens.muted(this.darkMode));
++                    MerchantIcon({ name: item.state === 'failed' ? 'replay' : 'more-o', iconSize: 14, color: DesignTokens.muted(this.darkMode) });
+                   }
+-                }.width(80).height(44).backgroundColor(Color.Transparent).enabled(!this.busy)
++                }.width(88).height(44).backgroundColor(Color.Transparent).enabled(!this.busy)
+                   .onClick(() => { if (item.state === 'failed') this.onRetry(index); else this.onMenu(index); });
+-              }.width(80);
++              }.width(88);
+             }, (item: ProductImageItem, index: number) => `${item.id}-${index}-${item.state}-${item.url}`);
+-          }.padding({ bottom: 2 });
++            if (this.items.length < (this.detail ? 20 : 10)) this.addTile();
++          }.alignItems(VerticalAlign.Top);
+         }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%');
+-      }
+-      if (this.items.length < (this.detail ? 20 : 10)) {
++      } else {
+         Button({ type: ButtonType.Normal }) {
+-          Row({ space: 10 }) {
+-            MerchantIcon({ name: 'photo-o', iconSize: 26 , color: DesignTokens.muted(this.darkMode) });
+-            Text(I18n.text(this.language, this.items.length ? '继续添加图片' : '添加商品图片', this.items.length ? 'Add more images' : 'Add product images'))
+-              .fontSize(14).fontColor(DesignTokens.text(this.darkMode));
+-            Text(`${this.items.length}/${this.detail ? 20 : 10}`).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+-          }
+-        }.width('100%').height(this.items.length ? 48 : 108).borderRadius(12)
++          Row({ space: 12 }) {
++            MerchantIcon({ name: 'photo-o', iconSize: 30, color: DesignTokens.brand(this.darkMode) });
++            Column({ space: 5 }) {
++              Text(I18n.text(this.language, '添加商品图片', 'Add product images')).fontSize(14).fontColor(DesignTokens.text(this.darkMode));
++              Text(I18n.text(this.language, this.detail ? '最多 20 张，按展示顺序排列' : '首张为封面，最多 10 张',
++                this.detail ? 'Up to 20 images, in display order' : 'First image is the cover · up to 10'))
++                .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++            }.layoutWeight(1).alignItems(HorizontalAlign.Start);
++            MerchantIcon({ name: 'add-o', iconSize: 20, color: DesignTokens.brand(this.darkMode) });
++          }.width('100%');
++        }.width('100%').constraintSize({ minHeight: 76 }).padding(12).borderRadius(12)
+           .backgroundColor(DesignTokens.subtle(this.darkMode)).enabled(!this.busy).onClick(this.onAdd);
+       }
+     }.width('100%').alignItems(HorizontalAlign.Start);
+--- before/entry/src/main/ets/features/product/ProductEditorControls.ets
++++ after/entry/src/main/ets/features/product/ProductEditorControls.ets
+@@ -13,7 +13,7 @@
+     Row({ space: 8 }) {
+       if (this.step) Text(this.step).fontSize(11).fontWeight(FontWeight.Medium).fontColor(DesignTokens.brand(this.darkMode))
+         .width(24).height(24).textAlign(TextAlign.Center).backgroundColor(DesignTokens.brandTint(this.darkMode)).borderRadius(8);
+-      Text(I18n.text(this.language, this.zh, this.en)).fontSize(17).fontWeight(FontWeight.Bold)
++      Text(I18n.text(this.language, this.zh, this.en)).fontSize(16).fontWeight(FontWeight.Bold)
+         .fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
+     }.width('100%');
+   }
+@@ -26,18 +26,25 @@
+   @Prop value: string = '';
+   @Prop hintZh: string = '';
+   @Prop hintEn: string = '';
++  @Prop inline: boolean = false;
+   action: () => void = () => {};
+   @StorageLink('language') private language: string = 'zh-CN';
+   @StorageLink('darkMode') private darkMode: boolean = false;
+   build() {
+     Row({ space: 12 }) {
+-      Column({ space: 6 }) {
+-        Text(I18n.text(this.language, this.zh, this.en)).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
+-        Text(this.value || I18n.text(this.language, this.hintZh, this.hintEn)).fontSize(12)
+-          .fontColor(DesignTokens.muted(this.darkMode)).maxLines(2);
+-      }.layoutWeight(1).alignItems(HorizontalAlign.Start);
++      if (this.inline) {
++        Text(I18n.text(this.language, this.zh, this.en)).fontSize(14).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
++        Text(this.value || I18n.text(this.language, this.hintZh, this.hintEn)).fontSize(13).layoutWeight(1.3)
++          .fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.End).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis });
++      } else {
++        Column({ space: 4 }) {
++          Text(I18n.text(this.language, this.zh, this.en)).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
++          if (this.value || this.hintZh || this.hintEn) Text(this.value || I18n.text(this.language, this.hintZh, this.hintEn)).fontSize(13)
++            .fontColor(DesignTokens.muted(this.darkMode)).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis });
++        }.layoutWeight(1).alignItems(HorizontalAlign.Start);
++      }
+       MerchantIcon({ name: 'arrow', iconSize: 18, color: DesignTokens.muted(this.darkMode) });
+-    }.width('100%').constraintSize({ minHeight: 64 }).padding({ top: 12, bottom: 12 })
++    }.width('100%').constraintSize({ minHeight: 52 }).padding({ top: 8, bottom: 8 })
+       .border({ width: { bottom: 0.5 }, color: DesignTokens.border(this.darkMode) }).onClick(this.action);
+   }
+ }
+@@ -60,3 +67,22 @@
+       .accessibilityText(I18n.text(this.language, this.zh, this.en)).accessibilityChecked(this.selected).onClick(this.action);
+   }
+ }
++
++@Component
++export struct EditorNumberField {
++  @Link value: string;
++  @Prop zh: string = '';
++  @Prop en: string = '';
++  @Prop integer: boolean = false;
++  @StorageLink('language') private language: string = 'zh-CN';
++  @StorageLink('darkMode') private darkMode: boolean = false;
++  build() {
++    Column({ space: 6 }) {
++      Text(I18n.text(this.language, this.zh, this.en)).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
++      TextInput({ text: this.value, placeholder: this.integer ? '0' : '0.00' })
++        .type(this.integer ? InputType.Number : InputType.NUMBER_DECIMAL).height(48).fontSize(15).padding({ left: 12, right: 12 })
++        .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).borderRadius(10)
++        .accessibilityText(I18n.text(this.language, this.zh, this.en)).onChange((value: string) => { this.value = value; });
++    }.width('100%').alignItems(HorizontalAlign.Start);
++  }
++}
+--- before/entry/src/main/ets/features/order/OrderDetailPage.ets
++++ after/entry/src/main/ets/features/order/OrderDetailPage.ets
+@@ -31,6 +31,7 @@
+   @State private order: OrderSummary | null = null;
+   @State private loading: boolean = true;
+   @State private refreshFailed: boolean = false;
++  @State private recordsExpanded: boolean = false;
+   @State private actionVisible: boolean = false;
+   @State private actionMode: OrderAction = 'share';
+   @State private company: string = '';
+@@ -262,44 +263,53 @@
+   }
+ 
+   @Builder private addressCard() {
+-    Column({ space: 14 }) {
+-      Row() {
+-        OrderSectionHeading({ zh: '收货信息', en: 'Delivery details', icon: 'location-o' }).layoutWeight(1);
+-        Text(this.shippingLabel()).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
++    Column({ space: 8 }) {
++      Row({ space: 8 }) {
++        OrderSectionHeading({ zh: '配送与收货', en: 'Delivery details', icon: 'location-o' }).layoutWeight(1);
++        Text(this.shippingLabel()).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).constraintSize({ maxWidth: '40%' });
+       }.width('100%');
+-      Column({ space: 8 }) {
++      Row({ space: 12 }) {
+         Text(this.order?.address?.name || I18n.text(this.language, '未提供收货人', 'Recipient not provided'))
+-          .fontSize(18).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).width('100%');
+-        if (this.order?.address?.phone) Text(this.order.address.phone).fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+-        Text([this.order?.address?.region || '', this.order?.address?.detail || ''].filter((part: string) => !!part).join(' ') || I18n.text(this.language, '未提供收货地址', 'Address not provided'))
+-          .fontSize(14).lineHeight(22).fontColor(DesignTokens.text(this.darkMode)).width('100%');
+-      }.width('100%').alignItems(HorizontalAlign.Start);
+-      Row({ space: 10 }) {
++          .fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
++        if (this.order?.address?.phone) Text(this.order.address.phone).fontSize(14).fontColor(DesignTokens.muted(this.darkMode))
++          .wordBreak(WordBreak.BREAK_ALL).textAlign(TextAlign.End).layoutWeight(1.2);
++      }.width('100%');
++      Text([this.order?.address?.region || '', this.order?.address?.detail || ''].filter((part: string) => !!part).join(' ') || I18n.text(this.language, '未提供收货地址', 'Address not provided'))
++        .fontSize(14).lineHeight(21).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++      if (this.order?.remark) {
++        Column({ space: 4 }) {
++          Text(I18n.text(this.language, '客户备注', 'Customer note')).fontSize(12).fontWeight(FontWeight.Medium).fontColor(DesignTokens.brand(this.darkMode)).width('100%');
++          Text(this.order.remark).fontSize(14).lineHeight(21).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++        }.width('100%').padding(10).borderRadius(10).backgroundColor(DesignTokens.brandTint(this.darkMode));
++      }
++      Row({ space: 8 }) {
+         Button(I18n.text(this.language, '联系客户', 'Contact customer'), { type: ButtonType.Normal }).height(44).layoutWeight(1).borderRadius(10).fontSize(13)
+           .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).enabled(!!this.order?.address?.phone).onClick(() => this.callCustomer());
+         Button(I18n.text(this.language, '复制收货信息', 'Copy address'), { type: ButtonType.Normal }).height(44).layoutWeight(1).borderRadius(10).fontSize(13)
+           .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode))
+           .enabled(!!OrderDetailPolicy.addressText(this.order?.address)).onClick(() => this.copyText(OrderDetailPolicy.addressText(this.order?.address)));
+       }.width('100%');
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++      if (this.order?.trackingNumber) {
++        Divider().color(DesignTokens.border(this.darkMode));
++        this.trackingCard();
++      }
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+   }
+   @Builder private trackingCard() {
+-    Column({ space: 12 }) {
+-      OrderSectionHeading({ zh: '物流信息', en: 'Shipment', icon: 'tosend' });
+-      Text(this.order?.trackingCompany || this.shippingLabel()).fontSize(15).fontWeight(FontWeight.Medium)
+-        .fontColor(DesignTokens.text(this.darkMode)).width('100%');
+-      Row({ space: 10 }) {
+-        Text(this.order?.trackingNumber || '—').fontSize(16).wordBreak(WordBreak.BREAK_ALL).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
+-        Button(I18n.text(this.language, '复制', 'Copy'), { type: ButtonType.Normal }).height(44).padding({ left: 14, right: 14 }).fontSize(12).borderRadius(10)
+-          .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).onClick(() => this.copyText(this.order?.trackingNumber || ''));
+-      }.width('100%');
+-      if (this.order?.shippedAt) OrderInfoRow({ zh: '发货时间', en: 'Shipped at', value: OrderDetailPolicy.timestamp(this.order.shippedAt) });
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++    Row({ space: 10 }) {
++      Column({ space: 4 }) {
++        Text(this.order?.trackingCompany || this.shippingLabel()).fontSize(13).fontWeight(FontWeight.Medium).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
++        Text(this.order?.trackingNumber || '—').fontSize(14).wordBreak(WordBreak.BREAK_ALL).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++      }.layoutWeight(1);
++      Button(I18n.text(this.language, '复制物流', 'Copy tracking'), { type: ButtonType.Normal }).constraintSize({ minHeight: 44, maxWidth: '35%' })
++        .padding({ left: 8, right: 8 }).fontSize(13).borderRadius(10).backgroundColor(Color.Transparent)
++        .fontColor(DesignTokens.brand(this.darkMode)).onClick(() => this.copyText(this.order?.trackingNumber || ''));
++    }.width('100%');
+   }
+   @Builder private itemCard() {
+-    Column({ space: 16 }) {
++    Column({ space: 10 }) {
+       Row() {
+-        OrderSectionHeading({ zh: '商品明细', en: 'Order items', icon: 'goods-collect-o' }).layoutWeight(1);
++        OrderSectionHeading({ zh: '商品与费用', en: 'Items and charges', icon: 'goods-collect-o' }).layoutWeight(1);
+         Text(I18n.text(this.language, `${(this.order?.items || []).length} 项`, `${(this.order?.items || []).length} items`))
+           .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+       }.width('100%');
+@@ -308,34 +318,36 @@
+         if (index < (this.order?.items?.length || 0) - 1) Divider().color(DesignTokens.border(this.darkMode));
+       }, (item: OrderItem, index: number) => `${index}-${JSON.stringify(item)}`);
+       if (!(this.order?.items || []).length) Text(I18n.text(this.language, '暂无商品明细', 'No item details available'))
+-        .fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).padding({ top: 12, bottom: 12 });
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++        .fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).padding({ top: 8, bottom: 8 });
++      Divider().color(DesignTokens.border(this.darkMode));
++      this.paymentCard();
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+   }
+   @Builder private paymentCard() {
+-    Column({ space: 12 }) {
+-      OrderSectionHeading({ zh: '金额明细', en: 'Amount breakdown', icon: 'gold-coin-o' });
++    Column({ space: 4 }) {
+       OrderInfoRow({ zh: '商品金额', en: 'Items subtotal', value: OrderDetailPolicy.money(this.order?.totalAmount) });
+       OrderInfoRow({ zh: '运费', en: 'Shipping fee', value: OrderDetailPolicy.money(this.order?.shippingFee) });
+       OrderInfoRow({ zh: '优惠金额', en: 'Discount', value: this.order?.discountAmount ? `−${OrderDetailPolicy.money(this.order.discountAmount)}` : OrderDetailPolicy.money(this.order?.discountAmount) });
+-      Divider().color(DesignTokens.border(this.darkMode)).margin({ top: 4, bottom: 4 });
+-      if (this.order) OrderInfoRow({ zh: OrderDetailPolicy.amountTitle(this.order, false), en: OrderDetailPolicy.amountTitle(this.order, true), value: OrderDetailPolicy.money(this.order.payAmount), emphasis: true });
+       if (this.order?.status === 'refunded') Text(I18n.text(this.language, '此处为原订单金额，退款明细请在售后管理中查看。', 'Original order amounts are shown. View refund details in After-sales.'))
+         .fontSize(12).lineHeight(19).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++    }.width('100%');
+   }
+   @Builder private recordCard() {
+-    Column({ space: 12 }) {
+-      OrderSectionHeading({ zh: '订单记录', en: 'Order record', icon: 'records-o' });
+-      OrderInfoRow({ zh: '订单编号', en: 'Order number', value: this.order?.no || '' });
+-      OrderInfoRow({ zh: '创建时间', en: 'Created at', value: OrderDetailPolicy.timestamp(this.order?.createdAt) });
+-      if (this.order?.paidAt) OrderInfoRow({ zh: '付款时间', en: 'Paid at', value: OrderDetailPolicy.timestamp(this.order.paidAt) });
+-      OrderInfoRow({ zh: '配送方式', en: 'Delivery method', value: this.shippingLabel() });
+-      if (this.order?.remark) {
+-        Divider().color(DesignTokens.border(this.darkMode)).margin({ top: 4, bottom: 4 });
+-        Text(I18n.text(this.language, '客户备注', 'Customer note')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+-        Text(this.order.remark).fontSize(14).lineHeight(22).fontColor(DesignTokens.text(this.darkMode)).width('100%');
+-      }
+-    }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
++    Column({ space: 4 }) {
++      Button({ type: ButtonType.Normal }) {
++        Row({ space: 8 }) {
++          Text(I18n.text(this.language, '订单时间记录', 'Order timeline')).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1).textAlign(TextAlign.Start);
++          Text(I18n.text(this.language, this.recordsExpanded ? '收起' : '展开', this.recordsExpanded ? 'Collapse' : 'Expand')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
++          MerchantIcon({ name: 'arrow', iconSize: 16, color: DesignTokens.muted(this.darkMode) }).rotate({ angle: this.recordsExpanded ? -90 : 90 });
++        }.width('100%');
++      }.width('100%').height(48).padding(0).backgroundColor(Color.Transparent).onClick(() => { this.recordsExpanded = !this.recordsExpanded; });
++      if (this.recordsExpanded) {
++        OrderInfoRow({ zh: '创建时间', en: 'Created at', value: OrderDetailPolicy.timestamp(this.order?.createdAt) });
++        if (this.order?.paidAt) OrderInfoRow({ zh: '付款时间', en: 'Paid at', value: OrderDetailPolicy.timestamp(this.order.paidAt) });
++        if (this.order?.shippedAt) OrderInfoRow({ zh: '发货时间', en: 'Shipped at', value: OrderDetailPolicy.timestamp(this.order.shippedAt) });
++      }
++    }.width('100%').padding({ left: 14, right: 14, top: 4, bottom: this.recordsExpanded ? 12 : 4 })
++      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
+   }
+   @Builder private actionBar() {
+     Row({ space: 12 }) {
+@@ -356,7 +368,13 @@
+     Column({ space: 16 }) {
+       Text(I18n.text(this.language, '核对订单后填写物流信息，确认后将更新发货状态。', 'Check the order and tracking details. Confirming updates shipment status.'))
+         .fontSize(13).lineHeight(21).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+-      OrderInfoRow({ zh: '订单编号', en: 'Order number', value: this.order?.no || '' });
++      Column({ space: 6 }) {
++        OrderInfoRow({ zh: '订单编号', en: 'Order number', value: this.order?.no || '' });
++        Text(OrderDetailPolicy.addressText(this.order?.address) || I18n.text(this.language, '未提供收货信息', 'Delivery details not provided'))
++          .fontSize(14).lineHeight(21).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++        if (this.order?.remark) Text(`${I18n.text(this.language, '客户备注', 'Customer note')}: ${this.order.remark}`)
++          .fontSize(13).fontColor(DesignTokens.brand(this.darkMode)).width('100%');
++      }.width('100%').padding(12).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(12);
+       IBestField({ value: $company, label: I18n.text(this.language, '物流公司', 'Carrier'), placeholder: I18n.text(this.language, '填写物流公司', 'Enter carrier name') });
+       IBestField({ value: $trackingNumber, label: I18n.text(this.language, '物流单号', 'Tracking no.'), placeholder: I18n.text(this.language, '填写完整单号', 'Enter tracking number') });
+     }.width('100%');
+@@ -390,10 +408,10 @@
+       }
+       if (this.sharePrefillFailed) Text(I18n.text(this.language, '原设置读取失败，请重新核对下方可见内容再生成链接。', 'Previous settings could not load. Review visible sections before creating a link.'))
+         .fontSize(12).fontColor(DesignTokens.warning(this.darkMode)).width('100%').padding(12).backgroundColor(DesignTokens.warningTint(this.darkMode)).borderRadius(12);
+-      Column({ space: 9 }) {
++      Column({ space: 6 }) {
+         Text(I18n.text(this.language, '客户可见内容', 'Visible to the customer')).fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).width('100%');
+         OrderShareChoice({ zh: '订单基础', en: 'Order summary', hintZh: '订单号、状态和时间', hintEn: 'Number, status and dates', selected: $shareBasics });
+-        OrderShareChoice({ zh: '客户信息', en: 'Customer details', hintZh: '姓名、电话、地址 · 默认隐藏', hintEn: 'Name, phone and address · hidden by default', selected: $shareCustomer });
++        OrderShareChoice({ zh: '客户信息', en: 'Customer details', hintZh: '姓名、电话、地址（敏感信息）', hintEn: 'Name, phone and address (private)', selected: $shareCustomer });
+         OrderShareChoice({ zh: '价格明细', en: 'Pricing', hintZh: '金额、优惠与运费', hintEn: 'Amounts, discount and shipping fee', selected: $sharePricing });
+         OrderShareChoice({ zh: '商品清单', en: 'Items', hintZh: '图片、规格和数量', hintEn: 'Images, options and quantities', selected: $shareItems });
+         OrderShareChoice({ zh: '备注与物流', en: 'Notes and shipping', hintZh: '客户备注与物流信息', hintEn: 'Customer notes and shipment details', selected: $shareExtra });
+@@ -411,7 +429,7 @@
+           .height(90).maxLength(40).padding(12).fontSize(14).fontColor(DesignTokens.text(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode))
+           .borderRadius(12).onChange((value: string) => { this.shareIntro = value; this.actionError = ''; });
+         Text(I18n.text(this.language, `${this.shareIntro.length}/40 · 将打开系统分享并复制链接`, `${this.shareIntro.length}/40 · Opens system sharing and copies the link`))
+-          .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
++          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+         if (this.currentShareCode) {
+           Row({ space: 12 }) {
+             Text(I18n.text(this.language, '已有生效的分享链接', 'An active link exists')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
+@@ -457,7 +475,7 @@
+   }
+   @Builder private skeleton() {
+     Column({ space: 14 }) {
+-      Column().width('100%').height(174).borderRadius(22).backgroundColor(DesignTokens.subtle(this.darkMode));
++      Column().width('100%').height(144).borderRadius(16).backgroundColor(DesignTokens.subtle(this.darkMode));
+       Column().width('100%').height(180).borderRadius(20).backgroundColor(DesignTokens.card(this.darkMode));
+       Column().width('100%').height(170).borderRadius(20).backgroundColor(DesignTokens.card(this.darkMode));
+     }.width('100%').padding(16);
+@@ -472,7 +490,7 @@
+             Scroll() { this.skeleton(); }.layoutWeight(1).width('100%').align(Alignment.Top);
+           } else if (this.order) {
+             Scroll() {
+-              Column({ space: 14 }) {
++              Column({ space: 10 }) {
+                 if (this.refreshFailed) {
+                   Button(I18n.text(this.language, '更新失败，当前为上次记录 · 点击重试', 'Update failed. Showing previous details · Retry'), { type: ButtonType.Normal })
+                     .width('100%').padding(14).fontSize(12).borderRadius(12).backgroundColor(DesignTokens.warningTint(this.darkMode))
+@@ -481,13 +499,12 @@
+                   Row({ space: 8 }) { LoadingProgress().width(16).height(16).color(DesignTokens.brand(this.darkMode));
+                     Text(I18n.text(this.language, '正在更新订单', 'Updating order')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }.width('100%');
+                 }
+-                OrderStatusCard({ order: this.order });
++                OrderStatusCard({ order: this.order, onCopy: () => this.copyText(this.order?.no || '') });
+                 if (this.order.status === 'after_sale' || this.order.status === 'refunded') {
+                   Button(I18n.text(this.language, '前往售后管理', 'Open After-sales'), { type: ButtonType.Normal }).width('100%').height(46).fontSize(13)
+                     .backgroundColor(DesignTokens.card(this.darkMode)).fontColor(DesignTokens.brand(this.darkMode)).borderRadius(12).onClick(() => AppRouter.push('AfterSale'));
+                 }
+-                if (this.order.trackingNumber) this.trackingCard();
+-                this.addressCard(); this.itemCard(); this.paymentCard(); this.recordCard();
++                this.addressCard(); this.itemCard(); this.recordCard();
+               }.width('100%').constraintSize({ maxWidth: 960 }).padding({ left: 16, right: 16, top: 14, bottom: 20 });
+             }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
+             this.actionBar();
+--- before/entry/src/main/ets/features/order/OrderDetailCards.ets
++++ after/entry/src/main/ets/features/order/OrderDetailCards.ets
+@@ -55,7 +55,7 @@
+       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+       if (this.selected) MerchantIcon({ name: 'success', iconSize: 23, color: DesignTokens.brand(this.darkMode) });
+       else Column().width(21).height(21).borderRadius(8).border({ width: 1, color: DesignTokens.border(this.darkMode) });
+-    }.width('100%').constraintSize({ minHeight: 68 }).padding(13).borderRadius(12)
++    }.width('100%').constraintSize({ minHeight: 56 }).padding({ left: 12, right: 12, top: 8, bottom: 8 }).borderRadius(12)
+       .backgroundColor(this.selected ? DesignTokens.brandTint(this.darkMode) : DesignTokens.subtle(this.darkMode))
+       .accessibilityChecked(this.selected).onClick(() => { this.selected = !this.selected; });
+   }
+@@ -64,25 +64,33 @@
+ @Component
+ export struct OrderStatusCard {
+   @Require @Prop order: OrderSummary;
++  onCopy: () => void = () => {};
+   @StorageLink('language') private language: string = 'zh-CN';
+   @StorageLink('darkMode') private darkMode: boolean = false;
+   private copy(): OrderStatusCopy { return OrderDetailPolicy.status(this.order.status); }
+   build() {
+-    Column({ space: 18 }) {
+-      Row({ space: 14 }) {
+-        Column() { MerchantIcon({ name: this.copy().icon, iconSize: 44, color: DesignTokens.brand(this.darkMode) }); }
+-          .width(66).height(66).justifyContent(FlexAlign.Center).borderRadius(20).backgroundColor(DesignTokens.card(this.darkMode));
+-        Column({ space: 7 }) {
+-          Text(I18n.text(this.language, this.copy().zh, this.copy().en)).fontSize(24).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
+-          Text(I18n.text(this.language, this.copy().hintZh, this.copy().hintEn)).fontSize(12).lineHeight(19).fontColor(DesignTokens.muted(this.darkMode));
+-        }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+-      }.width('100%');
+-      Divider().color(DesignTokens.border(this.darkMode));
++    Column({ space: 8 }) {
+       Row({ space: 12 }) {
+-        Text(OrderDetailPolicy.amountTitle(this.order, this.language === 'en-US')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
+-        Text(OrderDetailPolicy.money(this.order.payAmount)).fontSize(28).fontWeight(FontWeight.Bold)
+-          .fontColor(DesignTokens.brand(this.darkMode)).wordBreak(WordBreak.BREAK_ALL).textAlign(TextAlign.End).layoutWeight(1.8);
+-      }.width('100%');
+-    }.width('100%').padding(20).borderRadius(22).backgroundColor(DesignTokens.brandTint(this.darkMode));
++        Column({ space: 5 }) {
++          Row({ space: 8 }) {
++            MerchantIcon({ name: this.copy().icon, iconSize: 28, color: DesignTokens.brand(this.darkMode) });
++            Text(I18n.text(this.language, this.copy().zh, this.copy().en)).fontSize(20).fontWeight(FontWeight.Bold)
++              .fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
++          }.width('100%');
++        }.layoutWeight(1.1);
++        Column({ space: 4 }) {
++          Text(OrderDetailPolicy.amountTitle(this.order, this.language === 'en-US')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++          Text(OrderDetailPolicy.money(this.order.payAmount)).fontSize(24).fontWeight(FontWeight.Bold)
++            .fontColor(DesignTokens.brand(this.darkMode)).wordBreak(WordBreak.BREAK_ALL).textAlign(TextAlign.End).width('100%');
++        }.layoutWeight(1.2).alignItems(HorizontalAlign.End);
++      }.width('100%').alignItems(VerticalAlign.Center);
++      Text(I18n.text(this.language, this.copy().hintZh, this.copy().hintEn)).fontSize(12).lineHeight(18)
++        .fontColor(DesignTokens.muted(this.darkMode)).width('100%');
++      Row({ space: 8 }) {
++        Text(this.order.no || '—').fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).wordBreak(WordBreak.BREAK_ALL).layoutWeight(1);
++        Button(I18n.text(this.language, '复制单号', 'Copy no.'), { type: ButtonType.Normal }).height(44).fontSize(13).padding({ left: 8, right: 8 })
++          .backgroundColor(Color.Transparent).fontColor(DesignTokens.brand(this.darkMode)).onClick(this.onCopy);
++      }.width('100%').border({ width: { top: 0.5 }, color: DesignTokens.border(this.darkMode) });
++    }.width('100%').padding({ left: 16, right: 16, top: 14, bottom: 4 }).borderRadius(16).backgroundColor(DesignTokens.brandTint(this.darkMode));
+   }
+ }
+--- before/scripts/test-product-editor.mjs
++++ after/scripts/test-product-editor.mjs
+@@ -77,3 +77,44 @@
+     assert.doesNotMatch(source, /this\.(settingRow|primaryService|businessTool|supportRow)\([^\n]*I18n\.text/);
+   }
+ });
++
++function editor() {
++  let source = fs.readFileSync(path.join(base, 'ProductEditPage.ets'), 'utf8');
++  source = source.slice(source.indexOf('@Component\nstruct ProductEditPage'), source.indexOf('  @Builder private fieldErrors')) + '\n}';
++  source = source.replace('@Component\nstruct ProductEditPage', 'export class ProductEditPage')
++    .replace(/@(?:StorageProp|StorageLink|Watch)\([^)]*\)\s*/g, '').replace(/@State\s*/g, '');
++  const exports = {}; const session = { user: { id: 'test-owner' } };
++  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, {
++    exports, IdRouteParams: class {}, KeyboardAvoidMode: { OFFSET: 0 }, Scroller: class {},
++    ProductEditSession: Session, ProductEditPolicy: Policy, ProductImageQueue: Queue, ProductSkuMatrix: Matrix,
++    SessionStore: { shared: () => session }, IBestToast: { show: () => {} },
++    I18n: { text: (lang, zh, en) => lang === 'en-US' ? en : zh }
++  });
++  const instance = new exports.ProductEditPage(); instance.owner = 'test-owner'; instance.epoch = instance.session.begin();
++  instance.skus = [sku()]; instance.specGroups = [{ name: 'Colour', values: ['Blue'] }];
++  return instance;
++}
++
++test('one-SKU price edits open directly; Cancel discards and Apply updates only that draft', () => {
++  const p = editor(); p.openPricing();
++  assert.equal(p.skuEditorVisible, true); assert.equal(p.optionsVisible, false);
++  p.skuRetail = '99'; p.closeInner(); assert.equal(p.skus[0].priceRetail, 13);
++  p.openPricing(); p.skuRetail = '21'; p.skuStock = '9'; p.saveSku();
++  assert.equal(p.skus[0].priceRetail, 21); assert.equal(p.skus[0].stock, 9);
++  assert.equal(p.skus[0].id, 'sku-1'); assert.equal(p.skus[0].image, sku().image);
++  assert.equal(p.skuEditorVisible, false); assert.equal(p.optionsVisible, false);
++  assert.equal(p.specGroups[0].values[0], 'Blue');
++});
++
++test('multi-SKU editing retains parent confirmation; blank numeric fields cannot silently become zero', () => {
++  const p = editor(); p.skus.push({ ...sku(), id: 'sku-2' }); p.openPricing();
++  assert.equal(p.optionsVisible, true); assert.equal(p.skuEditorVisible, false);
++  p.openSku(0); p.skuStock = ''; p.saveSku(); assert.equal(p.skuEditorVisible, true); assert.equal(p.skus[0].stock, 7);
++  p.skuStock = '10'; p.saveSku(); assert.equal(p.skus[0].stock, 7); assert.equal(p.editorSkus[0].stock, 10);
++  p.acceptOptions(); assert.equal(p.skus[0].stock, 10); assert.equal(p.skus[1].stock, 7);
++});
++
++test('size-based summary does not mislabel SKU retail as the calculated size price', () => {
++  const p = editor(); p.pricingMode = 'by-size'; assert.doesNotMatch(p.priceSummary(), /¥/);
++  p.skus[0].active = false; assert.match(p.priceSummary(), /0$/);
++});

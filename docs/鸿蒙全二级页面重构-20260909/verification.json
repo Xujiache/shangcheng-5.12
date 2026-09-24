@@ -1,0 +1,286 @@
+{
+  "generatedAt": "2026-09-09T22:40:30.933681+09:00",
+  "baselineCommit": "958a0e5760c72632b64d667f9fe374a2d71a6e3f",
+  "status": "已修改、自动检查通过；真机待验证，未作最终验收",
+  "checks": [
+    {
+      "output": "✔ known statuses have clear labels and only pending shipment allows shipping (2.0966ms)\n✔ unpaid amounts are not described as paid; missing money is not invented as zero (0.4457ms)\n✔ share validation rejects empty sections, invalid duration and overlong messages (0.3451ms)\n✔ address parsing copies only and never changes authoritative order address (78.6412ms)\n✔ late share prefill cannot reopen a dismissed panel or overwrite changed account state (42.6642ms)\n✔ shipping is single-flight and refreshes final order state (41.7506ms)\n✔ failed refresh preserves displayed order and disables further shipment until refreshed (39.207ms)\n✔ channel invalidation ignores stale responses without invalidating unrelated requests (0.275ms)\n✔ SKU regeneration preserves matching IDs, images, amounts and stock (2.0761ms)\n✔ cancelled option drafts cannot modify nested parent values (0.4144ms)\n✔ partial upload keeps successes and retries only the chosen failed item (1.0679ms)\n✔ abandoned image request does not publish after leaving or changing account (0.3686ms)\n✔ media limits and failed upload validation apply to draft as well as review (0.6531ms)\n✔ invalid dimensions, fractional stock, empty name and missing delivery are blocked (0.4024ms)\n✔ save single-flight, dirty baseline and stale page epoch (0.4101ms)\n✔ setting menu leaves subscribe to locale and are not passed translated snapshots (4.2456ms)\n✔ one-SKU price edits open directly; Cancel discards and Apply updates only that draft (103.095ms)\n✔ multi-SKU editing retains parent confirmation; blank numeric fields cannot silently become zero (75.3031ms)\n✔ size-based summary does not mislabel SKU retail as the calculated size price (64.4502ms)\n✔ read tickets reject stale conditions, disposed pages and account changes independently (153.932ms)\n✔ unsaved cancel keeps draft; discard leaves once; busy cannot open or leave (31.9314ms)\n✔ debounce cancels superseded searches and page disposal cancels the last timer (26.2276ms)\n✔ pricing has no autosave, rejects failed-load edits and single-flights explicit saves (71.0349ms)\n✔ uncertain price save reads state without resubmitting or replacing draft (50.0568ms)\n✔ commission nested editor cancel does not mutate rules and changing settings never autosaves (71.8293ms)\n✔ business authorization dates allow future dates but reject impossible dates (22.4606ms)\n✔ store authorization cannot save after failed initial load and clones checkbox policies (60.0202ms)\n✔ failed append preserves list and rolls back pagination; same-filter failed refresh preserves page (71.1731ms)\n✔ store design updates its baseline only after save and preserves draft across read failures (46.1738ms)\n✔ refund timeout switches to read-only verification and never automatically repeats the mutation (61.3141ms)\n✔ errors expose no raw path or server stack (18.6419ms)\n✔ natural ranges and date boundaries use Beijing time, including leap days (4.0727ms)\n✔ date calendar keeps a draft, supports single day, and never truncates an excessive range (15.3419ms)\n✔ missing required fields fail closed while actual empty arrays render safely (1.8669ms)\n✔ duplicate activations coalesce; stale date responses cannot replace the latest selection (27.9807ms)\n✔ same-range failure retains data; new-range failure does not label stale figures as current (24.3047ms)\n✔ cancel keeps filters; confirmed custom range highlights independently; account change discards old results (21.1173ms)\n✔ missing endpoint reports unavailability and never falls back to legacy stats (19.8761ms)\n✔ new shared and ArkTS response fields stay aligned; both route insets and live locale are preserved (16.6743ms)\n✔ rapid theme/language selections persist only the latest pair (151.0778ms)\n✔ late bootstrap cannot undo an already selected theme or language (38.3937ms)\n✔ storage failure keeps live selection and exposes a successful retry (23.5659ms)\n✔ explicit mode configuration echoes do not become the system preference (20.5507ms)\n✔ runtime language does not reconfigure native resources or change theme (20.7256ms)\n✔ missing initialization cannot leave save feedback stuck indefinitely (20.2927ms)\n✔ missing thumbnail falls back once and becomes eligible again after TTL (12.9881ms)\n✔ thumbnail negative cache remains bounded (8.6227ms)\n✔ virtual list unregisters listeners and notifies current subscribers (13.3457ms)\nℹ tests 48\nℹ suites 0\nℹ pass 48\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1189.9477",
+      "exitCode": 0,
+      "args": [
+        "--test",
+        "native/harmony-merchant/scripts/test-secondary-pages.mjs",
+        "native/harmony-merchant/scripts/test-product-editor.mjs",
+        "native/harmony-merchant/scripts/test-order-detail.mjs",
+        "native/harmony-merchant/scripts/test-stats.mjs",
+        "native/harmony-merchant/scripts/test-ui-reliability.mjs"
+      ],
+      "check": "unit"
+    },
+    {
+      "output": "Secondary coverage passed: 35 routes, 81 overlay/state source anchors. Device acceptance is NOT inferred.",
+      "exitCode": 0,
+      "args": [
+        "native/harmony-merchant/scripts/audit-secondary-pages.mjs",
+        "--write"
+      ],
+      "check": "coverage"
+    },
+    {
+      "output": "Native mutation-safety audit passed: 56 single-flight contracts verified.",
+      "exitCode": 0,
+      "args": [
+        "native/harmony-merchant/scripts/audit-mutation-safety.mjs"
+      ],
+      "check": "mutations"
+    },
+    {
+      "output": "Personal center and complete settings audit passed.",
+      "exitCode": 0,
+      "args": [
+        "native/harmony-merchant/scripts/audit-profile-settings.mjs"
+      ],
+      "check": "settings"
+    },
+    {
+      "output": "Generated icons: 36 new PNGs, 69 semantic mappings; all current app/library icon paths covered. System permission sheets, keyboard and progress indicators are OS controls, not replaced artwork.",
+      "exitCode": 0,
+      "args": [
+        "native/harmony-merchant/scripts/audit-generated-icons.mjs"
+      ],
+      "check": "icons"
+    },
+    {
+      "output": "Native route audit passed: 35 routes declared, 27 static targets resolved.",
+      "exitCode": 0,
+      "args": [
+        "native/harmony-merchant/scripts/audit-routes.mjs"
+      ],
+      "check": "routes"
+    }
+  ],
+  "coverage": {
+    "routes": 35,
+    "overlaySourceAnchors": 81,
+    "note": "锚点是源码入口/状态，不是81种不同弹窗，也不是81项真机通过"
+  },
+  "build": {
+    "status": "passed",
+    "attempts": 2,
+    "firstAttempt": "ArkTS不接受ApiError到Error接口的结构转换，以及佣金map缺少明确返回类型；修复后重试成功",
+    "artifact": "D:\\DevEcoProjects\\jingwei-workspace\\native\\harmony-merchant\\entry\\build\\default\\outputs\\default\\entry-default-signed.hap",
+    "sha256": "1acde2d9859002b4285a2b309b592b062e91708238f143f51174d0e93e0695e5",
+    "bytes": 14335538,
+    "log": "build.log",
+    "warnings": 81,
+    "warningNote": "编译警告未视为真机兼容通过；含现存API 26/兼容API 21材质能力提示"
+  },
+  "device": {
+    "hdcTargets": "[Empty]",
+    "installed": false,
+    "uninstalled": false,
+    "clearedData": false,
+    "screenshots": [],
+    "status": "外部阻塞：未连接真机"
+  },
+  "sync": {
+    "files": [
+      {
+        "file": "entry/src/main/ets/core/navigation/AppRouter.ets",
+        "sha256": "8e8a5e4e7ebc7a1d1bbe3ecd33954cd2422e5997baad9c6fcaa867cda07b15e2"
+      },
+      {
+        "file": "entry/src/main/ets/core/ui/LeaveGuard.ets",
+        "sha256": "e8c4f8b0f1792a1c193137f13a8e3b0711d54a7d6f269c256a70fac71f1653b5"
+      },
+      {
+        "file": "entry/src/main/ets/core/ui/SecondaryPage.ets",
+        "sha256": "b9bbf6215a7b83ee0e78c7c000f663fc4c3da30366fdacf926747950195f6ef8"
+      },
+      {
+        "file": "entry/src/main/ets/core/ui/SecondaryPolicy.ets",
+        "sha256": "da1b34c1e97fd9e88fb9164f33c3ca5b2604a74f5f09efc6f64f38c08a7f360c"
+      },
+      {
+        "file": "entry/src/main/ets/features/auth/ChangePhonePage.ets",
+        "sha256": "b46a2d5afb0dab99203e28542919589a30bb9f372e75608283e6431b9161aee5"
+      },
+      {
+        "file": "entry/src/main/ets/features/auth/MerchantApplyPage.ets",
+        "sha256": "ed929440159ef0d22d5533a8704b9d9e0a46efb50df86e984136184d1c72497a"
+      },
+      {
+        "file": "entry/src/main/ets/features/auth/SetPasswordPage.ets",
+        "sha256": "00be8bb46ae4a8b2a5c4318641ccf46df3112d6066a8d1aba2dd57bd64e98f0e"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/CommissionPage.ets",
+        "sha256": "91e9639abfe7dd145c23e11c07f712d1360bf35abcccc1fcdee6902a8cd1d0d4"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/CustomerPage.ets",
+        "sha256": "a387d713440c35b5968603aa2ff6eb9a7418734339fb7b9045352a7954f5b360"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/DecoratePage.ets",
+        "sha256": "620b0a045bff952713c7f766edfe84dd0f74d1b728f060694f02fc1f1883e526"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/MarketingPage.ets",
+        "sha256": "9fece4c2285aee6eb036f72e910220e373d2336a17a685ce2a556ec333d4ab53"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/PriceRulePage.ets",
+        "sha256": "f78620e7284e193bb76feb7f8fabac6f7256dad88495d2c5f9d88013b65ed6bd"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/StaffPage.ets",
+        "sha256": "d473154116d4c2be1f14068c9391e56a4f01dd33358bf244e889c192b5284c23"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/StoreAuthPage.ets",
+        "sha256": "984b7b41767199fb46df2903ace4e9113e7f710ee33ecb86b5ef6e9fbf098d1d"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/StorePage.ets",
+        "sha256": "752a52ec803b96e7bbd0aa438677f06d7f9a92f6bb2a6410e9ae78f5bcab9c33"
+      },
+      {
+        "file": "entry/src/main/ets/features/chat/ChatDetailPage.ets",
+        "sha256": "5f8120634c5436b937061dfb7415d289091a9657c67d0662f0d328a8225f7c75"
+      },
+      {
+        "file": "entry/src/main/ets/features/chat/ChatSessionsPage.ets",
+        "sha256": "f8dd0e43682767ff88d7e95598b0a77b3f682c1c0f89e5bec45e6b1701980ca6"
+      },
+      {
+        "file": "entry/src/main/ets/features/legal/AgreementsPage.ets",
+        "sha256": "28d24ca4275a85fdd93a3126f2a20df0b6d606251aad168a039b311a4f1bab47"
+      },
+      {
+        "file": "entry/src/main/ets/features/member/MembershipPage.ets",
+        "sha256": "74bef9317557ac5d85359613f958b8daa37753b09996743c813933ca3bb55b9a"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/AfterSaleDetailPage.ets",
+        "sha256": "66128dc6f7a2d7fefe693f4560847a43a81325204776a5058d50807cf6bde790"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/AfterSalePage.ets",
+        "sha256": "5464aee6c4daefc0be7c9a6f1a356ace6b654d3a69c33b449720de391fee14c6"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/OrderDetailPage.ets",
+        "sha256": "73e04e2000cd3da3ea87547983f290f239d26c9fd6177aec12b28e7ee273db91"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/OrderListPage.ets",
+        "sha256": "d4744c9ed0d7a4b7425c001a6d5f3e443388b01e96be4cb32586e7cccb4223a9"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/AgencyPage.ets",
+        "sha256": "421d78d36c62fbaf04bc6fb48f571338f5ec45cce54fab96c71f13ce0426cae3"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/FactoryPage.ets",
+        "sha256": "46a86444b033432297b34b97df228864978882f00437ee7a37bfecb0fe556844"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/PlazaPage.ets",
+        "sha256": "0c0b19a3e36fce4e4e335f401769e8bae448cc8fc4cfe0498bc5105c5f80150d"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/CategoryPage.ets",
+        "sha256": "f201ffd4f56c49b371955d6d45acf59ad75b926d0d16816bbcc59f85d44a9192"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "sha256": "aa75fb19a1c0f9a86f540b458852148d72b2688b67582bc522fee9d6229b91fc"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductListPage.ets",
+        "sha256": "78836556be3987dce543e599f7239a3209263bfb9f2d9a129adc42c5b7d70446"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/AboutPage.ets",
+        "sha256": "e2f353b09b4bc94ad832038b8908914b76cfbc4a81509e4d1f27a0bab4fb2a6a"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/AccountSecurityPage.ets",
+        "sha256": "e341e50af773b6b2591caff7314799d8267e10b51d570fd0d4ab9c31adf18fff"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/AppearanceSettingsPage.ets",
+        "sha256": "8416a5263298ad846332cfb31dd64d657b7149b21aa4aa237b3dd2ebfa8eb186"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/LocationPickerPage.ets",
+        "sha256": "3d8e9b7bb66fb73efc1806303e5d17f9031bf459cbf6fe049896d45d176dac41"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/NotificationSettingsPage.ets",
+        "sha256": "1184eaff6eb9f03c858ab4b6ae47a84ae9bcc169e543da825f03b425c8bea0c2"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/ProfilePage.ets",
+        "sha256": "446ea82e059b2ac84990a4c1cb778136e960000582fad4a6fb4d61a695e23d6b"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/SettingsPage.ets",
+        "sha256": "87428f1ac1348dc6bd4203485dd8f8a09802abed0033c5aaf92ef925ec0c438f"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/SharePage.ets",
+        "sha256": "e3c72bfe47cc351b4171189fc749ad770801d63e7c8cbe1bfb4611f14713d9f6"
+      },
+      {
+        "file": "entry/src/main/ets/features/shell/FilteredListRoutes.ets",
+        "sha256": "283dcc63739aba1f5e25584c9a1d33d29996aee23ecbd7fc2d6ed264db7ad8b1"
+      },
+      {
+        "file": "entry/src/main/ets/features/stats/StatsPage.ets",
+        "sha256": "54f47a95c4836cd8e4dd231c1d4096427bc59469727c9c17b7aca78a307d62c3"
+      },
+      {
+        "file": "entry/src/main/ets/features/update/UpdatePage.ets",
+        "sha256": "487be2889d7d3ec71778d158a2f83d14223eacb36aa788c5e1182eb328f92ce1"
+      },
+      {
+        "file": "scripts/audit-mutation-safety.mjs",
+        "sha256": "2ffdc916a4d7efc6c5d2d52c09e7d0dc45b78e0c763eb5caf729f985f0096745"
+      },
+      {
+        "file": "scripts/audit-secondary-pages.mjs",
+        "sha256": "50641cfa05baf58f0e92faf40683eeec2dc1319c0f17b488bed9dd8770797e1a"
+      },
+      {
+        "file": "scripts/test-secondary-pages.mjs",
+        "sha256": "536608b72a496a909684748baeb5bdeb86fa24d48eb47e621495dcfc922e9a12"
+      },
+      {
+        "file": "scripts/test-stats.mjs",
+        "sha256": "6cec6453c69acad16e963d66a2dc4dcbb72af32c25344265febe7b0b4e305c24"
+      }
+    ],
+    "protectedHashes": {
+      "build-profile.json5": "62d6c41f308d584b1d8d9d01b2915faf089cb8221f13a77ecaae47b8ea5a1d68",
+      "entry/build-profile.json5": "b177ac0401a896a8000460550df856c2f3ff1e125c494aa52611456be3bddf78",
+      "code-linter.json5": "a502f1baa7c10ca4d2e924b0b56d1e655f8741843715c3d445a520495adc994d"
+    },
+    "destination": "D:\\DevEcoProjects\\jingwei-workspace\\native\\harmony-merchant",
+    "backup": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\jingwei-secondary-deveco-before-20260909"
+  },
+  "preserved": {
+    "ledgerConfigSha256": "12f3a5532f80082d4ded85074f78c91fd36089ad7cd3d48a5fc4f118d0da4beb",
+    "signingAndLocalConfigHashesVerified": true,
+    "backendChanges": false,
+    "vendorEdited": false,
+    "gitPushed": false,
+    "serverDeployed": false
+  },
+  "constraints": [
+    "未进行35页真机打开、主题/语言逐级返回、软键盘与实际安全区验收",
+    "未进行支付、退款、推送、定位或会员真实业务操作",
+    "没有真实截图或录像，不用生成图或静态审计替代",
+    "未声称后端联调或正式上线通过"
+  ]
+}

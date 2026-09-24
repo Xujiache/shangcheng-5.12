@@ -1,5 +1,7 @@
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
-import { IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestToast } from '@ibestservices/ibest-ui';
 import { I18n } from '../../core/i18n/I18n';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { HarmonyPushClient, PushPreferences } from '../../core/push/HarmonyPushClient';
@@ -12,6 +14,11 @@ export function NotificationSettingsBuilder(_: string) { NotificationSettingsPag
 
 @Component
 struct NotificationSettingsPage {
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -22,7 +29,7 @@ struct NotificationSettingsPage {
   @State private saving: boolean = false;
   private lastSaved: PushPreferences = { orders: true, refunds: true, chat: true };
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
   private context(): common.UIAbilityContext {
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -35,22 +42,30 @@ struct NotificationSettingsPage {
   }
 
   private async load(): Promise<void> {
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     this.loading = true;
     try {
-      const cached = await PushPreferenceStore.read(this.context());
+      const cached = await this.pageScope.read(PushPreferenceStore.read(this.context()), pageTicket);
       this.apply(cached);
       this.lastSaved = cached;
-    } catch (_) {}
+    } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);}
     try {
-      const remote = await HarmonyPushClient.getPreferences();
+      const remote = await this.pageScope.read(HarmonyPushClient.getPreferences(), pageTicket);
       this.apply(remote);
       this.lastSaved = remote;
-      await PushPreferenceStore.write(this.context(), remote);
+      await this.pageScope.read(PushPreferenceStore.write(this.context(), remote), pageTicket);
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       IBestToast.show(I18n.text(this.language,
         '当前显示设备上最后一次成功保存的通知设置',
         'Showing the last notification settings saved on this device'));
-    } finally { this.loading = false; }
+    } finally {
+      if (this.pageScope.accepts(pageTicket)) { this.loading = false; }
+    }
   }
 
   private async save(next: PushPreferences): Promise<void> {
@@ -79,7 +94,7 @@ struct NotificationSettingsPage {
     Row({ space: 12 }) {
       Column({ space: 4 }) {
         Text(title).fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).width('100%');
-        Text(description).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%').maxLines(2);
+        Text(description).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%').maxLines(2);
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
       Toggle({ type: ToggleType.Switch, isOn: value })
         .selectedColor(DesignTokens.brand(this.darkMode)).enabled(!this.loading && !this.saving)
@@ -91,10 +106,11 @@ struct NotificationSettingsPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '消息通知', 'Notifications'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
         Scroll() {
           Column({ space: 16 }) {
             Row({ space: 12 }) {
@@ -109,7 +125,7 @@ struct NotificationSettingsPage {
                   'Enable only the alerts that matter to your business.'))
                   .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%').lineHeight(18);
               }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-            }.width('100%').padding(18).backgroundColor(DesignTokens.card(this.darkMode))
+            }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
               .borderRadius(DesignTokens.RADIUS_XL).border({ width: 1, color: DesignTokens.border(this.darkMode) });
             Column() {
               this.toggleRow(I18n.text(this.language, '推送通知', 'Push notifications'),
@@ -138,7 +154,7 @@ struct NotificationSettingsPage {
             Text(I18n.text(this.language,
               '系统级通知权限仍可在 HarmonyOS“设置 → 通知”中调整。',
               'System notification permissions can also be changed in HarmonyOS Settings.'))
-              .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%').lineHeight(18).padding({ left: 4, right: 4 });
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%').lineHeight(18).padding({ left: 4, right: 4 });
           }.width('100%').constraintSize({ maxWidth: 680 })
             .padding({ left: 16, right: 16, top: 16, bottom: this.safeBottom + 24 });
         }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);

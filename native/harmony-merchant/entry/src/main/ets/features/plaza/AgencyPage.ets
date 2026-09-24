@@ -1,5 +1,9 @@
+import { ResilientRemoteImage } from '../../core/ui/ResilientRemoteImage';
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import {
-  IBestButton, IBestDialogUtil, IBestEmpty, IBestField, IBestNavBar, IBestTag, IBestToast
+  IBestButton, IBestDialogUtil, IBestEmpty, IBestField, IBestTag, IBestToast
 } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { IdRouteParams } from '../../core/navigation/RouteParams';
@@ -17,6 +21,24 @@ export function AgencyProductsBuilder(_: string, raw: Object) {
 
 @Component
 struct AgencyPage {
+  private handleBack(): void {
+    if (this.editorVisible) { this.closeLocalEditor(); return; }
+
+    this.leaveGuard.request(this.language, false, false, () => AppRouter.back());
+  }
+
+  private editStamp: string = '';
+  private localStamp(): string { return JSON.stringify([this.editingId, this.retailPrice, this.markupRatio]); }
+  private closeLocalEditor(): void {
+    this.leaveGuard.request(this.language, this.saving || Boolean(this.actionId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   params: IdRouteParams = new IdRouteParams();
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -35,23 +57,30 @@ struct AgencyPage {
   @State private showSuccessHint: boolean = false;
   private requestEpoch: number = 0;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     this.showSuccessHint = this.params.action === 'applied';
     this.load();
   }
 
   private async load(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     const epoch = ++this.requestEpoch;
     this.loading = true;
     try {
-      const result = await BusinessRepository.agencyApplications('');
+      const result = await this.pageScope.read(BusinessRepository.agencyApplications(''), pageTicket);
       if (epoch === this.requestEpoch) this.items = result;
     } catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       if (epoch === this.requestEpoch) {
-        IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '代理商品加载失败', 'Failed to load agency products'));
+        IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '代理商品加载失败', 'Failed to load agency products'));
       }
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       if (epoch === this.requestEpoch) this.loading = false;
+    }
     }
   }
 
@@ -85,7 +114,7 @@ struct AgencyPage {
     this.factoryPrice = item.factoryPrice;
     this.retailPrice = item.myRetailPrice.toFixed(2);
     this.markupRatio = item.markupRatio.toFixed(2);
-    this.editorVisible = true;
+    this.editStamp = this.localStamp(); this.editorVisible = true;
   }
 
   private syncFromPrice(): void {
@@ -103,6 +132,7 @@ struct AgencyPage {
   }
 
   private async save(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.saving) return;
     const price = Number(this.retailPrice);
     const ratio = Number(this.markupRatio);
@@ -112,15 +142,19 @@ struct AgencyPage {
     }
     const body: AgencyMutation = { myRetailPrice: price, markupRatio: ratio };
     this.saving = true;
+    const mutationTicket = this.pageScope.begin('save');
     try {
-      await BusinessRepository.updateAgencyApplication(this.editingId, body);
+      await this.pageScope.read(BusinessRepository.updateAgencyApplication(this.editingId, body), mutationTicket);
       this.editorVisible = false;
       IBestToast.show(I18n.text(this.language, '代理售价已更新', 'Agency price updated'));
-      await this.load();
+      await this.pageScope.read(this.load(), mutationTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '代理售价保存失败', 'Failed to save agency price'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '代理售价保存失败', 'Failed to save agency price'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.saving = false;
+    }
     }
   }
 
@@ -139,16 +173,21 @@ struct AgencyPage {
   }
 
   private async cancel(id: string): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.actionId || this.saving) return;
     this.actionId = id;
+    const mutationTicket = this.pageScope.begin('cancel');
     try {
-      await BusinessRepository.cancelAgencyApplication(id);
+      await this.pageScope.read(BusinessRepository.cancelAgencyApplication(id), mutationTicket);
       IBestToast.show(I18n.text(this.language, '代理关系已撤销', 'Agency relationship removed'));
-      await this.load();
+      await this.pageScope.read(this.load(), mutationTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '撤销失败', 'Failed to withdraw'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '撤销失败', 'Failed to withdraw'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.actionId = '';
+    }
     }
   }
 
@@ -162,16 +201,21 @@ struct AgencyPage {
   }
 
   private async changeStatus(id: string, status: string): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.actionId || this.saving) return;
     this.actionId = id;
+    const mutationTicket = this.pageScope.begin('changeStatus');
     try {
-      await BusinessRepository.updateAgencyApplication(id, { status });
+      await this.pageScope.read(BusinessRepository.updateAgencyApplication(id, { status }), mutationTicket);
       IBestToast.show(status === 'approved' ? I18n.text(this.language, '已重新上架', 'Published again') : I18n.text(this.language, '已下架', 'Unpublished'));
-      await this.load();
+      await this.pageScope.read(this.load(), mutationTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '操作失败', 'Operation failed'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '操作失败', 'Operation failed'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.actionId = '';
+    }
     }
   }
 
@@ -179,7 +223,7 @@ struct AgencyPage {
   private card(item: AgencyApplication) {
     Column({ space: 10 }) {
       Row({ space: 11 }) {
-        Image(item.productImage).width(74).height(74).borderRadius(10).objectFit(ImageFit.Cover);
+        ResilientRemoteImage({ originalUrl: item.productImage, widthValue: 74, heightValue: 74, radius: 10 });
         Column({ space: 5 }) {
           Row() {
             Text(item.productName).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).maxLines(1);
@@ -191,43 +235,44 @@ struct AgencyPage {
             .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
           Text(I18n.text(this.language, `加价 ${item.markupRatio.toFixed(2)}% · 同步 ${item.syncStatus || '--'}`,
             `Markup ${item.markupRatio.toFixed(2)}% · Sync ${item.syncStatus || '--'}`))
-            .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }.layoutWeight(1).alignItems(HorizontalAlign.Start);
       }.width('100%');
       Row() {
         Text(I18n.text(this.language, `申请于 ${item.appliedAt ? item.appliedAt.slice(0, 10) : '--'}`,
           `Applied ${item.appliedAt ? item.appliedAt.slice(0, 10) : '--'}`))
-          .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
+          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
         if (item.status === 'pending' || item.status === 'approved') {
-          IBestButton({ text: I18n.text(this.language, '调整售价', 'Edit price'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.openEditor(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '调整售价', 'Edit price'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.openEditor(item) });
         }
-        if (item.status === 'pending') IBestButton({ text: I18n.text(this.language, '取消申请', 'Withdraw'), plain: true, type: 'danger', onBtnClick: () => this.confirmCancel(item) });
+        if (item.status === 'pending') IBestButton({ btnHeight: 44, text: I18n.text(this.language, '取消申请', 'Withdraw'), plain: true, type: 'danger', onBtnClick: () => this.confirmCancel(item) });
         else if (item.status === 'approved') {
-          IBestButton({ text: I18n.text(this.language, '下架', 'Unpublish'), plain: true, type: 'danger', onBtnClick: () => this.confirmOffline(item) });
-          IBestButton({ text: I18n.text(this.language, '代理设置', 'Agency settings'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.openEditor(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '下架', 'Unpublish'), plain: true, type: 'danger', onBtnClick: () => this.confirmOffline(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '代理设置', 'Agency settings'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.openEditor(item) });
         } else if (item.status === 'offline') {
-          IBestButton({ text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', onBtnClick: () => this.confirmCancel(item) });
-          IBestButton({ text: I18n.text(this.language, '重新上架', 'Publish again'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.changeStatus(item.id, 'approved') });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', onBtnClick: () => this.confirmCancel(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重新上架', 'Publish again'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.changeStatus(item.id, 'approved') });
         } else if (item.status === 'rejected') {
-          IBestButton({ text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', onBtnClick: () => this.confirmCancel(item) });
-          IBestButton({ text: I18n.text(this.language, '查看厂家', 'View factory'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => AppRouter.push('FactoryDetail', new IdRouteParams(item.factoryId)) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '删除', 'Delete'), plain: true, type: 'danger', onBtnClick: () => this.confirmCancel(item) });
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '查看厂家', 'View factory'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => AppRouter.push('FactoryDetail', new IdRouteParams(item.factoryId)) });
         }
       }.width('100%');
-    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
   }
 
   build() {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({ title: I18n.text(this.language, '代理商品', 'Agency products'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back() });
+          SecondaryHeader({ title: I18n.text(this.language, '代理商品', 'Agency products'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => this.handleBack() });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
           if (this.showSuccessHint) {
             Row({ space: 10 }) {
               MerchantIcon({ name: 'success', color: Color.White, iconSize: 18 });
               Column({ space: 2 }) {
                 Text(I18n.text(this.language, '代理申请已提交', 'Agency request submitted')).fontSize(14).fontWeight(FontWeight.Bold).fontColor(Color.White);
                 Text(I18n.text(this.language, '厂家审核通过后即可配置并上架商品', 'Configure and publish products after factory approval'))
-                  .fontSize(11).fontColor('#F4FFF0');
+                  .fontSize(12).fontColor('#F4FFF0');
               }.layoutWeight(1).alignItems(HorizontalAlign.Start);
               Column() { MerchantIcon({ name: 'cross', color: Color.White, iconSize: 17 }); }
                 .width(32).height(32).justifyContent(FlexAlign.Center).onClick(() => this.showSuccessHint = false);
@@ -239,7 +284,7 @@ struct AgencyPage {
             this.statCell(`${this.countStatus('approved')}`, I18n.text(this.language, '已通过', 'Approved'));
             this.statCell(`${this.factoryCount()}`, I18n.text(this.language, '合作厂家', 'Factories'));
           }.margin({ left: 16, right: 16, top: 10 }).padding({ top: 12, bottom: 12 })
-            .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE).width('auto');
+            .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16).width('auto');
           Scroll() {
             Row({ space: 8 }) {
               ForEach(['', 'pending', 'approved', 'rejected', 'offline'], (value: string) => {
@@ -259,7 +304,7 @@ struct AgencyPage {
               IBestEmpty({ description: this.status
                 ? I18n.text(this.language, '当前状态暂无代理商品', 'No agency products in this status')
                 : I18n.text(this.language, '暂无代理商品', 'No agency products') });
-              IBestButton({ text: I18n.text(this.language, '去选品广场', 'Browse sourcing plaza'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => AppRouter.push('Plaza') });
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '去选品广场', 'Browse sourcing plaza'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => AppRouter.push('Plaza') });
             }.layoutWeight(1).justifyContent(FlexAlign.Center);
           } else {
             List({ space: 10 }) {
@@ -283,24 +328,24 @@ struct AgencyPage {
               onChange: () => this.syncFromRatio()
             });
             Row({ space: 10 }) {
-              IBestButton({ text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', disabled: this.saving, onBtnClick: () => { this.editorVisible = false; } });
-              IBestButton({
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', disabled: this.saving, onBtnClick: () => { this.closeLocalEditor(); } });
+              IBestButton({ btnHeight: 44,
                 text: I18n.text(this.language, '保存', 'Save'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', loading: this.saving, disabled: this.saving,
                 onBtnClick: () => this.save()
               });
             }.width('100%');
-          }.width('100%').padding({ left: 20, right: 20, top: 22, bottom: this.safeBottom + 22 })
+          }.width('100%').padding({ left: 16, right: 16, top: 22, bottom: this.safeBottom + 22 })
             .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius({ topLeft: 24, topRight: 24 });
         }
       }.width('100%').height('100%');
-    }.hideTitleBar(true);
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 
   @Builder
   private statCell(value: string, label: string) {
     Column({ space: 3 }) {
       Text(value).fontSize(19).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
-      Text(label).fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
+      Text(label).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
     }.layoutWeight(1);
   }
 }

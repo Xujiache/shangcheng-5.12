@@ -1,7 +1,9 @@
+import { SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { systemShare } from '@kit.ShareKit';
-import { IBestButton, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestButton, IBestToast } from '@ibestservices/ibest-ui';
 import { AppConfig } from '../../core/config/AppConfig';
 import { ImageSaveService } from '../../core/file/ImageSaveService';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -24,7 +26,7 @@ struct SharePage {
       await pasteboard.getSystemPasteboard().setData(record);
       IBestToast.show(I18n.text(this.language, '下载链接已复制', 'Download link copied'));
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '复制失败', 'Copy failed'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '复制失败', 'Copy failed'));
     }
   }
 
@@ -42,7 +44,7 @@ struct SharePage {
       const controller = new systemShare.ShareController(data);
       await controller.show(this.getUIContext().getHostContext() as common.UIAbilityContext, {});
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '分享失败', 'Sharing failed'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '分享失败', 'Sharing failed'));
     }
   }
 
@@ -63,7 +65,7 @@ struct SharePage {
       );
       IBestToast.show(I18n.text(this.language, '分享海报已保存到图库', 'Share poster saved to Photos'));
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '海报保存失败', 'Failed to save the poster'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '海报保存失败', 'Failed to save the poster'));
     } finally {
       this.saving = false;
     }
@@ -94,18 +96,18 @@ struct SharePage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '分享应用', 'Share app'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode),
           onLeftClick: () => AppRouter.back()
         });
         Scroll() {
           Column({ space: 16 }) {
             this.poster();
-            IBestButton({
+            IBestButton({ btnHeight: 44,
               text: I18n.text(this.language, '打开系统分享', 'Open system share'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
               btnWidth: '100%', onBtnClick: () => this.share()
             });
-            IBestButton({
+            IBestButton({ btnHeight: 44,
               text: I18n.text(this.language, '复制 AppGallery 链接', 'Copy AppGallery link'), plain: true,
               color: DesignTokens.brand(this.darkMode), btnWidth: '100%', onBtnClick: () => this.copyLink()
             });
@@ -120,8 +122,8 @@ struct SharePage {
             Text(I18n.text(this.language,
               '二维码和分享链接均指向正式 AppGallery 详情页。',
               'The QR code and share link both open the official AppGallery listing.'))
-              .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center);
-          }.width('100%').padding({ left: 20, right: 20, top: 18, bottom: this.safeBottom + 24 });
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center);
+          }.width('100%').padding({ left: 16, right: 16, top: 18, bottom: this.safeBottom + 24 });
         }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
       }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
     }.hideTitleBar(true);

@@ -1,3 +1,4 @@
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { IBestNavBar } from '@ibestservices/ibest-ui';
 import { I18n } from '../../core/i18n/I18n';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -29,9 +30,9 @@ struct AccountSecurityPage {
         .backgroundColor(DesignTokens.iconSurface(this.darkMode)).borderRadius(14);
       Column({ space: 4 }) {
         Text(title).fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).width('100%');
-        Text(description).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%').maxLines(2);
+        Text(description).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%').maxLines(2);
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-      if (value) Text(value).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+      if (value) Text(value).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
       MerchantIcon({ name: 'arrow', color: DesignTokens.muted(this.darkMode), iconSize: 16 });
     }.width('100%').height(72).padding({ left: 15, right: 15 })
       .border({ width: { bottom: border ? 1 : 0 }, color: DesignTokens.border(this.darkMode) }).onClick(action);
@@ -40,7 +41,7 @@ struct AccountSecurityPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '账号与安全', 'Account and security'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
@@ -55,7 +56,7 @@ struct AccountSecurityPage {
               Text(I18n.text(this.language,
                 '敏感操作需要密码或短信验证码确认', 'Sensitive changes require a password or SMS verification code'))
                 .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center);
-            }.width('100%').padding(20).backgroundColor(DesignTokens.card(this.darkMode))
+            }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
               .borderRadius(DesignTokens.RADIUS_XL).border({ width: 1, color: DesignTokens.border(this.darkMode) });
             Column() {
               this.securityRow('phone-o', I18n.text(this.language, '登录手机号', 'Sign-in phone'),
@@ -70,11 +71,11 @@ struct AccountSecurityPage {
                 I18n.text(this.language, '管理联系人、经营品类与店铺地址', 'Manage contacts, categories and store address'),
                 '', () => AppRouter.push('Profile'), false);
             }.width('100%').backgroundColor(DesignTokens.card(this.darkMode))
-              .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 1, color: DesignTokens.border(this.darkMode) }).clip(true);
+              .borderRadius(16).border({ width: 1, color: DesignTokens.border(this.darkMode) }).clip(true);
             Text(I18n.text(this.language,
               '经纬不会在任何页面展示、保存或发送你的明文密码。',
               'Jingwei never displays, stores or sends your password in plain text.'))
-              .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).lineHeight(18).width('100%').padding({ left: 6, right: 6 });
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).lineHeight(18).width('100%').padding({ left: 6, right: 6 });
           }.width('100%').constraintSize({ maxWidth: 680 })
             .padding({ left: 16, right: 16, top: 16, bottom: this.safeBottom + 24 });
         }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);

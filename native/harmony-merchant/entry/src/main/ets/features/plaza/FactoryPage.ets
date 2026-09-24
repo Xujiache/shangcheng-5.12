@@ -1,6 +1,9 @@
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
 import {
-  IBestButton, IBestField, IBestImagePreview, IBestNavBar, IBestSwitch, IBestTag, IBestToast
+  IBestButton, IBestField, IBestImagePreview, IBestSwitch, IBestTag, IBestToast
 } from '@ibestservices/ibest-ui';
 import { PhoneService } from '../../core/device/PhoneService';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -19,6 +22,22 @@ export function FactoryDetailBuilder(_: string, raw: Object) {
 
 @Component
 struct FactoryPage {
+  private handleBack(): void {
+    if (this.showAgency) { this.closeLocalEditor(); return; }
+
+    this.leaveGuard.request(this.language, false, false, () => AppRouter.back());
+  }
+
+  private editStamp: string = '';
+  private localStamp(): string { return JSON.stringify([this.markupText, this.message, this.autoSync]); }
+  private closeLocalEditor(): void {
+    this.leaveGuard.request(this.language, this.applying, this.localStamp() !== this.editStamp, () => { this.showAgency = false; });
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   params: IdRouteParams = new IdRouteParams();
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -36,24 +55,31 @@ struct FactoryPage {
   @State private ratingSubmitting: boolean = false;
   private routeTimer: number = -1;
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
-  aboutToDisappear(): void {
+  aboutToDisappear(): void { this.pageScope.dispose();
     if (this.routeTimer >= 0) clearTimeout(this.routeTimer);
     this.routeTimer = -1;
   }
 
   private async load(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     this.loading = true;
     try {
-      const detail = await BusinessRepository.plazaFactory(this.params.id);
-      const productPage = await BusinessRepository.plazaProducts('', 1, this.params.id);
+      const detail = await this.pageScope.read(BusinessRepository.plazaFactory(this.params.id), pageTicket);
+      const productPage = await this.pageScope.read(BusinessRepository.plazaProducts('', 1, this.params.id), pageTicket);
       this.data = detail;
       this.products = productPage.list;
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '厂家加载失败', 'Failed to load factory'));
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '厂家加载失败', 'Failed to load factory'));
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.loading = false;
+    }
     }
   }
 
@@ -74,35 +100,45 @@ struct FactoryPage {
   }
 
   private async follow(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (!this.data || this.following) return;
     const next = !this.data.followed;
     this.following = true;
+    const mutationTicket = this.pageScope.begin('follow');
     try {
-      await BusinessRepository.followFactory(this.data.id, next);
+      await this.pageScope.read(BusinessRepository.followFactory(this.data.id, next), mutationTicket);
       this.data.followed = next;
       this.data = this.data;
       IBestToast.show(next ? I18n.text(this.language, '已关注厂家', 'Factory followed') : I18n.text(this.language, '已取消关注', 'Factory unfollowed'));
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '操作失败', 'Operation failed'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '操作失败', 'Operation failed'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.following = false;
+    }
     }
   }
 
   private async rate(score: number): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (!this.data || this.rating > 0 || this.ratingSubmitting) return;
     this.ratingSubmitting = true;
+    const mutationTicket = this.pageScope.begin('rate');
     try {
-      const result = await BusinessRepository.rateFactory(this.data.id, score);
+      const result = await this.pageScope.read(BusinessRepository.rateFactory(this.data.id, score), mutationTicket);
       this.data.rating = result.rating;
       this.data.ratingCount = result.ratingCount;
       this.data = this.data;
       this.rating = score;
       IBestToast.show(I18n.text(this.language, '评价已提交', 'Rating submitted'));
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '评价失败', 'Failed to submit rating'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '评价失败', 'Failed to submit rating'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.ratingSubmitting = false;
+    }
     }
   }
 
@@ -115,7 +151,7 @@ struct FactoryPage {
     try {
       await PhoneService.dial(this.getUIContext().getHostContext() as common.UIAbilityContext, phone);
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '无法打开拨号界面', 'Unable to open the dialer'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '无法打开拨号界面', 'Unable to open the dialer'));
     }
   }
 
@@ -128,10 +164,11 @@ struct FactoryPage {
       IBestToast.show(I18n.text(this.language, '该厂家暂无可代理商品', 'This factory has no products available for agency'));
       return;
     }
-    this.showAgency = true;
+    this.editStamp = this.localStamp(); this.showAgency = true;
   }
 
   private async applyAgency(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (!this.data || this.applying) return;
     const markup = Number(this.markupText);
     if (!Number.isFinite(markup) || markup < 0 || markup > 100) {
@@ -147,8 +184,9 @@ struct FactoryPage {
       message: this.message.trim()
     };
     this.applying = true;
+    const mutationTicket = this.pageScope.begin('applyAgency');
     try {
-      await BusinessRepository.applyAgency(body);
+      await this.pageScope.read(BusinessRepository.applyAgency(body), mutationTicket);
       this.showAgency = false;
       IBestToast.show(I18n.text(this.language, `已提交 ${productIds.length} 件商品的代理申请`, `Agency request submitted for ${productIds.length} products`));
       this.routeTimer = setTimeout((): void => {
@@ -156,9 +194,12 @@ struct FactoryPage {
         AppRouter.replace('AgencyProducts', new IdRouteParams('', 'applied'));
       }, 800);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '代理申请失败', 'Agency request failed'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '代理申请失败', 'Agency request failed'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.applying = false;
+    }
     }
   }
 
@@ -172,7 +213,7 @@ struct FactoryPage {
           Text(I18n.text(this.language, `¥${item.startPrice.toFixed(2)} 起`, `From ¥${item.startPrice.toFixed(2)}`)).fontSize(15).fontWeight(FontWeight.Bold)
             .fontColor(DesignTokens.brand(this.darkMode));
           Blank();
-          Text(I18n.text(this.language, `${item.agencyCount} 家代理`, `${item.agencyCount} agents`)).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          Text(I18n.text(this.language, `${item.agencyCount} 家代理`, `${item.agencyCount} agents`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }.width('100%');
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
     }.width('100%').padding(11).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(12);
@@ -183,7 +224,7 @@ struct FactoryPage {
     Column({ space: 14 }) {
       Row() {
         Text(I18n.text(this.language, '申请代理', 'Apply for agency')).fontSize(20).fontWeight(FontWeight.Bold).layoutWeight(1);
-        Text(I18n.text(this.language, '关闭', 'Close')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).onClick(() => this.showAgency = false);
+        Text(I18n.text(this.language, '关闭', 'Close')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).onClick(() => this.closeLocalEditor());
       }.width('100%');
       Text(I18n.text(this.language, `将申请前 ${Math.min(5, this.products.length)} 件可代理商品，可在“我的代理”继续管理。`,
         `The first ${Math.min(5, this.products.length)} products will be requested. Manage them under My agency.`))
@@ -192,7 +233,7 @@ struct FactoryPage {
       Row() {
         Column({ space: 3 }) {
           Text(I18n.text(this.language, '自动同步厂家价格', 'Sync factory prices')).fontSize(14).fontWeight(FontWeight.Medium);
-          Text(I18n.text(this.language, '厂家调价时按加价比例更新', 'Apply the markup when factory prices change')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          Text(I18n.text(this.language, '厂家调价时按加价比例更新', 'Apply the markup when factory prices change')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }.layoutWeight(1).alignItems(HorizontalAlign.Start);
         IBestSwitch({ value: $autoSync, activeColor: DesignTokens.brand(this.darkMode) });
       }.width('100%');
@@ -202,20 +243,21 @@ struct FactoryPage {
           .height(88).width('100%').padding(10).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(10)
           .maxLength(300);
       }.width('100%').alignItems(HorizontalAlign.Start);
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '确认提交', 'Submit'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '100%',
         loading: this.applying, onBtnClick: () => this.applyAgency()
       });
-    }.width('100%').padding({ left: 20, right: 20, top: 18, bottom: this.safeBottom + 18 });
+    }.width('100%').padding({ left: 16, right: 16, top: 18, bottom: this.safeBottom + 18 });
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '厂家详情', 'Factory details'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode),
-          onLeftClick: () => AppRouter.back()
+          onLeftClick: () => this.handleBack()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
         if (this.loading) {
           Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }
             .layoutWeight(1).justifyContent(FlexAlign.Center);
@@ -241,17 +283,17 @@ struct FactoryPage {
                     `${this.data.region} · ${this.data.years || 1} years in business`)).fontSize(12)
                     .fontColor(DesignTokens.muted(this.darkMode));
                 }.layoutWeight(1).alignItems(HorizontalAlign.Start);
-                IBestButton({
+                IBestButton({ btnHeight: 44,
                   text: this.data.followed ? I18n.text(this.language, '已关注', 'Following') : I18n.text(this.language, '关注', 'Follow'), plain: true, color: DesignTokens.brand(this.darkMode),
                   loading: this.following, disabled: this.following, onBtnClick: () => this.follow()
                 });
-              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
 
               Row() {
-                Column({ space: 3 }) { Text(`${this.data.productCount || this.products.length}`).fontSize(20).fontWeight(FontWeight.Bold); Text(I18n.text(this.language, '在售商品', 'Products')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1);
-                Column({ space: 3 }) { Text(`${this.data.agencyCount || 0}`).fontSize(20).fontWeight(FontWeight.Bold); Text(I18n.text(this.language, '合作代理', 'Agents')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1);
-                Column({ space: 3 }) { Text(`¥${(this.data.monthGmv || this.data.gmv || 0).toFixed(0)}`).fontSize(20).fontWeight(FontWeight.Bold); Text(I18n.text(this.language, '经营规模', 'Business volume')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1);
-              }.width('100%').padding({ top: 16, bottom: 16 }).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+                Column({ space: 3 }) { Text(`${this.data.productCount || this.products.length}`).fontSize(20).fontWeight(FontWeight.Bold); Text(I18n.text(this.language, '在售商品', 'Products')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1);
+                Column({ space: 3 }) { Text(`${this.data.agencyCount || 0}`).fontSize(20).fontWeight(FontWeight.Bold); Text(I18n.text(this.language, '合作代理', 'Agents')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1);
+                Column({ space: 3 }) { Text(`¥${(this.data.monthGmv || this.data.gmv || 0).toFixed(0)}`).fontSize(20).fontWeight(FontWeight.Bold); Text(I18n.text(this.language, '经营规模', 'Business volume')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }.layoutWeight(1);
+              }.width('100%').padding({ top: 16, bottom: 16 }).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
 
               Column({ space: 9 }) {
                 Text(I18n.text(this.language, '厂家介绍', 'About the factory')).fontSize(18).fontWeight(FontWeight.Bold).width('100%');
@@ -259,7 +301,7 @@ struct FactoryPage {
                   .lineHeight(22).width('100%');
                 Text(I18n.text(this.language, `主营：${this.data.categories.join('、') || '--'}`, `Categories: ${this.data.categories.join(', ') || '--'}`)).fontSize(13).width('100%');
                 Text(I18n.text(this.language, `地址：${this.data.address || this.data.contact?.address || '--'}`, `Address: ${this.data.address || this.data.contact?.address || '--'}`)).fontSize(13).width('100%');
-              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
 
               if ((this.data.qualifications || []).length > 0) {
                 Column({ space: 10 }) {
@@ -269,12 +311,12 @@ struct FactoryPage {
                       ForEach(this.data.qualifications || [], (item: PlazaQualification) => {
                         Column({ space: 5 }) {
                           Image(item.image).width(116).height(82).objectFit(ImageFit.Cover).borderRadius(10);
-                          Text(item.name).fontSize(11).maxLines(1).width(116).textAlign(TextAlign.Center);
+                          Text(item.name).fontSize(12).maxLines(1).width(116).textAlign(TextAlign.Center);
                         }.onClick(() => this.previewQualification(item));
                       }, (item: PlazaQualification) => item.id);
                     }
                   }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%');
-                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+                }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
               }
 
               Column({ space: 10 }) {
@@ -283,13 +325,13 @@ struct FactoryPage {
                 if (this.data.contact?.workTime) {
                   Text(I18n.text(this.language, `工作时间：${this.data.contact.workTime}`, `Hours: ${this.data.contact.workTime}`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
                 }
-                IBestButton({ text: I18n.text(this.language, '联系厂家', 'Contact factory'), plain: true, color: DesignTokens.brand(this.darkMode), btnWidth: '100%', onBtnClick: () => this.callFactory() });
-              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+                IBestButton({ btnHeight: 44, text: I18n.text(this.language, '联系厂家', 'Contact factory'), plain: true, color: DesignTokens.brand(this.darkMode), btnWidth: '100%', onBtnClick: () => this.callFactory() });
+              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
 
               Column({ space: 10 }) {
                 Row() { Text(I18n.text(this.language, '可代理商品', 'Agency products')).fontSize(18).fontWeight(FontWeight.Bold).layoutWeight(1); Text(I18n.text(this.language, `${this.products.length} 件`, `${this.products.length} products`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)); }.width('100%');
                 ForEach(this.products.slice(0, 5), (item: PlazaProduct) => { this.productCard(item); }, (item: PlazaProduct) => item.productId);
-              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
 
               Column({ space: 10 }) {
                 Text(I18n.text(this.language, '为厂家评分', 'Rate this factory')).fontSize(18).fontWeight(FontWeight.Bold).width('100%');
@@ -304,9 +346,9 @@ struct FactoryPage {
                       .onClick(() => this.rate(score));
                   });
                 }.width('100%');
-              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+              }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
 
-              IBestButton({
+              IBestButton({ btnHeight: 44,
                 text: I18n.text(this.language, '申请代理该厂家商品', 'Apply to sell this factory\'s products'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
                 btnWidth: '100%', onBtnClick: () => this.openAgency()
               });
@@ -316,8 +358,8 @@ struct FactoryPage {
       }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode))
         .bindSheet(this.showAgency, this.agencySheet(), {
           height: SheetSize.MEDIUM,
-          onWillDismiss: () => { this.showAgency = false; }
+          onWillDismiss: () => { this.closeLocalEditor(); }
         });
-    }.hideTitleBar(true);
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

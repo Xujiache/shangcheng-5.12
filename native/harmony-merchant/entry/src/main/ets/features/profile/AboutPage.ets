@@ -1,5 +1,7 @@
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
-import { IBestDialogUtil, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestDialogUtil, IBestToast } from '@ibestservices/ibest-ui';
 import { AppConfig } from '../../core/config/AppConfig';
 import { PhoneService } from '../../core/device/PhoneService';
 import { I18n } from '../../core/i18n/I18n';
@@ -15,15 +17,24 @@ export function AboutAppBuilder(_: string) { AboutPage(); }
 
 @Component
 struct AboutPage {
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
   @State private publicSettings: PublicSystemSettings | null = null;
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
   private async load(): Promise<void> {
-    try { this.publicSettings = await PublicSettingsRepository.load(); } catch (_) {}
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
+    try { this.publicSettings = await this.pageScope.read(PublicSettingsRepository.load(), pageTicket); } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);}
   }
 
   private context(): common.UIAbilityContext {
@@ -60,7 +71,7 @@ struct AboutPage {
     Row({ space: 12 }) {
       MerchantIcon({ name: icon, color: DesignTokens.brand(this.darkMode), iconSize: 21 });
       Text(title).fontSize(14).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
-      if (detail) Text(detail).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+      if (detail) Text(detail).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
       MerchantIcon({ name: 'arrow', color: DesignTokens.muted(this.darkMode), iconSize: 16 });
     }.width('100%').height(58).padding({ left: 16, right: 16 })
       .border({ width: { bottom: border ? 1 : 0 }, color: DesignTokens.border(this.darkMode) }).onClick(action);
@@ -69,10 +80,11 @@ struct AboutPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '关于经纬商家端', 'About Jingwei Merchant'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, onRetry: () => this.load() });
         Scroll() {
           Column({ space: 16 }) {
             Column({ space: 12 }) {
@@ -112,7 +124,7 @@ struct AboutPage {
             Text(I18n.text(this.language,
               'Copyright © 经纬科技。保留所有权利。',
               'Copyright © Jingwei Technology. All rights reserved.'))
-              .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center).width('100%');
+              .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center).width('100%');
           }.width('100%').constraintSize({ maxWidth: 680 })
             .padding({ left: 16, right: 16, top: 16, bottom: this.safeBottom + 24 });
         }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);

@@ -1,3 +1,4 @@
+import { SecondaryBackHandler, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
 import { PrimaryNavigationMetrics } from '../shell/PrimaryNavigationMetrics';
 import { IBestButton, IBestDialogUtil, IBestEmpty, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -33,6 +34,8 @@ struct ProductStatusOption {
 
 @Component
 export struct ProductListPage {
+  backHandler: SecondaryBackHandler = new SecondaryBackHandler();
+  private back(): void { if (!this.backHandler.closeOverlay()) AppRouter.back(); }
   @Prop @Watch('onInitialStatus') initialStatus: string = '';
   @Prop @Watch('onActivation') activationEpoch: number = 0;
   showBack: boolean = false;
@@ -65,11 +68,18 @@ export struct ProductListPage {
   ];
 
   aboutToAppear(): void {
+    this.backHandler.closeOverlay = (): boolean => {
+      if (this.processingBatch) return true;
+      if (this.panel) { this.panel = ''; return true; }
+      if (this.selectionMode) { this.selectionMode = false; this.selectedIds = []; return true; }
+      return false;
+    };
     this.status = this.initialStatus;
     this.reload();
   }
 
   aboutToDisappear(): void {
+    this.backHandler.closeOverlay = () => false;
     this.requestEpoch += 1;
     this.loading = false;
     if (this.searchTimer >= 0) clearTimeout(this.searchTimer);
@@ -117,7 +127,8 @@ export struct ProductListPage {
     try {
       const result = await ProductRepository.list(requestedStatus, requestedKeyword, requestedPage);
       if (epoch !== this.requestEpoch || session !== this.sessionEpoch) return;
-      const incoming = Array.isArray(result.list) ? result.list : [];
+      if (!Array.isArray(result.list)) throw new Error('invalid-products');
+      const incoming = result.list;
       this.products = append ? this.products.concat(incoming.filter((item: ProductSummary): boolean =>
         !this.products.some((current: ProductSummary): boolean => current.id === item.id))) : incoming;
       this.dataSource.update(this.products);
@@ -125,7 +136,7 @@ export struct ProductListPage {
       this.total = result.total;
     } catch (error) {
       if (epoch === this.requestEpoch) {
-        this.errorMessage = error instanceof ApiError ? error.message : 'i18n:product-load';
+        this.errorMessage = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : 'i18n:product-load';
       }
     } finally {
       if (epoch === this.requestEpoch) {
@@ -229,7 +240,7 @@ export struct ProductListPage {
       this.selectedIds = [];
       await this.reload();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '操作失败', 'Operation failed'));
     } finally {
       this.processingBatch = false;
@@ -337,7 +348,7 @@ export struct ProductListPage {
         if (this.showBack) {
           Button({ type: ButtonType.Normal }) {
             MerchantIcon({ name: 'arrow-left', color: DesignTokens.text(this.darkMode), iconSize: 24 });
-          }.width(38).height(42).backgroundColor(Color.Transparent).onClick((): void => AppRouter.back());
+          }.width(44).height(44).backgroundColor(Color.Transparent).onClick((): void => this.back());
         }
         Column({ space: 4 }) {
           Text(I18n.text(this.language, '商品', 'Products')).fontSize(27).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
@@ -350,7 +361,7 @@ export struct ProductListPage {
           }.padding({ left: 14, right: 14 });
         }.height(42).borderRadius(13).backgroundColor(DesignTokens.selectedSurface(this.darkMode))
           .onClick((): void => AppRouter.push('ProductEdit', new IdRouteParams()));
-      }.width('100%').padding({ top: this.safeTop + 12, left: 18, right: 18, bottom: 16 });
+      }.width('100%').padding({ top: this.safeTop + (this.showBack ? 6 : 12), left: this.showBack ? 8 : 18, right: 16, bottom: this.showBack ? 8 : 16 });
 
       Row({ space: 9 }) {
         MerchantIcon({ name: 'search', color: DesignTokens.muted(this.darkMode), iconSize: 20 });

@@ -20,6 +20,7 @@
     "dev:platform-app": "pnpm --filter @jiujiu/platform-app dev:h5",
     "dev:admin-pc": "pnpm --filter @jiujiu/admin-pc dev",
     "dev:server": "pnpm --filter @jiujiu/server start:dev",
+    "preview:prototype": "node scripts/preview-prototype.mjs",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",

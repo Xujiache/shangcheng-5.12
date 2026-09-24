@@ -1,0 +1,1270 @@
+[
+  {
+    "route": "MerchantApply",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/auth/MerchantApplyPage.ets",
+        "sha256": "ed929440159ef0d22d5533a8704b9d9e0a46efb50df86e984136184d1c72497a"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/auth/MerchantApplyPage.ets",
+        "line": 33,
+        "declaration": "this.leaveGuard.request(this.language, this.submitting || this.sendingCode, !this.applyId && Boolean(this.phone || this.merchantName || this.smsCode), () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "SetPassword",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/auth/SetPasswordPage.ets",
+        "sha256": "00be8bb46ae4a8b2a5c4318641ccf46df3112d6066a8d1aba2dd57bd64e98f0e"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "ChangePhone",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/auth/ChangePhonePage.ets",
+        "sha256": "b46a2d5afb0dab99203e28542919589a30bb9f372e75608283e6431b9161aee5"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/auth/ChangePhonePage.ets",
+        "line": 22,
+        "declaration": "this.leaveGuard.request(this.language, this.saving || this.sendingNew || this.sendingOld, Boolean(this.newPhone || this.newCode || this.oldCode), () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Agreements",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/legal/AgreementsPage.ets",
+        "sha256": "28d24ca4275a85fdd93a3126f2a20df0b6d606251aad168a039b311a4f1bab47"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "UpdateCenter",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/update/UpdatePage.ets",
+        "sha256": "487be2889d7d3ec71778d158a2f83d14223eacb36aa788c5e1182eb328f92ce1"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "ProductEdit",
+    "group": "commerce",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "sha256": "aa75fb19a1c0f9a86f540b458852148d72b2688b67582bc522fee9d6229b91fc"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPolicy.ets",
+        "sha256": "3e24c5d49d16352d135fe370a1c0062b929c73899a36913146a1189c38dc929d"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductImageQueue.ets",
+        "sha256": "9827d857a489b140c61c014a3bc20259cee74389c93ddb307d715a61b65426c7"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductSkuMatrix.ets",
+        "sha256": "3e8655df64609c70d890035e5721ee989449600aef3831550db966d447e2806b"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 68,
+        "declaration": "@State private specEditorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 72,
+        "declaration": "@State private batchEditorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 75,
+        "declaration": "@State private skuEditorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 90,
+        "declaration": "@State private optionsVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 91,
+        "declaration": "@State private detailVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 94,
+        "declaration": "@State private categoryVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 221,
+        "declaration": "IBestActionSheet.show({ actions: [I18n.text(this.language, '从相册选择', 'Choose from Photos'), I18n.text(this.language, '拍照', 'Take photo')],",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 255,
+        "declaration": "IBestActionSheet.show({ actions: [I18n.text(this.language, '重新上传', 'Retry upload'), I18n.text(this.language, '移除图片', 'Remove image')],",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 273,
+        "declaration": "if (source.length) IBestImagePreview.show(source, { startIndex: index, closeOnClickImage: false, closeOnClickOverlay: true });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 281,
+        "declaration": "IBestActionSheet.show({ actions, cancelText: I18n.text(this.language, '取消', 'Cancel'), onSelect: (action: number) => {",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 284,
+        "declaration": "IBestActionSheet.show({ actions: [I18n.text(this.language, '相册', 'Photos'), I18n.text(this.language, '拍照', 'Camera')],",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 292,
+        "declaration": "IBestDialogUtil.open({ title: I18n.text(this.language, '删除图片', 'Delete image'),",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 325,
+        "declaration": "IBestActionSheet.show({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 431,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductEditPage.ets",
+        "line": 550,
+        "declaration": "IBestDialogUtil.open({ title: I18n.text(this.language, '尚未保存', 'Unsaved changes'),",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "CategoryManager",
+    "group": "commerce",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/product/CategoryPage.ets",
+        "sha256": "f201ffd4f56c49b371955d6d45acf59ad75b926d0d16816bbcc59f85d44a9192"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/product/CategoryPage.ets",
+        "line": 22,
+        "declaration": "this.leaveGuard.request(this.language, false, false, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/CategoryPage.ets",
+        "line": 28,
+        "declaration": "this.leaveGuard.request(this.language, this.saving || Boolean(this.workingId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/CategoryPage.ets",
+        "line": 47,
+        "declaration": "@State private editorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/CategoryPage.ets",
+        "line": 133,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/CategoryPage.ets",
+        "line": 313,
+        "declaration": ".bindSheet(this.editorVisible, this.editor(), {",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "OrderDetail",
+    "group": "commerce",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/order/OrderDetailPage.ets",
+        "sha256": "73e04e2000cd3da3ea87547983f290f239d26c9fd6177aec12b28e7ee273db91"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/OrderDetailPolicy.ets",
+        "sha256": "4cb010330c7faa5fac6fe342b9fb1a0e871fc607aef888d1652dcd64d54da8c4"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/order/OrderDetailPage.ets",
+        "line": 36,
+        "declaration": "@State private actionVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/OrderDetailPage.ets",
+        "line": 182,
+        "declaration": "IBestDialogUtil.open({ title: I18n.text(this.language, '撤销分享', 'Revoke share'),",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/OrderDetailPage.ets",
+        "line": 237,
+        "declaration": "IBestActionSheet.show({ actions: [I18n.text(this.language, '复制订单号', 'Copy order number'), I18n.text(this.language, '地址识别工具', 'Address parser'), I18n.text(this.language, '刷新订单', 'Refresh order')],",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "AfterSale",
+    "group": "commerce",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/order/AfterSalePage.ets",
+        "sha256": "5464aee6c4daefc0be7c9a6f1a356ace6b654d3a69c33b449720de391fee14c6"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/order/AfterSalePage.ets",
+        "line": 42,
+        "declaration": "this.leaveGuard.request(this.language, false, false, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/AfterSalePage.ets",
+        "line": 48,
+        "declaration": "this.leaveGuard.request(this.language, this.submitting, this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/AfterSalePage.ets",
+        "line": 70,
+        "declaration": "@State private editorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "AfterSaleDetail",
+    "group": "commerce",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/order/AfterSaleDetailPage.ets",
+        "sha256": "66128dc6f7a2d7fefe693f4560847a43a81325204776a5058d50807cf6bde790"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/order/AfterSaleDetailPage.ets",
+        "line": 43,
+        "declaration": "this.leaveGuard.request(this.language, false, false, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/AfterSaleDetailPage.ets",
+        "line": 49,
+        "declaration": "this.leaveGuard.request(this.language, this.submitting, this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/AfterSaleDetailPage.ets",
+        "line": 64,
+        "declaration": "@State private editorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/AfterSaleDetailPage.ets",
+        "line": 189,
+        "declaration": ".onClick(() => IBestImagePreview.show(item.evidence, {",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Customers",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/CustomerPage.ets",
+        "sha256": "a387d713440c35b5968603aa2ff6eb9a7418734339fb7b9045352a7954f5b360"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/CustomerPage.ets",
+        "line": 27,
+        "declaration": "IBestDialogUtil.open({ title: I18n.text(this.language, '确认价格层级', 'Confirm price tier'),",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/CustomerPage.ets",
+        "line": 34,
+        "declaration": "IBestDialogUtil.open({ title: I18n.text(this.language, '确认价格授权', 'Confirm price access'),",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/CustomerPage.ets",
+        "line": 119,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Commission",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/CommissionPage.ets",
+        "sha256": "91e9639abfe7dd145c23e11c07f712d1360bf35abcccc1fcdee6902a8cd1d0d4"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/CommissionPage.ets",
+        "line": 27,
+        "declaration": "this.leaveGuard.request(this.language, this.saving, this.dirty, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/CommissionPage.ets",
+        "line": 33,
+        "declaration": "this.leaveGuard.request(this.language, this.saving, this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/CommissionPage.ets",
+        "line": 52,
+        "declaration": "@State private editorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/CommissionPage.ets",
+        "line": 288,
+        "declaration": ".bindSheet(this.editorVisible, this.ruleEditor(), {",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Stores",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/StorePage.ets",
+        "sha256": "752a52ec803b96e7bbd0aa438677f06d7f9a92f6bb2a6410e9ae78f5bcab9c33"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/StorePage.ets",
+        "line": 107,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "StoreAuth",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/StoreAuthPage.ets",
+        "sha256": "984b7b41767199fb46df2903ace4e9113e7f710ee33ecb86b5ef6e9fbf098d1d"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/StoreAuthPage.ets",
+        "line": 30,
+        "declaration": "this.leaveGuard.request(this.language, this.saving, this.editorReady && this.formStamp() !== this.loadedStamp, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Staffs",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/StaffPage.ets",
+        "sha256": "d473154116d4c2be1f14068c9391e56a4f01dd33358bf244e889c192b5284c23"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/StaffPage.ets",
+        "line": 33,
+        "declaration": "this.leaveGuard.request(this.language, false, false, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/StaffPage.ets",
+        "line": 39,
+        "declaration": "this.leaveGuard.request(this.language, this.saving || Boolean(this.actionId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/StaffPage.ets",
+        "line": 57,
+        "declaration": "@State private editorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/StaffPage.ets",
+        "line": 146,
+        "declaration": "IBestActionSheet.show({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/StaffPage.ets",
+        "line": 154,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Marketing",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/MarketingPage.ets",
+        "sha256": "9fece4c2285aee6eb036f72e910220e373d2336a17a685ce2a556ec333d4ab53"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/MarketingPage.ets",
+        "line": 23,
+        "declaration": "this.leaveGuard.request(this.language, false, false, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/MarketingPage.ets",
+        "line": 29,
+        "declaration": "this.leaveGuard.request(this.language, this.formSaving || Boolean(this.actionId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/MarketingPage.ets",
+        "line": 47,
+        "declaration": "@State private editorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/MarketingPage.ets",
+        "line": 163,
+        "declaration": "private remove(item: MarketingCoupon): void { IBestDialogUtil.open({ title: I18n.text(this.language, '删除优惠券', 'Delete coupon'), message: I18n.text(this.language, `确定删除“${item.name}”吗？`, `Delete “${item.name}”?`), showCancelButton: true,",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Decorate",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/DecoratePage.ets",
+        "sha256": "620b0a045bff952713c7f766edfe84dd0f74d1b728f060694f02fc1f1883e526"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/DecoratePage.ets",
+        "line": 29,
+        "declaration": "this.leaveGuard.request(this.language, this.saving || this.uploading, this.editorReady && this.formStamp() !== this.loadedStamp, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/DecoratePage.ets",
+        "line": 104,
+        "declaration": "IBestActionSheet.show({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "PriceRule",
+    "group": "business",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/business/PriceRulePage.ets",
+        "sha256": "f78620e7284e193bb76feb7f8fabac6f7256dad88495d2c5f9d88013b65ed6bd"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/business/PriceRulePage.ets",
+        "line": 22,
+        "declaration": "this.leaveGuard.request(this.language, this.saving, this.dirty, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/business/PriceRulePage.ets",
+        "line": 111,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "ChatSessions",
+    "group": "communication",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/chat/ChatSessionsPage.ets",
+        "sha256": "f8dd0e43682767ff88d7e95598b0a77b3f682c1c0f89e5bec45e6b1701980ca6"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "ChatDetail",
+    "group": "communication",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/chat/ChatDetailPage.ets",
+        "sha256": "5f8120634c5436b937061dfb7415d289091a9657c67d0662f0d328a8225f7c75"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/chat/ChatDetailPage.ets",
+        "line": 48,
+        "declaration": "@State private panel: string = '';",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/chat/ChatDetailPage.ets",
+        "line": 267,
+        "declaration": "IBestImagePreview.show([url], { closeOnClickImage: false, closeOnClickOverlay: true });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Plaza",
+    "group": "communication",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/plaza/PlazaPage.ets",
+        "sha256": "0c0b19a3e36fce4e4e335f401769e8bae448cc8fc4cfe0498bc5105c5f80150d"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/plaza/PlazaPage.ets",
+        "line": 62,
+        "declaration": "@State private showFilters: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/PlazaPage.ets",
+        "line": 63,
+        "declaration": "@State private showVisibility: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/PlazaPage.ets",
+        "line": 251,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "FactoryDetail",
+    "group": "communication",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/plaza/FactoryPage.ets",
+        "sha256": "46a86444b033432297b34b97df228864978882f00437ee7a37bfecb0fe556844"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/plaza/FactoryPage.ets",
+        "line": 28,
+        "declaration": "this.leaveGuard.request(this.language, false, false, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/FactoryPage.ets",
+        "line": 34,
+        "declaration": "this.leaveGuard.request(this.language, this.applying, this.localStamp() !== this.editStamp, () => { this.showAgency = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/FactoryPage.ets",
+        "line": 48,
+        "declaration": "@State private showAgency: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/FactoryPage.ets",
+        "line": 159,
+        "declaration": "if (item.image) IBestImagePreview.show([item.image], { closeOnClickImage: false, closeOnClickOverlay: true });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/FactoryPage.ets",
+        "line": 359,
+        "declaration": ".bindSheet(this.showAgency, this.agencySheet(), {",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "AgencyProducts",
+    "group": "communication",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/plaza/AgencyPage.ets",
+        "sha256": "421d78d36c62fbaf04bc6fb48f571338f5ec45cce54fab96c71f13ce0426cae3"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/plaza/AgencyPage.ets",
+        "line": 27,
+        "declaration": "this.leaveGuard.request(this.language, false, false, () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/AgencyPage.ets",
+        "line": 33,
+        "declaration": "this.leaveGuard.request(this.language, this.saving || Boolean(this.actionId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/AgencyPage.ets",
+        "line": 49,
+        "declaration": "@State private editorVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/AgencyPage.ets",
+        "line": 162,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/plaza/AgencyPage.ets",
+        "line": 195,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Membership",
+    "group": "communication",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/member/MembershipPage.ets",
+        "sha256": "74bef9317557ac5d85359613f958b8daa37753b09996743c813933ca3bb55b9a"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Profile",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/ProfilePage.ets",
+        "sha256": "446ea82e059b2ac84990a4c1cb778136e960000582fad4a6fb4d61a695e23d6b"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/profile/ProfilePage.ets",
+        "line": 38,
+        "declaration": "this.leaveGuard.request(this.language, this.saving || this.uploading, this.hasChanges(), () => AppRouter.back());",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/ProfilePage.ets",
+        "line": 70,
+        "declaration": "@State private categorySheetVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/ProfilePage.ets",
+        "line": 139,
+        "declaration": "IBestActionSheet.show({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "LocationPicker",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/LocationPickerPage.ets",
+        "sha256": "3d8e9b7bb66fb73efc1806303e5d17f9031bf459cbf6fe049896d45d176dac41"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "Settings",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/SettingsPage.ets",
+        "sha256": "87428f1ac1348dc6bd4203485dd8f8a09802abed0033c5aaf92ef925ec0c438f"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/profile/SettingsPage.ets",
+        "line": 77,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/SettingsPage.ets",
+        "line": 113,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/profile/SettingsPage.ets",
+        "line": 131,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "AccountSecurity",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/AccountSecurityPage.ets",
+        "sha256": "e341e50af773b6b2591caff7314799d8267e10b51d570fd0d4ab9c31adf18fff"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "AppearanceSettings",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/AppearanceSettingsPage.ets",
+        "sha256": "8416a5263298ad846332cfb31dd64d657b7149b21aa4aa237b3dd2ebfa8eb186"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "NotificationSettings",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/NotificationSettingsPage.ets",
+        "sha256": "1184eaff6eb9f03c858ab4b6ae47a84ae9bcc169e543da825f03b425c8bea0c2"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "AboutApp",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/AboutPage.ets",
+        "sha256": "e2f353b09b4bc94ad832038b8908914b76cfbc4a81509e4d1f27a0bab4fb2a6a"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/profile/AboutPage.ets",
+        "line": 54,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "ShareApp",
+    "group": "account",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/profile/SharePage.ets",
+        "sha256": "e3c72bfe47cc351b4171189fc749ad770801d63e7c8cbe1bfb4611f14713d9f6"
+      }
+    ],
+    "presentation": "紧凑标题、卡片/字段间距及语义图片图标",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "FilteredOrders",
+    "group": "commerce",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/shell/FilteredListRoutes.ets",
+        "sha256": "283dcc63739aba1f5e25584c9a1d33d29996aee23ecbd7fc2d6ed264db7ad8b1"
+      },
+      {
+        "file": "entry/src/main/ets/features/order/OrderListPage.ets",
+        "sha256": "d4744c9ed0d7a4b7425c001a6d5f3e443388b01e96be4cb32586e7cccb4223a9"
+      }
+    ],
+    "presentation": "保留专用/双入口布局，补齐二级返回与密度",
+    "overlays": [],
+    "overlayAssessment": "无自定义弹层；系统/第三方界面保持原流程",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "FilteredProducts",
+    "group": "commerce",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/shell/FilteredListRoutes.ets",
+        "sha256": "283dcc63739aba1f5e25584c9a1d33d29996aee23ecbd7fc2d6ed264db7ad8b1"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductListPage.ets",
+        "sha256": "78836556be3987dce543e599f7239a3209263bfb9f2d9a129adc42c5b7d70446"
+      }
+    ],
+    "presentation": "保留专用/双入口布局，补齐二级返回与密度",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/product/ProductListPage.ets",
+        "line": 59,
+        "declaration": "@State private panel: string = '';",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/product/ProductListPage.ets",
+        "line": 214,
+        "declaration": "IBestDialogUtil.open({",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  },
+  {
+    "route": "StatsFull",
+    "group": "analytics",
+    "sources": [
+      {
+        "file": "entry/src/main/ets/features/stats/StatsPage.ets",
+        "sha256": "54f47a95c4836cd8e4dd231c1d4096427bc59469727c9c17b7aca78a307d62c3"
+      },
+      {
+        "file": "entry/src/main/ets/features/stats/StatsDatePanel.ets",
+        "sha256": "fcd370384d047395c313e061b8aa9e4e4faf815025db2c331701b92bd340df1a"
+      },
+      {
+        "file": "entry/src/main/ets/features/stats/StatsCards.ets",
+        "sha256": "a6512b654b286401e399dab51cac68a7c9ca6e487fcf2fc0c9630762b1585786"
+      },
+      {
+        "file": "entry/src/main/ets/features/stats/StatsTrendChart.ets",
+        "sha256": "d4e3e46da6976b55fbb754611fc6f66b7f4cc8d1e75b52fb5c3ccbe2029edc2b"
+      }
+    ],
+    "presentation": "保留专用/双入口布局，补齐二级返回与密度",
+    "overlays": [
+      {
+        "file": "entry/src/main/ets/features/stats/StatsPage.ets",
+        "line": 35,
+        "declaration": "@State private calendarVisible: boolean = false;",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/stats/StatsPage.ets",
+        "line": 36,
+        "declaration": "@State private sheetMode: string = 'dates';",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      },
+      {
+        "file": "entry/src/main/ets/features/stats/StatsPage.ets",
+        "line": 213,
+        "declaration": ".bindSheet(this.calendarVisible, this.sheet(), { height: '85%', showClose: false, dragBar: false,",
+        "device": "待验证",
+        "handling": "独立草稿/退出规则或原专用流程保留；实际交互待真机核对",
+        "automated": "源码覆盖与编译通过"
+      }
+    ],
+    "overlayAssessment": "已登记源码入口；共用返回/草稿规则及专用弹层保留",
+    "implementation": "已修改",
+    "automated": "自动覆盖检查与本地编译通过（不等于逐页交互验证）",
+    "device": "待验证：HDC 未发现连接设备"
+  }
+]

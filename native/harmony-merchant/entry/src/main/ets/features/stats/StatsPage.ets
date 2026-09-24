@@ -1,3 +1,4 @@
+import { SecondaryBackHandler } from '../../core/ui/SecondaryPolicy';
 import { PrimaryNavigationMetrics } from '../shell/PrimaryNavigationMetrics';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { ApiError } from '../../core/network/ApiClient';
@@ -14,11 +15,13 @@ import { StatsTrendChart } from './StatsTrendChart';
 
 @Builder
 export function StatsFullBuilder(_: string) {
-  NavDestination() { StatsPage({ showBack: true }); }.hideTitleBar(true);
+  StatsFullRoute();
 }
 
 @Component
 export struct StatsPage {
+  backHandler: SecondaryBackHandler = new SecondaryBackHandler();
+  private back(): void { if (!this.backHandler.closeOverlay()) AppRouter.back(); }
   @Prop @Watch('onActivation') activationEpoch: number = 0;
   showBack: boolean = false;
   @StorageProp('safeBottom') private safeBottom: number = 16;
@@ -43,8 +46,8 @@ export struct StatsPage {
   private reloadPending: boolean = false;
   private readonly periods: string[] = ['today', 'week', 'month', 'year'];
 
-  aboutToAppear(): void { this.disposed = false; this.owner = SessionStore.shared().user?.id || ''; this.load(); }
-  aboutToDisappear(): void { this.disposed = true; this.requests.invalidate(); this.calendarVisible = false; }
+  aboutToAppear(): void { this.backHandler.closeOverlay = (): boolean => { if (!this.calendarVisible) return false; this.closeSheet(); return true; }; this.disposed = false; this.owner = SessionStore.shared().user?.id || ''; this.load(); }
+  aboutToDisappear(): void { this.backHandler.closeOverlay = () => false; this.disposed = true; this.requests.invalidate(); this.calendarVisible = false; }
   private current(epoch: number): boolean {
     return !this.disposed && this.loadEpoch === epoch && this.requests.current(epoch) && this.owner === (SessionStore.shared().user?.id || '');
   }
@@ -164,8 +167,8 @@ export struct StatsPage {
     Column() {
       Row({ space: 6 }) {
         if (this.showBack) Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'arrow-left', color: DesignTokens.text(this.darkMode), iconSize: 24 }); }
-          .width(44).height(44).backgroundColor(Color.Transparent).onClick(() => AppRouter.back());
-        Text(I18n.text(this.language, '经营数据', 'Analytics')).fontSize(22).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
+          .width(44).height(44).backgroundColor(Color.Transparent).onClick(() => this.back());
+        Text(I18n.text(this.language, '经营数据', 'Analytics')).fontSize(this.showBack ? 20 : 22).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
         Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'question-o', color: DesignTokens.muted(this.darkMode), iconSize: 22 }); }
           .width(44).height(44).backgroundColor(Color.Transparent).accessibilityText(I18n.text(this.language, '统计说明', 'About these figures'))
           .onClick(() => { this.sheetMode = 'info'; this.calendarVisible = true; });
@@ -209,5 +212,14 @@ export struct StatsPage {
     }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode))
       .bindSheet(this.calendarVisible, this.sheet(), { height: '85%', showClose: false, dragBar: false,
         backgroundColor: DesignTokens.card(this.darkMode), onWillDismiss: () => this.closeSheet() });
+  }
+}
+
+@Component
+struct StatsFullRoute {
+  private backHandler: SecondaryBackHandler = new SecondaryBackHandler();
+  build() {
+    NavDestination() { StatsPage({ showBack: true, backHandler: this.backHandler }); }
+      .hideTitleBar(true).onBackPressed((): boolean => this.backHandler.closeOverlay());
   }
 }

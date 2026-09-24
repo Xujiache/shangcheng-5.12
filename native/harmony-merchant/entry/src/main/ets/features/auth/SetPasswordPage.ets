@@ -1,4 +1,6 @@
-import { IBestButton, IBestField, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
+import { IBestButton, IBestField, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { ApiError } from '../../core/network/ApiClient';
 import { DesignTokens } from '../../core/theme/DesignTokens';
@@ -76,7 +78,7 @@ struct SetPasswordPage {
         AppStorage.setOrCreate<number>('sessionEpoch', epoch + 1);
       }
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '密码设置失败', 'Failed to save password'));
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '密码设置失败', 'Failed to save password'));
     } finally {
       this.submitting = false;
     }
@@ -85,7 +87,7 @@ struct SetPasswordPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: this.hasPassword
             ? I18n.text(this.language, '修改登录密码', 'Change sign-in password')
             : I18n.text(this.language, '设置登录密码', 'Set sign-in password'), isShowStatusBar: true,
@@ -106,7 +108,7 @@ struct SetPasswordPage {
                 ? I18n.text(this.language, '修改密码需要验证当前密码', 'Verify your current password before changing it')
                 : I18n.text(this.language, '首次设置后即可使用手机号和密码登录', 'After setting a password, you can sign in with your phone number and password'))
                 .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center);
-            }.width('100%').padding(20).backgroundColor(DesignTokens.card(this.darkMode))
+            }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
               .borderRadius(DesignTokens.RADIUS_XL).border({ width: 1, color: DesignTokens.border(this.darkMode) });
             Column({ space: 4 }) {
               if (this.hasPassword) {
@@ -115,15 +117,15 @@ struct SetPasswordPage {
               IBestField({ value: $password, label: I18n.text(this.language, '新密码', 'New password'), placeholder: I18n.text(this.language, '请输入6至32位密码', 'Enter a 6–32 character password'), type: 'password' });
               IBestField({ value: $confirmPassword, label: I18n.text(this.language, '确认密码', 'Confirm password'), placeholder: I18n.text(this.language, '请再次输入密码', 'Enter the password again'), type: 'password', hasBorder: false });
             }.width('100%').padding(6).backgroundColor(DesignTokens.card(this.darkMode))
-              .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 1, color: DesignTokens.border(this.darkMode) });
+              .borderRadius(16).border({ width: 1, color: DesignTokens.border(this.darkMode) });
             Row({ space: 8 }) {
               MerchantIcon({ name: 'info-o', color: DesignTokens.brand(this.darkMode), iconSize: 16 });
               Text(I18n.text(this.language,
                 '密码长度为6至32位，请勿与其他平台使用相同密码。',
                 'Use 6–32 characters and avoid reusing a password from another service.'))
-                .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1).lineHeight(18);
+                .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1).lineHeight(18);
             }.width('100%').padding(12).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(14);
-            IBestButton({
+            IBestButton({ btnHeight: 44,
               text: I18n.text(this.language, '保存密码', 'Save password'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
               btnWidth: '100%', loading: this.submitting, disabled: this.submitting, onBtnClick: () => this.submit()
             });

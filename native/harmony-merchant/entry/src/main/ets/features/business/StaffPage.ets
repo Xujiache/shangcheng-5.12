@@ -1,3 +1,6 @@
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
 import {
   IBestActionSheet,
@@ -5,7 +8,6 @@ import {
   IBestDialogUtil,
   IBestEmpty,
   IBestField,
-  IBestNavBar,
   IBestSkeleton,
   IBestTag,
   IBestToast
@@ -25,6 +27,24 @@ export function StaffsBuilder(_: string) { StaffPage(); }
 
 @Component
 struct StaffPage {
+  private handleBack(): void {
+    if (this.editorVisible) { this.closeLocalEditor(); return; }
+
+    this.leaveGuard.request(this.language, false, false, () => AppRouter.back());
+  }
+
+  private editStamp: string = '';
+  private localStamp(): string { return JSON.stringify([this.editingId, this.name, this.phone, this.role, this.editingStatus, this.editingPermissions]); }
+  private closeLocalEditor(): void {
+    this.leaveGuard.request(this.language, this.saving || Boolean(this.actionId), this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -45,22 +65,29 @@ struct StaffPage {
   @State private actionId: string = '';
   private readonly defaultPermissions: string[] = ['product:read', 'product:write', 'order:read'];
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
   private async load(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.loading) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     this.loading = true;
     try {
-      const result = await BusinessRepository.staffs('', 1, 100);
+      const result = await this.pageScope.read(BusinessRepository.staffs('', 1, 100), pageTicket);
       this.staffs = result.list;
       this.loadError = '';
     } catch (error) {
-      this.loadError = error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      this.loadError = error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '员工加载失败，请稍后重试', 'Failed to load staff. Try again later.');
       if (this.staffs.length > 0) IBestToast.show(this.loadError);
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.loading = false;
       this.refreshing = false;
+    }
     }
   }
 
@@ -79,15 +106,14 @@ struct StaffPage {
     this.phone = item?.phone || '';
     this.role = item?.role || 'sales';
     this.editingStatus = item?.status || 'active';
-    this.editingPermissions = item?.permissions || this.defaultPermissions;
-    this.editorVisible = true;
+    this.editingPermissions = (item?.permissions || this.defaultPermissions).slice();
+    this.editStamp = this.localStamp(); this.editorVisible = true;
   }
 
-  private closeEditor(): void {
-    if (!this.saving) this.editorVisible = false;
-  }
+  private closeEditor(): void { this.closeLocalEditor(); }
 
   private async save(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.saving || this.actionId) return;
     if (!this.name.trim() || !InputValidators.isMainlandPhone(this.phone)) {
       IBestToast.show(I18n.text(this.language, '请填写姓名和正确手机号', 'Enter a name and valid phone number'));
@@ -98,16 +124,20 @@ struct StaffPage {
       permissions: this.editingPermissions.length > 0 ? this.editingPermissions : this.defaultPermissions
     };
     this.saving = true;
+    const mutationTicket = this.pageScope.begin('save');
     try {
-      if (this.editingId) await BusinessRepository.updateStaff(this.editingId, body);
-      else await BusinessRepository.createStaff(body);
+      if (this.editingId) await this.pageScope.read(BusinessRepository.updateStaff(this.editingId, body), mutationTicket);
+      else await this.pageScope.read(BusinessRepository.createStaff(body), mutationTicket);
       this.editorVisible = false;
       IBestToast.show(I18n.text(this.language, '员工已保存', 'Staff member saved'));
-      await this.load();
+      await this.pageScope.read(this.load(), mutationTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '保存失败', 'Failed to save'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '保存失败', 'Failed to save'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.saving = false;
+    }
     }
   }
 
@@ -135,20 +165,25 @@ struct StaffPage {
   }
 
   private async updateEmployment(item: StaffItem): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.actionId || this.saving) return;
     this.actionId = item.id;
     const body: StaffMutation = {
       name: item.name, phone: item.phone, role: item.role, status: 'left', permissions: item.permissions
     };
+    const mutationTicket = this.pageScope.begin('updateEmployment');
     try {
-      await BusinessRepository.updateStaff(item.id, body);
+      await this.pageScope.read(BusinessRepository.updateStaff(item.id, body), mutationTicket);
       IBestToast.show(I18n.text(this.language, '已办理离职', 'Marked as left'));
-      await this.load();
+      await this.pageScope.read(this.load(), mutationTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '状态更新失败', 'Failed to update status'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.actionId = '';
+    }
     }
   }
 
@@ -216,7 +251,7 @@ struct StaffPage {
     try {
       await PhoneService.dial(this.getUIContext().getHostContext() as common.UIAbilityContext, item.phone);
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '无法打开拨号界面', 'Unable to open the dialer'));
     }
   }
@@ -227,7 +262,7 @@ struct StaffPage {
       Text(value).fontSize(emphasized ? 20 : 18).fontWeight(FontWeight.Bold)
         .fontColor(emphasized ? DesignTokens.brand(this.darkMode) : DesignTokens.text(this.darkMode))
         .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis });
-      Text(label).fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).maxLines(1);
+      Text(label).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).maxLines(1);
     }.layoutWeight(1).alignItems(HorizontalAlign.Start);
   }
 
@@ -241,7 +276,7 @@ struct StaffPage {
         Row({ space: 5 }) {
           Circle().width(6).height(6).fill(DesignTokens.success(this.darkMode));
           Text(I18n.text(this.language, '数据实时更新', 'Live data'))
-            .fontSize(10).fontColor(DesignTokens.muted(this.darkMode));
+            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }
       }.width('100%');
       Row({ space: 12 }) {
@@ -253,7 +288,7 @@ struct StaffPage {
         this.overviewMetric(`${this.countLeftStaff()}`, I18n.text(this.language, '已离职', 'Former staff'));
       }.width('100%');
     }.width('100%').padding({ left: 16, right: 16, top: 14, bottom: 14 })
-      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)
+      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16)
       .border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
@@ -262,7 +297,7 @@ struct StaffPage {
     Column({ space: 2 }) {
       Text(label).fontSize(12).fontWeight(this.roleFilter === value ? FontWeight.Medium : FontWeight.Regular)
         .fontColor(this.roleFilter === value ? DesignTokens.brand(this.darkMode) : DesignTokens.muted(this.darkMode));
-      Text(`${this.roleCount(value)}`).fontSize(10)
+      Text(`${this.roleCount(value)}`).fontSize(12)
         .fontColor(this.roleFilter === value ? DesignTokens.brand(this.darkMode) : DesignTokens.muted(this.darkMode));
     }.layoutWeight(1).height(44).justifyContent(FlexAlign.Center)
       .backgroundColor(this.roleFilter === value ? DesignTokens.selectedSurface(this.darkMode) : Color.Transparent)
@@ -319,12 +354,12 @@ struct StaffPage {
         Column({ space: 3 }) {
           Text(`¥${(item.monthlyPerformance || 0).toFixed(2)}`).fontSize(15).fontWeight(FontWeight.Bold)
             .fontColor(DesignTokens.brand(this.darkMode)).maxLines(1);
-          Text(I18n.text(this.language, '本月业绩', 'This month')).fontSize(10)
+          Text(I18n.text(this.language, '本月业绩', 'This month')).fontSize(12)
             .fontColor(DesignTokens.muted(this.darkMode));
         }.alignItems(HorizontalAlign.End);
       }.width('100%');
       if (item.permissions.length > 0) {
-        Text(this.permissionSummary(item)).fontSize(11).fontColor(DesignTokens.muted(this.darkMode))
+        Text(this.permissionSummary(item)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode))
           .width('100%').maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis });
       }
       if (item.status === 'active') {
@@ -343,7 +378,7 @@ struct StaffPage {
         }
       }.width('100%');
     }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -352,7 +387,7 @@ struct StaffPage {
       ForEach([0, 1, 2], (_: number) => {
         Column() { IBestSkeleton({ rows: 3, animated: true, radius: 8 }); }
           .width('100%').height(132).padding(14)
-          .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+          .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
       });
     }.width('100%').padding({ left: 16, right: 16, top: 10 });
   }
@@ -366,7 +401,7 @@ struct StaffPage {
             : I18n.text(this.language, '邀请员工', 'Invite staff member'))
             .fontSize(20).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
           Text(I18n.text(this.language, '员工资料和原有权限规则将保持不变', 'Existing access rules remain unchanged'))
-            .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }.alignItems(HorizontalAlign.Start).layoutWeight(1);
         Column() { MerchantIcon({ name: 'cross', color: DesignTokens.muted(this.darkMode), iconSize: 19 }); }
           .width(38).height(38).justifyContent(FlexAlign.Center)
@@ -384,14 +419,14 @@ struct StaffPage {
         this.roleSelector('manager', I18n.text(this.language, '店长', 'Manager'));
       }.width('100%');
       Row({ space: 10 }) {
-        IBestButton({ text: I18n.text(this.language, '取消', 'Cancel'), plain: true,
+        IBestButton({ btnHeight: 44, text: I18n.text(this.language, '取消', 'Cancel'), plain: true,
           color: DesignTokens.muted(this.darkMode), btnWidth: '48%', disabled: this.saving,
           onBtnClick: () => this.closeEditor() });
-        IBestButton({ text: I18n.text(this.language, '保存', 'Save'), type: 'primary',
+        IBestButton({ btnHeight: 44, text: I18n.text(this.language, '保存', 'Save'), type: 'primary',
           color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%',
           loading: this.saving, disabled: this.saving || this.actionId.length > 0, onBtnClick: () => this.save() });
       }.width('100%');
-    }.width('100%').padding({ left: 20, right: 20, top: 20, bottom: this.safeBottom + 20 })
+    }.width('100%').padding({ left: 16, right: 16, top: 20, bottom: this.safeBottom + 20 })
       .backgroundColor(DesignTokens.elevatedSurface(this.darkMode))
       .borderRadius({ topLeft: 26, topRight: 26 }).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
@@ -400,14 +435,15 @@ struct StaffPage {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({
+          SecondaryHeader({
             title: I18n.text(this.language, '员工管理', 'Staff management'), isShowRight: true,
             rightLabel: I18n.text(this.language, '邀请', 'Invite'), rightLabelColor: DesignTokens.brand(this.darkMode),
             rightIcon: 'add-o', rightIconColor: DesignTokens.brand(this.darkMode), rightIconSize: 19,
             isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode),
             titleColor: DesignTokens.text(this.darkMode), leftIconColor: DesignTokens.text(this.darkMode),
-            onLeftClick: () => AppRouter.back(), onRightClick: () => this.open()
+            onLeftClick: () => this.handleBack(), onRightClick: () => this.open()
           });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
           Column({ space: 10 }) {
             this.overviewCard();
             Row({ space: 4 }) {
@@ -425,7 +461,7 @@ struct StaffPage {
           } else if (this.loadError && this.staffs.length === 0) {
             Column({ space: 12 }) {
               IBestEmpty({ description: this.loadError });
-              IBestButton({ text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary',
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary',
                 color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
                 onBtnClick: () => this.load() });
             }.layoutWeight(1).justifyContent(FlexAlign.Center);
@@ -439,9 +475,9 @@ struct StaffPage {
                 if (this.loadError) {
                   ListItem() {
                     Row() {
-                      Text(this.loadError).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                      Text(this.loadError).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
                       Blank();
-                      Text(I18n.text(this.language, '重试', 'Retry')).fontSize(11)
+                      Text(I18n.text(this.language, '重试', 'Retry')).fontSize(12)
                         .fontColor(DesignTokens.brand(this.darkMode)).onClick(() => this.load());
                     }.width('100%').padding(10).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(10);
                   }
@@ -461,6 +497,6 @@ struct StaffPage {
           this.editorSheet();
         }
       }.width('100%').height('100%');
-    }.hideTitleBar(true);
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

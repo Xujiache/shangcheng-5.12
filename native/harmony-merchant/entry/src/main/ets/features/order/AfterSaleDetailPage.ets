@@ -1,5 +1,8 @@
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import {
-  IBestButton, IBestField, IBestImagePreview, IBestNavBar, IBestTag, IBestToast
+  IBestButton, IBestField, IBestImagePreview, IBestTag, IBestToast
 } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { IdRouteParams } from '../../core/navigation/RouteParams';
@@ -19,6 +22,39 @@ export function AfterSaleDetailBuilder(_: string, raw: Object) {
 
 @Component
 struct AfterSaleDetailPage {
+  private async verifyReceipt(): Promise<void> {
+    if (!this.item || this.submitting || !this.pageScope.isCurrent()) return;
+    const ticket = this.pageScope.begin('verifyReceipt');
+    this.submitting = true;
+    try {
+      const current = await this.pageScope.read(OrderRepository.refundDetail(this.item.id), ticket);
+      this.item = current; this.receiptPending = false;
+      if (current.status !== 'pending') { this.editorVisible = false; await this.load(); }
+      else IBestToast.show(I18n.text(this.language, '当前仍为待处理，请核对后再确认，未重复提交。', 'Still pending. Review before confirming again; no action was resubmitted.'));
+    } catch (error) {
+      if (this.pageScope.accepts(ticket)) IBestToast.show(I18n.text(this.language, '暂时无法核对结果，请稍后继续核对，不要重复提交。', 'Unable to verify the result. Verify later; do not resubmit.'));
+    } finally { if (this.pageScope.accepts(ticket)) this.submitting = false; }
+  }
+
+  @State private receiptPending: boolean = false;
+  private handleBack(): void {
+    if (this.editorVisible) { this.closeLocalEditor(); return; }
+
+    this.leaveGuard.request(this.language, false, false, () => AppRouter.back());
+  }
+
+  private editStamp: string = '';
+  private localStamp(): string { return JSON.stringify([this.action, this.refundAmount, this.rejectReason]); }
+  private closeLocalEditor(): void {
+    this.leaveGuard.request(this.language, this.submitting, this.localStamp() !== this.editStamp, () => { this.editorVisible = false; });
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   params: IdRouteParams = new IdRouteParams();
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -31,17 +67,24 @@ struct AfterSaleDetailPage {
   @State private rejectReason: string = '';
   @State private submitting: boolean = false;
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
   private async load(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     this.loading = true;
     try {
-      this.item = await OrderRepository.refundDetail(this.params.id);
+      this.item = await this.pageScope.read(OrderRepository.refundDetail(this.params.id), pageTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '售后详情加载失败', 'Failed to load after-sales details'));
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.loading = false;
+    }
     }
   }
 
@@ -59,11 +102,14 @@ struct AfterSaleDetailPage {
     this.action = action;
     this.refundAmount = `${this.item.applyAmount}`;
     this.rejectReason = '';
-    this.editorVisible = true;
+    this.editStamp = this.localStamp(); this.editorVisible = true;
   }
 
   private async submit(): Promise<void> {
     if (!this.item || this.submitting) return;
+    if (!this.pageScope.isCurrent()) return;
+    if (this.receiptPending) { await this.verifyReceipt(); return; }
+    const ticket = this.pageScope.begin('submit');
     let approvedAmount: number | undefined = undefined;
     let rejectReason: string | undefined = undefined;
     if (this.action === 'agree') {
@@ -82,18 +128,20 @@ struct AfterSaleDetailPage {
     this.submitting = true;
     try {
       if (this.action === 'agree') {
-        await OrderRepository.agreeRefund(this.item.id, approvedAmount);
+        await this.pageScope.read(OrderRepository.agreeRefund(this.item.id, approvedAmount), ticket);
       } else {
-        await OrderRepository.rejectRefund(this.item.id, rejectReason || '');
+        await this.pageScope.read(OrderRepository.rejectRefund(this.item.id, rejectReason || ''), ticket);
       }
       this.editorVisible = false;
       IBestToast.show(I18n.text(this.language, '售后已处理', 'After-sales request handled'));
       await this.load();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(ticket)) return;
+      this.receiptPending = true;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '售后处理失败', 'Failed to handle after-sales request'));
     } finally {
-      this.submitting = false;
+      if (this.pageScope.accepts(ticket)) this.submitting = false;
     }
   }
 
@@ -117,7 +165,7 @@ struct AfterSaleDetailPage {
               .fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
           }
         }.width('100%').alignItems(HorizontalAlign.Start).padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-          .borderRadius(DesignTokens.RADIUS_LARGE);
+          .borderRadius(16);
 
         Column({ space: 10 }) {
           Text(I18n.text(this.language, '申请说明', 'Request details')).fontSize(16).fontWeight(FontWeight.Medium).width('100%');
@@ -129,7 +177,7 @@ struct AfterSaleDetailPage {
             `Submitted: ${item.createdAt.replace('T', ' ').slice(0, 19)}`))
             .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
         }.width('100%').alignItems(HorizontalAlign.Start).padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-          .borderRadius(DesignTokens.RADIUS_LARGE);
+          .borderRadius(16);
 
         if (item.evidence.length > 0) {
           Column({ space: 10 }) {
@@ -143,7 +191,7 @@ struct AfterSaleDetailPage {
                   }));
               }, (url: string) => url);
             }.width('100%');
-          }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+          }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
         }
 
         if (item.order) {
@@ -154,12 +202,12 @@ struct AfterSaleDetailPage {
             }
             Text(I18n.text(this.language, `订单号 ${item.order.no}`, `Order ${item.order.no}`)).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
             Text(I18n.text(this.language, `实付 ¥${item.order.payAmount.toFixed(2)}`, `Paid ¥${item.order.payAmount.toFixed(2)}`)).fontSize(14).width('100%');
-            IBestButton({
+            IBestButton({ btnHeight: 44,
               text: I18n.text(this.language, '查看订单详情', 'View order'), plain: true, color: DesignTokens.brand(this.darkMode), btnWidth: '100%',
               onBtnClick: () => AppRouter.push('OrderDetail', new IdRouteParams(item.orderId))
             });
           }.width('100%').alignItems(HorizontalAlign.Start).padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-            .borderRadius(DesignTokens.RADIUS_LARGE);
+            .borderRadius(16);
         }
         if (item.merchantReply || item.refundAmount !== undefined) {
           Column({ space: 8 }) {
@@ -173,7 +221,7 @@ struct AfterSaleDetailPage {
               Text(I18n.text(this.language, `退款金额 ¥${item.refundAmount.toFixed(2)}`, `Refund amount ¥${item.refundAmount.toFixed(2)}`))
                 .width('100%').wordBreak(WordBreak.BREAK_ALL).fontSize(14).fontColor(DesignTokens.text(this.darkMode));
             }
-          }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+          }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
         }
       }.width('100%').constraintSize({ maxWidth: 960 }).padding({ left: 16, right: 16, top: 12, bottom: this.safeBottom + (item.status === 'pending' ? 104 : 24) });
     }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
@@ -183,10 +231,11 @@ struct AfterSaleDetailPage {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({
+          SecondaryHeader({
             title: I18n.text(this.language, '售后详情', 'After-sales details'), isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode),
-            onLeftClick: () => AppRouter.back()
+            onLeftClick: () => this.handleBack()
           });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
           if (this.loading && !this.item) {
             Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }
               .layoutWeight(1).justifyContent(FlexAlign.Center);
@@ -195,8 +244,8 @@ struct AfterSaleDetailPage {
           } else {
             Column({ space: 12 }) {
               Text(I18n.text(this.language, '售后记录不存在或无权访问', 'This request does not exist or is not accessible')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode));
-              IBestButton({ text: I18n.text(this.language, '返回', 'Back'), plain: true, onBtnClick: () => AppRouter.back() });
-              IBestButton({ text: I18n.text(this.language, '重试', 'Retry'), plain: true,
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '返回', 'Back'), plain: true, onBtnClick: () => AppRouter.back() });
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重试', 'Retry'), plain: true,
                 color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.load() });
             }.layoutWeight(1).justifyContent(FlexAlign.Center);
           }
@@ -204,15 +253,15 @@ struct AfterSaleDetailPage {
 
         if (this.item?.status === 'pending' && !this.editorVisible) {
           Row({ space: 10 }) {
-            IBestButton({ text: I18n.text(this.language, '驳回', 'Reject'), plain: true, type: 'danger', btnWidth: '48%', onBtnClick: () => this.open('reject') });
-            IBestButton({ text: I18n.text(this.language, '同意退款', 'Approve refund'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', onBtnClick: () => this.open('agree') });
+            IBestButton({ btnHeight: 44, text: I18n.text(this.language, '驳回', 'Reject'), plain: true, type: 'danger', btnWidth: '48%', onBtnClick: () => this.open('reject') });
+            IBestButton({ btnHeight: 44, text: I18n.text(this.language, '同意退款', 'Approve refund'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '48%', onBtnClick: () => this.open('agree') });
           }.width('100%').padding({ left: 16, right: 16, top: 12, bottom: this.safeBottom + 12 })
             .backgroundColor(DesignTokens.card(this.darkMode)).border({ width: { top: 1 }, color: DesignTokens.border(this.darkMode) });
         }
 
         if (this.editorVisible) {
           Column().width('100%').height('100%').backgroundColor('#99000000')
-            .onClick(() => { if (!this.submitting) this.editorVisible = false; });
+            .onClick(() => this.closeLocalEditor());
           Scroll() {
           Column({ space: 14 }) {
             Text(this.action === 'agree'
@@ -224,23 +273,19 @@ struct AfterSaleDetailPage {
               IBestField({ value: $rejectReason, label: I18n.text(this.language, '驳回原因', 'Rejection reason'), placeholder: I18n.text(this.language, '请输入具体原因', 'Enter a specific reason') });
             }
             Row({ space: 10 }) {
-              IBestButton({ text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', disabled: this.submitting, onBtnClick: () => this.editorVisible = false });
-              IBestButton({
-                text: I18n.text(this.language, '确定', 'Confirm'), type: this.action === 'agree' ? 'primary' : 'danger',
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '取消', 'Cancel'), plain: true, btnWidth: '48%', disabled: this.submitting, onBtnClick: () => this.closeLocalEditor() });
+              IBestButton({ btnHeight: 44,
+                text: this.receiptPending ? I18n.text(this.language, '核对处理结果', 'Verify result') : I18n.text(this.language, '确定', 'Confirm'), type: this.action === 'agree' ? 'primary' : 'danger',
                 color: this.action === 'agree' ? DesignTokens.brand(this.darkMode) : DesignTokens.danger(this.darkMode), btnWidth: '48%',
                 loading: this.submitting, disabled: this.submitting, onBtnClick: () => this.submit()
               });
             }.width('100%');
-          }.width('100%').padding({ left: 20, right: 20, top: 22, bottom: this.safeBottom + 22 })
+          }.width('100%').padding({ left: 16, right: 16, top: 22, bottom: this.safeBottom + 22 })
             .backgroundColor(DesignTokens.card(this.darkMode));
           }.width('100%').constraintSize({ maxHeight: '80%', maxWidth: 720 }).align(Alignment.Top)
             .borderRadius({ topLeft: DesignTokens.RADIUS_XL, topRight: DesignTokens.RADIUS_XL }).clip(true);
         }
       }.width('100%').height('100%');
-    }.hideTitleBar(true).onBackPressed((): boolean => {
-      if (!this.editorVisible) return false;
-      if (!this.submitting) this.editorVisible = false;
-      return true;
-    });
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

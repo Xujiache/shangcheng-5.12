@@ -1,4 +1,7 @@
-import { IBestButton, IBestField, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
+import { IBestButton, IBestField, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { ApiError } from '../../core/network/ApiClient';
 import { SessionStore } from '../../core/storage/SessionStore';
@@ -13,6 +16,16 @@ export function ChangePhoneBuilder(_: string) { ChangePhonePage(); }
 
 @Component
 struct ChangePhonePage {
+  private handleBack(): void {
+
+
+    this.leaveGuard.request(this.language, this.saving || this.sendingNew || this.sendingOld, Boolean(this.newPhone || this.newCode || this.oldCode), () => AppRouter.back());
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -29,24 +42,28 @@ struct ChangePhonePage {
   private oldTimer: number = -1;
   private newTimer: number = -1;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     this.currentPhone = SessionStore.shared().user?.phone || '';
     this.step = this.currentPhone ? 0 : 1;
     if (!this.currentPhone) this.loadUser();
   }
 
-  aboutToDisappear(): void {
+  aboutToDisappear(): void { this.pageScope.dispose();
     if (this.oldTimer >= 0) clearInterval(this.oldTimer);
     if (this.newTimer >= 0) clearInterval(this.newTimer);
   }
 
   private async loadUser(): Promise<void> {
+    const pageTicket = this.pageScope.begin('loadUser');
+    this.pageError = '';
     try {
-      const user = await AuthRepository.userInfo();
-      await SessionStore.shared().updateUser(user);
+      const user = await this.pageScope.read(AuthRepository.userInfo(), pageTicket);
+      await this.pageScope.read(SessionStore.shared().updateUser(user), pageTicket);
       this.currentPhone = user.phone || '';
       this.step = this.currentPhone ? 0 : 1;
-    } catch (_) {}
+    } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);}
   }
 
   private continueToNewPhone(): void {
@@ -83,7 +100,7 @@ struct ChangePhonePage {
       IBestToast.show(I18n.text(this.language, '验证码已发送到原手机号', 'Verification code sent to your current phone'));
       this.startOldCountdown();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '验证码发送失败', 'Failed to send verification code'));
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '验证码发送失败', 'Failed to send verification code'));
     } finally { this.sendingOld = false; }
   }
 
@@ -96,7 +113,7 @@ struct ChangePhonePage {
       IBestToast.show(I18n.text(this.language, '验证码已发送到新手机号', 'Verification code sent to your new phone'));
       this.startNewCountdown();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '验证码发送失败', 'Failed to send verification code'));
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '验证码发送失败', 'Failed to send verification code'));
     } finally { this.sendingNew = false; }
   }
 
@@ -117,24 +134,25 @@ struct ChangePhonePage {
       IBestToast.show(I18n.text(this.language, '手机号修改成功', 'Phone number changed'));
       AppRouter.back();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '手机号修改失败', 'Failed to change phone number'));
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '手机号修改失败', 'Failed to change phone number'));
     } finally { this.saving = false; }
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '修改手机号', 'Change phone number'), isShowStatusBar: true,
-          navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
+          navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => this.handleBack()
         });
+          SecondaryFeedback({ errorKind: this.pageError, onRetry: () => this.loadUser() });
         Scroll() {
           Column({ space: 16 }) {
             Row() {
               Column({ space: 5 }) {
                 Text('1').fontSize(12).fontWeight(FontWeight.Bold)
                   .fontColor(this.step === 0 ? DesignTokens.onBrand(this.darkMode) : DesignTokens.brand(this.darkMode));
-                Text(I18n.text(this.language, '验证原手机', 'Verify current phone')).fontSize(10)
+                Text(I18n.text(this.language, '验证原手机', 'Verify current phone')).fontSize(12)
                   .fontColor(this.step === 0 ? DesignTokens.text(this.darkMode) : DesignTokens.muted(this.darkMode));
               }.layoutWeight(1).height(48).justifyContent(FlexAlign.Center)
                 .backgroundColor(this.step === 0 ? DesignTokens.brand(this.darkMode) : DesignTokens.selectedSurface(this.darkMode))
@@ -142,7 +160,7 @@ struct ChangePhonePage {
               Column({ space: 5 }) {
                 Text('2').fontSize(12).fontWeight(FontWeight.Bold)
                   .fontColor(this.step === 1 ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode));
-                Text(I18n.text(this.language, '绑定新手机', 'Link new phone')).fontSize(10)
+                Text(I18n.text(this.language, '绑定新手机', 'Link new phone')).fontSize(12)
                   .fontColor(this.step === 1 ? DesignTokens.text(this.darkMode) : DesignTokens.muted(this.darkMode));
               }.layoutWeight(1).height(48).justifyContent(FlexAlign.Center)
                 .backgroundColor(this.step === 1 ? DesignTokens.brand(this.darkMode) : DesignTokens.subtle(this.darkMode))
@@ -160,33 +178,33 @@ struct ChangePhonePage {
                 ? I18n.text(this.language, `验证码将发送至 ${this.currentPhone}`, `A code will be sent to ${this.currentPhone}`)
                 : I18n.text(this.language, '新手机号将用于后续登录与安全验证', 'The new number will be used for sign-in and verification'))
                 .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).textAlign(TextAlign.Center);
-            }.width('100%').padding(20).backgroundColor(DesignTokens.card(this.darkMode))
+            }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
               .borderRadius(DesignTokens.RADIUS_XL).border({ width: 1, color: DesignTokens.border(this.darkMode) });
             if (this.step === 0 && this.currentPhone) {
               Column({ space: 14 }) {
               Row({ space: 8 }) {
                 IBestField({ value: $oldCode, label: I18n.text(this.language, '原手机验证码', 'Current phone code'), placeholder: I18n.text(this.language, '4–6位验证码', '4–6 digit code'), type: 'number' });
-                IBestButton({ text: this.oldCountdown > 0 ? I18n.text(this.language, `${this.oldCountdown}秒`, `${this.oldCountdown}s`) : I18n.text(this.language, '发送', 'Send'), plain: true, color: DesignTokens.brand(this.darkMode), loading: this.sendingOld, disabled: this.oldCountdown > 0, onBtnClick: () => this.sendOldCode() });
+                IBestButton({ btnHeight: 44, text: this.oldCountdown > 0 ? I18n.text(this.language, `${this.oldCountdown}秒`, `${this.oldCountdown}s`) : I18n.text(this.language, '发送', 'Send'), plain: true, color: DesignTokens.brand(this.darkMode), loading: this.sendingOld, disabled: this.oldCountdown > 0, onBtnClick: () => this.sendOldCode() });
               }.width('100%');
-                IBestButton({ text: I18n.text(this.language, '下一步', 'Continue'), type: 'primary',
+                IBestButton({ btnHeight: 44, text: I18n.text(this.language, '下一步', 'Continue'), type: 'primary',
                   color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
                   btnWidth: '100%', onBtnClick: () => this.continueToNewPhone() });
               }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-                .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 1, color: DesignTokens.border(this.darkMode) });
+                .borderRadius(16).border({ width: 1, color: DesignTokens.border(this.darkMode) });
             } else {
               Column({ space: 14 }) {
                 IBestField({ value: $newPhone, label: I18n.text(this.language, '新手机号', 'New phone number'), placeholder: I18n.text(this.language, '请输入11位手机号', 'Enter an 11-digit mobile number'), type: 'number' });
                 Row({ space: 8 }) {
                   IBestField({ value: $newCode, label: I18n.text(this.language, '新手机验证码', 'New phone code'), placeholder: I18n.text(this.language, '4–6位验证码', '4–6 digit code'), type: 'number' });
-                  IBestButton({ text: this.newCountdown > 0 ? I18n.text(this.language, `${this.newCountdown}秒`, `${this.newCountdown}s`) : I18n.text(this.language, '发送', 'Send'), plain: true, color: DesignTokens.brand(this.darkMode), loading: this.sendingNew, disabled: this.newCountdown > 0, onBtnClick: () => this.sendNewCode() });
+                  IBestButton({ btnHeight: 44, text: this.newCountdown > 0 ? I18n.text(this.language, `${this.newCountdown}秒`, `${this.newCountdown}s`) : I18n.text(this.language, '发送', 'Send'), plain: true, color: DesignTokens.brand(this.darkMode), loading: this.sendingNew, disabled: this.newCountdown > 0, onBtnClick: () => this.sendNewCode() });
                 }.width('100%');
-                IBestButton({ text: I18n.text(this.language, '确认更换', 'Confirm change'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '100%', loading: this.saving, disabled: this.saving, onBtnClick: () => this.submit() });
+                IBestButton({ btnHeight: 44, text: I18n.text(this.language, '确认更换', 'Confirm change'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), btnWidth: '100%', loading: this.saving, disabled: this.saving, onBtnClick: () => this.submit() });
                 if (this.currentPhone) {
                   Text(I18n.text(this.language, '返回上一步', 'Back to previous step')).fontSize(13)
                     .fontColor(DesignTokens.brand(this.darkMode)).onClick(() => this.step = 0);
                 }
               }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-                .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 1, color: DesignTokens.border(this.darkMode) });
+                .borderRadius(16).border({ width: 1, color: DesignTokens.border(this.darkMode) });
             }
             Text(I18n.text(this.language,
               '为保护账号安全，已绑定手机号时必须同时验证原手机号与新手机号。',
@@ -196,6 +214,6 @@ struct ChangePhonePage {
             .padding({ left: 18, right: 18, top: 18, bottom: this.safeBottom + 24 });
         }.layoutWeight(1).align(Alignment.Top);
       }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
-    }.hideTitleBar(true);
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

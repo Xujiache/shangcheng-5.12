@@ -35,7 +35,9 @@
     "packNpmManually": false,
     "packNpmRelationList": [],
     "minifyWXSS": true,
-    "useCompilerPlugins": ["typescript"],
+    "useCompilerPlugins": [
+      "typescript"
+    ],
     "minifyWXML": true,
     "compileWorklet": false,
     "localPlugins": false,
@@ -45,7 +47,7 @@
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "3.5.5",
+  "libVersion": "3.15.2",
   "appid": "wxe8ed8b7d9d154165",
   "projectname": "ledger-mp",
   "condition": {},

@@ -1,0 +1,1414 @@
+--- a/packages/shared/src/types/stats.ts
++++ b/packages/shared/src/types/stats.ts
+@@ -88,3 +88,28 @@
+   merchants: number
+   gmv: number
+ }
++
++/** Read-only paid analytics. Dates use Asia/Shanghai; monetary values are yuan. */
++export type MerchantAnalyticsPeriod = 'today' | 'week' | 'month' | 'year' | 'custom'
++export interface MerchantAnalyticsQuery {
++  period: MerchantAnalyticsPeriod
++  startDate?: string
++  endDate?: string
++}
++export interface MerchantAnalytics {
++  version: 1
++  period: MerchantAnalyticsPeriod
++  startDate: string
++  endDate: string
++  timeZone: 'Asia/Shanghai'
++  asOf: string
++  granularity: 'hour' | 'day' | 'month'
++  paidAmount: number
++  paidOrderCount: number
++  avgOrderValue: number
++  refundAmount: number
++  totalQuantity: number
++  trend: { bucketStart: string; amount: number }[]
++  topProducts: { productId: ID; name: string; quantity: number }[]
++  categories: { categoryId: string; name: string; quantity: number }[]
++}
+--- a/packages/server/src/modules/merchant/merchant.controller.ts
++++ b/packages/server/src/modules/merchant/merchant.controller.ts
+@@ -13,6 +13,7 @@
+ } from '@nestjs/common'
+ import { ApiTags } from '@nestjs/swagger'
+ import { MerchantService } from './merchant.service'
++import { MerchantAnalyticsService } from './merchant-analytics.service'
+ import { OrderShareService, ShareField } from './order-share.service'
+ import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator'
+ import { Roles } from '../../common/decorators/roles.decorator'
+@@ -29,6 +30,7 @@
+   constructor(
+     private readonly svc: MerchantService,
+     private readonly orderShare: OrderShareService,
++    private readonly analytics: MerchantAnalyticsService,
+   ) {}
+ 
+   // ============ Dashboard ============
+@@ -39,6 +41,11 @@
+   @Get('stats') async stats(@CurrentUser() u: AuthUser, @Query() q: any) {
+     const mid = await this.svc.ensureMerchantId(u)
+     return this.svc.stats(mid, q)
++  }
++
++  @Get('stats/overview') async statsOverview(@CurrentUser() u: AuthUser, @Query() q: unknown) {
++    const mid = await this.svc.ensureMerchantId(u)
++    return this.analytics.overview(mid, q)
+   }
+ 
+   // ============ 商品 ============
+--- a/packages/server/src/modules/merchant/merchant.module.ts
++++ b/packages/server/src/modules/merchant/merchant.module.ts
+@@ -1,6 +1,7 @@
+ import { Module } from '@nestjs/common'
+ import { MerchantController } from './merchant.controller'
+ import { MerchantService } from './merchant.service'
++import { MerchantAnalyticsService } from './merchant-analytics.service'
+ import { OrderShareService } from './order-share.service'
+ import { ChatModule } from '../chat/chat.module'
+ 
+@@ -15,7 +16,7 @@
+ @Module({
+   imports: [ChatModule],
+   controllers: [MerchantController],
+-  providers: [MerchantService, OrderShareService],
++  providers: [MerchantService, OrderShareService, MerchantAnalyticsService],
+   // OrderShareService 也 export 给 UserMpModule 的 @Public 公开访问路由使用
+   exports: [MerchantService, OrderShareService],
+ })
+--- a/packages/server/test/member-localization.controller.spec.ts
++++ b/packages/server/test/member-localization.controller.spec.ts
+@@ -16,7 +16,7 @@
+     }
+     return {
+       service,
+-      controller: new MerchantController(service as never, {} as never),
++      controller: new MerchantController(service as never, {} as never, {} as never),
+     }
+   }
+ 
+--- /dev/null
++++ b/packages/server/src/modules/merchant/analytics-range.ts
+@@ -0,0 +1,87 @@
++import { BizCode, BizException } from '../../common/exceptions/biz.exception'
++
++export type AnalyticsPeriod = 'today' | 'week' | 'month' | 'year' | 'custom'
++export type AnalyticsBucket = 'hour' | 'day' | 'month'
++const DAY = 86400_000
++const OFFSET = 8 * 3600_000
++
++export interface AnalyticsRange {
++  period: AnalyticsPeriod
++  startDate: string
++  endDate: string
++  start: Date
++  end: Date
++  asOf: Date
++  bucket: AnalyticsBucket
++}
++
++export function businessDate(date: Date): string {
++  return new Date(date.getTime() + OFFSET).toISOString().slice(0, 10)
++}
++
++function dateOnly(value: unknown): Date {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
++    throw new BizException(BizCode.INVALID_PARAMS, '日期必须为 YYYY-MM-DD')
++  }
++  const result = new Date(`${value}T00:00:00+08:00`)
++  if (!Number.isFinite(result.getTime()) || businessDate(result) !== value || value < '0001-01-01') {
++    throw new BizException(BizCode.INVALID_PARAMS, '日期不合法')
++  }
++  return result
++}
++
++export function resolveAnalyticsRange(input: unknown, now = new Date()): AnalyticsRange {
++  if (!input || typeof input !== 'object' || Array.isArray(input)) {
++    throw new BizException(BizCode.INVALID_PARAMS, '无效的统计条件')
++  }
++  const q = input as Record<string, unknown>
++  const period = q.period ?? 'week'
++  if (!['today', 'week', 'month', 'year', 'custom'].includes(period as string)) {
++    throw new BizException(BizCode.INVALID_PARAMS, '无效的统计周期')
++  }
++  const today = businessDate(now)
++  const midnight = dateOnly(today)
++  let start = midnight
++  let endDate = today
++  if (period === 'custom') {
++    start = dateOnly(q.startDate)
++    const last = dateOnly(q.endDate)
++    endDate = businessDate(last)
++    const days = (last.getTime() - start.getTime()) / DAY + 1
++    if (days < 1 || days > 366 || endDate > today) {
++      throw new BizException(BizCode.INVALID_PARAMS, '请选择不超过 366 天且不晚于今天的日期范围')
++    }
++  } else {
++    if (q.startDate !== undefined || q.endDate !== undefined || q.date !== undefined) {
++      throw new BizException(BizCode.INVALID_PARAMS, '快捷周期不能同时传入自定义日期')
++    }
++    if (period === 'week') {
++      const weekday = new Date(midnight.getTime() + OFFSET).getUTCDay()
++      start = new Date(midnight.getTime() - ((weekday + 6) % 7) * DAY)
++    } else if (period === 'month') start = dateOnly(`${today.slice(0, 7)}-01`)
++    else if (period === 'year') start = dateOnly(`${today.slice(0, 4)}-01-01`)
++  }
++  const end = new Date(dateOnly(endDate).getTime() + DAY)
++  const days = (end.getTime() - start.getTime()) / DAY
++  const bucket = period === 'year' ? 'month' : period === 'today' ? 'hour'
++    : period !== 'custom' ? 'day' : days === 1 ? 'hour' : days <= 62 ? 'day' : 'month'
++  return { period: period as AnalyticsPeriod, startDate: businessDate(start), endDate, start, end,
++    asOf: new Date(Math.min(now.getTime(), end.getTime())), bucket }
++}
++
++/** ISO instants are stable keys; display labels are localized only by the client. */
++export function analyticsBuckets(range: AnalyticsRange): string[] {
++  const local = new Date(range.start.getTime() + OFFSET)
++  if (range.bucket === 'month') local.setUTCDate(1)
++  const result: string[] = []
++  let cursor = local.getTime() - OFFSET
++  const stop = Math.min(range.end.getTime(), range.asOf.getTime())
++  while (cursor < stop) {
++    result.push(new Date(cursor).toISOString())
++    if (range.bucket === 'month') {
++      local.setUTCMonth(local.getUTCMonth() + 1)
++      cursor = local.getTime() - OFFSET
++    } else cursor += range.bucket === 'hour' ? 3600_000 : DAY
++  }
++  return result
++}
+--- /dev/null
++++ b/packages/server/src/modules/merchant/merchant-analytics.service.ts
+@@ -0,0 +1,94 @@
++import { Injectable } from '@nestjs/common'
++import { Prisma } from '@prisma/client'
++import type { MerchantAnalytics } from '@jiujiu/shared'
++import { PrismaService } from '../../prisma/prisma.service'
++import { analyticsBuckets, AnalyticsRange, resolveAnalyticsRange } from './analytics-range'
++
++type RawPoint = { bucketStart: string; amount: string }
++type RawProduct = { productId: string; name: string; quantity: string }
++type RawCategory = { categoryId: string; name: string; quantity: string }
++interface RawAnalytics {
++  paidAmount: string; paidOrderCount: string; avgOrderValue: string; refundAmount: string
++  totalQuantity: string; trend: RawPoint[]; topProducts: RawProduct[]; categories: RawCategory[]
++}
++
++/** One statement gives all sections the same database snapshot, without hydrating orders. */
++export function analyticsQuery(merchantId: string, range: AnalyticsRange): Prisma.Sql {
++  const start = range.start.toISOString()
++  const cutoff = range.asOf.toISOString()
++  return Prisma.sql`
++    WITH paid AS (
++      SELECT id, "payAmount", "paidAt" FROM "Order"
++      WHERE "merchantId" = ${merchantId}
++        AND "paidAt" >= (${start}::timestamptz AT TIME ZONE 'UTC')
++        AND "paidAt" < (${cutoff}::timestamptz AT TIME ZONE 'UTC')
++    ), units AS (
++      SELECT i."productId", i."productName", i.quantity, p."paidAt", i.id,
++        COALESCE(c.id, '') AS "categoryId", COALESCE(c.name, '未分类') AS category
++      FROM "OrderItem" i JOIN paid p ON p.id = i."orderId"
++      LEFT JOIN "Product" product ON product.id = i."productId"
++      LEFT JOIN "Category" c ON c.id = product."categoryId"
++    ), trend AS (
++      SELECT date_trunc(${range.bucket}, "paidAt" + interval '8 hours') - interval '8 hours' AS bucket,
++        SUM("payAmount") AS amount FROM paid GROUP BY bucket
++    ), top_products AS (
++      SELECT "productId", (array_agg("productName" ORDER BY "paidAt" DESC, id DESC))[1] AS name,
++        SUM(quantity) AS quantity FROM units GROUP BY "productId"
++      ORDER BY quantity DESC, "productId" ASC
++    ), categories AS (
++      SELECT "categoryId", category AS name, SUM(quantity) AS quantity FROM units
++      GROUP BY "categoryId", category ORDER BY quantity DESC, "categoryId" ASC
++    )
++    SELECT
++      COALESCE(SUM("payAmount"), 0)::text AS "paidAmount",
++      COUNT(*)::text AS "paidOrderCount",
++      COALESCE(ROUND(AVG("payAmount"), 2), 0)::text AS "avgOrderValue",
++      (SELECT COALESCE(SUM("refundAmount"), 0)::text FROM "Refund"
++        WHERE "merchantId" = ${merchantId} AND status = 'completed'
++          AND "completedAt" >= (${start}::timestamptz AT TIME ZONE 'UTC')
++          AND "completedAt" < (${cutoff}::timestamptz AT TIME ZONE 'UTC')) AS "refundAmount",
++      (SELECT COALESCE(SUM(quantity), 0)::text FROM units) AS "totalQuantity",
++      (SELECT COALESCE(jsonb_agg(jsonb_build_object('bucketStart',
++        to_char(bucket, 'YYYY-MM-DD"T"HH24:MI:SS".000Z"'), 'amount', amount::text) ORDER BY bucket), '[]'::jsonb) FROM trend) AS trend,
++      (SELECT COALESCE(jsonb_agg(jsonb_build_object('productId', "productId", 'name', name,
++        'quantity', quantity::text) ORDER BY quantity DESC, "productId"), '[]'::jsonb) FROM top_products) AS "topProducts",
++      (SELECT COALESCE(jsonb_agg(jsonb_build_object('categoryId', "categoryId", 'name', name,
++        'quantity', quantity::text) ORDER BY quantity DESC, "categoryId"), '[]'::jsonb) FROM categories) AS categories
++    FROM paid
++  `
++}
++
++function money(value: string): number {
++  const amount = new Prisma.Decimal(value).toDecimalPlaces(2)
++  if (!amount.isFinite() || amount.isNegative() || amount.mul(100).gt(Number.MAX_SAFE_INTEGER)) {
++    throw new Error('Invalid analytics amount')
++  }
++  return amount.toNumber()
++}
++function quantity(value: string): number {
++  const result = Number(value)
++  if (!Number.isSafeInteger(result) || result < 0) throw new Error('Invalid analytics quantity')
++  return result
++}
++
++@Injectable()
++export class MerchantAnalyticsService {
++  constructor(private readonly prisma: PrismaService) {}
++
++  async overview(merchantId: string, query: unknown): Promise<MerchantAnalytics> {
++    const range = resolveAnalyticsRange(query)
++    const [raw] = await this.prisma.$queryRaw<RawAnalytics[]>(analyticsQuery(merchantId, range))
++    if (!raw) throw new Error('Analytics result missing')
++    const points = new Map(raw.trend.map((point) => [point.bucketStart, money(point.amount)]))
++    return {
++      version: 1, period: range.period, startDate: range.startDate, endDate: range.endDate,
++      timeZone: 'Asia/Shanghai', asOf: range.asOf.toISOString(), granularity: range.bucket,
++      paidAmount: money(raw.paidAmount), paidOrderCount: quantity(raw.paidOrderCount),
++      avgOrderValue: money(raw.avgOrderValue), refundAmount: money(raw.refundAmount),
++      totalQuantity: quantity(raw.totalQuantity),
++      trend: analyticsBuckets(range).map((bucketStart) => ({ bucketStart, amount: points.get(bucketStart) ?? 0 })),
++      topProducts: raw.topProducts.map((row) => ({ ...row, quantity: quantity(row.quantity) })),
++      categories: raw.categories.map((row) => ({ ...row, quantity: quantity(row.quantity) })),
++    }
++  }
++}
+--- /dev/null
++++ b/packages/server/test/merchant-analytics.spec.ts
+@@ -0,0 +1,59 @@
++import { resolveAnalyticsRange, analyticsBuckets } from '../src/modules/merchant/analytics-range'
++import { analyticsQuery, MerchantAnalyticsService } from '../src/modules/merchant/merchant-analytics.service'
++import { PrismaService } from '../src/prisma/prisma.service'
++
++const now = new Date('2026-09-09T10:23:00.000Z')
++describe('isolated paid analytics', () => {
++  afterEach(() => jest.useRealTimers())
++  it.each([
++    ['today', '2026-09-09', 'hour'], ['week', '2026-09-07', 'day'],
++    ['month', '2026-09-01', 'day'], ['year', '2026-01-01', 'month'],
++  ])('uses Beijing natural %s boundaries', (period, start, bucket) => {
++    const r = resolveAnalyticsRange({ period }, now)
++    expect(r.startDate).toBe(start); expect(r.endDate).toBe('2026-09-09'); expect(r.bucket).toBe(bucket)
++    expect(r.start.getTime()).toBe(Date.parse(`${start}T00:00:00+08:00`))
++  })
++  it('handles Sunday, Monday, year boundary and leap-day ranges', () => {
++    expect(resolveAnalyticsRange({ period: 'week' }, new Date('2026-09-06T15:59:59Z')).startDate).toBe('2026-08-31')
++    expect(resolveAnalyticsRange({ period: 'week' }, new Date('2026-09-06T16:00:00Z')).startDate).toBe('2026-09-07')
++    expect(resolveAnalyticsRange({ period: 'week' }, new Date('2026-09-06T17:00:00Z')).bucket).toBe('day')
++    expect(resolveAnalyticsRange({ period: 'month' }, new Date('2026-08-31T17:00:00Z')).bucket).toBe('day')
++    expect(resolveAnalyticsRange({ period: 'year' }, new Date('2025-12-31T16:00:00Z')).startDate).toBe('2026-01-01')
++    expect(resolveAnalyticsRange({ period: 'custom', startDate: '2024-01-01', endDate: '2024-12-31' }, now).bucket).toBe('month')
++    const single = resolveAnalyticsRange({ period: 'custom', startDate: '2024-02-29', endDate: '2024-02-29' }, now)
++    expect(analyticsBuckets(single)).toHaveLength(24)
++    expect(single.start.toISOString()).toBe('2024-02-28T16:00:00.000Z')
++    expect(resolveAnalyticsRange({ period: 'custom', startDate: '2019-12-31', endDate: '2020-01-01' }, now).startDate).toBe('2019-12-31')
++    expect(single.end.toISOString()).toBe('2024-02-29T16:00:00.000Z')
++  })
++  it.each([
++    { period: 'bad' }, { period: ['week'] }, { period: 'week', date: '2026-01-01' },
++    { period: 'custom', startDate: '2026-02-30', endDate: '2026-03-01' },
++    { period: 'custom', startDate: '2026-09-10', endDate: '2026-09-10' },
++    { period: 'custom', startDate: '2026-09-02', endDate: '2026-09-01' },
++    { period: 'custom', startDate: '2024-01-01', endDate: '2025-01-01' },
++  ])('rejects invalid or ambiguous dates: %p', (q) => expect(() => resolveAnalyticsRange(q, now)).toThrow())
++  it('produces monthly rather than twelve daily year buckets', () => {
++    const buckets = analyticsBuckets(resolveAnalyticsRange({ period: 'year' }, now))
++    expect(buckets).toHaveLength(9); expect(buckets[0]).toBe('2025-12-31T16:00:00.000Z')
++    expect(buckets[8]).toBe('2026-08-31T16:00:00.000Z')
++  })
++  it('parameterizes ownership and both payment/refund ranges without creation-time filtering', () => {
++    const query = analyticsQuery("owner'--", resolveAnalyticsRange({ period: 'week' }, now))
++    expect(query.text).not.toContain("owner'--"); expect(query.values.filter((v) => v === "owner'--")).toHaveLength(2)
++    expect(query.text).toContain('"paidAt" >='); expect(query.text).toContain('"completedAt" >=')
++    expect(query.text).toContain("status = 'completed'"); expect(query.text).not.toContain('"createdAt"')
++    expect(query.text).not.toContain('refundAmount" FROM paid')
++  })
++  it('keeps cents, independent refunds and fills only elapsed trend buckets', async () => {
++    jest.useFakeTimers().setSystemTime(now)
++    const $queryRaw = jest.fn().mockResolvedValue([{ paidAmount: '10.35', paidOrderCount: '2', avgOrderValue: '5.18', refundAmount: '99.99', totalQuantity: '3',
++      trend: [{ bucketStart: '2026-09-06T16:00:00.000Z', amount: '10.35' }],
++      topProducts: [{ productId: 'p1', name: 'Product', quantity: '3' }], categories: [{ categoryId: '', name: '未分类', quantity: '3' }] }])
++    const service = new MerchantAnalyticsService({ $queryRaw } as unknown as PrismaService)
++    const result = await service.overview('owner', { period: 'week' })
++    expect(result.paidAmount).toBe(10.35); expect(result.avgOrderValue).toBe(5.18); expect(result.refundAmount).toBe(99.99)
++    expect(result.trend).toHaveLength(3); expect(result.trend.reduce((sum, p) => sum + p.amount, 0)).toBe(result.paidAmount)
++    expect(result.categories[0].quantity).toBe(3); expect($queryRaw).toHaveBeenCalledTimes(1)
++  })
++})
+--- /dev/null
++++ b/packages/server/scripts/verify-merchant-analytics.cjs
+@@ -0,0 +1,92 @@
++// Starts an isolated, loopback-only PostgreSQL cluster with synthetic data only.
++// Usage: node scripts/verify-merchant-analytics.cjs "C:/Program Files/PostgreSQL/17/bin"
++const fs = require('node:fs');
++const path = require('node:path');
++const os = require('node:os');
++const assert = require('node:assert/strict');
++const { execFileSync } = require('node:child_process');
++const net = require('node:net');
++const { Client } = require('pg');
++process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.json');
++require('ts-node/register/transpile-only');
++const { analyticsQuery } = require('../src/modules/merchant/merchant-analytics.service');
++const { resolveAnalyticsRange } = require('../src/modules/merchant/analytics-range');
++const bin = process.argv[2];
++if (!bin || !path.isAbsolute(bin)) throw new Error('Explicit local PostgreSQL bin directory required');
++const dir = process.argv[3] ? path.resolve(process.argv[3]) : fs.mkdtempSync(path.join(os.tmpdir(), 'jingwei-analytics-pg-'));
++if (path.dirname(dir) !== path.resolve(os.tmpdir()) || !path.basename(dir).startsWith('jingwei-analytics-pg-')) throw new Error('Not an isolated analytics test directory');
++const data = path.join(dir, 'data');
++const run = (tool, args) => {
++  const log = path.join(dir, `${tool}-command.log`); const fd = fs.openSync(log, 'a');
++  // File handles avoid inherited anonymous pipes keeping pg_ctl waiting on Windows.
++  try { execFileSync(path.join(bin, `${tool}.exe`), args, { windowsHide: true, stdio: ['ignore', fd, fd], timeout: 60000 }); return fs.readFileSync(log, 'utf8'); }
++  finally { fs.closeSync(fd); }
++};
++async function freePort() {
++  return new Promise((resolve, reject) => {
++    const s = net.createServer(); s.once('error', reject);
++    s.listen(0, '127.0.0.1', () => { const port = s.address().port; s.close(() => resolve(port)); });
++  });
++}
++(async () => {
++  let started = false; let client;
++  try {
++    if (!fs.existsSync(data)) fs.writeFileSync(path.join(dir, 'init.log'), run('initdb', ['-D', data, '-A', 'trust', '-U', 'analytics_test', '--encoding=UTF8', '--no-locale']));
++    const pidFile = path.join(data, 'postmaster.pid');
++    const pidLines = fs.existsSync(pidFile) ? fs.readFileSync(pidFile, 'utf8').split(/\r?\n/) : [];
++    if (pidLines.length && path.resolve(pidLines[1]) !== path.resolve(data)) throw new Error('Unexpected test cluster ownership');
++    const port = pidLines.length ? Number(pidLines[3]) : await freePort();
++    if (!pidLines.length) run('pg_ctl', ['-D', data, '-l', path.join(dir, 'postgres.log'), '-o', `-h 127.0.0.1 -p ${port}`, '-w', 'start']);
++    started = true;
++    client = new Client({ host: '127.0.0.1', port, user: 'analytics_test', database: 'postgres' }); await client.connect();
++    await client.query(`
++      CREATE TABLE "Order" (id text PRIMARY KEY, "merchantId" text, "payAmount" numeric(10,2), "paidAt" timestamp(3), "createdAt" timestamp(3), status text);
++      CREATE TABLE "Category" (id text PRIMARY KEY, name text);
++      CREATE TABLE "Product" (id text PRIMARY KEY, "categoryId" text);
++      CREATE TABLE "OrderItem" (id text PRIMARY KEY, "orderId" text, "productId" text, "productName" text, quantity integer);
++      CREATE TABLE "Refund" (id text PRIMARY KEY, "merchantId" text, "orderId" text, status text, "refundAmount" numeric(10,2), "completedAt" timestamp(3));
++      INSERT INTO "Category" VALUES ('cat','Category'); INSERT INTO "Product" VALUES ('p','cat'),('q',NULL);
++      INSERT INTO "Order" VALUES
++        ('a','owner',12.34,'2026-09-06 16:00:00','2026-01-01','pending_shipment'),
++        ('b','owner',7.66,'2026-09-08 16:00:00','2026-09-08','refunded'),
++        ('c','owner',0.15,'2026-09-08 01:00:00','2025-01-01','completed'),
++        ('unpaid','owner',100,NULL,'2026-09-08','pending_payment'),
++        ('before','owner',99,'2026-09-06 15:59:59.999','2026-09-06','completed'),
++        ('month','owner',20,'2026-08-31 16:00:00','2026-08-31','completed'),
++        ('future','owner',100,'2026-09-09 11:00:00','2026-09-09','completed'),
++        ('other','elsewhere',900,'2026-09-08','2026-09-08','completed');
++      INSERT INTO "OrderItem" VALUES ('ia','a','p','Product P',2),('ib','b','p','Product P',1),('ic','c','q','Product Q',1),
++        ('iu','unpaid','p','Product P',100),('io','other','p','Product P',100),('if','future','p','Product P',100);
++      INSERT INTO "Refund" VALUES
++        ('r1','owner','before','completed',1.25,'2026-09-09 04:00:00'),
++        ('r2','owner','a','completed',2.75,'2026-09-07 00:00:00'),
++        ('r3','owner','a','agreed',100,'2026-09-08'), ('r4','elsewhere','other','completed',777,'2026-09-08'),
++        ('r5','owner','a','completed',500,'2026-09-06 15:59:59.999');
++    `);
++    const now = new Date('2026-09-09T10:23:00.000Z');
++    async function get(period, extra = {}) {
++      const q = analyticsQuery('owner', resolveAnalyticsRange({ period, ...extra }, now));
++      return (await client.query(q.text, q.values)).rows[0];
++    }
++    const week = await get('week');
++    assert.equal(Number(week.paidAmount), 20.15); assert.equal(Number(week.paidOrderCount), 3);
++    assert.equal(Number(week.avgOrderValue), 6.72); assert.equal(Number(week.refundAmount), 4);
++    assert.equal(Number(week.totalQuantity), 4); assert.equal(week.topProducts[0].quantity, '3');
++    assert.equal(week.categories.find(c => c.categoryId === '').quantity, '1');
++    assert.equal(week.trend.reduce((sum,p) => sum + Math.round(Number(p.amount)*100), 0), 2015);
++    const day = await get('today'); assert.equal(Number(day.paidAmount), 7.66); assert.equal(Number(day.refundAmount), 1.25);
++    const month = await get('month'); assert.equal(Number(month.paidAmount), 139.15);
++    const year = await get('year'); assert.equal(year.trend.length, 1); assert.equal(year.trend[0].bucketStart, '2026-08-31T16:00:00.000Z');
++    const empty = await get('custom', { startDate: '2024-02-29', endDate: '2024-02-29' });
++    assert.equal(empty.paidAmount, '0'); assert.equal(empty.refundAmount, '0'); assert.deepEqual(empty.trend, []);
++    // Running in a non-UTC database session must not shift UTC-stored business timestamps.
++    await client.query("SET TIME ZONE 'America/New_York'"); assert.deepEqual(await get('week'), week);
++    const result = { passed: true, assertions: ['unpaid exclusion','payment-time attribution','Beijing midnight boundaries','gross sales retain refunded orders',
++      'cross-period completed refunds','partial refunds','cents and rounding','ownership isolation','units not currency','monthly buckets', 'empty range','database session timezone'], directory: dir };
++    fs.writeFileSync(path.join(dir, 'verification.json'), JSON.stringify(result,null,2)); console.log(JSON.stringify(result));
++  } finally {
++    if (client) await client.end();
++    if (started || fs.existsSync(path.join(data, 'postmaster.pid'))) run('pg_ctl', ['-D', data, '-w', '-m', 'fast', 'stop']);
++    console.log(`Synthetic cluster artifacts: ${dir}`);
++  }
++})().catch(error => { console.error(error.message); process.exitCode = 1; });
+--- a/native/harmony-merchant/entry/src/main/ets/features/stats/StatsModels.ets
++++ b/native/harmony-merchant/entry/src/main/ets/features/stats/StatsModels.ets
+@@ -29,3 +29,34 @@
+   customerAnalysis: CustomerAnalysis;
+   categoryBars: CategoryBar[];
+ }
++
++// Independent ArkTS mirror of MerchantAnalytics. No shared runtime dependency.
++export interface AnalyticsTrendPoint { bucketStart: string; amount: number; }
++export interface AnalyticsProduct { productId: string; name: string; quantity: number; }
++export interface AnalyticsCategory { categoryId: string; name: string; quantity: number; }
++export interface MerchantAnalytics {
++  version: number;
++  period: string;
++  startDate: string;
++  endDate: string;
++  timeZone: string;
++  asOf: string;
++  granularity: string;
++  paidAmount: number;
++  paidOrderCount: number;
++  avgOrderValue: number;
++  refundAmount: number;
++  totalQuantity: number;
++  trend: AnalyticsTrendPoint[];
++  topProducts: AnalyticsProduct[];
++  categories: AnalyticsCategory[];
++}
++export class StatsSelection {
++  period: string;
++  startDate: string;
++  endDate: string;
++  constructor(period: string = 'week', startDate: string = '', endDate: string = '') {
++    this.period = period; this.startDate = startDate; this.endDate = endDate;
++  }
++}
++export interface StatsCalendarCell { date: string; day: number; inMonth: boolean; disabled: boolean; }
+--- a/native/harmony-merchant/entry/src/main/ets/features/stats/StatsPage.ets
++++ b/native/harmony-merchant/entry/src/main/ets/features/stats/StatsPage.ets
+@@ -1,14 +1,16 @@
+ import { PrimaryNavigationMetrics } from '../shell/PrimaryNavigationMetrics';
+-import { IBestButton, IBestCalendarConfirmResult, IBestCalendarDialog, IBestEmpty } from '@ibestservices/ibest-ui';
+ import { AppRouter } from '../../core/navigation/AppRouter';
+ import { ApiError } from '../../core/network/ApiClient';
++import { SessionStore } from '../../core/storage/SessionStore';
+ import { DesignTokens } from '../../core/theme/DesignTokens';
+ import { MerchantIcon } from '../../core/theme/MerchantIcon';
+-import { CategoryBar, MerchantStats, TopProductPoint, TrendPoint } from './StatsModels';
++import { I18n } from '../../core/i18n/I18n';
++import { MerchantAnalytics, StatsSelection } from './StatsModels';
+ import { StatsRepository } from './StatsRepository';
+-import { I18n } from '../../core/i18n/I18n';
+-
+-interface PeriodItem { value: string; label: string; }
++import { StatsPolicy, StatsRequests } from './StatsPolicy';
++import { StatsDatePanel } from './StatsDatePanel';
++import { StatsMetric, StatsRanking } from './StatsCards';
++import { StatsTrendChart } from './StatsTrendChart';
+ 
+ @Builder
+ export function StatsFullBuilder(_: string) {
+@@ -22,181 +24,190 @@
+   @StorageProp('safeBottom') private safeBottom: number = 16;
+   @StorageProp('safeTop') private safeTop: number = 24;
+   @StorageProp('windowWidth') private windowWidth: number = 390;
++  @StorageProp('sessionEpoch') @Watch('onSession') private sessionEpoch: number = 0;
+   @StorageLink('language') private language: string = 'zh-CN';
+   @StorageLink('darkMode') private darkMode: boolean = false;
+-  @State private period: string = 'week';
+-  @State private customDate: string = '';
++  @State private selection: StatsSelection = new StatsSelection();
++  @State private calendarSelection: StatsSelection = new StatsSelection();
+   @State private calendarVisible: boolean = false;
+-  @State private data: MerchantStats | null = null;
++  @State private sheetMode: string = 'dates';
++  @State private data: MerchantAnalytics | null = null;
+   @State private loading: boolean = false;
+-  @State private errorMessage: string = '';
++  @State private errorKind: string = '';
++  private requests: StatsRequests = new StatsRequests();
++  private scroller: Scroller = new Scroller();
++  private owner: string = '';
++  private disposed: boolean = false;
++  private displayKey: string = '';
+   private loadEpoch: number = 0;
+-  private readonly periods: PeriodItem[] = [
+-    { value: 'today', label: 'today' }, { value: 'week', label: 'week' },
+-    { value: 'month', label: 'month' }, { value: 'year', label: 'year' }
+-  ];
+-
++  private reloadPending: boolean = false;
++  private readonly periods: string[] = ['today', 'week', 'month', 'year'];
++
++  aboutToAppear(): void { this.disposed = false; this.owner = SessionStore.shared().user?.id || ''; this.load(); }
++  aboutToDisappear(): void { this.disposed = true; this.requests.invalidate(); this.calendarVisible = false; }
++  private current(epoch: number): boolean {
++    return !this.disposed && this.loadEpoch === epoch && this.requests.current(epoch) && this.owner === (SessionStore.shared().user?.id || '');
++  }
++  private onSession(): void {
++    this.requests.invalidate(); this.calendarVisible = false; this.data = null; this.displayKey = ''; this.loading = false;
++    this.errorKind = ''; this.selection = new StatsSelection(); this.owner = SessionStore.shared().user?.id || '';
++    if (this.owner && !this.disposed) this.load();
++  }
++  private onActivation(): void { if (this.calendarVisible) this.reloadPending = true; else this.load(); }
++  private async load(): Promise<void> {
++    if (this.disposed) return;
++    const requested = StatsPolicy.resolve(this.selection);
++    const key = `${this.owner}:${StatsPolicy.key(requested)}`;
++    const epoch = this.requests.begin(key);
++    if (!epoch) return;
++    this.loadEpoch = epoch; this.loading = true; this.errorKind = ''; this.reloadPending = false;
++    if (this.displayKey !== key) this.data = null;
++    try {
++      const raw = await StatsRepository.overview(requested);
++      if (!this.current(epoch)) return;
++      const result = StatsPolicy.verify(raw);
++      if (result.period !== requested.period || result.startDate !== requested.startDate || result.endDate !== requested.endDate) throw new Error('stats-contract');
++      this.data = result; this.displayKey = key;
++    } catch (error) {
++      if (this.current(epoch)) this.errorKind = error instanceof ApiError && (error.code === 404 || error.code === 1002) ? 'unavailable'
++        : error instanceof Error && error.message === 'stats-contract' ? 'contract' : 'network';
++    } finally { this.requests.finish(epoch); if (this.current(epoch)) this.loading = false; }
++  }
++  private selectPeriod(period: string): void {
++    if (this.selection.period === period) return;
++    this.selection = new StatsSelection(period); this.load();
++  }
++  private openCalendar(): void {
++    this.calendarSelection = StatsPolicy.resolve(this.selection); this.sheetMode = 'dates'; this.calendarVisible = true;
++  }
++  private selectRange(selection: StatsSelection): void {
++    if (StatsPolicy.rangeError(selection.startDate, selection.endDate)) return;
++    const unchanged = StatsPolicy.key(this.selection) === StatsPolicy.key(selection);
++    this.selection = new StatsSelection('custom', selection.startDate, selection.endDate); this.calendarVisible = false;
++    if (!unchanged || this.reloadPending) this.load();
++  }
++  private closeSheet(): void { this.calendarVisible = false; if (this.reloadPending) this.load(); }
+   private periodLabel(value: string): string {
+     if (value === 'today') return I18n.text(this.language, '今日', 'Today');
+     if (value === 'week') return I18n.text(this.language, '本周', 'Week');
+     if (value === 'month') return I18n.text(this.language, '本月', 'Month');
+     return I18n.text(this.language, '本年', 'Year');
+   }
+-
+-  aboutToAppear(): void { this.load(); }
+-
+-  private onActivation(): void { this.load(); }
+-
+-  private async load(): Promise<void> {
+-    const epoch = ++this.loadEpoch;
+-    const requestedPeriod = this.period;
+-    const requestedDate = this.customDate;
+-    this.loading = true;
+-    this.errorMessage = '';
+-    try {
+-      const result = await StatsRepository.get(requestedPeriod, requestedDate);
+-      if (epoch === this.loadEpoch) this.data = result;
+-    } catch (error) {
+-      if (epoch === this.loadEpoch) {
+-        this.errorMessage = error instanceof ApiError ? error.message : 'i18n:stats-load';
+-      }
+-    } finally {
+-      if (epoch === this.loadEpoch) this.loading = false;
+-    }
+-  }
+-
+-  private selectPeriod(value: string): void {
+-    if (this.period === value && !this.customDate) return;
+-    this.period = value;
+-    this.customDate = '';
+-    this.load();
+-  }
+-
+-  private selectDate(value: string): void {
+-    this.customDate = value;
+-    this.period = 'today';
+-    this.load();
+-  }
+-
+-  private maxTrend(): number {
+-    if (!this.data || this.data.salesTrend.length === 0) return 1;
+-    let max = 1;
+-    this.data.salesTrend.forEach((item: TrendPoint) => { if (item.value > max) max = item.value; });
+-    return max;
+-  }
+-
+-  @Builder
+-  private metric(label: string, value: string) {
+-    Column({ space: 7 }) {
+-      Text(value).fontSize(21).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).maxLines(1);
+-      Text(label).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
+-    }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+-  }
+-
++  private rangeLabel(): string {
++    const range = this.data || StatsPolicy.resolve(this.selection);
++    return range.startDate === range.endDate ? range.startDate : `${range.startDate} – ${range.endDate}`;
++  }
++  private errorText(): string {
++    if (this.errorKind === 'unavailable') return I18n.text(this.language, '新版统计服务暂未就绪，请稍后重试。', 'The updated analytics service is not available yet. Please try later.');
++    if (this.errorKind === 'contract') return I18n.text(this.language, '统计数据校验失败，请重试或联系支持。', 'Analytics could not be verified. Retry or contact support.');
++    return I18n.text(this.language, '数据更新失败，请检查网络后重试。', 'Unable to update analytics. Check your connection and retry.');
++  }
++
++  @Builder private dateFilter() {
++    Column({ space: 4 }) {
++      Row({ space: 4 }) {
++        ForEach(this.periods, (period: string) => {
++          Button(this.periodLabel(period), { type: ButtonType.Normal }).height(44).layoutWeight(1).fontSize(14).borderRadius(10)
++            .fontWeight(this.selection.period === period ? FontWeight.Medium : FontWeight.Regular)
++            .fontColor(this.selection.period === period ? DesignTokens.brand(this.darkMode) : DesignTokens.muted(this.darkMode))
++            .backgroundColor(this.selection.period === period ? DesignTokens.brandTint(this.darkMode) : Color.Transparent)
++            .accessibilitySelected(this.selection.period === period).onClick(() => this.selectPeriod(period));
++        }, (period: string) => `${period}:${this.language}`);
++      }.width('100%');
++      Row({ space: 6 }) {
++        Text(this.rangeLabel()).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
++        Button(I18n.text(this.language, '自定义', 'Custom'), { type: ButtonType.Normal }).height(44).fontSize(13).padding({ left: 10, right: 10 }).borderRadius(10)
++          .fontColor(this.selection.period === 'custom' ? DesignTokens.brand(this.darkMode) : DesignTokens.text(this.darkMode))
++          .backgroundColor(this.selection.period === 'custom' ? DesignTokens.brandTint(this.darkMode) : Color.Transparent)
++          .accessibilitySelected(this.selection.period === 'custom').onClick(() => this.openCalendar());
++      }.width('100%');
++    }.width('100%').padding({ left: 8, right: 8, top: 6, bottom: 2 }).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
++  }
++  @Builder private overview() {
++    if (this.data) Column({ space: 14 }) {
++      Row({ space: 14 }) {
++        StatsMetric({ zh: '实付成交额', en: 'Paid sales', value: StatsPolicy.money(this.data.paidAmount), highlight: true }).layoutWeight(1);
++        StatsMetric({ zh: '实付订单', en: 'Paid orders', value: `${this.data.paidOrderCount}` }).layoutWeight(1);
++      }.width('100%');
++      Divider().color(DesignTokens.border(this.darkMode));
++      Row({ space: 14 }) {
++        StatsMetric({ zh: '客单价', en: 'Avg. order value', value: StatsPolicy.money(this.data.avgOrderValue) }).layoutWeight(1);
++        StatsMetric({ zh: '已完成退款', en: 'Completed refunds', value: StatsPolicy.money(this.data.refundAmount) }).layoutWeight(1);
++      }.width('100%');
++    }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
++  }
++  @Builder private skeleton() {
++    Column({ space: 12 }) {
++      Column().height(162).width('100%').borderRadius(16).backgroundColor(DesignTokens.subtle(this.darkMode));
++      Column().height(226).width('100%').borderRadius(16).backgroundColor(DesignTokens.subtle(this.darkMode));
++      Text(I18n.text(this.language, '正在读取经营数据…', 'Loading analytics…')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
++    }.width('100%');
++  }
++  @Builder private sheet() {
++    if (this.sheetMode === 'dates') StatsDatePanel({ selection: this.calendarSelection, onApply: (selection: StatsSelection) => this.selectRange(selection), onClose: () => this.closeSheet() });
++    else Column({ space: 14 }) {
++      Text(I18n.text(this.language, '统计口径', 'About these figures')).fontSize(18).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++      Scroll() {
++        Column({ space: 16 }) {
++          Text(I18n.text(this.language, '成交额与订单数按付款时间统计；已退款订单的原付款仍计入成交，不代表利润或可提现余额。', 'Sales and order counts use payment time. Refunded orders remain in gross paid sales. This is not profit or withdrawable balance.')).fontSize(14).lineHeight(22).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++          Text(I18n.text(this.language, '退款按实际完成时间单独统计；申请、同意和处理中不算完成，跨期退款计入完成期间。', 'Refunds use completion time and are shown separately. Requested, approved or processing refunds are excluded; cross-period refunds count when completed.')).fontSize(14).lineHeight(22).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++          Text(I18n.text(this.language, '销量是付款订单购买件数，不扣减无法确认的退货件数。品类按商品当前分类，缺失归为未分类。', 'Units are purchased quantities from paid orders, without inferred returned quantities. Categories use current product classification; missing categories are uncategorized.')).fontSize(14).lineHeight(22).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++          Text(I18n.text(this.language, '统一采用北京时间，周一为每周开始。日期边界按开始日零点至结束日次日零点计算；今天只统计到本次更新时刻。', 'All dates use Beijing time. Weeks start Monday. Ranges include whole days; today is counted only up to the update time.')).fontSize(14).lineHeight(22).fontColor(DesignTokens.text(this.darkMode)).width('100%');
++        }.width('100%').alignItems(HorizontalAlign.Start);
++      }.layoutWeight(1).width('100%').align(Alignment.Top);
++      Button(I18n.text(this.language, '知道了', 'Got it'), { type: ButtonType.Normal }).width('100%').height(48).fontSize(14).borderRadius(12)
++        .backgroundColor(DesignTokens.brand(this.darkMode)).fontColor(DesignTokens.onBrand(this.darkMode)).onClick(() => this.closeSheet());
++    }.width('100%').height('100%').padding({ left: 18, right: 18, top: 18, bottom: this.safeBottom + 12 })
++      .foregroundColor(DesignTokens.text(this.darkMode));
++  }
+   build() {
+-    Stack() {
+-      Column() {
+-        Row({ space: 9 }) {
+-          if (this.showBack) {
+-            Column() { MerchantIcon({ name: 'arrow-left', color: DesignTokens.text(this.darkMode), iconSize: 25 }); }
+-              .width(34).height(38).justifyContent(FlexAlign.Center).onClick(() => AppRouter.back());
++    Column() {
++      Row({ space: 6 }) {
++        if (this.showBack) Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'arrow-left', color: DesignTokens.text(this.darkMode), iconSize: 24 }); }
++          .width(44).height(44).backgroundColor(Color.Transparent).onClick(() => AppRouter.back());
++        Text(I18n.text(this.language, '经营数据', 'Analytics')).fontSize(22).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
++        Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'question-o', color: DesignTokens.muted(this.darkMode), iconSize: 22 }); }
++          .width(44).height(44).backgroundColor(Color.Transparent).accessibilityText(I18n.text(this.language, '统计说明', 'About these figures'))
++          .onClick(() => { this.sheetMode = 'info'; this.calendarVisible = true; });
++        Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'replay', color: DesignTokens.brand(this.darkMode), iconSize: 22 }); }
++          .width(44).height(44).backgroundColor(Color.Transparent).enabled(!this.loading).onClick(() => this.load())
++          .accessibilityText(I18n.text(this.language, '刷新数据', 'Refresh analytics'));
++      }.width('100%').padding({ top: this.safeTop + 8, left: this.showBack ? 8 : 16, right: 8, bottom: 8 });
++      Scroll(this.scroller) {
++        Column({ space: 12 }) {
++          this.dateFilter();
++          if (this.errorKind) {
++            Column({ space: 8 }) {
++              Text(this.errorText()).fontSize(13).fontColor(DesignTokens.warning(this.darkMode)).width('100%');
++              if (this.data) Text(I18n.text(this.language, '以下保留该范围上次成功读取的数据。', 'Showing the last successful data for this range.')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
++              Button(I18n.text(this.language, '重试', 'Retry'), { type: ButtonType.Normal }).height(44).width('100%').fontSize(14).borderRadius(10)
++                .backgroundColor(DesignTokens.card(this.darkMode)).fontColor(DesignTokens.brand(this.darkMode)).enabled(!this.loading).onClick(() => this.load());
++            }.width('100%').padding(12).borderRadius(12).backgroundColor(DesignTokens.warningTint(this.darkMode));
+           }
+-          Text(I18n.text(this.language, '经营数据', 'Analytics')).fontSize(26).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
+-          Blank();
+-          if (this.customDate) {
+-            Text(I18n.text(this.language, '恢复当前', 'Reset')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode))
+-              .onClick(() => { this.customDate = ''; this.load(); });
++          if (this.loading && !this.data) this.skeleton();
++          if (this.data) {
++            Row({ space: 8 }) {
++              if (this.loading) LoadingProgress().width(16).height(16).color(DesignTokens.brand(this.darkMode));
++              Text(this.loading ? I18n.text(this.language, '更新中…', 'Updating…')
++                : I18n.text(this.language, `截至 ${StatsPolicy.bucketLabel(this.data.asOf, 'hour', true)} · 北京时间`, `As of ${StatsPolicy.bucketLabel(this.data.asOf, 'hour', true)} · Beijing time`))
++                .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
++            }.width('100%');
++            this.overview();
++            if (this.windowWidth >= 720) {
++              Row({ space: 12 }) {
++                StatsTrendChart({ points: this.data.trend, granularity: this.data.granularity }).layoutWeight(1);
++                StatsRanking({ data: this.data }).layoutWeight(1);
++              }.width('100%').alignItems(VerticalAlign.Top);
++            } else {
++              StatsTrendChart({ points: this.data.trend, granularity: this.data.granularity });
++              StatsRanking({ data: this.data });
++            }
+           }
+-          Text(this.customDate || I18n.text(this.language, '选择日期', 'Choose date')).fontSize(12).fontColor(DesignTokens.brand(this.darkMode))
+-            .padding({ left: 10, right: 10, top: 7, bottom: 7 })
+-            .backgroundColor(DesignTokens.brandTint(this.darkMode)).borderRadius(16)
+-            .onClick(() => { this.calendarVisible = true; });
+-        }.width('100%').padding({ top: this.safeTop + 15, left: 16, right: 16, bottom: 14 });
+-      Row({ space: 8 }) {
+-        ForEach(this.periods, (item: PeriodItem) => {
+-          Text(this.periodLabel(item.label)).fontSize(13).textAlign(TextAlign.Center)
+-            .fontColor(this.period === item.value ? DesignTokens.onBrand(this.darkMode) : DesignTokens.muted(this.darkMode))
+-            .padding({ top: 9, bottom: 9 }).layoutWeight(1)
+-            .backgroundColor(this.period === item.value ? DesignTokens.brand(this.darkMode) : DesignTokens.card(this.darkMode))
+-            .borderRadius(18).onClick(() => this.selectPeriod(item.value));
+-        }, (item: PeriodItem) => item.value);
+-      }.width('100%').padding({ left: 16, right: 16, bottom: 14 });
+-
+-      if (this.loading && !this.data) {
+-        Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }.layoutWeight(1).justifyContent(FlexAlign.Center);
+-      } else if (this.errorMessage) {
+-        Column({ space: 12 }) {
+-          IBestEmpty({ description: I18n.state(this.language, this.errorMessage), emptyImage: 'network' });
+-          IBestButton({ text: I18n.text(this.language, '重试', 'Retry'), color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.load() });
+-        }.layoutWeight(1).justifyContent(FlexAlign.Center);
+-      } else if (this.data) {
+-        Scroll() {
+-          Column({ space: 14 }) {
+-            Row() {
+-              this.metric(I18n.text(this.language, '实付成交额', 'Paid sales'), `¥${this.data.totalSales.toFixed(2)}`);
+-              this.metric(I18n.text(this.language, '实付订单', 'Paid orders'), `${this.data.orderCount}`);
+-              this.metric(I18n.text(this.language, '客单价', 'Avg. order value'), `¥${this.data.avgOrderValue.toFixed(2)}`);
+-            }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+-            Column({ space: 14 }) {
+-              Text(I18n.text(this.language, '销售趋势', 'Sales trend')).fontSize(17).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
+-              if (this.data.salesTrend.length === 0) {
+-                Text(I18n.text(this.language, '暂无趋势数据', 'No trend data')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode)).height(100);
+-              } else {
+-                Row({ space: 7 }) {
+-                  ForEach(this.data.salesTrend, (point: TrendPoint) => {
+-                    Column({ space: 6 }) {
+-                      Blank();
+-                      Column().width('64%').height(Math.max(4, 112 * point.value / this.maxTrend()))
+-                        .backgroundColor(DesignTokens.brand(this.darkMode)).borderRadius({ topLeft: 5, topRight: 5 });
+-                      Text(point.date.slice(5)).fontSize(9).fontColor(DesignTokens.muted(this.darkMode)).maxLines(1);
+-                    }.height(146).layoutWeight(1).justifyContent(FlexAlign.End);
+-                  }, (point: TrendPoint) => point.date);
+-                }.width('100%');
+-              }
+-            }.width('100%').alignItems(HorizontalAlign.Start).padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+-            Column({ space: 12 }) {
+-              Text(I18n.text(this.language, '热销商品', 'Top products')).fontSize(17).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
+-              if (this.data.topProducts.length === 0) Text(I18n.text(this.language, '暂无商品销量', 'No product sales')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
+-              ForEach(this.data.topProducts, (item: TopProductPoint, index: number) => {
+-                Row({ space: 10 }) {
+-                  Text(`${index + 1}`).width(26).fontSize(15).fontWeight(FontWeight.Bold).fontColor(index < 3 ? DesignTokens.brand(this.darkMode) : DesignTokens.muted(this.darkMode));
+-                  Text(item.name).fontSize(14).layoutWeight(1).maxLines(1);
+-                  Text(`${item.sales}`).fontSize(14).fontWeight(FontWeight.Medium);
+-                }.width('100%');
+-              }, (item: TopProductPoint) => item.productId);
+-            }.width('100%').alignItems(HorizontalAlign.Start).padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+-            Column({ space: 12 }) {
+-              Text(I18n.text(this.language, '品类销售', 'Sales by category')).fontSize(17).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
+-              ForEach(this.data.categoryBars, (item: CategoryBar) => {
+-                Row({ space: 10 }) {
+-                  Text(item.category).fontSize(13).width(80).maxLines(1);
+-                  Progress({ value: item.sales, total: Math.max(1, this.data?.totalSales || 1), type: ProgressType.Linear })
+-                    .color(DesignTokens.brand(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode)).layoutWeight(1);
+-                  Text(`¥${item.sales.toFixed(0)}`).fontSize(12).width(62).textAlign(TextAlign.End);
+-                }.width('100%');
+-              }, (item: CategoryBar) => item.category);
+-            }.width('100%').alignItems(HorizontalAlign.Start).padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+-          }.width('100%').padding({
+-            left: this.windowWidth >= 720 ? 24 : 16,
+-            right: this.windowWidth >= 720 ? 24 : 16,
+-            bottom: this.windowWidth >= 720 ? 28 : PrimaryNavigationMetrics.contentInset(this.safeBottom)
+-          });
+-        }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
+-      }
+-      }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode));
+-      IBestCalendarDialog({
+-        visible: $calendarVisible,
+-        value: $customDate,
+-        type: 'primary',
+-        selectedColor: DesignTokens.brand(this.darkMode),
+-        minDate: new Date(2020, 0, 1),
+-        maxDate: new Date(),
+-        onConfirm: (values: IBestCalendarConfirmResult[]): void => {
+-          if (values.length > 0) {
+-            this.selectDate(values[0].dateStr);
+-          }
+-        }
+-      });
+-    }.width('100%').height('100%');
++        }.width('100%').constraintSize({ maxWidth: 1120 }).padding({ left: 16, right: 16, top: 2,
++          bottom: this.showBack || this.windowWidth >= 720 ? this.safeBottom + 20 : PrimaryNavigationMetrics.contentInset(this.safeBottom) });
++      }.width('100%').layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
++    }.width('100%').height('100%').backgroundColor(DesignTokens.page(this.darkMode))
++      .bindSheet(this.calendarVisible, this.sheet(), { height: '85%', showClose: false, dragBar: false,
++        backgroundColor: DesignTokens.card(this.darkMode), onWillDismiss: () => this.closeSheet() });
+   }
+ }
+--- a/native/harmony-merchant/entry/src/main/ets/features/stats/StatsRepository.ets
++++ b/native/harmony-merchant/entry/src/main/ets/features/stats/StatsRepository.ets
+@@ -1,9 +1,17 @@
+ import { AppConfig } from '../../core/config/AppConfig';
+ import { ApiClient } from '../../core/network/ApiClient';
+ import { withQuery } from '../../core/network/QueryString';
+-import { MerchantStats } from './StatsModels';
++import { MerchantStats, MerchantAnalytics, StatsSelection } from './StatsModels';
+ 
+ export class StatsRepository {
++  static overview(selection: StatsSelection): Promise<MerchantAnalytics> {
++    return ApiClient.get<MerchantAnalytics>(withQuery(`${AppConfig.API_PREFIX}/m/stats/overview`, [
++      { name: 'period', value: selection.period },
++      { name: 'startDate', value: selection.period === 'custom' ? selection.startDate : '' },
++      { name: 'endDate', value: selection.period === 'custom' ? selection.endDate : '' }
++    ]));
++  }
++
+   static get(period: string, date: string = ''): Promise<MerchantStats> {
+     return ApiClient.get<MerchantStats>(withQuery(`${AppConfig.API_PREFIX}/m/stats`, [
+       { name: 'period', value: period },
+--- /dev/null
++++ b/native/harmony-merchant/entry/src/main/ets/features/stats/StatsPolicy.ets
+@@ -0,0 +1,85 @@
++import { MerchantAnalytics, AnalyticsTrendPoint, AnalyticsProduct, AnalyticsCategory, StatsSelection, StatsCalendarCell } from './StatsModels';
++
++export class StatsPolicy {
++  static today(now: number = Date.now()): string { return new Date(now + 8 * 3600000).toISOString().slice(0, 10); }
++  static validDate(value: string): boolean {
++    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '0001-01-01') return false;
++    const time = Date.parse(`${value}T00:00:00+08:00`);
++    return Number.isFinite(time) && StatsPolicy.today(time) === value;
++  }
++  static rangeError(start: string, end: string, today: string = StatsPolicy.today()): string {
++    if (!StatsPolicy.validDate(start) || !StatsPolicy.validDate(end)) return 'date';
++    if (end < start || end > today) return 'range';
++    if ((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000 + 1 > 366) return 'limit';
++    return '';
++  }
++  static resolve(selection: StatsSelection, now: number = Date.now()): StatsSelection {
++    if (selection.period === 'custom') return new StatsSelection('custom', selection.startDate, selection.endDate);
++    const today = StatsPolicy.today(now);
++    let start = today;
++    if (selection.period === 'week') {
++      const date = new Date(`${today}T00:00:00Z`);
++      date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7);
++      start = date.toISOString().slice(0, 10);
++    } else if (selection.period === 'month') start = `${today.slice(0, 7)}-01`;
++    else if (selection.period === 'year') start = `${today.slice(0, 4)}-01-01`;
++    return new StatsSelection(selection.period, start, today);
++  }
++  static key(selection: StatsSelection): string {
++    const range = StatsPolicy.resolve(selection);
++    return `${range.period}:${range.startDate}:${range.endDate}`;
++  }
++  static calendar(month: string, today: string = StatsPolicy.today()): StatsCalendarCell[] {
++    const first = new Date(`${month}-01T00:00:00Z`);
++    const offset = (first.getUTCDay() + 6) % 7;
++    const result: StatsCalendarCell[] = [];
++    for (let index = 0; index < 42; index++) {
++      const date = new Date(first.getTime() + (index - offset) * 86400000);
++      const value = date.toISOString().slice(0, 10);
++      result.push({ date: value, day: date.getUTCDate(), inMonth: value.slice(0, 7) === month, disabled: value < '0001-01-01' || value > today });
++    }
++    return result;
++  }
++  static money(value: number): string { return Number.isFinite(value) ? `¥${value.toFixed(2)}` : '—'; }
++  static percent(value: number, total: number): string { return total > 0 ? `${(100 * value / total).toFixed(1)}%` : '0.0%'; }
++  static bucketLabel(iso: string, granularity: string, full: boolean = false): string {
++    const date = new Date(Date.parse(iso) + 8 * 3600000).toISOString();
++    if (granularity === 'hour') return full ? `${date.slice(0, 10)} ${date.slice(11, 16)}` : date.slice(11, 16);
++    if (granularity === 'month') return date.slice(0, 7);
++    return full ? date.slice(0, 10) : date.slice(5, 10);
++  }
++  static verify(data: MerchantAnalytics): MerchantAnalytics {
++    if (!data || typeof data !== 'object' || data.version !== 1 || data.timeZone !== 'Asia/Shanghai' ||
++      !['today', 'week', 'month', 'year', 'custom'].includes(data.period) || !['hour', 'day', 'month'].includes(data.granularity) ||
++      !StatsPolicy.validDate(data.startDate) || !StatsPolicy.validDate(data.endDate) || !Number.isFinite(Date.parse(data.asOf))) throw new Error('stats-contract');
++    const amounts: number[] = [data.paidAmount, data.avgOrderValue, data.refundAmount];
++    if (amounts.some((value: number) => typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value * 100 > Number.MAX_SAFE_INTEGER)) throw new Error('stats-contract');
++    if (![data.paidOrderCount, data.totalQuantity].every((value: number) => Number.isSafeInteger(value) && value >= 0)) throw new Error('stats-contract');
++    if (!Array.isArray(data.trend) || !Array.isArray(data.topProducts) || !Array.isArray(data.categories)) throw new Error('stats-contract');
++    const trend: AnalyticsTrendPoint[] = Array.isArray(data.trend) ? data.trend.slice() : [];
++    const products: AnalyticsProduct[] = Array.isArray(data.topProducts) ? data.topProducts.slice() : [];
++    const categories: AnalyticsCategory[] = Array.isArray(data.categories) ? data.categories.slice() : [];
++    if (trend.some((p: AnalyticsTrendPoint) => !p || !Number.isFinite(Date.parse(p.bucketStart)) || typeof p.amount !== 'number' || !Number.isFinite(p.amount) || p.amount < 0) ||
++      products.some((p: AnalyticsProduct) => !p || typeof p.productId !== 'string' || typeof p.name !== 'string' || !Number.isSafeInteger(p.quantity) || p.quantity < 0) ||
++      categories.some((p: AnalyticsCategory) => !p || typeof p.categoryId !== 'string' || typeof p.name !== 'string' || !Number.isSafeInteger(p.quantity) || p.quantity < 0)) throw new Error('stats-contract');
++    const total = trend.reduce((sum: number, p: AnalyticsTrendPoint) => sum + Math.round(p.amount * 100), 0);
++    const units = categories.reduce((sum: number, p: AnalyticsCategory) => sum + p.quantity, 0);
++    if (units !== data.totalQuantity || products.reduce((sum: number, p: AnalyticsProduct) => sum + p.quantity, 0) > data.totalQuantity || total !== Math.round(data.paidAmount * 100)) throw new Error('stats-contract');
++    return { version: 1, period: data.period, startDate: data.startDate, endDate: data.endDate, timeZone: data.timeZone, asOf: data.asOf,
++      granularity: data.granularity, paidAmount: data.paidAmount, paidOrderCount: data.paidOrderCount, avgOrderValue: data.avgOrderValue,
++      refundAmount: data.refundAmount, totalQuantity: data.totalQuantity, trend, topProducts: products, categories };
++  }
++}
++
++export class StatsRequests {
++  private epoch: number = 0;
++  private activeKey: string = '';
++  private loading: boolean = false;
++  begin(key: string): number {
++    if (this.loading && key === this.activeKey) return 0;
++    this.activeKey = key; this.loading = true; return ++this.epoch;
++  }
++  current(epoch: number): boolean { return epoch === this.epoch; }
++  finish(epoch: number): void { if (this.current(epoch)) this.loading = false; }
++  invalidate(): void { this.epoch++; this.loading = false; this.activeKey = ''; }
++}
+--- /dev/null
++++ b/native/harmony-merchant/entry/src/main/ets/features/stats/StatsDatePanel.ets
+@@ -0,0 +1,151 @@
++import { DesignTokens } from '../../core/theme/DesignTokens';
++import { MerchantIcon } from '../../core/theme/MerchantIcon';
++import { I18n } from '../../core/i18n/I18n';
++import { StatsPolicy } from './StatsPolicy';
++import { StatsSelection, StatsCalendarCell } from './StatsModels';
++
++@Component
++export struct StatsDatePanel {
++  @Prop selection: StatsSelection = new StatsSelection();
++  onApply: (selection: StatsSelection) => void = () => {};
++  onClose: () => void = () => {};
++  @StorageProp('safeBottom') private safeBottom: number = 16;
++  @StorageLink('language') private language: string = 'zh-CN';
++  @StorageLink('darkMode') private darkMode: boolean = false;
++  @State private start: string = '';
++  @State private end: string = '';
++  @State private month: string = '';
++  @State private pickingEnd: boolean = false;
++  @State private error: string = '';
++  @State private monthPicker: boolean = false;
++  @State private browseYear: number = Number(StatsPolicy.today().slice(0, 4));
++  private readonly months: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
++  private readonly weekdaysZh: string[] = ['一', '二', '三', '四', '五', '六', '日'];
++  private readonly weekdaysEn: string[] = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
++  aboutToAppear(): void {
++    const range = StatsPolicy.resolve(this.selection);
++    this.start = range.startDate; this.end = range.endDate; this.month = range.endDate.slice(0, 7);
++    this.browseYear = Number(this.month.slice(0, 4));
++  }
++  private choose(date: string): void {
++    if (!this.pickingEnd) {
++      this.start = date; this.end = date; this.pickingEnd = true; this.error = '';
++    } else {
++      const start = date < this.start ? date : this.start;
++      const end = date < this.start ? this.start : date;
++      this.error = StatsPolicy.rangeError(start, end);
++      if (this.error) return;
++      this.start = start; this.end = end; this.pickingEnd = false;
++    }
++    this.month = date.slice(0, 7);
++  }
++  private moveMonth(offset: number): void {
++    const date = new Date(`${this.month}-01T00:00:00Z`);
++    date.setUTCMonth(date.getUTCMonth() + offset);
++    const month = date.toISOString().slice(0, 7);
++    if (month >= '0001-01' && month <= StatsPolicy.today().slice(0, 7)) this.month = month;
++  }
++  private apply(): void {
++    if (this.error) return;
++    this.error = StatsPolicy.rangeError(this.start, this.end);
++    if (!this.error) this.onApply(new StatsSelection('custom', this.start, this.end));
++  }
++  private dayColor(cell: StatsCalendarCell): string {
++    if (cell.disabled) return DesignTokens.border(this.darkMode);
++    if (cell.date === this.start || cell.date === this.end) return DesignTokens.onBrand(this.darkMode);
++    return cell.inMonth ? DesignTokens.text(this.darkMode) : DesignTokens.muted(this.darkMode);
++  }
++  @Builder private calendar() {
++    Column({ space: 6 }) {
++      Row() {
++        Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'arrow-left', iconSize: 20, color: DesignTokens.text(this.darkMode) }); }
++          .width(44).height(44).backgroundColor(Color.Transparent).enabled(this.month > '0001-01').onClick(() => this.moveMonth(-1))
++          .accessibilityText(I18n.text(this.language, '上个月', 'Previous month'));
++        Button(this.month, { type: ButtonType.Normal }).height(44).layoutWeight(1).fontSize(16).fontWeight(FontWeight.Medium)
++          .backgroundColor(Color.Transparent).fontColor(DesignTokens.text(this.darkMode)).onClick(() => { this.browseYear = Number(this.month.slice(0, 4)); this.monthPicker = true; })
++          .accessibilityText(I18n.text(this.language, '选择年月', 'Choose year and month'));
++        Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'arrow', iconSize: 20, color: DesignTokens.text(this.darkMode) }); }
++          .width(44).height(44).backgroundColor(Color.Transparent).enabled(this.month < StatsPolicy.today().slice(0, 7)).onClick(() => this.moveMonth(1))
++          .accessibilityText(I18n.text(this.language, '下个月', 'Next month'));
++      }.width('100%');
++      Row() {
++        ForEach([0, 1, 2, 3, 4, 5, 6], (index: number) => {
++          Text(this.language === 'en-US' ? this.weekdaysEn[index] : this.weekdaysZh[index]).fontSize(12).textAlign(TextAlign.Center)
++            .fontColor(DesignTokens.muted(this.darkMode)).height(28).layoutWeight(1);
++        }, (index: number) => `${index}:${this.language}`);
++      }.width('100%');
++      Grid() {
++        ForEach(StatsPolicy.calendar(this.month), (cell: StatsCalendarCell) => {
++          GridItem() {
++            Button(`${cell.day}`, { type: ButtonType.Normal }).width('100%').height(44).fontSize(14).fontColor(this.dayColor(cell))
++              .borderRadius(cell.date === this.start || cell.date === this.end ? 10 : 0)
++              .backgroundColor(cell.date === this.start || cell.date === this.end ? DesignTokens.brand(this.darkMode)
++                : cell.date > this.start && cell.date < this.end ? DesignTokens.brandTint(this.darkMode) : Color.Transparent)
++              .enabled(!cell.disabled).onClick(() => this.choose(cell.date)).accessibilityText(cell.date)
++              .accessibilitySelected(cell.date >= this.start && cell.date <= this.end);
++          }
++        }, (cell: StatsCalendarCell) => cell.date);
++      }.columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr').rowsGap(2).height(274).width('100%');
++    }.width('100%');
++  }
++  @Builder private monthsView() {
++    Column({ space: 12 }) {
++      Row() {
++        Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'arrow-left', iconSize: 20, color: DesignTokens.text(this.darkMode) }); }.width(44).height(44).fontSize(20).backgroundColor(Color.Transparent)
++          .fontColor(DesignTokens.text(this.darkMode)).enabled(this.browseYear > 1).onClick(() => { this.browseYear--; });
++        Text(`${this.browseYear}`).fontSize(18).fontWeight(FontWeight.Medium).layoutWeight(1).textAlign(TextAlign.Center).fontColor(DesignTokens.text(this.darkMode));
++        Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'arrow', iconSize: 20, color: DesignTokens.text(this.darkMode) }); }.width(44).height(44).fontSize(20).backgroundColor(Color.Transparent)
++          .fontColor(DesignTokens.text(this.darkMode)).enabled(this.browseYear < Number(StatsPolicy.today().slice(0, 4))).onClick(() => { this.browseYear++; });
++      }.width('100%');
++      Grid() {
++        ForEach(this.months, (month: number) => {
++          GridItem() {
++            Button(I18n.text(this.language, `${month}月`, ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1]), { type: ButtonType.Normal })
++              .height(48).width('100%').fontSize(14).borderRadius(10).fontColor(DesignTokens.text(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode))
++              .enabled(`${String(this.browseYear).padStart(4, '0')}-${String(month).padStart(2, '0')}` <= StatsPolicy.today().slice(0, 7))
++              .onClick(() => { this.month = `${String(this.browseYear).padStart(4, '0')}-${String(month).padStart(2, '0')}`; this.monthPicker = false; });
++          }
++        }, (month: number) => `${month}:${this.language}`);
++      }.columnsTemplate('1fr 1fr 1fr').columnsGap(10).rowsGap(10).height(232).width('100%');
++      Button(I18n.text(this.language, '返回日期选择', 'Back to dates'), { type: ButtonType.Normal }).height(44).width('100%').fontSize(14)
++        .backgroundColor(Color.Transparent).fontColor(DesignTokens.brand(this.darkMode)).onClick(() => { this.monthPicker = false; });
++    }.width('100%');
++  }
++  build() {
++    Column() {
++      Row() {
++        Text(I18n.text(this.language, '自定义日期', 'Custom dates')).fontSize(18).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
++        Button({ type: ButtonType.Normal }) { MerchantIcon({ name: 'cross', iconSize: 22, color: DesignTokens.muted(this.darkMode) }); }
++          .width(44).height(44).backgroundColor(Color.Transparent).onClick(this.onClose).accessibilityText(I18n.text(this.language, '取消', 'Cancel'));
++      }.width('100%').padding({ left: 16, right: 8, top: 8, bottom: 4 });
++      Scroll() {
++        Column({ space: 10 }) {
++          Row({ space: 12 }) {
++            Column({ space: 4 }) {
++              Text(I18n.text(this.language, '开始日期', 'Start date')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++              Text(this.start).fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
++            }.layoutWeight(1).padding(12).borderRadius(12).backgroundColor(this.pickingEnd ? DesignTokens.subtle(this.darkMode) : DesignTokens.brandTint(this.darkMode))
++              .onClick(() => { this.pickingEnd = false; this.month = this.start.slice(0, 7); }).accessibilitySelected(!this.pickingEnd);
++            Column({ space: 4 }) {
++              Text(I18n.text(this.language, '结束日期', 'End date')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++              Text(this.end).fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
++            }.layoutWeight(1).padding(12).borderRadius(12).backgroundColor(this.pickingEnd ? DesignTokens.brandTint(this.darkMode) : DesignTokens.subtle(this.darkMode))
++              .onClick(() => { this.pickingEnd = true; this.month = this.end.slice(0, 7); }).accessibilitySelected(this.pickingEnd);
++          }.width('100%');
++          if (this.monthPicker) this.monthsView(); else this.calendar();
++          Text(this.error ? I18n.text(this.language, '日期不合法或超过 366 天，请重新选择。', 'Choose a valid range of at most 366 days.')
++            : this.pickingEnd ? I18n.text(this.language, '再点一天选择结束日期；也可直接确认查看单日。', 'Tap an end date, or confirm to view this single day.')
++              : I18n.text(this.language, '先选开始，再选结束 · 北京时间 · 最多 366 天', 'Pick start, then end · Beijing time · Up to 366 days'))
++            .fontSize(12).lineHeight(18).fontColor(this.error ? DesignTokens.danger(this.darkMode) : DesignTokens.muted(this.darkMode)).width('100%');
++        }.width('100%').padding({ left: 16, right: 16, bottom: 12 });
++      }.layoutWeight(1).width('100%').align(Alignment.Top).scrollBar(BarState.Off);
++      Row({ space: 12 }) {
++        Button(I18n.text(this.language, '取消', 'Cancel'), { type: ButtonType.Normal }).height(48).layoutWeight(1).fontSize(14).borderRadius(12)
++          .backgroundColor(DesignTokens.subtle(this.darkMode)).fontColor(DesignTokens.text(this.darkMode)).onClick(this.onClose);
++        Button(I18n.text(this.language, '确认日期', 'Apply dates'), { type: ButtonType.Normal }).height(48).layoutWeight(2).fontSize(14).borderRadius(12)
++          .backgroundColor(DesignTokens.brand(this.darkMode)).fontColor(DesignTokens.onBrand(this.darkMode)).enabled(!this.error).opacity(this.error ? 0.45 : 1).onClick(() => this.apply());
++      }.width('100%').padding({ left: 16, right: 16, top: 10, bottom: this.safeBottom + 12 });
++    }.width('100%').height('100%').constraintSize({ maxWidth: 720 }).backgroundColor(DesignTokens.card(this.darkMode))
++      .borderRadius({ topLeft: 22, topRight: 22 }).clip(true);
++  }
++}
+--- /dev/null
++++ b/native/harmony-merchant/entry/src/main/ets/features/stats/StatsCards.ets
+@@ -0,0 +1,84 @@
++import { DesignTokens } from '../../core/theme/DesignTokens';
++import { MerchantIcon } from '../../core/theme/MerchantIcon';
++import { I18n } from '../../core/i18n/I18n';
++import { MerchantAnalytics, AnalyticsProduct, AnalyticsCategory } from './StatsModels';
++import { StatsPolicy } from './StatsPolicy';
++
++@Component
++export struct StatsMetric {
++  @Prop zh: string = '';
++  @Prop en: string = '';
++  @Prop value: string = '';
++  @Prop highlight: boolean = false;
++  @StorageLink('language') private language: string = 'zh-CN';
++  @StorageLink('darkMode') private darkMode: boolean = false;
++  build() {
++    Column({ space: 6 }) {
++      Text(I18n.text(this.language, this.zh, this.en)).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
++      Text(this.value).fontSize(22).fontWeight(FontWeight.Bold).wordBreak(WordBreak.BREAK_ALL)
++        .fontColor(this.highlight ? DesignTokens.brand(this.darkMode) : DesignTokens.text(this.darkMode));
++    }.width('100%').alignItems(HorizontalAlign.Start);
++  }
++}
++
++@Component
++export struct StatsRanking {
++  @Require @Prop data: MerchantAnalytics;
++  @StorageLink('language') private language: string = 'zh-CN';
++  @StorageLink('darkMode') private darkMode: boolean = false;
++  @State private category: boolean = false;
++  @State private productsExpanded: boolean = false;
++  @State private categoriesExpanded: boolean = false;
++  @Builder private row(name: string, quantity: number, index: number) {
++    Row({ space: 10 }) {
++      Text(`${index + 1}`).width(22).fontSize(14).fontWeight(FontWeight.Medium).fontColor(index < 3 ? DesignTokens.brand(this.darkMode) : DesignTokens.muted(this.darkMode));
++      Column({ space: 6 }) {
++        Row({ space: 8 }) {
++          Text(name).fontSize(14).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis });
++          Text(I18n.text(this.language, `${quantity} 件`, `${quantity} units`)).fontSize(14).fontWeight(FontWeight.Medium)
++            .fontColor(DesignTokens.text(this.darkMode)).textAlign(TextAlign.End).constraintSize({ maxWidth: '42%' });
++        }.width('100%');
++        Row({ space: 8 }) {
++          Progress({ value: quantity, total: Math.max(1, this.data.totalQuantity), type: ProgressType.Linear }).layoutWeight(1)
++            .color(DesignTokens.brand(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode)).style({ strokeWidth: 3 });
++          Text(StatsPolicy.percent(quantity, this.data.totalQuantity)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++        }.width('100%');
++      }.layoutWeight(1);
++    }.width('100%').constraintSize({ minHeight: 58 }).padding({ top: 8, bottom: 8 });
++  }
++  build() {
++    Column({ space: 4 }) {
++      Row({ space: 8 }) {
++        Button(I18n.text(this.language, '热销商品', 'Top products'), { type: ButtonType.Normal }).height(44).layoutWeight(1).fontSize(14)
++          .borderRadius(10).backgroundColor(this.category ? Color.Transparent : DesignTokens.brandTint(this.darkMode))
++          .fontColor(this.category ? DesignTokens.muted(this.darkMode) : DesignTokens.brand(this.darkMode)).onClick(() => { this.category = false; });
++        Button(I18n.text(this.language, '品类销量', 'Categories'), { type: ButtonType.Normal }).height(44).layoutWeight(1).fontSize(14)
++          .borderRadius(10).backgroundColor(this.category ? DesignTokens.brandTint(this.darkMode) : Color.Transparent)
++          .fontColor(this.category ? DesignTokens.brand(this.darkMode) : DesignTokens.muted(this.darkMode)).onClick(() => { this.category = true; });
++      }.width('100%');
++      Text(I18n.text(this.language, `购买数量 ${this.data.totalQuantity} 件 · 占全部销量`, `${this.data.totalQuantity} purchased units · Share of all units`))
++        .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%').padding({ top: 8, bottom: 4 });
++      if (this.category) {
++        ForEach(this.data.categories.slice(0, this.categoriesExpanded ? this.data.categories.length : 5), (item: AnalyticsCategory, index: number) => {
++          this.row(item.categoryId ? item.name : I18n.text(this.language, '未分类', 'Uncategorized'), item.quantity, index);
++        }, (item: AnalyticsCategory, index: number) => `${this.language}-${index}-${JSON.stringify(item)}`);
++      } else {
++        ForEach(this.data.topProducts.slice(0, this.productsExpanded ? this.data.topProducts.length : 5), (item: AnalyticsProduct, index: number) => {
++          this.row(item.name, item.quantity, index);
++        }, (item: AnalyticsProduct, index: number) => `${this.language}-${index}-${JSON.stringify(item)}`);
++      }
++      if (!(this.category ? this.data.categories.length : this.data.topProducts.length)) {
++        Column({ space: 8 }) {
++          MerchantIcon({ name: 'bar-chart-o', iconSize: 32, color: DesignTokens.muted(this.darkMode) });
++          Text(I18n.text(this.language, '本期暂无销量', 'No unit sales in this period')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode));
++        }.width('100%').padding({ top: 24, bottom: 24 });
++      }
++      if ((this.category ? this.data.categories.length : this.data.topProducts.length) > 5) {
++        Button((this.category ? this.categoriesExpanded : this.productsExpanded) ? I18n.text(this.language, '收起排行', 'Show less')
++          : this.category ? I18n.text(this.language, '展开全部品类', 'Show all categories') : I18n.text(this.language, '展开全部商品', 'Show all products'), { type: ButtonType.Normal })
++          .height(44).width('100%').fontSize(13).backgroundColor(Color.Transparent).fontColor(DesignTokens.brand(this.darkMode))
++          .onClick(() => { if (this.category) this.categoriesExpanded = !this.categoriesExpanded; else this.productsExpanded = !this.productsExpanded; });
++      }
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
++  }
++}
+--- /dev/null
++++ b/native/harmony-merchant/entry/src/main/ets/features/stats/StatsTrendChart.ets
+@@ -0,0 +1,88 @@
++import { DesignTokens } from '../../core/theme/DesignTokens';
++import { I18n } from '../../core/i18n/I18n';
++import { AnalyticsTrendPoint } from './StatsModels';
++import { StatsPolicy } from './StatsPolicy';
++
++@Component
++export struct StatsTrendChart {
++  @Prop @Watch('resetPoints') points: AnalyticsTrendPoint[] = [];
++  @Prop @Watch('redraw') granularity: string = 'day';
++  @StorageLink('language') @Watch('redraw') private language: string = 'zh-CN';
++  @StorageLink('darkMode') @Watch('redraw') private darkMode: boolean = false;
++  @State private selected: number = 0;
++  private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
++  private canvasWidth: number = 300;
++  private canvasHeight: number = 168;
++  private left: number = 52;
++  private ready: boolean = false;
++  aboutToAppear(): void { this.selected = Math.max(0, this.points.length - 1); }
++  private resetPoints(): void { this.selected = Math.max(0, this.points.length - 1); this.redraw(); }
++  private axis(value: number): string {
++    if (value >= 100000000) return `${(value / 100000000).toFixed(1)}${this.language === 'en-US' ? '×100M' : '亿'}`;
++    if (value >= 10000) return `${(value / 10000).toFixed(1)}${this.language === 'en-US' ? '×10k' : '万'}`;
++    return value.toFixed(value < 10 ? 2 : 0);
++  }
++  private x(index: number): number { return this.left + (this.canvasWidth - this.left - 14) * (this.points.length <= 1 ? 0.5 : index / (this.points.length - 1)); }
++  private redraw(): void {
++    if (!this.ready || this.canvasWidth < 100) return;
++    const c = this.context;
++    c.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
++    if (!this.points.length) return;
++    const max = Math.max(1, ...this.points.map((point: AnalyticsTrendPoint) => point.amount));
++    const top = 12; const bottom = this.canvasHeight - 28; const plot = bottom - top;
++    c.font = '12px sans-serif';
++    this.left = Math.max(44, Math.min(96, c.measureText(this.axis(max)).width + 10));
++    c.lineWidth = 1; c.strokeStyle = this.darkMode ? '#34332E' : '#E5E1D8'; c.fillStyle = DesignTokens.muted(this.darkMode);
++    c.textAlign = 'left'; c.textBaseline = 'middle';
++    for (let i = 0; i < 3; i++) {
++      const y = top + plot * i / 2;
++      c.fillText(this.axis(max * (1 - i / 2)), 0, y);
++      c.beginPath(); c.moveTo(this.left, y); c.lineTo(this.canvasWidth - 14, y); c.stroke();
++    }
++    c.beginPath(); c.moveTo(this.x(0), bottom);
++    this.points.forEach((point: AnalyticsTrendPoint, index: number) => { c.lineTo(this.x(index), bottom - point.amount / max * plot); });
++    c.lineTo(this.x(this.points.length - 1), bottom); c.closePath();
++    c.fillStyle = DesignTokens.brand(this.darkMode); c.globalAlpha = 0.12; c.fill(); c.globalAlpha = 1;
++    c.beginPath(); c.strokeStyle = DesignTokens.brand(this.darkMode); c.lineWidth = 2;
++    this.points.forEach((point: AnalyticsTrendPoint, index: number) => {
++      const y = bottom - point.amount / max * plot;
++      if (index === 0) c.moveTo(this.x(index), y); else c.lineTo(this.x(index), y);
++    }); c.stroke();
++    const selected = Math.min(this.selected, this.points.length - 1);
++    const sx = this.x(selected); const sy = bottom - this.points[selected].amount / max * plot;
++    c.globalAlpha = 0.3; c.lineWidth = 1; c.beginPath(); c.moveTo(sx, top); c.lineTo(sx, bottom); c.stroke(); c.globalAlpha = 1;
++    c.fillStyle = DesignTokens.brand(this.darkMode); c.beginPath(); c.arc(sx, sy, 4, 0, Math.PI * 2); c.fill();
++    const labels = Math.min(this.points.length, this.granularity === 'month' ? 3 : 4);
++    c.fillStyle = DesignTokens.muted(this.darkMode); c.textBaseline = 'bottom';
++    for (let i = 0; i < labels; i++) {
++      const index = labels === 1 ? 0 : Math.round((this.points.length - 1) * i / (labels - 1));
++      c.textAlign = i === 0 ? 'left' : i === labels - 1 ? 'right' : 'center';
++      c.fillText(StatsPolicy.bucketLabel(this.points[index].bucketStart, this.granularity), this.x(index), this.canvasHeight - 2);
++    }
++  }
++  private selectPoint(x: number): void {
++    if (!this.points.length) return;
++    this.selected = Math.max(0, Math.min(this.points.length - 1, Math.round((x - this.left) / Math.max(1, this.canvasWidth - this.left - 14) * (this.points.length - 1))));
++    this.redraw();
++  }
++  build() {
++    Column({ space: 8 }) {
++      Row({ space: 8 }) {
++        Text(I18n.text(this.language, '成交趋势', 'Sales trend')).fontSize(16).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode)).layoutWeight(1);
++        Text(I18n.text(this.language, '点击查看', 'Tap to inspect')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++      }.width('100%');
++      if (this.points.length) {
++        Row({ space: 8 }) {
++          Text(StatsPolicy.bucketLabel(this.points[Math.min(this.selected, this.points.length - 1)].bucketStart, this.granularity, true))
++            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).layoutWeight(1);
++          Text(StatsPolicy.money(this.points[Math.min(this.selected, this.points.length - 1)].amount)).fontSize(16).fontWeight(FontWeight.Medium)
++            .fontColor(DesignTokens.brand(this.darkMode)).textAlign(TextAlign.End).layoutWeight(1);
++        }.width('100%');
++        Canvas(this.context).width('100%').height(168).onReady(() => { this.ready = true; this.redraw(); })
++          .onAreaChange((_: Area, area: Area) => { this.canvasWidth = Number(area.width); this.redraw(); })
++          .onClick((event: ClickEvent) => this.selectPoint(event.x));
++        if (this.points.every((p: AnalyticsTrendPoint) => p.amount === 0)) Text(I18n.text(this.language, '本期暂无实付成交', 'No paid sales in this period')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
++      } else Text(I18n.text(this.language, '暂无趋势数据', 'No trend data')).fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).padding({ top: 30, bottom: 30 });
++    }.width('100%').padding(14).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16).alignItems(HorizontalAlign.Start);
++  }
++}
+--- a/native/harmony-merchant/scripts/audit-api-contracts.mjs
++++ b/native/harmony-merchant/scripts/audit-api-contracts.mjs
+@@ -15,7 +15,7 @@
+   ['entry/src/main/ets/features/shell/WorkbenchRepository.ets', [
+     ['get', '/m/dashboard'], ['get', '/m/feature-flags']
+   ]],
+-  ['entry/src/main/ets/features/stats/StatsRepository.ets', [['get', '/m/stats']]],
++  ['entry/src/main/ets/features/stats/StatsRepository.ets', [['get', '/m/stats'], ['get', '/m/stats/overview']]],
+   ['entry/src/main/ets/features/product/ProductRepository.ets', [
+     ['get', '/m/products'], ['post', '/m/products'], ['put', '/m/products/${id}'],
+     ['post', '/m/products/batch-online'], ['post', '/m/products/batch-offline'],
+--- a/native/harmony-merchant/scripts/audit-feature-surface.mjs
++++ b/native/harmony-merchant/scripts/audit-feature-surface.mjs
+@@ -55,7 +55,7 @@
+   ['entry/src/main/ets/core/realtime/HarmonyRealtime.ets', ['HARMONY_WS_URL', 'if (!this.stopped) this.connect()', 'this.socket !== socket', 'handleDisconnect(source?']],
+   ['entry/src/main/ets/features/product/ProductListPage.ets', ['processingBatch', 'requestEpoch', 'await this.reload()']],
+   ['entry/src/main/ets/features/order/OrderListPage.ets', ['requestEpoch', 'epoch !== this.requestEpoch']],
+-  ['entry/src/main/ets/features/stats/StatsPage.ets', ['loadEpoch', 'selectDate', "this.period = 'today'"]],
++  ['entry/src/main/ets/features/stats/StatsPage.ets', ['loadEpoch', 'selectRange', 'StatsPolicy.verify', 'StatsRepository.overview', 'onSession', '.bindSheet(']],
+   ['entry/src/main/ets/features/member/MembershipPage.ets', ['failedSections', 'this.purchasing || this.restoring']],
+   ['entry/src/main/ets/features/chat/ChatDetailPage.ets', ['criticalFailure', 'uploading', "payload.message.sender !== 'merchant'"]],
+ ]
+--- /dev/null
++++ b/native/harmony-merchant/scripts/test-stats.mjs
+@@ -0,0 +1,99 @@
++import fs from 'node:fs';
++import path from 'node:path';
++import vm from 'node:vm';
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import { createRequire } from 'node:module';
++import { fileURLToPath } from 'node:url';
++const ts = createRequire(import.meta.url)('typescript');
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const base = path.join(root, 'entry/src/main/ets/features/stats');
++const read = name => fs.readFileSync(path.join(base, `${name}.ets`), 'utf8');
++function compile(source, context = {}, dependencies = {}) {
++  const exports = {};
++  const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
++  vm.runInNewContext(js, { exports, require: n => dependencies[n] || {}, ...context }); return exports;
++}
++const models = compile(read('StatsModels'));
++const { StatsSelection: Selection } = models;
++const { StatsPolicy: Policy, StatsRequests: Requests } = compile(read('StatsPolicy'), {}, { './StatsModels': models });
++function controller(name, anchor, extra = {}) {
++  let source = read(name); const start = source.indexOf('@Component'); source = source.slice(start, source.indexOf(anchor, start)) + '\n}';
++  source = source.replace(/@Component\s+(?:export )?struct/, 'export class').replace(/@(?:Prop|StorageProp|StorageLink|Watch)\([^)]*\)\s*/g, '').replace(/@(?:Prop|Require|State)\s*/g, '');
++  return compile(source, { StatsPolicy: Policy, StatsRequests: Requests, StatsSelection: Selection, Scroller: class {}, ...extra })[name];
++}
++function fixture(selection = new Selection()) {
++  const range = Policy.resolve(selection);
++  return { version: 1, period: range.period, startDate: range.startDate, endDate: range.endDate, timeZone: 'Asia/Shanghai', asOf: new Date().toISOString(),
++    granularity: 'day', paidAmount: 12.34, paidOrderCount: 1, avgOrderValue: 12.34, refundAmount: 0, totalQuantity: 2,
++    trend: [{ bucketStart: new Date(`${range.startDate}T00:00:00+08:00`).toISOString(), amount: 12.34 }],
++    topProducts: [{ productId: 'p', name: 'Product', quantity: 2 }], categories: [{ categoryId: '', name: 'Uncategorized', quantity: 2 }] };
++}
++function page(repository) {
++  const session = { user: { id: 'owner' } };
++  class ApiError extends Error { constructor(code) { super('network'); this.code = code; } }
++  const Page = controller('StatsPage', '  @Builder private dateFilter', { SessionStore: { shared: () => session }, StatsRepository: repository, ApiError,
++    I18n: { text: (lang,zh,en) => lang === 'en-US' ? en : zh } });
++  const instance = new Page(); instance.owner = 'owner'; return { instance, session, ApiError };
++}
++
++test('natural ranges and date boundaries use Beijing time, including leap days', () => {
++  const now = Date.parse('2026-09-06T16:00:00Z');
++  assert.equal(Policy.resolve(new Selection('week'), now).startDate, '2026-09-07');
++  assert.equal(Policy.resolve(new Selection('month'), now).startDate, '2026-09-01');
++  assert.equal(Policy.rangeError('2024-01-01','2024-12-31','2026-09-09'),'');
++  assert.equal(Policy.rangeError('2024-01-01','2025-01-01','2026-09-09'),'limit');
++  assert.equal(Policy.validDate('2019-12-31'), true);
++  assert.equal(Policy.validDate('2026-02-30'), false); assert.equal(Policy.validDate('2024-02-29'), true);
++  assert.equal(Policy.rangeError('2026-09-10','2026-09-10','2026-09-09'),'range');
++  const cells = Policy.calendar('2026-09','2026-09-09'); assert.equal(cells.length,42); assert.equal(cells[0].date,'2026-08-31');
++});
++test('date calendar keeps a draft, supports single day, and never truncates an excessive range', () => {
++  const Panel = controller('StatsDatePanel', '  @Builder private calendar'); const p = new Panel(); let applied;
++  p.selection = new Selection('custom','2024-01-01','2024-01-31'); p.onApply = s => applied = s; p.aboutToAppear();
++  p.choose('2024-02-29'); assert.equal(p.start,p.end); assert.equal(p.selection.startDate,'2024-01-01');
++  p.apply(); assert.equal(applied.period,'custom'); assert.equal(applied.endDate,'2024-02-29');
++  p.pickingEnd = false; p.choose('2024-01-01'); p.choose('2025-01-01'); assert.equal(p.error,'limit'); assert.equal(p.end,'2024-01-01');
++  p.apply(); assert.equal(applied.endDate,'2024-02-29'); // Invalid attempted range must not silently confirm the previous single day.
++});
++test('missing required fields fail closed while actual empty arrays render safely', () => {
++  const f = fixture(); assert.equal(Policy.verify(f).paidAmount,12.34);
++  for (const value of [undefined,NaN,Infinity,'12.34']) assert.throws(() => Policy.verify({...f,paidAmount:value}));
++  assert.throws(() => Policy.verify({...f,trend:undefined}));
++  const zero = {...f,paidAmount:0,paidOrderCount:0,avgOrderValue:0,totalQuantity:0,trend:[],topProducts:[],categories:[]};
++  for (const key of ['trend','topProducts','categories']) assert.throws(() => Policy.verify({...zero,[key]:undefined}));
++  const empty = Policy.verify(zero);
++  assert.equal(empty.trend.length,0); assert.equal(empty.topProducts.length,0);
++  assert.equal(Policy.percent(1,4),'25.0%'); assert.equal(Policy.bucketLabel('2026-09-08T16:00:00Z','hour',true),'2026-09-09 00:00');
++});
++test('duplicate activations coalesce; stale date responses cannot replace the latest selection', async () => {
++  const jobs=[]; const h=page({overview:s=>new Promise(resolve=>jobs.push({s,resolve}))});
++  const first=h.instance.load(); await h.instance.load(); assert.equal(jobs.length,1);
++  h.instance.selectPeriod('month'); assert.equal(jobs.length,2); assert.equal(h.instance.data,null);
++  jobs[1].resolve(fixture(jobs[1].s)); await new Promise(r=>setTimeout(r,0));
++  jobs[0].resolve(fixture(jobs[0].s)); await first; assert.equal(h.instance.data.period,'month');
++});
++test('same-range failure retains data; new-range failure does not label stale figures as current', async () => {
++  let fail=false;const h=page({overview:async s=>{if(fail)throw Error('offline');return fixture(s);}});
++  await h.instance.load();const original=h.instance.data;fail=true;await h.instance.load();assert.equal(h.instance.data,original);
++  h.instance.selectPeriod('year');await new Promise(r=>setTimeout(r,0));assert.equal(h.instance.data,null);assert.equal(h.instance.errorKind,'network');
++});
++test('cancel keeps filters; confirmed custom range highlights independently; account change discards old results', async () => {
++  let resolve;const h=page({overview:()=>new Promise(r=>resolve=r)}); const old=Policy.key(h.instance.selection);
++  h.instance.openCalendar();h.instance.calendarSelection.startDate='2024-01-01';h.instance.closeSheet();assert.equal(Policy.key(h.instance.selection),old);
++  h.instance.selectRange(new Selection('custom','2024-01-01','2024-01-02'));assert.equal(h.instance.selection.period,'custom');
++  h.session.user.id='new-owner';resolve(fixture(new Selection('custom','2024-01-01','2024-01-02')));await new Promise(r=>setTimeout(r,0));assert.equal(h.instance.data,null);
++});
++test('missing endpoint reports unavailability and never falls back to legacy stats', async () => {
++  let calledLegacy=false; const repo={get:()=>{calledLegacy=true;}};const h=page(repo);repo.overview=async()=>{throw new h.ApiError(404);};
++  await h.instance.load();assert.equal(h.instance.errorKind,'unavailable');assert.equal(calledLegacy,false);
++});
++test('new shared and ArkTS response fields stay aligned; both route insets and live locale are preserved', () => {
++  const shared=fs.readFileSync(path.resolve(root,'../../packages/shared/src/types/stats.ts'),'utf8');
++  function keys(source){const file=ts.createSourceFile('contract.ts',source,ts.ScriptTarget.Latest,true);return file.statements.find(n=>ts.isInterfaceDeclaration(n)&&n.name.text==='MerchantAnalytics').members.map(n=>n.name.getText(file)).sort();}
++  assert.deepEqual(keys(shared),keys(read('StatsModels')));
++  assert.match(read('StatsPage'),/this.showBack \|\| this.windowWidth >= 720/);
++  assert.match(read('StatsPage'),/PrimaryNavigationMetrics.contentInset\(this.safeBottom\)/);
++  for(const name of ['StatsPage','StatsCards','StatsTrendChart','StatsDatePanel']) assert.match(read(name),/@StorageLink\('language'\)/);
++  assert.doesNotMatch(read('StatsCards'),/quantity\.toFixed|¥\$\{.*quantity/);
++});

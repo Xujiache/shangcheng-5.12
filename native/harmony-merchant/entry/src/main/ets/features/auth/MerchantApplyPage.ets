@@ -1,7 +1,9 @@
+import { SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
 import {
   IBestButton,
   IBestField,
-  IBestNavBar,
   IBestSteps,
   IBestStep,
   IBestToast
@@ -25,6 +27,13 @@ export function MerchantApplyBuilder(_: string) {
 
 @Component
 struct MerchantApplyPage {
+  private handleBack(): void {
+
+
+    this.leaveGuard.request(this.language, this.submitting || this.sendingCode, !this.applyId && Boolean(this.phone || this.merchantName || this.smsCode), () => AppRouter.back());
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
   @StorageLink('darkMode') private darkMode: boolean = false;
@@ -90,7 +99,7 @@ struct MerchantApplyPage {
         }
       }, 1000);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '验证码发送失败', 'Failed to send verification code'));
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '验证码发送失败', 'Failed to send verification code'));
     } finally {
       this.sendingCode = false;
     }
@@ -108,7 +117,7 @@ struct MerchantApplyPage {
       this.accountHasPassword = session.user.hasPassword === true;
       this.step = this.accountHasPassword ? 2 : 1;
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '手机号验证失败', 'Phone verification failed'));
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '手机号验证失败', 'Phone verification failed'));
     } finally {
       this.submitting = false;
     }
@@ -160,7 +169,7 @@ struct MerchantApplyPage {
       this.confirmPassword = '';
       this.step = 3;
     } catch (error) {
-      const message = error instanceof ApiError ? error.message
+      const message = error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '入驻申请提交失败', 'Failed to submit merchant application');
       if (error instanceof ApiError && error.code === 2001) {
         AuthRepository.discardApplicationSession();
@@ -190,7 +199,7 @@ struct MerchantApplyPage {
       IBestField({ value: $smsCode, label: I18n.text(this.language, '验证码', 'Verification code'), placeholder: I18n.text(this.language, '请输入短信验证码', 'Enter the SMS code'), type: 'number' });
       Row() {
         Blank();
-        IBestButton({
+        IBestButton({ btnHeight: 44,
           text: this.countdown > 0
             ? I18n.text(this.language, `${this.countdown}秒后重发`, `Resend in ${this.countdown}s`)
             : (this.sendingCode
@@ -204,7 +213,7 @@ struct MerchantApplyPage {
           onBtnClick: () => this.sendCode()
         });
       }
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '验证手机号', 'Verify phone'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
         btnWidth: '100%', loading: this.submitting, disabled: this.submitting, onBtnClick: () => this.verifyPhone()
       });
@@ -218,7 +227,7 @@ struct MerchantApplyPage {
         .fontSize(14).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
       IBestField({ value: $password, label: I18n.text(this.language, '新密码', 'New password'), placeholder: I18n.text(this.language, '请输入6至32位密码', 'Enter a 6–32 character password'), type: 'password' });
       IBestField({ value: $confirmPassword, label: I18n.text(this.language, '确认密码', 'Confirm password'), placeholder: I18n.text(this.language, '请再次输入密码', 'Enter the password again'), type: 'password' });
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '下一步', 'Next'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
         btnWidth: '100%', onBtnClick: () => this.continuePassword()
       });
@@ -229,13 +238,13 @@ struct MerchantApplyPage {
   private profileStep() {
     Column({ space: 12 }) {
       Row({ space: 10 }) {
-        IBestButton({
+        IBestButton({ btnHeight: 44,
           text: I18n.text(this.language, '厂家', 'Factory'), buttonSize: 'small',
           type: this.merchantType === 'factory' ? 'primary' : 'default',
           color: this.merchantType === 'factory' ? DesignTokens.brand(this.darkMode) : '',
           onBtnClick: () => this.merchantType = 'factory'
         });
-        IBestButton({
+        IBestButton({ btnHeight: 44,
           text: I18n.text(this.language, '门店', 'Store'), buttonSize: 'small',
           type: this.merchantType === 'store' ? 'primary' : 'default',
           color: this.merchantType === 'store' ? DesignTokens.brand(this.darkMode) : '',
@@ -260,7 +269,7 @@ struct MerchantApplyPage {
           }, (item: string) => item);
         }.width('100%');
       }.width('100%').alignItems(HorizontalAlign.Start);
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '提交入驻申请', 'Submit application'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
         btnWidth: '100%', loading: this.submitting, disabled: this.submitting, onBtnClick: () => this.submitApplication()
       });
@@ -277,7 +286,7 @@ struct MerchantApplyPage {
       if (this.applyId) {
         Text(I18n.text(this.language, `申请编号：${this.applyId}`, `Application ID: ${this.applyId}`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
       }
-      IBestButton({
+      IBestButton({ btnHeight: 44,
         text: I18n.text(this.language, '返回登录', 'Back to sign in'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
         onBtnClick: () => AppRouter.back()
       });
@@ -289,11 +298,11 @@ struct MerchantApplyPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '商家入驻', 'Merchant application'),
           isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode),
-          onLeftClick: () => AppRouter.back()
+          onLeftClick: () => this.handleBack()
         });
         Scroll() {
           Column({ space: 22 }) {
@@ -310,9 +319,9 @@ struct MerchantApplyPage {
               else this.successStep();
             }
             .width('100%')
-            .padding(18)
+            .padding(16)
             .backgroundColor(DesignTokens.card(this.darkMode))
-            .borderRadius(DesignTokens.RADIUS_LARGE);
+            .borderRadius(16);
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 18, bottom: this.safeBottom + 24 });
@@ -325,6 +334,6 @@ struct MerchantApplyPage {
       .height('100%')
       .backgroundColor(DesignTokens.page(this.darkMode));
     }
-    .hideTitleBar(true);
+    .hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }

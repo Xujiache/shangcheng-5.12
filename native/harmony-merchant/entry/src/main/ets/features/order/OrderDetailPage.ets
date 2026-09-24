@@ -1,8 +1,9 @@
+import { SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
 import { KeyboardAvoidMode } from '@kit.ArkUI';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { systemShare } from '@kit.ShareKit';
-import { IBestActionSheet, IBestDialogUtil, IBestField, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestActionSheet, IBestDialogUtil, IBestField, IBestToast } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { PhoneService } from '../../core/device/PhoneService';
 import { IdRouteParams } from '../../core/navigation/RouteParams';
@@ -457,7 +458,7 @@ struct OrderDetailPage {
           if (this.actionMode === 'ship') this.shippingForm();
           else if (this.actionMode === 'parse') this.parseForm();
           else this.sharingForm();
-        }.width('100%').padding(18).enabled(!this.submitting);
+        }.width('100%').padding(16).enabled(!this.submitting);
       }.layoutWeight(1).width('100%').align(Alignment.Top).scrollBar(BarState.Off);
       if (this.actionError) Text(this.errorText()).fontSize(12).fontColor(DesignTokens.danger(this.darkMode)).width('100%').padding({ left: 18, right: 18, top: 8 });
       Row({ space: 12 }) {
@@ -484,7 +485,7 @@ struct OrderDetailPage {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({ title: I18n.text(this.language, '订单详情', 'Order details'), isShowStatusBar: true,
+          SecondaryHeader({ title: I18n.text(this.language, '订单详情', 'Order details'), isShowStatusBar: true,
             navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => this.leave() });
           if (this.loading && !this.order) {
             Scroll() { this.skeleton(); }.layoutWeight(1).width('100%').align(Alignment.Top);
@@ -509,7 +510,7 @@ struct OrderDetailPage {
             }.layoutWeight(1).align(Alignment.Top).scrollBar(BarState.Off);
             this.actionBar();
           } else {
-            Column({ space: 18 }) {
+            Column({ space: 12 }) {
               MerchantIcon({ name: 'orders-o', iconSize: 54, color: DesignTokens.muted(this.darkMode) });
               Text(I18n.text(this.language, '暂时无法加载订单', 'Unable to load this order')).fontSize(16).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
               Text(I18n.text(this.language, '请检查网络后重试，订单信息不会丢失。', 'Check your connection and try again. Your order is unchanged.')).fontSize(13).textAlign(TextAlign.Center).fontColor(DesignTokens.muted(this.darkMode));

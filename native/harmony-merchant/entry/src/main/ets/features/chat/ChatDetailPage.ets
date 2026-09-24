@@ -1,6 +1,8 @@
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { util } from '@kit.ArkTS';
 import { common } from '@kit.AbilityKit';
-import { IBestButton, IBestImagePreview, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestButton, IBestImagePreview, IBestToast } from '@ibestservices/ibest-ui';
 import { FileUploadService } from '../../core/file/FileUploadService';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { IdRouteParams } from '../../core/navigation/RouteParams';
@@ -28,6 +30,9 @@ export function ChatDetailBuilder(_: string, raw: Object) {
 
 @Component
 struct ChatDetailPage {
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   params: IdRouteParams = new IdRouteParams();
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -49,7 +54,7 @@ struct ChatDetailPage {
   private unsubscribe?: () => void;
   private typingTimer: number = -1;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     AppStorage.setOrCreate<string>('activeChatSessionId', this.params.id);
     this.unsubscribe = HarmonyRealtime.shared().subscribe(
       (event: RealtimeEnvelope): void => this.onRealtime(event)
@@ -58,7 +63,7 @@ struct ChatDetailPage {
     this.load();
   }
 
-  aboutToDisappear(): void {
+  aboutToDisappear(): void { this.pageScope.dispose();
     if ((AppStorage.get<string>('activeChatSessionId') || '') === this.params.id) {
       AppStorage.setOrCreate<string>('activeChatSessionId', '');
     }
@@ -91,30 +96,41 @@ struct ChatDetailPage {
   }
 
   private async load(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     this.errorMessage = '';
     let criticalFailure: string = '';
     try {
-      this.session = await BusinessRepository.chatSession(this.params.id);
+      this.session = await this.pageScope.read(BusinessRepository.chatSession(this.params.id), pageTicket);
     } catch (error) {
-      criticalFailure = error instanceof ApiError ? error.message : 'i18n:conversation-detail-load';
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      criticalFailure = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : 'i18n:conversation-detail-load';
     }
     try {
-      this.messages = await BusinessRepository.chatMessages(this.params.id);
+      this.messages = await this.pageScope.read(BusinessRepository.chatMessages(this.params.id), pageTicket);
       this.hasEarlier = this.messages.length >= 30;
     } catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       if (!criticalFailure) {
-        criticalFailure = error instanceof ApiError ? error.message : 'i18n:message-history-load';
+        criticalFailure = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : 'i18n:message-history-load';
       }
     }
     try {
-      this.replies = await BusinessRepository.quickReplies();
+      this.replies = await this.pageScope.read(BusinessRepository.quickReplies(), pageTicket);
     } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);
       this.replies = [];
     }
     if (!criticalFailure) {
       try {
-        await BusinessRepository.markRead(this.params.id);
-      } catch (_) {}
+        await this.pageScope.read(BusinessRepository.markRead(this.params.id), pageTicket);
+      } catch (_) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(_);}
       HarmonyRealtime.shared().markChatRead(this.params.id);
       this.scrollBottom(120);
     } else {
@@ -138,6 +154,7 @@ struct ChatDetailPage {
   }
 
   private async send(type: string, content: string, retryId: string = ''): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     const normalized = content.trim();
     if (!normalized || this.sending) return;
     if (this.session?.status === 'closed') {
@@ -161,16 +178,20 @@ struct ChatDetailPage {
     }
     this.scrollBottom();
     const body: SendMessageRequest = { type, content: normalized };
+    const mutationTicket = this.pageScope.begin('send');
     try {
-      const serverMessage = await BusinessRepository.sendMessage(this.params.id, body);
+      const serverMessage = await this.pageScope.read(BusinessRepository.sendMessage(this.params.id, body), mutationTicket);
       this.messages = ChatMessagePolicy.confirmHttp(this.messages, optimistic.id, serverMessage);
       this.scrollBottom();
     } catch (error) {
+      if (!this.pageScope.accepts(mutationTicket)) return;
       this.messages = ChatMessagePolicy.markFailed(this.messages, optimistic.id);
-      IBestToast.show(error instanceof ApiError ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '发送失败，点击红色提示重试', 'Send failed. Tap the red status to retry.'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.sending = false;
+    }
     }
   }
 
@@ -181,7 +202,7 @@ struct ChatDetailPage {
       const urls = await FileUploadService.chooseAndUploadImages(1, 'chat');
       if (urls.length > 0) await this.send('image', urls[0]);
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '图片发送失败', 'Failed to send image'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '图片发送失败', 'Failed to send image'));
     } finally {
       this.uploading = false;
     }
@@ -195,7 +216,7 @@ struct ChatDetailPage {
       const url = await FileUploadService.captureAndUploadImage(context, 'chat');
       if (url) await this.send('image', url);
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '拍照发送失败', 'Failed to capture and send photo'));
     } finally {
       this.uploading = false;
@@ -203,12 +224,15 @@ struct ChatDetailPage {
   }
 
   private async loadEarlier(): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.messages.length === 0 || this.loadingEarlier || !this.hasEarlier) return;
+    const pageTicket = this.pageScope.begin('loadEarlier');
+    this.pageError = '';
     const firstServer = this.messages.find((item: ChatMessage): boolean => !item.id.startsWith('local-'));
     if (!firstServer) return;
     this.loadingEarlier = true;
     try {
-      const older = await BusinessRepository.chatMessages(this.params.id, firstServer.id);
+      const older = await this.pageScope.read(BusinessRepository.chatMessages(this.params.id, firstServer.id), pageTicket);
       if (older.length > 0) {
         this.messages = ChatMessagePolicy.prependEarlier(this.messages, older);
         if (older.length < 30) this.hasEarlier = false;
@@ -217,10 +241,14 @@ struct ChatDetailPage {
         IBestToast.show(I18n.text(this.language, '没有更早消息了', 'No earlier messages'));
       }
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '历史消息加载失败', 'Failed to load message history'));
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.loadingEarlier = false;
+    }
     }
   }
 
@@ -246,10 +274,11 @@ struct ChatDetailPage {
   @Builder
   private messageContent(item: ChatMessage) {
     if (item.type === 'image') {
-      Image(item.content).width(150).height(150).objectFit(ImageFit.Cover).borderRadius(10)
+      Image(item.content).width(150).aspectRatio(1).constraintSize({ maxWidth: '100%' })
+        .objectFit(ImageFit.Cover).borderRadius(10)
         .onClick(() => this.previewImage(item.content));
     } else {
-      Text(item.content).fontSize(15)
+      Text(item.content).fontSize(15).constraintSize({ maxWidth: '100%' }).wordBreak(WordBreak.BREAK_WORD)
         .fontColor(item.sender === 'merchant' ? DesignTokens.onBrand(this.darkMode) : DesignTokens.text(this.darkMode)).lineHeight(22);
     }
   }
@@ -257,20 +286,24 @@ struct ChatDetailPage {
   @Builder
   private bubble(item: ChatMessage) {
     if (item.sender === 'system') {
-      Text(item.content).fontSize(11).fontColor(DesignTokens.muted(this.darkMode))
+      Text(item.content).fontSize(12).fontColor(DesignTokens.muted(this.darkMode))
+        .constraintSize({ maxWidth: '100%' }).wordBreak(WordBreak.BREAK_WORD)
         .padding({ left: 10, right: 10, top: 5, bottom: 5 })
         .backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(10).margin({ top: 6, bottom: 6 });
     } else {
       Row({ space: 8 }) {
         if (item.sender !== 'merchant') {
           if (this.session?.userAvatar) {
-            Image(this.session.userAvatar).width(38).height(38).borderRadius(8).objectFit(ImageFit.Cover);
+            Image(this.session.userAvatar).width(38).height(38).flexShrink(0).borderRadius(8).objectFit(ImageFit.Cover);
           } else {
-            Column().width(38).height(38).backgroundColor('#777777').borderRadius(8);
+            Column().width(38).height(38).flexShrink(0).backgroundColor('#777777').borderRadius(8);
           }
         }
         Column({ space: 3 }) {
           Column() { this.messageContent(item); }
+            // The weighted body owns only the space left after both avatar lanes.
+            // A zero basis prevents intrinsic text/image width from pushing the avatar off-screen.
+            .constraintSize({ maxWidth: '100%' })
             .padding(item.type === 'image' ? 0 : 11)
             .backgroundColor(item.type === 'image' ? Color.Transparent :
               item.sender === 'merchant' ? DesignTokens.brand(this.darkMode) : Color.White)
@@ -281,17 +314,21 @@ struct ChatDetailPage {
               : item.sendState === 'failed'
                 ? I18n.text(this.language, '发送失败，点击重试', 'Send failed. Tap to retry.')
                 : item.read ? I18n.text(this.language, '已读', 'Read') : I18n.text(this.language, '未读', 'Unread'))
-              .fontSize(10).fontColor(item.sendState === 'failed' ? DesignTokens.danger(this.darkMode) : DesignTokens.muted(this.darkMode))
-              .textAlign(TextAlign.End).width('100%')
+              .fontSize(12).fontColor(item.sendState === 'failed' ? DesignTokens.danger(this.darkMode) : DesignTokens.muted(this.darkMode))
+              .textAlign(TextAlign.End).constraintSize({ maxWidth: '100%' }).wordBreak(WordBreak.BREAK_WORD)
               .onClick(() => { if (item.sendState === 'failed') this.send(item.type, item.content, item.id); });
           }
-        }.alignItems(item.sender === 'merchant' ? HorizontalAlign.End : HorizontalAlign.Start);
+        // Allocate the avatar and gap first. Neither a long bubble nor a receipt may claim the whole row.
+        // Keep a deterministic message lane on phones and split-screen tablets.
+        // Percentage width leaves room for the fixed avatar on either side.
+        }.width('75%').flexShrink(1)
+          .alignItems(item.sender === 'merchant' ? HorizontalAlign.End : HorizontalAlign.Start);
         if (item.sender === 'merchant') {
           Column() { Text(I18n.text(this.language, '商', 'M')).fontSize(13).fontColor(DesignTokens.onBrand(this.darkMode)); }
-            .width(38).height(38).backgroundColor(DesignTokens.brand(this.darkMode)).borderRadius(8)
+            .width(38).height(38).flexShrink(0).backgroundColor(DesignTokens.brand(this.darkMode)).borderRadius(8)
             .justifyContent(FlexAlign.Center);
         }
-      }.width('100%').justifyContent(item.sender === 'merchant' ? FlexAlign.End : FlexAlign.Start)
+      }.width('100%').justifyContent(FlexAlign.Start)
         .alignItems(VerticalAlign.Top).margin({ top: 5, bottom: 5 });
     }
   }
@@ -299,20 +336,21 @@ struct ChatDetailPage {
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: this.session?.userName || I18n.text(this.language, '在线客服', 'Customer service'), isShowRight: true,
           rightLabel: this.userTyping
             ? I18n.text(this.language, '正在输入…', 'Typing…')
             : this.session?.online ? I18n.text(this.language, '在线', 'Online') : I18n.text(this.language, '离线', 'Offline'),
           isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
         if (this.loading) {
           Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }
             .layoutWeight(1).justifyContent(FlexAlign.Center);
         } else if (this.errorMessage) {
           Column({ space: 12 }) {
             Text(I18n.state(this.language, this.errorMessage)).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
-            IBestButton({ text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => {
+            IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => {
               this.loading = true;
               this.load();
             } });
@@ -349,14 +387,14 @@ struct ChatDetailPage {
                   .width(54).height(54).justifyContent(FlexAlign.Center).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(12);
                 Text(this.uploading
                   ? I18n.text(this.language, '上传中…', 'Uploading…')
-                  : I18n.text(this.language, '图片', 'Image')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                  : I18n.text(this.language, '图片', 'Image')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
               }.width(84).opacity(this.uploading || this.sending ? 0.5 : 1).onClick(() => this.sendImage());
               Column({ space: 7 }) {
                 Column() { MerchantIcon({ name: 'photograph', color: DesignTokens.brand(this.darkMode), iconSize: 24 }); }
                   .width(54).height(54).justifyContent(FlexAlign.Center).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(12);
                 Text(this.uploading
                   ? I18n.text(this.language, '上传中…', 'Uploading…')
-                  : I18n.text(this.language, '拍照', 'Camera')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+                  : I18n.text(this.language, '拍照', 'Camera')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
               }.width(84).opacity(this.uploading || this.sending ? 0.5 : 1).onClick(() => this.takePhoto());
             }.width('100%').height(150).padding(16).backgroundColor(DesignTokens.subtle(this.darkMode));
           }
@@ -374,7 +412,7 @@ struct ChatDetailPage {
                 .padding({ left: 12, right: 12, top: 8, bottom: 8 }).backgroundColor(DesignTokens.card(this.darkMode))
                 .borderRadius(12).maxLength(1000).onChange((value: string) => this.onTextChanged(value));
               if (this.text.trim()) {
-                IBestButton({
+                IBestButton({ btnHeight: 44,
                   text: I18n.text(this.language, '发送', 'Send'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), loading: this.sending,
                   disabled: this.sending || this.uploading,
                   onBtnClick: () => this.send(this.draftType, this.text)

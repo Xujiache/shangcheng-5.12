@@ -1,6 +1,8 @@
+import { PageReadScope, PageSearch, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
 import {
-  IBestButton, IBestDialogUtil, IBestEmpty, IBestNavBar, IBestSearch, IBestTag, IBestToast
+  IBestButton, IBestDialogUtil, IBestEmpty, IBestSearch, IBestTag, IBestToast
 } from '@ibestservices/ibest-ui';
 import { PhoneService } from '../../core/device/PhoneService';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -22,6 +24,15 @@ export function StoresBuilder(_: string, raw: Object) {
 
 @Component
 struct StorePage {
+  private pageSearch: PageSearch = new PageSearch();
+  private submitSearch(): void { this.pageSearch.cancel(); this.reload(false); }
+  private visibleFilter: string = '';
+
+  aboutToDisappear(): void { this.pageSearch.cancel(); this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   params: FilterRouteParams = new FilterRouteParams();
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -39,7 +50,7 @@ struct StorePage {
     { value: '' }, { value: 'active' }, { value: 'pending' }, { value: 'cancelled' }
   ];
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     if (this.filters.some((item: StoreFilter): boolean => item.value === this.params.status)) {
       this.status = this.params.status;
     }
@@ -56,31 +67,39 @@ struct StorePage {
   }
 
   private async reload(fromRefresh: boolean): Promise<void> {
-    this.page = 1;
     if (fromRefresh) this.refreshing = true;
-    this.stores = [];
     await this.load(false);
     this.refreshing = false;
   }
 
   private async load(append: boolean): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (append && this.loading) return;
+    if (!append && this.loading && this.visibleFilter === this.keyword.trim()) return;
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
+    const filterKey = this.keyword.trim();
+    if (filterKey !== this.visibleFilter) { this.stores = []; this.total = 0; this.page = 1; this.visibleFilter = filterKey; }
     const epoch = ++this.requestEpoch;
     const requestedKeyword = this.keyword.trim();
-    const requestedPage = this.page;
+    const requestedPage = append ? this.page : 1;
     this.loading = true;
     try {
-      const result = await BusinessRepository.stores(requestedKeyword, requestedPage, 100);
+      const result = await this.pageScope.read(BusinessRepository.stores(requestedKeyword, requestedPage, 100), pageTicket);
       if (epoch !== this.requestEpoch) return;
       this.stores = append ? this.stores.concat(result.list) : result.list;
-      this.total = result.total;
+      this.total = result.total; this.page = requestedPage;
     } catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       if (epoch === this.requestEpoch) {
         if (append && this.page === requestedPage) this.page = Math.max(1, requestedPage - 1);
-        IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '门店加载失败', 'Failed to load stores'));
+        IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '门店加载失败', 'Failed to load stores'));
       }
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       if (epoch === this.requestEpoch) this.loading = false;
+    }
     }
   }
 
@@ -97,16 +116,21 @@ struct StorePage {
   }
 
   private async deleteStore(id: string): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (this.processingId) return;
     this.processingId = id;
+    const mutationTicket = this.pageScope.begin('deleteStore');
     try {
-      await BusinessRepository.deleteStore(id);
+      await this.pageScope.read(BusinessRepository.deleteStore(id), mutationTicket);
       IBestToast.show(I18n.text(this.language, '门店申请已驳回', 'Store request rejected'));
-      await this.reload(false);
+      await this.pageScope.read(this.reload(false), mutationTicket);
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '删除失败', 'Failed to delete'));
+      if (!this.pageScope.accepts(mutationTicket)) return;
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '删除失败', 'Failed to delete'));
     } finally {
+      if (this.pageScope.accepts(mutationTicket)) {
       this.processingId = '';
+    }
     }
   }
 
@@ -118,47 +142,21 @@ struct StorePage {
   }
 
   private approve(item: StoreItem): void {
-    IBestDialogUtil.open({
-      title: I18n.text(this.language, '通过门店申请', 'Approve store request'),
-      message: I18n.text(this.language, `通过“${item.name}”入驻申请，并颁发 ${item.level || 'A'} 级一年授权？`, `Approve “${item.name}” with one-year level ${item.level || 'A'} authorisation?`),
-      showCancelButton: true,
-      cancelButtonText: I18n.text(this.language, '取消', 'Cancel'),
-      confirmButtonText: I18n.text(this.language, '确认', 'Confirm'),
-      confirmButtonColor: DesignTokens.brand(this.darkMode),
-      onConfirm: () => { this.approveStore(item); }
-    });
+    this.approveStore(item);
   }
+
 
   private async approveStore(item: StoreItem): Promise<void> {
     if (this.processingId) return;
-    this.processingId = item.id;
-    const start = new Date();
-    const end = new Date(start.getTime());
-    end.setFullYear(end.getFullYear() + 1);
-    const body: StoreAuthConfig = {
-      storeId: item.id,
-      level: item.level || 'A',
-      visiblePriceTiers: ['retail', 'wholesale'],
-      productPolicies: [],
-      authValidFrom: this.formatDate(start),
-      authValidTo: this.formatDate(end)
-    };
-    try {
-      await BusinessRepository.saveStoreAuth(item.id, body);
-      IBestToast.show(I18n.text(this.language, '门店申请已通过', 'Store request approved'));
-      await this.reload(false);
-    } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message : I18n.text(this.language, '审核失败', 'Review failed'));
-    } finally {
-      this.processingId = '';
-    }
+    // Review level, dates and scope before explicitly saving the authorisation.
+    AppRouter.push('StoreAuth', new IdRouteParams(item.id));
   }
 
   private async call(item: StoreItem): Promise<void> {
     try {
       await PhoneService.dial(this.getUIContext().getHostContext() as common.UIAbilityContext, item.phone);
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message : I18n.text(this.language, '无法打开拨号界面', 'Unable to open the dialer'));
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language) : I18n.text(this.language, '无法打开拨号界面', 'Unable to open the dialer'));
     }
   }
 
@@ -186,59 +184,60 @@ struct StorePage {
       Row({ space: 8 }) {
         Text(I18n.text(this.language, `等级 ${item.level || 'C'}`, `Level ${item.level || 'C'}`)).fontSize(12).fontColor(DesignTokens.brand(this.darkMode));
         if (item.authValidTo) {
-          Text(I18n.text(this.language, `有效至 ${item.authValidTo.slice(0, 10)}`, `Valid until ${item.authValidTo.slice(0, 10)}`)).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          Text(I18n.text(this.language, `有效至 ${item.authValidTo.slice(0, 10)}`, `Valid until ${item.authValidTo.slice(0, 10)}`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }
         Blank();
         if (item.status === 'pending') {
-          IBestButton({
+          IBestButton({ btnHeight: 44,
             text: I18n.text(this.language, '驳回', 'Reject'), plain: true, type: 'danger', loading: this.processingId === item.id,
             onBtnClick: () => this.remove(item)
           });
-          IBestButton({
+          IBestButton({ btnHeight: 44,
             text: I18n.text(this.language, '通过', 'Approve'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), loading: this.processingId === item.id,
             onBtnClick: () => this.approve(item)
           });
         } else if (item.status === 'active') {
-          IBestButton({ text: I18n.text(this.language, '联系', 'Contact'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.call(item) });
-          IBestButton({
+          IBestButton({ btnHeight: 44, text: I18n.text(this.language, '联系', 'Contact'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => this.call(item) });
+          IBestButton({ btnHeight: 44,
             text: I18n.text(this.language, '授权', 'Authorise'), plain: true, color: DesignTokens.brand(this.darkMode),
             onBtnClick: () => AppRouter.push('StoreAuth', new IdRouteParams(item.id))
           });
         }
       }.width('100%');
     }.width('100%').alignItems(HorizontalAlign.Start).padding(14)
-      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE);
+      .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16);
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: I18n.text(this.language, '门店管理', 'Store management'), isShowStatusBar: true,
           navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load(false) });
         Row() {
           Column({ space: 3 }) {
             Text(`${this.count('')}`).fontSize(23).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
-            Text(I18n.text(this.language, '合作门店', 'Partner stores')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+            Text(I18n.text(this.language, '合作门店', 'Partner stores')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
           }.layoutWeight(1);
           Divider().vertical(true).height(36).color(DesignTokens.border(this.darkMode));
           Column({ space: 3 }) {
             Text(`${this.count('active')}`).fontSize(23).fontWeight(FontWeight.Bold).fontColor(DesignTokens.brand(this.darkMode));
-            Text(I18n.text(this.language, '已授权', 'Authorised')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+            Text(I18n.text(this.language, '已授权', 'Authorised')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
           }.layoutWeight(1);
           Divider().vertical(true).height(36).color(DesignTokens.border(this.darkMode));
           Column({ space: 3 }) {
             Text(`${this.count('pending')}`).fontSize(23).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
-            Text(I18n.text(this.language, '待审核', 'Pending')).fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+            Text(I18n.text(this.language, '待审核', 'Pending')).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
           }.layoutWeight(1);
-        }.width('94%').padding(18).margin({ top: 8, bottom: 10 }).backgroundColor(DesignTokens.card(this.darkMode))
+        }.width('94%').padding(16).margin({ top: 8, bottom: 10 }).backgroundColor(DesignTokens.card(this.darkMode))
           .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
         IBestSearch({
           value: $keyword, placeholder: I18n.text(this.language, '搜索门店或联系人', 'Search store or contact'), isRound: true,
           outBgColor: DesignTokens.page(this.darkMode), innerBgColor: DesignTokens.card(this.darkMode),
           showRightButton: true, rightButtonText: I18n.text(this.language, '搜索', 'Search'),
-          onSearch: () => this.reload(false), onRightButtonClick: () => this.reload(false)
+          onInput: () => this.pageSearch.schedule(() => this.reload(false)), onSearch: () => this.submitSearch(), onRightButtonClick: () => this.submitSearch()
         });
         Row({ space: 8 }) {
           ForEach(this.filters, (filter: StoreFilter) => {

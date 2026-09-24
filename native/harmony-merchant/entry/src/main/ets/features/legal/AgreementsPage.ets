@@ -1,3 +1,5 @@
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { IBestButton, IBestNavBar } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
 import { ApiError } from '../../core/network/ApiClient';
@@ -14,6 +16,11 @@ export function AgreementsBuilder(_: string, raw: Object) {
 
 @Component
 struct AgreementsPage {
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   params: AgreementRouteParams = new AgreementRouteParams('user');
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageLink('language') @Watch('onLanguageChanged') private language: string = 'zh-CN';
@@ -25,7 +32,7 @@ struct AgreementsPage {
   @State private loading: boolean = true;
   private requestEpoch: number = 0;
 
-  aboutToAppear(): void {
+  aboutToAppear(): void { this.pageScope.open();
     this.load();
   }
 
@@ -34,11 +41,13 @@ struct AgreementsPage {
   }
 
   private async load(): Promise<void> {
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     const epoch = ++this.requestEpoch;
     this.loading = true;
     this.errorMessage = '';
     try {
-      const data: LegalAgreementSet = await LegalRepository.agreements();
+      const data: LegalAgreementSet = await this.pageScope.read(LegalRepository.agreements(), pageTicket);
       if (epoch !== this.requestEpoch) return;
       const section = this.params.kind === 'privacy' ? data.privacy :
         this.params.kind === 'collect' ? data.collect : data.user;
@@ -46,21 +55,26 @@ struct AgreementsPage {
       this.updatedAt = section.updatedAt;
       this.body = section.body;
     } catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       if (epoch === this.requestEpoch) {
-        this.errorMessage = error instanceof ApiError ? error.message : 'i18n:agreement-load';
+        this.errorMessage = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : 'i18n:agreement-load';
       }
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       if (epoch === this.requestEpoch) this.loading = false;
+    }
     }
   }
 
   build() {
     NavDestination() {
       Column() {
-        IBestNavBar({
+        SecondaryHeader({
           title: this.title || I18n.text(this.language, '法律协议', 'Legal agreements'),
           isShowStatusBar: true, navBarBgColor: DesignTokens.surface(this.darkMode), onLeftClick: () => AppRouter.back()
         });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
         if (this.loading) {
           Column({ space: 10 }) {
             Column({ space: 10 }) {
@@ -68,14 +82,14 @@ struct AgreementsPage {
               Column().width('100%').height(12).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(6);
               Column().width('92%').height(12).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(6);
               Column().width('96%').height(12).backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(6);
-            }.width('86%').padding(20).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
+            }.width('86%').padding(16).backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(20);
             Text(I18n.text(this.language, '正在加载协议', 'Loading agreement')).fontSize(13).fontColor(DesignTokens.muted(this.darkMode));
           }.layoutWeight(1).justifyContent(FlexAlign.Center);
         } else if (this.errorMessage) {
           Column({ space: 12 }) {
             MerchantIcon({ name: 'replay', color: DesignTokens.brand(this.darkMode), iconSize: 30 });
             Text(I18n.state(this.language, this.errorMessage)).fontSize(14).fontColor(DesignTokens.muted(this.darkMode));
-            IBestButton({ text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.load() });
+            IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重新加载', 'Reload'), type: 'primary', color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode), onBtnClick: () => this.load() });
           }.layoutWeight(1).justifyContent(FlexAlign.Center);
         } else {
           Scroll() {
@@ -90,7 +104,7 @@ struct AgreementsPage {
                     .wordBreak(WordBreak.BREAK_ALL);
                   if (this.updatedAt) {
                     Text(I18n.text(this.language, `更新日期：${this.updatedAt}`, `Updated: ${this.updatedAt}`))
-                      .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+                      .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
                   }
                 }.layoutWeight(1).alignItems(HorizontalAlign.Start);
               }.width('100%');
@@ -103,8 +117,8 @@ struct AgreementsPage {
             }
             .width('calc(100% - 28vp)')
             .constraintSize({ maxWidth: 760 })
-            .padding({ left: 20, right: 20, top: 18, bottom: this.safeBottom + 24 })
-            .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(DesignTokens.RADIUS_LARGE)
+            .padding({ left: 16, right: 16, top: 18, bottom: this.safeBottom + 24 })
+            .backgroundColor(DesignTokens.card(this.darkMode)).borderRadius(16)
             .margin({ left: 14, right: 14, top: 14, bottom: this.safeBottom + 18 });
           }
           .layoutWeight(1)

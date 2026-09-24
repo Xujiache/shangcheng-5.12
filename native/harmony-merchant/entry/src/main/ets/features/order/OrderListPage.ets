@@ -1,3 +1,4 @@
+import { PageReadScope, PageSearch, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
 import { PrimaryNavigationMetrics } from '../shell/PrimaryNavigationMetrics';
 import { IBestButton, IBestEmpty, IBestSearch } from '@ibestservices/ibest-ui';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -14,6 +15,12 @@ interface OrderFilter { value: string; label: string; }
 
 @Component
 export struct OrderListPage {
+  private pageScope: PageReadScope = new PageReadScope();
+  private pageSearch: PageSearch = new PageSearch();
+  private visibleFilter: string = '';
+  @StorageProp('sessionEpoch') @Watch('onSessionChanged') private sessionEpoch: number = 0;
+  private onSessionChanged(): void { this.pageScope.dispose(); this.requestEpoch++; this.orders = []; this.total = 0; this.loading = false; this.pageSearch.cancel(); }
+  aboutToDisappear(): void { this.pageScope.dispose(); this.requestEpoch++; this.pageSearch.cancel(); }
   @Prop @Watch('onInitialStatus') initialStatus: string = '';
   @Prop @Watch('onActivation') activationEpoch: number = 0;
   showBack: boolean = false;
@@ -38,7 +45,7 @@ export struct OrderListPage {
     { value: 'cancelled', label: 'cancelled' }
   ];
 
-  aboutToAppear(): void { this.status = this.initialStatus; this.reload(); }
+  aboutToAppear(): void { this.pageScope.open(); this.status = this.initialStatus; this.reload(); }
 
   private onInitialStatus(): void {
     if (this.status === this.initialStatus) return;
@@ -49,26 +56,32 @@ export struct OrderListPage {
   private onActivation(): void { this.reload(); }
 
   private async reload(): Promise<void> {
-    this.page = 1; await this.load(false);
+    this.pageSearch.cancel(); await this.load(false);
   }
 
   private async load(append: boolean): Promise<void> {
+    if (!this.pageScope.isCurrent()) return;
     if (append && this.loading) return;
+    const condition = `${this.status}:${this.keyword.trim()}`;
+    if (this.loading && condition === this.visibleFilter) return;
+    if (condition !== this.visibleFilter) { this.orders = []; this.total = 0; this.page = 1; }
+    this.visibleFilter = condition;
+    const ticket = this.pageScope.begin('list');
     const epoch = ++this.requestEpoch;
     const requestedStatus = this.status;
     const requestedKeyword = this.keyword.trim();
-    const requestedPage = this.page;
+    const requestedPage = append ? this.page : 1;
     this.loading = true;
     this.errorMessage = '';
     try {
-      const result = await OrderRepository.list(requestedStatus, requestedKeyword, requestedPage);
+      const result = await this.pageScope.read(OrderRepository.list(requestedStatus, requestedKeyword, requestedPage), ticket);
       if (epoch !== this.requestEpoch) return;
       this.orders = append ? this.orders.concat(result.list) : result.list;
-      this.total = result.total;
+      this.total = result.total; this.page = requestedPage;
     } catch (error) {
       if (epoch === this.requestEpoch) {
         if (append && this.page === requestedPage) this.page = Math.max(1, requestedPage - 1);
-        this.errorMessage = error instanceof ApiError ? error.message : 'i18n:orders-load';
+        this.errorMessage = error instanceof ApiError ? SecondaryPolicy.message(error, this.language) : 'i18n:orders-load';
       }
     } finally {
       if (epoch === this.requestEpoch) {
@@ -142,19 +155,19 @@ export struct OrderListPage {
       Row() {
         if (this.showBack) {
           Column() { MerchantIcon({ name: 'arrow-left', color: DesignTokens.text(this.darkMode), iconSize: 25 }); }
-            .width(34).height(38).justifyContent(FlexAlign.Center).onClick(() => AppRouter.back());
+            .width(44).height(44).justifyContent(FlexAlign.Center).onClick(() => AppRouter.back());
         }
         Column({ space: 2 }) {
-          Text(I18n.text(this.language, '订单', 'Orders')).fontSize(26).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
+          Text(I18n.text(this.language, '订单', 'Orders')).fontSize(this.showBack ? 20 : 26).fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
           Text(I18n.text(this.language, `共 ${this.total} 单`, `${this.total} total`)).fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }.alignItems(HorizontalAlign.Start);
         Blank();
         IBestButton({ text: I18n.text(this.language, '售后', 'After-sales'), plain: true, color: DesignTokens.brand(this.darkMode), onBtnClick: () => AppRouter.push('AfterSale') });
-      }.width('100%').padding({ top: this.safeTop + 12, left: 16, right: 16, bottom: 10 });
+      }.width('100%').padding({ top: this.safeTop + (this.showBack ? 6 : 12), left: this.showBack ? 8 : 16, right: 16, bottom: 10 });
       IBestSearch({
         value: $keyword, placeholder: I18n.text(this.language, '搜索订单号或客户', 'Search order number or customer'), isRound: true,
         outBgColor: DesignTokens.page(this.darkMode), innerBgColor: DesignTokens.card(this.darkMode), showRightButton: true,
-        rightButtonText: I18n.text(this.language, '搜索', 'Search'), onSearch: () => this.reload(), onRightButtonClick: () => this.reload(), onClear: () => this.reload()
+        rightButtonText: I18n.text(this.language, '搜索', 'Search'), onInput: () => this.pageSearch.schedule(() => this.reload()), onSearch: () => this.reload(), onRightButtonClick: () => this.reload(), onClear: () => this.reload()
       });
       Scroll() {
         Row({ space: 8 }) {

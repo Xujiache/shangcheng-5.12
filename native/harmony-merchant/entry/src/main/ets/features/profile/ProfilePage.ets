@@ -1,5 +1,9 @@
+import { SessionStore } from '../../core/storage/SessionStore';
+import { LeaveGuard } from '../../core/ui/LeaveGuard';
+import { PageReadScope, SecondaryPolicy } from '../../core/ui/SecondaryPolicy';
+import { SecondaryFeedback, SecondaryHeader } from '../../core/ui/SecondaryPage';
 import { common } from '@kit.AbilityKit';
-import { IBestActionSheet, IBestButton, IBestField, IBestNavBar, IBestToast } from '@ibestservices/ibest-ui';
+import { IBestActionSheet, IBestButton, IBestField, IBestToast } from '@ibestservices/ibest-ui';
 import { FileUploadService } from '../../core/file/FileUploadService';
 import { I18n } from '../../core/i18n/I18n';
 import { AppRouter } from '../../core/navigation/AppRouter';
@@ -15,6 +19,31 @@ export function ProfileBuilder(_: string) { ProfilePage(); }
 
 @Component
 struct ProfilePage {
+  private locationRequestToken: string = '';
+  private locationOwner: string = '';
+  private openLocation(): void {
+    this.locationOwner = SessionStore.shared().user?.id || '';
+    this.locationRequestToken = `${this.locationOwner}:${Date.now()}:${this.locationEpoch}`;
+    AppStorage.setOrCreate('locationRequestToken', this.locationRequestToken);
+    AppStorage.setOrCreate('pickedLocationToken', '');
+    AppStorage.setOrCreate('pickedLatitude', this.latitude);
+    AppStorage.setOrCreate('pickedLongitude', this.longitude);
+    AppStorage.setOrCreate('pickedLocationSet', this.hasLocation);
+    AppRouter.push('LocationPicker');
+  }
+
+  private handleBack(): void {
+
+    if (this.categorySheetVisible) { this.closeCategorySheet(); return; }
+    this.leaveGuard.request(this.language, this.saving || this.uploading, this.hasChanges(), () => AppRouter.back());
+  }
+
+  private leaveGuard: LeaveGuard = new LeaveGuard();
+  aboutToDisappear(): void { this.pageScope.dispose(); }
+
+  private pageScope: PageReadScope = new PageReadScope();
+  @State private pageError: string = '';
+
   @StorageProp('safeBottom') private safeBottom: number = 16;
   @StorageProp('windowWidth') private windowWidth: number = 390;
   @StorageLink('language') private language: string = 'zh-CN';
@@ -48,9 +77,11 @@ struct ProfilePage {
     I18n.contract('办公'), I18n.contract('户外')
   ];
 
-  aboutToAppear(): void { this.load(); }
+  aboutToAppear(): void { this.pageScope.open(); this.load(); }
 
   private onLocationChanged(): void {
+    if (!this.locationRequestToken || AppStorage.get<string>('pickedLocationToken') !== this.locationRequestToken || this.locationOwner !== (SessionStore.shared().user?.id || '')) return;
+    AppStorage.setOrCreate('pickedLocationToken', '');
     this.region = AppStorage.get<string>('pickedRegion') || this.region;
     this.address = AppStorage.get<string>('pickedAddress') || this.address;
     const latitude = AppStorage.get<number>('pickedLatitude');
@@ -65,10 +96,12 @@ struct ProfilePage {
   }
 
   private async load(): Promise<void> {
+    const pageTicket = this.pageScope.begin('load');
+    this.pageError = '';
     this.loading = true;
     this.loadError = false;
     try {
-      const data = await BusinessRepository.profile();
+      const data = await this.pageScope.read(BusinessRepository.profile(), pageTicket);
       this.original = data;
       this.shopName = data.shopName;
       this.contactName = data.contactName;
@@ -89,11 +122,15 @@ struct ProfilePage {
       AppStorage.setOrCreate<number>('pickedLongitude', this.longitude);
       AppStorage.setOrCreate<boolean>('pickedLocationSet', this.hasLocation);
     } catch (error) {
+      if (!this.pageScope.accepts(pageTicket)) return;
+      this.pageError = SecondaryPolicy.errorKind(error);
       this.loadError = this.original === null;
-      IBestToast.show(error instanceof ApiError ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '资料加载失败', 'Failed to load profile'));
     } finally {
+      if (this.pageScope.accepts(pageTicket)) {
       this.loading = false;
+    }
     }
   }
 
@@ -119,7 +156,7 @@ struct ProfilePage {
       const urls = await FileUploadService.chooseAndUploadImages(1, 'avatar');
       if (urls.length > 0) this.avatar = urls[0];
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '头像上传失败', 'Failed to upload avatar'));
     } finally {
       this.uploading = false;
@@ -134,7 +171,7 @@ struct ProfilePage {
       const url = await FileUploadService.captureAndUploadImage(context, 'avatar');
       if (url) this.avatar = url;
     } catch (error) {
-      IBestToast.show(error instanceof Error ? error.message
+      IBestToast.show(error instanceof Error ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '头像拍摄上传失败', 'Failed to capture and upload avatar'));
     } finally {
       this.uploading = false;
@@ -273,7 +310,7 @@ struct ProfilePage {
       IBestToast.show(I18n.text(this.language, '资料已保存', 'Profile saved'));
       AppRouter.back();
     } catch (error) {
-      IBestToast.show(error instanceof ApiError ? error.message
+      IBestToast.show(error instanceof ApiError ? SecondaryPolicy.message(error, this.language)
         : I18n.text(this.language, '保存失败', 'Save failed'));
     } finally {
       this.saving = false;
@@ -304,14 +341,14 @@ struct ProfilePage {
           Text(I18n.text(this.language, `商户号 ${this.original.merchantNo}`, `Merchant ID ${this.original.merchantNo}`))
             .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).maxLines(1);
           Text(I18n.text(this.language, `状态：${this.original.status || '--'}`, `Status: ${this.original.status || '--'}`))
-            .fontSize(11).fontColor(DesignTokens.brand(this.darkMode));
+            .fontSize(12).fontColor(DesignTokens.brand(this.darkMode));
         }
         Text(this.uploading ? I18n.text(this.language, '头像上传中', 'Uploading avatar')
           : I18n.text(this.language, '点击头像更换', 'Tap the avatar to change it'))
-          .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+          .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
       }.layoutWeight(1).alignItems(HorizontalAlign.Start);
     }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -333,7 +370,7 @@ struct ProfilePage {
         placeholder: 'contact@example.com', type: 'email', maxlength: 60, hasBorder: false,
         radius: DesignTokens.RADIUS_FIELD });
     }.width('100%').padding(6).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -345,14 +382,14 @@ struct ProfilePage {
         Column({ space: 4 }) {
           Text(this.categorySummary()).fontSize(13).fontColor(DesignTokens.text(this.darkMode)).maxLines(2).width('100%');
           Text(I18n.text(this.language, `已选择 ${this.categories.length} 项`, `${this.categories.length} selected`))
-            .fontSize(11).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
+            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode)).width('100%');
         }.layoutWeight(1).alignItems(HorizontalAlign.Start);
         MerchantIcon({ name: 'arrow', color: DesignTokens.muted(this.darkMode), iconSize: 17 });
       }.width('100%').constraintSize({ minHeight: 58 }).padding({ left: 14, right: 14, top: 10, bottom: 10 })
         .backgroundColor(DesignTokens.subtle(this.darkMode)).borderRadius(DesignTokens.RADIUS_FIELD)
         .onClick(() => this.openCategorySheet());
     }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -366,7 +403,7 @@ struct ProfilePage {
           MerchantIcon({ name: 'location-o', color: DesignTokens.brand(this.darkMode), iconSize: 15 });
           Text(I18n.text(this.language, '地图选址', 'Choose on map')).fontSize(12).fontColor(DesignTokens.brand(this.darkMode));
         }.height(38).padding({ left: 10, right: 10 }).borderRadius(DesignTokens.RADIUS_CONTROL)
-          .backgroundColor(DesignTokens.selectedSurface(this.darkMode)).onClick(() => AppRouter.push('LocationPicker'));
+          .backgroundColor(DesignTokens.selectedSurface(this.darkMode)).onClick(() => this.openLocation());
       }.width('100%').padding({ left: 10, top: 4 });
       IBestField({ value: $region, label: I18n.text(this.language, '所在地区', 'Region'),
         placeholder: I18n.text(this.language, '例：陕西省西安市', 'Example: Xi’an, Shaanxi'),
@@ -375,11 +412,11 @@ struct ProfilePage {
         placeholder: I18n.text(this.language, '请输入详细地址', 'Enter the detailed address'), maxlength: 100,
         hasBorder: false, radius: DesignTokens.RADIUS_FIELD });
       if (this.hasLocation) {
-        Text(`${this.latitude.toFixed(6)}, ${this.longitude.toFixed(6)}`).fontSize(10)
+        Text(`${this.latitude.toFixed(6)}, ${this.longitude.toFixed(6)}`).fontSize(12)
           .fontColor(DesignTokens.muted(this.darkMode)).padding({ left: 10, right: 10, bottom: 6 }).width('100%');
       }
     }.width('100%').padding(6).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -393,10 +430,10 @@ struct ProfilePage {
         .placeholderColor(DesignTokens.muted(this.darkMode)).backgroundColor(DesignTokens.subtle(this.darkMode))
         .borderRadius(DesignTokens.RADIUS_FIELD).maxLength(160)
         .onChange((value: string): void => { this.description = value; });
-      Text(`${this.description.length} / 160`).fontSize(11).fontColor(DesignTokens.muted(this.darkMode))
+      Text(`${this.description.length} / 160`).fontSize(12).fontColor(DesignTokens.muted(this.darkMode))
         .width('100%').textAlign(TextAlign.End);
     }.width('100%').padding(16).backgroundColor(DesignTokens.card(this.darkMode))
-      .borderRadius(DesignTokens.RADIUS_LARGE).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
+      .borderRadius(16).border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
   }
 
   @Builder
@@ -443,7 +480,7 @@ struct ProfilePage {
           Text(I18n.text(this.language, '选择经营品类', 'Select operating categories')).fontSize(20)
             .fontWeight(FontWeight.Bold).fontColor(DesignTokens.text(this.darkMode));
           Text(I18n.text(this.language, `已选择 ${this.categoryDraft.length} 项`, `${this.categoryDraft.length} selected`))
-            .fontSize(11).fontColor(DesignTokens.muted(this.darkMode));
+            .fontSize(12).fontColor(DesignTokens.muted(this.darkMode));
         }.layoutWeight(1).alignItems(HorizontalAlign.Start);
         Column() { MerchantIcon({ name: 'cross', color: DesignTokens.muted(this.darkMode), iconSize: 18 }); }
           .width(38).height(38).justifyContent(FlexAlign.Center).borderRadius(19)
@@ -485,7 +522,7 @@ struct ProfilePage {
           onBtnClick: () => this.confirmCategories() });
       }.width('100%');
     }.width('100%').height(this.windowWidth >= 600 ? 560 : 520)
-      .padding({ left: 20, right: 20, top: 20, bottom: this.safeBottom + 18 })
+      .padding({ left: 16, right: 16, top: 20, bottom: this.safeBottom + 18 })
       .backgroundColor(DesignTokens.elevatedSurface(this.darkMode))
       .borderRadius({ topLeft: DesignTokens.RADIUS_XL, topRight: DesignTokens.RADIUS_XL })
       .border({ width: 0.5, color: DesignTokens.border(this.darkMode) });
@@ -495,11 +532,12 @@ struct ProfilePage {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         Column() {
-          IBestNavBar({
+          SecondaryHeader({
             title: I18n.text(this.language, '个人与店铺资料', 'Profile and store'), isShowStatusBar: true,
             navBarBgColor: DesignTokens.surface(this.darkMode), titleColor: DesignTokens.text(this.darkMode),
-            leftIconColor: DesignTokens.text(this.darkMode), onLeftClick: () => AppRouter.back()
+            leftIconColor: DesignTokens.text(this.darkMode), onLeftClick: () => this.handleBack()
           });
+          SecondaryFeedback({ errorKind: this.pageError, updating: this.loading, onRetry: () => this.load() });
           if (this.loading) {
             Column() { LoadingProgress().width(34).height(34).color(DesignTokens.brand(this.darkMode)); }
               .layoutWeight(1).justifyContent(FlexAlign.Center);
@@ -508,7 +546,7 @@ struct ProfilePage {
               MerchantIcon({ name: 'replay', color: DesignTokens.brand(this.darkMode), iconSize: 30 });
               Text(I18n.text(this.language, '资料暂时无法加载', 'Profile is temporarily unavailable'))
                 .fontSize(15).fontWeight(FontWeight.Medium).fontColor(DesignTokens.text(this.darkMode));
-              IBestButton({ text: I18n.text(this.language, '重新加载', 'Try again'), type: 'primary',
+              IBestButton({ btnHeight: 44, text: I18n.text(this.language, '重新加载', 'Try again'), type: 'primary',
                 color: DesignTokens.brand(this.darkMode), fontColor: DesignTokens.onBrand(this.darkMode),
                 btnBorderRadius: DesignTokens.RADIUS_FIELD, onBtnClick: () => this.load() });
             }.layoutWeight(1).justifyContent(FlexAlign.Center);
@@ -527,13 +565,6 @@ struct ProfilePage {
           this.categorySheet();
         }
       }.width('100%').height('100%');
-    }.hideTitleBar(true).onBackPressed((): boolean => {
-      if (this.categorySheetVisible) {
-        this.closeCategorySheet();
-        return true;
-      }
-      AppRouter.back();
-      return true;
-    });
+    }.hideTitleBar(true).onBackPressed((): boolean => { this.handleBack(); return true; });
   }
 }
