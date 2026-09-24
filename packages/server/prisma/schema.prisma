@@ -1068,6 +1068,8 @@ model LedgerUser {
   cutPlans      LedgerCutPlan[]
   payments      LedgerPaymentOrder[]
   workLogs      LedgerWorkLog[]
+  conversionJobs    LedgerConversionJob[]
+  conversionUploads LedgerConversionUpload[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
@@ -1304,4 +1306,77 @@ model LedgerConfig {
   key       String   @unique
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// 格式转换独立域：文件存入私有 bucket，数据库仅保存对象键。
+model LedgerConversionUpload {
+  id            String   @id @default(cuid())
+  userId        String
+  user          LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId         String?
+  job           LedgerConversionJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  fileName      String
+  extension     String
+  totalBytes    BigInt
+  chunkSize     Int
+  chunkCount    Int
+  receivedBytes BigInt   @default(0)
+  status        String   @default("uploading") // uploading / ready
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+  expiresAt     DateTime
+  chunks        LedgerConversionChunk[]
+
+  @@index([userId, status])
+  @@index([jobId])
+  @@index([expiresAt])
+}
+
+model LedgerConversionChunk {
+  uploadId  String
+  upload    LedgerConversionUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  index     Int
+  objectKey String
+  sizeBytes Int
+  sha256    String
+  createdAt DateTime @default(now())
+
+  @@id([uploadId, index])
+}
+
+model LedgerConversionJob {
+  id          String   @id @default(cuid())
+  userId      String
+  user        LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operationId String
+  uploadOrder Json    @default("[]")
+  options     Json     @default("{}")
+  status      String  @default("queued") // queued / running / succeeded / failed / cancelled
+  progress    Int     @default(0)
+  error       String?
+  createdAt   DateTime @default(now())
+  startedAt   DateTime?
+  heartbeatAt DateTime?
+  leaseId     String?
+  finishedAt  DateTime?
+  expiresAt   DateTime?
+  uploads     LedgerConversionUpload[]
+  assets      LedgerConversionAsset[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([expiresAt])
+}
+
+model LedgerConversionAsset {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       LedgerConversionJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  objectKey String   @unique
+  fileName  String
+  mimeType  String
+  sizeBytes BigInt
+  createdAt DateTime @default(now())
+
+  @@index([jobId])
 }

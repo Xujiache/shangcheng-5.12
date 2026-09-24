@@ -378,6 +378,10 @@ Page({
     if (!requireLogin()) return
     wx.navigateTo({ url: '/pages/work-log/index' })
   },
+  toFormat() {
+    if (!requireLogin('登录后可免费使用格式转换，转换文件保留 30 天。')) return
+    wx.navigateTo({ url: '/subpackages/format/index/index' })
+  },
   toTriangleTool() {
     wx.navigateTo({ url: '/pages/triangle-tool/index' })
   },

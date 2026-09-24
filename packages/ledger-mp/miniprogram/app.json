@@ -84,5 +84,6 @@
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "subPackages": [{ "root": "subpackages/format", "pages": ["index/index"] }]
 }

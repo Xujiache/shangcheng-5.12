@@ -1,0 +1,30 @@
+# 与 docker-compose.production.yml 叠加使用；默认 profile 不会自动启动。
+services:
+  conversion-worker:
+    profiles: [conversion]
+    build:
+      context: ..
+      dockerfile: packages/server/Dockerfile.conversion-worker
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    environment:
+      DATABASE_URL: ${CONVERSION_DATABASE_URL:?set CONVERSION_DATABASE_URL}
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${CONVERSION_S3_ACCESS_KEY:?set CONVERSION_S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${CONVERSION_S3_SECRET_KEY:?set CONVERSION_S3_SECRET_KEY}
+      CONVERSION_BUCKET: jiujiu-conversions
+    read_only: true
+    volumes:
+      - conversion_tmp:/tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 4g
+    cpus: 2
+
+volumes:
+  conversion_tmp:

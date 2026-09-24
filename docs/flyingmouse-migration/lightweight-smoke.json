@@ -1,0 +1,40 @@
+{
+  "sourceVersion": "0.7.10",
+  "date": "2026-09-24",
+  "scope": "One deterministic small fixture per pair, Linux source CLI versus Windows source CLI; not worker image, packaged desktop GUI, or mini-program acceptance.",
+  "linux": "WSL Ubuntu 24.04 / Node v24.9.0",
+  "windows": "Windows / Node v24.19.0",
+  "artifactRoot": "D:\\codex-temp-flyingmouse\\flyingmouse-smoke-qzAkWT",
+  "cases": [
+    {
+      "inputExtension": "txt",
+      "targetExtension": "md",
+      "fixture": "inputs/sample.txt",
+      "fixtureSha256": "854d1ddcc6ba6acd9b0fd2cb979b6da7fe177c8cddf039457b7c361fbc4e06fd",
+      "output": "sample.md",
+      "outputSha256": "854d1ddcc6ba6acd9b0fd2cb979b6da7fe177c8cddf039457b7c361fbc4e06fd",
+      "linuxOpened": "UTF-8 text contains source Chinese text",
+      "windowsCliByteEqual": true
+    },
+    {
+      "inputExtension": "srt",
+      "targetExtension": "vtt",
+      "fixture": "inputs/sample.srt",
+      "fixtureSha256": "3dbfd161cdd789d1ead09ee820e615897656757da1b4b7a41d97a0a81ca10534",
+      "output": "sample.vtt",
+      "outputSha256": "99c7796f081c76dcda7f07d17ca0503d47738f87814cf10e091b239eac69cada",
+      "linuxOpened": "UTF-8 text starts with WEBVTT and preserves Chinese cue",
+      "windowsCliByteEqual": true
+    },
+    {
+      "inputExtension": "png",
+      "targetExtension": "jpg",
+      "fixture": "inputs/sample.png",
+      "fixtureSha256": "4812e2ff530677056728b2bb8fb7a697fe4259f46c27f9a55fb988c515252b55",
+      "output": "sample.jpg",
+      "outputSha256": "8eab5e3053779c9bd5ddc32611d6536083377a881cbac32fccd18567c89351b3",
+      "linuxOpened": "sharp decoded JPEG with 2x2 dimensions",
+      "windowsCliByteEqual": true
+    }
+  ]
+}
