@@ -1,4 +1,4 @@
-/** Linux smoke-observed candidates; feature flag remains off until worker/device acceptance. */
+/** Linux smoke-observed candidates exposed only while the worker is healthy. */
 export const CONVERSION_CHUNK_BYTES = 8 * 1024 * 1024
 export const CONVERSION_FILE_LIMIT = 16 * 1024 ** 3
 export const CONVERSION_BATCH_LIMIT = 32 * 1024 ** 3
@@ -38,6 +38,22 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     label: 'PNG → JPG',
     inputExtensions: ['png'],
     targetExtension: 'jpg',
+    kind: 'convert',
+    options: [],
+  },
+  {
+    id: 'convert:png',
+    label: 'JPG/WebP → PNG',
+    inputExtensions: ['jpg', 'webp'],
+    targetExtension: 'png',
+    kind: 'convert',
+    options: [],
+  },
+  {
+    id: 'convert:webp',
+    label: 'JPG/PNG → WebP',
+    inputExtensions: ['jpg', 'png'],
+    targetExtension: 'webp',
     kind: 'convert',
     options: [],
   },

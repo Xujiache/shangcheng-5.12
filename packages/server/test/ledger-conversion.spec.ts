@@ -8,9 +8,13 @@ import { assertPrivateConversionBucket } from '../src/modules/ledger-conversion/
 
 describe('ledger conversion gate', () => {
   test('only Linux-observed pairs are advertised', () => {
-    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(3)
+    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(5)
     expect(findConversionOperation('convert:md', ['txt'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['pdf'])).toBeNull()
+    expect(findConversionOperation('convert:png', ['jpg'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['webp'])).toBeTruthy()
+    expect(findConversionOperation('convert:webp', ['jpg'])).toBeTruthy()
+    expect(findConversionOperation('convert:webp', ['png'])).toBeTruthy()
     expect(findConversionOperation('merge-pdfs', ['pdf'])).toBeNull()
   })
 
