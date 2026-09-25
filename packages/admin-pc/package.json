@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "vite --open",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vite build && vue-tsc --noEmit",
     "serve": "vite preview",
     "lint": "eslint",
     "fix": "eslint --fix",
@@ -20,7 +20,7 @@
     "prepare": "husky",
     "commit": "git-cz",
     "clean:dev": "tsx scripts/clean-dev.ts",
-    "typecheck": "vue-tsc --noEmit",
+    "typecheck": "vite build && vue-tsc --noEmit",
     "test": "vitest run --config ../../vitest.config.mts"
   },
   "config": {
