@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-源码快照完整归档；格式矩阵列出 1174 个候选输入→输出组合及 CLI 可达/仅桌面可达的选项。`TXT→MD`、`SRT→VTT`、`PNG→JPG` 已在 Linux worker 镜像和隔离的 PostgreSQL、Redis、MinIO 环境中完成上传、入队、转换、鉴权下载和删除小样本验收，见 `VALIDATION.md`。**桌面 GUI 质量语料、小程序真机及生产许可验收仍未完成**；其他组合不得对用户开放。PDF 拆分分组的 `splitMode/groupSize`、透明视频背景 `alphaBackground` 已加入 CLI 参数解析，但 worker 尚未传递这些选项。文档→Markdown 可能产生的 `.assets` 旁路目录当前 worker 也未收集，均属于迁移缺口。
+源码快照完整归档；格式矩阵列出 1174 个候选输入→输出组合及 CLI 可达/仅桌面可达的选项。`TXT→MD`、`SRT→VTT`、`PNG→JPG` 已在 Linux worker 镜像和隔离的 PostgreSQL、Redis、MinIO 环境中完成上传、入队、转换、鉴权下载和删除小样本验收，见 `VALIDATION.md`。**桌面 GUI 质量语料、小程序真机及生产许可验收仍未完成**；其他组合不得对用户开放。PDF 拆分分组的 `splitMode/groupSize`、透明视频背景 `alphaBackground` 已完成 CLI 参数解析和 worker 参数传递，仍需真实样本质量验收。文档→Markdown 的图片附件现与主文件一起打包成 ZIP，并拒绝符号链接附件；合成样本已校验 ZIP 内容，真实文档质量验收仍待完成。
 
 ## 上线前闸门
 
