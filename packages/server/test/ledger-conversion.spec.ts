@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { Client } from 'minio'
 import { ConversionService } from '../src/modules/ledger-conversion/conversion.service'
 import {
   findConversionOperation,
@@ -42,6 +43,40 @@ describe('ledger conversion gate', () => {
     ;(instance as any).storage = { putObject: jest.fn(), getObject: jest.fn() }
     return instance
   }
+
+  test('recovers storage initialization after a dependency starts late', async () => {
+    const keys = ['CONVERSION_FEATURE_ENABLED', 'CONVERSION_BUCKET', 'S3_BUCKET'] as const
+    const previous = keys.map((key) => process.env[key])
+    process.env.CONVERSION_FEATURE_ENABLED = 'true'
+    process.env.CONVERSION_BUCKET = 'private'
+    process.env.S3_BUCKET = 'public'
+    const bucket = jest
+      .spyOn(Client.prototype, 'bucketExists')
+      .mockRejectedValueOnce(new Error('storage offline'))
+      .mockResolvedValue(true)
+    const policy = jest
+      .spyOn(Client.prototype, 'getBucketPolicy')
+      .mockRejectedValue({ code: 'NoSuchBucketPolicy' })
+    const instance = new ConversionService({} as any)
+    const ping = jest.spyOn((instance as any).redis, 'ping').mockResolvedValue('PONG')
+    jest.spyOn((instance as any).logger, 'error').mockImplementation(() => undefined)
+    try {
+      await instance.onModuleInit()
+      expect((instance as any).ready).toBe(false)
+      await Promise.all([instance.retryInitialization(), instance.retryInitialization()])
+      expect((instance as any).ready).toBe(true)
+      expect(bucket).toHaveBeenCalledTimes(2)
+      expect(ping).toHaveBeenCalledTimes(1)
+    } finally {
+      await instance.onModuleDestroy()
+      bucket.mockRestore()
+      policy.mockRestore()
+      keys.forEach((key, index) => {
+        if (previous[index] === undefined) delete process.env[key]
+        else process.env[key] = previous[index]
+      })
+    }
+  })
 
   test('capabilities fail closed without a live worker heartbeat', async () => {
     const instance = service({})

@@ -42,6 +42,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   })
   private storage: Client | null = null
   private ready = false
+  private initializing: Promise<void> | null = null
   private readonly accepting = process.env.CONVERSION_FEATURE_ENABLED === 'true'
   // 真机大文件验收之前保持保守运行限制；部署后只可在原版上限内逐级放宽。
   private readonly maxFileBytes = boundedLimit(
@@ -63,6 +64,23 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
+    await this.initialize()
+  }
+
+  @Cron('*/30 * * * * *')
+  async retryInitialization() {
+    if (this.accepting && !this.ready) await this.initialize()
+  }
+
+  private initialize(): Promise<void> {
+    if (this.initializing) return this.initializing
+    this.initializing = this.connectStorage().finally(() => {
+      this.initializing = null
+    })
+    return this.initializing
+  }
+
+  private async connectStorage() {
     if (this.bucket === (process.env.S3_BUCKET || 'jiujiu-mall')) {
       this.logger.error('转换存储不得复用公开下载 bucket；转换功能已关闭')
       return
@@ -75,20 +93,21 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     }
     try {
       const url = new URL(process.env.S3_ENDPOINT || 'http://127.0.0.1:9000')
-      this.storage = new Client({
+      const storage = new Client({
         endPoint: url.hostname,
         port: Number(url.port) || (url.protocol === 'https:' ? 443 : 80),
         useSSL: url.protocol === 'https:',
         accessKey: accessKey || 'minioadmin',
         secretKey: secretKey || 'minioadmin',
       })
-      if (!(await this.storage.bucketExists(this.bucket)))
-        await this.storage.makeBucket(this.bucket)
-      await assertPrivateConversionBucket(this.storage, this.bucket)
-      await this.redis.connect()
+      if (!(await storage.bucketExists(this.bucket))) await storage.makeBucket(this.bucket)
+      await assertPrivateConversionBucket(storage, this.bucket)
+      if ((await this.redis.ping()) !== 'PONG') throw new Error('Redis PING failed')
+      this.storage = storage
       this.ready = true
     } catch (error: any) {
       this.logger.error(`转换服务初始化失败：${error?.message || error}`)
+      this.ready = false
       this.storage = null
     }
   }
