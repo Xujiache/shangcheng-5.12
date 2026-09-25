@@ -4,13 +4,15 @@
 
 源码快照完整归档；格式矩阵列出 1174 个候选输入→输出组合及 CLI 可达/仅桌面可达的选项。`TXT→MD`、`SRT→VTT`、`PNG→JPG` 已在 Linux worker 镜像和隔离的 PostgreSQL、Redis、MinIO 环境中完成上传、入队、转换、鉴权下载和删除小样本验收，见 `VALIDATION.md`。**桌面 GUI 质量语料、小程序真机及生产许可验收仍未完成**；其他组合不得对用户开放。PDF 拆分分组的 `splitMode/groupSize`、透明视频背景 `alphaBackground` 已完成 CLI 参数解析和 worker 参数传递，仍需真实样本质量验收。文档→Markdown 的图片附件现与主文件一起打包成 ZIP，并拒绝符号链接附件；含内嵌 PNG 的合成 DOCX 已在镜像内及隔离服务链路跑通，真实文档质量仍待验收，生产白名单未扩展。
 
-## 上线前闸门
+2026-09-26 服务器已按用户指示开启上述三组格式：PM2 API 读取 `/etc/jiujiu/server.env`，Docker 容器 `jiujiu-conversion-worker-production` 使用镜像 `jiujiu-conversion-worker:8483737`、`deploy_default` 网络和权限为 600 的 `/etc/jiujiu/conversion-worker.env`。worker 配置为 `unless-stopped`、只读根目录、3 GiB 临时目录、4 GiB 内存及 2 CPU 限额。生产数据库备份、线上 HTTPS 转换及清理证据见 `VALIDATION.md`。这不代表其余候选格式或小程序端已验收。
 
-1. 运行 `node scripts/verify-flyingmouse-source.cjs` 重算归档的 298 个源文件 SHA-256；如需核对原目录，再运行 `node scripts/verify-flyingmouse-source.cjs "C:\Users\Administrator\Desktop\flyingmouse-format"`。只读归档不参与小程序打包。完成 `LICENSING.md` 的源码授权与第三方 SBOM 审核。
+## 新环境部署及扩大格式范围前闸门
+
+1. 运行 `node scripts/verify-flyingmouse-source.cjs` 重算归档的 298 个源文件 SHA-256；如需核对原目录，再运行 `node scripts/verify-flyingmouse-source.cjs "C:\Users\Administrator\Desktop\flyingmouse-format"`。只读归档不参与小程序打包。补齐 `LICENSING.md` 所列的源码授权存档与第三方 SBOM 审核。
 2. 备份目标 PostgreSQL；先在一次性测试库执行 `deploy/ledger-conversions-init.sql` 并验证 Prisma 查询，再按仓库 SQL 变更流程执行生产。不要用 `prisma migrate deploy` 假定存在迁移历史。
 3. API 和 worker 均配置同一个 `CONVERSION_BUCKET=jiujiu-conversions`、`S3_ENDPOINT`、`S3_ACCESS_KEY`、`S3_SECRET_KEY`，并连接同一 Redis；Compose 中通过 `CONVERSION_REDIS_URL` 为 worker 提供完整连接地址，须与实际 Redis 密码配置一致。转换 bucket 必须独立于公开下载的 `jiujiu-mall`，并确认匿名访问为 `none`；凭据还需有读取 bucket policy 的权限，服务启动会拒绝匿名 Allow 策略。worker 另需 `DATABASE_URL`，API 能力接口要求最近 30 秒内有 worker 心跳。
 4. 默认运行上限为单文件 64 MiB、单批 256 MiB、100 个，且界面标明真机大文件未验。只有完成指定真机及服务器端到端压测后，才逐级设置 `CONVERSION_MAX_FILE_BYTES`、`CONVERSION_MAX_BATCH_BYTES`、`CONVERSION_MAX_FILES`；不得高于原版 16 GiB / 32 GiB / 1000 个。
-5. 在资源足够的 Linux 节点构建 `packages/server/Dockerfile.conversion-worker`；可将 `deploy/docker-compose.conversion-worker.yml` 与生产 compose 叠加并显式启用 `conversion` profile。worker 临时目录须保留超过源码内置的 1 GiB 磁盘余量；512 MiB tmpfs 已在端到端测试中触发 `UPLOAD_DISK_BUDGET_EXCEEDED`。API 与 worker 均部署新代码且完成后续验收后，才将 API 的 `CONVERSION_FEATURE_ENABLED=true`；默认关闭。
+5. 在资源足够的 Linux 节点构建 `packages/server/Dockerfile.conversion-worker`；可将 `deploy/docker-compose.conversion-worker.yml` 与生产 compose 叠加并显式启用 `conversion` profile。worker 临时目录须保留超过源码内置的 1 GiB 磁盘余量；512 MiB tmpfs 已在端到端测试中触发 `UPLOAD_DISK_BUDGET_EXCEEDED`。新环境默认关闭转换功能；当前生产的 `CONVERSION_FEATURE_ENABLED=true` 仅配合三组白名单和已验证的 worker 使用。
 6. 每个候选组合至少有 Linux 正常样本、损坏样本、结果可打开检查和与桌面版的质量对比；将通过项加入后端白名单。未通过项保留为未完成，不在能力接口返回。PDF 密码选项在实现安全的短期保管与日志脱敏前不得开放。
 
 ## 数据与回滚

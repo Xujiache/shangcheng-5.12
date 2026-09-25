@@ -1,6 +1,6 @@
 # 格式转换迁移验收记录（2026-09-24）
 
-基线：最新 `origin/feat/ledger-mp` 的 `a5bf9a8a358ae4ddb3974af022bea21332a9772d`；独立分支 `codex/flyingmouse-mp`。当前属于受功能开关保护的迁移基础设施，**尚未完成非桌面能力迁移，也未上线**。
+2026-09-24 基线：当时最新 `origin/feat/ledger-mp` 的 `a5bf9a8a358ae4ddb3974af022bea21332a9772d`；独立分支 `codex/flyingmouse-mp`。下表记录当日状态；后续生产三组格式部署见文末 2026-09-26 记录。
 
 | 检查 | 结果 | 证据/约束 |
 | --- | --- | --- |
@@ -51,3 +51,10 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 同一镜像随后在重新创建的一次性 PostgreSQL、Redis、MinIO 和 API 环境中完成完整服务链路复测：TXT→MD、SRT→VTT、PNG→JPG 的上传、排队、转换、鉴权下载及删除均通过；HTTP 分片上传、跨账号下载拒绝、取消、失败重试和过期上传清理也通过。证据为同级 `conversion-e2e/*-453ae71.log`；临时容器、网络和 API 已清理，生产转换开关保持关闭。该复测仍未覆盖带附件 DOCX 的服务层任务，因为该组合尚未列入白名单。
 - `8483737` 修复 ZIP 源文件读取失败时任务等待不结束的问题；后端 Jest 51 套、471 项及类型、lint、格式检查通过。新镜像 `sha256:a03ddd54614eb296d5863e4aff4f926496c0697c2bc05007d1d088acc4d3a7b1` 在同样的一次性环境重放以上三组转换、鉴权下载、删除、取消、失败重试和过期清理，全部通过。证据为同级 `conversion-e2e/*-8483737.log`；临时容器已清理，生产转换开关保持关闭。
 - 同一镜像另以仅在隔离 API 进程内扩展的测试白名单验证 DOCX→Markdown：合成 DOCX 的标题、正文、表格、图片经上传、入队、转换后保存在可下载的 ZIP，Markdown 图片引用与 ZIP 附件路径一致；跨账号下载被拒绝，任务及资产可删除。损坏 DOCX 进入失败状态且没有生成资产。证据为同级 `conversion-e2e/docx-result-20260926.log`、`docx-service-20260926.cjs` 及生成的 ZIP；临时容器已清理。生产白名单未扩展，真实文档质量、桌面版对比及小程序真机仍未验收。
+
+## 2026-09-26 生产三组格式部署
+
+- 生产库原有四张转换表，启动前任务和 Redis 队列均为空。数据库完整备份 `/etc/jiujiu/backups/ledger-conversion-preenable-20260926.dump` 已经容器内 `pg_restore -l` 验证，SHA-256 为 `a580de599b67af9b7d576f45bd4f8d7ee2e6413f5f916640d9f4a75734bf96ec`。
+- 专用 bucket `jiujiu-conversions` 已存在且无匿名访问策略。worker 使用 `8483737` 镜像接入生产 PostgreSQL、Redis、MinIO，容器 `jiujiu-conversion-worker-production` 已配置重启策略、只读根目录及资源上限；API 配置 `CONVERSION_BUCKET=jiujiu-conversions`、`CONVERSION_FEATURE_ENABLED=true` 后重启 PM2。配置文件保存在 `/etc/jiujiu/`，权限均为 600，不入库。
+- 线上 `https://ewsn.top` 的鉴权能力接口仅返回 TXT→MD、SRT→VTT、PNG→JPG 三组；三组均经 HTTPS 上传、排队、转换、鉴权下载、跨账号拒绝和删除验证，产物分别为可读 Markdown、VTT 和 JPEG。证据为服务器 `production-conversion-three-20260926.log` 及同目录的测试脚本；测试后四张转换表、队列、测试账号和 bucket 对象数均为零。API 健康检查为 200，worker 持续心跳且无重启。
+- 这是服务器侧小样本验证；其余格式仍不在生产白名单，小程序端、真实大文件及桌面质量对比未验收。源码授权凭证与第三方许可核对状态见 `LICENSING.md`。
