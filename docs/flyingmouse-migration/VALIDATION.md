@@ -14,7 +14,7 @@
 | worker Compose 声明 | 通过（静态） | `docker compose ... config --quiet` |
 | Linux worker 镜像 / DB+Redis+MinIO 端到端 | **未验** | Docker daemon 在临时容器退出时报告 `containerd ... meta.db: read-only file system`；未对现有环境做破坏性修复 |
 | 微信开发者工具 / 指定真机 | **未验** | CLI 服务端口关闭；真机未指定 |
-| Office/PDF/OCR、音视频、特殊格式 | **未验** | 未列入公开能力；PDF `splitMode/groupSize`、视频 `alphaBackground` 仍是 CLI 适配缺口 |
+| Office/PDF/OCR、音视频、特殊格式 | **未验** | 未列入公开能力；当日 PDF `splitMode/groupSize`、视频 `alphaBackground` 仍是 CLI 适配缺口，后续修复见下文 |
 | 许可与 SBOM | **待审** | 见 `LICENSING.md`；生产 worker 不可启用 |
 
 ## 重放命令
@@ -47,3 +47,4 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 在一次性 PostgreSQL、Redis、MinIO 容器中执行转换建表 SQL、同步 Prisma 测试库，再启动隔离 API 和 worker。TXT→MD、SRT→VTT、PNG→JPG 均通过服务层上传、入队、转换、鉴权下载和删除；TXT→MD 另通过 HTTP 分片上传、跨账号下载拒绝及删除。
 - 隔离环境通过取消、失败重试和过期上传清理。512 MiB tmpfs 会触发源码内置的 1 GiB 磁盘余量限制；改用 3 GiB tmpfs 后上述测试通过。测试容器已清理，生产服务健康检查返回 200。
 - 证据留在服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/conversion-e2e/`；镜像 SPDX 2.3 清单和依赖清单分别留在同级 `conversion-worker.spdx.json`、`conversion-worker-package-inventory.json`。这些测试未覆盖小程序真机、大文件、桌面 GUI 质量对比和生产许可审查。生产 worker 未启动，API 转换开关仍关闭。
+- `453ae71` 候选 worker 镜像 `sha256:9827fbefd20be50df63160b5093811798642780ad9ae96b72d90b208f8bf4ffa` 构建成功。在无网络、只读文件系统、一次性容器中，编译后的参数适配器向引擎 CLI 传递 PDF 分组和透明背景参数；带内嵌 PNG 的合成 DOCX 经真实 CLI 转成 Markdown 后，附件目录和 Markdown 一起生成可读取的 ZIP。对应镜像清单见同级 `conversion-worker-453ae71.spdx.json`。这未代替上传/入队的完整服务链路、真实文档质量和小程序真机验收。
