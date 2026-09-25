@@ -44,6 +44,22 @@ describe('conversion worker Markdown results', () => {
     },
   )
 
+  archiveTest('rejects when a ZIP source file cannot be read', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'conversion-output-'))
+    try {
+      await expect(
+        zipOutputs(
+          [{ path: join(root, 'missing.md'), fileName: 'missing.md' }],
+          [],
+          join(root, 'result.zip'),
+          sourceDir,
+        ),
+      ).rejects.toThrow()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   test('rejects a symlinked attachment', async () => {
     const root = await mkdtemp(join(tmpdir(), 'conversion-output-'))
     try {

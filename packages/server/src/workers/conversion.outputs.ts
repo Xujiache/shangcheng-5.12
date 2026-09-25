@@ -2,7 +2,7 @@ import { createRequire } from 'node:module'
 import { createWriteStream } from 'node:fs'
 import { lstat, readdir, realpath } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import { finished } from 'node:stream/promises'
+import { pipeline } from 'node:stream/promises'
 
 interface SidecarFile {
   path: string
@@ -42,6 +42,7 @@ export async function zipOutputs(
   const vendorRequire = createRequire(join(sourceDir, 'package.json'))
   const yazl = vendorRequire('yazl')
   const zip = new yazl.ZipFile()
+  zip.on('error', (error: Error) => zip.outputStream.destroy(error))
   const used = new Set<string>()
   for (const output of outputs) {
     const original = basename(output.fileName.replaceAll('\\', '/'))
@@ -56,7 +57,5 @@ export async function zipOutputs(
   }
   for (const file of sidecars) zip.addFile(file.path, file.zipName)
   zip.end()
-  const stream = createWriteStream(destination)
-  zip.outputStream.pipe(stream)
-  await finished(stream)
+  await pipeline(zip.outputStream, createWriteStream(destination))
 }
