@@ -95,7 +95,7 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 
 - 用户提供的 40 KiB DOCX 在本地和生产 worker 镜像中转成 Markdown，结果 SHA-256 一致。提交 `87e2143` 将 DOCX 加入 `convert:md` 白名单；生产 API 构建、18 项后端测试及公网 HTTPS 上传→转换→鉴权下载→结果哈希校验→删除均通过。测试原件及临时产物已从服务器删除。
 - 同一 DOCX 的 PDF 在 Linux worker 上可读且中文完整；macOS 本地渲染缺中文字。另一份含表格的合成 DOCX 在 Linux 上转 PDF 时曾丢失表格文字，因此 DOCX→PDF 仍不在生产白名单。
-- 本地测试适配器标示单文件 1 GiB、单批 2 GiB；生产仍为 64 MiB、256 MiB。隔离 worker 使用原 3 GiB tmpfs 转 1 GiB TXT→MD 报 `UPLOAD_DISK_BUDGET_EXCEEDED`；改用磁盘临时目录后报 `Invalid string length`。同镜像 128 MiB 和 256 MiB 文本样本转 Markdown 成功，但未覆盖其他格式及公网大文件链路。不得仅修改能力接口数值来宣称 1 GiB/2 GiB 可用。
+- 本地测试适配器原标示单文件 1 GiB、单批 2 GiB，生产为 64 MiB、256 MiB。隔离 worker 使用原 3 GiB tmpfs 转 1 GiB TXT→MD 报 `UPLOAD_DISK_BUDGET_EXCEEDED`；改用磁盘临时目录后报 `Invalid string length`。同镜像 128 MiB 和 256 MiB 文本样本转 Markdown 成功，但未覆盖其他格式及公网大文件链路。现将本地适配器的显示与接收上限统一为生产已开放的 64 MiB、256 MiB、100 个；本地能力接口返回值已核对。不得仅修改能力接口数值来宣称 1 GiB/2 GiB 可用。
 
 ## 2026-09-26 PDF 转 PNG
 
