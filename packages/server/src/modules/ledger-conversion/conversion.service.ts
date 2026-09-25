@@ -129,9 +129,13 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
           .then((count) => count > 0)
           .catch(() => false)
       : false
+    const storageOnline =
+      workerOnline && this.accepting && this.storage
+        ? await this.storage.bucketExists(this.bucket).catch(() => false)
+        : false
     return {
-      available: workerOnline && this.accepting && VERIFIED_CONVERSION_OPERATIONS.length > 0,
-      operations: workerOnline && this.accepting ? VERIFIED_CONVERSION_OPERATIONS : [],
+      available: storageOnline && VERIFIED_CONVERSION_OPERATIONS.length > 0,
+      operations: storageOnline ? VERIFIED_CONVERSION_OPERATIONS : [],
       limits: {
         maxFileBytes: this.maxFileBytes,
         maxBatchBytes: this.maxBatchBytes,

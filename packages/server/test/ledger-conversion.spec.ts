@@ -88,6 +88,23 @@ describe('ledger conversion gate', () => {
     await instance.onModuleDestroy()
   })
 
+  test('capabilities hide operations during a storage outage and recover afterward', async () => {
+    const instance = service({})
+    jest.spyOn((instance as any).redis, 'exists').mockResolvedValue(1)
+    const bucket = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('storage offline'))
+      .mockResolvedValue(true)
+    ;(instance as any).storage.bucketExists = bucket
+    await expect(instance.capabilities()).resolves.toMatchObject({
+      available: false,
+      operations: [],
+    })
+    await expect(instance.capabilities()).resolves.toMatchObject({ available: true })
+    expect(bucket).toHaveBeenCalledTimes(2)
+    await instance.onModuleDestroy()
+  })
+
   test('rejects unsupported extension before creating upload', async () => {
     const prisma = { ledgerConversionUpload: { create: jest.fn() } }
     const instance = service(prisma)
