@@ -11,6 +11,7 @@ describe('ledger conversion gate', () => {
   test('only Linux-observed pairs are advertised', () => {
     expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(7)
     expect(findConversionOperation('convert:md', ['txt'])).toBeTruthy()
+    expect(findConversionOperation('convert:md', ['docx'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['pdf'])).toBeNull()
     expect(findConversionOperation('convert:png', ['jpg'])).toBeTruthy()
     expect(findConversionOperation('convert:png', ['jpeg'])).toBeTruthy()

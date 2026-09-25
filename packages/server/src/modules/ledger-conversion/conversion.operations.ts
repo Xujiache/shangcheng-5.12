@@ -19,8 +19,8 @@ export interface ConversionOperation {
 export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:md',
-    label: 'TXT → Markdown',
-    inputExtensions: ['txt'],
+    label: 'TXT/DOCX → Markdown',
+    inputExtensions: ['txt', 'docx'],
     targetExtension: 'md',
     kind: 'convert',
     options: [],
