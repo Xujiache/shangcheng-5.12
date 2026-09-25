@@ -15,20 +15,29 @@ export interface ConversionOperation {
   options: string[]
 }
 
+const AUDIO_FORMATS = ['mp3', 'wav', 'flac', 'm4a', 'ogg', 'aac', 'opus', 'wma']
+const IMAGE_OUTPUT_FORMATS = ['gif', 'avif', 'tiff', 'ico', 'bmp', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
+
 // Extended only after the corresponding Linux fixture and quality checks pass.
 export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:md',
-    label: 'TXT/DOCX → Markdown',
-    inputExtensions: ['txt', 'docx'],
+    label: '文档/图片 → Markdown',
+    inputExtensions: [
+      'txt', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'gif',
+      'avif', 'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
+    ],
     targetExtension: 'md',
     kind: 'convert',
     options: [],
   },
   {
     id: 'convert:docx',
-    label: 'Markdown → Word',
-    inputExtensions: ['md'],
+    label: 'Markdown/图片 → Word',
+    inputExtensions: [
+      'md', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif',
+      'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
+    ],
     targetExtension: 'docx',
     kind: 'convert',
     options: [],
@@ -54,24 +63,33 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:jpg',
-    label: 'PNG/PDF → JPG',
-    inputExtensions: ['png', 'pdf'],
+    label: '图片/PDF → JPG',
+    inputExtensions: [
+      'png', 'pdf', 'webp', 'gif', 'avif', 'bmp', 'tiff',
+      'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+    ],
     targetExtension: 'jpg',
     kind: 'convert',
     options: [],
   },
   {
     id: 'convert:png',
-    label: 'JPG/JPEG/WebP/PDF → PNG',
-    inputExtensions: ['jpg', 'jpeg', 'webp', 'pdf'],
+    label: '图片/PDF → PNG',
+    inputExtensions: [
+      'jpg', 'jpeg', 'webp', 'pdf', 'gif', 'avif', 'bmp',
+      'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+    ],
     targetExtension: 'png',
     kind: 'convert',
     options: [],
   },
   {
     id: 'convert:webp',
-    label: 'JPG/JPEG/PNG/PDF → WebP',
-    inputExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+    label: '图片/PDF → WebP',
+    inputExtensions: [
+      'jpg', 'jpeg', 'png', 'pdf', 'gif', 'avif', 'bmp',
+      'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+    ],
     targetExtension: 'webp',
     kind: 'convert',
     options: [],
@@ -79,7 +97,10 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:pdf',
     label: '图片/Markdown → PDF',
-    inputExtensions: ['png', 'jpg', 'jpeg', 'webp', 'md'],
+    inputExtensions: [
+      'png', 'jpg', 'jpeg', 'webp', 'md', 'gif', 'avif',
+      'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+    ],
     targetExtension: 'pdf',
     kind: 'convert',
     options: [],
@@ -92,6 +113,22 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     kind: 'images-to-pdf',
     options: [],
   },
+  ...AUDIO_FORMATS.map((target) => ({
+    id: `convert:${target}`,
+    label: `音频 → ${target.toUpperCase()}`,
+    inputExtensions: AUDIO_FORMATS.filter((source) => source !== target),
+    targetExtension: target,
+    kind: 'convert' as const,
+    options: [],
+  })),
+  ...IMAGE_OUTPUT_FORMATS.map((target) => ({
+    id: `convert:${target}`,
+    label: `图片 → ${target.toUpperCase()}`,
+    inputExtensions: target === 'tiff' ? ['png', 'jpg'] : ['png', 'jpg', 'webp'],
+    targetExtension: target,
+    kind: 'convert' as const,
+    options: [],
+  })),
 ]
 
 export function findConversionOperation(id: string, extensions: string[]) {

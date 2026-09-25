@@ -57,7 +57,7 @@ function formatCategory(target: string) {
     /^(pdf|doc|docx|odt|rtf|txt|md|html|xlsx|xls|ods|csv|tsv|ppt|pptx|odp|epub|mobi)$/.test(target)
   )
     return '文档'
-  if (/^(jpg|jpeg|png|webp|gif|bmp|tiff|tif|svg|ico|avif|heic|tga)$/.test(target)) return '图片'
+  if (/^(jpg|jpeg|png|webp|gif|bmp|tiff|tif|svg|ico|avif|heic|tga|jp2|jxl|qoi|ppm)$/.test(target)) return '图片'
   if (/^(mp3|wav|flac|m4a|ogg|aac|opus|wma)$/.test(target)) return '音频'
   if (/^(mp4|mov|mkv|webm|avi|wmv|flv|m4v|mpeg|mpg|3gp|ts)$/.test(target)) return '视频'
   return '其他'
