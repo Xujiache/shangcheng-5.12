@@ -65,7 +65,7 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 后端提交 `c792363` 新增两项操作，覆盖上述四个输入→输出组合。隔离 PostgreSQL、Redis、MinIO、API 及原 worker 镜像的 HTTP 链路逐组通过上传、排队、转换、鉴权下载、跨账号拒绝及删除；临时服务已清理。证据为服务器 `conversion-e2e/http-raster-20260926.log`、同目录的测试脚本和部署脚本。
 - 生产 API 更新后，新四组及原三组均通过 `https://ewsn.top` 完整 HTTP 测试。测试后四张转换表、Redis 队列、测试账号和私有 bucket 对象数均为零；worker 无重启，API 内部就绪检查与公网接口均为 200。证据为服务器 `production-raster-http-20260926.log`、`production-regression-http-20260926.log` 和对应脚本。
 - 此次扩展后生产共开放七组；新增四组尚未与 Windows CLI 输出逐字节比较，也未完成桌面 GUI 质量对比、真实照片或小程序端验收。其余候选组合继续关闭。
-- DOCX→PDF 的隔离 CLI 试验发现质量差异：`conversion-e2e/sample-docx-20260926.docx` 含表格与图片，转换命令返回成功且 PDF 有图片，但渲染页和 `pdftotext` 均缺失表格文字；Pandoc 生成的另一份含表格、中文与图片的 DOCX 则完整保留这些内容。证据为服务器 `docx-pdf-cli-20260926.log`、`docx-pdf-page-20260926.png` 和 `docx-pdf-pandoc-20260926.log`。不能只检查 CLI 退出码；DOCX→PDF 仍未开放，须先用真实文档查明兼容范围并防止静默丢内容。
+- DOCX→PDF 的首次隔离 CLI 试验中，`conversion-e2e/sample-docx-20260926.docx` 的表格列宽仅为 100 twips，转换命令返回成功且 PDF 有图片，但渲染页和 `pdftotext` 均看不到表格文字。复查时，三份使用正常列宽（4500 twips）的 DOCX 均保留了中文、表格文字和图片；其中一份已渲染并目视核对。Pandoc 生成的另一份含表格、中文与图片的 DOCX 也完整保留这些内容。证据为服务器 `docx-pdf-cli-20260926.log`、`docx-pdf-page-20260926.png`、`docx-pdf-pandoc-20260926.log`、`docx-pdf-width-20260926.log` 和 `conversion-e2e/docx-width-fixed-page-20260926.png`。首次失败样本的异常列宽解释了该样本的现象，尚不能据此判断真实文档的兼容范围；DOCX→PDF 仍未开放，需用真实文档检查版面与内容。
 
 ## 2026-09-26 JPEG 扩展名接入
 
