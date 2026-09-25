@@ -47,6 +47,10 @@ const serverVerified = new Set([
   'jpeg:webp',
   'png:webp',
   'webp:png',
+  'png:pdf',
+  'jpg:pdf',
+  'jpeg:pdf',
+  'webp:pdf',
 ])
 const candidates = inputs.flatMap((inputExtension) =>
   targetsForExt(inputExtension, tools).map((targetExtension) => {
@@ -114,7 +118,7 @@ const matrix = {
   },
   candidates,
   batchOperations: [
-    { operationId: 'images-to-pdf', inputCategory: 'image', status: 'unverified' },
+    { operationId: 'images-to-pdf', inputCategory: 'image', status: 'server-smoke-verified' },
     { operationId: 'merge-pdfs', inputCategory: 'pdf', status: 'unverified' },
   ],
 }

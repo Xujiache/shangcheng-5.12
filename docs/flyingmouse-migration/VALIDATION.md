@@ -70,7 +70,7 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 ## 2026-09-26 JPEG 扩展名接入
 
 - `sample.jpeg` 使用与已验证 JPG 相同的实际 JPEG 文件内容。原 worker 镜像 CLI 成功生成可解码的 PNG 和 WebP；生产 API 提交 `34034ab` 将 `jpeg` 加入已有两项图片操作，并通过公网 HTTPS 的上传、转换、鉴权下载、跨账号拒绝和删除验证。证据为服务器 `jpeg-alias-cli-20260926.log`、`production-jpeg-http-20260926.log` 及测试脚本。
-- 当前生产开放九组输入→输出组合、五项操作；JPEG 扩展名两组使用已有转换链路，未新增 worker 依赖。小程序端及真实照片仍未验收，其他候选组合继续关闭。
+- 此次接入后生产开放九组输入→输出组合、五项操作；JPEG 扩展名两组使用已有转换链路，未新增 worker 依赖。小程序端及真实照片仍未验收，其他候选组合继续关闭。
 
 ## 2026-09-26 转换服务启动恢复
 
@@ -84,3 +84,9 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 旧能力接口只看 Redis worker 心跳：存储在启动后断开时仍返回 `available=true`。新增测试先复现该错误，再由提交 `b900a84` 在返回能力列表前检查私有转换 bucket；失败时返回 `available=false` 和空操作列表，恢复后重新返回五项操作。
 - 隔离环境依次验证 MinIO 在线、停止、恢复三个状态；能力接口结果分别为可用、不可用、可用，恢复后 TXT→MD 的上传、排队、鉴权下载和删除通过。测试使用独立 PostgreSQL、Redis、MinIO 数据卷、API 与原 worker 镜像，全部已清理。证据为服务器 `conversion-e2e/storage-health-result-20260926.log` 和同目录的重放脚本。
 - 生产 API 更新后，TXT→MD、SRT→VTT、PNG→JPG 的公网 HTTPS 回归通过；worker 无重启，API 就绪与公网接口为 200。证据为服务器 `production-storage-health-http-20260926.log`。未中断生产 MinIO 做故障演练。
+
+## 2026-09-26 图片转 PDF
+
+- 原 `8483737` worker 镜像隔离 CLI 验证 PNG、JPG、JPEG、WebP 各自转单页 PDF，以及 JPG 与 WebP 按顺序合成双页 PDF：`qpdf --check` 通过，`pdfinfo` 页数和页面渲染颜色符合输入；损坏 PNG 被拒绝。证据为服务器 `image-pdf-cli-20260926.log` 和 `jpeg-pdf-cli-20260926.log`。透明 PNG 在 PDF 中按原引擎规则与白底合成。
+- 后端提交 `bcbaee9` 开放四组图片→PDF 格式和 `images-to-pdf` 批量合成操作，仍使用同一 worker 镜像。隔离 PostgreSQL、Redis、MinIO、API 的 HTTP 链路验证单张 PNG 转 PDF 与 JPG、WebP 合成双页 PDF；均通过上传、排队、鉴权下载、跨账号拒绝、PDF 结构与页面顺序检查和删除。证据为服务器 `conversion-e2e/http-image-pdf-20260926.log` 及同目录脚本；隔离服务已清理。
+- 生产公网 HTTPS 重放上述两项操作通过，原有 TXT→MD、SRT→VTT、PNG→JPG 回归也通过；worker 无重启。证据为服务器 `production-image-pdf-http-20260926.log`、`production-image-pdf-regression-20260926.log`。当前共十三组输入→输出格式、七项操作；真实照片、大批量及小程序端仍未验收。
