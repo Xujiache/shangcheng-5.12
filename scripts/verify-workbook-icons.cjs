@@ -203,8 +203,8 @@ async function main() {
   assert.equal(state.data.displaySize, 14)
   let bytes = 0
   for (const item of processed) {
-    const source = fs.readFileSync(path.resolve(item.source))
-    const final = fs.readFileSync(path.resolve(item.output))
+    const source = fs.readFileSync(path.resolve(item.source.replaceAll('\\', '/')))
+    const final = fs.readFileSync(path.resolve(item.output.replaceAll('\\', '/')))
     assert.equal(hash(source), item.sourceSha256)
     assert.equal(hash(final), item.sha256)
     assert(
