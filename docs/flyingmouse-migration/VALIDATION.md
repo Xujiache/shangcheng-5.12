@@ -90,3 +90,9 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 原 `8483737` worker 镜像隔离 CLI 验证 PNG、JPG、JPEG、WebP 各自转单页 PDF，以及 JPG 与 WebP 按顺序合成双页 PDF：`qpdf --check` 通过，`pdfinfo` 页数和页面渲染颜色符合输入；损坏 PNG 被拒绝。证据为服务器 `image-pdf-cli-20260926.log` 和 `jpeg-pdf-cli-20260926.log`。透明 PNG 在 PDF 中按原引擎规则与白底合成。
 - 后端提交 `bcbaee9` 开放四组图片→PDF 格式和 `images-to-pdf` 批量合成操作，仍使用同一 worker 镜像。隔离 PostgreSQL、Redis、MinIO、API 的 HTTP 链路验证单张 PNG 转 PDF 与 JPG、WebP 合成双页 PDF；均通过上传、排队、鉴权下载、跨账号拒绝、PDF 结构与页面顺序检查和删除。证据为服务器 `conversion-e2e/http-image-pdf-20260926.log` 及同目录脚本；隔离服务已清理。
 - 生产公网 HTTPS 重放上述两项操作通过，原有 TXT→MD、SRT→VTT、PNG→JPG 回归也通过；worker 无重启。证据为服务器 `production-image-pdf-http-20260926.log`、`production-image-pdf-regression-20260926.log`。当前共十三组输入→输出格式、七项操作；真实照片、大批量及小程序端仍未验收。
+
+## 2026-09-26 DOCX 与大小上限复核
+
+- 用户提供的 40 KiB DOCX 在本地和生产 worker 镜像中转成 Markdown，结果 SHA-256 一致。提交 `87e2143` 将 DOCX 加入 `convert:md` 白名单；生产 API 构建、18 项后端测试及公网 HTTPS 上传→转换→鉴权下载→结果哈希校验→删除均通过。测试原件及临时产物已从服务器删除。
+- 同一 DOCX 的 PDF 在 Linux worker 上可读且中文完整；macOS 本地渲染缺中文字。另一份含表格的合成 DOCX 在 Linux 上转 PDF 时曾丢失表格文字，因此 DOCX→PDF 仍不在生产白名单。
+- 本地测试适配器标示单文件 1 GiB、单批 2 GiB；生产仍为 64 MiB、256 MiB。隔离 worker 使用原 3 GiB tmpfs 转 1 GiB TXT→MD 报 `UPLOAD_DISK_BUDGET_EXCEEDED`；改用磁盘临时目录后报 `Invalid string length`。同镜像 128 MiB 和 256 MiB 文本样本转 Markdown 成功，但未覆盖其他格式及公网大文件链路。不得仅修改能力接口数值来宣称 1 GiB/2 GiB 可用。
