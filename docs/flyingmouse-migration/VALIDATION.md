@@ -108,3 +108,8 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 原 `8483737` worker 镜像在隔离 CLI 中将单页 PDF 分别转成可读取的 JPG、WebP；中文、表格、图片目视完整。由文档页和蓝色图片页组成的双页 PDF 分别生成两张按页命名图片的 ZIP，第二页在两种格式中均目视为蓝色；损坏 PDF 在两种目标格式下均被拒绝。证据为服务器 `conversion-e2e/pdf-jpg-*`、`conversion-e2e/pdf-webp-*`、`check-pdf-image-cli-20260926.py` 和 `pdf-{jpg,webp}-corrupt-20260926.log`。
 - 后端提交 `7269f26` 将 PDF 加入已有 `convert:jpg` 和 `convert:webp` 白名单，不改 worker 镜像。Node 24 环境下 18 项转换后端测试及 API 构建通过。隔离 PostgreSQL、Redis、MinIO、API 和原 worker 镜像的四条单页/双页 HTTP 路径均通过上传、排队、鉴权下载、跨账号拒绝、结果检查和删除；证据为服务器 `conversion-e2e/http-pdf-images-20260926.log` 及同目录脚本。
 - 生产公网 HTTPS 重放四条路径通过，PDF→PNG 和 TXT→MD、SRT→VTT、PNG→JPG 回归通过；四张转换表、测试账号、Redis 队列和私有 bucket 对象数均为零，worker 心跳正常且无重启。证据为服务器 `production-pdf-jpg-webp-http-20260926.log`、`production-pdf-images-{png,base}-regression-20260926.log` 和 `check-pdf-images-production-20260926.log`。至此生产开放十七组输入→输出组合、七项操作；真实多页文件和大文件质量仍待验证。
+
+## 2026-09-26 生产客户端与静态站核查
+
+- Nginx 中带 `MicroMessenger` 用户代理的请求完成两次上传、分片提交和任务创建，相关接口均返回 201；生产数据库保留的 DOCX→Markdown 和 PDF→PNG 任务均为 `succeeded`、各有一个结果，三个结果下载请求返回 200。检查只统计请求类型、状态、格式和产物数，不读取用户文件或身份。曾有一次任务列表 GET 返回 502（19:18 UTC），其后同接口持续返回 200。证据为服务器 `real-conversion-server-check-20260926.log`；这些 HTTP 记录不证明客户端预览或保存体验。
+- `012307a` 构建后四个网页包的源码未再改动。线上 `/admin/`、`/merchant/`、`/platform/`、`/user/` 均返回 200，线上目录包含对应构建目录的全部文件且内容一致；多出的 91、90、73、50 个文件均是旧版静态资源，保留以免影响缓存中的旧页面。Nginx、Docker、PM2 启用且运行中，PostgreSQL、Redis、MinIO 健康，worker 无重启；证书有效期至 2026-12-17 UTC。
