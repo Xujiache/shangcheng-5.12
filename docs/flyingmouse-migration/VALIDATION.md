@@ -96,3 +96,9 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 用户提供的 40 KiB DOCX 在本地和生产 worker 镜像中转成 Markdown，结果 SHA-256 一致。提交 `87e2143` 将 DOCX 加入 `convert:md` 白名单；生产 API 构建、18 项后端测试及公网 HTTPS 上传→转换→鉴权下载→结果哈希校验→删除均通过。测试原件及临时产物已从服务器删除。
 - 同一 DOCX 的 PDF 在 Linux worker 上可读且中文完整；macOS 本地渲染缺中文字。另一份含表格的合成 DOCX 在 Linux 上转 PDF 时曾丢失表格文字，因此 DOCX→PDF 仍不在生产白名单。
 - 本地测试适配器标示单文件 1 GiB、单批 2 GiB；生产仍为 64 MiB、256 MiB。隔离 worker 使用原 3 GiB tmpfs 转 1 GiB TXT→MD 报 `UPLOAD_DISK_BUDGET_EXCEEDED`；改用磁盘临时目录后报 `Invalid string length`。同镜像 128 MiB 和 256 MiB 文本样本转 Markdown 成功，但未覆盖其他格式及公网大文件链路。不得仅修改能力接口数值来宣称 1 GiB/2 GiB 可用。
+
+## 2026-09-26 PDF 转 PNG
+
+- 原 `8483737` worker 镜像在隔离 CLI 中将单页 PDF 转为 2481×3508 PNG，目视检查中文、表格及图片均可见；双页样本分别包含文档页和蓝色图片页，输出 ZIP 按顺序保存 2481×3508 与 267×200 两张 PNG，第二页已目视核对为蓝色；损坏 PDF 被拒绝。证据为服务器 `conversion-e2e/pdf-png-20260926/`、`conversion-e2e/pdf-png-distinct-20260926/` 和 `pdf-png-corrupt-20260926.log`。
+- 后端白名单将 PDF 加入 `convert:png`，不改 worker 镜像。Node 24 环境下 18 项转换后端测试及 API 构建通过；隔离 PostgreSQL、Redis、MinIO、API 和生产同款 worker 的单页、双页 HTTP 转换均通过上传、排队、鉴权下载、跨账号拒绝、结果检查和删除。证据为服务器 `conversion-e2e/http-pdf-png-20260926.log` 及同目录脚本。
+- 生产 HTTPS 重放单页和双页转换均通过，TXT→MD、SRT→VTT、PNG→JPG 回归通过；四张转换表、测试账号、Redis 队列和私有 bucket 对象数均为零，worker 心跳正常且无重启。证据为服务器 `production-pdf-png-http-20260926.log`、`production-pdf-png-regression-20260926.log` 和 `check-pdf-png-production-20260926.log`。至此生产开放十五组输入→输出组合、七项操作；真实多页文件和大文件质量仍待验证。
