@@ -46,4 +46,4 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 目标提交 `f39ea43`；源码清单更新后，298 个文件 SHA-256 校验通过。worker 镜像使用 pnpm 9.0.0 构建，启动文件为 `dist/workers/conversion.worker.js`。
 - 在一次性 PostgreSQL、Redis、MinIO 容器中执行转换建表 SQL、同步 Prisma 测试库，再启动隔离 API 和 worker。TXT→MD、SRT→VTT、PNG→JPG 均通过服务层上传、入队、转换、鉴权下载和删除；TXT→MD 另通过 HTTP 分片上传、跨账号下载拒绝及删除。
 - 隔离环境通过取消、失败重试和过期上传清理。512 MiB tmpfs 会触发源码内置的 1 GiB 磁盘余量限制；改用 3 GiB tmpfs 后上述测试通过。测试容器已清理，生产服务健康检查返回 200。
-- 证据留在服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/conversion-e2e/`；镜像依赖清单留在同级 `conversion-worker-package-inventory.json`。这些测试未覆盖小程序真机、大文件、桌面 GUI 质量对比和生产许可审查。生产 worker 未启动，API 转换开关仍关闭。
+- 证据留在服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/conversion-e2e/`；镜像 SPDX 2.3 清单和依赖清单分别留在同级 `conversion-worker.spdx.json`、`conversion-worker-package-inventory.json`。这些测试未覆盖小程序真机、大文件、桌面 GUI 质量对比和生产许可审查。生产 worker 未启动，API 转换开关仍关闭。
