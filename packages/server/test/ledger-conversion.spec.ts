@@ -16,6 +16,7 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:png', ['jpg'])).toBeTruthy()
     expect(findConversionOperation('convert:png', ['jpeg'])).toBeTruthy()
     expect(findConversionOperation('convert:png', ['webp'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['pdf'])).toBeTruthy()
     expect(findConversionOperation('convert:webp', ['jpg'])).toBeTruthy()
     expect(findConversionOperation('convert:webp', ['jpeg'])).toBeTruthy()
     expect(findConversionOperation('convert:webp', ['png'])).toBeTruthy()

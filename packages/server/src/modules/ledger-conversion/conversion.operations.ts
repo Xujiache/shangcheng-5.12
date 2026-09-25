@@ -43,8 +43,8 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:png',
-    label: 'JPG/JPEG/WebP → PNG',
-    inputExtensions: ['jpg', 'jpeg', 'webp'],
+    label: 'JPG/JPEG/WebP/PDF → PNG',
+    inputExtensions: ['jpg', 'jpeg', 'webp', 'pdf'],
     targetExtension: 'png',
     kind: 'convert',
     options: [],
