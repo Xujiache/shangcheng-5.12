@@ -6,7 +6,7 @@
     "server.js:conversion routes",
     "cli.js:VALUE_OPTIONS"
   ],
-  "note": "Candidate pairs only. A pair is public only after Linux engine, fixture, quality and mini-program acceptance.",
+  "note": "Candidate pairs only. Server smoke verification is small-sample evidence, not desktop quality or mini-program acceptance; production exposure follows the backend allowlist.",
   "optionCatalog": {
     "videoCodec": ["h264", "h265", "av1"],
     "textEncoding": ["auto", "utf-8", "gb18030", "utf-16le", "utf-16be"],
@@ -8972,12 +8972,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "unverified",
+      "status": "server-smoke-verified",
       "acceptance": {
-        "linuxArtifactOpens": false,
+        "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": false,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
@@ -8990,12 +8990,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "unverified",
+      "status": "server-smoke-verified",
       "acceptance": {
-        "linuxArtifactOpens": false,
+        "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": false,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
@@ -14300,12 +14300,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "linux-source-sample-opened",
+      "status": "server-smoke-verified",
       "acceptance": {
         "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": true,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
@@ -14318,12 +14318,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "unverified",
+      "status": "server-smoke-verified",
       "acceptance": {
-        "linuxArtifactOpens": false,
+        "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": false,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
@@ -16604,12 +16604,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "linux-source-sample-opened",
+      "status": "server-smoke-verified",
       "acceptance": {
         "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": true,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
@@ -18548,12 +18548,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "linux-source-sample-opened",
+      "status": "server-smoke-verified",
       "acceptance": {
         "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": true,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
@@ -19088,12 +19088,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "unverified",
+      "status": "server-smoke-verified",
       "acceptance": {
-        "linuxArtifactOpens": false,
+        "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": false,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },

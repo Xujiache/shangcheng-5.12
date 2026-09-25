@@ -58,3 +58,10 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 专用 bucket `jiujiu-conversions` 已存在且无匿名访问策略。worker 使用 `8483737` 镜像接入生产 PostgreSQL、Redis、MinIO，容器 `jiujiu-conversion-worker-production` 已配置重启策略、只读根目录及资源上限；API 配置 `CONVERSION_BUCKET=jiujiu-conversions`、`CONVERSION_FEATURE_ENABLED=true` 后重启 PM2。配置文件保存在 `/etc/jiujiu/`，权限均为 600，不入库。
 - 线上 `https://ewsn.top` 的鉴权能力接口仅返回 TXT→MD、SRT→VTT、PNG→JPG 三组；三组均经 HTTPS 上传、排队、转换、鉴权下载、跨账号拒绝和删除验证，产物分别为可读 Markdown、VTT 和 JPEG。证据为服务器 `production-conversion-three-20260926.log` 及同目录的测试脚本；测试后四张转换表、队列、测试账号和 bucket 对象数均为零。API 健康检查为 200，worker 持续心跳且无重启。
 - 这是服务器侧小样本验证；其余格式仍不在生产白名单，小程序端、真实大文件及桌面质量对比未验收。源码授权凭证与第三方许可核对状态见 `LICENSING.md`。
+
+## 2026-09-26 图片格式扩展
+
+- 同一 `8483737` worker 镜像在隔离容器内完成 JPG→PNG、JPG→WebP、PNG→WebP、WebP→PNG 的 CLI 转换：产物可解码、尺寸为 64×48，透明输入在支持透明的输出中保留透明像素；损坏的 JPG 被拒绝。首次试跑的 128 MiB tmpfs 触发原有 1 GiB 磁盘余量保护，改用与生产一致的 3 GiB tmpfs 后通过。证据为服务器 `raster-candidates-20260926.cjs` 和同名日志。
+- 后端提交 `c792363` 新增两项操作，覆盖上述四个输入→输出组合。隔离 PostgreSQL、Redis、MinIO、API 及原 worker 镜像的 HTTP 链路逐组通过上传、排队、转换、鉴权下载、跨账号拒绝及删除；临时服务已清理。证据为服务器 `conversion-e2e/http-raster-20260926.log`、同目录的测试脚本和部署脚本。
+- 生产 API 更新后，新四组及原三组均通过 `https://ewsn.top` 完整 HTTP 测试。测试后四张转换表、Redis 队列、测试账号和私有 bucket 对象数均为零；worker 无重启，API 内部就绪检查与公网接口均为 200。证据为服务器 `production-raster-http-20260926.log`、`production-regression-http-20260926.log` 和对应脚本。
+- 当前生产共开放七组；新增四组尚未与 Windows CLI 输出逐字节比较，也未完成桌面 GUI 质量对比、真实照片或小程序端验收。其余候选组合继续关闭。
