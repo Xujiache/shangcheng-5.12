@@ -16,6 +16,8 @@ export interface ConversionOperation {
 }
 
 const AUDIO_FORMATS = ['mp3', 'wav', 'flac', 'm4a', 'ogg', 'aac', 'opus', 'wma']
+const VIDEO_INPUT_FORMATS = ['mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v', 'm4s', 'wmv', 'flv']
+const VIDEO_OUTPUT_FORMATS = ['mp4', 'webm', 'mkv', 'mov']
 const IMAGE_OUTPUT_FORMATS = ['gif', 'avif', 'tiff', 'ico', 'bmp', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
 
 // Extended only after the corresponding Linux fixture and quality checks pass.
@@ -44,10 +46,11 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:txt',
-    label: '图片文字识别',
+    label: '图片/字幕 → TXT',
     inputExtensions: [
       'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp',
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
+      'srt', 'vtt', 'ass', 'ssa',
     ],
     targetExtension: 'txt',
     kind: 'convert',
@@ -55,12 +58,20 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:vtt',
-    label: 'SRT → VTT',
-    inputExtensions: ['srt'],
+    label: '字幕 → VTT',
+    inputExtensions: ['srt', 'ass', 'ssa'],
     targetExtension: 'vtt',
     kind: 'convert',
     options: [],
   },
+  ...(['srt', 'ass', 'ssa'] as const).map((target) => ({
+    id: `convert:${target}`,
+    label: `字幕 → ${target.toUpperCase()}`,
+    inputExtensions: ['srt', 'vtt', 'ass', 'ssa'].filter((source) => source !== target),
+    targetExtension: target,
+    kind: 'convert' as const,
+    options: [],
+  })),
   {
     id: 'convert:jpg',
     label: '图片/PDF → JPG',
@@ -98,7 +109,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     id: 'convert:pdf',
     label: '图片/Markdown → PDF',
     inputExtensions: [
-      'png', 'jpg', 'jpeg', 'webp', 'md', 'gif', 'avif',
+      'png', 'jpg', 'jpeg', 'webp', 'md', 'docx', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
     ],
     targetExtension: 'pdf',
@@ -115,16 +126,30 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   ...AUDIO_FORMATS.map((target) => ({
     id: `convert:${target}`,
-    label: `音频 → ${target.toUpperCase()}`,
-    inputExtensions: AUDIO_FORMATS.filter((source) => source !== target),
+    label: `音频/视频 → ${target.toUpperCase()}`,
+    inputExtensions: [
+      ...AUDIO_FORMATS.filter((source) => source !== target),
+      ...VIDEO_INPUT_FORMATS,
+    ],
     targetExtension: target,
     kind: 'convert' as const,
     options: [],
   })),
   ...IMAGE_OUTPUT_FORMATS.map((target) => ({
     id: `convert:${target}`,
-    label: `图片 → ${target.toUpperCase()}`,
-    inputExtensions: target === 'tiff' ? ['png', 'jpg'] : ['png', 'jpg', 'webp'],
+    label: `${target === 'gif' ? '图片/视频' : '图片'} → ${target.toUpperCase()}`,
+    inputExtensions: [
+      ...(target === 'tiff' ? ['png', 'jpg'] : ['png', 'jpg', 'webp']),
+      ...(target === 'gif' ? VIDEO_INPUT_FORMATS : []),
+    ],
+    targetExtension: target,
+    kind: 'convert' as const,
+    options: [],
+  })),
+  ...VIDEO_OUTPUT_FORMATS.map((target) => ({
+    id: `convert:${target}`,
+    label: `视频 → ${target.toUpperCase()}`,
+    inputExtensions: VIDEO_INPUT_FORMATS.filter((source) => source !== target),
     targetExtension: target,
     kind: 'convert' as const,
     options: [],

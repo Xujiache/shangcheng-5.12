@@ -9,7 +9,7 @@ import { assertPrivateConversionBucket } from '../src/modules/ledger-conversion/
 
 describe('ledger conversion gate', () => {
   test('only Linux-observed pairs are advertised', () => {
-    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(27)
+    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(34)
     expect(findConversionOperation('convert:md', ['txt'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['docx'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['gif'])).toBeTruthy()
@@ -32,10 +32,16 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:webp', ['pdf'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['png'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['md'])).toBeTruthy()
-    expect(findConversionOperation('convert:pdf', ['docx'])).toBeNull()
+    expect(findConversionOperation('convert:pdf', ['docx'])).toBeTruthy()
     expect(findConversionOperation('convert:flac', ['mp3'])).toBeTruthy()
     expect(findConversionOperation('convert:flac', ['flac'])).toBeNull()
     expect(findConversionOperation('convert:wma', ['opus'])).toBeTruthy()
+    expect(findConversionOperation('convert:wma', ['mp4'])).toBeTruthy()
+    expect(findConversionOperation('convert:mp4', ['webm'])).toBeTruthy()
+    expect(findConversionOperation('convert:mp4', ['mp4'])).toBeNull()
+    expect(findConversionOperation('convert:gif', ['m4s'])).toBeTruthy()
+    expect(findConversionOperation('convert:ass', ['vtt'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['ssa'])).toBeTruthy()
     expect(findConversionOperation('convert:jxl', ['webp'])).toBeTruthy()
     expect(findConversionOperation('convert:tiff', ['png'])).toBeTruthy()
     expect(findConversionOperation('convert:tiff', ['webp'])).toBeNull()
