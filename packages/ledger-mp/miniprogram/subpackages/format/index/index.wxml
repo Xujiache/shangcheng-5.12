@@ -7,8 +7,8 @@
   <view wx:if="{{activeTab === 'convert'}}" class="format__content {{files.length ? 'format__content--with-dock' : ''}}">
     <view wx:if="{{loading}}" class="format__state"><view class="format__spinner"></view><view>正在连接转换服务…</view></view>
     <view wx:elif="{{!capabilities || !capabilities.available}}" class="format__state">
-      <view class="format__state-title">暂时无法连接</view>
-      <view class="format__muted">{{error || '请确认本地转换服务已启动'}}</view>
+      <view class="format__state-title">{{capabilities ? '格式转换暂未开放' : '暂时无法连接'}}</view>
+      <view class="format__muted">{{capabilities ? '服务正在准备中，请稍后重试' : (error || '请检查网络连接')}}</view>
       <button size="mini" class="format__button format__button--outline" bindtap="refresh">重新连接</button>
     </view>
     <block wx:else>

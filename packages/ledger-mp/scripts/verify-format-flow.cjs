@@ -9,9 +9,9 @@ const vm = require('node:vm')
 const { stripTypeScriptTypes } = require('node:module')
 const { test } = require('node:test')
 const source = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.ts'), 'utf8')
-const code = stripTypeScriptTypes(source.replace(/^import .*$/gm, ''))
-const op = (target, inputs, id = `convert:${target}`) => ({ id, targetExtension: target, inputExtensions: inputs, label: `转为 ${target.toUpperCase()}`, kind: 'convert' })
-const capabilities = { available: true, limits: { maxFileBytes: 1024, maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov']), op('epub', ['txt'])] }
+const code = stripTypeScriptTypes(source.replace(/^import[\s\S]*?from '[^']+'$/gm, ''))
+const op = (target, inputs, id = `convert:${target}`, options = []) => ({ id, targetExtension: target, inputExtensions: inputs, label: `转为 ${target.toUpperCase()}`, kind: 'convert', options })
+const capabilities = { available: true, limits: { maxFileBytes: 1024, maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('epub', ['txt'], 'convert:epub', ['textEncoding'])] }
 const event = (dataset, value) => ({ currentTarget: { dataset }, detail: { value } })
 const file = (name, size = 100) => ({ name, path: `/test/${name}`, size })
 function setup() {
@@ -116,6 +116,13 @@ test('PDF group validation and options survive submission; unavailable encryptio
   page.onOptionSelect(event({ key: 'splitMode' }, 1)); await page.start(); assert.equal(calls.created.length, 0)
   page.onOptionInput(event({ key: 'groupSize' }, '2')); await page.start()
   assert.equal(calls.created[0][2].splitMode, 'group'); assert.equal(calls.created[0][2].groupSize, '2')
+})
+test('job submission excludes options unsupported by the selected operation', async () => {
+  const { page, calls } = setup()
+  page.appendFiles([file('a.jpg')]); page.chooseOperation(event({ id: 'convert:png' }))
+  page.setData({ optionValues: { videoCodec: 'h265', textEncoding: 'utf-8' } })
+  await page.start()
+  assert.deepEqual(Object.keys(calls.created[0][2]), [])
 })
 test('export and task menus dispatch existing actions without dropping functionality', () => {
   const { page, calls } = setup()

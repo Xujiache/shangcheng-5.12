@@ -580,7 +580,11 @@ MotionPage({
       const ids: string[] = []
       for (let i = 0; i < this.data.files.length; i++)
         ids.push(await this.uploadOne(this.data.files[i], i, this.data.files.length))
-      await conversionApi.createJob(this.data.operation.id, ids, this.data.optionValues)
+      const options: Record<string, string> = {}
+      for (const [key, value] of Object.entries(this.data.optionValues)) {
+        if (this.data.operation.options.includes(key) && value) options[key] = value
+      }
+      await conversionApi.createJob(this.data.operation.id, ids, options)
       this.setData({
         files: [],
         operation: null,
