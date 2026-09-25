@@ -71,3 +71,10 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 
 - `sample.jpeg` 使用与已验证 JPG 相同的实际 JPEG 文件内容。原 worker 镜像 CLI 成功生成可解码的 PNG 和 WebP；生产 API 提交 `34034ab` 将 `jpeg` 加入已有两项图片操作，并通过公网 HTTPS 的上传、转换、鉴权下载、跨账号拒绝和删除验证。证据为服务器 `jpeg-alias-cli-20260926.log`、`production-jpeg-http-20260926.log` 及测试脚本。
 - 当前生产开放九组输入→输出组合、五项操作；JPEG 扩展名两组使用已有转换链路，未新增 worker 依赖。小程序端及真实照片仍未验收，其他候选组合继续关闭。
+
+## 2026-09-26 转换服务启动恢复
+
+- 生产 PM2 的保存配置包含 API 可执行文件和工作目录，`pm2-root` 已启用；工作目录 `.env` 链接到权限为 600 的 `/etc/jiujiu/server.env`。Docker worker 使用 `unless-stopped`。旧实现只在 API 启动时连接转换存储一次，依赖晚启动可能导致 API 在线而转换持续不可用。
+- 提交 `392bf86` 让转换服务每 30 秒重试失败的初始化，合并并发尝试，且在 bucket 隐私策略、Redis PING 均通过前保持不可用。针对初次存储失败、随后成功的后端测试通过。
+- 两组隔离环境分别让 MinIO、Redis 晚于 API 启动；初始转换初始化失败，依赖就绪后均无需重启 API，鉴权能力接口及 TXT→MD 的上传、入队、转换、隔离下载和删除通过。证据为服务器 `conversion-e2e/api-startup-retry-20260926.log`、`http-startup-retry-20260926.log`、`api-redis-late-20260926.log`、`http-redis-late-20260926.log` 及同目录的重放脚本。临时容器与 API 已清理。
+- 生产 API 更新后，TXT→MD、SRT→VTT、PNG→JPG 的公网 HTTPS 回归通过，worker 未重启，API 就绪与公网接口返回 200；证据为服务器 `production-startup-retry-http-20260926.log`。未对生产主机执行整机重启。
