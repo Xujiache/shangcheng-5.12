@@ -9,10 +9,15 @@ import { assertPrivateConversionBucket } from '../src/modules/ledger-conversion/
 
 describe('ledger conversion gate', () => {
   test('only Linux-observed pairs are advertised', () => {
-    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(7)
+    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(9)
     expect(findConversionOperation('convert:md', ['txt'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['docx'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['pdf'])).toBeNull()
+    expect(findConversionOperation('convert:docx', ['md'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['png'])).toBeNull()
+    expect(findConversionOperation('convert:txt', ['png'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['jpg'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['jpeg'])).toBeTruthy()
     expect(findConversionOperation('convert:png', ['jpg'])).toBeTruthy()
     expect(findConversionOperation('convert:png', ['jpeg'])).toBeTruthy()
     expect(findConversionOperation('convert:png', ['webp'])).toBeTruthy()
@@ -23,6 +28,7 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:webp', ['png'])).toBeTruthy()
     expect(findConversionOperation('convert:webp', ['pdf'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['png'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['md'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['docx'])).toBeNull()
     expect(findConversionOperation('images-to-pdf', ['png', 'jpeg'])).toBeTruthy()
     expect(findConversionOperation('images-to-pdf', ['pdf'])).toBeNull()

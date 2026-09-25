@@ -26,6 +26,25 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     options: [],
   },
   {
+    id: 'convert:docx',
+    label: 'Markdown → Word',
+    inputExtensions: ['md'],
+    targetExtension: 'docx',
+    kind: 'convert',
+    options: [],
+  },
+  {
+    id: 'convert:txt',
+    label: '图片文字识别',
+    inputExtensions: [
+      'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp',
+      'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
+    ],
+    targetExtension: 'txt',
+    kind: 'convert',
+    options: [],
+  },
+  {
     id: 'convert:vtt',
     label: 'SRT → VTT',
     inputExtensions: ['srt'],
@@ -59,8 +78,8 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:pdf',
-    label: '图片 → PDF',
-    inputExtensions: ['png', 'jpg', 'jpeg', 'webp'],
+    label: '图片/Markdown → PDF',
+    inputExtensions: ['png', 'jpg', 'jpeg', 'webp', 'md'],
     targetExtension: 'pdf',
     kind: 'convert',
     options: [],
