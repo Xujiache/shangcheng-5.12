@@ -12,7 +12,7 @@ services:
       minio: { condition: service_healthy }
     environment:
       DATABASE_URL: ${CONVERSION_DATABASE_URL:?set CONVERSION_DATABASE_URL}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${CONVERSION_REDIS_URL:?set CONVERSION_REDIS_URL}
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${CONVERSION_S3_ACCESS_KEY:?set CONVERSION_S3_ACCESS_KEY}
       S3_SECRET_KEY: ${CONVERSION_S3_SECRET_KEY:?set CONVERSION_S3_SECRET_KEY}

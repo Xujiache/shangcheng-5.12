@@ -2,7 +2,7 @@
   "source": "local:flyingmouse-format",
   "version": "0.7.10",
   "fileCount": 298,
-  "totalBytes": 6510073,
+  "totalBytes": 6510759,
   "files": [
     {
       "path": ".gitignore",
@@ -86,8 +86,8 @@
     },
     {
       "path": "cli.js",
-      "size": 14508,
-      "sha256": "80b559452cdaf8e3c958bff7065f1754c6821608b351ccc0c3413d801ce3e95d"
+      "size": 14950,
+      "sha256": "997aba2f0ce8fa1b595eef8f95167caa49fe6def8aecc1c2cde056cd00ff6655"
     },
     {
       "path": "config.js",
@@ -456,8 +456,8 @@
     },
     {
       "path": "office-engine.js",
-      "size": 6309,
-      "sha256": "59d74ac68ce5f2c281f4970c1932065e2cbf830fa7ce15c1e0a90c8692e42641"
+      "size": 6317,
+      "sha256": "bda33a1f7c00e788efa988422b7a4821480446075ebca3b6dd94e8ab4e1905c1"
     },
     {
       "path": "office-process.js",
@@ -881,8 +881,8 @@
     },
     {
       "path": "tests/cli.test.js",
-      "size": 3130,
-      "sha256": "6905085b0a664095ea6ab4d7507be2b758a6c87a72cf66fbd0d1b313e1f826df"
+      "size": 3366,
+      "sha256": "17a6caf00ad25d7b187cc1e7c823d7153e20ea4ebada5d37aa12a1a88fca182d"
     },
     {
       "path": "tests/conversion-audit-regressions.test.js",

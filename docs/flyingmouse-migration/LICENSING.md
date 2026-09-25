@@ -4,3 +4,4 @@
 - 源快照的 `docs/privacy-policy.html` 列出 PyMuPDF / AGPL-3.0 且源码链接是占位符。当前 Linux worker **未安装** PyMuPDF/docengine；PDF 结构化链路在明确源码提供及 AGPL 义务之前不得开启。
 - 源快照内的 `bin/avs3` 包含 Windows 可执行文件和模型，但缺少其 `.gitignore` 所列的 `THIRD_PARTY_NOTICE.txt`。它只保存在只读源码快照中，Linux worker 构建时排除，不进入小程序包或运行镜像。
 - FFmpeg、LibreOffice、Poppler、Tesseract、Pandoc、qpdf、Node/Python 依赖须依据最终 worker 镜像生成 SBOM 与实际许可证清单。许可检查和真实格式质量验收均通过之前，不部署生产 worker。
+- 2026-09-26 已从测试镜像生成依赖清单：461 个去重 Node 包、443 个 Debian 包，保存在服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/conversion-worker-package-inventory.json`。清单包含包版本、Node 许可证字段和 Debian copyright 文件中的许可证标识；源码授权依据与清单的人工核对仍待完成。
