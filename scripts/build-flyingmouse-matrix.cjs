@@ -43,6 +43,8 @@ const serverVerified = new Set([
   'png:jpg',
   'jpg:png',
   'jpg:webp',
+  'jpeg:png',
+  'jpeg:webp',
   'png:webp',
   'webp:png',
 ])

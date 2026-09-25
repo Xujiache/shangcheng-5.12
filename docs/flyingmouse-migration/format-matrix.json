@@ -8648,12 +8648,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "unverified",
+      "status": "server-smoke-verified",
       "acceptance": {
-        "linuxArtifactOpens": false,
+        "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": false,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
@@ -8666,12 +8666,12 @@
       "experimentalInput": false,
       "cliOptions": [],
       "desktopOnlyOptions": [],
-      "status": "unverified",
+      "status": "server-smoke-verified",
       "acceptance": {
-        "linuxArtifactOpens": false,
+        "linuxArtifactOpens": true,
         "windowsCliSampleByteEqual": false,
         "desktopQualityCompared": false,
-        "workerE2E": false,
+        "workerE2E": true,
         "miniProgramDevice": false
       }
     },
