@@ -16,6 +16,7 @@ interface LoginData {
   loading: boolean
   checking: boolean
   agreed: boolean
+  guestTop: number
   logoUrl: string
   privacyContractName: string
 }
@@ -36,11 +37,23 @@ MotionPage({
     checking: !!getToken(),
     // 隐私合规：必须由用户主动勾选，不得默认同意。
     agreed: false,
+    guestTop: 64,
     logoUrl: getLogo(),
     privacyContractName: '《小程序用户隐私保护指引》',
   } as LoginData,
 
   onLoad() {
+    const statusBarHeight = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
+    let guestTop = statusBarHeight + 8
+    try {
+      const capsule = wx.getMenuButtonBoundingClientRect()
+      if (capsule.top > statusBarHeight && capsule.height > 0) {
+        guestTop = Math.max(guestTop, capsule.top + (capsule.height - 38) / 2)
+      }
+    } catch (e) {
+      /* 旧基础库使用状态栏高度 */
+    }
+    this.setData({ guestTop })
     this.loadPrivacySetting()
     authApi
       .config()

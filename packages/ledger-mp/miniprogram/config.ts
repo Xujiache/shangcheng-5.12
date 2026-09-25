@@ -2,11 +2,19 @@
  * 门窗利账 · 运行配置
  *
  * API_BASE：后端基址（不含 /api/v1，request 工具会补 /api/v1/l/*）。
- * - 默认连统一后端 https://ewsn.top（与商城其它端一致）。
- * - 本地调试后端：改成 'http://localhost:3000'，并在微信开发者工具
- *   勾选「不校验合法域名」（project.config 已设 urlCheck:false）。
+ * 生产环境：业务与格式转换请求均使用统一 HTTPS 后端。
  */
 export const API_BASE = 'https://ewsn.top'
+export const CONVERSION_API_BASE = API_BASE
+export const LOCAL_CONVERSION_TEST = false
+
+const AVATAR_IMAGE_PREFIX = '/api/v1/l/avatar-image/'
+export function isAvatarImage(value: string): boolean {
+  return /^https?:\/\//.test(value) || value.startsWith(AVATAR_IMAGE_PREFIX)
+}
+export function avatarImageSrc(value: string): string {
+  return value.startsWith(AVATAR_IMAGE_PREFIX) ? API_BASE + value : value
+}
 
 /** access token 在本地存储的键名 */
 export const TOKEN_KEY = 'ledger_token'

@@ -7,10 +7,11 @@
     <!-- 用户卡 -->
     <view class="prof__user lz-card lz-card--glow">
       <image
-        wx:if="{{avatarUrl}}"
+        wx:if="{{avatarUrl && !avatarFailed}}"
         class="lz-avatar prof__avatar"
         src="{{avatarUrl}}"
         mode="aspectFill"
+        binderror="onAvatarError"
       />
       <view wx:else class="lz-avatar prof__avatar">{{avatarChar}}</view>
       <view class="lz-flex1" style="min-width: 0;">

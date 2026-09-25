@@ -3,7 +3,7 @@
     <image class="login__hero-image" src="/assets/login/login-hero.jpg" mode="aspectFill" />
     <view class="login__hero-shade"></view>
     <view class="login__hero-bridge"></view>
-    <view class="login__guest-top" hover-class="login__guest-top--press" bindtap="continueAsGuest">
+    <view class="login__guest-top" style="top: {{guestTop}}px" hover-class="login__guest-top--press" bindtap="continueAsGuest">
       <text>暂不登录</text>
     </view>
   </view>

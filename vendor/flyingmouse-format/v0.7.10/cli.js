@@ -14,7 +14,10 @@ const VALUE_OPTIONS = new Map([
   ["--output", "output"],
   ["--output-dir", "outputDir"],
   ["--video-codec", "videoCodec"],
+  ["--alpha-background", "alphaBackground"],
   ["--pdf-action", "pdfAction"],
+  ["--split-mode", "splitMode"],
+  ["--group-size", "groupSize"],
   ["--text-encoding", "textEncoding"],
   ["--password", "password"]
 ]);
@@ -32,7 +35,10 @@ Options:
   --output <file>             Single-result output path
   --output-dir <directory>    Output directory for one or more results
   --video-codec <h264|h265|av1>
+  --alpha-background <color>  Video alpha compositing background
   --pdf-action <encrypt|decrypt>
+  --split-mode <page|group>    PDF split mode
+  --group-size <pages>         Pages per group when splitting PDFs
   --password <password>       PDF password (never printed in JSON output)
   --text-encoding <encoding>  EPUB source: auto, utf-8, gb18030, utf-16le, utf-16be
   --json                      Stable machine-readable output
@@ -307,8 +313,11 @@ async function executeCli(parsed, runtime) {
         results.push(await postMultipart(`${baseUrl}/api/convert`, {
           targetFormat: parsed.options.to,
           videoCodec: parsed.options.videoCodec,
+          alphaBackground: parsed.options.alphaBackground,
           textEncoding: parsed.options.textEncoding,
           pdfAction: parsed.options.pdfAction,
+          splitMode: parsed.options.splitMode,
+          groupSize: parsed.options.groupSize,
           password: parsed.options.password
         }, [file], "file"));
       }

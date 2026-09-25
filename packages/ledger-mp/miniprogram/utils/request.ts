@@ -1,5 +1,5 @@
 import { navigation } from './page-transition'
-import { API_BASE, TOKEN_KEY } from '../config'
+import { API_BASE, CONVERSION_API_BASE, TOKEN_KEY } from '../config'
 // ── 读接口本地缓存（原 utils/cache 内联进来：避免新增文件被 DevTools 增量编译漏掉）──
 const CACHE_PREFIX = 'lc:' // ledger read-cache 命名空间
 const CACHE_VERSION = 2 // 缓存结构版本；改结构时 +1，旧缓存自动作废
@@ -174,7 +174,8 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
   const token = app?.globalData?.token || wx.getStorageSync(TOKEN_KEY) || ''
   const header: Record<string, string> = { 'content-type': 'application/json' }
   if (opts.auth !== false && token) header['Authorization'] = 'Bearer ' + token
-  const url = API_BASE + '/api/v1' + opts.url + buildQuery(opts.params)
+  const base = opts.url.startsWith('/l/conversions') ? CONVERSION_API_BASE : API_BASE
+  const url = base + '/api/v1' + opts.url + buildQuery(opts.params)
   // 读缓存：仅 GET 生效；键默认取 路径+查询串
   const method = opts.method || 'GET'
   const sensitive = /^\/l\/(auth|me(?:\/|$)|membership(?:\/|$)|pay(?:\/|$)|xpay(?:\/|$))/.test(

@@ -1,0 +1,16 @@
+<view class="file-visual file-visual--{{kind}}">
+  <image wx:if="{{thumbnailPath}}" class="file-visual__media" src="{{thumbnailPath}}" mode="aspectFill" />
+  <video wx:elif="{{kind === 'video' && mediaPath}}" class="file-visual__media" src="{{mediaPath}}" controls="{{false}}" autoplay="{{false}}" muted="{{true}}" show-center-play-btn="{{false}}" object-fit="cover" catchtap="noop" />
+  <view wx:else class="file-visual__paper">
+    <view wx:if="{{kind === 'document'}}" class="file-visual__lines"><view class="file-visual__line"></view><view class="file-visual__line"></view><view class="file-visual__line file-visual__line--short"></view></view>
+    <view wx:elif="{{kind === 'sheet'}}" class="file-visual__grid"><view class="file-visual__cell"></view><view class="file-visual__cell"></view><view class="file-visual__cell"></view><view class="file-visual__cell"></view></view>
+    <view wx:elif="{{kind === 'archive'}}" class="file-visual__zip"><view class="file-visual__zip-tooth"></view><view class="file-visual__zip-tooth"></view><view class="file-visual__zip-tooth"></view></view>
+    <view wx:elif="{{kind === 'slide'}}" class="file-visual__slide"><view class="file-visual__slide-line"></view></view>
+    <view wx:elif="{{kind === 'pdf'}}" class="file-visual__pdf">PDF</view>
+    <view wx:elif="{{kind === 'video'}}" class="file-visual__video-mark">▶</view>
+    <view wx:elif="{{kind === 'audio'}}" class="file-visual__audio">♪</view>
+    <view wx:else class="file-visual__other">···</view>
+  </view>
+  <view wx:if="{{kind === 'video'}}" class="file-visual__play">▶</view>
+  <view wx:if="{{(kind === 'image' || kind === 'video') && extension}}" class="file-visual__badge">{{extension}}</view>
+</view>

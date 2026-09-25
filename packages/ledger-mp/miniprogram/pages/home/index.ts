@@ -12,6 +12,7 @@ import {
   setMembership,
 } from '../../utils/store'
 import { makeShareCover } from '../../utils/share-cover'
+import { LOCAL_CONVERSION_TEST } from '../../config'
 
 const COLORMAP: Record<string, string> = {
   profile: 'c1',
@@ -21,6 +22,9 @@ const COLORMAP: Record<string, string> = {
   screen: 'c5',
   extras: 'c6',
 }
+const LOCAL_ADS = ['window-assistant', 'orders', 'customers', 'cutting', 'reports', 'new-year'].map(
+  (name) => ({ id: name, image: `/assets/ads/${name}.jpg`, link: '', title: name }),
+)
 // 头部大数对应的「当前周期」文案：日=今日 / 月=本月 / 年=本年（与所选单位一致）
 const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', year: '本年' }
 
@@ -81,7 +85,7 @@ MotionPage({
     }).then((p) => (this._cover = p))
   },
   onShow() {
-    const loggedIn = isLoggedIn()
+    const loggedIn = LOCAL_CONVERSION_TEST || isLoggedIn()
     this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
@@ -101,6 +105,11 @@ MotionPage({
     this.maybeShowChangelog()
   },
   async refreshMembershipAndData() {
+    if (LOCAL_CONVERSION_TEST) {
+      this.setData({ welcomeBannerVisible: false })
+      this.load()
+      return
+    }
     if (!isLoggedIn()) {
       this.setData({
         welcomeBannerVisible: false,
@@ -155,6 +164,7 @@ MotionPage({
   },
   // 新版本首开弹更新日志：按当前版本定向，每版本只弹一次
   maybeShowChangelog() {
+    if (LOCAL_CONVERSION_TEST) return
     // 更新日志接口需要 ledger token；游客态不发请求，避免 401 触发统一登出/重载。
     // 必须在 _clogChecked 置位前返回，这样同一页面登录成功后仍会检查一次。
     if (!isLoggedIn()) return
@@ -230,6 +240,23 @@ MotionPage({
   },
 
   async load(done?: () => void) {
+    if (LOCAL_CONVERSION_TEST) {
+      const period = this.data.period
+      this.setData({
+        periodLabel: PERIOD_LABEL[period] || '本年',
+        seriesTitle:
+          period === 'day'
+            ? '本月每日'
+            : period === 'year'
+              ? '近 5 年'
+              : `${this.data.ovYear} 年各月`,
+        loading: false,
+        loadError: false,
+        stale: false,
+      })
+      if (done) done()
+      return
+    }
     if (!isLoggedIn()) {
       this.setData({ loading: false, loadError: false })
       if (done) done()
@@ -321,6 +348,7 @@ MotionPage({
   },
 
   async loadUnread() {
+    if (LOCAL_CONVERSION_TEST) return
     if (!isLoggedIn()) return
     try {
       const r: any = await notificationApi.unreadCount()
@@ -332,6 +360,10 @@ MotionPage({
   },
 
   async loadAds() {
+    if (LOCAL_CONVERSION_TEST) {
+      this.setData({ ads: LOCAL_ADS })
+      return
+    }
     if (!isLoggedIn()) return
     try {
       const ads: any = await adApi.list()
@@ -378,7 +410,8 @@ MotionPage({
     navigation.navigateTo({ url: '/pages/work-log/index' })
   },
   toFormat() {
-    if (!requireLogin('登录后可免费使用格式转换，转换文件保留 30 天。')) return
+    if (!LOCAL_CONVERSION_TEST && !requireLogin('登录后可免费使用格式转换，转换文件保留 30 天。'))
+      return
     navigation.navigateTo({ url: '/subpackages/format/index/index' })
   },
   toTriangleTool() {

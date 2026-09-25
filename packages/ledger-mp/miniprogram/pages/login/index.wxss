@@ -37,7 +37,6 @@
 .login__guest-top {
   position: absolute;
   z-index: 1;
-  top: calc(env(safe-area-inset-top) + 14px);
   left: 20px;
   min-width: 82px;
   height: 38px;
@@ -63,7 +62,7 @@
   z-index: 2;
   min-height: 330px;
   margin-top: -2px;
-  padding: 18px 28px calc(14px + env(safe-area-inset-bottom));
+  padding: 44px 28px calc(14px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   background: #fff;
 }

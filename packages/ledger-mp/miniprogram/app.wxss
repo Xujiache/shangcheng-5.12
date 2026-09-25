@@ -11,6 +11,12 @@ page {
 view, text, button, input, textarea, scroll-view {
   box-sizing: border-box;
 }
+button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
 button::after {
   border: none;
 }

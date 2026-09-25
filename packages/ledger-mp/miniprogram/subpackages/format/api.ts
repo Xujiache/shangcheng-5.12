@@ -1,4 +1,4 @@
-import { API_BASE } from '../../config'
+import { CONVERSION_API_BASE } from '../../config'
 import { request, handleUnauthorized } from '../../utils/request'
 import { getToken } from '../../utils/store'
 
@@ -10,10 +10,14 @@ export interface Operation {
   targetExtension: string
   kind: string
   options: string[]
+  extensionLabel?: string
+  category?: string
+  displayLabel?: string
 }
 export interface Capabilities {
   available: boolean
   operations: Operation[]
+  features?: { pdfEncryption: boolean }
   limits: {
     maxFileBytes: number
     maxBatchBytes: number
@@ -29,6 +33,11 @@ export interface Asset {
   mimeType: string
   sizeBytes: number
   localPath?: string
+  sizeLabel?: string
+  extensionLabel?: string
+  visualKind?: string
+  thumbnailPath?: string
+  mediaPath?: string
 }
 export interface Job {
   id: string
@@ -36,12 +45,15 @@ export interface Job {
   progress: number
   error?: string
   operationId: string
+  options?: Record<string, string>
   createdAt: string
   expiresAt?: string
   uploads: { id: string; fileName: string; totalBytes: number }[]
   assets: Asset[]
   statusLabel?: string
   createdLabel?: string
+  operationLabel?: string
+  sourceLabel?: string
 }
 
 export const conversionApi = {
@@ -78,7 +90,7 @@ export function chunkUpload(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const task = wx.uploadFile({
-      url: `${API_BASE}/api/v1${ROOT}/uploads/${uploadId}/chunks`,
+      url: `${CONVERSION_API_BASE}/api/v1${ROOT}/uploads/${uploadId}/chunks`,
       filePath,
       name: 'file',
       formData: { index: String(index) },
@@ -108,7 +120,7 @@ export function chunkUpload(
 export function downloadAsset(jobId: string, assetId: string): Promise<string> {
   return new Promise((resolve, reject) => {
     wx.downloadFile({
-      url: `${API_BASE}/api/v1${ROOT}/jobs/${jobId}/assets/${assetId}`,
+      url: `${CONVERSION_API_BASE}/api/v1${ROOT}/jobs/${jobId}/assets/${assetId}`,
       header: { Authorization: 'Bearer ' + getToken() },
       timeout: 120_000,
       success: (res) => {

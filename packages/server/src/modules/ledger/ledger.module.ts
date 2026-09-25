@@ -13,6 +13,7 @@ import { LedgerBizController } from './ledger-biz.controller'
 import { LedgerAdminController } from './ledger-admin.controller'
 import { LedgerPayController } from './ledger-pay.controller'
 import { LedgerFeedbackMediaController } from './ledger-feedback-media.controller'
+import { LedgerAvatarMediaController } from './ledger-avatar-media.controller'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
 import { WorkbookService } from './workbook/workbook.service'
@@ -32,6 +33,7 @@ import { WorkbookController } from './workbook/workbook.controller'
     LedgerAdminController,
     LedgerPayController,
     LedgerFeedbackMediaController,
+    LedgerAvatarMediaController,
   ],
   providers: [
     WorkbookService,

@@ -1,0 +1,26 @@
+.file-visual { position: relative; width: 48px; height: 48px; flex-shrink: 0; overflow: hidden; border: 1px solid #dce4df; border-radius: 14px; background: #f2f6f3; }
+.file-visual--image, .file-visual--video { background: #dfe8e3; }
+.file-visual__media { display: block; width: 100%; height: 100%; }
+.file-visual__paper { position: relative; box-sizing: border-box; width: 31px; height: 39px; margin: 4px auto; overflow: hidden; border: 1.5px solid currentColor; border-radius: 3px; background: #fff; color: #71877c; }
+.file-visual__paper::after { content: ''; position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; background: #f2f6f3; border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(0); }
+.file-visual--document .file-visual__paper { color: #417cb6; }
+.file-visual--sheet .file-visual__paper { color: #318a6a; }
+.file-visual--archive .file-visual__paper { color: #ba8740; }
+.file-visual--slide .file-visual__paper { color: #d1754e; }
+.file-visual--pdf .file-visual__paper { color: #c3544d; }
+.file-visual--video .file-visual__paper { color: #627b89; }
+.file-visual--audio .file-visual__paper { color: #8a6cad; }
+.file-visual__lines { margin: 13px 5px 0; }
+.file-visual__line { height: 2px; margin-bottom: 5px; border-radius: 1px; background: currentColor; }
+.file-visual__line--short { width: 65%; }
+.file-visual__grid { display: flex; flex-wrap: wrap; gap: 2px; width: 18px; margin: 13px auto 0; }
+.file-visual__cell { box-sizing: border-box; width: 8px; height: 7px; border: 1px solid currentColor; }
+.file-visual__zip { width: 5px; margin: 12px auto 0; border-left: 2px solid currentColor; }
+.file-visual__zip-tooth { width: 4px; height: 3px; margin: 0 0 3px 2px; background: currentColor; }
+.file-visual__slide { width: 18px; height: 13px; margin: 13px auto 0; border: 1.5px solid currentColor; border-radius: 1px; }
+.file-visual__slide-line { width: 9px; height: 2px; margin: 4px auto; background: currentColor; }
+.file-visual__pdf { margin-top: 15px; text-align: center; font-size: 8px; font-weight: 700; }
+.file-visual__audio, .file-visual__video-mark, .file-visual__other { margin-top: 10px; text-align: center; font-size: 17px; }
+.file-visual__video-mark { font-size: 11px; }
+.file-visual__play { position: absolute; top: 13px; left: 17px; display: flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; background: rgba(0, 0, 0, .54); color: #fff; font-size: 8px; }
+.file-visual__badge { position: absolute; right: 2px; bottom: 2px; max-width: 38px; padding: 1px 3px; overflow: hidden; border-radius: 3px; background: rgba(255, 255, 255, .82); color: #31483e; font-size: 8px; font-weight: 600; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }

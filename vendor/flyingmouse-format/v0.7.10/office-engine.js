@@ -113,7 +113,7 @@ async function probeLibreOffice(command, options = {}) {
     timeout: options.timeout || 20000
   });
   const output = `${result.stdout || ""}\n${result.stderr || ""}`;
-  const match = /LibreOffice\s+([0-9]+(?:\.[0-9]+)+)/i.exec(output);
+  const match = /LibreOffice(?:Dev)?\s+([0-9]+(?:\.[0-9]+)+)/i.exec(output);
   if (!match) throw new OfficeEngineError("OFFICE_ENGINE_START_FAILED");
   return { enabled: true, version: match[1] };
 }

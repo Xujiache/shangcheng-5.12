@@ -19,6 +19,7 @@ export const ICONS: Record<string, string> = {
   close: 'M6 6l12 12M18 6L6 18',
   check: 'M5 13l4 4L19 7',
   camera: 'M4 8h3l2-2h6l2 2h3v12H4zM12 17a3.5 3.5 0 100-7 3.5 3.5 0 000 7z',
+  image: 'M4 4h16v16H4zM7 16l4-4 3 3 2-2 3 3M8.5 9h.01',
   up: 'M12 19V5M6 11l6-6 6 6',
   down: 'M12 5v14M6 13l6 6 6-6',
   orders: 'M7 3h7l5 5v13H7zM14 3v5h5M9 13h6M9 17h6',

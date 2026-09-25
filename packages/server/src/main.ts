@@ -53,8 +53,11 @@ async function bootstrap() {
     credentials: true,
   })
 
-  // Workbook sync needs 8 MB JSON; payment callback still uses rawBody for signature verification.
-  app.use('/api/v1/l/workbook/sync', json({ limit: '8mb' }))
+  // Workbook sync needs 8 MB JSON; keep this parser scoped without suppressing Nest's global JSON parser.
+  const workbookSyncJson = json({ limit: '8mb' })
+  app.use('/api/v1/l/workbook/sync', (req: Request, res: Response, next: NextFunction) =>
+    workbookSyncJson(req, res, next),
+  )
   app.getHttpAdapter().getInstance().disable('x-powered-by')
   app.use(
     helmet({

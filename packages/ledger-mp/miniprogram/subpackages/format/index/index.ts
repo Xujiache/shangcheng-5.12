@@ -1,16 +1,77 @@
 import { MotionPage } from '../../../utils/page-transition'
-import { Capabilities, conversionApi, chunkUpload, downloadAsset, Job, Operation } from '../api'
+import {
+  Asset,
+  Capabilities,
+  conversionApi,
+  chunkUpload,
+  downloadAsset,
+  Job,
+  Operation,
+} from '../api'
 import { isLoggedIn, requireLogin } from '../../../utils/store'
+import { LOCAL_CONVERSION_TEST } from '../../../config'
 
 interface PickedFile {
   name: string
   size: number
   path: string
+  thumbnailPath?: string
+  mediaPath?: string
+  visualKind?: string
   uploadId?: string
+  sizeLabel?: string
+  extensionLabel?: string
 }
 let pollTimer: ReturnType<typeof setInterval> | null = null
 const ext = (name: string) => name.split('.').pop()?.toLowerCase() || ''
+function visualKind(name: string) {
+  const extension = ext(name)
+  if (/^(png|jpe?g|webp|gif|bmp|tiff?|svg|heic|avif|ico|tga)$/.test(extension)) return 'image'
+  if (/^(mp4|mov|mkv|webm|avi|wmv|flv|m4v|mpe?g|3gp|ts)$/.test(extension)) return 'video'
+  if (/^(docx?|odt|rtf|txt|md|html?|epub|mobi|pages)$/.test(extension)) return 'document'
+  if (/^(xlsx?|ods|csv|tsv|numbers)$/.test(extension)) return 'sheet'
+  if (/^(zip|rar|7z|tar|gz|bz2|xz)$/.test(extension)) return 'archive'
+  if (/^(pptx?|odp|key)$/.test(extension)) return 'slide'
+  if (extension === 'pdf') return 'pdf'
+  if (/^(mp3|wav|flac|m4a|ogg|aac|opus|wma)$/.test(extension)) return 'audio'
+  return 'other'
+}
+function visual(name: string, path = '', thumbnailPath = '') {
+  const kind = visualKind(name)
+  return {
+    visualKind: kind,
+    thumbnailPath: thumbnailPath || (kind === 'image' ? path : ''),
+    mediaPath: kind === 'video' && !thumbnailPath ? path : '',
+  }
+}
 const msg = (error: unknown) => (error instanceof Error ? error.message : String(error))
+const sizeLabel = (bytes: number) =>
+  bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : bytes < 1024 * 1024 * 1024
+      ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+      : `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+const formatCategories = ['全部', '文档', '图片', '音频', '视频', '其他']
+function formatCategory(target: string) {
+  if (
+    /^(pdf|doc|docx|odt|rtf|txt|md|html|xlsx|xls|ods|csv|tsv|ppt|pptx|odp|epub|mobi)$/.test(target)
+  )
+    return '文档'
+  if (/^(jpg|jpeg|png|webp|gif|bmp|tiff|tif|svg|ico|avif|heic|tga)$/.test(target)) return '图片'
+  if (/^(mp3|wav|flac|m4a|ogg|aac|opus|wma)$/.test(target)) return '音频'
+  if (/^(mp4|mov|mkv|webm|avi|wmv|flv|m4v|mpeg|mpg|3gp|ts)$/.test(target)) return '视频'
+  return '其他'
+}
+const codecOptions = ['H.264 · 兼容优先', 'H.265 · 更小体积', 'AV1 · 高压缩率']
+const codecs = ['h264', 'h265', 'av1']
+const backgroundOptions = ['白色', '黑色', '绿色', '洋红色']
+const backgrounds = ['white', 'black', '0x00ff00', '0xff00ff']
+const encodingOptions = ['自动识别', 'UTF-8', 'GBK / GB18030', 'UTF-16LE', 'UTF-16BE']
+const encodings = ['auto', 'utf-8', 'gb18030', 'utf-16le', 'utf-16be']
+const pdfActionOptions = ['拆分', '加密', '解密']
+const pdfActions = ['', 'encrypt', 'decrypt']
+const splitModeOptions = ['每页一个 PDF', '每 N 页一组']
+const splitModes = ['page', 'group']
 const statusLabels: Record<string, string> = {
   queued: '排队中',
   running: '转换中',
@@ -28,7 +89,30 @@ function displayJob(job: Job, localPaths: Record<string, string> = {}): Job {
     ...job,
     statusLabel: statusLabels[job.status] || job.status,
     createdLabel,
-    assets: job.assets.map((asset) => ({ ...asset, localPath: localPaths[asset.id] })),
+    operationLabel:
+      job.operationId === 'images-to-pdf'
+        ? '多图合成 PDF'
+        : job.operationId === 'merge-pdfs'
+          ? '合并 PDF'
+          : job.operationId === 'convert:pdf' &&
+              job.uploads.every((row) => ext(row.fileName) === 'pdf')
+            ? job.options?.pdfAction === 'encrypt'
+              ? '加密 PDF'
+              : job.options?.pdfAction === 'decrypt'
+                ? '解密 PDF'
+                : '拆分 PDF'
+            : `转为 ${job.operationId.split(':')[1]?.toUpperCase() || job.operationId}`,
+    sourceLabel:
+      job.uploads.length === 1
+        ? job.uploads[0].fileName
+        : `${job.uploads[0].fileName} 等 ${job.uploads.length} 个文件`,
+    assets: job.assets.map((asset) => ({
+      ...asset,
+      localPath: localPaths[asset.id],
+      sizeLabel: sizeLabel(asset.sizeBytes),
+      extensionLabel: ext(asset.fileName).toUpperCase(),
+      ...visual(asset.fileName, localPaths[asset.id]),
+    })),
   }
 }
 
@@ -67,8 +151,33 @@ MotionPage({
     limitHint: '',
     files: [] as PickedFile[],
     operations: [] as Operation[],
+    filteredOperations: [] as Operation[],
+    activeTab: 'convert',
+    sourceOpen: false,
+    settingsOpen: false,
+    sortMode: false,
+    totalSizeLabel: '',
+    visibleFormatCategories: formatCategories,
+    formatCategory: '全部',
     operation: null as Operation | null,
+    formatOpen: false,
+    formatQuery: '',
+    codecOptions,
+    backgroundOptions,
+    encodingOptions,
+    pdfActionOptions,
+    splitModeOptions,
+    showVideoOptions: false,
+    showPdfOptions: false,
+    showTextEncoding: false,
     optionValues: {} as Record<string, string>,
+    optionIndexes: {
+      videoCodec: 0,
+      alphaBackground: 0,
+      textEncoding: 0,
+      pdfAction: 0,
+      splitMode: 0,
+    },
     jobs: [] as Job[],
     hasMore: false,
     busy: false,
@@ -78,17 +187,18 @@ MotionPage({
     previewText: '',
     previewVideo: '',
     previewAudio: '',
+    localTest: LOCAL_CONVERSION_TEST,
   },
 
   onLoad() {
-    if (!requireLogin('登录后可免费使用格式转换，文件保留 30 天。')) {
+    if (!LOCAL_CONVERSION_TEST && !requireLogin('登录后可免费使用格式转换，文件保留 30 天。')) {
       this.setData({ loading: false })
       return
     }
     this.refresh()
   },
   onShow() {
-    if (!isLoggedIn()) return
+    if (!LOCAL_CONVERSION_TEST && !isLoggedIn()) return
     if (!this.data.capabilities && !this.data.loading) this.refresh()
     if (pollTimer) clearInterval(pollTimer)
     pollTimer = setInterval(() => this.loadJobs(), 4000)
@@ -107,9 +217,17 @@ MotionPage({
     this.setData({ loading: true, error: '' })
     try {
       const capabilities = await conversionApi.capabilities()
-      const { maxFileBytes, maxBatchBytes, maxFiles } = capabilities.limits
-      const limitHint = `当前服务端限制：单文件 ${Math.round(maxFileBytes / 1024 / 1024)} MB，单批 ${Math.round(maxBatchBytes / 1024 / 1024)} MB / ${maxFiles} 个；真机大文件上限尚待验证。`
-      this.setData({ capabilities, limitHint, loading: false })
+      const { maxFileBytes, maxFiles } = capabilities.limits
+      const limitHint = `单个文件最大 ${sizeLabel(maxFileBytes)} · 最多 ${maxFiles} 个`
+      this.setData({
+        capabilities,
+        limitHint,
+        loading: false,
+        pdfActionOptions:
+          capabilities.features?.pdfEncryption === false
+            ? pdfActionOptions.slice(0, 1)
+            : pdfActionOptions,
+      })
       this.updateOperations()
       await this.loadJobs()
     } catch (error) {
@@ -151,18 +269,63 @@ MotionPage({
   },
   updateOperations() {
     const files = this.data.files
-    const operations = (this.data.capabilities?.operations || []).filter(
-      (operation) =>
-        files.length > 0 &&
-        files.every((file) => operation.inputExtensions.includes(ext(file.name))),
-    )
-    const operation =
-      operations.find((item) => item.id === this.data.operation?.id) || operations[0] || null
+    const operations = (this.data.capabilities?.operations || [])
+      .filter(
+        (operation) =>
+          files.length > 0 &&
+          (operation.id !== 'merge-pdfs' || files.length >= 2) &&
+          files.every((file) => operation.inputExtensions.includes(ext(file.name))),
+      )
+      .map((item) => ({
+        ...item,
+        extensionLabel: item.targetExtension.toUpperCase(),
+        category: formatCategory(item.targetExtension),
+        displayLabel:
+          item.id === 'images-to-pdf'
+            ? '图片合成 PDF'
+            : item.id === 'merge-pdfs'
+              ? '合并 PDF'
+              : item.id === 'convert:pdf' && files.every((file) => ext(file.name) === 'pdf')
+                ? '拆分 PDF'
+                : item.targetExtension.toUpperCase(),
+        label:
+          item.id === 'convert:pdf' && files.every((file) => ext(file.name) === 'pdf')
+            ? '拆分 / 处理 PDF（拆分结果为 ZIP）'
+            : item.label,
+      }))
+    const operation = operations.find((item) => item.id === this.data.operation?.id) || null
     this.setData({
       operations,
+      visibleFormatCategories: formatCategories.filter(
+        (category) => category === '全部' || operations.some((item) => item.category === category),
+      ),
+      settingsOpen: operation ? this.data.settingsOpen : false,
+      filteredOperations: operations,
       operation,
+      totalSizeLabel: sizeLabel(files.reduce((sum, file) => sum + file.size, 0)),
       optionValues: operation?.id === this.data.operation?.id ? this.data.optionValues : {},
+      optionIndexes:
+        operation?.id === this.data.operation?.id
+          ? this.data.optionIndexes
+          : { videoCodec: 0, alphaBackground: 0, textEncoding: 0, pdfAction: 0, splitMode: 0 },
     })
+    this.syncOptionVisibility()
+  },
+  switchTab(e: WechatMiniprogram.BaseEvent) {
+    this.setData({ activeTab: String(e.currentTarget.dataset.tab) })
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 })
+  },
+  openSourcePicker() {
+    if (!this.data.busy) this.setData({ sourceOpen: true })
+  },
+  closeSourcePicker() {
+    this.setData({ sourceOpen: false })
+  },
+  toggleSettings() {
+    if (!this.data.busy) this.setData({ settingsOpen: !this.data.settingsOpen })
+  },
+  toggleSort() {
+    if (!this.data.busy) this.setData({ sortMode: !this.data.sortMode })
   },
   appendFiles(files: PickedFile[]) {
     const limits = this.data.capabilities?.limits
@@ -179,11 +342,19 @@ MotionPage({
       wx.showToast({ title: '文件数量或大小超出当前限制', icon: 'none' })
       return
     }
-    this.setData({ files: combined })
+    this.setData({
+      files: combined.map((file) => ({
+        ...file,
+        ...visual(file.name, file.path, file.thumbnailPath),
+        sizeLabel: sizeLabel(file.size),
+        extensionLabel: ext(file.name).toUpperCase() || 'FILE',
+      })),
+    })
     this.updateOperations()
   },
   chooseMessage() {
     if (this.data.busy) return
+    this.closeSourcePicker()
     wx.chooseMessageFile({
       count: 100,
       type: 'all',
@@ -198,6 +369,7 @@ MotionPage({
   },
   chooseMedia() {
     if (this.data.busy) return
+    this.closeSourcePicker()
     wx.chooseMedia({
       count: 9,
       mediaType: ['image', 'video'],
@@ -205,11 +377,12 @@ MotionPage({
       success: (res) =>
         this.appendFiles(
           res.tempFiles.map((file, index) => ({
-            name:
-              file.tempFilePath.split('/').pop() ||
-              `媒体文件-${index}.${file.fileType === 'video' ? 'mp4' : 'jpg'}`,
+            name: ext(file.tempFilePath.split('/').pop() || '')
+              ? file.tempFilePath.split('/').pop()!
+              : `媒体文件-${index}.${file.fileType === 'video' ? 'mp4' : 'jpg'}`,
             size: file.size,
             path: file.tempFilePath,
+            thumbnailPath: file.thumbTempFilePath || '',
           })),
         ),
       fail: (error) => {
@@ -223,6 +396,11 @@ MotionPage({
     this.setData({ files: this.data.files.filter((_file, i) => i !== index) })
     this.updateOperations()
   },
+  clearFiles() {
+    if (this.data.busy) return
+    this.setData({ files: [], error: '' })
+    this.updateOperations()
+  },
   moveFile(e: WechatMiniprogram.BaseEvent) {
     if (this.data.busy) return
     const index = Number(e.currentTarget.dataset.index)
@@ -233,18 +411,98 @@ MotionPage({
     ;[files[index], files[next]] = [files[next], files[index]]
     this.setData({ files })
   },
-  chooseOperation() {
-    if (!this.data.operations.length) {
-      wx.showToast({ title: '所选格式暂无已验证的转换方式', icon: 'none' })
-      return
+  openFormatPicker() {
+    if (this.data.busy || !this.data.operations.length) return
+    this.setData({
+      formatOpen: true,
+      formatQuery: '',
+      formatCategory: '全部',
+      filteredOperations: this.data.operations,
+    })
+  },
+  closeFormatPicker() {
+    this.setData({ formatOpen: false })
+  },
+  onFormatQuery(e: WechatMiniprogram.Input) {
+    const query = String(e.detail.value || '')
+      .trim()
+      .toLowerCase()
+    this.setData({ formatQuery: query })
+    this.filterFormats()
+  },
+  chooseCategory(e: WechatMiniprogram.BaseEvent) {
+    this.setData({ formatCategory: String(e.currentTarget.dataset.category) })
+    this.filterFormats()
+  },
+  filterFormats() {
+    const { formatQuery, formatCategory } = this.data
+    this.setData({
+      filteredOperations: this.data.operations.filter(
+        (item) =>
+          (formatCategory === '全部' || item.category === formatCategory) &&
+          (!formatQuery ||
+            item.label.toLowerCase().includes(formatQuery) ||
+            item.targetExtension.includes(formatQuery)),
+      ),
+    })
+  },
+  chooseOperation(e: WechatMiniprogram.BaseEvent) {
+    if (this.data.busy) return
+    const operation = this.data.operations.find((item) => item.id === e.currentTarget.dataset.id)
+    if (!operation) return
+    this.setData({
+      operation,
+      error: '',
+      settingsOpen: false,
+      optionValues: {},
+      optionIndexes: {
+        videoCodec: 0,
+        alphaBackground: 0,
+        textEncoding: 0,
+        pdfAction: 0,
+        splitMode: 0,
+      },
+      formatOpen: false,
+    })
+    this.syncOptionVisibility()
+  },
+  syncOptionVisibility() {
+    const target = this.data.operation?.targetExtension || ''
+    const extensions = this.data.files.map((file) => ext(file.name))
+    this.setData({
+      showVideoOptions:
+        this.data.operation?.kind === 'convert' && ['mp4', 'mov', 'mkv', 'webm'].includes(target),
+      showPdfOptions:
+        this.data.operation?.id === 'convert:pdf' &&
+        extensions.length > 0 &&
+        extensions.every((item) => item === 'pdf'),
+      showTextEncoding:
+        target === 'epub' &&
+        extensions.some((item) =>
+          /^(txt|md|markdown|html|htm|json|log|xml|yaml|yml|csv|tsv)$/.test(item),
+        ),
+    })
+  },
+  onOptionSelect(e: any) {
+    if (this.data.busy) return
+    const key = String(e.currentTarget.dataset.key)
+    const index = Number(e.detail.value)
+    const values: Record<string, string[]> = {
+      videoCodec: codecs,
+      alphaBackground: backgrounds,
+      textEncoding: encodings,
+      pdfAction: pdfActions,
+      splitMode: splitModes,
     }
-    wx.showActionSheet({
-      itemList: this.data.operations.map((item) => item.label),
-      success: (res) =>
-        this.setData({ operation: this.data.operations[res.tapIndex], optionValues: {} }),
+    const value = values[key]?.[index]
+    if (value === undefined) return
+    this.setData({
+      optionValues: { ...this.data.optionValues, [key]: value },
+      optionIndexes: { ...this.data.optionIndexes, [key]: index },
     })
   },
   onOptionInput(e: WechatMiniprogram.Input) {
+    if (this.data.busy) return
     const key = String(e.currentTarget.dataset.key)
     this.setData({ optionValues: { ...this.data.optionValues, [key]: e.detail.value } })
   },
@@ -292,19 +550,53 @@ MotionPage({
     return uploadId!
   },
   async start() {
-    if (this.data.busy || !this.data.operation || !this.data.files.length) return
-    if (!requireLogin('登录后可免费使用格式转换。')) return
+    if (this.data.busy || !this.data.files.length) return
+    if (!this.data.operation) {
+      this.openFormatPicker()
+      return
+    }
+    if (!LOCAL_CONVERSION_TEST && !requireLogin('登录后可免费使用格式转换。')) return
+    if (
+      this.data.showPdfOptions &&
+      this.data.optionValues.pdfAction &&
+      !this.data.optionValues.password?.trim()
+    ) {
+      this.setData({ error: '请输入 PDF 密码' })
+      return
+    }
+    if (
+      this.data.showPdfOptions &&
+      this.data.optionValues.splitMode === 'group' &&
+      !this.data.optionValues.pdfAction
+    ) {
+      const groupSize = Number(this.data.optionValues.groupSize)
+      if (!Number.isSafeInteger(groupSize) || groupSize < 1 || groupSize > 999) {
+        this.setData({ error: '每组页数请输入 1–999 的整数' })
+        return
+      }
+    }
     this.setData({ busy: true, error: '', uploadPercent: 0, busyText: '准备上传' })
     try {
       const ids: string[] = []
       for (let i = 0; i < this.data.files.length; i++)
         ids.push(await this.uploadOne(this.data.files[i], i, this.data.files.length))
-      const job = await conversionApi.createJob(this.data.operation.id, ids, this.data.optionValues)
-      this.setData({ files: [], operation: null, operations: [], busyText: '', uploadPercent: 0 })
+      await conversionApi.createJob(this.data.operation.id, ids, this.data.optionValues)
+      this.setData({
+        files: [],
+        operation: null,
+        operations: [],
+        filteredOperations: [],
+        busyText: '',
+        uploadPercent: 0,
+        activeTab: 'history',
+        settingsOpen: false,
+        sortMode: false,
+      })
+      wx.pageScrollTo({ scrollTop: 0, duration: 0 })
       await this.loadJobs()
-      wx.showToast({ title: `任务已提交 ${job.id.slice(-6)}`, icon: 'success' })
+      wx.showToast({ title: '转换任务已开始', icon: 'success' })
     } catch (error) {
-      this.setData({ error: msg(error) })
+      this.setData({ error: msg(error), activeTab: 'convert' })
     } finally {
       this.setData({ busy: false, busyText: '' })
     }
@@ -333,36 +625,81 @@ MotionPage({
       wx.showToast({ title: msg(error), icon: 'none' })
     }
   },
-  async loadAsset(e: WechatMiniprogram.BaseEvent) {
-    const jobId = String(e.currentTarget.dataset.job)
-    const assetId = String(e.currentTarget.dataset.asset)
+  jobMenu(e: WechatMiniprogram.BaseEvent) {
+    const job = this.data.jobs.find((item) => item.id === e.currentTarget.dataset.id)
+    if (!job) return
+    const actions = ['queued', 'running'].includes(job.status)
+      ? ['取消任务']
+      : job.status === 'failed' || job.status === 'cancelled'
+        ? ['重新转换', '删除记录和文件']
+        : ['删除记录和文件']
+    wx.showActionSheet({
+      itemList: actions,
+      success: (res) => {
+        const label = actions[res.tapIndex]
+        this.jobAction({
+          currentTarget: {
+            dataset: {
+              id: job.id,
+              action: label === '取消任务' ? 'cancel' : label === '重新转换' ? 'retry' : 'delete',
+            },
+          },
+        } as any)
+      },
+    })
+  },
+  exportAsset(e: WechatMiniprogram.BaseEvent) {
+    wx.showActionSheet({
+      itemList: ['转发到微信', '保存到小程序（保留文件）', '仅下载（临时文件）'],
+      success: (res) => {
+        if (res.tapIndex === 0) this.shareAsset(e)
+        if (res.tapIndex === 1) this.saveAsset(e)
+        if (res.tapIndex === 2) this.loadAsset(e)
+      },
+    })
+  },
+  async ensureAsset(jobId: string, assetId: string): Promise<Asset & { localPath: string }> {
     const job = this.data.jobs.find((item) => item.id === jobId)
     const asset = job?.assets.find((item) => item.id === assetId)
-    if (!asset) return
-    try {
-      const path = asset.localPath || (await downloadAsset(jobId, assetId))
-      const jobs = this.data.jobs.map((item) =>
+    if (!asset) throw new Error('结果文件不存在')
+    if (asset.localPath) return asset as Asset & { localPath: string }
+    const path = await downloadAsset(jobId, assetId)
+    this.setData({
+      jobs: this.data.jobs.map((item) =>
         item.id === jobId
           ? {
               ...item,
               assets: item.assets.map((row) =>
-                row.id === assetId ? { ...row, localPath: path } : row,
+                row.id === assetId
+                  ? { ...row, localPath: path, ...visual(row.fileName, path) }
+                  : row,
               ),
             }
           : item,
+      ),
+    })
+    return { ...asset, localPath: path }
+  },
+  async loadAsset(e: WechatMiniprogram.BaseEvent) {
+    try {
+      await this.ensureAsset(
+        String(e.currentTarget.dataset.job),
+        String(e.currentTarget.dataset.asset),
       )
-      this.setData({ jobs })
-      wx.showToast({ title: '已下载，可预览或转发', icon: 'success' })
+      wx.showToast({ title: '已下载到小程序', icon: 'success' })
     } catch (error) {
       wx.showToast({ title: msg(error), icon: 'none' })
     }
   },
-  openAsset(e: WechatMiniprogram.BaseEvent) {
-    const asset = this.data.jobs
-      .find((item) => item.id === e.currentTarget.dataset.job)
-      ?.assets.find((row) => row.id === e.currentTarget.dataset.asset)
-    if (!asset?.localPath) {
-      wx.showToast({ title: '请先下载结果', icon: 'none' })
+  async openAsset(e: WechatMiniprogram.BaseEvent) {
+    let asset: Asset & { localPath: string }
+    try {
+      asset = await this.ensureAsset(
+        String(e.currentTarget.dataset.job),
+        String(e.currentTarget.dataset.asset),
+      )
+    } catch (error) {
+      wx.showToast({ title: msg(error), icon: 'none' })
       return
     }
     const extension = ext(asset.fileName)
@@ -394,12 +731,15 @@ MotionPage({
     this.setData({ previewText: '', previewVideo: '', previewAudio: '' })
   },
   noop() {},
-  shareAsset(e: WechatMiniprogram.BaseEvent) {
-    const asset = this.data.jobs
-      .find((item) => item.id === e.currentTarget.dataset.job)
-      ?.assets.find((row) => row.id === e.currentTarget.dataset.asset)
-    if (!asset?.localPath) {
-      wx.showToast({ title: '请先下载结果', icon: 'none' })
+  async shareAsset(e: WechatMiniprogram.BaseEvent) {
+    let asset: Asset & { localPath: string }
+    try {
+      asset = await this.ensureAsset(
+        String(e.currentTarget.dataset.job),
+        String(e.currentTarget.dataset.asset),
+      )
+    } catch (error) {
+      wx.showToast({ title: msg(error), icon: 'none' })
       return
     }
     const share = (wx as any).shareFileMessage
@@ -413,12 +753,15 @@ MotionPage({
       fail: () => wx.showToast({ title: '转发失败', icon: 'none' }),
     })
   },
-  saveAsset(e: WechatMiniprogram.BaseEvent) {
-    const asset = this.data.jobs
-      .find((item) => item.id === e.currentTarget.dataset.job)
-      ?.assets.find((row) => row.id === e.currentTarget.dataset.asset)
-    if (!asset?.localPath) {
-      wx.showToast({ title: '请先下载结果', icon: 'none' })
+  async saveAsset(e: WechatMiniprogram.BaseEvent) {
+    let asset: Asset & { localPath: string }
+    try {
+      asset = await this.ensureAsset(
+        String(e.currentTarget.dataset.job),
+        String(e.currentTarget.dataset.asset),
+      )
+    } catch (error) {
+      wx.showToast({ title: msg(error), icon: 'none' })
       return
     }
     wx.getFileSystemManager().saveFile({

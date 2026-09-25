@@ -65,7 +65,7 @@
           <image class="home__tool-image" src="/assets/tools/tool-work-log.png" mode="aspectFit" />
         </view>
         <view class="home__tool-t">记工</view>
-        <view class="home__tool-s">记工算薪</view>
+        <view class="home__tool-s">日工明细</view>
       </view>
       <view class="home__tool-card home__tool-card--format" hover-class="tap-active" bindtap="toFormat">
         <view class="home__tool-icon">

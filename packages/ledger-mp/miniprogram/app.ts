@@ -1,5 +1,5 @@
 import { navigation } from './utils/page-transition'
-import { TOKEN_KEY, VERSION } from './config'
+import { LOCAL_CONVERSION_TEST, TOKEN_KEY, VERSION } from './config'
 import { captureInviteCode, getBioLock, getBioVerified } from './utils/store'
 import { clearAllCache } from './utils/request'
 
@@ -27,6 +27,7 @@ const GUEST_ALLOWED_ROUTES = new Set([
 function blockRestrictedGuestRoute(options: any, token: string): boolean {
   if (token) return false
   const path = String((options && options.path) || '').replace(/^\/+/, '')
+  if (LOCAL_CONVERSION_TEST && path === 'subpackages/format/index/index') return false
   if (!path || GUEST_ALLOWED_ROUTES.has(path)) return false
   setTimeout(() => navigation.reLaunch({ url: '/pages/login/index' }), 0)
   return true

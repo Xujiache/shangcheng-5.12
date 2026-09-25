@@ -24,7 +24,8 @@ test("CLI accepts leading help flags with successful output and no conversion se
 test("CLI parses conversion, merge, JSON, and engine options", () => {
   const parsed = parseCliArgs([
     "convert", "一.txt", "二.txt", "--to", "md", "--output-dir", "out",
-    "--video-codec", "h265", "--pdf-action", "decrypt",
+    "--video-codec", "h265", "--alpha-background", "black",
+    "--pdf-action", "decrypt", "--split-mode", "group", "--group-size", "2",
     "--password", "secret", "--text-encoding", "gb18030", "--json"
   ]);
   assert.equal(parsed.command, "convert");
@@ -32,7 +33,10 @@ test("CLI parses conversion, merge, JSON, and engine options", () => {
   assert.equal(parsed.options.to, "md");
   assert.equal(parsed.options.outputDir, "out");
   assert.equal(parsed.options.videoCodec, "h265");
+  assert.equal(parsed.options.alphaBackground, "black");
   assert.equal(parsed.options.pdfAction, "decrypt");
+  assert.equal(parsed.options.splitMode, "group");
+  assert.equal(parsed.options.groupSize, "2");
   assert.equal(parsed.options.password, "secret");
   assert.equal(parsed.options.textEncoding, "gb18030");
   assert.equal(parsed.options.json, true);

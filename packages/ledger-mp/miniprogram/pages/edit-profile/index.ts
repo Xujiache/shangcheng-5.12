@@ -1,6 +1,6 @@
 import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi } from '../../api/index'
-import { API_BASE } from '../../config'
+import { API_BASE, avatarImageSrc, isAvatarImage } from '../../config'
 import { handleUnauthorized } from '../../utils/request'
 import { getUser, setUser, getToken } from '../../utils/store'
 
@@ -20,7 +20,9 @@ MotionPage({
     hues: HUES,
     hueKey: 'teal',
     hue: HUES[0],
-    avatarUrl: '', // 上传的头像图片公网 URL；有则优先显示图片
+    avatarUrl: '', // 服务端保存的头像地址；有则优先显示图片
+    avatarSrc: '',
+    avatarFailed: false,
     uploading: false,
     canSave: false,
     saving: false,
@@ -34,9 +36,9 @@ MotionPage({
     const u = getUser()
     const nickname = (u && u.nickname) || ''
     this._origNickname = nickname
-    // avatar 字段：http(s) 开头=上传的图片 URL；否则当作头像底色 hue key
+    // avatar 字段：图片地址或字母头像底色 hue key
     const stored = u && u.avatar ? u.avatar : ''
-    const isImg = /^https?:\/\//.test(stored)
+    const isImg = isAvatarImage(stored)
     const hueKey = !isImg && HUES.some((h) => h.key === stored) ? stored : 'teal'
     this._origHue = hueKey
     this._origAvatarUrl = isImg ? stored : ''
@@ -47,6 +49,8 @@ MotionPage({
       hueKey,
       hue,
       avatarUrl: isImg ? stored : '',
+      avatarSrc: isImg ? avatarImageSrc(stored) : '',
+      avatarFailed: false,
     })
     this.refreshCanSave()
   },
@@ -76,7 +80,12 @@ MotionPage({
     this.setData({ hueKey: key, hue }, () => this.refreshCanSave())
   },
 
-  // 选图 → 上传到对象存储 → 立即持久化(后端已存 avatar=url) + 更新本地缓存
+  // 选图 → 上传并持久化 → 使用服务端返回的不可变图片地址
+  onAvatarError() {
+    this.setData({ avatarFailed: true })
+    wx.showToast({ title: '头像图片加载失败', icon: 'none' })
+  },
+
   onChangeAvatar() {
     if (this.data.uploading) return
     wx.chooseMedia({
@@ -85,8 +94,16 @@ MotionPage({
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const fp = res.tempFiles && res.tempFiles[0] && res.tempFiles[0].tempFilePath
-        if (!fp) return
+        const selected = res.tempFiles && res.tempFiles[0]
+        const fp = selected && selected.tempFilePath
+        if (!fp) {
+          wx.showToast({ title: '未获取到图片，请重试', icon: 'none' })
+          return
+        }
+        if (selected.size > 10 * 1024 * 1024) {
+          wx.showToast({ title: '图片不能超过 10MB', icon: 'none' })
+          return
+        }
         this.setData({ uploading: true })
         wx.uploadFile({
           url: API_BASE + '/api/v1/l/avatar',
@@ -96,9 +113,20 @@ MotionPage({
           success: (up) => {
             try {
               const body = JSON.parse(up.data)
-              if (body && body.code === 0 && body.data && body.data.url) {
+              if (
+                up.statusCode >= 200 &&
+                up.statusCode < 300 &&
+                body &&
+                body.code === 0 &&
+                body.data &&
+                body.data.url
+              ) {
                 const url = body.data.url
-                this.setData({ avatarUrl: url })
+                this.setData({
+                  avatarUrl: url,
+                  avatarSrc: avatarImageSrc(url),
+                  avatarFailed: false,
+                })
                 const u = getUser()
                 if (u) {
                   u.avatar = url
@@ -112,7 +140,7 @@ MotionPage({
                 // uploadFile 不走 request 层，登录失效需手动走统一登出
                 handleUnauthorized()
               } else {
-                const msg = body && body.message
+                const msg = body && (body.message || body.msg)
                 wx.showToast({
                   title: (Array.isArray(msg) ? msg[0] : msg) || '上传失败',
                   icon: 'none',
@@ -122,16 +150,20 @@ MotionPage({
               wx.showToast({ title: '上传失败', icon: 'none' })
             }
           },
-          fail: () => wx.showToast({ title: '上传失败', icon: 'none' }),
+          fail: () => wx.showToast({ title: '上传失败，请检查本地服务连接', icon: 'none' }),
           complete: () => this.setData({ uploading: false }),
         })
+      },
+      fail: (error) => {
+        if (!String(error.errMsg || '').includes('cancel'))
+          wx.showToast({ title: '无法选取图片，请重试', icon: 'none' })
       },
     })
   },
 
   // 改回字母头像（移除已上传图片，下次保存生效）
   onUseLetter() {
-    this.setData({ avatarUrl: '' }, () => this.refreshCanSave())
+    this.setData({ avatarUrl: '', avatarSrc: '', avatarFailed: false }, () => this.refreshCanSave())
   },
 
   async onSave() {

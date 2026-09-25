@@ -182,7 +182,7 @@ export class FilesService implements OnModuleInit {
       }
     }
 
-    await this.prisma.uploadedFile.create({
+    const uploaded = await this.prisma.uploadedFile.create({
       data: {
         key,
         url,
@@ -192,7 +192,18 @@ export class FilesService implements OnModuleInit {
         ownerId: ownerId || null,
       },
     })
-    return { url, key, size: file.size, mimeType: file.mimetype, thumbnailUrl }
+    return { id: uploaded.id, url, key, size: file.size, mimeType: file.mimetype, thumbnailUrl }
+  }
+
+  async openLedgerAvatar(id: string) {
+    if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
+    const file = await this.prisma.uploadedFile.findFirst({
+      where: { id, bizType: 'avatar', key: { startsWith: 'avatar/' } },
+    })
+    if (!file || !IMAGE_MIME.includes(file.mimeType))
+      throw new BizException(BizCode.NOT_FOUND, '头像不存在')
+    const stream = await this.client.getObject(this.bucket, file.key)
+    return { stream, mimeType: file.mimeType, size: file.size }
   }
 
   async batchUpload(
