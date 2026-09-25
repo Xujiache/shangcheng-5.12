@@ -57,6 +57,22 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     kind: 'convert',
     options: [],
   },
+  {
+    id: 'convert:pdf',
+    label: '图片 → PDF',
+    inputExtensions: ['png', 'jpg', 'jpeg', 'webp'],
+    targetExtension: 'pdf',
+    kind: 'convert',
+    options: [],
+  },
+  {
+    id: 'images-to-pdf',
+    label: '图片合成 PDF',
+    inputExtensions: ['png', 'jpg', 'jpeg', 'webp'],
+    targetExtension: 'pdf',
+    kind: 'images-to-pdf',
+    options: [],
+  },
 ]
 
 export function findConversionOperation(id: string, extensions: string[]) {
