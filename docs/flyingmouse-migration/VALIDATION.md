@@ -78,3 +78,9 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 提交 `392bf86` 让转换服务每 30 秒重试失败的初始化，合并并发尝试，且在 bucket 隐私策略、Redis PING 均通过前保持不可用。针对初次存储失败、随后成功的后端测试通过。
 - 两组隔离环境分别让 MinIO、Redis 晚于 API 启动；初始转换初始化失败，依赖就绪后均无需重启 API，鉴权能力接口及 TXT→MD 的上传、入队、转换、隔离下载和删除通过。证据为服务器 `conversion-e2e/api-startup-retry-20260926.log`、`http-startup-retry-20260926.log`、`api-redis-late-20260926.log`、`http-redis-late-20260926.log` 及同目录的重放脚本。临时容器与 API 已清理。
 - 生产 API 更新后，TXT→MD、SRT→VTT、PNG→JPG 的公网 HTTPS 回归通过，worker 未重启，API 就绪与公网接口返回 200；证据为服务器 `production-startup-retry-http-20260926.log`。未对生产主机执行整机重启。
+
+## 2026-09-26 运行中存储健康检查
+
+- 旧能力接口只看 Redis worker 心跳：存储在启动后断开时仍返回 `available=true`。新增测试先复现该错误，再由提交 `b900a84` 在返回能力列表前检查私有转换 bucket；失败时返回 `available=false` 和空操作列表，恢复后重新返回五项操作。
+- 隔离环境依次验证 MinIO 在线、停止、恢复三个状态；能力接口结果分别为可用、不可用、可用，恢复后 TXT→MD 的上传、排队、鉴权下载和删除通过。测试使用独立 PostgreSQL、Redis、MinIO 数据卷、API 与原 worker 镜像，全部已清理。证据为服务器 `conversion-e2e/storage-health-result-20260926.log` 和同目录的重放脚本。
+- 生产 API 更新后，TXT→MD、SRT→VTT、PNG→JPG 的公网 HTTPS 回归通过；worker 无重启，API 就绪与公网接口为 200。证据为服务器 `production-storage-health-http-20260926.log`。未中断生产 MinIO 做故障演练。

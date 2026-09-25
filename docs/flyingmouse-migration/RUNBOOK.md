@@ -7,6 +7,7 @@
 2026-09-26 服务器已按用户指示开启上述九组格式：PM2 API 读取 `/etc/jiujiu/server.env`，Docker 容器 `jiujiu-conversion-worker-production` 使用镜像 `jiujiu-conversion-worker:8483737`、`deploy_default` 网络和权限为 600 的 `/etc/jiujiu/conversion-worker.env`。worker 配置为 `unless-stopped`、只读根目录、3 GiB 临时目录、4 GiB 内存及 2 CPU 限额。生产数据库备份、线上 HTTPS 转换及清理证据见 `VALIDATION.md`。这不代表其余候选格式或小程序端已验收。
 
 PM2 的 `pm2-root` 服务已启用，生产工作目录的 `.env` 链接到 `/etc/jiujiu/server.env`。API 在转换存储或 Redis 尚未就绪时每 30 秒重试初始化；隔离环境已验证 MinIO 和 Redis 分别晚于 API 启动时可自动恢复，无需重启 API。该测试不代替真实整机重启验收。
+能力接口还会实时检查私有转换 bucket：运行中存储中断时不再返回可用格式，存储恢复后重新开放。隔离环境已验证存储停止、恢复和随后实际转换；生产验证见 `VALIDATION.md`。
 
 ## 新环境部署及扩大格式范围前闸门
 
