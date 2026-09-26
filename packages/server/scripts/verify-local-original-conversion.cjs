@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { createHash, randomUUID } = require('node:crypto')
 const { execFileSync } = require('node:child_process')
-const { readFile, writeFile, mkdtemp, rm } = require('node:fs/promises')
+const { open, readFile, writeFile, mkdtemp, rm, stat } = require('node:fs/promises')
 const { homedir, tmpdir } = require('node:os')
 const { dirname, join } = require('node:path')
 const { PrismaClient } = require('@prisma/client')
@@ -446,6 +446,148 @@ async function main() {
   }
 
   if (!process.env.CONVERSION_SKIP_BASELINE) await verifyBaseline(convert)
+
+  if (process.env.CONVERSION_CONTROL_FLOW) {
+    const waitFor = async (id, expected) => {
+      for (let attempt = 0; attempt < 45; attempt++) {
+        const job = await json(`/jobs/${id}`)
+        if (expected.includes(job.status)) return job
+        await new Promise((done) => { setTimeout(done, 1000) })
+      }
+      throw new Error(`${id}: did not reach ${expected.join('/')}`)
+    }
+    const invalidUpload = await upload('broken.pdf', Buffer.from('this is not a PDF'))
+    const failed = await json('/jobs', 'POST', {
+      operationId: 'convert:txt', uploadIds: [invalidUpload], options: {},
+    })
+    outstanding.add(failed.id)
+    await waitFor(failed.id, ['failed'])
+    const firstAttempt = await prisma.ledgerConversionJob.findUnique({
+      where: { id: failed.id }, select: { startedAt: true },
+    })
+    const retry = await json(`/jobs/${failed.id}/retry`, 'POST')
+    if (retry.status !== 'queued') throw new Error('Failed PDF retry was not queued')
+    await waitFor(failed.id, ['failed'])
+    const secondAttempt = await prisma.ledgerConversionJob.findUnique({
+      where: { id: failed.id }, select: { startedAt: true },
+    })
+    if (!firstAttempt?.startedAt || !secondAttempt?.startedAt ||
+      secondAttempt.startedAt <= firstAttempt.startedAt)
+      throw new Error('Retry did not execute a new conversion attempt')
+    await cleanupJob(failed.id)
+    outstanding.delete(failed.id)
+    console.log('PASS failed conversion retried, executed again, and cleaned up')
+
+    const controlWork = await mkdtemp(join(tmpdir(), 'ledger-control-flow-'))
+    try {
+      const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
+      const sourceVideo = join(controlWork, 'long.mp4')
+      execFileSync(ffmpeg, ['-v', 'error', '-f', 'lavfi', '-i',
+        'testsrc2=size=320x180:rate=12:duration=120', '-f', 'lavfi', '-i',
+        'sine=frequency=440:duration=120', '-c:v', 'libx264', '-preset', 'ultrafast',
+        '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', sourceVideo])
+      const longUpload = await upload('long.mp4', await readFile(sourceVideo))
+      const running = await json('/jobs', 'POST', {
+        operationId: 'convert:webm', uploadIds: [longUpload], options: {},
+      })
+      outstanding.add(running.id)
+      await waitFor(running.id, ['running'])
+      const small = await sharp({ create: {
+        width: 32, height: 24, channels: 3, background: '#008866',
+      } }).png().toBuffer()
+      const queuedUpload = await upload('queued.png', small)
+      const queued = await json('/jobs', 'POST', {
+        operationId: 'convert:webp', uploadIds: [queuedUpload], options: {},
+      })
+      outstanding.add(queued.id)
+      if ((await json(`/jobs/${queued.id}`)).status !== 'queued')
+        throw new Error('Serial worker did not leave the second job queued')
+      if ((await json(`/jobs/${queued.id}/cancel`, 'POST')).status !== 'cancelled' ||
+        (await json(`/jobs/${queued.id}`)).status !== 'cancelled')
+        throw new Error('Queued job was not cancelled')
+      if ((await json(`/jobs/${running.id}/cancel`, 'POST')).status !== 'cancelled' ||
+        (await json(`/jobs/${running.id}`)).status !== 'cancelled')
+        throw new Error('Running job was not cancelled')
+      await cleanupJob(queued.id)
+      await cleanupJob(running.id)
+      outstanding.delete(queued.id)
+      outstanding.delete(running.id)
+      const followup = await convert('convert:webp', [['followup.png', small]])
+      if ((await sharp(followup.bytes).metadata()).format !== 'webp')
+        throw new Error('Worker did not recover after cancellation')
+      console.log('PASS queued/running cancellation, cleanup, and worker recovery')
+    } finally { await rm(controlWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_LARGE_FILE) {
+    const largeWork = await mkdtemp(join(tmpdir(), 'ledger-large-conversion-'))
+    try {
+      const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
+      const ffprobe = join(dirname(ffmpeg), 'ffprobe')
+      const input = join(largeWork, 'long.wav')
+      execFileSync(ffmpeg, ['-v', 'error', '-f', 'lavfi', '-i',
+        'sine=frequency=440:duration=600', '-ac', '2', '-ar', '44100',
+        '-c:a', 'pcm_s16le', input])
+      const size = (await stat(input)).size
+      if (size <= 96 * 1024 ** 2) throw new Error('Large fixture did not exceed 96 MiB')
+      const created = await json('/uploads', 'POST', { fileName: 'long.wav', sizeBytes: size })
+      const file = await open(input, 'r')
+      try {
+        for (let index = 0; index < created.chunkCount; index++) {
+          const offset = index * created.chunkBytes
+          const part = Buffer.allocUnsafe(Math.min(created.chunkBytes, size - offset))
+          const { bytesRead } = await file.read(part, 0, part.length, offset)
+          if (bytesRead !== part.length) throw new Error('Large file read was truncated')
+          const form = new FormData()
+          form.set('index', String(index))
+          form.set('file', new Blob([part]), 'chunk.bin')
+          const response = await fetch(new URL(`/api/v1/l/conversions/uploads/${created.id}/chunks`, base), {
+            method: 'POST', headers: auth, body: form,
+          })
+          const body = await response.json()
+          if (!response.ok || body.code !== 0)
+            throw new Error(`Large upload chunk ${index}: ${body.message || response.status}`)
+        }
+      } finally { await file.close() }
+      await json(`/uploads/${created.id}/complete`, 'POST')
+      const job = await json('/jobs', 'POST', {
+        operationId: 'convert:mp3', uploadIds: [created.id], options: {},
+      })
+      outstanding.add(job.id)
+      let result
+      for (let attempt = 0; attempt < 180; attempt++) {
+        result = await json(`/jobs/${job.id}`)
+        if (['succeeded', 'failed', 'cancelled'].includes(result.status)) break
+        await new Promise((done) => { setTimeout(done, 1000) })
+      }
+      if (result?.status !== 'succeeded' || !result.assets.length)
+        throw new Error(`Large WAV to MP3: ${result?.status || 'timed out'} ${result?.error || ''}`)
+      const response = await fetch(new URL(`/api/v1/l/conversions/jobs/${job.id}/assets/${result.assets[0].id}`, base), {
+        headers: auth,
+      })
+      if (!response.ok) throw new Error(`Large MP3 download failed: ${response.status}`)
+      const backend = join(largeWork, 'backend.mp3')
+      const direct = join(largeWork, 'direct.mp3')
+      await writeFile(backend, Buffer.from(await response.arrayBuffer()))
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+        '--to', 'mp3', '--output', direct, '--json'], { env: originalCliEnv(), timeout: 180000 })
+      const duration = (path) => Number(JSON.parse(execFileSync(ffprobe, ['-v', 'error',
+        '-show_entries', 'format=duration', '-of', 'json', path], { encoding: 'utf8' })).format.duration)
+      if (Math.abs(duration(backend) - 600) > 0.15 ||
+        Math.abs(duration(backend) - duration(direct)) > 0.01)
+        throw new Error('Large MP3 duration differs from original')
+      for (const offset of [0, 300, 597]) {
+        const pcm = (path) => execFileSync(ffmpeg, ['-v', 'error', '-ss', String(offset),
+          '-i', path, '-t', '2', '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1'])
+        const first = pcm(backend)
+        if (first.length < 60000 || !first.equals(pcm(direct)))
+          throw new Error(`Large MP3 at ${offset}s differs from original or is truncated`)
+      }
+      await cleanupJob(job.id)
+      outstanding.delete(job.id)
+      console.log(`PASS ${(size / 1024 ** 2).toFixed(1)} MiB WAV upload, MP3 conversion/download and cleanup`)
+    } finally { await rm(largeWork, { recursive: true, force: true }) }
+  }
 
   if (process.env.CONVERSION_VIDEO_INPUTS) {
     const videoWork = await mkdtemp(join(tmpdir(), 'ledger-video-pairs-'))
