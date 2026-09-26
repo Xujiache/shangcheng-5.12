@@ -7,9 +7,22 @@ const path = require("node:path");
 const yazl = require("yazl");
 
 const {
+  cleanWpsHtml,
   readDocxEntryString,
   docxNeedsPdfRepair
 } = require("../office-convert");
+
+test("WPS form fields stay readable in HTML and Markdown without control bytes or CSS text", () => {
+  const source = '<head><style type="text/css">@page { size: A4 }</style></head><body><p>Phone: \x07\x03请输入电话号码\x08</p></body>';
+  const html = cleanWpsHtml(source);
+  assert.match(html, /<style[^>]*>@page/);
+  assert.match(html, /Phone: 请输入电话号码/);
+  assert.doesNotMatch(html, /[\x03\x07\x08]/);
+
+  const markdownHtml = cleanWpsHtml(source, true);
+  assert.match(markdownHtml, /Phone: 请输入电话号码/);
+  assert.doesNotMatch(markdownHtml, /@page|<style|[\x03\x07\x08]/);
+});
 
 function buildDocx(parts) {
   return new Promise((resolve, reject) => {

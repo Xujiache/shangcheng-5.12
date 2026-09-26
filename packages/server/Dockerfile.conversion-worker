@@ -2,7 +2,7 @@ FROM node:24-bookworm-slim AS server-build
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
  && rm -rf /var/lib/apt/lists/*
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@9.0.0
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY tsconfig.base.json ./
 COPY packages/shared ./packages/shared
@@ -17,20 +17,48 @@ RUN pnpm --filter @jiujiu/shared build \
 FROM node:24-bookworm-slim AS source-build
 WORKDIR /app/flyingmouse
 COPY vendor/flyingmouse-format/v0.7.10 ./
-RUN rm -rf bin/avs3 && npm ci --omit=dev --no-audit --no-fund
+RUN rm -rf bin/avs3 && npm ci --omit=dev --no-audit --no-fund \
+ && node scripts/restore-pandoc.js && rm -rf output
+
+FROM node:24-bookworm-slim AS libraw-build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl build-essential pkg-config libjpeg-dev liblcms2-dev zlib1g-dev \
+ && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://www.libraw.org/data/LibRaw-0.21.5.tar.gz -o /tmp/libraw.tar.gz \
+ && echo 'a74a2e68303d3b9219f82318f935b28c5c4abd7f2c9f7dbf8faa4997c9038305  /tmp/libraw.tar.gz' | sha256sum -c - \
+ && tar -xzf /tmp/libraw.tar.gz -C /tmp \
+ && cd /tmp/LibRaw-0.21.5 \
+ && ./configure --disable-shared --enable-static \
+ && make -j2 bin/dcraw_emu
 
 FROM node:24-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates openssl ffmpeg libreoffice-writer libreoffice-calc libreoffice-impress \
-    poppler-utils tesseract-ocr tesseract-ocr-chi-sim pandoc qpdf dcraw \
+    poppler-utils tesseract-ocr tesseract-ocr-chi-sim pandoc qpdf dcraw libheif-examples \
+    python3 python3-venv \
     ghostscript fonts-noto-cjk \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && gzip -n -c /usr/share/tesseract-ocr/5/tessdata/eng.traineddata \
+    > /usr/share/tesseract-ocr/5/tessdata/eng.traineddata.gz \
+ && gzip -n -c /usr/share/tesseract-ocr/5/tessdata/chi_sim.traineddata \
+    > /usr/share/tesseract-ocr/5/tessdata/chi_sim.traineddata.gz
+COPY packages/server/scripts/camelot-requirements.txt /tmp/camelot-requirements.txt
+RUN python3 -m venv /opt/camelot-venv \
+ && /opt/camelot-venv/bin/pip install --no-cache-dir -r /tmp/camelot-requirements.txt \
+ && rm /tmp/camelot-requirements.txt
+COPY --chown=node:node packages/server/scripts/camelot_table_engine.py /usr/local/bin/jiujiu-camelot-table
+RUN chmod 755 /usr/local/bin/jiujiu-camelot-table
 ENV NODE_ENV=production FLYINGMOUSE_SOURCE_DIR=/app/flyingmouse \
+    PATH=/opt/camelot-venv/bin:$PATH \
+    FLYINGMOUSE_CAMELOT_TABLE_PATH=/usr/local/bin/jiujiu-camelot-table \
     FLYINGMOUSE_DCRAW_PATH=/usr/bin/dcraw \
+    FLYINGMOUSE_LIBRAW_DCRAW_PATH=/usr/local/bin/dcraw_emu \
+    FLYINGMOUSE_PANDOC_PATH=/app/flyingmouse/bin/pandoc/pandoc \
     FLYINGMOUSE_TESSDATA_PATH=/usr/share/tesseract-ocr/5/tessdata \
     HOME=/tmp XDG_CONFIG_HOME=/tmp
 WORKDIR /app/server
 COPY --from=server-build --chown=node:node /out ./
 COPY --from=source-build --chown=node:node /app/flyingmouse /app/flyingmouse
+COPY --from=libraw-build /tmp/LibRaw-0.21.5/bin/dcraw_emu /usr/local/bin/dcraw_emu
 USER node
-CMD ["node", "dist/src/workers/conversion.worker.js"]
+CMD ["node", "dist/workers/conversion.worker.js"]

@@ -36,6 +36,22 @@ const tools = {
 const observed = new Map(
   smoke.cases.map((item) => [`${item.inputExtension}:${item.targetExtension}`, item]),
 )
+// Small-sample server E2E evidence is recorded in docs/flyingmouse-migration/VALIDATION.md.
+const serverVerified = new Set([
+  'txt:md',
+  'srt:vtt',
+  'png:jpg',
+  'jpg:png',
+  'jpg:webp',
+  'jpeg:png',
+  'jpeg:webp',
+  'png:webp',
+  'webp:png',
+  'png:pdf',
+  'jpg:pdf',
+  'jpeg:pdf',
+  'webp:pdf',
+])
 const candidates = inputs.flatMap((inputExtension) =>
   targetsForExt(inputExtension, tools).map((targetExtension) => {
     const cliOptions = []
@@ -50,7 +66,9 @@ const candidates = inputs.flatMap((inputExtension) =>
     }
     if (['txt', 'md', 'html', 'csv', 'tsv'].includes(inputExtension) && targetExtension === 'epub')
       cliOptions.push('textEncoding')
-    const evidence = observed.get(`${inputExtension}:${targetExtension}`)
+    const pair = `${inputExtension}:${targetExtension}`
+    const evidence = observed.get(pair)
+    const serverSample = serverVerified.has(pair)
     return {
       inputExtension,
       targetExtension,
@@ -65,12 +83,16 @@ const candidates = inputs.flatMap((inputExtension) =>
       experimentalInput: config.experimentalInputSet.has(inputExtension),
       cliOptions,
       desktopOnlyOptions,
-      status: evidence ? 'linux-source-sample-opened' : 'unverified',
+      status: serverSample
+        ? 'server-smoke-verified'
+        : evidence
+          ? 'linux-source-sample-opened'
+          : 'unverified',
       acceptance: {
-        linuxArtifactOpens: !!evidence,
+        linuxArtifactOpens: !!evidence || serverSample,
         windowsCliSampleByteEqual: !!evidence?.windowsCliByteEqual,
         desktopQualityCompared: false,
-        workerE2E: false,
+        workerE2E: serverSample,
         miniProgramDevice: false,
       },
     }
@@ -84,7 +106,7 @@ const matrix = {
     'server.js:conversion routes',
     'cli.js:VALUE_OPTIONS',
   ],
-  note: 'Candidate pairs only. A pair is public only after Linux engine, fixture, quality and mini-program acceptance.',
+  note: 'Candidate pairs only. Server smoke verification is small-sample evidence, not desktop quality or mini-program acceptance; production exposure follows the backend allowlist.',
   optionCatalog: {
     videoCodec: ['h264', 'h265', 'av1'],
     textEncoding: ['auto', 'utf-8', 'gb18030', 'utf-16le', 'utf-16be'],
@@ -96,7 +118,7 @@ const matrix = {
   },
   candidates,
   batchOperations: [
-    { operationId: 'images-to-pdf', inputCategory: 'image', status: 'unverified' },
+    { operationId: 'images-to-pdf', inputCategory: 'image', status: 'server-smoke-verified' },
     { operationId: 'merge-pdfs', inputCategory: 'pdf', status: 'unverified' },
   ],
 }

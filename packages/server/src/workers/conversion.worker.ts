@@ -1,16 +1,21 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, ChildProcess } from 'node:child_process'
-import { createRequire } from 'node:module'
 import { createWriteStream } from 'node:fs'
 import { lstat, mkdir, mkdtemp, realpath, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, extname, join, resolve, sep } from 'node:path'
-import { finished, pipeline } from 'node:stream/promises'
+import { pipeline } from 'node:stream/promises'
 import { Transform } from 'node:stream'
 import { PrismaClient } from '@prisma/client'
 import Redis from 'ioredis'
 import { Client } from 'minio'
 import { assertPrivateConversionBucket } from '../modules/ledger-conversion/conversion.storage'
+import {
+  collectConversionWarnings,
+  CONVERSION_WARNINGS_OPTION_KEY,
+} from '../modules/ledger-conversion/conversion.warnings'
+import { operationArgs } from './conversion.args'
+import { markdownSidecars, zipOutputs } from './conversion.outputs'
 
 const QUEUE = 'ledger:conversions:queue'
 const WORKER_HEARTBEAT = 'ledger:conversions:worker:online'
@@ -94,30 +99,6 @@ async function downloadUpload(upload: any, directory: string) {
   return filePath
 }
 
-function operationArgs(
-  operationId: string,
-  files: string[],
-  options: Record<string, string>,
-  outputDir: string,
-) {
-  if (operationId === 'images-to-pdf')
-    return ['images-to-pdf', ...files, '--output-dir', outputDir, '--json']
-  if (operationId === 'merge-pdfs')
-    return ['merge-pdfs', ...files, '--output-dir', outputDir, '--json']
-  if (!operationId.startsWith('convert:')) throw new Error('未知转换操作')
-  const target = operationId.slice('convert:'.length)
-  if (!/^[a-z0-9]{2,8}$/.test(target)) throw new Error('目标格式不正确')
-  const args = ['convert', ...files, '--to', target, '--output-dir', outputDir, '--json']
-  for (const [key, flag] of Object.entries({
-    videoCodec: '--video-codec',
-    textEncoding: '--text-encoding',
-    pdfAction: '--pdf-action',
-  })) {
-    if (options[key]) args.push(flag, options[key])
-  }
-  return args
-}
-
 async function runCli(jobId: string, leaseId: string, args: string[]) {
   const child = spawn(process.execPath, [join(sourceDir, 'cli.js'), ...args], {
     cwd: sourceDir,
@@ -164,25 +145,6 @@ async function runCli(jobId: string, leaseId: string, args: string[]) {
     clearInterval(watcher)
     activeChild = null
   }
-}
-
-async function zipOutputs(files: { path: string; fileName: string }[], dest: string) {
-  const vendorRequire = createRequire(join(sourceDir, 'package.json'))
-  const yazl = vendorRequire('yazl')
-  const zip = new yazl.ZipFile()
-  const used = new Set<string>()
-  for (const file of files) {
-    let name = safeOutputName(file.fileName)
-    if (!name) throw new Error('转换引擎结果文件名无效')
-    let suffix = 2
-    while (used.has(name)) name = `${suffix++}-${safeOutputName(file.fileName)}`
-    used.add(name)
-    zip.addFile(file.path, name)
-  }
-  zip.end()
-  const out = createWriteStream(dest)
-  zip.outputStream.pipe(out)
-  await finished(out)
 }
 
 async function processJob(id: string) {
@@ -248,14 +210,19 @@ async function processJob(id: string) {
       where: { id, leaseId, status: 'running' },
       data: { progress: 10 },
     })
-    const options = (job.options || {}) as Record<string, string>
+    const options = Object.fromEntries(
+      Object.entries((job.options || {}) as Record<string, string>)
+        .filter(([key]) => key !== CONVERSION_WARNINGS_OPTION_KEY),
+    )
     const outputs = await runCli(
       id,
       leaseId,
       operationArgs(job.operationId, files, options, outputDir),
     )
+    const warnings = collectConversionWarnings(outputs, options)
     await assertLease()
     if (!outputs.length) throw new Error('转换没有产生文件')
+    const sidecars = await markdownSidecars(outputDir)
     await prisma.ledgerConversionJob.updateMany({
       where: { id, leaseId, status: 'running' },
       data: { progress: 80 },
@@ -276,6 +243,7 @@ async function processJob(id: string) {
         throw new Error('转换引擎输出不是普通文件')
       const fileName = safeOutputName(output.fileName)
       if (!fileName) throw new Error('转换引擎结果文件名无效')
+      if (sidecars.length) continue
       const assetId = randomUUID()
       const objectKey = `ledger-conversions/${job.userId}/jobs/${id}/assets/${assetId}`
       await storage.fPutObject(bucket, objectKey, filePath, {
@@ -291,9 +259,9 @@ async function processJob(id: string) {
         sizeBytes: BigInt(info.size),
       })
     }
-    if (outputs.length > 1) {
+    if (outputs.length > 1 || sidecars.length) {
       const zipPath = join(work, 'all-results.zip')
-      await zipOutputs(outputs, zipPath)
+      await zipOutputs(outputs, sidecars, zipPath, sourceDir)
       const assetId = randomUUID()
       const objectKey = `ledger-conversions/${job.userId}/jobs/${id}/assets/${assetId}`
       await storage.fPutObject(bucket, objectKey, zipPath, { 'Content-Type': 'application/zip' })
@@ -302,7 +270,7 @@ async function processJob(id: string) {
       assets.push({
         id: assetId,
         objectKey,
-        fileName: '全部结果.zip',
+        fileName: outputs.length > 1 ? '全部结果.zip' : '转换结果.zip',
         mimeType: 'application/zip',
         sizeBytes: BigInt((await stat(zipPath)).size),
       })
@@ -318,6 +286,7 @@ async function processJob(id: string) {
           progress: 100,
           finishedAt,
           expiresAt: new Date(finishedAt.getTime() + RETENTION_MS),
+          options: { ...options, [CONVERSION_WARNINGS_OPTION_KEY]: warnings },
         },
       })
       if (!done.count) throw new Error('任务已取消或租约已过期')

@@ -14,11 +14,13 @@ for (const tab of app.tabBar.list)
   assert.ok(app.pages.includes(tab.pagePath), `tab moved ${tab.pagePath}`)
 
 let moved = 0
+const legacyRoots = new Set(['subpackages/orders', 'subpackages/tools', 'subpackages/settings'])
 for (const pkg of app.subPackages || []) {
   for (const route of pkg.pages) {
     const target = `${pkg.root}/${route}`
-    const legacy = `pages/${route.replace(/^pages\//, '')}`
     assert.ok(pageExists(target), `missing subpackage page ${target}`)
+    if (!legacyRoots.has(pkg.root)) continue
+    const legacy = `pages/${route.replace(/^pages\//, '')}`
     assert.ok(app.pages.includes(legacy), `missing legacy route ${legacy}`)
     const stub = readFileSync(resolve(root, legacy + '.ts'), 'utf8')
     assert.ok(

@@ -10,9 +10,12 @@ const path = require("path");
 const zlib = require("zlib");
 const { finished } = require("stream/promises");
 const sharp = require("sharp");
-const { FFMPEG_PATH, DCRAW_PATH, rawInput } = require("./config");
+const { FFMPEG_PATH, DCRAW_PATH, LIBRAW_DCRAW_PATH, rawInput } = require("./config");
 const RAW_EXTENSIONS = rawInput;
+const RAW_MAX_STATIC_PIXELS = 20_000_000;
+const RAW_FORMAT_MAX_STATIC_PIXELS = Object.freeze({ fff: 60_000_000, mef: 22_000_000 });
 const FFMPEG_IMAGE_EXTENSIONS = new Set(["tga", "jp2", "j2k", "jxl", "qoi", "ppm"]);
+const HEIF_CONVERT_PATH = process.env.FLYINGMOUSE_HEIF_CONVERT_PATH || "/usr/bin/heif-convert";
 const { run } = require("./utils");
 const { throwIfCanceled } = require("./conversion-cancellation");
 const { reportConversionProgress } = require("./conversion-progress");
@@ -55,6 +58,42 @@ async function convertToIco(inputPath, outputPath) {
 
 async function convertImage(inputPath, outputPath, target, options = {}) {
   throwIfCanceled(options.signal);
+  if (path.extname(String(options.inputName || inputPath)).toLowerCase() === ".ai") {
+    const handle = await fsp.open(inputPath, "r");
+    const header = Buffer.alloc(5);
+    try {
+      await handle.read(header, 0, header.length, 0);
+    } finally {
+      await handle.close();
+    }
+    if (header.toString("ascii") !== "%PDF-") {
+      const error = new Error("仅支持包含 PDF 兼容数据的 AI 文件；旧版 EPS AI 暂不支持。");
+      error.code = "AI_PDF_COMPATIBILITY_REQUIRED";
+      error.messages = { zhCN: error.message, enUS: "Only PDF-compatible AI files are supported; legacy EPS AI files are not." };
+      throw error;
+    }
+    if (["pdf", "txt", "docx", "md"].includes(target)) {
+      const source = await fsp.readFile(inputPath);
+      try {
+        const document = await require("pdf-lib").PDFDocument.load(source);
+        if (!document.getPageCount()) throw new Error("AI PDF has no pages");
+      } catch {
+        const error = new Error("AI 文件中的 PDF 兼容数据无效或已加密。");
+        error.code = "AI_PDF_INVALID";
+        error.messages = { zhCN: error.message, enUS: "The PDF-compatible data in this AI file is invalid or encrypted." };
+        throw error;
+      }
+      if (target === "pdf") {
+        await fsp.writeFile(outputPath, source);
+        return { warnings: [] };
+      }
+      const result = await require("./pdf").convertPdf(inputPath, outputPath, target, options);
+      return { warnings: [...(result?.warnings || []), { code: "AI_PDF_TEXT_EXTRACTION", messages: {
+        zhCN: "已提取 AI 文件的 PDF 兼容文字层；插图、矢量图和原始排版可能无法保留，请对照原文件核对。",
+        enUS: "Text was extracted from the PDF-compatible AI data. Illustrations, vectors and original layout may not be retained; review against the source."
+      } }] };
+    }
+  }
   const prepared = await prepareImageInput(inputPath, options.inputName);
   try {
     throwIfCanceled(options.signal);
@@ -96,11 +135,25 @@ async function convertImage(inputPath, outputPath, target, options = {}) {
     // 专业/新式位图输出：sharp 的预编译编码器不全，统一走打包内置 ffmpeg。
     // jxl 显式指定 libjxl，其余按扩展名选 muxer；五种格式均已做编码→解码闭环实测。
     if (FFMPEG_IMAGE_EXTENSIONS.has(target)) {
-      const args = ["-hide_banner", "-y", "-i", prepared.inputPath, "-frames:v", "1"];
-      if (target === "jxl") args.push("-c:v", "libjxl");
-      args.push(outputPath);
-      await run(FFMPEG_PATH, args, { timeout: 1000 * 60 * 5 });
-      return { warnings: [] };
+      let ffmpegInput = prepared.inputPath;
+      let tempDir;
+      try {
+        const { format } = await sharp(prepared.inputPath, { limitInputPixels: LIMITS.maxImagePixels }).metadata();
+        if (format === "heif") {
+          // FFmpeg cannot reliably read AVIF uploads from a temporary file.
+          tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-avif-input-"));
+          ffmpegInput = path.join(tempDir, "frame.png");
+          await sharp(prepared.inputPath, { page: 0, pages: 1, limitInputPixels: LIMITS.maxImagePixels })
+            .png().toFile(ffmpegInput);
+        }
+        const args = ["-hide_banner", "-y", "-i", ffmpegInput, "-frames:v", "1"];
+        if (target === "jxl") args.push("-c:v", "libjxl");
+        args.push(outputPath);
+        await run(FFMPEG_PATH, args, { timeout: 1000 * 60 * 5 });
+        return { warnings: [] };
+      } finally {
+        if (tempDir) await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      }
     }
 
     if (target === "mp4" || target === "webm") {
@@ -121,16 +174,42 @@ async function convertImage(inputPath, outputPath, target, options = {}) {
 // sharp 的预编译构建不支持 BMP 输入（无解码器）且 libheif 只编译了 AV1（AVIF），
 // HEIC/HEIF（HEVC 编码）能读元数据但解不了像素。这里统一中转：
 //   - BMP   -> 纯 JS 解码成 PNG
-//   - HEIC  -> 打包内置 ffmpeg（含 hevc 解码器）转 PNG
+//   - HEIC  -> 打包内置 ffmpeg，Linux 上失败时由 libheif 转 PNG
 // 让下游统一走 PNG。
 async function prepareImageInput(inputPath, inputName) {
   // 设计稿（.ai/.psd）：先统一栅格化成 PNG 再走通用图片链路。
   // multer 临时文件无扩展名，按上传原始名（inputName）识别；多页 .ai 只取第 1 页
   // （包装稿典型为单页；实验性输入已附提示复核产物）。
   const designExt = path.extname(String(inputName || inputPath)).toLowerCase().replace(/^\./, "");
-  if (designExt === "ai" || designExt === "psd") {
+  if (designExt === "psd") {
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-psd-input-"));
+    const namedInput = path.join(tempDir, "input.psd");
+    const pngPath = path.join(tempDir, "decoded.png");
+    try {
+      await fsp.copyFile(inputPath, namedInput);
+      await run(FFMPEG_PATH, ["-hide_banner", "-y", "-i", namedInput, "-frames:v", "1", pngPath], { timeout: 1000 * 60 * 5 });
+      if (!fs.existsSync(pngPath)) throw new Error("PSD 图片解码失败：无法从该文件提取像素数据。");
+      return { inputPath: pngPath, tempDir };
+    } catch (error) {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      throw error;
+    }
+  }
+  if (designExt === "ai") {
     const { designToPng } = require("./design-export");
     return await designToPng(inputPath, designExt);
+  }
+
+  if (designExt === "svg" && path.extname(inputPath).toLowerCase() !== ".svg") {
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-svg-input-"));
+    const svgPath = path.join(tempDir, "input.svg");
+    try {
+      await fsp.copyFile(inputPath, svgPath);
+      return { inputPath: svgPath, tempDir };
+    } catch (error) {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      throw error;
+    }
   }
 
   // 先读文件头判断（不整读大图）；只有需要中转的格式才解码进内存。
@@ -163,12 +242,27 @@ async function prepareImageInput(inputPath, inputName) {
   if (isHeicFileSync(inputPath)) {
     const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-heic-input-"));
     const pngPath = path.join(tempDir, "decoded.png");
-    await run(FFMPEG_PATH, ["-hide_banner", "-y", "-i", inputPath, pngPath], { timeout: 1000 * 60 * 5 });
-    if (!fs.existsSync(pngPath)) {
+    try {
+      let ffmpegError;
+      try {
+        await run(FFMPEG_PATH, ["-hide_banner", "-y", "-i", inputPath, pngPath], { timeout: 1000 * 60 * 5 });
+      } catch (error) {
+        ffmpegError = error;
+      }
+      if (ffmpegError || !fs.existsSync(pngPath)) {
+        if (!fs.existsSync(HEIF_CONVERT_PATH)) {
+          if (ffmpegError) throw ffmpegError;
+          throw new Error("HEIC 图片解码失败：无法从该文件提取像素数据。");
+        }
+        await fsp.rm(pngPath, { force: true });
+        await run(HEIF_CONVERT_PATH, [inputPath, pngPath], { timeout: 1000 * 60 * 5 });
+      }
+      if (!fs.existsSync(pngPath)) throw new Error("HEIC 图片解码失败：无法从该文件提取像素数据。");
+      return { inputPath: pngPath, tempDir };
+    } catch (error) {
       await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-      throw new Error("HEIC 图片解码失败：无法从该文件提取像素数据。");
+      throw error;
     }
-    return { inputPath: pngPath, tempDir };
   }
 
   // 专业/新式位图输入在 Electron 上传后临时路径没有扩展名；这类容器的探测并非都
@@ -193,25 +287,53 @@ async function prepareImageInput(inputPath, inputName) {
     if (!DCRAW_PATH) {
       throw new Error("RAW 解码引擎（dcraw）不可用：未找到 dcraw.exe。");
     }
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-raw-input-"));
-    // dcraw 不支持 -O（部分版本报 Unknown option），输出 <basename>.tiff 固定生成在输入
-    // 所在目录。先把输入复制到临时目录再解码：源目录可能只读（U 盘/系统目录），
-    // 且避免在用户目录残留 .tiff。
-    const tempInput = path.join(tempDir, `input.${designExt || path.extname(inputPath).replace(/^\./, "") || "raw"}`);
-    await fsp.copyFile(inputPath, tempInput);
-    // dcraw -T 输出 16-bit TIFF；-o 1 = sRGB 色彩空间（默认 ACES 线性会偏灰，勿去掉）
-    await run(DCRAW_PATH, ["-T", "-o", "1", tempInput], { timeout: 1000 * 60 * 5 });
-    const stem = path.basename(tempInput, path.extname(tempInput));
-    const tiffCandidates = [
-      path.join(tempDir, `${stem}.tiff`),
-      path.join(tempDir, `${stem}.tif`)
-    ];
-    const tiffPath = tiffCandidates.find((c) => fs.existsSync(c));
-    if (!tiffPath) {
-      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-      throw new Error("RAW 图片解码失败：无法从该文件提取像素数据。");
+    if (designExt === "cr3" && !LIBRAW_DCRAW_PATH) {
+      throw new Error("CR3 解码引擎（LibRaw）不可用。");
     }
-    return { inputPath: tiffPath, tempDir };
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-raw-input-"));
+    try {
+      // dcraw 不支持 -O。复制到可写临时目录后，先只读元数据，避免超大 RAW 在像素检查前解码耗尽内存。
+      const tempInput = path.join(tempDir, `input.${designExt || path.extname(inputPath).replace(/^\./, "") || "raw"}`);
+      await fsp.copyFile(inputPath, tempInput);
+      let probe;
+      try {
+        probe = await run(DCRAW_PATH, ["-i", "-v", tempInput], { timeout: 1000 * 30, maxStdoutBytes: 64 * 1024 });
+      } catch (error) {
+        if (error.code === "ETIMEDOUT" || error.code === "CONVERSION_CANCELED") throw error;
+        throw new ResourceLimitError("IMAGE_METADATA_INVALID");
+      }
+      const sizes = [...`${probe.stdout}\n${probe.stderr}`.matchAll(/^Output size:[ \t]*(\d+)[ \t]*x[ \t]*(\d+)[ \t]*$/gm)];
+      if (sizes.length !== 1) throw new ResourceLimitError("IMAGE_METADATA_INVALID");
+      const width = Number(sizes[0][1]);
+      const height = Number(sizes[0][2]);
+      const pixels = width * height;
+      if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || !Number.isSafeInteger(pixels) || width < 1 || height < 1) {
+        throw new ResourceLimitError("IMAGE_METADATA_INVALID");
+      }
+      const rawExt = RAW_EXTENSIONS.has(designExt) ? designExt : path.extname(inputPath).toLowerCase().replace(/^\./, "");
+      const formatLimit = RAW_FORMAT_MAX_STATIC_PIXELS[rawExt];
+      const pixelLimit = formatLimit ? Math.min(formatLimit, LIMITS.maxImagePixels) : RAW_MAX_STATIC_PIXELS;
+      if (pixels > pixelLimit) {
+        throw new ResourceLimitError("IMAGE_PIXELS_EXCEEDED", { pixels, limitMegapixels: pixelLimit / 1_000_000 });
+      }
+      // dcraw 无法正确解码 Canon CR3；LibRaw 的 dcraw_emu 单独处理此格式。
+      // 两者均输出 sRGB TIFF，后续图片链路无需分流。
+      let tiffPath;
+      if (designExt === "cr3") {
+        tiffPath = path.join(tempDir, "input.tiff");
+        await run(LIBRAW_DCRAW_PATH, ["-T", "-o", "1", "-w", "-Z", tiffPath, tempInput], { timeout: 1000 * 60 * 5 });
+      } else {
+        await run(DCRAW_PATH, ["-T", "-o", "1", "-w", tempInput], { timeout: 1000 * 60 * 5 });
+        const stem = path.basename(tempInput, path.extname(tempInput));
+        tiffPath = [path.join(tempDir, `${stem}.tiff`), path.join(tempDir, `${stem}.tif`)]
+          .find((candidate) => fs.existsSync(candidate));
+      }
+      if (!tiffPath || !fs.existsSync(tiffPath)) throw new Error("RAW 图片解码失败：无法从该文件提取像素数据。");
+      return { inputPath: tiffPath, tempDir };
+    } catch (error) {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      throw error;
+    }
   }
 
   return { inputPath, tempDir: null };
@@ -269,6 +391,19 @@ async function inspectImageMetadata(inputPath, animated = false) {
 }
 
 async function convertImageToVideo(inputPath, outputPath, target) {
+  const { format } = await sharp(inputPath, { limitInputPixels: LIMITS.maxImagePixels }).metadata();
+  if (format === "svg" || format === "heif") {
+    // FFmpeg's still-image loop option cannot read SVG/AVIF reliably on Linux.
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-video-frame-"));
+    const pngPath = path.join(tempDir, "frame.png");
+    try {
+      await sharp(inputPath, { page: 0, pages: 1, limitInputPixels: LIMITS.maxImagePixels }).png().toFile(pngPath);
+      return await convertImageToVideo(pngPath, outputPath, target);
+    } finally {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
   const fd = fs.openSync(inputPath, "r");
   let isGif = false;
   try {

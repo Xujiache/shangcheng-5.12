@@ -1,3 +1,7 @@
+const fsp = require("fs/promises");
+const os = require("os");
+const path = require("path");
+
 class OfficeQualityError extends Error {
   constructor(code, messages, details = {}) {
     super(messages.zhCN);
@@ -62,6 +66,26 @@ function validatePresentationHtml(html) {
 
 function warning(code, messages, details, level = "warning") {
   return { code, level, messages, details };
+}
+
+function xlsmMacroLossWarning(target) {
+  if (target === "xlsx") {
+    return {
+      code: "XLSM_MACROS_OMITTED",
+      messages: {
+        zhCN: "转换不会执行 XLSM 宏；导出的 XLSX 不保留 VBA 宏。请核对工作表、公式和样式。",
+        enUS: "XLSM macros are disabled during conversion. The exported XLSX omits VBA macros. Review the worksheets, formulas, and formatting."
+      }
+    };
+  }
+  if (!["pdf", "csv", "html"].includes(target)) return null;
+  return {
+    code: "XLSM_MACROS_OMITTED",
+    messages: {
+      zhCN: "XLSM 宏在转换时不会执行；导出文件不保留宏和公式表达式，只保存转换时的计算值。请核对结果。",
+      enUS: "XLSM macros are disabled during conversion. The export omits macros and formula expressions and saves calculated values only. Review the result."
+    }
+  };
 }
 
 function firstWorksheet(workbook) {
@@ -144,9 +168,34 @@ async function inspectXlsxForCsv(inputPath, options = {}) {
   return { exportedSheet, ignoredSheets, formulaCount, warnings };
 }
 
+async function inspectEttForCsv(inputPath, originalName, options = {}) {
+  const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-ett-csv-"));
+  try {
+    const xlsxPath = path.join(tempDir, "preview.xlsx");
+    const convert = options.convertWithLibreOffice || require("./office-convert").convertWithLibreOffice;
+    await convert(inputPath, xlsxPath, originalName, "xlsx");
+    const result = await inspectXlsxForCsv(xlsxPath, options);
+    return {
+      ...result,
+      warnings: result.warnings.map((item) => ({ ...item, code: item.code.replace(/^XLSX_/, "ETT_") }))
+    };
+  } catch (error) {
+    return {
+      warnings: [warning("ETT_CSV_PREVIEW_UNAVAILABLE", {
+        zhCN: "无法检查 ETT 工作表和公式；CSV 可能只保留第一张工作表的计算值，请核对结果。",
+        enUS: "ETT sheets and formulas could not be inspected; CSV may retain only calculated values from the first worksheet. Review the result."
+      }, { cause: String(error?.message || "") })]
+    };
+  } finally {
+    await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 module.exports = {
   OfficeQualityError,
   inspectXlsxForCsv,
+  inspectEttForCsv,
+  xlsmMacroLossWarning,
   validatePresentationHtml,
   visibleBodyText
 };

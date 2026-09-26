@@ -31,9 +31,17 @@ for (const f of files.filter((f) => f.endsWith('.json'))) {
     assert(fs.existsSync(p + '.json'), p)
   }
 }
-const bin =
-  'C:/Program Files (x86)/Tencent/微信web开发者工具/code/package.nw/node_modules/wcc-exec/'
-const result = cp.spawnSync(bin + 'wcc.exe', ['-o', path.join(dir, 'wxml.js'), ...wxml], {
+const compilerDir =
+  process.env.WECHAT_COMPILER_DIR ||
+  (process.platform === 'win32'
+    ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/code/package.nw/node_modules/wcc-exec'
+    : process.platform === 'darwin'
+      ? '/Applications/wechatwebdevtools.app/Contents/Resources/app.asar.unpacked/node_modules/wcc-exec'
+      : '')
+if (!compilerDir) throw Error('请设置 WECHAT_COMPILER_DIR 指向微信开发者工具的 wcc-exec 目录')
+const compiler = (name) =>
+  path.join(compilerDir, name + (process.platform === 'win32' ? '.exe' : ''))
+const result = cp.spawnSync(compiler('wcc'), ['-o', path.join(dir, 'wxml.js'), ...wxml], {
   cwd: root,
   encoding: 'utf8',
   maxBuffer: 10 * 1024 * 1024,
@@ -42,7 +50,7 @@ if (result.status !== 0) throw Error(result.stderr || result.stdout || String(re
 const styles = files
   .filter((f) => f.endsWith('.wxss'))
   .map((f) => path.relative(root, f).replaceAll('\\', '/'))
-const css = cp.spawnSync(bin + 'wcsc.exe', ['-o', path.join(dir, 'wxss.js'), ...styles], {
+const css = cp.spawnSync(compiler('wcsc'), ['-o', path.join(dir, 'wxss.js'), ...styles], {
   cwd: root,
   encoding: 'utf8',
   maxBuffer: 10 * 1024 * 1024,

@@ -37,7 +37,7 @@ const { convertOfdToPdf } = require("./ofd-convert");
 const { OfficeEngineError, probeLibreOffice, runLibreOffice } = require("./office-engine");
 const { getOfficeState, waitForOfficeReady, OfficePreparationError } = require("./office-readiness");
 const { getStructuredPdfAvailability } = require("./pdf-structure-engine");
-const { inspectXlsxForCsv } = require("./office-quality");
+const { inspectXlsxForCsv, inspectEttForCsv, xlsmMacroLossWarning } = require("./office-quality");
 const logger = require("./logger");
 
 // Prefer the Electron main process's debug.log (set via FLYINGMOUSE_LOG_FILE
@@ -783,7 +783,7 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
       }
     } else if (category === "zip") {
       await convertZipImagesToPdf(file.path, outputPath);
-    } else if (category === "spreadsheet" && ["csv", "tsv"].includes(inputExt) && ["txt", "md", "json"].includes(requestedTarget)) {
+    } else if (category === "spreadsheet" && ["csv", "tsv"].includes(inputExt) && ["txt", "md", "json", "csv"].includes(requestedTarget)) {
       conversionResult = await convertText(file.path, outputPath, inputExt, requestedTarget, originalName);
     } else if (category === "spreadsheet" && ["csv", "tsv"].includes(inputExt) && ["epub", "xlsx", "html", "pdf"].includes(requestedTarget)) {
       // LO 的 csv/tsv 导入过滤器 headless 下假成功（exit 0 零输出），全部用自有实现
@@ -815,6 +815,8 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
       } else {
         if (category === "spreadsheet" && inputExt === "xlsx" && requestedTarget === "csv") {
           conversionResult = await inspectXlsxForCsv(file.path);
+        } else if (category === "spreadsheet" && inputExt === "ett" && requestedTarget === "csv") {
+          conversionResult = await inspectEttForCsv(file.path, originalName);
         }
         await convertWithLibreOffice(file.path, outputPath, originalName, requestedTarget);
       }
@@ -855,6 +857,10 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
     if (experimentalInputSet.has(inputExt)) {
       payload.warnings = [...(payload.warnings || []), experimentalInputWarning(inputExt)];
     }
+    if (inputExt === "xlsm") {
+      const macroWarning = xlsmMacroLossWarning(requestedTarget);
+      if (macroWarning) payload.warnings = [...(payload.warnings || []), macroWarning];
+    }
     logger.info(`Convert succeeded: "${originalName}" -> ${downloadName} (${requestedTarget})`);
     conversionProgress.outputReady(req);
     res.json(payload);
@@ -876,7 +882,7 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
       "BMP_UNSUPPORTED_VARIANT",
       "JSON_CSV_PATH_COLLISION",
       "PDF_TABLE_OCR_LOW_QUALITY"
-    ].includes(error?.code) || /^(?:MARKDOWN|EPUB|MOBI)_/.test(error?.code || "");
+    ].includes(error?.code) || /^(?:MARKDOWN|EPUB|MOBI|AI)_/.test(error?.code || "");
     const isResourceLimitError = error instanceof ResourceLimitError;
     const isOfficeEngineError = error instanceof OfficeEngineError || error instanceof OfficePreparationError;
     if (isClientConversionError || isResourceLimitError) logger.warn(`Convert rejected: "${originalName}" -> ${requestedTarget}`, error);

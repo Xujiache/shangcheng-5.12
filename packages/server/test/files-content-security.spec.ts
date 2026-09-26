@@ -11,7 +11,7 @@ import { FilesService } from '../src/modules/files/files.service'
 describe('FilesService 内容安全上传闸门', () => {
   it('量窗助手轮播图上传使用 ledger 凭据', async () => {
     const putObject = jest.fn(async () => undefined)
-    const create = jest.fn(async () => undefined)
+    const create = jest.fn(async () => ({ id: 'uploaded-1' }))
     const contentSecurity = { assertImageSafe: jest.fn(async (..._args: any[]) => undefined) }
     const service = new FilesService({ uploadedFile: { create } } as any, contentSecurity as any)
     ;(service as any).client = { putObject }

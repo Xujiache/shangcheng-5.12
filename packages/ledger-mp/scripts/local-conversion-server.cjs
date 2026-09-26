@@ -23,8 +23,13 @@ const host = process.env.LEDGER_LOCAL_HOST || '127.0.0.1'
 const lanHost = process.env.LEDGER_LOCAL_LAN_HOST || ''
 const prefix = '/api/v1/l/conversions'
 const chunkBytes = 8 * 1024 * 1024
-const maxFileBytes = 1024 * 1024 * 1024
-const maxBatchBytes = 2 * 1024 * 1024 * 1024
+const maxFileBytes = 96_000_000
+const textFileBytes = 64 * 1024 * 1024
+const textExtensions = [
+  'txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'tsv', 'log',
+  'xml', 'yaml', 'yml', 'srt', 'vtt', 'ass', 'ssa', 'rtf', 'epub',
+]
+const maxBatchBytes = 256 * 1024 * 1024
 const maxFiles = 100
 const uploads = new Map()
 const jobs = new Map()
@@ -152,12 +157,13 @@ async function main() {
   app.get(prefix + '/capabilities', (_req, res) => ok(res, {
     available: true, operations,
     features: { pdfEncryption },
-    limits: { maxFileBytes, maxBatchBytes, maxFiles, chunkBytes, retentionDays: 0, deviceVerified: false },
+    limits: { maxFileBytes, textFileBytes, textExtensions, maxBatchBytes, maxFiles, chunkBytes, retentionDays: 0, deviceVerified: false },
   }))
   app.post(prefix + '/uploads', (req, res) => {
     const fileName = safeName(req.body?.fileName)
     const sizeBytes = Number(req.body?.sizeBytes)
-    if (!fileName || !Number.isSafeInteger(sizeBytes) || sizeBytes <= 0 || sizeBytes > maxFileBytes) return fail(res, 400, '文件大小或名称无效')
+    const fileLimit = textExtensions.includes(path.extname(fileName).slice(1).toLowerCase()) ? textFileBytes : maxFileBytes
+    if (!fileName || !Number.isSafeInteger(sizeBytes) || sizeBytes <= 0 || sizeBytes > fileLimit) return fail(res, 400, '文件大小或名称无效')
     const upload = { id: randomUUID(), fileName, sizeBytes, chunkCount: Math.ceil(sizeBytes / chunkBytes), uploadedParts: [], complete: false }
     uploads.set(upload.id, upload); saveIndex()
     ok(res, { id: upload.id, chunkBytes, chunkCount: upload.chunkCount })

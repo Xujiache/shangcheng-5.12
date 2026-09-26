@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { basename, extname } from 'node:path'
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { HttpException, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { Prisma } from '@prisma/client'
 import Redis from 'ioredis'
@@ -18,6 +18,7 @@ import {
   findConversionOperation,
 } from './conversion.operations'
 import { assertPrivateConversionBucket } from './conversion.storage'
+import { CONVERSION_WARNINGS_OPTION_KEY, publicConversionWarnings } from './conversion.warnings'
 
 const QUEUE = 'ledger:conversions:queue'
 const WORKER_HEARTBEAT = 'ledger:conversions:worker:online'
@@ -31,6 +32,11 @@ const boundedLimit = (raw: string | undefined, fallback: number, ceiling: number
   const value = raw === undefined ? fallback : Number(raw)
   return Number.isSafeInteger(value) && value > 0 ? Math.min(value, ceiling) : fallback
 }
+const TEXT_INPUT_EXTENSIONS = [
+  'txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'tsv', 'log',
+  'xml', 'yaml', 'yml', 'srt', 'vtt', 'ass', 'ssa', 'rtf', 'epub',
+]
+const TEXT_FILE_LIMIT = 64 * 1024 ** 2
 
 @Injectable()
 export class ConversionService implements OnModuleInit, OnModuleDestroy {
@@ -42,11 +48,12 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   })
   private storage: Client | null = null
   private ready = false
+  private initializing: Promise<void> | null = null
   private readonly accepting = process.env.CONVERSION_FEATURE_ENABLED === 'true'
-  // 真机大文件验收之前保持保守运行限制；部署后只可在原版上限内逐级放宽。
+  // 微信 readFile 单文件上限为 100 MB；留出 4 MB 余量，批量预算保持不变。
   private readonly maxFileBytes = boundedLimit(
     process.env.CONVERSION_MAX_FILE_BYTES,
-    64 * 1024 ** 2,
+    96_000_000,
     CONVERSION_FILE_LIMIT,
   )
   private readonly maxBatchBytes = boundedLimit(
@@ -63,6 +70,23 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
+    await this.initialize()
+  }
+
+  @Cron('*/30 * * * * *')
+  async retryInitialization() {
+    if (this.accepting && !this.ready) await this.initialize()
+  }
+
+  private initialize(): Promise<void> {
+    if (this.initializing) return this.initializing
+    this.initializing = this.connectStorage().finally(() => {
+      this.initializing = null
+    })
+    return this.initializing
+  }
+
+  private async connectStorage() {
     if (this.bucket === (process.env.S3_BUCKET || 'jiujiu-mall')) {
       this.logger.error('转换存储不得复用公开下载 bucket；转换功能已关闭')
       return
@@ -75,20 +99,21 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     }
     try {
       const url = new URL(process.env.S3_ENDPOINT || 'http://127.0.0.1:9000')
-      this.storage = new Client({
+      const storage = new Client({
         endPoint: url.hostname,
         port: Number(url.port) || (url.protocol === 'https:' ? 443 : 80),
         useSSL: url.protocol === 'https:',
         accessKey: accessKey || 'minioadmin',
         secretKey: secretKey || 'minioadmin',
       })
-      if (!(await this.storage.bucketExists(this.bucket)))
-        await this.storage.makeBucket(this.bucket)
-      await assertPrivateConversionBucket(this.storage, this.bucket)
-      await this.redis.connect()
+      if (!(await storage.bucketExists(this.bucket))) await storage.makeBucket(this.bucket)
+      await assertPrivateConversionBucket(storage, this.bucket)
+      if ((await this.redis.ping()) !== 'PONG') throw new Error('Redis PING failed')
+      this.storage = storage
       this.ready = true
     } catch (error: any) {
       this.logger.error(`转换服务初始化失败：${error?.message || error}`)
+      this.ready = false
       this.storage = null
     }
   }
@@ -110,11 +135,17 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
           .then((count) => count > 0)
           .catch(() => false)
       : false
+    const storageOnline =
+      workerOnline && this.accepting && this.storage
+        ? await this.storage.bucketExists(this.bucket).catch(() => false)
+        : false
     return {
-      available: workerOnline && this.accepting && VERIFIED_CONVERSION_OPERATIONS.length > 0,
-      operations: workerOnline && this.accepting ? VERIFIED_CONVERSION_OPERATIONS : [],
+      available: storageOnline && VERIFIED_CONVERSION_OPERATIONS.length > 0,
+      operations: storageOnline ? VERIFIED_CONVERSION_OPERATIONS : [],
       limits: {
         maxFileBytes: this.maxFileBytes,
+        textFileBytes: Math.min(this.maxFileBytes, TEXT_FILE_LIMIT),
+        textExtensions: TEXT_INPUT_EXTENSIONS,
         maxBatchBytes: this.maxBatchBytes,
         maxFiles: this.maxFiles,
         chunkBytes: CONVERSION_CHUNK_BYTES,
@@ -137,7 +168,10 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     ) {
       throw new BizException(BizCode.INVALID_PARAMS, '尚未开放该文件格式')
     }
-    if (!Number.isSafeInteger(totalBytes) || totalBytes <= 0 || totalBytes > this.maxFileBytes) {
+    const maxFileBytes = TEXT_INPUT_EXTENSIONS.includes(extension)
+      ? Math.min(this.maxFileBytes, TEXT_FILE_LIMIT)
+      : this.maxFileBytes
+    if (!Number.isSafeInteger(totalBytes) || totalBytes <= 0 || totalBytes > maxFileBytes) {
       throw new BizException(BizCode.INVALID_PARAMS, '文件大小超过当前已验证的上限')
     }
     const upload = await this.prisma.ledgerConversionUpload.create({
@@ -302,6 +336,8 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       uploads.map((upload) => upload.extension),
     )
     if (!operation) throw new BizException(BizCode.INVALID_PARAMS, '该转换组合尚未通过 Linux 验证')
+    if (operation.id === 'merge-pdfs' && uploadIds.length < 2)
+      throw new BizException(BizCode.INVALID_PARAMS, '合并 PDF 至少需要两个文件')
     const options = body.options || {}
     if (
       typeof options !== 'object' ||
@@ -312,6 +348,15 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       )
     ) {
       throw new BizException(BizCode.INVALID_PARAMS, '转换选项不正确')
+    }
+    if (operation.id === 'convert:pdf' &&
+      (options.splitMode !== undefined || options.groupSize !== undefined) &&
+      (!uploads.every((upload) => upload.extension === 'pdf') ||
+        !['page', 'group'].includes(String(options.splitMode)) ||
+        (options.splitMode === 'group'
+          ? !/^[1-9]\d{0,2}$/.test(String(options.groupSize))
+          : options.groupSize !== undefined))) {
+      throw new BizException(BizCode.INVALID_PARAMS, 'PDF 拆分选项不正确')
     }
     const job = await this.prisma.$transaction(async (tx) => {
       const created = await tx.ledgerConversionJob.create({
@@ -378,8 +423,9 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       id: job.id,
       operationId: job.operationId,
       options: Object.fromEntries(
-        Object.entries(job.options || {}).filter(([key]) => key !== 'password'),
+        Object.entries(job.options || {}).filter(([key]) => key !== 'password' && key !== CONVERSION_WARNINGS_OPTION_KEY),
       ),
+      warnings: job.status === 'succeeded' ? publicConversionWarnings(job.options) : [],
       status: job.status,
       progress: job.progress,
       error: job.error,
@@ -415,6 +461,14 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   async retryJob(userId: string, id: string) {
     this.requireReady()
     if (!this.accepting) throw new BizException(BizCode.BUSINESS_ERROR, '格式转换尚未开放')
+    const previous = await this.prisma.ledgerConversionJob.findFirst({
+      where: { id, userId, status: 'failed', expiresAt: { gt: new Date() } },
+      select: { options: true },
+    })
+    if (!previous) throw new BizException(BizCode.INVALID_PARAMS, '任务不存在或不可重试')
+    const options = Object.fromEntries(
+      Object.entries(previous.options || {}).filter(([key]) => key !== CONVERSION_WARNINGS_OPTION_KEY),
+    )
     const result = await this.prisma.ledgerConversionJob.updateMany({
       where: { id, userId, status: 'failed', expiresAt: { gt: new Date() } },
       data: {
@@ -426,6 +480,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
         leaseId: null,
         finishedAt: null,
         expiresAt: null,
+        options: options as Prisma.InputJsonValue,
       },
     })
     if (!result.count) throw new BizException(BizCode.INVALID_PARAMS, '任务不存在或不可重试')
@@ -481,7 +536,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     return { userId, jobsDeleted: jobs.length, pendingUploadsDeleted: uploads.length }
   }
 
-  async asset(userId: string, jobId: string, assetId: string) {
+  async asset(userId: string, jobId: string, assetId: string, range?: string) {
     const storage = this.requireReady()
     const asset = await this.prisma.ledgerConversionAsset.findFirst({
       where: {
@@ -491,7 +546,37 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       },
     })
     if (!asset) throw new BizException(BizCode.INVALID_PARAMS, '结果不存在')
-    return { asset, stream: await storage.getObject(this.bucket, asset.objectKey) }
+    const size = Number(asset.sizeBytes)
+    if (!Number.isSafeInteger(size) || size < 0)
+      throw new BizException(BizCode.BUSINESS_ERROR, '结果文件大小无效')
+    if (!range) {
+      return {
+        asset,
+        stream: await storage.getObject(this.bucket, asset.objectKey),
+        statusCode: 200,
+        contentLength: size,
+      }
+    }
+    const match = /^bytes=(\d*)-(\d*)$/i.exec(range.trim())
+    const suffix = match && !match[1] && match[2] ? Number(match[2]) : NaN
+    const start = Number.isSafeInteger(suffix) && suffix > 0
+      ? Math.max(0, size - suffix)
+      : match && match[1] ? Number(match[1]) : NaN
+    const requestedEnd = match && match[1] && match[2] ? Number(match[2]) : size - 1
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(requestedEnd) ||
+      start >= size ||
+      requestedEnd < start
+    ) throw new HttpException('无效的文件范围', 416)
+    const end = Math.min(requestedEnd, size - 1)
+    return {
+      asset,
+      stream: await storage.getPartialObject(this.bucket, asset.objectKey, start, end - start + 1),
+      statusCode: 206,
+      contentLength: end - start + 1,
+      contentRange: `bytes ${start}-${end}/${size}`,
+    }
   }
 
   private async removeJobObjects(id: string) {

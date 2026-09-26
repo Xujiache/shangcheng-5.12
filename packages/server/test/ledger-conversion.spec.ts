@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { Client } from 'minio'
 import { ConversionService } from '../src/modules/ledger-conversion/conversion.service'
 import {
   findConversionOperation,
@@ -8,10 +9,164 @@ import { assertPrivateConversionBucket } from '../src/modules/ledger-conversion/
 
 describe('ledger conversion gate', () => {
   test('only Linux-observed pairs are advertised', () => {
-    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(3)
+    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(46)
     expect(findConversionOperation('convert:md', ['txt'])).toBeTruthy()
-    expect(findConversionOperation('convert:md', ['pdf'])).toBeNull()
-    expect(findConversionOperation('merge-pdfs', ['pdf'])).toBeNull()
+    expect(findConversionOperation('convert:md', ['docx'])).toBeTruthy()
+    expect(findConversionOperation('convert:md', ['gif'])).toBeTruthy()
+    expect(findConversionOperation('convert:md', ['pdf'])).toBeTruthy()
+    for (const target of ['txt', 'docx', 'md'])
+      expect(findConversionOperation(`convert:${target}`, ['ico'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['md'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['png'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['pdf'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['png'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['jpg'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['jpeg'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['pdf'])).toBeTruthy()
+    expect(findConversionOperation('convert:html', ['pdf'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['jpg'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['jpeg'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['webp'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['pdf'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['ico'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['heic'])).toBeTruthy()
+    expect(findConversionOperation('convert:png', ['psd'])).toBeTruthy()
+    expect(findConversionOperation('convert:jpg', ['pdf'])).toBeTruthy()
+    expect(findConversionOperation('convert:webp', ['jpg'])).toBeTruthy()
+    expect(findConversionOperation('convert:webp', ['jpeg'])).toBeTruthy()
+    expect(findConversionOperation('convert:webp', ['png'])).toBeTruthy()
+    expect(findConversionOperation('convert:webp', ['pdf'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['png'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['md'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['docx'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['zip'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['pdf'])).toMatchObject({
+      options: ['splitMode', 'groupSize'],
+    })
+    expect(findConversionOperation('convert:flac', ['mp3'])).toBeTruthy()
+    expect(findConversionOperation('convert:flac', ['flac'])).toBeNull()
+    expect(findConversionOperation('convert:wma', ['opus'])).toBeTruthy()
+    expect(findConversionOperation('convert:wma', ['mp4'])).toBeTruthy()
+    expect(findConversionOperation('convert:mp4', ['webm'])).toBeTruthy()
+    expect(findConversionOperation('convert:mp4', ['svg'])).toBeTruthy()
+    expect(findConversionOperation('convert:mp4', ['mp4'])).toBeNull()
+    expect(findConversionOperation('convert:gif', ['m4s'])).toBeTruthy()
+    expect(findConversionOperation('convert:ass', ['vtt'])).toBeTruthy()
+    expect(findConversionOperation('convert:txt', ['ssa'])).toBeTruthy()
+    expect(findConversionOperation('convert:epub', ['yaml'])).toBeTruthy()
+    expect(findConversionOperation('convert:xlsx', ['csv'])).toBeTruthy()
+    expect(findConversionOperation('convert:csv', ['tsv'])).toBeTruthy()
+    expect(findConversionOperation('convert:csv', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:html', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:xlsx', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:xls', ['xlsm'])).toBeNull()
+    expect(findConversionOperation('convert:ods', ['xlsm'])).toBeNull()
+    expect(findConversionOperation('convert:xlsx', ['pdf'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['html'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['htm'])).toBeTruthy()
+    expect(findConversionOperation('convert:jxl', ['webp'])).toBeTruthy()
+    expect(findConversionOperation('convert:jxl', ['avif'])).toBeTruthy()
+    expect(findConversionOperation('convert:jxl', ['jpeg'])).toBeTruthy()
+    expect(findConversionOperation('convert:tiff', ['png'])).toBeTruthy()
+    expect(findConversionOperation('convert:tiff', ['webp'])).toBeNull()
+    expect(findConversionOperation('convert:tiff', ['gif'])).toBeNull()
+    expect(findConversionOperation('convert:jpg', ['jfif'])).toBeNull()
+    for (const target of ['txt', 'md', 'epub'])
+      expect(findConversionOperation(`convert:${target}`, ['mobi'])).toBeTruthy()
+    for (const target of ['pdf', 'docx', 'html'])
+      expect(findConversionOperation(`convert:${target}`, ['mobi'])).toBeNull()
+    expect(findConversionOperation('images-to-pdf', ['png', 'jpeg'])).toBeTruthy()
+    expect(findConversionOperation('images-to-pdf', ['pdf'])).toBeNull()
+    expect(findConversionOperation('merge-pdfs', ['pdf', 'pdf'])).toBeTruthy()
+    expect(findConversionOperation('merge-pdfs', ['png'])).toBeNull()
+  })
+
+  test('advertises the 70 Office pairs verified with Chinese and numeric content', () => {
+    const officePairs: Record<string, string[]> = {
+      docx: ['pdf', 'odt', 'rtf', 'txt', 'html', 'md'],
+      doc: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
+      odt: ['pdf', 'docx', 'rtf', 'txt', 'html', 'md'],
+      rtf: ['pdf', 'docx', 'odt', 'txt', 'html', 'md'],
+      xlsx: ['pdf', 'xls', 'ods', 'csv', 'html'],
+      xls: ['pdf', 'xlsx', 'ods', 'csv', 'html'],
+      ods: ['pdf', 'xlsx', 'xls', 'csv', 'html'],
+      csv: ['pdf', 'xlsx', 'html', 'txt', 'md', 'json', 'epub'],
+      tsv: ['pdf', 'xlsx', 'html', 'txt', 'md', 'json', 'epub'],
+      pptx: ['pdf', 'odp', 'html', 'png', 'jpg'],
+      ppt: ['pdf', 'pptx', 'odp', 'html', 'png', 'jpg'],
+      odp: ['pdf', 'pptx', 'html', 'png', 'jpg'],
+    }
+    expect(Object.values(officePairs).reduce((count, targets) => count + targets.length, 0)).toBe(70)
+    for (const [source, targets] of Object.entries(officePairs)) {
+      for (const target of targets) {
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      }
+    }
+  })
+
+  test('opens verified camera and Illustrator outputs without exposing unverified OCR or RAW video', () => {
+    const illustratorTargets = [
+      'png', 'jpg', 'webp', 'gif', 'avif', 'tiff', 'ico',
+      'bmp', 'tga', 'jp2', 'jxl', 'qoi', 'ppm', 'pdf',
+    ]
+    for (const target of illustratorTargets)
+      expect(findConversionOperation(`convert:${target}`, ['ai'])).toBeTruthy()
+    for (const source of ['cr2', 'dng']) {
+      for (const target of ['png', 'jpg', 'webp', 'gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm', 'jp2', 'jxl'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      expect(findConversionOperation('convert:pdf', [source])).toBeTruthy()
+      for (const target of ['avif', 'txt', 'md', 'docx', 'mp4', 'webm'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
+    }
+    expect(findConversionOperation('convert:txt', ['ai'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['ai'])).toBeTruthy()
+    expect(findConversionOperation('convert:md', ['ai'])).toBeTruthy()
+    for (const target of ['mp4', 'webm']) {
+      expect(findConversionOperation(`convert:${target}`, ['ai'])).toBeTruthy()
+    }
+  })
+
+  test('limits newly sampled camera RAW inputs to verified image outputs', () => {
+    const sources = [
+      'cr3', 'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
+      'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw',
+    ]
+    for (const source of sources) {
+      for (const target of ['png', 'jpg', 'webp', 'gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      expect(findConversionOperation('convert:pdf', [source])).toBeTruthy()
+      for (const target of ['jp2', 'jxl', 'txt', 'md', 'docx', 'mp4', 'webm'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
+    }
+    for (const source of ['fff', 'mef']) {
+      for (const target of ['png', 'jpg', 'webp'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      expect(findConversionOperation('convert:pdf', [source])).toBeTruthy()
+      for (const target of ['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm', 'avif', 'jp2', 'jxl'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
+    }
+    expect(findConversionOperation('convert:png', ['x3f'])).toBeNull()
+  })
+
+  test('allows checked EPUB to PDF and Word exports', () => {
+    expect(findConversionOperation('convert:pdf', ['epub'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['epub'])).toBeTruthy()
+  })
+
+  test('opens only content-checked Kingsoft template conversions', () => {
+    const checkedPairs: Record<string, string[]> = {
+      wps: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
+      wpt: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
+      et: ['pdf', 'xlsx', 'xls', 'ods', 'csv', 'html'],
+      ett: ['pdf', 'xlsx', 'xls', 'ods', 'html', 'csv'],
+      dpt: ['pdf', 'pptx', 'odp', 'png', 'jpg'],
+    }
+    for (const [source, targets] of Object.entries(checkedPairs))
+      for (const target of targets)
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['dps'])).toBeNull()
+    expect(findConversionOperation('convert:html', ['dpt'])).toBeNull()
   })
 
   test('dedicated conversion bucket rejects anonymous read policy', async () => {
@@ -37,6 +192,40 @@ describe('ledger conversion gate', () => {
     return instance
   }
 
+  test('recovers storage initialization after a dependency starts late', async () => {
+    const keys = ['CONVERSION_FEATURE_ENABLED', 'CONVERSION_BUCKET', 'S3_BUCKET'] as const
+    const previous = keys.map((key) => process.env[key])
+    process.env.CONVERSION_FEATURE_ENABLED = 'true'
+    process.env.CONVERSION_BUCKET = 'private'
+    process.env.S3_BUCKET = 'public'
+    const bucket = jest
+      .spyOn(Client.prototype, 'bucketExists')
+      .mockRejectedValueOnce(new Error('storage offline'))
+      .mockResolvedValue(true)
+    const policy = jest
+      .spyOn(Client.prototype, 'getBucketPolicy')
+      .mockRejectedValue({ code: 'NoSuchBucketPolicy' })
+    const instance = new ConversionService({} as any)
+    const ping = jest.spyOn((instance as any).redis, 'ping').mockResolvedValue('PONG')
+    jest.spyOn((instance as any).logger, 'error').mockImplementation(() => undefined)
+    try {
+      await instance.onModuleInit()
+      expect((instance as any).ready).toBe(false)
+      await Promise.all([instance.retryInitialization(), instance.retryInitialization()])
+      expect((instance as any).ready).toBe(true)
+      expect(bucket).toHaveBeenCalledTimes(2)
+      expect(ping).toHaveBeenCalledTimes(1)
+    } finally {
+      await instance.onModuleDestroy()
+      bucket.mockRestore()
+      policy.mockRestore()
+      keys.forEach((key, index) => {
+        if (previous[index] === undefined) delete process.env[key]
+        else process.env[key] = previous[index]
+      })
+    }
+  })
+
   test('capabilities fail closed without a live worker heartbeat', async () => {
     const instance = service({})
     jest.spyOn((instance as any).redis, 'exists').mockResolvedValue(0)
@@ -47,12 +236,72 @@ describe('ledger conversion gate', () => {
     await instance.onModuleDestroy()
   })
 
+  test('capabilities hide operations during a storage outage and recover afterward', async () => {
+    const instance = service({})
+    jest.spyOn((instance as any).redis, 'exists').mockResolvedValue(1)
+    const bucket = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('storage offline'))
+      .mockResolvedValue(true)
+    ;(instance as any).storage.bucketExists = bucket
+    await expect(instance.capabilities()).resolves.toMatchObject({
+      available: false,
+      operations: [],
+    })
+    const restored = await instance.capabilities()
+    expect(restored.available).toBe(true)
+    expect(restored.operations.find((operation) => operation.id === 'convert:csv')).toMatchObject({
+      inputExtensions: expect.arrayContaining(['tsv']),
+    })
+    expect(bucket).toHaveBeenCalledTimes(2)
+    await instance.onModuleDestroy()
+  })
+
   test('rejects unsupported extension before creating upload', async () => {
     const prisma = { ledgerConversionUpload: { create: jest.fn() } }
     const instance = service(prisma)
     await expect(instance.startUpload('u1', 'secret.exe', 10)).rejects.toThrow('尚未开放')
     expect(prisma.ledgerConversionUpload.create).not.toHaveBeenCalled()
     await instance.onModuleDestroy()
+  })
+
+  test('accepts 96 MB media without allocating it while text stays at 64 MiB', async () => {
+    const previous = process.env.CONVERSION_MAX_FILE_BYTES
+    delete process.env.CONVERSION_MAX_FILE_BYTES
+    const prisma = {
+      ledgerConversionUpload: {
+        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({
+          id: 'upload', chunkSize: data.chunkSize, chunkCount: data.chunkCount,
+        })),
+      },
+    }
+    const instance = service(prisma)
+    try {
+      jest.spyOn((instance as any).redis, 'exists').mockResolvedValue(0)
+      await expect(instance.capabilities()).resolves.toMatchObject({
+        limits: {
+          maxFileBytes: 96_000_000,
+          textFileBytes: 64 * 1024 ** 2,
+          maxBatchBytes: 256 * 1024 ** 2,
+          maxFiles: 100,
+        },
+      })
+      await expect(instance.startUpload('u1', 'large.mp4', 96_000_000)).resolves.toMatchObject({
+        chunkCount: 12,
+      })
+      expect(prisma.ledgerConversionUpload.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ totalBytes: 96_000_000n }),
+      })
+      await expect(instance.startUpload('u1', 'too-large.mp4', 96_000_001))
+        .rejects.toThrow('文件大小超过当前已验证的上限')
+      await expect(instance.startUpload('u1', 'large.txt', 96_000_000))
+        .rejects.toThrow('文件大小超过当前已验证的上限')
+      expect(prisma.ledgerConversionUpload.create).toHaveBeenCalledTimes(1)
+    } finally {
+      await instance.onModuleDestroy()
+      if (previous === undefined) delete process.env.CONVERSION_MAX_FILE_BYTES
+      else process.env.CONVERSION_MAX_FILE_BYTES = previous
+    }
   })
 
   test('rejects another user upload when creating job', async () => {
@@ -74,6 +323,40 @@ describe('ledger conversion gate', () => {
       instance.createJob('u1', { operationId: 'convert:md', uploadIds: [42 as any] }),
     ).rejects.toThrow('文件数超限')
     expect(prisma.ledgerConversionUpload.findMany).not.toHaveBeenCalled()
+    await instance.onModuleDestroy()
+  })
+
+  test('requires two PDFs for merge and validates PDF split options', async () => {
+    const prisma = {
+      ledgerConversionUpload: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'a', extension: 'pdf', totalBytes: 12n },
+        ]),
+      },
+      $transaction: jest.fn(),
+    }
+    const instance = service(prisma)
+    await expect(instance.createJob('u1', {
+      operationId: 'merge-pdfs', uploadIds: ['a'],
+    })).rejects.toThrow('至少需要两个文件')
+    for (const options of [
+      { splitMode: 'bogus' },
+      { splitMode: 'group' },
+      { splitMode: 'group', groupSize: '0' },
+      { splitMode: 'group', groupSize: '1000' },
+      { splitMode: 'page', groupSize: '2' },
+    ]) {
+      await expect(instance.createJob('u1', {
+        operationId: 'convert:pdf', uploadIds: ['a'], options,
+      })).rejects.toThrow('PDF 拆分选项不正确')
+    }
+    prisma.ledgerConversionUpload.findMany.mockResolvedValueOnce([
+      { id: 'a', extension: 'png', totalBytes: 12n },
+    ])
+    await expect(instance.createJob('u1', {
+      operationId: 'convert:pdf', uploadIds: ['a'], options: { splitMode: 'page' },
+    })).rejects.toThrow('PDF 拆分选项不正确')
+    expect(prisma.$transaction).not.toHaveBeenCalled()
     await instance.onModuleDestroy()
   })
 
@@ -189,6 +472,42 @@ describe('ledger conversion gate', () => {
     await instance.onModuleDestroy()
   })
 
+  test('asset ranges retain owner checks and return exact byte lengths', async () => {
+    const asset = { id: 'a1', objectKey: 'private/result', sizeBytes: 10n }
+    const prisma = { ledgerConversionAsset: { findFirst: jest.fn().mockResolvedValue(asset) } }
+    const instance = service(prisma)
+    const storage = {
+      getObject: jest.fn().mockResolvedValue('whole'),
+      getPartialObject: jest.fn().mockResolvedValue('part'),
+    }
+    ;(instance as any).storage = storage
+
+    await expect(instance.asset('u1', 'j1', 'a1')).resolves.toMatchObject({
+      stream: 'whole', statusCode: 200, contentLength: 10,
+    })
+    await expect(instance.asset('u1', 'j1', 'a1', 'bytes=3-6')).resolves.toMatchObject({
+      stream: 'part', statusCode: 206, contentLength: 4, contentRange: 'bytes 3-6/10',
+    })
+    expect(storage.getPartialObject).toHaveBeenCalledWith('jiujiu-conversions', 'private/result', 3, 4)
+    await expect(instance.asset('u1', 'j1', 'a1', 'bytes=8-20')).resolves.toMatchObject({
+      contentLength: 2, contentRange: 'bytes 8-9/10',
+    })
+    await expect(instance.asset('u1', 'j1', 'a1', 'bytes=-4')).resolves.toMatchObject({
+      contentLength: 4, contentRange: 'bytes 6-9/10',
+    })
+    for (const range of ['bytes=10-', 'bytes=6-3', 'bytes=0-1,4-5', 'bytes=-0', 'bytes=-']) {
+      await expect(instance.asset('u1', 'j1', 'a1', range)).rejects.toMatchObject({ status: 416 })
+    }
+    expect(storage.getPartialObject).toHaveBeenCalledTimes(3)
+    expect(prisma.ledgerConversionAsset.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'a1', jobId: 'j1',
+        job: { userId: 'u1', status: 'succeeded', expiresAt: { gt: expect.any(Date) } },
+      },
+    })
+    await instance.onModuleDestroy()
+  })
+
   test('upload resume checks the ledger owner and expiry', async () => {
     const prisma = {
       ledgerConversionUpload: { findFirst: jest.fn().mockResolvedValue(null) },
@@ -203,7 +522,12 @@ describe('ledger conversion gate', () => {
 
   test('failed job retry is owner-scoped and requeues only an unexpired job', async () => {
     const prisma = {
-      ledgerConversionJob: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      ledgerConversionJob: {
+        findFirst: jest.fn().mockResolvedValue({
+          options: { password: 'secret', textEncoding: 'utf-8', __conversionWarnings: ['old warning'] },
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
       ledgerConversionUpload: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
     }
     const instance = service(prisma)
@@ -212,7 +536,10 @@ describe('ledger conversion gate', () => {
     expect(prisma.ledgerConversionJob.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'j1', userId: 'u1', status: 'failed', expiresAt: { gt: expect.any(Date) } },
-        data: expect.objectContaining({ status: 'queued', leaseId: null, expiresAt: null }),
+        data: expect.objectContaining({
+          status: 'queued', leaseId: null, expiresAt: null,
+          options: { password: 'secret', textEncoding: 'utf-8' },
+        }),
       }),
     )
     await instance.onModuleDestroy()
@@ -279,7 +606,7 @@ describe('ledger conversion gate', () => {
             operationId: 'convert:md',
             status: 'succeeded',
             progress: 100,
-            options: {},
+            options: { password: 'secret', __conversionWarnings: ['请核对 secret'] },
             uploadOrder: ['u2', 'u1'],
             leaseId: 'internal-secret',
             uploads: [
@@ -296,6 +623,9 @@ describe('ledger conversion gate', () => {
     expect(jobs[0].uploads.map((item: any) => item.id)).toEqual(['u2', 'u1'])
     expect(JSON.stringify(jobs)).not.toContain('internal-secret')
     expect(jobs[0].assets[0].sizeBytes).toBe(3)
+    expect(jobs[0].warnings).toEqual(['请核对 ***'])
+    expect(jobs[0].options).toEqual({})
+    expect(JSON.stringify(jobs)).not.toContain('secret')
     await instance.onModuleDestroy()
   })
 })

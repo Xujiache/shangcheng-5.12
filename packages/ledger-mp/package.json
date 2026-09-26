@@ -7,7 +7,7 @@
     "typecheck": "tsc --noEmit",
     "test:nesting": "tsx scripts/verify-nesting.ts",
     "test:routes": "node scripts/verify-routes.mjs",
-    "test:format-flow": "node --test scripts/verify-format-flow.cjs",
+    "test:format-flow": "node --test scripts/verify-format-flow.cjs && tsx scripts/verify-format-download.ts",
     "test:request": "tsx scripts/verify-request.ts",
     "lint": "eslint miniprogram scripts --config ../../eslint.config.mjs",
     "test": "tsx scripts/verify-workbook.ts && tsx scripts/verify-workbook-flow.ts && pnpm test:nesting && cd ../.. && node scripts/verify-page-transitions.cjs && node scripts/verify-workbook-icons.cjs"

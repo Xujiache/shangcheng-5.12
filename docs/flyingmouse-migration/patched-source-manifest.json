@@ -1,0 +1,90 @@
+{
+  "base": "source-manifest.json",
+  "files": [
+    {
+      "path": "config.js",
+      "size": 11630,
+      "sha256": "cb919180cbee7917d1d401e969373c25e977f55a535abdb17128bf1872f8d5cb"
+    },
+    {
+      "path": "ebook.js",
+      "size": 34299,
+      "sha256": "37cbca5441fc761eb0684bf783e9b8f111b4bae302642e944650b82a88c266ee"
+    },
+    {
+      "path": "image.js",
+      "size": 30187,
+      "sha256": "05f13a9b098459825e49458c11b811c2db7a44c861eaa50ee74d95d37beb657d"
+    },
+    {
+      "path": "office-convert.js",
+      "size": 30472,
+      "sha256": "16f1e33320d0d1af98335b6b2b934e5d5f659266f3852a03bb273640e0fa7c28"
+    },
+    {
+      "path": "office-quality.js",
+      "size": 7460,
+      "sha256": "64dba858a683bdbc15e9284f2bdf499cd098cf9a00e4e37cbb670cba91a50012"
+    },
+    {
+      "path": "office-runtime.js",
+      "size": 2933,
+      "sha256": "f375248de3ed3bec91b2da5525e1ba9804bf19c23b599ed4dbcfb61d5ffb787f"
+    },
+    {
+      "path": "pdf-table.js",
+      "size": 19819,
+      "sha256": "5f575e183d0656f64876856428c07a396c1038381964133dc403b86ea104ffed"
+    },
+    {
+      "path": "server.js",
+      "size": 43186,
+      "sha256": "24354a0ebd0374c318093c38df117ce57c7000527747f86b77e9e987d9b722c1"
+    },
+    {
+      "path": "tests/ebook-integrity.test.js",
+      "size": 14904,
+      "sha256": "ba5cfbf62f6576e9e6f7dd3e04454c27a047b1e819de1f6a8d20d6a1a068605c"
+    },
+    {
+      "path": "tests/image-conversion.test.js",
+      "size": 11508,
+      "sha256": "516cda3469dd3dacc2f4a17ca1d76302613f5e13a804137746c7da1084092ad2"
+    },
+    {
+      "path": "tests/office-engine.test.js",
+      "size": 8131,
+      "sha256": "dcfd49f23e5571fb8373064b0843f7582b9a4eb8b6634a25c69f04ba15d47c06"
+    },
+    {
+      "path": "tests/office-quality.test.js",
+      "size": 7849,
+      "sha256": "bb303d026bf9e63de6eede336c4e6fbba38279db36ee31e0db0c50f9bd701292"
+    },
+    {
+      "path": "tests/office-wps-repair.test.js",
+      "size": 5126,
+      "sha256": "d878dd66b408a0b97b9e2402829046faa697591a4301b39083bbeb559e2a67ab"
+    },
+    {
+      "path": "tests/raw-input.test.js",
+      "size": 14009,
+      "sha256": "8d5d8c85f730ccbe24ff0373b1f1d7467a6016c329da875c962e7152f27f36e0"
+    },
+    {
+      "path": "tests/text-conversion-integration.test.js",
+      "size": 14945,
+      "sha256": "dd527d3a617833eff526fcd0866975bdaf4823a623ab80a612c871be69be3d20"
+    },
+    {
+      "path": "text-conversion.js",
+      "size": 12174,
+      "sha256": "87796c0f814a9de9d713d8a50eafe9253aecfed5e7bd41daa83187a8ead86726"
+    },
+    {
+      "path": "text-docx.js",
+      "size": 16740,
+      "sha256": "cfc637c5b30cf1a42d39f770c39da15cf0af574e7312d99fb64af1d9ad9307c4"
+    }
+  ]
+}

@@ -71,6 +71,8 @@
 .format__status--failed { color: #b45341; }
 .format__job-source { color: #67727c; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-bottom: 8px; }
 .format__job-date { color: #9aA1a7; font-size: 11px; }
+.format__job-warnings { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fbf6ec; color: #735d35; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.format__job-warnings-title { margin-bottom: 4px; font-weight: 600; }
 .format__result { border-top: 1px solid #eef0f2; margin-top: 14px; padding-top: 14px; }
 .format__result-file { display: flex; align-items: center; gap: 12px; }
 .format__result-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }

@@ -240,7 +240,7 @@ tr:first-child{font-weight:bold;background:#f5f5f5}
 </style>
 </head>
 <body>
-<table>
+<table width="100%">
 ${rows}
 </table>
 </body>

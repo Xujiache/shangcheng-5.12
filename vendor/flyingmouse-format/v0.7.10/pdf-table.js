@@ -16,6 +16,7 @@ const { imageCoverageFromOperators } = require("./pdf-classifier");
 const { LIMITS, assertPdfPages } = require("./resource-policy");
 const { buildPdfTableWorkbook, detectTableLinesFromRaw } = require("./pdf-table-runtime");
 const { reportConversionProgress } = require("./conversion-progress");
+const CAMELOT_TABLE_PATH = process.env.FLYINGMOUSE_CAMELOT_TABLE_PATH || "";
 
 function groupPdfItemsIntoLines(items, viewport) {
   // Use the displayed page coordinate system, including /Rotate and CropBox.
@@ -217,7 +218,7 @@ async function extractTablesViaDocengine(inputPath) {
   const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-camelot-"));
   const jsonPath = path.join(tempDir, "tables.json");
   try {
-    await run(DOCENGINE_PATH, ["table", inputPath, jsonPath], { timeout: 1000 * 60 * 10 });
+    await run(CAMELOT_TABLE_PATH || DOCENGINE_PATH, ["table", inputPath, jsonPath], { timeout: 1000 * 60 * 10 });
     if (!fs.existsSync(jsonPath)) return [];
     const data = JSON.parse(await fsp.readFile(jsonPath, "utf8"));
     return Array.isArray(data.tables) ? data.tables : [];
@@ -291,7 +292,7 @@ async function extractComplexPdfTableModel(inputPath, options = {}) {
     // An accurate result on one native page says nothing about omitted pages.
     // Keep accepted native tables, but independently extract every other page.
     const byPage = new Map();
-    if (options.extractTablesViaDocengine || DOCENGINE_PATH) {
+    if (options.extractTablesViaDocengine || CAMELOT_TABLE_PATH || DOCENGINE_PATH) {
       const tables = await (options.extractTablesViaDocengine || extractTablesViaDocengine)(inputPath);
       for (const table of tables) {
         const pageNumber = Number(table.page);

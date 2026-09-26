@@ -142,6 +142,8 @@ const LIBREOFFICE_PATH = bundledLibreOfficePath();
 const PDFTOPPM_PATH = bundledPdftoppmPath();
 const TESSDATA_PATH = bundledTessdataPath();
 const DCRAW_PATH = bundledDcrawPath();
+const LIBRAW_DCRAW_PATH = process.env.FLYINGMOUSE_LIBRAW_DCRAW_PATH && fs.existsSync(process.env.FLYINGMOUSE_LIBRAW_DCRAW_PATH)
+  ? process.env.FLYINGMOUSE_LIBRAW_DCRAW_PATH : "";
 const DOCENGINE_PATH = bundledDocenginePath();
 const QPDF_PATH = bundledQpdfPath();
 const DOCSTRUCTURE_ENGINE_PATH = bundledDocstructureEnginePath();
@@ -219,6 +221,7 @@ module.exports = {
   PDFTOPPM_PATH,
   TESSDATA_PATH,
   DCRAW_PATH,
+  LIBRAW_DCRAW_PATH,
   DOCENGINE_PATH,
   QPDF_PATH,
   DOCSTRUCTURE_ENGINE_PATH,
