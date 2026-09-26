@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { markdownSidecars, zipOutputs } from '../src/workers/conversion.outputs'
 
-const sourceDir = resolve(__dirname, '../../../vendor/flyingmouse-format/v0.7.10')
+const sourceDir = resolve(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
 const archiveTest = existsSync(join(sourceDir, 'node_modules/yazl')) ? test : test.skip
 
 describe('conversion worker Markdown results', () => {

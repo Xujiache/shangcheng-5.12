@@ -28,8 +28,8 @@ packages/ledger-mp/
 2. 使用 `project.config.json` 中已配置的小程序 AppID。
 3. 装类型依赖（让 IDE / tsc 识别 `wx`）：仓库根 `pnpm install` 即可（已声明 `miniprogram-api-typings`）。
 4. **生产环境**：`config.ts` 的业务和格式转换地址均为 `https://ewsn.top`，`LOCAL_CONVERSION_TEST` 关闭，开发者工具校验合法域名。微信公众平台需将 `ewsn.top` 配置为合法的 request、uploadFile、downloadFile 域名。
-   - 格式转换页按选择文件、选择目标格式、保存结果操作；目标格式会根据文件类型筛选，支持批量任务、预览、转发、保存。生产后端需部署格式转换服务和 worker；当前服务端仅登记 3 个已验证操作，是否开放还取决于 `CONVERSION_FEATURE_ENABLED` 和 worker 心跳。
-   - 本地独立转换服务仅用于调试：在仓库根运行 `./packages/ledger-mp/scripts/start-local-conversion.sh`，并临时把 `config.ts` 的两个地址和 `LOCAL_CONVERSION_TEST` 改为本地设置。测试命令为 `node packages/ledger-mp/scripts/verify-local-conversions.cjs`。
+   - 格式转换页复用 `/l/conversions` 接口。原版源码与后端适配器在独立分支 `codex/ledger-original-engine-rebuild` 验证中；全量验收前不要用该分支切换生产。
+   - Mac 本地完整后端与原版 worker：`./packages/server/scripts/start-local-original-conversion.sh`。当前本机测试：在 `packages/server` 目录运行 `node --env-file=.env scripts/verify-local-original-conversion.cjs`。小程序连接本地 API 时还需微信开发者工具的本地网络配置。
 5. 类型检查：`pnpm --filter @jiujiu/ledger-mp typecheck`。
 
 ## 登录 / 隐私配置

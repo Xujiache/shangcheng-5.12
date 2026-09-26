@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { basename, extname } from 'node:path'
 import { HttpException, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
@@ -14,11 +16,13 @@ import {
   CONVERSION_FILE_LIMIT,
   CONVERSION_RETENTION_MS,
   CONVERSION_UPLOAD_TTL_MS,
-  VERIFIED_CONVERSION_OPERATIONS,
+  ORIGINAL_CONVERSION_OPERATIONS,
   findConversionOperation,
 } from './conversion.operations'
 import { assertPrivateConversionBucket } from './conversion.storage'
 import { CONVERSION_WARNINGS_OPTION_KEY, publicConversionWarnings } from './conversion.warnings'
+import { encryptConversionPassword } from './conversion.secrets'
+import catalog from './conversion.catalog.json'
 
 const QUEUE = 'ledger:conversions:queue'
 const WORKER_HEARTBEAT = 'ledger:conversions:worker:online'
@@ -32,12 +36,6 @@ const boundedLimit = (raw: string | undefined, fallback: number, ceiling: number
   const value = raw === undefined ? fallback : Number(raw)
   return Number.isSafeInteger(value) && value > 0 ? Math.min(value, ceiling) : fallback
 }
-const TEXT_INPUT_EXTENSIONS = [
-  'txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'tsv', 'log',
-  'xml', 'yaml', 'yml', 'srt', 'vtt', 'ass', 'ssa', 'rtf', 'epub',
-]
-const TEXT_FILE_LIMIT = 64 * 1024 ** 2
-
 @Injectable()
 export class ConversionService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ConversionService.name)
@@ -50,20 +48,19 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   private ready = false
   private initializing: Promise<void> | null = null
   private readonly accepting = process.env.CONVERSION_FEATURE_ENABLED === 'true'
-  // 微信 readFile 单文件上限为 100 MB；留出 4 MB 余量，批量预算保持不变。
   private readonly maxFileBytes = boundedLimit(
     process.env.CONVERSION_MAX_FILE_BYTES,
-    96_000_000,
+    CONVERSION_FILE_LIMIT,
     CONVERSION_FILE_LIMIT,
   )
   private readonly maxBatchBytes = boundedLimit(
     process.env.CONVERSION_MAX_BATCH_BYTES,
-    256 * 1024 ** 2,
+    CONVERSION_BATCH_LIMIT,
     CONVERSION_BATCH_LIMIT,
   )
   private readonly maxFiles = boundedLimit(
     process.env.CONVERSION_MAX_FILES,
-    100,
+    CONVERSION_COUNT_LIMIT,
     CONVERSION_COUNT_LIMIT,
   )
 
@@ -128,26 +125,39 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     return this.storage
   }
 
+  private async workerCapacity() {
+    const raw = await this.redis.get(WORKER_HEARTBEAT).catch(() => null)
+    if (!raw) return null
+    try {
+      const value = JSON.parse(raw) as Record<string, unknown>
+      if (value.sourceRevision !== catalog.sourceRevision ||
+        !Number.isSafeInteger(value.maxFileBytes) ||
+        !Number.isSafeInteger(value.maxBatchBytes) ||
+        !Number.isSafeInteger(value.maxFiles) ||
+        Number(value.maxFileBytes) <= 0 ||
+        Number(value.maxBatchBytes) <= 0 ||
+        Number(value.maxFiles) <= 0) return null
+      return {
+        maxFileBytes: Math.min(this.maxFileBytes, Number(value.maxFileBytes)),
+        maxBatchBytes: Math.min(this.maxBatchBytes, Number(value.maxBatchBytes)),
+        maxFiles: Math.min(this.maxFiles, Number(value.maxFiles)),
+      }
+    } catch { return null }
+  }
+
   async capabilities() {
-    const workerOnline = this.ready
-      ? await this.redis
-          .exists(WORKER_HEARTBEAT)
-          .then((count) => count > 0)
-          .catch(() => false)
-      : false
+    const capacity = this.ready ? await this.workerCapacity() : null
     const storageOnline =
-      workerOnline && this.accepting && this.storage
+      capacity && capacity.maxFileBytes > 0 && this.accepting && this.storage
         ? await this.storage.bucketExists(this.bucket).catch(() => false)
         : false
     return {
-      available: storageOnline && VERIFIED_CONVERSION_OPERATIONS.length > 0,
-      operations: storageOnline ? VERIFIED_CONVERSION_OPERATIONS : [],
+      available: Boolean(storageOnline && ORIGINAL_CONVERSION_OPERATIONS.length > 0),
+      operations: storageOnline ? ORIGINAL_CONVERSION_OPERATIONS : [],
       limits: {
-        maxFileBytes: this.maxFileBytes,
-        textFileBytes: Math.min(this.maxFileBytes, TEXT_FILE_LIMIT),
-        textExtensions: TEXT_INPUT_EXTENSIONS,
-        maxBatchBytes: this.maxBatchBytes,
-        maxFiles: this.maxFiles,
+        maxFileBytes: capacity?.maxFileBytes || 0,
+        maxBatchBytes: capacity?.maxBatchBytes || 0,
+        maxFiles: capacity?.maxFiles || 0,
         chunkBytes: CONVERSION_CHUNK_BYTES,
         retentionDays: 30,
         deviceVerified: false,
@@ -164,15 +174,14 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     if (
       !fileName ||
       !extension ||
-      !VERIFIED_CONVERSION_OPERATIONS.some((op) => op.inputExtensions.includes(extension))
+      !ORIGINAL_CONVERSION_OPERATIONS.some((op) => op.inputExtensions.includes(extension))
     ) {
       throw new BizException(BizCode.INVALID_PARAMS, '尚未开放该文件格式')
     }
-    const maxFileBytes = TEXT_INPUT_EXTENSIONS.includes(extension)
-      ? Math.min(this.maxFileBytes, TEXT_FILE_LIMIT)
-      : this.maxFileBytes
-    if (!Number.isSafeInteger(totalBytes) || totalBytes <= 0 || totalBytes > maxFileBytes) {
-      throw new BizException(BizCode.INVALID_PARAMS, '文件大小超过当前已验证的上限')
+    const capacity = await this.workerCapacity()
+    if (!capacity) throw new BizException(BizCode.BUSINESS_ERROR, '转换引擎暂不可用')
+    if (!Number.isSafeInteger(totalBytes) || totalBytes <= 0 || totalBytes > capacity.maxFileBytes) {
+      throw new BizException(BizCode.INVALID_PARAMS, '文件大小超过当前上限')
     }
     const upload = await this.prisma.ledgerConversionUpload.create({
       data: {
@@ -213,63 +222,69 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     userId: string,
     id: string,
     indexInput: unknown,
-    file: { buffer: Buffer; size: number },
+    file: { path: string; size: number },
   ) {
-    const storage = this.requireReady()
-    const index = integer(indexInput)
-    if (!Number.isInteger(index) || index < 0)
-      throw new BizException(BizCode.INVALID_PARAMS, '分片编号不正确')
-    const upload = await this.prisma.ledgerConversionUpload.findFirst({
-      where: { id, userId },
-      include: { chunks: { where: { index } } },
-    })
-    if (!upload || upload.status !== 'uploading' || upload.expiresAt < new Date() || upload.jobId) {
-      throw new BizException(BizCode.INVALID_PARAMS, '上传会话不可写')
-    }
-    const expected = Math.min(
-      upload.chunkSize,
-      Number(upload.totalBytes) - index * upload.chunkSize,
-    )
-    if (
-      !Number.isInteger(index) ||
-      index < 0 ||
-      index >= upload.chunkCount ||
-      !file?.buffer ||
-      file.size !== expected ||
-      file.buffer.length !== expected
-    ) {
-      throw new BizException(BizCode.INVALID_PARAMS, '分片编号或长度不正确')
-    }
-    const sha256 = createHash('sha256').update(file.buffer).digest('hex')
-    if (upload.chunks.length) {
-      if (upload.chunks[0].sha256 !== sha256)
-        throw new BizException(BizCode.INVALID_PARAMS, '该分片已存在且内容不同')
-      return { index, sha256, uploaded: true }
-    }
-    const objectKey = `ledger-conversions/${userId}/uploads/${id}/parts/${index}-${sha256}`
-    await storage.putObject(this.bucket, objectKey, file.buffer, file.size, {
-      'Content-Type': 'application/octet-stream',
-    })
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.ledgerConversionChunk.create({
-          data: { uploadId: id, index, objectKey, sizeBytes: file.size, sha256 },
-        })
-        await tx.ledgerConversionUpload.update({
-          where: { id },
-          data: { receivedBytes: { increment: BigInt(file.size) } },
-        })
+      const storage = this.requireReady()
+      const index = integer(indexInput)
+      if (!Number.isInteger(index) || index < 0)
+        throw new BizException(BizCode.INVALID_PARAMS, '分片编号不正确')
+      const upload = await this.prisma.ledgerConversionUpload.findFirst({
+        where: { id, userId },
+        include: { chunks: { where: { index } } },
       })
-    } catch (error) {
-      const prior = await this.prisma.ledgerConversionChunk.findUnique({
-        where: { uploadId_index: { uploadId: id, index } },
-      })
-      if (prior?.sha256 !== sha256) {
-        await storage.removeObject(this.bucket, objectKey).catch(() => undefined)
-        throw error
+      if (!upload || upload.status !== 'uploading' || upload.expiresAt < new Date() || upload.jobId) {
+        throw new BizException(BizCode.INVALID_PARAMS, '上传会话不可写')
       }
+      const expected = Math.min(
+        upload.chunkSize,
+        Number(upload.totalBytes) - index * upload.chunkSize,
+      )
+      if (
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= upload.chunkCount ||
+        !file?.path ||
+        file.size !== expected ||
+        !Number.isSafeInteger(file.size)
+      ) {
+        throw new BizException(BizCode.INVALID_PARAMS, '分片编号或长度不正确')
+      }
+      const hash = createHash('sha256')
+      for await (const chunk of createReadStream(file.path)) hash.update(chunk)
+      const sha256 = hash.digest('hex')
+      if (upload.chunks.length) {
+        if (upload.chunks[0].sha256 !== sha256)
+          throw new BizException(BizCode.INVALID_PARAMS, '该分片已存在且内容不同')
+        return { index, sha256, uploaded: true }
+      }
+      const objectKey = `ledger-conversions/${userId}/uploads/${id}/parts/${index}-${sha256}`
+      await storage.putObject(this.bucket, objectKey, createReadStream(file.path), file.size, {
+        'Content-Type': 'application/octet-stream',
+      })
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.ledgerConversionChunk.create({
+            data: { uploadId: id, index, objectKey, sizeBytes: file.size, sha256 },
+          })
+          await tx.ledgerConversionUpload.update({
+            where: { id },
+            data: { receivedBytes: { increment: BigInt(file.size) } },
+          })
+        })
+      } catch (error) {
+        const prior = await this.prisma.ledgerConversionChunk.findUnique({
+          where: { uploadId_index: { uploadId: id, index } },
+        })
+        if (prior?.sha256 !== sha256) {
+          await storage.removeObject(this.bucket, objectKey).catch(() => undefined)
+          throw error
+        }
+      }
+      return { index, sha256, uploaded: true }
+    } finally {
+      if (file?.path) await rm(file.path, { force: true })
     }
-    return { index, sha256, uploaded: true }
   }
 
   async completeUpload(userId: string, id: string) {
@@ -325,9 +340,12 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
         expiresAt: { gt: new Date() },
       },
     })
+    const capacity = await this.workerCapacity()
+    if (!capacity) throw new BizException(BizCode.BUSINESS_ERROR, '转换引擎暂不可用')
     if (
       uploads.length !== uploadIds.length ||
-      uploads.reduce((sum, upload) => sum + Number(upload.totalBytes), 0) > this.maxBatchBytes
+      uploadIds.length > capacity.maxFiles ||
+      uploads.reduce((sum, upload) => sum + Number(upload.totalBytes), 0) > capacity.maxBatchBytes
     ) {
       throw new BizException(BizCode.INVALID_PARAMS, '文件不可用或批量大小超限')
     }
@@ -335,7 +353,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       String(body.operationId || ''),
       uploads.map((upload) => upload.extension),
     )
-    if (!operation) throw new BizException(BizCode.INVALID_PARAMS, '该转换组合尚未通过 Linux 验证')
+    if (!operation) throw new BizException(BizCode.INVALID_PARAMS, '原版不支持该转换组合')
     if (operation.id === 'merge-pdfs' && uploadIds.length < 2)
       throw new BizException(BizCode.INVALID_PARAMS, '合并 PDF 至少需要两个文件')
     const options = body.options || {}
@@ -358,13 +376,35 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
           : options.groupSize !== undefined))) {
       throw new BizException(BizCode.INVALID_PARAMS, 'PDF 拆分选项不正确')
     }
+    const pdfInput = operation.id === 'convert:pdf' &&
+      uploads.every((upload) => upload.extension === 'pdf')
+    if ((options.pdfAction !== undefined || options.password !== undefined) &&
+      (!pdfInput || !['encrypt', 'decrypt'].includes(String(options.pdfAction)) ||
+        !String(options.password || '').trim() || options.splitMode !== undefined ||
+        options.groupSize !== undefined)) {
+      throw new BizException(BizCode.INVALID_PARAMS, 'PDF 加解密选项不正确')
+    }
+    if (options.videoCodec !== undefined && !['h264', 'h265', 'av1'].includes(String(options.videoCodec)))
+      throw new BizException(BizCode.INVALID_PARAMS, '视频编码选项不正确')
+    if (options.textEncoding !== undefined &&
+      !['auto', 'utf-8', 'gb18030', 'utf-16le', 'utf-16be'].includes(String(options.textEncoding)))
+      throw new BizException(BizCode.INVALID_PARAMS, '文本编码选项不正确')
+    if (options.alphaBackground !== undefined &&
+      !/^[A-Za-z]+$|^0x[0-9A-Fa-f]{6,8}$|^#[0-9A-Fa-f]{6,8}$/.test(String(options.alphaBackground)))
+      throw new BizException(BizCode.INVALID_PARAMS, '透明背景色不正确')
+    if (Object.keys(options).some((key) =>
+      !uploads.every((upload) => operation.optionInputExtensions?.[key]?.includes(upload.extension))))
+      throw new BizException(BizCode.INVALID_PARAMS, '该输入格式不支持所选选项')
+    const storedOptions = options.password === undefined ? options : {
+      ...options, password: encryptConversionPassword(String(options.password)),
+    }
     const job = await this.prisma.$transaction(async (tx) => {
       const created = await tx.ledgerConversionJob.create({
         data: {
           userId,
           operationId: operation.id,
           uploadOrder: uploadIds as Prisma.InputJsonValue,
-          options: options as Prisma.InputJsonValue,
+          options: storedOptions as Prisma.InputJsonValue,
         },
       })
       const attached = await tx.ledgerConversionUpload.updateMany({

@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, ChildProcess } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
-import { lstat, mkdir, mkdtemp, realpath, rm, stat } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { lstat, mkdir, mkdtemp, realpath, rm, stat, statfs, writeFile } from 'node:fs/promises'
+import { freemem, tmpdir } from 'node:os'
 import { basename, extname, join, resolve, sep } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Transform } from 'node:stream'
@@ -14,8 +14,9 @@ import {
   collectConversionWarnings,
   CONVERSION_WARNINGS_OPTION_KEY,
 } from '../modules/ledger-conversion/conversion.warnings'
-import { operationArgs } from './conversion.args'
 import { markdownSidecars, zipOutputs } from './conversion.outputs'
+import catalog from '../modules/ledger-conversion/conversion.catalog.json'
+import { assertConversionPasswordKey, decryptConversionPassword } from '../modules/ledger-conversion/conversion.secrets'
 
 const QUEUE = 'ledger:conversions:queue'
 const WORKER_HEARTBEAT = 'ledger:conversions:worker:online'
@@ -49,6 +50,20 @@ function minioClient() {
   })
 }
 const storage = minioClient()
+
+async function workerCapacity() {
+  const disk = await statfs(tmpdir())
+  const freeDiskBytes = disk.bavail * disk.bsize
+  const maxInputBytes = Math.max(0, Math.floor((freeDiskBytes - 1024 ** 3) / 3))
+  return {
+    sourceRevision: catalog.sourceRevision,
+    maxFileBytes: Math.min(16 * 1024 ** 3, maxInputBytes),
+    maxBatchBytes: Math.min(32 * 1024 ** 3, maxInputBytes),
+    maxFiles: 1000,
+    freeDiskBytes,
+    freeMemoryBytes: freemem(),
+  }
+}
 
 function terminate(child: ChildProcess) {
   if (!child.pid) return
@@ -99,23 +114,45 @@ async function downloadUpload(upload: any, directory: string) {
   return filePath
 }
 
-async function runCli(jobId: string, leaseId: string, args: string[]) {
-  const child = spawn(process.execPath, [join(sourceDir, 'cli.js'), ...args], {
+async function runEngine(jobId: string, leaseId: string, requestFile: string, runtimeDir: string) {
+  const child = spawn(process.execPath, [join(__dirname, 'conversion.engine.js'), requestFile], {
     cwd: sourceDir,
-    env: { ...process.env, FLYINGMOUSE_LOG_STDERR: '1' },
+    env: { ...process.env, FLYINGMOUSE_LOG_STDERR: '1', FLYINGMOUSE_RUNTIME_DIR: runtimeDir },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true,
   })
   activeChild = child
   let stdout = ''
   let stderr = ''
+  let progressBuffer = ''
   child.stdout?.on('data', (chunk) => {
     stdout += String(chunk)
     if (stdout.length > 2_000_000) terminate(child)
   })
   child.stderr?.on('data', (chunk) => {
     stderr = (stderr + String(chunk)).slice(-16_000)
+    progressBuffer += String(chunk)
+    const lines = progressBuffer.split('\n')
+    progressBuffer = lines.pop() || ''
+    for (const event of lines.filter((line) => line.startsWith('@@PROGRESS@@'))) {
+      try {
+        const state = JSON.parse(event.slice('@@PROGRESS@@'.length))
+        const base: Record<string, number> = {
+          uploading: 12, preparing: 20, queued: 24, recognizing: 30,
+          converting: 45, merging: 60, validating: 72,
+        }
+        const fraction = state.total > 0 && state.completed != null
+          ? Math.min(1, state.completed / state.total) : 0
+        const progress = Math.min(79, Math.floor((base[state.stage] || 12) + fraction * 12))
+        prisma.ledgerConversionJob.updateMany({
+          where: { id: jobId, leaseId, status: 'running', progress: { lt: progress } },
+          data: { progress },
+        }).catch(() => undefined)
+      } catch { /* Ignore a partial progress line. */ }
+    }
   })
+  const timeout = setTimeout(() => terminate(child), Number(process.env.CONVERSION_JOB_TIMEOUT_MS || 2 * 60 * 60 * 1000))
+  timeout.unref()
   const watcher = setInterval(async () => {
     try {
       const heartbeat = await prisma.ledgerConversionJob.updateMany({
@@ -142,6 +179,7 @@ async function runCli(jobId: string, leaseId: string, args: string[]) {
       warnings: unknown[]
     }[]
   } finally {
+    clearTimeout(timeout)
     clearInterval(watcher)
     activeChild = null
   }
@@ -163,6 +201,7 @@ async function processJob(id: string) {
   const work = await mkdtemp(join(tmpdir(), 'ledger-conversion-'))
   const writtenKeys: string[] = []
   let leaseLost = false
+  let passwordForRedaction = ''
   const heartbeat = setInterval(async () => {
     try {
       const current = await prisma.ledgerConversionJob.updateMany({
@@ -197,6 +236,11 @@ async function processJob(id: string) {
       },
     })
     if (!job.uploads.length) throw new Error('任务没有输入文件')
+    const totalBytes = job.uploads.reduce((sum, upload) => sum + Number(upload.totalBytes), 0)
+    const disk = await statfs(work)
+    const freeBytes = disk.bavail * disk.bsize
+    if (freeBytes < totalBytes * 3 + 1024 ** 3)
+      throw new Error('转换工作盘空间不足')
     const order = Array.isArray(job.uploadOrder) ? job.uploadOrder.map(String) : []
     job.uploads.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
     const inputDir = join(work, 'inputs')
@@ -210,15 +254,20 @@ async function processJob(id: string) {
       where: { id, leaseId, status: 'running' },
       data: { progress: 10 },
     })
-    const options = Object.fromEntries(
+    const storedOptions = Object.fromEntries(
       Object.entries((job.options || {}) as Record<string, string>)
         .filter(([key]) => key !== CONVERSION_WARNINGS_OPTION_KEY),
     )
-    const outputs = await runCli(
-      id,
-      leaseId,
-      operationArgs(job.operationId, files, options, outputDir),
-    )
+    const options = storedOptions.password === undefined ? storedOptions : {
+      ...storedOptions,
+      password: decryptConversionPassword(storedOptions.password),
+    }
+    passwordForRedaction = options.password || ''
+    const requestFile = join(work, 'request.json')
+    await writeFile(requestFile, JSON.stringify({
+      operationId: job.operationId, files, options, outputDir,
+    }), { mode: 0o600 })
+    const outputs = await runEngine(id, leaseId, requestFile, join(work, 'engine-runtime'))
     const warnings = collectConversionWarnings(outputs, options)
     await assertLease()
     if (!outputs.length) throw new Error('转换没有产生文件')
@@ -237,9 +286,10 @@ async function processJob(id: string) {
     }[] = []
     for (const output of outputs) {
       const filePath = resolve(output.path)
-      if (!filePath.startsWith(outputRoot + sep)) throw new Error('转换引擎输出路径越界')
+      const canonicalPath = await realpath(filePath)
+      if (!canonicalPath.startsWith(outputRoot + sep)) throw new Error('转换引擎输出路径越界')
       const info = await lstat(filePath)
-      if (!info.isFile() || (await realpath(filePath)) !== filePath)
+      if (!info.isFile())
         throw new Error('转换引擎输出不是普通文件')
       const fileName = safeOutputName(output.fileName)
       if (!fileName) throw new Error('转换引擎结果文件名无效')
@@ -286,7 +336,7 @@ async function processJob(id: string) {
           progress: 100,
           finishedAt,
           expiresAt: new Date(finishedAt.getTime() + RETENTION_MS),
-          options: { ...options, [CONVERSION_WARNINGS_OPTION_KEY]: warnings },
+          options: { ...storedOptions, [CONVERSION_WARNINGS_OPTION_KEY]: warnings },
         },
       })
       if (!done.count) throw new Error('任务已取消或租约已过期')
@@ -319,7 +369,9 @@ async function processJob(id: string) {
       where: { jobId: id },
       data: { expiresAt: new Date(finishedAt.getTime() + RETENTION_MS) },
     })
-    console.error(`[conversion-worker] ${id}: ${error?.message || error}`)
+    const detail = String(error?.message || error)
+    console.error(`[conversion-worker] ${id}: ${passwordForRedaction
+      ? detail.replaceAll(passwordForRedaction, '[redacted]') : detail}`)
   } finally {
     clearInterval(heartbeat)
     await rm(work, { recursive: true, force: true })
@@ -327,6 +379,7 @@ async function processJob(id: string) {
 }
 
 async function main() {
+  assertConversionPasswordKey()
   if (bucket === (process.env.S3_BUCKET || 'jiujiu-mall'))
     throw new Error('Conversion bucket must be private and separate')
   let timer: ReturnType<typeof setInterval> | undefined
@@ -335,7 +388,7 @@ async function main() {
     await assertPrivateConversionBucket(storage, bucket)
     await prisma.$connect()
     await redis.connect()
-    const heartbeat = () => redis.set(WORKER_HEARTBEAT, '1', 'EX', 30)
+    const heartbeat = async () => redis.set(WORKER_HEARTBEAT, JSON.stringify(await workerCapacity()), 'EX', 30)
     await heartbeat()
     timer = setInterval(() => {
       heartbeat().catch((error) => console.error('[conversion-worker] heartbeat:', error))

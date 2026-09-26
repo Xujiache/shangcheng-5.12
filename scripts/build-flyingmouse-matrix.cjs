@@ -4,7 +4,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const root = path.resolve(__dirname, '..')
 const source = path.resolve(
-  process.env.FLYINGMOUSE_SOURCE_DIR || path.join(root, 'vendor', 'flyingmouse-format', 'v0.7.10'),
+  process.env.FLYINGMOUSE_SOURCE_DIR || path.join(root, 'vendor', 'flyingmouse-format', 'upstream-a7b9b15'),
 )
 const config = require(path.join(source, 'config.js'))
 const { categoryForExt, targetsForExt } = require(path.join(source, 'utils.js'))

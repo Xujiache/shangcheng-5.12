@@ -554,16 +554,18 @@ MotionPage({
     const extensions = this.data.files.map((file) => ext(file.name))
     const options = new Set(operation?.options || [])
     const video = operation?.kind === 'convert' && ['mp4', 'mov', 'mkv', 'webm'].includes(target)
+    const allows = (key: string) => options.has(key) && extensions.length > 0 &&
+      extensions.every((item) => operation?.optionInputExtensions?.[key]?.includes(item))
     const pdf = operation?.id === 'convert:pdf' && extensions.length > 0 &&
       extensions.every((item) => item === 'pdf')
     const visibleOptionKeys = {
-      videoCodec: video && target !== 'webm' && options.has('videoCodec'),
-      alphaBackground: video && options.has('alphaBackground'),
-      textEncoding: options.has('textEncoding'),
-      pdfAction: pdf && options.has('pdfAction'),
-      splitMode: pdf && options.has('splitMode'),
-      groupSize: pdf && options.has('groupSize'),
-      password: pdf && options.has('password'),
+      videoCodec: video && target !== 'webm' && allows('videoCodec'),
+      alphaBackground: video && allows('alphaBackground'),
+      textEncoding: allows('textEncoding'),
+      pdfAction: pdf && allows('pdfAction'),
+      splitMode: pdf && allows('splitMode'),
+      groupSize: pdf && allows('groupSize'),
+      password: pdf && allows('password'),
     }
     this.setData({
       visibleOptionKeys,
@@ -586,8 +588,17 @@ MotionPage({
     }
     const value = values[key]?.[index]
     if (value === undefined) return
+    const optionValues = { ...this.data.optionValues, [key]: value }
+    if (key === 'pdfAction' && value) {
+      delete optionValues.splitMode
+      delete optionValues.groupSize
+    }
+    if (key === 'splitMode') {
+      delete optionValues.pdfAction
+      delete optionValues.password
+    }
     this.setData({
-      optionValues: { ...this.data.optionValues, [key]: value },
+      optionValues,
       optionIndexes: { ...this.data.optionIndexes, [key]: index },
     })
   },

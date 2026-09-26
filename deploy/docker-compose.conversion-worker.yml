@@ -17,6 +17,7 @@ services:
       S3_ACCESS_KEY: ${CONVERSION_S3_ACCESS_KEY:?set CONVERSION_S3_ACCESS_KEY}
       S3_SECRET_KEY: ${CONVERSION_S3_SECRET_KEY:?set CONVERSION_S3_SECRET_KEY}
       CONVERSION_BUCKET: jiujiu-conversions
+      CONVERSION_PASSWORD_KEY: ${CONVERSION_PASSWORD_KEY:?set CONVERSION_PASSWORD_KEY}
     read_only: true
     volumes:
       - conversion_tmp:/tmp

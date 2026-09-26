@@ -25,6 +25,7 @@ import {
 import { LedgerJwtGuard } from '../ledger/guards/ledger-jwt.guard'
 import { CONVERSION_CHUNK_BYTES } from './conversion.operations'
 import { ConversionService } from './conversion.service'
+import { conversionUploadStorage } from './conversion.upload-storage'
 
 @ApiTags('门窗利账-格式转换')
 @Public()
@@ -54,12 +55,15 @@ export class ConversionController {
   @Post('uploads/:id/chunks')
   @ApiConsumes('multipart/form-data')
   @Throttle({ default: { limit: 180, ttl: 60_000 } })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: CONVERSION_CHUNK_BYTES } }))
+  @UseInterceptors(FileInterceptor('file', {
+    storage: conversionUploadStorage,
+    limits: { fileSize: CONVERSION_CHUNK_BYTES },
+  }))
   putChunk(
     @CurrentLedgerUser() user: LedgerAuthUser,
     @Param('id') id: string,
     @Body('index') index: string,
-    @UploadedFile() file: { buffer: Buffer; size: number },
+    @UploadedFile() file: { path: string; size: number },
   ) {
     return this.service.putChunk(user.id, id, index, file)
   }

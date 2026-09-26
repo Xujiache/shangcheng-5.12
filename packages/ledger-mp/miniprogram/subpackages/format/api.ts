@@ -12,6 +12,7 @@ export interface Operation {
   targetExtension: string
   kind: string
   options: string[]
+  optionInputExtensions?: Record<string, string[]>
   extensionLabel?: string
   category?: string
   displayLabel?: string

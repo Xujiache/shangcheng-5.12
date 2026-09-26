@@ -9,7 +9,7 @@ const path = require('node:path')
 
 if (process.platform !== 'linux') throw new Error('Linux runtime required')
 const source = path.resolve(
-  process.argv[2] || path.join(__dirname, '../vendor/flyingmouse-format/v0.7.10'),
+  process.argv[2] || path.join(__dirname, '../vendor/flyingmouse-format/upstream-a7b9b15'),
 )
 const parent = path.resolve(process.argv[3] || os.tmpdir())
 const work = fs.mkdtempSync(path.join(parent, 'flyingmouse-smoke-'))

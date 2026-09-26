@@ -6,6 +6,7 @@
 .vscode
 
 **/node_modules
+vendor/flyingmouse-format/upstream-a7b9b15/bin/pandoc
 **/dist
 **/coverage
 **/.turbo
