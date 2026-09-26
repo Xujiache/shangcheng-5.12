@@ -98,6 +98,43 @@ describe('ledger conversion gate', () => {
     }
   })
 
+  test('opens verified camera and Illustrator outputs without exposing unverified OCR or RAW video', () => {
+    const illustratorTargets = [
+      'png', 'jpg', 'webp', 'gif', 'avif', 'tiff', 'ico',
+      'bmp', 'tga', 'jp2', 'jxl', 'qoi', 'ppm', 'pdf',
+    ]
+    for (const target of illustratorTargets)
+      expect(findConversionOperation(`convert:${target}`, ['ai'])).toBeTruthy()
+    for (const source of ['cr2', 'dng']) {
+      for (const target of ['png', 'jpg', 'webp', 'gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      for (const target of ['avif', 'jp2', 'jxl', 'pdf', 'txt', 'md', 'docx', 'mp4', 'webm'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
+    }
+    expect(findConversionOperation('convert:txt', ['ai'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['ai'])).toBeTruthy()
+    expect(findConversionOperation('convert:md', ['ai'])).toBeNull()
+    for (const target of ['mp4', 'webm']) {
+      expect(findConversionOperation(`convert:${target}`, ['ai'])).toBeTruthy()
+    }
+  })
+
+  test('opens only content-checked Kingsoft template conversions', () => {
+    const checkedPairs: Record<string, string[]> = {
+      wps: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
+      wpt: ['pdf', 'docx'],
+      et: ['pdf', 'xlsx', 'csv', 'html'],
+      ett: ['pdf', 'xlsx', 'html'],
+      dpt: ['pdf', 'pptx'],
+    }
+    for (const [source, targets] of Object.entries(checkedPairs))
+      for (const target of targets)
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['dps'])).toBeNull()
+    expect(findConversionOperation('convert:txt', ['wpt'])).toBeNull()
+    expect(findConversionOperation('convert:csv', ['ett'])).toBeNull()
+  })
+
   test('dedicated conversion bucket rejects anonymous read policy', async () => {
     const storage = {
       getBucketPolicy: jest.fn().mockResolvedValue(

@@ -3,13 +3,13 @@
   "files": [
     {
       "path": "image.js",
-      "size": 26486,
-      "sha256": "1dc3cf763caa9c95997821137f57526c144523d36bdf7f1070c6bd429c832bbe"
+      "size": 29379,
+      "sha256": "6ff2700d4e9e83e555de554f96adf9e9181201d132b2e10b52fcbd22ea9635b8"
     },
     {
       "path": "office-convert.js",
-      "size": 29982,
-      "sha256": "0a777516e2880f88cc05d9a410d36a1780487b306e9d894d23a59c8c1ea2169f"
+      "size": 30455,
+      "sha256": "c1df2f85bd724704eb3ebe532aeeba8a90b51630b78bb12ffa9244bc410d795f"
     },
     {
       "path": "office-runtime.js",
@@ -23,13 +23,28 @@
     },
     {
       "path": "server.js",
-      "size": 43311,
-      "sha256": "a7420c7ea7d1bd8d3d9f7c088e636e0a0019464dbc080fa76c9dcdc830d27cc9"
+      "size": 43314,
+      "sha256": "538bf3f5e5eba22ff17c41660ab037ebdfbe5223ad458efcedecfba50c7886dd"
+    },
+    {
+      "path": "tests/image-conversion.test.js",
+      "size": 9416,
+      "sha256": "410e27d15278ef73972a07fc9be06b5d79845a5bbfbee51f49631a8eeda08648"
     },
     {
       "path": "tests/office-engine.test.js",
       "size": 8131,
       "sha256": "dcfd49f23e5571fb8373064b0843f7582b9a4eb8b6634a25c69f04ba15d47c06"
+    },
+    {
+      "path": "tests/office-wps-repair.test.js",
+      "size": 5126,
+      "sha256": "d878dd66b408a0b97b9e2402829046faa697591a4301b39083bbeb559e2a67ab"
+    },
+    {
+      "path": "tests/raw-input.test.js",
+      "size": 6993,
+      "sha256": "0db3dcab1271a33874cc7926cf65fa34a915d64452040eca8775bc89e0861214"
     },
     {
       "path": "tests/text-conversion-integration.test.js",

@@ -201,6 +201,11 @@ function libreOfficeFilterFor(target) {
   return filters[target] || target;
 }
 
+function cleanWpsHtml(html, forMarkdown = false) {
+  const cleaned = html.replace(/[\x03\x07\x08]/g, "");
+  return forMarkdown ? cleaned.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, "") : cleaned;
+}
+
 async function findConvertedFile(outDir, target) {
   const files = await fsp.readdir(outDir).catch(() => []);
   const normalizedTarget = target.toLowerCase();
@@ -259,7 +264,11 @@ async function convertWithLibreOffice(inputPath, outputPath, originalName, targe
         reason: "no-output-file"
       });
     }
-    await fsp.copyFile(convertedPath, outputPath);
+    if (normalizeExt(originalExt) === "wps" && targetExt === "html") {
+      await fsp.writeFile(outputPath, cleanWpsHtml(await fsp.readFile(convertedPath, "utf8")), "utf8");
+    } else {
+      await fsp.copyFile(convertedPath, outputPath);
+    }
   } finally {
     await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
@@ -299,6 +308,7 @@ async function convertDocumentToMarkdown(inputPath, outputPath, inputExt, origin
     try {
       await convertWithLibreOffice(inputPath, htmlPath, originalName, "html");
       html = await fsp.readFile(htmlPath, "utf8");
+      if (ext === "wps") html = cleanWpsHtml(html, true);
     } finally {
       await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
@@ -648,6 +658,7 @@ async function convertDocumentToText(inputPath, outputPath, inputExt, originalNa
 }
 
 module.exports = {
+  cleanWpsHtml,
   libreOfficeFilterFor,
   findConvertedFile,
   convertWithLibreOffice,

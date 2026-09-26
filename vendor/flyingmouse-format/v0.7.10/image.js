@@ -12,6 +12,7 @@ const { finished } = require("stream/promises");
 const sharp = require("sharp");
 const { FFMPEG_PATH, DCRAW_PATH, rawInput } = require("./config");
 const RAW_EXTENSIONS = rawInput;
+const RAW_MAX_STATIC_PIXELS = 20_000_000;
 const FFMPEG_IMAGE_EXTENSIONS = new Set(["tga", "jp2", "j2k", "jxl", "qoi", "ppm"]);
 const HEIF_CONVERT_PATH = process.env.FLYINGMOUSE_HEIF_CONVERT_PATH || "/usr/bin/heif-convert";
 const { run } = require("./utils");
@@ -56,6 +57,42 @@ async function convertToIco(inputPath, outputPath) {
 
 async function convertImage(inputPath, outputPath, target, options = {}) {
   throwIfCanceled(options.signal);
+  if (path.extname(String(options.inputName || inputPath)).toLowerCase() === ".ai") {
+    const handle = await fsp.open(inputPath, "r");
+    const header = Buffer.alloc(5);
+    try {
+      await handle.read(header, 0, header.length, 0);
+    } finally {
+      await handle.close();
+    }
+    if (header.toString("ascii") !== "%PDF-") {
+      const error = new Error("仅支持包含 PDF 兼容数据的 AI 文件；旧版 EPS AI 暂不支持。");
+      error.code = "AI_PDF_COMPATIBILITY_REQUIRED";
+      error.messages = { zhCN: error.message, enUS: "Only PDF-compatible AI files are supported; legacy EPS AI files are not." };
+      throw error;
+    }
+    if (["pdf", "txt", "docx"].includes(target)) {
+      const source = await fsp.readFile(inputPath);
+      try {
+        const document = await require("pdf-lib").PDFDocument.load(source);
+        if (!document.getPageCount()) throw new Error("AI PDF has no pages");
+      } catch {
+        const error = new Error("AI 文件中的 PDF 兼容数据无效或已加密。");
+        error.code = "AI_PDF_INVALID";
+        error.messages = { zhCN: error.message, enUS: "The PDF-compatible data in this AI file is invalid or encrypted." };
+        throw error;
+      }
+      if (target === "pdf") {
+        await fsp.writeFile(outputPath, source);
+        return { warnings: [] };
+      }
+      const result = await require("./pdf").convertPdf(inputPath, outputPath, target, options);
+      return { warnings: [...(result?.warnings || []), { code: "AI_PDF_TEXT_EXTRACTION", messages: {
+        zhCN: "已提取 AI 文件的 PDF 兼容文字层；插图、矢量图和原始排版可能无法保留，请对照原文件核对。",
+        enUS: "Text was extracted from the PDF-compatible AI data. Illustrations, vectors and original layout may not be retained; review against the source."
+      } }] };
+    }
+  }
   const prepared = await prepareImageInput(inputPath, options.inputName);
   try {
     throwIfCanceled(options.signal);
@@ -250,24 +287,42 @@ async function prepareImageInput(inputPath, inputName) {
       throw new Error("RAW 解码引擎（dcraw）不可用：未找到 dcraw.exe。");
     }
     const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-raw-input-"));
-    // dcraw 不支持 -O（部分版本报 Unknown option），输出 <basename>.tiff 固定生成在输入
-    // 所在目录。先把输入复制到临时目录再解码：源目录可能只读（U 盘/系统目录），
-    // 且避免在用户目录残留 .tiff。
-    const tempInput = path.join(tempDir, `input.${designExt || path.extname(inputPath).replace(/^\./, "") || "raw"}`);
-    await fsp.copyFile(inputPath, tempInput);
-    // dcraw -T 输出 16-bit TIFF；-o 1 = sRGB 色彩空间（默认 ACES 线性会偏灰，勿去掉）
-    await run(DCRAW_PATH, ["-T", "-o", "1", tempInput], { timeout: 1000 * 60 * 5 });
-    const stem = path.basename(tempInput, path.extname(tempInput));
-    const tiffCandidates = [
-      path.join(tempDir, `${stem}.tiff`),
-      path.join(tempDir, `${stem}.tif`)
-    ];
-    const tiffPath = tiffCandidates.find((c) => fs.existsSync(c));
-    if (!tiffPath) {
+    try {
+      // dcraw 不支持 -O。复制到可写临时目录后，先只读元数据，避免超大 RAW 在像素检查前解码耗尽内存。
+      const tempInput = path.join(tempDir, `input.${designExt || path.extname(inputPath).replace(/^\./, "") || "raw"}`);
+      await fsp.copyFile(inputPath, tempInput);
+      let probe;
+      try {
+        probe = await run(DCRAW_PATH, ["-i", "-v", tempInput], { timeout: 1000 * 30, maxStdoutBytes: 64 * 1024 });
+      } catch (error) {
+        if (error.code === "ETIMEDOUT" || error.code === "CONVERSION_CANCELED") throw error;
+        throw new ResourceLimitError("IMAGE_METADATA_INVALID");
+      }
+      const sizes = [...`${probe.stdout}\n${probe.stderr}`.matchAll(/^Output size:[ \t]*(\d+)[ \t]*x[ \t]*(\d+)[ \t]*$/gm)];
+      if (sizes.length !== 1) throw new ResourceLimitError("IMAGE_METADATA_INVALID");
+      const width = Number(sizes[0][1]);
+      const height = Number(sizes[0][2]);
+      const pixels = width * height;
+      if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || !Number.isSafeInteger(pixels) || width < 1 || height < 1) {
+        throw new ResourceLimitError("IMAGE_METADATA_INVALID");
+      }
+      if (pixels > RAW_MAX_STATIC_PIXELS) {
+        throw new ResourceLimitError("IMAGE_PIXELS_EXCEEDED", { pixels, limitMegapixels: RAW_MAX_STATIC_PIXELS / 1_000_000 });
+      }
+      // dcraw -T 输出 16-bit TIFF；-o 1 = sRGB 色彩空间（默认 ACES 线性会偏灰，勿去掉）
+      await run(DCRAW_PATH, ["-T", "-o", "1", tempInput], { timeout: 1000 * 60 * 5 });
+      const stem = path.basename(tempInput, path.extname(tempInput));
+      const tiffCandidates = [
+        path.join(tempDir, `${stem}.tiff`),
+        path.join(tempDir, `${stem}.tif`)
+      ];
+      const tiffPath = tiffCandidates.find((c) => fs.existsSync(c));
+      if (!tiffPath) throw new Error("RAW 图片解码失败：无法从该文件提取像素数据。");
+      return { inputPath: tiffPath, tempDir };
+    } catch (error) {
       await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-      throw new Error("RAW 图片解码失败：无法从该文件提取像素数据。");
+      throw error;
     }
-    return { inputPath: tiffPath, tempDir };
   }
 
   return { inputPath, tempDir: null };

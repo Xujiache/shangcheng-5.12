@@ -885,7 +885,7 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
       "BMP_UNSUPPORTED_VARIANT",
       "JSON_CSV_PATH_COLLISION",
       "PDF_TABLE_OCR_LOW_QUALITY"
-    ].includes(error?.code) || /^(?:MARKDOWN|EPUB|MOBI)_/.test(error?.code || "");
+    ].includes(error?.code) || /^(?:MARKDOWN|EPUB|MOBI|AI)_/.test(error?.code || "");
     const isResourceLimitError = error instanceof ResourceLimitError;
     const isOfficeEngineError = error instanceof OfficeEngineError || error instanceof OfficePreparationError;
     if (isClientConversionError || isResourceLimitError) logger.warn(`Convert rejected: "${originalName}" -> ${requestedTarget}`, error);

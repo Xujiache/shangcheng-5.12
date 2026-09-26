@@ -21,6 +21,9 @@ const VIDEO_OUTPUT_FORMATS = ['mp4', 'webm', 'mkv', 'mov']
 const IMAGE_OUTPUT_FORMATS = ['gif', 'avif', 'tiff', 'ico', 'bmp', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
 const ADDITIONAL_IMAGE_INPUTS = ['jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'j2k', 'psd']
 const CROSS_IMAGE_INPUTS = ['gif', 'avif', 'bmp', 'tiff', 'ico', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
+const VERIFIED_RAW_INPUTS = ['cr2', 'dng']
+const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, 'ai']
+const VERIFIED_RAW_OUTPUTS = new Set(['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
 
 // Extended only after the corresponding Linux fixture and quality checks pass.
 export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
@@ -33,6 +36,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       ...ADDITIONAL_IMAGE_INPUTS,
       'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
       'doc', 'odt', 'rtf',
+      'wps',
     ],
     targetExtension: 'md',
     kind: 'convert',
@@ -46,6 +50,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
       ...ADDITIONAL_IMAGE_INPUTS,
       'txt', 'html', 'htm', 'doc', 'odt', 'rtf', 'pdf',
+      'wpt', 'wps', 'ai',
     ],
     targetExtension: 'docx',
     kind: 'convert',
@@ -61,6 +66,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'srt', 'vtt', 'ass', 'ssa',
       'md', 'markdown', 'html', 'htm', 'json', 'csv', 'log',
       'xml', 'yaml', 'yml', 'epub', 'pdf', 'docx', 'doc', 'odt', 'rtf', 'tsv',
+      'ai', 'wps',
     ],
     targetExtension: 'txt',
     kind: 'convert',
@@ -88,6 +94,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'txt', 'md', 'markdown', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
       'docx', 'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'xlsm', 'pptx', 'ppt', 'odp', 'pdf',
+      'et', 'ett', 'wps',
     ],
     targetExtension: 'html',
     kind: 'convert',
@@ -107,6 +114,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'txt', 'md', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml',
       'xlsx', 'xls', 'ods', 'xlsm', 'tsv',
+      'et',
     ],
     targetExtension: 'csv',
     kind: 'convert',
@@ -123,17 +131,17 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:xlsx',
     label: '表格/PDF → Excel',
-    inputExtensions: ['csv', 'tsv', 'xls', 'ods', 'pdf'],
+    inputExtensions: ['csv', 'tsv', 'xls', 'ods', 'pdf', 'et', 'ett'],
     targetExtension: 'xlsx',
     kind: 'convert',
     options: [],
   },
   ...([
-    ['odt', ['docx', 'doc', 'rtf']],
-    ['rtf', ['docx', 'doc', 'odt']],
+    ['odt', ['docx', 'doc', 'rtf', 'wps']],
+    ['rtf', ['docx', 'doc', 'odt', 'wps']],
     ['xls', ['xlsx', 'ods']],
     ['ods', ['xlsx', 'xls']],
-    ['pptx', ['ppt', 'odp']],
+    ['pptx', ['ppt', 'odp', 'dpt']],
     ['odp', ['pptx', 'ppt']],
   ] as [string, string[]][]).map(([target, sources]) => ({
     id: `convert:${target}`,
@@ -150,6 +158,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'png', 'pdf', 'webp', 'gif', 'avif', 'bmp', 'tiff',
       'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
       ...ADDITIONAL_IMAGE_INPUTS.filter((source) => !['jfif', 'jpe'].includes(source)),
+      ...VERIFIED_IMAGE_INPUTS,
       'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'jpg',
@@ -163,6 +172,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'jpg', 'jpeg', 'webp', 'pdf', 'gif', 'avif', 'bmp',
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
       ...ADDITIONAL_IMAGE_INPUTS,
+      ...VERIFIED_IMAGE_INPUTS,
       'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'png',
@@ -176,6 +186,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'jpg', 'jpeg', 'png', 'pdf', 'gif', 'avif', 'bmp',
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
       ...ADDITIONAL_IMAGE_INPUTS,
+      ...VERIFIED_IMAGE_INPUTS,
     ],
     targetExtension: 'webp',
     kind: 'convert',
@@ -188,8 +199,10 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'png', 'jpg', 'jpeg', 'webp', 'md', 'docx', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
       ...ADDITIONAL_IMAGE_INPUTS,
+      'ai',
       'txt', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml', 'pdf', 'zip',
       'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'xlsm', 'csv', 'tsv', 'pptx', 'ppt', 'odp',
+      'wps', 'wpt', 'et', 'ett', 'dpt',
     ],
     targetExtension: 'pdf',
     kind: 'convert',
@@ -228,6 +241,8 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       ...(target === 'tiff' ? ['png', 'jpg', 'jpeg'] : ['png', 'jpg', 'jpeg', 'webp']),
       ...ADDITIONAL_IMAGE_INPUTS.filter((source) => target !== 'tiff' || source !== 'tif'),
+      ...(VERIFIED_RAW_OUTPUTS.has(target) ? VERIFIED_RAW_INPUTS : []),
+      'ai',
       ...CROSS_IMAGE_INPUTS.filter((source) => source !== target && (target !== 'tiff' || source !== 'gif')),
       ...(target === 'gif' ? VIDEO_INPUT_FORMATS : []),
     ],
@@ -241,7 +256,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       ...VIDEO_INPUT_FORMATS.filter((source) => source !== target),
       ...(['mp4', 'webm'].includes(target)
-        ? [...ADDITIONAL_IMAGE_INPUTS, ...CROSS_IMAGE_INPUTS, 'png', 'jpg', 'jpeg', 'webp']
+        ? [...ADDITIONAL_IMAGE_INPUTS, ...CROSS_IMAGE_INPUTS, 'png', 'jpg', 'jpeg', 'webp', 'ai']
         : []),
     ],
     targetExtension: target,
