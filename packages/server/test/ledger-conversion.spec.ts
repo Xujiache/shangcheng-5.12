@@ -53,8 +53,14 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:txt', ['ssa'])).toBeTruthy()
     expect(findConversionOperation('convert:epub', ['yaml'])).toBeTruthy()
     expect(findConversionOperation('convert:xlsx', ['csv'])).toBeTruthy()
+    expect(findConversionOperation('convert:csv', ['tsv'])).toBeTruthy()
+    expect(findConversionOperation('convert:csv', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:html', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:xlsx', ['xlsm'])).toBeNull()
     expect(findConversionOperation('convert:xlsx', ['pdf'])).toBeTruthy()
-    expect(findConversionOperation('convert:pdf', ['html'])).toBeNull()
+    expect(findConversionOperation('convert:pdf', ['html'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['htm'])).toBeTruthy()
     expect(findConversionOperation('convert:jxl', ['webp'])).toBeTruthy()
     expect(findConversionOperation('convert:jxl', ['avif'])).toBeTruthy()
     expect(findConversionOperation('convert:jxl', ['jpeg'])).toBeTruthy()
@@ -171,7 +177,11 @@ describe('ledger conversion gate', () => {
       available: false,
       operations: [],
     })
-    await expect(instance.capabilities()).resolves.toMatchObject({ available: true })
+    const restored = await instance.capabilities()
+    expect(restored.available).toBe(true)
+    expect(restored.operations.find((operation) => operation.id === 'convert:csv')).toMatchObject({
+      inputExtensions: expect.arrayContaining(['tsv']),
+    })
     expect(bucket).toHaveBeenCalledTimes(2)
     await instance.onModuleDestroy()
   })

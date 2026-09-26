@@ -26,6 +26,8 @@ test("probe creates a writable isolated profile before executing LibreOffice", a
       assert.ok(options.timeout >= 15000, "probe timeout must tolerate slow first launch");
       profilePath = profilePathFromArgs(args);
       assert.equal((await fsp.stat(profilePath)).isDirectory(), true);
+      const profileConfig = await fsp.readFile(path.join(profilePath, "user", "registrymodifications.xcu"), "utf8");
+      assert.match(profileConfig, /oor:name="DisableMacrosExecution"[^>]*><value>true<\/value>/);
       return { stdout: "LibreOffice 26.2.1.2 620(Build:2)", stderr: "" };
     }
   });

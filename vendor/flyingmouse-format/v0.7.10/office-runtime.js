@@ -5,6 +5,11 @@ const path = require("node:path");
 // LibreOffice creates many nested files below UserInstallation. Node accepting a
 // long path is not evidence that LibreOffice's native components can use it.
 const MAX_PROFILE_PATH_LENGTH = 160;
+const DISABLE_MACROS_CONFIG = '<?xml version="1.0" encoding="UTF-8"?>'
+  + '<oor:items xmlns:oor="http://openoffice.org/2001/registry">'
+  + '<item oor:path="/org.openoffice.Office.Common/Security/Scripting">'
+  + '<prop oor:name="DisableMacrosExecution" oor:op="fuse"><value>true</value></prop>'
+  + '</item></oor:items>';
 
 function createOfficeWorkspace(options = {}) {
   const io = options.fs || fs;
@@ -30,6 +35,9 @@ function createOfficeWorkspace(options = {}) {
       root = io.mkdtempSync(path.join(base, "office-"));
       const profileDir = path.join(root, "p");
       io.mkdirSync(profileDir, { mode: 0o700 });
+      const userDir = path.join(profileDir, "user");
+      io.mkdirSync(userDir, { mode: 0o700 });
+      io.writeFileSync(path.join(userDir, "registrymodifications.xcu"), DISABLE_MACROS_CONFIG, { flag: "wx", mode: 0o600 });
       const probe = path.join(profileDir, ".write-probe");
       io.writeFileSync(probe, "ok", { flag: "wx", mode: 0o600 });
       io.unlinkSync(probe);

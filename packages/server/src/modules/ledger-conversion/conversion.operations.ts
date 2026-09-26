@@ -87,7 +87,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     label: '文本/电子书 → HTML',
     inputExtensions: [
       'txt', 'md', 'markdown', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
-      'docx', 'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp', 'pdf',
+      'docx', 'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'xlsm', 'pptx', 'ppt', 'odp', 'pdf',
     ],
     targetExtension: 'html',
     kind: 'convert',
@@ -106,7 +106,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     label: '文本/表格 → CSV',
     inputExtensions: [
       'txt', 'md', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml',
-      'xlsx', 'xls', 'ods',
+      'xlsx', 'xls', 'ods', 'xlsm', 'tsv',
     ],
     targetExtension: 'csv',
     kind: 'convert',
@@ -188,8 +188,8 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'png', 'jpg', 'jpeg', 'webp', 'md', 'docx', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
       ...ADDITIONAL_IMAGE_INPUTS,
-      'txt', 'markdown', 'json', 'log', 'xml', 'yaml', 'yml', 'pdf', 'zip',
-      'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'csv', 'tsv', 'pptx', 'ppt', 'odp',
+      'txt', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml', 'pdf', 'zip',
+      'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'xlsm', 'csv', 'tsv', 'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'pdf',
     kind: 'convert',

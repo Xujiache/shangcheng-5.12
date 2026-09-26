@@ -1,0 +1,50 @@
+{
+  "base": "source-manifest.json",
+  "files": [
+    {
+      "path": "image.js",
+      "size": 26486,
+      "sha256": "1dc3cf763caa9c95997821137f57526c144523d36bdf7f1070c6bd429c832bbe"
+    },
+    {
+      "path": "office-convert.js",
+      "size": 29982,
+      "sha256": "0a777516e2880f88cc05d9a410d36a1780487b306e9d894d23a59c8c1ea2169f"
+    },
+    {
+      "path": "office-runtime.js",
+      "size": 2933,
+      "sha256": "f375248de3ed3bec91b2da5525e1ba9804bf19c23b599ed4dbcfb61d5ffb787f"
+    },
+    {
+      "path": "pdf-table.js",
+      "size": 19819,
+      "sha256": "5f575e183d0656f64876856428c07a396c1038381964133dc403b86ea104ffed"
+    },
+    {
+      "path": "server.js",
+      "size": 43311,
+      "sha256": "a7420c7ea7d1bd8d3d9f7c088e636e0a0019464dbc080fa76c9dcdc830d27cc9"
+    },
+    {
+      "path": "tests/office-engine.test.js",
+      "size": 8131,
+      "sha256": "dcfd49f23e5571fb8373064b0843f7582b9a4eb8b6634a25c69f04ba15d47c06"
+    },
+    {
+      "path": "tests/text-conversion-integration.test.js",
+      "size": 13053,
+      "sha256": "d7e9350a64ca115feb04b84865c126b8067de9712b0e194b1f0152e988692949"
+    },
+    {
+      "path": "text-conversion.js",
+      "size": 12174,
+      "sha256": "87796c0f814a9de9d713d8a50eafe9253aecfed5e7bd41daa83187a8ead86726"
+    },
+    {
+      "path": "text-docx.js",
+      "size": 16190,
+      "sha256": "3ac9c5e8ff9da17a2835876220488018d982bdf04cc3b73edda9c7bde9422ac4"
+    }
+  ]
+}

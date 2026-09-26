@@ -208,6 +208,21 @@ test("server converts TSV through the same real pipelines as CSV", async () => {
   assert.equal(xlsxBuffer.toString("latin1", 0, 2), "PK", "tsv->xlsx must be a zip archive");
 });
 
+test("TSV to CSV preserves columns and quoted Chinese multiline values", async () => {
+  const source = '姓名\t备注\t地址\r\n王晓明\t"报价含""安装费"",\r\n需复核"\t上海,浦东\r\n李娜\t"第一行\r\n第二行"\t北京,朝阳\r\n';
+  const { response, body } = await convertResponse("客户报价.tsv", source, "csv", "text/tab-separated-values");
+  assert.equal(response.status, 200, body.error);
+  const download = await fetch(`${baseUrl}${body.downloadUrl}`);
+  assert.equal(download.status, 200);
+  const csv = await download.text();
+  const { parse } = require("csv-parse/sync");
+  assert.deepEqual(parse(csv, { relax_column_count: false }), [
+    ["姓名", "备注", "地址"],
+    ["王晓明", '报价含"安装费",\r\n需复核', "上海,浦东"],
+    ["李娜", "第一行\r\n第二行", "北京,朝阳"]
+  ]);
+});
+
 test("capabilities expose stable conversion limits and Sharp keeps pixel protection enabled", async () => {
   const response = await fetch(`${baseUrl}/api/capabilities`);
   assert.equal(response.status, 200);

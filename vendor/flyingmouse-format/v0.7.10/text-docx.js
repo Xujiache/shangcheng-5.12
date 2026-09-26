@@ -302,6 +302,7 @@ async function convertText(inputPath, outputPath, inputExt, target, originalName
     }
   } else if (target === "csv") {
     if (source === "json") converted = jsonToCsv(raw);
+    else if (source === "csv") converted = raw;
     else converted = raw.split(/\r?\n/).map((line) => `"${line.replaceAll('"', '""')}"`).join("\n");
   }
 

@@ -5,8 +5,10 @@ const path = require('node:path')
 
 const root = path.resolve(__dirname, '..')
 const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-manifest.json'))
+const baselineOnly = process.argv.includes('--baseline')
+const patched = baselineOnly ? { files: [] } : require(path.join(root, 'docs/flyingmouse-migration/patched-source-manifest.json'))
 const source = path.resolve(
-  process.argv[2] || path.join(root, 'vendor/flyingmouse-format/v0.7.10'),
+  process.argv.slice(2).find((arg) => arg !== '--baseline') || path.join(root, 'vendor/flyingmouse-format/v0.7.10'),
 )
 const actual = []
 function walk(dir, relative = '') {
@@ -21,6 +23,10 @@ function walk(dir, relative = '') {
 }
 walk(source)
 const expected = new Map(manifest.files.map((file) => [file.path, file]))
+for (const file of patched.files) {
+  if (!expected.has(file.path)) throw new Error(`Patch is absent from source baseline: ${file.path}`)
+  expected.set(file.path, file)
+}
 const mismatches = []
 for (const name of actual) {
   const item = expected.get(name)
@@ -39,5 +45,5 @@ if (mismatches.length) {
   console.error(mismatches.join('\n'))
   process.exitCode = 1
 } else {
-  console.log(`Verified ${actual.length} files against SHA-256 manifest: ${source}`)
+  console.log(`Verified ${actual.length} files against SHA-256 ${baselineOnly ? 'baseline' : 'baseline and patch'} manifest: ${source}`)
 }

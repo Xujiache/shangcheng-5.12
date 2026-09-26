@@ -26,6 +26,51 @@ function setup() {
   return { page, calls, api }
 }
 
+test('returning refreshes formats and limits without resetting selection or repeating the first request', async () => {
+  const { page, api } = setup()
+  let resolveFirst
+  let capabilityRequests = 0
+  let historyRequests = 0
+  const updated = {
+    ...capabilities,
+    limits: { ...capabilities.limits, maxFileBytes: 2048, maxFiles: 4 },
+    operations: [...capabilities.operations, op('avif', ['jpg'])],
+  }
+  api.capabilities = () => {
+    capabilityRequests++
+    return capabilityRequests === 1
+      ? new Promise(resolve => { resolveFirst = resolve })
+      : Promise.resolve(updated)
+  }
+  api.listJobs = async () => { historyRequests++; return [] }
+
+  page.onLoad()
+  page.onShow()
+  assert.equal(capabilityRequests, 1)
+  assert.equal(historyRequests, 0)
+  resolveFirst(capabilities)
+  await new Promise(setImmediate)
+  assert.equal(historyRequests, 1)
+
+  page.appendFiles([file('a.jpg')])
+  page.chooseOperation(event({ id: 'convert:png' }))
+  page.onHide()
+  page.onShow()
+  assert.equal(capabilityRequests, 2)
+  await new Promise(setImmediate)
+  assert.equal(historyRequests, 2)
+  assert.equal(page.data.limitHint, '单个文件最大 2 KB · 文本类 1 KB · 最多 4 个')
+  assert.deepEqual(Array.from(page.data.files, item => item.name), ['a.jpg'])
+  assert.equal(page.data.operation.id, 'convert:png')
+  assert(page.data.operations.some(item => item.id === 'convert:avif'))
+
+  page.onHide()
+  page.setData({ busy: true })
+  page.onShow()
+  assert.equal(capabilityRequests, 2)
+  page.onHide()
+})
+
 test('file-first flow: no format without files; source closes before native chooser', async () => {
   const { page, calls } = setup()
   page.openFormatPicker(); assert.equal(page.data.formatOpen, false)

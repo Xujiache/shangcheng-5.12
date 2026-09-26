@@ -113,3 +113,10 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 
 - Nginx 中带 `MicroMessenger` 用户代理的请求完成两次上传、分片提交和任务创建，相关接口均返回 201；生产数据库保留的 DOCX→Markdown 和 PDF→PNG 任务均为 `succeeded`、各有一个结果，三个结果下载请求返回 200。检查只统计请求类型、状态、格式和产物数，不读取用户文件或身份。曾有一次任务列表 GET 返回 502（19:18 UTC），其后同接口持续返回 200。证据为服务器 `real-conversion-server-check-20260926.log`；这些 HTTP 记录不证明客户端预览或保存体验。
 - `012307a` 构建后四个网页包的源码未再改动。线上 `/admin/`、`/merchant/`、`/platform/`、`/user/` 均返回 200，线上目录包含对应构建目录的全部文件且内容一致；多出的 91、90、73、50 个文件均是旧版静态资源，保留以免影响缓存中的旧页面。Nginx、Docker、PM2 启用且运行中，PostgreSQL、Redis、MinIO 健康，worker 无重启；证书有效期至 2026-12-17 UTC。
+
+## 2026-09-26 格式矩阵与 96 MB 上限部署
+
+- 生产 worker 镜像 `jiujiu-conversion-worker:b1c5cd2`（`sha256:2f6b96c49ff8a9b86f2aeb951ef67a37a1ab226c3ac9099d7edc04e418e62f37`）已替换旧镜像；旧容器保留为 `jiujiu-conversion-worker-before-b1c5cd2-20260926`，更新前 API 构建备份在服务器 `server-dist-before-b1c5cd2.tgz`。PM2 API 已从同一提交重建并重启，公网 `/health` 返回 200，worker 运行 5 分钟后重启数为 0。没有数据库迁移，原有三条成功任务仍保留。
+- 新镜像在无网络、只读根目录、4 GiB 内存限制的一次性容器中验证 HEIC→PNG、PSD→PDF、SVG→MP4、数字 PDF 表格→XLSX、PDF→DOCX；产物签名、XLSX 中文和数值、DOCX 中文正文均已核对。镜像包含 libheif 与专用 Camelot 表格引擎，不包含扫描 PDF 结构化大模型。
+- 公网鉴权能力接口返回 46 项操作、736 个展示条目（去重后 731 组），单文件 96,000,000 字节、单批 268,435,456 字节、最多 100 个文件。公网 HTTPS 共完成 46 次抽样转换：8 组新增格式、8 组文本、7 组 Office/PDF/ZIP、22 组图片/OCR/音视频/字幕回归及 1 个 96,000,000 字节 MP4→WebM。每次均检查下载产物、跨账号下载拒绝并删除测试任务；额外核验 Range 206/416，以及 96,000,001 字节上传请求返回 400。测试脚本留在服务器 `engine-unlock-test/b1-production-http.cjs`。
+- 上述抽样不证明 731 组逐一通过，更不代表原版 1174 个目录候选全部可用。差集仍有 443 组，主要是 RAW/AI 及缺真实样本的旧式文档；MOBI、TSV→CSV、OFD 中文和 EPUB3 等路径已发现具体失败。原版 16 GiB/32 GiB/1000 的理论上限受微信文件接口与现有 worker 资源限制，未对小程序开放。小程序真机与桌面 GUI 质量对比尚未完成。

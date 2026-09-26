@@ -783,7 +783,7 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
       }
     } else if (category === "zip") {
       await convertZipImagesToPdf(file.path, outputPath);
-    } else if (category === "spreadsheet" && ["csv", "tsv"].includes(inputExt) && ["txt", "md", "json"].includes(requestedTarget)) {
+    } else if (category === "spreadsheet" && ["csv", "tsv"].includes(inputExt) && ["txt", "md", "json", "csv"].includes(requestedTarget)) {
       conversionResult = await convertText(file.path, outputPath, inputExt, requestedTarget, originalName);
     } else if (category === "spreadsheet" && ["csv", "tsv"].includes(inputExt) && ["epub", "xlsx", "html", "pdf"].includes(requestedTarget)) {
       // LO 的 csv/tsv 导入过滤器 headless 下假成功（exit 0 零输出），全部用自有实现
@@ -854,6 +854,15 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
     }
     if (experimentalInputSet.has(inputExt)) {
       payload.warnings = [...(payload.warnings || []), experimentalInputWarning(inputExt)];
+    }
+    if (inputExt === "xlsm" && ["pdf", "csv", "html"].includes(requestedTarget)) {
+      payload.warnings = [...(payload.warnings || []), {
+        code: "XLSM_MACROS_OMITTED",
+        messages: {
+          zhCN: "XLSM 宏在转换时不会执行；导出文件不保留宏和公式表达式，只保存转换时的计算值。请核对结果。",
+          enUS: "XLSM macros are disabled during conversion. The export omits macros and formula expressions and saves calculated values only. Review the result."
+        }
+      }];
     }
     logger.info(`Convert succeeded: "${originalName}" -> ${downloadName} (${requestedTarget})`);
     conversionProgress.outputReady(req);

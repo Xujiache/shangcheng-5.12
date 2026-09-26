@@ -266,10 +266,10 @@ MotionPage({
   },
   onShow() {
     if (!LOCAL_CONVERSION_TEST && !isLoggedIn()) return
-    if (!this.data.capabilities && !this.data.loading) this.refresh()
+    if (!this.data.loading && !this.data.busy) this.refresh()
     if (pollTimer) clearInterval(pollTimer)
     pollTimer = setInterval(() => this.loadJobs(), 4000)
-    this.loadJobs()
+    if (!this.data.loading) this.loadJobs()
   },
   onHide() {
     if (pollTimer) clearInterval(pollTimer)
