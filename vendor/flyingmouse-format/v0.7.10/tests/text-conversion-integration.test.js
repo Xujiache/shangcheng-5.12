@@ -186,7 +186,7 @@ test("server converts CSV to PDF and HTML with a real table", { skip: !LO_AVAILA
   assert.equal(html.body.fileName, "rows.html");
   const htmlDownload = await fetch(`${baseUrl}${html.body.downloadUrl}`);
   const htmlText = await htmlDownload.text();
-  assert.match(htmlText, /<table>/);
+  assert.match(htmlText, /<table width="100%">/);
   assert.match(htmlText, /Alice/);
 });
 

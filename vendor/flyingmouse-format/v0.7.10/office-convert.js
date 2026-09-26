@@ -196,7 +196,7 @@ async function repairZipCrcIfNeeded(inputPath, tempDir, originalExt) {
 function libreOfficeFilterFor(target) {
   const filters = {
     txt: "txt:Text",
-    csv: "csv:Text - txt - csv (StarCalc)"
+    csv: "csv:Text - txt - csv (StarCalc):44,34,76,1"
   };
   return filters[target] || target;
 }
