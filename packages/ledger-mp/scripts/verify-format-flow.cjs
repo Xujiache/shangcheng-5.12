@@ -11,14 +11,14 @@ const { test } = require('node:test')
 const source = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.ts'), 'utf8')
 const code = stripTypeScriptTypes(source.replace(/^import[\s\S]*?from '[^']+'$/gm, ''))
 const op = (target, inputs, id = `convert:${target}`, options = []) => ({ id, targetExtension: target, inputExtensions: inputs, label: `转为 ${target.toUpperCase()}`, kind: 'convert', options })
-const capabilities = { available: true, limits: { maxFileBytes: 1024, maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('epub', ['txt'], 'convert:epub', ['textEncoding'])] }
+const capabilities = { available: true, limits: { maxFileBytes: 1024, maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png', 'jp2', 'jxl', 'qoi', 'ppm']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov', 'm4s'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('mkv', ['mov', 'mp4']), op('epub', ['txt'], 'convert:epub', ['textEncoding']), op('txt', ['docx', 'xlsx', 'zip', 'json', 'yaml', 'yml', 'xml', 'log', 'markdown']), op('vtt', ['srt']), op('json', ['txt'])] }
 const event = (dataset, value) => ({ currentTarget: { dataset }, detail: { value } })
 const file = (name, size = 100) => ({ name, path: `/test/${name}`, size })
 function setup() {
   let page
-  const calls = { toasts: [], created: [] }
+  const calls = { toasts: [], created: [], fileData: {} }
   const api = { capabilities: async () => capabilities, listJobs: async () => [], createJob: async (...args) => { calls.created.push(args); return { id: 'new' } } }
-  const wx = { pageScrollTo() {}, showToast: options => calls.toasts.push(options.title), showActionSheet: options => { calls.sheet = options }, chooseMessageFile: options => { calls.message = options }, chooseMedia: options => { calls.media = options } }
+  const wx = { pageScrollTo() {}, showToast: options => calls.toasts.push(options.title), showActionSheet: options => { calls.sheet = options }, chooseMessageFile: options => { calls.message = options }, chooseMedia: options => { calls.media = options }, getFileSystemManager: () => ({ readFile: options => options.success({ data: (calls.fileData[options.filePath] || new Uint8Array()).buffer }) }) }
   vm.runInNewContext(code, { MotionPage: config => { page = config }, LOCAL_CONVERSION_TEST: true, conversionApi: api, wx, setInterval, clearInterval, Error, console })
   page.setData = values => Object.assign(page.data, values)
   page.setData({ capabilities })
@@ -36,7 +36,7 @@ test('file-first flow: no format without files; source closes before native choo
   await page.start(); assert.equal(page.data.formatOpen, true)
   assert.equal(calls.created.length, 0)
 })
-test('file visuals use actual image paths, video covers, and distinct file categories', () => {
+test('file visuals use actual image paths, video covers, and distinct file categories', async () => {
   const { page, calls } = setup()
   page.appendFiles([file('photo.png'), file('manual.docx'), file('table.xlsx')])
   assert.equal(page.data.files[0].thumbnailPath, '/test/photo.png')
@@ -46,13 +46,67 @@ test('file visuals use actual image paths, video covers, and distinct file categ
   assert.equal(page.data.files[0].visualKind, 'archive')
   page.clearFiles()
   page.chooseMedia()
-  calls.media.success({ tempFiles: [{ tempFilePath: '/test/clip.mp4', fileType: 'video', size: 100, thumbTempFilePath: '/test/cover.jpg' }] })
+  await calls.media.success({ tempFiles: [{ tempFilePath: '/test/clip.mp4', fileType: 'video', size: 100, thumbTempFilePath: '/test/cover.jpg' }] })
   assert.equal(page.data.files[0].visualKind, 'video')
   assert.equal(page.data.files[0].thumbnailPath, '/test/cover.jpg')
   assert.equal(page.data.files[0].mediaPath, '')
   page.clearFiles()
   page.appendFiles([file('chat.mov')])
   assert.equal(page.data.files[0].mediaPath, '/test/chat.mov')
+})
+test('unknown album suffixes are replaced only after reading the media signature', async () => {
+  const { page, calls } = setup()
+  page.chooseMedia()
+  calls.fileData['/test/wxfile'] = Uint8Array.from([0, 0, 0, 20, 102, 116, 121, 112, 113, 116, 32, 32])
+  await calls.media.success({ tempFiles: [{ tempFilePath: '/test/wxfile', fileType: 'video', size: 100 }] })
+  assert.match(page.data.files[0].name, /\.mov$/)
+  assert(page.data.operations.some(item => item.id === 'convert:mp4'))
+  page.clearFiles()
+  calls.fileData['/test/image.tmp'] = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])
+  await calls.media.success({ tempFiles: [{ tempFilePath: '/test/image.tmp', fileType: 'image', size: 100 }] })
+  assert.match(page.data.files[0].name, /\.png$/)
+  assert.equal(page.data.files[0].visualKind, 'image')
+  page.clearFiles()
+  calls.fileData['/test/misnamed.jpg'] = calls.fileData['/test/image.tmp']
+  await calls.media.success({ tempFiles: [{ tempFilePath: '/test/misnamed.jpg', fileType: 'image', size: 100 }] })
+  assert.match(page.data.files[0].name, /\.png$/)
+  page.clearFiles()
+  await calls.media.success({ tempFiles: [{ tempFilePath: '/test/unknown.tmp', fileType: 'video', size: 100 }] })
+  assert.equal(page.data.files.length, 0)
+  assert(calls.toasts.includes('无法识别媒体格式'))
+})
+test('unsupported single files are rejected with a format-specific message', () => {
+  const { page, calls } = setup()
+  page.appendFiles([file('archive.unknown')])
+  assert.equal(page.data.files.length, 0)
+  assert.match(calls.toasts[0], /UNKNOWN/)
+  page.appendFiles([file('a.jpg'), file('README')])
+  assert.deepEqual(Array.from(page.data.files, row => row.name), ['a.jpg'])
+  assert(calls.toasts.includes('已跳过不支持的文件'))
+})
+test('special image and video formats have safe visual fallbacks; subtitles have their own group', () => {
+  const { page } = setup()
+  for (const extension of ['jp2', 'jxl', 'qoi', 'ppm']) {
+    page.appendFiles([file(`scan.${extension}`)])
+    assert.equal(page.data.files[0].visualKind, 'image')
+    assert.equal(page.data.files[0].thumbnailPath, '')
+    page.clearFiles()
+  }
+  page.appendFiles([file('clip.m4s')])
+  assert.equal(page.data.files[0].visualKind, 'video')
+  assert.equal(page.data.files[0].mediaPath, '')
+  page.clearFiles()
+  page.appendFiles([file('captions.srt')])
+  assert.equal(page.data.files[0].visualKind, 'document')
+  assert.equal(page.data.operations.find(item => item.id === 'convert:vtt').category, '字幕')
+  page.clearFiles()
+  for (const extension of ['json', 'yaml', 'yml', 'xml', 'log', 'markdown']) {
+    page.appendFiles([file(`notes.${extension}`)])
+    assert.equal(page.data.files[0].visualKind, 'document')
+    page.clearFiles()
+  }
+  page.appendFiles([file('notes.txt')])
+  assert.equal(page.data.operations.find(item => item.id === 'convert:json').category, '文档')
 })
 test('only common targets are offered; PDF merge requires multiple PDFs', () => {
   const { page } = setup()
@@ -109,6 +163,18 @@ test('changing source clears incompatible target; settings follow selected opera
   page.clearFiles(); page.appendFiles([file('a.txt')]); assert.equal(page.data.operation, null)
   page.chooseOperation(event({ id: 'convert:epub' })); assert.equal(page.data.showTextEncoding, true); assert.equal(page.data.showVideoOptions, false)
 })
+test('settings are shown only when the selected operation accepts them', () => {
+  const { page } = setup()
+  page.appendFiles([file('a.mov')]); page.chooseOperation(event({ id: 'convert:mkv' }))
+  assert.equal(page.data.showVideoOptions, false)
+  assert.equal(page.data.visibleOptionKeys.videoCodec, false)
+  page.chooseOperation(event({ id: 'convert:mp4' }))
+  assert.equal(page.data.visibleOptionKeys.videoCodec, true)
+  page.clearFiles(); page.appendFiles([file('a.txt')]); page.chooseOperation(event({ id: 'convert:json' }))
+  assert.equal(page.data.showTextEncoding, false)
+  page.chooseOperation(event({ id: 'convert:epub' }))
+  assert.equal(page.data.showTextEncoding, true)
+})
 test('PDF group validation and options survive submission; unavailable encryption is hidden', async () => {
   const { page, calls } = setup()
   await page.refresh(); assert.equal(page.data.pdfActionOptions.length, 1)
@@ -133,4 +199,17 @@ test('export and task menus dispatch existing actions without dropping functiona
   for (const [status, index, expected] of [['running', 0, 'cancel'], ['failed', 0, 'retry'], ['failed', 1, 'delete'], ['succeeded', 0, 'delete']]) {
     page.setData({ jobs: [{ id: 'a', status }] }); page.jobMenu(event({ id: 'a' })); calls.sheet.success({ tapIndex: index }); assert.equal(action, expected)
   }
+})
+test('non-previewable result never downloads when preview is invoked', async () => {
+  const { page, calls, api } = setup()
+  api.listJobs = async () => [{ id: 'job', status: 'succeeded', createdAt: '2026-09-26T00:00:00Z', operationId: 'convert:jp2', uploads: [{ fileName: 'source.png' }], assets: [{ id: 'asset', fileName: 'result.jp2', sizeBytes: 100, mimeType: 'image/jp2' }] }]
+  await page.loadJobs()
+  assert.equal(page.data.jobs[0].assets[0].canPreview, false)
+  let downloadCalled = false
+  page.ensureAsset = async () => { downloadCalled = true }
+  await page.openAsset(event({ job: 'job', asset: 'asset' }))
+  assert.equal(downloadCalled, false)
+  assert(calls.toasts.includes('该格式请导出后打开'))
+  const markup = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.wxml'), 'utf8')
+  assert(markup.includes('wx:if="{{asset.canPreview}}"'))
 })
