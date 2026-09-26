@@ -7,6 +7,8 @@ server_dir="$repo_root/packages/server"
 engine_root="${CONVERSION_ENGINE_ROOT:-$HOME/Library/Caches/ledger-flyingmouse-engines/darwin-arm64}"
 qpdf_root="${CONVERSION_QPDF_ROOT:-$HOME/Library/Caches/ledger-qpdf-osx-arm64}"
 raw_path="${CONVERSION_DCRAW_PATH:-$HOME/Library/Caches/LibRaw-0.21.5/bin/dcraw_emu}"
+structure_python="${CONVERSION_DOCSTRUCTURE_PYTHON:-$HOME/Library/Caches/ledger-flyingmouse-engines/docstructure-venv/bin/python}"
+structure_models="${CONVERSION_DOCSTRUCTURE_MODEL_DIR:-$HOME/Library/Caches/ledger-flyingmouse-engines/docstructure-models/models}"
 
 test "$(uname -s)" = Darwin
 test -f "$server_dir/.env"
@@ -29,6 +31,15 @@ if test -x "$qpdf_root/bin/qpdf"; then
   export DYLD_LIBRARY_PATH="$engine_root/runtime/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
 fi
 if test -x "$raw_path"; then export FLYINGMOUSE_DCRAW_PATH="$raw_path"; fi
+if test -x "$structure_python" && test -d "$structure_models"; then
+  FLYINGMOUSE_DOCSTRUCTURE_PYTHON="$structure_python" \
+    PYTHONPATH="$FLYINGMOUSE_SOURCE_DIR/tools/docstructure-engine" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    "$structure_python" -c 'from pathlib import Path; from flyingmouse_docstructure.pipeline import _resolve_models; import sys; _resolve_models(Path(sys.argv[1]))' "$structure_models"
+  export FLYINGMOUSE_DOCSTRUCTURE_PYTHON="$structure_python"
+  export FLYINGMOUSE_DOCSTRUCTURE_MODEL_DIR="$structure_models"
+  export FLYINGMOUSE_DOCSTRUCTURE_ENGINE_PATH="$server_dir/scripts/run-original-docstructure-macos.sh"
+fi
 
 cd "$server_dir"
 node --env-file=.env dist/main.js &

@@ -19,9 +19,11 @@
 | Pandoc | 原版脚本固定，3.11 | 已加载 |
 | qpdf | conda-forge macOS arm64，12.4.1 | 已加载；PDF 加解密本地通过 |
 | LibRaw `dcraw_emu` | 原版 Linux Docker 所用 0.21.5 源码在 Mac 编译 | 已安装；真实 RAW 质量未验收 |
-| PDF 结构引擎及模型 | 原版 Mac 引擎包未提供可用产物 | 缺失，扫描 PDF 结构化输出未通过 |
+| PDF 结构引擎及模型 | 原版 Python 入口 + 原版 Windows 发行包中的 11 组通用模型，Mac 隔离 Python 环境 | 原版模型及依赖已安装，扫描 PDF 实际转换仍未通过内存准入验收 |
 
 原版 macOS 引擎包 SHA-256：`ffb5ae5d4131afae557eafc0b1dd6d2406cbdc4fd513c905a345371805e8e8b2`。qpdf 包 SHA-256：`768994b33c7171a0dda82e976c670fdf91336ec8ed5fa6d46b74ad330b25c8d6`。LibRaw 源码 SHA-256：`a74a2e68303d3b9219f82318f935b28c5c4abd7f2c9f7dbf8faa4997c9038305`。
+
+PDF 结构模型取自原版 `ci-engines-v1-win32-docstructure-1.0.1.tar.zst`，完整归档 SHA-256 为 `f159fd0b0698e5b5d81a47ca7a7d8fbc73775b4c2a13bcc916c0a3024e98dd35`；仅提取其 37 个模型文件（约 1.10 GB），没有在 Mac 上执行 Windows 程序。仓库外隔离环境安装原版锁定的 PaddlePaddle 3.2.2、PaddleOCR 3.7.0、PaddleX 3.7.2、img2table 2.0.0、Pillow 11.3.0 和 PyMuPDF 1.26.3。原版 Python 测试 **40/40 通过**，11 组模型经原版校验器核对；Mac 包装入口保持原版参数和退出码协议。原版 JS 要求启动 PDF 结构任务前 `os.freemem() ≥ 5 GiB`，当前 8 GiB Mac 仅测得约 0.12 GiB 空闲。真实图片层 PDF→DOCX 直调退出 1，命中原版内存规则，且明确排除了引擎或模型缺失；不得通过降低原版阈值冒充通过。
 
 ## 本地启动与验证
 
@@ -31,7 +33,7 @@
 4. 执行 `corepack pnpm --filter @jiujiu/server exec tsc --noEmit --pretty false`、`corepack pnpm --filter @jiujiu/ledger-mp typecheck`、相关 Jest 测试，以及原版测试。
 5. `node scripts/flyingmouse-acceptance.cjs --gate` 是发布闸门。只有全部 1174 组和所有全局闸门通过才返回成功；完整逐项记录见 `acceptance-a7b9b15.json`。
 
-当前 Mac 实测：DOCX→PDF 的真实样本已和原版 CLI 直调对比，1 页、提取文本一致且原文大部分保留，故逐项报告为 **1/1174**。其他四条本地链路抽测通过，但尚未满足逐项质量与原版对比标准。微信开发者工具模拟器已用本地测试身份从页面选取该 DOCX、选择 PDF、上传、创建任务，最终显示 143 KB PDF 和“已完成”；后端数据库记录 `succeeded`，调试器 0 错误。同一 UI 任务经鉴权下载得到 145993 字节 PDF、1 页、1188 字文本。模拟器中的导出保存及手机真机仍未验收，故 `miniDevtools` 闸门保持未完成。测试仅修改被 Git 忽略的 `project.private.config.json`，关闭模拟器合法域名检查；这不代表真机网络许可已通过。原版测试串行结果 **1015 通过、1 失败、21 跳过**；失败为 60 张图片合并触发原版内存保护。8 GiB Mac 当前空闲内存较低，真实 RAW 大图和扫描 PDF 结构引擎仍是完整验收阻塞项。Linux 全矩阵及生产端到端未完成。
+当前 Mac 实测：DOCX→PDF 的真实样本已和原版 CLI 直调对比，1 页、提取文本一致且原文大部分保留；有效两页 PDF→PDF 拆分的前后端页文字与原版直调一致，故逐项报告为 **2/1174**。其他四条本地链路抽测通过，但尚未满足逐项质量与原版对比标准。微信开发者工具模拟器已用本地测试身份从页面选取该 DOCX、选择 PDF、上传、创建任务，最终显示 143 KB PDF 和“已完成”；后端数据库记录 `succeeded`，调试器 0 错误。同一 UI 任务经鉴权下载得到 145993 字节 PDF、1 页、1188 字文本。模拟器中的导出保存及手机真机仍未验收，故 `miniDevtools` 闸门保持未完成。测试仅修改被 Git 忽略的 `project.private.config.json`，关闭模拟器合法域名检查；这不代表真机网络许可已通过。原版测试串行结果 **1015 通过、1 失败、21 跳过**；失败为 60 张图片合并触发原版内存保护。8 GiB Mac 当前空闲内存较低，真实 RAW 大图和扫描 PDF 结构任务仍是完整验收阻塞项。Linux 全矩阵及生产端到端未完成。
 
 ## 资源与数据
 

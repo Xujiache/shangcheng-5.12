@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 1,
+    "passed": 2,
     "failed": 0,
-    "incomplete": 1173
+    "incomplete": 1172
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -6941,11 +6941,12 @@
     {
       "input": "pdf",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "38936c35f18808ab12d656f459aeeca15dd4319bcb77bb6b90ad2c5846607bd0",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-page PDF: direct original and authenticated backend split into same page texts"
     },
     {
       "input": "pdf",

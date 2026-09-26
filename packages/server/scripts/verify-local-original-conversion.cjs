@@ -21,6 +21,23 @@ let userId
 let cleanupJob
 const outstanding = new Set()
 
+function originalCliEnv() {
+  const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+  const engines = process.env.CONVERSION_ENGINE_ROOT ||
+    join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/darwin-arm64')
+  return {
+    ...process.env,
+    FLYINGMOUSE_FFMPEG_PATH: join(engines, 'runtime/bin/ffmpeg'),
+    FLYINGMOUSE_LIBREOFFICE_PATH: join(engines, 'libreoffice/LibreOffice.app/Contents/MacOS/soffice'),
+    FLYINGMOUSE_PDFTOPPM_PATH: join(engines, 'runtime/bin/pdftoppm'),
+    FLYINGMOUSE_TESSDATA_PATH: join(engines, 'tessdata'),
+    FLYINGMOUSE_PANDOC_PATH: join(source, 'bin/pandoc/pandoc'),
+    FLYINGMOUSE_QPDF_PATH: join(homedir(), 'Library/Caches/ledger-qpdf-osx-arm64/bin/qpdf'),
+    DYLD_LIBRARY_PATH: join(engines, 'runtime/lib') +
+      (process.env.DYLD_LIBRARY_PATH ? `:${process.env.DYLD_LIBRARY_PATH}` : ''),
+  }
+}
+
 async function pdfPage(label) {
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
@@ -122,6 +139,41 @@ async function main() {
     throw new Error('PDF decrypt lost pages')
   console.log('PASS PDF encrypt/decrypt, two pages retained')
 
+  const split = await convert('convert:pdf', [['two-pages.pdf', merged.bytes]], { splitMode: 'page' })
+  const splitWork = await mkdtemp(join(tmpdir(), 'ledger-pdf-split-check-'))
+  try {
+    const input = join(splitWork, 'input.pdf')
+    const backendZip = join(splitWork, 'backend.pdf.zip')
+    const directZip = join(splitWork, 'direct.pdf.zip')
+    await writeFile(input, merged.bytes)
+    await writeFile(backendZip, split.bytes)
+    const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+    execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+      '--to', 'pdf', '--output', directZip, '--json'], { env: originalCliEnv() })
+    const pageTexts = (archive) => {
+      const names = execFileSync('unzip', ['-Z', '-1', archive], { encoding: 'utf8' })
+        .trim().split('\n').filter((name) => name.endsWith('.pdf'))
+      if (names.length !== 2) throw new Error('PDF split did not produce two pages')
+      return names.map((name) => {
+        const bytes = execFileSync('unzip', ['-p', archive, name])
+        const part = join(splitWork, `${randomUUID()}.pdf`)
+        require('node:fs').writeFileSync(part, bytes)
+        const text = execFileSync(join(dirname(process.env.FLYINGMOUSE_PDFTOPPM_PATH || 'pdftoppm'), 'pdftotext'),
+          [part, '-'], { encoding: 'utf8' }).trim()
+        return text
+      }).sort()
+    }
+    const backendPages = pageTexts(backendZip)
+    if (JSON.stringify(backendPages) !== JSON.stringify(pageTexts(directZip)) ||
+      !backendPages.some((text) => text.includes('First page')) ||
+      !backendPages.some((text) => text.includes('Second page')))
+      throw new Error('PDF split differs from original or lost page text')
+    execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+      '--record', 'pdf', 'pdf', createHash('sha256').update(merged.bytes).digest('hex'),
+      'two-page PDF: direct original and authenticated backend split into same page texts'])
+  } finally { await rm(splitWork, { recursive: true, force: true }) }
+  console.log('PASS pdf:pdf split, two page texts match direct original')
+
   const imageA = await sharp({ create: { width: 32, height: 24, channels: 3, background: '#008866' } }).png().toBuffer()
   const imageB = await sharp({ create: { width: 32, height: 24, channels: 3, background: '#cc4455' } }).jpeg().toBuffer()
   const images = await convert('images-to-pdf', [['first.png', imageA], ['second.jpg', imageB]])
@@ -143,18 +195,9 @@ async function main() {
       const extracted = execFileSync(pdftotext, ['-layout', pdfPath, '-'], { encoding: 'utf8' })
       if (extracted.trim().length < 100) throw new Error('DOCX to PDF lost most text')
       const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
-      const engines = process.env.CONVERSION_ENGINE_ROOT ||
-        join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/darwin-arm64')
       execFileSync(process.execPath, [join(source, 'cli.js'), 'convert',
         process.env.CONVERSION_SAMPLE_DOCX, '--to', 'pdf', '--output', directPath, '--json'], {
-        env: {
-          ...process.env,
-          FLYINGMOUSE_FFMPEG_PATH: join(engines, 'runtime/bin/ffmpeg'),
-          FLYINGMOUSE_LIBREOFFICE_PATH: join(engines, 'libreoffice/LibreOffice.app/Contents/MacOS/soffice'),
-          FLYINGMOUSE_PDFTOPPM_PATH: join(engines, 'runtime/bin/pdftoppm'),
-          FLYINGMOUSE_TESSDATA_PATH: join(engines, 'tessdata'),
-          FLYINGMOUSE_PANDOC_PATH: join(source, 'bin/pandoc/pandoc'),
-        },
+        env: originalCliEnv(),
       })
       const direct = await readFile(directPath)
       if ((await PDFDocument.load(direct)).getPageCount() !== pages)
