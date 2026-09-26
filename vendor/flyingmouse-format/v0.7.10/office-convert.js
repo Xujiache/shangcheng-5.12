@@ -308,7 +308,7 @@ async function convertDocumentToMarkdown(inputPath, outputPath, inputExt, origin
     try {
       await convertWithLibreOffice(inputPath, htmlPath, originalName, "html");
       html = await fsp.readFile(htmlPath, "utf8");
-      if (ext === "wps") html = cleanWpsHtml(html, true);
+      if (ext === "wps" || ext === "wpt") html = cleanWpsHtml(html, true);
     } finally {
       await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }

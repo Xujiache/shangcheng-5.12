@@ -99,7 +99,7 @@ async function convertTextToEpub(raw, source, originalName, outputPath, options 
   throwIfCanceled(options.signal);
   const report = captureConversionProgressReporter();
   const title = cleanTitle(path.basename(originalName || "book", path.extname(originalName || "")));
-  const chapters = splitChapters(raw, source);
+  const chapters = options.chapters || splitChapters(raw, source);
   const documents = [];
   documents.push({ name: "META-INF/container.xml", content: () => `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -475,7 +475,7 @@ function epubStyleWarnings(chapters) {
   } }];
 }
 
-// epub → pdf/docx：合并 html 后交给 LibreOffice（html→pdf/docx 管线实测可靠）。
+// epub → pdf/docx：合并 HTML 后经 ODT 交给 LibreOffice 导出。
 // 惰性 require office-convert 避免模块循环。
 async function convertEpubViaLibreOffice(inputPath, outputPath, target) {
   const { convertWithLibreOffice } = require("./office-convert");
@@ -486,11 +486,11 @@ async function convertEpubViaLibreOffice(inputPath, outputPath, target) {
   const htmlPath = path.join(tempDir, "book.html");
   try {
     await fsp.writeFile(htmlPath, html, "utf8");
-    if (target === "pdf") {
-      // Direct HTML→PDF silently drops the first block in this LibreOffice build.
+    if (target === "pdf" || target === "docx") {
+      // Direct HTML→PDF drops the first block; HTML→DOCX has no export filter.
       const odtPath = path.join(tempDir, "book.odt");
       await convertWithLibreOffice(htmlPath, odtPath, "book.html", "odt");
-      await convertWithLibreOffice(odtPath, outputPath, "book.odt", "pdf");
+      await convertWithLibreOffice(odtPath, outputPath, "book.odt", target);
     } else {
       await convertWithLibreOffice(htmlPath, outputPath, "book.html", target);
     }
@@ -500,7 +500,7 @@ async function convertEpubViaLibreOffice(inputPath, outputPath, target) {
   return { warnings: epubStyleWarnings(xhtmls) };
 }
 
-// ---- MOBI 解析（PalmDOC 1/2；KF8/HUFF-CDIC/加密/附加记录明确拒绝） ----
+// ---- MOBI 解析（PalmDOC 1/2；KF8/HUFF-CDIC/加密明确拒绝） ----
 
 function decompressPalmDoc(chunk) {
   const output = [];
@@ -523,7 +523,34 @@ function decompressPalmDoc(chunk) {
   return Buffer.from(output);
 }
 
-function parseMobiText(buffer) {
+function stripMobiTrailingData(chunk, flags) {
+  let end = chunk.length;
+  // MOBI 6 text records may end with an indexing entry whose total size is
+  // encoded backwards. These bytes are outside the compressed PalmDOC stream.
+  if (flags & 2) {
+    let size = 0, count = 0, terminated = false;
+    for (; count < 4 && count < end; count++) {
+      const byte = chunk[end - count - 1];
+      size |= (byte & 0x7f) << (count * 7);
+      if (byte & 0x80) { count++; terminated = true; break; }
+    }
+    if (!terminated || size < count || size > end) throw ebookError("MOBI_INVALID_RECORD", "MOBI 附加记录长度无效。");
+    end -= size;
+  }
+  // The low two bits of the final byte give the count of UTF-8 bytes copied
+  // from the next record. The count byte and overlap are not book text.
+  let overlap = Buffer.alloc(0);
+  if (flags & 1) {
+    if (!end) throw ebookError("MOBI_INVALID_RECORD", "MOBI 多字节记录不完整。");
+    const size = (chunk[end - 1] & 3) + 1;
+    if (size > end) throw ebookError("MOBI_INVALID_RECORD", "MOBI 多字节记录长度无效。");
+    overlap = chunk.subarray(end - size, end - 1);
+    end -= size;
+  }
+  return { data: chunk.subarray(0, end), overlap };
+}
+
+function parseMobiText(buffer, options = {}) {
   // MOBI 文件是 PDB 容器：PalmDB header(78 字节) + 记录表(每条 8 字节) + 记录数据。
   // 记录 0 = MOBI header（其前 16 字节是 PalmDOC header：compression/textLength/recordCount），
   // 文本记录从记录 1 开始。
@@ -549,7 +576,7 @@ function parseMobiText(buffer) {
   const textLength = buffer.readUInt32BE(record0 + 4);
   const recordCount = buffer.readUInt16BE(record0 + 8);
   if (recordCount <= 0 || recordCount >= numRecords) throw new Error("MOBI 解析失败：文本记录数不合法。");
-  let encoding = "windows-1252";
+  let encoding = "windows-1252", extraDataFlags = 0;
   if (buffer.toString("ascii", record0 + 16, record0 + 20) === "MOBI") {
     const headerLength = buffer.readUInt32BE(record0 + 20);
     if (headerLength < 24 || record0 + 16 + headerLength > offsets[1]) throw ebookError("MOBI_INVALID_RECORD", "MOBI 头长度无效。");
@@ -558,16 +585,24 @@ function parseMobiText(buffer) {
     encoding = codepage === 65001 ? "utf-8" : "windows-1252";
     const version = buffer.readUInt32BE(record0 + 36);
     if (version >= 8) throw ebookError("MOBI_KF8_UNSUPPORTED", "KF8/AZW3 排版暂不支持，请先导出 EPUB。");
-    if (headerLength >= 228 && buffer.readUInt16BE(record0 + 242) !== 0) throw ebookError("MOBI_EXTRA_DATA_UNSUPPORTED", "此 MOBI 含附加文本记录，当前版本尚不能可靠还原，请先导出 EPUB。");
+    if (headerLength >= 228) extraDataFlags = buffer.readUInt16BE(record0 + 242);
+    if (extraDataFlags & ~3) throw ebookError("MOBI_EXTRA_DATA_UNSUPPORTED", "此 MOBI 含尚未验证的附加文本记录，请先导出 EPUB。");
   }
 
   const recordData = [];
+  let previousOverlap = Buffer.alloc(0);
   for (let index = 1; index <= recordCount && index < offsets.length; index += 1) {
     const start = offsets[index];
     const end = offsets[index + 1] || buffer.length;
-    const chunk = buffer.subarray(start, end);
-    recordData.push(compression === 2 ? decompressPalmDoc(chunk) : chunk);
+    const { data, overlap } = stripMobiTrailingData(buffer.subarray(start, end), extraDataFlags);
+    const decoded = compression === 2 ? decompressPalmDoc(data) : data;
+    if (previousOverlap.length && !decoded.subarray(0, previousOverlap.length).equals(previousOverlap)) {
+      throw ebookError("MOBI_INVALID_RECORD", "MOBI 跨记录多字节内容不一致。");
+    }
+    recordData.push(decoded);
+    previousOverlap = overlap;
   }
+  if (previousOverlap.length) throw ebookError("MOBI_TEXT_INCOMPLETE", "MOBI 最后一条文本记录含未完成的多字节内容。");
   const textBytes = Buffer.concat(recordData);
   if (!textLength || textBytes.length < textLength) throw ebookError("MOBI_TEXT_INCOMPLETE", "MOBI 文本长度不符，拒绝输出残缺内容。");
   let html;
@@ -575,8 +610,8 @@ function parseMobiText(buffer) {
   catch { throw ebookError("MOBI_ENCODING_INVALID", "MOBI 字符编码无效，拒绝输出乱码。"); }
   const cleaned = html
     .replace(/<\?xml[\s\S]*?\?>/i, "")
-    .replace(/<mbp:[^>]*>[\s\S]*?<\/mbp:[^>]*>/gi, "")
-    .replace(/<mbp:[^>]*\/?>/gi, "")
+    .replace(/<mbp:pagebreak\b[^>]*>/gi, options.preservePagebreaks ? "\f" : "")
+    .replace(/<\/?mbp:[^>]*>/gi, "")
     .replace(/<exthml[^>]*>[\s\S]*?<\/exthml>/gi, "")
     .replace(/<html[^>]*>[\s\S]*?<body[^>]*>/i, "")
     .replace(/<\/body>[\s\S]*?<\/html>/i, "");
@@ -594,10 +629,26 @@ async function convertMobiToText(inputPath, outputPath) {
 
 async function convertMobiToEpub(inputPath, outputPath, originalName) {
   const buffer = await fsp.readFile(inputPath);
-  const html = parseMobiText(buffer);
-  const text = htmlToText(html);
+  const html = parseMobiText(buffer, { preservePagebreaks: true });
+  const text = htmlToText(html).replace(/\f/g, "\n");
   if (!text.trim()) throw new Error("MOBI 解析失败：未提取到任何文本。");
-  await convertTextToEpub(text, "txt", originalName || "book", outputPath);
+  const sections = html.split("\f").map(part => ({
+    body: htmlToText(part),
+    title: htmlToText(/<(?:h[1-6]|p)\b[^>]*>([\s\S]*?)<\/(?:h[1-6]|p)>/i.exec(part)?.[1] || "").replace(/\s+/g, " ").trim()
+  })).filter(part => part.body);
+  const chapterIndexes = sections.map((section, index) =>
+    /^(?:CHAPTER\s+[IVXLCDM\d]+[.:\s]|第\s*[\d一二三四五六七八九十百千]+\s*[章节])/i.test(section.title) ? index : -1
+  ).filter(index => index >= 0);
+  let chapters;
+  if (chapterIndexes.length >= 2 && sections.length <= 100) {
+    chapters = [];
+    if (chapterIndexes[0]) chapters.push({ title: "前言与目录", body: sections.slice(0, chapterIndexes[0]).map(section => section.body).join("\n\n") });
+    for (let index = 0; index < chapterIndexes.length; index++) {
+      const start = chapterIndexes[index], end = chapterIndexes[index + 1] ?? sections.length;
+      chapters.push({ title: sections[start].title.slice(0, 100), body: sections.slice(start, end).map(section => section.body).join("\n\n") });
+    }
+  }
+  await convertTextToEpub(text, "txt", originalName || "book", outputPath, chapters ? { chapters } : {});
 }
 
 // 电子书输入分发（EPUB/MOBI 是二进制容器，不能按 utf8 文本读取）
@@ -640,7 +691,15 @@ async function routeEbook(inputPath, outputPath, inputExt, target, originalName)
 
 async function convertEbook(inputPath, outputPath, inputExt, target, originalName) {
   try {
-    return await routeEbook(inputPath, outputPath, inputExt, target, originalName);
+    const result = await routeEbook(inputPath, outputPath, inputExt, target, originalName);
+    if (inputExt !== "mobi") return result;
+    return { warnings: [{
+      code: "MOBI_TEXT_ONLY",
+      messages: {
+        zhCN: "MOBI 按文本提取转换；内嵌图片和原版式不会保留，请核对结果。",
+        enUS: "MOBI is converted from extracted text; embedded images and original layout are not preserved. Review the result."
+      }
+    }] };
   } catch (error) {
     if (!/^(?:EPUB|MOBI)_/.test(error.code || "")) error.code = inputExt === "mobi" ? "MOBI_PARSE_FAILED" : "EPUB_PARSE_FAILED";
     throw error;

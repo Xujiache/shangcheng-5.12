@@ -37,7 +37,7 @@ const { convertOfdToPdf } = require("./ofd-convert");
 const { OfficeEngineError, probeLibreOffice, runLibreOffice } = require("./office-engine");
 const { getOfficeState, waitForOfficeReady, OfficePreparationError } = require("./office-readiness");
 const { getStructuredPdfAvailability } = require("./pdf-structure-engine");
-const { inspectXlsxForCsv } = require("./office-quality");
+const { inspectXlsxForCsv, inspectEttForCsv } = require("./office-quality");
 const logger = require("./logger");
 
 // Prefer the Electron main process's debug.log (set via FLYINGMOUSE_LOG_FILE
@@ -815,6 +815,8 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
       } else {
         if (category === "spreadsheet" && inputExt === "xlsx" && requestedTarget === "csv") {
           conversionResult = await inspectXlsxForCsv(file.path);
+        } else if (category === "spreadsheet" && inputExt === "ett" && requestedTarget === "csv") {
+          conversionResult = await inspectEttForCsv(file.path, originalName);
         }
         await convertWithLibreOffice(file.path, outputPath, originalName, requestedTarget);
       }

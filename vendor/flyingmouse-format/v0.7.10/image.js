@@ -13,6 +13,7 @@ const sharp = require("sharp");
 const { FFMPEG_PATH, DCRAW_PATH, LIBRAW_DCRAW_PATH, rawInput } = require("./config");
 const RAW_EXTENSIONS = rawInput;
 const RAW_MAX_STATIC_PIXELS = 20_000_000;
+const RAW_FORMAT_MAX_STATIC_PIXELS = Object.freeze({ fff: 60_000_000, mef: 22_000_000 });
 const FFMPEG_IMAGE_EXTENSIONS = new Set(["tga", "jp2", "j2k", "jxl", "qoi", "ppm"]);
 const HEIF_CONVERT_PATH = process.env.FLYINGMOUSE_HEIF_CONVERT_PATH || "/usr/bin/heif-convert";
 const { run } = require("./utils");
@@ -309,8 +310,11 @@ async function prepareImageInput(inputPath, inputName) {
       if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || !Number.isSafeInteger(pixels) || width < 1 || height < 1) {
         throw new ResourceLimitError("IMAGE_METADATA_INVALID");
       }
-      if (pixels > RAW_MAX_STATIC_PIXELS) {
-        throw new ResourceLimitError("IMAGE_PIXELS_EXCEEDED", { pixels, limitMegapixels: RAW_MAX_STATIC_PIXELS / 1_000_000 });
+      const rawExt = RAW_EXTENSIONS.has(designExt) ? designExt : path.extname(inputPath).toLowerCase().replace(/^\./, "");
+      const formatLimit = RAW_FORMAT_MAX_STATIC_PIXELS[rawExt];
+      const pixelLimit = formatLimit ? Math.min(formatLimit, LIMITS.maxImagePixels) : RAW_MAX_STATIC_PIXELS;
+      if (pixels > pixelLimit) {
+        throw new ResourceLimitError("IMAGE_PIXELS_EXCEEDED", { pixels, limitMegapixels: pixelLimit / 1_000_000 });
       }
       // dcraw 无法正确解码 Canon CR3；LibRaw 的 dcraw_emu 单独处理此格式。
       // 两者均输出 sRGB TIFF，后续图片链路无需分流。

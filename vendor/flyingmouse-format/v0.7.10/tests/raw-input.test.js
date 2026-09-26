@@ -118,6 +118,44 @@ require(${JSON.stringify(path.join(engineDir, "image.js"))}).prepareImageInput($
   }
 });
 
+test("FFF 与 MEF 的像素上限独立于其他 RAW，且不超过可用内存预算", async (t) => {
+  const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "raw-large-preflight-test-"));
+  t.after(() => fsp.rm(scratch, { recursive: true, force: true }));
+  const engineDir = path.join(__dirname, "..");
+  for (const [ext, size, memoryLimit, expectedLimit, decodeCalled, inputName] of [
+    ["fff", "8374 x 6304", 64_000_000, null, true],
+    ["fff", "8374 x 6304", 64_000_000, null, true, "upload.FFF"],
+    ["fff", "8000 x 8000", 64_000_000, 60, false],
+    ["mef", "5344 x 4016", 64_000_000, null, true],
+    ["mef", "5000 x 5000", 64_000_000, 22, false],
+    ["cr2", "5000 x 5000", 64_000_000, 20, false],
+    ["fff", "5000 x 5000", 15_000_000, 15, false]
+  ]) {
+    const source = path.join(scratch, inputName ? "extensionless-upload" : `fake.${ext}`);
+    const marker = path.join(scratch, "decode-called");
+    await fsp.writeFile(source, "fake RAW");
+    await fsp.rm(marker, { force: true });
+    const script = `const policy = require(${JSON.stringify(path.join(engineDir, "resource-policy.js"))});
+policy.LIMITS = { ...policy.LIMITS, maxImagePixels: ${memoryLimit} };
+const utils = require(${JSON.stringify(path.join(engineDir, "utils.js"))});
+utils.run = async (_command, args) => {
+  if (args[0] === '-i') return { stdout: ${JSON.stringify(`Output size: ${size}\n`)}, stderr: '' };
+  require('fs').writeFileSync(${JSON.stringify(marker)}, 'called');
+  throw new Error('decode failed');
+};
+require(${JSON.stringify(path.join(engineDir, "image.js"))}).prepareImageInput(${JSON.stringify(source)}, ${JSON.stringify(inputName)})
+  .then(() => process.exit(2), e => console.log(JSON.stringify({ errorCode: e.errorCode || null, limit: e.details?.limitMegapixels })));`;
+    const result = spawnSync(process.execPath, ["-e", script], {
+      env: { ...process.env, FLYINGMOUSE_DCRAW_PATH: process.execPath },
+      encoding: "utf8", timeout: 10_000
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const observed = JSON.parse(result.stdout.trim().split(/\r?\n/).filter((line) => line.startsWith("{")).at(-1));
+    assert.equal(observed.limit ?? null, expectedLimit, `${ext} ${size}`);
+    assert.equal(await fsp.stat(marker).then(() => true, () => false), decodeCalled, `${ext} ${size}`);
+  }
+});
+
 test("CR3 在旧 dcraw 尺寸预检后才调用 LibRaw，失败时清理临时目录", async (t) => {
   const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "cr3-preflight-test-"));
   t.after(() => fsp.rm(scratch, { recursive: true, force: true }));

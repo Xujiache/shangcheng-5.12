@@ -68,7 +68,10 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:tiff', ['webp'])).toBeNull()
     expect(findConversionOperation('convert:tiff', ['gif'])).toBeNull()
     expect(findConversionOperation('convert:jpg', ['jfif'])).toBeNull()
-    expect(findConversionOperation('convert:txt', ['mobi'])).toBeNull()
+    for (const target of ['txt', 'md', 'epub'])
+      expect(findConversionOperation(`convert:${target}`, ['mobi'])).toBeTruthy()
+    for (const target of ['pdf', 'docx', 'html'])
+      expect(findConversionOperation(`convert:${target}`, ['mobi'])).toBeNull()
     expect(findConversionOperation('images-to-pdf', ['png', 'jpeg'])).toBeTruthy()
     expect(findConversionOperation('images-to-pdf', ['pdf'])).toBeNull()
     expect(findConversionOperation('merge-pdfs', ['pdf', 'pdf'])).toBeTruthy()
@@ -130,29 +133,32 @@ describe('ledger conversion gate', () => {
       for (const target of ['pdf', 'jp2', 'jxl', 'txt', 'md', 'docx', 'mp4', 'webm'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
     }
-    for (const source of ['fff', 'mef', 'x3f'])
-      expect(findConversionOperation('convert:png', [source])).toBeNull()
+    for (const source of ['fff', 'mef']) {
+      for (const target of ['png', 'jpg', 'webp'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      for (const target of ['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm', 'pdf'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
+    }
+    expect(findConversionOperation('convert:png', ['x3f'])).toBeNull()
   })
 
-  test('allows checked EPUB to PDF while keeping unverified EPUB to Word closed', () => {
+  test('allows checked EPUB to PDF and Word exports', () => {
     expect(findConversionOperation('convert:pdf', ['epub'])).toBeTruthy()
-    expect(findConversionOperation('convert:docx', ['epub'])).toBeNull()
+    expect(findConversionOperation('convert:docx', ['epub'])).toBeTruthy()
   })
 
   test('opens only content-checked Kingsoft template conversions', () => {
     const checkedPairs: Record<string, string[]> = {
       wps: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
-      wpt: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html'],
+      wpt: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
       et: ['pdf', 'xlsx', 'xls', 'ods', 'csv', 'html'],
-      ett: ['pdf', 'xlsx', 'xls', 'ods', 'html'],
+      ett: ['pdf', 'xlsx', 'xls', 'ods', 'html', 'csv'],
       dpt: ['pdf', 'pptx', 'odp', 'png', 'jpg'],
     }
     for (const [source, targets] of Object.entries(checkedPairs))
       for (const target of targets)
         expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['dps'])).toBeNull()
-    expect(findConversionOperation('convert:md', ['wpt'])).toBeNull()
-    expect(findConversionOperation('convert:csv', ['ett'])).toBeNull()
     expect(findConversionOperation('convert:html', ['dpt'])).toBeNull()
   })
 

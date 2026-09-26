@@ -1,10 +1,12 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { test } = require("node:test");
 
 const {
   OfficeQualityError,
+  inspectEttForCsv,
   inspectXlsxForCsv,
   validatePresentationHtml,
   visibleBodyText
@@ -83,10 +85,48 @@ test("XLSX to CSV falls back to the first sheet and emits no loss warning for a 
   assert.deepEqual(result.warnings.map((warning) => warning.code), ["XLSX_CSV_EXPORTED_SHEET"]);
 });
 
+test("ETT to CSV previews all sheets and formulas before reporting first-sheet loss", async () => {
+  let previewPath;
+  class Workbook {
+    constructor() {
+      this.worksheets = [
+        worksheet("交易", [{ formula: "SUM(A1:A2)", result: 3 }]),
+        worksheet("资金", [7])
+      ];
+      this.xlsx = { readFile: async (filePath) => { assert.equal(filePath, previewPath); } };
+    }
+  }
+  const result = await inspectEttForCsv("sample.ett", "sample.ett", {
+    Workbook,
+    convertWithLibreOffice: async (input, output, originalName, target) => {
+      assert.deepEqual([input, originalName, target], ["sample.ett", "sample.ett", "xlsx"]);
+      previewPath = output;
+      await fsp.writeFile(output, "preview");
+    }
+  });
+  assert.equal(result.exportedSheet, "交易");
+  assert.deepEqual(result.ignoredSheets, ["资金"]);
+  assert.equal(result.formulaCount, 1);
+  assert.deepEqual(result.warnings.map((item) => item.code), [
+    "ETT_CSV_EXPORTED_SHEET", "ETT_CSV_SHEETS_OMITTED", "ETT_CSV_FORMULAS_AS_VALUES"
+  ]);
+  assert.equal(fs.existsSync(path.dirname(previewPath)), false);
+});
+
+test("ETT to CSV retains a visible caution if workbook preview fails", async () => {
+  const result = await inspectEttForCsv("sample.ett", "sample.ett", {
+    convertWithLibreOffice: async () => { throw new Error("preview unavailable"); }
+  });
+  assert.deepEqual(result.warnings.map((item) => item.code), ["ETT_CSV_PREVIEW_UNAVAILABLE"]);
+  assert.match(result.warnings[0].messages.zhCN, /工作表和公式/);
+  assert.match(result.warnings[0].messages.enUS, /sheets and formulas/);
+});
+
 test("server wires Office quality results into the existing warning and bilingual error contracts", () => {
   const source = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
   assert.match(source, /require\(["']\.\/office-quality["']\)/);
   assert.match(source, /inspectXlsxForCsv\(file\.path\)/);
+  assert.match(source, /inspectEttForCsv\(file\.path, originalName\)/);
   assert.match(source, /conversionResult\s*=\s*await inspectXlsxForCsv/);
   // 演示文稿 HTML 已改走 LO->PDF->文本提取（不再依赖 LO 的 html 导出过滤器）
   assert.match(source, /convertPresentationToHtml\(file\.path, outputPath, originalName\)/);

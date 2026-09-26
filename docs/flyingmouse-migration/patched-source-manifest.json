@@ -8,18 +8,23 @@
     },
     {
       "path": "ebook.js",
-      "size": 31027,
-      "sha256": "f97d2b2d675d8bb3972f51db19a7c5beea51814e0da130154c071596fb19cfcc"
+      "size": 34299,
+      "sha256": "37cbca5441fc761eb0684bf783e9b8f111b4bae302642e944650b82a88c266ee"
     },
     {
       "path": "image.js",
-      "size": 29817,
-      "sha256": "9e9f994af8b5af331465cb36be26682fcfeb96eb0f54ef4a2ad11c01b4e401d3"
+      "size": 30181,
+      "sha256": "08986ff89d1c5b5b0745a84309ab255c3028729453f09a6b20bd037894ea3fed"
     },
     {
       "path": "office-convert.js",
-      "size": 30455,
-      "sha256": "c1df2f85bd724704eb3ebe532aeeba8a90b51630b78bb12ffa9244bc410d795f"
+      "size": 30472,
+      "sha256": "16f1e33320d0d1af98335b6b2b934e5d5f659266f3852a03bb273640e0fa7c28"
+    },
+    {
+      "path": "office-quality.js",
+      "size": 6576,
+      "sha256": "c603050a7096f1f87a58ca0a7a9aa09526119b86ce597b932fd170d467db14bf"
     },
     {
       "path": "office-runtime.js",
@@ -33,13 +38,13 @@
     },
     {
       "path": "server.js",
-      "size": 43314,
-      "sha256": "538bf3f5e5eba22ff17c41660ab037ebdfbe5223ad458efcedecfba50c7886dd"
+      "size": 43510,
+      "sha256": "d5bca820cac9cd25df41a0d077bc607e0df1854d796159eaa4894ba303746c1d"
     },
     {
       "path": "tests/ebook-integrity.test.js",
-      "size": 8378,
-      "sha256": "223ce133a91da6919cf6136bc3339b8e9d9ccb8b7c1af87fdebbf3277c285f1e"
+      "size": 14904,
+      "sha256": "ba5cfbf62f6576e9e6f7dd3e04454c27a047b1e819de1f6a8d20d6a1a068605c"
     },
     {
       "path": "tests/image-conversion.test.js",
@@ -52,14 +57,19 @@
       "sha256": "dcfd49f23e5571fb8373064b0843f7582b9a4eb8b6634a25c69f04ba15d47c06"
     },
     {
+      "path": "tests/office-quality.test.js",
+      "size": 7106,
+      "sha256": "42c3a2c6190d81e99c6b6b7b151375dba72ede166cb039809b8cae31f4657d36"
+    },
+    {
       "path": "tests/office-wps-repair.test.js",
       "size": 5126,
       "sha256": "d878dd66b408a0b97b9e2402829046faa697591a4301b39083bbeb559e2a67ab"
     },
     {
       "path": "tests/raw-input.test.js",
-      "size": 11669,
-      "sha256": "3f430f7b1aa8495109a904242e74a72550472109fe8274fd22c717055b999ff2"
+      "size": 14009,
+      "sha256": "8d5d8c85f730ccbe24ff0373b1f1d7467a6016c329da875c962e7152f27f36e0"
     },
     {
       "path": "tests/text-conversion-integration.test.js",

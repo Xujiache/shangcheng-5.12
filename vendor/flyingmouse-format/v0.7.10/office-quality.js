@@ -1,3 +1,7 @@
+const fsp = require("fs/promises");
+const os = require("os");
+const path = require("path");
+
 class OfficeQualityError extends Error {
   constructor(code, messages, details = {}) {
     super(messages.zhCN);
@@ -144,9 +148,33 @@ async function inspectXlsxForCsv(inputPath, options = {}) {
   return { exportedSheet, ignoredSheets, formulaCount, warnings };
 }
 
+async function inspectEttForCsv(inputPath, originalName, options = {}) {
+  const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-ett-csv-"));
+  try {
+    const xlsxPath = path.join(tempDir, "preview.xlsx");
+    const convert = options.convertWithLibreOffice || require("./office-convert").convertWithLibreOffice;
+    await convert(inputPath, xlsxPath, originalName, "xlsx");
+    const result = await inspectXlsxForCsv(xlsxPath, options);
+    return {
+      ...result,
+      warnings: result.warnings.map((item) => ({ ...item, code: item.code.replace(/^XLSX_/, "ETT_") }))
+    };
+  } catch (error) {
+    return {
+      warnings: [warning("ETT_CSV_PREVIEW_UNAVAILABLE", {
+        zhCN: "无法检查 ETT 工作表和公式；CSV 可能只保留第一张工作表的计算值，请核对结果。",
+        enUS: "ETT sheets and formulas could not be inspected; CSV may retain only calculated values from the first worksheet. Review the result."
+      }, { cause: String(error?.message || "") })]
+    };
+  } finally {
+    await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 module.exports = {
   OfficeQualityError,
   inspectXlsxForCsv,
+  inspectEttForCsv,
   validatePresentationHtml,
   visibleBodyText
 };

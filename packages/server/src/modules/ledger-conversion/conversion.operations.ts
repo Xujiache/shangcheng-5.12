@@ -27,7 +27,8 @@ const VERIFIED_ADDITIONAL_RAW_INPUTS = [
   'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
   'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw',
 ]
-const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, ...VERIFIED_ADDITIONAL_RAW_INPUTS, 'ai']
+const VERIFIED_LARGE_RAW_INPUTS = ['fff', 'mef']
+const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, ...VERIFIED_ADDITIONAL_RAW_INPUTS, ...VERIFIED_LARGE_RAW_INPUTS, 'ai']
 const VERIFIED_RAW_OUTPUTS = new Set(['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
 
 // Extended only after the corresponding Linux fixture and quality checks pass.
@@ -39,9 +40,9 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'txt', 'docx', 'pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif',
       'avif', 'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
       ...ADDITIONAL_IMAGE_INPUTS,
-      'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
+      'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub', 'mobi',
       'doc', 'odt', 'rtf',
-      'wps',
+      'wps', 'wpt',
     ],
     targetExtension: 'md',
     kind: 'convert',
@@ -54,7 +55,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'md', 'markdown', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
       ...ADDITIONAL_IMAGE_INPUTS,
-      'txt', 'html', 'htm', 'doc', 'odt', 'rtf', 'pdf',
+      'txt', 'html', 'htm', 'doc', 'odt', 'rtf', 'pdf', 'epub',
       'wpt', 'wps', 'ai',
     ],
     targetExtension: 'docx',
@@ -70,7 +71,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       ...ADDITIONAL_IMAGE_INPUTS,
       'srt', 'vtt', 'ass', 'ssa',
       'md', 'markdown', 'html', 'htm', 'json', 'csv', 'log',
-      'xml', 'yaml', 'yml', 'epub', 'pdf', 'docx', 'doc', 'odt', 'rtf', 'tsv',
+      'xml', 'yaml', 'yml', 'epub', 'mobi', 'pdf', 'docx', 'doc', 'odt', 'rtf', 'tsv',
       'ai', 'wps', 'wpt',
     ],
     targetExtension: 'txt',
@@ -119,7 +120,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'txt', 'md', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml',
       'xlsx', 'xls', 'ods', 'xlsm', 'tsv',
-      'et',
+      'et', 'ett',
     ],
     targetExtension: 'csv',
     kind: 'convert',
@@ -128,7 +129,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:epub',
     label: '文本/表格 → EPUB',
-    inputExtensions: ['txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml'],
+    inputExtensions: ['txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'mobi'],
     targetExtension: 'epub',
     kind: 'convert',
     options: [],
