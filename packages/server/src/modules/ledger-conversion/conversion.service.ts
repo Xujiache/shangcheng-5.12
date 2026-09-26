@@ -325,6 +325,8 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       uploads.map((upload) => upload.extension),
     )
     if (!operation) throw new BizException(BizCode.INVALID_PARAMS, '该转换组合尚未通过 Linux 验证')
+    if (operation.id === 'merge-pdfs' && uploadIds.length < 2)
+      throw new BizException(BizCode.INVALID_PARAMS, '合并 PDF 至少需要两个文件')
     const options = body.options || {}
     if (
       typeof options !== 'object' ||
@@ -335,6 +337,15 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       )
     ) {
       throw new BizException(BizCode.INVALID_PARAMS, '转换选项不正确')
+    }
+    if (operation.id === 'convert:pdf' &&
+      (options.splitMode !== undefined || options.groupSize !== undefined) &&
+      (!uploads.every((upload) => upload.extension === 'pdf') ||
+        !['page', 'group'].includes(String(options.splitMode)) ||
+        (options.splitMode === 'group'
+          ? !/^[1-9]\d{0,2}$/.test(String(options.groupSize))
+          : options.groupSize !== undefined))) {
+      throw new BizException(BizCode.INVALID_PARAMS, 'PDF 拆分选项不正确')
     }
     const job = await this.prisma.$transaction(async (tx) => {
       const created = await tx.ledgerConversionJob.create({

@@ -28,7 +28,8 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'txt', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'gif',
       'avif', 'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
-      'html', 'htm', 'json', 'csv', 'log', 'xml', 'yaml', 'yml', 'epub',
+      'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
+      'doc', 'odt', 'rtf',
     ],
     targetExtension: 'md',
     kind: 'convert',
@@ -40,7 +41,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'md', 'markdown', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
-      'txt', 'html', 'htm',
+      'txt', 'html', 'htm', 'doc', 'odt', 'rtf',
     ],
     targetExtension: 'docx',
     kind: 'convert',
@@ -54,7 +55,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
       'srt', 'vtt', 'ass', 'ssa',
       'md', 'markdown', 'html', 'htm', 'json', 'csv', 'log',
-      'xml', 'yaml', 'yml', 'epub',
+      'xml', 'yaml', 'yml', 'epub', 'docx', 'doc', 'odt', 'rtf', 'tsv',
     ],
     targetExtension: 'txt',
     kind: 'convert',
@@ -79,7 +80,10 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:html',
     label: '文本/电子书 → HTML',
-    inputExtensions: ['txt', 'md', 'markdown', 'json', 'csv', 'log', 'xml', 'yaml', 'yml', 'epub'],
+    inputExtensions: [
+      'txt', 'md', 'markdown', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
+      'docx', 'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp',
+    ],
     targetExtension: 'html',
     kind: 'convert',
     options: [],
@@ -87,7 +91,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:json',
     label: '文本/表格 → JSON',
-    inputExtensions: ['txt', 'md', 'markdown', 'html', 'htm', 'csv', 'log', 'xml', 'yaml', 'yml'],
+    inputExtensions: ['txt', 'md', 'markdown', 'html', 'htm', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml'],
     targetExtension: 'json',
     kind: 'convert',
     options: [],
@@ -95,7 +99,10 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:csv',
     label: '文本/表格 → CSV',
-    inputExtensions: ['txt', 'md', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml'],
+    inputExtensions: [
+      'txt', 'md', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml',
+      'xlsx', 'xls', 'ods',
+    ],
     targetExtension: 'csv',
     kind: 'convert',
     options: [],
@@ -103,25 +110,41 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   {
     id: 'convert:epub',
     label: '文本/表格 → EPUB',
-    inputExtensions: ['txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'log', 'xml', 'yaml', 'yml'],
+    inputExtensions: ['txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml'],
     targetExtension: 'epub',
     kind: 'convert',
     options: [],
   },
   {
     id: 'convert:xlsx',
-    label: 'CSV → Excel',
-    inputExtensions: ['csv'],
+    label: '表格 → Excel',
+    inputExtensions: ['csv', 'tsv', 'xls', 'ods'],
     targetExtension: 'xlsx',
     kind: 'convert',
     options: [],
   },
+  ...([
+    ['odt', ['docx', 'doc', 'rtf']],
+    ['rtf', ['docx', 'doc', 'odt']],
+    ['xls', ['xlsx', 'ods']],
+    ['ods', ['xlsx', 'xls']],
+    ['pptx', ['ppt', 'odp']],
+    ['odp', ['pptx', 'ppt']],
+  ] as [string, string[]][]).map(([target, sources]) => ({
+    id: `convert:${target}`,
+    label: `Office 文档 → ${target.toUpperCase()}`,
+    inputExtensions: sources,
+    targetExtension: target,
+    kind: 'convert' as const,
+    options: [],
+  })),
   {
     id: 'convert:jpg',
     label: '图片/PDF → JPG',
     inputExtensions: [
       'png', 'pdf', 'webp', 'gif', 'avif', 'bmp', 'tiff',
       'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+      'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'jpg',
     kind: 'convert',
@@ -133,6 +156,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'jpg', 'jpeg', 'webp', 'pdf', 'gif', 'avif', 'bmp',
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+      'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'png',
     kind: 'convert',
@@ -151,15 +175,16 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:pdf',
-    label: '图片/Markdown → PDF',
+    label: '图片/文档/压缩包 → PDF',
     inputExtensions: [
       'png', 'jpg', 'jpeg', 'webp', 'md', 'docx', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
-      'txt', 'markdown', 'json', 'log', 'xml', 'yaml', 'yml',
+      'txt', 'markdown', 'json', 'log', 'xml', 'yaml', 'yml', 'pdf', 'zip',
+      'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'csv', 'tsv', 'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'pdf',
     kind: 'convert',
-    options: [],
+    options: ['splitMode', 'groupSize'],
   },
   {
     id: 'images-to-pdf',
@@ -167,6 +192,14 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: ['png', 'jpg', 'jpeg', 'webp'],
     targetExtension: 'pdf',
     kind: 'images-to-pdf',
+    options: [],
+  },
+  {
+    id: 'merge-pdfs',
+    label: '合并 PDF',
+    inputExtensions: ['pdf'],
+    targetExtension: 'pdf',
+    kind: 'merge-pdfs',
     options: [],
   },
   ...AUDIO_FORMATS.map((target) => ({

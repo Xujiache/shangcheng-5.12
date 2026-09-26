@@ -9,7 +9,7 @@ import { assertPrivateConversionBucket } from '../src/modules/ledger-conversion/
 
 describe('ledger conversion gate', () => {
   test('only Linux-observed pairs are advertised', () => {
-    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(39)
+    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(46)
     expect(findConversionOperation('convert:md', ['txt'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['docx'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['gif'])).toBeTruthy()
@@ -33,6 +33,10 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:pdf', ['png'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['md'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['docx'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['zip'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['pdf'])).toMatchObject({
+      options: ['splitMode', 'groupSize'],
+    })
     expect(findConversionOperation('convert:flac', ['mp3'])).toBeTruthy()
     expect(findConversionOperation('convert:flac', ['flac'])).toBeNull()
     expect(findConversionOperation('convert:wma', ['opus'])).toBeTruthy()
@@ -50,7 +54,31 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:tiff', ['webp'])).toBeNull()
     expect(findConversionOperation('images-to-pdf', ['png', 'jpeg'])).toBeTruthy()
     expect(findConversionOperation('images-to-pdf', ['pdf'])).toBeNull()
-    expect(findConversionOperation('merge-pdfs', ['pdf'])).toBeNull()
+    expect(findConversionOperation('merge-pdfs', ['pdf', 'pdf'])).toBeTruthy()
+    expect(findConversionOperation('merge-pdfs', ['png'])).toBeNull()
+  })
+
+  test('advertises the 70 Office pairs verified with Chinese and numeric content', () => {
+    const officePairs: Record<string, string[]> = {
+      docx: ['pdf', 'odt', 'rtf', 'txt', 'html', 'md'],
+      doc: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
+      odt: ['pdf', 'docx', 'rtf', 'txt', 'html', 'md'],
+      rtf: ['pdf', 'docx', 'odt', 'txt', 'html', 'md'],
+      xlsx: ['pdf', 'xls', 'ods', 'csv', 'html'],
+      xls: ['pdf', 'xlsx', 'ods', 'csv', 'html'],
+      ods: ['pdf', 'xlsx', 'xls', 'csv', 'html'],
+      csv: ['pdf', 'xlsx', 'html', 'txt', 'md', 'json', 'epub'],
+      tsv: ['pdf', 'xlsx', 'html', 'txt', 'md', 'json', 'epub'],
+      pptx: ['pdf', 'odp', 'html', 'png', 'jpg'],
+      ppt: ['pdf', 'pptx', 'odp', 'html', 'png', 'jpg'],
+      odp: ['pdf', 'pptx', 'html', 'png', 'jpg'],
+    }
+    expect(Object.values(officePairs).reduce((count, targets) => count + targets.length, 0)).toBe(70)
+    for (const [source, targets] of Object.entries(officePairs)) {
+      for (const target of targets) {
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      }
+    }
   })
 
   test('dedicated conversion bucket rejects anonymous read policy', async () => {
@@ -164,6 +192,40 @@ describe('ledger conversion gate', () => {
       instance.createJob('u1', { operationId: 'convert:md', uploadIds: [42 as any] }),
     ).rejects.toThrow('文件数超限')
     expect(prisma.ledgerConversionUpload.findMany).not.toHaveBeenCalled()
+    await instance.onModuleDestroy()
+  })
+
+  test('requires two PDFs for merge and validates PDF split options', async () => {
+    const prisma = {
+      ledgerConversionUpload: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'a', extension: 'pdf', totalBytes: 12n },
+        ]),
+      },
+      $transaction: jest.fn(),
+    }
+    const instance = service(prisma)
+    await expect(instance.createJob('u1', {
+      operationId: 'merge-pdfs', uploadIds: ['a'],
+    })).rejects.toThrow('至少需要两个文件')
+    for (const options of [
+      { splitMode: 'bogus' },
+      { splitMode: 'group' },
+      { splitMode: 'group', groupSize: '0' },
+      { splitMode: 'group', groupSize: '1000' },
+      { splitMode: 'page', groupSize: '2' },
+    ]) {
+      await expect(instance.createJob('u1', {
+        operationId: 'convert:pdf', uploadIds: ['a'], options,
+      })).rejects.toThrow('PDF 拆分选项不正确')
+    }
+    prisma.ledgerConversionUpload.findMany.mockResolvedValueOnce([
+      { id: 'a', extension: 'png', totalBytes: 12n },
+    ])
+    await expect(instance.createJob('u1', {
+      operationId: 'convert:pdf', uploadIds: ['a'], options: { splitMode: 'page' },
+    })).rejects.toThrow('PDF 拆分选项不正确')
+    expect(prisma.$transaction).not.toHaveBeenCalled()
     await instance.onModuleDestroy()
   })
 
