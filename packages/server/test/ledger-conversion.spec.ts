@@ -122,7 +122,7 @@ describe('ledger conversion gate', () => {
   test('limits newly sampled camera RAW inputs to verified RGB outputs', () => {
     const sources = [
       'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
-      'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw', 'x3f',
+      'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw',
     ]
     for (const source of sources) {
       for (const target of ['png', 'jpg', 'webp'])
@@ -130,7 +130,7 @@ describe('ledger conversion gate', () => {
       for (const target of ['pdf', 'jp2', 'jxl', 'txt', 'md', 'docx', 'mp4', 'webm'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
     }
-    for (const source of ['cr3', 'fff', 'mef'])
+    for (const source of ['cr3', 'fff', 'mef', 'x3f'])
       expect(findConversionOperation('convert:png', [source])).toBeNull()
   })
 

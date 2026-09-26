@@ -24,7 +24,7 @@ const CROSS_IMAGE_INPUTS = ['gif', 'avif', 'bmp', 'tiff', 'ico', 'tga', 'jp2', '
 const VERIFIED_RAW_INPUTS = ['cr2', 'dng']
 const VERIFIED_RAW_RGB_INPUTS = [
   'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
-  'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw', 'x3f',
+  'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw',
 ]
 const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, ...VERIFIED_RAW_RGB_INPUTS, 'ai']
 const VERIFIED_RAW_OUTPUTS = new Set(['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
