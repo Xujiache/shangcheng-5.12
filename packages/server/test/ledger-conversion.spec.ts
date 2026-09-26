@@ -119,6 +119,21 @@ describe('ledger conversion gate', () => {
     }
   })
 
+  test('limits newly sampled camera RAW inputs to verified RGB outputs', () => {
+    const sources = [
+      'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
+      'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw', 'x3f',
+    ]
+    for (const source of sources) {
+      for (const target of ['png', 'jpg', 'webp'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
+      for (const target of ['pdf', 'jp2', 'jxl', 'txt', 'md', 'docx', 'mp4', 'webm'])
+        expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
+    }
+    for (const source of ['cr3', 'fff', 'mef'])
+      expect(findConversionOperation('convert:png', [source])).toBeNull()
+  })
+
   test('opens only content-checked Kingsoft template conversions', () => {
     const checkedPairs: Record<string, string[]> = {
       wps: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],

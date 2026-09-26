@@ -22,7 +22,11 @@ const IMAGE_OUTPUT_FORMATS = ['gif', 'avif', 'tiff', 'ico', 'bmp', 'tga', 'jp2',
 const ADDITIONAL_IMAGE_INPUTS = ['jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'j2k', 'psd']
 const CROSS_IMAGE_INPUTS = ['gif', 'avif', 'bmp', 'tiff', 'ico', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
 const VERIFIED_RAW_INPUTS = ['cr2', 'dng']
-const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, 'ai']
+const VERIFIED_RAW_RGB_INPUTS = [
+  'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
+  'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw', 'x3f',
+]
+const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, ...VERIFIED_RAW_RGB_INPUTS, 'ai']
 const VERIFIED_RAW_OUTPUTS = new Set(['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
 
 // Extended only after the corresponding Linux fixture and quality checks pass.
