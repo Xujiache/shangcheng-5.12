@@ -1,6 +1,6 @@
 # 格式转换迁移验收记录（2026-09-24）
 
-2026-09-24 基线：当时最新 `origin/feat/ledger-mp` 的 `a5bf9a8a358ae4ddb3974af022bea21332a9772d`；独立分支 `codex/flyingmouse-mp`。下表记录当日状态；后续生产三组格式部署见文末 2026-09-26 记录。
+当前生产状态见文末“2026-09-26 `fcdbffc` 部署与公网抽样验收”。以下首表保留 2026-09-24 历史基线：当时最新 `origin/feat/ledger-mp` 的 `a5bf9a8a358ae4ddb3974af022bea21332a9772d`；独立分支 `codex/flyingmouse-mp`。
 
 | 检查 | 结果 | 证据/约束 |
 | --- | --- | --- |
@@ -128,3 +128,20 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 新镜像在无网络、只读根目录、4 GiB 内存限制的一次性容器中验证 HTML→PDF、TSV→CSV，以及 XLSM→PDF/CSV/HTML；XLSM 三组 CLI 结果均带 `XLSM_MACROS_OMITTED`。LibreOffice 每次使用独立配置并写入 `DisableMacrosExecution=true`；对 DOCX→PDF、PPTX→PDF 做过隔离回归。带 VBA 的 XLSM 测试件只加宽第一列，`vbaProject.bin` 哈希保持不变。未执行真实恶意宏试验，XLSM→XLSX/XLS/ODS 的宏保真未验收，仍未开放。
 - 公网 HTTPS 的 6 组新增格式均通过上传、转换、鉴权下载、跨账号拒绝和删除；PDF 提取文本、TSV/CSV 多列及单元格内换行、XLSM 中文/数值/公式计算结果和用户可见宏提示均已核对。首次使用窄列 XLSM 时，PDF 如源表格视觉效果一样裁掉一个汉字；加宽原测试件列后 PDF 完整显示，未据此修改业务文件。另重放 HEIC→PNG、数字 PDF→XLSX、PPTX→PNG 和 Markdown→PDF 回归通过。测试脚本为服务器 `engine-unlock-test/b1-production-http.cjs`。
 - 测试结束后运行中的任务 0、测试账号 0；原有 3 条成功用户任务未动。小程序源码已修复返回页面后能力和限额不刷新的问题，格式流程 22/22、下载测试和类型检查通过；Mac 锁屏且微信开发者工具服务端口关闭，官方编译、上传与真机验证尚未完成。源码提交不会自动更新手机上的正式版。
+
+## 2026-09-26 `a3785dc`/`d94c072` 生产格式复核（历史）
+
+- 生产 API 仓库提交为 `a3785dc`，worker 使用 `jiujiu-conversion-worker:d94c072`。复核时 worker 运行中、重启 0 次，公网 `/health` 与本机 `/health/ready` 均返回 200。鉴权能力接口返回 46 项操作、950 个展示条目，对应原版目录中 945 个不同输入→目标组合；单文件 96,000,000 字节（文本类 64 MiB）、单批 256 MiB、最多 100 个文件，`deviceVerified=false`。
+- 公网 HTTPS 的 RAW、CR3、EPUB→PDF 测试共 114/114 次转换通过：`engine-unlock-test/release-candidates-http-a3785dc.log` 前 112 次均有 `pair_ok`，随后脚本把无样式 `sample.epub` 没有样式损失警告误判为失败，转换本身没有失败；`epub-sample-http.log` 与 `epub-table-http.log` 分别补跑并通过这两组。112 次包含 13 种 RAW 输入各 7 个输出、两份 CR3 样本各 10 个输出和一份 EPUB→PDF；114 是测试次数，不是 114 个不同格式组合。
+- 旧 Office 格式公网测试 16/16 次通过，见 `engine-unlock-test/office-pairs-http-a3785dc.log`：两份 DPT 的 ODP/PNG/JPG 共 6 次，WPT 的 ODT/RTF/TXT/HTML 共 4 次，ET 的 XLS/ODS 共 2 次，两份 ETT 的 XLS/ODS 共 4 次。日志验证转换与下载产物；这不等于任意旧文档版式已与桌面原版一致。
+- 本地已有 MOBI、FFF、MEF、EPUB→DOCX、WPT→Markdown、ETT→CSV 的进一步修复或隔离样本，但这些仍是**待发布候选**，没有计入 `a3785dc`/`d94c072` 的生产能力。DPT→HTML 实测只剩文字、丢失图片及布局，仍关闭；含 SVG 排版的 EPUB 明确拒绝，OFD 中文和其他未验证路径也不得计为支持。
+- 原版目录的 1174 组是候选集合，当时有 229 组未开放；已开放的 945 组没有逐项通过真实文件质量对比。当时微信小程序官方编译、正式版上传和真机效果尚未验收，源码与生产服务更新不会自动更新手机上的小程序版本。
+
+## 2026-09-26 `fcdbffc` 部署与公网抽样验收
+
+- 生产 API 与 worker 已部署 `fcdbffc`。worker 镜像 `jiujiu-conversion-worker:fcdbffc` 的镜像 ID 为 `sha256:526eb07727d15c71431d054b3f305132ba4f3132ec650f34924b824bb8d148ef`；复核时 worker 运行中、重启 0 次，端口 3002 对外 `/health` 返回 200。进程健康与下述转换链路分别核验。
+- 从提交 `fcdbffc` 的 `packages/server/src/modules/ledger-conversion/conversion.operations.ts` 重算：46 项操作、962 个展示条目、957 个不同输入→目标组合、94 种输入后缀、44 种目标后缀；重复的 5 个展示条目是 PNG/JPG/JPEG/WebP→PDF 及 PDF→PDF。相比上一版的 945 个不同组合，新增 MOBI→TXT/Markdown/EPUB、FFF/MEF→PNG/JPG/WebP、EPUB→DOCX、WPT→Markdown 和 ETT→CSV，共 12 组。原版目录 1174 组中仍有 217 组未开放；白名单数量不等于逐项质量验收。
+- 新镜像的隔离 RAW smoke：真实 FFF/MEF→PNG/JPG/WebP 与 CR2/DNG→JPG 共 8/8 个正向样本通过，4/4 个预期失败及清理检查通过；峰值 cgroup 内存 924.1 MiB。证据为服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/fcdbffc-raw-smoke/smoke-20260926T040456Z.{jsonl,stderr,meta}`。这只覆盖所列样本和输出，不证明其他大 RAW 格式或大批量任务。
+- 新镜像的隔离电子书/Office smoke：13 次成功转换，包括 11 次新增组合（两份 MOBI 各转 TXT/Markdown/EPUB、两份 EPUB→DOCX、WPT→Markdown、两份 ETT→CSV）及 2 次基线 EPUB→TXT 内容对比；另有含 SVG 章节的 EPUB→DOCX（`EPUB_SVG_UNSUPPORTED`）与 KF8 MOBI 两次预期拒绝，以及 4 项内容/目录检查，合计 19/19 检查通过。证据为服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/fcdbffc-isolated-smoke/runs/20260926T040823Z/{smoke.log,summary.json}`。MOBI 仅提取文本，内嵌图片与版式不保留。
+- 公网 HTTPS 脚本 `engine-unlock-test/release-ebook-office-raw-http.cjs` 最终运行记录 `selected_cases 17 of 17`、17 条 `pair_ok` 和 `cleanup_ok`。17 次包括两份 MOBI 各转 TXT/Markdown/EPUB（6 次）、两份 EPUB→DOCX（2 次）、WPT→Markdown（1 次）、两份 ETT→CSV（2 次）、FFF/MEF 各转 PNG/JPG/WebP（6 次），覆盖 12 组不同输入→目标组合。证据为服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/engine-unlock-test/release-ebook-office-raw-http-fcdbffc.log`。首次脚本运行因测试 ZIP 的 `[Content_Types].xml` glob 写法失败；修正脚本后完整重跑通过，不能将首次断言错误记作转换失败。
+- 本次公网抽样不代表 957 组均已实测，也不代表真实电子书、Office 文档和大 RAW 的全部内容或版式质量。上一节 `a3785dc`/`d94c072` 的 114/114 RAW/EPUB 与 16/16 旧 Office 公网记录保留为历史结果。小程序官方编译、正式版上传、真机效果及整镜像许可验收仍未完成。

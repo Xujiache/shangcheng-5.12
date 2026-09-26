@@ -2,7 +2,9 @@
 
 ## 当前状态
 
-源码目录列出 1174 个输入→输出候选。当前生产提交 `a7e6dc0` 的能力接口开放 46 项操作、742 个输入→输出条目，其中 737 个是目录中的不同组合。生产公网复测见 `VALIDATION.md`。静态 HTML/HTM→PDF 已用英文全书和中文页面核验；JavaScript 动态生成的内容不会执行。TSV→CSV 的列结构缺陷已修复；XLSM→PDF/CSV/HTML 使用禁宏的独立 LibreOffice 配置，并提示静态导出会丢失宏和公式表达式。**这不等于 1174 组全部可用**：RAW、AI 等缺真实样本，扫描 PDF 的结构化引擎超过现有 4 GiB worker 限额，MOBI、OFD 中文和 EPUB3 等已发现错误；桌面 GUI 质量语料、小程序真机和整镜像许可验收仍未完成。PDF 加密选项仍关闭。文档→Markdown 的图片附件与主文件一起打包成 ZIP，并拒绝符号链接附件。
+源码目录列出 1174 个输入→输出候选。2026-09-26 当前生产 API 与 worker 已部署 `fcdbffc`，worker 镜像为 `jiujiu-conversion-worker:fcdbffc`；公网 `/health` 返回 200，worker 运行中且重启 0 次。该提交的后端白名单有 46 项操作、962 个展示条目、957 个不同输入→目标组合，涉及 94 种输入和 44 种目标后缀；这些是源码统计。新增电子书、Office 和 RAW 组合的公网 HTTPS 抽样转换 17/17 次通过，隔离镜像证据和公网测试范围见 `VALIDATION.md`。单文件上限 96,000,000 字节（文本类 64 MiB）、单批 256 MiB、最多 100 个。**1174 是原版目录候选，不代表已逐项支持或验收**；当前还有 217 个目录组合未开放，已列入白名单的 957 组也未逐项实测。扫描 PDF 的结构化引擎仍超过当前 4 GiB worker 限额；OFD 中文、部分 EPUB3 和桌面 GUI 质量语料仍待验证，小程序真机及整镜像许可验收未完成。PDF 加密选项继续关闭。文档→Markdown 的图片附件与主文件一起打包成 ZIP，并拒绝符号链接附件。
+
+`fcdbffc` 将 MOBI→TXT/Markdown/EPUB、FFF/MEF→PNG/JPG/WebP、EPUB→DOCX、WPT→Markdown、ETT→CSV 加入白名单。MOBI 仅提取文本，内嵌图片和原版式不保留；KF8 MOBI 被拒绝，含 SVG 章节的 EPUB 在 Markdown/HTML/PDF/DOCX 导出时被拒绝。公网 17 个样本覆盖上述 12 组不同组合，测试后清理通过；手机上的正式版小程序未因此自动更新。
 
 2026-09-26 初次生产部署开放十七组格式及一项图片合成操作；此后逐步扩展。PM2 API 读取 `/etc/jiujiu/server.env`，Docker 容器 `jiujiu-conversion-worker-production` 使用 `deploy_default` 网络和权限为 600 的 `/etc/jiujiu/conversion-worker.env`。worker 配置为 `unless-stopped`、只读根目录、3 GiB 临时目录、4 GiB 内存及 2 CPU 限额。生产数据库备份、线上 HTTPS 转换及清理证据见 `VALIDATION.md`。
 
