@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 741,
+    "passed": 747,
     "failed": 1,
-    "incomplete": 432
+    "incomplete": 426
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -7980,56 +7980,62 @@
     {
       "input": "ppt",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ac777654402e5e43ae312e2a8be5f4546401ca3db6230d045b60768c5a62520b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "ppt",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ac777654402e5e43ae312e2a8be5f4546401ca3db6230d045b60768c5a62520b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "ppt",
       "output": "odp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ac777654402e5e43ae312e2a8be5f4546401ca3db6230d045b60768c5a62520b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "ppt",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ac777654402e5e43ae312e2a8be5f4546401ca3db6230d045b60768c5a62520b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "ppt",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ac777654402e5e43ae312e2a8be5f4546401ca3db6230d045b60768c5a62520b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "ppt",
       "output": "pptx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ac777654402e5e43ae312e2a8be5f4546401ca3db6230d045b60768c5a62520b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "pptx",

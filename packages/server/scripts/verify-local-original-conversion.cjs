@@ -1297,10 +1297,18 @@ async function main() {
       const odp = join(presentationWork, 'slides.odp')
       execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', pptx,
         '--to', 'odp', '--output', odp, '--json'], { env: originalCliEnv() })
+      const ppt = join(presentationWork, 'slides.ppt')
+      execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
+        [`-env:UserInstallation=file://${join(presentationWork, 'legacy-profile')}`,
+          '--headless', '--convert-to', 'ppt:MS PowerPoint 97', '--outdir',
+          presentationWork, pptx])
+      if (!(await readFile(ppt)).subarray(0, 8).equals(Buffer.from('d0cf11e0a1b11ae1', 'hex')))
+        throw new Error('Legacy PPT fixture is not an OLE PowerPoint file')
       const unzip = (file, name) => execFileSync('unzip', ['-p', file, name], { encoding: 'utf8' })
       const labels = ['量窗助手', '12345', '经营分析', '订单数量', '37']
-      for (const inputExtension of ['pptx', 'odp']) {
-        const input = inputExtension === 'pptx' ? pptx : odp
+      for (const inputExtension of (process.env.CONVERSION_PRESENTATIONS === 'ppt'
+        ? ['ppt'] : ['pptx', 'odp', 'ppt'])) {
+        const input = { pptx, odp, ppt }[inputExtension]
         const fixture = await readFile(input)
         const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
           operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
