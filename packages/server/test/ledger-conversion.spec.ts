@@ -9,7 +9,7 @@ import { assertPrivateConversionBucket } from '../src/modules/ledger-conversion/
 
 describe('ledger conversion gate', () => {
   test('only Linux-observed pairs are advertised', () => {
-    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(34)
+    expect(VERIFIED_CONVERSION_OPERATIONS).toHaveLength(39)
     expect(findConversionOperation('convert:md', ['txt'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['docx'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['gif'])).toBeTruthy()
@@ -42,6 +42,9 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:gif', ['m4s'])).toBeTruthy()
     expect(findConversionOperation('convert:ass', ['vtt'])).toBeTruthy()
     expect(findConversionOperation('convert:txt', ['ssa'])).toBeTruthy()
+    expect(findConversionOperation('convert:epub', ['yaml'])).toBeTruthy()
+    expect(findConversionOperation('convert:xlsx', ['csv'])).toBeTruthy()
+    expect(findConversionOperation('convert:pdf', ['html'])).toBeNull()
     expect(findConversionOperation('convert:jxl', ['webp'])).toBeTruthy()
     expect(findConversionOperation('convert:tiff', ['png'])).toBeTruthy()
     expect(findConversionOperation('convert:tiff', ['webp'])).toBeNull()
