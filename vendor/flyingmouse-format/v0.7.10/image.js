@@ -10,7 +10,7 @@ const path = require("path");
 const zlib = require("zlib");
 const { finished } = require("stream/promises");
 const sharp = require("sharp");
-const { FFMPEG_PATH, DCRAW_PATH, rawInput } = require("./config");
+const { FFMPEG_PATH, DCRAW_PATH, LIBRAW_DCRAW_PATH, rawInput } = require("./config");
 const RAW_EXTENSIONS = rawInput;
 const RAW_MAX_STATIC_PIXELS = 20_000_000;
 const FFMPEG_IMAGE_EXTENSIONS = new Set(["tga", "jp2", "j2k", "jxl", "qoi", "ppm"]);
@@ -286,6 +286,9 @@ async function prepareImageInput(inputPath, inputName) {
     if (!DCRAW_PATH) {
       throw new Error("RAW 解码引擎（dcraw）不可用：未找到 dcraw.exe。");
     }
+    if (designExt === "cr3" && !LIBRAW_DCRAW_PATH) {
+      throw new Error("CR3 解码引擎（LibRaw）不可用。");
+    }
     const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-raw-input-"));
     try {
       // dcraw 不支持 -O。复制到可写临时目录后，先只读元数据，避免超大 RAW 在像素检查前解码耗尽内存。
@@ -309,15 +312,19 @@ async function prepareImageInput(inputPath, inputName) {
       if (pixels > RAW_MAX_STATIC_PIXELS) {
         throw new ResourceLimitError("IMAGE_PIXELS_EXCEEDED", { pixels, limitMegapixels: RAW_MAX_STATIC_PIXELS / 1_000_000 });
       }
-      // dcraw -T 输出 16-bit TIFF；-o 1 = sRGB 色彩空间（默认 ACES 线性会偏灰，勿去掉）
-      await run(DCRAW_PATH, ["-T", "-o", "1", tempInput], { timeout: 1000 * 60 * 5 });
-      const stem = path.basename(tempInput, path.extname(tempInput));
-      const tiffCandidates = [
-        path.join(tempDir, `${stem}.tiff`),
-        path.join(tempDir, `${stem}.tif`)
-      ];
-      const tiffPath = tiffCandidates.find((c) => fs.existsSync(c));
-      if (!tiffPath) throw new Error("RAW 图片解码失败：无法从该文件提取像素数据。");
+      // dcraw 无法正确解码 Canon CR3；LibRaw 的 dcraw_emu 单独处理此格式。
+      // 两者均输出 sRGB TIFF，后续图片链路无需分流。
+      let tiffPath;
+      if (designExt === "cr3") {
+        tiffPath = path.join(tempDir, "input.tiff");
+        await run(LIBRAW_DCRAW_PATH, ["-T", "-o", "1", "-w", "-Z", tiffPath, tempInput], { timeout: 1000 * 60 * 5 });
+      } else {
+        await run(DCRAW_PATH, ["-T", "-o", "1", "-w", tempInput], { timeout: 1000 * 60 * 5 });
+        const stem = path.basename(tempInput, path.extname(tempInput));
+        tiffPath = [path.join(tempDir, `${stem}.tiff`), path.join(tempDir, `${stem}.tif`)]
+          .find((candidate) => fs.existsSync(candidate));
+      }
+      if (!tiffPath || !fs.existsSync(tiffPath)) throw new Error("RAW 图片解码失败：无法从该文件提取像素数据。");
       return { inputPath: tiffPath, tempDir };
     } catch (error) {
       await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});

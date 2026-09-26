@@ -11,8 +11,8 @@ const { test } = require("node:test");
 const sharp = require("sharp");
 
 const { categoryForExt, targetsForExt } = require("../utils");
-const { rawInput, DCRAW_PATH } = require("../config");
-const { prepareImageInput } = require("../image");
+const { rawInput, DCRAW_PATH, LIBRAW_DCRAW_PATH } = require("../config");
+const { convertImage, prepareImageInput } = require("../image");
 
 const RAW_EXTS = ["cr2", "cr3", "crw", "nef", "arw", "dng", "raf", "rw2", "orf", "pef", "srw", "3fr", "erf", "fff", "iiq", "kdc", "mef", "mrw", "x3f"];
 
@@ -95,7 +95,7 @@ test("RAW 预检拒绝无效和超 20MP 元数据，解码失败也清理临时�
     const script = `const utils = require(${JSON.stringify(path.join(engineDir, "utils.js"))});
 utils.run = async (_command, args) => {
   if (args[0] === '-i') return { stdout: ${JSON.stringify(probe)}, stderr: '' };
-  require('fs').writeFileSync(${JSON.stringify(marker)}, 'called');
+  require('fs').writeFileSync(${JSON.stringify(marker)}, JSON.stringify({ command: _command, args }));
   throw new Error('decode failed');
 };
 require(${JSON.stringify(path.join(engineDir, "image.js"))}).prepareImageInput(${JSON.stringify(source)})
@@ -109,9 +109,101 @@ require(${JSON.stringify(path.join(engineDir, "image.js"))}).prepareImageInput($
     assert.equal(observed.errorCode, expectedCode);
     if (expectedCode === "IMAGE_PIXELS_EXCEEDED") assert.equal(observed.limit, 20);
     assert.equal(await fsp.stat(marker).then(() => true, () => false), decodeCalled);
+    if (decodeCalled) {
+      const call = JSON.parse(await fsp.readFile(marker, "utf8"));
+      assert.deepEqual(call.args.slice(0, 4), ["-T", "-o", "1", "-w"]);
+    }
     assert.deepEqual((await fsp.readdir(temp)).filter((name) => name.startsWith("flyingmouse-raw-input-")), [],
       "失败后的 RAW 临时目录必须删除");
   }
+});
+
+test("CR3 在旧 dcraw 尺寸预检后才调用 LibRaw，失败时清理临时目录", async (t) => {
+  const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "cr3-preflight-test-"));
+  t.after(() => fsp.rm(scratch, { recursive: true, force: true }));
+  const source = path.join(scratch, "fake.cr3");
+  const temp = path.join(scratch, "temp");
+  const libraw = path.join(scratch, "dcraw_emu");
+  const marker = path.join(scratch, "decode-called");
+  await fsp.writeFile(source, "fake CR3");
+  await fsp.writeFile(libraw, "stub");
+  await fsp.mkdir(temp);
+  for (const [probe, expectedCode, decodeCalled] of [
+    ["Camera: Unknown\n", "IMAGE_METADATA_INVALID", false],
+    ["Output size: 6000 x 4000\n", "IMAGE_PIXELS_EXCEEDED", false],
+    ["Output size: 3408 x 2272\n", null, true]
+  ]) {
+    await fsp.rm(marker, { force: true });
+    const engineDir = path.join(__dirname, "..");
+    const script = `const utils = require(${JSON.stringify(path.join(engineDir, "utils.js"))});
+utils.run = async (command, args) => {
+  if (args[0] === '-i') return { stdout: ${JSON.stringify(probe)}, stderr: '' };
+  require('fs').writeFileSync(${JSON.stringify(marker)}, JSON.stringify({ command, args }));
+  throw new Error('decode failed');
+};
+require(${JSON.stringify(path.join(engineDir, "image.js"))}).prepareImageInput(${JSON.stringify(source)})
+  .then(() => process.exit(2), e => { console.log(JSON.stringify({ errorCode: e.errorCode || null })); });`;
+    const result = spawnSync(process.execPath, ["-e", script], {
+      env: {
+        ...process.env,
+        FLYINGMOUSE_DCRAW_PATH: process.execPath,
+        FLYINGMOUSE_LIBRAW_DCRAW_PATH: libraw,
+        TMPDIR: temp
+      },
+      encoding: "utf8", timeout: 10_000
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const observed = JSON.parse(result.stdout.trim().split(/\r?\n/).filter((line) => line.startsWith("{")).at(-1));
+    assert.equal(observed.errorCode, expectedCode);
+    assert.equal(await fsp.stat(marker).then(() => true, () => false), decodeCalled);
+    if (decodeCalled) {
+      const call = JSON.parse(await fsp.readFile(marker, "utf8"));
+      assert.equal(call.command, libraw);
+      assert.deepEqual(call.args.slice(0, 5), ["-T", "-o", "1", "-w", "-Z"]);
+      assert.equal(path.basename(call.args[5]), "input.tiff");
+    }
+    assert.deepEqual((await fsp.readdir(temp)).filter((name) => name.startsWith("flyingmouse-raw-input-")), []);
+  }
+});
+
+test("两张真实 CR3 由 LibRaw 解出不同的非空画面", {
+  skip: !DCRAW_PATH || !LIBRAW_DCRAW_PATH || !process.env.FLYINGMOUSE_CR3_FIXTURE_DIR
+}, async (t) => {
+  const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "cr3-output-test-"));
+  t.after(() => fsp.rm(scratch, { recursive: true, force: true }));
+  const samples = [];
+  for (const [name, target] of [["cr3.cr3", "png"], ["cr3raw.cr3", "jpg"]]) {
+    const source = path.join(process.env.FLYINGMOUSE_CR3_FIXTURE_DIR, name);
+    const prepared = await prepareImageInput(source);
+    try {
+      const metadata = await sharp(prepared.inputPath).metadata();
+      assert.equal(metadata.width, 3407);
+      assert.equal(metadata.height, 2271);
+      const pixels = await sharp(prepared.inputPath).resize(64, 64).removeAlpha().raw().toBuffer();
+      const levels = new Set(pixels);
+      assert.ok(levels.size > 128, `${name} 画面不应是黑图或纯色`);
+      samples.push(pixels);
+    } finally {
+      await fsp.rm(prepared.tempDir, { recursive: true, force: true });
+    }
+    const output = path.join(scratch, `${name}.${target}`);
+    await convertImage(source, output, target);
+    const converted = await sharp(output).metadata();
+    assert.equal(converted.width, 3407);
+    assert.equal(converted.height, 2271);
+  }
+  assert.notDeepEqual(samples[0], samples[1], "两张原片应解出不同像素");
+});
+
+test("截断的真实 CR3 不得返回转换结果", {
+  skip: !DCRAW_PATH || !LIBRAW_DCRAW_PATH || !process.env.FLYINGMOUSE_CR3_FIXTURE_DIR
+}, async (t) => {
+  const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "cr3-truncated-test-"));
+  t.after(() => fsp.rm(scratch, { recursive: true, force: true }));
+  const original = await fsp.readFile(path.join(process.env.FLYINGMOUSE_CR3_FIXTURE_DIR, "cr3raw.cr3"));
+  const truncated = path.join(scratch, "truncated.cr3");
+  await fsp.writeFile(truncated, original.subarray(0, 1024 * 1024));
+  await assert.rejects(prepareImageInput(truncated));
 });
 
 test("真实 CR2/DNG 在解码前通过尺寸预检", { skip: !DCRAW_PATH || !process.env.FLYINGMOUSE_RAW_FIXTURE_DIR }, async () => {

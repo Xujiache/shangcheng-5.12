@@ -246,6 +246,16 @@ async function convertText(inputPath, outputPath, inputExt, target, originalName
       } finally {
         await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
       }
+    } else if (source === "html") {
+      // Direct LibreOffice HTML→PDF drops the first content block on short pages.
+      const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-htmlpdf-"));
+      const odtPath = path.join(tempDir, "converted.odt");
+      try {
+        await convertWithLibreOffice(inputPath, odtPath, originalName, "odt");
+        await convertWithLibreOffice(odtPath, outputPath, "converted.odt", "pdf");
+      } finally {
+        await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      }
     } else {
       await convertWithLibreOffice(inputPath, outputPath, originalName, "pdf");
     }

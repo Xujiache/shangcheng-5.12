@@ -7,7 +7,8 @@ const os = require("node:os");
 const { Readable } = require("node:stream");
 const { pipeline } = require("node:stream/promises");
 const yazl = require("yazl");
-const { convertEpubToText, convertEpubToMarkdown, convertEpubToHtml, convertTextToEpub, parseMobiText } = require("../ebook");
+const sharp = require("sharp");
+const { convertEpubToText, convertEpubToMarkdown, convertEpubToHtml, convertEpubViaLibreOffice, convertTextToEpub, fitEpubPdfImages, parseMobiText } = require("../ebook");
 
 async function makeEpub(filePath, options = {}) {
   const zip = new yazl.ZipFile();
@@ -59,6 +60,35 @@ test("EPUB HTML and Markdown keep raster image bytes; missing image resources ar
   assert.match(await fsp.readFile(md, "utf8"), /!\[图片\]\(data:image\/png;base64,iVBOR/);
   await makeEpub(epub, { image: true, missingImage: true });
   await assert.rejects(convertEpubToHtml(epub, path.join(dir, "missing.html")), { code: "EPUB_IMAGE_MISSING" });
+});
+
+test("EPUB PDF preparation fits a large cover without changing small images or their bytes", async () => {
+  const cover = await sharp({ create: { width: 800, height: 1104, channels: 3, background: "#17684b" } }).png().toBuffer();
+  const icon = await sharp({ create: { width: 20, height: 20, channels: 3, background: "#17684b" } }).png().toBuffer();
+  const coverTag = `<img alt="封面" src="data:image/png;base64,${cover.toString("base64")}">`;
+  const iconTag = `<img alt="图标" src="data:image/png;base64,${icon.toString("base64")}">`;
+  const prepared = await fitEpubPdfImages(`${coverTag}${iconTag}`);
+  assert.match(prepared, /alt="封面"[^>]* width="600" height="828">/);
+  assert.ok(prepared.includes(`src="data:image/png;base64,${cover.toString("base64")}"`));
+  assert.ok(prepared.includes(iconTag));
+});
+
+test("EPUB PDF passes through ODT so the first HTML block survives LibreOffice", async (t) => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "epub-pdf-test-"));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const epub = path.join(dir, "book.epub"), pdf = path.join(dir, "book.pdf");
+  await makeEpub(epub);
+  const calls = [];
+  t.mock.method(require("../office-convert"), "convertWithLibreOffice", async (input, output, name, target) => {
+    calls.push({ input, name, target });
+    if (target === "odt") assert.match(await fsp.readFile(input, "utf8"), /第一章/);
+    if (target === "pdf") assert.equal(await fsp.readFile(input, "utf8"), "odt-stub");
+    await fsp.writeFile(output, `${target}-stub`);
+  });
+  await convertEpubViaLibreOffice(epub, pdf, "pdf");
+  assert.deepEqual(calls.map(({ target }) => target), ["odt", "pdf"]);
+  assert.equal(calls[1].name, "book.odt");
+  assert.equal(await fsp.readFile(pdf, "utf8"), "pdf-stub");
 });
 
 test("plain text EPUB generation escapes markup and round-trips its original text", async (t) => {

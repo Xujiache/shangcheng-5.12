@@ -2,9 +2,19 @@
   "base": "source-manifest.json",
   "files": [
     {
+      "path": "config.js",
+      "size": 11630,
+      "sha256": "cb919180cbee7917d1d401e969373c25e977f55a535abdb17128bf1872f8d5cb"
+    },
+    {
+      "path": "ebook.js",
+      "size": 31027,
+      "sha256": "f97d2b2d675d8bb3972f51db19a7c5beea51814e0da130154c071596fb19cfcc"
+    },
+    {
       "path": "image.js",
-      "size": 29379,
-      "sha256": "6ff2700d4e9e83e555de554f96adf9e9181201d132b2e10b52fcbd22ea9635b8"
+      "size": 29817,
+      "sha256": "9e9f994af8b5af331465cb36be26682fcfeb96eb0f54ef4a2ad11c01b4e401d3"
     },
     {
       "path": "office-convert.js",
@@ -27,6 +37,11 @@
       "sha256": "538bf3f5e5eba22ff17c41660ab037ebdfbe5223ad458efcedecfba50c7886dd"
     },
     {
+      "path": "tests/ebook-integrity.test.js",
+      "size": 8378,
+      "sha256": "223ce133a91da6919cf6136bc3339b8e9d9ccb8b7c1af87fdebbf3277c285f1e"
+    },
+    {
       "path": "tests/image-conversion.test.js",
       "size": 9416,
       "sha256": "410e27d15278ef73972a07fc9be06b5d79845a5bbfbee51f49631a8eeda08648"
@@ -43,13 +58,13 @@
     },
     {
       "path": "tests/raw-input.test.js",
-      "size": 6993,
-      "sha256": "0db3dcab1271a33874cc7926cf65fa34a915d64452040eca8775bc89e0861214"
+      "size": 11669,
+      "sha256": "3f430f7b1aa8495109a904242e74a72550472109fe8274fd22c717055b999ff2"
     },
     {
       "path": "tests/text-conversion-integration.test.js",
-      "size": 13053,
-      "sha256": "d7e9350a64ca115feb04b84865c126b8067de9712b0e194b1f0152e988692949"
+      "size": 14945,
+      "sha256": "dd527d3a617833eff526fcd0866975bdaf4823a623ab80a612c871be69be3d20"
     },
     {
       "path": "text-conversion.js",
@@ -58,8 +73,8 @@
     },
     {
       "path": "text-docx.js",
-      "size": 16190,
-      "sha256": "3ac9c5e8ff9da17a2835876220488018d982bdf04cc3b73edda9c7bde9422ac4"
+      "size": 16740,
+      "sha256": "cfc637c5b30cf1a42d39f770c39da15cf0af574e7312d99fb64af1d9ad9307c4"
     }
   ]
 }

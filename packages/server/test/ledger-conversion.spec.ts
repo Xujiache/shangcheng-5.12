@@ -119,19 +119,24 @@ describe('ledger conversion gate', () => {
     }
   })
 
-  test('limits newly sampled camera RAW inputs to verified RGB outputs', () => {
+  test('limits newly sampled camera RAW inputs to verified image outputs', () => {
     const sources = [
-      'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
+      'cr3', 'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
       'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw',
     ]
     for (const source of sources) {
-      for (const target of ['png', 'jpg', 'webp'])
+      for (const target of ['png', 'jpg', 'webp', 'gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
       for (const target of ['pdf', 'jp2', 'jxl', 'txt', 'md', 'docx', 'mp4', 'webm'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
     }
-    for (const source of ['cr3', 'fff', 'mef', 'x3f'])
+    for (const source of ['fff', 'mef', 'x3f'])
       expect(findConversionOperation('convert:png', [source])).toBeNull()
+  })
+
+  test('allows checked EPUB to PDF while keeping unverified EPUB to Word closed', () => {
+    expect(findConversionOperation('convert:pdf', ['epub'])).toBeTruthy()
+    expect(findConversionOperation('convert:docx', ['epub'])).toBeNull()
   })
 
   test('opens only content-checked Kingsoft template conversions', () => {

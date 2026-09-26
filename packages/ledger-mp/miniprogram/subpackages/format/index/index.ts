@@ -32,7 +32,7 @@ const ext = (name: string) => {
 }
 function visualKind(name: string) {
   const extension = ext(name)
-  if (/^(png|jpe?g|jpe|jfif|webp|gif|bmp|tiff?|svg|heic|heif|avif|ico|tga|jp2|j2k|jxl|qoi|ppm|psd|ai|cr2|dng|nef|arw|raf|rw2|orf|pef|srw|crw|3fr|erf|iiq|kdc|mrw|x3f)$/.test(extension)) return 'image'
+  if (/^(png|jpe?g|jpe|jfif|webp|gif|bmp|tiff?|svg|heic|heif|avif|ico|tga|jp2|j2k|jxl|qoi|ppm|psd|ai|cr2|cr3|dng|nef|arw|raf|rw2|orf|pef|srw|crw|3fr|erf|iiq|kdc|mrw|x3f)$/.test(extension)) return 'image'
   if (/^(mp4|mov|mkv|webm|avi|wmv|flv|m4v|m4s|mpe?g|3gp|ts)$/.test(extension)) return 'video'
   if (/^(docx?|odt|rtf|wps|wpt|txt|md|markdown|html?|epub|mobi|pages|json|xml|ya?ml|log|srt|vtt|ass|ssa)$/.test(extension)) return 'document'
   if (/^(xlsx?|ods|csv|tsv|et|ett|numbers)$/.test(extension)) return 'sheet'

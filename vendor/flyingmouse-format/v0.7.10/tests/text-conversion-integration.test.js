@@ -2,14 +2,17 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
+const { spawnSync } = require("node:child_process");
 const { after, before, test } = require("node:test");
+const { pathToFileURL } = require("node:url");
 
 const runtimeDir = path.join(os.tmpdir(), `flyingmouse-text-integration-${process.pid}`);
 process.env.FLYINGMOUSE_RUNTIME_DIR = runtimeDir;
 // csv->pdf 走 LibreOffice html->pdf 管线；使用当前配置的引擎，不绑定开发者安装目录。
 // 注意必须用 soffice.com（命令行壳）：portable 版 soffice.exe 会拉起 GUI 挂起，probe 超时。
 const candidateLo = require("../config").LIBREOFFICE_PATH;
-const LO_AVAILABLE = require("node:fs").existsSync(candidateLo);
+const LO_AVAILABLE = require("node:fs").existsSync(candidateLo)
+  || spawnSync(candidateLo, ["--version"], { stdio: "ignore", timeout: 3000 }).status === 0;
 if (LO_AVAILABLE) process.env.FLYINGMOUSE_LIBREOFFICE_PATH = candidateLo;
 const { startServer, platformCapabilities } = require("../server");
 const { DCRAW_PATH, rawInput, experimentalInputsByCategory } = require("../config");
@@ -46,6 +49,17 @@ async function convertResponse(name, content, targetFormat, type) {
   form.append("targetFormat", targetFormat);
   const response = await fetch(`${baseUrl}/api/convert`, { method: "POST", body: form });
   return { response, body: await response.json() };
+}
+
+async function pdfPageText(body) {
+  const download = await fetch(`${baseUrl}${body.downloadUrl}`);
+  assert.equal(download.status, 200);
+  const { getDocument } = await import(pathToFileURL(require.resolve("pdfjs-dist/legacy/build/pdf.mjs")).href);
+  const data = new Uint8Array(await download.arrayBuffer());
+  const document = await getDocument({ data, isEvalSupported: false, useSystemFonts: true }).promise;
+  const page = await document.getPage(1);
+  const content = await page.getTextContent();
+  return { pages: document.numPages, text: content.items.map((item) => item.str).join(" ") };
 }
 
 test("server preserves HTML headings and lists when converting to Markdown", async () => {
@@ -180,6 +194,9 @@ test("server converts CSV to PDF and HTML with a real table", { skip: !LO_AVAILA
   const pdfDownload = await fetch(`${baseUrl}${pdf.body.downloadUrl}`);
   const pdfBuffer = Buffer.from(await pdfDownload.arrayBuffer());
   assert.equal(pdfBuffer.toString("latin1", 0, 4), "%PDF", "csv->pdf must produce a real PDF");
+  const pdfContent = await pdfPageText(pdf.body);
+  assert.match(pdfContent.text, /name/);
+  assert.match(pdfContent.text, /Alice/);
 
   const html = await convertResponse("rows.csv", "name,age\nAlice,30\n", "html", "text/csv");
   assert.equal(html.response.status, 200, html.body.error);
@@ -188,6 +205,26 @@ test("server converts CSV to PDF and HTML with a real table", { skip: !LO_AVAILA
   const htmlText = await htmlDownload.text();
   assert.match(htmlText, /<table width="100%">/);
   assert.match(htmlText, /Alice/);
+});
+
+test("server keeps the first block when converting HTML and HTM to PDF", { skip: !LO_AVAILABLE }, async () => {
+  for (const extension of ["html", "htm"]) {
+    const pdf = await convertResponse(`page.${extension}`, "<h1>FIRST_BLOCK</h1><p>SECOND_BLOCK</p>", "pdf", "text/html");
+    assert.equal(pdf.response.status, 200, pdf.body.error);
+    const content = await pdfPageText(pdf.body);
+    assert.equal(content.pages, 1);
+    assert.match(content.text, /FIRST_BLOCK/);
+    assert.match(content.text, /SECOND_BLOCK/);
+  }
+});
+
+test("server keeps the first table row when converting TSV to PDF", { skip: !LO_AVAILABLE }, async () => {
+  const pdf = await convertResponse("rows.tsv", "name\tage\nAlice\t30\n", "pdf", "text/tab-separated-values");
+  assert.equal(pdf.response.status, 200, pdf.body.error);
+  const content = await pdfPageText(pdf.body);
+  assert.equal(content.pages, 1);
+  assert.match(content.text, /name/);
+  assert.match(content.text, /Alice/);
 });
 
 test("server converts TSV through the same real pipelines as CSV", async () => {

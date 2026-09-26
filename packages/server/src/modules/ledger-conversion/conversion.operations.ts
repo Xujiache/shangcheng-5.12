@@ -22,11 +22,12 @@ const IMAGE_OUTPUT_FORMATS = ['gif', 'avif', 'tiff', 'ico', 'bmp', 'tga', 'jp2',
 const ADDITIONAL_IMAGE_INPUTS = ['jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'j2k', 'psd']
 const CROSS_IMAGE_INPUTS = ['gif', 'avif', 'bmp', 'tiff', 'ico', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
 const VERIFIED_RAW_INPUTS = ['cr2', 'dng']
-const VERIFIED_RAW_RGB_INPUTS = [
+const VERIFIED_ADDITIONAL_RAW_INPUTS = [
+  'cr3',
   'nef', 'arw', 'raf', 'rw2', 'orf', 'pef', 'srw',
   'crw', '3fr', 'erf', 'iiq', 'kdc', 'mrw',
 ]
-const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, ...VERIFIED_RAW_RGB_INPUTS, 'ai']
+const VERIFIED_IMAGE_INPUTS = [...VERIFIED_RAW_INPUTS, ...VERIFIED_ADDITIONAL_RAW_INPUTS, 'ai']
 const VERIFIED_RAW_OUTPUTS = new Set(['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
 
 // Extended only after the corresponding Linux fixture and quality checks pass.
@@ -204,7 +205,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
       ...ADDITIONAL_IMAGE_INPUTS,
       'ai',
-      'txt', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml', 'pdf', 'zip',
+      'txt', 'markdown', 'html', 'htm', 'json', 'log', 'xml', 'yaml', 'yml', 'pdf', 'zip', 'epub',
       'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'xlsm', 'csv', 'tsv', 'pptx', 'ppt', 'odp',
       'wps', 'wpt', 'et', 'ett', 'dpt',
     ],
@@ -245,7 +246,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       ...(target === 'tiff' ? ['png', 'jpg', 'jpeg'] : ['png', 'jpg', 'jpeg', 'webp']),
       ...ADDITIONAL_IMAGE_INPUTS.filter((source) => target !== 'tiff' || source !== 'tif'),
-      ...(VERIFIED_RAW_OUTPUTS.has(target) ? VERIFIED_RAW_INPUTS : []),
+      ...(VERIFIED_RAW_OUTPUTS.has(target) ? [...VERIFIED_RAW_INPUTS, ...VERIFIED_ADDITIONAL_RAW_INPUTS] : []),
       'ai',
       ...CROSS_IMAGE_INPUTS.filter((source) => source !== target && (target !== 'tiff' || source !== 'gif')),
       ...(target === 'gif' ? VIDEO_INPUT_FORMATS : []),

@@ -414,6 +414,50 @@ function mergeEpubHtml(xhtmls, entries) {
   return `<!DOCTYPE html>\n<html><head><meta charset="utf-8"><title>book</title></head>\n<body>\n${cleaned}\n</body></html>`;
 }
 
+// LibreOffice ignores max-width on EPUB images. Give oversized images explicit
+// dimensions so a full cover fits within its A4 content area.
+async function fitEpubPdfImages(html) {
+  const sharp = require("sharp");
+  const { LIMITS } = require("./resource-policy");
+  const parts = html.split(/(<img\b[^>]*>)/gi);
+  for (let index = 1; index < parts.length; index += 2) {
+    const tag = parts[index];
+    const source = /\bsrc="data:image\/(?:png|jpeg|gif|webp|bmp);base64,([^"]+)"/i.exec(tag);
+    if (!source) continue;
+    const bytes = Buffer.from(source[1], "base64");
+    let width, height;
+    if (/\bsrc="data:image\/bmp;/i.test(tag)) {
+      const dibSize = bytes.length >= 18 && bytes.subarray(0, 2).toString() === "BM" ? bytes.readUInt32LE(14) : 0;
+      if (dibSize === 12 && bytes.length >= 22) {
+        width = bytes.readUInt16LE(18);
+        height = bytes.readUInt16LE(20);
+      } else if (dibSize >= 40 && bytes.length >= 26) {
+        width = bytes.readInt32LE(18);
+        height = Math.abs(bytes.readInt32LE(22));
+      }
+    } else {
+      ({ width, height } = await sharp(bytes, { limitInputPixels: LIMITS.maxImagePixels }).metadata());
+    }
+    if (!Number.isSafeInteger(width) || width <= 0 || !Number.isSafeInteger(height) || height <= 0) {
+      throw ebookError("EPUB_IMAGE_INVALID", "EPUB 图片尺寸无效，无法安全排入 PDF 页面。");
+    }
+    const numberAttribute = (name) => {
+      const match = new RegExp(`\\s${name}\\s*=\\s*(?:"(\\d+)"|'(\\d+)'|(\\d+)(?=\\s|/?>))`, "i").exec(tag);
+      const value = match && Number(match[1] || match[2] || match[3]);
+      return Number.isSafeInteger(value) && value > 0 ? value : null;
+    };
+    const declaredWidth = numberAttribute("width"), declaredHeight = numberAttribute("height");
+    const shownWidth = declaredWidth || (declaredHeight ? width * declaredHeight / height : width);
+    const shownHeight = declaredHeight || (declaredWidth ? height * declaredWidth / width : height);
+    const scale = Math.min(1, 600 / shownWidth, 900 / shownHeight);
+    if (scale >= 1) continue;
+    const closing = tag.endsWith("/>") ? "/>" : ">";
+    const start = tag.slice(0, -closing.length).replace(/\s(?:width|height)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+    parts[index] = `${start} width="${Math.max(1, Math.floor(shownWidth * scale))}" height="${Math.max(1, Math.floor(shownHeight * scale))}"${closing}`;
+  }
+  return parts.join("");
+}
+
 async function convertEpubToHtml(inputPath, outputPath) {
   const entries = await readZipEntries(inputPath);
   const xhtmls = await epubSpineXhtml(entries);
@@ -437,12 +481,19 @@ async function convertEpubViaLibreOffice(inputPath, outputPath, target) {
   const { convertWithLibreOffice } = require("./office-convert");
   const entries = await readZipEntries(inputPath);
   const xhtmls = await epubSpineXhtml(entries);
-  const html = mergeEpubHtml(xhtmls, entries);
+  const html = target === "pdf" ? await fitEpubPdfImages(mergeEpubHtml(xhtmls, entries)) : mergeEpubHtml(xhtmls, entries);
   const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-epub-"));
   const htmlPath = path.join(tempDir, "book.html");
   try {
     await fsp.writeFile(htmlPath, html, "utf8");
-    await convertWithLibreOffice(htmlPath, outputPath, "book.html", target);
+    if (target === "pdf") {
+      // Direct HTML→PDF silently drops the first block in this LibreOffice build.
+      const odtPath = path.join(tempDir, "book.odt");
+      await convertWithLibreOffice(htmlPath, odtPath, "book.html", "odt");
+      await convertWithLibreOffice(odtPath, outputPath, "book.odt", "pdf");
+    } else {
+      await convertWithLibreOffice(htmlPath, outputPath, "book.html", target);
+    }
   } finally {
     await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
@@ -602,6 +653,7 @@ module.exports = {
   convertEpubToMarkdown,
   convertEpubToHtml,
   convertEpubViaLibreOffice,
+  fitEpubPdfImages,
   convertMobiToText,
   convertMobiToEpub,
   convertEbook,
