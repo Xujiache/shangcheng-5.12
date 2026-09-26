@@ -9,8 +9,22 @@ const {
   inspectEttForCsv,
   inspectXlsxForCsv,
   validatePresentationHtml,
-  visibleBodyText
+  visibleBodyText,
+  xlsmMacroLossWarning
 } = require("../office-quality");
+
+test("XLSM to XLSX warns about VBA loss without falsely claiming formulas are removed", () => {
+  const warning = xlsmMacroLossWarning("xlsx");
+  assert.equal(warning.code, "XLSM_MACROS_OMITTED");
+  assert.match(warning.messages.zhCN, /不保留 VBA 宏/);
+  assert.match(warning.messages.enUS, /omits VBA macros/);
+  assert.doesNotMatch(warning.messages.zhCN, /不保留宏和公式表达式/);
+  for (const target of ["pdf", "csv", "html"]) {
+    assert.match(xlsmMacroLossWarning(target).messages.zhCN, /不保留宏和公式表达式/);
+  }
+  assert.equal(xlsmMacroLossWarning("ods"), null);
+  assert.equal(xlsmMacroLossWarning("xls"), null);
+});
 
 test("presentation HTML accepts visible slide text inside a non-empty body", () => {
   const result = validatePresentationHtml(`<!doctype html><html><head><title>Deck</title></head>
@@ -127,6 +141,7 @@ test("server wires Office quality results into the existing warning and bilingua
   assert.match(source, /require\(["']\.\/office-quality["']\)/);
   assert.match(source, /inspectXlsxForCsv\(file\.path\)/);
   assert.match(source, /inspectEttForCsv\(file\.path, originalName\)/);
+  assert.match(source, /xlsmMacroLossWarning\(requestedTarget\)/);
   assert.match(source, /conversionResult\s*=\s*await inspectXlsxForCsv/);
   // 演示文稿 HTML 已改走 LO->PDF->文本提取（不再依赖 LO 的 html 导出过滤器）
   assert.match(source, /convertPresentationToHtml\(file\.path, outputPath, originalName\)/);

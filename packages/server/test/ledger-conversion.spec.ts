@@ -14,6 +14,8 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:md', ['docx'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['gif'])).toBeTruthy()
     expect(findConversionOperation('convert:md', ['pdf'])).toBeTruthy()
+    for (const target of ['txt', 'docx', 'md'])
+      expect(findConversionOperation(`convert:${target}`, ['ico'])).toBeTruthy()
     expect(findConversionOperation('convert:docx', ['md'])).toBeTruthy()
     expect(findConversionOperation('convert:docx', ['png'])).toBeTruthy()
     expect(findConversionOperation('convert:docx', ['pdf'])).toBeTruthy()
@@ -57,7 +59,9 @@ describe('ledger conversion gate', () => {
     expect(findConversionOperation('convert:csv', ['xlsm'])).toBeTruthy()
     expect(findConversionOperation('convert:html', ['xlsm'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['xlsm'])).toBeTruthy()
-    expect(findConversionOperation('convert:xlsx', ['xlsm'])).toBeNull()
+    expect(findConversionOperation('convert:xlsx', ['xlsm'])).toBeTruthy()
+    expect(findConversionOperation('convert:xls', ['xlsm'])).toBeNull()
+    expect(findConversionOperation('convert:ods', ['xlsm'])).toBeNull()
     expect(findConversionOperation('convert:xlsx', ['pdf'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['html'])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['htm'])).toBeTruthy()
@@ -109,14 +113,15 @@ describe('ledger conversion gate', () => {
     for (const target of illustratorTargets)
       expect(findConversionOperation(`convert:${target}`, ['ai'])).toBeTruthy()
     for (const source of ['cr2', 'dng']) {
-      for (const target of ['png', 'jpg', 'webp', 'gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
+      for (const target of ['png', 'jpg', 'webp', 'gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm', 'jp2', 'jxl'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
-      for (const target of ['avif', 'jp2', 'jxl', 'pdf', 'txt', 'md', 'docx', 'mp4', 'webm'])
+      expect(findConversionOperation('convert:pdf', [source])).toBeTruthy()
+      for (const target of ['avif', 'txt', 'md', 'docx', 'mp4', 'webm'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
     }
     expect(findConversionOperation('convert:txt', ['ai'])).toBeTruthy()
     expect(findConversionOperation('convert:docx', ['ai'])).toBeTruthy()
-    expect(findConversionOperation('convert:md', ['ai'])).toBeNull()
+    expect(findConversionOperation('convert:md', ['ai'])).toBeTruthy()
     for (const target of ['mp4', 'webm']) {
       expect(findConversionOperation(`convert:${target}`, ['ai'])).toBeTruthy()
     }
@@ -130,13 +135,15 @@ describe('ledger conversion gate', () => {
     for (const source of sources) {
       for (const target of ['png', 'jpg', 'webp', 'gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
-      for (const target of ['pdf', 'jp2', 'jxl', 'txt', 'md', 'docx', 'mp4', 'webm'])
+      expect(findConversionOperation('convert:pdf', [source])).toBeTruthy()
+      for (const target of ['jp2', 'jxl', 'txt', 'md', 'docx', 'mp4', 'webm'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
     }
     for (const source of ['fff', 'mef']) {
       for (const target of ['png', 'jpg', 'webp'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
-      for (const target of ['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm', 'pdf'])
+      expect(findConversionOperation('convert:pdf', [source])).toBeTruthy()
+      for (const target of ['gif', 'tiff', 'ico', 'bmp', 'tga', 'qoi', 'ppm', 'avif', 'jp2', 'jxl'])
         expect(findConversionOperation(`convert:${target}`, [source])).toBeNull()
     }
     expect(findConversionOperation('convert:png', ['x3f'])).toBeNull()

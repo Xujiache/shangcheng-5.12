@@ -72,7 +72,7 @@ async function convertImage(inputPath, outputPath, target, options = {}) {
       error.messages = { zhCN: error.message, enUS: "Only PDF-compatible AI files are supported; legacy EPS AI files are not." };
       throw error;
     }
-    if (["pdf", "txt", "docx"].includes(target)) {
+    if (["pdf", "txt", "docx", "md"].includes(target)) {
       const source = await fsp.readFile(inputPath);
       try {
         const document = await require("pdf-lib").PDFDocument.load(source);

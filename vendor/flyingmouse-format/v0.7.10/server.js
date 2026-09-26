@@ -37,7 +37,7 @@ const { convertOfdToPdf } = require("./ofd-convert");
 const { OfficeEngineError, probeLibreOffice, runLibreOffice } = require("./office-engine");
 const { getOfficeState, waitForOfficeReady, OfficePreparationError } = require("./office-readiness");
 const { getStructuredPdfAvailability } = require("./pdf-structure-engine");
-const { inspectXlsxForCsv, inspectEttForCsv } = require("./office-quality");
+const { inspectXlsxForCsv, inspectEttForCsv, xlsmMacroLossWarning } = require("./office-quality");
 const logger = require("./logger");
 
 // Prefer the Electron main process's debug.log (set via FLYINGMOUSE_LOG_FILE
@@ -857,14 +857,9 @@ app.post("/api/convert", assertLocalWebRequest, conversionProgress.begin, upload
     if (experimentalInputSet.has(inputExt)) {
       payload.warnings = [...(payload.warnings || []), experimentalInputWarning(inputExt)];
     }
-    if (inputExt === "xlsm" && ["pdf", "csv", "html"].includes(requestedTarget)) {
-      payload.warnings = [...(payload.warnings || []), {
-        code: "XLSM_MACROS_OMITTED",
-        messages: {
-          zhCN: "XLSM 宏在转换时不会执行；导出文件不保留宏和公式表达式，只保存转换时的计算值。请核对结果。",
-          enUS: "XLSM macros are disabled during conversion. The export omits macros and formula expressions and saves calculated values only. Review the result."
-        }
-      }];
+    if (inputExt === "xlsm") {
+      const macroWarning = xlsmMacroLossWarning(requestedTarget);
+      if (macroWarning) payload.warnings = [...(payload.warnings || []), macroWarning];
     }
     logger.info(`Convert succeeded: "${originalName}" -> ${downloadName} (${requestedTarget})`);
     conversionProgress.outputReady(req);

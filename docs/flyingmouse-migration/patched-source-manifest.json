@@ -13,8 +13,8 @@
     },
     {
       "path": "image.js",
-      "size": 30181,
-      "sha256": "08986ff89d1c5b5b0745a84309ab255c3028729453f09a6b20bd037894ea3fed"
+      "size": 30187,
+      "sha256": "05f13a9b098459825e49458c11b811c2db7a44c861eaa50ee74d95d37beb657d"
     },
     {
       "path": "office-convert.js",
@@ -23,8 +23,8 @@
     },
     {
       "path": "office-quality.js",
-      "size": 6576,
-      "sha256": "c603050a7096f1f87a58ca0a7a9aa09526119b86ce597b932fd170d467db14bf"
+      "size": 7460,
+      "sha256": "64dba858a683bdbc15e9284f2bdf499cd098cf9a00e4e37cbb670cba91a50012"
     },
     {
       "path": "office-runtime.js",
@@ -38,8 +38,8 @@
     },
     {
       "path": "server.js",
-      "size": 43510,
-      "sha256": "d5bca820cac9cd25df41a0d077bc607e0df1854d796159eaa4894ba303746c1d"
+      "size": 43186,
+      "sha256": "24354a0ebd0374c318093c38df117ce57c7000527747f86b77e9e987d9b722c1"
     },
     {
       "path": "tests/ebook-integrity.test.js",
@@ -48,8 +48,8 @@
     },
     {
       "path": "tests/image-conversion.test.js",
-      "size": 9416,
-      "sha256": "410e27d15278ef73972a07fc9be06b5d79845a5bbfbee51f49631a8eeda08648"
+      "size": 11508,
+      "sha256": "516cda3469dd3dacc2f4a17ca1d76302613f5e13a804137746c7da1084092ad2"
     },
     {
       "path": "tests/office-engine.test.js",
@@ -58,8 +58,8 @@
     },
     {
       "path": "tests/office-quality.test.js",
-      "size": 7106,
-      "sha256": "42c3a2c6190d81e99c6b6b7b151375dba72ede166cb039809b8cae31f4657d36"
+      "size": 7849,
+      "sha256": "bb303d026bf9e63de6eede336c4e6fbba38279db36ee31e0db0c50f9bd701292"
     },
     {
       "path": "tests/office-wps-repair.test.js",

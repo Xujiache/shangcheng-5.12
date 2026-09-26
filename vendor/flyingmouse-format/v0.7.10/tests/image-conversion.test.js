@@ -8,6 +8,7 @@ const { PDFDocument, StandardFonts } = require("pdf-lib");
 
 const { convertRasterImage } = require("../image-conversion");
 const { convertImage } = require("../image");
+const { encodeIco } = require("../ico-format");
 const { validateNativePdfDocx } = require("../pdf");
 
 async function removeScratch(scratch) {
@@ -140,6 +141,40 @@ test("PDF-compatible AI to TXT and DOCX extracts the native text layer", async (
   assert.ok(docxResult.warnings.some((warning) => warning.code === "PDF_DOCX_LAYOUT_FALLBACK"));
 });
 
+test("PDF-compatible AI to Markdown uses the PDF text path instead of raster OCR", async (t) => {
+  const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-ai-markdown-"));
+  t.after(() => removeScratch(scratch));
+  const source = path.join(scratch, "uploaded-file");
+  const output = path.join(scratch, "converted.md");
+  const document = await PDFDocument.create();
+  document.addPage([612, 792]);
+  await fsp.writeFile(source, await document.save());
+
+  const result = await convertImage(source, output, "md", {
+    inputName: "drawing.ai",
+    pdfTextPages: [{ pageNumber: 1, rows: [["SEARCHABLE VECTOR TEXT 7319"]], imageCoverage: 0 }],
+    ocrAvailable: () => { throw new Error("raster OCR must not run"); }
+  });
+  assert.match(await fsp.readFile(output, "utf8"), /SEARCHABLE VECTOR TEXT 7319/);
+  assert.ok(result.warnings.some((warning) => warning.code === "PDF_MARKDOWN_REFLOW"));
+  assert.ok(result.warnings.some((warning) => warning.code === "AI_PDF_TEXT_EXTRACTION"));
+});
+
+test("ICO without recognized text refuses editable Markdown and DOCX outputs", async (t) => {
+  const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-ico-no-text-"));
+  t.after(() => removeScratch(scratch));
+  const source = path.join(scratch, "uploaded-file");
+  const png = await sharp({ create: { width: 64, height: 64, channels: 3, background: "white" } }).png().toBuffer();
+  await fsp.writeFile(source, encodeIco([{ size: 64, data: png }]));
+  t.mock.method(require("../ocr"), "recognizeImageResult", async () => ({ text: "", warnings: [] }));
+  for (const target of ["md", "docx"]) {
+    const output = path.join(scratch, `blank.${target}`);
+    await assert.rejects(convertImage(source, output, target, { inputName: "blank.ico" }),
+      (error) => error.code === "OCR_NO_TEXT");
+    await assert.rejects(fsp.stat(output), /ENOENT/);
+  }
+});
+
 test("legacy EPS AI and malformed PDF-compatible AI are rejected explicitly", async (t) => {
   const scratch = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-ai-invalid-"));
   t.after(() => removeScratch(scratch));
@@ -151,6 +186,8 @@ test("legacy EPS AI and malformed PDF-compatible AI are rejected explicitly", as
   await assert.rejects(convertImage(source, path.join(scratch, "legacy.png"), "png", { inputName: "legacy.ai" }),
     (error) => error.code === "AI_PDF_COMPATIBILITY_REQUIRED");
   await assert.rejects(convertImage(source, path.join(scratch, "legacy.txt"), "txt", { inputName: "legacy.ai" }),
+    (error) => error.code === "AI_PDF_COMPATIBILITY_REQUIRED");
+  await assert.rejects(convertImage(source, path.join(scratch, "legacy.md"), "md", { inputName: "legacy.ai" }),
     (error) => error.code === "AI_PDF_COMPATIBILITY_REQUIRED");
   await fsp.writeFile(source, "%PDF-1.7\nnot a valid PDF");
   await assert.rejects(convertImage(source, output, "pdf", { inputName: "broken.ai" }),
