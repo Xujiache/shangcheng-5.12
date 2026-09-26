@@ -47,86 +47,7 @@ async function pdfPage(label) {
   return Buffer.from(await pdf.save())
 }
 
-async function main() {
-  const user = await prisma.ledgerUser.create({
-    data: { nickname: '本地转换验收', wxOpenid: `local-conversion-${randomUUID()}` },
-  })
-  userId = user.id
-  const token = await new JwtService({ secret: process.env.JWT_SECRET }).signAsync({
-    sub: userId, scope: 'ledger', jti: randomUUID(),
-  }, { expiresIn: '1h' })
-  const auth = { Authorization: `Bearer ${token}` }
-  async function json(route, method = 'GET', data) {
-    const response = await fetch(new URL(`/api/v1/l/conversions${route}`, base), {
-      method, headers: { ...auth, ...(data ? { 'Content-Type': 'application/json' } : {}) },
-      body: data ? JSON.stringify(data) : undefined,
-    }).catch((error) => {
-      throw new Error(`${method} ${route} transport: ${error.cause?.code || error.message} ` +
-        `${error.cause?.message || ''}`, { cause: error })
-    })
-    const body = await response.json()
-    if (!response.ok || body.code !== 0) throw new Error(`${route}: ${body.message || response.status}`)
-    return body.data
-  }
-  cleanupJob = (id) => json(`/jobs/${id}`, 'DELETE')
-  const capabilities = await json('/capabilities')
-  if (!capabilities.available || !capabilities.operations.some((op) => op.id === 'convert:md'))
-    throw new Error('Original conversion worker is unavailable')
-
-  async function upload(name, data) {
-    const created = await json('/uploads', 'POST', { fileName: name, sizeBytes: data.length })
-    for (let index = 0; index < created.chunkCount; index++) {
-      const part = data.subarray(index * created.chunkBytes, (index + 1) * created.chunkBytes)
-      const form = new FormData()
-      form.set('index', String(index))
-      form.set('file', new Blob([part]), 'chunk.bin')
-      const response = await fetch(new URL(`/api/v1/l/conversions/uploads/${created.id}/chunks`, base), {
-        method: 'POST', headers: auth, body: form,
-      }).catch((error) => {
-        throw new Error(`POST upload chunk ${index} transport: ${error.cause?.code || error.message} ` +
-          `${error.cause?.message || ''}`, { cause: error })
-      })
-      const body = await response.json()
-      if (!response.ok || body.code !== 0) throw new Error(`Chunk upload: ${body.message || response.status}`)
-    }
-    await json(`/uploads/${created.id}/complete`, 'POST')
-    return created.id
-  }
-
-  async function convert(operationId, files, options = {}) {
-    const uploadIds = []
-    for (const [name, bytes] of files) uploadIds.push(await upload(name, bytes))
-    const job = await json('/jobs', 'POST', { operationId, uploadIds, options })
-    outstanding.add(job.id)
-    let result
-    for (let attempt = 0; attempt < 90; attempt++) {
-      result = await json(`/jobs/${job.id}`)
-      if (['succeeded', 'failed', 'cancelled'].includes(result.status)) break
-      await new Promise((done) => { setTimeout(done, 1000) })
-    }
-    if (result?.status !== 'succeeded' || !result.assets.length)
-      throw new Error(`${operationId}: ${result?.status || 'timed out'} ${result?.error || ''}`)
-    if (options.password) {
-      const stored = await prisma.ledgerConversionJob.findUnique({
-        where: { id: job.id }, select: { options: true },
-      })
-      if (!String(stored?.options?.password || '').startsWith('v1:') ||
-        String(stored.options.password).includes(options.password))
-        throw new Error('PDF password was stored without encryption')
-    }
-    const response = await fetch(new URL(`/api/v1/l/conversions/jobs/${job.id}/assets/${result.assets[0].id}`, base), {
-      headers: auth,
-    }).catch((error) => {
-      throw new Error(`GET result ${job.id} transport: ${error.cause?.code || error.message} ` +
-        `${error.cause?.message || ''}`, { cause: error })
-    })
-    if (!response.ok) throw new Error(`${operationId} download failed: ${response.status}`)
-    const bytes = Buffer.from(await response.arrayBuffer())
-    await cleanupJob(job.id)
-    outstanding.delete(job.id)
-    return { bytes, result }
-  }
-
+async function verifyBaseline(convert) {
   const markdown = await convert('convert:md', [['sample.txt', Buffer.from('你好，原版转换验收。\n')]])
   if (!markdown.bytes.toString('utf8').includes('你好，原版转换验收。')) throw new Error('Chinese text was lost')
   console.log('PASS txt:md, authenticated upload/download and Chinese content')
@@ -437,6 +358,498 @@ async function main() {
       }
     }
   } finally { await rm(audioWork, { recursive: true, force: true }) }
+}
+
+async function main() {
+  const user = await prisma.ledgerUser.create({
+    data: { nickname: '本地转换验收', wxOpenid: `local-conversion-${randomUUID()}` },
+  })
+  userId = user.id
+  const token = await new JwtService({ secret: process.env.JWT_SECRET }).signAsync({
+    sub: userId, scope: 'ledger', jti: randomUUID(),
+  }, { expiresIn: '1h' })
+  const auth = { Authorization: `Bearer ${token}` }
+  async function json(route, method = 'GET', data) {
+    const response = await fetch(new URL(`/api/v1/l/conversions${route}`, base), {
+      method, headers: { ...auth, ...(data ? { 'Content-Type': 'application/json' } : {}) },
+      body: data ? JSON.stringify(data) : undefined,
+    }).catch((error) => {
+      throw new Error(`${method} ${route} transport: ${error.cause?.code || error.message} ` +
+        `${error.cause?.message || ''}`, { cause: error })
+    })
+    const body = await response.json()
+    if (!response.ok || body.code !== 0) throw new Error(`${route}: ${body.message || response.status}`)
+    return body.data
+  }
+  cleanupJob = (id) => json(`/jobs/${id}`, 'DELETE')
+  const capabilities = await json('/capabilities')
+  if (!capabilities.available || !capabilities.operations.some((op) => op.id === 'convert:md'))
+    throw new Error('Original conversion worker is unavailable')
+
+  async function upload(name, data) {
+    const created = await json('/uploads', 'POST', { fileName: name, sizeBytes: data.length })
+    for (let index = 0; index < created.chunkCount; index++) {
+      const part = data.subarray(index * created.chunkBytes, (index + 1) * created.chunkBytes)
+      const form = new FormData()
+      form.set('index', String(index))
+      form.set('file', new Blob([part]), 'chunk.bin')
+      const response = await fetch(new URL(`/api/v1/l/conversions/uploads/${created.id}/chunks`, base), {
+        method: 'POST', headers: auth, body: form,
+      }).catch((error) => {
+        throw new Error(`POST upload chunk ${index} transport: ${error.cause?.code || error.message} ` +
+          `${error.cause?.message || ''}`, { cause: error })
+      })
+      const body = await response.json()
+      if (!response.ok || body.code !== 0) throw new Error(`Chunk upload: ${body.message || response.status}`)
+    }
+    await json(`/uploads/${created.id}/complete`, 'POST')
+    return created.id
+  }
+
+  async function convert(operationId, files, options = {}) {
+    const uploadIds = []
+    for (const [name, bytes] of files) uploadIds.push(await upload(name, bytes))
+    const job = await json('/jobs', 'POST', { operationId, uploadIds, options })
+    outstanding.add(job.id)
+    let result
+    for (let attempt = 0; attempt < 90; attempt++) {
+      result = await json(`/jobs/${job.id}`)
+      if (['succeeded', 'failed', 'cancelled'].includes(result.status)) break
+      await new Promise((done) => { setTimeout(done, 1000) })
+    }
+    if (result?.status !== 'succeeded' || !result.assets.length)
+      throw new Error(`${operationId}: ${result?.status || 'timed out'} ${result?.error || ''}`)
+    if (options.password) {
+      const stored = await prisma.ledgerConversionJob.findUnique({
+        where: { id: job.id }, select: { options: true },
+      })
+      if (!String(stored?.options?.password || '').startsWith('v1:') ||
+        String(stored.options.password).includes(options.password))
+        throw new Error('PDF password was stored without encryption')
+    }
+    const response = await fetch(new URL(`/api/v1/l/conversions/jobs/${job.id}/assets/${result.assets[0].id}`, base), {
+      headers: auth,
+    }).catch((error) => {
+      throw new Error(`GET result ${job.id} transport: ${error.cause?.code || error.message} ` +
+        `${error.cause?.message || ''}`, { cause: error })
+    })
+    if (!response.ok) throw new Error(`${operationId} download failed: ${response.status}`)
+    const bytes = Buffer.from(await response.arrayBuffer())
+    await cleanupJob(job.id)
+    outstanding.delete(job.id)
+    return { bytes, result }
+  }
+
+  if (!process.env.CONVERSION_SKIP_BASELINE) await verifyBaseline(convert)
+
+  if (process.env.CONVERSION_VIDEO_INPUTS) {
+    const videoWork = await mkdtemp(join(tmpdir(), 'ledger-video-pairs-'))
+    try {
+      const source = engineSource
+      const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
+      const ffprobe = join(dirname(ffmpeg), 'ffprobe')
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const master = join(videoWork, 'master.mp4')
+      execFileSync(ffmpeg, ['-v', 'error', '-f', 'lavfi', '-i',
+        'testsrc2=size=320x180:rate=12:duration=3', '-f', 'lavfi', '-i',
+        'sine=frequency=440:duration=3', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac', '-shortest', master])
+      const formats = {
+        avi: ['-c:v', 'mpeg4', '-c:a', 'libmp3lame', '-f', 'avi'],
+        flv: ['-c:v', 'flv', '-c:a', 'libmp3lame', '-f', 'flv'],
+        m4s: ['-c', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4'],
+        m4v: ['-c', 'copy', '-f', 'mp4'],
+        wmv: ['-c:v', 'wmv2', '-c:a', 'wmav2', '-f', 'asf'],
+        mkv: ['-c', 'copy', '-f', 'matroska'],
+        mov: ['-c', 'copy', '-f', 'mov'],
+        webm: ['-c:v', 'libvpx-vp9', '-b:v', '350k', '-c:a', 'libopus', '-f', 'webm'],
+      }
+      const probe = (file) => JSON.parse(execFileSync(ffprobe, ['-v', 'error',
+        '-show_entries', 'stream=codec_name,codec_type,width,height:format=duration',
+        '-of', 'json', file], { encoding: 'utf8' }))
+      const audio = (file) => {
+        const pcm = execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-map', '0:a:0',
+          '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1'])
+        let energy = 0
+        for (let index = 0; index < pcm.length; index += 2)
+          energy += pcm.readInt16LE(index) ** 2
+        if (pcm.length < 80000 || Math.sqrt(energy / (pcm.length / 2)) < 100)
+          throw new Error(`${file}: missing or silent three-second audio`)
+        return pcm
+      }
+      const frames = (file) => execFileSync(ffmpeg, ['-v', 'error', '-i', file,
+        '-vf', 'fps=1', '-frames:v', '3', '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'],
+      { maxBuffer: 2 * 1024 ** 2 })
+      for (const inputExtension of process.env.CONVERSION_VIDEO_INPUTS.split(',')) {
+        if (!['avi', 'flv', 'm4s', 'm4v', 'wmv', 'mkv', 'mov', 'mp4', 'webm'].includes(inputExtension))
+          throw new Error(`Unsupported video fixture generator: ${inputExtension}`)
+        const input = inputExtension === 'mp4' ? master : join(videoWork, `input.${inputExtension}`)
+        if (inputExtension !== 'mp4')
+          execFileSync(ffmpeg, ['-v', 'error', '-i', master, ...formats[inputExtension], input])
+        const fixture = await readFile(input)
+        const inputInfo = probe(input)
+        if (!inputInfo.streams.some((stream) => stream.codec_type === 'video') ||
+          !inputInfo.streams.some((stream) => stream.codec_type === 'audio'))
+          throw new Error(`${inputExtension}: fixture must have video and audio`)
+        const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+        for (const target of targets) {
+          const label = `${inputExtension}-${target}`
+          const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
+          const backendPath = join(videoWork, `backend-${label}.${target}`)
+          const directPath = join(videoWork, `direct-${label}.${target}`)
+          await writeFile(backendPath, backend.bytes)
+          execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+            '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+          const first = probe(backendPath)
+          const second = probe(directPath)
+          const firstVideo = first.streams.find((stream) => stream.codec_type === 'video')
+          const secondVideo = second.streams.find((stream) => stream.codec_type === 'video')
+          const firstAudio = first.streams.find((stream) => stream.codec_type === 'audio')
+          const secondAudio = second.streams.find((stream) => stream.codec_type === 'audio')
+          if (Math.abs(Number(first.format.duration) - 3) > 0.25 ||
+            Math.abs(Number(first.format.duration) - Number(second.format.duration)) > 0.03)
+            throw new Error(`${label}: duration ${first.format.duration}s differs from ` +
+              `source 3s or original ${second.format.duration}s`)
+          if (['gif', 'mkv', 'mov', 'mp4', 'webm'].includes(target)) {
+            if (!firstVideo || !secondVideo || firstVideo.codec_name !== secondVideo.codec_name ||
+              firstVideo.width !== secondVideo.width || firstVideo.height !== secondVideo.height ||
+              firstVideo.width < 300 || firstVideo.height < 170)
+              throw new Error(`${label}: video codec or dimensions differ from original`)
+            const rendered = frames(backendPath)
+            if (rendered.length !== 3 * firstVideo.width * firstVideo.height * 3 ||
+              rendered.subarray(0, rendered.length / 3).equals(rendered.subarray(2 * rendered.length / 3)) ||
+              !rendered.equals(frames(directPath)))
+              throw new Error(`${label}: decoded video frames missing, static, or differ from original`)
+            if (target === 'gif') {
+              if (firstAudio || secondAudio) throw new Error(`${label}: GIF unexpectedly has audio`)
+            } else if (!firstAudio || !secondAudio ||
+              firstAudio.codec_name !== secondAudio.codec_name ||
+              !audio(backendPath).equals(audio(directPath)))
+              throw new Error(`${label}: audio track differs from original`)
+          } else if (firstVideo || secondVideo || !firstAudio || !secondAudio ||
+            firstAudio.codec_name !== secondAudio.codec_name ||
+            !audio(backendPath).equals(audio(directPath)))
+            throw new Error(`${label}: extracted audio differs from original`)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+            'moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared'])
+          console.log(`PASS ${inputExtension}:${target}, video or audio matches direct original`)
+        }
+      }
+    } finally { await rm(videoWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_SUBTITLE_INPUTS) {
+    const subtitleWork = await mkdtemp(join(tmpdir(), 'ledger-subtitle-pairs-'))
+    try {
+      const source = engineSource
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const cues = ['量窗助手 第一行', '第二行 12345']
+      const sources = {
+        srt: '1\n00:00:01,000 --> 00:00:02,000\n量窗助手 第一行\n\n' +
+          '2\n00:00:02,500 --> 00:00:03,700\n第二行 12345\n',
+        vtt: 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n量窗助手 第一行\n\n' +
+          '00:00:02.500 --> 00:00:03.700\n第二行 12345\n',
+        ass: '[Script Info]\nScriptType: v4.00+\n\n[Events]\n' +
+          'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n' +
+          'Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,量窗助手 第一行\n' +
+          'Dialogue: 0,0:00:02.50,0:00:03.70,Default,,0,0,0,,第二行 12345\n',
+        ssa: '[Script Info]\nScriptType: v4.00\n\n[Events]\n' +
+          'Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n' +
+          'Dialogue: Marked=0,0:00:01.00,0:00:02.00,Default,,0,0,0,,量窗助手 第一行\n' +
+          'Dialogue: Marked=0,0:00:02.50,0:00:03.70,Default,,0,0,0,,第二行 12345\n',
+      }
+      for (const inputExtension of process.env.CONVERSION_SUBTITLE_INPUTS.split(',')) {
+        if (!Object.hasOwn(sources, inputExtension))
+          throw new Error(`Unsupported subtitle fixture generator: ${inputExtension}`)
+        const fixture = Buffer.from(sources[inputExtension])
+        const input = join(subtitleWork, `input.${inputExtension}`)
+        await writeFile(input, fixture)
+        const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+        for (const target of targets) {
+          const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
+          const directPath = join(subtitleWork, `direct-${inputExtension}.${target}`)
+          execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+            '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+          const result = backend.bytes.toString('utf8')
+          if (result !== await readFile(directPath, 'utf8') ||
+            cues.some((cue) => !result.includes(cue)) ||
+            (result.match(/量窗助手 第一行/g) || []).length !== 1 ||
+            (result.match(/第二行 12345/g) || []).length !== 1)
+            throw new Error(`${inputExtension} to ${target}: cue text differs from original`)
+          if (target === 'txt') {
+            if (result.includes('00:00:01') || result.includes('Dialogue:'))
+              throw new Error(`${inputExtension} to TXT: timing not removed`)
+          } else if (target === 'srt' || target === 'vtt') {
+            const separator = target === 'srt' ? ',' : '.'
+            if (!result.includes(`00:00:01${separator}000 --> 00:00:02${separator}000`) ||
+              !result.includes(`00:00:02${separator}500 --> 00:00:03${separator}700`))
+              throw new Error(`${inputExtension} to ${target}: cue timing changed`)
+          } else if ((result.match(/^Dialogue:/gm) || []).length !== 2 ||
+            !result.includes('0:00:01.00,0:00:02.00') ||
+            !result.includes('0:00:02.50,0:00:03.70'))
+            throw new Error(`${inputExtension} to ${target}: ASS/SSA timing changed`)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+            'two Chinese timed cues: direct original and authenticated backend, text/timing checked'])
+          console.log(`PASS ${inputExtension}:${target}, text and timing match direct original`)
+        }
+      }
+    } finally { await rm(subtitleWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_EPUB) {
+    const ebookWork = await mkdtemp(join(tmpdir(), 'ledger-epub-pairs-'))
+    try {
+      const source = engineSource
+      const markdown = join(ebookWork, 'chapters.md')
+      const input = join(ebookWork, 'chapters.epub')
+      await writeFile(markdown, '# 第一章 量窗助手\n中文正文与数值 12345。\n\n' +
+        '# 第二章 经营分析\n第二段内容和数值 67890。\n')
+      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', markdown,
+        '--to', 'epub', '--output', input, '--json'], { env: originalCliEnv() })
+      execFileSync('unzip', ['-tqq', input])
+      if (execFileSync('unzip', ['-p', input, 'mimetype'], { encoding: 'utf8' }) !== 'application/epub+zip')
+        throw new Error('EPUB fixture lacks the required mimetype')
+      const fixture = await readFile(input)
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes('epub')).map((operation) => operation.targetExtension)
+        .filter((target) => !process.env.CONVERSION_EPUB_TARGETS ||
+          process.env.CONVERSION_EPUB_TARGETS.split(',').includes(target))
+      const content = async (file, target) => {
+        if (target === 'pdf') {
+          const pages = (await PDFDocument.load(await readFile(file))).getPageCount()
+          if (pages < 1) throw new Error(`${file}: EPUB produced an empty PDF`)
+          return execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext'),
+            [file, '-'], { encoding: 'utf8' })
+        }
+        if (target === 'docx') {
+          execFileSync('unzip', ['-tqq', file])
+          return execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
+            .replace(/<[^>]+>/g, '')
+        }
+        const value = await readFile(file, 'utf8')
+        return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
+      }
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [['chapters.epub', fixture]])
+        const backendPath = join(ebookWork, `backend.${target}`)
+        const directPath = join(ebookWork, `direct.${target}`)
+        await writeFile(backendPath, backend.bytes)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        const result = (await content(backendPath, target)).replace(/\s+/g, '')
+        if (result !== (await content(directPath, target)).replace(/\s+/g, '') ||
+          !result.includes('第一章') || !result.includes('第二章') ||
+          !result.includes('量窗助手') || !result.includes('12345') || !result.includes('67890'))
+          throw new Error(`EPUB to ${target}: chapters or Chinese text differ from original`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', 'epub', target, createHash('sha256').update(fixture).digest('hex'),
+          'two-chapter Chinese EPUB: direct original and authenticated backend, decoded chapters checked'])
+        console.log(`PASS epub:${target}, two chapters match direct original`)
+      }
+    } finally { await rm(ebookWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_MOBI) {
+    const mobiWork = await mkdtemp(join(tmpdir(), 'ledger-mobi-pairs-'))
+    try {
+      const source = engineSource
+      const html = Buffer.from('<h1>第一章 量窗助手</h1><p>中文正文 12345</p>' +
+        '<h1>第二章 经营分析</h1><p>第二段 67890</p>')
+      const record = Buffer.alloc(40)
+      record.writeUInt16BE(1, 0)
+      record.writeUInt32BE(html.length, 4)
+      record.writeUInt16BE(1, 8)
+      record.writeUInt16BE(4096, 10)
+      record.write('MOBI', 16)
+      record.writeUInt32BE(24, 20)
+      record.writeUInt32BE(65001, 28)
+      record.writeUInt32BE(6, 36)
+      const header = Buffer.alloc(96)
+      header.writeUInt16BE(2, 76)
+      header.writeUInt32BE(header.length, 78)
+      header.writeUInt32BE(header.length + record.length, 86)
+      const fixture = Buffer.concat([header, record, html])
+      const input = join(mobiWork, 'chapters.mobi')
+      await writeFile(input, fixture)
+      const { parseMobiText } = require(`${source}/ebook.js`)
+      if (parseMobiText(fixture) !== html.toString('utf8'))
+        throw new Error('PalmDOC MOBI fixture does not decode to its source HTML')
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes('mobi')).map((operation) => operation.targetExtension)
+      const content = async (file, target) => {
+        if (target !== 'epub') return readFile(file, 'utf8')
+        execFileSync('unzip', ['-tqq', file])
+        const entries = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+          .trim().split('\n').filter((entry) => entry.endsWith('.xhtml'))
+        if (!entries.length) throw new Error(`${file}: EPUB has no XHTML chapter`)
+        return entries.map((entry) => execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' }))
+          .join('\n').replace(/<[^>]+>/g, '')
+      }
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [['chapters.mobi', fixture]])
+        const backendPath = join(mobiWork, `backend.${target}`)
+        const directPath = join(mobiWork, `direct.${target}`)
+        await writeFile(backendPath, backend.bytes)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        const result = (await content(backendPath, target)).replace(/\s+/g, '')
+        if (result !== (await content(directPath, target)).replace(/\s+/g, '') ||
+          !result.includes('第一章') || !result.includes('第二章') ||
+          !result.includes('量窗助手') || !result.includes('12345') || !result.includes('67890'))
+          throw new Error(`MOBI to ${target}: chapters or Chinese text differ from original`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', 'mobi', target, createHash('sha256').update(fixture).digest('hex'),
+          'valid two-chapter UTF-8 PalmDOC MOBI: direct original and authenticated backend, decoded content checked'])
+        console.log(`PASS mobi:${target}, two chapters match direct original`)
+      }
+    } finally { await rm(mobiWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_DOCUMENT_INPUTS) {
+    if (!process.env.CONVERSION_SAMPLE_DOCX)
+      throw new Error('CONVERSION_DOCUMENT_INPUTS requires CONVERSION_SAMPLE_DOCX')
+    const documentWork = await mkdtemp(join(tmpdir(), 'ledger-document-pairs-'))
+    try {
+      const source = engineSource
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const sourceXml = execFileSync('unzip', ['-p', process.env.CONVERSION_SAMPLE_DOCX,
+        'word/document.xml'], { encoding: 'utf8' })
+      const sourceText = [...sourceXml.matchAll(/<w:t(?:\s[^>]*)?>(.*?)<\/w:t>/g)]
+        .map((match) => match[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'"))
+        .join('').replace(/\s+/g, '')
+      const chunks = []
+      for (let index = 0; index + 10 <= sourceText.length; index += 10)
+        chunks.push(sourceText.slice(index, index + 10))
+      if (chunks.length < 10) throw new Error('Document fixture has too little source text')
+      const extract = async (file, target) => {
+        if (target === 'pdf') {
+          if ((await PDFDocument.load(await readFile(file))).getPageCount() < 1)
+            throw new Error(`${file}: PDF has no pages`)
+          return execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext'),
+            [file, '-'], { encoding: 'utf8' })
+        }
+        if (target === 'docx' || target === 'odt') {
+          execFileSync('unzip', ['-tqq', file])
+          const entry = target === 'docx' ? 'word/document.xml' : 'content.xml'
+          return execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' })
+            .replace(/<[^>]+>/g, '')
+        }
+        if (target === 'rtf')
+          return execFileSync('textutil', ['-convert', 'txt', '-stdout', file], { encoding: 'utf8' })
+        const value = await readFile(file, 'utf8')
+        return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
+      }
+      for (const inputExtension of process.env.CONVERSION_DOCUMENT_INPUTS.split(',')) {
+        if (!['odt', 'rtf'].includes(inputExtension))
+          throw new Error(`Unsupported document fixture generator: ${inputExtension}`)
+        const input = join(documentWork, `input.${inputExtension}`)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert',
+          process.env.CONVERSION_SAMPLE_DOCX, '--to', inputExtension,
+          '--output', input, '--json'], { env: originalCliEnv() })
+        const fixture = await readFile(input)
+        const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+        for (const target of targets) {
+          const label = `${inputExtension}-${target}`
+          const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
+          const backendPath = join(documentWork, `backend-${label}.${target}`)
+          const directPath = join(documentWork, `direct-${label}.${target}`)
+          await writeFile(backendPath, backend.bytes)
+          execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+            '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+          const result = (await extract(backendPath, target)).replace(/\s+/g, '')
+          if (result !== (await extract(directPath, target)).replace(/\s+/g, '') ||
+            chunks.filter((part) => result.includes(part)).length / chunks.length < 0.7)
+            throw new Error(`${label}: decoded text differs from original or lost source text`)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+            'real Chinese document roundtrip: direct original and authenticated backend, decoded text retained'])
+          console.log(`PASS ${inputExtension}:${target}, Chinese text matches direct original`)
+        }
+      }
+    } finally { await rm(documentWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_PDF_TEXT) {
+    if (!process.env.CONVERSION_PDF_SIMPLE && !process.env.CONVERSION_SAMPLE_DOCX)
+      throw new Error('CONVERSION_PDF_TEXT requires CONVERSION_SAMPLE_DOCX')
+    const pdfWork = await mkdtemp(join(tmpdir(), 'ledger-pdf-text-pairs-'))
+    try {
+      const source = engineSource
+      const input = join(pdfWork, 'input.pdf')
+      let sourceFile = process.env.CONVERSION_SAMPLE_DOCX
+      if (process.env.CONVERSION_PDF_SIMPLE) {
+        sourceFile = join(pdfWork, 'input.txt')
+        await writeFile(sourceFile, '量窗助手转换验收：这是第一段中文正文，包含门窗订单、客户资料和成本记录。' +
+          '请保留文字顺序、标点与数字 12345。\n\n第二段记录经营分析：本月营收 67890 元，' +
+          '订单数量 37，平均利润 245 元。转换后必须能够正常编辑这些完整内容。\n\n' +
+          '第三段再次检查长句和中文字符：铝合金门窗、玻璃、五金配件与安装工序均应完整保留。\n')
+      }
+      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert',
+        sourceFile, '--to', 'pdf', '--output', input, '--json'],
+      { env: originalCliEnv() })
+      const fixture = await readFile(input)
+      if ((await PDFDocument.load(fixture)).getPageCount() !== 1)
+        throw new Error('PDF text fixture must have one page for single-image outputs')
+      const pdftotext = join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext')
+      const sourceText = execFileSync(pdftotext, [input, '-'], { encoding: 'utf8' })
+        .replace(/\s+/g, '')
+      const chunks = []
+      for (let index = 0; index + 10 <= sourceText.length; index += 10)
+        chunks.push(sourceText.slice(index, index + 10))
+      if (chunks.length < 10) throw new Error('PDF fixture has insufficient extractable Chinese text')
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes('pdf')).map((operation) => operation.targetExtension)
+        .filter((target) => !['pdf', 'xlsx'].includes(target) &&
+          (!process.env.CONVERSION_PDF_TARGETS ||
+            process.env.CONVERSION_PDF_TARGETS.split(',').includes(target)))
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [['input.pdf', fixture]])
+        const backendPath = join(pdfWork, `backend.${target}`)
+        const directPath = join(pdfWork, `direct.${target}`)
+        await writeFile(backendPath, backend.bytes)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        if (['jpg', 'png', 'webp'].includes(target)) {
+          const first = await sharp(backend.bytes).metadata()
+          const second = await sharp(directPath).metadata()
+          if (first.width !== second.width || first.height !== second.height ||
+            first.width < 500 || first.height < 500)
+            throw new Error(`PDF to ${target}: image dimensions differ from original`)
+          const preview = async (file) => sharp(file).resize(300, 300, { fit: 'inside' })
+            .removeAlpha().raw().toBuffer()
+          if (!(await preview(backend.bytes)).equals(await preview(directPath)))
+            throw new Error(`PDF to ${target}: decoded pixels differ from original`)
+        } else {
+          const extract = (file) => {
+            if (target !== 'docx') {
+              const value = require('node:fs').readFileSync(file, 'utf8')
+              return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
+            }
+            execFileSync('unzip', ['-tqq', file])
+            return execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
+              .replace(/<[^>]+>/g, '')
+          }
+          const result = extract(backendPath).replace(/\s+/g, '')
+          if (result !== extract(directPath).replace(/\s+/g, '') ||
+            chunks.filter((part) => result.includes(part)).length / chunks.length < 0.7)
+            throw new Error(`PDF to ${target}: Chinese text differs from original or source`)
+        }
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', 'pdf', target, createHash('sha256').update(fixture).digest('hex'),
+          'real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked'])
+        console.log(`PASS pdf:${target}, text or image matches direct original`)
+      }
+    } finally { await rm(pdfWork, { recursive: true, force: true }) }
+  }
 
   if (process.env.CONVERSION_SHEET_INPUTS) {
     const sheetWork = await mkdtemp(join(tmpdir(), 'ledger-sheet-pairs-'))
@@ -535,7 +948,7 @@ async function main() {
     } finally { await rm(sheetWork, { recursive: true, force: true }) }
   }
 
-  if (process.env.CONVERSION_SAMPLE_DOCX) {
+  if (process.env.CONVERSION_SAMPLE_DOCX && !process.env.CONVERSION_SKIP_DOCX) {
     const sample = await readFile(process.env.CONVERSION_SAMPLE_DOCX)
     const document = await convert('convert:pdf', [['sample.docx', sample]])
     const pages = (await PDFDocument.load(document.bytes)).getPageCount()

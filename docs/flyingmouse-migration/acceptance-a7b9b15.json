@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 523,
+    "passed": 679,
     "failed": 0,
-    "incomplete": 651
+    "incomplete": 495
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -602,155 +602,172 @@
     {
       "input": "ass",
       "output": "srt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0f2185bc172fc385dc39fe71ed5d2b121ba9bc3217fdca4bb9bc89ec3a09a516",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "ass",
       "output": "ssa",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0f2185bc172fc385dc39fe71ed5d2b121ba9bc3217fdca4bb9bc89ec3a09a516",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "ass",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0f2185bc172fc385dc39fe71ed5d2b121ba9bc3217fdca4bb9bc89ec3a09a516",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "ass",
       "output": "vtt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0f2185bc172fc385dc39fe71ed5d2b121ba9bc3217fdca4bb9bc89ec3a09a516",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "avi",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avi",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "avif",
@@ -2100,47 +2117,52 @@
     {
       "input": "epub",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "461fbba1ff8ef688c4d33e8703abdb411c1c1295be350fef626cf8d1adf33b82",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-chapter Chinese EPUB: direct original and authenticated backend, decoded chapters checked"
     },
     {
       "input": "epub",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "461fbba1ff8ef688c4d33e8703abdb411c1c1295be350fef626cf8d1adf33b82",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-chapter Chinese EPUB: direct original and authenticated backend, decoded chapters checked"
     },
     {
       "input": "epub",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "461fbba1ff8ef688c4d33e8703abdb411c1c1295be350fef626cf8d1adf33b82",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-chapter Chinese EPUB: direct original and authenticated backend, decoded chapters checked"
     },
     {
       "input": "epub",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "461fbba1ff8ef688c4d33e8703abdb411c1c1295be350fef626cf8d1adf33b82",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-chapter Chinese EPUB: direct original and authenticated backend, decoded chapters checked"
     },
     {
       "input": "epub",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "461fbba1ff8ef688c4d33e8703abdb411c1c1295be350fef626cf8d1adf33b82",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-chapter Chinese EPUB: direct original and authenticated backend, decoded chapters checked"
     },
     {
       "input": "erf",
@@ -2665,119 +2687,132 @@
     {
       "input": "flv",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "flv",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "gif",
@@ -5445,236 +5480,262 @@
     {
       "input": "m4s",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4s",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "m4v",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "markdown",
@@ -5990,245 +6051,272 @@
     {
       "input": "mkv",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mkv",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mobi",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4beaa137653ea95b5f839156275fe394eaf9017dcb418a49960493e2bbaf826c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid two-chapter UTF-8 PalmDOC MOBI: direct original and authenticated backend, decoded content checked"
     },
     {
       "input": "mobi",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4beaa137653ea95b5f839156275fe394eaf9017dcb418a49960493e2bbaf826c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid two-chapter UTF-8 PalmDOC MOBI: direct original and authenticated backend, decoded content checked"
     },
     {
       "input": "mobi",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4beaa137653ea95b5f839156275fe394eaf9017dcb418a49960493e2bbaf826c",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid two-chapter UTF-8 PalmDOC MOBI: direct original and authenticated backend, decoded content checked"
     },
     {
       "input": "mov",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mov",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp3",
@@ -6303,110 +6391,122 @@
     {
       "input": "mp4",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mp4",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "mrw",
@@ -6848,56 +6948,62 @@
     {
       "input": "odt",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9baa8e44833548a31e10c994d3b99d82db61a207f2629f99df45c985998ae78d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "odt",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9baa8e44833548a31e10c994d3b99d82db61a207f2629f99df45c985998ae78d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "odt",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9baa8e44833548a31e10c994d3b99d82db61a207f2629f99df45c985998ae78d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "odt",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9baa8e44833548a31e10c994d3b99d82db61a207f2629f99df45c985998ae78d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "odt",
       "output": "rtf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9baa8e44833548a31e10c994d3b99d82db61a207f2629f99df45c985998ae78d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "odt",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "9baa8e44833548a31e10c994d3b99d82db61a207f2629f99df45c985998ae78d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "ofd",
@@ -7222,43 +7328,47 @@
     {
       "input": "pdf",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d3e7f6d360593e99a1e6f43028a24bd7639979e058d417cfd5d4204592428acc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked"
     },
     {
       "input": "pdf",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d3e7f6d360593e99a1e6f43028a24bd7639979e058d417cfd5d4204592428acc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked"
     },
     {
       "input": "pdf",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a357d8e6a8428ef1761e2e1afc58513c4e87263227fa9fc84636e2732695ed9a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked"
     },
     {
       "input": "pdf",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d3e7f6d360593e99a1e6f43028a24bd7639979e058d417cfd5d4204592428acc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked"
     },
     {
       "input": "pdf",
       "output": "pdf",
-      "fixtureSha256": "66362758cdf21d9a7af0dcf4452e9d83e771ab8cc8c24f2a19cfa8b93d9790b7",
+      "fixtureSha256": "bc67f9cae8b251a19a1427d2b1ed43d83556d50f2f58f3f0f6676cd385eeda9b",
       "original": "pass",
       "backend": "pass",
       "quality": "pass",
@@ -7268,29 +7378,32 @@
     {
       "input": "pdf",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a357d8e6a8428ef1761e2e1afc58513c4e87263227fa9fc84636e2732695ed9a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked"
     },
     {
       "input": "pdf",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d3e7f6d360593e99a1e6f43028a24bd7639979e058d417cfd5d4204592428acc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked"
     },
     {
       "input": "pdf",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a357d8e6a8428ef1761e2e1afc58513c4e87263227fa9fc84636e2732695ed9a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese text-layer PDF: direct original and authenticated backend, text or pixels checked"
     },
     {
       "input": "pdf",
@@ -8456,56 +8569,62 @@
     {
       "input": "rtf",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "29177da3c3eaf0a526d10bc4bf62a8f0ae48b531c8d7f7a9ac486c57f62747f6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "rtf",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "29177da3c3eaf0a526d10bc4bf62a8f0ae48b531c8d7f7a9ac486c57f62747f6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "rtf",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "29177da3c3eaf0a526d10bc4bf62a8f0ae48b531c8d7f7a9ac486c57f62747f6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "rtf",
       "output": "odt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "29177da3c3eaf0a526d10bc4bf62a8f0ae48b531c8d7f7a9ac486c57f62747f6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "rtf",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "29177da3c3eaf0a526d10bc4bf62a8f0ae48b531c8d7f7a9ac486c57f62747f6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "rtf",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "29177da3c3eaf0a526d10bc4bf62a8f0ae48b531c8d7f7a9ac486c57f62747f6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "rw2",
@@ -8681,38 +8800,42 @@
     {
       "input": "srt",
       "output": "ass",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f62bb951c69fc7c7bf411a2788af428828eaba7b5b8635909995937d09fb1a43",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "srt",
       "output": "ssa",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f62bb951c69fc7c7bf411a2788af428828eaba7b5b8635909995937d09fb1a43",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "srt",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f62bb951c69fc7c7bf411a2788af428828eaba7b5b8635909995937d09fb1a43",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "srt",
       "output": "vtt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f62bb951c69fc7c7bf411a2788af428828eaba7b5b8635909995937d09fb1a43",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "srw",
@@ -8888,38 +9011,42 @@
     {
       "input": "ssa",
       "output": "ass",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "869375918d659c907d1ceaaa16008f09f4cce0488f12b3a2d764e63d0303c323",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "ssa",
       "output": "srt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "869375918d659c907d1ceaaa16008f09f4cce0488f12b3a2d764e63d0303c323",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "ssa",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "869375918d659c907d1ceaaa16008f09f4cce0488f12b3a2d764e63d0303c323",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "ssa",
       "output": "vtt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "869375918d659c907d1ceaaa16008f09f4cce0488f12b3a2d764e63d0303c323",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "svg",
@@ -9804,38 +9931,42 @@
     {
       "input": "vtt",
       "output": "ass",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec5b14ca1827ae459480f7a5f53c35a173a94e8126c0a381d7915b50fbec5415",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "vtt",
       "output": "srt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec5b14ca1827ae459480f7a5f53c35a173a94e8126c0a381d7915b50fbec5415",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "vtt",
       "output": "ssa",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec5b14ca1827ae459480f7a5f53c35a173a94e8126c0a381d7915b50fbec5415",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "vtt",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec5b14ca1827ae459480f7a5f53c35a173a94e8126c0a381d7915b50fbec5415",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two Chinese timed cues: direct original and authenticated backend, text/timing checked"
     },
     {
       "input": "wav",
@@ -9910,110 +10041,122 @@
     {
       "input": "webm",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webm",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "webp",
@@ -10258,119 +10401,132 @@
     {
       "input": "wmv",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "mkv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "mov",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wmv",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "moving video with audio: direct original and authenticated backend, codec/duration/frames/audio compared"
     },
     {
       "input": "wpd",
