@@ -33,7 +33,7 @@ PDF 结构模型取自原版 `ci-engines-v1-win32-docstructure-1.0.1.tar.zst`，
 4. 执行 `corepack pnpm --filter @jiujiu/server exec tsc --noEmit --pretty false`、`corepack pnpm --filter @jiujiu/ledger-mp typecheck`、相关 Jest 测试，以及原版测试。
 5. `node scripts/flyingmouse-acceptance.cjs --gate` 是发布闸门。只有全部 1174 组和所有全局闸门通过才返回成功；完整逐项记录见 `acceptance-a7b9b15.json`。
 
-当前 Mac 实测：DOCX→PDF 的真实样本已和原版 CLI 直调对比，1 页、提取文本一致且原文大部分保留；有效两页 PDF→PDF 拆分的前后端页文字与原版直调一致，故逐项报告为 **2/1174**。其他四条本地链路抽测通过，但尚未满足逐项质量与原版对比标准。微信开发者工具模拟器已用本地测试身份从页面选取该 DOCX、选择 PDF、上传、创建任务，最终显示 143 KB PDF 和“已完成”；后端数据库记录 `succeeded`，调试器 0 错误。同一 UI 任务经鉴权下载得到 145993 字节 PDF、1 页、1188 字文本。模拟器中的导出保存及手机真机仍未验收，故 `miniDevtools` 闸门保持未完成。测试仅修改被 Git 忽略的 `project.private.config.json`，关闭模拟器合法域名检查；这不代表真机网络许可已通过。原版测试串行结果 **1015 通过、1 失败、21 跳过**；失败为 60 张图片合并触发原版内存保护。8 GiB Mac 当前空闲内存较低，真实 RAW 大图和扫描 PDF 结构任务仍是完整验收阻塞项。Linux 全矩阵及生产端到端未完成。
+当前 Mac 实测：DOCX→PDF 的真实样本已和原版 CLI 直调对比，1 页、提取文本一致且原文大部分保留；有效两页 PDF→PDF 拆分的前后端页文字与原版直调一致；有效中文 TXT→CSV/DOCX/EPUB/HTML/JSON/MD/PDF 完成上传、转换、下载、解码和原版直调内容对比；有效中文 PNG→18 种输出完成同样链路，并按输出检查 OCR 文字、文档结构、PDF 页面、像素或视频时长。因此逐项报告为 **27/1174**。其他四条本地链路抽测通过，但尚未满足逐项质量与原版对比标准。微信开发者工具模拟器已用本地测试身份从页面选取该 DOCX、选择 PDF、上传、创建任务，最终显示 143 KB PDF 和“已完成”；后端数据库记录 `succeeded`，调试器 0 错误。同一 UI 任务经鉴权下载得到 145993 字节 PDF、1 页、1188 字文本。模拟器中的导出保存及手机真机仍未验收，故 `miniDevtools` 闸门保持未完成。测试仅修改被 Git 忽略的 `project.private.config.json`，关闭模拟器合法域名检查；这不代表真机网络许可已通过。原版测试串行结果 **1015 通过、1 失败、21 跳过**；失败为 60 张图片合并触发原版内存保护。8 GiB Mac 当前空闲内存较低，真实 RAW 大图和扫描 PDF 结构任务仍是完整验收阻塞项。Linux 全矩阵及生产端到端未完成。
 
 ## 资源与数据
 

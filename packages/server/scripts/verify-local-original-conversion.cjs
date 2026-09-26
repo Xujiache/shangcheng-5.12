@@ -94,7 +94,7 @@ async function main() {
     for (let attempt = 0; attempt < 90; attempt++) {
       result = await json(`/jobs/${job.id}`)
       if (['succeeded', 'failed', 'cancelled'].includes(result.status)) break
-      await new Promise((done) => setTimeout(done, 1000))
+      await new Promise((done) => { setTimeout(done, 1000) })
     }
     if (result?.status !== 'succeeded' || !result.assets.length)
       throw new Error(`${operationId}: ${result?.status || 'timed out'} ${result?.error || ''}`)
@@ -180,6 +180,128 @@ async function main() {
   if ((await PDFDocument.load(images.bytes)).getPageCount() !== 2)
     throw new Error('Image merge lost pages')
   console.log('PASS images-to-pdf, two images retained')
+
+  const textFixture = Buffer.from('量窗助手中文验收\n第二行 12345\n')
+  const textWork = await mkdtemp(join(tmpdir(), 'ledger-text-pairs-'))
+  try {
+    const input = join(textWork, 'sample.txt')
+    await writeFile(input, textFixture)
+    const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+    for (const target of ['csv', 'docx', 'epub', 'html', 'json', 'md', 'pdf']) {
+      const directPath = join(textWork, `direct.${target}`)
+      const backend = await convert(`convert:${target}`, [['sample.txt', textFixture]])
+      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+        '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+      const direct = await readFile(directPath)
+      const content = (bytes, label) => {
+        if (target === 'pdf') {
+          const file = join(textWork, `${label}.pdf`)
+          require('node:fs').writeFileSync(file, bytes)
+          return execFileSync(join(dirname(process.env.FLYINGMOUSE_PDFTOPPM_PATH || 'pdftoppm'), 'pdftotext'),
+            [file, '-'], { encoding: 'utf8' })
+        }
+        if (target === 'docx' || target === 'epub') {
+          const file = join(textWork, `${label}.${target}`)
+          require('node:fs').writeFileSync(file, bytes)
+          execFileSync('unzip', ['-tqq', file])
+          const entry = target === 'docx' ? 'word/document.xml' : 'OEBPS/chapter-1.xhtml'
+          return execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' })
+            .replace(/<[^>]+>/g, '')
+        }
+        const value = bytes.toString('utf8')
+        if (target === 'json') JSON.parse(value)
+        return value
+      }
+      if (target === 'pdf' && (await PDFDocument.load(backend.bytes)).getPageCount() !== 1)
+        throw new Error('TXT to PDF page count differs from source')
+      const backendText = content(backend.bytes, 'backend')
+      if (!backendText.includes('量窗助手中文验收') ||
+        backendText.replace(/\s+/g, '') !== content(direct, 'direct').replace(/\s+/g, ''))
+        throw new Error(`TXT to ${target} differs from original or lost Chinese text`)
+      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+        '--record', 'txt', target, createHash('sha256').update(textFixture).digest('hex'),
+        'valid Chinese TXT: direct original and authenticated backend, decoded content matched'])
+      console.log(`PASS txt:${target}, Chinese content matches direct original`)
+    }
+  } finally { await rm(textWork, { recursive: true, force: true }) }
+
+  const imageFixture = await sharp(Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="320">' +
+    '<rect width="600" height="320" fill="white"/>' +
+    '<text x="45" y="125" font-family="PingFang SC" font-size="54">量窗助手 12345</text>' +
+    '<rect x="45" y="185" width="220" height="80" fill="#008866"/></svg>',
+  )).png().toBuffer()
+  const imageWork = await mkdtemp(join(tmpdir(), 'ledger-image-pairs-'))
+  try {
+    const input = join(imageWork, 'sample.png')
+    await writeFile(input, imageFixture)
+    const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+    const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
+    const ffprobe = join(dirname(ffmpeg), 'ffprobe')
+    const decoded = (file) => {
+      const info = JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-select_streams', 'v',
+        '-show_entries', 'stream=codec_name,width,height:format=duration', '-of', 'json', file],
+      { encoding: 'utf8' }))
+      const pixels = execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-frames:v', '1',
+        '-f', 'rawvideo', '-pix_fmt', 'rgba', 'pipe:1'], { maxBuffer: 4 * 1024 ** 2 })
+      let green = 0
+      for (let index = 0; index < pixels.length; index += 4)
+        if (pixels[index + 1] > pixels[index] + 50 &&
+          pixels[index + 1] > pixels[index + 2] + 15) green++
+      const selected = info.streams.find((stream) => pixels.length === stream.width * stream.height * 4)
+      if (green < 50 || !selected)
+        throw new Error(`${file}: decoded ${pixels.length} bytes, ${green} green pixels, ` +
+          `streams ${info.streams.map((stream) => `${stream.width}x${stream.height}`).join(',')}`)
+      return { info: { ...info, streams: [selected] }, pixels }
+    }
+    for (const target of ['avif', 'bmp', 'docx', 'gif', 'ico', 'jp2', 'jpg', 'jxl',
+      'md', 'mp4', 'pdf', 'ppm', 'qoi', 'tga', 'tiff', 'txt', 'webm', 'webp']) {
+      const backend = await convert(`convert:${target}`, [['sample.png', imageFixture]])
+      const directPath = join(imageWork, `direct.${target}`)
+      const backendPath = join(imageWork, `backend.${target}`)
+      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+        '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+      await writeFile(backendPath, backend.bytes)
+      if (target === 'txt' || target === 'md') {
+        const result = backend.bytes.toString('utf8')
+        if (!result.includes('量窗助手 12345') || result !== (await readFile(directPath, 'utf8')))
+          throw new Error(`PNG to ${target} OCR differs from original`)
+      } else if (target === 'docx') {
+        const xml = (file) => {
+          execFileSync('unzip', ['-tqq', file])
+          return execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
+            .replace(/<[^>]+>/g, '')
+        }
+        if (!xml(backendPath).includes('量窗助手 12345') || xml(backendPath) !== xml(directPath))
+          throw new Error('PNG to DOCX OCR differs from original')
+      } else {
+        if (target === 'pdf') {
+          if ((await PDFDocument.load(backend.bytes)).getPageCount() !== 1)
+            throw new Error('PNG to PDF page count is wrong')
+          const pdftoppm = originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH
+          for (const name of ['backend', 'direct'])
+            execFileSync(pdftoppm, ['-f', '1', '-l', '1', '-r', '72', '-png', '-singlefile',
+              join(imageWork, `${name}.pdf`), join(imageWork, `${name}-render`)])
+        }
+        const first = decoded(target === 'pdf' ? join(imageWork, 'backend-render.png') : backendPath)
+        const second = decoded(target === 'pdf' ? join(imageWork, 'direct-render.png') : directPath)
+        if (first.info.streams[0].width !== second.info.streams[0].width ||
+          first.info.streams[0].height !== second.info.streams[0].height ||
+          first.info.streams[0].codec_name !== second.info.streams[0].codec_name ||
+          !first.pixels.equals(second.pixels))
+          throw new Error(`PNG to ${target} pixels differ from original`)
+        if (target === 'mp4' || target === 'webm') {
+          const duration = Number(first.info.format.duration)
+          if (duration < 2.9 || duration > 3.1)
+            throw new Error(`PNG to ${target} video duration is wrong`)
+        }
+      }
+      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+        '--record', 'png', target, createHash('sha256').update(imageFixture).digest('hex'),
+        'valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched'])
+      console.log(`PASS png:${target}, output matches direct original`)
+    }
+  } finally { await rm(imageWork, { recursive: true, force: true }) }
 
   if (process.env.CONVERSION_SAMPLE_DOCX) {
     const sample = await readFile(process.env.CONVERSION_SAMPLE_DOCX)
