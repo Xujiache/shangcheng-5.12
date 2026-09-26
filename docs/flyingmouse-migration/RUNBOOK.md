@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-源码目录列出 1174 个输入→输出候选。当前生产提交 `b1c5cd2` 的能力接口开放 46 项操作、736 个输入→输出条目，其中 731 个是目录中的不同组合；本分支下一批候选为 742 个条目、737 个不同组合。生产公网复测见 `VALIDATION.md`。静态 HTML/HTM→PDF 已在隔离容器用英文全书和中文页面核验；JavaScript 动态生成的内容不会执行。TSV→CSV 的列结构缺陷已修复；XLSM→PDF/CSV/HTML 强制禁宏并提示静态导出会丢失宏和公式表达式。**这不等于 1174 组全部可用**：RAW、AI 等缺真实样本，扫描 PDF 的结构化引擎超过现有 4 GiB worker 限额，MOBI、OFD 中文和 EPUB3 等已发现错误；桌面 GUI 质量语料、小程序真机和整镜像许可验收仍未完成。PDF 加密选项仍关闭。文档→Markdown 的图片附件与主文件一起打包成 ZIP，并拒绝符号链接附件。
+源码目录列出 1174 个输入→输出候选。当前生产提交 `a7e6dc0` 的能力接口开放 46 项操作、742 个输入→输出条目，其中 737 个是目录中的不同组合。生产公网复测见 `VALIDATION.md`。静态 HTML/HTM→PDF 已用英文全书和中文页面核验；JavaScript 动态生成的内容不会执行。TSV→CSV 的列结构缺陷已修复；XLSM→PDF/CSV/HTML 使用禁宏的独立 LibreOffice 配置，并提示静态导出会丢失宏和公式表达式。**这不等于 1174 组全部可用**：RAW、AI 等缺真实样本，扫描 PDF 的结构化引擎超过现有 4 GiB worker 限额，MOBI、OFD 中文和 EPUB3 等已发现错误；桌面 GUI 质量语料、小程序真机和整镜像许可验收仍未完成。PDF 加密选项仍关闭。文档→Markdown 的图片附件与主文件一起打包成 ZIP，并拒绝符号链接附件。
 
 2026-09-26 初次生产部署开放十七组格式及一项图片合成操作；此后逐步扩展。PM2 API 读取 `/etc/jiujiu/server.env`，Docker 容器 `jiujiu-conversion-worker-production` 使用 `deploy_default` 网络和权限为 600 的 `/etc/jiujiu/conversion-worker.env`。worker 配置为 `unless-stopped`、只读根目录、3 GiB 临时目录、4 GiB 内存及 2 CPU 限额。生产数据库备份、线上 HTTPS 转换及清理证据见 `VALIDATION.md`。
 

@@ -120,3 +120,11 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 新镜像在无网络、只读根目录、4 GiB 内存限制的一次性容器中验证 HEIC→PNG、PSD→PDF、SVG→MP4、数字 PDF 表格→XLSX、PDF→DOCX；产物签名、XLSX 中文和数值、DOCX 中文正文均已核对。镜像包含 libheif 与专用 Camelot 表格引擎，不包含扫描 PDF 结构化大模型。
 - 公网鉴权能力接口返回 46 项操作、736 个展示条目（去重后 731 组），单文件 96,000,000 字节、单批 268,435,456 字节、最多 100 个文件。公网 HTTPS 共完成 46 次抽样转换：8 组新增格式、8 组文本、7 组 Office/PDF/ZIP、22 组图片/OCR/音视频/字幕回归及 1 个 96,000,000 字节 MP4→WebM。每次均检查下载产物、跨账号下载拒绝并删除测试任务；额外核验 Range 206/416，以及 96,000,001 字节上传请求返回 400。测试脚本留在服务器 `engine-unlock-test/b1-production-http.cjs`。
 - 上述抽样不证明 731 组逐一通过，更不代表原版 1174 个目录候选全部可用。差集仍有 443 组，主要是 RAW/AI 及缺真实样本的旧式文档；MOBI、TSV→CSV、OFD 中文和 EPUB3 等路径已发现具体失败。原版 16 GiB/32 GiB/1000 的理论上限受微信文件接口与现有 worker 资源限制，未对小程序开放。小程序真机与桌面 GUI 质量对比尚未完成。
+
+## 2026-09-26 HTML、TSV、XLSM 补充部署
+
+- 生产 API 与 worker 已切换到 `a7e6dc0`，worker 镜像为 `sha256:5a696a1606e22c48382ae37fa234a47b9ce73096833cd4a7f6c55c82e1e2e359`；前一容器保留为 `jiujiu-conversion-worker-before-a7e6dc0-20260926`，API 更新前构建备份为服务器 `server-dist-before-a7e6dc0.tgz`。公网 `/health` 与本机 `/health/ready` 均返回 200，worker 运行 2 分钟后重启数为 0。无数据库迁移。
+- 能力接口返回 46 项操作、742 个展示条目、737 个不同输入→目标组合、69 种输入后缀和 44 种目标后缀；单文件 96,000,000 字节、单批 256 MiB、100 个文件的上限保持。新增的 6 组是 HTML/HTM→PDF、TSV→CSV、XLSM→PDF/CSV/HTML；原版目录仍有 437 组未开放。
+- 新镜像在无网络、只读根目录、4 GiB 内存限制的一次性容器中验证 HTML→PDF、TSV→CSV，以及 XLSM→PDF/CSV/HTML；XLSM 三组 CLI 结果均带 `XLSM_MACROS_OMITTED`。LibreOffice 每次使用独立配置并写入 `DisableMacrosExecution=true`；对 DOCX→PDF、PPTX→PDF 做过隔离回归。带 VBA 的 XLSM 测试件只加宽第一列，`vbaProject.bin` 哈希保持不变。未执行真实恶意宏试验，XLSM→XLSX/XLS/ODS 的宏保真未验收，仍未开放。
+- 公网 HTTPS 的 6 组新增格式均通过上传、转换、鉴权下载、跨账号拒绝和删除；PDF 提取文本、TSV/CSV 多列及单元格内换行、XLSM 中文/数值/公式计算结果和用户可见宏提示均已核对。首次使用窄列 XLSM 时，PDF 如源表格视觉效果一样裁掉一个汉字；加宽原测试件列后 PDF 完整显示，未据此修改业务文件。另重放 HEIC→PNG、数字 PDF→XLSX、PPTX→PNG 和 Markdown→PDF 回归通过。测试脚本为服务器 `engine-unlock-test/b1-production-http.cjs`。
+- 测试结束后运行中的任务 0、测试账号 0；原有 3 条成功用户任务未动。小程序源码已修复返回页面后能力和限额不刷新的问题，格式流程 22/22、下载测试和类型检查通过；Mac 锁屏且微信开发者工具服务端口关闭，官方编译、上传与真机验证尚未完成。源码提交不会自动更新手机上的正式版。
