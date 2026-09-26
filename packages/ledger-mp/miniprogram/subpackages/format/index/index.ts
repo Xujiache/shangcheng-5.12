@@ -5,6 +5,8 @@ import {
   conversionApi,
   chunkUpload,
   downloadAsset,
+  WX_DOWNLOAD_MAX_BYTES,
+  WX_SAVED_FILE_MAX_BYTES,
   Job,
   Operation,
 } from '../api'
@@ -50,6 +52,7 @@ function visual(name: string, path = '', thumbnailPath = '') {
   }
 }
 function canPreview(name: string, size: number) {
+  if (size >= WX_DOWNLOAD_MAX_BYTES) return false
   const extension = ext(name)
   return /^(docx?|xlsx?|pptx?|pdf|png|jpe?g|webp|gif|mp4|mov|webm|mp3|wav|m4a|aac)$/.test(extension) ||
     (size < 256 * 1024 && /^(txt|md|markdown|csv|json|html|xml|yaml|yml|log|srt|vtt|ass|ssa)$/.test(extension))
@@ -740,7 +743,7 @@ MotionPage({
     const asset = job?.assets.find((item) => item.id === assetId)
     if (!asset) throw new Error('结果文件不存在')
     if (asset.localPath) return asset as Asset & { localPath: string }
-    const path = await downloadAsset(jobId, assetId)
+    const path = await downloadAsset(jobId, assetId, asset.sizeBytes)
     this.setData({
       jobs: this.data.jobs.map((item) =>
         item.id === jobId
@@ -835,6 +838,12 @@ MotionPage({
     })
   },
   async saveAsset(e: WechatMiniprogram.BaseEvent) {
+    const selected = this.data.jobs.find((job) => job.id === String(e.currentTarget.dataset.job))
+      ?.assets.find((asset) => asset.id === String(e.currentTarget.dataset.asset))
+    if (selected && selected.sizeBytes >= WX_SAVED_FILE_MAX_BYTES) {
+      wx.showToast({ title: '达到微信本地保存上限（100 MB）', icon: 'none' })
+      return
+    }
     let asset: Asset & { localPath: string }
     try {
       asset = await this.ensureAsset(

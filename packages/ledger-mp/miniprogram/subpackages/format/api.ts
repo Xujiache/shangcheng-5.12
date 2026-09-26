@@ -3,6 +3,8 @@ import { request, handleUnauthorized } from '../../utils/request'
 import { getToken } from '../../utils/store'
 
 const ROOT = '/l/conversions'
+export const WX_DOWNLOAD_MAX_BYTES = 200_000_000
+export const WX_SAVED_FILE_MAX_BYTES = 100_000_000
 export interface Operation {
   id: string
   label: string
@@ -117,13 +119,19 @@ export function chunkUpload(
   })
 }
 
-export function downloadAsset(jobId: string, assetId: string): Promise<string> {
+export function downloadAsset(jobId: string, assetId: string, sizeBytes: number): Promise<string> {
+  if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 0)
+    return Promise.reject(new Error('结果文件大小无效'))
+  if (sizeBytes >= WX_DOWNLOAD_MAX_BYTES)
+    return Promise.reject(new Error('文件达到微信单次下载上限（200 MB）'))
   return new Promise((resolve, reject) => {
     wx.downloadFile({
       url: `${CONVERSION_API_BASE}/api/v1${ROOT}/jobs/${jobId}/assets/${assetId}`,
       header: { Authorization: 'Bearer ' + getToken() },
       timeout: 120_000,
       success: (res) => {
+        if (res.statusCode !== 200 && res.tempFilePath)
+          wx.getFileSystemManager().unlink({ filePath: res.tempFilePath, fail: () => {} })
         if (res.statusCode === 401) {
           handleUnauthorized()
           reject(new Error('登录已失效'))

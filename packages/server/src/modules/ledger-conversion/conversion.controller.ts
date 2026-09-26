@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Post,
   Query,
@@ -107,12 +108,18 @@ export class ConversionController {
     @CurrentLedgerUser() user: LedgerAuthUser,
     @Param('id') id: string,
     @Param('assetId') assetId: string,
+    @Headers('range') range: string | undefined,
     @Res() response: Response,
   ) {
-    const { asset, stream } = await this.service.asset(user.id, id, assetId)
+    const { asset, stream, statusCode, contentLength, contentRange } =
+      await this.service.asset(user.id, id, assetId, range)
     const fallback = asset.fileName.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+    response.status(statusCode)
     response.setHeader('Content-Type', asset.mimeType)
-    response.setHeader('Content-Length', String(asset.sizeBytes))
+    response.setHeader('Content-Length', String(contentLength))
+    response.setHeader('Accept-Ranges', 'bytes')
+    response.setHeader('Cache-Control', 'private, no-store')
+    if (contentRange) response.setHeader('Content-Range', contentRange)
     response.setHeader(
       'Content-Disposition',
       `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(asset.fileName)}`,

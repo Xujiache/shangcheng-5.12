@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { basename, extname } from 'node:path'
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { HttpException, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { Prisma } from '@prisma/client'
 import Redis from 'ioredis'
@@ -515,7 +515,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     return { userId, jobsDeleted: jobs.length, pendingUploadsDeleted: uploads.length }
   }
 
-  async asset(userId: string, jobId: string, assetId: string) {
+  async asset(userId: string, jobId: string, assetId: string, range?: string) {
     const storage = this.requireReady()
     const asset = await this.prisma.ledgerConversionAsset.findFirst({
       where: {
@@ -525,7 +525,37 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       },
     })
     if (!asset) throw new BizException(BizCode.INVALID_PARAMS, '结果不存在')
-    return { asset, stream: await storage.getObject(this.bucket, asset.objectKey) }
+    const size = Number(asset.sizeBytes)
+    if (!Number.isSafeInteger(size) || size < 0)
+      throw new BizException(BizCode.BUSINESS_ERROR, '结果文件大小无效')
+    if (!range) {
+      return {
+        asset,
+        stream: await storage.getObject(this.bucket, asset.objectKey),
+        statusCode: 200,
+        contentLength: size,
+      }
+    }
+    const match = /^bytes=(\d*)-(\d*)$/i.exec(range.trim())
+    const suffix = match && !match[1] && match[2] ? Number(match[2]) : NaN
+    const start = Number.isSafeInteger(suffix) && suffix > 0
+      ? Math.max(0, size - suffix)
+      : match && match[1] ? Number(match[1]) : NaN
+    const requestedEnd = match && match[1] && match[2] ? Number(match[2]) : size - 1
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(requestedEnd) ||
+      start >= size ||
+      requestedEnd < start
+    ) throw new HttpException('无效的文件范围', 416)
+    const end = Math.min(requestedEnd, size - 1)
+    return {
+      asset,
+      stream: await storage.getPartialObject(this.bucket, asset.objectKey, start, end - start + 1),
+      statusCode: 206,
+      contentLength: end - start + 1,
+      contentRange: `bytes ${start}-${end}/${size}`,
+    }
   }
 
   private async removeJobObjects(id: string) {

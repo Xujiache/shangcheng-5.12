@@ -341,6 +341,42 @@ describe('ledger conversion gate', () => {
     await instance.onModuleDestroy()
   })
 
+  test('asset ranges retain owner checks and return exact byte lengths', async () => {
+    const asset = { id: 'a1', objectKey: 'private/result', sizeBytes: 10n }
+    const prisma = { ledgerConversionAsset: { findFirst: jest.fn().mockResolvedValue(asset) } }
+    const instance = service(prisma)
+    const storage = {
+      getObject: jest.fn().mockResolvedValue('whole'),
+      getPartialObject: jest.fn().mockResolvedValue('part'),
+    }
+    ;(instance as any).storage = storage
+
+    await expect(instance.asset('u1', 'j1', 'a1')).resolves.toMatchObject({
+      stream: 'whole', statusCode: 200, contentLength: 10,
+    })
+    await expect(instance.asset('u1', 'j1', 'a1', 'bytes=3-6')).resolves.toMatchObject({
+      stream: 'part', statusCode: 206, contentLength: 4, contentRange: 'bytes 3-6/10',
+    })
+    expect(storage.getPartialObject).toHaveBeenCalledWith('jiujiu-conversions', 'private/result', 3, 4)
+    await expect(instance.asset('u1', 'j1', 'a1', 'bytes=8-20')).resolves.toMatchObject({
+      contentLength: 2, contentRange: 'bytes 8-9/10',
+    })
+    await expect(instance.asset('u1', 'j1', 'a1', 'bytes=-4')).resolves.toMatchObject({
+      contentLength: 4, contentRange: 'bytes 6-9/10',
+    })
+    for (const range of ['bytes=10-', 'bytes=6-3', 'bytes=0-1,4-5', 'bytes=-0', 'bytes=-']) {
+      await expect(instance.asset('u1', 'j1', 'a1', range)).rejects.toMatchObject({ status: 416 })
+    }
+    expect(storage.getPartialObject).toHaveBeenCalledTimes(3)
+    expect(prisma.ledgerConversionAsset.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'a1', jobId: 'j1',
+        job: { userId: 'u1', status: 'succeeded', expiresAt: { gt: expect.any(Date) } },
+      },
+    })
+    await instance.onModuleDestroy()
+  })
+
   test('upload resume checks the ledger owner and expiry', async () => {
     const prisma = {
       ledgerConversionUpload: { findFirst: jest.fn().mockResolvedValue(null) },

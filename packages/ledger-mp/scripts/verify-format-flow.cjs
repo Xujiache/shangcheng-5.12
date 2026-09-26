@@ -19,7 +19,7 @@ function setup() {
   const calls = { toasts: [], created: [], fileData: {} }
   const api = { capabilities: async () => capabilities, listJobs: async () => [], createJob: async (...args) => { calls.created.push(args); return { id: 'new' } } }
   const wx = { pageScrollTo() {}, showToast: options => calls.toasts.push(options.title), showActionSheet: options => { calls.sheet = options }, chooseMessageFile: options => { calls.message = options }, chooseMedia: options => { calls.media = options }, getFileSystemManager: () => ({ readFile: options => options.success({ data: (calls.fileData[options.filePath] || new Uint8Array()).buffer }) }) }
-  vm.runInNewContext(code, { MotionPage: config => { page = config }, LOCAL_CONVERSION_TEST: true, conversionApi: api, wx, setInterval, clearInterval, Error, console })
+  vm.runInNewContext(code, { MotionPage: config => { page = config }, LOCAL_CONVERSION_TEST: true, WX_DOWNLOAD_MAX_BYTES: 200_000_000, WX_SAVED_FILE_MAX_BYTES: 100_000_000, conversionApi: api, wx, setInterval, clearInterval, Error, console })
   page.setData = values => Object.assign(page.data, values)
   page.setData({ capabilities })
   page.uploadOne = async selected => selected.name
@@ -199,6 +199,13 @@ test('export and task menus dispatch existing actions without dropping functiona
   for (const [status, index, expected] of [['running', 0, 'cancel'], ['failed', 0, 'retry'], ['failed', 1, 'delete'], ['succeeded', 0, 'delete']]) {
     page.setData({ jobs: [{ id: 'a', status }] }); page.jobMenu(event({ id: 'a' })); calls.sheet.success({ tapIndex: index }); assert.equal(action, expected)
   }
+})
+test('files beyond WeChat saved-file limit fail before download', async () => {
+  const { page, calls } = setup()
+  page.setData({ jobs: [{ id: 'job', assets: [{ id: 'asset', sizeBytes: 100_000_000 }] }] })
+  page.ensureAsset = async () => { throw Error('must not download') }
+  await page.saveAsset(event({ job: 'job', asset: 'asset' }))
+  assert(calls.toasts.includes('达到微信本地保存上限（100 MB）'))
 })
 test('non-previewable result never downloads when preview is invoked', async () => {
   const { page, calls, api } = setup()
