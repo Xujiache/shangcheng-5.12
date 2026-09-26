@@ -192,47 +192,77 @@ async function main() {
     throw new Error('Image merge lost pages')
   console.log('PASS images-to-pdf, two images retained')
 
-  const textFixture = Buffer.from('量窗助手中文验收\n第二行 12345\n')
+  const textSources = {
+    txt: '量窗助手中文验收\n第二行 12345\n',
+    md: '# 量窗助手中文验收\n\n第二行 12345\n',
+    markdown: '# 量窗助手中文验收\n\n第二行 12345\n',
+    log: '2026-09-27 量窗助手中文验收 12345\n',
+    yaml: 'title: 量窗助手中文验收\ncount: 12345\n',
+    yml: 'title: 量窗助手中文验收\ncount: 12345\n',
+    xml: '<root><title>量窗助手中文验收</title><count>12345</count></root>\n',
+    json: '{"title":"量窗助手中文验收","count":12345}\n',
+    html: '<html><body><h1>量窗助手中文验收</h1><p>第二行 12345</p></body></html>\n',
+    htm: '<html><body><h1>量窗助手中文验收</h1><p>第二行 12345</p></body></html>\n',
+    csv: '标题,数值\n量窗助手中文验收,12345\n',
+    tsv: '标题\t数值\n量窗助手中文验收\t12345\n',
+  }
   const textWork = await mkdtemp(join(tmpdir(), 'ledger-text-pairs-'))
   try {
-    const input = join(textWork, 'sample.txt')
-    await writeFile(input, textFixture)
     const source = engineSource
-    for (const target of ['csv', 'docx', 'epub', 'html', 'json', 'md', 'pdf']) {
-      const directPath = join(textWork, `direct.${target}`)
-      const backend = await convert(`convert:${target}`, [['sample.txt', textFixture]])
-      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
-        '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
-      const direct = await readFile(directPath)
-      const content = (bytes, label) => {
-        if (target === 'pdf') {
-          const file = join(textWork, `${label}.pdf`)
-          require('node:fs').writeFileSync(file, bytes)
-          return execFileSync(join(dirname(process.env.FLYINGMOUSE_PDFTOPPM_PATH || 'pdftoppm'), 'pdftotext'),
-            [file, '-'], { encoding: 'utf8' })
+    const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+    for (const inputExtension of (process.env.CONVERSION_TEXT_INPUTS || 'txt').split(',')) {
+      if (!Object.hasOwn(textSources, inputExtension))
+        throw new Error(`Unsupported text fixture generator: ${inputExtension}`)
+      const textFixture = Buffer.from(textSources[inputExtension])
+      const input = join(textWork, `sample.${inputExtension}`)
+      await writeFile(input, textFixture)
+      const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+      for (const target of targets) {
+        const directPath = join(textWork, `direct-${inputExtension}.${target}`)
+        const backend = await convert(`convert:${target}`, [[`sample.${inputExtension}`, textFixture]])
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        const direct = await readFile(directPath)
+        const content = (bytes, label) => {
+          if (target === 'pdf') {
+            const file = join(textWork, `${label}.pdf`)
+            require('node:fs').writeFileSync(file, bytes)
+            return execFileSync(join(dirname(process.env.FLYINGMOUSE_PDFTOPPM_PATH || 'pdftoppm'), 'pdftotext'),
+              [file, '-'], { encoding: 'utf8' })
+          }
+          if (['docx', 'epub', 'xlsx'].includes(target)) {
+            const file = join(textWork, `${label}.${target}`)
+            require('node:fs').writeFileSync(file, bytes)
+            execFileSync('unzip', ['-tqq', file])
+            let entry = 'word/document.xml'
+            if (target === 'epub') entry = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+              .split('\n').find((name) => name.endsWith('.xhtml'))
+            if (target === 'xlsx') {
+              const strings = execFileSync('unzip', ['-p', file, 'xl/sharedStrings.xml'], { encoding: 'utf8' })
+              const sheet = execFileSync('unzip', ['-p', file, 'xl/worksheets/sheet1.xml'], { encoding: 'utf8' })
+              if (!sheet.includes('<row r="2"')) throw new Error('XLSX lost data rows')
+              return strings + sheet
+            }
+            return execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' })
+              .replace(/<[^>]+>/g, '')
+          }
+          const value = bytes.toString('utf8')
+          if (target === 'json') JSON.parse(value)
+          return value
         }
-        if (target === 'docx' || target === 'epub') {
-          const file = join(textWork, `${label}.${target}`)
-          require('node:fs').writeFileSync(file, bytes)
-          execFileSync('unzip', ['-tqq', file])
-          const entry = target === 'docx' ? 'word/document.xml' : 'OEBPS/chapter-1.xhtml'
-          return execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' })
-            .replace(/<[^>]+>/g, '')
-        }
-        const value = bytes.toString('utf8')
-        if (target === 'json') JSON.parse(value)
-        return value
+        if (target === 'pdf' && (await PDFDocument.load(backend.bytes)).getPageCount() !== 1)
+          throw new Error(`${inputExtension} to PDF page count differs from source`)
+        const backendText = content(backend.bytes, 'backend')
+        const normalized = backendText.replace(/\s+/g, '')
+        if (!normalized.includes('量窗助手中文验收') ||
+          normalized !== content(direct, 'direct').replace(/\s+/g, ''))
+          throw new Error(`${inputExtension} to ${target} differs from original or lost Chinese text`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', inputExtension, target, createHash('sha256').update(textFixture).digest('hex'),
+          'valid Chinese text: direct original and authenticated backend, decoded content matched'])
+        console.log(`PASS ${inputExtension}:${target}, Chinese content matches direct original`)
       }
-      if (target === 'pdf' && (await PDFDocument.load(backend.bytes)).getPageCount() !== 1)
-        throw new Error('TXT to PDF page count differs from source')
-      const backendText = content(backend.bytes, 'backend')
-      if (!backendText.includes('量窗助手中文验收') ||
-        backendText.replace(/\s+/g, '') !== content(direct, 'direct').replace(/\s+/g, ''))
-        throw new Error(`TXT to ${target} differs from original or lost Chinese text`)
-      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
-        '--record', 'txt', target, createHash('sha256').update(textFixture).digest('hex'),
-        'valid Chinese TXT: direct original and authenticated backend, decoded content matched'])
-      console.log(`PASS txt:${target}, Chinese content matches direct original`)
     }
   } finally { await rm(textWork, { recursive: true, force: true }) }
 
@@ -356,46 +386,154 @@ async function main() {
     const source = engineSource
     const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
     const ffprobe = join(dirname(ffmpeg), 'ffprobe')
-    const input = join(audioWork, 'tone.wav')
+    const tone = join(audioWork, 'tone.wav')
     execFileSync(ffmpeg, ['-v', 'error', '-f', 'lavfi', '-i',
-      'sine=frequency=440:duration=3', '-ac', '1', input])
-    const fixture = await readFile(input)
-    for (const target of ['aac', 'flac', 'm4a', 'mp3', 'ogg', 'opus', 'wma']) {
-      const backend = await convert(`convert:${target}`, [['tone.wav', fixture]])
-      const backendPath = join(audioWork, `backend.${target}`)
-      const directPath = join(audioWork, `direct.${target}`)
-      await writeFile(backendPath, backend.bytes)
-      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
-        '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
-      const inspect = (file) => {
-        const info = JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-select_streams', 'a:0',
-          '-show_entries', 'stream=codec_name,channels:format=duration', '-of', 'json', file],
-        { encoding: 'utf8' }))
-        const pcm = execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-map', '0:a:0',
-          '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1'])
-        let sum = 0
-        for (let index = 0; index < pcm.length; index += 2) {
-          const value = pcm.readInt16LE(index)
-          sum += value * value
-        }
-        if (!info.streams.length || Number(info.format.duration) < 2.9 ||
-          Number(info.format.duration) > 3.2 || pcm.length < 80000 ||
-          Math.sqrt(sum / (pcm.length / 2)) < 100)
-          throw new Error(`${file}: missing audio, short duration, or silent output`)
-        return { info, pcm }
+      'sine=frequency=440:duration=3', '-ac', '1', tone])
+    const inspect = (file) => {
+      const info = JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-select_streams', 'a:0',
+        '-show_entries', 'stream=codec_name,channels:format=duration', '-of', 'json', file],
+      { encoding: 'utf8' }))
+      const pcm = execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-map', '0:a:0',
+        '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1'])
+      let sum = 0
+      for (let index = 0; index < pcm.length; index += 2) {
+        const value = pcm.readInt16LE(index)
+        sum += value * value
       }
-      const first = inspect(backendPath)
-      const second = inspect(directPath)
-      if (first.info.streams[0].codec_name !== second.info.streams[0].codec_name ||
-        first.info.streams[0].channels !== second.info.streams[0].channels ||
-        !first.pcm.equals(second.pcm))
-        throw new Error(`WAV to ${target} audio differs from original`)
-      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
-        '--record', 'wav', target, createHash('sha256').update(fixture).digest('hex'),
-        'valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched'])
-      console.log(`PASS wav:${target}, audio matches direct original`)
+      if (!info.streams.length || Number(info.format.duration) < 2.9 ||
+        Number(info.format.duration) > 3.2 || pcm.length < 80000 ||
+        Math.sqrt(sum / (pcm.length / 2)) < 100)
+        throw new Error(`${file}: missing audio, short duration, or silent output`)
+      return { info, pcm }
+    }
+    const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+    for (const inputExtension of (process.env.CONVERSION_AUDIO_INPUTS || 'wav').split(',')) {
+      if (!['wav', 'aac', 'flac', 'm4a', 'mp3', 'ogg', 'opus', 'wma'].includes(inputExtension))
+        throw new Error(`Unsupported audio fixture generator: ${inputExtension}`)
+      const input = inputExtension === 'wav' ? tone : join(audioWork, `source.${inputExtension}`)
+      if (inputExtension !== 'wav')
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', tone,
+          '--to', inputExtension, '--output', input, '--json'], { env: originalCliEnv() })
+      const fixture = await readFile(input)
+      const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [[`tone.${inputExtension}`, fixture]])
+        const backendPath = join(audioWork, `backend-${inputExtension}.${target}`)
+        const directPath = join(audioWork, `direct-${inputExtension}.${target}`)
+        await writeFile(backendPath, backend.bytes)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        const first = inspect(backendPath)
+        const second = inspect(directPath)
+        if (first.info.streams[0].codec_name !== second.info.streams[0].codec_name ||
+          first.info.streams[0].channels !== second.info.streams[0].channels ||
+          !first.pcm.equals(second.pcm))
+          throw new Error(`${inputExtension} to ${target} audio differs from original`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+          'valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched'])
+        console.log(`PASS ${inputExtension}:${target}, audio matches direct original`)
+      }
     }
   } finally { await rm(audioWork, { recursive: true, force: true }) }
+
+  if (process.env.CONVERSION_SHEET_INPUTS) {
+    const sheetWork = await mkdtemp(join(tmpdir(), 'ledger-sheet-pairs-'))
+    try {
+      const source = engineSource
+      const fixturePath = join(__dirname, '../test/fixtures/conversion/sheet-formula.xlsx')
+      const base = await readFile(fixturePath)
+      const original = join(sheetWork, 'fixture.xlsx')
+      await writeFile(original, base)
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const unzip = (file, name) => execFileSync('unzip', ['-p', file, name], { encoding: 'utf8' })
+      const inspect = (file, target, label) => {
+        if (target === 'csv') {
+          const value = require('node:fs').readFileSync(file, 'utf8').replace(/\s+/g, '')
+          if (!value.includes('量窗助手中文验收,12345,24690'))
+            throw new Error(`${label}: CSV lost formula result or numeric value`)
+          return value
+        }
+        if (target === 'html') {
+          const html = require('node:fs').readFileSync(file, 'utf8')
+          const body = (html.match(/<body\b[^>]*>(.*?)<\/body>/s) || [])[1] || ''
+          const value = body.replace(/<[^>]+>/g, '').replace(/\s+/g, '')
+          if (!value.includes('量窗助手中文验收') || !value.includes('12345') ||
+            !value.includes('24690') || !value.includes('附加工作表'))
+            throw new Error(`${label}: HTML lost cells or the second sheet`)
+          return value
+        }
+        if (target === 'pdf') {
+          const text = execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext'),
+            [file, '-'], { encoding: 'utf8' }).replace(/\s+/g, '')
+          if (!text.includes('量窗助手中文验收') || !text.includes('12345') ||
+            !text.includes('24690') || !text.includes('附加工作表'))
+            throw new Error(`${label}: PDF lost cells or the second sheet`)
+          return text
+        }
+        let document = file
+        if (target === 'xls') {
+          const soffice = originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH
+          execFileSync(soffice, [`-env:UserInstallation=file://${join(sheetWork, `profile-${label}`)}`,
+            '--headless', '--convert-to', 'xlsx', '--outdir', sheetWork, file])
+          document = file.replace(/\.xls$/, '.xlsx')
+        }
+        execFileSync('unzip', ['-tqq', document])
+        if (target === 'ods') {
+          const xml = unzip(document, 'content.xml')
+          if (!xml.includes('table:name="验收表"') || !xml.includes('table:name="第二表"') ||
+            !xml.includes('量窗助手中文验收') || !xml.includes('附加工作表') ||
+            !xml.includes('office:value="12345"') || !xml.includes('office:value="24690"') ||
+            !xml.includes('table:formula="of:=[.B1]*2"'))
+            throw new Error(`${label}: ODS lost sheets, values, or formula`)
+          return JSON.stringify({
+            sheets: [...xml.matchAll(/<table:table table:name="([^"]+)/g)].map((item) => item[1]),
+            cells: xml.match(/<table:table-row.*?<\/table:table-row>/s)?.[0]
+              .replace(/<[^>]+>/g, '').replace(/\s+/g, ''),
+            formula: 'B1*2', value: 24690,
+          })
+        }
+        const workbook = unzip(document, 'xl/workbook.xml')
+        const strings = unzip(document, 'xl/sharedStrings.xml')
+        const first = unzip(document, 'xl/worksheets/sheet1.xml')
+        const second = unzip(document, 'xl/worksheets/sheet2.xml')
+        if (!workbook.includes('name="验收表"') || !workbook.includes('name="第二表"') ||
+          !strings.includes('量窗助手中文验收') || !strings.includes('附加工作表') ||
+          !/<f(?:\s[^>]*)?>B1\*2<\/f>/.test(first) || !first.includes('<v>12345</v>') ||
+          !first.includes('<v>24690</v>') || !second.includes('<v>7</v>'))
+          throw new Error(`${label}: XLS/XLSX lost sheets, values, or formula`)
+        return JSON.stringify({ sheets: ['验收表', '第二表'], formula: 'B1*2', values: [12345, 24690, 7] })
+      }
+      for (const inputExtension of process.env.CONVERSION_SHEET_INPUTS.split(',')) {
+        if (!['xlsx', 'ods', 'xls'].includes(inputExtension))
+          throw new Error(`Unsupported spreadsheet fixture generator: ${inputExtension}`)
+        const input = join(sheetWork, `input.${inputExtension}`)
+        if (inputExtension === 'xlsx') await writeFile(input, base)
+        else execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', original,
+          '--to', inputExtension, '--output', input, '--json'], { env: originalCliEnv() })
+        const fixture = await readFile(input)
+        const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+        for (const target of targets) {
+          const label = `${inputExtension}-${target}`
+          const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
+          const backendPath = join(sheetWork, `backend-${label}.${target}`)
+          const directPath = join(sheetWork, `direct-${label}.${target}`)
+          await writeFile(backendPath, backend.bytes)
+          execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+            '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+          if (inspect(backendPath, target, `backend-${label}`) !==
+            inspect(directPath, target, `direct-${label}`))
+            throw new Error(`${label}: backend differs from original`)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+            'two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked'])
+          console.log(`PASS ${inputExtension}:${target}, two sheets and values match direct original`)
+        }
+      }
+    } finally { await rm(sheetWork, { recursive: true, force: true }) }
+  }
 
   if (process.env.CONVERSION_SAMPLE_DOCX) {
     const sample = await readFile(process.env.CONVERSION_SAMPLE_DOCX)

@@ -10,6 +10,20 @@ const source = path.join(root, 'vendor/flyingmouse-format/upstream-a7b9b15')
 const expectedImageSha256 = '94593339599ff432abfb75b21578e019c4f05327cd1164af6e724c7f47474fcf'
 const before = 'args.push("-loop", "1", "-i", inputPath, "-t", "3");'
 const after = 'args.push("-stream_loop", "-1", "-i", inputPath, "-t", "3");'
+const rawBefore = [
+  '    const tiffCandidates = [',
+  '      path.join(tempDir, `${stem}.tiff`),',
+  '      path.join(tempDir, `${stem}.tif`)',
+  '    ];',
+].join('\n')
+const rawAfter = [
+  '    const tiffCandidates = [',
+  '      path.join(tempDir, `${stem}.tiff`),',
+  '      path.join(tempDir, `${stem}.tif`),',
+  '      path.join(tempDir, `${path.basename(tempInput)}.tiff`),',
+  '      path.join(tempDir, `${path.basename(tempInput)}.tif`)',
+  '    ];',
+].join('\n')
 
 function hash(bytes) { return createHash('sha256').update(bytes).digest('hex') }
 
@@ -21,22 +35,26 @@ function apply(directory) {
   if (hash(bytes) !== expectedImageSha256)
     throw new Error('Runtime image.js does not match pinned a7b9b15 source')
   const code = bytes.toString('utf8')
-  if (code.split(before).length !== 2)
-    throw new Error('Expected original FFmpeg loop call exactly once')
-  const patched = code.replace(before, after)
+  if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2)
+    throw new Error('Expected original image conversion calls exactly once')
+  const patched = code.replace(before, after).replace(rawBefore, rawAfter)
   fs.writeFileSync(imagePath, patched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
+    fixRevision: 2,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
-    fix: 'Use FFmpeg stream_loop for still-image video, including AVIF',
+    fixes: [
+      'Use FFmpeg stream_loop for still-image video, including AVIF',
+      'Accept LibRaw TIFF output named after the complete input file',
+    ],
   }, null, 2) + '\n')
 }
 
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 2 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     !fs.existsSync(path.join(directory, 'node_modules')))
     throw new Error('Runtime copy metadata or dependencies are invalid')

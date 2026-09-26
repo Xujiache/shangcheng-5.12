@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 382,
+    "passed": 523,
     "failed": 0,
-    "incomplete": 792
+    "incomplete": 651
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -190,65 +190,72 @@
     {
       "input": "aac",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "aac",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "aac",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "aac",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "aac",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "aac",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "aac",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "ai",
@@ -1621,65 +1628,72 @@
     {
       "input": "csv",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "csv",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "csv",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "csv",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "csv",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "csv",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "csv",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "dng",
@@ -2581,65 +2595,72 @@
     {
       "input": "flac",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "flac",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "flac",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "flac",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "flac",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "flac",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "flac",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "flv",
@@ -3311,128 +3332,142 @@
     {
       "input": "htm",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "htm",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "htm",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "htm",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "htm",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "htm",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "htm",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "html",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "html",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "html",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "html",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "html",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "html",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "html",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "ico",
@@ -4859,56 +4894,62 @@
     {
       "input": "json",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0e20085edb76a67a668e7cd1ced01f416348931dc68179ffd76036cd1ea0b6b8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "json",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0e20085edb76a67a668e7cd1ced01f416348931dc68179ffd76036cd1ea0b6b8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "json",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0e20085edb76a67a668e7cd1ced01f416348931dc68179ffd76036cd1ea0b6b8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "json",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0e20085edb76a67a668e7cd1ced01f416348931dc68179ffd76036cd1ea0b6b8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "json",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0e20085edb76a67a668e7cd1ced01f416348931dc68179ffd76036cd1ea0b6b8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "json",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0e20085edb76a67a668e7cd1ced01f416348931dc68179ffd76036cd1ea0b6b8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "jxl",
@@ -5264,128 +5305,142 @@
     {
       "input": "log",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "log",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "log",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "log",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "log",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "log",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "log",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "m4a",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "m4a",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "m4a",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "m4a",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "m4a",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "m4a",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "m4a",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "m4s",
@@ -5624,128 +5679,142 @@
     {
       "input": "markdown",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "markdown",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "markdown",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "markdown",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "markdown",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "markdown",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "markdown",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "md",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "md",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "md",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "md",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "md",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "md",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "md",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "mef",
@@ -6164,65 +6233,72 @@
     {
       "input": "mp3",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "mp3",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "mp3",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "mp3",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "mp3",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "mp3",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "mp3",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "mp4",
@@ -6722,47 +6798,52 @@
     {
       "input": "ods",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2c8293fc3266fb6e2cb66f5e5fb4b51bdae09639edbfd41f4b10e5b0aaad2272",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "ods",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2c8293fc3266fb6e2cb66f5e5fb4b51bdae09639edbfd41f4b10e5b0aaad2272",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "ods",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2c8293fc3266fb6e2cb66f5e5fb4b51bdae09639edbfd41f4b10e5b0aaad2272",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "ods",
       "output": "xls",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2c8293fc3266fb6e2cb66f5e5fb4b51bdae09639edbfd41f4b10e5b0aaad2272",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "ods",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2c8293fc3266fb6e2cb66f5e5fb4b51bdae09639edbfd41f4b10e5b0aaad2272",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "odt",
@@ -6830,128 +6911,142 @@
     {
       "input": "ogg",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "ogg",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "ogg",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "ogg",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "ogg",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "ogg",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "ogg",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "opus",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "opus",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "opus",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "opus",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "opus",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "opus",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "opus",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "orf",
@@ -7163,7 +7258,7 @@
     {
       "input": "pdf",
       "output": "pdf",
-      "fixtureSha256": "ff90e9d11e0083ae87c8ea97b5eef1430eb18937a171228ffecc6005a00a1618",
+      "fixtureSha256": "66362758cdf21d9a7af0dcf4452e9d83e771ab8cc8c24f2a19cfa8b93d9790b7",
       "original": "pass",
       "backend": "pass",
       "quality": "pass",
@@ -9559,74 +9654,82 @@
     {
       "input": "tsv",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "tsv",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "tsv",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "tsv",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "tsv",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "tsv",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "tsv",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "tsv",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "txt",
@@ -9636,7 +9739,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese TXT: direct original and authenticated backend, decoded content matched"
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "txt",
@@ -9646,7 +9749,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese TXT: direct original and authenticated backend, decoded content matched"
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "txt",
@@ -9656,7 +9759,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese TXT: direct original and authenticated backend, decoded content matched"
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "txt",
@@ -9666,7 +9769,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese TXT: direct original and authenticated backend, decoded content matched"
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "txt",
@@ -9676,7 +9779,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese TXT: direct original and authenticated backend, decoded content matched"
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "txt",
@@ -9686,7 +9789,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese TXT: direct original and authenticated backend, decoded content matched"
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "txt",
@@ -9696,7 +9799,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese TXT: direct original and authenticated backend, decoded content matched"
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "vtt",
@@ -9742,7 +9845,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
@@ -9752,7 +9855,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
@@ -9762,7 +9865,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
@@ -9772,7 +9875,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
@@ -9782,7 +9885,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
@@ -9792,7 +9895,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
@@ -9802,7 +9905,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "webm",
@@ -10085,65 +10188,72 @@
     {
       "input": "wma",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wma",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wma",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wma",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wma",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wma",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wma",
       "output": "wav",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second audio: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wmv",
@@ -10625,47 +10735,52 @@
     {
       "input": "xls",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4b3994026ba86d26e39f9ef9dbb8145c539f4f8b73ef63c16c2c9dd4acd56f1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xls",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4b3994026ba86d26e39f9ef9dbb8145c539f4f8b73ef63c16c2c9dd4acd56f1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xls",
       "output": "ods",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4b3994026ba86d26e39f9ef9dbb8145c539f4f8b73ef63c16c2c9dd4acd56f1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xls",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4b3994026ba86d26e39f9ef9dbb8145c539f4f8b73ef63c16c2c9dd4acd56f1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xls",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4b3994026ba86d26e39f9ef9dbb8145c539f4f8b73ef63c16c2c9dd4acd56f1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xlsm",
@@ -10724,236 +10839,262 @@
     {
       "input": "xlsx",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4618cfbcb910136364c370ac3ef9c0a71664d62b42bae93b90978b01e51bb25",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xlsx",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4618cfbcb910136364c370ac3ef9c0a71664d62b42bae93b90978b01e51bb25",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xlsx",
       "output": "ods",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4618cfbcb910136364c370ac3ef9c0a71664d62b42bae93b90978b01e51bb25",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xlsx",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4618cfbcb910136364c370ac3ef9c0a71664d62b42bae93b90978b01e51bb25",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xlsx",
       "output": "xls",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a4618cfbcb910136364c370ac3ef9c0a71664d62b42bae93b90978b01e51bb25",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-sheet spreadsheet: direct original and authenticated backend, text/numbers/formula checked"
     },
     {
       "input": "xml",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "xml",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "xml",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "xml",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "xml",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "xml",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "xml",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yaml",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yaml",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yaml",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yaml",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yaml",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yaml",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yaml",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yml",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yml",
       "output": "epub",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yml",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yml",
       "output": "json",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yml",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yml",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "yml",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese text: direct original and authenticated backend, decoded content matched"
     },
     {
       "input": "zip",
