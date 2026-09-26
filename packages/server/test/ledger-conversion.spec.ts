@@ -142,17 +142,18 @@ describe('ledger conversion gate', () => {
   test('opens only content-checked Kingsoft template conversions', () => {
     const checkedPairs: Record<string, string[]> = {
       wps: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html', 'md'],
-      wpt: ['pdf', 'docx'],
-      et: ['pdf', 'xlsx', 'csv', 'html'],
-      ett: ['pdf', 'xlsx', 'html'],
-      dpt: ['pdf', 'pptx'],
+      wpt: ['pdf', 'docx', 'odt', 'rtf', 'txt', 'html'],
+      et: ['pdf', 'xlsx', 'xls', 'ods', 'csv', 'html'],
+      ett: ['pdf', 'xlsx', 'xls', 'ods', 'html'],
+      dpt: ['pdf', 'pptx', 'odp', 'png', 'jpg'],
     }
     for (const [source, targets] of Object.entries(checkedPairs))
       for (const target of targets)
         expect(findConversionOperation(`convert:${target}`, [source])).toBeTruthy()
     expect(findConversionOperation('convert:pdf', ['dps'])).toBeNull()
-    expect(findConversionOperation('convert:txt', ['wpt'])).toBeNull()
+    expect(findConversionOperation('convert:md', ['wpt'])).toBeNull()
     expect(findConversionOperation('convert:csv', ['ett'])).toBeNull()
+    expect(findConversionOperation('convert:html', ['dpt'])).toBeNull()
   })
 
   test('dedicated conversion bucket rejects anonymous read policy', async () => {
