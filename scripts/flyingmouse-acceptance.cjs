@@ -19,6 +19,15 @@ if (record >= 0) {
     fixtureSha256: sha256, original: 'pass', backend: 'pass', quality: 'pass', evidence,
   })
 }
+const fail = process.argv.indexOf('--fail')
+if (fail >= 0) {
+  const [input, output, stage, sha256, evidence] = process.argv.slice(fail + 1)
+  const pair = existing.get(`${input}:${output}`)
+  if (!pair || !['original', 'backend', 'quality'].includes(stage) ||
+    !/^[a-f0-9]{64}$/.test(sha256) || !evidence)
+    throw new Error('Fail requires an original pair, stage, fixture SHA-256, and evidence label')
+  Object.assign(pair, { fixtureSha256: sha256, [stage]: 'fail', evidence })
+}
 const pairs = catalog.operations.filter((item) => item.kind === 'convert')
   .flatMap((operation) => operation.inputExtensions.map((input) => {
     const output = operation.targetExtension

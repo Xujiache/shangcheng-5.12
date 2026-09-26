@@ -4,8 +4,8 @@
   "counts": {
     "total": 1174,
     "passed": 741,
-    "failed": 0,
-    "incomplete": 433
+    "failed": 1,
+    "incomplete": 432
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -7439,11 +7439,12 @@
     {
       "input": "pdf",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "191b62f777449e99f5c636aed9ca29ae7a23802cb8f4b2bb9dac0382d8f96762",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "fail",
+      "status": "fail",
+      "evidence": "Chinese ruled table: original XLSX and local backend need layout repair; extra blank column separates row value"
     },
     {
       "input": "pef",

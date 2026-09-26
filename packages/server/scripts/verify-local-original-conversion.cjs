@@ -1008,6 +1008,88 @@ async function main() {
     } finally { await rm(pdfWork, { recursive: true, force: true }) }
   }
 
+  if (process.env.CONVERSION_PDF_TABLE) {
+    const work = await mkdtemp(join(tmpdir(), 'ledger-pdf-table-pair-'))
+    try {
+      const pdf = await PDFDocument.create()
+      const page = pdf.addPage([400, 300])
+      const font = await pdf.embedFont(StandardFonts.Helvetica)
+      const rows = [['Name', 'Value'], ['Window', '315.50']]
+      rows.forEach((row, rowIndex) => row.forEach((value, columnIndex) => {
+        page.drawText(value, { x: 70 + columnIndex * 130, y: 205 - rowIndex * 70,
+          size: 22, font })
+      }))
+      for (const x of [60, 180, 310]) page.drawLine({
+        start: { x, y: 80 }, end: { x, y: 240 }, thickness: 2,
+      })
+      for (const y of [80, 160, 240]) page.drawLine({
+        start: { x: 60, y }, end: { x: 310, y }, thickness: 2,
+      })
+      const fixture = Buffer.from(await pdf.save())
+      const input = join(work, 'input.pdf')
+      const direct = join(work, 'direct.xlsx')
+      const backend = join(work, 'backend.xlsx')
+      await writeFile(input, fixture)
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+        '--to', 'xlsx', '--output', direct, '--json'], { env: originalCliEnv() })
+      const result = await convert('convert:xlsx', [['input.pdf', fixture]])
+      await writeFile(backend, result.bytes)
+      const ExcelJS = require('../../../vendor/flyingmouse-format/upstream-a7b9b15/node_modules/exceljs')
+      const cells = async (path) => {
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.readFile(path)
+        const sheet = workbook.getWorksheet('P001-T01')
+        if (!sheet) throw new Error('PDF table lost its editable worksheet')
+        return rows.map((row, rowIndex) => row.map((_, columnIndex) =>
+          sheet.getCell(rowIndex + 1, columnIndex + 1).value))
+      }
+      const actual = await cells(backend)
+      if (JSON.stringify(actual) !== JSON.stringify(await cells(direct)) ||
+        JSON.stringify(actual) !== JSON.stringify(rows))
+        throw new Error(`PDF table cells differ from original or source: ${JSON.stringify(actual)}`)
+      console.log('PASS pdf:xlsx English ruled-table smoke; Chinese layout quality remains open')
+
+      const sourceSheet = join(work, 'chinese.xlsx')
+      const chinesePdf = join(work, 'chinese.pdf')
+      const chineseDirect = join(work, 'chinese-direct.xlsx')
+      const chineseBackend = join(work, 'chinese-backend.xlsx')
+      const sourceWorkbook = new ExcelJS.Workbook()
+      const worksheet = sourceWorkbook.addWorksheet('订单')
+      worksheet.addRow(['项目', '金额'])
+      worksheet.addRow(['门窗', 315.5])
+      worksheet.getColumn(1).width = 20
+      worksheet.getColumn(2).width = 18
+      worksheet.eachRow({ includeEmpty: false }, (row) => row.eachCell({ includeEmpty: false },
+        (cell) => { cell.border = { top: { style: 'thin' }, left: { style: 'thin' },
+          bottom: { style: 'thin' }, right: { style: 'thin' } } }))
+      await sourceWorkbook.xlsx.writeFile(sourceSheet)
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', sourceSheet,
+        '--to', 'pdf', '--output', chinesePdf, '--json'], { env: originalCliEnv() })
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', chinesePdf,
+        '--to', 'xlsx', '--output', chineseDirect, '--json'], { env: originalCliEnv() })
+      const chineseResult = await convert('convert:xlsx',
+        [['chinese.pdf', await readFile(chinesePdf)]])
+      await writeFile(chineseBackend, chineseResult.bytes)
+      const readChinese = async (path) => {
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.readFile(path)
+        const table = workbook.getWorksheet('P001-T01')
+        if (!table) throw new Error('Chinese PDF table lost its editable worksheet')
+        return [1, 2].map((row) => [1, 2, 3].map((column) => table.getCell(row, column).value || ''))
+      }
+      const directRows = await readChinese(chineseDirect)
+      const backendRows = await readChinese(chineseBackend)
+      if (JSON.stringify(directRows) !== JSON.stringify(backendRows) ||
+        JSON.stringify(backendRows) !== JSON.stringify([['项目', '金额', ''], ['门窗', '315.5', '']]))
+        throw new Error(`PDF Chinese table column fidelity: direct=${JSON.stringify(directRows)} ` +
+          `backend=${JSON.stringify(backendRows)}`)
+      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+        '--record', 'pdf', 'xlsx', createHash('sha256').update(await readFile(chinesePdf)).digest('hex'),
+        'English and Chinese ruled tables: direct original and backend retain editable cells'])
+      console.log('PASS pdf:xlsx Chinese table, direct and backend retain cells')
+    } finally { await rm(work, { recursive: true, force: true }) }
+  }
+
   if (process.env.CONVERSION_SHEET_INPUTS) {
     const sheetWork = await mkdtemp(join(tmpdir(), 'ledger-sheet-pairs-'))
     try {
