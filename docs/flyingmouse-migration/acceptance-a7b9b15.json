@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 704,
+    "passed": 741,
     "failed": 0,
-    "incomplete": 470
+    "incomplete": 433
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -1886,65 +1886,72 @@
     {
       "input": "doc",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "doc",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "doc",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "doc",
       "output": "odt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "doc",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "doc",
       "output": "rtf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "doc",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real Chinese document roundtrip: direct original and authenticated backend, decoded text retained"
     },
     {
       "input": "docx",
@@ -6872,47 +6879,52 @@
     {
       "input": "odp",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "bc29940d8a9f0d80c02a207c102b599522f37901f0e21f360bc920b7f8cd63b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "odp",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "bc29940d8a9f0d80c02a207c102b599522f37901f0e21f360bc920b7f8cd63b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "odp",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "bc29940d8a9f0d80c02a207c102b599522f37901f0e21f360bc920b7f8cd63b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "odp",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "bc29940d8a9f0d80c02a207c102b599522f37901f0e21f360bc920b7f8cd63b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "odp",
       "output": "pptx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "bc29940d8a9f0d80c02a207c102b599522f37901f0e21f360bc920b7f8cd63b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "ods",
@@ -7387,7 +7399,7 @@
     {
       "input": "pdf",
       "output": "pdf",
-      "fixtureSha256": "f3c00289ed257d21593e193d773e60922af721a0174143efcc550894c0d525e2",
+      "fixtureSha256": "dbe2d8c40839143a72cc515ca923a565c4a4dab042a9458cfe45c3ee7a570459",
       "original": "pass",
       "backend": "pass",
       "quality": "pass",
@@ -8021,218 +8033,242 @@
     {
       "input": "pptx",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1aaf9a4818ee34bb7e3322329a6b9f68fd987003568dc700010cceeae2e14663",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "pptx",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1aaf9a4818ee34bb7e3322329a6b9f68fd987003568dc700010cceeae2e14663",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "pptx",
       "output": "odp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1aaf9a4818ee34bb7e3322329a6b9f68fd987003568dc700010cceeae2e14663",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "pptx",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1aaf9a4818ee34bb7e3322329a6b9f68fd987003568dc700010cceeae2e14663",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "pptx",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1aaf9a4818ee34bb7e3322329a6b9f68fd987003568dc700010cceeae2e14663",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked"
     },
     {
       "input": "psd",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "psd",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
@@ -11280,11 +11316,12 @@
     {
       "input": "zip",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5e07c6e08fb58f8116211b8482ffa18b188a0b561af71e82d16ab6eca2b539ee",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "two-color image ZIP: direct original and authenticated backend, two rendered pages compared"
     }
   ]
 }

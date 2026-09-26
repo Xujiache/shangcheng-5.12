@@ -217,7 +217,7 @@ async function verifyBaseline(convert) {
     const inputExtensions = (process.env.CONVERSION_IMAGE_INPUTS || 'png').split(',')
     for (const inputExtension of inputExtensions) {
       if (!['png', 'svg', 'avif', 'bmp', 'gif', 'ico', 'jp2', 'j2k', 'jpg', 'jpe', 'jpeg',
-        'jfif', 'jxl', 'ppm', 'qoi', 'tga', 'tif', 'tiff', 'webp', 'heic', 'heif']
+        'jfif', 'jxl', 'ppm', 'qoi', 'tga', 'tif', 'tiff', 'webp', 'heic', 'heif', 'psd']
         .includes(inputExtension))
         throw new Error(`Unsupported image fixture generator: ${inputExtension}`)
       const input = join(imageWork, `sample.${inputExtension}`)
@@ -229,6 +229,8 @@ async function verifyBaseline(convert) {
         if (inputExtension === 'j2k')
           execFileSync(ffmpeg, ['-v', 'error', '-i', png, '-c:v', 'jpeg2000', '-format',
             'j2k', '-f', 'image2', input])
+        else if (inputExtension === 'psd')
+          execFileSync('sips', ['-s', 'format', 'psd', png, '--out', input])
         else if (inputExtension === 'jxl')
           execFileSync(ffmpeg, ['-v', 'error', '-i', png, '-c:v', 'libjxl',
             '-distance', '0', '-effort', '7', input])
@@ -894,10 +896,18 @@ async function main() {
         return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
       }
       for (const inputExtension of process.env.CONVERSION_DOCUMENT_INPUTS.split(',')) {
-        if (!['odt', 'rtf'].includes(inputExtension))
+        if (!['odt', 'rtf', 'doc'].includes(inputExtension))
           throw new Error(`Unsupported document fixture generator: ${inputExtension}`)
         const input = join(documentWork, `input.${inputExtension}`)
-        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert',
+        if (inputExtension === 'doc') {
+          execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
+            [`-env:UserInstallation=file://${join(documentWork, 'source-doc-profile')}`,
+              '--headless', '--convert-to', 'doc:MS Word 97', '--outdir', documentWork,
+              process.env.CONVERSION_SAMPLE_DOCX])
+          const generated = join(documentWork,
+            basename(process.env.CONVERSION_SAMPLE_DOCX).replace(/\.docx$/i, '.doc'))
+          await writeFile(input, await readFile(generated))
+        } else execFileSync(process.execPath, [join(source, 'cli.js'), 'convert',
           process.env.CONVERSION_SAMPLE_DOCX, '--to', inputExtension,
           '--output', input, '--json'], { env: originalCliEnv() })
         const fixture = await readFile(input)
@@ -1192,6 +1202,121 @@ async function main() {
         console.log(`PASS xlsm:${target}, cells match direct original and macro warning is visible`)
       }
     } finally { await rm(macroWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_PRESENTATIONS) {
+    const presentationWork = await mkdtemp(join(tmpdir(), 'ledger-presentation-pairs-'))
+    try {
+      const source = engineSource
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const pptx = join(presentationWork, 'slides.pptx')
+      await writeFile(pptx, await readFile(join(__dirname,
+        '../test/fixtures/conversion/presentation-two-slides.pptx')))
+      const odp = join(presentationWork, 'slides.odp')
+      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', pptx,
+        '--to', 'odp', '--output', odp, '--json'], { env: originalCliEnv() })
+      const unzip = (file, name) => execFileSync('unzip', ['-p', file, name], { encoding: 'utf8' })
+      const labels = ['量窗助手', '12345', '经营分析', '订单数量', '37']
+      for (const inputExtension of ['pptx', 'odp']) {
+        const input = inputExtension === 'pptx' ? pptx : odp
+        const fixture = await readFile(input)
+        const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+        for (const target of targets) {
+          const backend = await convert(`convert:${target}`, [[`slides.${inputExtension}`, fixture]])
+          const backendPath = join(presentationWork, `backend-${inputExtension}.${target}`)
+          const directPath = join(presentationWork, `direct-${inputExtension}.${target}`)
+          await writeFile(backendPath, backend.bytes)
+          execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+            '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+          if (target === 'jpg' || target === 'png') {
+            const entries = (file) => execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+              .trim().split('\n').filter((entry) => entry.endsWith(`.${target}`)).sort()
+            const firstNames = entries(backendPath)
+            const secondNames = entries(directPath)
+            if (firstNames.length !== 2 || JSON.stringify(firstNames) !== JSON.stringify(secondNames))
+              throw new Error(`${inputExtension} to ${target}: slides ZIP differs from original`)
+            for (let index = 0; index < firstNames.length; index++) {
+              const first = execFileSync('unzip', ['-p', backendPath, firstNames[index]])
+              const second = execFileSync('unzip', ['-p', directPath, secondNames[index]])
+              const meta = await sharp(first).metadata()
+              if (meta.width < 500 || meta.height < 300 ||
+                !(await sharp(first).resize(300, 180).removeAlpha().raw().toBuffer())
+                  .equals(await sharp(second).resize(300, 180).removeAlpha().raw().toBuffer()))
+                throw new Error(`${inputExtension} to ${target}: slide pixels differ from original`)
+            }
+          } else {
+            const content = async (file) => {
+              if (target === 'pdf') {
+                if ((await PDFDocument.load(await readFile(file))).getPageCount() !== 2)
+                  throw new Error(`${file}: presentation PDF did not retain two slides`)
+                return execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH),
+                  'pdftotext'), [file, '-'], { encoding: 'utf8' })
+              }
+              if (target === 'html') return (await readFile(file, 'utf8')).replace(/<[^>]+>/g, '')
+              execFileSync('unzip', ['-tqq', file])
+              if (target === 'odp') return unzip(file, 'content.xml').replace(/<[^>]+>/g, '')
+              return [1, 2].map((number) => unzip(file, `ppt/slides/slide${number}.xml`)
+                .replace(/<[^>]+>/g, '')).join(' ')
+            }
+            const text = (await content(backendPath)).replace(/\s+/g, '')
+            if (text !== (await content(directPath)).replace(/\s+/g, '') ||
+              labels.some((label) => !text.includes(label)))
+              throw new Error(`${inputExtension} to ${target}: slide text differs from original`)
+          }
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+            'two-slide Chinese presentation: direct original and authenticated backend, page text or pixels checked'])
+          console.log(`PASS ${inputExtension}:${target}, two slides match direct original`)
+        }
+      }
+    } finally { await rm(presentationWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_ZIP) {
+    const zipWork = await mkdtemp(join(tmpdir(), 'ledger-zip-pdf-'))
+    try {
+      const first = join(zipWork, 'first.png')
+      const second = join(zipWork, 'second.png')
+      await writeFile(first, await sharp({ create: {
+        width: 320, height: 240, channels: 3, background: '#008866',
+      } }).png().toBuffer())
+      await writeFile(second, await sharp({ create: {
+        width: 320, height: 240, channels: 3, background: '#cc4455',
+      } }).png().toBuffer())
+      const input = join(zipWork, 'images.zip')
+      execFileSync('zip', ['-q', '-j', input, first, second])
+      execFileSync('unzip', ['-tqq', input])
+      const fixture = await readFile(input)
+      const backend = await convert('convert:pdf', [['images.zip', fixture]])
+      const backendPath = join(zipWork, 'backend.pdf')
+      const directPath = join(zipWork, 'direct.pdf')
+      await writeFile(backendPath, backend.bytes)
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+        '--to', 'pdf', '--output', directPath, '--json'], { env: originalCliEnv() })
+      if ((await PDFDocument.load(backend.bytes)).getPageCount() !== 2 ||
+        (await PDFDocument.load(await readFile(directPath))).getPageCount() !== 2)
+        throw new Error('ZIP images to PDF did not retain two pages')
+      const pdftoppm = originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH
+      for (const [label, file] of [['backend', backendPath], ['direct', directPath]])
+        execFileSync(pdftoppm, ['-r', '72', '-f', '1', '-l', '2', '-png', file,
+          join(zipWork, label)])
+      const previews = []
+      for (const label of ['backend', 'direct']) {
+        const files = require('node:fs').readdirSync(zipWork)
+          .filter((name) => name.startsWith(`${label}-`) && name.endsWith('.png')).sort()
+        if (files.length !== 2) throw new Error(`${label}: ZIP PDF did not render two pages`)
+        previews.push(await Promise.all(files.map((name) => sharp(join(zipWork, name))
+          .resize(200, 150).removeAlpha().raw().toBuffer())))
+      }
+      if (previews[0][0].equals(previews[0][1]) ||
+        previews[0].some((item, index) => !item.equals(previews[1][index])))
+        throw new Error('ZIP PDF images are identical or differ from original')
+      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+        '--record', 'zip', 'pdf', createHash('sha256').update(fixture).digest('hex'),
+        'two-color image ZIP: direct original and authenticated backend, two rendered pages compared'])
+      console.log('PASS zip:pdf, two images and pages match direct original')
+    } finally { await rm(zipWork, { recursive: true, force: true }) }
   }
 
   if (process.env.CONVERSION_SAMPLE_DOCX && !process.env.CONVERSION_SKIP_DOCX) {
