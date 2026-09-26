@@ -3,6 +3,7 @@
 ## 固定版本与边界
 
 - 原版提交：`a7b9b15d32db80cecedae00e89289088656fb1ae`。`vendor/flyingmouse-format/upstream-a7b9b15/` 包含原仓库 307 个跟踪文件，保留原许可与署名；`node scripts/verify-flyingmouse-source.cjs` 逐文件校验 SHA-256。
+- Mac 与 Linux 均通过 `scripts/apply-flyingmouse-platform-fixes.cjs` 在运行副本上应用同一处可核对修复：静态图转视频把 FFmpeg 输入参数 `-loop 1` 改为 `-stream_loop -1`。干净原版 AVIF→MP4 因 `Option loop not found` 失败；补丁副本的原版直调与本地后端均得到 3 秒、600×320 H.264 视频。原版目录保持不变；运行副本记录前后 `image.js` SHA-256。Mac 启动脚本生成副本，Linux worker 镜像在构建阶段应用同一脚本。
 - `node scripts/generate-flyingmouse-operations.cjs --check` 校验由原版 `config.js`、`utils.js:targetsForExt` 生成的 1174 个输入→输出组合、46 项操作及选项适用输入。目录组合是候选，不等于已逐项通过。
 - 小程序界面和业务数据未重建。开发版默认使用本机 `127.0.0.1:3001`；体验版、正式版仍指向生产地址。手机真机需配置开发版私网地址及微信网络许可后实测。
 - 完整 Nest API、PostgreSQL、Redis、私有对象存储和串行 worker 在 Mac 上运行。每任务独立进程、目录，原版 HTTP 服务仅监听 `127.0.0.1` 随机端口。生产环境未切换。
@@ -29,15 +30,16 @@ PDF 结构模型取自原版 `ci-engines-v1-win32-docstructure-1.0.1.tar.zst`，
 
 1. 本地 `packages/server/.env` 配置开发数据库、Redis、S3、JWT。为 PDF 密码另设随机 32 字节十六进制 `CONVERSION_PASSWORD_KEY`，文件权限 `0600`；API 和 worker 必须使用同一密钥。该值不得提交到 Git。
 2. 执行 `packages/server/scripts/start-local-original-conversion.sh`。脚本先校验后端依赖地址均为本机，再校验源码，构建整个 Nest 后端并同时启动 API 和串行 worker。
-3. 执行 `node --env-file=packages/server/.env packages/server/scripts/verify-local-original-conversion.cjs`，覆盖鉴权上传、排队、转换、下载、PDF 加解密、图片合成和清理。可通过 `CONVERSION_SAMPLE_DOCX=<真实文件路径>` 增加 DOCX→PDF 与原版 CLI 的页数、文本对比。
+3. 执行 `FLYINGMOUSE_TEST_SOURCE_DIR=$HOME/Library/Caches/ledger-flyingmouse-engines/runtime-a7b9b15-image-loop node --env-file=packages/server/.env packages/server/scripts/verify-local-original-conversion.cjs`，覆盖鉴权上传、排队、转换、下载、PDF 加解密、图片合成和清理，并与同一补丁副本的原版 CLI 直调比较。可通过 `CONVERSION_SAMPLE_DOCX=<真实文件路径>` 增加 DOCX 的六种输出检查，通过 `CONVERSION_IMAGE_INPUTS=png,jpg,svg,...` 指定图片输入批次。
 4. 执行 `corepack pnpm --filter @jiujiu/server exec tsc --noEmit --pretty false`、`corepack pnpm --filter @jiujiu/ledger-mp typecheck`、相关 Jest 测试，以及原版测试。
 5. `node scripts/flyingmouse-acceptance.cjs --gate` 是发布闸门。只有全部 1174 组和所有全局闸门通过才返回成功；完整逐项记录见 `acceptance-a7b9b15.json`。
 
-当前 Mac 实测：DOCX→PDF 的真实样本已和原版 CLI 直调对比，1 页、提取文本一致且原文大部分保留；有效两页 PDF→PDF 拆分的前后端页文字与原版直调一致；有效中文 TXT→CSV/DOCX/EPUB/HTML/JSON/MD/PDF 完成上传、转换、下载、解码和原版直调内容对比；有效中文 PNG→18 种输出完成同样链路，并按输出检查 OCR 文字、文档结构、PDF 页面、像素或视频时长。因此逐项报告为 **27/1174**。其他四条本地链路抽测通过，但尚未满足逐项质量与原版对比标准。微信开发者工具模拟器已用本地测试身份从页面选取该 DOCX、选择 PDF、上传、创建任务，最终显示 143 KB PDF 和“已完成”；后端数据库记录 `succeeded`，调试器 0 错误。同一 UI 任务经鉴权下载得到 145993 字节 PDF、1 页、1188 字文本。模拟器中的导出保存及手机真机仍未验收，故 `miniDevtools` 闸门保持未完成。测试仅修改被 Git 忽略的 `project.private.config.json`，关闭模拟器合法域名检查；这不代表真机网络许可已通过。原版测试串行结果 **1015 通过、1 失败、21 跳过**；失败为 60 张图片合并触发原版内存保护。8 GiB Mac 当前空闲内存较低，真实 RAW 大图和扫描 PDF 结构任务仍是完整验收阻塞项。Linux 全矩阵及生产端到端未完成。
+当前 Mac 实测：真实 DOCX→HTML/MD/ODT/PDF/RTF/TXT 已与原版 CLI 直调对比解码后的正文，保留至少 70% 原文连续片段；PDF 额外核对页数。该 DOCX 没有内嵌图片，不能据此证明图片保真。有效两页 PDF→PDF 拆分的前后端页文字与原版直调一致；有效中文 TXT→七种文本/文档输出、WAV→七种音频输出，及 PNG/JPG/JPEG/JPE/JFIF/SVG/AVIF/BMP/GIF/ICO/JP2/JXL/PPM/QOI/TGA/TIF/TIFF/WebP/HEIC/HEIF→原版目录列出的图片相关目标，均完成上传、转换、下载、原版直调和按类型的质量检查。因此逐项报告为 **382/1174**。JXL 有损样本曾把“量窗助手”OCR 识别成“星窗助手”；改用无损 JXL 样本后该组合通过，但原版的有损样本误识别仍需作为 OCR 局限继续测试。HEIC/HEIF/JXL 的原版结果带实验性输入提示，需要更多真实设备样本。其他四条本地链路抽测通过，但尚未满足逐项质量与原版对比标准。微信开发者工具模拟器已用本地测试身份从页面选取该 DOCX、选择 PDF、上传、创建任务，最终显示 143 KB PDF 和“已完成”；后端数据库记录 `succeeded`，调试器 0 错误。同一 UI 任务经鉴权下载得到 145993 字节 PDF、1 页、1188 字文本。模拟器中的导出保存及手机真机仍未验收，故 `miniDevtools` 闸门保持未完成。测试仅修改被 Git 忽略的 `project.private.config.json`，关闭模拟器合法域名检查；这不代表真机网络许可已通过。原版测试串行结果 **1015 通过、1 失败、21 跳过**；失败为 60 张图片合并触发原版内存保护。8 GiB Mac 当前空闲内存较低，真实 RAW 大图和扫描 PDF 结构任务仍是完整验收阻塞项。Linux 全矩阵及生产端到端未完成。
 
 ## 资源与数据
 
 - 单任务从串行执行开始；worker 心跳按临时盘剩余空间动态给出输入上限，要求输入三倍空间再加 1 GiB 预留，并受原版单文件 16 GiB、单批 32 GiB、1000 文件硬上限约束。实际可用上限随磁盘变化，微信端传输与保存上限仍需真机测定。
+- 本地连续验收中曾发生 `POST /uploads` 的 `ECONNRESET`。测试客户端禁用连接复用后完整通过；Nest HTTP 服务将 Node 默认 5 秒 keep-alive 延长至 30 秒，恢复复用后也完成一轮长链路回归。根因仍需通过更长时间及真机压力测试确认。
 - 分片上传、对象存储下载、引擎输入与输出使用流式文件；分片 SHA-256 和总长度逐项校验。结果限定在任务输出目录内，任务失败、取消或结束后回收独立临时目录。
 - PDF 密码使用 AES-256-GCM 加密后写入任务记录。API 不返回密码；worker 解密后传给原版，完成后保持加密状态，失败日志对密码脱敏。密钥轮换需先处理尚可重试的旧任务。
 - 用户订单、客户、账本和原有小程序素材不在转换迁移范围内。

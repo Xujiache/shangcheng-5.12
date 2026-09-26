@@ -8,6 +8,8 @@ const { PrismaClient } = require('@prisma/client')
 const { JwtService } = require('@nestjs/jwt')
 const sharp = require('sharp')
 const { PDFDocument, StandardFonts } = require('../../../vendor/flyingmouse-format/upstream-a7b9b15/node_modules/pdf-lib')
+const engineSource = process.env.FLYINGMOUSE_TEST_SOURCE_DIR ||
+  join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
 
 const base = new URL(process.env.CONVERSION_TEST_API || 'http://127.0.0.1:3001')
 const database = new URL(process.env.DATABASE_URL || 'postgres://missing:missing@invalid/db')
@@ -22,7 +24,7 @@ let cleanupJob
 const outstanding = new Set()
 
 function originalCliEnv() {
-  const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+  const source = engineSource
   const engines = process.env.CONVERSION_ENGINE_ROOT ||
     join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/darwin-arm64')
   return {
@@ -52,12 +54,15 @@ async function main() {
   userId = user.id
   const token = await new JwtService({ secret: process.env.JWT_SECRET }).signAsync({
     sub: userId, scope: 'ledger', jti: randomUUID(),
-  }, { expiresIn: '10m' })
+  }, { expiresIn: '1h' })
   const auth = { Authorization: `Bearer ${token}` }
   async function json(route, method = 'GET', data) {
     const response = await fetch(new URL(`/api/v1/l/conversions${route}`, base), {
       method, headers: { ...auth, ...(data ? { 'Content-Type': 'application/json' } : {}) },
       body: data ? JSON.stringify(data) : undefined,
+    }).catch((error) => {
+      throw new Error(`${method} ${route} transport: ${error.cause?.code || error.message} ` +
+        `${error.cause?.message || ''}`, { cause: error })
     })
     const body = await response.json()
     if (!response.ok || body.code !== 0) throw new Error(`${route}: ${body.message || response.status}`)
@@ -77,6 +82,9 @@ async function main() {
       form.set('file', new Blob([part]), 'chunk.bin')
       const response = await fetch(new URL(`/api/v1/l/conversions/uploads/${created.id}/chunks`, base), {
         method: 'POST', headers: auth, body: form,
+      }).catch((error) => {
+        throw new Error(`POST upload chunk ${index} transport: ${error.cause?.code || error.message} ` +
+          `${error.cause?.message || ''}`, { cause: error })
       })
       const body = await response.json()
       if (!response.ok || body.code !== 0) throw new Error(`Chunk upload: ${body.message || response.status}`)
@@ -108,6 +116,9 @@ async function main() {
     }
     const response = await fetch(new URL(`/api/v1/l/conversions/jobs/${job.id}/assets/${result.assets[0].id}`, base), {
       headers: auth,
+    }).catch((error) => {
+      throw new Error(`GET result ${job.id} transport: ${error.cause?.code || error.message} ` +
+        `${error.cause?.message || ''}`, { cause: error })
     })
     if (!response.ok) throw new Error(`${operationId} download failed: ${response.status}`)
     const bytes = Buffer.from(await response.arrayBuffer())
@@ -147,7 +158,7 @@ async function main() {
     const directZip = join(splitWork, 'direct.pdf.zip')
     await writeFile(input, merged.bytes)
     await writeFile(backendZip, split.bytes)
-    const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+    const source = engineSource
     execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
       '--to', 'pdf', '--output', directZip, '--json'], { env: originalCliEnv() })
     const pageTexts = (archive) => {
@@ -186,7 +197,7 @@ async function main() {
   try {
     const input = join(textWork, 'sample.txt')
     await writeFile(input, textFixture)
-    const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+    const source = engineSource
     for (const target of ['csv', 'docx', 'epub', 'html', 'json', 'md', 'pdf']) {
       const directPath = join(textWork, `direct.${target}`)
       const backend = await convert(`convert:${target}`, [['sample.txt', textFixture]])
@@ -225,17 +236,14 @@ async function main() {
     }
   } finally { await rm(textWork, { recursive: true, force: true }) }
 
-  const imageFixture = await sharp(Buffer.from(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="320">' +
+  const imageSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="320">' +
     '<rect width="600" height="320" fill="white"/>' +
     '<text x="45" y="125" font-family="PingFang SC" font-size="54">量窗助手 12345</text>' +
-    '<rect x="45" y="185" width="220" height="80" fill="#008866"/></svg>',
-  )).png().toBuffer()
+    '<rect x="45" y="185" width="220" height="80" fill="#008866"/></svg>'
+  const imagePng = await sharp(Buffer.from(imageSvg)).png().toBuffer()
   const imageWork = await mkdtemp(join(tmpdir(), 'ledger-image-pairs-'))
   try {
-    const input = join(imageWork, 'sample.png')
-    await writeFile(input, imageFixture)
-    const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+    const source = engineSource
     const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
     const ffprobe = join(dirname(ffmpeg), 'ffprobe')
     const decoded = (file) => {
@@ -254,54 +262,140 @@ async function main() {
           `streams ${info.streams.map((stream) => `${stream.width}x${stream.height}`).join(',')}`)
       return { info: { ...info, streams: [selected] }, pixels }
     }
-    for (const target of ['avif', 'bmp', 'docx', 'gif', 'ico', 'jp2', 'jpg', 'jxl',
-      'md', 'mp4', 'pdf', 'ppm', 'qoi', 'tga', 'tiff', 'txt', 'webm', 'webp']) {
-      const backend = await convert(`convert:${target}`, [['sample.png', imageFixture]])
-      const directPath = join(imageWork, `direct.${target}`)
-      const backendPath = join(imageWork, `backend.${target}`)
-      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
-        '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
-      await writeFile(backendPath, backend.bytes)
-      if (target === 'txt' || target === 'md') {
-        const result = backend.bytes.toString('utf8')
-        if (!result.includes('量窗助手 12345') || result !== (await readFile(directPath, 'utf8')))
-          throw new Error(`PNG to ${target} OCR differs from original`)
-      } else if (target === 'docx') {
-        const xml = (file) => {
-          execFileSync('unzip', ['-tqq', file])
-          return execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
-            .replace(/<[^>]+>/g, '')
-        }
-        if (!xml(backendPath).includes('量窗助手 12345') || xml(backendPath) !== xml(directPath))
-          throw new Error('PNG to DOCX OCR differs from original')
-      } else {
-        if (target === 'pdf') {
-          if ((await PDFDocument.load(backend.bytes)).getPageCount() !== 1)
-            throw new Error('PNG to PDF page count is wrong')
-          const pdftoppm = originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH
-          for (const name of ['backend', 'direct'])
-            execFileSync(pdftoppm, ['-f', '1', '-l', '1', '-r', '72', '-png', '-singlefile',
-              join(imageWork, `${name}.pdf`), join(imageWork, `${name}-render`)])
-        }
-        const first = decoded(target === 'pdf' ? join(imageWork, 'backend-render.png') : backendPath)
-        const second = decoded(target === 'pdf' ? join(imageWork, 'direct-render.png') : directPath)
-        if (first.info.streams[0].width !== second.info.streams[0].width ||
-          first.info.streams[0].height !== second.info.streams[0].height ||
-          first.info.streams[0].codec_name !== second.info.streams[0].codec_name ||
-          !first.pixels.equals(second.pixels))
-          throw new Error(`PNG to ${target} pixels differ from original`)
-        if (target === 'mp4' || target === 'webm') {
-          const duration = Number(first.info.format.duration)
-          if (duration < 2.9 || duration > 3.1)
-            throw new Error(`PNG to ${target} video duration is wrong`)
-        }
+    const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+    const inputExtensions = (process.env.CONVERSION_IMAGE_INPUTS || 'png').split(',')
+    for (const inputExtension of inputExtensions) {
+      if (!['png', 'svg', 'avif', 'bmp', 'gif', 'ico', 'jp2', 'jpg', 'jpe', 'jpeg',
+        'jfif', 'jxl', 'ppm', 'qoi', 'tga', 'tif', 'tiff', 'webp', 'heic', 'heif']
+        .includes(inputExtension))
+        throw new Error(`Unsupported image fixture generator: ${inputExtension}`)
+      const input = join(imageWork, `sample.${inputExtension}`)
+      if (inputExtension === 'png') await writeFile(input, imagePng)
+      else if (inputExtension === 'svg') await writeFile(input, imageSvg)
+      else {
+        const png = join(imageWork, 'source.png')
+        await writeFile(png, imagePng)
+        if (inputExtension === 'jxl')
+          execFileSync(ffmpeg, ['-v', 'error', '-i', png, '-c:v', 'libjxl',
+            '-distance', '0', '-effort', '7', input])
+        else if (inputExtension === 'heic' || inputExtension === 'heif') {
+          const heic = join(imageWork, 'source.heic')
+          if (!require('node:fs').existsSync(heic))
+            execFileSync('sips', ['-s', 'format', 'heic', png, '--out', heic])
+          await writeFile(input, await readFile(heic))
+        } else if (['jpe', 'jpeg', 'jfif', 'tif'].includes(inputExtension)) {
+          const target = inputExtension === 'tif' ? 'tiff' : 'jpg'
+          const generated = join(imageWork, `source.${target}`)
+          if (!require('node:fs').existsSync(generated))
+            execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', png,
+              '--to', target, '--output', generated, '--json'], { env: originalCliEnv() })
+          await writeFile(input, await readFile(generated))
+        } else
+          execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', png,
+            '--to', inputExtension, '--output', input, '--json'], { env: originalCliEnv() })
       }
-      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
-        '--record', 'png', target, createHash('sha256').update(imageFixture).digest('hex'),
-        'valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched'])
-      console.log(`PASS png:${target}, output matches direct original`)
+      const imageFixture = await readFile(input)
+      const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [[`sample.${inputExtension}`, imageFixture]])
+        const directPath = join(imageWork, `direct-${inputExtension}.${target}`)
+        const backendPath = join(imageWork, `backend-${inputExtension}.${target}`)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        await writeFile(backendPath, backend.bytes)
+        if (target === 'txt' || target === 'md') {
+          const result = backend.bytes.toString('utf8')
+          if (!result.includes('量窗助手 12345') || result !== (await readFile(directPath, 'utf8')))
+            throw new Error(`${inputExtension} to ${target} OCR differs from original`)
+        } else if (target === 'docx') {
+          const xml = (file) => {
+            execFileSync('unzip', ['-tqq', file])
+            return execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
+              .replace(/<[^>]+>/g, '')
+          }
+          if (!xml(backendPath).includes('量窗助手 12345') || xml(backendPath) !== xml(directPath))
+            throw new Error(`${inputExtension} to DOCX OCR differs from original`)
+        } else {
+          if (target === 'pdf') {
+            if ((await PDFDocument.load(backend.bytes)).getPageCount() !== 1)
+              throw new Error(`${inputExtension} to PDF page count is wrong`)
+            const pdftoppm = originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH
+            for (const [name, file] of [['backend', backendPath], ['direct', directPath]])
+              execFileSync(pdftoppm, ['-f', '1', '-l', '1', '-r', '72', '-png', '-singlefile',
+                file, join(imageWork, `${name}-render`)])
+          }
+          const first = decoded(target === 'pdf' ? join(imageWork, 'backend-render.png') : backendPath)
+          const second = decoded(target === 'pdf' ? join(imageWork, 'direct-render.png') : directPath)
+          if (first.info.streams[0].width !== second.info.streams[0].width ||
+            first.info.streams[0].height !== second.info.streams[0].height ||
+            first.info.streams[0].codec_name !== second.info.streams[0].codec_name ||
+            !first.pixels.equals(second.pixels))
+            throw new Error(`${inputExtension} to ${target} pixels differ from original`)
+          if (target === 'mp4' || target === 'webm') {
+            const duration = Number(first.info.format.duration)
+            const expectedDuration = inputExtension === 'gif'
+              ? Number(JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-show_entries',
+                'format=duration', '-of', 'json', input], { encoding: 'utf8' })).format.duration)
+              : 3
+            if (Math.abs(duration - expectedDuration) > 0.11 ||
+              Math.abs(duration - Number(second.info.format.duration)) > 0.01)
+              throw new Error(`${inputExtension} to ${target} video duration is wrong`)
+          }
+        }
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', inputExtension, target, createHash('sha256').update(imageFixture).digest('hex'),
+          'valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched'])
+        console.log(`PASS ${inputExtension}:${target}, output matches direct original`)
+      }
     }
   } finally { await rm(imageWork, { recursive: true, force: true }) }
+
+  const audioWork = await mkdtemp(join(tmpdir(), 'ledger-audio-pairs-'))
+  try {
+    const source = engineSource
+    const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
+    const ffprobe = join(dirname(ffmpeg), 'ffprobe')
+    const input = join(audioWork, 'tone.wav')
+    execFileSync(ffmpeg, ['-v', 'error', '-f', 'lavfi', '-i',
+      'sine=frequency=440:duration=3', '-ac', '1', input])
+    const fixture = await readFile(input)
+    for (const target of ['aac', 'flac', 'm4a', 'mp3', 'ogg', 'opus', 'wma']) {
+      const backend = await convert(`convert:${target}`, [['tone.wav', fixture]])
+      const backendPath = join(audioWork, `backend.${target}`)
+      const directPath = join(audioWork, `direct.${target}`)
+      await writeFile(backendPath, backend.bytes)
+      execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
+        '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+      const inspect = (file) => {
+        const info = JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-select_streams', 'a:0',
+          '-show_entries', 'stream=codec_name,channels:format=duration', '-of', 'json', file],
+        { encoding: 'utf8' }))
+        const pcm = execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-map', '0:a:0',
+          '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1'])
+        let sum = 0
+        for (let index = 0; index < pcm.length; index += 2) {
+          const value = pcm.readInt16LE(index)
+          sum += value * value
+        }
+        if (!info.streams.length || Number(info.format.duration) < 2.9 ||
+          Number(info.format.duration) > 3.2 || pcm.length < 80000 ||
+          Math.sqrt(sum / (pcm.length / 2)) < 100)
+          throw new Error(`${file}: missing audio, short duration, or silent output`)
+        return { info, pcm }
+      }
+      const first = inspect(backendPath)
+      const second = inspect(directPath)
+      if (first.info.streams[0].codec_name !== second.info.streams[0].codec_name ||
+        first.info.streams[0].channels !== second.info.streams[0].channels ||
+        !first.pcm.equals(second.pcm))
+        throw new Error(`WAV to ${target} audio differs from original`)
+      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+        '--record', 'wav', target, createHash('sha256').update(fixture).digest('hex'),
+        'valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched'])
+      console.log(`PASS wav:${target}, audio matches direct original`)
+    }
+  } finally { await rm(audioWork, { recursive: true, force: true }) }
 
   if (process.env.CONVERSION_SAMPLE_DOCX) {
     const sample = await readFile(process.env.CONVERSION_SAMPLE_DOCX)
@@ -316,7 +410,7 @@ async function main() {
       const pdftotext = join(dirname(process.env.FLYINGMOUSE_PDFTOPPM_PATH || 'pdftoppm'), 'pdftotext')
       const extracted = execFileSync(pdftotext, ['-layout', pdfPath, '-'], { encoding: 'utf8' })
       if (extracted.trim().length < 100) throw new Error('DOCX to PDF lost most text')
-      const source = join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+      const source = engineSource
       execFileSync(process.execPath, [join(source, 'cli.js'), 'convert',
         process.env.CONVERSION_SAMPLE_DOCX, '--to', 'pdf', '--output', directPath, '--json'], {
         env: originalCliEnv(),
@@ -341,6 +435,34 @@ async function main() {
         chunks.push(sourceText.slice(index, index + 10))
       if (chunks.length < 10 || chunks.filter((part) => outputText.includes(part)).length / chunks.length < 0.7)
         throw new Error('DOCX to PDF lost source document text')
+      for (const target of ['html', 'md', 'odt', 'rtf', 'txt']) {
+        const converted = await convert(`convert:${target}`, [['sample.docx', sample]])
+        const backendPath = join(work, `backend.${target}`)
+        const otherDirectPath = join(work, `direct.${target}`)
+        await writeFile(backendPath, converted.bytes)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert',
+          process.env.CONVERSION_SAMPLE_DOCX, '--to', target, '--output', otherDirectPath,
+          '--json'], { env: originalCliEnv() })
+        const extract = (file) => {
+          if (target === 'odt') {
+            execFileSync('unzip', ['-tqq', file])
+            return execFileSync('unzip', ['-p', file, 'content.xml'], { encoding: 'utf8' })
+              .replace(/<[^>]+>/g, '')
+          }
+          if (target === 'rtf')
+            return execFileSync('textutil', ['-convert', 'txt', '-stdout', file], { encoding: 'utf8' })
+          const value = require('node:fs').readFileSync(file, 'utf8')
+          return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
+        }
+        const normalized = extract(backendPath).replace(/\s+/g, '')
+        if (normalized !== extract(otherDirectPath).replace(/\s+/g, '') ||
+          chunks.filter((part) => normalized.includes(part)).length / chunks.length < 0.7)
+          throw new Error(`DOCX to ${target} differs from original or lost source text`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', 'docx', target, createHash('sha256').update(sample).digest('hex'),
+          'real DOCX: direct original and authenticated backend, decoded text matched and source retained'])
+        console.log(`PASS real DOCX:${target}, decoded text matches direct original`)
+      }
     } finally { await rm(work, { recursive: true, force: true }) }
     execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
       '--record', 'docx', 'pdf', createHash('sha256').update(sample).digest('hex'),

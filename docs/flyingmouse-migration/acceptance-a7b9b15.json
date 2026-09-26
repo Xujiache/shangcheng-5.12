@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 27,
+    "passed": 382,
     "failed": 0,
-    "incomplete": 1147
+    "incomplete": 792
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -748,326 +748,362 @@
     {
       "input": "avif",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "avif",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "bmp",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "cr2",
@@ -1882,29 +1918,32 @@
     {
       "input": "docx",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3777658917bdfb83d1c1990964dccb6a357c5ef2e8eb32f7432b4fa754a2aec9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real DOCX: direct original and authenticated backend, decoded text matched and source retained"
     },
     {
       "input": "docx",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3777658917bdfb83d1c1990964dccb6a357c5ef2e8eb32f7432b4fa754a2aec9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real DOCX: direct original and authenticated backend, decoded text matched and source retained"
     },
     {
       "input": "docx",
       "output": "odt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3777658917bdfb83d1c1990964dccb6a357c5ef2e8eb32f7432b4fa754a2aec9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real DOCX: direct original and authenticated backend, decoded text matched and source retained"
     },
     {
       "input": "docx",
@@ -1919,20 +1958,22 @@
     {
       "input": "docx",
       "output": "rtf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3777658917bdfb83d1c1990964dccb6a357c5ef2e8eb32f7432b4fa754a2aec9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real DOCX: direct original and authenticated backend, decoded text matched and source retained"
     },
     {
       "input": "docx",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3777658917bdfb83d1c1990964dccb6a357c5ef2e8eb32f7432b4fa754a2aec9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real DOCX: direct original and authenticated backend, decoded text matched and source retained"
     },
     {
       "input": "dps",
@@ -2720,497 +2761,552 @@
     {
       "input": "gif",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "gif",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heic",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "heif",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "htm",
@@ -3341,6 +3437,186 @@
     {
       "input": "ico",
       "output": "avif",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "bmp",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "docx",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "gif",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "jp2",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "jpg",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "jxl",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "md",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "mp4",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "pdf",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "png",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "ppm",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "qoi",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "tga",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "tiff",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "txt",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "webm",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "ico",
+      "output": "webp",
+      "fixtureSha256": "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
+    },
+    {
+      "input": "iiq",
+      "output": "avif",
       "fixtureSha256": null,
       "original": "not-run",
       "backend": "not-run",
@@ -3348,7 +3624,7 @@
       "status": "not-run"
     },
     {
-      "input": "ico",
+      "input": "iiq",
       "output": "bmp",
       "fixtureSha256": null,
       "original": "not-run",
@@ -3357,7 +3633,7 @@
       "status": "not-run"
     },
     {
-      "input": "ico",
+      "input": "iiq",
       "output": "docx",
       "fixtureSha256": null,
       "original": "not-run",
@@ -3366,7 +3642,7 @@
       "status": "not-run"
     },
     {
-      "input": "ico",
+      "input": "iiq",
       "output": "gif",
       "fixtureSha256": null,
       "original": "not-run",
@@ -3375,7 +3651,16 @@
       "status": "not-run"
     },
     {
-      "input": "ico",
+      "input": "iiq",
+      "output": "ico",
+      "fixtureSha256": null,
+      "original": "not-run",
+      "backend": "not-run",
+      "quality": "not-run",
+      "status": "not-run"
+    },
+    {
+      "input": "iiq",
       "output": "jp2",
       "fixtureSha256": null,
       "original": "not-run",
@@ -3384,7 +3669,7 @@
       "status": "not-run"
     },
     {
-      "input": "ico",
+      "input": "iiq",
       "output": "jpg",
       "fixtureSha256": null,
       "original": "not-run",
@@ -3393,177 +3678,6 @@
       "status": "not-run"
     },
     {
-      "input": "ico",
-      "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "ico",
-      "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "iiq",
-      "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "iiq",
-      "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "iiq",
-      "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "iiq",
-      "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "iiq",
-      "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "iiq",
-      "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
-      "input": "iiq",
-      "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
-    },
-    {
       "input": "iiq",
       "output": "jxl",
       "fixtureSha256": null,
@@ -3845,812 +3959,902 @@
     {
       "input": "jfif",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jfif",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jp2",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpe",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpeg",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jpg",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "json",
@@ -4709,164 +4913,182 @@
     {
       "input": "jxl",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "jxl",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "kdc",
@@ -6941,7 +7163,7 @@
     {
       "input": "pdf",
       "output": "pdf",
-      "fixtureSha256": "dadb0d74b1f11ee83b0d06ba6ce8fc741011241f1efa0f55421da503b1c2e599",
+      "fixtureSha256": "ff90e9d11e0083ae87c8ea97b5eef1430eb18937a171228ffecc6005a00a1618",
       "original": "pass",
       "backend": "pass",
       "quality": "pass",
@@ -7163,7 +7385,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7173,7 +7395,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7183,7 +7405,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7193,7 +7415,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7203,7 +7425,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7213,7 +7435,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7223,7 +7445,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7233,7 +7455,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7243,7 +7465,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7253,7 +7475,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7263,7 +7485,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7273,7 +7495,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7283,7 +7505,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7293,7 +7515,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7303,7 +7525,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7313,7 +7535,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7323,7 +7545,7 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "png",
@@ -7333,169 +7555,187 @@
       "backend": "pass",
       "quality": "pass",
       "status": "pass",
-      "evidence": "valid Chinese PNG: direct original and authenticated backend; OCR or decoded pixels matched"
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppm",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "ppt",
@@ -7770,164 +8010,182 @@
     {
       "input": "qoi",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "qoi",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "raf",
@@ -8571,659 +8829,732 @@
     {
       "input": "svg",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "svg",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tga",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tif",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tiff",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "tsv",
@@ -9406,65 +9737,72 @@
     {
       "input": "wav",
       "output": "aac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
       "output": "flac",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
       "output": "m4a",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
       "output": "mp3",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
       "output": "ogg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
       "output": "opus",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "wav",
       "output": "wma",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid three-second WAV: direct original and authenticated backend, codec/duration/decoded signal matched"
     },
     {
       "input": "webm",
@@ -9577,155 +9915,172 @@
     {
       "input": "webp",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "webp",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched"
     },
     {
       "input": "wma",

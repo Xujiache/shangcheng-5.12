@@ -10,6 +10,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { json, type Request, type Response, type NextFunction } from 'express'
 import helmet from 'helmet'
 import { requestTraceId } from './common/trace'
+import type { Server } from 'node:http'
 
 /**
  * 解析允许的 CORS 源列表。
@@ -115,6 +116,10 @@ async function bootstrap() {
 
   const port = Number(configService.get<string>('SERVER_PORT')) || 3000
   const host = configService.get<string>('SERVER_HOST') || '127.0.0.1'
+  // Long conversion requests can leave pooled client sockets idle past Node's 5s default.
+  // Keep the connection open across upload, status polling, and result download.
+  const httpServer = app.getHttpServer() as Server
+  httpServer.keepAliveTimeout = 30_000
   await app.listen(port, host)
   console.log(`🚀 Server running on http://${host}:${port}`)
   if (swaggerEnabled) {
