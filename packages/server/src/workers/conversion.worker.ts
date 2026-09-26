@@ -10,6 +10,10 @@ import { PrismaClient } from '@prisma/client'
 import Redis from 'ioredis'
 import { Client } from 'minio'
 import { assertPrivateConversionBucket } from '../modules/ledger-conversion/conversion.storage'
+import {
+  collectConversionWarnings,
+  CONVERSION_WARNINGS_OPTION_KEY,
+} from '../modules/ledger-conversion/conversion.warnings'
 import { operationArgs } from './conversion.args'
 import { markdownSidecars, zipOutputs } from './conversion.outputs'
 
@@ -206,12 +210,16 @@ async function processJob(id: string) {
       where: { id, leaseId, status: 'running' },
       data: { progress: 10 },
     })
-    const options = (job.options || {}) as Record<string, string>
+    const options = Object.fromEntries(
+      Object.entries((job.options || {}) as Record<string, string>)
+        .filter(([key]) => key !== CONVERSION_WARNINGS_OPTION_KEY),
+    )
     const outputs = await runCli(
       id,
       leaseId,
       operationArgs(job.operationId, files, options, outputDir),
     )
+    const warnings = collectConversionWarnings(outputs, options)
     await assertLease()
     if (!outputs.length) throw new Error('转换没有产生文件')
     const sidecars = await markdownSidecars(outputDir)
@@ -278,6 +286,7 @@ async function processJob(id: string) {
           progress: 100,
           finishedAt,
           expiresAt: new Date(finishedAt.getTime() + RETENTION_MS),
+          options: { ...options, [CONVERSION_WARNINGS_OPTION_KEY]: warnings },
         },
       })
       if (!done.count) throw new Error('任务已取消或租约已过期')

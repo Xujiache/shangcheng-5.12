@@ -13,6 +13,7 @@ const sharp = require("sharp");
 const { FFMPEG_PATH, DCRAW_PATH, rawInput } = require("./config");
 const RAW_EXTENSIONS = rawInput;
 const FFMPEG_IMAGE_EXTENSIONS = new Set(["tga", "jp2", "j2k", "jxl", "qoi", "ppm"]);
+const HEIF_CONVERT_PATH = process.env.FLYINGMOUSE_HEIF_CONVERT_PATH || "/usr/bin/heif-convert";
 const { run } = require("./utils");
 const { throwIfCanceled } = require("./conversion-cancellation");
 const { reportConversionProgress } = require("./conversion-progress");
@@ -96,11 +97,25 @@ async function convertImage(inputPath, outputPath, target, options = {}) {
     // 专业/新式位图输出：sharp 的预编译编码器不全，统一走打包内置 ffmpeg。
     // jxl 显式指定 libjxl，其余按扩展名选 muxer；五种格式均已做编码→解码闭环实测。
     if (FFMPEG_IMAGE_EXTENSIONS.has(target)) {
-      const args = ["-hide_banner", "-y", "-i", prepared.inputPath, "-frames:v", "1"];
-      if (target === "jxl") args.push("-c:v", "libjxl");
-      args.push(outputPath);
-      await run(FFMPEG_PATH, args, { timeout: 1000 * 60 * 5 });
-      return { warnings: [] };
+      let ffmpegInput = prepared.inputPath;
+      let tempDir;
+      try {
+        const { format } = await sharp(prepared.inputPath, { limitInputPixels: LIMITS.maxImagePixels }).metadata();
+        if (format === "heif") {
+          // FFmpeg cannot reliably read AVIF uploads from a temporary file.
+          tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-avif-input-"));
+          ffmpegInput = path.join(tempDir, "frame.png");
+          await sharp(prepared.inputPath, { page: 0, pages: 1, limitInputPixels: LIMITS.maxImagePixels })
+            .png().toFile(ffmpegInput);
+        }
+        const args = ["-hide_banner", "-y", "-i", ffmpegInput, "-frames:v", "1"];
+        if (target === "jxl") args.push("-c:v", "libjxl");
+        args.push(outputPath);
+        await run(FFMPEG_PATH, args, { timeout: 1000 * 60 * 5 });
+        return { warnings: [] };
+      } finally {
+        if (tempDir) await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      }
     }
 
     if (target === "mp4" || target === "webm") {
@@ -121,16 +136,42 @@ async function convertImage(inputPath, outputPath, target, options = {}) {
 // sharp 的预编译构建不支持 BMP 输入（无解码器）且 libheif 只编译了 AV1（AVIF），
 // HEIC/HEIF（HEVC 编码）能读元数据但解不了像素。这里统一中转：
 //   - BMP   -> 纯 JS 解码成 PNG
-//   - HEIC  -> 打包内置 ffmpeg（含 hevc 解码器）转 PNG
+//   - HEIC  -> 打包内置 ffmpeg，Linux 上失败时由 libheif 转 PNG
 // 让下游统一走 PNG。
 async function prepareImageInput(inputPath, inputName) {
   // 设计稿（.ai/.psd）：先统一栅格化成 PNG 再走通用图片链路。
   // multer 临时文件无扩展名，按上传原始名（inputName）识别；多页 .ai 只取第 1 页
   // （包装稿典型为单页；实验性输入已附提示复核产物）。
   const designExt = path.extname(String(inputName || inputPath)).toLowerCase().replace(/^\./, "");
-  if (designExt === "ai" || designExt === "psd") {
+  if (designExt === "psd") {
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-psd-input-"));
+    const namedInput = path.join(tempDir, "input.psd");
+    const pngPath = path.join(tempDir, "decoded.png");
+    try {
+      await fsp.copyFile(inputPath, namedInput);
+      await run(FFMPEG_PATH, ["-hide_banner", "-y", "-i", namedInput, "-frames:v", "1", pngPath], { timeout: 1000 * 60 * 5 });
+      if (!fs.existsSync(pngPath)) throw new Error("PSD 图片解码失败：无法从该文件提取像素数据。");
+      return { inputPath: pngPath, tempDir };
+    } catch (error) {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      throw error;
+    }
+  }
+  if (designExt === "ai") {
     const { designToPng } = require("./design-export");
     return await designToPng(inputPath, designExt);
+  }
+
+  if (designExt === "svg" && path.extname(inputPath).toLowerCase() !== ".svg") {
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-svg-input-"));
+    const svgPath = path.join(tempDir, "input.svg");
+    try {
+      await fsp.copyFile(inputPath, svgPath);
+      return { inputPath: svgPath, tempDir };
+    } catch (error) {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      throw error;
+    }
   }
 
   // 先读文件头判断（不整读大图）；只有需要中转的格式才解码进内存。
@@ -163,12 +204,27 @@ async function prepareImageInput(inputPath, inputName) {
   if (isHeicFileSync(inputPath)) {
     const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-heic-input-"));
     const pngPath = path.join(tempDir, "decoded.png");
-    await run(FFMPEG_PATH, ["-hide_banner", "-y", "-i", inputPath, pngPath], { timeout: 1000 * 60 * 5 });
-    if (!fs.existsSync(pngPath)) {
+    try {
+      let ffmpegError;
+      try {
+        await run(FFMPEG_PATH, ["-hide_banner", "-y", "-i", inputPath, pngPath], { timeout: 1000 * 60 * 5 });
+      } catch (error) {
+        ffmpegError = error;
+      }
+      if (ffmpegError || !fs.existsSync(pngPath)) {
+        if (!fs.existsSync(HEIF_CONVERT_PATH)) {
+          if (ffmpegError) throw ffmpegError;
+          throw new Error("HEIC 图片解码失败：无法从该文件提取像素数据。");
+        }
+        await fsp.rm(pngPath, { force: true });
+        await run(HEIF_CONVERT_PATH, [inputPath, pngPath], { timeout: 1000 * 60 * 5 });
+      }
+      if (!fs.existsSync(pngPath)) throw new Error("HEIC 图片解码失败：无法从该文件提取像素数据。");
+      return { inputPath: pngPath, tempDir };
+    } catch (error) {
       await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-      throw new Error("HEIC 图片解码失败：无法从该文件提取像素数据。");
+      throw error;
     }
-    return { inputPath: pngPath, tempDir };
   }
 
   // 专业/新式位图输入在 Electron 上传后临时路径没有扩展名；这类容器的探测并非都
@@ -269,6 +325,19 @@ async function inspectImageMetadata(inputPath, animated = false) {
 }
 
 async function convertImageToVideo(inputPath, outputPath, target) {
+  const { format } = await sharp(inputPath, { limitInputPixels: LIMITS.maxImagePixels }).metadata();
+  if (format === "svg" || format === "heif") {
+    // FFmpeg's still-image loop option cannot read SVG/AVIF reliably on Linux.
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "flyingmouse-video-frame-"));
+    const pngPath = path.join(tempDir, "frame.png");
+    try {
+      await sharp(inputPath, { page: 0, pages: 1, limitInputPixels: LIMITS.maxImagePixels }).png().toFile(pngPath);
+      return await convertImageToVideo(pngPath, outputPath, target);
+    } finally {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
   const fd = fs.openSync(inputPath, "r");
   let isGif = false;
   try {

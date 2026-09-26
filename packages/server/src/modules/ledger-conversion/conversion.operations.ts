@@ -19,6 +19,8 @@ const AUDIO_FORMATS = ['mp3', 'wav', 'flac', 'm4a', 'ogg', 'aac', 'opus', 'wma']
 const VIDEO_INPUT_FORMATS = ['mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v', 'm4s', 'wmv', 'flv']
 const VIDEO_OUTPUT_FORMATS = ['mp4', 'webm', 'mkv', 'mov']
 const IMAGE_OUTPUT_FORMATS = ['gif', 'avif', 'tiff', 'ico', 'bmp', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
+const ADDITIONAL_IMAGE_INPUTS = ['jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'j2k', 'psd']
+const CROSS_IMAGE_INPUTS = ['gif', 'avif', 'bmp', 'tiff', 'ico', 'tga', 'jp2', 'jxl', 'qoi', 'ppm']
 
 // Extended only after the corresponding Linux fixture and quality checks pass.
 export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
@@ -26,8 +28,9 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     id: 'convert:md',
     label: '文档/图片 → Markdown',
     inputExtensions: [
-      'txt', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'gif',
+      'txt', 'docx', 'pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif',
       'avif', 'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
+      ...ADDITIONAL_IMAGE_INPUTS,
       'html', 'htm', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
       'doc', 'odt', 'rtf',
     ],
@@ -37,11 +40,12 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:docx',
-    label: 'Markdown/图片 → Word',
+    label: '文档/图片/PDF → Word',
     inputExtensions: [
       'md', 'markdown', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
-      'txt', 'html', 'htm', 'doc', 'odt', 'rtf',
+      ...ADDITIONAL_IMAGE_INPUTS,
+      'txt', 'html', 'htm', 'doc', 'odt', 'rtf', 'pdf',
     ],
     targetExtension: 'docx',
     kind: 'convert',
@@ -53,9 +57,10 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp',
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi',
+      ...ADDITIONAL_IMAGE_INPUTS,
       'srt', 'vtt', 'ass', 'ssa',
       'md', 'markdown', 'html', 'htm', 'json', 'csv', 'log',
-      'xml', 'yaml', 'yml', 'epub', 'docx', 'doc', 'odt', 'rtf', 'tsv',
+      'xml', 'yaml', 'yml', 'epub', 'pdf', 'docx', 'doc', 'odt', 'rtf', 'tsv',
     ],
     targetExtension: 'txt',
     kind: 'convert',
@@ -82,7 +87,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     label: '文本/电子书 → HTML',
     inputExtensions: [
       'txt', 'md', 'markdown', 'json', 'csv', 'tsv', 'log', 'xml', 'yaml', 'yml', 'epub',
-      'docx', 'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp',
+      'docx', 'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp', 'pdf',
     ],
     targetExtension: 'html',
     kind: 'convert',
@@ -117,8 +122,8 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   },
   {
     id: 'convert:xlsx',
-    label: '表格 → Excel',
-    inputExtensions: ['csv', 'tsv', 'xls', 'ods'],
+    label: '表格/PDF → Excel',
+    inputExtensions: ['csv', 'tsv', 'xls', 'ods', 'pdf'],
     targetExtension: 'xlsx',
     kind: 'convert',
     options: [],
@@ -144,6 +149,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'png', 'pdf', 'webp', 'gif', 'avif', 'bmp', 'tiff',
       'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+      ...ADDITIONAL_IMAGE_INPUTS.filter((source) => !['jfif', 'jpe'].includes(source)),
       'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'jpg',
@@ -156,6 +162,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'jpg', 'jpeg', 'webp', 'pdf', 'gif', 'avif', 'bmp',
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+      ...ADDITIONAL_IMAGE_INPUTS,
       'pptx', 'ppt', 'odp',
     ],
     targetExtension: 'png',
@@ -168,6 +175,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'jpg', 'jpeg', 'png', 'pdf', 'gif', 'avif', 'bmp',
       'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+      ...ADDITIONAL_IMAGE_INPUTS,
     ],
     targetExtension: 'webp',
     kind: 'convert',
@@ -179,6 +187,7 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     inputExtensions: [
       'png', 'jpg', 'jpeg', 'webp', 'md', 'docx', 'gif', 'avif',
       'bmp', 'tiff', 'tga', 'ppm', 'jp2', 'jxl', 'qoi', 'ico',
+      ...ADDITIONAL_IMAGE_INPUTS,
       'txt', 'markdown', 'json', 'log', 'xml', 'yaml', 'yml', 'pdf', 'zip',
       'doc', 'odt', 'rtf', 'xlsx', 'xls', 'ods', 'csv', 'tsv', 'pptx', 'ppt', 'odp',
     ],
@@ -217,7 +226,9 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
     id: `convert:${target}`,
     label: `${target === 'gif' ? '图片/视频' : '图片'} → ${target.toUpperCase()}`,
     inputExtensions: [
-      ...(target === 'tiff' ? ['png', 'jpg'] : ['png', 'jpg', 'webp']),
+      ...(target === 'tiff' ? ['png', 'jpg', 'jpeg'] : ['png', 'jpg', 'jpeg', 'webp']),
+      ...ADDITIONAL_IMAGE_INPUTS.filter((source) => target !== 'tiff' || source !== 'tif'),
+      ...CROSS_IMAGE_INPUTS.filter((source) => source !== target && (target !== 'tiff' || source !== 'gif')),
       ...(target === 'gif' ? VIDEO_INPUT_FORMATS : []),
     ],
     targetExtension: target,
@@ -226,8 +237,13 @@ export const VERIFIED_CONVERSION_OPERATIONS: ConversionOperation[] = [
   })),
   ...VIDEO_OUTPUT_FORMATS.map((target) => ({
     id: `convert:${target}`,
-    label: `视频 → ${target.toUpperCase()}`,
-    inputExtensions: VIDEO_INPUT_FORMATS.filter((source) => source !== target),
+    label: `${['mp4', 'webm'].includes(target) ? '图片/视频' : '视频'} → ${target.toUpperCase()}`,
+    inputExtensions: [
+      ...VIDEO_INPUT_FORMATS.filter((source) => source !== target),
+      ...(['mp4', 'webm'].includes(target)
+        ? [...ADDITIONAL_IMAGE_INPUTS, ...CROSS_IMAGE_INPUTS, 'png', 'jpg', 'jpeg', 'webp']
+        : []),
+    ],
     targetExtension: target,
     kind: 'convert' as const,
     options: [],

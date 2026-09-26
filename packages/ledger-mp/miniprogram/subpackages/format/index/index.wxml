@@ -60,6 +60,7 @@
       <view class="format__job-date">{{job.createdLabel}}</view>
       <view wx:if="{{job.status === 'queued' || job.status === 'running'}}" class="format__progress"><view class="format__progress-fill" style="width: {{job.progress}}%"></view></view>
       <view wx:if="{{job.error}}" class="format__inline-error">{{job.error}}</view>
+      <view wx:if="{{job.warnings && job.warnings.length}}" class="format__job-warnings"><view class="format__job-warnings-title">转换提示 · 请核对结果</view><view wx:for="{{job.warnings}}" wx:for-item="warning" wx:key="*this">{{warning}}</view></view>
       <view wx:for="{{job.assets}}" wx:for-item="asset" wx:key="id" class="format__result">
         <view class="format__result-file"><format-file-visual kind="{{asset.visualKind}}" extension="{{asset.extensionLabel}}" thumbnail-path="{{asset.thumbnailPath}}" media-path="{{asset.mediaPath}}" /><view class="format__file-info"><view class="format__filename">{{asset.fileName}}</view><view class="format__file-meta">{{asset.sizeLabel}}</view></view></view>
         <view class="format__result-actions"><button wx:if="{{asset.canPreview}}" size="mini" class="format__button format__button--plain" data-job="{{job.id}}" data-asset="{{asset.id}}" bindtap="openAsset">预览</button><button size="mini" class="format__button format__button--outline" data-job="{{job.id}}" data-asset="{{asset.id}}" bindtap="exportAsset">导出文件</button></view>

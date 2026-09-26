@@ -23,14 +23,23 @@ RUN rm -rf bin/avs3 && npm ci --omit=dev --no-audit --no-fund \
 FROM node:24-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates openssl ffmpeg libreoffice-writer libreoffice-calc libreoffice-impress \
-    poppler-utils tesseract-ocr tesseract-ocr-chi-sim pandoc qpdf dcraw \
+    poppler-utils tesseract-ocr tesseract-ocr-chi-sim pandoc qpdf dcraw libheif-examples \
+    python3 python3-venv \
     ghostscript fonts-noto-cjk \
  && rm -rf /var/lib/apt/lists/* \
  && gzip -n -c /usr/share/tesseract-ocr/5/tessdata/eng.traineddata \
     > /usr/share/tesseract-ocr/5/tessdata/eng.traineddata.gz \
  && gzip -n -c /usr/share/tesseract-ocr/5/tessdata/chi_sim.traineddata \
     > /usr/share/tesseract-ocr/5/tessdata/chi_sim.traineddata.gz
+COPY packages/server/scripts/camelot-requirements.txt /tmp/camelot-requirements.txt
+RUN python3 -m venv /opt/camelot-venv \
+ && /opt/camelot-venv/bin/pip install --no-cache-dir -r /tmp/camelot-requirements.txt \
+ && rm /tmp/camelot-requirements.txt
+COPY --chown=node:node packages/server/scripts/camelot_table_engine.py /usr/local/bin/jiujiu-camelot-table
+RUN chmod 755 /usr/local/bin/jiujiu-camelot-table
 ENV NODE_ENV=production FLYINGMOUSE_SOURCE_DIR=/app/flyingmouse \
+    PATH=/opt/camelot-venv/bin:$PATH \
+    FLYINGMOUSE_CAMELOT_TABLE_PATH=/usr/local/bin/jiujiu-camelot-table \
     FLYINGMOUSE_DCRAW_PATH=/usr/bin/dcraw \
     FLYINGMOUSE_PANDOC_PATH=/app/flyingmouse/bin/pandoc/pandoc \
     FLYINGMOUSE_TESSDATA_PATH=/usr/share/tesseract-ocr/5/tessdata \

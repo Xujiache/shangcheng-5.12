@@ -32,7 +32,7 @@ const ext = (name: string) => {
 }
 function visualKind(name: string) {
   const extension = ext(name)
-  if (/^(png|jpe?g|webp|gif|bmp|tiff?|svg|heic|avif|ico|tga|jp2|jxl|qoi|ppm)$/.test(extension)) return 'image'
+  if (/^(png|jpe?g|jpe|jfif|webp|gif|bmp|tiff?|svg|heic|heif|avif|ico|tga|jp2|j2k|jxl|qoi|ppm|psd)$/.test(extension)) return 'image'
   if (/^(mp4|mov|mkv|webm|avi|wmv|flv|m4v|m4s|mpe?g|3gp|ts)$/.test(extension)) return 'video'
   if (/^(docx?|odt|rtf|txt|md|markdown|html?|epub|mobi|pages|json|xml|ya?ml|log|srt|vtt|ass|ssa)$/.test(extension)) return 'document'
   if (/^(xlsx?|ods|csv|tsv|numbers)$/.test(extension)) return 'sheet'
@@ -155,12 +155,14 @@ function mediaSignature(data: ArrayBuffer, fileType: string) {
   if (bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 1 && bytes[3] === 0) return 'ico'
   if (at(0, 4) === 'qoif') return 'qoi'
   if (/^P[1-6]$/.test(at(0, 2))) return 'ppm'
-  if (at(4, 4) === 'jP  ' || (bytes[0] === 0xff && bytes[1] === 0x4f)) return 'jp2'
+  if (at(4, 4) === 'jP  ') return 'jp2'
+  if (bytes[0] === 0xff && bytes[1] === 0x4f) return 'j2k'
   if (at(4, 4) === 'JXL ' || (bytes[0] === 0xff && bytes[1] === 0x0a)) return 'jxl'
   if (at(4, 4) === 'ftyp') {
     const brands = at(8, 32)
     if (/avif|avis/.test(brands)) return 'avif'
     if (/heic|heix|hevc|hevx/.test(brands)) return 'heic'
+    if (/heif|heis|mif1/.test(brands)) return 'heif'
     if (fileType === 'video') return at(8, 4) === 'qt  ' ? 'mov' : 'mp4'
   }
   if (at(0, 4) === 'RIFF' && at(8, 4) === 'AVI ') return 'avi'
@@ -177,7 +179,12 @@ async function pickedMedia(file: WechatMiniprogram.ChooseMediaSuccessCallbackRes
   } catch {
     // 已知后缀仍可用于选择；未知格式不猜测容器类型。
   }
-  const extension = detected || (visualKind(base) === file.fileType ? ext(base) : '')
+  const originalExtension = ext(base)
+  const matchingAlias = (detected === 'jpg' && ['jpeg', 'jpe', 'jfif'].includes(originalExtension)) ||
+    (detected === 'tiff' && originalExtension === 'tif') ||
+    (detected === 'heic' && originalExtension === 'heif')
+  const extension = matchingAlias ? originalExtension : detected ||
+    (visualKind(base) === file.fileType ? originalExtension : '')
   if (!extension) return null
   return {
     name: ext(base) === extension ? base : `媒体文件-${Date.now()}-${index}.${extension}`,
@@ -277,8 +284,10 @@ MotionPage({
     this.setData({ loading: true, error: '' })
     try {
       const capabilities = await conversionApi.capabilities()
-      const { maxFileBytes, maxFiles } = capabilities.limits
-      const limitHint = `单个文件最大 ${sizeLabel(maxFileBytes)} · 最多 ${maxFiles} 个`
+      const { maxFileBytes, maxFiles, textFileBytes } = capabilities.limits
+      const textHint = textFileBytes && textFileBytes < maxFileBytes
+        ? ` · 文本类 ${sizeLabel(textFileBytes)}` : ''
+      const limitHint = `单个文件最大 ${sizeLabel(maxFileBytes)}${textHint} · 最多 ${maxFiles} 个`
       this.setData({
         capabilities,
         limitHint,
@@ -408,7 +417,12 @@ MotionPage({
     const combined = [...this.data.files, ...accepted]
     if (
       combined.length > limits.maxFiles ||
-      combined.some((file) => file.size <= 0 || file.size > limits.maxFileBytes) ||
+      combined.some((file) => {
+        const maxFileBytes = limits.textExtensions?.includes(ext(file.name))
+          ? Math.min(limits.maxFileBytes, limits.textFileBytes || limits.maxFileBytes)
+          : limits.maxFileBytes
+        return file.size <= 0 || file.size > maxFileBytes
+      }) ||
       combined.reduce((sum, file) => sum + file.size, 0) > limits.maxBatchBytes
     ) {
       wx.showToast({ title: '文件数量或大小超出当前限制', icon: 'none' })

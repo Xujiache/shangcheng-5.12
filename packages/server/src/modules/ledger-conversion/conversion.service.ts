@@ -18,6 +18,7 @@ import {
   findConversionOperation,
 } from './conversion.operations'
 import { assertPrivateConversionBucket } from './conversion.storage'
+import { CONVERSION_WARNINGS_OPTION_KEY, publicConversionWarnings } from './conversion.warnings'
 
 const QUEUE = 'ledger:conversions:queue'
 const WORKER_HEARTBEAT = 'ledger:conversions:worker:online'
@@ -31,6 +32,11 @@ const boundedLimit = (raw: string | undefined, fallback: number, ceiling: number
   const value = raw === undefined ? fallback : Number(raw)
   return Number.isSafeInteger(value) && value > 0 ? Math.min(value, ceiling) : fallback
 }
+const TEXT_INPUT_EXTENSIONS = [
+  'txt', 'md', 'markdown', 'html', 'htm', 'json', 'csv', 'tsv', 'log',
+  'xml', 'yaml', 'yml', 'srt', 'vtt', 'ass', 'ssa', 'rtf', 'epub',
+]
+const TEXT_FILE_LIMIT = 64 * 1024 ** 2
 
 @Injectable()
 export class ConversionService implements OnModuleInit, OnModuleDestroy {
@@ -44,10 +50,10 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   private ready = false
   private initializing: Promise<void> | null = null
   private readonly accepting = process.env.CONVERSION_FEATURE_ENABLED === 'true'
-  // 真机大文件验收之前保持保守运行限制；部署后只可在原版上限内逐级放宽。
+  // 微信 readFile 单文件上限为 100 MB；留出 4 MB 余量，批量预算保持不变。
   private readonly maxFileBytes = boundedLimit(
     process.env.CONVERSION_MAX_FILE_BYTES,
-    64 * 1024 ** 2,
+    96_000_000,
     CONVERSION_FILE_LIMIT,
   )
   private readonly maxBatchBytes = boundedLimit(
@@ -138,6 +144,8 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       operations: storageOnline ? VERIFIED_CONVERSION_OPERATIONS : [],
       limits: {
         maxFileBytes: this.maxFileBytes,
+        textFileBytes: Math.min(this.maxFileBytes, TEXT_FILE_LIMIT),
+        textExtensions: TEXT_INPUT_EXTENSIONS,
         maxBatchBytes: this.maxBatchBytes,
         maxFiles: this.maxFiles,
         chunkBytes: CONVERSION_CHUNK_BYTES,
@@ -160,7 +168,10 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     ) {
       throw new BizException(BizCode.INVALID_PARAMS, '尚未开放该文件格式')
     }
-    if (!Number.isSafeInteger(totalBytes) || totalBytes <= 0 || totalBytes > this.maxFileBytes) {
+    const maxFileBytes = TEXT_INPUT_EXTENSIONS.includes(extension)
+      ? Math.min(this.maxFileBytes, TEXT_FILE_LIMIT)
+      : this.maxFileBytes
+    if (!Number.isSafeInteger(totalBytes) || totalBytes <= 0 || totalBytes > maxFileBytes) {
       throw new BizException(BizCode.INVALID_PARAMS, '文件大小超过当前已验证的上限')
     }
     const upload = await this.prisma.ledgerConversionUpload.create({
@@ -412,8 +423,9 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       id: job.id,
       operationId: job.operationId,
       options: Object.fromEntries(
-        Object.entries(job.options || {}).filter(([key]) => key !== 'password'),
+        Object.entries(job.options || {}).filter(([key]) => key !== 'password' && key !== CONVERSION_WARNINGS_OPTION_KEY),
       ),
+      warnings: job.status === 'succeeded' ? publicConversionWarnings(job.options) : [],
       status: job.status,
       progress: job.progress,
       error: job.error,
@@ -449,6 +461,14 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   async retryJob(userId: string, id: string) {
     this.requireReady()
     if (!this.accepting) throw new BizException(BizCode.BUSINESS_ERROR, '格式转换尚未开放')
+    const previous = await this.prisma.ledgerConversionJob.findFirst({
+      where: { id, userId, status: 'failed', expiresAt: { gt: new Date() } },
+      select: { options: true },
+    })
+    if (!previous) throw new BizException(BizCode.INVALID_PARAMS, '任务不存在或不可重试')
+    const options = Object.fromEntries(
+      Object.entries(previous.options || {}).filter(([key]) => key !== CONVERSION_WARNINGS_OPTION_KEY),
+    )
     const result = await this.prisma.ledgerConversionJob.updateMany({
       where: { id, userId, status: 'failed', expiresAt: { gt: new Date() } },
       data: {
@@ -460,6 +480,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
         leaseId: null,
         finishedAt: null,
         expiresAt: null,
+        options: options as Prisma.InputJsonValue,
       },
     })
     if (!result.count) throw new BizException(BizCode.INVALID_PARAMS, '任务不存在或不可重试')

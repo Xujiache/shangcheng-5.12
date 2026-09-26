@@ -22,6 +22,8 @@ export interface Capabilities {
   features?: { pdfEncryption: boolean }
   limits: {
     maxFileBytes: number
+    textFileBytes?: number
+    textExtensions?: string[]
     maxBatchBytes: number
     maxFiles: number
     chunkBytes: number
@@ -46,6 +48,7 @@ export interface Job {
   status: string
   progress: number
   error?: string
+  warnings?: string[]
   operationId: string
   options?: Record<string, string>
   createdAt: string

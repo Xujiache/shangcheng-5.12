@@ -11,7 +11,7 @@ const { test } = require('node:test')
 const source = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.ts'), 'utf8')
 const code = stripTypeScriptTypes(source.replace(/^import[\s\S]*?from '[^']+'$/gm, ''))
 const op = (target, inputs, id = `convert:${target}`, options = []) => ({ id, targetExtension: target, inputExtensions: inputs, label: `转为 ${target.toUpperCase()}`, kind: 'convert', options })
-const capabilities = { available: true, limits: { maxFileBytes: 1024, maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png', 'jp2', 'jxl', 'qoi', 'ppm']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov', 'm4s'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('mkv', ['mov', 'mp4']), op('epub', ['txt'], 'convert:epub', ['textEncoding']), op('txt', ['docx', 'xlsx', 'zip', 'json', 'yaml', 'yml', 'xml', 'log', 'markdown']), op('vtt', ['srt']), op('json', ['txt'])] }
+const capabilities = { available: true, limits: { maxFileBytes: 1024, textFileBytes: 512, textExtensions: ['txt'], maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png', 'jp2', 'j2k', 'jxl', 'qoi', 'ppm', 'jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'psd']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov', 'm4s'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('mkv', ['mov', 'mp4']), op('epub', ['txt'], 'convert:epub', ['textEncoding']), op('txt', ['docx', 'xlsx', 'zip', 'json', 'yaml', 'yml', 'xml', 'log', 'markdown']), op('vtt', ['srt']), op('json', ['txt'])] }
 const event = (dataset, value) => ({ currentTarget: { dataset }, detail: { value } })
 const file = (name, size = 100) => ({ name, path: `/test/${name}`, size })
 function setup() {
@@ -71,6 +71,14 @@ test('unknown album suffixes are replaced only after reading the media signature
   await calls.media.success({ tempFiles: [{ tempFilePath: '/test/misnamed.jpg', fileType: 'image', size: 100 }] })
   assert.match(page.data.files[0].name, /\.png$/)
   page.clearFiles()
+  calls.fileData['/test/photo.jfif'] = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0])
+  await calls.media.success({ tempFiles: [{ tempFilePath: '/test/photo.jfif', fileType: 'image', size: 100 }] })
+  assert.equal(page.data.files[0].name, 'photo.jfif')
+  page.clearFiles()
+  calls.fileData['/test/raw.j2k'] = Uint8Array.from([0xff, 0x4f, 0xff, 0x51])
+  await calls.media.success({ tempFiles: [{ tempFilePath: '/test/raw.j2k', fileType: 'image', size: 100 }] })
+  assert.equal(page.data.files[0].name, 'raw.j2k')
+  page.clearFiles()
   await calls.media.success({ tempFiles: [{ tempFilePath: '/test/unknown.tmp', fileType: 'video', size: 100 }] })
   assert.equal(page.data.files.length, 0)
   assert(calls.toasts.includes('无法识别媒体格式'))
@@ -86,7 +94,7 @@ test('unsupported single files are rejected with a format-specific message', () 
 })
 test('special image and video formats have safe visual fallbacks; subtitles have their own group', () => {
   const { page } = setup()
-  for (const extension of ['jp2', 'jxl', 'qoi', 'ppm']) {
+  for (const extension of ['jp2', 'j2k', 'jxl', 'qoi', 'ppm', 'jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'psd']) {
     page.appendFiles([file(`scan.${extension}`)])
     assert.equal(page.data.files[0].visualKind, 'image')
     assert.equal(page.data.files[0].thumbnailPath, '')
@@ -131,6 +139,14 @@ test('invalid or excessive files leave the existing queue unchanged', () => {
   page.appendFiles([file('large.jpg', 1025)])
   page.appendFiles([file('b.jpg'), file('c.jpg'), file('d.jpg')])
   assert.equal(page.data.files.length, 1); assert.equal(calls.toasts.length, 3)
+})
+test('text source keeps its tighter engine limit while media uses the raised limit', () => {
+  const { page, calls } = setup()
+  page.appendFiles([file('notes.txt', 513)])
+  assert.equal(page.data.files.length, 0)
+  page.appendFiles([file('clip.mp4', 513)])
+  assert.equal(page.data.files.length, 1)
+  assert.equal(calls.toasts.length, 1)
 })
 test('sort determines upload order; successful submit opens history', async () => {
   const { page, calls } = setup()
@@ -178,6 +194,7 @@ test('settings are shown only when the selected operation accepts them', () => {
 test('PDF group validation and options survive submission; unavailable encryption is hidden', async () => {
   const { page, calls } = setup()
   await page.refresh(); assert.equal(page.data.pdfActionOptions.length, 1)
+  assert.match(page.data.limitHint, /文本类/)
   page.appendFiles([file('a.pdf')]); page.chooseOperation(event({ id: 'convert:pdf' }))
   page.onOptionSelect(event({ key: 'splitMode' }, 1)); await page.start(); assert.equal(calls.created.length, 0)
   page.onOptionInput(event({ key: 'groupSize' }, '2')); await page.start()
@@ -219,4 +236,19 @@ test('non-previewable result never downloads when preview is invoked', async () 
   assert(calls.toasts.includes('该格式请导出后打开'))
   const markup = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.wxml'), 'utf8')
   assert(markup.includes('wx:if="{{asset.canPreview}}"'))
+})
+test('result above the WeChat download ceiling does not offer preview', async () => {
+  const { page, api } = setup()
+  api.listJobs = async () => [{ id: 'job', status: 'succeeded', createdAt: '2026-09-26T00:00:00Z', operationId: 'convert:pdf', uploads: [{ fileName: 'source.docx' }], assets: [{ id: 'asset', fileName: 'result.pdf', sizeBytes: 200_000_000, mimeType: 'application/pdf' }] }]
+  await page.loadJobs()
+  assert.equal(page.data.jobs[0].assets[0].canPreview, false)
+})
+test('history retains server warnings and renders the review notice', async () => {
+  const { page, api } = setup()
+  api.listJobs = async () => [{ id: 'job', status: 'succeeded', createdAt: '2026-09-26T00:00:00Z', operationId: 'convert:txt', warnings: ['部分文字识别置信度较低，请对照原件核对。'], uploads: [{ fileName: 'scan.png' }], assets: [] }]
+  await page.loadJobs()
+  assert.equal(page.data.jobs[0].warnings[0], '部分文字识别置信度较低，请对照原件核对。')
+  const markup = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.wxml'), 'utf8')
+  assert(markup.includes('job.warnings && job.warnings.length'))
+  assert(markup.includes('{{warning}}'))
 })
