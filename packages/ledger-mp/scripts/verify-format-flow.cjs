@@ -10,7 +10,7 @@ const { stripTypeScriptTypes } = require('node:module')
 const { test } = require('node:test')
 const source = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.ts'), 'utf8')
 const code = stripTypeScriptTypes(source.replace(/^import[\s\S]*?from '[^']+'$/gm, ''))
-const op = (target, inputs, id = `convert:${target}`, options = []) => ({ id, targetExtension: target, inputExtensions: inputs, label: `转为 ${target.toUpperCase()}`, kind: 'convert', options })
+const op = (target, inputs, id = `convert:${target}`, options = []) => ({ id, targetExtension: target, inputExtensions: inputs, label: `转为 ${target.toUpperCase()}`, kind: 'convert', options, optionInputExtensions: Object.fromEntries(options.map(key => [key, inputs])) })
 const capabilities = { available: true, limits: { maxFileBytes: 1024, textFileBytes: 512, textExtensions: ['txt'], maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png', 'jp2', 'j2k', 'jxl', 'qoi', 'ppm', 'jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'psd', 'fff', 'mef']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov', 'm4s'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('mkv', ['mov', 'mp4']), op('epub', ['txt'], 'convert:epub', ['textEncoding']), op('txt', ['docx', 'xlsx', 'xlsm', 'zip', 'json', 'yaml', 'yml', 'xml', 'log', 'markdown']), op('vtt', ['srt']), op('json', ['txt'])] }
 const event = (dataset, value) => ({ currentTarget: { dataset }, detail: { value } })
 const file = (name, size = 100) => ({ name, path: `/test/${name}`, size })

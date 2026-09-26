@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 const { createHash, randomUUID } = require('node:crypto')
 const { execFileSync } = require('node:child_process')
-const { open, readFile, writeFile, mkdtemp, rm, stat } = require('node:fs/promises')
+const { mkdir, open, readFile, writeFile, mkdtemp, rm, stat } = require('node:fs/promises')
 const { homedir, tmpdir } = require('node:os')
-const { dirname, join } = require('node:path')
+const { basename, dirname, join } = require('node:path')
 const { PrismaClient } = require('@prisma/client')
 const { JwtService } = require('@nestjs/jwt')
 const sharp = require('sharp')
@@ -1093,6 +1093,105 @@ async function main() {
         }
       }
     } finally { await rm(sheetWork, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_XLSM) {
+    const macroWork = await mkdtemp(join(tmpdir(), 'ledger-xlsm-pairs-'))
+    try {
+      const source = engineSource
+      const input = join(__dirname, '../test/fixtures/xlsm-macro-loss/source.xlsm')
+      const fixture = await readFile(input)
+      if (execFileSync('unzip', ['-p', input, 'xl/vbaProject.bin']).length < 10000)
+        throw new Error('XLSM fixture has no VBA project')
+      const expanded = join(macroWork, 'wide-source')
+      const wideInput = join(macroWork, 'wide.xlsm')
+      execFileSync('unzip', ['-q', input, '-d', expanded])
+      const sheetPath = join(expanded, 'xl/worksheets/sheet1.xml')
+      const sheetXml = await readFile(sheetPath, 'utf8')
+      if (sheetXml.split('<sheetData>').length !== 2)
+        throw new Error('XLSM source worksheet is not suitable for column-width adjustment')
+      await writeFile(sheetPath, sheetXml.replace('<sheetData>',
+        '<cols><col min="1" max="1" width="32" customWidth="1"/>' +
+        '<col min="2" max="3" width="18" customWidth="1"/></cols><sheetData>'))
+      execFileSync('zip', ['-q', '-r', wideInput, '.'], { cwd: expanded })
+      execFileSync('unzip', ['-tqq', wideInput])
+      if (execFileSync('unzip', ['-p', wideInput, 'xl/vbaProject.bin']).length < 10000)
+        throw new Error('Wider XLSM PDF fixture lost its VBA project')
+      const wideFixture = await readFile(wideInput)
+      const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
+      const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes('xlsm')).map((operation) => operation.targetExtension)
+      const unzip = (file, name) => execFileSync('unzip', ['-p', file, name], { encoding: 'utf8' })
+      const inspect = async (file, target, label) => {
+        if (target === 'pdf') {
+          if ((await PDFDocument.load(await readFile(file))).getPageCount() < 1)
+            throw new Error(`${label}: XLSM PDF has no pages`)
+          const text = execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH),
+            'pdftotext'), [file, '-'], { encoding: 'utf8' }).replace(/\s+/g, '')
+          if (!text.includes('中文内容完整保留') || !text.includes('5682') ||
+            !text.includes('11364') || !text.includes('13001'))
+            throw new Error(`${label}: XLSM PDF lost cells`)
+          return text
+        }
+        if (target === 'csv' || target === 'html') {
+          const raw = await readFile(file, 'utf8')
+          const text = (target === 'html' ? raw.replace(/<[^>]+>/g, '') : raw).replace(/\s+/g, '')
+          if (!text.includes('中文内容完整保留') || !text.includes('5682') ||
+            !text.includes('11364') || !text.includes('13001'))
+            throw new Error(`${label}: XLSM ${target} lost cells`)
+          return text
+        }
+        let document = file
+        if (target === 'xls') {
+          const soffice = originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH
+          const convertedDir = join(macroWork, `converted-${label}`)
+          await mkdir(convertedDir)
+          execFileSync(soffice, [`-env:UserInstallation=file://${join(macroWork, `profile-${label}`)}`,
+            '--headless', '--convert-to', 'xlsx', '--outdir', convertedDir, file])
+          document = join(convertedDir, basename(file).replace(/\.xls$/, '.xlsx'))
+        }
+        execFileSync('unzip', ['-tqq', document])
+        if (target === 'ods') {
+          const xml = unzip(document, 'content.xml')
+          if (!xml.includes('table:name="Sheet1"') || !xml.includes('table:name="Sheet2"') ||
+            !xml.includes('中文内容完整保留') || !xml.includes('office:value="5682"') ||
+            !xml.includes('office:value="11364"') || !xml.includes('office:value="13001"') ||
+            (xml.match(/table:formula=/g) || []).length < 2)
+            throw new Error(`${label}: XLSM ODS lost sheets, values, or formulas`)
+          return 'Sheet1 Sheet2 中文内容完整保留 5682 11364 13001 two formulas'
+        }
+        const workbook = unzip(document, 'xl/workbook.xml')
+        const strings = unzip(document, 'xl/sharedStrings.xml')
+        const cells = unzip(document, 'xl/worksheets/sheet1.xml')
+        if (!workbook.includes('name="Sheet1"') || !workbook.includes('name="Sheet2"') ||
+          !strings.includes('中文内容完整保留') ||
+          !/<f(?:\s[^>]*)?>B2\*2<\/f>/.test(cells) ||
+          !/<f(?:\s[^>]*)?>SUM\(B2:B3\)<\/f>/.test(cells) ||
+          ['5682', '11364', '7319', '13001'].some((value) => !cells.includes(`<v>${value}</v>`)) ||
+          execFileSync('unzip', ['-Z', '-1', document], { encoding: 'utf8' }).includes('xl/vbaProject.bin'))
+          throw new Error(`${label}: XLSM ${target} lost sheets/formulas/values or retained unsupported VBA`)
+        return 'Sheet1 Sheet2 中文内容完整保留 5682 11364 7319 13001 two formulas'
+      }
+      for (const target of targets) {
+        const sourceFile = target === 'pdf' ? wideInput : input
+        const inputBytes = target === 'pdf' ? wideFixture : fixture
+        const converted = await convert(`convert:${target}`, [['source.xlsm', inputBytes]])
+        const backendPath = join(macroWork, `backend.${target}`)
+        const directPath = join(macroWork, `direct.${target}`)
+        await writeFile(backendPath, converted.bytes)
+        execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', sourceFile,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        if ((await inspect(backendPath, target, `backend-${target}`)) !==
+          (await inspect(directPath, target, `direct-${target}`)))
+          throw new Error(`XLSM to ${target}: result differs from original`)
+        if (!converted.result.warnings?.some((warning) => warning.includes('宏和 VBA')))
+          throw new Error(`XLSM to ${target}: macro loss warning was not shown`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', 'xlsm', target, createHash('sha256').update(inputBytes).digest('hex'),
+          'real VBA-bearing XLSM: direct original and authenticated backend, cells/formulas and macro warning checked'])
+        console.log(`PASS xlsm:${target}, cells match direct original and macro warning is visible`)
+      }
+    } finally { await rm(macroWork, { recursive: true, force: true }) }
   }
 
   if (process.env.CONVERSION_SAMPLE_DOCX && !process.env.CONVERSION_SKIP_DOCX) {

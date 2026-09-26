@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 698,
+    "passed": 704,
     "failed": 0,
-    "incomplete": 476
+    "incomplete": 470
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -10960,56 +10960,62 @@
     {
       "input": "xlsm",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4fef939629ec6fa57394459e0fa2490d10fe9e31521ec40f9aff747db57815af",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real VBA-bearing XLSM: direct original and authenticated backend, cells/formulas and macro warning checked"
     },
     {
       "input": "xlsm",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4fef939629ec6fa57394459e0fa2490d10fe9e31521ec40f9aff747db57815af",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real VBA-bearing XLSM: direct original and authenticated backend, cells/formulas and macro warning checked"
     },
     {
       "input": "xlsm",
       "output": "ods",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4fef939629ec6fa57394459e0fa2490d10fe9e31521ec40f9aff747db57815af",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real VBA-bearing XLSM: direct original and authenticated backend, cells/formulas and macro warning checked"
     },
     {
       "input": "xlsm",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "e97bbbb33e6b898d5e02f5386c71d98adb0fc777873797b7f23c6400dbddb2c7",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real VBA-bearing XLSM: direct original and authenticated backend, cells/formulas and macro warning checked"
     },
     {
       "input": "xlsm",
       "output": "xls",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4fef939629ec6fa57394459e0fa2490d10fe9e31521ec40f9aff747db57815af",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real VBA-bearing XLSM: direct original and authenticated backend, cells/formulas and macro warning checked"
     },
     {
       "input": "xlsm",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "4fef939629ec6fa57394459e0fa2490d10fe9e31521ec40f9aff747db57815af",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "real VBA-bearing XLSM: direct original and authenticated backend, cells/formulas and macro warning checked"
     },
     {
       "input": "xlsx",

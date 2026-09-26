@@ -269,6 +269,9 @@ async function processJob(id: string) {
     }), { mode: 0o600 })
     const outputs = await runEngine(id, leaseId, requestFile, join(work, 'engine-runtime'))
     const warnings = collectConversionWarnings(outputs, options)
+    if (job.uploads.some((upload) => extname(upload.fileName).toLowerCase() === '.xlsm')) {
+      warnings.push('XLSM 中的宏和 VBA 代码可能未保留；请在原文件中核对并保留备份。')
+    }
     await assertLease()
     if (!outputs.length) throw new Error('转换没有产生文件')
     const sidecars = await markdownSidecars(outputDir)
