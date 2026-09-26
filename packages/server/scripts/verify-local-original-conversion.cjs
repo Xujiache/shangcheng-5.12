@@ -216,7 +216,7 @@ async function verifyBaseline(convert) {
     const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
     const inputExtensions = (process.env.CONVERSION_IMAGE_INPUTS || 'png').split(',')
     for (const inputExtension of inputExtensions) {
-      if (!['png', 'svg', 'avif', 'bmp', 'gif', 'ico', 'jp2', 'jpg', 'jpe', 'jpeg',
+      if (!['png', 'svg', 'avif', 'bmp', 'gif', 'ico', 'jp2', 'j2k', 'jpg', 'jpe', 'jpeg',
         'jfif', 'jxl', 'ppm', 'qoi', 'tga', 'tif', 'tiff', 'webp', 'heic', 'heif']
         .includes(inputExtension))
         throw new Error(`Unsupported image fixture generator: ${inputExtension}`)
@@ -226,7 +226,10 @@ async function verifyBaseline(convert) {
       else {
         const png = join(imageWork, 'source.png')
         await writeFile(png, imagePng)
-        if (inputExtension === 'jxl')
+        if (inputExtension === 'j2k')
+          execFileSync(ffmpeg, ['-v', 'error', '-i', png, '-c:v', 'jpeg2000', '-format',
+            'j2k', '-f', 'image2', input])
+        else if (inputExtension === 'jxl')
           execFileSync(ffmpeg, ['-v', 'error', '-i', png, '-c:v', 'libjxl',
             '-distance', '0', '-effort', '7', input])
         else if (inputExtension === 'heic' || inputExtension === 'heif') {
@@ -246,6 +249,8 @@ async function verifyBaseline(convert) {
             '--to', inputExtension, '--output', input, '--json'], { env: originalCliEnv() })
       }
       const imageFixture = await readFile(input)
+      if (inputExtension === 'j2k' && imageFixture.subarray(0, 4).toString('hex') !== 'ff4fff51')
+        throw new Error('J2K fixture is not a JPEG 2000 codestream')
       const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
         operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
       for (const target of targets) {
