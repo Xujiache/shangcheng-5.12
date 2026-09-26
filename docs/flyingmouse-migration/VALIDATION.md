@@ -1,6 +1,6 @@
 # 格式转换迁移验收记录（2026-09-24）
 
-当前生产状态见文末“2026-09-26 `fcdbffc` 部署与公网抽样验收”。以下首表保留 2026-09-24 历史基线：当时最新 `origin/feat/ledger-mp` 的 `a5bf9a8a358ae4ddb3974af022bea21332a9772d`；独立分支 `codex/flyingmouse-mp`。
+当前生产状态见文末“2026-09-26 `618c798` 部署与公网验收”。以下首表保留 2026-09-24 历史基线：当时最新 `origin/feat/ledger-mp` 的 `a5bf9a8a358ae4ddb3974af022bea21332a9772d`；独立分支 `codex/flyingmouse-mp`。
 
 | 检查 | 结果 | 证据/约束 |
 | --- | --- | --- |
@@ -145,3 +145,11 @@ FLYINGMOUSE_SOURCE_DIR=/path/to/source-copy node /path/to/scripts/build-flyingmo
 - 新镜像的隔离电子书/Office smoke：13 次成功转换，包括 11 次新增组合（两份 MOBI 各转 TXT/Markdown/EPUB、两份 EPUB→DOCX、WPT→Markdown、两份 ETT→CSV）及 2 次基线 EPUB→TXT 内容对比；另有含 SVG 章节的 EPUB→DOCX（`EPUB_SVG_UNSUPPORTED`）与 KF8 MOBI 两次预期拒绝，以及 4 项内容/目录检查，合计 19/19 检查通过。证据为服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/fcdbffc-isolated-smoke/runs/20260926T040823Z/{smoke.log,summary.json}`。MOBI 仅提取文本，内嵌图片与版式不保留。
 - 公网 HTTPS 脚本 `engine-unlock-test/release-ebook-office-raw-http.cjs` 最终运行记录 `selected_cases 17 of 17`、17 条 `pair_ok` 和 `cleanup_ok`。17 次包括两份 MOBI 各转 TXT/Markdown/EPUB（6 次）、两份 EPUB→DOCX（2 次）、WPT→Markdown（1 次）、两份 ETT→CSV（2 次）、FFF/MEF 各转 PNG/JPG/WebP（6 次），覆盖 12 组不同输入→目标组合。证据为服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/engine-unlock-test/release-ebook-office-raw-http-fcdbffc.log`。首次脚本运行因测试 ZIP 的 `[Content_Types].xml` glob 写法失败；修正脚本后完整重跑通过，不能将首次断言错误记作转换失败。
 - 本次公网抽样不代表 957 组均已实测，也不代表真实电子书、Office 文档和大 RAW 的全部内容或版式质量。上一节 `a3785dc`/`d94c072` 的 114/114 RAW/EPUB 与 16/16 旧 Office 公网记录保留为历史结果。小程序官方编译、正式版上传、真机效果及整镜像许可验收仍未完成。
+
+## 2026-09-26 `618c798` 部署与公网验收
+
+- 生产 API 与 worker 于约 05:05 UTC 切换到 `618c798`。worker 镜像 `jiujiu-conversion-worker:618c798` 的镜像 ID 为 `sha256:3c8fa9047bb3d677ef1de12d22ae55b03cd3b23fb348726acc8f37179e06eec8`；复核时容器运行中、重启 0 次。API 更新前的构建备份保存在服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/next-release-qa/server-dist-before-618c798.tgz`。
+- 从提交 `618c798` 的白名单重算：46 项操作、989 个展示条目、984 个不同输入→目标组合。相比 `fcdbffc` 新增 27 组：18 组 RAW→PDF、CR2/DNG→JP2/JXL 四组、XLSM→XLSX、ICO→TXT/Markdown/DOCX 三组、AI→Markdown。原版目录 1174 组中仍有 190 组未开放，分为图片 173、文档 8、演示文稿 7、表格 2 组。单文件 96,000,000 字节（文本类 64 MiB）、单批 256 MiB、最多 100 个文件的上限未变。
+- 新镜像在无网络、只读根目录、3 GiB 临时目录、4 GiB 内存及 2 CPU 限制的隔离容器中，真实 RAW/PDF/JP2/JXL、带 VBA 的 XLSM、ICO、AI 样本与预期拒绝检查合计 9/9 通过；cgroup 内存峰值 1,682,034,688 字节。首次试跑只发现测试脚本的夹具挂载与 ZIP 检查工具问题，修正后完整重跑通过，不能记为转换失败。证据为服务器 `/root/deployment-verification/jiujiu-f39ea43-20260925/next-release-qa/isolated-smoke/{summary.json,run.jsonl,run.meta}`。
+- 公网 HTTPS 脚本 `next-release-qa/next-release-public-qa.cjs` 记录 `selected_cases 27 of 27`、27 条 `pair_ok` 和 `cleanup_ok`：18 组 RAW→PDF、CR2/DNG→JP2/JXL 四组、XLSM→XLSX、ICO→TXT/Markdown/DOCX 三组、AI→Markdown 均完成上传、转换、鉴权下载、跨账号拒绝、结果内容检查和清理。证据为服务器 `next-release-qa/public-qa-618c798.log`；服务端 SSH 会话在脚本结束后断开，但复核时没有测试脚本进程，日志完整，测试账号 0，数据库仍为原有任务 3、上传 4、分片 4、结果 5、运行中任务 0。旧版基线 TXT→Markdown、SRT→VTT、PNG→JPG 的公网测试 3/3 通过，见 `next-release-qa/baseline-618c798.log`。公网 `/health` 为 200，worker 运行中且重启 0 次。
+- 这些抽样不代表 984 组逐一通过，也不代替小程序真机、更多真实文件或与原版桌面 GUI 的质量对比。XLSM→XLSX 明确移除 VBA 宏；ICO 文本导出与 AI→Markdown 的 OCR/文本层结果存在内容与版式限制。微信开发者工具项目已打开，但模拟器当前报 `Error: Timeout`，服务端口关闭；官方小程序上传与真机效果仍未验收。
