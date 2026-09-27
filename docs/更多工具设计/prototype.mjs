@@ -11,7 +11,7 @@ const pages = [
   ['retire', '退休倒计时', '出生年月与职工类别自动匹配法定退休月份，填写一次，本机保存。'],
   ['level', '水平仪测量仪', '读数居中，校准与锁定各司其职；读数为演示。'],
   ['glass', '玻璃 K 值计算', '先选玻璃构造，再调整参数；计算结果为示例。'],
-  ['luban', '鲁班尺', '尺寸查格、门窗宽高核对、邻近尺寸建议，明确尺制与测量口径。'],
+  ['luban', '鲁班尺', '双层尺面左右滑动，按用途筛选附近尺寸，复制与保存始终位于底部。'],
 ]
 const variants = {
   rmb: [['normal', '已输入金额'], ['empty', '未输入'], ['error', '输入错误']],
@@ -185,6 +185,7 @@ function glassView() {
 }
 const renderers = { home: homeView, tools: toolsView, rmb: rmbView, retire: retirementView, level: levelView, glass: glassView, luban: lubanPage.view }
 function render(focusSelector) {
+  lubanPage.cancelDrag()
   app.innerHTML = renderers[currentPage]()
   if (currentPage === 'retire') retirementRenderedDay = localToday()
   document.getElementById('review-title').textContent = pages.find(([id]) => id === currentPage)[1]
@@ -263,6 +264,9 @@ document.addEventListener('click', async event => {
   if (action === 'glass-edit') { glassResult = false; render() }
   if (action === 'save-param') { const key = target.dataset.key; const value = document.getElementById('glass-param').value.trim(); if (!/^\d+(?:\.\d+)?$/.test(value) || Number(value) <= 0 || (key === 'emissivity' && Number(value) > 1)) { const error = document.getElementById('param-error'); error.hidden = false; error.textContent = key === 'emissivity' ? '请输入大于 0 且不超过 1 的数值' : '请输入大于 0 的有效数值'; return } glass[key] = value; glassError = false; closeSheet(); render(`[data-param="${key}"]`) }
 })
+for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) document.addEventListener(type, event => { if (currentPage === 'luban') lubanPage.onPointer(event) })
+document.addEventListener('focusin', event => { if (currentPage === 'luban' && event.target.dataset.lubanField) lubanPage.onFocus(event.target) })
+document.addEventListener('keydown', event => { if (currentPage === 'luban') lubanPage.onKey(event) })
 document.addEventListener('input', event => {
   if (event.target.id === 'tool-search') { toolSearch = event.target.value; updateToolSearch(); return }
   if (event.target.dataset.lubanField) { lubanPage.onInput(event.target); return }

@@ -152,17 +152,7 @@
 .luban-result-name>span{font-size:16px;color:#6f8274}
 .luban-result-name button{margin-left:auto;border:0;background:none;color:#b1bcb2;padding:8px 0 8px 8px}
 .luban-result-name .icon{width:15px;height:15px}
-.luban-range{font-size:10px;color:#98a99b;margin:3px 0 20px;font-variant-numeric:tabular-nums}
-.luban-ruler{position:relative;padding-top:7px}
-.luban-ruler-groups{display:grid;grid-template-columns:repeat(var(--groups),minmax(0,1fr));background:#f0f2ed;border-radius:5px 5px 0 0;overflow:hidden}
-.luban-ruler-groups span{height:28px;display:grid;place-items:center;font-size:12px;color:#9caa9f;border-right:1px solid white}
-.luban-ruler-groups .auspicious{background:#e7f3e9;color:#5a8e69}
-.luban-ruler-groups .current{font-weight:650;background:#b2c7b8;color:#fff}
-.luban-ruler-groups .auspicious.current{background:#519273}
-.luban-ruler-pointer{position:absolute;top:0;bottom:18px;width:1px;background:#46765a;z-index:1}
-.luban-ruler-pointer:before{content:"";position:absolute;top:-2px;left:-4px;border-left:4.5px solid transparent;border-right:4.5px solid transparent;border-top:6px solid #46765a}
-.luban-ticks{height:10px;border-top:1px solid #d5dfd4;background:repeating-linear-gradient(90deg,#c7d7c9 0 1px,transparent 1px calc(100% / var(--cells)));margin-bottom:4px}
-.luban-ruler-scale{display:flex;justify-content:space-between;color:#b0bcb0;font-size:9px}
+.luban-range{font-size:10px;color:#809587;margin:3px 0 17px;font-variant-numeric:tabular-nums}
 .luban-result-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;border-top:1px solid var(--line);min-height:38px;font-size:10px;color:#a6b3a8}
 .luban-result-footer button{background:none;border:0;padding:8px 0;color:#638570;font-size:10px;display:flex;align-items:center;gap:3px}
 .luban-result-footer .icon{width:11px;height:11px}
@@ -170,15 +160,15 @@
 .luban-suggestion-heading h3{font-size:12px;font-weight:550;color:#506c59;margin:0}
 .luban-suggestion-heading button{display:flex;align-items:center;gap:4px;background:none;border:0;color:#829587;font-size:10px;padding:4px 0}
 .luban-suggestion-heading .icon{width:12px;height:12px}
-.luban-suggestion{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;padding:15px 17px;border:0;background:none;text-align:left}
-.luban-suggestion+.luban-suggestion{border-top:1px solid var(--line)}
+.luban-suggestion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.luban-suggestion{display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:14px 12px;text-align:left;border-radius:15px}
+
 .luban-suggestion strong{font-size:17px;font-weight:550;color:#347657;font-variant-numeric:tabular-nums}
 .luban-suggestion small{display:block;font-size:10px;color:#95a698;margin-top:4px}
-.luban-adjustment{font-size:11px;color:#819787;display:flex;align-items:center;gap:6px}
+.luban-adjustment{font-size:10px;color:#819787;display:flex;align-items:center;justify-content:space-between;width:100%;gap:6px;margin-top:13px}
 .luban-adjustment .icon{width:12px;height:12px;color:#a0b1a3}
 .luban-no-suggestion{font-size:11px;line-height:1.9;margin:0;padding:17px;color:#8a9c8f}
 .luban-suggestion-note{font-size:9.5px;color:#99aa9c;margin:9px 3px 0}
-.luban-actions{margin-top:23px;gap:10px}
+.luban-action-bar{flex-shrink:0;padding:12px 18px 10px;background:#f7faf7f5;border-top:1px solid #e0e8e1;box-shadow:0 -8px 18px -16px #254c3b40;z-index:6}.luban-actions{margin:0;gap:10px}
 .luban-actions button{font-size:13px;height:44px;border-radius:14px}
 .luban-bottom-links{display:flex;justify-content:space-between;margin:15px 0 0}
 .luban-bottom-links button{display:flex;align-items:center;gap:3px;background:none;border:0;font-size:10px;padding:6px 3px;color:#7e9685}
@@ -205,4 +195,45 @@
 .luban-history small{display:block;font-size:10px;color:#8fa294;margin-top:5px}
 .luban-history .icon{width:13px;height:13px;color:#90a595;flex-shrink:0}
 .luban-copy-text{user-select:text}
-@media(max-width:370px){.home-quick-grid{padding-left:4px;padding-right:4px}.home-quick-grid .hub-tool-label{font-size:10.5px}.home-quick-grid .hub-tool-media,.home-quick-grid .hub-tool-media img{width:40px;height:40px}.home-all-tools{gap:8px}.home-all-copy small{font-size:9px}.home-all-tools>img{width:34px;height:34px}.luban-input-panel,.luban-result{padding-left:13px;padding-right:13px}.luban-dimensions.paired input{font-size:25px}.luban-input-bottom>div{gap:5px}.luban-input-bottom>button{font-size:9px}.luban-range{font-size:9px}.luban-ruler-groups span{font-size:11px}.luban-adjustment{font-size:10px}.luban-settings{max-height:520px}}
+@media(max-width:370px){.home-quick-grid{padding-left:4px;padding-right:4px}.home-quick-grid .hub-tool-label{font-size:10.5px}.home-quick-grid .hub-tool-media,.home-quick-grid .hub-tool-media img{width:40px;height:40px}.home-all-tools{gap:8px}.home-all-copy small{font-size:9px}.home-all-tools>img{width:34px;height:34px}.luban-input-panel,.luban-result{padding-left:13px;padding-right:13px}.luban-dimensions.paired input{font-size:25px}.luban-input-bottom>div{gap:5px}.luban-input-bottom>button{font-size:9px}.luban-range{font-size:9px}.luban-adjustment{font-size:10px}.luban-settings{max-height:520px}}
+
+/* 固定指针下的双层尺面；底栏在滚动容器之外。 */
+.luban-body{padding-bottom:18px}
+.luban-slider-panel{margin-top:15px;padding:13px 0 12px}
+.luban-slider-panel>.label-row{padding:0 15px 7px}
+.luban-slider-panel h3{font-size:12px;font-weight:550;margin:0;color:#486954}
+.luban-field-switch{display:flex;gap:3px}
+.luban-field-switch button{border:0;background:none;color:#91a095;font-size:10px;padding:5px 8px;border-radius:7px}
+.luban-field-switch button.selected{color:#267457;background:#edf5ef}
+.luban-slider{position:relative;overflow:hidden;touch-action:pan-y;user-select:none;cursor:grab;outline-offset:-3px!important}
+.luban-slider.dragging{cursor:grabbing}
+.luban-slider[aria-disabled="true"]{cursor:default}
+.luban-slide-row{padding:7px 0 0}
+.luban-slide-label{display:flex;align-items:center;justify-content:space-between;padding:0 15px 6px;color:#8c9e90;font-size:10px;pointer-events:none}
+.luban-slide-label small{font-size:8px;margin-left:7px;color:#a2afa5}
+.luban-slide-label strong{font-weight:500;font-size:10px;color:#628570}
+.luban-slide-row.selected .luban-slide-label>span{color:#416b50}
+.luban-slide-band{position:relative;height:44px;overflow:hidden;background:#f7f8f5;pointer-events:none}
+.luban-slide-cell{position:absolute;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:center;border-right:1px solid white;background:#eef1ec;color:#7e897e;overflow:hidden}
+.luban-slide-cell small{font-size:8px;line-height:1.3;white-space:nowrap;color:#9ba699}
+.luban-slide-cell b{font-size:12px;font-weight:500;white-space:nowrap}
+.luban-slide-cell.auspicious{background:#e5f2e8;color:#3a7c57}
+.luban-slide-cell.auspicious small{color:#87a88e}
+.luban-slide-scale{height:29px;position:relative;overflow:hidden;margin-top:3px;pointer-events:none}
+.luban-slide-scale span{position:absolute;top:0;height:5px;border-left:1px solid #b8cabd;font-size:8px;color:#91a597;padding-top:10px;transform:translateX(-.5px)}
+.luban-slide-scale span.major{height:9px;text-indent:-10px}
+.luban-slider-pointer{position:absolute;top:25px;bottom:17px;left:50%;width:1px;background:#207455;pointer-events:none;box-shadow:0 0 0 1px #fff5}
+.luban-slider-pointer:before{content:"";position:absolute;top:-5px;left:-4px;border-left:4.5px solid transparent;border-right:4.5px solid transparent;border-top:6px solid #207455}
+.luban-slider-pointer:after{content:"";position:absolute;bottom:-3px;left:-3px;width:7px;height:4px;border-radius:2px;background:#207455}
+.luban-slider-hint{display:flex;justify-content:space-between;padding:3px 15px 0;font-size:9px;color:#95a599}
+.luban-quick-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:11px 12px 0}
+.luban-quick-steps button{height:30px;border:1px solid #e2ebe4;border-radius:8px;background:#f8fbf8;color:#5a7e65;font-size:11px;display:grid;place-items:center}
+.luban-slider-empty{padding:35px 16px;color:#98a99c;text-align:center;font-size:12px}
+.luban-suggestion-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px}
+.luban-filter{display:flex;padding:3px;background:#e7eee8;border-radius:9px;gap:3px}
+.luban-filter button,.luban-tolerances button{border:0;background:none;color:#8c9e91;font-size:10px;padding:5px 7px;border-radius:6px;white-space:nowrap}
+.luban-filter button.selected{background:#fff;color:#316d4d;box-shadow:0 1px 3px #1d402408}
+.luban-tolerances{display:flex;gap:3px}
+.luban-tolerances button{padding:5px 4px;font-size:9px}
+.luban-tolerances button.selected{color:#36774f;background:#dfebe1}
+@media(max-width:370px){.luban-suggestion-controls{gap:4px}.luban-filter button{padding:5px;font-size:9px}.luban-tolerances button{padding:5px 3px}.luban-suggestion strong{font-size:15px}.luban-suggestion small{font-size:9px}.luban-action-bar{padding-left:12px;padding-right:12px}.luban-slide-label small{margin-left:4px}}

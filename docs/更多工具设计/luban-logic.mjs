@@ -121,3 +121,55 @@ export function nearestAuspicious(lengthMm, ruleId = 'yang', options = {}) {
   }
   return { ok: true, current, lower, upper }
 }
+
+function safelyInsideCell(lengthMm, result, set) {
+  if (!result.group.auspicious) return false
+  const offsetTicks = lengthMm * TICKS - result.cycleIndex * set.cycleTicks
+  const cellIndex = result.group.index * 4 + result.item.index
+  const fromStart = offsetTicks * set.cells - cellIndex * set.cycleTicks
+  const fromEnd = (cellIndex + 1) * set.cycleTicks - offsetTicks * set.cells
+  const minimum = Math.min(4000 * set.cells, set.cycleTicks)
+  return fromStart * 4 >= minimum && fromEnd * 4 >= minimum
+}
+
+export function nearbyAuspicious(lengthMm, ruleId = 'yang', options = {}) {
+  const current = lookupLength(lengthMm, 'mm', ruleId, options?.customCycleMm)
+  if (!current.ok) return current
+  if (!options || typeof options !== 'object' || Array.isArray(options) ||
+      Object.keys(options).some(key => !['toleranceMm', 'limit', 'preferredGroups', 'customCycleMm', 'requireBoth', 'otherCycleMm'].includes(key))) {
+    return { ok: false, error: '建议选项无效' }
+  }
+  const toleranceMm = options.toleranceMm === undefined ? 30 : options.toleranceMm
+  const limit = options.limit === undefined ? 8 : options.limit
+  if (typeof toleranceMm !== 'number' || !Number.isFinite(toleranceMm) || toleranceMm < 0 || toleranceMm > 1000 ||
+      !Number.isInteger(limit) || limit < 1 || limit > 2001 ||
+      (options.requireBoth !== undefined && typeof options.requireBoth !== 'boolean')) {
+    return { ok: false, error: '允许调整量须在 0 至 1000 毫米内；建议数量须为 1 至 2001 的整数' }
+  }
+  const selected = setup(ruleId, options.customCycleMm)
+  const otherId = ruleId === 'yang' ? 'yin' : 'yang'
+  const other = setup(otherId, options.otherCycleMm)
+  if (!other) return { ok: false, error: '另一尺制的自定义周期无效' }
+  const preferred = options.preferredGroups
+  if (preferred !== undefined && (!Array.isArray(preferred) ||
+      preferred.some(name => typeof name !== 'string' || !selected.rule.groups.some(group => group.name === name)) ||
+      new Set(preferred).size !== preferred.length)) {
+    return { ok: false, error: '目标大格无效' }
+  }
+  const items = []
+  const lower = Math.max(1, Math.ceil(current.lengthMm - toleranceMm))
+  const upper = Math.min(MAX_MM, Math.floor(current.lengthMm + toleranceMm))
+  for (let targetMm = lower; targetMm <= upper; targetMm++) {
+    const primary = lookupLength(targetMm, 'mm', ruleId, options.customCycleMm)
+    if (!safelyInsideCell(targetMm, primary, selected) ||
+        (preferred && !preferred.includes(primary.group.name))) continue
+    const secondary = lookupLength(targetMm, 'mm', otherId, options.otherCycleMm)
+    if (options.requireBoth && !safelyInsideCell(targetMm, secondary, other)) continue
+    const yang = ruleId === 'yang' ? primary : secondary
+    const yin = ruleId === 'yin' ? primary : secondary
+    items.push({ targetMm, deltaMm: targetMm - current.lengthMm,
+      yang, yin, group: primary.group, item: primary.item, rangeMm: primary.rangeMm })
+  }
+  items.sort((a, b) => Math.abs(a.deltaMm) - Math.abs(b.deltaMm) || a.targetMm - b.targetMm)
+  return { ok: true, current, items: items.slice(0, limit) }
+}

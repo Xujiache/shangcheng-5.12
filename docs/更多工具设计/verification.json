@@ -883,5 +883,128 @@
       ],
       "integrationAudit": "No confirmed issue found"
     }
+  },
+  "lubanSlidingRevision": {
+    "verifiedAt": "2026-09-27T17:42:26.094Z",
+    "scope": "Browser interactive prototype, not native WeChat device acceptance",
+    "logicTests": {
+      "passed": 27,
+      "failed": 0
+    },
+    "checks": [
+      "1975 mm shows Yang 官/富贵 and Yin 丁/登科",
+      "80 px mouse drag left changes 1975 to 1995 mm; both rows, field and results synchronize",
+      "Arrow keys 1 mm and Shift+Arrow 10 mm; ±5/10/20 quick steps",
+      "Width and height active field isolation; mm/cm conversion preserves dimensions",
+      "Both-rulers and ±300 mm filters; distance-sorted integer suggestions",
+      "Action bar position unchanged while content scrollTop changes to 455px; content ends above bar",
+      "Copy text contains both rulers and width/height values",
+      "Saved dimensions restore units, both-ruler filter and tolerance after reload",
+      "Empty input keeps fixed buttons visible but disabled",
+      "Keyboard movement clamps to 0.001 and 100000 mm"
+    ],
+    "layout": [
+      {
+        "width": 320,
+        "state": "normal",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 300,
+        "bodyWidth": 300,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 320,
+        "headerAboveContent": true
+      },
+      {
+        "width": 320,
+        "state": "door",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 300,
+        "bodyWidth": 300,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 320,
+        "headerAboveContent": true
+      },
+      {
+        "width": 320,
+        "state": "empty",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 300,
+        "bodyWidth": 300,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 320,
+        "headerAboveContent": true
+      },
+      {
+        "width": 390,
+        "state": "normal",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 370,
+        "bodyWidth": 370,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 390,
+        "headerAboveContent": true
+      },
+      {
+        "width": 390,
+        "state": "door",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 370,
+        "bodyWidth": 370,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 390,
+        "headerAboveContent": true
+      },
+      {
+        "width": 390,
+        "state": "empty",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 370,
+        "bodyWidth": 370,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 390,
+        "headerAboveContent": true
+      },
+      {
+        "width": 430,
+        "state": "normal",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 390,
+        "bodyWidth": 390,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 430,
+        "headerAboveContent": true
+      },
+      {
+        "width": 430,
+        "state": "door",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 390,
+        "bodyWidth": 390,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 430,
+        "headerAboveContent": true
+      },
+      {
+        "width": 430,
+        "state": "empty",
+        "barBottomInset": 20,
+        "bodyScrollWidth": 390,
+        "bodyWidth": 390,
+        "contentEndsBeforeBar": true,
+        "documentWidth": 430,
+        "headerAboveContent": true
+      }
+    ],
+    "errors": [],
+    "independentReview": {
+      "model": "gpt-6-sol",
+      "resolved": [
+        "Release drag capture before full rerender/navigation",
+        "Clip ruler cells at 100 m selectable limit"
+      ]
+    },
+    "limitations": [
+      "Touch uses Pointer Events and touch-action: pan-y; physical touch device not tested. In-app browser cannot dispatch synthetic touch events; touch emulation reset."
+    ]
   }
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { RULERS, lookupLength, nearestAuspicious } from './luban-logic.mjs'
+import { RULERS, lookupLength, nearestAuspicious, nearbyAuspicious } from './luban-logic.mjs'
 
 test('ruler catalog has 8 × 4 and 10 × 4 labelled cells', () => {
   assert.equal(RULERS.yang.groups.length, 8)
@@ -64,4 +64,65 @@ test('nearest suggestions stay inside auspicious cells', () => {
   }
   assert.equal(nearestAuspicious(60, 'yang', { toleranceMm: 1 }).upper, null)
   assert.equal(nearestAuspicious(60, 'yang', { preferredGroups: ['本'] }).upper.group.name, '本')
+})
+
+test('nearby integer suggestions reproduce the 1975 mm two-ruler sample', () => {
+  const result = nearbyAuspicious(1975)
+  assert.equal(result.ok, true)
+  assert.equal(result.current.group.name, '官')
+  assert.deepEqual(result.items.slice(0, 5).map(entry => entry.targetMm), [1975, 1974, 1976, 1973, 1977])
+  for (const entry of result.items.slice(0, 5)) {
+    assert.equal(entry.yang.group.name, '官')
+    assert.equal(entry.yang.item.name, '富贵')
+    assert.equal(entry.yin.group.name, '丁')
+    assert.equal(entry.yin.item.name, '登科')
+    assert.equal(entry.group.name, entry.yang.group.name)
+    assert.equal(entry.item.name, entry.yang.item.name)
+  }
+  assert.equal(new Set(result.items.map(entry => entry.targetMm)).size, result.items.length)
+  assert.deepEqual(result.items.map(entry => Math.abs(entry.deltaMm)), [...result.items.map(entry => Math.abs(entry.deltaMm))].sort((a, b) => a - b))
+})
+
+test('nearby suggestions respect bounds, filters and both-ruler safe insets', () => {
+  assert.deepEqual(nearbyAuspicious(1975, 'yang', { toleranceMm: 0 }).items.map(entry => entry.targetMm), [1975])
+  assert.deepEqual(nearbyAuspicious(1975, 'yang', { toleranceMm: 2, limit: 3 }).items.map(entry => entry.targetMm), [1975, 1974, 1976])
+  assert.deepEqual(nearbyAuspicious(1975, 'yang', { toleranceMm: 30, preferredGroups: ['本'] }).items, [])
+  const single = nearbyAuspicious(1975)
+  const both = nearbyAuspicious(1975, 'yang', { requireBoth: true })
+  assert.ok(single.items.some(entry => entry.targetMm === 1979 && !entry.yin.group.auspicious))
+  assert.ok(!both.items.some(entry => entry.targetMm === 1979))
+  for (const [ruleId, options] of [['yang', {}], ['yin', { requireBoth: true }],
+    ['yang', { customCycleMm: 429.6, otherCycleMm: 388.4, requireBoth: true }]]) {
+    const result = nearbyAuspicious(1975, ruleId, { toleranceMm: 300, limit: 2001, ...options })
+    assert.equal(result.ok, true)
+    for (const entry of result.items) {
+      assert.ok(Number.isInteger(entry.targetMm) && entry.targetMm > 0 && entry.targetMm <= 100000)
+      assert.ok(Math.abs(entry.deltaMm) <= 300)
+      assert.equal(entry[ruleId].group.auspicious, true)
+      for (const resultId of options.requireBoth ? ['yang', 'yin'] : [ruleId]) {
+        const rulerResult = entry[resultId]
+        assert.equal(rulerResult.group.auspicious, true)
+        const inset = Math.min(1, (rulerResult.rangeMm.end - rulerResult.rangeMm.start) / 4)
+        assert.ok(entry.targetMm + 1e-8 >= rulerResult.rangeMm.start + inset)
+        assert.ok(entry.targetMm - 1e-8 <= rulerResult.rangeMm.end - inset)
+      }
+    }
+    if (options.customCycleMm) {
+      assert.equal(result.items[0].yang.cycleMm, options.customCycleMm)
+      assert.equal(result.items[0].yin.cycleMm, options.otherCycleMm)
+    }
+  }
+  assert.equal(nearbyAuspicious(1, 'yang', { toleranceMm: 1000, limit: 2001 }).items.every(entry => entry.targetMm > 0), true)
+  assert.equal(nearbyAuspicious(100000, 'yang', { toleranceMm: 1000, limit: 2001 }).items.every(entry => entry.targetMm <= 100000), true)
+})
+
+test('nearby suggestions reject invalid options', () => {
+  for (const options of [null, [], { toleranceMm: -1 }, { toleranceMm: 1001 }, { toleranceMm: Infinity },
+    { toleranceMm: '30' }, { limit: 0 }, { limit: 1.5 }, { limit: 2002 }, { requireBoth: 1 },
+    { preferredGroups: '官' }, { preferredGroups: ['unknown'] }, { preferredGroups: ['官', '官'] },
+    { customCycleMm: 1 }, { otherCycleMm: 1 }, { unknown: true }]) {
+    assert.equal(nearbyAuspicious(1975, 'yang', options).ok, false, JSON.stringify(options))
+  }
+  assert.equal(nearbyAuspicious(100001).ok, false)
+  assert.equal(nearbyAuspicious(1975, 'invalid').ok, false)
 })
