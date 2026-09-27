@@ -168,7 +168,8 @@
 .luban-adjustment .icon{width:12px;height:12px;color:#a0b1a3}
 .luban-no-suggestion{font-size:11px;line-height:1.9;margin:0;padding:17px;color:#8a9c8f}
 .luban-suggestion-note{font-size:9.5px;color:#99aa9c;margin:9px 3px 0}
-.luban-action-bar{flex-shrink:0;padding:12px 18px 10px;background:#f7faf7f5;border-top:1px solid #e0e8e1;box-shadow:0 -8px 18px -16px #254c3b40;z-index:6}.luban-actions{margin:0;gap:10px}
+.luban-action-bar{position:relative;flex-shrink:0;padding:12px 18px 10px;background:#f7faf7f5;border-top:1px solid #e0e8e1;box-shadow:0 -8px 18px -16px #254c3b40;z-index:6}.luban-actions{margin:0;gap:10px}
+.luban-jump{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);display:flex;align-items:center;gap:4px;white-space:nowrap;padding:8px 12px;border:1px solid #d4e7d9;border-radius:999px;background:#f9fcf9;color:#276c51;box-shadow:0 3px 12px #254c3b1a;font-size:11px}.luban-jump .icon{width:13px;height:13px}
 .luban-actions button{font-size:13px;height:44px;border-radius:14px}
 .luban-bottom-links{display:flex;justify-content:space-between;margin:15px 0 0}
 .luban-bottom-links button{display:flex;align-items:center;gap:3px;background:none;border:0;font-size:10px;padding:6px 3px;color:#7e9685}

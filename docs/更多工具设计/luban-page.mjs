@@ -94,7 +94,13 @@ export function createLubanPage({ header, icon, escapeHtml: esc, showSheet, clos
       <div id="luban-results" aria-live="polite">${results()}</div>
       <div class="luban-bottom-links"><button data-action="luban-history">已存尺寸 ${icon('chevron')}</button><button data-action="luban-reference">尺制与字样说明 ${icon('chevron')}</button></div>
       <p class="luban-cultural-note">传统用尺参考，不代表现实吉凶。工程尺寸以规范、设计与加工要求为准。</p>
-    </div><footer class="luban-action-bar" aria-label="尺寸操作"><div class="button-pair luban-actions"><button class="secondary" data-action="luban-copy" ${fields().some(([field]) => !query(field).ok) ? 'disabled' : ''}>${icon('copy')}复制结果</button><button class="primary" data-action="luban-save" ${fields().some(([field]) => !query(field).ok) ? 'disabled' : ''}>保存尺寸</button></div></footer>`
+    </div><footer class="luban-action-bar" aria-label="尺寸操作"><button class="luban-jump" data-action="luban-jump" hidden>查看下方结果 ${icon('down')}</button><div class="button-pair luban-actions"><button class="secondary" data-action="luban-copy" ${fields().some(([field]) => !query(field).ok) ? 'disabled' : ''}>${icon('copy')}复制结果</button><button class="primary" data-action="luban-save" ${fields().some(([field]) => !query(field).ok) ? 'disabled' : ''}>保存尺寸</button></div></footer>`
+  }
+  function syncJump() {
+    const body = document.querySelector('.luban-body')
+    const button = document.querySelector('.luban-jump')
+    if (!body || !button) return
+    button.hidden = !fields().some(([field]) => query(field).ok) || body.scrollHeight - body.clientHeight - body.scrollTop < 24
   }
   function updateResults() {
     document.getElementById('preview-state').value = state()
@@ -107,7 +113,8 @@ export function createLubanPage({ header, icon, escapeHtml: esc, showSheet, clos
     slider.setAttribute('aria-disabled', !result.ok)
     slider.querySelector('.luban-slider-pointer').hidden = !result.ok
     document.querySelectorAll('.luban-field-switch button').forEach(button => { button.classList.toggle('selected', button.dataset.field === active); button.setAttribute('aria-pressed', button.dataset.field === active) })
-    document.querySelectorAll('.luban-action-bar button').forEach(button => { button.disabled = fields().some(([field]) => !query(field).ok) })
+    document.querySelectorAll('.luban-actions button').forEach(button => { button.disabled = fields().some(([field]) => !query(field).ok) })
+    syncJump()
   }
   function historyEntries() {
     try {
@@ -123,6 +130,11 @@ export function createLubanPage({ header, icon, escapeHtml: esc, showSheet, clos
     showSheet('尺制与字样说明', `<div class="luban-reference"><p>${settingsLabel()}。大格内再均分四小格；边界归右侧，整周期回到下一周期首格。</p><div class="luban-reference-table">${RULERS[rule].groups.map(group => `<div><b class="${group.auspicious ? 'auspicious' : ''}">${group.name}<small>${group.auspicious ? '吉' : '凶'}</small></b><span>${group.items.join(' · ')}</span></div>`).join('')}</div><h4>怎样使用</h4><p>先用实际量具测量，再输入净尺寸。本页刻度为示意，不能把手机屏幕直接当作实体尺。上层文公尺，下层丁兰尺，同一指针对应同一物理尺寸。文公尺常用于阳宅、门窗家具；丁兰尺多用于阴宅、祖龛。神位、佛具等具体取尺依地方习俗核对，不将两尺混为一种规则。</p><h4>版本和含义</h4><p>采用常见卷尺字样版本，传统实物存在异文与长度差异。吉凶是传统尺面分类，不是现实结果预测。阳尺住宅取字可在设置中选择财、本。尺面绿色表示传统吉格，灰色表示传统凶格，文字同时注明。双尺同吉只是可选筛选，不是所有门窗必须同时满足的规则。</p><a target="_blank" rel="noopener" href="https://magazine.ncfta.gov.tw/News_Content2.aspx?n=3131&s=82534&sms=12605">查看传统艺术中心资料 ↗</a><a target="_blank" rel="noopener" href="LUBAN-RESEARCH.md">查看尺制来源与版本说明 ↗</a></div>`)
   }
   async function onAction(action, target) {
+    if (action === 'luban-jump') {
+      const body = document.querySelector('.luban-body')
+      body?.scrollTo({ top: body.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+      return
+    }
     if (action === 'luban-mode') { mode = target.dataset.mode; active = mode === 'single' ? 'length' : 'width'; render(); return }
     if (action === 'luban-unit') {
       const next = target.dataset.unit
@@ -228,5 +240,5 @@ export function createLubanPage({ header, icon, escapeHtml: esc, showSheet, clos
     values = { length: state === 'empty' ? '' : '1000', width: '1000', height: '2100' }; active = mode === 'single' ? 'length' : 'width'
   }
   const state = () => mode === 'door' ? 'door' : rule === 'yin' ? 'yin' : values.length ? 'normal' : 'empty'
-  return { view, onAction, onInput, onFocus, onPointer, onKey, cancelDrag, setState, state }
+  return { view, onAction, onInput, onFocus, onPointer, onKey, cancelDrag, setState, state, syncJump }
 }

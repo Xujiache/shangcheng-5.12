@@ -187,6 +187,10 @@ const renderers = { home: homeView, tools: toolsView, rmb: rmbView, retire: reti
 function render(focusSelector) {
   lubanPage.cancelDrag()
   app.innerHTML = renderers[currentPage]()
+  if (currentPage === 'luban') {
+    app.querySelector('.luban-body').addEventListener('scroll', lubanPage.syncJump, { passive: true })
+    lubanPage.syncJump()
+  }
   if (currentPage === 'retire') retirementRenderedDay = localToday()
   document.getElementById('review-title').textContent = pages.find(([id]) => id === currentPage)[1]
   document.getElementById('caption').textContent = pages.find(([id]) => id === currentPage)[2]
