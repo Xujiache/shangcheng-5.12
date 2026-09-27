@@ -751,5 +751,137 @@
       "Special and flexible retirement need separate applicable-rule review",
       "Browser behavior verified; native WeChat storage and device acceptance not performed"
     ]
+  },
+  "searchLubanPngRevision": {
+    "verifiedAt": "2026-09-27T17:11:42.095Z",
+    "scope": "Interactive design prototype only; no native WeChat changes",
+    "logicTests": {
+      "passed": 24,
+      "failed": 0
+    },
+    "uiChecks": [
+      "Whole-row home entry; five popular shortcuts",
+      "Search aliases 门尺/PDF; no-results and clear restore",
+      "All ten tool PNGs decode",
+      "13.406/13.407 mm subcell boundary and 429 mm whole-cycle boundary",
+      "Invalid negative input rejected",
+      "1019.875 mm suggestion applied and preserved as 101.9875 cm / 1.019875 m",
+      "Width and height compute independently; 1 mm step changes active height",
+      "Yin ruler has 10 groups / 40 cells",
+      "Invalid 0 cycle rejected; custom 429.6 mm accepted",
+      "Copied text includes width, height and custom cycle",
+      "Saved record survives reload and restores dimensions and ruler",
+      "Reference table shows all eight groups and 32 labels"
+    ],
+    "layout": [
+      {
+        "width": 320,
+        "page": "home",
+        "bodyScrollWidth": 300,
+        "bodyWidth": 300,
+        "brokenImages": 0,
+        "columns": [],
+        "documentWidth": 320,
+        "windowWidth": 320
+      },
+      {
+        "width": 320,
+        "page": "tools",
+        "bodyScrollWidth": 300,
+        "bodyWidth": 300,
+        "brokenImages": 0,
+        "columns": [
+          "51.1953px 51.2031px 51.1953px 51.2031px 51.2031px",
+          "51.1953px 51.2031px 51.1953px 51.2031px 51.2031px"
+        ],
+        "documentWidth": 320,
+        "windowWidth": 320
+      },
+      {
+        "width": 320,
+        "page": "luban",
+        "bodyScrollWidth": 300,
+        "bodyWidth": 300,
+        "brokenImages": 0,
+        "columns": [],
+        "documentWidth": 320,
+        "windowWidth": 320
+      },
+      {
+        "width": 390,
+        "page": "home",
+        "bodyScrollWidth": 370,
+        "bodyWidth": 370,
+        "brokenImages": 0,
+        "columns": [],
+        "documentWidth": 390,
+        "windowWidth": 390
+      },
+      {
+        "width": 390,
+        "page": "tools",
+        "bodyScrollWidth": 370,
+        "bodyWidth": 370,
+        "brokenImages": 0,
+        "columns": [
+          "65.1953px 65.2031px 65.1953px 65.2031px 65.1953px",
+          "65.1953px 65.2031px 65.1953px 65.2031px 65.1953px"
+        ],
+        "documentWidth": 390,
+        "windowWidth": 390
+      },
+      {
+        "width": 390,
+        "page": "luban",
+        "bodyScrollWidth": 370,
+        "bodyWidth": 370,
+        "brokenImages": 0,
+        "columns": [],
+        "documentWidth": 390,
+        "windowWidth": 390
+      },
+      {
+        "width": 430,
+        "page": "home",
+        "bodyScrollWidth": 390,
+        "bodyWidth": 390,
+        "brokenImages": 0,
+        "columns": [],
+        "documentWidth": 430,
+        "windowWidth": 430
+      },
+      {
+        "width": 430,
+        "page": "tools",
+        "bodyScrollWidth": 390,
+        "bodyWidth": 390,
+        "brokenImages": 0,
+        "columns": [
+          "69.1953px 69.2031px 69.1953px 69.2031px 69.1953px",
+          "69.1953px 69.2031px 69.1953px 69.2031px 69.1953px"
+        ],
+        "documentWidth": 430,
+        "windowWidth": 430
+      },
+      {
+        "width": 430,
+        "page": "luban",
+        "bodyScrollWidth": 390,
+        "bodyWidth": 390,
+        "brokenImages": 0,
+        "columns": [],
+        "documentWidth": 430,
+        "windowWidth": 430
+      }
+    ],
+    "browserErrors": [],
+    "independentReview": {
+      "model": "gpt-6-sol",
+      "resolved": [
+        "Yin tick count corrected from 32 to 40",
+        "Range boundaries retain precision"
+      ],
+      "integrationAudit": "No confirmed issue found"
+    }
   }
 }

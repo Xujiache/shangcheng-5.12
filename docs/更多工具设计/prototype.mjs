@@ -1,22 +1,27 @@
 import { toRmbUppercase, dateCountdown } from './prototype-logic.mjs'
+import { TOOL_CATALOG, searchTools } from './tool-catalog.mjs'
+import { createLubanPage } from './luban-page.mjs'
 import { calculateRetirement, loadRetirementProfile, saveRetirementProfile, clearRetirementProfile } from './retirement-policy.mjs'
 
 const asset = '../../packages/ledger-mp/miniprogram/assets/'
 const pages = [
-  ['home', '首页入口', '保留格式转换，在同一行右侧增加“更多工具”。'],
-  ['tools', '更多工具', '热门工具与其他工具均按每行五个排列，不足五个保留空位。'],
+  ['home', '首页入口', '五个常用工具平等展示，整行“更多工具”入口更容易找到。'],
+  ['tools', '更多工具', '支持工具名称与用途搜索，两组工具均保持每行五个。'],
   ['rmb', '人民币大小写转换', '输入金额即显示大写，主操作为复制结果。'],
   ['retire', '退休倒计时', '出生年月与职工类别自动匹配法定退休月份，填写一次，本机保存。'],
   ['level', '水平仪测量仪', '读数居中，校准与锁定各司其职；读数为演示。'],
   ['glass', '玻璃 K 值计算', '先选玻璃构造，再调整参数；计算结果为示例。'],
+  ['luban', '鲁班尺', '尺寸查格、门窗宽高核对、邻近尺寸建议，明确尺制与测量口径。'],
 ]
 const variants = {
   rmb: [['normal', '已输入金额'], ['empty', '未输入'], ['error', '输入错误']],
   retire: [['empty', '首次填写'], ['normal', '已保存结果'], ['special', '特殊工种'], ['unknown', '类别待确认'], ['reached', '已到退休月']],
   level: [['normal', '水平读数'], ['calibrated', '已校准'], ['angle', '倾角模式'], ['unavailable', '传感器不可用']],
+  luban: [['normal', '单尺寸查询'], ['door', '门窗宽高'], ['yin', '丁兰尺'], ['empty', '未输入']],
   glass: [['normal', '中空玻璃'], ['vacuum', '真空玻璃'], ['result', '结果示例'], ['error', '参数错误']],
 }
 const paths = {
+  search: 'M10.5 3a7.5 7.5 0 100 15 7.5 7.5 0 000-15M16 16l5 5',
   back: 'M15 5l-7 7 7 7', chevron: 'M9 6l6 6-6 6', down: 'M6 9l6 6 6-6', close: 'M6 6l12 12M18 6L6 18',
   copy: 'M8 8h12v13H8zM16 8V3H3v13h5', check: 'M5 13l4 4L19 7', calendar: 'M7 3v4M17 3v4M4 10h16M4 5h16v16H4z',
   target: 'M12 3a9 9 0 100 18 9 9 0 000-18M12 7v10M7 12h10', lock: 'M7 10V7a5 5 0 0110 0v3M5 10h14v11H5z',
@@ -25,16 +30,7 @@ const paths = {
   info: 'M12 3a9 9 0 100 18 9 9 0 000-18M12 8h.01M12 11v6', document: 'M6 3h9l4 4v14H6zM15 3v5h4M9 12h7M9 16h5',
 }
 const icon = (name, className = '') => `<svg class="icon ${className}" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name] || paths.chevron}"/></svg>`
-function illustration(kind) {
-  const gradient = `<defs><linearGradient id="mint-${kind}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dcf8e6"/><stop offset=".54" stop-color="#a1ddc0"/><stop offset="1" stop-color="#63bca2"/></linearGradient><linearGradient id="paper-${kind}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#e6f3e9"/></linearGradient></defs>`
-  const drawings = {
-    money: `<rect x="5" y="17" width="48" height="32" rx="6" fill="#8fc3ad"/><rect x="8" y="9" width="47" height="33" rx="5" fill="url(#mint-money)" stroke="#77b79d"/><rect x="12" y="13" width="39" height="25" rx="4" fill="none" stroke="#e8fff2"/><circle cx="31.5" cy="25.5" r="9" fill="url(#paper-money)"/><path d="M28 21l3.5 4 3.5-4M27.5 26h8M27.5 29h8M31.5 25v8" fill="none" stroke="#478d6d" stroke-width="1.8" stroke-linecap="round"/><path d="M16 25h2M45 25h2" stroke="#589c7e" stroke-width="2" stroke-linecap="round"/>`,
-    calendar: `<rect x="10" y="9" width="40" height="44" rx="7" fill="#96c9ae"/><rect x="7" y="6" width="40" height="43" rx="7" fill="url(#paper-calendar)" stroke="#a8cdb5"/><path d="M14 6h26a7 7 0 017 7v6H7v-6a7 7 0 017-7" fill="url(#mint-calendar)"/><path d="M17 3v8M37 3v8" stroke="#619778" stroke-width="3.5" stroke-linecap="round"/><path d="M16 25h5M29 25h8M16 33h5M29 33h8M16 40h5" stroke="#7da58a" stroke-width="2.5" stroke-linecap="round"/><circle cx="45" cy="44" r="11" fill="#eaf4d9" stroke="#b8cd9c"/><path d="M45 38v6l4 2" stroke="#7e9961" stroke-width="1.8" stroke-linecap="round" fill="none"/>`,
-    level: `<rect x="4" y="21" width="52" height="22" rx="7" fill="#75b89c"/><rect x="4" y="17" width="52" height="22" rx="7" fill="url(#mint-level)" stroke="#83bea0"/><rect x="7" y="20" width="6" height="16" rx="3" fill="#d5eee0"/><rect x="47" y="20" width="6" height="16" rx="3" fill="#d5eee0"/><rect x="18" y="22" width="24" height="12" rx="6" fill="#e9f4c3" stroke="#95b478"/><path d="M26 22v12M34 22v12" stroke="#87a06b"/><ellipse cx="30" cy="27.5" rx="3" ry="3.5" fill="#b8d681" stroke="#94b363"/><path d="M13 47h34" stroke="#cdddcf" stroke-width="2" stroke-linecap="round"/>`,
-    glass: `<path d="M23 7l29 9v36l-29-9z" fill="#c7e7db" stroke="#8ab8aa"/><path d="M14 12l29 9v36l-29-9z" fill="#b4ded3" fill-opacity=".75" stroke="#74aaa0"/><path d="M5 6l29 9v36L5 42z" fill="url(#mint-glass)" fill-opacity=".72" stroke="#77b1a3"/><path d="M9 12l19 6M9 17l8 2M18 43l11 3" stroke="#effff5" stroke-width="1.7" stroke-linecap="round"/><path d="M38 22l8 3v18" stroke="#f0fff8" stroke-width="1.5" stroke-linecap="round"/>`,
-  }
-  return `<svg class="tool-illustration" viewBox="0 0 60 62" aria-hidden="true">${gradient}${drawings[kind]}</svg>`
-}
+const illustration = kind => `<img class="tool-illustration" src="assets/tool-${({ money: 'rmb', calendar: 'retire' })[kind] || kind}.png" alt="">`
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))
 const capsule = '<div class="mini-capsule" aria-hidden="true"><span class="mini-dots">···</span><i class="capsule-sep"></i><i class="capsule-ring"></i></div>'
 const header = title => `<header class="nav-header"><button class="nav-back" data-action="back" aria-label="返回">${icon('back')}</button><h2>${title}</h2>${capsule}</header>`
@@ -42,6 +38,7 @@ const app = document.getElementById('app')
 const sheetRoot = document.getElementById('sheet-root')
 let currentPage = 'home'
 let amount = '12680.50'
+let toolSearch = ''
 let retirementProfile = null
 let retirementDraft = { birthMonth: '', category: '', workType: 'standard' }
 let retirementEditing = true
@@ -61,20 +58,29 @@ let advancedOpen = false
 let glassError = false
 const glass = { outer: '6', inner: '6', cavity: '12', gas: '空气', coating: '无镀膜', emissivity: '0.84', pressure: '0.10', pillar: '0.5', pitch: '25', outside: '25', inside: '7.7' }
 const localToday = () => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` }
-const tool = (page, kind, title, label) => `<button class="hub-tool" data-page="${page}" aria-label="${title}"><span class="hub-tool-media">${illustration(kind)}</span><span class="hub-tool-label">${label}</span></button>`
+const toolTile = item => `<button class="hub-tool" ${item.action === 'navigate' ? `data-page="${item.id}"` : `data-action="existing-tool" data-label="${item.title}"`} aria-label="${item.title}"><span class="hub-tool-media"><img alt="" src="${item.group === 'popular' ? `${asset}tools/tool-${item.id}.png` : `assets/tool-${item.id}.png`}"></span><span class="hub-tool-label">${escapeHtml(item.shortLabel).replaceAll('\n', '<br>')}</span></button>`
+const lubanPage = createLubanPage({ header, icon, escapeHtml, showSheet, closeSheet, toast, render, storage: retirementStorage })
 
 function homeView() {
-  const homeTools = [['triangle', '三角计算', '边角反算'], ['arc', '圆弧计算', '弦长拱高'], ['cut', '优化下料', '省料排版'], ['work-log', '记工', '日工明细']]
+  const homeTools = TOOL_CATALOG.filter(item => item.group === 'popular')
   return `<header class="home-heading"><h2>利润中心</h2><p>门窗经营一目了然</p><div class="home-bell"><img alt="" src="${asset}profile/profile-message.png"></div>${capsule}</header>
-  <div class="page-body home-body"><div class="section-label">实用工具</div><section class="panel home-tools"><div class="home-tool-grid">${homeTools.map(([file, title, subtitle]) => `<div class="home-tool"><img alt="" src="${asset}tools/tool-${file}.png"><strong>${title}</strong><small>${subtitle}</small></div>`).join('')}</div>
-  <div class="home-tool-footer"><div class="format-entry"><img alt="" src="${asset}tools/tool-format.png"><span><strong>格式转换</strong><small>文件处理</small></span></div><button class="more-entry" data-page="tools">更多工具 ${icon('chevron')}</button></div></section>
+  <div class="page-body home-body"><div class="section-label home-tools-label">实用工具</div><section class="panel home-tools"><div class="home-quick-grid">${homeTools.map(toolTile).join('')}</div>
+  <button class="home-all-tools" data-page="tools"><img src="assets/tool-more.png" alt=""><span class="home-all-copy"><strong>更多工具</strong><small>鲁班尺、退休倒计时、人民币大写</small></span><span class="home-all-arrow">${icon('chevron')}</span></button></section>
   <section class="profit-panel"><div class="segment"><span>日</span><span class="selected">月</span><span>年</span></div><p class="profit-label">本月净利润</p><div class="profit-money"><small>¥</small>0</div><div class="metrics">${[['¥0', '营收'], ['¥0', '成本'], ['0', '订单数'], ['¥0', '单均利润']].map(([v, l]) => `<div><strong>${v}</strong><small>${l}</small></div>`).join('')}</div><div class="goal-row"><span>本月目标 未设 · 已实现 ¥0</span><span>0%</span></div><div class="goal-track"></div></section>
   <div class="home-section">经营分析</div><section class="panel analysis-panel"><b>成本构成</b><p>本月暂无成本数据</p></section></div>
   <div class="home-tabbar" aria-hidden="true"><div class="home-tab active"><img src="${asset}workbook-icons/home.png" alt="">首页</div><div class="home-tab"><img src="${asset}workbook-icons/orders.png" alt="">订单</div><div class="tab-add">+</div><div class="home-tab"><img src="${asset}workbook-icons/trend.png" alt="">报表</div><div class="home-tab"><img src="${asset}navigation/nav-profile.png" alt="">我的</div></div>`
 }
+function toolsResults() {
+  const list = searchTools(toolSearch)
+  if (toolSearch.trim()) return `<p class="search-count" role="status">${list.length ? `找到 ${list.length} 个工具` : '没有找到相关工具'}</p>${list.length ? `<section class="panel hub-grid" aria-label="搜索结果">${list.map(toolTile).join('')}</section>` : `<div class="search-empty">${icon('search')}<h3>换个关键词试试</h3><p>可以搜索工具名称，也可以输入“门尺”“金额”等用途。</p><button data-action="clear-tool-search">查看全部工具</button></div>`}`
+  return ['popular', 'other'].map((group, i) => `<h3 class="section-label hub-section-title ${i ? 'section-space' : ''}" id="${group}-tools-title">${i ? '其他工具' : '热门工具'}</h3><section class="panel hub-grid" aria-labelledby="${group}-tools-title">${list.filter(item => item.group === group).map(toolTile).join('')}</section>`).join('')
+}
 function toolsView() {
-  const popularTools = [['triangle', '三角计算'], ['arc', '圆弧计算'], ['cut', '优化下料'], ['work-log', '记工'], ['format', '格式转换']]
-  return `${header('更多工具')}<div class="page-body hub-body"><h3 class="section-label hub-section-title" id="popular-tools-title">热门工具</h3><section class="panel hub-grid" aria-labelledby="popular-tools-title">${popularTools.map(([file, title]) => `<button class="hub-tool" data-action="existing-tool" data-label="${title}" aria-label="${title}"><span class="hub-tool-media"><img alt="" src="${asset}tools/tool-${file}.png"></span><span class="hub-tool-label">${title}</span></button>`).join('')}</section><h3 class="section-label hub-section-title section-space" id="other-tools-title">其他工具</h3><section class="panel hub-grid" aria-labelledby="other-tools-title">${tool('rmb', 'money', '人民币大小写转换', '人民币<br>大小写')}${tool('retire', 'calendar', '退休倒计时', '退休<br>倒计时')}${tool('level', 'level', '水平仪测量仪', '水平仪<br>测量仪')}${tool('glass', 'glass', '中空真空玻璃 K 值计算', '玻璃K值<br>计算')}</section><p class="hub-foot">量窗助手 · 实用工具</p></div>`
+  return `${header('更多工具')}<div class="page-body hub-body"><div class="tool-search">${icon('search')}<input id="tool-search" type="search" maxlength="40" autocomplete="off" placeholder="搜索工具或用途" aria-label="搜索工具" value="${escapeHtml(toolSearch)}"><button data-action="clear-tool-search" aria-label="清空搜索" ${toolSearch ? '' : 'hidden'}>${icon('close')}</button></div><div id="tools-results">${toolsResults()}</div><p class="hub-foot">量窗助手 · 实用工具</p></div>`
+}
+function updateToolSearch() {
+  document.getElementById('tools-results').innerHTML = toolsResults()
+  document.querySelector('.tool-search [data-action="clear-tool-search"]').hidden = !toolSearch
 }
 function rmbResultMarkup() {
   const result = toRmbUppercase(amount)
@@ -177,13 +183,13 @@ function glassView() {
   if (glassResult) return `${header('玻璃 K 值计算')}<div class="page-body"><section class="panel glass-result"><div class="label-row"><p class="result-eyebrow">玻璃中心 K 值</p><span class="demo-mark">结果示例</span></div><div class="k-value">${vacuum ? '0.70' : '2.80'}</div><div class="k-unit">W / (m² · K)</div><p class="k-description">数值越小，玻璃的保温性能越好</p></section><section class="panel glass-summary"><div class="label-row"><h3 class="card-heading">本次构造</h3>${illustration('glass')}</div><dl class="summary-list"><dt>玻璃类型</dt><dd>${glassName()}</dd><dt>构造</dt><dd>${structureName()} mm</dd><dt>${vacuum ? '真空间隙' : '腔体气体'}</dt><dd>${vacuum ? `${glass.cavity} mm` : glass.gas}</dd><dt>Low-E 镀膜</dt><dd>${glass.coating}</dd></dl></section><p class="result-disclaimer">本设计稿展示结果样式，数值为演示数据。正式计算需按确认的模型求解，结果口径为玻璃中心区域，不包含窗框与边缘传热。</p><button class="primary" data-action="glass-edit">修改参数</button></div>`
   return `${header('玻璃 K 值计算')}<div class="page-body"><div class="segment glass-tabs" aria-label="玻璃类型"><button data-action="glass-hollow" class="${!vacuum ? 'selected' : ''}" aria-pressed="${!vacuum}">中空玻璃</button><button data-action="glass-vacuum" class="${vacuum ? 'selected' : ''}" aria-pressed="${vacuum}">真空玻璃</button></div><section class="panel glass-panel"><div class="label-row"><h3 class="card-heading">玻璃构造</h3><span style="font-size:11px;color:#819789">从室外到室内</span></div><div class="glass-diagram" role="img" aria-label="玻璃构造示意"><span class="glass-out-label">室外</span><div class="glass-piece"></div><div class="glass-cavity ${vacuum ? 'vacuum' : ''}">${vacuum ? '真空层' : glass.gas}</div><div class="glass-piece inner"></div><span class="glass-in-label">室内</span></div><div class="glass-structure">${structureName()}</div><div class="glass-specs"><button data-param="outer"><small>外片玻璃</small><b>${glass.outer} mm</b></button><button data-param="cavity"><small>${vacuum ? '真空间隙' : '中空层'}</small><b>${glass.cavity} mm</b></button><button data-param="inner"><small>内片玻璃</small><b>${glass.inner} mm</b></button></div></section><section class="panel parameter-panel">${!vacuum ? `<button class="settings-row" data-param="gas"><span>腔体气体</span><span class="settings-value">${glass.gas}${icon('chevron')}</span></button>` : ''}<button class="settings-row" data-param="coating"><span>Low-E 镀膜</span><span class="settings-value">${glass.coating}${icon('chevron')}</span></button>${glass.coating !== '无镀膜' ? `<button class="settings-row" data-param="emissivity"><span>镀膜表面发射率</span><span class="settings-value">${glass.emissivity}${icon('chevron')}</span></button>` : ''}</section><button class="advanced-toggle" data-action="advanced" aria-expanded="${advancedOpen}"><span>${vacuum ? '真空层与边界参数' : '边界条件'}</span>${icon('down')}</button>${advancedOpen ? `<section class="advanced-content">${(vacuum ? [['pressure', '真空压力', 'Pa'], ['pillar', '支撑柱直径', 'mm'], ['pitch', '支撑柱间距', 'mm']] : []).concat([['outside', '室外表面换热系数', 'W/(m²·K)'], ['inside', '室内表面换热系数', 'W/(m²·K)']]).map(([key, label, unit]) => `<button class="settings-row" data-param="${key}"><span>${label}</span><span class="settings-value">${glass[key]} ${unit}${icon('chevron')}</span></button>`).join('')}<p>${vacuum ? '压力、支撑结构与材料参数以厂家规格为准。' : '正式计算的边界条件需与采用的标准一致。'}</p></section>` : ''}${glassError ? '<p class="field-foot error" role="alert" style="margin:0 3px 14px">请填写大于 0 的玻璃厚度，再进行计算。</p>' : ''}<button class="primary" data-action="calculate-glass">计算 K 值</button><p class="glass-help">设计预览 · 计算结果为示例，不用于工程计算。</p></div>`
 }
-const renderers = { home: homeView, tools: toolsView, rmb: rmbView, retire: retirementView, level: levelView, glass: glassView }
+const renderers = { home: homeView, tools: toolsView, rmb: rmbView, retire: retirementView, level: levelView, glass: glassView, luban: lubanPage.view }
 function render(focusSelector) {
   app.innerHTML = renderers[currentPage]()
   if (currentPage === 'retire') retirementRenderedDay = localToday()
   document.getElementById('review-title').textContent = pages.find(([id]) => id === currentPage)[1]
   document.getElementById('caption').textContent = pages.find(([id]) => id === currentPage)[2]
-  const visibleState = currentPage === 'rmb' ? (!amount ? 'empty' : toRmbUppercase(amount).ok ? 'normal' : 'error') : currentPage === 'retire' ? retirementState() : currentPage === 'level' ? (levelUnavailable ? 'unavailable' : levelMode === 'angle' ? 'angle' : levelCalibrated ? 'calibrated' : 'normal') : currentPage === 'glass' ? (glassResult ? 'result' : glassError ? 'error' : glassType === 'vacuum' ? 'vacuum' : 'normal') : 'normal'
+  const visibleState = currentPage === 'rmb' ? (!amount ? 'empty' : toRmbUppercase(amount).ok ? 'normal' : 'error') : currentPage === 'retire' ? retirementState() : currentPage === 'level' ? (levelUnavailable ? 'unavailable' : levelMode === 'angle' ? 'angle' : levelCalibrated ? 'calibrated' : 'normal') : currentPage === 'luban' ? lubanPage.state() : currentPage === 'glass' ? (glassResult ? 'result' : glassError ? 'error' : glassType === 'vacuum' ? 'vacuum' : 'normal') : 'normal'
   document.getElementById('preview-state').value = visibleState
   if (focusSelector) app.querySelector(focusSelector)?.focus()
   document.querySelectorAll('.page-link').forEach(link => { const selected = link.dataset.page === currentPage; link.classList.toggle('active', selected); selected ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current') })
@@ -222,6 +228,8 @@ document.addEventListener('click', async event => {
   if (target.dataset.param) { paramSheet(target.dataset.param); return }
   if (target.dataset.choiceKey) { const { choiceKey, choiceValue } = target.dataset; glass[choiceKey] = choiceValue; if (choiceKey === 'coating') glass.emissivity = choiceValue === '无镀膜' ? '0.84' : '0.10'; closeSheet(); render(`[data-param="${choiceKey}"]`); return }
   const action = target.dataset.action
+  if (action?.startsWith('luban-')) { await lubanPage.onAction(action, target); return }
+  if (action === 'clear-tool-search') { toolSearch = ''; document.getElementById('tool-search').value = ''; updateToolSearch(); document.getElementById('tool-search').focus(); return }
   if (action === 'existing-tool') toast(`${target.dataset.label}沿用现有页面`)
   if (action === 'back') { if (currentPage === 'glass' && glassResult) { glassResult = false; render() } else navigate(currentPage === 'tools' ? 'home' : 'tools') }
   if (action === 'clear-amount') { amount = ''; render(); document.getElementById('amount').focus() }
@@ -256,6 +264,8 @@ document.addEventListener('click', async event => {
   if (action === 'save-param') { const key = target.dataset.key; const value = document.getElementById('glass-param').value.trim(); if (!/^\d+(?:\.\d+)?$/.test(value) || Number(value) <= 0 || (key === 'emissivity' && Number(value) > 1)) { const error = document.getElementById('param-error'); error.hidden = false; error.textContent = key === 'emissivity' ? '请输入大于 0 且不超过 1 的数值' : '请输入大于 0 的有效数值'; return } glass[key] = value; glassError = false; closeSheet(); render(`[data-param="${key}"]`) }
 })
 document.addEventListener('input', event => {
+  if (event.target.id === 'tool-search') { toolSearch = event.target.value; updateToolSearch(); return }
+  if (event.target.dataset.lubanField) { lubanPage.onInput(event.target); return }
   if (event.target.id === 'retirement-birth') { retirementDraft.birthMonth = event.target.value; return }
   if (event.target.id !== 'amount') return
   amount = event.target.value
@@ -279,6 +289,7 @@ document.addEventListener('keydown', event => {
 document.getElementById('preview-state').addEventListener('change', event => {
   const state = event.target.value
   sheetRoot.innerHTML = ''
+  if (currentPage === 'luban') lubanPage.setState(state)
   if (currentPage === 'rmb') amount = state === 'empty' ? '' : state === 'error' ? '12.345' : '12680.50'
   if (currentPage === 'retire') {
     retirementDemo = true; retirementMessage = ''; retirementFieldError = ''; retirementPersistence = 'none'

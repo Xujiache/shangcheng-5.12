@@ -91,3 +91,118 @@
 .retirement-review-status{font-size:11px;color:#809a88;margin-bottom:19px}
 .retirement-save-warning{font-size:11px;line-height:1.9;color:#b05e40;margin:12px 4px 0}
 @media(max-width:370px){.retirement-intro{gap:10px}.retirement-intro h3{font-size:17px}.retirement-intro p{font-size:11px}.retirement-form-row{padding:16px 13px;font-size:12px;gap:8px}.retirement-form-row input{max-width:155px;font-size:12px}.retirement-field-value{font-size:11px;gap:5px}.retirement-result{padding:18px}.retirement-countdown-area .countdown{gap:15px}.retirement-countdown-area .countdown strong{font-size:32px}.retirement-saved{font-size:9px}.retirement-profile .settings-row{padding:12px 14px}.retirement-profile .settings-value{font-size:11px}.retirement-review{padding:21px 17px}.retirement-review h3{font-size:15px}}
+
+/* 常用入口与工具搜索 */
+.home-tools-label{font-size:13px;font-weight:600;margin:1px 2px 12px}
+.home-quick-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:23px 7px 13px;gap:0}
+.home-quick-grid .hub-tool{min-height:72px;gap:9px}
+.home-quick-grid .hub-tool-label{min-height:20px;font-size:12px}
+.home-quick-grid .hub-tool-media,.home-quick-grid .hub-tool-media img{width:45px;height:45px}
+.home-all-tools{display:flex;align-items:center;gap:13px;width:calc(100% - 24px);margin:0 12px 11px;padding:13px 9px 8px;border:0;border-top:1px solid #e9eeea;background:none;text-align:left}
+.home-all-tools>img{width:42px;height:42px;object-fit:contain;flex-shrink:0}
+.home-all-copy{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.home-all-copy strong{font-size:14px;font-weight:600;color:#213b2f}
+.home-all-copy small{font-size:10px;line-height:1.5;color:#889b8e}
+.home-all-arrow{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;color:#4f8068;background:#edf5ef}
+.home-all-arrow .icon{width:14px;height:14px}
+.home-all-tools:hover{background:#f6faf7;border-radius:0 0 12px 12px}
+.tool-illustration{object-fit:contain}
+.tool-search{display:flex;align-items:center;gap:9px;height:44px;background:#fff;border:1px solid #e1e9e3;border-radius:13px;padding:0 13px;margin-bottom:25px}
+.tool-search>.icon{width:17px;height:17px;color:#92a197;flex-shrink:0}
+.tool-search input{min-width:0;width:100%;border:0;outline:0!important;background:none;font-size:13px;color:var(--ink);padding:10px 0;line-height:1.5}
+.tool-search input::placeholder{color:#9aa89f}
+.tool-search input::-webkit-search-cancel-button{display:none}
+.tool-search button{border:0;background:#f0f4ef;color:#90a093;border-radius:50%;width:21px;height:21px;padding:3px;flex-shrink:0}
+.tool-search button .icon{width:14px;height:14px}
+.search-count{font-size:12px;color:#7e9384;margin:0 3px 13px}
+.search-empty{text-align:center;padding:48px 19px}
+.search-empty>.icon{width:31px;height:31px;color:#a3b7a9;stroke-width:1.3;margin-bottom:14px}
+.search-empty h3{font-size:16px;font-weight:500;margin:0 0 10px}
+.search-empty p{font-size:12px;color:#8b9c90;line-height:1.9;margin:0 0 16px}
+.search-empty button{background:none;border:0;color:var(--green);font-size:12px;padding:10px}
+
+/* 鲁班尺：尺寸输入、尺面落格和约束内建议 */
+.luban-modes{margin-bottom:17px}
+.luban-input-panel{padding:18px 17px 0}
+.luban-input-panel h3{font-size:13px;font-weight:500;margin:0}
+.luban-units{display:flex;gap:2px;background:#f0f5f1;padding:3px;border-radius:9px}
+.luban-units button{background:none;border:0;border-radius:7px;min-width:31px;height:25px;font-size:11px;color:#8a9b8e;display:grid;place-items:center}
+.luban-units .selected{background:white;color:#216e53;box-shadow:0 1px 3px #203b2910}
+.luban-dimensions{display:grid;grid-template-columns:1fr;margin:17px 0 15px}
+.luban-dimensions.paired{grid-template-columns:1fr 1fr;gap:17px}
+.luban-dimensions label{min-width:0}
+.luban-dimensions label>span{display:none;color:#96a69a;font-size:11px;margin-bottom:6px}
+.luban-dimensions.paired label>span{display:block}
+.luban-dimensions label>div{display:flex;align-items:baseline;gap:6px}
+.luban-dimensions input{width:100%;min-width:0;border:0;background:none;color:#254d39;font-size:31px;font-weight:550;line-height:1.3;padding:1px 0;outline-offset:5px!important;font-variant-numeric:tabular-nums}
+.luban-dimensions input::placeholder{font-size:21px;color:#c2cdc4;font-weight:400}
+.luban-dimensions small{font-size:12px;color:#96a69a}
+.luban-input-bottom{border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px}
+.luban-input-bottom>button{background:none;border:0;font-size:10px;color:#789181;display:flex;align-items:center;gap:4px;padding:8px 0}
+.luban-input-bottom .icon{width:12px;height:12px}
+.luban-input-bottom>div{display:flex;align-items:center;gap:9px;color:#9ca99f;font-size:10px}
+.luban-input-bottom>div button{display:grid;place-items:center;width:27px;height:27px;border:1px solid #e1eae3;background:#fafcf9;border-radius:8px;font-size:19px;color:#5a8067;line-height:1}
+.luban-measure-note{font-size:10px;color:#8a9f90;margin:10px 3px 0}
+.luban-result{padding:18px 17px 0;margin-top:15px}
+.luban-status{font-size:10px;color:#8f9690;background:#f0f2ef;padding:3px 7px;border-radius:6px}
+.luban-result.auspicious .luban-status{color:#3e8c66;background:#edf6ee}
+.luban-result-name{display:flex;align-items:center;gap:12px;margin-top:10px}
+.luban-result-name strong{font-size:36px;font-weight:500;color:#626b62;line-height:1.4}
+.luban-result.auspicious .luban-result-name strong{color:#287856}
+.luban-result-name>span{font-size:16px;color:#6f8274}
+.luban-result-name button{margin-left:auto;border:0;background:none;color:#b1bcb2;padding:8px 0 8px 8px}
+.luban-result-name .icon{width:15px;height:15px}
+.luban-range{font-size:10px;color:#98a99b;margin:3px 0 20px;font-variant-numeric:tabular-nums}
+.luban-ruler{position:relative;padding-top:7px}
+.luban-ruler-groups{display:grid;grid-template-columns:repeat(var(--groups),minmax(0,1fr));background:#f0f2ed;border-radius:5px 5px 0 0;overflow:hidden}
+.luban-ruler-groups span{height:28px;display:grid;place-items:center;font-size:12px;color:#9caa9f;border-right:1px solid white}
+.luban-ruler-groups .auspicious{background:#e7f3e9;color:#5a8e69}
+.luban-ruler-groups .current{font-weight:650;background:#b2c7b8;color:#fff}
+.luban-ruler-groups .auspicious.current{background:#519273}
+.luban-ruler-pointer{position:absolute;top:0;bottom:18px;width:1px;background:#46765a;z-index:1}
+.luban-ruler-pointer:before{content:"";position:absolute;top:-2px;left:-4px;border-left:4.5px solid transparent;border-right:4.5px solid transparent;border-top:6px solid #46765a}
+.luban-ticks{height:10px;border-top:1px solid #d5dfd4;background:repeating-linear-gradient(90deg,#c7d7c9 0 1px,transparent 1px calc(100% / var(--cells)));margin-bottom:4px}
+.luban-ruler-scale{display:flex;justify-content:space-between;color:#b0bcb0;font-size:9px}
+.luban-result-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;border-top:1px solid var(--line);min-height:38px;font-size:10px;color:#a6b3a8}
+.luban-result-footer button{background:none;border:0;padding:8px 0;color:#638570;font-size:10px;display:flex;align-items:center;gap:3px}
+.luban-result-footer .icon{width:11px;height:11px}
+.luban-suggestion-heading{display:flex;justify-content:space-between;align-items:center;margin:22px 2px 11px}
+.luban-suggestion-heading h3{font-size:12px;font-weight:550;color:#506c59;margin:0}
+.luban-suggestion-heading button{display:flex;align-items:center;gap:4px;background:none;border:0;color:#829587;font-size:10px;padding:4px 0}
+.luban-suggestion-heading .icon{width:12px;height:12px}
+.luban-suggestion{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;padding:15px 17px;border:0;background:none;text-align:left}
+.luban-suggestion+.luban-suggestion{border-top:1px solid var(--line)}
+.luban-suggestion strong{font-size:17px;font-weight:550;color:#347657;font-variant-numeric:tabular-nums}
+.luban-suggestion small{display:block;font-size:10px;color:#95a698;margin-top:4px}
+.luban-adjustment{font-size:11px;color:#819787;display:flex;align-items:center;gap:6px}
+.luban-adjustment .icon{width:12px;height:12px;color:#a0b1a3}
+.luban-no-suggestion{font-size:11px;line-height:1.9;margin:0;padding:17px;color:#8a9c8f}
+.luban-suggestion-note{font-size:9.5px;color:#99aa9c;margin:9px 3px 0}
+.luban-actions{margin-top:23px;gap:10px}
+.luban-actions button{font-size:13px;height:44px;border-radius:14px}
+.luban-bottom-links{display:flex;justify-content:space-between;margin:15px 0 0}
+.luban-bottom-links button{display:flex;align-items:center;gap:3px;background:none;border:0;font-size:10px;padding:6px 3px;color:#7e9685}
+.luban-bottom-links .icon{width:12px;height:12px}
+.luban-cultural-note{font-size:9.5px;line-height:1.8;color:#a1afa4;margin:12px 3px 0}
+.luban-empty{text-align:center;padding:40px 20px;margin-top:16px;color:#7d9485}
+.luban-empty p{font-size:14px;margin:0 0 10px}.luban-empty small{font-size:11px;color:#9cafa0}
+.luban-error{font-size:11px;color:#b75b43;line-height:1.8;margin:10px 3px}
+.luban-settings{max-height:560px;overflow:auto}
+.luban-settings>label{display:block;font-size:12px;color:#667e6d;margin:0 0 13px}
+.luban-settings input,.luban-settings select{display:block;width:100%;height:43px;border:1px solid #dce7de;border-radius:10px;background:#f6faf7;color:#345b42;padding:0 11px;font-size:13px;margin:7px 0 0;box-sizing:border-box}
+.luban-settings>p{font-size:10px;line-height:1.8;margin:0 0 15px}
+.luban-reference{max-height:540px;overflow:auto}
+.luban-reference>p{font-size:11px;line-height:1.9;margin:0 0 16px}
+.luban-reference h4{font-size:12px;margin:20px 0 7px;font-weight:600}
+.luban-reference a{display:block;font-size:11px;color:#487d5b;margin:12px 0}
+.luban-reference-table>div{display:flex;align-items:center;gap:15px;padding:10px 0;border-top:1px solid #edf1eb;font-size:11px;color:#8b9c8d}
+.luban-reference-table b{font-size:18px;font-weight:500;color:#9ca89c;min-width:35px}
+.luban-reference-table b.auspicious{color:#48825c}
+.luban-reference-table b small{font-size:9px;margin-left:6px}
+.luban-history{max-height:480px;overflow:auto}
+.luban-history>button{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;border-top:1px solid #e7eee6;background:none;text-align:left;width:100%;padding:15px 0}
+.luban-history b{font-size:13px;font-weight:500;word-break:break-all}
+.luban-history small{display:block;font-size:10px;color:#8fa294;margin-top:5px}
+.luban-history .icon{width:13px;height:13px;color:#90a595;flex-shrink:0}
+.luban-copy-text{user-select:text}
+@media(max-width:370px){.home-quick-grid{padding-left:4px;padding-right:4px}.home-quick-grid .hub-tool-label{font-size:10.5px}.home-quick-grid .hub-tool-media,.home-quick-grid .hub-tool-media img{width:40px;height:40px}.home-all-tools{gap:8px}.home-all-copy small{font-size:9px}.home-all-tools>img{width:34px;height:34px}.luban-input-panel,.luban-result{padding-left:13px;padding-right:13px}.luban-dimensions.paired input{font-size:25px}.luban-input-bottom>div{gap:5px}.luban-input-bottom>button{font-size:9px}.luban-range{font-size:9px}.luban-ruler-groups span{font-size:11px}.luban-adjustment{font-size:10px}.luban-settings{max-height:520px}}
