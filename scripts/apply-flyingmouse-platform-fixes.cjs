@@ -12,6 +12,8 @@ const expectedOfficeSha256 = 'e823d8fbd291a1fbfee32a90f9645cb6ee5e71e3f30c10e887
 const expectedOfdSha256 = '3401538b1746c19e06771b88bbd713494618544541a52a7f2ae1149513d2e601'
 const expectedPdfTableSha256 = 'bc03c4af4b123d34abed95d276bea21e2829de9e6b48d66b05f484bccff8f1f1'
 const expectedPdfSha256 = '7e5c912a02d692c1a268f488b12cc0dfcef00f443d79f9b5200edabc4a8d12a2'
+const expectedOcrSha256 = '1ddc8b79a9ec6db76677d5905c1d8e0a6a99ef1afe6a553ec7f1319e73302636'
+const expectedOfdDependencySha256 = '254a22b7ebe342318d03b6c5efb61a6779fa8368318c74c5e04d5f831360847d'
 const before = 'args.push("-loop", "1", "-i", inputPath, "-t", "3");'
 const after = 'args.push("-stream_loop", "-1", "-i", inputPath, "-t", "3");'
 const rawBefore = [
@@ -35,6 +37,19 @@ const ofdBefore = '    await convert(inputPath, outputPath);'
 const ofdAfter = '    await convert(inputPath, outputPath, {\n' +
   '      fontDir: process.env.FLYINGMOUSE_OFD_FONT_DIR, silent: true\n' +
   '    });'
+const ocrBefore = '  if (metadata.width && metadata.width < 2480) {\n' +
+  '    pipeline.resize({ width: 2480, withoutEnlargement: false });\n' +
+  '  }'
+const ocrAfter = '  if (metadata.width && metadata.width < 2480) {\n' +
+  '    const safeWidth = Math.floor(Math.sqrt(LIMITS.maxImagePixels * metadata.width / metadata.height));\n' +
+  '    if (safeWidth > metadata.width)\n' +
+  '      pipeline.resize({ width: Math.min(2480, safeWidth), withoutEnlargement: false });\n' +
+  '  }'
+const ofdDependencyBefore = 'const normalized = filePath.replace(/\\\\/g, "/");'
+const ofdDependencyAfter = 'const normalized = filePath.replace(/\\\\/g, "/").replace(/^\\/+/, "");'
+const ofdColorBefore = 'const parts = color.value.trim().split(/\\s+/).map(Number);'
+const ofdColorAfter = 'const parts = color.value.trim().split(/\\s+/)' +
+  '.map((value) => value.startsWith("#") ? parseInt(value.slice(1), 16) : Number(value));'
 const pdfTableReplacements = [
   [
     '  const ratio = clamp(Number(options.minLengthRatio) || 0.35, 0.05, 1);',
@@ -76,21 +91,34 @@ function apply(directory) {
   const pdfTableBytes = fs.readFileSync(pdfTablePath)
   const pdfPath = path.join(directory, 'pdf.js')
   const pdfBytes = fs.readFileSync(pdfPath)
+  const ocrPath = path.join(directory, 'ocr.js')
+  const ocrBytes = fs.readFileSync(ocrPath)
+  const ofdDependencyPath = path.join(directory, 'node_modules/@miconvert/ofd-to-pdf/dist/index.js')
+  const ofdDependencyBytes = fs.readFileSync(ofdDependencyPath)
   if (hash(bytes) !== expectedImageSha256 || hash(officeBytes) !== expectedOfficeSha256 ||
     hash(ofdBytes) !== expectedOfdSha256 || hash(pdfTableBytes) !== expectedPdfTableSha256 ||
-    hash(pdfBytes) !== expectedPdfSha256)
+    hash(pdfBytes) !== expectedPdfSha256 || hash(ocrBytes) !== expectedOcrSha256 ||
+    hash(ofdDependencyBytes) !== expectedOfdDependencySha256)
     throw new Error('Runtime source does not match pinned a7b9b15 files')
   const code = bytes.toString('utf8')
   const officeCode = officeBytes.toString('utf8')
   const ofdCode = ofdBytes.toString('utf8')
   let pdfTablePatched = pdfTableBytes.toString('utf8')
   const pdfCode = pdfBytes.toString('utf8')
+  const ocrCode = ocrBytes.toString('utf8')
+  const ofdDependencyCode = ofdDependencyBytes.toString('utf8')
   if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
-    officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2)
+    officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2 ||
+    ocrCode.split(ocrBefore).length !== 2 ||
+    ofdDependencyCode.split(ofdDependencyBefore).length !== 3 ||
+    ofdDependencyCode.split(ofdColorBefore).length !== 3)
     throw new Error('Expected original conversion calls exactly once')
   const patched = code.replace(before, after).replace(rawBefore, rawAfter)
   const officePatched = officeCode.replace(officeBefore, officeAfter)
   const ofdPatched = ofdCode.replace(ofdBefore, ofdAfter)
+  const ocrPatched = ocrCode.replace(ocrBefore, ocrAfter)
+  const ofdDependencyPatched = ofdDependencyCode.split(ofdDependencyBefore)
+    .join(ofdDependencyAfter).split(ofdColorBefore).join(ofdColorAfter)
   for (const [before, after] of pdfTableReplacements) {
     if (pdfTablePatched.split(before).length !== 2)
       throw new Error('Expected original PDF table threshold exactly once')
@@ -113,9 +141,11 @@ function apply(directory) {
   fs.writeFileSync(ofdPath, ofdPatched)
   fs.writeFileSync(pdfTablePath, pdfTablePatched)
   fs.writeFileSync(pdfPath, pdfPatched)
+  fs.writeFileSync(ocrPath, ocrPatched)
+  fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 8,
+    fixRevision: 10,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -126,6 +156,10 @@ function apply(directory) {
     pdfTableRuntimeSha256: hash(Buffer.from(pdfTablePatched)),
     pdfSourceSha256: expectedPdfSha256,
     pdfRuntimeSha256: hash(Buffer.from(pdfPatched)),
+    ocrSourceSha256: expectedOcrSha256,
+    ocrRuntimeSha256: hash(Buffer.from(ocrPatched)),
+    ofdDependencySourceSha256: expectedOfdDependencySha256,
+    ofdDependencyRuntimeSha256: hash(Buffer.from(ofdDependencyPatched)),
     fixes: [
       'Use FFmpeg stream_loop for still-image video, including AVIF',
       'Accept LibRaw TIFF output named after the complete input file',
@@ -134,6 +168,9 @@ function apply(directory) {
       'Supply a CJK font directory and suppress a third-party OFD stdout banner',
       'Detect small ruled tables on full-page PDF renders without changing small-raster thresholds',
       'Stream rendered slides into self-contained presentation HTML while retaining selectable text',
+      'Keep OCR enlargement within the original pixel budget without shrinking source images',
+      'Resolve absolute OFD archive paths in the third-party reader',
+      'Decode OFD hexadecimal color components before rendering text and shapes',
     ],
   }, null, 2) + '\n')
 }
@@ -141,12 +178,14 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 8 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 10 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||
     fixes.pdfTableSourceSha256 !== expectedPdfTableSha256 ||
     fixes.pdfSourceSha256 !== expectedPdfSha256 ||
+    fixes.ocrSourceSha256 !== expectedOcrSha256 ||
+    fixes.ofdDependencySourceSha256 !== expectedOfdDependencySha256 ||
     fs.realpathSync(path.join(directory, 'node_modules/pdfjs-dist/package.json')) !==
       path.join(directory, 'node_modules/pdfjs-dist/package.json'))
     throw new Error('Runtime copy metadata or dependencies are invalid')
@@ -156,9 +195,13 @@ function verifyRuntime(directory) {
       : item.path === 'office-convert.js' ? fixes.officeRuntimeSha256
         : item.path === 'ofd-convert.js' ? fixes.ofdRuntimeSha256
           : item.path === 'pdf-table-runtime.js' ? fixes.pdfTableRuntimeSha256
-            : item.path === 'pdf.js' ? fixes.pdfRuntimeSha256 : item.sha256
+            : item.path === 'pdf.js' ? fixes.pdfRuntimeSha256
+              : item.path === 'ocr.js' ? fixes.ocrRuntimeSha256 : item.sha256
     if (actual !== expected) throw new Error(`Runtime source mismatch: ${item.path}`)
   }
+  if (hash(fs.readFileSync(path.join(directory, 'node_modules/@miconvert/ofd-to-pdf/dist/index.js')))
+    !== fixes.ofdDependencyRuntimeSha256)
+    throw new Error('Runtime OFD dependency mismatch')
 }
 
 if (process.argv[2] === '--in-place') {
