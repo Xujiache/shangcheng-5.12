@@ -30,13 +30,14 @@ function originalCliEnv() {
   return {
     ...process.env,
     FLYINGMOUSE_FFMPEG_PATH: join(engines, 'runtime/bin/ffmpeg'),
-    FLYINGMOUSE_DCRAW_PATH: join(homedir(), 'Library/Caches/LibRaw-0.21.5/bin/dcraw_emu'),
+    FLYINGMOUSE_DCRAW_PATH: process.env.CONVERSION_DCRAW_PATH ||
+      join(homedir(), 'Library/Caches/LibRaw-0.21.5/bin/dcraw_emu'),
     FLYINGMOUSE_LIBREOFFICE_PATH: join(engines, 'libreoffice/LibreOffice.app/Contents/MacOS/soffice'),
     FLYINGMOUSE_PDFTOPPM_PATH: join(engines, 'runtime/bin/pdftoppm'),
     FLYINGMOUSE_TESSDATA_PATH: join(engines, 'tessdata'),
     FLYINGMOUSE_PANDOC_PATH: join(source, 'bin/pandoc/pandoc'),
     FLYINGMOUSE_OFD_FONT_DIR: process.env.FLYINGMOUSE_OFD_FONT_DIR ||
-      join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/ofd-fonts'),
+      join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/ofd-fonts-regular'),
     FLYINGMOUSE_QPDF_PATH: join(homedir(), 'Library/Caches/ledger-qpdf-osx-arm64/bin/qpdf'),
     DYLD_LIBRARY_PATH: join(engines, 'runtime/lib') +
       (process.env.DYLD_LIBRARY_PATH ? `:${process.env.DYLD_LIBRARY_PATH}` : ''),
@@ -452,18 +453,19 @@ async function main() {
 
   if (!process.env.CONVERSION_SKIP_BASELINE) await verifyBaseline(convert)
 
-  if (process.env.CONVERSION_RAW_SAMPLE) {
-    const extension = process.env.CONVERSION_RAW_SAMPLE.split('.').pop().toLowerCase()
+  const imageLikeSample = process.env.CONVERSION_RAW_SAMPLE || process.env.CONVERSION_VECTOR_SAMPLE
+  if (imageLikeSample) {
+    const extension = imageLikeSample.split('.').pop().toLowerCase()
     const catalog = require('../src/modules/ledger-conversion/conversion.catalog.json')
     const supported = new Set(catalog.operations.filter((operation) =>
       operation.kind === 'convert' && operation.inputExtensions.includes(extension))
       .map((operation) => operation.targetExtension))
     const targets = (process.env.CONVERSION_RAW_TARGETS || 'png').split(',')
     if (targets.some((target) => !supported.has(target)))
-      throw new Error(`Unsupported RAW target for ${extension}`)
+      throw new Error(`Unsupported image target for ${extension}`)
     const work = await mkdtemp(join(tmpdir(), 'ledger-raw-pairs-'))
     try {
-      const fixture = await readFile(process.env.CONVERSION_RAW_SAMPLE)
+      const fixture = await readFile(imageLikeSample)
       const input = join(work, `sample.${extension}`)
       await writeFile(input, fixture)
       const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
@@ -492,10 +494,10 @@ async function main() {
             throw new Error('RAW PDF has wrong page count')
           for (const [name, file] of [['direct', direct], ['backend', backendPath]])
             execFileSync(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH,
-              ['-f', '1', '-singlefile', '-r', '72', '-png', file, join(work, name)])
+              ['-f', '1', '-singlefile', '-r', '72', '-png', file, join(work, `pdf-${name}`)])
         }
-        const first = decoded(target === 'pdf' ? join(work, 'backend.png') : backendPath)
-        const second = decoded(target === 'pdf' ? join(work, 'direct.png') : direct)
+        const first = decoded(target === 'pdf' ? join(work, 'pdf-backend.png') : backendPath)
+        const second = decoded(target === 'pdf' ? join(work, 'pdf-direct.png') : direct)
         if (first.stream.width !== second.stream.width ||
           first.stream.height !== second.stream.height ||
           !first.pixels.equals(second.pixels))
@@ -506,7 +508,9 @@ async function main() {
           throw new Error(`${extension} to ${target}: video duration differs from original`)
         execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
           '--record', extension, target, createHash('sha256').update(fixture).digest('hex'),
-          'genuine camera RAW: direct original and authenticated backend, decoded pixels compared'])
+          extension === 'ai'
+            ? 'Illustrator file: direct original and authenticated backend, decoded pixels compared'
+            : 'genuine camera RAW: direct original and authenticated backend, decoded pixels compared'])
         console.log(`PASS ${extension}:${target}, decoded pixels match direct original`)
       }
     } finally { await rm(work, { recursive: true, force: true }) }

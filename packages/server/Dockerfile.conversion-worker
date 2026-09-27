@@ -32,8 +32,19 @@ RUN curl -fsSL https://www.libraw.org/data/LibRaw-0.21.5.tar.gz -o /tmp/libraw.t
  && echo 'a74a2e68303d3b9219f82318f935b28c5c4abd7f2c9f7dbf8faa4997c9038305  /tmp/libraw.tar.gz' | sha256sum -c - \
  && tar -xzf /tmp/libraw.tar.gz -C /tmp \
  && cd /tmp/LibRaw-0.21.5 \
- && ./configure --disable-shared --enable-static \
+ && CXXFLAGS='-DUSE_X3FTOOLS' ./configure --disable-shared --enable-static \
  && make -j2 bin/dcraw_emu
+
+FROM python:3.13-slim AS ofd-font-build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir fonttools==4.60.2 \
+ && curl -fsSL https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/Variable/TTF/NotoSansCJKsc-VF.ttf -o /tmp/NotoSansCJKsc-VF.ttf \
+ && echo '990c807e79c25662a5a9ecf7f971baeb2bf2eab9a559e5ecf15cdfdb8561d21f  /tmp/NotoSansCJKsc-VF.ttf' | sha256sum -c - \
+ && mkdir -p /ofd-fonts \
+ && fonttools varLib.instancer /tmp/NotoSansCJKsc-VF.ttf wght=400 --static --update-name-table -o /ofd-fonts/NotoSansCJKsc-Regular.ttf \
+ && curl -fsSL https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/LICENSE -o /ofd-fonts/OFL.txt \
+ && echo '6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2  /ofd-fonts/OFL.txt' | sha256sum -c -
 
 FROM node:24-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -55,8 +66,8 @@ RUN chmod 755 /usr/local/bin/jiujiu-camelot-table
 ENV NODE_ENV=production FLYINGMOUSE_SOURCE_DIR=/app/flyingmouse \
     PATH=/opt/camelot-venv/bin:$PATH \
     FLYINGMOUSE_CAMELOT_TABLE_PATH=/usr/local/bin/jiujiu-camelot-table \
-    FLYINGMOUSE_DCRAW_PATH=/usr/bin/dcraw \
-    FLYINGMOUSE_LIBRAW_DCRAW_PATH=/usr/local/bin/dcraw_emu \
+    FLYINGMOUSE_DCRAW_PATH=/usr/local/bin/dcraw_emu \
+    FLYINGMOUSE_OFD_FONT_DIR=/opt/ofd-fonts \
     FLYINGMOUSE_PANDOC_PATH=/app/flyingmouse/bin/pandoc/pandoc \
     FLYINGMOUSE_TESSDATA_PATH=/usr/share/tesseract-ocr/5/tessdata \
     HOME=/tmp XDG_CONFIG_HOME=/tmp
@@ -64,5 +75,6 @@ WORKDIR /app/server
 COPY --from=server-build --chown=node:node /out ./
 COPY --from=source-build --chown=node:node /app/flyingmouse /app/flyingmouse
 COPY --from=libraw-build /tmp/LibRaw-0.21.5/bin/dcraw_emu /usr/local/bin/dcraw_emu
+COPY --from=ofd-font-build --chown=node:node /ofd-fonts /opt/ofd-fonts
 USER node
 CMD ["node", "dist/workers/conversion.worker.js"]

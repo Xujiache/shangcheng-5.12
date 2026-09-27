@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 809,
-    "failed": 1,
-    "incomplete": 364
+    "passed": 954,
+    "failed": 0,
+    "incomplete": 220
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -260,20 +260,22 @@
     {
       "input": "ai",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
@@ -287,47 +289,52 @@
     {
       "input": "ai",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
@@ -341,65 +348,72 @@
     {
       "input": "ai",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
@@ -413,20 +427,22 @@
     {
       "input": "ai",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "ai",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "Illustrator file: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "arw",
@@ -1132,20 +1148,22 @@
     {
       "input": "cr2",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
@@ -1159,47 +1177,52 @@
     {
       "input": "cr2",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
@@ -1213,65 +1236,72 @@
     {
       "input": "cr2",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
@@ -1285,20 +1315,22 @@
     {
       "input": "cr2",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr2",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "cr3",
@@ -1731,20 +1763,22 @@
     {
       "input": "dng",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
@@ -1758,47 +1792,52 @@
     {
       "input": "dng",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
@@ -1812,65 +1851,72 @@
     {
       "input": "dng",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
@@ -1884,20 +1930,22 @@
     {
       "input": "dng",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "dng",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "doc",
@@ -5235,20 +5283,22 @@
     {
       "input": "kdc",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
@@ -5262,47 +5312,52 @@
     {
       "input": "kdc",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
@@ -5316,65 +5371,72 @@
     {
       "input": "kdc",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
@@ -5388,20 +5450,22 @@
     {
       "input": "kdc",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "kdc",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "log",
@@ -6577,20 +6641,22 @@
     {
       "input": "mrw",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
@@ -6604,47 +6670,52 @@
     {
       "input": "mrw",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
@@ -6658,65 +6729,72 @@
     {
       "input": "mrw",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
@@ -6730,38 +6808,42 @@
     {
       "input": "mrw",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "mrw",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
@@ -6775,47 +6857,52 @@
     {
       "input": "nef",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
@@ -6829,65 +6916,72 @@
     {
       "input": "nef",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
@@ -6901,20 +6995,22 @@
     {
       "input": "nef",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "nef",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "odp",
@@ -7079,12 +7175,12 @@
     {
       "input": "ofd",
       "output": "pdf",
-      "fixtureSha256": "f52f1df911c3d84943a7699fc517a528560e9e492082e72ee65d5ef5df8ad976",
+      "fixtureSha256": "306dba9b790fe29af0cd1b365ef259c427319e0ba39c3a5f08dc8eaa2d63147c",
       "original": "pass",
       "backend": "pass",
-      "quality": "fail",
-      "status": "fail",
-      "evidence": "OFD invoice: backend matches patched original, but rendered Chinese title and form content have missing or overlapping glyphs; visual quality fails"
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "v11 direct and authenticated backend; 4 public OFD samples; page/text/pixel parity and visual review; regular static CJK TTF"
     },
     {
       "input": "ogg",
@@ -7229,20 +7325,22 @@
     {
       "input": "orf",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
@@ -7256,47 +7354,52 @@
     {
       "input": "orf",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
@@ -7310,65 +7413,72 @@
     {
       "input": "orf",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
@@ -7382,20 +7492,22 @@
     {
       "input": "orf",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "orf",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "pdf",
@@ -8732,20 +8844,22 @@
     {
       "input": "rw2",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
@@ -8759,47 +8873,52 @@
     {
       "input": "rw2",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
@@ -8813,65 +8932,72 @@
     {
       "input": "rw2",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
@@ -8885,20 +9011,22 @@
     {
       "input": "rw2",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "rw2",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "srt",
@@ -10844,20 +10972,22 @@
     {
       "input": "x3f",
       "output": "avif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "bmp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
@@ -10871,47 +11001,52 @@
     {
       "input": "x3f",
       "output": "gif",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "ico",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "jp2",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "jxl",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
@@ -10925,65 +11060,72 @@
     {
       "input": "x3f",
       "output": "mp4",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "ppm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "qoi",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "tga",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "tiff",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
@@ -10997,20 +11139,22 @@
     {
       "input": "x3f",
       "output": "webm",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "x3f",
       "output": "webp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "genuine camera RAW: direct original and authenticated backend, decoded pixels compared"
     },
     {
       "input": "xls",

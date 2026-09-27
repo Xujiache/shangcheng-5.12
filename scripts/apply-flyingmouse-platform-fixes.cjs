@@ -50,6 +50,14 @@ const ofdDependencyAfter = 'const normalized = filePath.replace(/\\\\/g, "/").re
 const ofdColorBefore = 'const parts = color.value.trim().split(/\\s+/).map(Number);'
 const ofdColorAfter = 'const parts = color.value.trim().split(/\\s+/)' +
   '.map((value) => value.startsWith("#") ? parseInt(value.slice(1), 16) : Number(value));'
+const ofdFontSubsetBefore = 'cjkFont = await pdfDoc.embedFont(cjkBytes, { subset: true });'
+const ofdFontSubsetAfter = 'cjkFont = await pdfDoc.embedFont(cjkBytes, { subset: false });'
+const ofdPathStartBefore = '      case "C":\n      case "S":\n' +
+  '        commands.push({ type: "C" });\n        i += 1;\n        break;'
+const ofdPathStartAfter = '      case "S":\n' +
+  '        commands.push({ type: "M", x: Number(tokens[i + 1]), y: Number(tokens[i + 2]) });\n' +
+  '        i += 3;\n        break;\n      case "C":\n' +
+  '        commands.push({ type: "C" });\n        i += 1;\n        break;'
 const pdfTableReplacements = [
   [
     '  const ratio = clamp(Number(options.minLengthRatio) || 0.35, 0.05, 1);',
@@ -111,7 +119,11 @@ function apply(directory) {
     officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2 ||
     ocrCode.split(ocrBefore).length !== 2 ||
     ofdDependencyCode.split(ofdDependencyBefore).length !== 3 ||
-    ofdDependencyCode.split(ofdColorBefore).length !== 3)
+    ofdDependencyCode.split(ofdColorBefore).length !== 3 ||
+    ofdDependencyCode.split(ofdFontSubsetBefore).length !== 2 ||
+    ofdDependencyCode.split(ofdPathStartBefore).length !== 2 ||
+    ofdDependencyCode.split('y: currentY - fontSize,').length !== 3 ||
+    ofdDependencyCode.split('y: startY - fontSize,').length !== 4)
     throw new Error('Expected original conversion calls exactly once')
   const patched = code.replace(before, after).replace(rawBefore, rawAfter)
   const officePatched = officeCode.replace(officeBefore, officeAfter)
@@ -119,6 +131,10 @@ function apply(directory) {
   const ocrPatched = ocrCode.replace(ocrBefore, ocrAfter)
   const ofdDependencyPatched = ofdDependencyCode.split(ofdDependencyBefore)
     .join(ofdDependencyAfter).split(ofdColorBefore).join(ofdColorAfter)
+    .replace(ofdFontSubsetBefore, ofdFontSubsetAfter)
+    .replace(ofdPathStartBefore, ofdPathStartAfter)
+    .replaceAll('y: currentY - fontSize,', 'y: currentY,')
+    .replaceAll('y: startY - fontSize,', 'y: startY,')
   for (const [before, after] of pdfTableReplacements) {
     if (pdfTablePatched.split(before).length !== 2)
       throw new Error('Expected original PDF table threshold exactly once')
@@ -145,7 +161,7 @@ function apply(directory) {
   fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 10,
+    fixRevision: 11,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -171,6 +187,8 @@ function apply(directory) {
       'Keep OCR enlargement within the original pixel budget without shrinking source images',
       'Resolve absolute OFD archive paths in the third-party reader',
       'Decode OFD hexadecimal color components before rendering text and shapes',
+      'Embed a complete CJK TrueType font to avoid missing glyphs in PDF font subsetting',
+      'Treat OFD text Y as a baseline and S path commands as subpath starts',
     ],
   }, null, 2) + '\n')
 }
@@ -178,7 +196,7 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 10 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 11 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||
