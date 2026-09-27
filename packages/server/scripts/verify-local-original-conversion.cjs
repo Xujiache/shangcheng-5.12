@@ -1536,15 +1536,18 @@ async function main() {
 
   if (process.env.CONVERSION_LEGACY_PRESENTATION_SAMPLE) {
     const inputExtension = process.env.CONVERSION_LEGACY_PRESENTATION_SAMPLE.split('.').pop().toLowerCase()
-    if (!['dps', 'dpt'].includes(inputExtension) || !process.env.CONVERSION_LEGACY_PRESENTATION_EXPECT)
-      throw new Error('Legacy presentation requires DPS/DPT and expected slide text')
+    const imageOnly = process.env.CONVERSION_LEGACY_PRESENTATION_IMAGE_ONLY === '1'
+    const validTextSample = ['dps', 'dpt'].includes(inputExtension) &&
+      process.env.CONVERSION_LEGACY_PRESENTATION_EXPECT
+    if (!(imageOnly ? inputExtension === 'pptx' : validTextSample))
+      throw new Error('Presentation requires DPS/DPT with text or image-only PPTX')
     const work = await mkdtemp(join(tmpdir(), 'ledger-legacy-presentation-'))
     try {
       const input = join(work, `input.${inputExtension}`)
       const fixture = await readFile(process.env.CONVERSION_LEGACY_PRESENTATION_SAMPLE)
       await writeFile(input, fixture)
       const pages = Number(process.env.CONVERSION_LEGACY_PRESENTATION_PAGES || 1)
-      const expected = process.env.CONVERSION_LEGACY_PRESENTATION_EXPECT.split('|')
+      const expected = imageOnly ? [] : process.env.CONVERSION_LEGACY_PRESENTATION_EXPECT.split('|')
         .map((value) => value.replace(/\s+/g, ''))
       const selected = process.env.CONVERSION_LEGACY_PRESENTATION_TARGETS?.split(',')
       const targets = require('../src/modules/ledger-conversion/conversion.catalog.json').operations
@@ -1558,7 +1561,17 @@ async function main() {
           const text = html.replace(/<[^>]+>/g, '').replace(/\s+/g, '')
           if (expected.some((part) => !text.includes(part)))
             throw new Error('HTML lost known slide text')
-          return JSON.stringify({ text, images: (html.match(/<img|background-image|data:image|<svg/g) || []).length })
+          const matches = [...html.matchAll(/<img[^>]+src="data:image\/png;base64,([A-Za-z0-9+/=]+)"/g)]
+          const images = []
+          for (const match of matches) {
+            const bytes = Buffer.from(match[1], 'base64')
+            const metadata = await sharp(bytes).metadata()
+            if (metadata.width < 500 || metadata.height < 300)
+              throw new Error('HTML contains an undersized slide image')
+            images.push(await sharp(bytes).resize(500, 300, { fit: 'inside' }).removeAlpha()
+              .raw().toBuffer())
+          }
+          return { text, images }
         }
         if (target === 'jpg' || target === 'png') {
           const names = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
@@ -1607,14 +1620,20 @@ async function main() {
           '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
         const actual = await inspect(backendPath, target)
         const original = await inspect(directPath, target)
-        if (Array.isArray(actual) && Array.isArray(original)) {
-          for (let index = 0; index < actual.length; index++) {
-            if (actual[index].length !== original[index]?.length)
+        if (target === 'html' && actual.text !== original.text)
+          throw new Error(`${inputExtension} to html: slide text differs from original`)
+        const actualImages = target === 'html' ? actual.images : actual
+        const originalImages = target === 'html' ? original.images : original
+        if (Array.isArray(actualImages) && Array.isArray(originalImages)) {
+          if (actualImages.length !== originalImages.length)
+            throw new Error(`${inputExtension} to ${target}: slide image counts differ`)
+          for (let index = 0; index < actualImages.length; index++) {
+            if (actualImages[index].length !== originalImages[index]?.length)
               throw new Error(`${inputExtension} to ${target}: slide ${index + 1} dimensions differ`)
             let delta = 0
-            for (let offset = 0; offset < actual[index].length; offset++)
-              delta += Math.abs(actual[index][offset] - original[index][offset])
-            const meanDelta = delta / actual[index].length
+            for (let offset = 0; offset < actualImages[index].length; offset++)
+              delta += Math.abs(actualImages[index][offset] - originalImages[index][offset])
+            const meanDelta = delta / actualImages[index].length
             if (meanDelta > 2)
               throw new Error(`${inputExtension} to ${target}: slide ${index + 1} ` +
                 `mean pixel difference ${meanDelta.toFixed(2)} > 2`)
@@ -1622,7 +1641,7 @@ async function main() {
         } else if (actual !== original)
           throw new Error(`${inputExtension} to ${target}: slide text differs from original`)
         if (target === 'html' && process.env.CONVERSION_LEGACY_PRESENTATION_REQUIRE_IMAGES &&
-          JSON.parse(actual).images === 0) {
+          actual.images.length !== pages) {
           execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
             '--fail', inputExtension, target, 'quality',
             createHash('sha256').update(fixture).digest('hex'),

@@ -11,6 +11,7 @@ const expectedImageSha256 = '94593339599ff432abfb75b21578e019c4f05327cd1164af6e7
 const expectedOfficeSha256 = 'e823d8fbd291a1fbfee32a90f9645cb6ee5e71e3f30c10e8875893fcad54e742'
 const expectedOfdSha256 = '3401538b1746c19e06771b88bbd713494618544541a52a7f2ae1149513d2e601'
 const expectedPdfTableSha256 = 'bc03c4af4b123d34abed95d276bea21e2829de9e6b48d66b05f484bccff8f1f1'
+const expectedPdfSha256 = '7e5c912a02d692c1a268f488b12cc0dfcef00f443d79f9b5200edabc4a8d12a2'
 const before = 'args.push("-loop", "1", "-i", inputPath, "-t", "3");'
 const after = 'args.push("-stream_loop", "-1", "-i", inputPath, "-t", "3");'
 const rawBefore = [
@@ -73,13 +74,17 @@ function apply(directory) {
   const ofdBytes = fs.readFileSync(ofdPath)
   const pdfTablePath = path.join(directory, 'pdf-table-runtime.js')
   const pdfTableBytes = fs.readFileSync(pdfTablePath)
+  const pdfPath = path.join(directory, 'pdf.js')
+  const pdfBytes = fs.readFileSync(pdfPath)
   if (hash(bytes) !== expectedImageSha256 || hash(officeBytes) !== expectedOfficeSha256 ||
-    hash(ofdBytes) !== expectedOfdSha256 || hash(pdfTableBytes) !== expectedPdfTableSha256)
+    hash(ofdBytes) !== expectedOfdSha256 || hash(pdfTableBytes) !== expectedPdfTableSha256 ||
+    hash(pdfBytes) !== expectedPdfSha256)
     throw new Error('Runtime source does not match pinned a7b9b15 files')
   const code = bytes.toString('utf8')
   const officeCode = officeBytes.toString('utf8')
   const ofdCode = ofdBytes.toString('utf8')
   let pdfTablePatched = pdfTableBytes.toString('utf8')
+  const pdfCode = pdfBytes.toString('utf8')
   if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
     officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2)
     throw new Error('Expected original conversion calls exactly once')
@@ -91,13 +96,26 @@ function apply(directory) {
       throw new Error('Expected original PDF table threshold exactly once')
     pdfTablePatched = pdfTablePatched.replace(before, after)
   }
+  const presentationStartMarker = '// 演示文稿 -> HTML：LibreOffice'
+  const presentationEndMarker = 'async function convertZipImagesToPdf'
+  const presentationStart = pdfCode.indexOf(presentationStartMarker)
+  const presentationEnd = pdfCode.indexOf(presentationEndMarker, presentationStart)
+  if (presentationStart < 0 || presentationEnd < 0 ||
+    pdfCode.lastIndexOf(presentationStartMarker) !== presentationStart ||
+    pdfCode.lastIndexOf(presentationEndMarker) !== presentationEnd)
+    throw new Error('Expected original presentation HTML implementation exactly once')
+  const presentationPatch = fs.readFileSync(path.join(__dirname,
+    'flyingmouse-patches/presentation-html.js.inc'), 'utf8')
+  const pdfPatched = pdfCode.slice(0, presentationStart) + presentationPatch +
+    pdfCode.slice(presentationEnd)
   fs.writeFileSync(imagePath, patched)
   fs.writeFileSync(officePath, officePatched)
   fs.writeFileSync(ofdPath, ofdPatched)
   fs.writeFileSync(pdfTablePath, pdfTablePatched)
+  fs.writeFileSync(pdfPath, pdfPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 6,
+    fixRevision: 8,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -106,6 +124,8 @@ function apply(directory) {
     ofdRuntimeSha256: hash(Buffer.from(ofdPatched)),
     pdfTableSourceSha256: expectedPdfTableSha256,
     pdfTableRuntimeSha256: hash(Buffer.from(pdfTablePatched)),
+    pdfSourceSha256: expectedPdfSha256,
+    pdfRuntimeSha256: hash(Buffer.from(pdfPatched)),
     fixes: [
       'Use FFmpeg stream_loop for still-image video, including AVIF',
       'Accept LibRaw TIFF output named after the complete input file',
@@ -113,6 +133,7 @@ function apply(directory) {
       'Keep PDF.js dependencies physically inside the isolated runtime root',
       'Supply a CJK font directory and suppress a third-party OFD stdout banner',
       'Detect small ruled tables on full-page PDF renders without changing small-raster thresholds',
+      'Stream rendered slides into self-contained presentation HTML while retaining selectable text',
     ],
   }, null, 2) + '\n')
 }
@@ -120,11 +141,12 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 6 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 8 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||
     fixes.pdfTableSourceSha256 !== expectedPdfTableSha256 ||
+    fixes.pdfSourceSha256 !== expectedPdfSha256 ||
     fs.realpathSync(path.join(directory, 'node_modules/pdfjs-dist/package.json')) !==
       path.join(directory, 'node_modules/pdfjs-dist/package.json'))
     throw new Error('Runtime copy metadata or dependencies are invalid')
@@ -133,7 +155,8 @@ function verifyRuntime(directory) {
     const expected = item.path === 'image.js' ? fixes.imageRuntimeSha256
       : item.path === 'office-convert.js' ? fixes.officeRuntimeSha256
         : item.path === 'ofd-convert.js' ? fixes.ofdRuntimeSha256
-          : item.path === 'pdf-table-runtime.js' ? fixes.pdfTableRuntimeSha256 : item.sha256
+          : item.path === 'pdf-table-runtime.js' ? fixes.pdfTableRuntimeSha256
+            : item.path === 'pdf.js' ? fixes.pdfRuntimeSha256 : item.sha256
     if (actual !== expected) throw new Error(`Runtime source mismatch: ${item.path}`)
   }
 }

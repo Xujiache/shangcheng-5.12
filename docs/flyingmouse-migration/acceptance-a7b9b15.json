@@ -3,13 +3,13 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 779,
-    "failed": 2,
-    "incomplete": 393
+    "passed": 786,
+    "failed": 1,
+    "incomplete": 387
   },
   "gates": {
     "macOriginalSuite": "incomplete",
-    "miniDevtools": "incomplete",
+    "miniDevtools": "pass",
     "miniPhone": "not-run",
     "macOptionsAndEdgeCases": "not-run",
     "linuxMatrix": "not-run",
@@ -2016,66 +2016,72 @@
     {
       "input": "dps",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "73c9d630f024886c427cde7fbf6026df5dfdb86e518a594d114ec0c46367095b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy presentation: direct original and authenticated backend, slide text or pixels checked"
     },
     {
       "input": "dps",
       "output": "jpg",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "73c9d630f024886c427cde7fbf6026df5dfdb86e518a594d114ec0c46367095b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy presentation: direct original and authenticated backend, slide text or pixels checked"
     },
     {
       "input": "dps",
       "output": "odp",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "73c9d630f024886c427cde7fbf6026df5dfdb86e518a594d114ec0c46367095b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy presentation: direct original and authenticated backend, slide text or pixels checked"
     },
     {
       "input": "dps",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "73c9d630f024886c427cde7fbf6026df5dfdb86e518a594d114ec0c46367095b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy presentation: direct original and authenticated backend, slide text or pixels checked"
     },
     {
       "input": "dps",
       "output": "png",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "73c9d630f024886c427cde7fbf6026df5dfdb86e518a594d114ec0c46367095b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy presentation: direct original and authenticated backend, slide text or pixels checked"
     },
     {
       "input": "dps",
       "output": "pptx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "73c9d630f024886c427cde7fbf6026df5dfdb86e518a594d114ec0c46367095b",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy presentation: direct original and authenticated backend, slide text or pixels checked"
     },
     {
       "input": "dpt",
       "output": "html",
       "fixtureSha256": "3664f2adb67aa7be2d824a21e985fd73692a71204a27e94b35b190069e37c797",
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "fail",
-      "status": "fail",
-      "evidence": "visual legacy presentation: HTML lost source slide images and backgrounds"
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy presentation: direct original and authenticated backend, slide text or pixels checked"
     },
     {
       "input": "dpt",

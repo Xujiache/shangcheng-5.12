@@ -9,7 +9,7 @@ qpdf_root="${CONVERSION_QPDF_ROOT:-$HOME/Library/Caches/ledger-qpdf-osx-arm64}"
 raw_path="${CONVERSION_DCRAW_PATH:-$HOME/Library/Caches/LibRaw-0.21.5/bin/dcraw_emu}"
 structure_python="${CONVERSION_DOCSTRUCTURE_PYTHON:-$HOME/Library/Caches/ledger-flyingmouse-engines/docstructure-venv/bin/python}"
 structure_models="${CONVERSION_DOCSTRUCTURE_MODEL_DIR:-$HOME/Library/Caches/ledger-flyingmouse-engines/docstructure-models/models}"
-runtime_source="${FLYINGMOUSE_RUNTIME_SOURCE_DIR:-$HOME/Library/Caches/ledger-flyingmouse-engines/runtime-a7b9b15-platform-v6}"
+runtime_source="${FLYINGMOUSE_RUNTIME_SOURCE_DIR:-$HOME/Library/Caches/ledger-flyingmouse-engines/runtime-a7b9b15-platform-v8}"
 ofd_font_dir="${FLYINGMOUSE_OFD_FONT_DIR:-$HOME/Library/Caches/ledger-flyingmouse-engines/ofd-fonts}"
 
 test "$(uname -s)" = Darwin
