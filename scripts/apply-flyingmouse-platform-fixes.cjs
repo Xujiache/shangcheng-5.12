@@ -161,8 +161,18 @@ function apply(directory) {
     throw new Error('Expected original presentation HTML implementation exactly once')
   const presentationPatch = fs.readFileSync(path.join(__dirname,
     'flyingmouse-patches/presentation-html.js.inc'), 'utf8')
-  const pdfPatched = pdfCode.slice(0, presentationStart) + presentationPatch +
-    pdfCode.slice(presentationEnd)
+  const zipImageBatch = fs.readFileSync(path.join(__dirname,
+    'flyingmouse-patches/zip-image-batch.js.inc'), 'utf8').trimEnd()
+  const zipImageCall = '    await convertImagesToPdf(images, outputPath);'
+  if (pdfCode.split(zipImageCall).length !== 2)
+    throw new Error('Expected original ZIP image conversion exactly once')
+  const pdfPatched = (pdfCode.slice(0, presentationStart) + presentationPatch +
+    pdfCode.slice(presentationEnd))
+    .replace('const { convertImagesToPdf } = require("./image");',
+      'const { convertImagesToPdf, inspectImageMetadata } = require("./image");')
+    .replace('const { assertPdfPages } = require("./resource-policy");',
+      'const { LIMITS, assertImageMetadata, assertPdfPages } = require("./resource-policy");')
+    .replace(zipImageCall, zipImageBatch)
   fs.writeFileSync(imagePath, patched)
   fs.writeFileSync(officePath, officePatched)
   fs.writeFileSync(ofdPath, ofdPatched)
@@ -172,7 +182,7 @@ function apply(directory) {
   fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 12,
+    fixRevision: 13,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -201,6 +211,7 @@ function apply(directory) {
       'Decode OFD hexadecimal color components before rendering text and shapes',
       'Embed a complete CJK TrueType font to avoid missing glyphs in PDF font subsetting',
       'Treat OFD text Y as a baseline and S path commands as subpath starts',
+      'Convert ZIP images in memory-budgeted batches before merging every PDF page',
     ],
   }, null, 2) + '\n')
 }
@@ -208,7 +219,7 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 12 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 13 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||

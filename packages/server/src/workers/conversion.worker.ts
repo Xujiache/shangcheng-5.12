@@ -363,6 +363,8 @@ async function processJob(id: string) {
       publicError = '上传文件校验失败，请重新选择文件'
     else if (detail.includes('RAW 图片解码失败：无法从该文件提取像素数据。'))
       publicError = 'RAW 图片解码失败：无法从该文件提取像素数据。'
+    else if (detail.includes('合并图片超过当前内存预算'))
+      publicError = '图片总像素超过当前内存预算，请分批转换或释放内存后重试'
     await prisma.ledgerConversionJob.updateMany({
       where: { id, leaseId, status: 'running' },
       data: {
