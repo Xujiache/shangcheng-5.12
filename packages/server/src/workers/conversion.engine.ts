@@ -99,7 +99,7 @@ async function main() {
       await saveConvertedResult(result, destination, { resolveUrl, overwrite: false, resolveRedirect: resolveUrl })
       outputs.push({ path: destination, fileName: name, mimeType: result.mimeType, warnings: result.warnings || [] })
     }
-    process.stdout.write(`${JSON.stringify({ ok: true, outputs })}\n`)
+    process.stdout.write(`@@LEDGER_CONVERSION_RESULT@@${JSON.stringify({ ok: true, outputs })}\n`)
   } finally {
     await new Promise<void>((done) => {
       started.server.close(() => done())

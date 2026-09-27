@@ -170,7 +170,10 @@ async function runEngine(jobId: string, leaseId: string, requestFile: string, ru
       child.once('exit', (code) => resolveExit(code ?? 1))
     })
     if (exitCode !== 0) throw new Error(`转换引擎退出 ${exitCode}: ${stderr.slice(-1000)}`)
-    const parsed = JSON.parse(stdout.trim())
+    const results = stdout.split(/\r?\n/)
+      .filter((line) => line.startsWith('@@LEDGER_CONVERSION_RESULT@@'))
+    if (results.length !== 1) throw new Error('转换引擎未返回唯一结果清单')
+    const parsed = JSON.parse(results[0].slice('@@LEDGER_CONVERSION_RESULT@@'.length))
     if (!parsed.ok || !Array.isArray(parsed.outputs)) throw new Error('转换引擎未返回结果清单')
     return parsed.outputs as {
       path: string

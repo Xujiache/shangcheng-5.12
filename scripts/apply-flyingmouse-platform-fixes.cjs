@@ -9,6 +9,7 @@ const root = path.resolve(__dirname, '..')
 const source = path.join(root, 'vendor/flyingmouse-format/upstream-a7b9b15')
 const expectedImageSha256 = '94593339599ff432abfb75b21578e019c4f05327cd1164af6e724c7f47474fcf'
 const expectedOfficeSha256 = 'e823d8fbd291a1fbfee32a90f9645cb6ee5e71e3f30c10e8875893fcad54e742'
+const expectedOfdSha256 = '3401538b1746c19e06771b88bbd713494618544541a52a7f2ae1149513d2e601'
 const before = 'args.push("-loop", "1", "-i", inputPath, "-t", "3");'
 const after = 'args.push("-stream_loop", "-1", "-i", inputPath, "-t", "3");'
 const rawBefore = [
@@ -28,6 +29,10 @@ const rawAfter = [
 const officeBefore = '      libreOfficeFilterFor(target),'
 const officeAfter = '      normalizeExt(originalExt) === "html" && targetExt === "docx"\n' +
   '        ? "docx:Office Open XML Text" : libreOfficeFilterFor(target),'
+const ofdBefore = '    await convert(inputPath, outputPath);'
+const ofdAfter = '    await convert(inputPath, outputPath, {\n' +
+  '      fontDir: process.env.FLYINGMOUSE_OFD_FONT_DIR, silent: true\n' +
+  '    });'
 
 function hash(bytes) { return createHash('sha256').update(bytes).digest('hex') }
 
@@ -38,29 +43,38 @@ function apply(directory) {
   const bytes = fs.readFileSync(imagePath)
   const officePath = path.join(directory, 'office-convert.js')
   const officeBytes = fs.readFileSync(officePath)
-  if (hash(bytes) !== expectedImageSha256 || hash(officeBytes) !== expectedOfficeSha256)
+  const ofdPath = path.join(directory, 'ofd-convert.js')
+  const ofdBytes = fs.readFileSync(ofdPath)
+  if (hash(bytes) !== expectedImageSha256 || hash(officeBytes) !== expectedOfficeSha256 ||
+    hash(ofdBytes) !== expectedOfdSha256)
     throw new Error('Runtime source does not match pinned a7b9b15 files')
   const code = bytes.toString('utf8')
   const officeCode = officeBytes.toString('utf8')
+  const ofdCode = ofdBytes.toString('utf8')
   if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
-    officeCode.split(officeBefore).length !== 2)
+    officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2)
     throw new Error('Expected original conversion calls exactly once')
   const patched = code.replace(before, after).replace(rawBefore, rawAfter)
   const officePatched = officeCode.replace(officeBefore, officeAfter)
+  const ofdPatched = ofdCode.replace(ofdBefore, ofdAfter)
   fs.writeFileSync(imagePath, patched)
   fs.writeFileSync(officePath, officePatched)
+  fs.writeFileSync(ofdPath, ofdPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 4,
+    fixRevision: 5,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
     officeRuntimeSha256: hash(Buffer.from(officePatched)),
+    ofdSourceSha256: expectedOfdSha256,
+    ofdRuntimeSha256: hash(Buffer.from(ofdPatched)),
     fixes: [
       'Use FFmpeg stream_loop for still-image video, including AVIF',
       'Accept LibRaw TIFF output named after the complete input file',
       'Select an explicit LibreOffice DOCX export filter for EPUB HTML',
       'Keep PDF.js dependencies physically inside the isolated runtime root',
+      'Supply a CJK font directory and suppress a third-party OFD stdout banner',
     ],
   }, null, 2) + '\n')
 }
@@ -68,16 +82,18 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 4 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 5 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
+    fixes.ofdSourceSha256 !== expectedOfdSha256 ||
     fs.realpathSync(path.join(directory, 'node_modules/pdfjs-dist/package.json')) !==
       path.join(directory, 'node_modules/pdfjs-dist/package.json'))
     throw new Error('Runtime copy metadata or dependencies are invalid')
   for (const item of manifest.files) {
     const actual = hash(fs.readFileSync(path.join(directory, item.path)))
     const expected = item.path === 'image.js' ? fixes.imageRuntimeSha256
-      : item.path === 'office-convert.js' ? fixes.officeRuntimeSha256 : item.sha256
+      : item.path === 'office-convert.js' ? fixes.officeRuntimeSha256
+        : item.path === 'ofd-convert.js' ? fixes.ofdRuntimeSha256 : item.sha256
     if (actual !== expected) throw new Error(`Runtime source mismatch: ${item.path}`)
   }
 }

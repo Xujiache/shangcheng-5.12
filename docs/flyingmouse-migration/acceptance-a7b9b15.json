@@ -3,9 +3,9 @@
   "rule": "A pair passes only with a real fixture hash and successful original, backend, and result-quality checks.",
   "counts": {
     "total": 1174,
-    "passed": 747,
-    "failed": 1,
-    "incomplete": 426
+    "passed": 773,
+    "failed": 2,
+    "incomplete": 399
   },
   "gates": {
     "macOriginalSuite": "incomplete",
@@ -2345,110 +2345,122 @@
     {
       "input": "et",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "cc24d79d73397b05ae37eb18ec56409c0ac071ef026e677166c79a9d88665cf5",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "et",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "cc24d79d73397b05ae37eb18ec56409c0ac071ef026e677166c79a9d88665cf5",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "et",
       "output": "ods",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "cc24d79d73397b05ae37eb18ec56409c0ac071ef026e677166c79a9d88665cf5",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "et",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "cc24d79d73397b05ae37eb18ec56409c0ac071ef026e677166c79a9d88665cf5",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "et",
       "output": "xls",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "cc24d79d73397b05ae37eb18ec56409c0ac071ef026e677166c79a9d88665cf5",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "et",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "cc24d79d73397b05ae37eb18ec56409c0ac071ef026e677166c79a9d88665cf5",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "ett",
       "output": "csv",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "be9df0139a6ba09dc6a58601757b522d0236f67632739245c73f9392c9ee7d30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "ett",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "be9df0139a6ba09dc6a58601757b522d0236f67632739245c73f9392c9ee7d30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "ett",
       "output": "ods",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "be9df0139a6ba09dc6a58601757b522d0236f67632739245c73f9392c9ee7d30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "ett",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "be9df0139a6ba09dc6a58601757b522d0236f67632739245c73f9392c9ee7d30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "ett",
       "output": "xls",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "be9df0139a6ba09dc6a58601757b522d0236f67632739245c73f9392c9ee7d30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "ett",
       "output": "xlsx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "be9df0139a6ba09dc6a58601757b522d0236f67632739245c73f9392c9ee7d30",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy sheet: direct original and authenticated backend, cells and formulas checked"
     },
     {
       "input": "fff",
@@ -7039,11 +7051,12 @@
     {
       "input": "ofd",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f52f1df911c3d84943a7699fc517a528560e9e492082e72ee65d5ef5df8ad976",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "fail",
+      "status": "fail",
+      "evidence": "OFD invoice: backend matches patched original, but rendered Chinese title and form content have missing or overlapping glyphs; visual quality fails"
     },
     {
       "input": "ogg",
@@ -7399,7 +7412,7 @@
     {
       "input": "pdf",
       "output": "pdf",
-      "fixtureSha256": "dbe2d8c40839143a72cc515ca923a565c4a4dab042a9458cfe45c3ee7a570459",
+      "fixtureSha256": "df94a9fc61ade976163378d976ae37e5946a2c65941ea2a1a8287338e8147782",
       "original": "pass",
       "backend": "pass",
       "quality": "pass",
@@ -10656,128 +10669,142 @@
     {
       "input": "wps",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wps",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wps",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wps",
       "output": "odt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wps",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wps",
       "output": "rtf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wps",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wpt",
       "output": "docx",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wpt",
       "output": "html",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wpt",
       "output": "md",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wpt",
       "output": "odt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wpt",
       "output": "pdf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wpt",
       "output": "rtf",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "wpt",
       "output": "txt",
-      "fixtureSha256": null,
-      "original": "not-run",
-      "backend": "not-run",
-      "quality": "not-run",
-      "status": "not-run"
+      "fixtureSha256": "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d",
+      "original": "pass",
+      "backend": "pass",
+      "quality": "pass",
+      "status": "pass",
+      "evidence": "legacy document sample: direct original and authenticated backend, known phrases checked"
     },
     {
       "input": "x3f",

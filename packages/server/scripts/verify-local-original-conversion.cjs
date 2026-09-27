@@ -34,6 +34,8 @@ function originalCliEnv() {
     FLYINGMOUSE_PDFTOPPM_PATH: join(engines, 'runtime/bin/pdftoppm'),
     FLYINGMOUSE_TESSDATA_PATH: join(engines, 'tessdata'),
     FLYINGMOUSE_PANDOC_PATH: join(source, 'bin/pandoc/pandoc'),
+    FLYINGMOUSE_OFD_FONT_DIR: process.env.FLYINGMOUSE_OFD_FONT_DIR ||
+      join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/ofd-fonts'),
     FLYINGMOUSE_QPDF_PATH: join(homedir(), 'Library/Caches/ledger-qpdf-osx-arm64/bin/qpdf'),
     DYLD_LIBRARY_PATH: join(engines, 'runtime/lib') +
       (process.env.DYLD_LIBRARY_PATH ? `:${process.env.DYLD_LIBRARY_PATH}` : ''),
@@ -934,6 +936,132 @@ async function main() {
     } finally { await rm(documentWork, { recursive: true, force: true }) }
   }
 
+  if (process.env.CONVERSION_LEGACY_DOCUMENT_SAMPLE) {
+    const inputExtension = process.env.CONVERSION_LEGACY_DOCUMENT_SAMPLE.split('.').pop().toLowerCase()
+    if (!['wps', 'wpt'].includes(inputExtension))
+      throw new Error('Legacy document sample must be WPS or WPT')
+    if (!process.env.CONVERSION_LEGACY_EXPECT)
+      throw new Error('Legacy document sample requires CONVERSION_LEGACY_EXPECT')
+    const work = await mkdtemp(join(tmpdir(), 'ledger-legacy-document-'))
+    try {
+      const input = join(work, `input.${inputExtension}`)
+      const fixture = await readFile(process.env.CONVERSION_LEGACY_DOCUMENT_SAMPLE)
+      await writeFile(input, fixture)
+      const normalize = (value) => value.replace(/\s+/g, '')
+      const expected = process.env.CONVERSION_LEGACY_EXPECT.split('|').map(normalize)
+      const targets = require('../src/modules/ledger-conversion/conversion.catalog.json').operations
+        .filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension))
+        .map((operation) => operation.targetExtension)
+      const extract = async (file, target) => {
+        if (target === 'pdf') return normalize(execFileSync(
+          join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext'),
+          [file, '-'], { encoding: 'utf8' }))
+        if (target === 'html') return normalize((await readFile(file, 'utf8')).replace(/<[^>]+>/g, ''))
+        if (target === 'md' || target === 'txt') return normalize(await readFile(file, 'utf8'))
+        if (target === 'docx' || target === 'odt') {
+          execFileSync('unzip', ['-tqq', file])
+          return normalize(execFileSync('unzip', ['-p', file,
+            target === 'docx' ? 'word/document.xml' : 'content.xml'], { encoding: 'utf8' })
+            .replace(/<[^>]+>/g, ''))
+        }
+        if (target === 'rtf') return normalize(execFileSync(originalCliEnv().FLYINGMOUSE_PANDOC_PATH,
+          ['-f', 'rtf', '-t', 'plain', file], { encoding: 'utf8' }))
+        throw new Error(`Unexpected legacy document target ${target}`)
+      }
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
+        const backendPath = join(work, `backend-${target}.${target}`)
+        const directPath = join(work, `direct-${target}.${target}`)
+        await writeFile(backendPath, backend.bytes)
+        execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        const backendText = await extract(backendPath, target)
+        const directText = await extract(directPath, target)
+        const coverage = expected.filter((part) => backendText.includes(part)).length / expected.length
+        if (backendText !== directText || coverage < 1)
+          throw new Error(`${inputExtension} to ${target}: same=${backendText === directText} ` +
+            `source coverage=${coverage.toFixed(2)} backendLength=${backendText.length} ` +
+            `directLength=${directText.length}`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+          'legacy document sample: direct original and authenticated backend, known phrases checked'])
+        console.log(`PASS ${inputExtension}:${target}, source text matches direct original`)
+      }
+    } finally { await rm(work, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_LEGACY_SHEET_SAMPLE) {
+    const inputExtension = process.env.CONVERSION_LEGACY_SHEET_SAMPLE.split('.').pop().toLowerCase()
+    if (!['et', 'ett'].includes(inputExtension) || !process.env.CONVERSION_LEGACY_SHEET_EXPECT)
+      throw new Error('Legacy sheet sample requires ET/ETT and expected cell text')
+    const work = await mkdtemp(join(tmpdir(), 'ledger-legacy-sheet-'))
+    try {
+      const input = join(work, `input.${inputExtension}`)
+      const fixture = await readFile(process.env.CONVERSION_LEGACY_SHEET_SAMPLE)
+      await writeFile(input, fixture)
+      const expected = process.env.CONVERSION_LEGACY_SHEET_EXPECT.split('|')
+        .map((value) => value.replace(/\s+/g, ''))
+      const ExcelJS = require('../../../vendor/flyingmouse-format/upstream-a7b9b15/node_modules/exceljs')
+      const inspect = async (file, target, label) => {
+        if (['csv', 'html', 'pdf'].includes(target)) {
+          const value = target === 'pdf' ? execFileSync(
+            join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext'),
+            [file, '-'], { encoding: 'utf8' }) : await readFile(file, 'utf8')
+          const text = value.replace(/<[^>]+>/g, '').replace(/\s+/g, '')
+          if (expected.some((part) => !text.includes(part)))
+            throw new Error(`${label}: ${target} lost known cells`)
+          if (target === 'pdf' && (await PDFDocument.load(await readFile(file))).getPageCount() < 1)
+            throw new Error(`${label}: ${target} lost pages`)
+          return text
+        }
+        let workbookPath = file
+        if (target !== 'xlsx') {
+          const outdir = join(work, `xlsx-${label}`)
+          await mkdir(outdir)
+          execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
+            [`-env:UserInstallation=file://${join(work, `profile-${label}`)}`,
+              '--headless', '--convert-to', 'xlsx', '--outdir', outdir, file])
+          workbookPath = join(outdir, `${label}.xlsx`)
+        }
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.readFile(workbookPath)
+        const sheets = workbook.worksheets.map((sheet) => {
+          const cells = []
+          sheet.eachRow({ includeEmpty: false }, (row) => row.eachCell({ includeEmpty: false },
+            (cell) => cells.push([cell.address, cell.value])))
+          return [sheet.name, cells]
+        })
+        const flat = JSON.stringify(sheets).replace(/\s+/g, '')
+        const formulas = (flat.match(/"formula":/g) || []).length
+        if (workbook.worksheets.length < Number(process.env.CONVERSION_LEGACY_SHEET_MIN_SHEETS || 1) ||
+          formulas < Number(process.env.CONVERSION_LEGACY_SHEET_MIN_FORMULAS || 0) ||
+          expected.some((part) => !flat.includes(part)))
+          throw new Error(`${label}: ${target} lost sheets, formulas, or known cells`)
+        return JSON.stringify(sheets)
+      }
+      const targets = require('../src/modules/ledger-conversion/conversion.catalog.json').operations
+        .filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension))
+        .map((operation) => operation.targetExtension)
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
+        const backendPath = join(work, `backend-${target}.${target}`)
+        const directPath = join(work, `direct-${target}.${target}`)
+        await writeFile(backendPath, backend.bytes)
+        execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        if ((await inspect(backendPath, target, `backend-${target}`)) !==
+          (await inspect(directPath, target, `direct-${target}`)))
+          throw new Error(`${inputExtension} to ${target}: workbook differs from original`)
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+          'legacy sheet: direct original and authenticated backend, cells and formulas checked'])
+        console.log(`PASS ${inputExtension}:${target}, cells match direct original`)
+      }
+    } finally { await rm(work, { recursive: true, force: true }) }
+  }
+
   if (process.env.CONVERSION_PDF_TEXT) {
     if (!process.env.CONVERSION_PDF_SIMPLE && !process.env.CONVERSION_SAMPLE_DOCX)
       throw new Error('CONVERSION_PDF_TEXT requires CONVERSION_SAMPLE_DOCX')
@@ -1087,6 +1215,49 @@ async function main() {
         '--record', 'pdf', 'xlsx', createHash('sha256').update(await readFile(chinesePdf)).digest('hex'),
         'English and Chinese ruled tables: direct original and backend retain editable cells'])
       console.log('PASS pdf:xlsx Chinese table, direct and backend retain cells')
+    } finally { await rm(work, { recursive: true, force: true }) }
+  }
+
+  if (process.env.CONVERSION_OFD_SAMPLE) {
+    if (!process.env.CONVERSION_OFD_EXPECT)
+      throw new Error('CONVERSION_OFD_SAMPLE requires CONVERSION_OFD_EXPECT')
+    const work = await mkdtemp(join(tmpdir(), 'ledger-ofd-pair-'))
+    try {
+      const input = join(work, 'input.ofd')
+      const direct = join(work, 'direct.pdf')
+      const backend = join(work, 'backend.pdf')
+      const fixture = await readFile(process.env.CONVERSION_OFD_SAMPLE)
+      await writeFile(input, fixture)
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+        '--to', 'pdf', '--output', direct, '--json'], { env: originalCliEnv() })
+      const result = await convert('convert:pdf', [['input.ofd', fixture]])
+      await writeFile(backend, result.bytes)
+      const pages = (file) => PDFDocument.load(require('node:fs').readFileSync(file))
+        .then((document) => document.getPageCount())
+      if ((await pages(direct)) < 1 || (await pages(backend)) !== (await pages(direct)))
+        throw new Error('OFD PDF page count differs from original')
+      const pdftotext = join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext')
+      const text = (file) => execFileSync(pdftotext, [file, '-'], { encoding: 'utf8' })
+        .replace(/\s+/g, '')
+      const originalText = text(direct)
+      const backendText = text(backend)
+      const expected = process.env.CONVERSION_OFD_EXPECT.replace(/\s+/g, '')
+      if (backendText !== originalText || !originalText.includes(expected))
+        throw new Error(`OFD PDF text check failed: same=${backendText === originalText} ` +
+          `directExpected=${originalText.includes(expected)} ` +
+          `backendExpected=${backendText.includes(expected)} ` +
+          `directLength=${originalText.length} backendLength=${backendText.length}`)
+      const pdftoppm = originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH
+      const render = (file, name) => {
+        const prefix = join(work, name)
+        execFileSync(pdftoppm, ['-f', '1', '-singlefile', '-r', '72', '-png', file, prefix])
+        return `${prefix}.png`
+      }
+      const directPixels = await sharp(render(direct, 'direct')).removeAlpha().raw().toBuffer()
+      const backendPixels = await sharp(render(backend, 'backend')).removeAlpha().raw().toBuffer()
+      if (!directPixels.equals(backendPixels))
+        throw new Error('OFD PDF rendered pixels differ from original')
+      console.log('PASS ofd:pdf structural parity; visual source fidelity requires separate review')
     } finally { await rm(work, { recursive: true, force: true }) }
   }
 
