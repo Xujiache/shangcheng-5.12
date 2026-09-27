@@ -2,7 +2,7 @@
   "verifiedAt": "2026-09-27T15:14:51.370Z",
   "scope": "Standalone design prototype, not WeChat runtime acceptance",
   "checks": [
-    "Homepage more-tools entry opens four tools",
+    "Homepage more-tools entry opens five popular and four other tools",
     "All four detail entries and back navigation",
     "RMB live conversion, clipboard, clear and invalid precision",
     "Retirement empty/date sheet/save/leap day/reached states",
@@ -667,5 +667,48 @@
   "logicTests": {
     "passed": 5,
     "failed": 0
+  },
+  "toolsGridRevision": {
+    "verifiedAt": "2026-09-27T15:30:27.716Z",
+    "sizes": [
+      {
+        "width": 320,
+        "columns": 5,
+        "popular": 5,
+        "other": 4,
+        "remainingCells": 1,
+        "horizontalOverflow": false
+      },
+      {
+        "width": 375,
+        "columns": 5,
+        "popular": 5,
+        "other": 4,
+        "remainingCells": 1,
+        "horizontalOverflow": false
+      },
+      {
+        "width": 430,
+        "columns": 5,
+        "popular": 5,
+        "other": 4,
+        "remainingCells": 1,
+        "horizontalOverflow": false
+      },
+      {
+        "width": 1440,
+        "columns": 5,
+        "popular": 5,
+        "other": 4,
+        "remainingCells": 1,
+        "horizontalOverflow": false
+      }
+    ],
+    "wrap": {
+      "sameX": true,
+      "nextRow": true
+    },
+    "detailRoutes": 4,
+    "errors": []
   }
 }

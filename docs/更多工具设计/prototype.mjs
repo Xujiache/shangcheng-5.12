@@ -3,7 +3,7 @@ import { toRmbUppercase, dateCountdown } from './prototype-logic.mjs'
 const asset = '../../packages/ledger-mp/miniprogram/assets/'
 const pages = [
   ['home', '首页入口', '保留格式转换，在同一行右侧增加“更多工具”。'],
-  ['tools', '更多工具', '四项工具分组展示，整行可点，说明只保留用途。'],
+  ['tools', '更多工具', '热门工具与其他工具均按每行五个排列，不足五个保留空位。'],
   ['rmb', '人民币大小写转换', '输入金额即显示大写，主操作为复制结果。'],
   ['retire', '退休倒计时', '设置目标日期，查看剩余年月日与总天数。'],
   ['level', '水平仪测量仪', '读数居中，校准与锁定各司其职；读数为演示。'],
@@ -53,7 +53,7 @@ let glassError = false
 const glass = { outer: '6', inner: '6', cavity: '12', gas: '空气', coating: '无镀膜', emissivity: '0.84', pressure: '0.10', pillar: '0.5', pitch: '25', outside: '25', inside: '7.7' }
 const localToday = () => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` }
 const displayDate = iso => iso ? iso.split('-').map((part, i) => `${Number(part)}${[' 年 ', ' 月 ', ' 日'][i]}`).join('') : ''
-const tool = (page, kind, title, sub) => `<button class="tool-row" data-page="${page}">${illustration(kind)}<span class="tool-row-copy"><strong>${title}</strong><small>${sub}</small></span>${icon('chevron', 'row-chevron')}</button>`
+const tool = (page, kind, title, label) => `<button class="hub-tool" data-page="${page}" aria-label="${title}"><span class="hub-tool-media">${illustration(kind)}</span><span class="hub-tool-label">${label}</span></button>`
 
 function homeView() {
   const homeTools = [['triangle', '三角计算', '边角反算'], ['arc', '圆弧计算', '弦长拱高'], ['cut', '优化下料', '省料排版'], ['work-log', '记工', '日工明细']]
@@ -65,7 +65,8 @@ function homeView() {
   <div class="home-tabbar" aria-hidden="true"><div class="home-tab active"><img src="${asset}workbook-icons/home.png" alt="">首页</div><div class="home-tab"><img src="${asset}workbook-icons/orders.png" alt="">订单</div><div class="tab-add">+</div><div class="home-tab"><img src="${asset}workbook-icons/trend.png" alt="">报表</div><div class="home-tab"><img src="${asset}navigation/nav-profile.png" alt="">我的</div></div>`
 }
 function toolsView() {
-  return `${header('更多工具')}<div class="page-body"><p class="page-lead">常用计算与现场测量</p><div class="section-label">日常工具</div><section class="panel">${tool('rmb', 'money', '人民币大小写转换', '金额转大写，复制即可用')}${tool('retire', 'calendar', '退休倒计时', '设定退休日期，查看剩余时间')}</section><div class="section-label section-space">测量与门窗</div><section class="panel">${tool('level', 'level', '水平仪测量仪', '查看水平状态与倾斜角度')}${tool('glass', 'glass', '玻璃 K 值计算', '中空玻璃 · 真空玻璃')}</section><p class="hub-foot">量窗助手 · 实用工具</p></div>`
+  const popularTools = [['triangle', '三角计算'], ['arc', '圆弧计算'], ['cut', '优化下料'], ['work-log', '记工'], ['format', '格式转换']]
+  return `${header('更多工具')}<div class="page-body hub-body"><h3 class="section-label hub-section-title" id="popular-tools-title">热门工具</h3><section class="panel hub-grid" aria-labelledby="popular-tools-title">${popularTools.map(([file, title]) => `<button class="hub-tool" data-action="existing-tool" data-label="${title}" aria-label="${title}"><span class="hub-tool-media"><img alt="" src="${asset}tools/tool-${file}.png"></span><span class="hub-tool-label">${title}</span></button>`).join('')}</section><h3 class="section-label hub-section-title section-space" id="other-tools-title">其他工具</h3><section class="panel hub-grid" aria-labelledby="other-tools-title">${tool('rmb', 'money', '人民币大小写转换', '人民币<br>大小写')}${tool('retire', 'calendar', '退休倒计时', '退休<br>倒计时')}${tool('level', 'level', '水平仪测量仪', '水平仪<br>测量仪')}${tool('glass', 'glass', '中空真空玻璃 K 值计算', '玻璃K值<br>计算')}</section><p class="hub-foot">量窗助手 · 实用工具</p></div>`
 }
 function rmbResultMarkup() {
   const result = toRmbUppercase(amount)
@@ -136,6 +137,7 @@ document.addEventListener('click', async event => {
   if (target.dataset.param) { paramSheet(target.dataset.param); return }
   if (target.dataset.choiceKey) { const { choiceKey, choiceValue } = target.dataset; glass[choiceKey] = choiceValue; if (choiceKey === 'coating') glass.emissivity = choiceValue === '无镀膜' ? '0.84' : '0.10'; closeSheet(); render(`[data-param="${choiceKey}"]`); return }
   const action = target.dataset.action
+  if (action === 'existing-tool') toast(`${target.dataset.label}沿用现有页面`)
   if (action === 'back') { if (currentPage === 'glass' && glassResult) { glassResult = false; render() } else navigate(currentPage === 'tools' ? 'home' : 'tools') }
   if (action === 'clear-amount') { amount = ''; render(); document.getElementById('amount').focus() }
   if (action === 'copy-amount') { const result = toRmbUppercase(amount); if (!result.ok) return; try { await navigator.clipboard.writeText(result.uppercase); toast('大写金额已复制') } catch { toast('复制未成功，请长按大写金额复制') } }
