@@ -1534,6 +1534,109 @@ async function main() {
     } finally { await rm(presentationWork, { recursive: true, force: true }) }
   }
 
+  if (process.env.CONVERSION_LEGACY_PRESENTATION_SAMPLE) {
+    const inputExtension = process.env.CONVERSION_LEGACY_PRESENTATION_SAMPLE.split('.').pop().toLowerCase()
+    if (!['dps', 'dpt'].includes(inputExtension) || !process.env.CONVERSION_LEGACY_PRESENTATION_EXPECT)
+      throw new Error('Legacy presentation requires DPS/DPT and expected slide text')
+    const work = await mkdtemp(join(tmpdir(), 'ledger-legacy-presentation-'))
+    try {
+      const input = join(work, `input.${inputExtension}`)
+      const fixture = await readFile(process.env.CONVERSION_LEGACY_PRESENTATION_SAMPLE)
+      await writeFile(input, fixture)
+      const pages = Number(process.env.CONVERSION_LEGACY_PRESENTATION_PAGES || 1)
+      const expected = process.env.CONVERSION_LEGACY_PRESENTATION_EXPECT.split('|')
+        .map((value) => value.replace(/\s+/g, ''))
+      const selected = process.env.CONVERSION_LEGACY_PRESENTATION_TARGETS?.split(',')
+      const targets = require('../src/modules/ledger-conversion/conversion.catalog.json').operations
+        .filter((operation) => operation.kind === 'convert' &&
+          operation.inputExtensions.includes(inputExtension))
+        .map((operation) => operation.targetExtension).filter((target) =>
+          (target !== 'html' || selected?.includes('html')) && (!selected || selected.includes(target)))
+      const inspect = async (file, target) => {
+        if (target === 'html') {
+          const html = await readFile(file, 'utf8')
+          const text = html.replace(/<[^>]+>/g, '').replace(/\s+/g, '')
+          if (expected.some((part) => !text.includes(part)))
+            throw new Error('HTML lost known slide text')
+          return JSON.stringify({ text, images: (html.match(/<img|background-image|data:image|<svg/g) || []).length })
+        }
+        if (target === 'jpg' || target === 'png') {
+          const names = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+            .trim().split('\n').filter((name) => name.endsWith(`.${target}`)).sort()
+          if (names.length !== pages) throw new Error(`${target}: expected ${pages} slides, got ${names.length}`)
+          const images = []
+          for (const name of names) {
+            const bytes = execFileSync('unzip', ['-p', file, name],
+              { maxBuffer: 64 * 1024 * 1024 })
+            const image = await sharp(bytes).resize(500, 300, { fit: 'inside' }).removeAlpha()
+              .raw().toBuffer()
+            images.push(image)
+          }
+          return images
+        }
+        if (target === 'pdf') {
+          if ((await PDFDocument.load(await readFile(file))).getPageCount() !== pages)
+            throw new Error(`PDF did not retain ${pages} slides`)
+          const value = execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH),
+            'pdftotext'), [file, '-'], { encoding: 'utf8' }).replace(/\s+/g, '')
+          if (expected.some((part) => !value.includes(part)))
+            throw new Error('PDF lost known slide text')
+          return value
+        }
+        execFileSync('unzip', ['-tqq', file])
+        const names = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+          .trim().split('\n')
+        const slides = target === 'pptx' ? names.filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
+          : names.filter((name) => name === 'content.xml')
+        if (target === 'pptx' && slides.length !== pages || target === 'odp' && !slides.length)
+          throw new Error(`${target}: missing slides`)
+        const content = slides.map((name) => execFileSync('unzip', ['-p', file, name],
+          { encoding: 'utf8' }).replace(/<[^>]+>/g, '')).join('').replace(/\s+/g, '')
+        if (expected.some((part) => !content.includes(part)) ||
+          !names.some((name) => /(?:ppt\/media\/|Pictures\/)/.test(name)))
+          throw new Error(`${target}: lost known text or slide images`)
+        return content
+      }
+      for (const target of targets) {
+        const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
+        const suffix = ['jpg', 'png'].includes(target) ? 'zip' : target
+        const backendPath = join(work, `backend-${target}.${suffix}`)
+        const directPath = join(work, `direct-${target}.${suffix}`)
+        await writeFile(backendPath, backend.bytes)
+        execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+          '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        const actual = await inspect(backendPath, target)
+        const original = await inspect(directPath, target)
+        if (Array.isArray(actual) && Array.isArray(original)) {
+          for (let index = 0; index < actual.length; index++) {
+            if (actual[index].length !== original[index]?.length)
+              throw new Error(`${inputExtension} to ${target}: slide ${index + 1} dimensions differ`)
+            let delta = 0
+            for (let offset = 0; offset < actual[index].length; offset++)
+              delta += Math.abs(actual[index][offset] - original[index][offset])
+            const meanDelta = delta / actual[index].length
+            if (meanDelta > 2)
+              throw new Error(`${inputExtension} to ${target}: slide ${index + 1} ` +
+                `mean pixel difference ${meanDelta.toFixed(2)} > 2`)
+          }
+        } else if (actual !== original)
+          throw new Error(`${inputExtension} to ${target}: slide text differs from original`)
+        if (target === 'html' && process.env.CONVERSION_LEGACY_PRESENTATION_REQUIRE_IMAGES &&
+          JSON.parse(actual).images === 0) {
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--fail', inputExtension, target, 'quality',
+            createHash('sha256').update(fixture).digest('hex'),
+            'visual legacy presentation: HTML lost source slide images and backgrounds'])
+          throw new Error(`${inputExtension} to HTML: visual slide images were omitted`)
+        }
+        execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+          '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
+          'legacy presentation: direct original and authenticated backend, slide text or pixels checked'])
+        console.log(`PASS ${inputExtension}:${target}, ${pages} slides match direct original`)
+      }
+    } finally { await rm(work, { recursive: true, force: true }) }
+  }
+
   if (process.env.CONVERSION_ZIP) {
     const zipWork = await mkdtemp(join(tmpdir(), 'ledger-zip-pdf-'))
     try {
