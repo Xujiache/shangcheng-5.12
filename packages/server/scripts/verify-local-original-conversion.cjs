@@ -453,6 +453,16 @@ async function main() {
 
   if (!process.env.CONVERSION_SKIP_BASELINE) await verifyBaseline(convert)
 
+  if (process.env.CONVERSION_BAD_RAW) {
+    let failure
+    try {
+      await convert('convert:png', [['broken.cr2', Buffer.from('not a camera RAW file')]])
+    } catch (error) { failure = error }
+    if (!failure?.message.includes('RAW 图片解码失败'))
+      throw new Error(`Damaged RAW returned the wrong error: ${failure?.message || 'conversion succeeded'}`)
+    console.log('PASS damaged RAW reports a decode error through the authenticated backend')
+  }
+
   const imageLikeSample = process.env.CONVERSION_RAW_SAMPLE || process.env.CONVERSION_VECTOR_SAMPLE
   if (imageLikeSample) {
     const extension = imageLikeSample.split('.').pop().toLowerCase()

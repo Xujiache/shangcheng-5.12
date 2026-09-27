@@ -30,6 +30,15 @@ const rawAfter = [
   '      path.join(tempDir, `${path.basename(tempInput)}.tif`)',
   '    ];',
 ].join('\n')
+const rawRunBefore = '    await run(DCRAW_PATH, ["-T", "-o", "1", tempInput], { timeout: 1000 * 60 * 5 });'
+const rawRunAfter = [
+  '    try {',
+  '      await run(DCRAW_PATH, ["-T", "-o", "1", tempInput], { timeout: 1000 * 60 * 5 });',
+  '    } catch (cause) {',
+  '      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});',
+  '      throw new Error("RAW 图片解码失败：无法从该文件提取像素数据。", { cause });',
+  '    }',
+].join('\n')
 const officeBefore = '      libreOfficeFilterFor(target),'
 const officeAfter = '      normalizeExt(originalExt) === "html" && targetExt === "docx"\n' +
   '        ? "docx:Office Open XML Text" : libreOfficeFilterFor(target),'
@@ -116,6 +125,7 @@ function apply(directory) {
   const ocrCode = ocrBytes.toString('utf8')
   const ofdDependencyCode = ofdDependencyBytes.toString('utf8')
   if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
+    code.split(rawRunBefore).length !== 2 ||
     officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2 ||
     ocrCode.split(ocrBefore).length !== 2 ||
     ofdDependencyCode.split(ofdDependencyBefore).length !== 3 ||
@@ -126,6 +136,7 @@ function apply(directory) {
     ofdDependencyCode.split('y: startY - fontSize,').length !== 4)
     throw new Error('Expected original conversion calls exactly once')
   const patched = code.replace(before, after).replace(rawBefore, rawAfter)
+    .replace(rawRunBefore, rawRunAfter)
   const officePatched = officeCode.replace(officeBefore, officeAfter)
   const ofdPatched = ofdCode.replace(ofdBefore, ofdAfter)
   const ocrPatched = ocrCode.replace(ocrBefore, ocrAfter)
@@ -161,7 +172,7 @@ function apply(directory) {
   fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 11,
+    fixRevision: 12,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -179,6 +190,7 @@ function apply(directory) {
     fixes: [
       'Use FFmpeg stream_loop for still-image video, including AVIF',
       'Accept LibRaw TIFF output named after the complete input file',
+      'Normalize failed RAW decoder errors and clean their temporary files',
       'Select an explicit LibreOffice DOCX export filter for EPUB HTML',
       'Keep PDF.js dependencies physically inside the isolated runtime root',
       'Supply a CJK font directory and suppress a third-party OFD stdout banner',
@@ -196,7 +208,7 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 11 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 12 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||

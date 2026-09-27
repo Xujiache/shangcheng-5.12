@@ -357,9 +357,12 @@ async function processJob(id: string) {
   } catch (error: any) {
     if (writtenKeys.length) await storage.removeObjects(bucket, writtenKeys).catch(() => undefined)
     const finishedAt = new Date()
-    const publicError = String(error?.message || '').startsWith('输入分片校验失败')
-      ? '上传文件校验失败，请重新选择文件'
-      : '转换失败，请检查文件是否损坏或更换格式后重试'
+    const detail = String(error?.message || error)
+    let publicError = '转换失败，请检查文件是否损坏或更换格式后重试'
+    if (detail.startsWith('输入分片校验失败'))
+      publicError = '上传文件校验失败，请重新选择文件'
+    else if (detail.includes('RAW 图片解码失败：无法从该文件提取像素数据。'))
+      publicError = 'RAW 图片解码失败：无法从该文件提取像素数据。'
     await prisma.ledgerConversionJob.updateMany({
       where: { id, leaseId, status: 'running' },
       data: {
@@ -375,7 +378,6 @@ async function processJob(id: string) {
       where: { jobId: id },
       data: { expiresAt: new Date(finishedAt.getTime() + RETENTION_MS) },
     })
-    const detail = String(error?.message || error)
     console.error(`[conversion-worker] ${id}: ${passwordForRedaction
       ? detail.replaceAll(passwordForRedaction, '[redacted]') : detail}`)
   } finally {
