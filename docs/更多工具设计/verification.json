@@ -710,5 +710,46 @@
     },
     "detailRoutes": 4,
     "errors": []
+  },
+  "retirementAutoCalculationRevision": {
+    "verifiedAt": "2026-09-27T16:14:04.288728+00:00",
+    "scope": "Standalone design prototype; browser storage only; no WeChat integration",
+    "policyVersion": "2025-gradual-retirement-v1",
+    "logicTests": {
+      "passed": 16,
+      "failed": 0
+    },
+    "officialTableCases": {
+      "male": 144,
+      "female55": 144,
+      "female50": 120,
+      "total": 408
+    },
+    "uiChecks": [
+      "1973-01 male ordinary employee saved as 2035-02, age 62 years 1 month",
+      "Reload and close/reopen restore saved result",
+      "Same-page navigation preserves form edits; cancel retains previous profile",
+      "Editing to 1975-03 female original 50 produces 2025-05",
+      "Design-state examples do not overwrite saved profile",
+      "Special work persists with needs-review and no invented date",
+      "Unknown category persists with needs-review and no invented date",
+      "Clear requires confirmation, then reload returns to empty form",
+      "Empty birth month fails validation",
+      "320px form and result: app scroll width equals 300px client width; document width 320px",
+      "Zero captured browser runtime errors"
+    ],
+    "independentReview": {
+      "model": "gpt-6-sol",
+      "resolved": [
+        "Midnight refresh records only the rendered day; sheet close refreshes deferred countdown",
+        "Failed save keeps editable draft and existing record instead of presenting unsaved result",
+        "Same retirement page navigation no longer reloads old profile over draft",
+        "Pre-2025 result does not claim a new-schedule contribution requirement"
+      ]
+    },
+    "limitations": [
+      "Special and flexible retirement need separate applicable-rule review",
+      "Browser behavior verified; native WeChat storage and device acceptance not performed"
+    ]
   }
 }

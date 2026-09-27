@@ -1,17 +1,18 @@
 import { toRmbUppercase, dateCountdown } from './prototype-logic.mjs'
+import { calculateRetirement, loadRetirementProfile, saveRetirementProfile, clearRetirementProfile } from './retirement-policy.mjs'
 
 const asset = '../../packages/ledger-mp/miniprogram/assets/'
 const pages = [
   ['home', '首页入口', '保留格式转换，在同一行右侧增加“更多工具”。'],
   ['tools', '更多工具', '热门工具与其他工具均按每行五个排列，不足五个保留空位。'],
   ['rmb', '人民币大小写转换', '输入金额即显示大写，主操作为复制结果。'],
-  ['retire', '退休倒计时', '设置目标日期，查看剩余年月日与总天数。'],
+  ['retire', '退休倒计时', '出生年月与职工类别自动匹配法定退休月份，填写一次，本机保存。'],
   ['level', '水平仪测量仪', '读数居中，校准与锁定各司其职；读数为演示。'],
   ['glass', '玻璃 K 值计算', '先选玻璃构造，再调整参数；计算结果为示例。'],
 ]
 const variants = {
   rmb: [['normal', '已输入金额'], ['empty', '未输入'], ['error', '输入错误']],
-  retire: [['normal', '倒计时'], ['empty', '未设置日期'], ['reached', '已到设定日期']],
+  retire: [['empty', '首次填写'], ['normal', '已保存结果'], ['special', '特殊工种'], ['unknown', '类别待确认'], ['reached', '已到退休月']],
   level: [['normal', '水平读数'], ['calibrated', '已校准'], ['angle', '倾角模式'], ['unavailable', '传感器不可用']],
   glass: [['normal', '中空玻璃'], ['vacuum', '真空玻璃'], ['result', '结果示例'], ['error', '参数错误']],
 }
@@ -41,7 +42,15 @@ const app = document.getElementById('app')
 const sheetRoot = document.getElementById('sheet-root')
 let currentPage = 'home'
 let amount = '12680.50'
-let retirementDate = '2036-09-01'
+let retirementProfile = null
+let retirementDraft = { birthMonth: '', category: '', workType: 'standard' }
+let retirementEditing = true
+let retirementDemo = false
+let retirementMessage = ''
+let retirementFieldError = ''
+let retirementPersistence = 'none'
+let retirementStorage
+try { retirementStorage = window.localStorage } catch { retirementStorage = null }
 let levelMode = 'flat'
 let levelCalibrated = false
 let levelLocked = false
@@ -52,7 +61,6 @@ let advancedOpen = false
 let glassError = false
 const glass = { outer: '6', inner: '6', cavity: '12', gas: '空气', coating: '无镀膜', emissivity: '0.84', pressure: '0.10', pillar: '0.5', pitch: '25', outside: '25', inside: '7.7' }
 const localToday = () => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` }
-const displayDate = iso => iso ? iso.split('-').map((part, i) => `${Number(part)}${[' 年 ', ' 月 ', ' 日'][i]}`).join('') : ''
 const tool = (page, kind, title, label) => `<button class="hub-tool" data-page="${page}" aria-label="${title}"><span class="hub-tool-media">${illustration(kind)}</span><span class="hub-tool-label">${label}</span></button>`
 
 function homeView() {
@@ -78,10 +86,85 @@ function rmbView() {
   const result = toRmbUppercase(amount)
   return `${header('人民币大小写转换')}<div class="page-body"><section class="panel field-panel"><label class="field-label" for="amount">输入金额（元）</label><div class="amount-line"><span class="currency-symbol">¥</span><input class="amount-input" id="amount" inputmode="decimal" type="text" value="${escapeHtml(amount)}" placeholder="0.00" maxlength="20" autocomplete="off" aria-describedby="amount-help"><button class="clear-input" data-action="clear-amount" aria-label="清空金额">${icon('close')}</button></div><p class="field-foot ${amount && !result.ok ? 'error' : ''}" id="amount-help">${amount && !result.ok ? escapeHtml(result.error) : '最多保留两位小数'}</p></section><section class="panel result-panel" id="rmb-result" aria-live="polite">${rmbResultMarkup()}</section><button class="primary action-gap" data-action="copy-amount" ${!amount || !result.ok ? 'disabled' : ''}>${icon('copy')}复制大写金额</button><div class="hint-block"><h3>填写票据时更省心</h3><p>使用壹、贰、叁等大写汉字，整元自动补“整”。</p></div></div>`
 }
+const retirementCategories = {
+  male: ['男职工', '原法定退休年龄 60 周岁'],
+  female50: ['女职工 · 原 50 周岁', '通常为工人岗位，按社保认定类别选择'],
+  female55: ['女职工 · 原 55 周岁', '通常为管理、技术岗位，按社保认定类别选择'],
+  unknown: ['暂不确定', '先保存信息，确认类别后再计算'],
+}
+const retirementWorkTypes = {
+  standard: ['普通岗位', '按普通职工法定退休规则计算'],
+  special: ['特殊工种 / 特殊退休', '如井下、高温等，需审核工种与从业条件'],
+}
+const ageLabel = months => `${Math.floor(months / 12)} 年${months % 12 ? ` ${months % 12} 个月` : ''}`
+const monthLabel = value => `${Number(value.slice(0, 4))} 年 ${Number(value.slice(5, 7))} 月`
+function restoreRetirement() {
+  const saved = loadRetirementProfile(retirementStorage, localToday())
+  retirementProfile = saved.profile
+  retirementDraft = saved.profile ? { ...saved.profile } : { birthMonth: '', category: '', workType: 'standard' }
+  retirementEditing = !saved.profile
+  retirementDemo = false
+  retirementFieldError = ''
+  retirementPersistence = saved.profile ? 'saved' : 'none'
+  retirementMessage = saved.issue === 'unavailable' ? '当前浏览器无法读取本机记录，保存时会再次尝试。' : saved.issue === 'invalid' ? '上次记录无法读取，请重新填写。' : ''
+}
+function retirementState() {
+  if (retirementEditing || !retirementProfile) return 'empty'
+  const result = calculateRetirement(retirementProfile, localToday())
+  if (!result.ok) return 'empty'
+  if (result.status === 'needs-review') return result.reasonCode === 'special-work' ? 'special' : 'unknown'
+  return dateCountdown(result.countdownDate, localToday()).reached ? 'reached' : 'normal'
+}
+function retirementForm() {
+  const category = retirementCategories[retirementDraft.category]
+  return `<div class="retirement-intro"><div class="retirement-intro-icon">${illustration('calendar')}</div><div><h3>${retirementProfile && !retirementDemo ? '修改退休信息' : '算出你的退休时间'}</h3><p>按出生年月和职工类别，自动匹配现行规则。</p></div></div>
+  <section class="panel retirement-form">
+    <label class="retirement-form-row" for="retirement-birth"><span>出生年月</span><input id="retirement-birth" type="month" min="1900-01" max="${localToday().slice(0, 7)}" value="${escapeHtml(retirementDraft.birthMonth)}" aria-describedby="retirement-form-message" aria-invalid="${retirementFieldError === 'birthMonth'}"></label>
+    <button class="retirement-form-row" data-action="retirement-category"><span>职工类别</span><span class="retirement-field-value ${!category ? 'placeholder' : ''}">${category ? category[0] : '请选择'}${icon('chevron')}</span></button>
+    <button class="retirement-form-row" data-action="retirement-work"><span>工种情况</span><span class="retirement-field-value">${retirementWorkTypes[retirementDraft.workType][0]}${icon('chevron')}</span></button>
+  </section>
+  <div id="retirement-form-message" class="retirement-form-message ${retirementFieldError ? 'error' : ''}" ${retirementFieldError ? 'role="alert"' : ''}>${retirementMessage ? escapeHtml(retirementMessage) : '请选择单位或社保认定的职工类别。'}</div>
+  <button class="primary" data-action="retirement-save">${retirementDraft.workType === 'special' || retirementDraft.category === 'unknown' ? '保存信息' : '计算并保存'}</button>
+  ${retirementProfile && !retirementDemo ? '<button class="retirement-cancel" data-action="retirement-cancel">取消修改，返回结果</button>' : ''}
+  <p class="retirement-local-note">${icon('lock')}只保存在当前浏览器，后续打开自动显示。</p>
+  <button class="retirement-policy-link" data-action="retirement-policy">职工类别怎么选？${icon('chevron')}</button>`
+}
+function retirementProfileCard() {
+  return `<div class="section-label section-space"><span>我的信息</span><button data-action="retirement-edit">${retirementDemo ? '填写我的信息' : '修改信息'}</button></div>
+  <section class="panel retirement-profile">
+    <div class="settings-row"><span>出生年月</span><span class="settings-value">${monthLabel(retirementProfile.birthMonth)}</span></div>
+    <div class="settings-row"><span>职工类别</span><span class="settings-value">${retirementCategories[retirementProfile.category][0]}</span></div>
+    <div class="settings-row"><span>工种情况</span><span class="settings-value">${retirementWorkTypes[retirementProfile.workType][0]}</span></div>
+  </section>`
+}
+function retirementResult(result) {
+  const countdown = dateCountdown(result.countdownDate, localToday())
+  return `<section class="panel retirement-result">
+    <div class="label-row"><span class="result-eyebrow">法定退休年月</span><span class="retirement-saved ${retirementPersistence === 'failed' ? 'error' : ''}">${icon(retirementPersistence === 'saved' && !retirementDemo ? 'check' : 'info')}${retirementDemo ? '示例 · 未保存' : retirementPersistence === 'saved' ? '已存本机' : '未保存'}</span></div>
+    <div class="retirement-month">${result.retirementMonth.slice(0, 4)}<small>年</small>${Number(result.retirementMonth.slice(5))}<small>月</small></div>
+    <div class="retirement-age">届时法定退休年龄 <strong>${result.ageYears} 岁${result.ageMonths ? ` ${result.ageMonths} 个月` : ''}</strong></div>
+    <div class="retirement-countdown-area"><p>${countdown.reached ? '已到法定退休月份' : '距离退休月份还有'}</p><div class="countdown"><div><strong>${countdown.years}</strong><span>年</span></div><div><strong>${countdown.months}</strong><span>个月</span></div><div><strong>${countdown.days}</strong><span>天</span></div></div><div class="retirement-day-total">${countdown.reached ? '实际退休状态以办理结果为准' : `共 ${countdown.totalDays.toLocaleString('zh-CN')} 天 · 按退休月 1 日倒计时`}</div></div>
+  </section>
+  ${retirementMessage ? `<p class="retirement-save-warning" role="status">${escapeHtml(retirementMessage)}</p>` : ''}
+  ${retirementProfileCard()}
+  <div class="retirement-pension-note"><div>${icon('info')}<span>领取养老金，还需满足缴费条件</span></div><p>${result.retirementMonth < '2025-01' ? '该退休月份早于现行改革实施时间，缴费条件按当时政策及实际办理情况核定。' : `${Number(result.retirementMonth.slice(0, 4))} 年最低缴费年限为 <b>${ageLabel(result.minimumContributionMonths)}</b>。`}当前结果为法定退休时间，养老金领取还需经办机构审核。</p></div>
+  <div class="retirement-footer-actions"><button data-action="retirement-policy">计算依据与适用范围 ${icon('chevron')}</button>${retirementDemo ? '' : '<button data-action="retirement-clear">清除信息</button>'}</div>`
+}
+function retirementReview(result) {
+  const special = result.reasonCode === 'special-work'
+  return `<section class="panel retirement-review">${illustration('calendar')}<h3>${special ? '特殊情况，需要进一步核定' : '确认职工类别后，就能计算'}</h3><p>${special ? '特殊工种退休与认定目录、从业年限等条件有关，仅凭出生年月无法确定。请向单位或参保地社保经办机构核实。' : '女性原 50 周岁、原 55 周岁两类的延迟规则不同。请先向单位或社保确认原法定退休年龄。'}</p><div class="retirement-review-status">${retirementDemo ? '示例状态，未写入本机' : retirementPersistence === 'saved' ? '已记住本次填写的信息' : '本次信息尚未保存'}</div><button class="primary" data-action="retirement-edit">${special ? '修改信息' : '选择职工类别'}</button></section>${retirementMessage ? `<p class="retirement-save-warning" role="status">${escapeHtml(retirementMessage)}</p>` : ''}${retirementProfileCard()}<div class="retirement-footer-actions"><button data-action="retirement-policy">计算依据与适用范围 ${icon('chevron')}</button>${retirementDemo ? '' : '<button data-action="retirement-clear">清除信息</button>'}</div>`
+}
 function retirementView() {
-  const result = retirementDate ? dateCountdown(retirementDate, localToday()) : null
-  const valid = result?.ok
-  return `${header('退休倒计时')}<div class="page-body">${valid ? `<section class="panel retire-hero">${illustration('calendar')}<p class="result-eyebrow">${result.reached ? '已到您设定的退休日期' : '距离您设定的退休日期'}</p><div class="countdown"><div><strong>${result.years}</strong><span>年</span></div><div><strong>${result.months}</strong><span>个月</span></div><div><strong>${result.days}</strong><span>天</span></div></div><div class="countdown-total">${result.reached ? '愿每一天，都有新的期待' : `还有 <b>${result.totalDays.toLocaleString('zh-CN')}</b> 天`}</div></section><div class="section-label section-space">日期设置</div><section class="panel"><button class="settings-row" data-action="retire-date"><span>退休日期</span><span class="settings-value">${displayDate(retirementDate)}${icon('chevron')}</span></button><div class="settings-row"><span>今天</span><span class="settings-value">${displayDate(localToday())}</span></div></section><p class="quiet-help">按您设置的日期倒计时，不推算政策退休年龄。</p>` : `<section class="panel retire-empty">${illustration('calendar')}<h3>给下一段生活，定个日期</h3><p>设置您的退休日期<br>剩余的年月日，一眼就能看到</p><button class="primary" data-action="retire-date">设置退休日期</button></section><p class="quiet-help">按您设置的日期倒计时，不推算政策退休年龄。</p>`}</div>`
+  const result = retirementProfile ? calculateRetirement(retirementProfile, localToday()) : null
+  const content = retirementEditing || !result?.ok ? retirementForm() : result.status === 'needs-review' ? retirementReview(result) : retirementResult(result)
+  return `${header('退休倒计时')}<div class="page-body retirement-body">${content}</div>`
+}
+function retirementChoiceSheet(kind) {
+  const choices = kind === 'category' ? retirementCategories : retirementWorkTypes
+  showSheet(kind === 'category' ? '选择职工类别' : '选择工种情况', `<p>${kind === 'category' ? '原退休年龄指延迟退休改革前的类别；岗位示例仅供识别，以社保认定为准。' : '特殊工种需经认定，不能仅按职业名称判断是否可以提前退休。'}</p>${Object.entries(choices).map(([key, [name, description]]) => `<button class="retirement-choice ${retirementDraft[kind] === key ? 'chosen' : ''}" data-action="retirement-choose" data-kind="${kind}" data-value="${key}"><span><strong>${name}</strong><small>${description}</small></span>${retirementDraft[kind] === key ? icon('check') : ''}</button>`).join('')}`)
+}
+function retirementPolicySheet() {
+  showSheet('计算依据与适用范围', `<div class="retirement-policy-body"><h4>按出生年月匹配延迟规则</h4><p>普通职工按 2025 年起实施的渐进式延迟退休规则计算。选择已确认的男职工、原 50 周岁女职工或原 55 周岁女职工类别。</p><h4>岗位名称不能直接代替认定</h4><p>女职工的原退休年龄受岗位、身份及当地认定规则影响。灵活就业、城乡居民养老保险、特殊工种等其他情形，不直接套用本工具的普通职工结果。</p><h4>月份与养老金领取</h4><p>官方对照表确定到月份，本工具按该月 1 日展示倒计时。弹性提前或延迟退休、养老金申领条件需另行满足并办理，本工具不作资格认定。</p><a href="https://legalinfo.moj.gov.cn/pub/sfbzhfx/zhfxfzzx/fzzxyw/202409/t20240913_506025.html" target="_blank" rel="noopener">查看全国人大决定与国务院办法 ↗</a><a href="https://www.mohrss.gov.cn/wap/zc/zcwj/202501/t20250101_533701.html" target="_blank" rel="noopener">查看人社部弹性退休办法 ↗</a></div>`)
 }
 function levelView() {
   const value = levelCalibrated ? '0.0' : levelMode === 'angle' ? '8.0' : '0.6'
@@ -97,14 +180,16 @@ function glassView() {
 const renderers = { home: homeView, tools: toolsView, rmb: rmbView, retire: retirementView, level: levelView, glass: glassView }
 function render(focusSelector) {
   app.innerHTML = renderers[currentPage]()
+  if (currentPage === 'retire') retirementRenderedDay = localToday()
   document.getElementById('review-title').textContent = pages.find(([id]) => id === currentPage)[1]
   document.getElementById('caption').textContent = pages.find(([id]) => id === currentPage)[2]
-  const visibleState = currentPage === 'rmb' ? (!amount ? 'empty' : toRmbUppercase(amount).ok ? 'normal' : 'error') : currentPage === 'retire' ? (!retirementDate ? 'empty' : dateCountdown(retirementDate, localToday()).reached ? 'reached' : 'normal') : currentPage === 'level' ? (levelUnavailable ? 'unavailable' : levelMode === 'angle' ? 'angle' : levelCalibrated ? 'calibrated' : 'normal') : currentPage === 'glass' ? (glassResult ? 'result' : glassError ? 'error' : glassType === 'vacuum' ? 'vacuum' : 'normal') : 'normal'
+  const visibleState = currentPage === 'rmb' ? (!amount ? 'empty' : toRmbUppercase(amount).ok ? 'normal' : 'error') : currentPage === 'retire' ? retirementState() : currentPage === 'level' ? (levelUnavailable ? 'unavailable' : levelMode === 'angle' ? 'angle' : levelCalibrated ? 'calibrated' : 'normal') : currentPage === 'glass' ? (glassResult ? 'result' : glassError ? 'error' : glassType === 'vacuum' ? 'vacuum' : 'normal') : 'normal'
   document.getElementById('preview-state').value = visibleState
   if (focusSelector) app.querySelector(focusSelector)?.focus()
   document.querySelectorAll('.page-link').forEach(link => { const selected = link.dataset.page === currentPage; link.classList.toggle('active', selected); selected ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current') })
 }
 function navigate(page, historyMode = 'push') {
+  if (page === 'retire' && currentPage !== 'retire') restoreRetirement()
   currentPage = renderers[page] ? page : 'home'
   sheetRoot.innerHTML = ''
   if (historyMode !== 'none' && location.hash !== `#${currentPage}`) history[historyMode === 'replace' ? 'replaceState' : 'pushState'](null, '', `#${currentPage}`)
@@ -121,8 +206,8 @@ function showSheet(title, content) {
   sheetRoot.innerHTML = `<div class="sheet-backdrop"><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="sheet-heading"><h3 id="sheet-title">${title}</h3><button class="sheet-close" data-action="close-sheet" aria-label="关闭">${icon('close')}</button></div>${content}</section></div>`
   sheetRoot.querySelector('input,button')?.focus()
 }
-function closeSheet() { sheetRoot.innerHTML = ''; if (sheetReturnFocus?.isConnected) sheetReturnFocus.focus() }
-function dateSheet() { showSheet('设置退休日期', `<p>选择您计划退休的日期，倒计时将自动更新。</p><label for="retire-date" class="field-label">退休日期</label><input id="retire-date" type="date" value="${retirementDate || '2036-09-01'}"><p class="sheet-error" id="date-error" role="alert" hidden></p><button class="primary" data-action="save-retire-date">保存日期</button>`) }
+function closeSheet() { sheetRoot.innerHTML = ''; refreshRetirementDay(); if (sheetReturnFocus?.isConnected) sheetReturnFocus.focus() }
+
 function paramSheet(key) {
   const choice = key === 'gas' ? ['空气', '氩气'] : key === 'coating' ? ['无镀膜', '第 2 面 Low-E', '第 3 面 Low-E'] : null
   const names = { outer: '外片玻璃厚度', inner: '内片玻璃厚度', cavity: glassType === 'vacuum' ? '真空间隙' : '中空层厚度', gas: '腔体气体', coating: 'Low-E 镀膜位置', emissivity: '镀膜表面发射率', pressure: '真空压力', pillar: '支撑柱直径', pitch: '支撑柱间距', outside: '室外表面换热系数', inside: '室内表面换热系数' }
@@ -141,8 +226,23 @@ document.addEventListener('click', async event => {
   if (action === 'back') { if (currentPage === 'glass' && glassResult) { glassResult = false; render() } else navigate(currentPage === 'tools' ? 'home' : 'tools') }
   if (action === 'clear-amount') { amount = ''; render(); document.getElementById('amount').focus() }
   if (action === 'copy-amount') { const result = toRmbUppercase(amount); if (!result.ok) return; try { await navigator.clipboard.writeText(result.uppercase); toast('大写金额已复制') } catch { toast('复制未成功，请长按大写金额复制') } }
-  if (action === 'retire-date') dateSheet()
-  if (action === 'save-retire-date') { const date = document.getElementById('retire-date').value; const result = dateCountdown(date, localToday()); if (!result.ok) { const error = document.getElementById('date-error'); error.hidden = false; error.textContent = '请选择有效日期'; return } retirementDate = date; closeSheet(); render('[data-action="retire-date"]'); toast('退休日期已更新') }
+  if (action === 'retirement-category') retirementChoiceSheet('category')
+  if (action === 'retirement-work') retirementChoiceSheet('workType')
+  if (action === 'retirement-choose') { retirementDraft[target.dataset.kind] = target.dataset.value; retirementMessage = ''; retirementFieldError = ''; closeSheet(); render(target.dataset.kind === 'category' ? '[data-action="retirement-category"]' : '[data-action="retirement-work"]') }
+  if (action === 'retirement-save') {
+    const result = calculateRetirement(retirementDraft, localToday())
+    if (!result.ok) { retirementMessage = result.error; retirementFieldError = result.field; render(result.field === 'birthMonth' ? '#retirement-birth' : '[data-action="retirement-category"]'); return }
+    const saved = saveRetirementProfile(retirementStorage, result.profile, localToday())
+    if (!saved.ok) { retirementMessage = '信息保存失败，请重试。已填写的内容仍保留在此页，上次保存的记录未更改。'; retirementFieldError = ''; render(); return }
+    retirementProfile = result.profile; retirementDraft = { ...result.profile }; retirementEditing = false; retirementDemo = false; retirementFieldError = ''
+    retirementPersistence = 'saved'; retirementMessage = ''
+    render(); toast(result.status === 'calculated' ? '已计算并保存，下次打开直接查看' : '信息已保存，待确认后再计算')
+  }
+  if (action === 'retirement-edit') { retirementDraft = retirementDemo ? { birthMonth: '', category: '', workType: 'standard' } : { ...retirementProfile }; retirementEditing = true; retirementMessage = ''; retirementFieldError = ''; render('#retirement-birth') }
+  if (action === 'retirement-cancel') { retirementEditing = false; retirementMessage = ''; retirementFieldError = ''; render() }
+  if (action === 'retirement-policy') retirementPolicySheet()
+  if (action === 'retirement-clear') showSheet('清除退休信息', '<p>清除本机保存的出生年月和职工类别。下次打开时，需要重新填写。</p><button class="primary" data-action="retirement-confirm-clear">确认清除</button>')
+  if (action === 'retirement-confirm-clear') { const cleared = clearRetirementProfile(retirementStorage); if (!cleared.ok) { toast('清除失败，请稍后重试'); return } closeSheet(); restoreRetirement(); render(); toast('退休信息已清除') }
   if (action === 'close-sheet') closeSheet()
   if (action === 'level-flat' || action === 'level-angle') { levelMode = action === 'level-flat' ? 'flat' : 'angle'; levelCalibrated = false; levelLocked = false; render() }
   if (action === 'calibrate') showSheet('校准水平仪', '<p>先把手机放在已知水平的表面，保持静止。校准后，当前角度将设为参考零点。</p><button class="primary" data-action="confirm-calibrate">设为参考零点</button>')
@@ -156,6 +256,7 @@ document.addEventListener('click', async event => {
   if (action === 'save-param') { const key = target.dataset.key; const value = document.getElementById('glass-param').value.trim(); if (!/^\d+(?:\.\d+)?$/.test(value) || Number(value) <= 0 || (key === 'emissivity' && Number(value) > 1)) { const error = document.getElementById('param-error'); error.hidden = false; error.textContent = key === 'emissivity' ? '请输入大于 0 且不超过 1 的数值' : '请输入大于 0 的有效数值'; return } glass[key] = value; glassError = false; closeSheet(); render(`[data-param="${key}"]`) }
 })
 document.addEventListener('input', event => {
+  if (event.target.id === 'retirement-birth') { retirementDraft.birthMonth = event.target.value; return }
   if (event.target.id !== 'amount') return
   amount = event.target.value
   const result = toRmbUppercase(amount)
@@ -179,10 +280,23 @@ document.getElementById('preview-state').addEventListener('change', event => {
   const state = event.target.value
   sheetRoot.innerHTML = ''
   if (currentPage === 'rmb') amount = state === 'empty' ? '' : state === 'error' ? '12.345' : '12680.50'
-  if (currentPage === 'retire') retirementDate = state === 'empty' ? '' : state === 'reached' ? localToday() : '2036-09-01'
+  if (currentPage === 'retire') {
+    retirementDemo = true; retirementMessage = ''; retirementFieldError = ''; retirementPersistence = 'none'
+    retirementProfile = state === 'empty' ? null : { birthMonth: state === 'reached' ? '1960-01' : '1973-01', category: state === 'unknown' ? 'unknown' : 'male', workType: state === 'special' ? 'special' : 'standard' }
+    retirementDraft = retirementProfile ? { ...retirementProfile } : { birthMonth: '', category: '', workType: 'standard' }
+    retirementEditing = state === 'empty'
+  }
   if (currentPage === 'level') { levelMode = state === 'angle' ? 'angle' : 'flat'; levelCalibrated = state === 'calibrated'; levelUnavailable = state === 'unavailable'; levelLocked = false }
   if (currentPage === 'glass') { glassType = state === 'vacuum' ? 'vacuum' : 'hollow'; glassResult = state === 'result'; glassError = state === 'error'; glass.outer = glassError ? '0' : '6'; glass.cavity = glassType === 'hollow' ? '12' : '0.2'; glass.coating = glassType === 'hollow' ? '无镀膜' : '第 2 面 Low-E'; glass.emissivity = glassType === 'hollow' ? '0.84' : '0.10'; advancedOpen = false }
   render()
 })
 window.addEventListener('popstate', () => navigate(location.hash.slice(1), 'none'))
+let retirementRenderedDay = localToday()
+function refreshRetirementDay() {
+  const day = localToday()
+  if (currentPage === 'retire' && !retirementEditing && !sheetRoot.children.length && day !== retirementRenderedDay) render()
+}
+window.addEventListener('focus', refreshRetirementDay)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshRetirementDay() })
+setInterval(refreshRetirementDay, 60000)
 navigate(location.hash.slice(1) || 'home', 'replace')

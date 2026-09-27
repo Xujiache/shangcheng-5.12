@@ -30,3 +30,64 @@
 .hub-tool-media img,.hub-tool-media .tool-illustration{display:block;width:44px;height:44px;max-width:100%;object-fit:contain;flex:0 1 44px}
 .hub-tool-label{font-size:11.5px;font-weight:550;line-height:17px;min-height:34px;text-align:center}
 @media(max-width:370px){.hub-tool-label{font-size:11px}.hub-tool-media,.hub-tool-media img,.hub-tool-media .tool-illustration{width:40px;height:40px}}
+
+/* 退休倒计时：一次填写，结果页优先。 */
+.retirement-intro{display:flex;align-items:center;gap:14px;margin:6px 1px 25px}
+.retirement-intro-icon{flex:0 0 45px}
+.retirement-intro .tool-illustration{width:45px;height:48px}
+.retirement-intro h3{font-size:19px;font-weight:600;letter-spacing:-.4px;margin:0 0 6px}
+.retirement-intro p{font-size:11.5px;line-height:1.8;color:#73877a;margin:0}
+.retirement-form-row{min-height:73px;width:100%;padding:17px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:none;border:0;text-align:left;font-size:14px}
+.retirement-form-row+.retirement-form-row{border-top:1px solid var(--line)}
+.retirement-form-row>span:first-child{flex-shrink:0}
+.retirement-form-row input{font-size:14px;min-width:0;max-width:190px;padding:8px 0;border:0;color:#34634d;background:transparent;text-align:right}
+.retirement-field-value{font-size:12px;color:#436c53;display:flex;align-items:center;gap:8px;text-align:right}
+.retirement-field-value.placeholder{color:#9cac9f}
+.retirement-field-value .icon{width:14px;height:14px;color:#91a295}
+.retirement-form-message{font-size:11px;line-height:1.8;color:#829487;min-height:22px;margin:13px 4px 22px}
+.retirement-form-message.error,.retirement-saved.error{color:#b8533e}
+.retirement-local-note{display:flex;align-items:center;justify-content:center;gap:6px;color:#849a89;font-size:11px;line-height:1.7;margin:15px 0 0}
+.retirement-local-note .icon{width:13px;height:13px}
+.retirement-policy-link,.retirement-cancel{display:flex;align-items:center;justify-content:center;gap:5px;border:0;background:none;color:#507763;font-size:12px;margin:25px auto 0;padding:8px}
+.retirement-cancel{margin:12px auto 0}
+.retirement-policy-link .icon{width:12px;height:12px}
+.retirement-result{padding:21px 21px 22px;background:linear-gradient(150deg,#fcfefb,#edf6ef);border-color:#d9e8dd}
+.retirement-saved{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#779781;white-space:nowrap}
+.retirement-saved .icon{width:12px;height:12px}
+.retirement-month{font-size:35px;color:#1c664b;letter-spacing:-1px;font-weight:550;line-height:1.3;margin:18px 0 10px;font-variant-numeric:tabular-nums}
+.retirement-month small{font-size:15px;letter-spacing:0;font-weight:400;margin:0 10px 0 5px;color:#76917d}
+.retirement-age{font-size:12px;color:#7c9482}
+.retirement-age strong{font-weight:500;color:#477058;margin-left:9px}
+.retirement-countdown-area{border-top:1px solid #dfe9df;margin-top:22px;padding-top:18px}
+.retirement-countdown-area>p{margin:0;font-size:12px;color:#6f8775}
+.retirement-countdown-area .countdown{justify-content:flex-start;gap:20px;margin:14px 0 12px}
+.retirement-countdown-area .countdown strong{font-size:36px;letter-spacing:-1px}
+.retirement-day-total{font-size:10px;color:#8ca18f;line-height:1.7}
+.retirement-profile .settings-row{min-height:51px;padding:12px 18px;font-size:12px}
+.retirement-profile .settings-value{font-size:12px}
+.retirement-pension-note{margin:20px 3px 0;font-size:11px;color:#809484}
+.retirement-pension-note>div{display:flex;align-items:center;gap:6px;color:#58765f;font-size:12px}
+.retirement-pension-note .icon{width:14px;height:14px}
+.retirement-pension-note p{margin:8px 0 0;font-size:11px;line-height:1.85}
+.retirement-pension-note b{font-weight:600;color:#52755b}
+.retirement-footer-actions{display:flex;justify-content:space-between;gap:12px;margin:15px 0 0}
+.retirement-footer-actions button{display:flex;align-items:center;gap:4px;background:none;border:0;padding:8px 3px;font-size:10.5px;color:#6a8875}
+.retirement-footer-actions button:last-child:not(:first-child){color:#98a499}
+.retirement-footer-actions .icon{width:12px;height:12px}
+.retirement-choice{width:100%;display:flex;align-items:center;justify-content:space-between;gap:15px;background:none;border:0;border-top:1px solid var(--line);padding:16px 0;text-align:left}
+.retirement-choice strong{display:block;font-size:14px;font-weight:500;line-height:1.6}
+.retirement-choice small{display:block;font-size:11px;color:#8a9a8e;line-height:1.6;margin-top:4px}
+.retirement-choice.chosen{color:var(--green)}
+.retirement-choice .icon{width:17px;height:17px}
+.retirement-policy-body{max-height:480px;overflow:auto}
+.retirement-policy-body h4{font-size:13px;font-weight:600;margin:18px 0 7px}
+.retirement-policy-body h4:first-child{margin-top:0}
+.retirement-policy-body p{font-size:12px;margin:0 0 13px}
+.retirement-policy-body a{display:block;font-size:12px;color:var(--green);padding:8px 0;text-decoration:underline;text-underline-offset:4px}
+.retirement-review{padding:25px 22px}
+.retirement-review .tool-illustration{width:44px;height:46px;margin-bottom:17px}
+.retirement-review h3{font-size:17px;font-weight:600;margin:0 0 13px}
+.retirement-review>p{font-size:12px;color:#74897b;line-height:1.9;margin:0 0 19px}
+.retirement-review-status{font-size:11px;color:#809a88;margin-bottom:19px}
+.retirement-save-warning{font-size:11px;line-height:1.9;color:#b05e40;margin:12px 4px 0}
+@media(max-width:370px){.retirement-intro{gap:10px}.retirement-intro h3{font-size:17px}.retirement-intro p{font-size:11px}.retirement-form-row{padding:16px 13px;font-size:12px;gap:8px}.retirement-form-row input{max-width:155px;font-size:12px}.retirement-field-value{font-size:11px;gap:5px}.retirement-result{padding:18px}.retirement-countdown-area .countdown{gap:15px}.retirement-countdown-area .countdown strong{font-size:32px}.retirement-saved{font-size:9px}.retirement-profile .settings-row{padding:12px 14px}.retirement-profile .settings-value{font-size:11px}.retirement-review{padding:21px 17px}.retirement-review h3{font-size:15px}}
