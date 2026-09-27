@@ -1,0 +1,671 @@
+{
+  "verifiedAt": "2026-09-27T15:14:51.370Z",
+  "scope": "Standalone design prototype, not WeChat runtime acceptance",
+  "checks": [
+    "Homepage more-tools entry opens four tools",
+    "All four detail entries and back navigation",
+    "RMB live conversion, clipboard, clear and invalid precision",
+    "Retirement empty/date sheet/save/leap day/reached states",
+    "Level calibrate, lock/resume, mode and unavailable state",
+    "Glass type, validated parameter sheet, advanced parameters, result/edit",
+    "Modal Escape closes and returns focus",
+    "64 page/state combinations across 320, 375, 430, 1440px without horizontal overflow, title wrap, or broken images",
+    "Zero browser runtime errors"
+  ],
+  "layout": [
+    {
+      "width": 320,
+      "page": "home",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "tools",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "rmb",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "rmb",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "rmb",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "retire",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "retire",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "retire",
+      "state": "reached",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "level",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "level",
+      "state": "calibrated",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "level",
+      "state": "angle",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "level",
+      "state": "unavailable",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "glass",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "glass",
+      "state": "vacuum",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "glass",
+      "state": "result",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 320,
+      "page": "glass",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 300
+    },
+    {
+      "width": 375,
+      "page": "home",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "tools",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "rmb",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "rmb",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "rmb",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "retire",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "retire",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "retire",
+      "state": "reached",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "level",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "level",
+      "state": "calibrated",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "level",
+      "state": "angle",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "level",
+      "state": "unavailable",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "glass",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "glass",
+      "state": "vacuum",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "glass",
+      "state": "result",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 375,
+      "page": "glass",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 355
+    },
+    {
+      "width": 430,
+      "page": "home",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "tools",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "rmb",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "rmb",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "rmb",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "retire",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "retire",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "retire",
+      "state": "reached",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "level",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "level",
+      "state": "calibrated",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "level",
+      "state": "angle",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "level",
+      "state": "unavailable",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "glass",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "glass",
+      "state": "vacuum",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "glass",
+      "state": "result",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 430,
+      "page": "glass",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "home",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "tools",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "rmb",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "rmb",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "rmb",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "retire",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "retire",
+      "state": "empty",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "retire",
+      "state": "reached",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "level",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "level",
+      "state": "calibrated",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "level",
+      "state": "angle",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "level",
+      "state": "unavailable",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "glass",
+      "state": "normal",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "glass",
+      "state": "vacuum",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "glass",
+      "state": "result",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    },
+    {
+      "width": 1440,
+      "page": "glass",
+      "state": "error",
+      "windowOverflow": false,
+      "contentOverflow": false,
+      "titleWrapped": false,
+      "brokenImages": 0,
+      "bodyWidth": 390
+    }
+  ],
+  "errors": [],
+  "independentReview": {
+    "model": "gpt-6-sol",
+    "resolved": [
+      "Browser Back no longer traps at initial home route",
+      "Dialog save restores focus to new date/parameter trigger",
+      "Preview state follows form edits and date save"
+    ],
+    "changes": "Read-only review; UI authored by main agent"
+  },
+  "logicTests": {
+    "passed": 5,
+    "failed": 0
+  }
+}

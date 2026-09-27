@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>量窗助手 · 更多工具设计</title>
+  <link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+  <div class="studio">
+    <aside class="review-nav">
+      <a class="studio-brand" href="#home"><span class="brand-mark">量</span><span>量窗助手<small>更多工具 · 交互设计稿</small></span></a>
+      <nav aria-label="设计页面" id="review-pages"></nav>
+      <div class="review-note"><span class="note-kicker">设计范围</span><p>首页入口、工具总览、四个工具详情及操作状态。</p><p>金额和日期可交互。传感器读数、玻璃计算结果为演示数据。</p></div>
+      <div class="source-link"><a href="overview.html">查看六页总览 ↗</a><br><br><a href="DESIGN.md">查看设计说明 ↗</a></div>
+    </aside>
+    <main class="review-stage">
+      <header class="review-heading"><div><p class="eyebrow">量窗助手 / 工具</p><h1 id="review-title">首页入口</h1></div><label class="state-control" id="state-control" hidden>查看状态<select id="preview-state" aria-label="查看设计状态"></select></label></header>
+      <div class="review-canvas">
+        <div class="phone" id="phone">
+          <div class="statusbar" aria-hidden="true"><span>9:41</span><span class="island"></span><span class="status-icons"><i class="signal"></i><svg viewBox="0 0 24 18"><path d="M2 6q10-9 20 0M6 10q6-5 12 0M10 14q2-2 4 0"/></svg><i class="battery"></i></span></div>
+          <div id="app" class="app"></div>
+          <div class="home-indicator" aria-hidden="true"></div>
+          <div id="toast" class="toast" role="status" aria-live="polite"></div>
+          <div id="sheet-root"></div>
+        </div>
+        <div class="design-caption"><span id="caption"></span><small>可体验新增入口、表单、返回与弹层</small></div>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="prototype.mjs"></script>
+</body>
+</html>
