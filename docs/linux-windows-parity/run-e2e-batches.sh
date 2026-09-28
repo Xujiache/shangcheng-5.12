@@ -101,7 +101,7 @@ run_case() {
 }
 
 if [[ "$phase" == core || "$phase" == all ]]; then
-  for batch in pdf baseline doc sheet xlsm presentation pdfContent text audio video subtitle image arch options original psd psdOcr; do
+  for batch in pdf baseline doc sheet xlsm presentation pdfContent text audio video subtitle image arch options original psd psdOcr large; do
     run_case "$batch" "$batch"
   done
 fi

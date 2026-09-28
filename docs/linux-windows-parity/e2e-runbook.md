@@ -52,8 +52,8 @@ The serial launcher [`run-e2e-batches.sh`](run-e2e-batches.sh) runs PDF first, t
 ```sh
 cd /root/deployment-verification/linux-windows-parity/e2e
 install -m 700 /root/projects/jiujiu-linux-parity-candidate/docs/linux-windows-parity/run-e2e-batches.sh ./run-e2e-batches.sh
-PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-0f2e3cc ./run-e2e-batches.sh --phase core
-PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-0f2e3cc ./run-e2e-batches.sh --phase external
+PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-c093bb4 ./run-e2e-batches.sh --phase core
+PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-c093bb4 ./run-e2e-batches.sh --phase external
 ```
 
 Use `--batch pdf` or another batch name for a short first probe; each invocation writes a new run directory. External sample files are mounted read-only from `/root/deployment-verification/linux-windows-parity/fixtures`. For an individual failed external case, pass its exact `status.tsv` label to `--batch`; this starts a new run and preserves the earlier evidence. Missing sample bytes or expected content remain `not-run` in `status.tsv`; inspect the adjacent logs and pair evidence before claiming acceptance.
