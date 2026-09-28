@@ -8,11 +8,11 @@ const images: Record<string, string> = {
   cut: '/assets/tools/tool-cut.png',
   'work-log': '/assets/tools/tool-work-log.png',
   format: '/assets/tools/tool-format.png',
-  rmb: '/assets/tools/tool-rmb.png',
-  retire: '/assets/tools/tool-retire.png',
-  level: '/assets/tools/tool-level.png',
-  glass: '/assets/tools/tool-glass.png',
-  luban: '/assets/tools/tool-luban.png',
+  rmb: '/subpackages/more-tools/assets/tool-rmb.png',
+  retire: '/subpackages/more-tools/assets/tool-retire.png',
+  level: '/subpackages/more-tools/assets/tool-level.png',
+  glass: '/subpackages/more-tools/assets/tool-glass.png',
+  luban: '/subpackages/more-tools/assets/tool-luban.png',
 }
 const routes: Record<string, string> = {
   triangle: '/pages/triangle-tool/index',

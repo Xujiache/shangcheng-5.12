@@ -4,7 +4,7 @@
 
   <view class="lz-page lz-page--pad-bottom arc__page">
     <view class="arc__sketch">
-      <image class="arc__demo" src="/assets/tools/arc-demo.jpg" mode="aspectFit" />
+      <image class="arc__demo" src="/subpackages/tools/assets/arc-demo.jpg" mode="aspectFit" />
     </view>
 
     <view class="arc__rule">

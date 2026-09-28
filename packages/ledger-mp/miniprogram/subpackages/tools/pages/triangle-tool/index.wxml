@@ -4,7 +4,7 @@
 
   <view class="lz-page lz-page--pad-bottom geo__page">
     <view class="geo__sketch geo__sketch--tri">
-      <image class="geo__demo" src="/assets/tools/triangle-demo.jpg" mode="aspectFit" />
+      <image class="geo__demo" src="/subpackages/tools/assets/triangle-demo.jpg" mode="aspectFit" />
     </view>
 
     <view class="geo__rule">
