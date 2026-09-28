@@ -47,6 +47,31 @@ def verify_modules() -> None:
     sys.path.insert(0, str(root))
 
 
+def keep_visible_content_inside_margins() -> None:
+    # The bundled RawPage may treat a long line as a right-edge outlier, then
+    # clip its final glyph while assigning blocks to the inferred content box.
+    from pdf2docx.common import constants
+    from pdf2docx.page.RawPage import RawPage
+    from pdf2docx.shape.Shape import Hyperlink
+    from pdf2docx.shape.Shapes import Shapes
+
+    original = RawPage.calculate_margin
+
+    def calculate_margin(self, **settings):
+        margins = original(self, **settings)
+        shapes = Shapes([shape for shape in self.shapes if not isinstance(shape, Hyperlink)])
+        if not self.blocks and not shapes:
+            return margins
+        bounds = self.blocks.bbox | shapes.bbox
+        x0, y0, x1, y1 = self.bbox
+        return (min(margins[0], max(bounds[0] - x0, 0.0)),
+                min(margins[1], max(x1 - bounds[2] - constants.MINOR_DIST, 0.0)),
+                min(margins[2], max(bounds[1] - y0, 0.0)),
+                min(margins[3], max(y1 - bounds[3], 0.0)))
+
+    RawPage.calculate_margin = calculate_margin
+
+
 def main() -> None:
     if sys.version_info[:2] != (3, 12):
         raise RuntimeError("Original docengine bytecode requires Python 3.12")
@@ -54,6 +79,8 @@ def main() -> None:
     if hashlib.sha256(data).hexdigest() != ENTRY_SHA256:
         raise RuntimeError("Original docengine entry SHA-256 mismatch")
     verify_modules()
+    if len(sys.argv) > 1 and sys.argv[1] == "convert":
+        keep_visible_content_inside_margins()
     code = marshal.loads(data)
     if not isinstance(code, types.CodeType):
         raise RuntimeError("Original docengine entry is not a Python code object")
