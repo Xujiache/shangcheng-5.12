@@ -50,11 +50,37 @@ async function main() {
       psd[40 + channel * width * height + pixel] = pixels[pixel * 3 + channel]
   writeFileSync(join(out, 'graphic.psd'), psd)
 
+  const textWidth = 1200; const textHeight = 480
+  const textImage = await sharp(Buffer.from(`<svg width="${textWidth}" height="${textHeight}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="480" fill="#f5f9ff"/>
+    <rect x="40" y="35" width="1120" height="410" rx="28" fill="#ffffff" stroke="#2563eb" stroke-width="8"/>
+    <rect x="75" y="70" width="30" height="300" fill="#f97316"/>
+    <text x="145" y="205" fill="#14213d" font-family="Arial" font-size="83" font-weight="bold">WINDOW ORDER</text>
+    <text x="145" y="330" fill="#173f35" font-family="Arial" font-size="78" font-weight="bold">TOTAL 315.50</text>
+  </svg>`)).removeAlpha().raw().toBuffer()
+  const textPsd = Buffer.alloc(40 + textWidth * textHeight * 3)
+  textPsd.write('8BPS', 0)
+  textPsd.writeUInt16BE(1, 4)
+  textPsd.writeUInt16BE(3, 12)
+  textPsd.writeUInt32BE(textHeight, 14)
+  textPsd.writeUInt32BE(textWidth, 18)
+  textPsd.writeUInt16BE(8, 22)
+  textPsd.writeUInt16BE(3, 24)
+  for (let pixel = 0; pixel < textWidth * textHeight; pixel++)
+    for (let channel = 0; channel < 3; channel++)
+      textPsd[40 + channel * textWidth * textHeight + pixel] = textImage[pixel * 3 + channel]
+  writeFileSync(join(out, 'graphic-text.psd'), textPsd)
+
   writeFileSync(join(out, 'office-SHA256.json'), JSON.stringify({
     generator: 'scripts/generate-parity-office-fixtures.cjs',
-    files: { 'office-chinese.docx': sha(docx), 'graphic.psd': sha(psd) },
+    files: { 'office-chinese.docx': sha(docx), 'graphic.psd': sha(psd), 'graphic-text.psd': sha(textPsd) },
+    graphicTextPsd: {
+      source: 'SVG rasterized by sharp to 1200x480 RGB pixels',
+      encoding: '8BPS version 1, 8-bit planar RGB, uncompressed',
+      expectedOcr: ['WINDOW ORDER', 'TOTAL 315.50'],
+    },
   }, null, 2) + '\n')
-  console.log(JSON.stringify({ docx: sha(docx), psd: sha(psd) }))
+  console.log(JSON.stringify({ docx: sha(docx), psd: sha(psd), textPsd: sha(textPsd) }))
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1 })

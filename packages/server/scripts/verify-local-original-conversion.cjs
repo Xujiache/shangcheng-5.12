@@ -656,6 +656,10 @@ async function main() {
     const targets = (process.env.CONVERSION_RAW_TARGETS || 'png').split(',')
     if (targets.some((target) => !supported.has(target)))
       throw new Error(`Unsupported image target for ${extension}`)
+    if (targets.some((target) => ['docx', 'md', 'txt'].includes(target)) &&
+      (!process.env.CONVERSION_RAW_OCR_EXPECT ||
+        process.env.CONVERSION_RAW_OCR_EXPECT.replace(/\s+/g, '').length < 4))
+      throw new Error(`${extension} OCR requires visible fixture text via CONVERSION_RAW_OCR_EXPECT`)
     const work = await mkdtemp(join(tmpdir(), 'ledger-raw-pairs-'))
     try {
       const fixture = await readFile(imageLikeSample)
@@ -669,7 +673,7 @@ async function main() {
         { encoding: 'utf8' }))
         const pixels = execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-frames:v', '1',
           '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'],
-        { maxBuffer: 64 * 1024 ** 2 })
+        { maxBuffer: 256 * 1024 ** 2 })
         const stream = info.streams.find((item) => pixels.length === item.width * item.height * 3)
         if (!stream || pixels.equals(Buffer.alloc(pixels.length)))
           throw new Error(`${file}: image is blank or truncated`)
@@ -682,6 +686,24 @@ async function main() {
           '--to', target, '--output', direct, '--json'], { env: originalCliEnv() })
         const result = await convert(`convert:${target}`, [[`sample.${extension}`, fixture]])
         await writeFile(backendPath, result.bytes)
+        if (['docx', 'md', 'txt'].includes(target)) {
+          const expected = process.env.CONVERSION_RAW_OCR_EXPECT?.replace(/\s+/g, '')
+          if (!expected || expected.length < 4)
+            throw new Error(`${extension} OCR requires CONVERSION_RAW_OCR_EXPECT from visible fixture text`)
+          const extractText = (file) => (target === 'docx'
+            ? execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
+              .replace(/<[^>]+>/g, '')
+            : require('node:fs').readFileSync(file, 'utf8')).replace(/\s+/g, '')
+          const directText = extractText(direct)
+          const backendText = extractText(backendPath)
+          if (!backendText.includes(expected) || backendText !== directText)
+            throw new Error(`${extension} to ${target}: OCR text lost known phrase or differs from original`)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--record', extension, target, createHash('sha256').update(fixture).digest('hex'),
+            'genuine image fixture: visible OCR phrase retained by direct original and backend'])
+          console.log(`PASS ${extension}:${target}, OCR text matches known fixture phrase and original`)
+          continue
+        }
         if (target === 'pdf') {
           if ((await PDFDocument.load(result.bytes)).getPageCount() !== 1)
             throw new Error('RAW PDF has wrong page count')
@@ -1425,6 +1447,19 @@ async function main() {
           throw new Error(`${inputExtension} to ${target}: same=${backendText === directText} ` +
             `source coverage=${coverage.toFixed(2)} backendLength=${backendText.length} ` +
             `directLength=${directText.length}`)
+        if (target === 'docx' && process.env.CONVERSION_LEGACY_DOCUMENT_REQUIRE_STRUCTURE) {
+          const structure = (file) => ({
+            tables: (execFileSync('unzip', ['-p', file, 'word/document.xml'],
+              { encoding: 'utf8' }).match(/<w:tbl(?:\s|>)/g) || []).length,
+            images: execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+              .split('\n').filter((name) => name.startsWith('word/media/') && !name.endsWith('/')).length,
+          })
+          const directStructure = structure(directPath)
+          const backendStructure = structure(backendPath)
+          if (directStructure.tables < 1 || directStructure.images < 1 ||
+            JSON.stringify(directStructure) !== JSON.stringify(backendStructure))
+            throw new Error(`${inputExtension} to DOCX lost editable table or embedded image`)
+        }
         execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
           '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
           'legacy document sample: direct original and authenticated backend, known phrases checked'])

@@ -2,8 +2,8 @@
 // Candidate-only Linux acceptance. The existing verifier owns API auth and job cleanup.
 const { spawnSync } = require('node:child_process')
 const { createHash } = require('node:crypto')
-const { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } = require('node:fs')
-const { dirname, resolve } = require('node:path')
+const { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } = require('node:fs')
+const { basename, dirname, resolve, sep } = require('node:path')
 
 const root = resolve(__dirname, '..')
 const args = process.argv.slice(2)
@@ -19,12 +19,25 @@ const batches = {
   text: { CONVERSION_BASELINE_SECTION: 'text', CONVERSION_TEXT_INPUTS: process.env.CONVERSION_TEXT_INPUTS || 'txt,md,markdown,log,yaml,yml,xml,json,html,htm,csv,tsv' },
   image: { CONVERSION_BASELINE_SECTION: 'image', CONVERSION_IMAGE_INPUTS: process.env.CONVERSION_IMAGE_INPUTS || 'png,svg,avif,bmp,gif,ico,jp2,j2k,jpg,jpe,jpeg,jfif,jxl,ppm,qoi,tga,tif,tiff,webp,heic,heif' },
   audio: { CONVERSION_BASELINE_SECTION: 'audio', CONVERSION_AUDIO_INPUTS: process.env.CONVERSION_AUDIO_INPUTS || 'wav,aac,flac,m4a,mp3,ogg,opus,wma' },
-  video: { CONVERSION_VIDEO_INPUTS: process.env.CONVERSION_VIDEO_INPUTS || 'mp4,mov,mkv,webm' },
+  video: { CONVERSION_VIDEO_INPUTS: process.env.CONVERSION_VIDEO_INPUTS || 'avi,flv,m4s,m4v,mkv,mov,mp4,webm,wmv' },
+  subtitle: { CONVERSION_SUBTITLE_INPUTS: process.env.CONVERSION_SUBTITLE_INPUTS || 'srt,vtt,ass,ssa' },
   doc: { CONVERSION_DOCUMENT_INPUTS: process.env.CONVERSION_DOCUMENT_INPUTS || 'odt,rtf,doc',
     CONVERSION_REQUIRE_OFFICE_STRUCTURE: '1' },
   sheet: { CONVERSION_SHEET_INPUTS: process.env.CONVERSION_SHEET_INPUTS || 'xlsx,ods,xls' },
+  xlsm: { CONVERSION_XLSM: '1' },
   presentation: { CONVERSION_PRESENTATIONS: 'all' },
+  pdfContent: { CONVERSION_PDF_TEXT: '1', CONVERSION_PDF_SIMPLE: '1', CONVERSION_PDF_TABLE: '1' },
   arch: { CONVERSION_ZIP: '1', CONVERSION_EPUB: '1', CONVERSION_MOBI: '1' },
+  raw: { CONVERSION_RAW_TARGETS: process.env.CONVERSION_RAW_TARGETS || 'avif,bmp,gif,ico,jp2,jpg,jxl,mp4,pdf,png,ppm,qoi,tga,tiff,webm,webp' },
+  rawOcr: { CONVERSION_RAW_TARGETS: process.env.CONVERSION_RAW_TARGETS || 'docx,md,txt' },
+  vector: { CONVERSION_RAW_TARGETS: process.env.CONVERSION_RAW_TARGETS || 'avif,bmp,gif,ico,jp2,jpg,jxl,mp4,pdf,png,ppm,qoi,tga,tiff,webm,webp' },
+  vectorOcr: { CONVERSION_RAW_TARGETS: process.env.CONVERSION_RAW_TARGETS || 'docx,md,txt' },
+  psd: { CONVERSION_RAW_SAMPLE: resolve(dirname(cases), 'graphic.psd'),
+    CONVERSION_RAW_TARGETS: process.env.CONVERSION_RAW_TARGETS || 'avif,bmp,gif,ico,jp2,jpg,jxl,mp4,pdf,png,ppm,qoi,tga,tiff,webm,webp' },
+  psdOcr: { CONVERSION_RAW_SAMPLE: resolve(dirname(cases), 'graphic-text.psd'),
+    CONVERSION_RAW_TARGETS: process.env.CONVERSION_RAW_TARGETS || 'docx,md,txt',
+    CONVERSION_RAW_OCR_EXPECT: 'WINDOW ORDERTOTAL 315.50' },
+  legacyDoc: {}, legacySheet: {}, legacySlide: {}, ofd: {},
   options: { CONVERSION_OPTIONS: '1' },
   original: { CONVERSION_OPTIONS: '1', CONVERSION_CONTROL_FLOW: '1' },
 }
@@ -86,13 +99,76 @@ const env = {
   ...(batch === 'pdf' && args.includes('--media') ? { CONVERSION_VIDEO_INPUTS: 'mp4' } : {}),
   ...(batch === 'pdf' && args.includes('--options') ? { CONVERSION_OPTIONS: '1' } : {}),
 }
+const sampleByBatch = {
+  raw: 'CONVERSION_RAW_SAMPLE', rawOcr: 'CONVERSION_RAW_SAMPLE',
+  vector: 'CONVERSION_VECTOR_SAMPLE', vectorOcr: 'CONVERSION_VECTOR_SAMPLE',
+  legacyDoc: 'CONVERSION_LEGACY_DOCUMENT_SAMPLE',
+  legacySheet: 'CONVERSION_LEGACY_SHEET_SAMPLE',
+  legacySlide: 'CONVERSION_LEGACY_PRESENTATION_SAMPLE', ofd: 'CONVERSION_OFD_SAMPLE',
+}
+const sampleName = sampleByBatch[batch]
+if (['raw', 'rawOcr', 'vector', 'vectorOcr', 'psd', 'psdOcr'].includes(batch)) {
+  const allowed = new Set((batch.endsWith('Ocr') ? 'docx,md,txt' :
+    'avif,bmp,gif,ico,jp2,jpg,jxl,mp4,pdf,png,ppm,qoi,tga,tiff,webm,webp').split(','))
+  if (env.CONVERSION_RAW_TARGETS.split(',').some((target) => !allowed.has(target)))
+    throw new Error(`Unsupported target for ${batch}: ${env.CONVERSION_RAW_TARGETS}`)
+}
+if (sampleName) {
+  const fixtureRoot = process.env.CONVERSION_FIXTURE_ROOT
+  const sample = env[sampleName]
+  if (!fixtureRoot || !sample || !existsSync(sample) ||
+    !realpathSync(sample).startsWith(realpathSync(fixtureRoot) + sep))
+    throw new Error(`${batch} requires ${sampleName} under CONVERSION_FIXTURE_ROOT`)
+  const matrix = JSON.parse(readFileSync(resolve(root, 'docs/linux-windows-parity/matrix-fixtures.json'), 'utf8'))
+  const known = [
+    ...Object.values(matrix.inputExtensions).map((item) => item.candidate).filter(Boolean),
+    ...matrix.legacyReplayFixtures.files,
+  ].filter((item) => basename(item.resourceId || '') === basename(sample))
+  const expectedHashes = new Set(known.map((item) => item.sha256))
+  if (expectedHashes.size !== 1 ||
+    createHash('sha256').update(readFileSync(sample)).digest('hex') !== [...expectedHashes][0])
+    throw new Error(`Unknown or SHA-256-mismatched public fixture: ${sample}`)
+  const extension = basename(sample).split('.').pop().toLowerCase()
+  const rawExtensions = new Set(['3fr', 'arw', 'cr2', 'cr3', 'crw', 'dng', 'erf', 'fff', 'iiq',
+    'kdc', 'mef', 'mrw', 'nef', 'orf', 'pef', 'raf', 'rw2', 'srw', 'x3f'])
+  if ((batch.startsWith('raw') && !rawExtensions.has(extension)) ||
+    (batch.startsWith('vector') && extension !== 'ai') ||
+    (batch === 'legacyDoc' && !['wps', 'wpt', 'wpd'].includes(extension)) ||
+    (batch === 'legacySheet' && !['et', 'ett'].includes(extension)) ||
+    (batch === 'legacySlide' && !['dps', 'dpt'].includes(extension)) ||
+    (batch === 'ofd' && extension !== 'ofd'))
+    throw new Error(`Unexpected fixture type for ${batch}: ${extension}`)
+  if (batch === 'legacySlide' && !env.CONVERSION_LEGACY_PRESENTATION_TARGETS) {
+    const catalog = require('../packages/server/src/modules/ledger-conversion/conversion.catalog.json')
+    env.CONVERSION_LEGACY_PRESENTATION_TARGETS = catalog.operations
+      .filter((operation) => operation.kind === 'convert' &&
+        operation.inputExtensions.includes(extension)).map((operation) => operation.targetExtension).join(',')
+  }
+  if (batch === 'legacySlide' && basename(sample).startsWith('synthetic-slides.')) {
+    env.CONVERSION_LEGACY_PRESENTATION_PAGES = '2'
+    env.CONVERSION_LEGACY_PRESENTATION_REQUIRE_IMAGES = '1'
+  }
+  if (batch === 'legacySheet' && basename(sample).startsWith('synthetic-formula.')) {
+    env.CONVERSION_LEGACY_SHEET_MIN_SHEETS = '2'
+    env.CONVERSION_LEGACY_SHEET_MIN_FORMULAS = '1'
+  }
+  if (batch === 'legacyDoc' && basename(sample).startsWith('synthetic-office-rich.'))
+    env.CONVERSION_LEGACY_DOCUMENT_REQUIRE_STRUCTURE = '1'
+}
+if (['rawOcr', 'vectorOcr'].includes(batch) &&
+  (!env.CONVERSION_RAW_OCR_EXPECT || env.CONVERSION_RAW_OCR_EXPECT.replace(/\s+/g, '').length < 4))
+  throw new Error(`${batch} requires a visible text phrase in CONVERSION_RAW_OCR_EXPECT`)
+for (const [selected, required] of Object.entries({ legacyDoc: 'CONVERSION_LEGACY_EXPECT',
+  legacySheet: 'CONVERSION_LEGACY_SHEET_EXPECT', legacySlide: 'CONVERSION_LEGACY_PRESENTATION_EXPECT',
+  ofd: 'CONVERSION_OFD_EXPECT' }))
+  if (batch === selected && !env[required]) throw new Error(`${batch} requires ${required}`)
 if (batch === 'doc' && !env.CONVERSION_SAMPLE_DOCX)
   env.CONVERSION_SAMPLE_DOCX = resolve(dirname(cases), 'office-chinese.docx')
 if (batch === 'doc' && !hashes['office-chinese.docx'])
   throw new Error('Document batch requires tracked office-SHA256.json provenance')
 for (const file of [env.CONVERSION_SAMPLE_DOCX, env.CONVERSION_RAW_SAMPLE].filter(Boolean)) {
   const expected = hashes[require('node:path').basename(file)]
-  if (require('node:path').basename(file) === 'graphic.psd' && !expected)
+  if (['graphic.psd', 'graphic-text.psd'].includes(require('node:path').basename(file)) && !expected)
     throw new Error('PSD fixture requires tracked office-SHA256.json provenance')
   if (!existsSync(file) || (expected && createHash('sha256').update(readFileSync(file)).digest('hex') !== expected))
     throw new Error(`Supplementary fixture missing or SHA-256 mismatch: ${file}`)
@@ -124,12 +200,36 @@ const pairCounts = { events: pairRows.length, passed: pairRows.filter((row) => r
   failed: pairRows.filter((row) => row.status === 'fail').length }
 const jobCounts = { events: jobRows.length, passed: jobRows.filter((row) => row.status === 'pass').length,
   failed: jobRows.filter((row) => row.status !== 'pass').length }
+const catalog = require('../packages/server/src/modules/ledger-conversion/conversion.catalog.json')
+const acceptedKeys = new Set(catalog.operations.filter((operation) => operation.kind === 'convert')
+  .flatMap((operation) => operation.inputExtensions.map((input) => `${input}:${operation.targetExtension}`)))
+const currentPairs = new Map()
+for (const row of pairRows) {
+  const key = `${row.input}:${row.output}`
+  if (acceptedKeys.has(key))
+    currentPairs.set(key, row.status !== 'pass' || currentPairs.get(key) === 'fail' ? 'fail' : 'pass')
+}
+const currentCoverage = { total: catalog.pairCount,
+  passed: [...currentPairs.values()].filter((status) => status === 'pass').length,
+  failed: [...currentPairs.values()].filter((status) => status === 'fail').length,
+  notRun: catalog.pairCount - currentPairs.size }
+const currentOperations = new Map()
+for (const row of jobRows) {
+  if (catalog.operations.some((operation) => operation.id === row.operationId))
+    currentOperations.set(row.operationId,
+      row.status !== 'pass' || currentOperations.get(row.operationId) === 'fail' ? 'fail' : 'pass')
+}
+const operationCoverage = { total: catalog.operations.length,
+  passed: [...currentOperations.values()].filter((status) => status === 'pass').length,
+  failed: [...currentOperations.values()].filter((status) => status === 'fail').length,
+  notRun: catalog.operations.length - currentOperations.size }
 if (batch !== 'pdf') {
   const result = { batch, status: child.status === 0 ? 'batch-passed' : 'fail',
     inputs: env.CONVERSION_TEXT_INPUTS || env.CONVERSION_IMAGE_INPUTS ||
       env.CONVERSION_AUDIO_INPUTS || env.CONVERSION_VIDEO_INPUTS ||
       env.CONVERSION_DOCUMENT_INPUTS || env.CONVERSION_SHEET_INPUTS || batch,
-    pairs: pairCounts, jobs: jobCounts, historicalMatrixStatus: 'not-run' }
+    pairs: pairCounts, jobs: jobCounts, currentCoverage, operationCoverage,
+    historicalMatrixStatus: 'not-run' }
   writeFileSync(evidence, JSON.stringify(result) + '\n')
   console.log(JSON.stringify(result))
   if (child.status !== 0) process.exitCode = 1
@@ -150,7 +250,7 @@ for (const result of results) {
 }
 writeFileSync(evidence, results.map((item) => JSON.stringify(item)).join('\n') + '\n')
 console.log(JSON.stringify({ checked: results.length, expected: manifest.length * 2,
-  pairs: pairCounts, jobs: jobCounts,
+  pairs: pairCounts, jobs: jobCounts, currentCoverage, operationCoverage,
   passed: results.filter((item) => item.status === 'pass').length,
   failed: results.filter((item) => item.status !== 'pass').length,
   windowsCompared: results.filter((item) => item.windowsComparison === 'pass').length,

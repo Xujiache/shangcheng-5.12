@@ -110,6 +110,27 @@ const pdfCoverageAfter = `      if (expected.length <= 1 || actual.includes(expe
         if (sourceIndex === expected.length) return false;
       }
       return true;`
+const pdfClassifierBefore = 'const { classifyPdf } = require("./pdf-classifier");'
+const pdfClassifierAfter = 'const { classifyPdf, classifyPageMetrics } = require("./pdf-classifier");'
+const pdfOcrNeedBefore = `function pdfPageNeedsOcr(page) {
+  return !page.ocr && page.blank !== true && (
+    !page.rows?.some((row) => row.some((cell) => String(cell).trim()))
+    || page.imageCoverage > 0
+  );
+}`
+const pdfOcrNeedAfter = `function pdfPageNeedsOcr(page) {
+  const cells = (page.rows || []).flat();
+  const characters = Array.from(cells.join("")).filter((character) => !/\\s/u.test(character));
+  const printable = characters.filter((character) => !/\\p{C}/u.test(character)).length;
+  return !page.ocr && page.blank !== true && (
+    !cells.some((cell) => String(cell).trim())
+    || classifyPageMetrics({
+      characterCount: characters.length,
+      printableRatio: characters.length ? printable / characters.length : 0,
+      imageCoverage: page.imageCoverage
+    }) === "scanned"
+  );
+}`
 const memoryBoundHelper = `function linuxMemoryBound(host, read, allowZero = false) {
   if (process.platform !== "linux" || typeof read !== "function") return host;
   try {
@@ -172,6 +193,7 @@ function apply(directory) {
   const ofdDependencyCode = ofdDependencyBytes.toString('utf8')
   if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
     code.split(rawRunBefore).length !== 2 || pdfCode.split(pdfCoverageBefore).length !== 2 ||
+    pdfCode.split(pdfClassifierBefore).length !== 2 || pdfCode.split(pdfOcrNeedBefore).length !== 2 ||
     structureCode.split(structureMemoryBefore).length !== 2 ||
     structureCode.split('const DEFAULT_TIMEOUT_MS').length !== 2 ||
     resourceCode.split(resourceMemoryBefore).length !== 2 ||
@@ -223,6 +245,8 @@ function apply(directory) {
     .replace('const { assertPdfPages } = require("./resource-policy");',
       'const { LIMITS, assertImageMetadata, assertPdfPages } = require("./resource-policy");')
     .replace(zipImageCall, zipImageBatch)
+    .replace(pdfClassifierBefore, pdfClassifierAfter)
+    .replace(pdfOcrNeedBefore, pdfOcrNeedAfter)
     .replace(pdfCoverageBefore, pdfCoverageAfter)
   const structurePatched = structureCode.replace('const DEFAULT_TIMEOUT_MS',
     memoryBoundHelper + 'const DEFAULT_TIMEOUT_MS').replace(structureMemoryBefore, structureMemoryAfter)
@@ -239,7 +263,7 @@ function apply(directory) {
   fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 15,
+    fixRevision: 16,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -275,6 +299,7 @@ function apply(directory) {
       'Convert ZIP images in memory-budgeted batches before merging every PDF page',
       'Keep PDF-to-Word layout output when it preserves a source cell plus one superscript glyph',
       'Bound Linux PDF structure and resource budgets by process container memory',
+      'Use original PDF page classification so small figures do not trigger full-page OCR',
     ],
   }, null, 2) + '\n')
 }
@@ -282,7 +307,7 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 15 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 16 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||

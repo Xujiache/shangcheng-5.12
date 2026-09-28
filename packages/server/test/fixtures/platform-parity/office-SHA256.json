@@ -2,6 +2,15 @@
   "generator": "scripts/generate-parity-office-fixtures.cjs",
   "files": {
     "office-chinese.docx": "bc224af6297d56546d4ac04aa1cecc439c156ed5406871abd82ce0d0fa8c52fa",
-    "graphic.psd": "9a5bac157271dada036d83cfb36aa6610943061522584a0afa0e051e97e6eb1a"
+    "graphic.psd": "9a5bac157271dada036d83cfb36aa6610943061522584a0afa0e051e97e6eb1a",
+    "graphic-text.psd": "57482676681046b340faddcdddd53d0aa49849d06e5fd0eb8aecca6827cf16cd"
+  },
+  "graphicTextPsd": {
+    "source": "SVG rasterized by sharp to 1200x480 RGB pixels",
+    "encoding": "8BPS version 1, 8-bit planar RGB, uncompressed",
+    "expectedOcr": [
+      "WINDOW ORDER",
+      "TOTAL 315.50"
+    ]
   }
 }

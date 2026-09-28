@@ -34,3 +34,65 @@ node scripts/flyingmouse-platform-reference.cjs \
 Upload `reference.json`, `environment.json`, rendered page PNGs and converted outputs as CI artifacts. The reference records original CLI warnings and fails on `PDF_DOCX_LAYOUT_FALLBACK`, missing source bitmap, missing DOCX media asset, or missing expected editable text. The fixture set is expected to expose quality gaps; failed output remains failed evidence.
 
 Optional `--windows-reference /path/reference.json` compares both content and rendered raw pixel hashes, page counts, and dimensions. Without a matching Windows reference or render, `windowsComparison` is `not-compared`; equal text alone never becomes a visual parity pass. Exact pixel mismatches need visual review because font rasterizers may differ by platform. This runner is a focused gate, not the complete 1174-pair matrix. Its output is evidence to review before any acceptance-ledger update.
+
+## Full catalog batches
+
+Use the isolated container and environment in [`e2e-runbook.md`](e2e-runbook.md). Run one batch per invocation, with a unique evidence path so `*.jobs.jsonl` and `*.pairs.jsonl` are retained. Use the same `docker run` prefix from that runbook and replace its final Node arguments as below (`CANDIDATE_IMAGE` must be the verified local tag). Run the PDF batch with an 8 GiB runner limit. Run other batches with 2 GiB unless the selected input needs more; never run PDF or RAW conversions concurrently.
+
+```sh
+parity_batch() {
+  batch="$1"
+  shift
+  docker run --rm --network host --memory 2g --cpus 2 --pids-limit 128 \
+    --env-file runner.env \
+    -e CONVERSION_FIXTURE_ROOT=/parity-fixtures \
+    -e NODE_PATH=/app/server/node_modules \
+    -e FLYINGMOUSE_TEST_SOURCE_DIR=/app/flyingmouse \
+    -e FLYINGMOUSE_FFMPEG_PATH=/opt/ffmpeg-8.1.1/bin/ffmpeg \
+    -e FLYINGMOUSE_LIBREOFFICE_PATH=/opt/libreoffice26.2/program/soffice \
+    -e FLYINGMOUSE_PDFTOPPM_PATH=/opt/poppler-26.05.0/bin/pdftoppm \
+    -v /root/projects/jiujiu-linux-parity-candidate:/parity-src:ro \
+    -v /root/deployment-verification/linux-windows-parity/fixtures:/parity-fixtures:ro \
+    -v "$PWD/artifacts":/parity-artifacts \
+    "$@" \
+    --entrypoint node CANDIDATE_IMAGE \
+    /parity-src/scripts/flyingmouse-linux-parity.cjs \
+    --cases /parity-src/packages/server/test/fixtures/platform-parity/cases.json \
+    --batch "$batch" --evidence "/parity-artifacts/$batch.jsonl"
+}
+cd /root/deployment-verification/linux-windows-parity/e2e
+mkdir -p artifacts
+parity_batch baseline
+parity_batch text
+parity_batch image
+parity_batch audio
+parity_batch video
+parity_batch subtitle
+parity_batch doc
+parity_batch sheet
+parity_batch xlsm
+parity_batch presentation
+parity_batch pdfContent
+parity_batch arch
+parity_batch psd
+parity_batch psdOcr
+parity_batch options
+parity_batch original
+```
+
+Run PDF with the same command prefix in [`e2e-runbook.md`](e2e-runbook.md) using `--memory 8g`, `--batch pdf`, and `/parity-artifacts/pdf.jsonl`. Each command is independent; continue after a failed batch using a fresh evidence filename. Input lists can be narrowed with the corresponding `CONVERSION_*_INPUTS` environment variable passed using `-e` before `--entrypoint`.
+
+The remaining eight batches require a sample below `CONVERSION_FIXTURE_ROOT`. The runner checks its real path and SHA-256 against [`matrix-fixtures.json`](matrix-fixtures.json). Set each filename to a hash-locked fixture from that manifest; run one source sample per invocation and use a unique evidence path. Example calls using the function above:
+
+```sh
+parity_batch raw -e "CONVERSION_RAW_SAMPLE=/parity-fixtures/${RAW_FILE:?}"
+parity_batch vector -e "CONVERSION_VECTOR_SAMPLE=/parity-fixtures/${AI_FILE:?}"
+parity_batch legacyDoc -e "CONVERSION_LEGACY_DOCUMENT_SAMPLE=/parity-fixtures/${WPS_WPT_WPD_FILE:?}" -e "CONVERSION_LEGACY_EXPECT=${DOCUMENT_TEXT:?}"
+parity_batch legacySheet -e "CONVERSION_LEGACY_SHEET_SAMPLE=/parity-fixtures/${ET_ETT_FILE:?}" -e "CONVERSION_LEGACY_SHEET_EXPECT=${SHEET_TEXT:?}"
+parity_batch legacySlide -e "CONVERSION_LEGACY_PRESENTATION_SAMPLE=/parity-fixtures/${DPS_DPT_FILE:?}" -e "CONVERSION_LEGACY_PRESENTATION_EXPECT=${SLIDE_TEXT:?}"
+parity_batch ofd -e "CONVERSION_OFD_SAMPLE=/parity-fixtures/${OFD_FILE:?}" -e "CONVERSION_OFD_EXPECT=${OFD_TEXT:?}"
+```
+
+`rawOcr` and `vectorOcr` use the same RAW or AI sample variable plus `-e "CONVERSION_RAW_OCR_EXPECT=${VISIBLE_TEXT:?}"`; run them only when that exact hash-locked image visibly contains the phrase. The default RAW/AI public samples have no proven text, so their OCR batches remain untested until a suitable sample exists. Landscape/photo OCR must never be marked passed from a generic no-text error. WPS/WPT rich fixtures require editable DOCX table and image; synthetic ET/ETT require two sheets and a formula; synthetic DPS/DPT require two pages and HTML images. The tracked `graphic.psd` covers 16 image/video targets; separate tracked `graphic-text.psd` covers three OCR targets with visible `WINDOW ORDER` and `TOTAL 315.50`, and both have hashes in `office-SHA256.json`.
+
+The catalog has 1,174 input/output pairs over 98 inputs and 46 operations. Batch definitions are static routing coverage only. With the current public RAW and AI files, 60 OCR pairs (19 RAW inputs × 3 plus AI × 3) still lack text-bearing input; PSD's three OCR pairs now have a synthetic fixture, but remain **not run** until direct CLI and authenticated backend output checks finish. No Linux batch inherits the historical 954 passes. `currentCoverage` and `operationCoverage` count only this invocation's JSONL evidence; a failed pair or operation takes precedence over a pass within the same invocation. The historical 220 incomplete pairs and Windows reference gaps remain separate from current Linux results.

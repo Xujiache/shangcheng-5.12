@@ -553,10 +553,13 @@
       "candidate": {
         "sha256": "306dba9b790fe29af0cd1b365ef259c427319e0ba39c3a5f08dc8eaa2d63147c",
         "source": "https://github.com/isee15/ofdjs/tree/master/test/fixtures",
-        "license": null,
-        "localAvailability": "not-in-tracked-repo-or-retained-public-cache",
-        "exactDownloadUrlVerified": false,
-        "status": "accepted historically; reacquire exact bytes before replay"
+        "license": "Apache-2.0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; current Linux pairs unverified",
+        "resourceId": "parity-fixtures/legacy/n.ofd",
+        "downloadUrl": "https://raw.githubusercontent.com/isee15/ofdjs/09163ca5e362dfef0194b8a4c34d149c30740f49/test/fixtures/n.ofd",
+        "matchesHistoricalAcceptedFixture": true
       }
     },
     "orf": {
@@ -767,10 +770,13 @@
       "candidate": {
         "sha256": "3417815c24d7227a1dd3fc5b95cb3e84f895a1e608a58432cb5ffcaebb4cae90",
         "source": "https://github.com/xberg-io/test_documents/blob/main/wordperfect/PROVENANCE.md",
-        "license": null,
-        "localAvailability": "not-in-tracked-repo-or-retained-public-cache",
-        "exactDownloadUrlVerified": false,
-        "status": "accepted historically; reacquire exact bytes before replay"
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; current Linux pairs unverified",
+        "resourceId": "parity-fixtures/legacy/corel_wp6.wpd",
+        "downloadUrl": "https://raw.githubusercontent.com/xberg-io/test_documents/ffc1599155c350804a6d28961da4b1262a70d50d/wordperfect/corel_wp6.wpd",
+        "matchesHistoricalAcceptedFixture": true
       }
     },
     "x3f": {
@@ -1525,5 +1531,151 @@
   },
   "publicRawSourceIndex": "https://raw.pixls.us/json/getrepository.php?set=all",
   "publicRawCacheRootAlias": "~/Library/Caches/ledger-flyingmouse-engines/parity-fixtures/raw",
-  "publicDesignCacheRootAlias": "~/Library/Caches/ledger-flyingmouse-engines/parity-fixtures/design"
+  "publicDesignCacheRootAlias": "~/Library/Caches/ledger-flyingmouse-engines/parity-fixtures/design",
+  "legacyReplayFixtures": {
+    "cacheRootAlias": "~/Library/Caches/ledger-flyingmouse-engines/parity-fixtures/legacy",
+    "isolatedServerRoot": "/root/deployment-verification/linux-windows-parity/fixtures/legacy",
+    "publicProvenance": "xberg-io/test_documents/wordperfect/PROVENANCE.md and isee15/ofdjs LICENSE",
+    "files": [
+      {
+        "resourceId": "parity-fixtures/legacy/999.ofd",
+        "sha256": "a2b9080ae35184135160c48ce45fb609c35d5ecfdb538ebc16132c48a2186a80",
+        "bytes": 29752,
+        "origin": "public-upstream-test-fixture",
+        "downloadUrl": "https://raw.githubusercontent.com/isee15/ofdjs/09163ca5e362dfef0194b8a4c34d149c30740f49/test/fixtures/999.ofd",
+        "license": "Apache-2.0",
+        "signature": "OFD ZIP containing OFD.xml",
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/corel_wp6.wpd",
+        "sha256": "3417815c24d7227a1dd3fc5b95cb3e84f895a1e608a58432cb5ffcaebb4cae90",
+        "bytes": 1099409,
+        "origin": "public-upstream-test-fixture",
+        "downloadUrl": "https://raw.githubusercontent.com/xberg-io/test_documents/ffc1599155c350804a6d28961da4b1262a70d50d/wordperfect/corel_wp6.wpd",
+        "license": "CC0",
+        "signature": "WordPerfect 6, FF 57 50 43",
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/n.ofd",
+        "sha256": "306dba9b790fe29af0cd1b365ef259c427319e0ba39c3a5f08dc8eaa2d63147c",
+        "bytes": 39835,
+        "origin": "public-upstream-test-fixture",
+        "downloadUrl": "https://raw.githubusercontent.com/isee15/ofdjs/09163ca5e362dfef0194b8a4c34d149c30740f49/test/fixtures/n.ofd",
+        "license": "Apache-2.0",
+        "signature": "OFD ZIP containing OFD.xml",
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-formula.et",
+        "sha256": "817ac5fdd39ee15beae32f5728090234665fd8ce6f1a0577e094458efe694dbb",
+        "bytes": 18944,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "packages/server/test/fixtures/conversion/sheet-formula.xlsx opened in WPS Spreadsheets, Save As",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-formula.ett",
+        "sha256": "7590588a5bc1e797fbfefb1bb991b267f1101050cb4fd357fbc3b78d87d91870",
+        "bytes": 18944,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "WPS Spreadsheets Save As from synthetic-formula.et",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-office-rich.wps",
+        "sha256": "18c976866d535a074a8b8d170b9c32921cd00acd02f384e19e2f6de5bc1f7cfb",
+        "bytes": 17408,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "packages/server/test/fixtures/platform-parity/office-chinese.docx opened in WPS Writer, Save As",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice reopened and exported DOCX with Chinese text, a real table, and word/media/image1.png; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-office-rich.wpt",
+        "sha256": "917907351fc08e17d8082b4ec6b9bc7e0ae9181406227af5228bf44287b48e0b",
+        "bytes": 17920,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "WPS Writer Save As from synthetic-office-rich.wps",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice reopened and exported DOCX with Chinese text, a real table, and word/media/image1.png; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-office.wps",
+        "sha256": "d3ba004d9e83c4fac1eb604bfd59d4cd50fd7b9b46754fcec40e76f04a6bf7e8",
+        "bytes": 10240,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "new WPS Writer document with four Chinese text paragraphs and numeric amounts",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-office.wpt",
+        "sha256": "e77a4537c17538a8cb936a06cc1d9f444161a5731d97c1e1f1d2b04d360d3472",
+        "bytes": 10240,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "WPS Writer Save As from synthetic-office.wps",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-slides.dps",
+        "sha256": "f23b1493b1f90bed5709459bcf7d24429e8ab53b4d33a0856b6c9b7929a61c9b",
+        "bytes": 117760,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "packages/server/test/fixtures/conversion/presentation-two-slides.pptx opened in WPS Presentation, Save As",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/synthetic-slides.dpt",
+        "sha256": "945d1e7a4bf2d15bd60a12ab193c515dceb891d20314e6ee6f2ec022a0aa5cc3",
+        "bytes": 117760,
+        "origin": "locally-synthesized-via-wps-save-as",
+        "source": "WPS Presentation Save As from synthetic-slides.dps",
+        "generator": "WPS Office for Mac 12.1.28496",
+        "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
+        "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
+        "localAvailability": "generated-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/test.ofd",
+        "sha256": "df9985e85ae8dd0c49f974fd472409cdfb4e3d5b1788a33c84b624c1310cdaee",
+        "bytes": 23064,
+        "origin": "public-upstream-test-fixture",
+        "downloadUrl": "https://raw.githubusercontent.com/isee15/ofdjs/09163ca5e362dfef0194b8a4c34d149c30740f49/test/fixtures/test.ofd",
+        "license": "Apache-2.0",
+        "signature": "OFD ZIP containing OFD.xml",
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+      },
+      {
+        "resourceId": "parity-fixtures/legacy/wp6.wpd",
+        "sha256": "45ec5771e60fc55c07f398ddec80e9463f3cd7b80bfadacf93743dcfcef866e7",
+        "bytes": 2074,
+        "origin": "public-upstream-test-fixture",
+        "downloadUrl": "https://raw.githubusercontent.com/xberg-io/test_documents/ffc1599155c350804a6d28961da4b1262a70d50d/wordperfect/wp6.wpd",
+        "license": "Apache-2.0",
+        "signature": "WordPerfect, FF 57 50 43",
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+      }
+    ],
+    "scope": "These are genuine file formats with inspectable content. They are not the six historical private inputs and do not inherit historical 954/1174 pair acceptance."
+  }
 }
