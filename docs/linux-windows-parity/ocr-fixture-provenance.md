@@ -14,3 +14,11 @@ Local source metadata: `/Users/mac/Library/Caches/ledger-flyingmouse-engines/par
 | `pixls-1376-992c969286dc06b1.dng` | [1376](https://raw.pixls.us/getfile.php/1376/nice/Pentax%20-%20K-3%20II%20-%2014bit%20%283%3A2%29.dng); CC0 | `992c969286dc06b1690128a7b14ea74c5b5a46209b0fbf21e83df00807b050b9` | `X-rite`, `colorchecker`, `MSCCPPPC0616` on the open chart |
 
 The additional ARW resource 1028 was SHA-verified and previewed, but its ColorChecker SG shows only patches, so it was rejected as an OCR fixture. The MEF preview contains dark Cyrillic building signage, but it is weaker for an initial OCR check. The two pages of `design/IconGrid.ai` were rendered; they show only pink construction lines and a grid, with no readable text. No OCR engine or backend conversion has yet been run on these fixtures, so visual legibility is a sample-selection result, not an OCR acceptance result.
+
+## Illustrator candidate
+
+| Original `.ai` file | Source and license | SHA-256 verified locally | Text visible in rendered Illustrator PDF-compatible content |
+| --- | --- | --- | --- |
+| `Timeline_Xanthe_Jeff.ai` | [jsmentch/IllustratorArt at `f76a53d`](https://github.com/jsmentch/IllustratorArt/blob/f76a53d16059cc92c3d4ae7c3edecac726d52fb5/ai/Timeline_Xanthe_Jeff.ai); repository MIT | `48b3192a38831598bb3f2479f1e15d986982f8a7c76e9c151510557968be88da` | `silently breathe in`, `meditative pace`, `instructions: interpret as you may` |
+
+The file is 9,693,367 bytes. `file` identifies PDF 1.5; `pdfinfo` reports creator `Adobe Illustrator CC 2017 (Macintosh)`, and the PDF page contains Illustrator `PieceInfo`. Its one page was rendered with Poppler and inspected visually. The source is a real Illustrator file with a PDF-compatible representation, not a renamed PDF or JPEG. OCR and backend conversion are still pending.

@@ -108,7 +108,8 @@ const emit = (batch, item, expected = []) => {
 }
 for (const ext of raw) emit('raw', matrix.inputExtensions[ext].candidate)
 emit('vector', matrix.inputExtensions.ai.candidate)
-for (const item of matrix.ocrCandidates || []) emit('rawOcr', item, item.expectedText || [])
+for (const item of matrix.ocrCandidates || [])
+  emit(item.resourceId.toLowerCase().endsWith('.ai') ? 'vectorOcr' : 'rawOcr', item, item.expectedText || [])
 for (const item of matrix.legacyReplayFixtures.files) {
   const ext = item.resourceId.split('.').pop().toLowerCase()
   const batch = ['wps', 'wpt', 'wpd'].includes(ext) ? 'legacyDoc'
@@ -130,12 +131,14 @@ NODE
     sample="/parity-fixtures/${matches[0]#"$fixtures"/}"
     case "$batch" in
       raw) run_case "$label" "$batch" -e "CONVERSION_RAW_SAMPLE=$sample" ;;
-      rawOcr)
+      rawOcr|vectorOcr)
         if [[ -z "$expected" ]]; then
           printf '%s\t%s\tnot-run-expectation\t\t\n' "$label" "$batch" >>"$run_dir/status.tsv"
           failed=1; run_count=$((run_count + 1)); continue
         fi
-        run_case "$label" "$batch" -e "CONVERSION_RAW_SAMPLE=$sample" \
+        if [[ "$batch" == rawOcr ]]; then key=CONVERSION_RAW_SAMPLE
+        else key=CONVERSION_VECTOR_SAMPLE; fi
+        run_case "$label" "$batch" -e "$key=$sample" \
           -e "CONVERSION_RAW_OCR_EXPECT=${expected%%|*}" ;;
       vector) run_case "$label" "$batch" -e "CONVERSION_VECTOR_SAMPLE=$sample" ;;
       legacyDoc|legacySheet|legacySlide|ofd)

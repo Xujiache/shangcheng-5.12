@@ -83,6 +83,17 @@
       ],
       "source": "https://raw.pixls.us/getfile.php/1376/nice/Pentax - K-3 II - 14bit (3:2).dng",
       "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/design/ocr-candidates/Timeline_Xanthe_Jeff.ai",
+      "sha256": "48b3192a38831598bb3f2479f1e15d986982f8a7c76e9c151510557968be88da",
+      "expectedText": [
+        "silently breathe in",
+        "meditative pace",
+        "instructions: interpret as you may"
+      ],
+      "source": "https://raw.githubusercontent.com/jsmentch/IllustratorArt/f76a53d16059cc92c3d4ae7c3edecac726d52fb5/ai/Timeline_Xanthe_Jeff.ai",
+      "license": "MIT"
     }
   ],
   "trackedSyntheticPdfFixtures": {
