@@ -4,16 +4,7 @@
  * API_BASE：后端基址（不含 /api/v1，request 工具会补 /api/v1/l/*）。
  * 生产环境：业务与格式转换请求均使用统一 HTTPS 后端。
  */
-function developmentApiBase() {
-  try {
-    if (typeof wx === 'undefined' || wx.getAccountInfoSync().miniProgram.envVersion !== 'develop') return ''
-    const saved = String(wx.getStorageSync('ledger_local_api_base') || '').replace(/\/$/, '')
-    if (/^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):\d{2,5}$/.test(saved))
-      return saved
-    return 'http://127.0.0.1:3001'
-  } catch { return '' }
-}
-export const API_BASE = developmentApiBase() || 'https://ewsn.top'
+export const API_BASE = 'https://ewsn.top'
 export const CONVERSION_API_BASE = API_BASE
 export const LOCAL_CONVERSION_TEST = false
 
