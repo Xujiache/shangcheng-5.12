@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -eu
+: "${FLYINGMOUSE_SOURCE_DIR:?}"
+: "${FLYINGMOUSE_DOCSTRUCTURE_PYTHON:?}"
+export PYTHONPATH="$FLYINGMOUSE_SOURCE_DIR/tools/docstructure-engine${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONDONTWRITEBYTECODE=1
+exec "$FLYINGMOUSE_DOCSTRUCTURE_PYTHON" -m flyingmouse_docstructure "$@"

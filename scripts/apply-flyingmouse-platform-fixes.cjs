@@ -12,6 +12,8 @@ const expectedOfficeSha256 = 'e823d8fbd291a1fbfee32a90f9645cb6ee5e71e3f30c10e887
 const expectedOfdSha256 = '3401538b1746c19e06771b88bbd713494618544541a52a7f2ae1149513d2e601'
 const expectedPdfTableSha256 = 'bc03c4af4b123d34abed95d276bea21e2829de9e6b48d66b05f484bccff8f1f1'
 const expectedPdfSha256 = '7e5c912a02d692c1a268f488b12cc0dfcef00f443d79f9b5200edabc4a8d12a2'
+const expectedPdfStructureSha256 = 'b434e049863de42c487dd0411bf924a6c522923bb1dd75ac10810a74e9434f97'
+const expectedResourcePolicySha256 = 'dde3ee42b661c3d21ae3a5fc8d7b0c2d775561467ac2378c7c78d0feb56139da'
 const expectedOcrSha256 = '1ddc8b79a9ec6db76677d5905c1d8e0a6a99ef1afe6a553ec7f1319e73302636'
 const expectedOfdDependencySha256 = '254a22b7ebe342318d03b6c5efb61a6779fa8368318c74c5e04d5f831360847d'
 const before = 'args.push("-loop", "1", "-i", inputPath, "-t", "3");'
@@ -108,6 +110,25 @@ const pdfCoverageAfter = `      if (expected.length <= 1 || actual.includes(expe
         if (sourceIndex === expected.length) return false;
       }
       return true;`
+const memoryBoundHelper = `function linuxMemoryBound(host, read, allowZero = false) {
+  if (process.platform !== "linux" || typeof read !== "function") return host;
+  try {
+    const limited = read();
+    if (Number.isFinite(limited) && (allowZero ? limited >= 0 : limited > 0))
+      return Math.min(host, limited);
+  } catch { /* Missing process limit falls back to host memory. */ }
+  return host;
+}
+
+`
+const structureMemoryBefore = '  const getFreeMemory = dependencies.getFreeMemory || (() => os.freemem());'
+const structureMemoryAfter = '  const getFreeMemory = dependencies.getFreeMemory || (() =>\n' +
+  '    linuxMemoryBound(os.freemem(), process.availableMemory, true));'
+const resourceMemoryBefore = 'function calculateResourceLimits({ totalMemory = os.totalmem(), freeMemory = os.freemem() } = {}) {'
+const resourceMemoryAfter = 'function calculateResourceLimits({\n' +
+  '  totalMemory = linuxMemoryBound(os.totalmem(), process.constrainedMemory),\n' +
+  '  freeMemory = linuxMemoryBound(os.freemem(), process.availableMemory, true)\n' +
+  '} = {}) {'
 
 function hash(bytes) { return createHash('sha256').update(bytes).digest('hex') }
 
@@ -124,13 +145,20 @@ function apply(directory) {
   const pdfTableBytes = fs.readFileSync(pdfTablePath)
   const pdfPath = path.join(directory, 'pdf.js')
   const pdfBytes = fs.readFileSync(pdfPath)
+  const structurePath = path.join(directory, 'pdf-structure-engine.js')
+  const structureBytes = fs.readFileSync(structurePath)
+  const resourcePath = path.join(directory, 'resource-policy.js')
+  const resourceBytes = fs.readFileSync(resourcePath)
   const ocrPath = path.join(directory, 'ocr.js')
   const ocrBytes = fs.readFileSync(ocrPath)
   const ofdDependencyPath = path.join(directory, 'node_modules/@miconvert/ofd-to-pdf/dist/index.js')
   const ofdDependencyBytes = fs.readFileSync(ofdDependencyPath)
   if (hash(bytes) !== expectedImageSha256 || hash(officeBytes) !== expectedOfficeSha256 ||
     hash(ofdBytes) !== expectedOfdSha256 || hash(pdfTableBytes) !== expectedPdfTableSha256 ||
-    hash(pdfBytes) !== expectedPdfSha256 || hash(ocrBytes) !== expectedOcrSha256 ||
+    hash(pdfBytes) !== expectedPdfSha256 ||
+    hash(structureBytes) !== expectedPdfStructureSha256 ||
+    hash(resourceBytes) !== expectedResourcePolicySha256 ||
+    hash(ocrBytes) !== expectedOcrSha256 ||
     hash(ofdDependencyBytes) !== expectedOfdDependencySha256)
     throw new Error('Runtime source does not match pinned a7b9b15 files')
   const code = bytes.toString('utf8')
@@ -138,10 +166,16 @@ function apply(directory) {
   const ofdCode = ofdBytes.toString('utf8')
   let pdfTablePatched = pdfTableBytes.toString('utf8')
   const pdfCode = pdfBytes.toString('utf8')
+  const structureCode = structureBytes.toString('utf8')
+  const resourceCode = resourceBytes.toString('utf8')
   const ocrCode = ocrBytes.toString('utf8')
   const ofdDependencyCode = ofdDependencyBytes.toString('utf8')
   if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
     code.split(rawRunBefore).length !== 2 || pdfCode.split(pdfCoverageBefore).length !== 2 ||
+    structureCode.split(structureMemoryBefore).length !== 2 ||
+    structureCode.split('const DEFAULT_TIMEOUT_MS').length !== 2 ||
+    resourceCode.split(resourceMemoryBefore).length !== 2 ||
+    resourceCode.split('const MiB').length !== 2 ||
     officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2 ||
     ocrCode.split(ocrBefore).length !== 2 ||
     ofdDependencyCode.split(ofdDependencyBefore).length !== 3 ||
@@ -190,16 +224,22 @@ function apply(directory) {
       'const { LIMITS, assertImageMetadata, assertPdfPages } = require("./resource-policy");')
     .replace(zipImageCall, zipImageBatch)
     .replace(pdfCoverageBefore, pdfCoverageAfter)
+  const structurePatched = structureCode.replace('const DEFAULT_TIMEOUT_MS',
+    memoryBoundHelper + 'const DEFAULT_TIMEOUT_MS').replace(structureMemoryBefore, structureMemoryAfter)
+  const resourcePatched = resourceCode.replace('const MiB',
+    memoryBoundHelper + 'const MiB').replace(resourceMemoryBefore, resourceMemoryAfter)
   fs.writeFileSync(imagePath, patched)
   fs.writeFileSync(officePath, officePatched)
   fs.writeFileSync(ofdPath, ofdPatched)
   fs.writeFileSync(pdfTablePath, pdfTablePatched)
   fs.writeFileSync(pdfPath, pdfPatched)
+  fs.writeFileSync(structurePath, structurePatched)
+  fs.writeFileSync(resourcePath, resourcePatched)
   fs.writeFileSync(ocrPath, ocrPatched)
   fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 14,
+    fixRevision: 15,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -210,6 +250,10 @@ function apply(directory) {
     pdfTableRuntimeSha256: hash(Buffer.from(pdfTablePatched)),
     pdfSourceSha256: expectedPdfSha256,
     pdfRuntimeSha256: hash(Buffer.from(pdfPatched)),
+    pdfStructureSourceSha256: expectedPdfStructureSha256,
+    pdfStructureRuntimeSha256: hash(Buffer.from(structurePatched)),
+    resourcePolicySourceSha256: expectedResourcePolicySha256,
+    resourcePolicyRuntimeSha256: hash(Buffer.from(resourcePatched)),
     ocrSourceSha256: expectedOcrSha256,
     ocrRuntimeSha256: hash(Buffer.from(ocrPatched)),
     ofdDependencySourceSha256: expectedOfdDependencySha256,
@@ -230,6 +274,7 @@ function apply(directory) {
       'Treat OFD text Y as a baseline and S path commands as subpath starts',
       'Convert ZIP images in memory-budgeted batches before merging every PDF page',
       'Keep PDF-to-Word layout output when it preserves a source cell plus one superscript glyph',
+      'Bound Linux PDF structure and resource budgets by process container memory',
     ],
   }, null, 2) + '\n')
 }
@@ -237,12 +282,14 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 14 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 15 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||
     fixes.pdfTableSourceSha256 !== expectedPdfTableSha256 ||
     fixes.pdfSourceSha256 !== expectedPdfSha256 ||
+    fixes.pdfStructureSourceSha256 !== expectedPdfStructureSha256 ||
+    fixes.resourcePolicySourceSha256 !== expectedResourcePolicySha256 ||
     fixes.ocrSourceSha256 !== expectedOcrSha256 ||
     fixes.ofdDependencySourceSha256 !== expectedOfdDependencySha256 ||
     fs.realpathSync(path.join(directory, 'node_modules/pdfjs-dist/package.json')) !==
@@ -255,6 +302,8 @@ function verifyRuntime(directory) {
         : item.path === 'ofd-convert.js' ? fixes.ofdRuntimeSha256
           : item.path === 'pdf-table-runtime.js' ? fixes.pdfTableRuntimeSha256
             : item.path === 'pdf.js' ? fixes.pdfRuntimeSha256
+              : item.path === 'pdf-structure-engine.js' ? fixes.pdfStructureRuntimeSha256
+                : item.path === 'resource-policy.js' ? fixes.resourcePolicyRuntimeSha256
               : item.path === 'ocr.js' ? fixes.ocrRuntimeSha256 : item.sha256
     if (actual !== expected) throw new Error(`Runtime source mismatch: ${item.path}`)
   }

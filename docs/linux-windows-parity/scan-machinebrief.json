@@ -1,0 +1,35 @@
+{
+  "scope": "isolated Linux original docstructure inference and original structured writers; synthetic fixture only",
+  "sourceRevision": "a7b9b15d32db80cecedae00e89289088656fb1ae",
+  "fixture": {
+    "path": "packages/server/test/fixtures/platform-parity/scan-table.pdf",
+    "sha256": "8419cbd63268688edc50093671566dfda977dd9b5b615165729d099ca2c871ca"
+  },
+  "runtime": {
+    "network": "none",
+    "memoryLimitBytes": 8589934592,
+    "cpuLimit": 2,
+    "verifiedModelFiles": 37,
+    "cliExitCode": 0,
+    "cliResult": { "code": "OK", "engineVersion": "1.0.1", "pageCount": 1, "elapsedMs": 91437 },
+    "observedMemoryPeakLowerBoundBytes": 4339412992,
+    "memoryPeakNote": "cgroup memory.peak was sampled while the container ran; final peak after exit was not available"
+  },
+  "extraction": {
+    "engine": "pp-structure-v3",
+    "pageCount": 1,
+    "tableCandidateCount": 1,
+    "tableRows": 3,
+    "tableColumns": 2,
+    "cells": [["项目", "金额"], ["门窗订单", "315.50"], ["安装费用", "48.20"]],
+    "tableCandidateConfidence": 0.9996603627999624,
+    "chosenTableScore": 0.99986414512,
+    "figureCount": 1,
+    "warnings": []
+  },
+  "originalStructuredWriters": {
+    "docx": { "bytes": 97270, "sha256": "18571474133ee4af550e600130ee6781867b8fb980e97f79d01021daafaf720f", "editableTableRows": 3, "editableTableColumns": 2, "mediaAssetCount": 3 },
+    "xlsx": { "bytes": 95916, "sha256": "328e98a893a00844d9c42a7ecae96d51951703d49ce0f4f77d1cee6253149220", "editableTableSheet": "P001-T01" }
+  },
+  "boundary": "Direct original engine and writer evidence only; authenticated backend, full matrix, and Windows visual comparison remain separate gates."
+}

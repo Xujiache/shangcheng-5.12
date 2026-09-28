@@ -1,0 +1,17 @@
+{
+  "source": "ci-engines-v1-win32-core.tar.zst/docengine/docengine.exe",
+  "coreArchiveSha256": "d4f13034e719760790d75569b2dd9696facb88b15b8322f28d2aa4c3dbe6a835",
+  "exeSha256": "c79c5fb2f797a04e7d2794ef84a88caac0ec6e8f8348efe310fc127549cd518c",
+  "entrySha256": "36404137ad6657f41e10558f7b72de907d845c851c5e9be76e926853d4e99037",
+  "entryPython": "3.12",
+  "entryFunctions": ["_preprocess_formulas", "_strip_headers_footers", "cmd_convert", "cmd_table", "main"],
+  "embeddedVersions": {
+    "pythonDocx": "1.2.0",
+    "PyMuPDF": "1.28.2",
+    "Camelot": "2.0.0",
+    "NumPy": "2.5.2",
+    "pdf2docx": null
+  },
+  "versionEvidence": "PyInstaller PYZ docx and pymupdf._build code constants; Camelot/NumPy dist-info directory names. pdf2docx exact version not established.",
+  "pdf2docxComparison": "Against PyPI 0.5.8 compiled with Python 3.12, 39 of 55 normalized Windows PYZ modules match; 16 differ, including converter, RawPage, RawPageFitz, Blocks, Cell, Row, Lines, Spans, and ImagesExtractor. Original entry execution with pip 0.5.8 is not full Windows docengine parity."
+}

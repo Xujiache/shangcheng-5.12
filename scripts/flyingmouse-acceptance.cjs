@@ -9,6 +9,7 @@ const previous = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPa
 if (previous && previous.sourceRevision !== catalog.sourceRevision)
   throw new Error('Acceptance evidence belongs to another source revision')
 const existing = new Map((previous?.pairs || []).map((item) => [`${item.input}:${item.output}`, item]))
+let pairEvent
 const record = process.argv.indexOf('--record')
 if (record >= 0) {
   const [input, output, sha256, evidence] = process.argv.slice(record + 1)
@@ -18,6 +19,8 @@ if (record >= 0) {
   Object.assign(pair, {
     fixtureSha256: sha256, original: 'pass', backend: 'pass', quality: 'pass', evidence,
   })
+  pairEvent = { input, output, fixtureSha256: sha256, evidence,
+    assertedStages: { original: 'pass', backend: 'pass', quality: 'pass' }, status: 'pass' }
 }
 const fail = process.argv.indexOf('--fail')
 if (fail >= 0) {
@@ -27,7 +30,13 @@ if (fail >= 0) {
     !/^[a-f0-9]{64}$/.test(sha256) || !evidence)
     throw new Error('Fail requires an original pair, stage, fixture SHA-256, and evidence label')
   Object.assign(pair, { fixtureSha256: sha256, [stage]: 'fail', evidence })
+  pairEvent = { input, output, fixtureSha256: sha256, evidence,
+    assertedStages: { [stage]: 'fail' }, status: 'fail' }
 }
+if (pairEvent && process.env.FLYINGMOUSE_ACCEPTANCE_READONLY === '1' &&
+  process.env.CONVERSION_PAIR_EVIDENCE)
+  fs.appendFileSync(process.env.CONVERSION_PAIR_EVIDENCE,
+    JSON.stringify({ ...pairEvent, at: new Date().toISOString() }) + '\n')
 const pairs = catalog.operations.filter((item) => item.kind === 'convert')
   .flatMap((operation) => operation.inputExtensions.map((input) => {
     const output = operation.targetExtension
@@ -63,6 +72,8 @@ if (process.argv.includes('--gate')) {
   console.log(JSON.stringify({ counts: report.counts, gates: report.gates }, null, 2))
   if (report.counts.passed !== report.counts.total ||
     Object.values(report.gates).some((value) => value !== 'pass')) process.exitCode = 1
+} else if (process.env.FLYINGMOUSE_ACCEPTANCE_READONLY === '1') {
+  console.log(`${report.counts.passed}/${report.counts.total} pairs recorded; read-only validation`)
 } else {
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n')
   console.log(`${report.counts.passed}/${report.counts.total} pairs accepted; ${report.counts.failed} failed`)

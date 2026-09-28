@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { spawn, ChildProcess } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
 import { lstat, mkdir, mkdtemp, realpath, rm, stat, statfs, writeFile } from 'node:fs/promises'
-import { freemem, tmpdir } from 'node:os'
+import { tmpdir } from 'node:os'
 import { basename, extname, join, resolve, sep } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Transform } from 'node:stream'
@@ -18,6 +18,7 @@ import { markdownSidecars, zipOutputs } from './conversion.outputs'
 import catalog from '../modules/ledger-conversion/conversion.catalog.json'
 import { assertConversionPasswordKey, decryptConversionPassword } from '../modules/ledger-conversion/conversion.secrets'
 import { serverEventId } from '../modules/ledger/tool-events.service'
+import { freeWorkerMemoryBytes } from './conversion.capacity'
 
 const QUEUE = 'ledger:conversions:queue'
 const WORKER_HEARTBEAT = 'ledger:conversions:worker:online'
@@ -62,7 +63,7 @@ async function workerCapacity() {
     maxBatchBytes: Math.min(32 * 1024 ** 3, maxInputBytes),
     maxFiles: 1000,
     freeDiskBytes,
-    freeMemoryBytes: freemem(),
+    freeMemoryBytes: freeWorkerMemoryBytes(),
   }
 }
 

@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 const { createHash, randomUUID } = require('node:crypto')
 const { execFileSync, spawn } = require('node:child_process')
-const { mkdir, open, readFile, writeFile, mkdtemp, rm, stat } = require('node:fs/promises')
+const { appendFile, copyFile, mkdir, open, readFile, writeFile, mkdtemp, rm, stat } = require('node:fs/promises')
 const { homedir, tmpdir } = require('node:os')
 const { basename, dirname, join } = require('node:path')
+const { pathToFileURL } = require('node:url')
 const { PrismaClient } = require('@prisma/client')
 const { JwtService } = require('@nestjs/jwt')
 const sharp = require('sharp')
-const { PDFDocument, StandardFonts } = require('../../../vendor/flyingmouse-format/upstream-a7b9b15/node_modules/pdf-lib')
 const engineSource = process.env.FLYINGMOUSE_TEST_SOURCE_DIR ||
   join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
+const { PDFDocument, StandardFonts } = require(join(engineSource, 'node_modules/pdf-lib'))
 
 const base = new URL(process.env.CONVERSION_TEST_API || 'http://127.0.0.1:3001')
 const database = new URL(process.env.DATABASE_URL || 'postgres://missing:missing@invalid/db')
@@ -23,24 +24,34 @@ let userId
 let cleanupJob
 const outstanding = new Set()
 
+function rtfText(file) {
+  const work = require('node:fs').mkdtempSync(join(tmpdir(), 'ledger-rtf-text-'))
+  try {
+    execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
+      [`-env:UserInstallation=${pathToFileURL(join(work, 'profile')).href}`,
+        '--headless', '--convert-to', 'txt:Text', '--outdir', work, file])
+    return require('node:fs').readFileSync(join(work, `${basename(file, '.rtf')}.txt`), 'utf8')
+  } finally { require('node:fs').rmSync(work, { recursive: true, force: true }) }
+}
+
 function originalCliEnv() {
   const source = engineSource
   const engines = process.env.CONVERSION_ENGINE_ROOT ||
     join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/darwin-arm64')
   return {
     ...process.env,
-    FLYINGMOUSE_FFMPEG_PATH: join(engines, 'runtime/bin/ffmpeg'),
-    FLYINGMOUSE_DCRAW_PATH: process.env.CONVERSION_DCRAW_PATH ||
+    FLYINGMOUSE_FFMPEG_PATH: process.env.FLYINGMOUSE_FFMPEG_PATH || join(engines, 'runtime/bin/ffmpeg'),
+    FLYINGMOUSE_DCRAW_PATH: process.env.FLYINGMOUSE_DCRAW_PATH || process.env.CONVERSION_DCRAW_PATH ||
       join(homedir(), 'Library/Caches/LibRaw-0.21.5/bin/dcraw_emu'),
-    FLYINGMOUSE_LIBREOFFICE_PATH: join(engines, 'libreoffice/LibreOffice.app/Contents/MacOS/soffice'),
-    FLYINGMOUSE_PDFTOPPM_PATH: join(engines, 'runtime/bin/pdftoppm'),
-    FLYINGMOUSE_TESSDATA_PATH: join(engines, 'tessdata'),
-    FLYINGMOUSE_PANDOC_PATH: join(source, 'bin/pandoc/pandoc'),
+    FLYINGMOUSE_LIBREOFFICE_PATH: process.env.FLYINGMOUSE_LIBREOFFICE_PATH || join(engines, 'libreoffice/LibreOffice.app/Contents/MacOS/soffice'),
+    FLYINGMOUSE_PDFTOPPM_PATH: process.env.FLYINGMOUSE_PDFTOPPM_PATH || join(engines, 'runtime/bin/pdftoppm'),
+    FLYINGMOUSE_TESSDATA_PATH: process.env.FLYINGMOUSE_TESSDATA_PATH || join(engines, 'tessdata'),
+    FLYINGMOUSE_PANDOC_PATH: process.env.FLYINGMOUSE_PANDOC_PATH || join(source, 'bin/pandoc/pandoc'),
     FLYINGMOUSE_OFD_FONT_DIR: process.env.FLYINGMOUSE_OFD_FONT_DIR ||
       join(homedir(), 'Library/Caches/ledger-flyingmouse-engines/ofd-fonts-regular'),
-    FLYINGMOUSE_QPDF_PATH: join(homedir(), 'Library/Caches/ledger-qpdf-osx-arm64/bin/qpdf'),
-    DYLD_LIBRARY_PATH: join(engines, 'runtime/lib') +
-      (process.env.DYLD_LIBRARY_PATH ? `:${process.env.DYLD_LIBRARY_PATH}` : ''),
+    FLYINGMOUSE_QPDF_PATH: process.env.FLYINGMOUSE_QPDF_PATH || join(homedir(), 'Library/Caches/ledger-qpdf-osx-arm64/bin/qpdf'),
+    ...(process.platform === 'darwin' ? { DYLD_LIBRARY_PATH: join(engines, 'runtime/lib') +
+      (process.env.DYLD_LIBRARY_PATH ? `:${process.env.DYLD_LIBRARY_PATH}` : '') } : {}),
   }
 }
 
@@ -52,6 +63,8 @@ async function pdfPage(label) {
 }
 
 async function verifyBaseline(convert) {
+  const section = process.env.CONVERSION_BASELINE_SECTION
+  if (!section || section === 'baseline') {
   const markdown = await convert('convert:md', [['sample.txt', Buffer.from('你好，原版转换验收。\n')]])
   if (!markdown.bytes.toString('utf8').includes('你好，原版转换验收。')) throw new Error('Chinese text was lost')
   console.log('PASS txt:md, authenticated upload/download and Chinese content')
@@ -116,7 +129,9 @@ async function verifyBaseline(convert) {
   if ((await PDFDocument.load(images.bytes)).getPageCount() !== 2)
     throw new Error('Image merge lost pages')
   console.log('PASS images-to-pdf, two images retained')
+  }
 
+  if (!section || section === 'text') {
   const textSources = {
     txt: '量窗助手中文验收\n第二行 12345\n',
     md: '# 量窗助手中文验收\n\n第二行 12345\n',
@@ -190,10 +205,12 @@ async function verifyBaseline(convert) {
       }
     }
   } finally { await rm(textWork, { recursive: true, force: true }) }
+  }
 
+  if (!section || section === 'image') {
   const imageSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="320">' +
     '<rect width="600" height="320" fill="white"/>' +
-    '<text x="45" y="125" font-family="PingFang SC" font-size="54">量窗助手 12345</text>' +
+    `<text x="45" y="125" font-family="${process.platform === 'darwin' ? 'PingFang SC' : 'Noto Sans CJK SC'}" font-size="54">量窗助手 12345</text>` +
     '<rect x="45" y="185" width="220" height="80" fill="#008866"/></svg>'
   const imagePng = await sharp(Buffer.from(imageSvg)).png().toBuffer()
   const imageWork = await mkdtemp(join(tmpdir(), 'ledger-image-pairs-'))
@@ -233,15 +250,20 @@ async function verifyBaseline(convert) {
         if (inputExtension === 'j2k')
           execFileSync(ffmpeg, ['-v', 'error', '-i', png, '-c:v', 'jpeg2000', '-format',
             'j2k', '-f', 'image2', input])
-        else if (inputExtension === 'psd')
-          execFileSync('sips', ['-s', 'format', 'psd', png, '--out', input])
+        else if (inputExtension === 'psd') {
+          if (!process.env.CONVERSION_PSD_SAMPLE)
+            throw new Error('PSD requires CONVERSION_PSD_SAMPLE pointing to a genuine PSD fixture')
+          await writeFile(input, await readFile(process.env.CONVERSION_PSD_SAMPLE))
+        }
         else if (inputExtension === 'jxl')
           execFileSync(ffmpeg, ['-v', 'error', '-i', png, '-c:v', 'libjxl',
             '-distance', '0', '-effort', '7', input])
         else if (inputExtension === 'heic' || inputExtension === 'heif') {
           const heic = join(imageWork, 'source.heic')
           if (!require('node:fs').existsSync(heic))
-            execFileSync('sips', ['-s', 'format', 'heic', png, '--out', heic])
+            execFileSync(process.platform === 'darwin' ? 'sips' : 'heif-enc',
+              process.platform === 'darwin'
+                ? ['-s', 'format', 'heic', png, '--out', heic] : [png, '-o', heic])
           await writeFile(input, await readFile(heic))
         } else if (['jpe', 'jpeg', 'jfif', 'tif'].includes(inputExtension)) {
           const target = inputExtension === 'tif' ? 'tiff' : 'jpg'
@@ -312,7 +334,9 @@ async function verifyBaseline(convert) {
       }
     }
   } finally { await rm(imageWork, { recursive: true, force: true }) }
+  }
 
+  if (!section || section === 'audio') {
   const audioWork = await mkdtemp(join(tmpdir(), 'ledger-audio-pairs-'))
   try {
     const source = engineSource
@@ -369,16 +393,21 @@ async function verifyBaseline(convert) {
       }
     }
   } finally { await rm(audioWork, { recursive: true, force: true }) }
+  }
 }
 
 async function main() {
+  let pdfParityFailures = 0
+  const jobTimeoutSeconds = Number(process.env.CONVERSION_TEST_JOB_TIMEOUT_SECONDS || 90)
+  if (!Number.isInteger(jobTimeoutSeconds) || jobTimeoutSeconds < 30 || jobTimeoutSeconds > 720)
+    throw new Error('CONVERSION_TEST_JOB_TIMEOUT_SECONDS must be 30 through 720')
   const user = await prisma.ledgerUser.create({
     data: { nickname: '本地转换验收', wxOpenid: `local-conversion-${randomUUID()}` },
   })
   userId = user.id
   const token = await new JwtService({ secret: process.env.JWT_SECRET }).signAsync({
     sub: userId, scope: 'ledger', jti: randomUUID(),
-  }, { expiresIn: '1h' })
+  }, { expiresIn: '3h' })
   const auth = { Authorization: `Bearer ${token}` }
   async function json(route, method = 'GET', data) {
     const response = await fetch(new URL(`/api/v1/l/conversions${route}`, base), {
@@ -418,16 +447,25 @@ async function main() {
   }
 
   async function convert(operationId, files, options = {}) {
+    const jobEvidence = { operationId, startedAt: new Date().toISOString(),
+      inputs: files.map(([name, bytes]) => ({ name, sha256: createHash('sha256').update(bytes).digest('hex'),
+        bytes: bytes.length })), status: 'fail' }
+    let job
+    let result
+    try {
     const uploadIds = []
     for (const [name, bytes] of files) uploadIds.push(await upload(name, bytes))
-    const job = await json('/jobs', 'POST', { operationId, uploadIds, options })
+    job = await json('/jobs', 'POST', { operationId, uploadIds, options })
+    jobEvidence.jobId = job.id
     outstanding.add(job.id)
-    let result
-    for (let attempt = 0; attempt < 90; attempt++) {
+    for (let attempt = 0; attempt < jobTimeoutSeconds; attempt++) {
       result = await json(`/jobs/${job.id}`)
       if (['succeeded', 'failed', 'cancelled'].includes(result.status)) break
       await new Promise((done) => { setTimeout(done, 1000) })
     }
+    jobEvidence.terminalStatus = ['succeeded', 'failed', 'cancelled'].includes(result?.status)
+      ? result.status : 'timed-out'
+    jobEvidence.warnings = result?.warnings || []
     if (result?.status !== 'succeeded' || !result.assets.length)
       throw new Error(`${operationId}: ${result?.status || 'timed out'} ${result?.error || ''}`)
     if (options.password) {
@@ -446,12 +484,157 @@ async function main() {
     })
     if (!response.ok) throw new Error(`${operationId} download failed: ${response.status}`)
     const bytes = Buffer.from(await response.arrayBuffer())
+    jobEvidence.output = { sha256: createHash('sha256').update(bytes).digest('hex'),
+      bytes: bytes.length }
     await cleanupJob(job.id)
     outstanding.delete(job.id)
+    jobEvidence.status = 'pass'
     return { bytes, result }
+    } catch (error) {
+      jobEvidence.error = String(error.message || error).slice(0, 500)
+      if (!jobEvidence.terminalStatus) jobEvidence.terminalStatus = result?.status || 'not-created'
+      throw error
+    } finally {
+      if (process.env.CONVERSION_JOB_EVIDENCE)
+        await appendFile(process.env.CONVERSION_JOB_EVIDENCE,
+          JSON.stringify({ ...jobEvidence, finishedAt: new Date().toISOString() }) + '\n')
+    }
   }
 
-  if (!process.env.CONVERSION_SKIP_BASELINE) await verifyBaseline(convert)
+  if (!process.env.CONVERSION_SKIP_BASELINE || process.env.CONVERSION_BASELINE_SECTION)
+    await verifyBaseline(convert)
+
+  if (process.env.CONVERSION_PDF_PARITY_CASES) {
+    const cases = JSON.parse(await readFile(process.env.CONVERSION_PDF_PARITY_CASES, 'utf8'))
+    if (!Array.isArray(cases) || !cases.length || !process.env.CONVERSION_PARITY_EVIDENCE)
+      throw new Error('PDF parity requires cases and CONVERSION_PARITY_EVIDENCE')
+    const artifactRoot = join(dirname(process.env.CONVERSION_PARITY_EVIDENCE),
+      `${basename(process.env.CONVERSION_PARITY_EVIDENCE, '.jsonl')}-files`)
+    await mkdir(artifactRoot)
+    const work = await mkdtemp(join(tmpdir(), 'ledger-pdf-parity-'))
+    const ExcelJS = require(join(engineSource, 'node_modules/exceljs'))
+    const hash = (bytes) => createHash('sha256').update(bytes).digest('hex')
+    const normalize = (value) => String(value || '').replace(/\s+/g, '')
+    const render = async (file, key) => {
+      const directory = join(work, `render-${key}`)
+      await mkdir(directory)
+      execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
+        [`-env:UserInstallation=${pathToFileURL(join(directory, 'profile')).href}`, '--headless',
+          '--convert-to', 'pdf', '--outdir', directory, file])
+      const pdf = join(directory, `${basename(file, '.docx').replace(/\.xlsx$/, '')}.pdf`)
+      const pageCount = (await PDFDocument.load(await readFile(pdf))).getPageCount()
+      const pages = []
+      for (let page = 1; page <= pageCount; page++) {
+        const image = join(directory, `page-${page}`)
+        execFileSync(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH,
+          ['-f', String(page), '-l', String(page), '-r', '120', '-singlefile', '-png', pdf, image])
+        const bitmap = sharp(`${image}.png`)
+        const metadata = await bitmap.metadata()
+        const pixels = await bitmap.removeAlpha().raw().toBuffer()
+        const artifact = `${key}-page-${page}.png`
+        await copyFile(`${image}.png`, join(artifactRoot, artifact))
+        pages.push({ width: metadata.width, height: metadata.height, pixelSha256: hash(pixels),
+          pngSha256: hash(await readFile(`${image}.png`)),
+          pngPath: join(basename(artifactRoot), artifact) })
+      }
+      return { pageCount, pages }
+    }
+    let failures = 0
+    try {
+      for (const [caseIndex, item] of cases.entries()) {
+        if (!['native', 'scan', 'mixed'].includes(item.kind) || !item.path ||
+          !Array.isArray(item.expect) || !item.expect.length ||
+          !item.expect.every((value) => typeof value === 'string' && value.length))
+          throw new Error('PDF parity case requires kind, path and nonempty expect strings')
+        const inputPath = require('node:path').resolve(dirname(process.env.CONVERSION_PDF_PARITY_CASES), item.path)
+        const source = await readFile(inputPath)
+        if (source.subarray(0, 5).toString() !== '%PDF-') throw new Error(`Invalid PDF: ${inputPath}`)
+        for (const target of ['docx', 'xlsx']) {
+          const label = `${item.kind}:${target}:${basename(inputPath)}`
+          const artifactKey = `${caseIndex + 1}-${item.kind}-${target}`
+          const directPath = join(work, `${randomUUID()}.${target}`)
+          const evidence = { label, inputSha256: hash(source), target, status: 'fail', files: {} }
+          try {
+            const response = execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert',
+              inputPath, '--to', target, '--output', directPath, '--json'],
+            { env: originalCliEnv(), timeout: 12 * 60 * 1000, encoding: 'utf8' })
+            evidence.directWarnings = JSON.parse(response.trim()).outputs?.flatMap((output) =>
+              output.warnings || []) || []
+            const direct = await readFile(directPath)
+            evidence.directSha256 = hash(direct)
+            const directOutput = `${artifactKey}-direct.${target}`
+            await copyFile(directPath, join(artifactRoot, directOutput))
+            evidence.files.directOutput = join(basename(artifactRoot), directOutput)
+            if (evidence.directWarnings.some((warning) =>
+              warning?.code === 'PDF_DOCX_LAYOUT_FALLBACK'))
+              throw new Error('PDF_DOCX_LAYOUT_FALLBACK: direct conversion degraded layout')
+            const converted = await convert(`convert:${target}`, [[basename(inputPath), source]])
+            const backend = converted.bytes
+            evidence.backendSha256 = hash(backend)
+            const backendOutput = `${artifactKey}-backend.${target}`
+            await writeFile(join(artifactRoot, backendOutput), backend)
+            evidence.files.backendOutput = join(basename(artifactRoot), backendOutput)
+            evidence.backendWarnings = converted.result.warnings || []
+            if ([...evidence.directWarnings, ...evidence.backendWarnings].some((warning) =>
+              warning?.code === 'PDF_DOCX_LAYOUT_FALLBACK' ||
+              (typeof warning === 'string' && (warning.includes('版式引擎输出存在缺字') ||
+                warning.includes('版式引擎不可用')))))
+              throw new Error('PDF_DOCX_LAYOUT_FALLBACK: conversion degraded layout')
+            const extract = async (bytes, file) => {
+              await writeFile(file, bytes)
+              if (target === 'docx') {
+                execFileSync('unzip', ['-tqq', file])
+                const names = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+                  .trim().split('\n')
+                const assets = names.filter((name) => name.startsWith('word/media/')).length
+                if (file === directCheckPath) evidence.directAssets = assets
+                else evidence.backendAssets = assets
+                const xml = execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
+                return xml.replace(/<[^>]+>/g, '')
+              }
+              const book = new ExcelJS.Workbook()
+              await book.xlsx.readFile(file)
+              return book.worksheets.flatMap((sheet) => {
+                const values = []
+                sheet.eachRow((row) => row.eachCell((cell) => values.push(String(cell.value ?? ''))))
+                return values
+              }).join(' ')
+            }
+            const directCheckPath = join(work, `${randomUUID()}-direct.${target}`)
+            const backendCheckPath = join(work, `${randomUUID()}-backend.${target}`)
+            const directText = normalize(await extract(direct, directCheckPath))
+            const backendText = normalize(await extract(backend, backendCheckPath))
+            evidence.contentSha256 = hash(Buffer.from(backendText))
+            evidence.directContentSha256 = hash(Buffer.from(directText))
+            evidence.contentLength = backendText.length
+            evidence.directRender = await render(directCheckPath, `${artifactKey}-direct`)
+            evidence.backendRender = await render(backendCheckPath, `${artifactKey}-backend`)
+            const matched = item.expect.every((phrase) => backendText.includes(normalize(phrase)))
+            if (!matched || directText !== backendText || !backendText ||
+              (target === 'docx' && (evidence.directAssets < (item.expectAssets?.docx || 0) ||
+                evidence.backendAssets < (item.expectAssets?.docx || 0))) ||
+              JSON.stringify(evidence.directRender) !== JSON.stringify(evidence.backendRender))
+              throw new Error('Expected content missing or direct/backend content/render differs')
+            execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+              '--record', 'pdf', target, evidence.inputSha256,
+              'synthetic PDF: direct original and authenticated backend content, assets, and renders checked'])
+            Object.assign(evidence, { status: 'pass', matched: item.expect })
+            console.log(`PASS ${label}, content retained and direct/backend matched`)
+          } catch (error) {
+            failures++
+            evidence.error = String(error.message || error).slice(0, 500)
+            try {
+              execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+                '--fail', 'pdf', target, 'quality', evidence.inputSha256, evidence.error])
+            } catch (recordError) { evidence.recordError = String(recordError.message || recordError).slice(0, 300) }
+            console.error(`FAIL ${label}: ${evidence.error}`)
+          }
+          await appendFile(process.env.CONVERSION_PARITY_EVIDENCE, JSON.stringify(evidence) + '\n')
+        }
+      }
+    } finally { await rm(work, { recursive: true, force: true }) }
+    pdfParityFailures = failures
+  }
 
   if (process.env.CONVERSION_BAD_RAW) {
     let failure
@@ -1115,6 +1298,11 @@ async function main() {
         .map((match) => match[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'"))
         .join('').replace(/\s+/g, '')
+      if (process.env.CONVERSION_REQUIRE_OFFICE_STRUCTURE &&
+        (!/<w:tbl(?:\s|>)/.test(sourceXml) || !execFileSync('unzip',
+        ['-Z', '-1', process.env.CONVERSION_SAMPLE_DOCX], { encoding: 'utf8' })
+        .split('\n').some((name) => name.startsWith('word/media/') && !name.endsWith('/'))))
+        throw new Error('Document fixture requires an editable table and embedded image')
       const chunks = []
       for (let index = 0; index + 10 <= sourceText.length; index += 10)
         chunks.push(sourceText.slice(index, index + 10))
@@ -1132,8 +1320,7 @@ async function main() {
           return execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' })
             .replace(/<[^>]+>/g, '')
         }
-        if (target === 'rtf')
-          return execFileSync('textutil', ['-convert', 'txt', '-stdout', file], { encoding: 'utf8' })
+        if (target === 'rtf') return rtfText(file)
         const value = await readFile(file, 'utf8')
         return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
       }
@@ -1143,7 +1330,7 @@ async function main() {
         const input = join(documentWork, `input.${inputExtension}`)
         if (inputExtension === 'doc') {
           execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
-            [`-env:UserInstallation=file://${join(documentWork, 'source-doc-profile')}`,
+            [`-env:UserInstallation=${pathToFileURL(join(documentWork, 'source-doc-profile')).href}`,
               '--headless', '--convert-to', 'doc:MS Word 97', '--outdir', documentWork,
               process.env.CONVERSION_SAMPLE_DOCX])
           const generated = join(documentWork,
@@ -1167,6 +1354,19 @@ async function main() {
           if (result !== (await extract(directPath, target)).replace(/\s+/g, '') ||
             chunks.filter((part) => result.includes(part)).length / chunks.length < 0.7)
             throw new Error(`${label}: decoded text differs from original or lost source text`)
+          if (target === 'docx' && process.env.CONVERSION_REQUIRE_OFFICE_STRUCTURE) {
+            const structure = (file) => ({
+              tables: (execFileSync('unzip', ['-p', file, 'word/document.xml'],
+                { encoding: 'utf8' }).match(/<w:tbl(?:\s|>)/g) || []).length,
+              images: execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+                .split('\n').filter((name) => name.startsWith('word/media/') && !name.endsWith('/')).length,
+            })
+            const directStructure = structure(directPath)
+            const backendStructure = structure(backendPath)
+            if (directStructure.tables < 1 || directStructure.images < 1 ||
+              JSON.stringify(directStructure) !== JSON.stringify(backendStructure))
+              throw new Error(`${label}: editable table or embedded image was lost`)
+          }
           execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
             '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
             'real Chinese document roundtrip: direct original and authenticated backend, decoded text retained'])
@@ -1208,8 +1408,7 @@ async function main() {
             target === 'docx' ? 'word/document.xml' : 'content.xml'], { encoding: 'utf8' })
             .replace(/<[^>]+>/g, ''))
         }
-        if (target === 'rtf') return normalize(execFileSync('textutil',
-          ['-convert', 'txt', '-stdout', file], { encoding: 'utf8' }))
+        if (target === 'rtf') return normalize(rtfText(file))
         throw new Error(`Unexpected legacy document target ${target}`)
       }
       for (const target of targets) {
@@ -1245,7 +1444,7 @@ async function main() {
       await writeFile(input, fixture)
       const expected = process.env.CONVERSION_LEGACY_SHEET_EXPECT.split('|')
         .map((value) => value.replace(/\s+/g, ''))
-      const ExcelJS = require('../../../vendor/flyingmouse-format/upstream-a7b9b15/node_modules/exceljs')
+      const ExcelJS = require(join(engineSource, 'node_modules/exceljs'))
       const inspect = async (file, target, label) => {
         if (['csv', 'html', 'pdf'].includes(target)) {
           const value = target === 'pdf' ? execFileSync(
@@ -1263,7 +1462,7 @@ async function main() {
           const outdir = join(work, `xlsx-${label}`)
           await mkdir(outdir)
           execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
-            [`-env:UserInstallation=file://${join(work, `profile-${label}`)}`,
+            [`-env:UserInstallation=${pathToFileURL(join(work, `profile-${label}`)).href}`,
               '--headless', '--convert-to', 'xlsx', '--outdir', outdir, file])
           workbookPath = join(outdir, `${label}.xlsx`)
         }
@@ -1405,7 +1604,7 @@ async function main() {
         '--to', 'xlsx', '--output', direct, '--json'], { env: originalCliEnv() })
       const result = await convert('convert:xlsx', [['input.pdf', fixture]])
       await writeFile(backend, result.bytes)
-      const ExcelJS = require('../../../vendor/flyingmouse-format/upstream-a7b9b15/node_modules/exceljs')
+      const ExcelJS = require(join(engineSource, 'node_modules/exceljs'))
       const cells = async (path) => {
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.readFile(path)
@@ -1541,7 +1740,7 @@ async function main() {
         let document = file
         if (target === 'xls') {
           const soffice = originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH
-          execFileSync(soffice, [`-env:UserInstallation=file://${join(sheetWork, `profile-${label}`)}`,
+          execFileSync(soffice, [`-env:UserInstallation=${pathToFileURL(join(sheetWork, `profile-${label}`)).href}`,
             '--headless', '--convert-to', 'xlsx', '--outdir', sheetWork, file])
           document = file.replace(/\.xls$/, '.xlsx')
         }
@@ -1652,7 +1851,7 @@ async function main() {
           const soffice = originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH
           const convertedDir = join(macroWork, `converted-${label}`)
           await mkdir(convertedDir)
-          execFileSync(soffice, [`-env:UserInstallation=file://${join(macroWork, `profile-${label}`)}`,
+          execFileSync(soffice, [`-env:UserInstallation=${pathToFileURL(join(macroWork, `profile-${label}`)).href}`,
             '--headless', '--convert-to', 'xlsx', '--outdir', convertedDir, file])
           document = join(convertedDir, basename(file).replace(/\.xls$/, '.xlsx'))
         }
@@ -1713,7 +1912,7 @@ async function main() {
         '--to', 'odp', '--output', odp, '--json'], { env: originalCliEnv() })
       const ppt = join(presentationWork, 'slides.ppt')
       execFileSync(originalCliEnv().FLYINGMOUSE_LIBREOFFICE_PATH,
-        [`-env:UserInstallation=file://${join(presentationWork, 'legacy-profile')}`,
+        [`-env:UserInstallation=${pathToFileURL(join(presentationWork, 'legacy-profile')).href}`,
           '--headless', '--convert-to', 'ppt:MS PowerPoint 97', '--outdir',
           presentationWork, pptx])
       if (!(await readFile(ppt)).subarray(0, 8).equals(Buffer.from('d0cf11e0a1b11ae1', 'hex')))
@@ -1997,8 +2196,7 @@ async function main() {
             return execFileSync('unzip', ['-p', file, 'content.xml'], { encoding: 'utf8' })
               .replace(/<[^>]+>/g, '')
           }
-          if (target === 'rtf')
-            return execFileSync('textutil', ['-convert', 'txt', '-stdout', file], { encoding: 'utf8' })
+          if (target === 'rtf') return rtfText(file)
           const value = require('node:fs').readFileSync(file, 'utf8')
           return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
         }
@@ -2017,6 +2215,7 @@ async function main() {
       'real DOCX: direct original and authenticated backend, same page count and text; source text retained'])
     console.log(`PASS real DOCX:PDF, ${pages} pages and text match direct original`)
   }
+  if (pdfParityFailures) throw new Error(`${pdfParityFailures} PDF parity cases failed; see evidence JSONL`)
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1 }).finally(async () => {

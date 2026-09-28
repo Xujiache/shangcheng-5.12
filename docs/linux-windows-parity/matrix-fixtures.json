@@ -1,0 +1,1529 @@
+{
+  "sourceRevision": "a7b9b15d32db80cecedae00e89289088656fb1ae",
+  "acceptanceLedger": "docs/flyingmouse-migration/acceptance-a7b9b15.json",
+  "scope": "External and tracked fixtures relevant to historical acceptance and unaccepted RAW/AI pairs; downloaded public RAW candidates require Linux direct/backend quality checks. Candidate hashes do not prove current availability or output quality. Six historical WPS/DPS/DPT/ET/ETT fixtures and one DOCX are untracked local inputs; only hashes are retained, not private paths or contents.",
+  "trackedSyntheticPdfFixtures": {
+    "root": "packages/server/test/fixtures/platform-parity",
+    "files": {
+      "native-table.pdf": "bbaa09d06f28a970094f3cc22ee7f95f74f1fee4b01799c3ef86bd6917930062",
+      "scan-table.pdf": "8419cbd63268688edc50093671566dfda977dd9b5b615165729d099ca2c871ca",
+      "mixed-table.pdf": "e670824af82ebc9794be34ca59464bd6b086e1dbdef97fc0bbf31126d8712a93"
+    }
+  },
+  "inputExtensions": {
+    "3fr": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "f7c0f941bd542ec638073bfa9febdc4efa01f4a4855d73c5d9218b975d1de91a",
+        "source": "https://raw.pixls.us/",
+        "license": "CC BY-NC-SA 4.0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/709/nice/Hasselblad%20-%20CFV.3FR",
+        "resourceId": "parity-fixtures/raw/public-f7c0f941bd542ec6.3fr",
+        "camera": "Hasselblad CFV",
+        "decodedDimensions": [
+          4096,
+          4096
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 22810624,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 50333520
+      }
+    },
+    "ai": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69"
+      ],
+      "candidate": {
+        "sha256": "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69",
+        "source": "https://github.com/meetuparchive/swarm-icons/blob/master/design_resources/IconGrid.ai",
+        "license": "MIT (declared by upstream package.json)",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "genuine public AI template, same bytes as historical accepted fixture",
+        "downloadUrl": "https://raw.githubusercontent.com/meetuparchive/swarm-icons/master/design_resources/IconGrid.ai",
+        "resourceId": "parity-fixtures/design/IconGrid.ai",
+        "bytes": 209271,
+        "formatEvidence": "Adobe Illustrator CC 22.1 CreatorTool; /PieceInfo/Illustrator and /AIPrivateData present; PDF-compatible two-page AI",
+        "synthetic": false,
+        "licenseEvidenceUrl": "https://github.com/meetuparchive/swarm-icons/blob/master/package.json",
+        "syntheticLimitation": "No Illustrator authoring engine on this Mac; preserving original Illustrator private data requires a genuine AI file, so this public fixture is reproducible but not newly generated."
+      }
+    },
+    "arw": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/1582/nice/Sony%20-%20ILCE-7S%20-%2014bit%2014bit%20compressed%20%283%3A2%29.ARW",
+        "resourceId": "parity-fixtures/raw/public-a35ebb2fbec929da.arw",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "camera": "Sony ILCE-7S",
+        "decodedDimensions": [
+          2784,
+          1872
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 6160384,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 15636816
+      }
+    },
+    "cr2": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+      ],
+      "candidate": {
+        "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; Linux pairs unverified",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/2102/nice/Canon%20-%20EOS%2040D%20-%20sRAW2%20%28sRAW%29%20%283%3A2%29.CR2",
+        "resourceId": "parity-fixtures/raw/public-ba644e7dd2abe74e.cr2",
+        "camera": "Canon EOS 40D",
+        "decodedDimensions": [
+          1944,
+          1296
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 5805950,
+        "matchesHistoricalAcceptedFixture": true,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 7560144
+      }
+    },
+    "cr3": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/4659/nice/Canon%20-%20EOS%20R6%20-%203%3A2.CR3",
+        "resourceId": "parity-fixtures/raw/public-74abb0a113d075ad.cr3",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "camera": "Canon EOS R6",
+        "decodedDimensions": [
+          3407,
+          2271
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 5273174,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 23213763
+      }
+    },
+    "crw": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "3e583286dd5e63b03aca3de6671b7921fc9fd814a7f4cbed50a20c028728c802"
+      ],
+      "candidate": {
+        "sha256": "4ee482f2b6f9f1a8d370703ea04e9f2abaa49356973a7f56b229af93a78e8a2e",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "candidate input decoded; historical accepted pairs apply only to identical hash",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/1307/nice/Canon%20-%20EOS%20D30%20-%20RAW%20%283%3A2%29.CRW",
+        "resourceId": "parity-fixtures/raw/public-4ee482f2b6f9f1a8.crw",
+        "camera": "Canon EOS D30",
+        "decodedDimensions": [
+          2176,
+          1448
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 2993260,
+        "matchesHistoricalAcceptedFixture": false,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 9454416
+      }
+    },
+    "dng": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b"
+      ],
+      "candidate": {
+        "sha256": "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; Linux pairs unverified",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/6584/nice/Canon%20-%20EOS-1D%20X%20-%201%3A1.dng",
+        "resourceId": "parity-fixtures/raw/public-0c07c60ceda8e724.dng",
+        "camera": "Canon EOS-1D X",
+        "decodedDimensions": [
+          644,
+          644
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 2689240,
+        "matchesHistoricalAcceptedFixture": true,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 1246080
+      }
+    },
+    "erf": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/2680/nice/Epson%20-%20R-D1%20-%2012bit%20%283%3A2%29.ERF",
+        "resourceId": "parity-fixtures/raw/public-09d8e533d9311629.erf",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "camera": "Epson R-D1",
+        "decodedDimensions": [
+          3040,
+          2024
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 9958994,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 18460752
+      }
+    },
+    "fff": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "209d464e13702de5f4fdb830ac26ac140c98a8d0dc3e81c5ba61d93677330832",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/1640/nice/Hasselblad%20-%20H5D-40%20-%2016bit%20%284%3A3%29.fff",
+        "resourceId": "parity-fixtures/raw/public-209d464e13702de5.fff",
+        "camera": "Hasselblad H5D-40",
+        "decodedDimensions": [
+          7327,
+          5502
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 69826305,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 120941334
+      }
+    },
+    "iiq": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "61aa32c5947d386f0d5ee465c5183185df6c9cd7ff7eb66ffec12e84b487878c",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/8010/nice/Phase%20One%20-%20P40%2B%20-%20IIQ%20S%20%284%3A3%29.IIQ",
+        "resourceId": "parity-fixtures/raw/public-61aa32c5947d386f.iiq",
+        "camera": "Phase One P40+",
+        "decodedDimensions": [
+          3658,
+          2740
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 11172571,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 30070632
+      }
+    },
+    "kdc": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856"
+      ],
+      "candidate": {
+        "sha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; Linux pairs unverified",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/2338/nice/Kodak%20-%20DC120%20-%208bit%20%284%3A3%29.kdc",
+        "resourceId": "parity-fixtures/raw/public-967c3af47289e6cc.kdc",
+        "camera": "Kodak DC120",
+        "decodedDimensions": [
+          1301,
+          976
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 843328,
+        "matchesHistoricalAcceptedFixture": true,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 3811200
+      }
+    },
+    "mef": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "bcd63507c3c4cc3ea1bad2945e3f88cb4677a1a3c762e1acc38df4445714eb7c",
+        "source": "https://raw.pixls.us/",
+        "license": "CC BY-NC-SA 4.0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/562/nice/Mamiya%20-%20ZD.MEF",
+        "resourceId": "parity-fixtures/raw/public-bcd63507c3c4cc3e.mef",
+        "camera": "Mamiya ZD",
+        "decodedDimensions": [
+          5344,
+          4016
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 36575308,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 64386384
+      }
+    },
+    "mrw": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+      ],
+      "candidate": {
+        "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; Linux pairs unverified",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/7795/nice/Minolta%20-%20DiMAGE%205%20-%204%3A3.MRW",
+        "resourceId": "parity-fixtures/raw/public-d60bfd80bcb1f7b9.mrw",
+        "camera": "Minolta DiMAGE 5",
+        "decodedDimensions": [
+          2056,
+          1544
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 6422144,
+        "matchesHistoricalAcceptedFixture": true,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 9525264
+      }
+    },
+    "nef": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2"
+      ],
+      "candidate": {
+        "sha256": "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; Linux pairs unverified",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/4269/nice/Nikon%20-%20Nikon%20COOLSCAN%20V%20ED%20-%20uncompressed%20%283%3A2%29.nef",
+        "resourceId": "parity-fixtures/raw/public-ed8978b7a0a3270f.nef",
+        "camera": "Nikon Nikon COOLSCAN V ED",
+        "decodedDimensions": [
+          818,
+          546
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 3303378,
+        "matchesHistoricalAcceptedFixture": true,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 1341260
+      }
+    },
+    "ofd": {
+      "acceptedPairs": 1,
+      "unacceptedTargets": [],
+      "historicalAcceptanceSha256": [
+        "306dba9b790fe29af0cd1b365ef259c427319e0ba39c3a5f08dc8eaa2d63147c"
+      ],
+      "candidate": {
+        "sha256": "306dba9b790fe29af0cd1b365ef259c427319e0ba39c3a5f08dc8eaa2d63147c",
+        "source": "https://github.com/isee15/ofdjs/tree/master/test/fixtures",
+        "license": null,
+        "localAvailability": "not-in-tracked-repo-or-retained-public-cache",
+        "exactDownloadUrlVerified": false,
+        "status": "accepted historically; reacquire exact bytes before replay"
+      }
+    },
+    "orf": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+      ],
+      "candidate": {
+        "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; Linux pairs unverified",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/5424/nice/Olympus%20-%20E-10%20-%2016bit%20%284%3A3%29.ORF",
+        "resourceId": "parity-fixtures/raw/public-2bfdade72439017a.orf",
+        "camera": "Olympus E-10",
+        "decodedDimensions": [
+          2256,
+          1684
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 7614592,
+        "matchesHistoricalAcceptedFixture": true,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 11399184
+      }
+    },
+    "pef": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "27809a7d252d515685ed4e6091b70ab25348502baeb75db03ce7b4f1d9549b76",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/4392/nice/Pentax%20-%20%2Aist%20DS%20-%2012bit%2012bit%20uncompressed%20%283%3A2%29.pef",
+        "resourceId": "parity-fixtures/raw/public-27809a7d252d5156.pef",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "camera": "Pentax *ist DS",
+        "decodedDimensions": [
+          3040,
+          2022
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 10287201,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 18442512
+      }
+    },
+    "raf": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "e4652f3710cc972712a25370988ad8d72c8bf368956215348ea77b17d95f36f7",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/997/nice/Fujifilm%20-%20X-S1%20-%2012bit%2012bit%20uncompressed%20%284%3A3%29.RAF",
+        "resourceId": "parity-fixtures/raw/public-e4652f3710cc9727.raf",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "camera": "Fujifilm X-S1",
+        "decodedDimensions": [
+          2848,
+          2144
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 19752160,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 18320208
+      }
+    },
+    "rw2": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+      ],
+      "candidate": {
+        "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "historical accepted input hash recovered; Linux pairs unverified",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/7008/nice/Panasonic%20-%20DMC-LX7%20-%201%3A1.RW2",
+        "resourceId": "parity-fixtures/raw/public-d142a23aca836053.rw2",
+        "camera": "Panasonic DMC-LX7",
+        "decodedDimensions": [
+          1384,
+          1384
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 3249664,
+        "matchesHistoricalAcceptedFixture": true,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 5748240
+      }
+    },
+    "srw": {
+      "acceptedPairs": 0,
+      "unacceptedTargets": [
+        "avif",
+        "bmp",
+        "docx",
+        "gif",
+        "ico",
+        "jp2",
+        "jpg",
+        "jxl",
+        "md",
+        "mp4",
+        "pdf",
+        "png",
+        "ppm",
+        "qoi",
+        "tga",
+        "tiff",
+        "txt",
+        "webm",
+        "webp"
+      ],
+      "historicalAcceptanceSha256": [],
+      "candidate": {
+        "sha256": "a084890fd9d7995ceb746c18ecf5be48c95baf14286d5c0c480cc3daa25f3e37",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "candidate input verified; no conversion pair accepted yet",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/1204/nice/Samsung%20-%20EX1%20-%2014bit%20%284%3A3%29.SRW",
+        "resourceId": "parity-fixtures/raw/public-a084890fd9d7995c.srw",
+        "camera": "Samsung EX1",
+        "decodedDimensions": [
+          3682,
+          2760
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 21699313,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 30488832
+      }
+    },
+    "wpd": {
+      "acceptedPairs": 7,
+      "unacceptedTargets": [],
+      "historicalAcceptanceSha256": [
+        "3417815c24d7227a1dd3fc5b95cb3e84f895a1e608a58432cb5ffcaebb4cae90"
+      ],
+      "candidate": {
+        "sha256": "3417815c24d7227a1dd3fc5b95cb3e84f895a1e608a58432cb5ffcaebb4cae90",
+        "source": "https://github.com/xberg-io/test_documents/blob/main/wordperfect/PROVENANCE.md",
+        "license": null,
+        "localAvailability": "not-in-tracked-repo-or-retained-public-cache",
+        "exactDownloadUrlVerified": false,
+        "status": "accepted historically; reacquire exact bytes before replay"
+      }
+    },
+    "x3f": {
+      "acceptedPairs": 16,
+      "unacceptedTargets": [
+        "docx",
+        "md",
+        "txt"
+      ],
+      "historicalAcceptanceSha256": [
+        "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754"
+      ],
+      "candidate": {
+        "sha256": "44508f7df4191aacaecb6461e1841dae002e5b71a4f95a00aa3f52d1c6d6bc5f",
+        "source": "https://raw.pixls.us/",
+        "license": "CC0",
+        "localAvailability": "downloaded-sha256-verified",
+        "exactDownloadUrlVerified": true,
+        "status": "candidate input decoded; historical accepted pairs apply only to identical hash",
+        "downloadUrl": "https://raw.pixls.us/getfile.php/1116/nice/Sigma%20-%20DP1%20-%203%3A2.X3F",
+        "resourceId": "parity-fixtures/raw/public-44508f7df4191aac.x3f",
+        "camera": "Sigma DP1",
+        "decodedDimensions": [
+          2651,
+          1767
+        ],
+        "libRawVersion": "0.21.5",
+        "libRawDecode": "pass",
+        "bytes": 10317264,
+        "matchesHistoricalAcceptedFixture": false,
+        "originalDcrawFlagsDecode": "pass: -T -o 1",
+        "decodedTiffBytes": 14054823
+      }
+    }
+  },
+  "replay": {
+    "rawOrVector": "CONVERSION_SKIP_BASELINE=1 CONVERSION_RAW_SAMPLE=<verified local genuine file> CONVERSION_RAW_TARGETS=<comma-separated supported targets> node packages/server/scripts/verify-local-original-conversion.cjs",
+    "ofd": "CONVERSION_SKIP_BASELINE=1 CONVERSION_OFD_SAMPLE=<verified public file> CONVERSION_OFD_EXPECT=<known visible text> node packages/server/scripts/verify-local-original-conversion.cjs",
+    "focusedPdf": "node scripts/flyingmouse-linux-parity.cjs --cases packages/server/test/fixtures/platform-parity/cases.json --evidence .quality/linux-windows-parity/linux-parity.jsonl --office --media --options",
+    "rawNonOcrTargets": "avif,bmp,gif,ico,jp2,jpg,jxl,mp4,pdf,png,ppm,qoi,tga,tiff,webm,webp",
+    "rawCaveat": "RAW branch decodes outputs as images and records acceptance entries; do not pass docx,md,txt. Run only in disposable candidate checkout with ledger writes reviewed separately."
+  },
+  "historicalAcceptedInputs": {
+    "aac": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "4415d6caaa2c5604263c52016d4309002b600093cd8411de0cd2aa905d310b42"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "ai": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "5143b4cfd063967fbedc9d6cc417e0af6b078ecbd0df32292ea7c3b49e0fac69"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.ai.candidate"
+    },
+    "ass": {
+      "acceptedPairs": 4,
+      "sha256": [
+        "0f2185bc172fc385dc39fe71ed5d2b121ba9bc3217fdca4bb9bc89ec3a09a516"
+      ],
+      "provenance": "subtitle-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "avi": {
+      "acceptedPairs": 13,
+      "sha256": [
+        "9c4fa3255da9e4d975bda73a6f3b24a965c35555ed398558710d63b77a39a30e"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "avif": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "5aba5dafa4f08c13550a2a6ce7118834898407a11eef99a9bff80e71f2bcd2b1"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "bmp": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "483a59bf3e8219a1d6fc370ce9b7b65d816f39769ed0366e1195eb24997ffb08"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "cr2": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.cr2.candidate"
+    },
+    "crw": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "3e583286dd5e63b03aca3de6671b7921fc9fd814a7f4cbed50a20c028728c802"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.crw.candidate"
+    },
+    "csv": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "c14aa5d1ba4159d3575a9a17e582c0990c3b796436930ba8443ee3c6a4d0beb3"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "dng": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "0c07c60ceda8e724534ed24ae56ec73f6040a3c9040127fcba7dc3305e59396b"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.dng.candidate"
+    },
+    "doc": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "f9d65470ecfc5155f826e79d4c00ce6ab1ec3643c4d52a103009a46e8ac99313"
+      ],
+      "provenance": "generated-from-untracked-DOCX",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "docx": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "3777658917bdfb83d1c1990964dccb6a357c5ef2e8eb32f7432b4fa754a2aec9"
+      ],
+      "provenance": "external-local-file-used-in-historical-run",
+      "sourceRef": null
+    },
+    "dps": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "73c9d630f024886c427cde7fbf6026df5dfdb86e518a594d114ec0c46367095b"
+      ],
+      "provenance": "private-local-historical-sample",
+      "sourceRef": null
+    },
+    "dpt": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "3664f2adb67aa7be2d824a21e985fd73692a71204a27e94b35b190069e37c797"
+      ],
+      "provenance": "private-local-historical-sample",
+      "sourceRef": null
+    },
+    "epub": {
+      "acceptedPairs": 5,
+      "sha256": [
+        "461fbba1ff8ef688c4d33e8703abdb411c1c1295be350fef626cf8d1adf33b82"
+      ],
+      "provenance": "document-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "et": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "cc24d79d73397b05ae37eb18ec56409c0ac071ef026e677166c79a9d88665cf5"
+      ],
+      "provenance": "private-local-historical-sample",
+      "sourceRef": null
+    },
+    "ett": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "be9df0139a6ba09dc6a58601757b522d0236f67632739245c73f9392c9ee7d30"
+      ],
+      "provenance": "private-local-historical-sample",
+      "sourceRef": null
+    },
+    "flac": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "3efb3e14885f68d556dd3414cf7cd53bc6ca50cfe8dd2b61ce4549b175300653"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "flv": {
+      "acceptedPairs": 13,
+      "sha256": [
+        "fc4caf7eba5dea3955d32e3553a5b02a3103cae3ae63e8abe418dbb1f092eaee"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "gif": {
+      "acceptedPairs": 17,
+      "sha256": [
+        "ec225b79996a149b413e4f97d50c17fe09df7ea76a01b3528ea5a44f33f95334"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "heic": {
+      "acceptedPairs": 19,
+      "sha256": [
+        "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "heif": {
+      "acceptedPairs": 19,
+      "sha256": [
+        "f24660a0ada19141a1674d6a7bc7574e4171c5e0d56ee19f93457af5fa2050f8"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "htm": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "html": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "573cdb19fba19963dd0fc08270e836aaddc6d902245fd6ed7f8af8a07694fb59"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "ico": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "40dbedf63f764e39f4ec4ae6ea0d29bbf9b55dd1116dc3c385226c9def21b375"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "j2k": {
+      "acceptedPairs": 19,
+      "sha256": [
+        "a2d89757dda98885f429bc01826c35c46f7264a20215da41a1ec920ea8498bb5"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "jfif": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "jp2": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "1b10efef93d8d7c5c537c6320b6bda552d11c041fd07123b4dd7bf38759c1a06"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "jpe": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "jpeg": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "jpg": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "2e897038c9a64ad25a6da7db325ef27b8ab5517dbdf2fd6eb5310738168bf49e"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "json": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "0e20085edb76a67a668e7cd1ced01f416348931dc68179ffd76036cd1ea0b6b8"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "jxl": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "89cf21423cb1a2e865636a90830e008d0ed16afb57c38901c8ce1881bdef00da"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "kdc": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.kdc.candidate"
+    },
+    "log": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "746079a94285d1afca0485dcbc7798b4208a9683063fb00b49d25445d9d5e6c6"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "m4a": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "6df2c80e766f792e2238cc340293220befa7ce0ca18da96a00d80de6ca9db679"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "m4s": {
+      "acceptedPairs": 13,
+      "sha256": [
+        "3e6b1ff54c545dc465736687767455a0d1c0c2815e3d964f265ce405119b3bab"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "m4v": {
+      "acceptedPairs": 13,
+      "sha256": [
+        "a952a5fb598b27c1a09ada35a564e0fa78b59be4c75645c769027a74f1a0bc03"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "markdown": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "md": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "b8fd1b9b0ccba0207f3ee4e84f67d217cb4af040b1d1a7bcfb9b4fabb64a6d8d"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "mkv": {
+      "acceptedPairs": 12,
+      "sha256": [
+        "ea2efd959e805657d13ed4ee3d3e2acccccc684b251ea7cf624de31d92138c4c"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "mobi": {
+      "acceptedPairs": 3,
+      "sha256": [
+        "4beaa137653ea95b5f839156275fe394eaf9017dcb418a49960493e2bbaf826c"
+      ],
+      "provenance": "document-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "mov": {
+      "acceptedPairs": 12,
+      "sha256": [
+        "beff4b73b358411e39a746d936ac4a5b9011960965a8efeba3b17085a64ef154"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "mp3": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "04bbe16bdcd1f9ef4494d308db936e873e301389b755edc0c6cfbc209e139d0b"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "mp4": {
+      "acceptedPairs": 12,
+      "sha256": [
+        "2dae4dd707e951293fc62b0641620a9e071883861f903054131bbc386de6f75b"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "mrw": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.mrw.candidate"
+    },
+    "nef": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "ed8978b7a0a3270fbaad4c23863d081538b9dbdfbeb25750d5849872b396e7d2"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.nef.candidate"
+    },
+    "odp": {
+      "acceptedPairs": 5,
+      "sha256": [
+        "bc29940d8a9f0d80c02a207c102b599522f37901f0e21f360bc920b7f8cd63b1"
+      ],
+      "provenance": "presentation-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "ods": {
+      "acceptedPairs": 5,
+      "sha256": [
+        "2c8293fc3266fb6e2cb66f5e5fb4b51bdae09639edbfd41f4b10e5b0aaad2272"
+      ],
+      "provenance": "spreadsheet-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "odt": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "9baa8e44833548a31e10c994d3b99d82db61a207f2629f99df45c985998ae78d"
+      ],
+      "provenance": "generated-from-untracked-DOCX",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "ofd": {
+      "acceptedPairs": 1,
+      "sha256": [
+        "306dba9b790fe29af0cd1b365ef259c427319e0ba39c3a5f08dc8eaa2d63147c"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.ofd.candidate"
+    },
+    "ogg": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "f81fcd4d726937b432ab516271005d2abdcff9bef5e459980b7c02948e5f22c1"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "opus": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "6581389ec668b32f55fca040a22d498fa530551f6d4de35da2b46a0240ef3e4a"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "orf": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.orf.candidate"
+    },
+    "pdf": {
+      "acceptedPairs": 9,
+      "sha256": [
+        "5a71d9cb9ffcb26655339dfb2870ae2bd3d13f45bf7b6b6465d20602688c3e96",
+        "a357d8e6a8428ef1761e2e1afc58513c4e87263227fa9fc84636e2732695ed9a",
+        "d3e7f6d360593e99a1e6f43028a24bd7639979e058d417cfd5d4204592428acc",
+        "df94a9fc61ade976163378d976ae37e5946a2c65941ea2a1a8287338e8147782"
+      ],
+      "provenance": "pdf-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "png": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "750c0528c3d0a3a9d3a623792a40a6c4c538b6473acd7c32091af993139bac6e"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "ppm": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "1946141aaf72728a46be9ad3a0b87c422d22440e9c7c1ff78b8dd52882f9aa77"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "ppt": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "ac777654402e5e43ae312e2a8be5f4546401ca3db6230d045b60768c5a62520b"
+      ],
+      "provenance": "presentation-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "pptx": {
+      "acceptedPairs": 5,
+      "sha256": [
+        "1aaf9a4818ee34bb7e3322329a6b9f68fd987003568dc700010cceeae2e14663"
+      ],
+      "provenance": "tracked-repository-file",
+      "sourceRef": "packages/server/test/fixtures/conversion/presentation-two-slides.pptx"
+    },
+    "psd": {
+      "acceptedPairs": 19,
+      "sha256": [
+        "dba85c6292ef7770c77c47bcad9e61ad9a41c8cc68f092c94101a72d721a3029"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "qoi": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "980b8b25caf9d27e51029b44c134162f72f78ff3217d3954228930ef072b4479"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "rtf": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "29177da3c3eaf0a526d10bc4bf62a8f0ae48b531c8d7f7a9ac486c57f62747f6"
+      ],
+      "provenance": "generated-from-untracked-DOCX",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "rw2": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.rw2.candidate"
+    },
+    "srt": {
+      "acceptedPairs": 4,
+      "sha256": [
+        "f62bb951c69fc7c7bf411a2788af428828eaba7b5b8635909995937d09fb1a43"
+      ],
+      "provenance": "subtitle-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "ssa": {
+      "acceptedPairs": 4,
+      "sha256": [
+        "869375918d659c907d1ceaaa16008f09f4cce0488f12b3a2d764e63d0303c323"
+      ],
+      "provenance": "subtitle-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "svg": {
+      "acceptedPairs": 19,
+      "sha256": [
+        "04af8d79800dd0654654a01e21107b789e84d93b5ea476e4036ae72134a1b788"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "tga": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "a88341ef845c592e80de419ea86aefbec9a19ea71a2310fdefe0ddc298a1a764"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "tif": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "tiff": {
+      "acceptedPairs": 18,
+      "sha256": [
+        "096c01cff9b12592af7a9f06456fa0678973e383481dd9549563aaa6bfaa1a30"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "tsv": {
+      "acceptedPairs": 8,
+      "sha256": [
+        "16080e98719f0cf17938760790e7e49154eb64d5df5fcc712cd4b3e2b236d144"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "txt": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "fad06c6bfcc0eef97da70a15ecbcf04586db21df51b3a142851d9ad2aeae59b9"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "vtt": {
+      "acceptedPairs": 4,
+      "sha256": [
+        "ec5b14ca1827ae459480f7a5f53c35a173a94e8126c0a381d7915b50fbec5415"
+      ],
+      "provenance": "subtitle-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "wav": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "e04f8ba594eb8914e4ec3c8e4b965943740409488500c09ad0de1dbbab4cdbd1"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "webm": {
+      "acceptedPairs": 12,
+      "sha256": [
+        "b9c94183284658de33f1280aa41061d4b49aa73c7b73739ce4ab8ad179839dbc"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "webp": {
+      "acceptedPairs": 17,
+      "sha256": [
+        "3b7c2b5e09ecfb39559b43bddc813fcbc376204e072c7c2a4d66ee828ec71dbe"
+      ],
+      "provenance": "image-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "wma": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "662d82c03a28c4c2825c7c2bf17507fcb03453350162eec112a58ee3e53f15da"
+      ],
+      "provenance": "audio-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "wmv": {
+      "acceptedPairs": 13,
+      "sha256": [
+        "8796784343c23bbf3891f86f3e133c25ca933973eaed526be1e5e74e20f0b619"
+      ],
+      "provenance": "video-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "wpd": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "3417815c24d7227a1dd3fc5b95cb3e84f895a1e608a58432cb5ffcaebb4cae90"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.wpd.candidate"
+    },
+    "wps": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "f5d4ac9fdb402ab7edaa932093bd8df06c173180d3876ad9671e028c179dd0ed"
+      ],
+      "provenance": "private-local-historical-sample",
+      "sourceRef": null
+    },
+    "wpt": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "8c1e5a7891aafba1432d01d1e2fc5e4c9fd51751c876ebc437ca204abf40248d"
+      ],
+      "provenance": "private-local-historical-sample",
+      "sourceRef": null
+    },
+    "x3f": {
+      "acceptedPairs": 16,
+      "sha256": [
+        "151b4411058b768adc69183edd11656a4224ca03d3a118442cfa692986fb4754"
+      ],
+      "provenance": "external-public-or-previously-recorded",
+      "sourceRef": "inputExtensions.x3f.candidate"
+    },
+    "xls": {
+      "acceptedPairs": 5,
+      "sha256": [
+        "a4b3994026ba86d26e39f9ef9dbb8145c539f4f8b73ef63c16c2c9dd4acd56f1"
+      ],
+      "provenance": "spreadsheet-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "xlsm": {
+      "acceptedPairs": 6,
+      "sha256": [
+        "4fef939629ec6fa57394459e0fa2490d10fe9e31521ec40f9aff747db57815af",
+        "e97bbbb33e6b898d5e02f5386c71d98adb0fc777873797b7f23c6400dbddb2c7"
+      ],
+      "provenance": "tracked-repository-file-and-derived-variant",
+      "sourceRef": "packages/server/test/fixtures/xlsm-macro-loss/source.xlsm"
+    },
+    "xlsx": {
+      "acceptedPairs": 5,
+      "sha256": [
+        "a4618cfbcb910136364c370ac3ef9c0a71664d62b42bae93b90978b01e51bb25"
+      ],
+      "provenance": "tracked-repository-file",
+      "sourceRef": "packages/server/test/fixtures/conversion/sheet-formula.xlsx"
+    },
+    "xml": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "f00407aab8ad054cd8aa687c8eb444a5634e6b5f1f979e478d4a649a265f122f"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "yaml": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "yml": {
+      "acceptedPairs": 7,
+      "sha256": [
+        "a69bdda82e143f1b6627953445a2d385169a63b7d43be8d86229e4f7a89db4fc"
+      ],
+      "provenance": "text-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    },
+    "zip": {
+      "acceptedPairs": 1,
+      "sha256": [
+        "5e07c6e08fb58f8116211b8482ffa18b188a0b561af71e82d16ab6eca2b539ee"
+      ],
+      "provenance": "zip-generated",
+      "sourceRef": "packages/server/scripts/verify-local-original-conversion.cjs"
+    }
+  },
+  "publicRawSourceIndex": "https://raw.pixls.us/json/getrepository.php?set=all",
+  "publicRawCacheRootAlias": "~/Library/Caches/ledger-flyingmouse-engines/parity-fixtures/raw",
+  "publicDesignCacheRootAlias": "~/Library/Caches/ledger-flyingmouse-engines/parity-fixtures/design"
+}

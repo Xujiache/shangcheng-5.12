@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "a7b9b15d32db80cecedae00e89289088656fb1ae",
+  "repositoryRevision": "9fbe0b94bcf188cc1bccb49e9150156ac71eee95",
+  "windowsBaseline": {
+    "platform": "win32-x64",
+    "releaseTag": "ci-engines-v1",
+    "coreAsset": {
+      "name": "ci-engines-v1-win32-core.tar.zst",
+      "sha256": "d4f13034e719760790d75569b2dd9696facb88b15b8322f28d2aa4c3dbe6a835",
+      "source": "vendor/flyingmouse-format/upstream-a7b9b15/ci-engines-v1.json:6-22"
+    },
+    "docstructureAsset": {
+      "name": "ci-engines-v1-win32-docstructure-1.0.1.tar.zst",
+      "sha256": "f159fd0b0698e5b5d81a47ca7a7d8fbc73775b4c2a13bcc916c0a3024e98dd35",
+      "engineVersion": "1.0.1",
+      "modelFamilies": 11,
+      "source": "vendor/flyingmouse-format/upstream-a7b9b15/ci-engines-v1.json:24-31"
+    },
+    "versions": {
+      "ffmpeg": null,
+      "ffmpegAbiMatch": "8.1.1 (libavcodec 62.28.101; libavformat 62.12.101)",
+      "libreoffice": "26.2.1.2",
+      "poppler": "26.05.0",
+      "tesseractCli": null,
+      "tesseractJs": "7.0.0",
+      "docengine": null,
+      "qpdf": "12.4.0",
+      "pandoc": "3.11"
+    },
+    "verifiedArchive": {
+      "downloadedBytes": 541035233,
+      "sha256Verified": true,
+      "cachePath": "/Users/mac/Library/Caches/ledger-flyingmouse-engines/windows-core-audit/ci-engines-v1-win32-core.tar.zst",
+      "libreofficeEvidence": "soffice.com PE FileVersion and ProductVersion 26.2.1.2",
+      "popplerEvidence": "pdftoppm.exe embedded 26.05.0 version string",
+      "docenginePythonDll": "python312.dll",
+      "docenginePyMuPDFVersion": "1.28.2",
+      "docenginePythonDocxVersion": "1.2.0",
+      "docenginePdf2docxComparison": {
+        "referenceWheel": "pdf2docx 0.5.8 CPython 3.12 pure Python modules",
+        "exactCodeObjectMatches": 39,
+        "differentModules": 16,
+        "totalModules": 55,
+        "conclusion": "Windows bundled pdf2docx contains patched Python bytecode; pip 0.5.8 is not behaviorally identical"
+      },
+      "docengineConvertSteps": [
+        "preprocess mathematical formula regions",
+        "strip repeated headers and footers",
+        "pdf2docx Converter.convert(parse_stream_table=False)"
+      ],
+      "docengineDistInfo": [
+        "camelot_py-2.0.0",
+        "numpy-2.5.2"
+      ],
+      "engTraineddataGzipSha256": "45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91",
+      "chiSimTraineddataGzipSha256": "b8a23f10c7de500891eb458a8adc9cc58ab7f242f08b7d149f5e9aea4ad5db7c",
+      "bundledFontFamilies": [
+        "DejaVu Sans",
+        "Source Code Pro",
+        "Ubuntu",
+        "Inconsolata",
+        "OpenSymbol"
+      ]
+    }
+  },
+  "linuxObserved": {
+    "platform": "linux-x64",
+    "versions": {
+      "ffmpeg": "5.1.9",
+      "libreoffice": "7.4.7.2",
+      "poppler": "22.12.0",
+      "tesseract": "5.3",
+      "pandoc": "3.11"
+    },
+    "observationSource": "production candidate runtime inspection supplied by task owner; not independently reproduced in this inventory",
+    "docstructureConfigured": false,
+    "docstructureModelFilesPackaged": false,
+    "docengineImplementation": "packages/server/scripts/run-original-pdf2docx.py",
+    "docenginePythonPackages": {
+      "pdf2docx": "0.5.8",
+      "PyMuPDF": "1.28.2"
+    }
+  },
+  "sharedOrOther": {
+    "linuxVersionMatchedSources": {
+      "ffmpeg": {
+        "version": "8.1.1",
+        "url": "https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz",
+        "sha256": "b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3",
+        "matchingEvidence": "Windows binary contains libavcodec 62.28.101 and libavformat 62.12.101; source headers match both; exact product build string unverified"
+      },
+      "libreoffice": {
+        "version": "26.2.1.2",
+        "url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.2.1.2/deb/x86_64/LibreOffice_26.2.1.2_Linux_x86-64_deb.tar.gz",
+        "sha256": "9807363c8fabf79fc3562f606ce1673c4b29c3c53baca513f84e762845a093b2",
+        "checksumSource": "The Document Foundation adjacent .sha256 sidecar"
+      },
+      "poppler": {
+        "version": "26.05.0",
+        "url": "https://poppler.freedesktop.org/poppler-26.05.0.tar.xz",
+        "sha256": "6fef27ff04f37db43054c86bcdff6128c9fb1f6af4ef3c8b369a7e9abd68d0bb"
+      },
+      "qpdf": {
+        "version": "12.4.0",
+        "url": "https://github.com/qpdf/qpdf/releases/download/v12.4.0/qpdf-12.4.0-bin-linux-x86_64.zip",
+        "sha256": "a3bca240f3bb61efdc3a90be89d1da4ed5e125326c3458c4e62df53ff4f153e3",
+        "validation": "Official binary starts and reports 12.4.0 inside isolated Debian Bookworm worker; full encrypt/decrypt/split acceptance pending."
+      }
+    },
+    "pandocLinuxSource": "pandoc-engine-lock.json linux-x64 SHA-256 37edb3bbcf722f921a009941bf5874e2e0c09263226c9b4a2d980788cb062ab6",
+    "librawLinuxSource": "LibRaw-0.21.5.tar.gz SHA-256 a74a2e68303d3b9219f82318f935b28c5c4abd7f2c9f7dbf8faa4997c9038305",
+    "ofdFontLinuxSource": "NotoSansCJKsc-VF.ttf SHA-256 990c807e79c25662a5a9ecf7f971baeb2bf2eab9a559e5ecf15cdfdb8561d21f"
+  },
+  "scopeNotes": [
+    "The Windows core SHA was verified and selected files inspected; FFmpeg exact product build and embedded pdf2docx package version still need Windows runtime interrogation or reliable embedded metadata. Bundled pdf2docx differs from the public 0.5.8 wheel in 16 of 55 Python modules. Windows OCR uses locked tesseract.js 7.0.0, not a Tesseract CLI.",
+    "Thai traineddata and AVS3 are packaged Windows resources, not demonstrated active conversion gaps in the current source.",
+    "1174 source-to-target pairs are a declared catalog, not an acceptance result."
+  ],
+  "candidateVerified": {
+    "productionSwitched": false,
+    "backendUnitTests": {
+      "passed": 31,
+      "failed": 0
+    },
+    "originalFocusedLinuxTests": {
+      "passed": 174,
+      "failed": 0,
+      "skipped": 1,
+      "skippedReason": "Native media test lacks FFmpeg in isolated source-only stage; rerun in final candidate required."
+    },
+    "originalDocengineExtractionTests": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sourceFilesHashChecked": 307,
+    "sourceBuildImage": "jiujiu-parity-source-build:test",
+    "ffmpegImage": "jiujiu-parity-ffmpeg:test",
+    "windowsExecution": "blocked-before-runner-allocation-by-GitHub-account-billing",
+    "fullLinuxMatrix": "not-run"
+  },
+  "linuxCandidateBuilds": {
+    "platform": "linux-amd64",
+    "ffmpeg": {
+      "version": "8.1.1",
+      "libavcodec": "62.28.101",
+      "svtAv1SourceVersion": "1.4.1",
+      "dockerImage": "jiujiu-parity-ffmpeg:test",
+      "imageId": "2783b072fe14",
+      "sourceSha256Verified": true,
+      "oldWorkerRuntimeLddMissing": [],
+      "oldWorkerVersionRunPassed": true,
+      "libx264TestFrameEncodePassed": true,
+      "logPath": "/root/deployment-verification/linux-windows-parity/build/ffmpeg-build-v2.log"
+    },
+    "poppler": {
+      "version": "26.05.0",
+      "freetypeSourceVersion": "2.13.3",
+      "fontconfigSourceVersion": "2.15.0",
+      "dockerImage": "jiujiu-parity-poppler:test",
+      "imageId": "166719be8520",
+      "sourceSha256Verified": true,
+      "oldWorkerRuntimeLddMissing": [],
+      "oldWorkerVersionRunPassed": true,
+      "fontsConfDirectories": [
+        "/usr/share/fonts",
+        "/usr/local/share/fonts",
+        "/opt/ofd-fonts"
+      ],
+      "oldWorkerFontMatches": {
+        "Noto Sans CJK SC": "NotoSansCJKsc-Regular.ttf",
+        "DejaVu Sans": "DejaVuSans.ttf"
+      },
+      "logPath": "/root/deployment-verification/linux-windows-parity/build/poppler-build.log"
+    },
+    "validationScope": "Independent engine images and read-only mounts into the previous 9fbe0b9 worker image; full candidate image and end-to-end conversions remain pending"
+  }
+}

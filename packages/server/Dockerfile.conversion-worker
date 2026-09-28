@@ -25,6 +25,35 @@ RUN rm -rf bin/avs3 && npm ci --omit=dev --no-audit --no-fund \
  && node /app/scripts/apply-flyingmouse-platform-fixes.cjs --in-place /app/flyingmouse \
  && rm -rf output
 
+FROM debian:bookworm-slim AS ffmpeg-build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl build-essential cmake pkg-config yasm nasm \
+    libx264-dev libx265-dev libsvtav1-dev libvpx-dev libopus-dev libmp3lame-dev \
+    libjxl-dev libopenjp2-7-dev libwebp-dev libaom-dev libass-dev \
+    libfreetype6-dev libfontconfig1-dev libfribidi-dev \
+ && rm -rf /var/lib/apt/lists/*
+RUN curl --retry 3 -fsSL https://github.com/AOMediaCodec/SVT-AV1/archive/refs/tags/v1.4.1.tar.gz -o /tmp/svt-av1.tar.gz \
+ && echo '4546773a087ee546d65e05bb0f12c9d15b1ca450d3dc154b72f85e4d541a081a  /tmp/svt-av1.tar.gz' | sha256sum -c - \
+ && tar -xzf /tmp/svt-av1.tar.gz -C /tmp \
+ && cmake -S /tmp/SVT-AV1-1.4.1 -B /tmp/svt-av1-build \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/svt-av1-1.4.1 \
+    -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DBUILD_APPS=OFF -DBUILD_DEC=OFF \
+ && cmake --build /tmp/svt-av1-build -j2 \
+ && cmake --install /tmp/svt-av1-build \
+ && rm -rf /tmp/svt-av1.tar.gz /tmp/SVT-AV1-1.4.1 /tmp/svt-av1-build
+RUN curl --retry 3 -fsSL https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz -o /tmp/ffmpeg.tar.xz \
+ && echo 'b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3  /tmp/ffmpeg.tar.xz' | sha256sum -c - \
+ && tar -xf /tmp/ffmpeg.tar.xz -C /tmp \
+ && cd /tmp/ffmpeg-8.1.1 \
+ && PKG_CONFIG_PATH=/opt/svt-av1-1.4.1/lib/pkgconfig \
+    ./configure --prefix=/opt/ffmpeg-8.1.1 --enable-shared --disable-static \
+    --enable-gpl --enable-version3 --enable-libx264 --enable-libx265 \
+    --enable-libsvtav1 --enable-libvpx --enable-libopus --enable-libmp3lame \
+    --enable-libjxl --enable-libopenjpeg --enable-libwebp --enable-libaom \
+    --enable-libass --enable-libfreetype --enable-libfontconfig --enable-libfribidi \
+ && make -j2 && make install \
+ && rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg-8.1.1
+
 FROM node:24-bookworm-slim AS libraw-build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl build-essential pkg-config libjpeg-dev liblcms2-dev zlib1g-dev \
@@ -47,42 +76,158 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
  && curl -fsSL https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/LICENSE -o /ofd-fonts/OFL.txt \
  && echo '6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2  /ofd-fonts/OFL.txt' | sha256sum -c -
 
-FROM node:24-bookworm-slim
+FROM python:3.11-slim-bookworm AS docstructure-model-build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl zstd \
+ && rm -rf /var/lib/apt/lists/*
+COPY vendor/flyingmouse-format/upstream-a7b9b15/docstructure-engine-lock.json /tmp/model-lock.json
+COPY packages/server/scripts/verify-docstructure-models.py /tmp/verify-models.py
+RUN curl --retry 3 -fsSL https://github.com/LaoFeng-mouse/flyingmouse-format/releases/download/ci-engines-v1/ci-engines-v1-win32-docstructure-1.0.1.tar.zst -o /tmp/models.tar.zst \
+ && echo 'f159fd0b0698e5b5d81a47ca7a7d8fbc73775b4c2a13bcc916c0a3024e98dd35  /tmp/models.tar.zst' | sha256sum -c - \
+ && mkdir -p /opt/docstructure-models \
+ && tar --use-compress-program=unzstd -xf /tmp/models.tar.zst --strip-components=2 -C /opt/docstructure-models docstructure/models \
+ && python /tmp/verify-models.py /tmp/model-lock.json /opt/docstructure-models \
+ && rm /tmp/models.tar.zst
+
+FROM debian:bookworm-slim AS poppler-build
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates openssl ffmpeg libreoffice-writer libreoffice-calc libreoffice-impress \
+    ca-certificates curl build-essential pkg-config ninja-build python3 python3-venv \
+    gperf libexpat1-dev libbz2-dev \
+    libfreetype6-dev libfontconfig1-dev libjpeg-dev libpng-dev \
+    libopenjp2-7-dev liblcms2-dev libtiff-dev zlib1g-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && python3 -m venv /opt/cmake-venv \
+ && /opt/cmake-venv/bin/pip install --no-cache-dir cmake==3.31.10
+RUN curl --retry 3 -fsSL https://download.savannah.gnu.org/releases/freetype/freetype-2.13.3.tar.xz -o /tmp/freetype.tar.xz \
+ && echo '0550350666d427c74daeb85d5ac7bb353acba5f76956395995311a9c6f063289  /tmp/freetype.tar.xz' | sha256sum -c - \
+ && tar -xf /tmp/freetype.tar.xz -C /tmp \
+ && cd /tmp/freetype-2.13.3 \
+ && ./configure --prefix=/opt/poppler-deps --disable-static --enable-shared \
+ && make -j2 && make install \
+ && rm -rf /tmp/freetype.tar.xz /tmp/freetype-2.13.3
+RUN curl --retry 3 -fsSL https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.15.0.tar.gz -o /tmp/fontconfig.tar.gz \
+ && echo 'f5f359d6332861bd497570848fcb42520964a9e83d5e3abe397b6b6db9bcaaf4  /tmp/fontconfig.tar.gz' | sha256sum -c - \
+ && tar -xzf /tmp/fontconfig.tar.gz -C /tmp \
+ && cd /tmp/fontconfig-2.15.0 \
+ && PKG_CONFIG_PATH=/opt/poppler-deps/lib/pkgconfig \
+    LDFLAGS=-Wl,-rpath,/opt/poppler-deps/lib \
+    ./configure --prefix=/opt/poppler-deps --disable-static --enable-shared \
+    --with-default-fonts=/usr/share/fonts,/usr/local/share/fonts,/opt/ofd-fonts \
+ && make -j2 && make install \
+ && rm -rf /tmp/fontconfig.tar.gz /tmp/fontconfig-2.15.0
+RUN curl --retry 3 -fsSL https://poppler.freedesktop.org/poppler-26.05.0.tar.xz -o /tmp/poppler.tar.xz \
+ && echo '6fef27ff04f37db43054c86bcdff6128c9fb1f6af4ef3c8b369a7e9abd68d0bb  /tmp/poppler.tar.xz' | sha256sum -c - \
+ && tar -xf /tmp/poppler.tar.xz -C /tmp \
+ && PKG_CONFIG_PATH=/opt/poppler-deps/lib/pkgconfig \
+    /opt/cmake-venv/bin/cmake -S /tmp/poppler-26.05.0 -B /tmp/poppler-build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/poppler-26.05.0 \
+    -DCMAKE_PREFIX_PATH=/opt/poppler-deps \
+    -DENABLE_UTILS=ON -DENABLE_CPP=OFF -DENABLE_GLIB=OFF \
+    -DENABLE_QT5=OFF -DENABLE_QT6=OFF -DENABLE_NSS3=OFF \
+    -DENABLE_GPGME=OFF -DENABLE_LIBCURL=OFF -DENABLE_BOOST=OFF \
+ && /opt/cmake-venv/bin/cmake --build /tmp/poppler-build -j2 \
+ && /opt/cmake-venv/bin/cmake --install /tmp/poppler-build \
+ && rm -rf /tmp/poppler.tar.xz /tmp/poppler-26.05.0 /tmp/poppler-build
+
+FROM python:3.12-slim-bookworm AS windows-tessdata-build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl zstd \
+ && rm -rf /var/lib/apt/lists/* \
+ && python3 -m venv /opt/extractor \
+ && /opt/extractor/bin/pip install --no-cache-dir pyinstaller==6.22.3
+COPY scripts/restore-original-docengine.py /tmp/restore-original-docengine.py
+COPY scripts/test-restore-original-docengine.py /tmp/test-restore-original-docengine.py
+RUN curl --retry 3 -fsSL https://github.com/LaoFeng-mouse/flyingmouse-format/releases/download/ci-engines-v1/ci-engines-v1-win32-core.tar.zst -o /tmp/core.tar.zst \
+ && echo 'd4f13034e719760790d75569b2dd9696facb88b15b8322f28d2aa4c3dbe6a835  /tmp/core.tar.zst' | sha256sum -c - \
+ && mkdir -p /opt/flyingmouse-tessdata \
+ && tar --use-compress-program=unzstd -xf /tmp/core.tar.zst --strip-components=1 \
+    -C /opt/flyingmouse-tessdata tessdata/eng.traineddata.gz tessdata/chi_sim.traineddata.gz \
+ && echo '45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91  /opt/flyingmouse-tessdata/eng.traineddata.gz' | sha256sum -c - \
+ && echo 'b8a23f10c7de500891eb458a8adc9cc58ab7f242f08b7d149f5e9aea4ad5db7c  /opt/flyingmouse-tessdata/chi_sim.traineddata.gz' | sha256sum -c - \
+ && tar --use-compress-program=unzstd -xf /tmp/core.tar.zst -C /tmp docengine/docengine.exe \
+ && /opt/extractor/bin/python /tmp/restore-original-docengine.py --exe /tmp/docengine/docengine.exe --output /opt/docengine/docengine-entry.marshal \
+    --modules-dir /opt/docengine/modules --manifest /opt/docengine/modules-manifest.json \
+ && ORIGINAL_DOCENGINE_EXE=/tmp/docengine/docengine.exe /opt/extractor/bin/python /tmp/test-restore-original-docengine.py \
+ && rm -rf /tmp/docengine \
+ && rm /tmp/core.tar.zst
+
+FROM debian:bookworm-slim AS qpdf-build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl unzip \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl --retry 3 -fsSL https://github.com/qpdf/qpdf/releases/download/v12.4.0/qpdf-12.4.0-bin-linux-x86_64.zip -o /tmp/qpdf.zip \
+ && echo 'a3bca240f3bb61efdc3a90be89d1da4ed5e125326c3458c4e62df53ff4f153e3  /tmp/qpdf.zip' | sha256sum -c - \
+ && unzip -q /tmp/qpdf.zip -d /opt/qpdf-12.4.0 \
+ && rm /tmp/qpdf.zip
+
+FROM debian:bookworm-slim AS libreoffice-build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl --retry 3 -fsSL https://downloadarchive.documentfoundation.org/libreoffice/old/26.2.1.2/deb/x86_64/LibreOffice_26.2.1.2_Linux_x86-64_deb.tar.gz -o /tmp/libreoffice.tar.gz \
+ && echo '9807363c8fabf79fc3562f606ce1673c4b29c3c53baca513f84e762845a093b2  /tmp/libreoffice.tar.gz' | sha256sum -c - \
+ && tar -xzf /tmp/libreoffice.tar.gz -C /tmp \
+ && mkdir -p /lo \
+ && for package in /tmp/LibreOffice_26.2.1.2_Linux_x86-64_deb/DEBS/*.deb; do dpkg-deb -x "$package" /lo; done \
+ && rm -rf /tmp/libreoffice.tar.gz /tmp/LibreOffice_26.2.1.2_Linux_x86-64_deb
+
+FROM python:3.12-slim-bookworm
+COPY --from=server-build /usr/local/bin/node /usr/local/bin/node
+RUN groupadd --gid 1000 node && useradd --uid 1000 --gid node --create-home node
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates openssl unzip ffmpeg libreoffice-writer libreoffice-calc libreoffice-impress \
     poppler-utils tesseract-ocr tesseract-ocr-chi-sim pandoc qpdf dcraw libheif-examples \
-    python3 python3-venv \
+    python3 python3-venv libgomp1 libgl1 libglib2.0-0 \
     ghostscript fonts-noto-cjk \
  && rm -rf /var/lib/apt/lists/* \
  && gzip -n -c /usr/share/tesseract-ocr/5/tessdata/eng.traineddata \
     > /usr/share/tesseract-ocr/5/tessdata/eng.traineddata.gz \
  && gzip -n -c /usr/share/tesseract-ocr/5/tessdata/chi_sim.traineddata \
     > /usr/share/tesseract-ocr/5/tessdata/chi_sim.traineddata.gz
-COPY packages/server/scripts/camelot-requirements.txt /tmp/camelot-requirements.txt
-RUN python3 -m venv /opt/camelot-venv \
- && /opt/camelot-venv/bin/pip install --no-cache-dir -r /tmp/camelot-requirements.txt \
- && rm /tmp/camelot-requirements.txt
-COPY packages/server/scripts/pdf2docx-requirements.txt /tmp/pdf2docx-requirements.txt
+COPY packages/server/scripts/docengine-requirements-linux.lock /tmp/docengine-requirements.lock
 RUN python3 -m venv /opt/pdf2docx-venv \
- && /opt/pdf2docx-venv/bin/pip install --no-cache-dir -r /tmp/pdf2docx-requirements.txt \
- && rm /tmp/pdf2docx-requirements.txt
-COPY --chown=node:node packages/server/scripts/camelot_table_engine.py /usr/local/bin/jiujiu-camelot-table
-COPY --chown=node:node packages/server/scripts/run-original-pdf2docx.py /usr/local/libexec/jiujiu-pdf2docx.py
-COPY --chown=node:node packages/server/scripts/run-original-pdf2docx.sh /usr/local/bin/jiujiu-pdf2docx
-RUN chmod 755 /usr/local/bin/jiujiu-camelot-table /usr/local/bin/jiujiu-pdf2docx
+ && /opt/pdf2docx-venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/docengine-requirements.lock \
+ && /opt/pdf2docx-venv/bin/pip check \
+ && rm /tmp/docengine-requirements.lock
+COPY --chown=node:node packages/server/scripts/run-original-docengine.py /usr/local/libexec/run-original-docengine.py
+COPY --chown=node:node packages/server/scripts/run-original-docengine.sh /usr/local/bin/jiujiu-docengine
+COPY packages/server/scripts/docstructure-requirements-linux.lock /tmp/docstructure-requirements.lock
+RUN /usr/bin/python3 -m venv /opt/docstructure-venv \
+ && /opt/docstructure-venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/docstructure-requirements.lock \
+ && /opt/docstructure-venv/bin/pip check \
+ && rm /tmp/docstructure-requirements.lock
+COPY --chown=node:node packages/server/scripts/run-original-docstructure-linux.sh /usr/local/bin/jiujiu-docstructure
+COPY --chown=node:node packages/server/scripts/run-original-qpdf.sh /usr/local/bin/jiujiu-qpdf
+RUN chmod 755 /usr/local/bin/jiujiu-docengine /usr/local/bin/jiujiu-docstructure /usr/local/bin/jiujiu-qpdf
 ENV NODE_ENV=production FLYINGMOUSE_SOURCE_DIR=/app/flyingmouse \
-    PATH=/opt/camelot-venv/bin:$PATH \
-    FLYINGMOUSE_CAMELOT_TABLE_PATH=/usr/local/bin/jiujiu-camelot-table \
-    FLYINGMOUSE_DOCENGINE_PATH=/usr/local/bin/jiujiu-pdf2docx \
+    FLYINGMOUSE_DOCENGINE_PATH=/usr/local/bin/jiujiu-docengine \
+    FLYINGMOUSE_DOCSTRUCTURE_PYTHON=/opt/docstructure-venv/bin/python \
+    FLYINGMOUSE_DOCSTRUCTURE_ENGINE_PATH=/usr/local/bin/jiujiu-docstructure \
+    FLYINGMOUSE_DOCSTRUCTURE_MODEL_DIR=/opt/docstructure-models \
     FLYINGMOUSE_DCRAW_PATH=/usr/local/bin/dcraw_emu \
+    FLYINGMOUSE_FFMPEG_PATH=/opt/ffmpeg-8.1.1/bin/ffmpeg \
+    FLYINGMOUSE_PDFTOPPM_PATH=/opt/poppler-26.05.0/bin/pdftoppm \
     FLYINGMOUSE_OFD_FONT_DIR=/opt/ofd-fonts \
     FLYINGMOUSE_PANDOC_PATH=/app/flyingmouse/bin/pandoc/pandoc \
-    FLYINGMOUSE_TESSDATA_PATH=/usr/share/tesseract-ocr/5/tessdata \
+    FLYINGMOUSE_LIBREOFFICE_PATH=/opt/libreoffice26.2/program/soffice \
+    FLYINGMOUSE_TESSDATA_PATH=/opt/flyingmouse-tessdata \
+    FLYINGMOUSE_QPDF_PATH=/usr/local/bin/jiujiu-qpdf \
+    LD_LIBRARY_PATH=/opt/ffmpeg-8.1.1/lib:/opt/svt-av1-1.4.1/lib:/opt/poppler-26.05.0/lib:/opt/poppler-deps/lib \
+    FONTCONFIG_PATH=/opt/poppler-deps/etc/fonts \
     HOME=/tmp XDG_CONFIG_HOME=/tmp
 WORKDIR /app/server
 COPY --from=server-build --chown=node:node /out ./
 COPY --from=source-build --chown=node:node /app/flyingmouse /app/flyingmouse
 COPY --from=libraw-build /tmp/LibRaw-0.21.5/bin/dcraw_emu /usr/local/bin/dcraw_emu
+COPY --from=ffmpeg-build /opt/ffmpeg-8.1.1 /opt/ffmpeg-8.1.1
+COPY --from=ffmpeg-build /opt/svt-av1-1.4.1 /opt/svt-av1-1.4.1
+COPY --from=poppler-build /opt/poppler-26.05.0 /opt/poppler-26.05.0
+COPY --from=poppler-build /opt/poppler-deps /opt/poppler-deps
+COPY --from=windows-tessdata-build --chown=node:node /opt/flyingmouse-tessdata /opt/flyingmouse-tessdata
+COPY --from=windows-tessdata-build --chown=node:node /opt/docengine /opt/docengine
 COPY --from=ofd-font-build --chown=node:node /ofd-fonts /opt/ofd-fonts
+COPY --from=docstructure-model-build --chown=node:node /opt/docstructure-models /opt/docstructure-models
+COPY --from=libreoffice-build /lo/opt/libreoffice26.2 /opt/libreoffice26.2
+COPY --from=qpdf-build /opt/qpdf-12.4.0 /opt/qpdf-12.4.0
+COPY packages/server/scripts/verify-docstructure-models.py /usr/local/libexec/verify-docstructure-models.py
+COPY packages/server/scripts/verify-linux-conversion-engines.sh /usr/local/libexec/verify-linux-conversion-engines.sh
+RUN sh /usr/local/libexec/verify-linux-conversion-engines.sh > /app/engine-versions.txt 2>&1 \
+ || { cat /app/engine-versions.txt; exit 1; }
 USER node
 CMD ["node", "dist/workers/conversion.worker.js"]

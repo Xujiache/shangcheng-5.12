@@ -27,11 +27,19 @@ async function document() {
 
 async function main() {
   mkdirSync(out, { recursive: true })
-  const fontBytes = readFileSync(fontPath)
+  const sourceFont = readFileSync(fontPath)
+  const subsetPath = join(out, 'fixture-cjk-subset.ttf')
+  const glyphs = ['量窗助手 订单验收', '左栏：客户资料与门窗规格', '客户：测试样本  编号：A-102',
+    '右栏：经营分析与成本记录', '利润：82.25  数量：37', '项目', '金额', '门窗订单',
+    '315.50', '安装费用', '48.20', '图例：蓝色矩形与橙色圆形'].join('')
+  execFileSync(process.env.PARITY_PYTHON || 'python3', ['-m', 'fontTools.subset', fontPath,
+    `--text=${glyphs}`, `--output-file=${subsetPath}`, '--layout-features=*'],
+  { env: process.env })
+  const fontBytes = readFileSync(subsetPath)
   const logoSvg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="#eff6ff"/><rect x="20" y="19" width="70" height="50" fill="#2563eb"/><circle cx="117" cy="44" r="25" fill="#f97316"/></svg>')
   const logo = await sharp(logoSvg).png().toBuffer()
   const native = await document()
-  const font = await native.embedFont(fontBytes, { subset: true })
+  const font = await native.embedFont(fontBytes, { subset: false })
   const page = native.addPage([595, 842])
   const ink = rgb(0.12, 0.17, 0.25)
   const draw = (text, x, y, size = 15) => page.drawText(text, { x, y, size, font, color: ink })
@@ -79,7 +87,8 @@ async function main() {
   writeFileSync(join(out, 'cases.json'), JSON.stringify(cases, null, 2) + '\n')
   const hashes = Object.fromEntries([[nativePath, nativeBytes], [join(out, 'scan-table.pdf'), scanBytes],
     [join(out, 'mixed-table.pdf'), mixedBytes]].map(([path, bytes]) => [path.split('/').pop(), sha(bytes)]))
-  writeFileSync(join(out, 'SHA256.json'), JSON.stringify({ fontSha256: sha(fontBytes),
+  writeFileSync(join(out, 'SHA256.json'), JSON.stringify({ sourceFontSha256: sha(sourceFont),
+    fontSubsetSha256: sha(fontBytes),
     scanPngSha256: sha(scanImage), files: hashes }, null, 2) + '\n')
   console.log(JSON.stringify(hashes))
 }

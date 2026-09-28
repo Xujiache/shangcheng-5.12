@@ -1,9 +1,10 @@
 {
-  "fontSha256": "9ac21a28f6859a89c26f2ff9dd377eb6c9a47800ad02db339738eb2f2154213f",
-  "scanPngSha256": "32f63d170ac8ea3deb2361ecd02db0e06a80edb4c50e688fe8f3d90dce0f16b5",
+  "sourceFontSha256": "9ac21a28f6859a89c26f2ff9dd377eb6c9a47800ad02db339738eb2f2154213f",
+  "fontSubsetSha256": "58b8e4acde26b95573ff4ce12df75f49bfd28668d54e17fba5710b479a4dec04",
+  "scanPngSha256": "dcfed4f0f16b151f5ba730ed16ebf93d32fd28680aa30029bef23413a456c7c9",
   "files": {
-    "native-table.pdf": "1c6e756958127ec86986cd8c9d87d64fda30fd1cf638ccc7c86ef5b2eba5ffec",
-    "scan-table.pdf": "ec58dc12a58458266e1816937dcb5e621597c4719b9e661e4e7b494617634c0e",
-    "mixed-table.pdf": "9687d05b704cc060a8ec617386fade75a380bee21bc1d26be992a86524a7053f"
+    "native-table.pdf": "bbaa09d06f28a970094f3cc22ee7f95f74f1fee4b01799c3ef86bd6917930062",
+    "scan-table.pdf": "8419cbd63268688edc50093671566dfda977dd9b5b615165729d099ca2c871ca",
+    "mixed-table.pdf": "e670824af82ebc9794be34ca59464bd6b086e1dbdef97fc0bbf31126d8712a93"
   }
 }
