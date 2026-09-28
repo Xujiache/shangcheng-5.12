@@ -86,6 +86,9 @@ async function main() {
     const outputs: any[] = []
     for (let index = 0; index < results.length; index++) {
       const result = results[index]
+      if (request.operationId === 'convert:docx' &&
+        result.warnings?.some((warning: { code?: string }) => warning.code === 'PDF_DOCX_LAYOUT_FALLBACK'))
+        throw new Error('PDF 转 Word 版式处理失败，已阻止降级结果。')
       const name = basename(String(result.fileName || '')).replace(/[\x00-\x1f\x7f]/g, '')
       if (!name || name === '.' || name === '..') throw new Error('Invalid engine output name')
       const destination = resolve(request.outputDir, `${index}-${name}`)

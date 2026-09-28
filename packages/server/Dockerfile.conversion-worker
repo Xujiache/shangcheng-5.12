@@ -62,11 +62,18 @@ COPY packages/server/scripts/camelot-requirements.txt /tmp/camelot-requirements.
 RUN python3 -m venv /opt/camelot-venv \
  && /opt/camelot-venv/bin/pip install --no-cache-dir -r /tmp/camelot-requirements.txt \
  && rm /tmp/camelot-requirements.txt
+COPY packages/server/scripts/pdf2docx-requirements.txt /tmp/pdf2docx-requirements.txt
+RUN python3 -m venv /opt/pdf2docx-venv \
+ && /opt/pdf2docx-venv/bin/pip install --no-cache-dir -r /tmp/pdf2docx-requirements.txt \
+ && rm /tmp/pdf2docx-requirements.txt
 COPY --chown=node:node packages/server/scripts/camelot_table_engine.py /usr/local/bin/jiujiu-camelot-table
-RUN chmod 755 /usr/local/bin/jiujiu-camelot-table
+COPY --chown=node:node packages/server/scripts/run-original-pdf2docx.py /usr/local/libexec/jiujiu-pdf2docx.py
+COPY --chown=node:node packages/server/scripts/run-original-pdf2docx.sh /usr/local/bin/jiujiu-pdf2docx
+RUN chmod 755 /usr/local/bin/jiujiu-camelot-table /usr/local/bin/jiujiu-pdf2docx
 ENV NODE_ENV=production FLYINGMOUSE_SOURCE_DIR=/app/flyingmouse \
     PATH=/opt/camelot-venv/bin:$PATH \
     FLYINGMOUSE_CAMELOT_TABLE_PATH=/usr/local/bin/jiujiu-camelot-table \
+    FLYINGMOUSE_DOCENGINE_PATH=/usr/local/bin/jiujiu-pdf2docx \
     FLYINGMOUSE_DCRAW_PATH=/usr/local/bin/dcraw_emu \
     FLYINGMOUSE_OFD_FONT_DIR=/opt/ofd-fonts \
     FLYINGMOUSE_PANDOC_PATH=/app/flyingmouse/bin/pandoc/pandoc \

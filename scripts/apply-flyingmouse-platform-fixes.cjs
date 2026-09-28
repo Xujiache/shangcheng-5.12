@@ -92,6 +92,22 @@ const pdfTableReplacements = [
     '  // 会把字形竖笔误当竖线；高分辨率整页另外设置 40px 下限。',
   ],
 ]
+const pdfCoverageBefore = '      return expected.length > 1 && !actual.includes(expected);'
+const pdfCoverageAfter = `      if (expected.length <= 1 || actual.includes(expected)) return false;
+      // PDF text extraction can omit superscripts that the layout engine retains.
+      // Allow only one inserted glyph inside the same source cell; a missing
+      // source glyph still fails the coverage check.
+      for (let start = 0; start < actual.length; start++) {
+        if (actual[start] !== expected[0]) continue;
+        let sourceIndex = 1;
+        let inserted = 0;
+        for (let index = start + 1; index < actual.length && sourceIndex < expected.length; index++) {
+          if (actual[index] === expected[sourceIndex]) sourceIndex++;
+          else if (++inserted > 1) break;
+        }
+        if (sourceIndex === expected.length) return false;
+      }
+      return true;`
 
 function hash(bytes) { return createHash('sha256').update(bytes).digest('hex') }
 
@@ -125,7 +141,7 @@ function apply(directory) {
   const ocrCode = ocrBytes.toString('utf8')
   const ofdDependencyCode = ofdDependencyBytes.toString('utf8')
   if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
-    code.split(rawRunBefore).length !== 2 ||
+    code.split(rawRunBefore).length !== 2 || pdfCode.split(pdfCoverageBefore).length !== 2 ||
     officeCode.split(officeBefore).length !== 2 || ofdCode.split(ofdBefore).length !== 2 ||
     ocrCode.split(ocrBefore).length !== 2 ||
     ofdDependencyCode.split(ofdDependencyBefore).length !== 3 ||
@@ -173,6 +189,7 @@ function apply(directory) {
     .replace('const { assertPdfPages } = require("./resource-policy");',
       'const { LIMITS, assertImageMetadata, assertPdfPages } = require("./resource-policy");')
     .replace(zipImageCall, zipImageBatch)
+    .replace(pdfCoverageBefore, pdfCoverageAfter)
   fs.writeFileSync(imagePath, patched)
   fs.writeFileSync(officePath, officePatched)
   fs.writeFileSync(ofdPath, ofdPatched)
@@ -182,7 +199,7 @@ function apply(directory) {
   fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 13,
+    fixRevision: 14,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -212,6 +229,7 @@ function apply(directory) {
       'Embed a complete CJK TrueType font to avoid missing glyphs in PDF font subsetting',
       'Treat OFD text Y as a baseline and S path commands as subpath starts',
       'Convert ZIP images in memory-budgeted batches before merging every PDF page',
+      'Keep PDF-to-Word layout output when it preserves a source cell plus one superscript glyph',
     ],
   }, null, 2) + '\n')
 }
@@ -219,7 +237,7 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 13 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 14 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||
