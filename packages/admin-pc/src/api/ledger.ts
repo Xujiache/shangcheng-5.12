@@ -83,6 +83,35 @@ export interface LedgerAccountsPage {
   pageSize: number
 }
 
+export type LedgerToolKey = 'triangle' | 'arc' | 'cut' | 'work-log' | 'format' | 'rmb' | 'retire' | 'level' | 'glass' | 'luban'
+export type LedgerToolStatus = 'open' | 'success' | 'failure'
+export interface LedgerToolUsage {
+  today: number
+  last7Days: number
+  last30Days: number
+  all: number
+  byStatus: Record<LedgerToolStatus, number>
+}
+export interface LedgerToolSummary {
+  label: string
+  timezone: string
+  tools: Record<LedgerToolKey, LedgerToolUsage>
+}
+export interface LedgerToolEvent {
+  id: string
+  tool: LedgerToolKey
+  status: LedgerToolStatus
+  occurredAt: string
+  receivedAt: string
+}
+export interface LedgerToolEventsPage {
+  label: string
+  total: number
+  page: number
+  pageSize: number
+  items: LedgerToolEvent[]
+}
+
 /** 充值返回 */
 export interface LedgerGrantResult {
   membership: LedgerMembership
@@ -125,6 +154,21 @@ export async function fetchLedgerAccounts(params?: {
   } catch {
     return { list: [], total: 0, page: params?.page ?? 1, pageSize: params?.pageSize ?? 20 }
   }
+}
+
+export function fetchLedgerToolSummary(id: string): Promise<LedgerToolSummary> {
+  return request.get({ url: `/api/v1/p/ledger/users/${encodeURIComponent(id)}/tools/summary` })
+}
+
+export function fetchLedgerToolEvents(id: string, params: {
+  tool?: LedgerToolKey
+  status?: LedgerToolStatus
+  from?: string
+  to?: string
+  page: number
+  pageSize: number
+}): Promise<LedgerToolEventsPage> {
+  return request.get({ url: `/api/v1/p/ledger/users/${encodeURIComponent(id)}/tools/events`, params })
 }
 
 /** 更新账号（启用 / 停用 · 改昵称） */

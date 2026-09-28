@@ -1,0 +1,39 @@
+<lz-bg />
+<view class="more-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="更多工具" />
+  <view class="more-page__body">
+    <view class="more-page__search">
+      <text class="more-page__search-icon">⌕</text>
+      <input value="{{query}}" placeholder="搜索工具或用途" confirm-type="search" bindinput="onSearch" />
+      <view wx:if="{{query}}" class="more-page__clear" bindtap="clearSearch">×</view>
+    </view>
+
+    <block wx:if="{{popular.length}}">
+      <view class="more-page__heading">热门工具</view>
+      <view class="more-page__grid">
+        <view wx:for="{{popular}}" wx:key="id" class="more-page__item" data-id="{{item.id}}" hover-class="tap-active" bindtap="openTool">
+          <image src="{{item.image}}" mode="aspectFit" />
+          <text>{{item.shortLabel}}</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:if="{{others.length}}">
+      <view class="more-page__heading more-page__heading--other">其他工具</view>
+      <view class="more-page__grid">
+        <view wx:for="{{others}}" wx:key="id" class="more-page__item" data-id="{{item.id}}" hover-class="tap-active" bindtap="openTool">
+          <image src="{{item.image}}" mode="aspectFit" />
+          <text>{{item.shortLabel}}</text>
+        </view>
+      </view>
+    </block>
+
+    <view wx:if="{{!popular.length && !others.length}}" class="more-page__empty">
+      <view>没有找到相关工具</view>
+      <text>试试工具名称、用途或常见叫法</text>
+      <button bindtap="clearSearch">清空搜索</button>
+    </view>
+    <view wx:else class="more-page__foot">量窗助手 · 实用工具</view>
+  </view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

@@ -1,0 +1,23 @@
+.tool-page { min-height: 100vh; color: var(--text); }
+.tool-body { padding: 16px 16px calc(36px + env(safe-area-inset-bottom)); }
+.tool-body--with-actions { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+.tool-card { margin-bottom: 14px; padding: 19px 17px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-soft); }
+.tool-kicker { color: var(--muted); font-size: 12px; font-weight: 700; }
+.tool-section { margin: 24px 2px 10px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.tool-title { color: var(--text); font-size: 17px; font-weight: 800; }
+.tool-note { color: var(--muted); font-size: 11px; line-height: 1.7; }
+.tool-row { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); }
+.tool-row:last-child { border-bottom: 0; }
+.tool-row__label { color: var(--text); font-size: 13px; font-weight: 600; }
+.tool-row__value { color: var(--muted); font-size: 12px; text-align: right; }
+.tool-primary { width: 100%; min-height: 48px; margin: 13px 0 0; border-radius: 16px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; }
+.tool-primary[disabled] { opacity: .4; }
+.tool-secondary { width: 100%; min-height: 46px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--accent-text); font-size: 13px; font-weight: 700; }
+.tool-error { margin-top: 9px; color: #b44735; font-size: 11px; }
+.tool-actions { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(245, 250, 247, .96); border-top: 1px solid var(--border); box-shadow: 0 -8px 28px rgba(22, 48, 37, .06); }
+.tool-actions button { flex: 1; min-height: 46px; margin: 0; }
+.tool-segment { display: flex; padding: 4px; border-radius: 999px; background: #e4ece8; border: 1px solid var(--border); }
+.tool-segment view { flex: 1; min-height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.tool-segment .is-active { background: #fff; color: var(--text); box-shadow: 0 2px 8px rgba(16, 54, 41, .08); }
+.tool-locked { margin: 16px; padding: 30px 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); text-align: center; }
+.tool-locked text { display: block; color: var(--muted); font-size: 13px; }

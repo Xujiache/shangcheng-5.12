@@ -1,0 +1,5 @@
+# Mac ARM source build: python scripts/install-glass-engine.py
+# Validate with: python test/verify-glass-engine.py
+# Linux can install this pinned source directly with PIP_CONSTRAINT=glass-build-constraints.txt.
+# pyWinCalc v3.6.2, including WinCalc v2.5.1 selected by that source release.
+pywincalc @ git+https://github.com/LBNL-ETA/pyWinCalc.git@49e3316a17d08715b96a5245a4bb656fcd914310

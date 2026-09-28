@@ -1,0 +1,42 @@
+<lz-bg />
+<view class="tool-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="水平仪测量仪" />
+  <view wx:if="{{authorized}}" class="tool-body">
+    <view class="tool-segment">
+      <view class="{{mode === 'flat' ? 'is-active' : ''}}" data-mode="flat" bindtap="changeMode">水平仪</view>
+      <view class="{{mode === 'incline' ? 'is-active' : ''}}" data-mode="incline" bindtap="changeMode">倾角仪</view>
+    </view>
+    <view class="tool-card level-card">
+      <view class="level-status {{unavailable ? 'level-status--error' : ''}}">
+        <view class="level-status__dot"></view>
+        <text>{{unavailable ? '传感器不可用' : locked ? '已锁定读数' : calibrated ? '已校准 · 实时测量' : '实时测量'}}</text>
+      </view>
+      <block wx:if="{{!unavailable}}">
+        <view wx:if="{{mode === 'flat'}}" class="level-dial">
+          <view class="level-dial__axis level-dial__axis--x"></view>
+          <view class="level-dial__axis level-dial__axis--y"></view>
+          <view class="level-dial__ring"></view>
+          <view class="level-dial__bubble" style="transform: translate({{bubbleX}}px, {{bubbleY}}px);"></view>
+        </view>
+        <view wx:else class="level-slope">
+          <view class="level-slope__line" style="transform: rotate({{inclineDeg}}deg);"></view>
+          <view class="level-slope__base"></view>
+        </view>
+        <view class="level-value">{{displayAngle}}<text>°</text></view>
+        <view class="level-caption">{{mode === 'flat' ? '偏离水平' : '相对屏幕的倾角'}}</view>
+        <view class="level-axes">
+          <view><text>横向角度</text><text class="level-axes__value">{{horizontalText}}°</text></view>
+          <view><text>纵向角度</text><text class="level-axes__value">{{verticalText}}°</text></view>
+        </view>
+      </block>
+      <view wx:else class="level-unavailable">请在支持加速度传感器的手机上打开，并检查微信权限与系统设置。</view>
+    </view>
+    <view class="level-buttons">
+      <button class="tool-secondary" disabled="{{unavailable || locked}}" bindtap="calibrate">校准</button>
+      <button class="tool-primary" disabled="{{unavailable}}" bindtap="toggleLock">{{locked ? '继续测量' : '锁定读数'}}</button>
+    </view>
+    <view class="tool-note level-note">校准前请把手机放在已知水平面上。测量时放稳手机，晃动会影响读数。</view>
+  </view>
+  <view wx:else class="tool-locked"><text>登录后可免费使用水平仪测量仪</text><button class="tool-primary" bindtap="login">去登录</button></view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

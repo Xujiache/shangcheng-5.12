@@ -1,4 +1,5 @@
 import { MotionPage, navigation } from '../../utils/page-transition'
+import { reportToolEvent } from '../../utils/tool-events'
 import { localDate, money, quantity, rows, summary, validDate } from '../../utils/workbook/domain'
 import {
   maybeImportGuest,
@@ -32,6 +33,7 @@ MotionPage({
   },
   showVersion: 0,
   async onShow() {
+    reportToolEvent('work-log', 'open')
     const version = (this.showVersion || 0) + 1
     this.showVersion = version
     this.setData({ cloudNotice: '', cloudDetail: '', cloudBusy: false })

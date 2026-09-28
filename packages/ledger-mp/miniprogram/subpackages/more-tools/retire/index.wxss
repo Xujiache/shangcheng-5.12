@@ -1,0 +1,16 @@
+@import "../common.wxss";
+.retire-summary { padding: 24px 18px; background: linear-gradient(145deg, #fafffc, #e8f5ed); }
+.retire-summary__date { margin-top: 11px; color: #31725d; font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.retire-summary__date text { font-size: 14px; font-weight: 600; }
+.retire-summary__age { margin-top: 5px; color: var(--muted); font-size: 11px; }
+.retire-summary__divider { margin: 21px 0; border-top: 1px solid var(--border); }
+.retire-summary__count { display: flex; gap: 20px; margin: 8px 0; color: #287e63; font-size: 27px; font-weight: 800; }
+.retire-summary__count text { display: flex; align-items: baseline; }
+.retire-summary__unit { margin-left: 4px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.retire-summary__review { margin: 18px 0 8px; color: var(--accent-text); font-size: 20px; font-weight: 700; }
+.retire-information { padding-top: 3px; padding-bottom: 3px; }
+.retire-picker { min-height: 58px; }
+.retire-form-note { margin: 7px 0 14px; }
+.retire-cancel { margin-top: 9px; }
+.retire-clear { margin: 17px 0; color: var(--muted); font-size: 11px; text-align: center; }
+.retire-policy { margin: 24px 3px 0; }

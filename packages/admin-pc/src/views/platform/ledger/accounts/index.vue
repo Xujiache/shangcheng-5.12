@@ -102,8 +102,9 @@
             <span>{{ formatDateTime(row.createdAt) }}</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="280" fixed="right">
+        <ElTableColumn label="操作" width="345" fixed="right">
           <template #default="{ row }">
+            <ElButton link type="primary" @click="openTools(row)">工具使用</ElButton>
             <ElButton link type="primary" @click="openEdit(row)">编辑</ElButton>
             <ElButton
               link
@@ -187,18 +188,76 @@
         <ElButton type="primary" :loading="notifySubmitting" @click="submitNotify">发送</ElButton>
       </template>
     </ElDialog>
+
+    <ElDrawer v-model="toolsOpen" :title="`工具使用 · ${toolsAccount}`" size="920px" destroy-on-close>
+      <div class="tool-drawer">
+        <div class="tool-drawer__note">已同步使用记录 · 本机工具的离线操作在设备补传后显示。统计不含游客使用。</div>
+        <ElTable v-loading="toolsLoading" :data="usageRows" size="small" border>
+          <ElTableColumn prop="label" label="工具" min-width="125" />
+          <ElTableColumn prop="today" label="今日事件" width="88" align="right" />
+          <ElTableColumn prop="last7Days" label="近 7 天" width="82" align="right" />
+          <ElTableColumn prop="last30Days" label="近 30 天" width="88" align="right" />
+          <ElTableColumn prop="open" label="累计打开" width="88" align="right" />
+          <ElTableColumn prop="success" label="累计成功" width="88" align="right" />
+          <ElTableColumn prop="failure" label="累计失败" width="88" align="right" />
+        </ElTable>
+        <div class="tool-drawer__head">使用明细</div>
+        <div class="tool-drawer__filters">
+          <ElSelect v-model="toolFilter" placeholder="全部工具" clearable style="width: 148px" @change="resetToolEvents">
+            <ElOption v-for="tool in toolOptions" :key="tool.key" :label="tool.label" :value="tool.key" />
+          </ElSelect>
+          <ElSelect v-model="statusFilter" placeholder="全部状态" clearable style="width: 126px" @change="resetToolEvents">
+            <ElOption label="打开" value="open" />
+            <ElOption label="成功" value="success" />
+            <ElOption label="失败" value="failure" />
+          </ElSelect>
+          <ElDatePicker v-model="toolDateRange" type="daterange" start-placeholder="开始日期" end-placeholder="结束日期" clearable @change="resetToolEvents" />
+        </div>
+        <ElTable v-loading="eventsLoading" :data="toolEvents" size="small" stripe empty-text="当前条件下暂无已同步记录">
+          <ElTableColumn label="发生时间" width="190">
+            <template #default="{ row }">{{ formatDateTime(row.occurredAt) }}</template>
+          </ElTableColumn>
+          <ElTableColumn label="工具" min-width="145">
+            <template #default="{ row }">{{ toolName(row.tool) }}</template>
+          </ElTableColumn>
+          <ElTableColumn label="状态" width="88">
+            <template #default="{ row }">
+              <ElTag :type="row.status === 'success' ? 'success' : row.status === 'failure' ? 'danger' : 'info'" size="small">{{ statusName(row.status) }}</ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="同步时间" width="190">
+            <template #default="{ row }">{{ formatDateTime(row.receivedAt) }}</template>
+          </ElTableColumn>
+        </ElTable>
+        <ElPagination
+          v-model:current-page="eventPage"
+          :page-size="20"
+          :total="eventTotal"
+          layout="total, prev, pager, next"
+          background
+          class="tool-drawer__pager"
+          @current-change="loadToolEvents"
+        />
+      </div>
+    </ElDrawer>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
+  import { ref, reactive, onMounted, computed } from 'vue'
   import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
   import { Refresh, Search } from '@element-plus/icons-vue'
   import {
     fetchLedgerAccounts,
+    fetchLedgerToolSummary,
+    fetchLedgerToolEvents,
     updateLedgerAccount,
     pushLedgerNotification,
-    type LedgerAccount
+    type LedgerAccount,
+    type LedgerToolKey,
+    type LedgerToolStatus,
+    type LedgerToolSummary,
+    type LedgerToolEvent
   } from '@/api/ledger'
   import {
     membershipTagType,
@@ -218,6 +277,96 @@
   const loading = ref(false)
   const keyword = ref('')
   const status = ref<'active' | 'disabled' | ''>('')
+
+  const toolOptions: Array<{ key: LedgerToolKey; label: string }> = [
+    { key: 'triangle', label: '三角计算' },
+    { key: 'arc', label: '圆弧计算' },
+    { key: 'cut', label: '优化下料' },
+    { key: 'work-log', label: '记工' },
+    { key: 'format', label: '格式转换' },
+    { key: 'rmb', label: '人民币大小写' },
+    { key: 'retire', label: '退休倒计时' },
+    { key: 'level', label: '水平仪' },
+    { key: 'glass', label: '玻璃 K 值' },
+    { key: 'luban', label: '鲁班尺' }
+  ]
+  const toolName = (key: LedgerToolKey) => toolOptions.find(item => item.key === key)?.label || key
+  const statusName = (value: LedgerToolStatus) => ({ open: '打开', success: '成功', failure: '失败' })[value]
+  const toolsOpen = ref(false)
+  const toolsAccount = ref('')
+  const toolsUserId = ref('')
+  const toolsLoading = ref(false)
+  const toolSummary = ref<LedgerToolSummary | null>(null)
+  const usageRows = computed(() => toolOptions.map(({ key, label }) => {
+    const item = toolSummary.value?.tools[key]
+    return { label, today: item?.today || 0, last7Days: item?.last7Days || 0,
+      last30Days: item?.last30Days || 0, open: item?.byStatus.open || 0,
+      success: item?.byStatus.success || 0, failure: item?.byStatus.failure || 0 }
+  }))
+  const toolFilter = ref<LedgerToolKey | ''>('')
+  const statusFilter = ref<LedgerToolStatus | ''>('')
+  const toolDateRange = ref<[Date, Date] | null>(null)
+  const eventPage = ref(1)
+  const eventTotal = ref(0)
+  const eventsLoading = ref(false)
+  const toolEvents = ref<LedgerToolEvent[]>([])
+  let toolEventsRequest = 0
+
+  async function openTools(row: LedgerAccount) {
+    toolsUserId.value = row.id
+    toolsAccount.value = `${row.nickname || '微信用户'}（${row.accountCode}）`
+    toolsOpen.value = true
+    toolFilter.value = ''
+    statusFilter.value = ''
+    toolDateRange.value = null
+    eventPage.value = 1
+    toolSummary.value = null
+    toolEvents.value = []
+    eventTotal.value = 0
+    toolsLoading.value = true
+    try {
+      const summary = await fetchLedgerToolSummary(row.id)
+      if (toolsUserId.value === row.id) toolSummary.value = summary
+    } catch (e: any) {
+      if (toolsUserId.value === row.id) ElMessage.error(e?.message || '加载工具统计失败')
+    } finally {
+      if (toolsUserId.value === row.id) toolsLoading.value = false
+    }
+    if (toolsUserId.value === row.id) loadToolEvents()
+  }
+
+  function resetToolEvents() {
+    eventPage.value = 1
+    loadToolEvents()
+  }
+
+  async function loadToolEvents() {
+    if (!toolsUserId.value) return
+    const requestId = ++toolEventsRequest
+    const userId = toolsUserId.value
+    const range = toolDateRange.value
+    const from = range?.[0] ? new Date(range[0]).toISOString() : undefined
+    const end = range?.[1] ? new Date(range[1]) : null
+    if (end) end.setHours(23, 59, 59, 999)
+    eventsLoading.value = true
+    try {
+      const response = await fetchLedgerToolEvents(userId, {
+        tool: toolFilter.value || undefined,
+        status: statusFilter.value || undefined,
+        from,
+        to: end?.toISOString(),
+        page: eventPage.value,
+        pageSize: 20
+      })
+      if (userId !== toolsUserId.value || requestId !== toolEventsRequest) return
+      toolEvents.value = response.items
+      eventTotal.value = response.total
+    } catch (e: any) {
+      if (requestId === toolEventsRequest) ElMessage.error(e?.message || '加载工具明细失败')
+    } finally {
+      if (requestId === toolEventsRequest) eventsLoading.value = false
+    }
+  }
 
   async function load() {
     loading.value = true
@@ -401,6 +550,12 @@
     font-size: 13px;
     color: var(--art-gray-700, #374151);
   }
+
+  .tool-drawer { display: flex; flex-direction: column; gap: 15px; }
+  .tool-drawer__note { padding: 10px 12px; border-radius: 9px; background: #f0f7f3; color: #4f685b; font-size: 12px; }
+  .tool-drawer__head { margin-top: 8px; font-size: 15px; font-weight: 700; }
+  .tool-drawer__filters { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tool-drawer__pager { justify-content: flex-end; }
 
   .pf-pager {
     display: flex;

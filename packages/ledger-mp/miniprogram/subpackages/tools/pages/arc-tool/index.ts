@@ -1,4 +1,5 @@
 import { MotionPage } from '../../../../utils/page-transition'
+import { reportToolEvent } from '../../../../utils/tool-events'
 import {
   initialMembershipAccess,
   membershipAccessView,
@@ -117,6 +118,7 @@ MotionPage({
     resultRows: [] as Array<{ label: string; value: string }>,
   },
   onShow() {
+    reportToolEvent('arc', 'open')
     this.checkAccess()
   },
   async checkAccess() {
@@ -160,6 +162,7 @@ MotionPage({
     const vals = this.data.values as Values
     const selected = ORDER.filter((k) => String(vals[k]).trim()).slice(0, 2)
     if (selected.length < 2) {
+      reportToolEvent('arc', 'failure')
       wx.showToast({ title: '请至少输入 2 个参数', icon: 'none' })
       return
     }
@@ -167,6 +170,7 @@ MotionPage({
     for (const k of selected) {
       const n = parsePositive(vals[k])
       if (n === undefined) {
+        reportToolEvent('arc', 'failure')
         wx.showToast({ title: '参数必须大于 0', icon: 'none' })
         return
       }
@@ -185,7 +189,9 @@ MotionPage({
           { label: '弓形面积', value: fmt(r.segmentArea) },
         ],
       })
+      reportToolEvent('arc', 'success')
     } catch (e: any) {
+      reportToolEvent('arc', 'failure')
       wx.showToast({ title: e?.message || '参数组合无法计算', icon: 'none' })
     }
   },

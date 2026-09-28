@@ -1,0 +1,66 @@
+<lz-bg />
+<view class="tool-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="玻璃 K 值计算" />
+  <view wx:if="{{authorized}}" class="tool-body">
+    <view class="tool-segment">
+      <view class="{{type === 'hollow' ? 'is-active' : ''}}" data-type="hollow" bindtap="changeType">中空玻璃</view>
+      <view class="{{type === 'vacuum' ? 'is-active' : ''}}" data-type="vacuum" bindtap="changeType">真空玻璃</view>
+    </view>
+
+    <view wx:if="{{!result}}" class="glass-editor">
+      <view class="tool-card glass-structure">
+        <view class="glass-card-head"><text class="tool-title">玻璃构造</text><text>从室外到室内</text></view>
+        <view class="glass-diagram">
+          <text>室外</text><view class="glass-pane"></view><view class="glass-gap">{{type === 'hollow' ? '气体层' : '真空层'}}</view><view class="glass-pane"></view><text>室内</text>
+        </view>
+        <view class="glass-structure__label">{{outerMm}} + {{gapMm}} + {{innerMm}} mm</view>
+        <view class="glass-triple">
+          <view><text>外片玻璃</text><input type="digit" value="{{outerMm}}" data-field="outerMm" bindinput="onField" /><text class="glass-unit">mm</text></view>
+          <view><text>{{type === 'hollow' ? '中空层' : '真空层'}}</text><input type="digit" value="{{gapMm}}" data-field="gapMm" bindinput="onField" /><text class="glass-unit">mm</text></view>
+          <view><text>内片玻璃</text><input type="digit" value="{{innerMm}}" data-field="innerMm" bindinput="onField" /><text class="glass-unit">mm</text></view>
+        </view>
+      </view>
+
+      <view class="tool-card glass-params">
+        <picker wx:if="{{type === 'hollow'}}" range="{{gases}}" range-key="label" value="{{gasIndex}}" bindchange="chooseGas">
+          <view class="tool-row"><text class="tool-row__label">腔体气体</text><text class="tool-row__value">{{gases[gasIndex].label}} ›</text></view>
+        </picker>
+        <picker range="{{coatings}}" range-key="label" value="{{coatingIndex}}" bindchange="chooseCoating">
+          <view class="tool-row"><text class="tool-row__label">Low-E 镀膜</text><text class="tool-row__value">{{coatings[coatingIndex].label}} ›</text></view>
+        </picker>
+        <view wx:if="{{coatingIndex > 0}}" class="tool-row"><text class="tool-row__label">镀膜表面发射率</text><input type="digit" value="{{emissivity}}" data-field="emissivity" bindinput="onField" /></view>
+      </view>
+
+      <view class="glass-advanced" bindtap="toggleAdvanced">边界与{{type === 'vacuum' ? '支撑柱' : '计算'}}参数 <text>{{advanced ? '收起⌃' : '展开⌄'}}</text></view>
+      <view wx:if="{{advanced}}" class="tool-card glass-params">
+        <block wx:if="{{type === 'vacuum'}}">
+          <view class="tool-row"><text class="tool-row__label">真空压力（Pa）</text><input type="digit" value="{{vacuumPressurePa}}" data-field="vacuumPressurePa" bindinput="onField" /></view>
+          <view class="tool-row"><text class="tool-row__label">支撑柱直径（mm）</text><input type="digit" value="{{pillarDiameterMm}}" data-field="pillarDiameterMm" bindinput="onField" /></view>
+          <view class="tool-row"><text class="tool-row__label">支撑柱间距（mm）</text><input type="digit" value="{{pillarPitchMm}}" data-field="pillarPitchMm" bindinput="onField" /></view>
+        </block>
+        <view class="tool-row"><text class="tool-row__label">室外换热系数</text><input type="digit" value="{{outsideH}}" data-field="outsideH" bindinput="onField" /><text class="glass-unit">W/(m²·K)</text></view>
+        <view class="tool-row"><text class="tool-row__label">室内换热系数</text><input type="digit" value="{{insideH}}" data-field="insideH" bindinput="onField" /><text class="glass-unit">W/(m²·K)</text></view>
+        <view class="tool-note">真空压力与支撑柱参数请按厂家产品规格填写。</view>
+      </view>
+      <view wx:if="{{error}}" class="tool-error glass-error">{{error}}</view>
+      <button class="tool-primary" loading="{{calculating}}" disabled="{{calculating}}" bindtap="calculate">计算 K 值</button>
+      <view class="tool-note glass-note">计算玻璃中心区域，不含间隔条、边缘和窗框传热；输入参数应与实际产品一致。</view>
+    </view>
+
+    <view wx:else>
+      <view class="tool-card glass-result">
+        <view class="tool-kicker">玻璃中心 K / U 值</view>
+        <view class="glass-result__number">{{result.uValue}}<text>W/(m²·K)</text></view>
+        <view class="tool-note">计算模型：{{result.model}}</view>
+        <view class="glass-result__rule"></view>
+        <view class="tool-row"><text class="tool-row__label">玻璃类型</text><text class="tool-row__value">{{type === 'hollow' ? '中空玻璃' : '真空玻璃'}}</text></view>
+        <view class="tool-row"><text class="tool-row__label">构造</text><text class="tool-row__value">{{outerMm}} + {{gapMm}} + {{innerMm}} mm</text></view>
+        <view class="tool-row"><text class="tool-row__label">室内 / 室外空气温度</text><text class="tool-row__value">{{result.conditions.insideAirC}}°C / {{result.conditions.outsideAirC}}°C</text></view>
+      </view>
+      <button class="tool-primary" bindtap="edit">修改参数</button>
+      <view class="tool-note glass-note">此值仅为所列边界和材料假设下的玻璃中心计算结果，并非整窗传热系数或产品检测报告。</view>
+    </view>
+  </view>
+  <view wx:else class="tool-locked"><text>登录后可免费使用玻璃 K 值计算</text><button class="tool-primary" bindtap="login">去登录</button></view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

@@ -1075,6 +1075,7 @@ model LedgerUser {
   workbook      LedgerWorkbook?
   workbookOperations LedgerWorkbookOperation[]
   workbookAttachments LedgerWorkbookAttachment[]
+  toolEvents    LedgerToolEvent[]
 
   @@index([status])
   @@index([invitedById]) // 邀请统计/已邀人数查询（#10）
@@ -1420,4 +1421,18 @@ model LedgerConversionAsset {
   createdAt DateTime @default(now())
 
   @@index([jobId])
+}
+
+/// Metadata only. No tool inputs or results are persisted.
+model LedgerToolEvent {
+  id         String     @id @db.Uuid
+  userId     String
+  user       LedgerUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tool       String
+  status     String
+  occurredAt DateTime
+  receivedAt DateTime   @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([userId, tool, status, occurredAt])
 }

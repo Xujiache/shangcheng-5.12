@@ -1,6 +1,8 @@
 import { navigation } from './page-transition'
 import { TOKEN_KEY } from '../config'
 
+const ACCOUNT_ID_KEY = 'ledger_active_account_id'
+
 export function app(): IAppOption | undefined {
   return getApp<IAppOption>()
 }
@@ -11,6 +13,11 @@ export function getToken(): string {
 
 export function isLoggedIn(): boolean {
   return !!getToken()
+}
+
+export function getCurrentLedgerAccountId(): string {
+  if (!isLoggedIn()) return ''
+  return getUser()?.id || String(wx.getStorageSync(ACCOUNT_ID_KEY) || '')
 }
 
 export function goToLogin() {
@@ -47,6 +54,7 @@ export function setAuth(token: string, user?: LedgerUserInfo) {
   if (user) {
     a.globalData.user = user
     a.globalData.membership = user.membership
+    wx.setStorageSync(ACCOUNT_ID_KEY, user.id)
   }
   // setAuth 仅在用户主动完成微信登录后调用，等同已完成身份验证：
   // 视作本次冷启动已解锁，避免登录后一切后台又被生物锁拦一次
@@ -57,6 +65,7 @@ export function setUser(user: LedgerUserInfo) {
   const a = app()
   if (!a) return
   a.globalData.user = user
+  wx.setStorageSync(ACCOUNT_ID_KEY, user.id)
   if (user.membership) a.globalData.membership = user.membership
 }
 

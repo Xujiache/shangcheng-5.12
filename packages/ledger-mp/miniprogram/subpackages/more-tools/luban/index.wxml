@@ -1,0 +1,84 @@
+<lz-bg />
+<view class="tool-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="鲁班尺" />
+  <view wx:if="{{authorized}}" class="tool-body tool-body--with-actions">
+    <view class="tool-segment">
+      <view class="{{mode === 'single' ? 'is-active' : ''}}" data-mode="single" bindtap="changeMode">单尺寸</view>
+      <view class="{{mode === 'door' ? 'is-active' : ''}}" data-mode="door" bindtap="changeMode">门窗宽高</view>
+    </view>
+
+    <view class="tool-card luban-entry">
+      <view class="tool-kicker">{{mode === 'single' ? '输入尺寸' : activePart === 'width' ? '门窗净宽' : '门窗净高'}}</view>
+      <view class="luban-entry__row">
+        <input type="digit" value="{{lengthInput}}" bindinput="onLengthInput" placeholder="输入尺寸" />
+        <picker range="{{units}}" value="{{unitIndex}}" bindchange="changeUnit"><view class="luban-entry__unit">{{units[unitIndex]}} ⌄</view></picker>
+      </view>
+      <view wx:if="{{mode === 'door'}}" class="luban-parts">
+        <view class="{{activePart === 'width' ? 'is-selected' : ''}}" data-part="width" bindtap="selectPart">净宽 {{widthMm}} mm</view>
+        <view class="{{activePart === 'height' ? 'is-selected' : ''}}" data-part="height" bindtap="selectPart">净高 {{heightMm}} mm</view>
+      </view>
+      <view class="luban-entry__foot">
+        <picker range="{{rules}}" range-key="label" value="{{ruleIndex}}" bindchange="changeRule"><view>{{rules[ruleIndex].label}} ⌄</view></picker>
+        <view class="luban-step"><text class="luban-step__button" data-step="-1" bindtap="step">−</text><text class="luban-step__unit">1 mm</text><text class="luban-step__button" data-step="1" bindtap="step">＋</text></view>
+      </view>
+      <view wx:if="{{error}}" class="tool-error">{{error}}</view>
+    </view>
+
+    <view class="tool-card luban-ruler">
+      <view class="luban-ruler__head"><text class="tool-title">滑动选尺寸</text><text>尺寸</text></view>
+      <view class="luban-ruler__line"><text>文公尺 · 阳尺</text><text>429 mm / 周期</text></view>
+      <view class="luban-viewport" bindtouchstart="startDrag" bindtouchmove="moveDrag" bindtouchend="endDrag">
+        <view class="luban-track" style="transform: translateX({{yangOffset}}px);">
+          <view wx:for="{{yangCells}}" wx:key="key" class="luban-cell {{item.good ? 'is-good' : ''}}" style="width: {{yangCellWidth}}px;"><text class="luban-cell__group">{{item.group}}</text><text class="luban-cell__name">{{item.name}}</text></view>
+        </view>
+        <view class="luban-pointer"></view>
+      </view>
+      <view class="luban-ruler__line"><text>丁兰尺 · 阴尺</text><text>388 mm / 周期</text></view>
+      <view class="luban-viewport" bindtouchstart="startDrag" bindtouchmove="moveDrag" bindtouchend="endDrag">
+        <view class="luban-track" style="transform: translateX({{yinOffset}}px);">
+          <view wx:for="{{yinCells}}" wx:key="key" class="luban-cell luban-cell--yin {{item.good ? 'is-good' : ''}}" style="width: {{yinCellWidth}}px;"><text class="luban-cell__group">{{item.group}}</text><text class="luban-cell__name">{{item.name}}</text></view>
+        </view>
+        <view class="luban-pointer"></view>
+      </view>
+      <view class="luban-step-row"><view wx:for="{{steps}}" wx:key="*this" data-step="{{item}}" bindtap="step">{{item > 0 ? '+' : ''}}{{item}}</view></view>
+      <view class="tool-note">左右滑动尺面调节尺寸；屏幕刻度仅供查格，不是实物测量尺。</view>
+    </view>
+
+    <view id="luban-result" class="tool-card luban-result">
+      <view class="tool-kicker">当前尺寸 · {{lengthMm}} mm</view>
+      <view class="luban-result__row"><view><text class="luban-result__label">文公尺</text><text class="luban-result__name">{{yangGroup}} · {{yangItem}}</text></view><text class="{{yangGood ? 'is-good' : ''}}">{{yangGood ? '吉' : '凶'}}</text></view>
+      <view class="luban-result__row"><view><text class="luban-result__label">丁兰尺</text><text class="luban-result__name">{{yinGroup}} · {{yinItem}}</text></view><text class="{{yinGood ? 'is-good' : ''}}">{{yinGood ? '吉' : '凶'}}</text></view>
+    </view>
+
+    <view class="tool-card luban-suggest">
+      <view class="tool-title">附近尺寸</view>
+      <view class="luban-suggest__options">
+        <text>允许调整 ±</text>
+        <input type="number" value="{{tolerance}}" bindinput="onTolerance" />
+        <text>mm</text>
+      </view>
+      <view class="luban-suggest__ranges">
+        <view wx:for="{{ranges}}" wx:key="*this" data-range="{{item}}" bindtap="chooseRange">±{{item}}</view>
+      </view>
+      <view class="luban-suggest__switch"><text>只显示双尺同吉</text><switch checked="{{requireBoth}}" color="#0E7C66" bindchange="onBothChange" /></view>
+      <button class="tool-secondary" bindtap="findNearby">查找附近吉数</button>
+      <view wx:if="{{searched && suggestions.length}}" class="luban-suggest__list">
+        <view wx:for="{{suggestions}}" wx:key="targetMm" class="luban-suggest__item" data-size="{{item.targetMm}}" bindtap="applySuggestion"><text class="luban-suggest__size">{{item.targetMm}} mm</text><text class="luban-suggest__summary">{{item.summary}}</text><text class="luban-suggest__apply">应用 ›</text></view>
+      </view>
+      <view wx:elif="{{searched}}" class="tool-note luban-suggest__none">该调整范围内没有符合条件的尺寸，可扩大范围或关闭双尺同吉。</view>
+    </view>
+
+    <view wx:if="{{records.length}}" class="tool-card luban-records">
+      <view class="tool-title">最近保存</view>
+      <view wx:for="{{records}}" wx:key="id" class="tool-row" data-id="{{item.id}}" bindtap="restoreRecord"><text class="tool-row__label">{{item.note}}</text><text class="tool-row__value">{{item.display}} ›</text></view>
+    </view>
+    <view class="tool-note luban-disclaimer">鲁班尺格位属于传统民俗参考；尺寸仍应以门窗结构、公差和施工要求为准。</view>
+  </view>
+  <view wx:else class="tool-locked"><text>登录后可免费使用鲁班尺</text><button class="tool-primary" bindtap="login">去登录</button></view>
+  <view wx:if="{{authorized}}" class="tool-actions">
+    <button class="tool-secondary" disabled="{{error}}" bindtap="copyResult">复制结果</button>
+    <button class="tool-primary" disabled="{{error}}" bindtap="saveRecord">保存尺寸</button>
+  </view>
+  <view wx:if="{{authorized && showJump}}" class="luban-jump" bindtap="jumpToResult">查看结果 ↓</view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

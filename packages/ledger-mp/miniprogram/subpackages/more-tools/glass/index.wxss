@@ -1,0 +1,27 @@
+@import "../common.wxss";
+.glass-editor { margin-top: 14px; }
+.glass-card-head { display: flex; justify-content: space-between; align-items: center; }
+.glass-card-head text:last-child { color: var(--faint); font-size: 10px; }
+.glass-diagram { display: flex; align-items: center; justify-content: center; gap: 5px; height: 100px; }
+.glass-diagram text { color: var(--faint); font-size: 10px; }
+.glass-pane { width: 16px; height: 66px; border: 2px solid #9fcec8; background: linear-gradient(120deg, #dff7f3, #bde1dc, #efffff); transform: skewY(-6deg); box-shadow: 2px 2px 5px rgba(28, 103, 89, .12); }
+.glass-gap { width: 62px; height: 54px; display: flex; align-items: center; justify-content: center; border-top: 1px solid #bedbd3; border-bottom: 1px solid #bedbd3; color: var(--faint); font-size: 10px; }
+.glass-structure__label { margin-bottom: 15px; color: var(--accent-text); font-size: 11px; font-weight: 700; text-align: center; }
+.glass-triple { display: flex; border-top: 1px solid var(--border); }
+.glass-triple view { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; padding-top: 12px; }
+.glass-triple view + view { border-left: 1px solid var(--border); }
+.glass-triple text { color: var(--muted); font-size: 10px; }
+.glass-triple input { width: 100%; height: 30px; margin-top: 6px; color: var(--text); font-size: 17px; font-weight: 800; text-align: center; }
+.glass-triple .glass-unit { color: var(--faint); font-size: 10px; }
+.glass-params { padding-top: 4px; padding-bottom: 4px; }
+.glass-params .tool-row input { width: 76px; height: 42px; color: var(--text); font-size: 12px; text-align: right; }
+.glass-params .tool-row .glass-unit { color: var(--faint); font-size: 9px; }
+.glass-params > .tool-note { margin: 10px 0; }
+.glass-advanced { display: flex; justify-content: space-between; padding: 7px 4px 14px; color: var(--muted); font-size: 12px; }
+.glass-advanced text { color: var(--accent-text); }
+.glass-error { margin: 0 4px 12px; }
+.glass-note { margin: 12px 3px 0; }
+.glass-result { margin-top: 14px; background: linear-gradient(155deg, #f9fffb, #eaf6ee); }
+.glass-result__number { margin: 14px 0 11px; color: var(--accent-text); font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.glass-result__number text { margin-left: 5px; font-size: 11px; font-weight: 600; }
+.glass-result__rule { margin-top: 18px; border-top: 1px solid var(--border); }

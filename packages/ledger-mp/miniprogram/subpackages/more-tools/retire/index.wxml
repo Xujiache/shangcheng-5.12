@@ -1,0 +1,53 @@
+<lz-bg />
+<view class="tool-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="退休倒计时" />
+  <view wx:if="{{authorized}}" class="tool-body">
+    <block wx:if="{{hasProfile && !editing}}">
+      <view class="tool-card retire-summary">
+        <view class="tool-kicker">法定退休年月</view>
+        <block wx:if="{{calculated}}">
+          <view class="retire-summary__date">{{retirementYear}} <text>年</text> {{retirementMonth}} <text>月</text></view>
+          <view class="retire-summary__age">届时法定退休年龄 {{ageText}}</view>
+          <view class="retire-summary__divider"></view>
+          <view class="tool-kicker">{{reached ? '已到法定退休月份' : '距离退休月份还有'}}</view>
+          <view class="retire-summary__count"><view><text>{{years}}</text><text class="retire-summary__unit">年</text></view><view><text>{{months}}</text><text class="retire-summary__unit">个月</text></view><view><text>{{days}}</text><text class="retire-summary__unit">天</text></view></view>
+          <view class="tool-note">共 {{totalDays}} 天 · 按退休月 1 日倒计时</view>
+        </block>
+        <block wx:else>
+          <view class="retire-summary__review">请向单位或社保经办机构核定</view>
+          <view class="tool-note">{{reviewReason}}</view>
+        </block>
+      </view>
+      <view class="tool-section">我的信息</view>
+      <view class="tool-card retire-information">
+        <view class="tool-row"><text class="tool-row__label">出生年月</text><text class="tool-row__value">{{birthMonthText}}</text></view>
+        <view class="tool-row"><text class="tool-row__label">职工类别</text><text class="tool-row__value">{{categoryText}}</text></view>
+        <view class="tool-row"><text class="tool-row__label">工种情况</text><text class="tool-row__value">{{workText}}</text></view>
+      </view>
+      <button class="tool-secondary" bindtap="editProfile">修改我的信息</button>
+      <view class="retire-clear" bindtap="clearProfile">清除本机资料</view>
+      <view class="tool-note retire-policy">依据 2025 年起渐进式延迟退休政策计算。实际退休及领取养老金资格以主管部门核定为准。</view>
+    </block>
+    <block wx:else>
+      <view class="tool-card">
+        <view class="tool-title">{{hasProfile ? '修改我的信息' : '填写我的信息'}}</view>
+        <view class="tool-note retire-form-note">只需填写一次，结果保存在本机；再次打开会按当天日期重算。</view>
+        <picker mode="date" fields="month" start="1900-01" end="{{todayMonth}}" value="{{draftBirthMonth}}" bindchange="onBirthMonth">
+          <view class="tool-row retire-picker"><text class="tool-row__label">出生年月</text><text class="tool-row__value">{{draftBirthMonth || '请选择'}} ›</text></view>
+        </picker>
+        <picker range="{{categories}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategory">
+          <view class="tool-row retire-picker"><text class="tool-row__label">职工类别</text><text class="tool-row__value">{{categories[categoryIndex].label}} ›</text></view>
+        </picker>
+        <picker range="{{workTypes}}" range-key="label" value="{{workIndex}}" bindchange="onWorkType">
+          <view class="tool-row retire-picker"><text class="tool-row__label">工种情况</text><text class="tool-row__value">{{workTypes[workIndex].label}} ›</text></view>
+        </picker>
+        <view wx:if="{{error}}" class="tool-error">{{error}}</view>
+      </view>
+      <button class="tool-primary" bindtap="saveProfile">计算并保存</button>
+      <button wx:if="{{hasProfile}}" class="tool-secondary retire-cancel" bindtap="cancelEdit">取消修改</button>
+      <view class="tool-note retire-policy">女职工类别以单位或社保认定为准。特殊工种或类别不明时保存资料，不推测退休日期。</view>
+    </block>
+  </view>
+  <view wx:else class="tool-locked"><text>登录后可免费使用退休倒计时</text><button class="tool-primary" bindtap="login">去登录</button></view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

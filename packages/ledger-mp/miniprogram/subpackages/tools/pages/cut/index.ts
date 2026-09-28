@@ -1,4 +1,5 @@
 import { MotionPage, navigation } from '../../../../utils/page-transition'
+import { reportToolEvent } from '../../../../utils/tool-events'
 import { cutApi, cutPlanApi } from '../../../../api/index'
 import { isLoggedIn } from '../../../../utils/store'
 
@@ -75,6 +76,7 @@ MotionPage({
     this.checkAccess()
   },
   onShow() {
+    reportToolEvent('cut', 'open')
     // 从「下料结果」页保存方案后返回，刷新历史列表
     if (this.data.cloudEnabled) this.fetchHistory()
   },
@@ -306,6 +308,7 @@ MotionPage({
       const sheetW = Math.round(Number(this.data.sheetWStr) || 0)
       const sheetH = Math.round(Number(this.data.sheetHStr) || 0)
       if (sheetW <= 0 || sheetH <= 0) {
+        reportToolEvent('cut', 'failure')
         wx.showToast({ title: '请填写整板宽和高', icon: 'none' })
         return
       }
@@ -317,10 +320,12 @@ MotionPage({
         }))
         .filter((p: any) => p.w > 0 && p.h > 0 && p.qty > 0)
       if (!pieces.length) {
+        reportToolEvent('cut', 'failure')
         wx.showToast({ title: '请填写宽、高和数量', icon: 'none' })
         return
       }
       if (pieces.reduce((s: number, p: any) => s + p.qty, 0) > 2000) {
+        reportToolEvent('cut', 'failure')
         wx.showToast({ title: '总块数过多（上限 2000），请核对数量', icon: 'none' })
         return
       }
@@ -333,6 +338,7 @@ MotionPage({
     } else {
       const stock = Math.round(Number(this.data.stockLengthStr) || 0)
       if (stock <= 0) {
+        reportToolEvent('cut', 'failure')
         wx.showToast({ title: '请填写整根料长', icon: 'none' })
         return
       }
@@ -343,10 +349,12 @@ MotionPage({
         }))
         .filter((p: any) => p.length > 0 && p.qty > 0)
       if (!pieces.length) {
+        reportToolEvent('cut', 'failure')
         wx.showToast({ title: '请填写段长和数量', icon: 'none' })
         return
       }
       if (pieces.reduce((s: number, p: any) => s + p.qty, 0) > 5000) {
+        reportToolEvent('cut', 'failure')
         wx.showToast({ title: '段数过多（上限 5000），请核对数量', icon: 'none' })
         return
       }

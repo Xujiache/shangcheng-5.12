@@ -420,6 +420,9 @@ MotionPage({
   toArcTool() {
     navigation.navigateTo({ url: '/pages/arc-tool/index' })
   },
+  toMoreTools() {
+    navigation.navigateTo({ url: '/subpackages/more-tools/index/index' })
+  },
 
   toCost() {
     if (!requireLogin()) return

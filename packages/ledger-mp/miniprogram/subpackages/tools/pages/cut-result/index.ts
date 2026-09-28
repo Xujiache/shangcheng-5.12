@@ -1,4 +1,5 @@
 import { MotionPage, navigation } from '../../../../utils/page-transition'
+import { reportToolEvent } from '../../../../utils/tool-events'
 import { cutPlanApi } from '../../../../api/index'
 import { optimizeCutting } from '../../../../utils/cutting'
 import { optimizeNesting, NestResult } from '../../../../utils/nesting'
@@ -54,7 +55,16 @@ MotionPage({
         subt: material === 'glass' ? '玻璃 · 自动旋转优化方案' : `${meta.name} · 优化方案`,
         editingTitle: d.editingTitle || '',
       },
-      () => (meta.is2d ? this.compute2d() : this.compute1d()),
+      () => {
+        try {
+          if (meta.is2d) this.compute2d()
+          else this.compute1d()
+          reportToolEvent('cut', 'success')
+        } catch (error) {
+          reportToolEvent('cut', 'failure')
+          throw error
+        }
+      },
     )
   },
 

@@ -1,0 +1,2 @@
+# Upstream WinCalc v2.5.1 uses cmake_minimum_required(<3.5), removed in CMake 4.
+cmake<4

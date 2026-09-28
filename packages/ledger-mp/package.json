@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit",
     "test:nesting": "tsx scripts/verify-nesting.ts",
     "test:routes": "node scripts/verify-routes.mjs",
+    "test:more-tools": "tsx scripts/verify-more-tools.ts && tsx scripts/verify-tool-events.ts",
     "test:format-flow": "node --test scripts/verify-format-flow.cjs && tsx scripts/verify-format-download.ts",
     "test:request": "tsx scripts/verify-request.ts",
     "lint": "eslint miniprogram scripts --config ../../eslint.config.mjs",

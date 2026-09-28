@@ -1,4 +1,5 @@
 import { MotionPage } from '../../../../utils/page-transition'
+import { reportToolEvent } from '../../../../utils/tool-events'
 import {
   initialMembershipAccess,
   membershipAccessView,
@@ -104,6 +105,7 @@ MotionPage({
     resultRows: [] as Array<{ label: string; value: string }>,
   },
   onShow() {
+    reportToolEvent('triangle', 'open')
     this.checkAccess()
   },
   async checkAccess() {
@@ -147,10 +149,12 @@ MotionPage({
     const vals = this.data.values as Values
     const selected = ORDER.filter((k) => String(vals[k]).trim()).slice(0, 3)
     if (selected.length < 3) {
+      reportToolEvent('triangle', 'failure')
       wx.showToast({ title: '请至少输入 3 个参数', icon: 'none' })
       return
     }
     if (selected.every((k) => k === 'A' || k === 'B' || k === 'C')) {
+      reportToolEvent('triangle', 'failure')
       wx.showToast({ title: '不能只输入 3 个角', icon: 'none' })
       return
     }
@@ -158,6 +162,7 @@ MotionPage({
     for (const k of selected) {
       const n = parsePositive(vals[k])
       if (n === undefined) {
+        reportToolEvent('triangle', 'failure')
         wx.showToast({ title: '参数必须大于 0', icon: 'none' })
         return
       }
@@ -177,7 +182,9 @@ MotionPage({
           { label: '面积', value: fmt(r.area) },
         ],
       })
+      reportToolEvent('triangle', 'success')
     } catch (e: any) {
+      reportToolEvent('triangle', 'failure')
       wx.showToast({ title: e?.message || '参数组合无法计算', icon: 'none' })
     }
   },

@@ -12,6 +12,7 @@ import {
 } from '../api'
 import { isLoggedIn, requireLogin } from '../../../utils/store'
 import { LOCAL_CONVERSION_TEST } from '../../../config'
+import { reportToolEvent } from '../../../utils/tool-events'
 
 interface PickedFile {
   name: string
@@ -262,6 +263,7 @@ MotionPage({
       this.setData({ loading: false })
       return
     }
+    reportToolEvent('format', 'open')
     this.refresh()
   },
   onShow() {

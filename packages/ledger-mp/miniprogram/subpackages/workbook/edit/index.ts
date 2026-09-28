@@ -1,4 +1,5 @@
 import { MotionPage, navigation } from '../../../utils/page-transition'
+import { reportToolEvent } from '../../../utils/tool-events'
 import {
   check,
   clone,
@@ -243,6 +244,7 @@ MotionPage({
   async save() {
     if (this.data.saving || this.data.locked) return
     this.setData({ saving: true })
+    let saved = false
     try {
       const repo = repository()
       const s = repo.read()
@@ -298,9 +300,12 @@ MotionPage({
       repo.write(latest)
       candidates.forEach((e) => changes.push(makeChange('entries', e, s.book)))
       saveChanges(this.data.id ? '编辑记工' : '新增记工 ' + candidates.length + ' 笔', changes)
+      saved = true
+      reportToolEvent('work-log', 'success')
       wx.showToast({ title: '已保存到本机', image: '/assets/workbook-icons/check.png' })
       navigation.navigateBack()
     } catch (e) {
+      if (!saved) reportToolEvent('work-log', 'failure')
       reportError(e)
     } finally {
       this.setData({ saving: false })

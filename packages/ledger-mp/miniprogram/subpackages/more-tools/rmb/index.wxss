@@ -1,0 +1,13 @@
+@import "../common.wxss";
+.rmb-input { display: flex; align-items: center; height: 68px; gap: 9px; border-bottom: 1px solid var(--border); }
+.rmb-input text { color: var(--accent-text); font-size: 25px; font-weight: 700; }
+.rmb-input input { flex: 1; min-width: 0; height: 100%; color: var(--text); font-size: 27px; font-weight: 700; }
+.rmb-clear { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 23px; }
+.rmb-input + .tool-note { margin-top: 9px; }
+.rmb-result { background: linear-gradient(150deg, #f9fffb, #ecf7f1); }
+.rmb-result__value { padding: 21px 0 23px; color: var(--accent-text); font-size: 18px; font-weight: 800; line-height: 1.55; word-break: break-all; }
+.rmb-result__value--empty { color: var(--faint); font-size: 13px; font-weight: 500; }
+.rmb-result__amount { display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+.rmb-result__amount text { color: var(--text); font-weight: 700; }
+.rmb-help { margin: 24px 3px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.rmb-help text { display: block; margin-top: 6px; font-size: 11px; font-weight: 400; line-height: 1.6; }

@@ -17,6 +17,7 @@ import {
 import { markdownSidecars, zipOutputs } from './conversion.outputs'
 import catalog from '../modules/ledger-conversion/conversion.catalog.json'
 import { assertConversionPasswordKey, decryptConversionPassword } from '../modules/ledger-conversion/conversion.secrets'
+import { serverEventId } from '../modules/ledger/tool-events.service'
 
 const QUEUE = 'ledger:conversions:queue'
 const WORKER_HEARTBEAT = 'ledger:conversions:worker:online'
@@ -353,6 +354,11 @@ async function processJob(id: string) {
         where: { jobId: id },
         data: { expiresAt: new Date(finishedAt.getTime() + RETENTION_MS) },
       })
+      await tx.ledgerToolEvent.createMany({
+        data: [{ id: serverEventId('format', id, 'success'), userId: job.userId,
+          tool: 'format', status: 'success', occurredAt: finishedAt }],
+        skipDuplicates: true,
+      })
     })
   } catch (error: any) {
     if (writtenKeys.length) await storage.removeObjects(bucket, writtenKeys).catch(() => undefined)
@@ -365,16 +371,26 @@ async function processJob(id: string) {
       publicError = 'RAW 图片解码失败：无法从该文件提取像素数据。'
     else if (detail.includes('合并图片超过当前内存预算'))
       publicError = '图片总像素超过当前内存预算，请分批转换或释放内存后重试'
-    await prisma.ledgerConversionJob.updateMany({
-      where: { id, leaseId, status: 'running' },
-      data: {
-        status: 'failed',
-        leaseId: null,
-        heartbeatAt: null,
-        error: publicError,
-        finishedAt,
-        expiresAt: new Date(finishedAt.getTime() + RETENTION_MS),
-      },
+    await prisma.$transaction(async (tx) => {
+      const failed = await tx.ledgerConversionJob.updateMany({
+        where: { id, leaseId, status: 'running' },
+        data: {
+          status: 'failed',
+          leaseId: null,
+          heartbeatAt: null,
+          error: publicError,
+          finishedAt,
+          expiresAt: new Date(finishedAt.getTime() + RETENTION_MS),
+        },
+      })
+      if (failed.count) {
+        const job = await tx.ledgerConversionJob.findUniqueOrThrow({ where: { id }, select: { userId: true } })
+        await tx.ledgerToolEvent.createMany({
+          data: [{ id: serverEventId('format', id, 'failure'), userId: job.userId,
+            tool: 'format', status: 'failure', occurredAt: finishedAt }],
+          skipDuplicates: true,
+        })
+      }
     })
     await prisma.ledgerConversionUpload.updateMany({
       where: { jobId: id },

@@ -67,15 +67,20 @@
         <view class="home__tool-t">记工</view>
         <view class="home__tool-s">日工明细</view>
       </view>
-      <view class="home__tool-card home__tool-card--format" hover-class="tap-active" bindtap="toFormat">
+      <view class="home__tool-card" hover-class="tap-active" bindtap="toFormat">
         <view class="home__tool-icon">
           <image class="home__tool-image" src="/assets/tools/tool-format.png" mode="aspectFit" />
         </view>
-        <view class="home__tool-info">
-          <view class="home__tool-t">格式转换</view>
-          <view class="home__tool-s">文件处理</view>
+        <view class="home__tool-t">格式转换</view>
+        <view class="home__tool-s">文件处理</view>
+      </view>
+      <view class="home__more" hover-class="tap-active" bindtap="toMoreTools">
+        <image class="home__more-icon" src="/assets/tools/tool-more.png" mode="aspectFit" />
+        <view class="home__more-copy">
+          <view class="home__more-title">更多工具</view>
+          <view class="home__more-sub">量窗助手、退休倒计时、人民币大写等</view>
         </view>
-        <view class="home__tool-arrow">›</view>
+        <view class="home__more-arrow">›</view>
       </view>
     </view>
 

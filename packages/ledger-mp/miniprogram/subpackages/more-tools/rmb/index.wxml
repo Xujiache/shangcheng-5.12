@@ -1,0 +1,28 @@
+<lz-bg />
+<view class="tool-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="人民币大小写转换" />
+  <view wx:if="{{authorized}}" class="tool-body">
+    <view class="tool-card">
+      <view class="tool-kicker">输入金额（元）</view>
+      <view class="rmb-input">
+        <text>¥</text>
+        <input type="digit" value="{{amount}}" placeholder="输入金额" maxlength="20" bindinput="onAmount" />
+        <view wx:if="{{amount}}" class="rmb-clear" bindtap="clearAmount">×</view>
+      </view>
+      <view class="tool-note">最多保留两位小数</view>
+      <view wx:if="{{error}}" class="tool-error">{{error}}</view>
+    </view>
+    <view class="tool-card rmb-result">
+      <view class="tool-kicker">人民币大写</view>
+      <view class="rmb-result__value {{!uppercase ? 'rmb-result__value--empty' : ''}}">{{uppercase || '输入金额后显示大写结果'}}</view>
+      <view wx:if="{{uppercase}}" class="rmb-result__amount">小写金额 <text>¥ {{normalized}}</text></view>
+    </view>
+    <button class="tool-primary" disabled="{{!uppercase}}" bindtap="copyResult">复制大写金额</button>
+    <view class="rmb-help">
+      <view>填写票据时更省心</view>
+      <text>使用壹、贰、叁等大写汉字，整元自动补“整”。</text>
+    </view>
+  </view>
+  <view wx:else class="tool-locked"><text>登录后可免费使用人民币大小写转换</text><button class="tool-primary" bindtap="login">去登录</button></view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

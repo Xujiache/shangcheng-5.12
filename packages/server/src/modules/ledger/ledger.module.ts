@@ -18,6 +18,10 @@ import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { LedgerMembershipGuard } from './guards/ledger-membership.guard'
 import { WorkbookService } from './workbook/workbook.service'
 import { WorkbookController } from './workbook/workbook.controller'
+import { ToolEventsController, LedgerToolAdminController } from './tool-events.controller'
+import { ToolEventsService } from './tool-events.service'
+import { GlassToolController } from './glass-tool.controller'
+import { GlassToolService } from './glass-tool.service'
 
 /**
  * 门窗利账（ledger）模块 —— 记账小程序后端域，与商城零耦合。
@@ -27,6 +31,9 @@ import { WorkbookController } from './workbook/workbook.controller'
   imports: [FilesModule],
   controllers: [
     WorkbookController,
+    ToolEventsController,
+    LedgerToolAdminController,
+    GlassToolController,
     LedgerAuthController,
     LedgerController,
     LedgerBizController,
@@ -37,6 +44,8 @@ import { WorkbookController } from './workbook/workbook.controller'
   ],
   providers: [
     WorkbookService,
+    ToolEventsService,
+    GlassToolService,
     LedgerAuthService,
     LedgerService,
     LedgerAdminService,

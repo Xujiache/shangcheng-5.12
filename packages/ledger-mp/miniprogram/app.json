@@ -54,6 +54,17 @@
     },
     { "root": "subpackages/format", "pages": ["index/index"] },
     {
+      "root": "subpackages/more-tools",
+      "pages": [
+        "index/index",
+        "rmb/index",
+        "retire/index",
+        "level/index",
+        "glass/index",
+        "luban/index"
+      ]
+    },
+    {
       "root": "subpackages/workbook",
       "pages": ["records/index", "edit/index", "people/index", "finance/index", "reports/index"]
     },

@@ -2,9 +2,11 @@ import { navigation } from './utils/page-transition'
 import { LOCAL_CONVERSION_TEST, TOKEN_KEY, VERSION } from './config'
 import { captureInviteCode, getBioLock, getBioVerified } from './utils/store'
 import { clearAllCache } from './utils/request'
+import { flushToolEvents } from './utils/tool-events'
 
 const GUEST_ALLOWED_ROUTES = new Set([
   'pages/home/index',
+  'subpackages/more-tools/index/index',
   'pages/login/index',
   'pages/triangle-tool/index',
   'pages/arc-tool/index',
@@ -44,6 +46,7 @@ App<IAppOption>({
   },
   onLaunch(options: any) {
     this.globalData.token = wx.getStorageSync(TOKEN_KEY) || ''
+    void flushToolEvents()
     captureInviteCode(options && options.query && options.query.inviteCode)
     blockRestrictedGuestRoute(options, this.globalData.token)
     // 真实状态栏高度：安卓 env(safe-area-inset-top) 返回 0，自定义导航必须用它做顶部留白
@@ -60,9 +63,13 @@ App<IAppOption>({
     }
     // 网络状态：初始查询 + 监听变化，供请求层离线兜底/页面提示
     wx.getNetworkType({ success: (r) => (this.globalData.online = r.networkType !== 'none') })
-    wx.onNetworkStatusChange((r) => (this.globalData.online = r.isConnected))
+    wx.onNetworkStatusChange((r) => {
+      this.globalData.online = r.isConnected
+      if (r.isConnected) void flushToolEvents()
+    })
   },
   onShow(options: any) {
+    void flushToolEvents()
     captureInviteCode(options && options.query && options.query.inviteCode)
     if (blockRestrictedGuestRoute(options, this.globalData.token)) return
     // 生物解锁闸门：每次冷启动校验一次（解锁后 bioVerified 置位不再拦）。
@@ -78,6 +85,7 @@ App<IAppOption>({
     if (this.globalData.token !== token) clearAllCache()
     this.globalData.token = token
     wx.setStorageSync(TOKEN_KEY, token)
+    void flushToolEvents()
   },
   clearAuth() {
     this.globalData.token = ''
