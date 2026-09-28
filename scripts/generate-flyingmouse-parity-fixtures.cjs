@@ -79,11 +79,17 @@ async function main() {
   const mixedBytes = Buffer.from(await mixed.save({ useObjectStreams: false }))
   writeFileSync(join(out, 'mixed-table.pdf'), mixedBytes)
 
-  const cases = [
-    { kind: 'native', path: 'native-table.pdf', expect: ['量窗助手', '订单', '315.50'], expectAssets: { docx: 1 } },
-    { kind: 'scan', path: 'scan-table.pdf', expect: ['量窗助手', '订单', '315.50'], expectAssets: { docx: 1 } },
-    { kind: 'mixed', path: 'mixed-table.pdf', expect: ['量窗助手', '订单', '315.50'], expectAssets: { docx: 1 } },
-  ]
+  const expectByTarget = {
+    docx: ['量窗助手', '订单验收', '左栏', '客户资料', '门窗规格', '测试样本',
+      'A-102', '右栏', '经营分析', '成本记录', '利润', '82.25', '数量', '37',
+      '项目', '金额', '门窗订单', '315.50', '安装费用', '48.20', '图例', '蓝色矩形', '橙色圆形'],
+    xlsx: ['项目', '金额', '门窗订单', '315.50', '安装费用', '48.20'],
+  }
+  const expectTableRows = [['项目', '金额'], ['门窗订单', '315.50'], ['安装费用', '48.20']]
+  const cases = ['native', 'scan', 'mixed'].map((kind) => ({
+    kind, path: `${kind}-table.pdf`, expect: ['量窗助手', '订单', '315.50'],
+    expectByTarget, expectTableRows, expectAssets: { docx: 1 },
+  }))
   writeFileSync(join(out, 'cases.json'), JSON.stringify(cases, null, 2) + '\n')
   const hashes = Object.fromEntries([[nativePath, nativeBytes], [join(out, 'scan-table.pdf'), scanBytes],
     [join(out, 'mixed-table.pdf'), mixedBytes]].map(([path, bytes]) => [path.split('/').pop(), sha(bytes)]))

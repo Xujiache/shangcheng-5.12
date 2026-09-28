@@ -5,6 +5,7 @@ const { execFileSync, spawnSync } = require('node:child_process')
 const { existsSync, mkdirSync, readFileSync, writeFileSync } = require('node:fs')
 const { basename, dirname, extname, join, resolve } = require('node:path')
 const { pathToFileURL } = require('node:url')
+const { assertPdfParityQuality } = require('./flyingmouse-pdf-parity-quality.cjs')
 
 const args = process.argv.slice(2)
 const arg = (flag) => { const index = args.indexOf(flag); return index < 0 ? undefined : args[index + 1] }
@@ -135,10 +136,10 @@ async function main() {
         if (row.warnings.some((warning) => warning.code === 'PDF_DOCX_LAYOUT_FALLBACK'))
           throw new Error('PDF_DOCX_LAYOUT_FALLBACK: original engine degraded layout')
         Object.assign(row, await inspect(file, target, key))
-        if (target === 'docx' && row.assets < (item.expectAssets?.docx || 0))
-          throw new Error(`Embedded graphic missing: expected ${item.expectAssets.docx}, got ${row.assets}`)
-        const missing = (item.expect || []).filter((phrase) => !row.content?.includes(text(phrase)))
-        if (missing.length) throw new Error(`Expected content missing: ${missing.join(', ')}`)
+        const sourcePages = (await PDFDocument.load(sourceBytes)).getPageCount()
+        assertPdfParityQuality({ item, target, sourcePages,
+          direct: { text: row.content, assets: row.assets, sheets: row.sheets, render: row.render },
+          backend: { text: row.content, assets: row.assets, sheets: row.sheets, render: row.render } })
         row.status = 'pass'
       } catch (error) { row.error = String(error.message || error).slice(0, 1000) }
       report.push(row)

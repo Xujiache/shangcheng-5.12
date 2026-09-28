@@ -2,6 +2,89 @@
   "sourceRevision": "a7b9b15d32db80cecedae00e89289088656fb1ae",
   "acceptanceLedger": "docs/flyingmouse-migration/acceptance-a7b9b15.json",
   "scope": "External and tracked fixtures relevant to historical acceptance and unaccepted RAW/AI pairs; downloaded public RAW candidates require Linux direct/backend quality checks. Candidate hashes do not prove current availability or output quality. Six historical WPS/DPS/DPT/ET/ETT fixtures and one DOCX are untracked local inputs; only hashes are retained, not private paths or contents.",
+  "ocrCandidates": [
+    {
+      "resourceId": "parity-fixtures/raw/public-209d464e13702de5.fff",
+      "sha256": "209d464e13702de5f4fdb830ac26ac140c98a8d0dc3e81c5ba61d93677330832",
+      "expectedText": [
+        "Digital ColorChecker SG",
+        "gretagmacbeth"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/1640/nice/Hasselblad - H5D-40 - 16bit (4:3).fff",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/public-27809a7d252d5156.pef",
+      "sha256": "27809a7d252d515685ed4e6091b70ab25348502baeb75db03ce7b4f1d9549b76",
+      "expectedText": [
+        "Nutrition Facts",
+        "Charge: R190808"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/4392/nice/Pentax - *ist DS - 12bit 12bit uncompressed (3:2).pef",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/public-4ee482f2b6f9f1a8.crw",
+      "sha256": "4ee482f2b6f9f1a8d370703ea04e9f2abaa49356973a7f56b229af93a78e8a2e",
+      "expectedText": [
+        "PlayStation 2",
+        "AMPLITUDE"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/1307/nice/Canon - EOS D30 - RAW (3:2).CRW",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-880-c660fac3f9e4a3e0.rw2",
+      "sha256": "c660fac3f9e4a3e03c1496db62abbe50a73ed3bd6a11056c41badf87cd0b7841",
+      "expectedText": [
+        "Charge: R110903",
+        "IT8.7/2-1993"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/880/nice/Panasonic - DMC-GF1 - 4:3.rw2",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-1430-38d3750abbcf847b.orf",
+      "sha256": "38d3750abbcf847bba58e254b2ab8c57d8c9f3fc48490c29ae2b55c4e84d5f64",
+      "expectedText": [
+        "Charge: R150502",
+        "IT8.7/2-1993"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/1430/nice/Olympus - E-PL6 - 16bit (4:3).orf",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-865-f756ad5be551a8b3.raf",
+      "sha256": "f756ad5be551a8b3e1b503a8a6f7e8e637fba519c0b0f8c79dd58e94b0287602",
+      "expectedText": [
+        "KOSMOS GREYCARD",
+        "www.photocoach.com.au"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/865/nice/Fujifilm - X-T2 - 14bit 14bit compressed (3:2).RAF",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-2238-c5ca0333a7cda8a2.nef",
+      "sha256": "c5ca0333a7cda8a2fc33fb2157d18dfa89f1844548dc49c2fd2e67f502f72e25",
+      "expectedText": [
+        "X-rite",
+        "colorchecker"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/2238/nice/Nikon - Coolpix A - 14bit 14bit compressed (Lossy (type 2)) (3:2).NEF",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-1376-992c969286dc06b1.dng",
+      "sha256": "992c969286dc06b1690128a7b14ea74c5b5a46209b0fbf21e83df00807b050b9",
+      "expectedText": [
+        "X-rite",
+        "colorchecker",
+        "MSCCPPPC0616"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/1376/nice/Pentax - K-3 II - 14bit (3:2).dng",
+      "license": "CC0"
+    }
+  ],
   "trackedSyntheticPdfFixtures": {
     "root": "packages/server/test/fixtures/platform-parity",
     "files": {
@@ -1545,7 +1628,11 @@
         "downloadUrl": "https://raw.githubusercontent.com/isee15/ofdjs/09163ca5e362dfef0194b8a4c34d149c30740f49/test/fixtures/999.ofd",
         "license": "Apache-2.0",
         "signature": "OFD ZIP containing OFD.xml",
-        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "财天下科技有限公司",
+          "2020年08月05日"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/corel_wp6.wpd",
@@ -1555,7 +1642,11 @@
         "downloadUrl": "https://raw.githubusercontent.com/xberg-io/test_documents/ffc1599155c350804a6d28961da4b1262a70d50d/wordperfect/corel_wp6.wpd",
         "license": "CC0",
         "signature": "WordPerfect 6, FF 57 50 43",
-        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "Ruimtelijke interpolatie van neerslaggegevens",
+          "dagelijkse neerslag als functie van hoogte"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/n.ofd",
@@ -1565,7 +1656,11 @@
         "downloadUrl": "https://raw.githubusercontent.com/isee15/ofdjs/09163ca5e362dfef0194b8a4c34d149c30740f49/test/fixtures/n.ofd",
         "license": "Apache-2.0",
         "signature": "OFD ZIP containing OFD.xml",
-        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "路桥区卫生局",
+          "张阿三"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-formula.et",
@@ -1576,7 +1671,12 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "量窗助手中文验收",
+          "12345",
+          "24690"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-formula.ett",
@@ -1587,7 +1687,12 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "量窗助手中文验收",
+          "12345",
+          "24690"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-office-rich.wps",
@@ -1598,7 +1703,13 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice reopened and exported DOCX with Chinese text, a real table, and word/media/image1.png; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "量窗助手中文验收",
+          "门窗订单",
+          "315.50",
+          "安装费用"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-office-rich.wpt",
@@ -1609,7 +1720,13 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice reopened and exported DOCX with Chinese text, a real table, and word/media/image1.png; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "量窗助手中文验收",
+          "门窗订单",
+          "315.50",
+          "安装费用"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-office.wps",
@@ -1620,7 +1737,12 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "公开合成验收样本",
+          "门窗订单",
+          "315.50"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-office.wpt",
@@ -1631,7 +1753,12 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "公开合成验收样本",
+          "门窗订单",
+          "315.50"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-slides.dps",
@@ -1642,7 +1769,14 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "量窗助手",
+          "12345",
+          "第二页",
+          "经营分析",
+          "37"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/synthetic-slides.dpt",
@@ -1653,7 +1787,14 @@
         "generator": "WPS Office for Mac 12.1.28496",
         "signature": "OLE Compound Document D0 CF 11 E0 A1 B1 1A E1",
         "validation": "LibreOffice opened and exported actual text, formulas, or two slide texts; pairwise conversion not yet accepted",
-        "localAvailability": "generated-and-isolated-server-sha256-verified"
+        "localAvailability": "generated-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "量窗助手",
+          "12345",
+          "第二页",
+          "经营分析",
+          "37"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/test.ofd",
@@ -1663,7 +1804,11 @@
         "downloadUrl": "https://raw.githubusercontent.com/isee15/ofdjs/09163ca5e362dfef0194b8a4c34d149c30740f49/test/fixtures/test.ofd",
         "license": "Apache-2.0",
         "signature": "OFD ZIP containing OFD.xml",
-        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "电子发票",
+          "发票号码"
+        ]
       },
       {
         "resourceId": "parity-fixtures/legacy/wp6.wpd",
@@ -1673,7 +1818,11 @@
         "downloadUrl": "https://raw.githubusercontent.com/xberg-io/test_documents/ffc1599155c350804a6d28961da4b1262a70d50d/wordperfect/wp6.wpd",
         "license": "Apache-2.0",
         "signature": "WordPerfect, FF 57 50 43",
-        "localAvailability": "downloaded-and-isolated-server-sha256-verified"
+        "localAvailability": "downloaded-and-isolated-server-sha256-verified",
+        "expectedText": [
+          "APPENDIX",
+          "AND FURTHER"
+        ]
       }
     ],
     "scope": "These are genuine file formats with inspectable content. They are not the six historical private inputs and do not inherit historical 954/1174 pair acceptance."

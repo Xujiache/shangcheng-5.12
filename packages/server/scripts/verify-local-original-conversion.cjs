@@ -505,6 +505,7 @@ async function main() {
     await verifyBaseline(convert)
 
   if (process.env.CONVERSION_PDF_PARITY_CASES) {
+    const { assertPdfParityQuality } = require('../../../scripts/flyingmouse-pdf-parity-quality.cjs')
     const cases = JSON.parse(await readFile(process.env.CONVERSION_PDF_PARITY_CASES, 'utf8'))
     if (!Array.isArray(cases) || !cases.length || !process.env.CONVERSION_PARITY_EVIDENCE)
       throw new Error('PDF parity requires cases and CONVERSION_PARITY_EVIDENCE')
@@ -549,11 +550,15 @@ async function main() {
         const inputPath = require('node:path').resolve(dirname(process.env.CONVERSION_PDF_PARITY_CASES), item.path)
         const source = await readFile(inputPath)
         if (source.subarray(0, 5).toString() !== '%PDF-') throw new Error(`Invalid PDF: ${inputPath}`)
+        const sourcePages = (await PDFDocument.load(source)).getPageCount()
         for (const target of ['docx', 'xlsx']) {
           const label = `${item.kind}:${target}:${basename(inputPath)}`
           const artifactKey = `${caseIndex + 1}-${item.kind}-${target}`
           const directPath = join(work, `${randomUUID()}.${target}`)
-          const evidence = { label, inputSha256: hash(source), target, status: 'fail', files: {} }
+          const evidence = { label, inputSha256: hash(source), sourcePages, target,
+            expectedContent: item.expectByTarget?.[target] || item.expect,
+            expectedTableRows: target === 'xlsx' ? item.expectTableRows : undefined,
+            status: 'fail', files: {} }
           try {
             const response = execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert',
               inputPath, '--to', target, '--output', directPath, '--json'],
@@ -590,35 +595,35 @@ async function main() {
                 if (file === directCheckPath) evidence.directAssets = assets
                 else evidence.backendAssets = assets
                 const xml = execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
-                return xml.replace(/<[^>]+>/g, '')
+                return { text: xml.replace(/<[^>]+>/g, ''), assets }
               }
               const book = new ExcelJS.Workbook()
               await book.xlsx.readFile(file)
-              return book.worksheets.flatMap((sheet) => {
-                const values = []
-                sheet.eachRow((row) => row.eachCell((cell) => values.push(String(cell.value ?? ''))))
-                return values
-              }).join(' ')
+              const sheets = book.worksheets.map((sheet) => {
+                const rows = []
+                sheet.eachRow((row) => rows.push(row.values.slice(1).map((cell) => String(cell ?? ''))))
+                return { name: sheet.name, rows }
+              })
+              return { text: sheets.flatMap((sheet) => sheet.rows.flat()).join(' '), sheets }
             }
             const directCheckPath = join(work, `${randomUUID()}-direct.${target}`)
             const backendCheckPath = join(work, `${randomUUID()}-backend.${target}`)
-            const directText = normalize(await extract(direct, directCheckPath))
-            const backendText = normalize(await extract(backend, backendCheckPath))
+            const directExtract = await extract(direct, directCheckPath)
+            const backendExtract = await extract(backend, backendCheckPath)
+            const directText = normalize(directExtract.text)
+            const backendText = normalize(backendExtract.text)
             evidence.contentSha256 = hash(Buffer.from(backendText))
             evidence.directContentSha256 = hash(Buffer.from(directText))
             evidence.contentLength = backendText.length
             evidence.directRender = await render(directCheckPath, `${artifactKey}-direct`)
             evidence.backendRender = await render(backendCheckPath, `${artifactKey}-backend`)
-            const matched = item.expect.every((phrase) => backendText.includes(normalize(phrase)))
-            if (!matched || directText !== backendText || !backendText ||
-              (target === 'docx' && (evidence.directAssets < (item.expectAssets?.docx || 0) ||
-                evidence.backendAssets < (item.expectAssets?.docx || 0))) ||
-              JSON.stringify(evidence.directRender) !== JSON.stringify(evidence.backendRender))
-              throw new Error('Expected content missing or direct/backend content/render differs')
+            assertPdfParityQuality({ item, target, sourcePages,
+              direct: { ...directExtract, text: directText, render: evidence.directRender },
+              backend: { ...backendExtract, text: backendText, render: evidence.backendRender } })
             execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
               '--record', 'pdf', target, evidence.inputSha256,
               'synthetic PDF: direct original and authenticated backend content, assets, and renders checked'])
-            Object.assign(evidence, { status: 'pass', matched: item.expect })
+            Object.assign(evidence, { status: 'pass', matched: evidence.expectedContent })
             console.log(`PASS ${label}, content retained and direct/backend matched`)
           } catch (error) {
             failures++

@@ -123,6 +123,7 @@ if (sampleName) {
   const known = [
     ...Object.values(matrix.inputExtensions).map((item) => item.candidate).filter(Boolean),
     ...matrix.legacyReplayFixtures.files,
+    ...(matrix.ocrCandidates || []),
   ].filter((item) => basename(item.resourceId || '') === basename(sample))
   const expectedHashes = new Set(known.map((item) => item.sha256))
   if (expectedHashes.size !== 1 ||
@@ -138,6 +139,12 @@ if (sampleName) {
     (batch === 'legacySlide' && !['dps', 'dpt'].includes(extension)) ||
     (batch === 'ofd' && extension !== 'ofd'))
     throw new Error(`Unexpected fixture type for ${batch}: ${extension}`)
+  if (batch === 'rawOcr' || batch === 'vectorOcr') {
+    const qualified = (matrix.ocrCandidates || []).find((item) =>
+      basename(item.resourceId) === basename(sample) && item.sha256 === [...expectedHashes][0])
+    if (!qualified?.expectedText?.includes(env.CONVERSION_RAW_OCR_EXPECT))
+      throw new Error(`${batch} requires a visually qualified phrase for the exact fixture SHA-256`)
+  }
   if (batch === 'legacySlide' && !env.CONVERSION_LEGACY_PRESENTATION_TARGETS) {
     const catalog = require('../packages/server/src/modules/ledger-conversion/conversion.catalog.json')
     env.CONVERSION_LEGACY_PRESENTATION_TARGETS = catalog.operations
@@ -219,16 +226,27 @@ for (const row of jobRows) {
     currentOperations.set(row.operationId,
       row.status !== 'pass' || currentOperations.get(row.operationId) === 'fail' ? 'fail' : 'pass')
 }
-const operationCoverage = { total: catalog.operations.length,
+const jobOperationCoverage = { total: catalog.operations.length,
   passed: [...currentOperations.values()].filter((status) => status === 'pass').length,
   failed: [...currentOperations.values()].filter((status) => status === 'fail').length,
   notRun: catalog.operations.length - currentOperations.size }
+const qualityOperations = new Map()
+for (const [key, status] of currentPairs) {
+  const operationId = `convert:${key.split(':')[1]}`
+  qualityOperations.set(operationId,
+    status === 'fail' || qualityOperations.get(operationId) === 'fail' ? 'fail' : 'pass')
+}
+const qualityOperationCoverage = { total: catalog.operations.length,
+  passed: [...qualityOperations.values()].filter((status) => status === 'pass').length,
+  failed: [...qualityOperations.values()].filter((status) => status === 'fail').length,
+  notRun: catalog.operations.length - qualityOperations.size }
 if (batch !== 'pdf') {
   const result = { batch, status: child.status === 0 ? 'batch-passed' : 'fail',
     inputs: env.CONVERSION_TEXT_INPUTS || env.CONVERSION_IMAGE_INPUTS ||
       env.CONVERSION_AUDIO_INPUTS || env.CONVERSION_VIDEO_INPUTS ||
       env.CONVERSION_DOCUMENT_INPUTS || env.CONVERSION_SHEET_INPUTS || batch,
-    pairs: pairCounts, jobs: jobCounts, currentCoverage, operationCoverage,
+    pairs: pairCounts, jobs: jobCounts, currentCoverage, jobOperationCoverage,
+    qualityOperationCoverage, qualityEvidenceComplete: child.status === 0,
     historicalMatrixStatus: 'not-run' }
   writeFileSync(evidence, JSON.stringify(result) + '\n')
   console.log(JSON.stringify(result))
@@ -250,7 +268,8 @@ for (const result of results) {
 }
 writeFileSync(evidence, results.map((item) => JSON.stringify(item)).join('\n') + '\n')
 console.log(JSON.stringify({ checked: results.length, expected: manifest.length * 2,
-  pairs: pairCounts, jobs: jobCounts, currentCoverage, operationCoverage,
+  pairs: pairCounts, jobs: jobCounts, currentCoverage, jobOperationCoverage,
+  qualityOperationCoverage, qualityEvidenceComplete: child.status === 0,
   passed: results.filter((item) => item.status === 'pass').length,
   failed: results.filter((item) => item.status !== 'pass').length,
   windowsCompared: results.filter((item) => item.windowsComparison === 'pass').length,
