@@ -14,7 +14,11 @@ docengine_usage=$("$FLYINGMOUSE_DOCENGINE_PATH" --help 2>&1) || docengine_status
 printf '%s\n' "$docengine_usage"
 test "$docengine_status" -eq 1
 test "$docengine_usage" = 'usage: docengine convert <pdf> <docx> | docengine table <pdf> <json> [pages]'
-"$FLYINGMOUSE_DOCSTRUCTURE_ENGINE_PATH" --help
+test -x "$FLYINGMOUSE_DOCSTRUCTURE_ENGINE_PATH"
+PYTHONPATH="$FLYINGMOUSE_SOURCE_DIR/tools/docstructure-engine" \
+  PYTHONDONTWRITEBYTECODE=1 PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True \
+  "$FLYINGMOUSE_DOCSTRUCTURE_PYTHON" -c \
+  'import paddle, paddleocr, cv2, fitz; from flyingmouse_docstructure import __version__; from flyingmouse_docstructure.__main__ import main; print("docstructure", __version__, "paddle", paddle.__version__)'
 /opt/pdf2docx-venv/bin/pip check
 /opt/docstructure-venv/bin/pip check
 python3 /usr/local/libexec/verify-docstructure-models.py \
