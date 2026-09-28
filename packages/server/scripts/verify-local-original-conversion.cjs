@@ -11,6 +11,7 @@ const sharp = require('sharp')
 const engineSource = process.env.FLYINGMOUSE_TEST_SOURCE_DIR ||
   join(__dirname, '../../../vendor/flyingmouse-format/upstream-a7b9b15')
 const { PDFDocument, StandardFonts } = require(join(engineSource, 'node_modules/pdf-lib'))
+const { ZipFile } = require(join(engineSource, 'node_modules/yazl'))
 
 const base = new URL(process.env.CONVERSION_TEST_API || 'http://127.0.0.1:3001')
 const database = new URL(process.env.DATABASE_URL || 'postgres://missing:missing@invalid/db')
@@ -60,6 +61,15 @@ async function pdfPage(label) {
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   pdf.addPage([300, 300]).drawText(label, { x: 40, y: 150, size: 18, font })
   return Buffer.from(await pdf.save())
+}
+
+async function writeZip(file, entries) {
+  const archive = new ZipFile()
+  for (const [name, bytes] of entries) archive.addBuffer(bytes, name)
+  archive.end()
+  const chunks = []
+  for await (const chunk of archive.outputStream) chunks.push(chunk)
+  await writeFile(file, Buffer.concat(chunks))
 }
 
 async function verifyBaseline(convert) {
@@ -2019,7 +2029,9 @@ async function main() {
       await writeFile(sheetPath, sheetXml.replace('<sheetData>',
         '<cols><col min="1" max="1" width="32" customWidth="1"/>' +
         '<col min="2" max="3" width="18" customWidth="1"/></cols><sheetData>'))
-      execFileSync('zip', ['-q', '-r', wideInput, '.'], { cwd: expanded })
+      await writeZip(wideInput, await Promise.all(execFileSync('unzip', ['-Z', '-1', input],
+        { encoding: 'utf8' }).split('\n').filter((name) => name && !name.endsWith('/')).map(async (name) =>
+        [name, await readFile(join(expanded, name))])))
       execFileSync('unzip', ['-tqq', wideInput])
       if (execFileSync('unzip', ['-p', wideInput, 'xl/vbaProject.bin']).length < 10000)
         throw new Error('Wider XLSM PDF fixture lost its VBA project')
@@ -2311,7 +2323,7 @@ async function main() {
         width: 320, height: 240, channels: 3, background: '#cc4455',
       } }).png().toBuffer())
       const input = join(zipWork, 'images.zip')
-      execFileSync('zip', ['-q', '-j', input, first, second])
+      await writeZip(input, [['first.png', await readFile(first)], ['second.png', await readFile(second)]])
       execFileSync('unzip', ['-tqq', input])
       const fixture = await readFile(input)
       const backend = await convert('convert:pdf', [['images.zip', fixture]])
