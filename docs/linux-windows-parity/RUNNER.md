@@ -78,6 +78,7 @@ parity_batch psd
 parity_batch psdOcr
 parity_batch options
 parity_batch original
+parity_batch large
 ```
 
 Run PDF with the same command prefix in [`e2e-runbook.md`](e2e-runbook.md) using `--memory 8g`, `--batch pdf`, and `/parity-artifacts/pdf.jsonl`. Each command is independent; continue after a failed batch using a fresh evidence filename. Input lists can be narrowed with the corresponding `CONVERSION_*_INPUTS` environment variable passed using `-e` before `--entrypoint`.
@@ -93,6 +94,21 @@ parity_batch legacySlide -e "CONVERSION_LEGACY_PRESENTATION_SAMPLE=/parity-fixtu
 parity_batch ofd -e "CONVERSION_OFD_SAMPLE=/parity-fixtures/${OFD_FILE:?}" -e "CONVERSION_OFD_EXPECT=${OFD_TEXT:?}"
 ```
 
-`rawOcr` and `vectorOcr` use the same RAW or AI sample variable plus `-e "CONVERSION_RAW_OCR_EXPECT=${VISIBLE_TEXT:?}"`; run them only when that exact hash-locked image visibly contains the phrase. The default RAW/AI public samples have no proven text, so their OCR batches remain untested until a suitable sample exists. Landscape/photo OCR must never be marked passed from a generic no-text error. WPS/WPT rich fixtures require editable DOCX table and image; synthetic ET/ETT require two sheets and a formula; synthetic DPS/DPT require two pages and HTML images. The tracked `graphic.psd` covers 16 image/video targets; separate tracked `graphic-text.psd` covers three OCR targets with visible `WINDOW ORDER` and `TOTAL 315.50`, and both have hashes in `office-SHA256.json`.
+`rawOcr` and `vectorOcr` use the same RAW or AI sample variable plus `-e "CONVERSION_RAW_OCR_EXPECT=${VISIBLE_TEXT:?}"`; run them only when that exact hash-locked image visibly contains the phrase. The default RAW/AI public samples may lack readable text; OCR uses only the separately qualified `ocrCandidates` entries. Landscape/photo OCR must never be marked passed from a generic no-text error. WPS/WPT rich fixtures require editable DOCX table and image; synthetic ET/ETT require two sheets and a formula; synthetic DPS/DPT require two pages and HTML images. The tracked `graphic.psd` covers 16 image/video targets; separate tracked `graphic-text.psd` covers three OCR targets with visible `WINDOW ORDER` and `TOTAL 315.50`, and both have hashes in `office-SHA256.json`.
 
-The catalog has 1,174 input/output pairs over 98 inputs and 46 operations. Batch definitions are static routing coverage only. Eight OCR-capable public RAW candidates and one text-bearing AI candidate are recorded separately in `matrix-fixtures.json`; visible source text is a fixture qualification, not an OCR pass. Eleven RAW formats still lack text-bearing samples, leaving 33 OCR pairs without a qualified fixture. PSD's three OCR pairs have a synthetic fixture, but remain **not run** until direct CLI and authenticated backend output checks finish. No Linux batch inherits the historical 954 passes. `currentCoverage` and `qualityOperationCoverage` derive from this invocation's asserted pair events and the two multi-file operation quality events in `*.operations.jsonl`; a failure takes precedence over a pass. `jobOperationCoverage` only reports transport and download completion. If a verifier exits nonzero, `qualityEvidenceComplete` is false and any preceding pass events are partial evidence, not a batch acceptance. The historical 220 incomplete pairs and Windows reference gaps remain separate from current Linux results.
+The catalog has 1,174 input/output pairs over 98 inputs and 46 operations. Batch definitions are static routing coverage only. OCR-capable public RAW and AI candidates are recorded separately in `matrix-fixtures.json`; visible source text is a fixture qualification, not an OCR pass. Any RAW input missing from `ocrCandidates` still leaves its three OCR pairs without a qualified fixture. PSD's three OCR pairs have a synthetic fixture, but remain **not run** until direct CLI and authenticated backend output checks finish. No Linux batch inherits the historical 954 passes. `currentCoverage` and `qualityOperationCoverage` derive from this invocation's asserted pair events and the two multi-file operation quality events in `*.operations.jsonl`; a failure takes precedence over a pass. `jobOperationCoverage` only reports transport and download completion. If a verifier exits nonzero, `qualityEvidenceComplete` is false and any preceding pass events are partial evidence, not a batch acceptance. The historical 220 incomplete pairs and Windows reference gaps remain separate from current Linux results.
+
+## Replay the exact inputs through the original CLI
+
+Copy a batch's `*.jobs.jsonl`, matching `*.fixture-index.json`, and its `*-inputs/` directory together. Check out the same repository revision; place the public fixtures under a separate root with `raw/`, `design/`, and `legacy/` children. On Windows or Linux, run:
+
+```sh
+node scripts/flyingmouse-job-reference.cjs \
+  --jobs /path/to/batch.jobs.jsonl \
+  --repo-root /path/to/checkout \
+  --public-root /path/to/public-fixtures \
+  --source /path/to/original-engine \
+  --out /path/to/new-reference-directory
+```
+
+The replay checks every input's SHA-256 and size, preserves primary outputs and nested sidecar assets with individual hashes, CLI warnings, and source/runtime fingerprints, then writes one `reference.jsonl` row per job. `qualityStatus` stays `not-assessed` and `parityStatus` stays `not-compared`. Original CLI lacks `splitMode`, `groupSize`, and `alphaBackground`; those PDF and video jobs use the original `server.js` conversion route bound to a temporary localhost port with an isolated runtime directory. The existing six-PDF Windows reference is separate; this general job replay has not run on Windows yet.

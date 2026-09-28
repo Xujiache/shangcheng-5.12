@@ -133,6 +133,15 @@
       ],
       "source": "https://raw.pixls.us/getfile.php/562/nice/Mamiya%20-%20ZD.MEF",
       "license": "CC BY-NC-SA 4.0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/public-967c3af47289e6cc.kdc",
+      "sha256": "967c3af47289e6cc5ab4f9bd24135b7e5386f574fc76deb3b13e884bfda87856",
+      "expectedText": [
+        "HOSTEL"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/2338/nice/Kodak%20-%20DC120%20-%208bit%20%284%3A3%29.kdc",
+      "license": "CC0"
     }
   ],
   "trackedSyntheticPdfFixtures": {
