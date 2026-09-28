@@ -1,0 +1,9 @@
+{
+  "fontSha256": "9ac21a28f6859a89c26f2ff9dd377eb6c9a47800ad02db339738eb2f2154213f",
+  "scanPngSha256": "32f63d170ac8ea3deb2361ecd02db0e06a80edb4c50e688fe8f3d90dce0f16b5",
+  "files": {
+    "native-table.pdf": "1c6e756958127ec86986cd8c9d87d64fda30fd1cf638ccc7c86ef5b2eba5ffec",
+    "scan-table.pdf": "ec58dc12a58458266e1816937dcb5e621597c4719b9e661e4e7b494617634c0e",
+    "mixed-table.pdf": "9687d05b704cc060a8ec617386fade75a380bee21bc1d26be992a86524a7053f"
+  }
+}

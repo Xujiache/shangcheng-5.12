@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "native",
+    "path": "native-table.pdf",
+    "expect": [
+      "量窗助手",
+      "订单",
+      "315.50"
+    ],
+    "expectAssets": {
+      "docx": 1
+    }
+  },
+  {
+    "kind": "scan",
+    "path": "scan-table.pdf",
+    "expect": [
+      "量窗助手",
+      "订单",
+      "315.50"
+    ],
+    "expectAssets": {
+      "docx": 1
+    }
+  },
+  {
+    "kind": "mixed",
+    "path": "mixed-table.pdf",
+    "expect": [
+      "量窗助手",
+      "订单",
+      "315.50"
+    ],
+    "expectAssets": {
+      "docx": 1
+    }
+  }
+]

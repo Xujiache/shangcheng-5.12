@@ -1,0 +1,64 @@
+name: Conversion Windows reference
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/ledger-original-engine-rebuild]
+    paths:
+      - .github/workflows/conversion-windows-reference.yml
+      - scripts/flyingmouse-platform-reference.cjs
+      - packages/server/test/fixtures/platform-parity/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conversion-windows-reference-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reference:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      SOURCE: vendor/flyingmouse-format/upstream-a7b9b15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install original locked dependencies and engines
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Set-Location $env:SOURCE
+          npm ci --omit=dev --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Original dependency install failed' }
+          node scripts/restore-pandoc.js
+          if ($LASTEXITCODE -ne 0) { throw 'Pandoc restore failed' }
+          ./scripts/restore-ci-engines.ps1
+      - name: Run original Windows reference on identical synthetic files
+        run: |
+          $source = (Resolve-Path $env:SOURCE).Path
+          $env:FLYINGMOUSE_TEST_SOURCE_DIR = $source
+          $env:FLYINGMOUSE_FFMPEG_PATH = "$source/bin/ffmpeg/ffmpeg.exe"
+          $env:FLYINGMOUSE_LIBREOFFICE_PATH = "$source/bin/libreoffice/LibreOfficePortable/App/libreoffice/program/soffice.com"
+          $env:FLYINGMOUSE_PDFTOPPM_PATH = "$source/bin/poppler/Library/bin/pdftoppm.exe"
+          $env:FLYINGMOUSE_TESSDATA_PATH = "$source/bin/tessdata"
+          $env:FLYINGMOUSE_DOCENGINE_PATH = "$source/bin/docengine/docengine.exe"
+          $env:FLYINGMOUSE_DOCSTRUCTURE_ENGINE_PATH = "$source/bin/docstructure/docstructure-engine.exe"
+          $env:FLYINGMOUSE_DOCSTRUCTURE_MODEL_DIR = "$source/bin/docstructure/models"
+          $env:FLYINGMOUSE_PANDOC_PATH = "$source/bin/pandoc/pandoc.exe"
+          node scripts/flyingmouse-platform-reference.cjs --cases packages/server/test/fixtures/platform-parity/cases.json --out .quality/windows-reference
+          if ($LASTEXITCODE -ne 0) { throw 'Reference contains failed or degraded cases; inspect artifacts' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-0.7.10-reference
+          path: .quality/windows-reference
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: warn
