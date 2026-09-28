@@ -25,7 +25,32 @@ RUN npm ci --omit=dev --no-audit --no-fund \
  && node /app/scripts/apply-flyingmouse-platform-fixes.cjs --in-place /app/flyingmouse \
  && rm -rf output
 
+FROM debian:bookworm-slim AS davs2-build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl build-essential pkg-config nasm \
+ && rm -rf /var/lib/apt/lists/*
+RUN curl --retry 3 -fsSL https://github.com/pkuvcl/davs2/archive/refs/tags/1.7.tar.gz -o /tmp/davs2.tar.gz \
+ && echo 'b697d0b376a1c7f7eda3a4cc6d29707c8154c4774358303653f0a9727f923cc8  /tmp/davs2.tar.gz' | sha256sum -c - \
+ && tar -xzf /tmp/davs2.tar.gz -C /tmp \
+ && cd /tmp/davs2-1.7/build/linux \
+ && ./configure --prefix=/opt/davs2-1.7 --enable-shared --disable-static --disable-cli \
+ && make -j2 && make install
+
+FROM debian:bookworm-slim AS uavs3d-build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl build-essential cmake gawk \
+ && rm -rf /var/lib/apt/lists/*
+RUN curl --retry 3 -fsSL https://github.com/uavs3/uavs3d/archive/refs/tags/1.2.tar.gz -o /tmp/uavs3d.tar.gz \
+ && echo 'faa1f1f82badc0603d9944bb5af7b961dd42236e2c3a7aa8fcfc080bbeb5b157  /tmp/uavs3d.tar.gz' | sha256sum -c - \
+ && tar -xzf /tmp/uavs3d.tar.gz -C /tmp \
+ && cmake -S /tmp/uavs3d-1.2 -B /tmp/uavs3d-build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/uavs3d-1.2 -DBUILD_SHARED_LIBS=ON -DCOMPILE_10BIT=ON \
+ && cmake --build /tmp/uavs3d-build -j2 \
+ && cmake --install /tmp/uavs3d-build
+
 FROM debian:bookworm-slim AS ffmpeg-build
+COPY --from=davs2-build /opt/davs2-1.7 /opt/davs2-1.7
+COPY --from=uavs3d-build /opt/uavs3d-1.2 /opt/uavs3d-1.2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl build-essential cmake pkg-config yasm nasm \
     libx264-dev libx265-dev libsvtav1-dev libvpx-dev libopus-dev libmp3lame-dev \
@@ -45,11 +70,12 @@ RUN curl --retry 3 -fsSL https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz -o /tmp
  && echo 'b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3  /tmp/ffmpeg.tar.xz' | sha256sum -c - \
  && tar -xf /tmp/ffmpeg.tar.xz -C /tmp \
  && cd /tmp/ffmpeg-8.1.1 \
- && PKG_CONFIG_PATH=/opt/svt-av1-1.4.1/lib/pkgconfig \
+ && PKG_CONFIG_PATH=/opt/davs2-1.7/lib/pkgconfig:/opt/uavs3d-1.2/lib/pkgconfig:/opt/svt-av1-1.4.1/lib/pkgconfig \
     ./configure --prefix=/opt/ffmpeg-8.1.1 --enable-shared --disable-static \
     --enable-gpl --enable-version3 --enable-libx264 --enable-libx265 \
     --enable-libsvtav1 --enable-libvpx --enable-libopus --enable-libmp3lame \
     --enable-libjxl --enable-libopenjpeg --enable-libwebp --enable-libaom \
+    --enable-libdavs2 --enable-libuavs3d \
     --enable-libass --enable-libfreetype --enable-libfontconfig --enable-libfribidi \
  && make -j2 && make install \
  && rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg-8.1.1
@@ -208,12 +234,14 @@ ENV NODE_ENV=production FLYINGMOUSE_SOURCE_DIR=/app/flyingmouse \
     FLYINGMOUSE_LIBREOFFICE_PATH=/opt/libreoffice26.2/program/soffice \
     FLYINGMOUSE_TESSDATA_PATH=/opt/flyingmouse-tessdata \
     FLYINGMOUSE_QPDF_PATH=/usr/local/bin/jiujiu-qpdf \
-    LD_LIBRARY_PATH=/opt/ffmpeg-8.1.1/lib:/opt/svt-av1-1.4.1/lib:/opt/poppler-26.05.0/lib:/opt/poppler-deps/lib \
+    LD_LIBRARY_PATH=/opt/ffmpeg-8.1.1/lib:/opt/davs2-1.7/lib:/opt/uavs3d-1.2/lib:/opt/svt-av1-1.4.1/lib:/opt/poppler-26.05.0/lib:/opt/poppler-deps/lib \
     FONTCONFIG_PATH=/opt/poppler-deps/etc/fonts \
     HOME=/tmp XDG_CONFIG_HOME=/tmp
 WORKDIR /app/server
 COPY --from=libraw-build /tmp/LibRaw-0.21.5/bin/dcraw_emu /usr/local/bin/dcraw_emu
 COPY --from=ffmpeg-build /opt/ffmpeg-8.1.1 /opt/ffmpeg-8.1.1
+COPY --from=davs2-build /opt/davs2-1.7 /opt/davs2-1.7
+COPY --from=uavs3d-build /opt/uavs3d-1.2 /opt/uavs3d-1.2
 COPY --from=ffmpeg-build /opt/svt-av1-1.4.1 /opt/svt-av1-1.4.1
 COPY --from=poppler-build /opt/poppler-26.05.0 /opt/poppler-26.05.0
 COPY --from=poppler-build /opt/poppler-deps /opt/poppler-deps
