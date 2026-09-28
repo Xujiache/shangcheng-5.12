@@ -2401,8 +2401,37 @@ async function main() {
           const value = require('node:fs').readFileSync(file, 'utf8')
           return target === 'html' ? value.replace(/<[^>]+>/g, '') : value
         }
-        const normalized = extract(backendPath).replace(/\s+/g, '')
-        if (normalized !== extract(otherDirectPath).replace(/\s+/g, '') ||
+        const markdown = async (file, zipped) => {
+          const entries = zipped ? execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+            .trim().split('\n') : []
+          const mdFiles = entries.filter((name) => name.endsWith('.md'))
+          if (zipped && mdFiles.length !== 1) throw new Error('DOCX to md ZIP lacks one Markdown file')
+          const value = zipped ? execFileSync('unzip', ['-p', file, mdFiles[0]], { encoding: 'utf8' })
+            : await readFile(file, 'utf8')
+          const links = [...value.matchAll(/!\[[^\]]*\]\((fm-assets-[^/)\s]+\/[^/)\s]+)\)/g)]
+          const sourceImages = execFileSync('unzip', ['-Z', '-1', process.env.CONVERSION_SAMPLE_DOCX],
+            { encoding: 'utf8' }).split('\n').filter((name) => name.startsWith('word/media/') &&
+              !name.endsWith('/'))
+          if (!sourceImages.length || links.length !== sourceImages.length)
+            throw new Error('DOCX to md lost an embedded image')
+          let canonical = value
+          for (const [index, link] of links.entries()) {
+            const asset = link[1]
+            if (!/^fm-assets-[A-Za-z0-9]+\/image-\d+\.[a-z0-9]+$/.test(asset) ||
+              (zipped && !entries.includes(asset)))
+              throw new Error('DOCX to md has an invalid image reference')
+            const bytes = zipped ? execFileSync('unzip', ['-p', file, asset])
+              : await readFile(join(dirname(file), asset))
+            canonical = canonical.replace(asset,
+              `image-${index + 1}:${createHash('sha256').update(bytes).digest('hex')}`)
+          }
+          return canonical.replace(/\s+/g, '')
+        }
+        const normalized = target === 'md' ? await markdown(backendPath, true)
+          : extract(backendPath).replace(/\s+/g, '')
+        const directNormalized = target === 'md' ? await markdown(otherDirectPath, false)
+          : extract(otherDirectPath).replace(/\s+/g, '')
+        if (normalized !== directNormalized ||
           chunks.filter((part) => normalized.includes(part)).length / chunks.length < 0.7)
           throw new Error(`DOCX to ${target} differs from original or lost source text`)
         execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
