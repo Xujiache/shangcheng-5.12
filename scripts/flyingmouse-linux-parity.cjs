@@ -84,6 +84,8 @@ const evidenceBase = resolve(evidence).replace(/\.jsonl$/, '')
 const jobsEvidence = `${evidenceBase}.jobs.jsonl`
 const pairsEvidence = `${evidenceBase}.pairs.jsonl`
 const operationsEvidence = `${evidenceBase}.operations.jsonl`
+const inputArtifacts = `${evidenceBase}-inputs`
+const fixtureIndexPath = `${evidenceBase}.fixture-index.json`
 const env = {
   ...process.env,
   NODE_ENV: 'test',
@@ -91,6 +93,8 @@ const env = {
   CONVERSION_JOB_EVIDENCE: jobsEvidence,
   CONVERSION_PAIR_EVIDENCE: pairsEvidence,
   CONVERSION_OPERATION_EVIDENCE: operationsEvidence,
+  CONVERSION_INPUT_ARTIFACT_DIR: inputArtifacts,
+  CONVERSION_INPUT_FIXTURE_INDEX: fixtureIndexPath,
   CONVERSION_SKIP_BASELINE: '1',
   CONVERSION_TEST_JOB_TIMEOUT_SECONDS: batch === 'pdf' ? '720' :
     (process.env.CONVERSION_TEST_JOB_TIMEOUT_SECONDS || '90'),
@@ -175,10 +179,12 @@ if (batch === 'doc' && !env.CONVERSION_SAMPLE_DOCX)
   env.CONVERSION_SAMPLE_DOCX = resolve(dirname(cases), 'office-chinese.docx')
 if (batch === 'doc' && !hashes['office-chinese.docx'])
   throw new Error('Document batch requires tracked office-SHA256.json provenance')
-for (const file of [env.CONVERSION_SAMPLE_DOCX, env.CONVERSION_RAW_SAMPLE].filter(Boolean)) {
+for (const file of [env.CONVERSION_SAMPLE_DOCX, env.CONVERSION_PSD_SAMPLE,
+  env.CONVERSION_RAW_SAMPLE].filter(Boolean)) {
   const expected = hashes[require('node:path').basename(file)]
-  if (['graphic.psd', 'graphic-text.psd'].includes(require('node:path').basename(file)) && !expected)
-    throw new Error('PSD fixture requires tracked office-SHA256.json provenance')
+  if ((file === env.CONVERSION_SAMPLE_DOCX || file === env.CONVERSION_PSD_SAMPLE ||
+    ['graphic.psd', 'graphic-text.psd'].includes(require('node:path').basename(file))) && !expected)
+    throw new Error('Office or PSD fixture requires tracked office-SHA256.json provenance')
   if (!existsSync(file) || (expected && createHash('sha256').update(readFileSync(file)).digest('hex') !== expected))
     throw new Error(`Supplementary fixture missing or SHA-256 mismatch: ${file}`)
 }
@@ -189,13 +195,28 @@ if (args.includes('--check')) {
   process.exit(0)
 }
 mkdirSync(dirname(resolve(evidence)), { recursive: true })
-for (const path of [evidence, jobsEvidence, pairsEvidence, operationsEvidence]) {
+for (const path of [evidence, jobsEvidence, pairsEvidence, operationsEvidence,
+  fixtureIndexPath, inputArtifacts]) {
   try {
     lstatSync(path)
     throw new Error(`Evidence already exists; use a new path: ${path}`)
   } catch (error) { if (error.code !== 'ENOENT') throw error }
 }
 for (const path of [evidence, jobsEvidence, pairsEvidence, operationsEvidence]) writeFileSync(path, '')
+const fixtureIndex = {}
+for (const [name, sha256] of Object.entries(hashes))
+  fixtureIndex[sha256] = { repoPath: `packages/server/test/fixtures/platform-parity/${name}` }
+for (const name of ['presentation-two-slides.pptx', 'sheet-formula.xlsx']) {
+  const repoPath = `packages/server/test/fixtures/conversion/${name}`
+  fixtureIndex[createHash('sha256').update(readFileSync(resolve(root, repoPath))).digest('hex')] = { repoPath }
+}
+const fixtureMatrix = require('../docs/linux-windows-parity/matrix-fixtures.json')
+for (const item of [
+  ...Object.values(fixtureMatrix.inputExtensions).map((entry) => entry.candidate).filter(Boolean),
+  ...fixtureMatrix.legacyReplayFixtures.files, ...(fixtureMatrix.ocrCandidates || []),
+]) if (!fixtureIndex[item.sha256]) fixtureIndex[item.sha256] = { resourceId: item.resourceId }
+writeFileSync(fixtureIndexPath, JSON.stringify(fixtureIndex) + '\n')
+mkdirSync(inputArtifacts, { mode: 0o700 })
 const child = spawnSync(process.execPath, [
   resolve(root, 'packages/server/scripts/verify-local-original-conversion.cjs'),
 ], { cwd: root, env, stdio: 'inherit', timeout: 2 * 60 * 60 * 1000 })

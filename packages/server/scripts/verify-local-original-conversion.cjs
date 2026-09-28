@@ -548,12 +548,33 @@ async function main() {
   }
 
   async function convert(operationId, files, options = {}) {
-    const jobEvidence = { operationId, startedAt: new Date().toISOString(),
+    const jobEvidence = { operationId, options, startedAt: new Date().toISOString(),
       inputs: files.map(([name, bytes]) => ({ name, sha256: createHash('sha256').update(bytes).digest('hex'),
         bytes: bytes.length })), status: 'fail' }
     let job
     let result
     try {
+    if (process.env.CONVERSION_INPUT_ARTIFACT_DIR) {
+      if (!process.env.CONVERSION_INPUT_FIXTURE_INDEX)
+        throw new Error('Input artifact directory requires a fixed-fixture index')
+      const fixed = JSON.parse(await readFile(process.env.CONVERSION_INPUT_FIXTURE_INDEX, 'utf8'))
+      for (const [index, [name, bytes]] of files.entries()) {
+        const input = jobEvidence.inputs[index]
+        if (fixed[input.sha256]) {
+          Object.assign(input, fixed[input.sha256])
+          continue
+        }
+        const extension = name.toLowerCase().match(/\.([a-z0-9]{1,10})$/)?.[1]
+        if (!extension) throw new Error(`Cannot retain generated fixture without an extension: ${name}`)
+        const filename = `${input.sha256}.${extension}`
+        const path = join(process.env.CONVERSION_INPUT_ARTIFACT_DIR, filename)
+        try { await writeFile(path, bytes, { flag: 'wx', mode: 0o600 }) }
+        catch (error) { if (error.code !== 'EEXIST') throw error }
+        if (createHash('sha256').update(await readFile(path)).digest('hex') !== input.sha256)
+          throw new Error(`Stored input fixture SHA-256 mismatch: ${filename}`)
+        input.relativePath = join(basename(process.env.CONVERSION_INPUT_ARTIFACT_DIR), filename)
+      }
+    }
     const uploadIds = []
     for (const [name, bytes] of files) uploadIds.push(await upload(name, bytes))
     job = await json('/jobs', 'POST', { operationId, uploadIds, options })

@@ -124,6 +124,15 @@
       ],
       "source": "https://raw.pixls.us/getfile.php/1116/nice/Sigma - DP1 - 3:2.X3F",
       "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/public-bcd63507c3c4cc3e.mef",
+      "sha256": "bcd63507c3c4cc3ea1bad2945e3f88cb4677a1a3c762e1acc38df4445714eb7c",
+      "expectedText": [
+        "1949-1953"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/562/nice/Mamiya%20-%20ZD.MEF",
+      "license": "CC BY-NC-SA 4.0"
     }
   ],
   "trackedSyntheticPdfFixtures": {
