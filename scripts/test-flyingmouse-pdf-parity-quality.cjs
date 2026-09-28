@@ -41,3 +41,26 @@ test('DOCX fails when known text remains but a source page is missing', () => {
   assert.throws(() => assertPdfParityQuality({ item, target: 'docx', sourcePages: 2,
     direct, backend }), /lost source pages/)
 })
+
+test('fixed PDF fixture rejects extra DOCX render pages', () => {
+  const native = { ...item, expectRenderPages: { docx: 1 } }
+  const direct = output('direct.png')
+  const backend = output('backend.png')
+  direct.render.pageCount = backend.render.pageCount = 3
+  assert.throws(() => assertPdfParityQuality({ item: native, target: 'docx', sourcePages: 1,
+    direct, backend }), /rendered 3 pages; expected 1/)
+  const mixed = { ...item, expectRenderPages: { docx: 2 } }
+  direct.text = backend.text = '门窗订单315.50门窗订单315.50'
+  assert.throws(() => assertPdfParityQuality({ item: mixed, target: 'docx', sourcePages: 2,
+    direct, backend }), /rendered 3 pages; expected 2/)
+})
+
+test('structured DOCX reserves rendered pages for editable body and references', () => {
+  const scan = { ...item, kind: 'scan' }
+  assert.throws(() => assertPdfParityQuality({ item: scan, target: 'docx', sourcePages: 1,
+    direct: output('direct.png'), backend: output('backend.png') }), /lost source pages/)
+  const direct = output('direct.png'); const backend = output('backend.png')
+  direct.render.pageCount = backend.render.pageCount = 2
+  assert.doesNotThrow(() => assertPdfParityQuality({ item: scan, target: 'docx', sourcePages: 1,
+    direct, backend }))
+})

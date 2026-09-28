@@ -94,6 +94,36 @@
       ],
       "source": "https://raw.githubusercontent.com/jsmentch/IllustratorArt/f76a53d16059cc92c3d4ae7c3edecac726d52fb5/ai/Timeline_Xanthe_Jeff.ai",
       "license": "MIT"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-967-891b098c6cad16f0.arw",
+      "sha256": "891b098c6cad16f01af4cbbe229d89652008b0108ad343079a4fc688b320fa14",
+      "expectedText": [
+        "X-rite",
+        "colorchecker"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/967/nice/Sony - ILCE-7M2 - 14bit 14bit compressed (3:2).arw",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-1346-b30089172973388d.cr2",
+      "sha256": "b30089172973388d03e192a14a63f750e22914dfc01db5713b6b3bce3c9baeee",
+      "expectedText": [
+        "X-rite",
+        "colorchecker"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/1346/nice/Canon - EOS 5D - RAW (3:2).CR2",
+      "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/public-44508f7df4191aac.x3f",
+      "sha256": "44508f7df4191aacaecb6461e1841dae002e5b71a4f95a00aa3f52d1c6d6bc5f",
+      "expectedText": [
+        "SKAGENS REV",
+        "CAFE FYRSKIB XXI"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/1116/nice/Sigma - DP1 - 3:2.X3F",
+      "license": "CC0"
     }
   ],
   "trackedSyntheticPdfFixtures": {

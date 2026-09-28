@@ -31,8 +31,11 @@ function assertPdfParityQuality({ item, target, sourcePages, direct, backend }) 
       if (output.text.split(normalize(phrase)).length - 1 < sourcePages)
         throw new Error(`${name} ${target} lost source-page content: ${phrase}`)
     if (target === 'docx') {
-      if (output.render.pageCount < sourcePages || output.assets < (item.expectAssets?.docx || 0))
+      const minimumPages = sourcePages + (item.kind === 'scan' || item.kind === 'mixed' ? 1 : 0)
+      if (output.render.pageCount < minimumPages || output.assets < (item.expectAssets?.docx || 0))
         throw new Error(`${name} DOCX lost source pages or embedded image`)
+      if (item.expectRenderPages?.docx && output.render.pageCount !== item.expectRenderPages.docx)
+        throw new Error(`${name} DOCX rendered ${output.render.pageCount} pages; expected ${item.expectRenderPages.docx}`)
     } else if (item.expectTableRows && tableCount(output.sheets, item.expectTableRows) < sourcePages)
       throw new Error(`${name} XLSX lost a source-page table or known cells`)
   }

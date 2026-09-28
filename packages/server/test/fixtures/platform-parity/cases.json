@@ -58,7 +58,10 @@
         "安装费用",
         "48.20"
       ]
-    ]
+    ],
+    "expectRenderPages": {
+      "docx": 1
+    }
   },
   {
     "kind": "scan",

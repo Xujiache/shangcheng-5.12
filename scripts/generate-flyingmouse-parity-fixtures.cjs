@@ -89,6 +89,7 @@ async function main() {
   const cases = ['native', 'scan', 'mixed'].map((kind) => ({
     kind, path: `${kind}-table.pdf`, expect: ['量窗助手', '订单', '315.50'],
     expectByTarget, expectTableRows, expectAssets: { docx: 1 },
+    ...(kind === 'native' ? { expectRenderPages: { docx: 1 } } : {}),
   }))
   writeFileSync(join(out, 'cases.json'), JSON.stringify(cases, null, 2) + '\n')
   const hashes = Object.fromEntries([[nativePath, nativeBytes], [join(out, 'scan-table.pdf'), scanBytes],

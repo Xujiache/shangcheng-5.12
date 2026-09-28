@@ -24,6 +24,7 @@ const { PDFDocument } = require(join(source, 'node_modules/pdf-lib'))
 const sharp = require(join(source, 'node_modules/sharp'))
 const ExcelJS = require(join(source, 'node_modules/exceljs'))
 const unzipper = require(join(source, 'node_modules/unzipper'))
+const { validatePdfOfficeDocx } = require(join(source, 'pdf-office-docx.js'))
 const cases = JSON.parse(readFileSync(manifestPath, 'utf8'))
 if (!Array.isArray(cases) || !cases.length) throw new Error('Empty cases')
 const hashesPath = join(dirname(manifestPath), 'SHA256.json')
@@ -137,6 +138,10 @@ async function main() {
           throw new Error('PDF_DOCX_LAYOUT_FALLBACK: original engine degraded layout')
         Object.assign(row, await inspect(file, target, key))
         const sourcePages = (await PDFDocument.load(sourceBytes)).getPageCount()
+        if (target === 'docx' && item.kind !== 'native') {
+          const reference = await validatePdfOfficeDocx(file, { expectedReferenceImages: sourcePages })
+          row.referenceImageCount = reference.referenceImageCount
+        }
         assertPdfParityQuality({ item, target, sourcePages,
           direct: { text: row.content, assets: row.assets, sheets: row.sheets, render: row.render },
           backend: { text: row.content, assets: row.assets, sheets: row.sheets, render: row.render } })

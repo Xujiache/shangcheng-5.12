@@ -42,6 +42,16 @@ run_dir="artifacts/run-$(date -u +%Y%m%dT%H%M%SZ)-$$"
 mkdir -m 700 "$run_dir"
 run_dir=$(realpath "$run_dir")
 chown 1000:1000 "$run_dir"
+node - "$image_id" "$image" "$checkout" >"$run_dir/environment.json" <<'NODE'
+const { execFileSync } = require('node:child_process')
+const { createHash } = require('node:crypto')
+const { readFileSync } = require('node:fs')
+const [imageId, imageTag, checkout] = process.argv.slice(2)
+console.log(JSON.stringify({ imageId, imageTag, startedAt: new Date().toISOString(),
+  checkoutRevision: execFileSync('git', ['-C', checkout, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  fixtureManifestSha256: createHash('sha256').update(readFileSync(
+    `${checkout}/docs/linux-windows-parity/matrix-fixtures.json`)).digest('hex') }, null, 2))
+NODE
 printf 'label\tbatch\texit\tevidence\tlog\n' >"$run_dir/status.tsv"
 failed=0
 disk_blocked=0

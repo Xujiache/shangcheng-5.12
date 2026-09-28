@@ -83,12 +83,14 @@ const reference = Array.isArray(referenceData) ? Object.fromEntries(referenceDat
 const evidenceBase = resolve(evidence).replace(/\.jsonl$/, '')
 const jobsEvidence = `${evidenceBase}.jobs.jsonl`
 const pairsEvidence = `${evidenceBase}.pairs.jsonl`
+const operationsEvidence = `${evidenceBase}.operations.jsonl`
 const env = {
   ...process.env,
   NODE_ENV: 'test',
   FLYINGMOUSE_ACCEPTANCE_READONLY: '1',
   CONVERSION_JOB_EVIDENCE: jobsEvidence,
   CONVERSION_PAIR_EVIDENCE: pairsEvidence,
+  CONVERSION_OPERATION_EVIDENCE: operationsEvidence,
   CONVERSION_SKIP_BASELINE: '1',
   CONVERSION_TEST_JOB_TIMEOUT_SECONDS: batch === 'pdf' ? '720' :
     (process.env.CONVERSION_TEST_JOB_TIMEOUT_SECONDS || '90'),
@@ -187,13 +189,13 @@ if (args.includes('--check')) {
   process.exit(0)
 }
 mkdirSync(dirname(resolve(evidence)), { recursive: true })
-for (const path of [evidence, jobsEvidence, pairsEvidence]) {
+for (const path of [evidence, jobsEvidence, pairsEvidence, operationsEvidence]) {
   try {
     lstatSync(path)
     throw new Error(`Evidence already exists; use a new path: ${path}`)
   } catch (error) { if (error.code !== 'ENOENT') throw error }
 }
-for (const path of [evidence, jobsEvidence, pairsEvidence]) writeFileSync(path, '')
+for (const path of [evidence, jobsEvidence, pairsEvidence, operationsEvidence]) writeFileSync(path, '')
 const child = spawnSync(process.execPath, [
   resolve(root, 'packages/server/scripts/verify-local-original-conversion.cjs'),
 ], { cwd: root, env, stdio: 'inherit', timeout: 2 * 60 * 60 * 1000 })
@@ -203,6 +205,7 @@ if (child.error) {
 }
 const jobRows = readFileSync(jobsEvidence, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
 const pairRows = readFileSync(pairsEvidence, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
+const operationRows = readFileSync(operationsEvidence, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
 const pairCounts = { events: pairRows.length, passed: pairRows.filter((row) => row.status === 'pass').length,
   failed: pairRows.filter((row) => row.status === 'fail').length }
 const jobCounts = { events: jobRows.length, passed: jobRows.filter((row) => row.status === 'pass').length,
@@ -236,6 +239,11 @@ for (const [key, status] of currentPairs) {
   qualityOperations.set(operationId,
     status === 'fail' || qualityOperations.get(operationId) === 'fail' ? 'fail' : 'pass')
 }
+for (const row of operationRows) {
+  if (catalog.operations.some((operation) => operation.id === row.operationId && operation.kind !== 'convert'))
+    qualityOperations.set(row.operationId,
+      row.status !== 'pass' || qualityOperations.get(row.operationId) === 'fail' ? 'fail' : 'pass')
+}
 const qualityOperationCoverage = { total: catalog.operations.length,
   passed: [...qualityOperations.values()].filter((status) => status === 'pass').length,
   failed: [...qualityOperations.values()].filter((status) => status === 'fail').length,
@@ -245,7 +253,8 @@ if (batch !== 'pdf') {
     inputs: env.CONVERSION_TEXT_INPUTS || env.CONVERSION_IMAGE_INPUTS ||
       env.CONVERSION_AUDIO_INPUTS || env.CONVERSION_VIDEO_INPUTS ||
       env.CONVERSION_DOCUMENT_INPUTS || env.CONVERSION_SHEET_INPUTS || batch,
-    pairs: pairCounts, jobs: jobCounts, currentCoverage, jobOperationCoverage,
+    pairs: pairCounts, jobs: jobCounts, operationQualityEvents: operationRows.length,
+    currentCoverage, jobOperationCoverage,
     qualityOperationCoverage, qualityEvidenceComplete: child.status === 0,
     historicalMatrixStatus: 'not-run' }
   writeFileSync(evidence, JSON.stringify(result) + '\n')
@@ -268,7 +277,8 @@ for (const result of results) {
 }
 writeFileSync(evidence, results.map((item) => JSON.stringify(item)).join('\n') + '\n')
 console.log(JSON.stringify({ checked: results.length, expected: manifest.length * 2,
-  pairs: pairCounts, jobs: jobCounts, currentCoverage, jobOperationCoverage,
+  pairs: pairCounts, jobs: jobCounts, operationQualityEvents: operationRows.length,
+  currentCoverage, jobOperationCoverage,
   qualityOperationCoverage, qualityEvidenceComplete: child.status === 0,
   passed: results.filter((item) => item.status === 'pass').length,
   failed: results.filter((item) => item.status !== 'pass').length,

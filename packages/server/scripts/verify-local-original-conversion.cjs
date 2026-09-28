@@ -65,14 +65,72 @@ async function pdfPage(label) {
 async function verifyBaseline(convert) {
   const section = process.env.CONVERSION_BASELINE_SECTION
   if (!section || section === 'baseline') {
+  const recordMerge = async (operationId, status, inputs, output, directOutput, evidence) => {
+    if (!process.env.CONVERSION_OPERATION_EVIDENCE) return
+    await appendFile(process.env.CONVERSION_OPERATION_EVIDENCE, JSON.stringify({ operationId, status,
+      inputs: inputs.map(([name, bytes]) => ({ name, sha256: createHash('sha256').update(bytes).digest('hex'),
+        bytes: bytes.length })),
+      output: output && { sha256: createHash('sha256').update(output).digest('hex'), bytes: output.length },
+      directOutput: directOutput && { sha256: createHash('sha256').update(directOutput).digest('hex'),
+        bytes: directOutput.length },
+      evidence, at: new Date().toISOString() }) + '\n')
+  }
+  const renderedPages = async (file, work, name, count) => {
+    const pages = []
+    for (let page = 1; page <= count; page++) {
+      const output = join(work, `${name}-${page}`)
+      execFileSync(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH,
+        ['-f', String(page), '-l', String(page), '-r', '72', '-singlefile', '-png', file, output])
+      const bitmap = sharp(`${output}.png`)
+      const { data, info } = await bitmap.removeAlpha().raw().toBuffer({ resolveWithObject: true })
+      pages.push({ width: info.width, height: info.height, pixels: data })
+    }
+    return pages
+  }
   const markdown = await convert('convert:md', [['sample.txt', Buffer.from('你好，原版转换验收。\n')]])
   if (!markdown.bytes.toString('utf8').includes('你好，原版转换验收。')) throw new Error('Chinese text was lost')
   console.log('PASS txt:md, authenticated upload/download and Chinese content')
 
   const first = await pdfPage('First page')
   const second = await pdfPage('Second page')
-  const merged = await convert('merge-pdfs', [['first.pdf', first], ['second.pdf', second]])
-  if ((await PDFDocument.load(merged.bytes)).getPageCount() !== 2) throw new Error('PDF merge lost pages')
+  const pdfInputs = [['first.pdf', first], ['second.pdf', second]]
+  let merged
+  let directMerged
+  try {
+    merged = await convert('merge-pdfs', pdfInputs)
+    if ((await PDFDocument.load(merged.bytes)).getPageCount() !== 2) throw new Error('PDF merge lost pages')
+    const work = await mkdtemp(join(tmpdir(), 'ledger-merge-quality-'))
+    try {
+      const file = join(work, 'backend.pdf')
+      const direct = join(work, 'direct.pdf')
+      const firstFile = join(work, 'first.pdf')
+      const secondFile = join(work, 'second.pdf')
+      await writeFile(firstFile, first)
+      await writeFile(secondFile, second)
+      await writeFile(file, merged.bytes)
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'merge-pdfs', firstFile, secondFile,
+        '--output', direct, '--json'], { env: originalCliEnv() })
+      directMerged = await readFile(direct)
+      if ((await PDFDocument.load(directMerged)).getPageCount() !== 2)
+        throw new Error('Original PDF merge lost pages')
+      const text = (path) => execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH),
+        'pdftotext'), [path, '-'], { encoding: 'utf8' }).replace(/\s+/g, ' ')
+      const backendText = text(file)
+      if (!backendText.includes('First page') || !backendText.includes('Second page') ||
+        backendText !== text(direct)) throw new Error('PDF merge lost source text or differs from original')
+      const backendPages = await renderedPages(file, work, 'backend', 2)
+      const directPages = await renderedPages(direct, work, 'direct', 2)
+      if (backendPages.some((page, index) => page.width !== directPages[index].width ||
+        page.height !== directPages[index].height || !page.pixels.equals(directPages[index].pixels)))
+        throw new Error('PDF merge rendered pages differ from original')
+    } finally { await rm(work, { recursive: true, force: true }) }
+    await recordMerge('merge-pdfs', 'pass', pdfInputs, merged.bytes, directMerged,
+      'two source pages, text and rendered pixels match original CLI')
+  } catch (error) {
+    await recordMerge('merge-pdfs', 'fail', pdfInputs, merged?.bytes, directMerged,
+      String(error.message || error))
+    throw error
+  }
   console.log('PASS merge-pdfs, two input pages retained')
 
   const encrypted = await convert('convert:pdf', [['input.pdf', merged.bytes]], {
@@ -125,9 +183,52 @@ async function verifyBaseline(convert) {
 
   const imageA = await sharp({ create: { width: 32, height: 24, channels: 3, background: '#008866' } }).png().toBuffer()
   const imageB = await sharp({ create: { width: 32, height: 24, channels: 3, background: '#cc4455' } }).jpeg().toBuffer()
-  const images = await convert('images-to-pdf', [['first.png', imageA], ['second.jpg', imageB]])
-  if ((await PDFDocument.load(images.bytes)).getPageCount() !== 2)
-    throw new Error('Image merge lost pages')
+  const imageInputs = [['first.png', imageA], ['second.jpg', imageB]]
+  let images
+  let directImages
+  try {
+    images = await convert('images-to-pdf', imageInputs)
+    if ((await PDFDocument.load(images.bytes)).getPageCount() !== 2)
+      throw new Error('Image merge lost pages')
+    const work = await mkdtemp(join(tmpdir(), 'ledger-image-merge-quality-'))
+    try {
+      const file = join(work, 'backend.pdf')
+      const direct = join(work, 'direct.pdf')
+      const firstFile = join(work, 'first.png')
+      const secondFile = join(work, 'second.jpg')
+      await writeFile(firstFile, imageA)
+      await writeFile(secondFile, imageB)
+      await writeFile(file, images.bytes)
+      execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'images-to-pdf', firstFile, secondFile,
+        '--output', direct, '--json'], { env: originalCliEnv() })
+      directImages = await readFile(direct)
+      if ((await PDFDocument.load(directImages)).getPageCount() !== 2)
+        throw new Error('Original image merge lost pages')
+      const backendPages = await renderedPages(file, work, 'backend', 2)
+      const directPages = await renderedPages(direct, work, 'direct', 2)
+      for (const [page, color] of [[1, 'green'], [2, 'red']]) {
+        const backend = backendPages[page - 1]
+        const reference = directPages[page - 1]
+        if (backend.width !== reference.width || backend.height !== reference.height ||
+          !backend.pixels.equals(reference.pixels))
+          throw new Error(`Image merge page ${page} differs from original`)
+        const pixels = backend.pixels
+        let colored = 0
+        for (let index = 0; index < pixels.length; index += 3) {
+          const [red, green, blue] = [pixels[index], pixels[index + 1], pixels[index + 2]]
+          if (color === 'green' ? green > red + 40 && green > blue + 20
+            : red > green + 40 && red > blue + 40) colored++
+        }
+        if (colored < 20) throw new Error(`Image merge lost ${color} source pixels on page ${page}`)
+      }
+    } finally { await rm(work, { recursive: true, force: true }) }
+    await recordMerge('images-to-pdf', 'pass', imageInputs, images.bytes, directImages,
+      'two pages retain ordered source colors and rendered pixels match original CLI')
+  } catch (error) {
+    await recordMerge('images-to-pdf', 'fail', imageInputs, images?.bytes, directImages,
+      String(error.message || error))
+    throw error
+  }
   console.log('PASS images-to-pdf, two images retained')
   }
 
@@ -506,6 +607,8 @@ async function main() {
 
   if (process.env.CONVERSION_PDF_PARITY_CASES) {
     const { assertPdfParityQuality } = require('../../../scripts/flyingmouse-pdf-parity-quality.cjs')
+    const { REFERENCE_HEADING, validatePdfOfficeDocx } =
+      require(join(engineSource, 'pdf-office-docx.js'))
     const cases = JSON.parse(await readFile(process.env.CONVERSION_PDF_PARITY_CASES, 'utf8'))
     if (!Array.isArray(cases) || !cases.length || !process.env.CONVERSION_PARITY_EVIDENCE)
       throw new Error('PDF parity requires cases and CONVERSION_PARITY_EVIDENCE')
@@ -516,6 +619,31 @@ async function main() {
     const ExcelJS = require(join(engineSource, 'node_modules/exceljs'))
     const hash = (bytes) => createHash('sha256').update(bytes).digest('hex')
     const normalize = (value) => String(value || '').replace(/\s+/g, '')
+    const referencePixels = async (file, xml, expectedPages) => {
+      await validatePdfOfficeDocx(file, { expectedReferenceImages: expectedPages.length })
+      const rels = execFileSync('unzip', ['-p', file, 'word/_rels/document.xml.rels'],
+        { encoding: 'utf8' })
+      const imagePaths = new Map([...rels.matchAll(/<Relationship\b([^>]*)\/?\s*>/g)]
+        .map((match) => [match[1].match(/\bId="([^"]+)"/)?.[1],
+          match[1].match(/\bTarget="media\/([^"]+\.png)"/)?.[1]]).filter((pair) => pair[0] && pair[1]))
+      const references = [...xml.slice(xml.indexOf(REFERENCE_HEADING)).matchAll(
+        /<wp:(?:inline|anchor)\b[\s\S]*?<\/wp:(?:inline|anchor)>/g)]
+        .filter((match) => /descr="Original reference page \d+"/.test(match[0]))
+      if (references.length !== expectedPages.length)
+        throw new Error(`Original reference images: expected ${expectedPages.length}, found ${references.length}`)
+      for (let index = 0; index < references.length; index++) {
+        const id = references[index][0].match(/<a:blip\b[^>]*\br:embed="([^"]+)"/)?.[1]
+        const image = imagePaths.get(id)
+        if (!image) throw new Error(`Original reference page ${index + 1} lacks an image`)
+        const bytes = execFileSync('unzip', ['-p', file, `word/media/${image}`])
+        const { data, info } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+        const expected = expectedPages[index]
+        if (info.width !== expected.width || info.height !== expected.height ||
+          hash(data) !== expected.pixelSha256)
+          throw new Error(`Original reference page ${index + 1} differs from source PDF pixels`)
+      }
+      return references.length
+    }
     const render = async (file, key) => {
       const directory = join(work, `render-${key}`)
       await mkdir(directory)
@@ -551,6 +679,10 @@ async function main() {
         const source = await readFile(inputPath)
         if (source.subarray(0, 5).toString() !== '%PDF-') throw new Error(`Invalid PDF: ${inputPath}`)
         const sourcePages = (await PDFDocument.load(source)).getPageCount()
+        const expectedReferences = item.kind === 'native' ? null : JSON.parse(execFileSync(
+          process.env.FLYINGMOUSE_DOCSTRUCTURE_PYTHON || '/opt/docstructure-venv/bin/python',
+          [join(__dirname, 'pdf-reference-raster-hashes.py'), inputPath],
+          { encoding: 'utf8', timeout: 30000 }))
         for (const target of ['docx', 'xlsx']) {
           const label = `${item.kind}:${target}:${basename(inputPath)}`
           const artifactKey = `${caseIndex + 1}-${item.kind}-${target}`
@@ -558,6 +690,7 @@ async function main() {
           const evidence = { label, inputSha256: hash(source), sourcePages, target,
             expectedContent: item.expectByTarget?.[target] || item.expect,
             expectedTableRows: target === 'xlsx' ? item.expectTableRows : undefined,
+            expectedReferencePixels: target === 'docx' ? expectedReferences : undefined,
             status: 'fail', files: {} }
           try {
             const response = execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert',
@@ -595,6 +728,13 @@ async function main() {
                 if (file === directCheckPath) evidence.directAssets = assets
                 else evidence.backendAssets = assets
                 const xml = execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
+                if (expectedReferences) {
+                  if (!xml.includes(REFERENCE_HEADING))
+                    throw new Error('Structured DOCX lacks original reference section')
+                  const referenceCount = await referencePixels(file, xml, expectedReferences)
+                  if (file === directCheckPath) evidence.directReferencePages = referenceCount
+                  else evidence.backendReferencePages = referenceCount
+                }
                 return { text: xml.replace(/<[^>]+>/g, ''), assets }
               }
               const book = new ExcelJS.Workbook()
