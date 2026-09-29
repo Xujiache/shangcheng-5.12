@@ -387,6 +387,8 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     }
     if (options.videoCodec !== undefined && !['h264', 'h265', 'av1'].includes(String(options.videoCodec)))
       throw new BizException(BizCode.INVALID_PARAMS, '视频编码选项不正确')
+    if (operation.id === 'convert:mov' && options.videoCodec === 'av1')
+      throw new BizException(BizCode.INVALID_PARAMS, 'AV1 无法写入 MOV 容器，请改用 MP4 或 MKV')
     if (options.textEncoding !== undefined &&
       !['auto', 'utf-8', 'gb18030', 'utf-16le', 'utf-16be'].includes(String(options.textEncoding)))
       throw new BizException(BizCode.INVALID_PARAMS, '文本编码选项不正确')

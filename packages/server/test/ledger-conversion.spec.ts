@@ -301,6 +301,21 @@ describe('ledger conversion gate', () => {
     await instance.onModuleDestroy()
   })
 
+  test('rejects AV1 in MOV before enqueueing a job', async () => {
+    const prisma = {
+      ledgerConversionUpload: { findMany: jest.fn().mockResolvedValue([
+        { id: 'a', extension: 'webm', totalBytes: 12n },
+      ]) },
+      $transaction: jest.fn(),
+    }
+    const instance = service(prisma)
+    await expect(instance.createJob('u1', {
+      operationId: 'convert:mov', uploadIds: ['a'], options: { videoCodec: 'av1' },
+    })).rejects.toThrow('AV1 无法写入 MOV 容器')
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    await instance.onModuleDestroy()
+  })
+
   test('does not overwrite a previously uploaded chunk with different bytes', async () => {
     const prisma = {
       ledgerConversionUpload: {

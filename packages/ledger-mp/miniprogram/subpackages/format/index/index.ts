@@ -571,6 +571,7 @@ MotionPage({
       blanks: operation?.id === 'images-to-pdf' && allows('blanks'),
     }
     this.setData({
+      codecOptions: target === 'mov' ? codecOptions.slice(0, 2) : codecOptions,
       visibleOptionKeys,
       showVideoOptions: visibleOptionKeys.videoCodec || visibleOptionKeys.alphaBackground,
       showPdfOptions: visibleOptionKeys.pdfAction || visibleOptionKeys.splitMode ||
