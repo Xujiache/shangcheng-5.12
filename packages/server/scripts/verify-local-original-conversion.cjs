@@ -853,6 +853,7 @@ async function main() {
         process.env.CONVERSION_RAW_OCR_EXPECT.replace(/\s+/g, '').length < 4))
       throw new Error(`${extension} OCR requires visible fixture text via CONVERSION_RAW_OCR_EXPECT`)
     const work = await mkdtemp(join(tmpdir(), 'ledger-raw-pairs-'))
+    const failures = []
     try {
       const fixture = await readFile(imageLikeSample)
       const input = join(work, `sample.${extension}`)
@@ -872,11 +873,15 @@ async function main() {
         return { info, stream, pixels }
       }
       for (const target of targets) {
+        let stage = 'original'
+        try {
         const direct = join(work, `direct.${target}`)
         const backendPath = join(work, `backend.${target}`)
         execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
           '--to', target, '--output', direct, '--json'], { env: originalCliEnv() })
+        stage = 'backend'
         const result = await convert(`convert:${target}`, [[`sample.${extension}`, fixture]])
+        stage = 'quality'
         await writeFile(backendPath, result.bytes)
         if (['docx', 'md', 'txt'].includes(target)) {
           const expected = process.env.CONVERSION_RAW_OCR_EXPECT?.replace(/\s+/g, '')
@@ -919,7 +924,15 @@ async function main() {
             ? 'Illustrator file: direct original and authenticated backend, decoded pixels compared'
             : 'genuine camera RAW: direct original and authenticated backend, decoded pixels compared'])
         console.log(`PASS ${extension}:${target}, decoded pixels match direct original`)
+        } catch (error) {
+          const message = `${extension}:${target}: ${error.message}`
+          failures.push(message)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--fail', extension, target, stage, createHash('sha256').update(fixture).digest('hex'), message])
+          console.error(`FAIL ${message}`)
+        }
       }
+      if (failures.length) throw new Error(`${failures.length} ${extension} pairs failed; see pair evidence`)
     } finally { await rm(work, { recursive: true, force: true }) }
   }
 
