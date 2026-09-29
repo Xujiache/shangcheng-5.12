@@ -266,6 +266,7 @@ COPY --from=windows-tessdata-build --chown=node:node /opt/docengine /opt/docengi
 COPY --from=ofd-font-build --chown=node:node /ofd-fonts /opt/ofd-fonts
 COPY --from=docstructure-model-build --chown=node:node /opt/docstructure-models /opt/docstructure-models
 COPY --from=libreoffice-build /lo/opt/libreoffice26.2 /opt/libreoffice26.2
+COPY packages/server/scripts/libreoffice-fonts.conf /opt/poppler-deps/etc/fonts/conf.d/70-libreoffice-fonts.conf
 COPY --from=qpdf-build /opt/qpdf-12.4.0 /opt/qpdf-12.4.0
 COPY --from=server-build --chown=node:node /out ./
 COPY --from=source-build --chown=node:node /app/flyingmouse /app/flyingmouse

@@ -21,7 +21,7 @@ The Chinese-script match is `/opt/ofd-fonts/NotoSansCJKsc-Regular.ttf` (SHA-256 
 
 LibreOffice 26.2 in the *same image* already includes Carlito, Caladea, Liberation Sans, and Liberation Serif under `/opt/libreoffice26.2/share/fonts/truetype`, but that directory is absent from the candidate's Fontconfig search path. Regular-face SHA-256 values are `b4ff23ba370cc95a3c349336b73f9c28514a1371210f89832efc85c4b1ea7131` (Carlito), `d2f6cad33f191e65b68bd74e6d4f7708080a41b32db635866109df3090265d91` (Caladea), `76d04c18ea243f426b7de1f3ad208e927008f961dc5945e5aad352d0dfde8ee8` (Liberation Sans), and `058ea80864aef09a23f45cbec2bb5400bc3dfbdea01c3f10538a21fcb497fb74` (Liberation Serif). The existing `30-metric-aliases.conf` explicitly maps Arial→Liberation Sans, Calibri→Carlito, Cambria→Caladea, and Times New Roman→Liberation Serif when those fonts are discoverable.
 
-An ephemeral Fontconfig file that included the existing config and added only that bundled LibreOffice font directory changed `fc-match` to those four mapped families. It left `宋体:lang=zh-cn`, `微软雅黑:lang=zh-cn`, and `等线:lang=zh-cn` on Noto Sans CJK SC. No image or worker was changed. This confirms a narrow discovery/configuration gap, but not yet a rendered-output improvement.
+Mounting [`libreoffice-fonts.conf`](../../packages/server/scripts/libreoffice-fonts.conf) directly into the existing `conf.d` changed `fc-match` to those four mapped families. `Noto Sans CJK SC` and `宋体:lang=zh-cn` still select `/opt/ofd-fonts/NotoSansCJKsc-Regular.ttf`. `DejaVu Sans` remains available, but its selected file changes from `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf` to LibreOffice's bundled `DejaVuSans.ttf`; both report the same font version, while their SHA-256 values differ. No running worker was changed.
 
 ## Tracked Office fixture declarations
 
@@ -35,4 +35,14 @@ The same OOXML theme files list script-specific font names including 宋体, but
 
 ## Small candidate change and gate
 
-Expose the already bundled LibreOffice `share/fonts/truetype` directory to the candidate Fontconfig config without copying Microsoft fonts or changing the input documents. First verify `fc-match` picks the intended four metric-compatible substitutes. Then run each fixed Office fixture through original CLI and authenticated backend Office→PDF in an isolated candidate, collect `pdffonts`, page count, text bounding boxes, table/slide geometry, and rendered images. Compare against a same-byte Windows run once available. Keep the change only if text/content gates remain green and geometry improves without new clipping or page changes. Carlito/Caladea/Liberation are metric substitutes, not proof of identical Windows rendering; Chinese serif/sans and formula glyph choices still need separate Windows reference evidence.
+Expose the already bundled LibreOffice `share/fonts/truetype` directory to the candidate Fontconfig config without copying Microsoft fonts or changing the input documents. The main `fonts.conf` includes `conf.d`; the added file declares only that directory.
+
+The three fixed Office fixtures were converted to PDF by the original CLI in two isolated `48d7c15` containers, one baseline and one with the `.conf` mounted at its intended path. The results are retained under `/root/deployment-verification/linux-windows-parity/font-audit/{baseline,config}/`:
+
+| Input | Pages before/after | Embedded font names before/after | Text and 72 dpi page pixels |
+| --- | --- | --- | --- |
+| `office-chinese.docx` | 1 / 1 | NotoSerifCJKsc-Regular, LiberationSerif / same | Identical |
+| `sheet-formula.xlsx` | 2 / 2 | NotoSansCJKSC-Regular, Carlito / same | Identical |
+| `presentation-two-slides.pptx` | 2 / 2 | NotoSansCJKSC-Regular, Carlito / same | Identical |
+
+`pdffonts` reports all listed fonts embedded. The PDF file hashes differ between runs, but extracted text SHA-256 and every rendered page's raw PPM SHA-256 match. Thus the new Fontconfig discovery fixes `fc-match` for the four named Latin families but **does not change these three LibreOffice PDF renderings**; LibreOffice already used bundled fonts for these inputs. The authenticated backend was not run for this comparison. Retain geometry and clipping checks for broader samples, particularly documents that invoke Fontconfig through Poppler or another engine. Carlito/Caladea/Liberation are metric substitutes, not proof of identical Windows rendering; Chinese serif/sans and formula glyph choices still need separate Windows reference evidence.
