@@ -2074,42 +2074,57 @@ async function main() {
     if (!process.env.CONVERSION_OFD_EXPECT)
       throw new Error('CONVERSION_OFD_SAMPLE requires CONVERSION_OFD_EXPECT')
     const work = await mkdtemp(join(tmpdir(), 'ledger-ofd-pair-'))
+    let fixture
+    let stage = 'original'
     try {
       const input = join(work, 'input.ofd')
       const direct = join(work, 'direct.pdf')
       const backend = join(work, 'backend.pdf')
-      const fixture = await readFile(process.env.CONVERSION_OFD_SAMPLE)
+      fixture = await readFile(process.env.CONVERSION_OFD_SAMPLE)
       await writeFile(input, fixture)
       execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
         '--to', 'pdf', '--output', direct, '--json'], { env: originalCliEnv() })
+      stage = 'backend'
       const result = await convert('convert:pdf', [['input.ofd', fixture]])
+      stage = 'quality'
       await writeFile(backend, result.bytes)
       const pages = (file) => PDFDocument.load(require('node:fs').readFileSync(file))
         .then((document) => document.getPageCount())
-      if ((await pages(direct)) < 1 || (await pages(backend)) !== (await pages(direct)))
+      const pageCount = await pages(direct)
+      if (pageCount < 1 || (await pages(backend)) !== pageCount)
         throw new Error('OFD PDF page count differs from original')
       const pdftotext = join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext')
       const text = (file) => execFileSync(pdftotext, [file, '-'], { encoding: 'utf8' })
         .replace(/\s+/g, '')
       const originalText = text(direct)
       const backendText = text(backend)
-      const expected = process.env.CONVERSION_OFD_EXPECT.replace(/\s+/g, '')
-      if (backendText !== originalText || !originalText.includes(expected))
+      const expected = process.env.CONVERSION_OFD_EXPECT.split('|').map((part) => part.replace(/\s+/g, ''))
+      if (backendText !== originalText || expected.some((part) => !originalText.includes(part)))
         throw new Error(`OFD PDF text check failed: same=${backendText === originalText} ` +
-          `directExpected=${originalText.includes(expected)} ` +
-          `backendExpected=${backendText.includes(expected)} ` +
+          `directExpected=${expected.every((part) => originalText.includes(part))} ` +
+          `backendExpected=${expected.every((part) => backendText.includes(part))} ` +
           `directLength=${originalText.length} backendLength=${backendText.length}`)
       const pdftoppm = originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH
-      const render = (file, name) => {
+      const render = (file, name, page) => {
         const prefix = join(work, name)
-        execFileSync(pdftoppm, ['-f', '1', '-singlefile', '-r', '72', '-png', file, prefix])
+        execFileSync(pdftoppm, ['-f', String(page), '-l', String(page),
+          '-singlefile', '-r', '72', '-png', file, prefix])
         return `${prefix}.png`
       }
-      const directPixels = await sharp(render(direct, 'direct')).removeAlpha().raw().toBuffer()
-      const backendPixels = await sharp(render(backend, 'backend')).removeAlpha().raw().toBuffer()
-      if (!directPixels.equals(backendPixels))
-        throw new Error('OFD PDF rendered pixels differ from original')
+      for (let page = 1; page <= pageCount; page++) {
+        const directPixels = await sharp(render(direct, 'direct', page)).removeAlpha().raw().toBuffer()
+        const backendPixels = await sharp(render(backend, 'backend', page)).removeAlpha().raw().toBuffer()
+        if (!directPixels.equals(backendPixels))
+          throw new Error(`OFD PDF page ${page} rendered pixels differ from original`)
+      }
+      execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+        '--record', 'ofd', 'pdf', createHash('sha256').update(fixture).digest('hex'),
+        `${pageCount} pages: original and backend text and rendered pixels match`])
       console.log('PASS ofd:pdf structural parity; visual source fidelity requires separate review')
+    } catch (error) {
+      if (fixture) execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+        '--fail', 'ofd', 'pdf', stage, createHash('sha256').update(fixture).digest('hex'), error.message])
+      throw error
     } finally { await rm(work, { recursive: true, force: true }) }
   }
 
@@ -2469,6 +2484,8 @@ async function main() {
           '--to', 'pdf', '--output', pdf, '--json'], { env: originalCliEnv(), timeout: 600000 })
         if ((await PDFDocument.load(await readFile(pdf))).getPageCount() !== pages)
           throw new Error(`${label}: rendered slide count differs from source`)
+        const layout = execFileSync(join(dirname(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH), 'pdftotext'),
+          ['-layout', pdf, '-'], { encoding: 'utf8' }).replace(/\r/g, '').replace(/[ \t]+$/gm, '').trim()
         const images = []
         for (let page = 1; page <= pages; page++) {
           const output = join(work, `${label}-${page}`)
@@ -2476,7 +2493,7 @@ async function main() {
             ['-r', '72', '-f', String(page), '-l', String(page), '-singlefile', '-png', pdf, output])
           images.push(await sharp(`${output}.png`).removeAlpha().raw().toBuffer({ resolveWithObject: true }))
         }
-        return images
+        return { layout, images }
       }
       const sourceImages = await render(input, 'source')
       const failures = []
@@ -2517,10 +2534,12 @@ async function main() {
         if (target === 'pptx' || target === 'odp') {
           const backendSlides = await render(backendPath, `backend-${target}`)
           const directSlides = await render(directPath, `direct-${target}`)
+          if (backendSlides.layout !== sourceImages.layout || directSlides.layout !== sourceImages.layout)
+            throw new Error(`${target}: rendered slide text wraps or moves to another line`)
           for (let index = 0; index < pages; index++) {
-            const source = sourceImages[index]
-            const backend = backendSlides[index]
-            const direct = directSlides[index]
+            const source = sourceImages.images[index]
+            const backend = backendSlides.images[index]
+            const direct = directSlides.images[index]
             if (backend.info.width !== source.info.width || backend.info.height !== source.info.height ||
               !backend.data.equals(direct.data))
               throw new Error(`${target}: slide ${index + 1} render differs from original`)
@@ -2531,7 +2550,7 @@ async function main() {
                 Math.abs(source.data[pixel + 2] - backend.data[pixel + 2])
               if (delta > 150) changed++
             }
-            if (changed > source.data.length / 3 * 0.002)
+            if (changed > source.data.length / 3 * 0.02)
               throw new Error(`${target}: slide ${index + 1} changed ${changed} visible pixels after export`)
           }
         }

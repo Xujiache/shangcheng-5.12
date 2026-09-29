@@ -163,7 +163,7 @@ NODE
           legacyDoc) key=CONVERSION_LEGACY_DOCUMENT_SAMPLE; cue=CONVERSION_LEGACY_EXPECT ;;
           legacySheet) key=CONVERSION_LEGACY_SHEET_SAMPLE; cue=CONVERSION_LEGACY_SHEET_EXPECT ;;
           legacySlide) key=CONVERSION_LEGACY_PRESENTATION_SAMPLE; cue=CONVERSION_LEGACY_PRESENTATION_EXPECT ;;
-          ofd) key=CONVERSION_OFD_SAMPLE; cue=CONVERSION_OFD_EXPECT; expected=${expected%%|*} ;;
+          ofd) key=CONVERSION_OFD_SAMPLE; cue=CONVERSION_OFD_EXPECT ;;
         esac
         run_case "$label" "$batch" -e "$key=$sample" -e "$cue=$expected" ;;
     esac
