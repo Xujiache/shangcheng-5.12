@@ -153,6 +153,16 @@
       "license": "CC BY-NC-SA 4.0"
     },
     {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-3704-c7fa60d25295e225.iiq",
+      "sha256": "c7fa60d25295e225ce32f3c68063748e88daf238e69f9abd602b1dcb900ecf08",
+      "expectedText": [
+        "x-rite",
+        "colorchecker"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/3704/nice/Phase%20One%20-%20IQ3%20100MP%20Trichr%20-%20Unknown%20%288%29%20%284%3A3%29.IIQ",
+      "license": "CC0"
+    },
+    {
       "resourceId": "parity-fixtures/raw/ocr-candidates/photographyblog-canon-eos-r-21.cr3",
       "sha256": "00fe33e02ac81f504a0714f61ec5c90e3cd5ee191de56a07718bde99eab8137e",
       "expectedText": [
