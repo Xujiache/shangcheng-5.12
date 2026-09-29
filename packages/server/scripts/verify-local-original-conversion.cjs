@@ -1036,12 +1036,12 @@ async function main() {
         { splitMode: 'group', groupSize: '2' })
       const direct = await directHttp('three-pages.pdf', merged.bytes, 'pdf',
         { splitMode: 'group', groupSize: '2' })
-      const inspect = async (bytes, name) => {
+      const inspect = async (bytes, name, expectedParts = 2) => {
         const file = join(work, `${name}.zip`)
         await writeFile(file, bytes)
         const names = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
           .trim().split('\n').filter((item) => item.endsWith('.pdf'))
-        if (names.length !== 2) throw new Error(`${name}: expected two PDF groups`)
+        if (names.length !== expectedParts) throw new Error(`${name}: expected ${expectedParts} PDF groups`)
         const groups = []
         for (const item of names) {
           const pdf = execFileSync('unzip', ['-p', file, item])
@@ -1062,6 +1062,25 @@ async function main() {
         !first[1].text.includes('Third page'))
         throw new Error('PDF group split differs from original or lost page text')
       console.log('PASS PDF groupSize=2, direct original and backend preserve all three pages')
+      const pagePassed = await optionQuality('convert:pdf', { splitMode: 'page' },
+        'three-page PDF splits into three one-page files; original and backend preserve each page text',
+        async () => {
+          const result = await convert('convert:pdf', [['three-pages.pdf', merged.bytes]],
+            { splitMode: 'page' })
+          const originalResult = await directHttp('three-pages.pdf', merged.bytes, 'pdf',
+            { splitMode: 'page' })
+          const backendPages = await inspect(result.bytes, 'page-backend', 3)
+          const directPages = await inspect(originalResult, 'page-direct', 3)
+          const texts = (pages) => pages.map((page) => page.text.trim()).sort()
+          if (backendPages.some((page) => page.count !== 1) ||
+            JSON.stringify(texts(backendPages)) !== JSON.stringify(texts(directPages)) ||
+            !['First page', 'Second page', 'Third page'].every((label) =>
+              backendPages.some((page) => page.text.includes(label))))
+            throw new Error('Per-page PDF split differs from original or lost page text')
+          return { inputSha256: sha256(merged.bytes), backendSha256: sha256(result.bytes),
+            directSha256: sha256(originalResult), pages: backendPages }
+        })
+      if (pagePassed) console.log('PASS PDF splitMode=page, original and backend preserve three separate pages')
 
       const phrase = '量窗助手编码验收 12345'
       for (const [option, encoding] of [
