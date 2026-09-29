@@ -1,0 +1,5 @@
+# ARW → JP2 output decoder check
+
+The first isolated `70a630e` RAW run rejected `arw:jp2` despite a successful authenticated job. The verifier used FFmpeg 8.1.1's native JPEG 2000 decoder, which emitted `nonzerobits -4 invalid or unsupported`. The original Linux CLI, called directly on the same ARW, generated a 6,059,315-byte JP2 (`sha256:085175c7281d74e9b386fcbf0a413e022e847e1b14f556d0864f27d5890c4270`). FFprobe reports 2784 × 1872 pixels; Pillow backed by OpenJPEG decodes it as RGB with nonconstant 0–255 ranges in all channels. The file and probe output are retained under `/root/deployment-verification/linux-windows-parity/build/arw-jp2-diagnostic/`.
+
+The RAW pair verifier now uses Pillow's OpenJPEG decoder for JP2 results and still compares full RGB pixels from direct original and authenticated backend outputs. FFmpeg remains the decoder for the other targets. The original failed run `e2e/artifacts/run-20260929T160832Z-2181227/` remains failed until the exact ARW sample is rerun with this checker. Windows 0.7.10 output remains unmeasured.

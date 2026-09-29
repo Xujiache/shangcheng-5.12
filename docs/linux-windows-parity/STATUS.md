@@ -53,6 +53,7 @@
 - 媒体内部编码：EVC 与 AVS2/AVS3 已通过上述 Linux 原版 CLI / 鉴权后端对照；Windows 输出仍待比较。文件扩展名齐全不代表其他内部编码齐全。
 - RAW / AI / 旧 Office / OFD 现有 53 条外部样本任务（47 份唯一原片），共 449 次目标转换；旧文档、旧表格、旧演示、OFD、一份 AI 与首份 3FR 已执行，DPS/DPT→PPTX 的两项版式检查仍失败。剩余 RAW 与 OCR 样本正在串行执行。53 条均通过 UID 1000 可读取及 SHA-256 预检；IIQ OCR 样本约 101 MP，超出当前图像像素上限，资源与 OCR 结果未验收。已有失败样本继续保留。
 - DPS/DPT→PPTX：原版 Linux CLI 与鉴权后端都会让两页标题及正文换行；ODP 的原版与后台渲染则保持源页像素一致。[诊断与被否决的宽文本框试验](legacy-slide-diagnostic.md)保留，尚无 Windows 实机对照。
+- ARW→JP2：首轮校验器的 FFmpeg 原生 JPEG 2000 解码失败；同一原版直接输出可由 OpenJPEG 完整解码。[解码器诊断](arw-jp2-decoder-diagnostic.md)与更新后的校验器已保存，该组合仍需重新跑鉴权输出比较。
 - AV1→MOV：隔离 worker 的 FFmpeg 8.1.1 不生成内容且可能长期占住队列；相同输入直接执行报 `av1 only supported in MP4 and AVIF`。候选后端已加入入队前拒绝，客户端 MOV 编码选择只显示 H.264/H.265；该组合仍算未通过，其他选项需在更新后的隔离环境重跑。
 - Windows 执行基线仍缺。GitHub Windows 任务因账号计费限制未分配 runner；2026-09-29 复核仍为 `runner_name:""`、`steps:[]`。Mac 锁屏也阻止 WPS 渲染检查。未获得用户同一文件的 Windows 输出。
 - 原版完整套件剩余 8 个桌面入口测试失败，15 个跳过。失败不能从完整套件结果中抹掉；详见原版测试报告。
