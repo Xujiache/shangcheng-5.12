@@ -142,6 +142,47 @@
       ],
       "source": "https://raw.pixls.us/getfile.php/2338/nice/Kodak%20-%20DC120%20-%208bit%20%284%3A3%29.kdc",
       "license": "CC0"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/photographyblog-canon-eos-r-21.cr3",
+      "sha256": "00fe33e02ac81f504a0714f61ec5c90e3cd5ee191de56a07718bde99eab8137e",
+      "expectedText": [
+        "NOBU",
+        "SHOREDITCH"
+      ],
+      "source": "https://img.photographyblog.com/reviews/canon_eos_r/sample_images/canon_eos_r_21.cr3",
+      "license": "Photography Blog sample; public download for isolated private test only; no redistribution license stated"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/photographyblog-hasselblad-907x-21.3fr",
+      "sha256": "737f1447c898c12ea4e4a7311b7874605e9244f282ba70b0d245a08ad3d956e1",
+      "expectedText": [
+        "PANG",
+        "LODGE",
+        "Coffee"
+      ],
+      "source": "https://img.photographyblog.com/reviews/hasselblad_907x_50c/sample_images/hasselblad_907x_50c_21.3fr",
+      "license": "Photography Blog sample; public download for isolated private test only; no redistribution license stated"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/photographyblog-samsung-nx300-20.srw",
+      "sha256": "5c28b40f1523639ec7dfef80a1503a37baf979d54a731587eab28e6c81212926",
+      "expectedText": [
+        "Hazardous material",
+        "Avoid contact with skin and eyes"
+      ],
+      "source": "https://img.photographyblog.com/reviews/samsung_nx300/sample_images/samsung_nx300_20.srw",
+      "license": "Photography Blog sample; public download for isolated private test only; no redistribution license stated"
+    },
+    {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-3158-fa1bff3e0b9b9a14.erf",
+      "sha256": "fa1bff3e0b9b9a14f83b8db9fae022c2aca8d455896bf4f25f2c1a0034e295e6",
+      "expectedText": [
+        "KIRKLAND",
+        "TABASCO"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/3158/nice/Epson - R-D1x - 12bit (3:2).ERF",
+      "license": "CC0"
     }
   ],
   "trackedSyntheticPdfFixtures": {
