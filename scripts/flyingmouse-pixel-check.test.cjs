@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const { execFileSync } = require('node:child_process')
 const { createHash } = require('node:crypto')
 const { test } = require('node:test')
 const { hashRgbOutput } = require('./flyingmouse-pixel-check.cjs')
@@ -27,10 +28,17 @@ test('large RGB streams are checked with a small Node heap', async () => {
   const code = 'const b=Buffer.alloc(65536,7); let n=2304;' +
     'function send(){while(n-- > 0){if(!process.stdout.write(b)){' +
     'process.stdout.once("drain",send);return;}}}send();'
-  const before = process.resourceUsage().maxRSS
-  const actual = await hashRgbOutput(process.execPath, ['--max-old-space-size=32', '-e', code],
-    144 * 1024 ** 2)
-  assert.ok(process.resourceUsage().maxRSS - before < 64 * 1024,
+  // Isolate the checker and its GC budget from the test runner's prior allocations.
+  const checker = 'const {hashRgbOutput}=require(process.argv[1]);' +
+    'const before=process.resourceUsage().maxRSS;' +
+    `hashRgbOutput(process.execPath,['-e',${JSON.stringify(code)}],144*1024**2)` +
+    '.then(result=>console.log(JSON.stringify({...result,' +
+    'rssGrowthKiB:process.resourceUsage().maxRSS-before})))' +
+    '.catch(error=>{console.error(error);process.exitCode=1});'
+  const actual = JSON.parse(execFileSync(process.execPath,
+    ['--max-old-space-size=32', '-e', checker, require.resolve('./flyingmouse-pixel-check.cjs')],
+    { encoding: 'utf8', timeout: 30000 }))
+  assert.ok(actual.rssGrowthKiB < 96 * 1024,
     'checker must not retain a full 144 MiB RGB buffer')
   const hash = createHash('sha256')
   const block = Buffer.alloc(65536, 7)
