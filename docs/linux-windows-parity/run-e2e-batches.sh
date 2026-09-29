@@ -33,7 +33,7 @@ worker_id=$(docker inspect jiujiu-parity-worker --format '{{.Image}}')
 curl -fsS http://127.0.0.1:3013/health/ready >/dev/null ||
   { echo 'Isolated API is not ready' >&2; exit 2; }
 
-# Existing runtime: --copy verifies 307 original file hashes and fixRevision 16.
+# Existing runtime: --copy verifies 307 original file hashes and fixRevision 17.
 docker run --rm --read-only --network none \
   -v "$checkout":/parity-src:ro --entrypoint node "$image" \
   /parity-src/scripts/apply-flyingmouse-platform-fixes.cjs --copy /app/flyingmouse >/dev/null
@@ -79,6 +79,9 @@ run_case() {
   case "$batch" in raw|rawOcr|vector|vectorOcr|psd|psdOcr|image|avs)
     extra=(-e CONVERSION_TEST_JOB_TIMEOUT_SECONDS=720) ;;
   esac
+  if [[ "$batch" == image && -n "${CONVERSION_IMAGE_INPUTS:-}" ]]; then
+    extra+=(-e "CONVERSION_IMAGE_INPUTS=$CONVERSION_IMAGE_INPUTS")
+  fi
   if docker run --rm --network host --memory 8g --cpus 2 --pids-limit 512 \
     --env-file runner.env \
     -e NODE_PATH=/app/server/node_modules \
