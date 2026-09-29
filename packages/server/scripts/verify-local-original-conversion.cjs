@@ -25,6 +25,21 @@ let userId
 let cleanupJob
 const outstanding = new Set()
 
+async function saveOcrInspection(inspection, backendPath, directPath) {
+  if (!process.env.CONVERSION_PAIR_EVIDENCE) return
+  const directory = process.env.CONVERSION_PAIR_EVIDENCE.replace(/\.jsonl$/, '') + '-ocr'
+  await mkdir(directory, { recursive: true })
+  for (const [label, file] of [['backend', backendPath], ['direct', directPath]]) {
+    const bytes = await readFile(file)
+    const name = `${inspection.input}-${label}.${inspection.output}`
+    await writeFile(join(directory, name), bytes, { flag: 'wx' })
+    inspection[label] = { file: name, bytes: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex') }
+  }
+  await writeFile(join(directory, `${inspection.input}-${inspection.output}.json`),
+    JSON.stringify(inspection, null, 2) + '\n', { flag: 'wx' })
+}
+
 function rtfText(file) {
   const work = require('node:fs').mkdtempSync(join(tmpdir(), 'ledger-rtf-text-'))
   try {
@@ -418,19 +433,7 @@ async function verifyBaseline(convert) {
             sourceTextRetained: text.backend.includes(expected),
             directTextRetained: text.direct.includes(expected),
             directBackendEqual: text.backend === text.direct }
-          if (process.env.CONVERSION_PAIR_EVIDENCE) {
-            const directory = process.env.CONVERSION_PAIR_EVIDENCE.replace(/\.jsonl$/, '') + '-ocr'
-            await mkdir(directory, { recursive: true })
-            for (const [label, file] of [['backend', backendPath], ['direct', directPath]]) {
-              const bytes = await readFile(file)
-              const name = `${inputExtension}-${label}.${target}`
-              await writeFile(join(directory, name), bytes, { flag: 'wx' })
-              inspection[label] = { file: name, bytes: bytes.length,
-                sha256: createHash('sha256').update(bytes).digest('hex') }
-            }
-            await writeFile(join(directory, `${inputExtension}-${target}.json`),
-              JSON.stringify(inspection, null, 2) + '\n', { flag: 'wx' })
-          }
+          await saveOcrInspection(inspection, backendPath, directPath)
           if (!inspection.sourceTextRetained)
             throw new Error(`${inputExtension} to ${target} OCR lost visible source text; ` +
               `direct/backend equal=${inspection.directBackendEqual}`)
@@ -915,8 +918,17 @@ async function main() {
             : require('node:fs').readFileSync(file, 'utf8')).replace(/\s+/g, '')
           const directText = extractText(direct)
           const backendText = extractText(backendPath)
-          if (!backendText.includes(expected) || backendText !== directText)
-            throw new Error(`${extension} to ${target}: OCR text lost known phrase or differs from original`)
+          const inspection = { input: extension, output: target, expected,
+            text: { backend: backendText, direct: directText },
+            sourceTextRetained: backendText.includes(expected),
+            directTextRetained: directText.includes(expected),
+            directBackendEqual: backendText === directText }
+          await saveOcrInspection(inspection, backendPath, direct)
+          if (!inspection.sourceTextRetained)
+            throw new Error(`${extension} to ${target}: OCR lost visible source text; ` +
+              `direct/backend equal=${inspection.directBackendEqual}`)
+          if (!inspection.directBackendEqual)
+            throw new Error(`${extension} to ${target}: OCR differs between direct and backend`)
           execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
             '--record', extension, target, createHash('sha256').update(fixture).digest('hex'),
             'genuine image fixture: visible OCR phrase retained by direct original and backend'])
