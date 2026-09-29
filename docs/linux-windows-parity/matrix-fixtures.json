@@ -147,8 +147,8 @@
       "resourceId": "parity-fixtures/raw/ocr-candidates/photographyblog-canon-eos-r-21.cr3",
       "sha256": "00fe33e02ac81f504a0714f61ec5c90e3cd5ee191de56a07718bde99eab8137e",
       "expectedText": [
-        "SHOREDITCH",
-        "NOBU"
+        "NOBU",
+        "SHOREDITCH"
       ],
       "source": "https://img.photographyblog.com/reviews/canon_eos_r/sample_images/canon_eos_r_21.cr3",
       "license": "Photography Blog sample; public download for isolated private test only; no redistribution license stated"
