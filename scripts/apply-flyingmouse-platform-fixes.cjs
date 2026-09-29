@@ -18,6 +18,13 @@ const expectedOcrSha256 = '1ddc8b79a9ec6db76677d5905c1d8e0a6a99ef1afe6a553ec7f13
 const expectedOfdDependencySha256 = '254a22b7ebe342318d03b6c5efb61a6779fa8368318c74c5e04d5f831360847d'
 const before = 'args.push("-loop", "1", "-i", inputPath, "-t", "3");'
 const after = 'args.push("-stream_loop", "-1", "-i", inputPath, "-t", "3");'
+const jp2ThreadBefore = '      if (target === "jxl") args.push("-c:v", "libjxl");'
+const jp2ThreadAfter = jp2ThreadBefore + '\n' +
+  '      if (target === "jp2" || target === "j2k") args.push("-threads", "1");'
+const videoThreadBefore = '  const args = ["-hide_banner", "-y"];'
+const videoThreadAfter = '  const args = ["-hide_banner", "-y", "-threads", "1", "-filter_threads", "1"];'
+const videoOutputThreadBefore = '  args.push(outputPath);\n  await run(FFMPEG_PATH, args, { timeout: 1000 * 60 * 10 });'
+const videoOutputThreadAfter = '  args.push("-threads", "1", outputPath);\n  await run(FFMPEG_PATH, args, { timeout: 1000 * 60 * 10 });'
 const rawBefore = [
   '    const tiffCandidates = [',
   '      path.join(tempDir, `${stem}.tiff`),',
@@ -195,7 +202,9 @@ function apply(directory) {
   const resourceCode = resourceBytes.toString('utf8')
   const ocrCode = ocrBytes.toString('utf8')
   const ofdDependencyCode = ofdDependencyBytes.toString('utf8')
-  if (code.split(before).length !== 2 || code.split(rawBefore).length !== 2 ||
+  if (code.split(before).length !== 2 || code.split(jp2ThreadBefore).length !== 2 ||
+    code.split(videoThreadBefore).length !== 2 || code.split(videoOutputThreadBefore).length !== 2 ||
+    code.split(rawBefore).length !== 2 ||
     code.split(rawRunBefore).length !== 2 || pdfCode.split(pdfCoverageBefore).length !== 2 ||
     pdfCode.split(pdfClassifierBefore).length !== 2 || pdfCode.split(pdfOcrNeedBefore).length !== 2 ||
     pdfCode.split(pdfLayoutCheckBefore).length !== 2 ||
@@ -213,7 +222,8 @@ function apply(directory) {
     ofdDependencyCode.split('y: startY - fontSize,').length !== 4)
     throw new Error('Expected original conversion calls exactly once')
   const patched = code.replace(before, after).replace(rawBefore, rawAfter)
-    .replace(rawRunBefore, rawRunAfter)
+    .replace(rawRunBefore, rawRunAfter).replace(jp2ThreadBefore, jp2ThreadAfter)
+    .replace(videoThreadBefore, videoThreadAfter).replace(videoOutputThreadBefore, videoOutputThreadAfter)
   const officePatched = officeCode.replace(officeBefore, officeAfter)
   const ofdPatched = ofdCode.replace(ofdBefore, ofdAfter)
   const ocrPatched = ocrCode.replace(ocrBefore, ocrAfter)
@@ -269,7 +279,7 @@ function apply(directory) {
   fs.writeFileSync(ofdDependencyPath, ofdDependencyPatched)
   fs.writeFileSync(path.join(directory, '.platform-fixes.json'), JSON.stringify({
     sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-    fixRevision: 17,
+    fixRevision: 18,
     imageSourceSha256: expectedImageSha256,
     imageRuntimeSha256: hash(Buffer.from(patched)),
     officeSourceSha256: expectedOfficeSha256,
@@ -306,6 +316,8 @@ function apply(directory) {
       'Keep PDF-to-Word layout output when it preserves a source cell plus one superscript glyph',
       'Bound Linux PDF structure and resource budgets by process container memory',
       'Use original PDF page classification only for DOCX layout acceptance; retain text OCR routing',
+      'Use one JPEG 2000 encoder context without changing pixels or codec parameters',
+      'Bound still-image video decoder, filter and encoder threads while retaining codec settings',
     ],
   }, null, 2) + '\n')
 }
@@ -313,7 +325,7 @@ function apply(directory) {
 function verifyRuntime(directory) {
   const manifest = require(path.join(root, 'docs/flyingmouse-migration/source-a7b9b15-manifest.json'))
   const fixes = JSON.parse(fs.readFileSync(path.join(directory, '.platform-fixes.json'), 'utf8'))
-  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 17 ||
+  if (fixes.sourceRevision !== manifest.sourceRevision || fixes.fixRevision !== 18 ||
     fixes.imageSourceSha256 !== expectedImageSha256 ||
     fixes.officeSourceSha256 !== expectedOfficeSha256 ||
     fixes.ofdSourceSha256 !== expectedOfdSha256 ||

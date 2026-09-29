@@ -6,7 +6,7 @@
 
 | 项目 | 实际变化 | 验证范围 |
 | --- | --- | --- |
-| 原版源码 | 保留并逐个核对 307 个原文件，仅修补独立运行副本；当前修订 r17 | 镜像内源码及补丁哈希检查 |
+| 原版源码 | 保留并逐个核对 307 个原文件，仅修补独立运行副本；隔离 worker 当前修订 r18 | 镜像内源码及补丁哈希检查 |
 | PDF 版式引擎 | 恢复 Windows 包中的原入口、55 个 pdf2docx 与 20 个 Camelot 模块，使用 Python 3.12 | 真实 PDF 转 DOCX/XLSX 已运行；双栏分页仍失败 |
 | 扫描 PDF | 补齐 docstructure 1.0.1、对应 Python 环境与 37 个校验过的模型文件 | 单页扫描、多页混合样本可提取可编辑表格和文字；无 Windows 结果对照 |
 | 原生引擎 | FFmpeg 8.1.1、LibreOffice 26.2.1.2、Poppler 26.05.0、qpdf 12.4.0、Pandoc 3.11 | 启动及多类真实转换；不能由版本相同推断输出相同 |
@@ -17,8 +17,11 @@
 | SVG | FFmpeg 增加 librsvg 解码器 | 19 个鉴权任务全部产出，16 个质量通过；剩余 3 个为原有 OCR 错字 |
 | EVC | 补齐 XEVD 0.7.0，FFmpeg 8.1.1 启用 libxevd | 真实 EVC-in-MP4 首帧解码通过；完整鉴权批次另记 |
 | 字体发现 | Fontconfig 扫描已打包的 LibreOffice 字体 | Arial / Calibri / Cambria / Times New Roman 命中对应替代字体；三份 Office 直接转换的页数、文字、页面像素不变 |
+| 大 RAW 内存 | 原生 JPEG 2000 在写完 tile 后释放编码缓存；限制 JP2 编码线程及静态图转视频线程，原尺寸和编码参数不变 | FFF→JP2/MP4、ARW→JP2 三项完整鉴权链路通过；其他 r18 回归另记 |
 
-当前隔离镜像：`jiujiu-conversion-worker:linux-parity-70a630e`，ID `sha256:a1c9ae62d977369178342b64be0033c0e5b4da0548ac12fe2c6c10f3e461ca65`。它仅在 `b801ba9` 的 r17 镜像上覆盖编译后的转换服务、格式目录及转换入口；构建文件和哈希在服务器 `build/ledger-parity-overlay-70a630e/`。底层 `b801ba9` 镜像 ID 为 `sha256:affc0971c705446f9cd824e6b044638930c9d98b8d349da2b0f14b1dbf1a384c`，包含 EVC 解码与字体扫描配置，保持原版 307 文件校验；不是声称重新执行了整个 Dockerfile。底层构建及首帧预检记录在服务器 `build/runtime-evc-fonts-b801ba9/`，父级为 `/root/deployment-verification/linux-windows-parity/`。
+隔离 API 镜像仍为 `jiujiu-conversion-worker:linux-parity-70a630e`，ID `sha256:a1c9ae62d977369178342b64be0033c0e5b4da0548ac12fe2c6c10f3e461ca65`。它仅在 `b801ba9` 的 r17 镜像上覆盖编译后的转换服务、格式目录及转换入口；构建文件和哈希在服务器 `build/ledger-parity-overlay-70a630e/`。底层 `b801ba9` 镜像 ID 为 `sha256:affc0971c705446f9cd824e6b044638930c9d98b8d349da2b0f14b1dbf1a384c`，包含 EVC 解码与字体扫描配置，保持原版 307 文件校验；不是声称重新执行了整个 Dockerfile。底层构建及首帧预检记录在服务器 `build/runtime-evc-fonts-b801ba9/`，父级为 `/root/deployment-verification/linux-windows-parity/`。
+
+隔离 worker 已换为 r18 候选 `jiujiu-conversion-worker:linux-parity-r18-jp2`，ID `sha256:8937089153cd37f5be990fb9872e4fbe9f8dff1c38357cc51c55b6707d98ba45`。它在上述 70a630e 镜像覆盖相同配置的 FFmpeg 编译产物、`image.js` 和补丁清单；原 307 文件及运行哈希检查通过。JPEG 2000 修复前后源码、二进制和编译配置保留在 `build/jp2-allocator/`；不是完整 Dockerfile 重建验收。生产 worker 未切换。
 
 ## 当前实测
 
@@ -41,28 +44,32 @@
 | 旧演示 DPS / DPT（b801ba9） | 两份各 6 组：10 项通过、2 项 PPTX 文本换行失败；12 个鉴权任务成功 | `e2e/artifacts/run-20260929T115907Z-1868559/`；[版式诊断](legacy-slide-diagnostic.md) |
 | OFD 与 AI（b801ba9） | OFD 三份各转 PDF，共 3/3；AI 一份转 16 项，共 16/16，均通过质量检查与鉴权任务 | `e2e/artifacts/run-20260929T120059Z-1873519/`、`run-20260929T120443Z-1879123/` |
 | 原版可见选项（70a630e） | 21 项质量断言中 20 通过；23 个鉴权任务中 22 通过。唯一失败 AV1→MOV 被即时拒绝，没有再阻塞后续任务 | `e2e/artifacts/run-20260929T123959Z-1932719/`；[选项明细](options-coverage-audit.md) |
-| RAW（70a630e，阶段结果） | 前 11 份完成，共 176 个非 OCR 目标：173 通过、3 失败；剩余原片仍在串行测试 | `e2e/artifacts/run-20260929T160832Z-2181227/`；[RAW 内存诊断](raw-memory-diagnostic.md) |
+| RAW（70a630e，首轮完成） | 19 份 × 16 个非 OCR 目标：301/304 通过，3 失败；首轮失败原样保留 | `e2e/artifacts/run-20260929T160832Z-2181227/`；[RAW 内存诊断](raw-memory-diagnostic.md) |
+| RAW 失败项复测（r18） | FFF→JP2、FFF→MP4、ARW→JP2 三项完整鉴权及完整像素对比通过；未将其他历史结果算作 r18 重测 | `e2e/artifacts/run-r18-raw-retry-20260929T191806Z-2501671/` |
+| JPEG 2000 原生修复（r18） | 34/34 对照通过：11 帧、多种编码选项、16 位/透明度、完整原平面无损检查；与只修 SOP 的基线字节一致 | `build/jp2-allocator/paired-sop/paired-v4-results.jsonl`；[修复与历史失败](jpeg2000-encoder-diagnostic.md) |
 | 大文件 | 100.9 MiB WAV 真实上传、MP3 转换、下载、600 秒时长与音频采样、清理通过 | `e2e/artifacts/run-20260928T213157Z-574016/` |
 
 本机日志默认位于 `.quality/linux-windows-parity/`；服务器证据路径相对于 `/root/deployment-verification/linux-windows-parity/`。不同修订、不同测试范围的结果分别保存，不能把历史 Mac 的 954/1174 或旧 PDF 检查结果加入当前通过数。其他已执行的文档、表格、演示、文本、音视频、压缩、PSD 和选项批次原始日志保存在 `e2e/artifacts/`；完整矩阵仍需汇总逐项质量及 Windows 对照。
 
 ## 尚未通过的事项
 
-- 原生双栏 PDF：1 页变为 3 页。原版直接调用与后端的 DOCX XML 一致。[双单元格试验](pdf-column-diagnostic.md)会损坏长双栏页面，因此未合入。
+- 原生双栏 PDF：原路径仍将 1 页变为 3 页。[双单元格试验](pdf-column-diagnostic.md)会损坏长双栏页面，因此未合入。显式分栏、源坐标间距及 inline 图片距离的诊断方案已在七个服务器样本保留页数和文字；表格网格、行距及真实文件广泛回归仍待完成，没有生产补丁。
 - 图片 OCR：16 种输入各有 DOCX/MD/TXT 共 48 组错字；已查明测试图“量窗助手”被识别成“星窗助手”。[纠偏试验](ocr-deskew-diagnostic.md)会在倾斜发票上产生其他错字，未合入。
 - r16 的 7 个 SVG 解码失败在 r17 完整链路中已修复；SVG 的 DOCX/MD/TXT 仍因源文字错字失败，不能把整个 SVG 批次标为通过。
 - 媒体内部编码：EVC 与 AVS2/AVS3 已通过上述 Linux 原版 CLI / 鉴权后端对照；Windows 输出仍待比较。文件扩展名齐全不代表其他内部编码齐全。
-- RAW / AI / 旧 Office / OFD 现有 53 条外部样本任务（47 份唯一原片），共 449 次目标转换；旧文档、旧表格、旧演示、OFD、一份 AI 与首份 3FR 已执行，DPS/DPT→PPTX 的两项版式检查仍失败。剩余 RAW 与 OCR 样本正在串行执行。53 条均通过 UID 1000 可读取及 SHA-256 预检；IIQ OCR 样本约 101 MP，超出当前图像像素上限，资源与 OCR 结果未验收。已有失败样本继续保留。
+- RAW / AI / 旧 Office / OFD 现有 53 条外部样本任务（47 份唯一原片），共 449 次目标转换；旧文档、旧表格、旧演示、OFD、一份 AI 及 19 份 RAW 非 OCR 已执行，DPS/DPT→PPTX 两项版式检查仍失败。RAW 的 OCR 批次仍未验收。53 条均通过 UID 1000 可读取及 SHA-256 预检；IIQ OCR 样本约 101 MP，超出当前图像像素上限，资源与 OCR 结果未验收。已有失败样本继续保留。
 - DPS/DPT→PPTX：原版 Linux CLI 与鉴权后端都会让两页标题及正文换行；ODP 的原版与后台渲染则保持源页像素一致。[诊断与被否决的宽文本框试验](legacy-slide-diagnostic.md)保留，尚无 Windows 实机对照。
-- ARW→JP2：首轮校验器的 FFmpeg 原生 JPEG 2000 解码失败；同一原版直接输出可由 OpenJPEG 完整解码。[解码器诊断](arw-jp2-decoder-diagnostic.md)与更新后的校验器已保存，该组合仍需重新跑鉴权输出比较。
-- FFF→JP2/MP4：首轮两项原版直接转换被 8 GiB 容器 OOM 结束；测试器也占用完整像素缓冲。单线程 4 GiB 试验仍失败；已修复验收器的额外像素缓冲，正在保留原尺寸及编码参数复测。没有把线程试验合入转换核心，详见 [内存记录](raw-memory-diagnostic.md)。
+- ARW→JP2：首轮校验器原生解码失败；完整 OpenJPEG 像素校验和两次鉴权重放均通过。[解码器诊断](arw-jp2-decoder-diagnostic.md)保留首轮失败，不宣称 Windows 已测。
+- FFF→JP2/MP4：r18 完整鉴权重放通过，文件字节与原版单线程结果完全一致；原生 JPEG 2000 34 项严格回归已通过，其他图片/视频路径仍待完整重测。FFF runner 峰值 8,118,878,208 字节、隔离 worker 峰值 8,316,755,968 字节，均无 OOM；现有生产 4 GiB 配额仍不足，详见 [内存记录](raw-memory-diagnostic.md)。
 - AV1→MOV：隔离 worker 的 FFmpeg 8.1.1 不生成内容且可能长期占住队列；相同输入直接执行报 `av1 only supported in MP4 and AVIF`。候选后端已加入入队前拒绝，客户端 MOV 编码选择只显示 H.264/H.265；该组合仍算未通过，其余 20 项质量断言已在上述 `70a630e` 隔离批次中通过。
-- Windows 执行基线仍缺。用户选择恢复 GitHub Actions 额度后，新任务 [36609759341](https://github.com/Xujiache/shangcheng-5.12/actions/runs/36609759341) 仍因账号账单锁定未启动，`runner_name:""`、`steps:[]`；额度尚未验证恢复。Mac WPS 的本次 UI 连接超时，未完成渲染检查。未获得用户同一文件的 Windows 输出。
+- Windows 执行基线仍缺。新任务 [36609759341](https://github.com/Xujiache/shangcheng-5.12/actions/runs/36609759341) 因账单锁定未启动，`runner_name:""`、`steps:[]`。用户只有 Mac、无额外磁盘或 Windows 主机，已选择先修复 Linux，不继续依赖 GitHub 额度恢复。此前 Mac WPS 已打开原 DOCX，呈现一页但文字换行、图例位置与源文件不一致，也有字体替代；不能代替 Windows 0.7.10 对照。
 - 原版完整套件剩余 8 个桌面入口测试失败，15 个跳过。失败不能从完整套件结果中抹掉；详见原版测试报告。
 
 ## 运行边界
 
 隔离 API 仅为本机 3013，数据库、队列、文件桶与生产独立。worker 8 GiB、2 CPU、串行；每批检查至少 3 GiB 磁盘余量。本次 PDF worker 峰值 4,665,884,672 字节，现有生产 4 GiB 限额不够覆盖该样本。
+
+这里的本机 3013 指服务器回环端口。用户已要求所有后端在服务器运行：Mac 后端停止，后续不启动 Mac 后端、微信开发者工具或预览。小程序配置继续指向 `https://ewsn.top`。
 
 现有生产 worker 仍为 `jiujiu-conversion-worker:9fbe0b9`，生产 API 3003 健康检查通过。上述候选修复与测试没有替换生产。失败或未测项目解决之前不发布“全部对齐”。
 

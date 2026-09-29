@@ -1,0 +1,64 @@
+--- a/libavcodec/j2kenc.c
++++ b/libavcodec/j2kenc.c
+@@ -719,7 +719,6 @@
+     int bandno, empty = 1;
+     int i;
+     // init bitstream
+-    *s->buf = 0;
+     s->bit_index = 0;
+ 
+     if (s->sop) {
+@@ -727,6 +726,7 @@
+         bytestream_put_be16(&s->buf, 4);
+         bytestream_put_be16(&s->buf, packetno);
+     }
++    *s->buf = 0;
+     // header
+ 
+     if (!layno) {
+@@ -1326,6 +1326,36 @@
+                         cblk->layers[0].npasses = cblk->ninclpasses;
+                         if (cblk->ninclpasses)
+                             cblk->layers[0].data_len = cblk->passes[cblk->ninclpasses - 1].rate;
++                    }
++                }
++            }
++        }
++    }
++}
++
++static void free_tile_cblk_buffers(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
++{
++    int compno, reslevelno, bandno, precno, cblkno, layno;
++
++    for (compno = 0; compno < s->ncomponents; compno++) {
++        Jpeg2000Component *comp = tile->comp + compno;
++
++        for (reslevelno = 0; reslevelno < s->codsty.nreslevels; reslevelno++) {
++            Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
++
++            for (bandno = 0; bandno < reslevel->nbands; bandno++) {
++                Jpeg2000Band *band = reslevel->band + bandno;
++
++                for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
++                    Jpeg2000Prec *prec = band->prec + precno;
++
++                    for (cblkno = 0; cblkno < prec->nb_codeblocks_height * prec->nb_codeblocks_width; cblkno++) {
++                        Jpeg2000Cblk *cblk = prec->cblk + cblkno;
++
++                        av_freep(&cblk->data);
++                        av_freep(&cblk->passes);
++                        for (layno = 0; layno < s->nlayers; layno++)
++                            cblk->layers[layno].data_start = NULL;
+                     }
+                 }
+             }
+@@ -1420,6 +1450,8 @@
+ 
+     if ((ret = encode_packets(s, tile, tileno, s->nlayers)) < 0)
+         return ret;
++    /* All layers have been copied to the output packet. */
++    free_tile_cblk_buffers(s, tile);
+     av_log(s->avctx, AV_LOG_DEBUG, "after rate control\n");
+     return 0;
+ }

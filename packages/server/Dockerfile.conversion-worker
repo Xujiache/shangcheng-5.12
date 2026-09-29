@@ -61,11 +61,12 @@ RUN curl --retry 3 -fsSL https://github.com/mpeg5/xevd/archive/refs/tags/v0.7.0.
  && cmake --install /tmp/xevd-build
 
 FROM debian:bookworm-slim AS ffmpeg-build
+COPY scripts/ffmpeg-patches/jpeg2000-encoder.patch /tmp/jpeg2000-encoder.patch
 COPY --from=davs2-build /opt/davs2-1.7 /opt/davs2-1.7
 COPY --from=uavs3d-build /opt/uavs3d-1.2 /opt/uavs3d-1.2
 COPY --from=xevd-build /opt/xevd-0.7.0 /opt/xevd-0.7.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl build-essential cmake pkg-config yasm nasm \
+    ca-certificates curl build-essential cmake pkg-config yasm nasm patch \
     libx264-dev libx265-dev libsvtav1-dev libvpx-dev libopus-dev libmp3lame-dev \
     libjxl-dev libopenjp2-7-dev libwebp-dev libaom-dev libass-dev \
     libfreetype6-dev libfontconfig1-dev libfribidi-dev \
@@ -85,6 +86,9 @@ RUN curl --retry 3 -fsSL https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz -o /tmp
  && echo 'b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3  /tmp/ffmpeg.tar.xz' | sha256sum -c - \
  && tar -xf /tmp/ffmpeg.tar.xz -C /tmp \
  && cd /tmp/ffmpeg-8.1.1 \
+ && echo 'eb328476ce7419f3c8be3105eb61df14d903a855fdc62d0999a84c14bc53b06a  libavcodec/j2kenc.c' | sha256sum -c - \
+ && patch -p1 < /tmp/jpeg2000-encoder.patch \
+ && echo '53998376db9bda077e262abaa6a1046988c8cafe894130688bb89adda3cdf308  libavcodec/j2kenc.c' | sha256sum -c - \
  && PKG_CONFIG_PATH=/opt/xevd-0.7.0/lib/pkgconfig:/opt/davs2-1.7/lib/pkgconfig:/opt/uavs3d-1.2/lib/pkgconfig:/opt/svt-av1-1.4.1/lib/pkgconfig \
     ./configure --prefix=/opt/ffmpeg-8.1.1 --enable-shared --disable-static \
     --enable-gpl --enable-version3 --enable-libx264 --enable-libx265 \
@@ -93,7 +97,7 @@ RUN curl --retry 3 -fsSL https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz -o /tmp
     --enable-libdavs2 --enable-libuavs3d --enable-libxevd --enable-librsvg \
     --enable-libass --enable-libfreetype --enable-libfontconfig --enable-libfribidi \
  && make -j2 && make install \
- && rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg-8.1.1
+ && rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg-8.1.1 /tmp/jpeg2000-encoder.patch
 
 FROM node:24-bookworm-slim AS libraw-build
 RUN apt-get update && apt-get install -y --no-install-recommends \
