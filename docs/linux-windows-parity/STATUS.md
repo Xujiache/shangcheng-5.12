@@ -14,7 +14,7 @@
 | PDF 行尾缺字 | 依据可见内容边界修正错误的页面边距裁剪 | 中文长行 150 字完整保留；原生样本和空白页 XML 不变 |
 | PDF OCR 路由 | r17 将版式分类限定在 DOCX 接受检查，恢复原文本 OCR 判定 | 两项原版混合页面文字识别回归已消除 |
 | AVS2/AVS3 | 补齐 davs2 / uavs3d，含 AVS3 8/10 位 | 三份真实流完整解码出首帧；鉴权上传、转换、下载批次另记 |
-| SVG | FFmpeg 增加 librsvg 解码器 | 候选真实解出 600×320 图；全部 SVG 目标链路正在复测 |
+| SVG | FFmpeg 增加 librsvg 解码器 | 19 个鉴权任务全部产出，16 个质量通过；剩余 3 个为原有 OCR 错字 |
 
 当前隔离镜像：`jiujiu-conversion-worker:linux-parity-48d7c15`，ID `sha256:bb3f522645b46be47f3026bac98df750089602ec36992bbd43093d6c44618873`。它由已验证的 `dbc7eac` 候选叠加新版 FFmpeg 和 r17 原版运行副本构建；不是声称重新执行了整个 Dockerfile。构建记录在服务器 `build/runtime-r17-48d7c15/`，父级为 `/root/deployment-verification/linux-windows-parity/`。
 
@@ -28,6 +28,8 @@
 | 原仓库完整 99 个测试文件 | 1037 项：1014 通过、8 失败、15 跳过 | [完整记录与失败原因](original-suite-r17.md) |
 | 图片完整批次（r16） | 380 组：325 通过、55 失败；380 个后台任务中 373 成功、7 失败 | `e2e/artifacts/run-20260929T032709Z-1012571/` |
 | PDF 原生 / 扫描 / 混合（r17） | 6 组：5 通过、1 失败；6 个后台任务都生成了文件 | `e2e/artifacts/run-20260929T035726Z-1152010/` |
+| SVG 专项（r17） | 19 组：16 通过、3 OCR 失败；19 个后台任务全部成功，原缺解码器的 7 组通过 | `e2e/artifacts/run-20260929T041625Z-1243980/` |
+| PDF 内容（r17） | 8 组通过，含中文行尾、文本与表格 | `e2e/artifacts/run-20260929T041352Z-1238927/` |
 | 大文件 | 100.9 MiB WAV 真实上传、MP3 转换、下载、600 秒时长与音频采样、清理通过 | `e2e/artifacts/run-20260928T213157Z-574016/` |
 
 本机日志默认位于 `.quality/linux-windows-parity/`；服务器证据路径相对于 `/root/deployment-verification/linux-windows-parity/`。不同修订、不同测试范围的结果分别保存，不能把历史 Mac 的 954/1174 或旧 PDF 检查结果加入当前通过数。其他已执行的文档、表格、演示、文本、音视频、压缩、PSD 和选项批次原始日志保存在 `e2e/artifacts/`；完整矩阵仍需汇总逐项质量及 Windows 对照。
@@ -36,7 +38,7 @@
 
 - 原生双栏 PDF：1 页变为 3 页。原版直接调用与后端的 DOCX XML 一致。[双单元格试验](pdf-column-diagnostic.md)会损坏长双栏页面，因此未合入。
 - 图片 OCR：16 种输入各有 DOCX/MD/TXT 共 48 组错字；已查明测试图“量窗助手”被识别成“星窗助手”。[纠偏试验](ocr-deskew-diagnostic.md)会在倾斜发票上产生其他错字，未合入。
-- r16 中 7 个 SVG 目标缺解码器；r17 已补引擎，尚需完整链路复测结果。
+- r16 的 7 个 SVG 解码失败在 r17 完整链路中已修复；SVG 的 DOCX/MD/TXT 仍因源文字错字失败，不能把整个 SVG 批次标为通过。
 - 媒体内部编码：Windows FFmpeg 有而 Linux 候选没有 EVC 解码器；正在核对支持容器中的真实样本。文件扩展名齐全不代表内部编码齐全。
 - RAW / AI / 旧 Office / OFD 的 51 份外部样本尚待完整串行执行；MRW 和 IIQ 尚缺含可读文字的 OCR 样本。已有失败样本继续保留。
 - Windows 执行基线仍缺。GitHub Windows 任务因账号计费限制未分配 runner；2026-09-29 复核仍为 `runner_name:""`、`steps:[]`。Mac 锁屏也阻止 WPS 渲染检查。未获得用户同一文件的 Windows 输出。
