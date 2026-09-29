@@ -2459,11 +2459,26 @@ async function main() {
           throw new Error(`${target}: missing slides`)
         const content = slides.map((name) => execFileSync('unzip', ['-p', file, name],
           { encoding: 'utf8' }).replace(/<[^>]+>/g, '')).join('').replace(/\s+/g, '')
-        if (expected.some((part) => !content.includes(part)) ||
-          !names.some((name) => /(?:ppt\/media\/|Pictures\/)/.test(name)))
-          throw new Error(`${target}: lost known text or slide images`)
+        if (expected.some((part) => !content.includes(part)))
+          throw new Error(`${target}: lost known slide text`)
         return content
       }
+      const render = async (file, label) => {
+        const pdf = join(work, `${label}.pdf`)
+        execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', file,
+          '--to', 'pdf', '--output', pdf, '--json'], { env: originalCliEnv(), timeout: 600000 })
+        if ((await PDFDocument.load(await readFile(pdf))).getPageCount() !== pages)
+          throw new Error(`${label}: rendered slide count differs from source`)
+        const images = []
+        for (let page = 1; page <= pages; page++) {
+          const output = join(work, `${label}-${page}`)
+          execFileSync(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH,
+            ['-r', '72', '-f', String(page), '-l', String(page), '-singlefile', '-png', pdf, output])
+          images.push(await sharp(`${output}.png`).removeAlpha().raw().toBuffer({ resolveWithObject: true }))
+        }
+        return images
+      }
+      const sourceImages = await render(input, 'source')
       const failures = []
       for (const target of targets) {
         let stage = 'backend'
@@ -2499,6 +2514,27 @@ async function main() {
           }
         } else if (actual !== original)
           throw new Error(`${inputExtension} to ${target}: slide text differs from original`)
+        if (target === 'pptx' || target === 'odp') {
+          const backendSlides = await render(backendPath, `backend-${target}`)
+          const directSlides = await render(directPath, `direct-${target}`)
+          for (let index = 0; index < pages; index++) {
+            const source = sourceImages[index]
+            const backend = backendSlides[index]
+            const direct = directSlides[index]
+            if (backend.info.width !== source.info.width || backend.info.height !== source.info.height ||
+              !backend.data.equals(direct.data))
+              throw new Error(`${target}: slide ${index + 1} render differs from original`)
+            let changed = 0
+            for (let pixel = 0; pixel < source.data.length; pixel += 3) {
+              const delta = Math.abs(source.data[pixel] - backend.data[pixel]) +
+                Math.abs(source.data[pixel + 1] - backend.data[pixel + 1]) +
+                Math.abs(source.data[pixel + 2] - backend.data[pixel + 2])
+              if (delta > 150) changed++
+            }
+            if (changed > source.data.length / 3 * 0.002)
+              throw new Error(`${target}: slide ${index + 1} changed ${changed} visible pixels after export`)
+          }
+        }
         if (target === 'html' && process.env.CONVERSION_LEGACY_PRESENTATION_REQUIRE_IMAGES &&
           actual.images.length !== pages) {
           throw new Error(`${inputExtension} to HTML: visual slide images were omitted`)
