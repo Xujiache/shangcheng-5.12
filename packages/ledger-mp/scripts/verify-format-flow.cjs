@@ -11,7 +11,7 @@ const { test } = require('node:test')
 const source = fs.readFileSync(path.join(__dirname, '../miniprogram/subpackages/format/index/index.ts'), 'utf8')
 const code = stripTypeScriptTypes(source.replace(/^import[\s\S]*?from '[^']+'$/gm, ''))
 const op = (target, inputs, id = `convert:${target}`, options = []) => ({ id, targetExtension: target, inputExtensions: inputs, label: `转为 ${target.toUpperCase()}`, kind: 'convert', options, optionInputExtensions: Object.fromEntries(options.map(key => [key, inputs])) })
-const capabilities = { available: true, limits: { maxFileBytes: 1024, textFileBytes: 512, textExtensions: ['txt'], maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png', 'jp2', 'j2k', 'jxl', 'qoi', 'ppm', 'jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'psd', 'fff', 'mef']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov', 'm4s'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('mkv', ['mov', 'mp4']), op('epub', ['txt'], 'convert:epub', ['textEncoding']), op('txt', ['docx', 'xlsx', 'xlsm', 'zip', 'json', 'yaml', 'yml', 'xml', 'log', 'markdown']), op('vtt', ['srt']), op('json', ['txt'])] }
+const capabilities = { available: true, limits: { maxFileBytes: 1024, textFileBytes: 512, textExtensions: ['txt'], maxBatchBytes: 2048, maxFiles: 3 }, features: { pdfEncryption: false }, operations: [op('png', ['jpg', 'png', 'jp2', 'j2k', 'jxl', 'qoi', 'ppm', 'jfif', 'jpe', 'tif', 'svg', 'heic', 'heif', 'psd', 'fff', 'mef']), op('webp', ['jpg', 'png']), op('pdf', ['jpg', 'png', 'pdf'], 'convert:pdf', ['splitMode', 'groupSize']), op('pdf', ['pdf'], 'merge-pdfs'), op('pdf', ['jpg', 'png'], 'images-to-pdf'), op('mp4', ['mov', 'm4s'], 'convert:mp4', ['videoCodec', 'alphaBackground']), op('mov', ['webm'], 'convert:mov', ['videoCodec']), op('mkv', ['mov', 'mp4']), op('epub', ['txt'], 'convert:epub', ['textEncoding']), op('txt', ['docx', 'xlsx', 'xlsm', 'zip', 'json', 'yaml', 'yml', 'xml', 'log', 'markdown']), op('vtt', ['srt']), op('json', ['txt'])] }
 const event = (dataset, value) => ({ currentTarget: { dataset }, detail: { value } })
 const file = (name, size = 100) => ({ name, path: `/test/${name}`, size })
 function setup() {
@@ -19,7 +19,7 @@ function setup() {
   const calls = { toasts: [], created: [], fileData: {} }
   const api = { capabilities: async () => capabilities, listJobs: async () => [], createJob: async (...args) => { calls.created.push(args); return { id: 'new' } } }
   const wx = { pageScrollTo() {}, showToast: options => calls.toasts.push(options.title), showActionSheet: options => { calls.sheet = options }, chooseMessageFile: options => { calls.message = options }, chooseMedia: options => { calls.media = options }, getFileSystemManager: () => ({ readFile: options => options.success({ data: (calls.fileData[options.filePath] || new Uint8Array()).buffer }) }) }
-  vm.runInNewContext(code, { MotionPage: config => { page = config }, LOCAL_CONVERSION_TEST: true, WX_DOWNLOAD_MAX_BYTES: 200_000_000, WX_SAVED_FILE_MAX_BYTES: 100_000_000, conversionApi: api, wx, setInterval, clearInterval, Error, console })
+  vm.runInNewContext(code, { MotionPage: config => { page = config }, LOCAL_CONVERSION_TEST: true, WX_DOWNLOAD_MAX_BYTES: 200_000_000, WX_SAVED_FILE_MAX_BYTES: 100_000_000, conversionApi: api, reportToolEvent() {}, wx, setInterval, clearInterval, Error, console })
   page.setData = values => Object.assign(page.data, values)
   page.setData({ capabilities })
   page.uploadOne = async selected => selected.name
@@ -238,6 +238,13 @@ test('settings are shown only when the selected operation accepts them', () => {
   assert.equal(page.data.showTextEncoding, false)
   page.chooseOperation(event({ id: 'convert:epub' }))
   assert.equal(page.data.showTextEncoding, true)
+})
+test('MOV codec picker omits AV1 while MP4 keeps it', () => {
+  const { page } = setup()
+  page.appendFiles([file('clip.webm')]); page.chooseOperation(event({ id: 'convert:mov' }))
+  assert.equal(page.data.codecOptions.length, 2)
+  page.clearFiles(); page.appendFiles([file('clip.mov')]); page.chooseOperation(event({ id: 'convert:mp4' }))
+  assert.equal(page.data.codecOptions.length, 3)
 })
 test('PDF group validation and options survive submission; unavailable encryption is hidden', async () => {
   const { page, calls } = setup()

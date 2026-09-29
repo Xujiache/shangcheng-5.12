@@ -39,6 +39,7 @@
 | 旧表格 ET / ETT（b801ba9） | 两份含双工作表与公式的样本，共 12/12 组质量检查及鉴权任务通过 | `e2e/artifacts/run-20260929T113044Z-1823277/` |
 | 旧演示 DPS / DPT（b801ba9） | 两份各 6 组：10 项通过、2 项 PPTX 文本换行失败；12 个鉴权任务成功 | `e2e/artifacts/run-20260929T115907Z-1868559/`；[版式诊断](legacy-slide-diagnostic.md) |
 | OFD 与 AI（b801ba9） | OFD 三份各转 PDF，共 3/3；AI 一份转 16 项，共 16/16，均通过质量检查与鉴权任务 | `e2e/artifacts/run-20260929T120059Z-1873519/`、`run-20260929T120443Z-1879123/` |
+| 原版可见选项（70a630e） | 21 项质量断言中 20 通过；23 个鉴权任务中 22 通过。唯一失败 AV1→MOV 被即时拒绝，没有再阻塞后续任务 | `e2e/artifacts/run-20260929T123959Z-1932719/`；[选项明细](options-coverage-audit.md) |
 | 大文件 | 100.9 MiB WAV 真实上传、MP3 转换、下载、600 秒时长与音频采样、清理通过 | `e2e/artifacts/run-20260928T213157Z-574016/` |
 
 本机日志默认位于 `.quality/linux-windows-parity/`；服务器证据路径相对于 `/root/deployment-verification/linux-windows-parity/`。不同修订、不同测试范围的结果分别保存，不能把历史 Mac 的 954/1174 或旧 PDF 检查结果加入当前通过数。其他已执行的文档、表格、演示、文本、音视频、压缩、PSD 和选项批次原始日志保存在 `e2e/artifacts/`；完整矩阵仍需汇总逐项质量及 Windows 对照。
