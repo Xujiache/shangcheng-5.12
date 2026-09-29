@@ -404,18 +404,38 @@ async function verifyBaseline(convert) {
           '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
         stage = 'quality'
         await writeFile(backendPath, backend.bytes)
-        if (target === 'txt' || target === 'md') {
-          const result = backend.bytes.toString('utf8')
-          if (!result.includes('量窗助手 12345') || result !== (await readFile(directPath, 'utf8')))
-            throw new Error(`${inputExtension} to ${target} OCR differs from original`)
-        } else if (target === 'docx') {
+        if (['txt', 'md', 'docx'].includes(target)) {
           const xml = (file) => {
             execFileSync('unzip', ['-tqq', file])
             return execFileSync('unzip', ['-p', file, 'word/document.xml'], { encoding: 'utf8' })
               .replace(/<[^>]+>/g, '')
           }
-          if (!xml(backendPath).includes('量窗助手 12345') || xml(backendPath) !== xml(directPath))
-            throw new Error(`${inputExtension} to DOCX OCR differs from original`)
+          const text = target === 'docx'
+            ? { backend: xml(backendPath), direct: xml(directPath) }
+            : { backend: backend.bytes.toString('utf8'), direct: await readFile(directPath, 'utf8') }
+          const expected = '量窗助手 12345'
+          const inspection = { input: inputExtension, output: target, expected, text,
+            sourceTextRetained: text.backend.includes(expected),
+            directTextRetained: text.direct.includes(expected),
+            directBackendEqual: text.backend === text.direct }
+          if (process.env.CONVERSION_PAIR_EVIDENCE) {
+            const directory = process.env.CONVERSION_PAIR_EVIDENCE.replace(/\.jsonl$/, '') + '-ocr'
+            await mkdir(directory, { recursive: true })
+            for (const [label, file] of [['backend', backendPath], ['direct', directPath]]) {
+              const bytes = await readFile(file)
+              const name = `${inputExtension}-${label}.${target}`
+              await writeFile(join(directory, name), bytes, { flag: 'wx' })
+              inspection[label] = { file: name, bytes: bytes.length,
+                sha256: createHash('sha256').update(bytes).digest('hex') }
+            }
+            await writeFile(join(directory, `${inputExtension}-${target}.json`),
+              JSON.stringify(inspection, null, 2) + '\n', { flag: 'wx' })
+          }
+          if (!inspection.sourceTextRetained)
+            throw new Error(`${inputExtension} to ${target} OCR lost visible source text; ` +
+              `direct/backend equal=${inspection.directBackendEqual}`)
+          if (!inspection.directBackendEqual)
+            throw new Error(`${inputExtension} to ${target} OCR differs between direct and backend`)
         } else {
           if (target === 'pdf') {
             if ((await PDFDocument.load(backend.bytes)).getPageCount() !== 1)
