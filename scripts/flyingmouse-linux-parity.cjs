@@ -42,6 +42,7 @@ const batches = {
   original: { CONVERSION_OPTIONS: '1', CONVERSION_CONTROL_FLOW: '1' },
   large: { CONVERSION_LARGE_FILE: '1' },
   avs: { CONVERSION_AVS: '1' },
+  evc: { CONVERSION_EVC: '1' },
 }
 if (batch !== 'pdf' && !batches[batch]) throw new Error(`Unsupported batch: ${batch}`)
 if (process.platform !== 'linux' && !args.includes('--check'))
@@ -217,6 +218,8 @@ for (const item of [
   ...Object.values(fixtureMatrix.inputExtensions).map((entry) => entry.candidate).filter(Boolean),
   ...fixtureMatrix.legacyReplayFixtures.files, ...(fixtureMatrix.ocrCandidates || []),
 ]) if (!fixtureIndex[item.sha256]) fixtureIndex[item.sha256] = { resourceId: item.resourceId }
+for (const item of require('../docs/linux-windows-parity/evc-fixtures.json'))
+  fixtureIndex[item.sha256] = { resourceId: `evc/${item.name}` }
 writeFileSync(fixtureIndexPath, JSON.stringify(fixtureIndex) + '\n')
 mkdirSync(inputArtifacts, { mode: 0o700 })
 const child = spawnSync(process.execPath, [

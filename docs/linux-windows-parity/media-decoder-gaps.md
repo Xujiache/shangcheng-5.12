@@ -8,8 +8,9 @@ FFmpeg 8.1.1 maps EVC to MP4/MOV (`evc1`); the original engine accepts MP4 input
 
 | Evidence | Value |
 | --- | --- |
-| Official input | [FFmpeg FATE `evc/akiyo_cif.evc`](https://fate-suite.ffmpeg.org/evc/akiyo_cif.evc), also used by FFmpeg 8.1.1 `tests/fate/lavf-container.mak:99` |
+| Official input | [FFmpeg FATE `evc/akiyo_cif.evc`](https://fate-suite.ffmpeg.org/evc/akiyo_cif.evc), also used by FFmpeg 8.1.1 `tests/fate/lavf-container.mak:99`; hash-locked test input is in [`evc-fixtures.json`](evc-fixtures.json) |
 | Input SHA-256 | `f3ef572163a9354415ab380063137c0907df9cd097c22a7b6be65b351d3c6405` (34,071 bytes) |
+| Sample licensing | The FATE file and directory listing state no license; only URL, hash, and test commands are committed, not sample bytes. |
 | Remux command | `ffmpeg -f evc -i akiyo_cif.evc -c:v copy akiyo_cif.mp4` (local FFmpeg 9.0.1) |
 | MP4 SHA-256 | `0f8cb4ed2713186cbc2081cca5d95503cefbd5214bdf899b421ed344d635b83f` (37,390 bytes) |
 | Container proof | `ffprobe`: `mov,mp4,m4a,3gp,3g2,mj2`; video `evc`, tag `evc1`, Baseline, 352×288, 300 frames, 12 s |

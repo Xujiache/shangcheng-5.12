@@ -670,7 +670,9 @@ async function main() {
     await verifyBaseline(convert)
 
   if (process.env.CONVERSION_AVS)
-    await require('./verify-avs-conversion.cjs')(convert, engineSource, originalCliEnv())
+    await require('./verify-media-codec-conversion.cjs')(convert, engineSource, originalCliEnv())
+  if (process.env.CONVERSION_EVC)
+    await require('./verify-media-codec-conversion.cjs')(convert, engineSource, originalCliEnv(), 'evc')
 
   if (process.env.CONVERSION_PDF_PARITY_CASES) {
     const { assertPdfParityQuality } = require('../../../scripts/flyingmouse-pdf-parity-quality.cjs')

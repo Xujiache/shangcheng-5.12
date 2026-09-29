@@ -1,0 +1,15 @@
+[
+  {
+    "name": "akiyo_cif.mp4",
+    "codec": "evc",
+    "sha256": "0f8cb4ed2713186cbc2081cca5d95503cefbd5214bdf899b421ed344d635b83f",
+    "dimensions": "352x288",
+    "durationSeconds": 12,
+    "frames": 300,
+    "hasAudio": false,
+    "sourceUrl": "https://fate-suite.ffmpeg.org/evc/akiyo_cif.evc",
+    "sourceLicense": "No license stated in the FFmpeg FATE file or directory listing; use as an external test fixture only, without committing its bytes",
+    "sourceSha256": "f3ef572163a9354415ab380063137c0907df9cd097c22a7b6be65b351d3c6405",
+    "remux": "ffmpeg -f evc -i akiyo_cif.evc -c:v copy akiyo_cif.mp4"
+  }
+]

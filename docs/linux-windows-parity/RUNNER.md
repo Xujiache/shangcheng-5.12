@@ -79,7 +79,11 @@ parity_batch psdOcr
 parity_batch options
 parity_batch original
 parity_batch large
+parity_batch avs
+parity_batch evc
 ```
+
+`avs` reads hash-locked MKV samples from `/parity-fixtures/avs/`. `evc` reads the hash-locked genuine EVC-in-MP4 sample from `/parity-fixtures/evc/akiyo_cif.mp4`; its [fixture manifest](evc-fixtures.json) records the official FFmpeg FATE raw stream, both SHA-256 values, and the copy-only remux command. These batches test authenticated backend and original CLI conversion separately, then compare source dimensions and duration, sampled decoded frames, output streams, and audio presence. The EVC sample has no audio, so audio-output pairs are outside this case. Each target records pass or fail independently. See [decoder gap evidence](media-decoder-gaps.md) for the pre-fix negative result.
 
 Run PDF with the same command prefix in [`e2e-runbook.md`](e2e-runbook.md) using `--memory 8g`, `--batch pdf`, and `/parity-artifacts/pdf.jsonl`. Each command is independent; continue after a failed batch using a fresh evidence filename. Input lists can be narrowed with the corresponding `CONVERSION_*_INPUTS` environment variable passed using `-e` before `--entrypoint`.
 
