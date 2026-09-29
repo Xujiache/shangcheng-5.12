@@ -325,6 +325,7 @@ async function verifyBaseline(convert) {
     '<rect x="45" y="185" width="220" height="80" fill="#008866"/></svg>'
   const imagePng = await sharp(Buffer.from(imageSvg)).png().toBuffer()
   const imageWork = await mkdtemp(join(tmpdir(), 'ledger-image-pairs-'))
+  const imageFailures = []
   try {
     const source = engineSource
     const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
@@ -393,11 +394,15 @@ async function verifyBaseline(convert) {
       const targets = catalog.operations.filter((operation) => operation.kind === 'convert' &&
         operation.inputExtensions.includes(inputExtension)).map((operation) => operation.targetExtension)
       for (const target of targets) {
+        let stage = 'backend'
+        try {
         const backend = await convert(`convert:${target}`, [[`sample.${inputExtension}`, imageFixture]])
         const directPath = join(imageWork, `direct-${inputExtension}.${target}`)
         const backendPath = join(imageWork, `backend-${inputExtension}.${target}`)
+        stage = 'original'
         execFileSync(process.execPath, [join(source, 'cli.js'), 'convert', input,
           '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        stage = 'quality'
         await writeFile(backendPath, backend.bytes)
         if (target === 'txt' || target === 'md') {
           const result = backend.bytes.toString('utf8')
@@ -442,8 +447,16 @@ async function verifyBaseline(convert) {
           '--record', inputExtension, target, createHash('sha256').update(imageFixture).digest('hex'),
           'valid Chinese image: direct original and authenticated backend; OCR or decoded pixels matched'])
         console.log(`PASS ${inputExtension}:${target}, output matches direct original`)
+        } catch (error) {
+          const message = `${inputExtension}:${target}: ${error.message}`
+          imageFailures.push(message)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--fail', inputExtension, target, stage, createHash('sha256').update(imageFixture).digest('hex'), message])
+          console.error(`FAIL ${message}`)
+        }
       }
     }
+    if (imageFailures.length) throw new Error(`${imageFailures.length} image pairs failed; see pair evidence`)
   } finally { await rm(imageWork, { recursive: true, force: true }) }
   }
 
