@@ -65,6 +65,8 @@ async function main() {
   if (!sourceDir) throw new Error('FLYINGMOUSE_SOURCE_DIR is required')
   const request = JSON.parse(await readFile(process.argv[2], 'utf8')) as Request
   if (!Array.isArray(request.files) || !request.files.length) throw new Error('No input files')
+  if (request.operationId === 'convert:mov' && request.options?.videoCodec === 'av1')
+    throw new Error('AV1 无法写入 MOV 容器，请改用 MP4 或 MKV')
   const { startServer } = require(join(sourceDir, 'server.js'))
   const { saveConvertedResult } = require(join(sourceDir, 'save-converted-result.js'))
   const started = await startServer(0)
