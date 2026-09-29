@@ -885,21 +885,21 @@ async function main() {
       await writeFile(input, fixture)
       const ffmpeg = originalCliEnv().FLYINGMOUSE_FFMPEG_PATH
       const ffprobe = join(dirname(ffmpeg), 'ffprobe')
-      const decoded = (file, format) => {
+      const { hashRgbOutput } = require('../../../scripts/flyingmouse-pixel-check.cjs')
+      const decoded = async (file, format) => {
         const info = JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-select_streams', 'v',
           '-show_entries', 'stream=width,height:format=duration', '-of', 'json', file],
         { encoding: 'utf8' }))
         // OpenJPEG decodes valid JP2 files that FFmpeg's native decoder rejects.
+        const stream = info.streams.find((item) => item.width > 0 && item.height > 0)
+        if (!stream) throw new Error(`${file}: missing image dimensions`)
+        const expectedBytes = stream.width * stream.height * 3
         const pixels = format === 'jp2'
-          ? execFileSync('/opt/pdf2docx-venv/bin/python', ['-c',
+          ? await hashRgbOutput('/opt/pdf2docx-venv/bin/python', ['-c',
             'from PIL import Image; import sys; sys.stdout.buffer.write(Image.open(sys.argv[1]).convert("RGB").tobytes())',
-            file], { maxBuffer: 256 * 1024 ** 2 })
-          : execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-frames:v', '1',
-            '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'],
-          { maxBuffer: 256 * 1024 ** 2 })
-        const stream = info.streams.find((item) => pixels.length === item.width * item.height * 3)
-        if (!stream || pixels.equals(Buffer.alloc(pixels.length)))
-          throw new Error(`${file}: image is blank or truncated`)
+            file], expectedBytes)
+          : await hashRgbOutput(ffmpeg, ['-v', 'error', '-i', file, '-frames:v', '1',
+            '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'], expectedBytes)
         return { info, stream, pixels }
       }
       for (const target of targets) {
@@ -947,11 +947,11 @@ async function main() {
             execFileSync(originalCliEnv().FLYINGMOUSE_PDFTOPPM_PATH,
               ['-f', '1', '-singlefile', '-r', '72', '-png', file, join(work, `pdf-${name}`)])
         }
-        const first = decoded(target === 'pdf' ? join(work, 'pdf-backend.png') : backendPath, target)
-        const second = decoded(target === 'pdf' ? join(work, 'pdf-direct.png') : direct, target)
+        const first = await decoded(target === 'pdf' ? join(work, 'pdf-backend.png') : backendPath, target)
+        const second = await decoded(target === 'pdf' ? join(work, 'pdf-direct.png') : direct, target)
         if (first.stream.width !== second.stream.width ||
           first.stream.height !== second.stream.height ||
-          !first.pixels.equals(second.pixels))
+          first.pixels.sha256 !== second.pixels.sha256)
           throw new Error(`${extension} to ${target}: decoded pixels differ from original`)
         if (['mp4', 'webm'].includes(target) &&
           (Math.abs(Number(first.info.format.duration) - 3) > 0.2 ||
