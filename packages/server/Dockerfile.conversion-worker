@@ -52,19 +52,18 @@ FROM debian:bookworm-slim AS xevd-build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl build-essential cmake \
  && rm -rf /var/lib/apt/lists/*
-RUN curl --retry 3 -fsSL https://github.com/mpeg5/xevd/archive/refs/tags/v0.4.1.tar.gz -o /tmp/xevd.tar.gz \
- && echo '76a72ddce00642f75f5896e11ee960293640af2e8a41f9e641e1b9310348e19a  /tmp/xevd.tar.gz' | sha256sum -c - \
+RUN curl --retry 3 -fsSL https://github.com/mpeg5/xevd/archive/refs/tags/v0.7.0.tar.gz -o /tmp/xevd.tar.gz \
+ && echo 'febfdb532819bbf36b1b04e74d3ef328ad0f0f2db6224ddb7640fce6bd0014f4  /tmp/xevd.tar.gz' | sha256sum -c - \
  && tar -xzf /tmp/xevd.tar.gz -C /tmp \
- && printf 'v0.4.1\n' > /tmp/xevd-0.4.1/version.txt \
- && cmake -S /tmp/xevd-0.4.1 -B /tmp/xevd-build -DSET_PROF=MAIN \
-    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/xevd-0.4.1 \
+ && cmake -S /tmp/xevd-0.7.0 -B /tmp/xevd-build -DSET_PROF=MAIN \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/xevd-0.7.0 \
  && cmake --build /tmp/xevd-build -j2 \
  && cmake --install /tmp/xevd-build
 
 FROM debian:bookworm-slim AS ffmpeg-build
 COPY --from=davs2-build /opt/davs2-1.7 /opt/davs2-1.7
 COPY --from=uavs3d-build /opt/uavs3d-1.2 /opt/uavs3d-1.2
-COPY --from=xevd-build /opt/xevd-0.4.1 /opt/xevd-0.4.1
+COPY --from=xevd-build /opt/xevd-0.7.0 /opt/xevd-0.7.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl build-essential cmake pkg-config yasm nasm \
     libx264-dev libx265-dev libsvtav1-dev libvpx-dev libopus-dev libmp3lame-dev \
@@ -86,7 +85,7 @@ RUN curl --retry 3 -fsSL https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz -o /tmp
  && echo 'b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3  /tmp/ffmpeg.tar.xz' | sha256sum -c - \
  && tar -xf /tmp/ffmpeg.tar.xz -C /tmp \
  && cd /tmp/ffmpeg-8.1.1 \
- && PKG_CONFIG_PATH=/opt/xevd-0.4.1/lib/pkgconfig:/opt/davs2-1.7/lib/pkgconfig:/opt/uavs3d-1.2/lib/pkgconfig:/opt/svt-av1-1.4.1/lib/pkgconfig \
+ && PKG_CONFIG_PATH=/opt/xevd-0.7.0/lib/pkgconfig:/opt/davs2-1.7/lib/pkgconfig:/opt/uavs3d-1.2/lib/pkgconfig:/opt/svt-av1-1.4.1/lib/pkgconfig \
     ./configure --prefix=/opt/ffmpeg-8.1.1 --enable-shared --disable-static \
     --enable-gpl --enable-version3 --enable-libx264 --enable-libx265 \
     --enable-libsvtav1 --enable-libvpx --enable-libopus --enable-libmp3lame \
@@ -250,7 +249,7 @@ ENV NODE_ENV=production FLYINGMOUSE_SOURCE_DIR=/app/flyingmouse \
     FLYINGMOUSE_LIBREOFFICE_PATH=/opt/libreoffice26.2/program/soffice \
     FLYINGMOUSE_TESSDATA_PATH=/opt/flyingmouse-tessdata \
     FLYINGMOUSE_QPDF_PATH=/usr/local/bin/jiujiu-qpdf \
-    LD_LIBRARY_PATH=/opt/ffmpeg-8.1.1/lib:/opt/davs2-1.7/lib:/opt/uavs3d-1.2/lib:/opt/xevd-0.4.1/lib:/opt/svt-av1-1.4.1/lib:/opt/poppler-26.05.0/lib:/opt/poppler-deps/lib \
+    LD_LIBRARY_PATH=/opt/ffmpeg-8.1.1/lib:/opt/davs2-1.7/lib:/opt/uavs3d-1.2/lib:/opt/xevd-0.7.0/lib:/opt/svt-av1-1.4.1/lib:/opt/poppler-26.05.0/lib:/opt/poppler-deps/lib \
     FONTCONFIG_PATH=/opt/poppler-deps/etc/fonts \
     HOME=/tmp XDG_CONFIG_HOME=/tmp
 WORKDIR /app/server
@@ -258,7 +257,7 @@ COPY --from=libraw-build /tmp/LibRaw-0.21.5/bin/dcraw_emu /usr/local/bin/dcraw_e
 COPY --from=ffmpeg-build /opt/ffmpeg-8.1.1 /opt/ffmpeg-8.1.1
 COPY --from=davs2-build /opt/davs2-1.7 /opt/davs2-1.7
 COPY --from=uavs3d-build /opt/uavs3d-1.2 /opt/uavs3d-1.2
-COPY --from=xevd-build /opt/xevd-0.4.1 /opt/xevd-0.4.1
+COPY --from=xevd-build /opt/xevd-0.7.0 /opt/xevd-0.7.0
 COPY --from=ffmpeg-build /opt/svt-av1-1.4.1 /opt/svt-av1-1.4.1
 COPY --from=poppler-build /opt/poppler-26.05.0 /opt/poppler-26.05.0
 COPY --from=poppler-build /opt/poppler-deps /opt/poppler-deps
