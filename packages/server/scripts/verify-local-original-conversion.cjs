@@ -974,6 +974,24 @@ async function main() {
     const work = await mkdtemp(join(tmpdir(), 'ledger-conversion-options-'))
     try {
       const originalEnv = originalCliEnv()
+      const optionFailures = []
+      const optionQuality = async (operationId, options, assertions, verify) => {
+        let status = 'pass', details
+        try { details = await verify() } catch (error) {
+          status = 'fail'
+          details = { error: String(error.message || error) }
+        }
+        if (process.env.CONVERSION_OPERATION_EVIDENCE)
+          await appendFile(process.env.CONVERSION_OPERATION_EVIDENCE,
+            JSON.stringify({ operationId, variant: 'visible-option', options, status, assertions,
+              ...details, at: new Date().toISOString() }) + '\n')
+        if (status === 'fail') {
+          optionFailures.push(`${operationId} ${JSON.stringify(options)}: ${details.error}`)
+          console.error(`FAIL ${optionFailures.at(-1)}`)
+        }
+        return status === 'pass'
+      }
+      const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex')
       const directHttp = async (name, bytes, target, options) => {
         const child = spawn(process.execPath, ['-e',
           'require(process.argv[1] + "/server.js").startServer(0).then(({server,url}) => {' +
@@ -1041,31 +1059,37 @@ async function main() {
 
       const phrase = '量窗助手编码验收 12345'
       for (const [option, encoding] of [
+        ['auto', 'UTF-8'], ['utf-8', 'UTF-8'],
         ['gb18030', 'GB18030'], ['utf-16le', 'UTF-16LE'], ['utf-16be', 'UTF-16BE'],
       ]) {
-        const fixture = execFileSync('iconv', ['-f', 'UTF-8', '-t', encoding],
-          { input: Buffer.from(`${phrase}\n`) })
-        const input = join(work, `${option}.txt`)
-        const output = join(work, `${option}.epub`)
-        await writeFile(input, fixture)
-        const result = await convert('convert:epub', [[`${option}.txt`, fixture]],
-          { textEncoding: option })
-        execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
-          '--to', 'epub', '--text-encoding', option, '--output', output, '--json'],
-        { env: originalEnv })
-        const extract = (file) => {
-          const entry = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
-            .split('\n').find((name) => name.endsWith('.xhtml'))
-          if (!entry) throw new Error(`${option}: EPUB has no XHTML`)
-          return execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' })
-            .replace(/<[^>]+>/g, '').replace(/\s+/g, '')
-        }
-        const backendEpub = join(work, `${option}-backend.epub`)
-        await writeFile(backendEpub, result.bytes)
-        if (!extract(backendEpub).includes(phrase.replace(/\s+/g, '')) ||
-          extract(backendEpub) !== extract(output))
-          throw new Error(`${option}: EPUB text differs from original or lost Chinese characters`)
-        console.log(`PASS textEncoding=${option}, original and backend EPUB retain Chinese text`)
+        const passed = await optionQuality('convert:epub', { textEncoding: option },
+          'backend and original EPUB XHTML contain exact Chinese phrase and equal extracted text', async () => {
+            const fixture = execFileSync('iconv', ['-f', 'UTF-8', '-t', encoding],
+              { input: Buffer.from(`${phrase}\n`) })
+            const input = join(work, `${option}.txt`)
+            const output = join(work, `${option}.epub`)
+            await writeFile(input, fixture)
+            const result = await convert('convert:epub', [[`${option}.txt`, fixture]],
+              { textEncoding: option })
+            execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
+              '--to', 'epub', '--text-encoding', option, '--output', output, '--json'],
+            { env: originalEnv })
+            const extract = (file) => {
+              const entry = execFileSync('unzip', ['-Z', '-1', file], { encoding: 'utf8' })
+                .split('\n').find((name) => name.endsWith('.xhtml'))
+              if (!entry) throw new Error(`${option}: EPUB has no XHTML`)
+              return execFileSync('unzip', ['-p', file, entry], { encoding: 'utf8' })
+                .replace(/<[^>]+>/g, '').replace(/\s+/g, '')
+            }
+            const backendEpub = join(work, `${option}-backend.epub`)
+            await writeFile(backendEpub, result.bytes)
+            if (!extract(backendEpub).includes(phrase.replace(/\s+/g, '')) ||
+              extract(backendEpub) !== extract(output))
+              throw new Error(`${option}: EPUB text differs from original or lost Chinese characters`)
+            return { inputSha256: sha256(fixture), backendSha256: sha256(result.bytes),
+              directSha256: sha256(await readFile(output)), extractedText: extract(backendEpub) }
+          })
+        if (passed) console.log(`PASS textEncoding=${option}, original and backend EPUB retain Chinese text`)
       }
 
       const ffmpeg = originalEnv.FLYINGMOUSE_FFMPEG_PATH
@@ -1074,31 +1098,39 @@ async function main() {
       execFileSync(ffmpeg, ['-v', 'error', '-f', 'lavfi', '-i',
         'testsrc2=size=128x96:rate=8:duration=2', '-c:v', 'libvpx-vp9', video])
       const videoBytes = await readFile(video)
-      for (const [option, codec] of [
-        ['h264', 'h264'], ['h265', 'hevc'], ['av1', 'av1'],
-      ]) {
-        const directPath = join(work, `${option}-direct.mp4`)
-        const backendPath = join(work, `${option}-backend.mp4`)
-        const result = await convert('convert:mp4', [['options.webm', videoBytes]],
-          { videoCodec: option })
-        await writeFile(backendPath, result.bytes)
-        execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', video,
-          '--to', 'mp4', '--video-codec', option, '--output', directPath, '--json'],
-        { env: originalEnv })
-        const probe = (file) => JSON.parse(execFileSync(ffprobe, ['-v', 'error',
-          '-show_entries', 'stream=codec_name,width,height:format=duration', '-of', 'json', file],
-        { encoding: 'utf8' }))
-        const first = probe(backendPath)
-        const second = probe(directPath)
-        const frames = (file) => execFileSync(ffmpeg, ['-v', 'error', '-i', file,
-          '-frames:v', '2', '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'])
-        if (first.streams[0]?.codec_name !== codec || second.streams[0]?.codec_name !== codec ||
-          first.streams[0].width !== 128 || first.streams[0].height !== 96 ||
-          Math.abs(Number(first.format.duration) - 2) > 0.2 ||
-          Math.abs(Number(first.format.duration) - Number(second.format.duration)) > 0.02 ||
-          !frames(backendPath).equals(frames(directPath)))
-          throw new Error(`videoCodec=${option}: codec, duration or frames differ from original`)
-        console.log(`PASS videoCodec=${option}, original and backend frames match`)
+      for (const target of ['mp4', 'mov', 'mkv']) {
+        for (const [option, codec] of [
+          ['h264', 'h264'], ['h265', 'hevc'], ['av1', 'av1'],
+        ]) {
+          const passed = await optionQuality(`convert:${target}`, { videoCodec: option },
+            'backend and original output have selected codec, 128x96 frames, two seconds and identical decoded frames',
+            async () => {
+              const directPath = join(work, `${option}-direct.${target}`)
+              const backendPath = join(work, `${option}-backend.${target}`)
+              const result = await convert(`convert:${target}`, [['options.webm', videoBytes]],
+                { videoCodec: option })
+              await writeFile(backendPath, result.bytes)
+              execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', video,
+                '--to', target, '--video-codec', option, '--output', directPath, '--json'],
+              { env: originalEnv })
+              const probe = (file) => JSON.parse(execFileSync(ffprobe, ['-v', 'error',
+                '-show_entries', 'stream=codec_name,width,height:format=duration', '-of', 'json', file],
+              { encoding: 'utf8' }))
+              const first = probe(backendPath)
+              const second = probe(directPath)
+              const frames = (file) => execFileSync(ffmpeg, ['-v', 'error', '-i', file,
+                '-frames:v', '2', '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'])
+              if (first.streams[0]?.codec_name !== codec || second.streams[0]?.codec_name !== codec ||
+                first.streams[0].width !== 128 || first.streams[0].height !== 96 ||
+                Math.abs(Number(first.format.duration) - 2) > 0.2 ||
+                Math.abs(Number(first.format.duration) - Number(second.format.duration)) > 0.02 ||
+                !frames(backendPath).equals(frames(directPath)))
+                throw new Error(`videoCodec=${option}: codec, duration or frames differ from original`)
+              return { inputSha256: sha256(videoBytes), backendSha256: sha256(result.bytes),
+                directSha256: sha256(await readFile(directPath)), codec }
+            })
+          if (passed) console.log(`PASS videoCodec=${option} target=${target}, original and backend frames match`)
+        }
       }
       const alphaPng = join(work, 'alpha.png')
       const alphaVideo = join(work, 'alpha.mov')
@@ -1110,28 +1142,40 @@ async function main() {
       execFileSync(ffmpeg, ['-v', 'error', '-loop', '1', '-i', alphaPng,
         '-t', '2', '-c:v', 'qtrle', '-pix_fmt', 'argb', alphaVideo])
       const alphaInput = await readFile(alphaVideo)
-      const background = '#0000ff'
-      const alphaBackend = await convert('convert:mp4', [['alpha.mov', alphaInput]],
-        { alphaBackground: background })
-      const alphaDirect = await directHttp('alpha.mov', alphaInput, 'mp4',
-        { alphaBackground: background })
-      const alphaBackendPath = join(work, 'alpha-backend.mp4')
-      const alphaDirectPath = join(work, 'alpha-direct.mp4')
-      await writeFile(alphaBackendPath, alphaBackend.bytes)
-      await writeFile(alphaDirectPath, alphaDirect)
       const frame = (file) => execFileSync(ffmpeg, ['-v', 'error', '-i', file,
         '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'])
-      const rendered = frame(alphaBackendPath)
-      const pixel = (x, y) => [...rendered.subarray((y * 64 + x) * 3,
-        (y * 64 + x) * 3 + 3)]
-      const corner = pixel(4, 4)
-      const center = pixel(32, 32)
-      if (rendered.length !== 64 * 64 * 3 || !rendered.equals(frame(alphaDirectPath)) ||
-        corner[2] < 170 || corner[0] > 80 || corner[1] > 80 ||
-        center[0] < 150 || center[1] > 90 || center[2] > 90)
-        throw new Error(`alphaBackground=${background}: colors or frames differ from original ` +
-          `corner=${corner} center=${center}`)
-      console.log(`PASS alphaBackground=${background}, blue transparent area and red foreground match original`)
+      for (const [background, color] of [
+        ['white', [255, 255, 255]], ['black', [0, 0, 0]],
+        ['0x00ff00', [0, 255, 0]], ['0xff00ff', [255, 0, 255]],
+        ['#0000ff', [0, 0, 255]],
+      ]) {
+        const passed = await optionQuality('convert:mp4', { alphaBackground: background },
+          'backend and original decoded frames match; transparent corner has selected color and center stays red',
+          async () => {
+            const alphaBackend = await convert('convert:mp4', [['alpha.mov', alphaInput]],
+              { alphaBackground: background })
+            const alphaDirect = await directHttp('alpha.mov', alphaInput, 'mp4',
+              { alphaBackground: background })
+            const alphaBackendPath = join(work, `alpha-${background}-backend.mp4`)
+            const alphaDirectPath = join(work, `alpha-${background}-direct.mp4`)
+            await writeFile(alphaBackendPath, alphaBackend.bytes)
+            await writeFile(alphaDirectPath, alphaDirect)
+            const rendered = frame(alphaBackendPath)
+            const pixel = (x, y) => [...rendered.subarray((y * 64 + x) * 3,
+              (y * 64 + x) * 3 + 3)]
+            const corner = pixel(4, 4)
+            const center = pixel(32, 32)
+            if (rendered.length !== 64 * 64 * 3 || !rendered.equals(frame(alphaDirectPath)) ||
+              corner.some((channel, index) => Math.abs(channel - color[index]) > 60) ||
+              center[0] < 150 || center[1] > 90 || center[2] > 90)
+              throw new Error(`alphaBackground=${background}: colors or frames differ from original ` +
+                `corner=${corner} center=${center}`)
+            return { inputSha256: sha256(alphaInput), backendSha256: sha256(alphaBackend.bytes),
+              directSha256: sha256(alphaDirect), corner, center }
+          })
+        if (passed) console.log(`PASS alphaBackground=${background}, transparent area and red foreground match original`)
+      }
+      if (optionFailures.length) throw new Error(`${optionFailures.length} visible conversion options failed`)
     } finally { await rm(work, { recursive: true, force: true }) }
   }
 
