@@ -27,10 +27,13 @@ Mount the audit directory read/write so the check can save JSON. The script veri
 ```sh
 docker run --rm --network none --read-only --user 0 --memory 1g --cpus 1 \
   -v /root/deployment-verification/linux-windows-parity/avs-codec-audit:/samples \
+  -v "$PWD":/parity-src:ro \
   --entrypoint node "$PARITY_WORKER_IMAGE" \
-  /samples/flyingmouse-avs-decode-check.cjs \
+  /parity-src/scripts/flyingmouse-avs-decode-check.cjs \
   --ffmpeg /opt/ffmpeg-8.1.1/bin/ffmpeg --samples /samples \
   --out /samples/candidate-decode-evidence.json
 ```
 
-Copy the checked-in `scripts/flyingmouse-avs-decode-check.cjs` to the audit directory before running. Compare output pixel hashes with Windows on the same samples and options when a Windows reference runner is available; a local successful decode alone is a capability check.
+Run from the checked-out repository so the script and hash-locked `avs-fixtures.json` are mounted together. Compare output pixel hashes with Windows on the same samples and options when a Windows reference runner is available; a local successful decode alone is a capability check.
+
+The `linux-parity-dbc7eac` isolated runtime decoded all three samples. The result is retained as `candidate-dbc7eac-decode-evidence.json` in the audit directory. Its authenticated `avs` batch additionally converts each complete source to MP4, MOV, WebM and GIF, checks source duration and dimensions (including the original GIF scaling rule), and compares decoded frames/audio against the direct original CLI. Stage test inputs under the private fixture root's `avs/` directory. These outputs still require the Windows comparison.

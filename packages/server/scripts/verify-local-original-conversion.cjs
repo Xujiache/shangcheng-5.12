@@ -649,6 +649,9 @@ async function main() {
   if (!process.env.CONVERSION_SKIP_BASELINE || process.env.CONVERSION_BASELINE_SECTION)
     await verifyBaseline(convert)
 
+  if (process.env.CONVERSION_AVS)
+    await require('./verify-avs-conversion.cjs')(convert, engineSource, originalCliEnv())
+
   if (process.env.CONVERSION_PDF_PARITY_CASES) {
     const { assertPdfParityQuality } = require('../../../scripts/flyingmouse-pdf-parity-quality.cjs')
     const { REFERENCE_HEADING, validatePdfOfficeDocx } =

@@ -76,7 +76,7 @@ run_case() {
   fi
   local evidence="/parity-artifacts/$label.jsonl" log="$run_dir/$label.log"
   local extra=()
-  case "$batch" in raw|rawOcr|vector|vectorOcr|psd|psdOcr|image)
+  case "$batch" in raw|rawOcr|vector|vectorOcr|psd|psdOcr|image|avs)
     extra=(-e CONVERSION_TEST_JOB_TIMEOUT_SECONDS=720) ;;
   esac
   if docker run --rm --network host --memory 8g --cpus 2 --pids-limit 512 \
@@ -101,7 +101,7 @@ run_case() {
 }
 
 if [[ "$phase" == core || "$phase" == all ]]; then
-  for batch in pdf baseline doc sheet xlsm presentation pdfContent text audio video subtitle image arch options original psd psdOcr large; do
+  for batch in pdf baseline doc sheet xlsm presentation pdfContent text audio video subtitle image arch options original psd psdOcr large avs; do
     run_case "$batch" "$batch"
   done
 fi

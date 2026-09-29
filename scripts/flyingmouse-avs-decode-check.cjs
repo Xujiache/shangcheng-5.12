@@ -7,11 +7,7 @@ const { readFileSync, writeFileSync } = require('node:fs');
 const { resolve, join } = require('node:path');
 const { spawnSync } = require('node:child_process');
 
-const samples = [
-  { name: 'parity-test1-avs2.mkv', codec: 'avs2', sha256: 'fcb1429017508937b257843e14762521b515616e2f2ff4b83ebf30afcd9f7ed2', dimensions: '854x480' },
-  { name: 'parity-test5-avs3.mkv', codec: 'avs3', sha256: '174af739da3b2d7e0df0a72ff60e0b1e72e58243776c780e332261a485e0713a', dimensions: '1024x576' },
-  { name: 'parity-avs3-10bit.mkv', codec: 'avs3', sha256: '6539a5db45966add6466704ec13a029998ecd1835c50dad8e90952cdc01ea16e', dimensions: '640x360' },
-];
+const samples = require('../docs/linux-windows-parity/avs-fixtures.json');
 
 function option(name, fallback) {
   const index = process.argv.indexOf(name);

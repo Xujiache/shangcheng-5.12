@@ -41,6 +41,7 @@ const batches = {
   options: { CONVERSION_OPTIONS: '1' },
   original: { CONVERSION_OPTIONS: '1', CONVERSION_CONTROL_FLOW: '1' },
   large: { CONVERSION_LARGE_FILE: '1' },
+  avs: { CONVERSION_AVS: '1' },
 }
 if (batch !== 'pdf' && !batches[batch]) throw new Error(`Unsupported batch: ${batch}`)
 if (process.platform !== 'linux' && !args.includes('--check'))
