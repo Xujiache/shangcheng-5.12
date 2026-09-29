@@ -55,6 +55,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl --retry 3 -fsSL https://github.com/mpeg5/xevd/archive/refs/tags/v0.4.1.tar.gz -o /tmp/xevd.tar.gz \
  && echo '76a72ddce00642f75f5896e11ee960293640af2e8a41f9e641e1b9310348e19a  /tmp/xevd.tar.gz' | sha256sum -c - \
  && tar -xzf /tmp/xevd.tar.gz -C /tmp \
+ && printf 'v0.4.1\n' > /tmp/xevd-0.4.1/version.txt \
  && cmake -S /tmp/xevd-0.4.1 -B /tmp/xevd-build -DSET_PROF=MAIN \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/xevd-0.4.1 \
  && cmake --build /tmp/xevd-build -j2 \
