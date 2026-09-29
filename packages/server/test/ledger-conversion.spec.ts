@@ -44,7 +44,7 @@ describe('ledger conversion gate', () => {
     expect(video?.optionInputExtensions?.videoCodec).toContain('mov')
     expect(video?.optionInputExtensions?.alphaBackground).not.toContain('mp3')
     expect(video?.optionInputExtensions?.alphaBackground).toContain('mov')
-    expect(findConversionOperation('images-to-pdf', ['png', 'jpeg'])).toBeTruthy()
+    expect(findConversionOperation('images-to-pdf', ['png', 'jpeg'])?.options).toContain('blanks')
     expect(findConversionOperation('merge-pdfs', ['pdf', 'pdf'])).toBeTruthy()
     expect(findConversionOperation('convert:png', ['exe'])).toBeNull()
   })
@@ -261,6 +261,28 @@ describe('ledger conversion gate', () => {
       operationId: 'convert:pdf', uploadIds: ['a'], options: { splitMode: 'page' },
     })).rejects.toThrow('PDF 拆分选项不正确')
     expect(prisma.$transaction).not.toHaveBeenCalled()
+    await instance.onModuleDestroy()
+  })
+
+  test('validates repeated blank page positions against image order', async () => {
+    const prisma = {
+      ledgerConversionUpload: { findMany: jest.fn().mockResolvedValue([
+        { id: 'a', extension: 'png', totalBytes: 12n },
+        { id: 'b', extension: 'jpeg', totalBytes: 12n },
+      ]) },
+      $transaction: jest.fn().mockRejectedValue(new Error('validation passed')),
+    }
+    const instance = service(prisma)
+    for (const blanks of ['3', '-1', '1.5', '1,,2', 'abc', '1,']) {
+      await expect(instance.createJob('u1', {
+        operationId: 'images-to-pdf', uploadIds: ['a', 'b'], options: { blanks },
+      })).rejects.toThrow('空白页位置不正确')
+    }
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    await expect(instance.createJob('u1', {
+      operationId: 'images-to-pdf', uploadIds: ['a', 'b'], options: { blanks: '0,1,1,2' },
+    })).rejects.toThrow('validation passed')
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1)
     await instance.onModuleDestroy()
   })
 

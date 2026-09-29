@@ -1,6 +1,6 @@
 {
   "sourceRevision": "a7b9b15d32db80cecedae00e89289088656fb1ae",
-  "source": "config.js + utils.js:targetsForExt (all original engines present)",
+  "source": "config.js + utils.js:targetsForExt + server.js:blanks (all original engines present)",
   "pairCount": 1174,
   "operations": [
     {
@@ -1797,7 +1797,55 @@
       ],
       "targetExtension": "pdf",
       "kind": "images-to-pdf",
-      "options": []
+      "options": [
+        "blanks"
+      ],
+      "optionInputExtensions": {
+        "blanks": [
+          "3fr",
+          "ai",
+          "arw",
+          "avif",
+          "bmp",
+          "cr2",
+          "cr3",
+          "crw",
+          "dng",
+          "erf",
+          "fff",
+          "gif",
+          "heic",
+          "heif",
+          "ico",
+          "iiq",
+          "j2k",
+          "jfif",
+          "jp2",
+          "jpe",
+          "jpeg",
+          "jpg",
+          "jxl",
+          "kdc",
+          "mef",
+          "mrw",
+          "nef",
+          "orf",
+          "pef",
+          "png",
+          "ppm",
+          "psd",
+          "qoi",
+          "raf",
+          "rw2",
+          "srw",
+          "svg",
+          "tga",
+          "tif",
+          "tiff",
+          "webp",
+          "x3f"
+        ]
+      }
     },
     {
       "id": "merge-pdfs",

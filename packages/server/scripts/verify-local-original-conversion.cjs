@@ -1005,10 +1005,16 @@ async function main() {
         })
         try {
           const form = new FormData()
-          form.set('file', new Blob([bytes]), name)
-          form.set('targetFormat', target)
+          const route = target === 'images-to-pdf' ? '/api/convert-images-to-pdf' : '/api/convert'
+          if (target === 'images-to-pdf') {
+            for (const [fileName, fileBytes] of bytes)
+              form.append('files', new Blob([fileBytes]), fileName)
+          } else {
+            form.set('file', new Blob([bytes]), name)
+            form.set('targetFormat', target)
+          }
           for (const [key, value] of Object.entries(options)) form.set(key, value)
-          const response = await fetch(new URL('/api/convert', url), { method: 'POST', body: form })
+          const response = await fetch(new URL(route, url), { method: 'POST', body: form })
           const body = await response.json()
           if (!response.ok || !body.downloadUrl)
             throw new Error(`Original ${target} conversion: ${body.error || response.status}`)
@@ -1175,6 +1181,47 @@ async function main() {
           })
         if (passed) console.log(`PASS alphaBackground=${background}, transparent area and red foreground match original`)
       }
+      const images = await Promise.all([
+        { r: 230, g: 35, b: 35 }, { r: 30, g: 60, b: 220 },
+      ].map((background) => sharp({ create: { width: 80, height: 80,
+        channels: 3, background } }).png().toBuffer()))
+      const imageInputs = images.map((bytes, index) => [`page-${index + 1}.png`, bytes])
+      const blankPositions = '0,1,1,2'
+      const blanksPassed = await optionQuality('images-to-pdf', { blanks: blankPositions },
+        'six rendered pages retain red/blue input order and four white pages at requested repeated positions',
+        async () => {
+          const result = await convert('images-to-pdf', imageInputs, { blanks: blankPositions })
+          const direct = await directHttp('', imageInputs, 'images-to-pdf', { blanks: blankPositions })
+          const colors = async (bytes, label) => {
+            const file = join(work, `${label}.pdf`)
+            await writeFile(file, bytes)
+            const pdf = await PDFDocument.load(bytes)
+            if (pdf.getPageCount() !== 6) throw new Error(`${label}: expected six PDF pages`)
+            const centers = []
+            for (let page = 1; page <= 6; page++) {
+              const prefix = join(work, `${label}-${page}`)
+              execFileSync(originalEnv.FLYINGMOUSE_PDFTOPPM_PATH,
+                ['-f', String(page), '-l', String(page), '-scale-to', '64',
+                  '-singlefile', '-png', file, prefix])
+              const { data, info } = await sharp(`${prefix}.png`).removeAlpha().raw()
+                .toBuffer({ resolveWithObject: true })
+              const at = (Math.floor(info.height / 2) * info.width +
+                Math.floor(info.width / 2)) * info.channels
+              centers.push([...data.subarray(at, at + 3)])
+            }
+            return centers
+          }
+          const actual = await colors(result.bytes, 'blanks-backend')
+          const expected = [[255, 255, 255], [230, 35, 35], [255, 255, 255],
+            [255, 255, 255], [30, 60, 220], [255, 255, 255]]
+          if (JSON.stringify(actual) !== JSON.stringify(await colors(direct, 'blanks-direct')) ||
+            actual.some((color, index) =>
+              color.some((channel, component) => Math.abs(channel - expected[index][component]) > 35)))
+            throw new Error(`Inserted blank-page order or rendered colors differ: ${JSON.stringify(actual)}`)
+          return { inputSha256: imageInputs.map(([, bytes]) => sha256(bytes)),
+            backendSha256: sha256(result.bytes), directSha256: sha256(direct), centers: actual }
+        })
+      if (blanksPassed) console.log('PASS images-to-pdf blanks=0,1,1,2, original and backend page order match')
       if (optionFailures.length) throw new Error(`${optionFailures.length} visible conversion options failed`)
     } finally { await rm(work, { recursive: true, force: true }) }
   }

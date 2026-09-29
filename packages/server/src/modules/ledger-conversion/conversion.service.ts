@@ -362,7 +362,8 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       Array.isArray(options) ||
       Object.entries(options).some(
         ([key, value]) =>
-          !operation.options.includes(key) || typeof value !== 'string' || value.length > 80,
+          !operation.options.includes(key) || typeof value !== 'string' ||
+          value.length > (key === 'blanks' ? 24 * 1024 : 80),
       )
     ) {
       throw new BizException(BizCode.INVALID_PARAMS, '转换选项不正确')
@@ -392,6 +393,15 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     if (options.alphaBackground !== undefined &&
       !/^[A-Za-z]+$|^0x[0-9A-Fa-f]{6,8}$|^#[0-9A-Fa-f]{6,8}$/.test(String(options.alphaBackground)))
       throw new BizException(BizCode.INVALID_PARAMS, '透明背景色不正确')
+    const blanks = options.blanks === undefined ? undefined : String(options.blanks)
+    if (blanks !== undefined &&
+      (operation.id !== 'images-to-pdf' || !blanks.trim() ||
+        !blanks.split(',').every((item) => {
+          const position = Number(item.trim())
+          return item.trim() !== '' && Number.isInteger(position) &&
+            position >= 0 && position <= uploads.length
+        })))
+      throw new BizException(BizCode.INVALID_PARAMS, '空白页位置不正确')
     if (Object.keys(options).some((key) =>
       !uploads.every((upload) => operation.optionInputExtensions?.[key]?.includes(upload.extension))))
       throw new BizException(BizCode.INVALID_PARAMS, '该输入格式不支持所选选项')

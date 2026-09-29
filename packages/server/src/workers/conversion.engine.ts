@@ -73,7 +73,9 @@ async function main() {
     const results: any[] = []
     if (request.operationId === 'images-to-pdf' || request.operationId === 'merge-pdfs') {
       const route = request.operationId === 'images-to-pdf' ? 'convert-images-to-pdf' : 'merge-pdfs'
-      results.push(await runOne(new URL(`/api/${route}`, started.url), {}, request.files, 'files', started.url))
+      const fields: Record<string, string> = request.operationId === 'images-to-pdf' && request.options.blanks
+        ? { blanks: request.options.blanks } : {}
+      results.push(await runOne(new URL(`/api/${route}`, started.url), fields, request.files, 'files', started.url))
     } else {
       const target = /^convert:([a-z0-9]{2,8})$/.exec(request.operationId)?.[1]
       if (!target) throw new Error('Invalid conversion operation')

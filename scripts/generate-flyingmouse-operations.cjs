@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..')
 const source = path.join(root, 'vendor/flyingmouse-format/upstream-a7b9b15')
 const { categoryForExt, targetsForExt } = require(path.join(source, 'utils.js'))
 const config = require(path.join(source, 'config.js'))
+const supportsImageBlanks = /req\.body\?\.blanks/.test(fs.readFileSync(path.join(source, 'server.js'), 'utf8'))
 const inputs = [...new Set([
   ...config.imageInput, ...config.designInput, ...config.rawInput,
   ...config.textInput, ...config.documentInput, ...config.spreadsheetInput,
@@ -46,10 +47,13 @@ const operations = [...targets].sort(([a], [b]) => a.localeCompare(b)).map(([tar
     optionInputExtensions,
   }
 })
+const imagePdfInputs = [...new Set([...config.imageInput, ...config.designInput, ...config.rawInput])].sort()
 operations.push({
   id: 'images-to-pdf', label: '图片合成 PDF',
-  inputExtensions: [...new Set([...config.imageInput, ...config.designInput, ...config.rawInput])].sort(),
-  targetExtension: 'pdf', kind: 'images-to-pdf', options: [],
+  inputExtensions: imagePdfInputs,
+  targetExtension: 'pdf', kind: 'images-to-pdf',
+  options: supportsImageBlanks ? ['blanks'] : [],
+  optionInputExtensions: supportsImageBlanks ? { blanks: imagePdfInputs } : {},
 }, {
   id: 'merge-pdfs', label: '合并 PDF', inputExtensions: ['pdf'],
   targetExtension: 'pdf', kind: 'merge-pdfs', options: [],
@@ -57,7 +61,7 @@ operations.push({
 const output = path.join(root, 'packages/server/src/modules/ledger-conversion/conversion.catalog.json')
 const catalog = {
   sourceRevision: 'a7b9b15d32db80cecedae00e89289088656fb1ae',
-  source: 'config.js + utils.js:targetsForExt (all original engines present)',
+  source: 'config.js + utils.js:targetsForExt + server.js:blanks (all original engines present)',
   pairCount: [...targets.values()].reduce((sum, items) => sum + items.length, 0),
   operations,
 }

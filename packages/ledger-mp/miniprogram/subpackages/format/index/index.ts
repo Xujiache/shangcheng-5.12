@@ -568,12 +568,13 @@ MotionPage({
       splitMode: pdf && allows('splitMode'),
       groupSize: pdf && allows('groupSize'),
       password: pdf && allows('password'),
+      blanks: operation?.id === 'images-to-pdf' && allows('blanks'),
     }
     this.setData({
       visibleOptionKeys,
       showVideoOptions: visibleOptionKeys.videoCodec || visibleOptionKeys.alphaBackground,
       showPdfOptions: visibleOptionKeys.pdfAction || visibleOptionKeys.splitMode ||
-        visibleOptionKeys.groupSize || visibleOptionKeys.password,
+        visibleOptionKeys.groupSize || visibleOptionKeys.password || visibleOptionKeys.blanks,
       showTextEncoding: visibleOptionKeys.textEncoding,
     })
   },
@@ -677,6 +678,15 @@ MotionPage({
         this.setData({ error: '每组页数请输入 1–999 的整数' })
         return
       }
+    }
+    if (this.data.visibleOptionKeys.blanks && this.data.optionValues.blanks?.trim() &&
+      !this.data.optionValues.blanks.split(',').every((item) => {
+        const position = Number(item.trim())
+        return item.trim() !== '' && Number.isInteger(position) &&
+          position >= 0 && position <= this.data.files.length
+      })) {
+      this.setData({ error: `请输入 0–${this.data.files.length} 的空白页位置，用逗号分隔` })
+      return
     }
     this.setData({ busy: true, error: '', uploadPercent: 0, busyText: '准备上传' })
     try {
