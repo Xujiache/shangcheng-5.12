@@ -144,6 +144,15 @@
       "license": "CC0"
     },
     {
+      "resourceId": "parity-fixtures/raw/ocr-candidates/pixls-370-689db1544408760b.mrw",
+      "sha256": "689db1544408760ba954493c4afea9b2deed5226e3acd5c6c2126fe4819d0555",
+      "expectedText": [
+        "CHICK TOWN"
+      ],
+      "source": "https://raw.pixls.us/getfile.php/370/nice/Minolta%20-%20DiMAGE%207i.MRW",
+      "license": "CC BY-NC-SA 4.0"
+    },
+    {
       "resourceId": "parity-fixtures/raw/ocr-candidates/photographyblog-canon-eos-r-21.cr3",
       "sha256": "00fe33e02ac81f504a0714f61ec5c90e3cd5ee191de56a07718bde99eab8137e",
       "expectedText": [
