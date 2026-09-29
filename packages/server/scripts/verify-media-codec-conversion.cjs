@@ -36,16 +36,20 @@ function mediaTiming(info) {
   // These frozen fixtures use FFmpeg's default highest-channel audio selection.
   const audio = info.streams.filter((stream) => stream.codec_type === 'audio')
     .sort((a, b) => b.channels - a.channels)[0]
+  const subtitles = info.streams.filter((stream) => stream.codec_type === 'subtitle')
   if (!video) throw new Error('Missing video stream')
-  return { video: seconds(video), audio: seconds(audio) }
+  return { video: seconds(video), audio: seconds(audio),
+    subtitle: subtitles.length ? Math.max(...subtitles.map(seconds)) : 0 }
 }
 
 function checkMediaTiming(source, output, target) {
   const expected = mediaTiming(source)
   const actual = mediaTiming(output)
+  const selectedSubtitle = actual.subtitle > 0 ? expected.subtitle : 0
   if (Math.abs(actual.video - expected.video) > 0.25 ||
     (target !== 'gif' && Math.abs(actual.audio - expected.audio) > 0.25) ||
-    Math.abs(Number(output.format.duration) - Math.max(expected.video, target === 'gif' ? 0 : expected.audio)) > 0.25)
+    (actual.subtitle > 0 && Math.abs(actual.subtitle - expected.subtitle) > 0.25) ||
+    Math.abs(Number(output.format.duration) - Math.max(expected.video, target === 'gif' ? 0 : expected.audio, selectedSubtitle)) > 0.25)
     throw new Error(`Media duration differs: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
   return expected
 }
