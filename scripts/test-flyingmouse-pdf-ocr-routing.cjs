@@ -18,7 +18,7 @@ if (!process.env.FLYINGMOUSE_TEST_SOURCE_DIR) {
     throw error
   }
 }
-const { convertPdf, convertPdfToDocx, validateNativePdfDocx } = require(path.join(runtime, 'pdf.js'))
+const { convertPdf, convertPdfToDocx, fillMissingPdfPageText, validateNativePdfDocx } = require(path.join(runtime, 'pdf.js'))
 const { extractPdfRowsByPage } = require(path.join(runtime, 'pdf-table.js'))
 const fixture = (name) => path.join(root, 'packages/server/test/fixtures/platform-parity', name)
 
@@ -36,6 +36,20 @@ test('native page with a small figure keeps the layout engine output', async () 
   })
   assert.deepEqual(result.warnings, [])
   assert.equal(await fsp.readFile(output, 'utf8'), 'layout')
+})
+
+test('native paragraph above a partial scan still receives text OCR', async () => {
+  let recognized = 0
+  const pages = await fillMissingPdfPageText('fixture.pdf', [{
+    pageNumber: 1, rows: [['Account metadata line above the scanned invoice']], imageCoverage: 0.5
+  }], {
+    ocrAvailable: () => true,
+    createOcrWorker: async () => ({ terminate: async () => {} }),
+    renderPdfTablePage: async () => ({ outputPath: 'partial-scan.png' }),
+    recognizeImageResultWithWorker: async () => { recognized++; return { text: '采购明细单\n合计1186.00', confidence: 90, warnings: [] } }
+  })
+  assert.equal(recognized, 1)
+  assert.match(pages[0].rows.flat().join(' '), /1186\.00/)
 })
 
 test('full-page scan with a digital numeric header still receives OCR', async () => {
