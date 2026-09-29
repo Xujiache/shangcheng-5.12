@@ -1,9 +1,28 @@
 // Additional real-codec cases; successful execution alone is not Windows parity.
 const { execFileSync } = require('node:child_process')
 const { createHash } = require('node:crypto')
+const { readFileSync, rmSync } = require('node:fs')
 const { mkdtemp, readFile, writeFile, rm } = require('node:fs/promises')
 const { tmpdir } = require('node:os')
 const { dirname, extname, join } = require('node:path')
+
+function parseProbe(output) {
+  const result = { streams: [], format: {} }
+  for (const line of output.split(/\r?\n/).filter(Boolean)) {
+    if (/^libuavs3d\(\d+\): [\w.-]+,\s*$/.test(line)) continue
+    const match = /^(streams\.stream\.(\d+)\.(codec_name|codec_type|width|height|nb_frames)|format\.duration)=(.+)$/.exec(line)
+    if (!match) throw new Error(`Unexpected ffprobe output: ${line.slice(0, 160)}`)
+    const value = JSON.parse(match[4])
+    const target = match[2] === undefined ? result.format :
+      (result.streams[Number(match[2])] ||= {})
+    const field = match[3] || 'duration'
+    if (Object.hasOwn(target, field)) throw new Error(`Duplicate ffprobe field: ${match[1]}`)
+    target[field] = value
+  }
+  if (!result.streams.length || result.streams.some((stream) => !stream) || !result.format.duration)
+    throw new Error('Incomplete ffprobe output')
+  return result
+}
 
 module.exports = async function verifyMediaCodec(convert, source, env, codecSet = 'avs') {
   if (!['avs', 'evc'].includes(codecSet)) throw new Error(`Unknown media codec set: ${codecSet}`)
@@ -11,11 +30,17 @@ module.exports = async function verifyMediaCodec(convert, source, env, codecSet 
   const work = await mkdtemp(join(tmpdir(), `ledger-${codecSet}-`))
   const failures = []
   const ffmpeg = env.FLYINGMOUSE_FFMPEG_PATH
-  const probe = (file, frameCount = false) => JSON.parse(execFileSync(join(dirname(ffmpeg), 'ffprobe'),
+  const probe = (file, frameCount = false) => parseProbe(execFileSync(join(dirname(ffmpeg), 'ffprobe'),
     ['-v', 'error', '-show_entries', `stream=codec_name,codec_type,width,height${frameCount ? ',nb_frames' : ''}:format=duration`,
-      '-of', 'json', file], { encoding: 'utf8' }))
-  const decode = (file, args) => execFileSync(ffmpeg,
-    ['-v', 'error', '-i', file, ...args, 'pipe:1'], { maxBuffer: 32 * 1024 ** 2, timeout: 120000 })
+      '-of', 'flat', file], { encoding: 'utf8' }))
+  const decode = (file, args) => {
+    const output = join(work, 'decoded.bin')
+    try {
+      execFileSync(ffmpeg, ['-v', 'error', '-y', '-i', file, ...args, output],
+        { maxBuffer: 32 * 1024 ** 2, timeout: 120000 })
+      return readFileSync(output)
+    } finally { rmSync(output, { force: true }) }
+  }
   const record = (args) => execFileSync(process.execPath,
     [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'), ...args])
   try {
@@ -87,3 +112,5 @@ module.exports = async function verifyMediaCodec(convert, source, env, codecSet 
     if (failures.length) throw new Error(`${failures.length} ${codecSet.toUpperCase()} cases failed; see pair evidence`)
   } finally { await rm(work, { recursive: true, force: true }) }
 }
+
+module.exports.parseProbe = parseProbe
