@@ -1638,13 +1638,18 @@ async function main() {
         if (target === 'rtf') return normalize(rtfText(file))
         throw new Error(`Unexpected legacy document target ${target}`)
       }
+      const failures = []
       for (const target of targets) {
+        let stage = 'backend'
+        try {
         const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
         const backendPath = join(work, `backend-${target}.${target}`)
         const directPath = join(work, `direct-${target}.${target}`)
         await writeFile(backendPath, backend.bytes)
+        stage = 'original'
         execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
           '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        stage = 'quality'
         const backendText = await extract(backendPath, target)
         const directText = await extract(directPath, target)
         const coverage = expected.filter((part) => backendText.includes(part)).length / expected.length
@@ -1669,7 +1674,15 @@ async function main() {
           '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
           'legacy document sample: direct original and authenticated backend, known phrases checked'])
         console.log(`PASS ${inputExtension}:${target}, source text matches direct original`)
+        } catch (error) {
+          const message = `${inputExtension}:${target}: ${error.message}`
+          failures.push(message)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--fail', inputExtension, target, stage, createHash('sha256').update(fixture).digest('hex'), message])
+          console.error(`FAIL ${message}`)
+        }
       }
+      if (failures.length) throw new Error(`${failures.length} ${inputExtension} pairs failed; see pair evidence`)
     } finally { await rm(work, { recursive: true, force: true }) }
   }
 
@@ -1726,13 +1739,18 @@ async function main() {
         .filter((operation) => operation.kind === 'convert' &&
           operation.inputExtensions.includes(inputExtension))
         .map((operation) => operation.targetExtension)
+      const failures = []
       for (const target of targets) {
+        let stage = 'backend'
+        try {
         const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
         const backendPath = join(work, `backend-${target}.${target}`)
         const directPath = join(work, `direct-${target}.${target}`)
         await writeFile(backendPath, backend.bytes)
+        stage = 'original'
         execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
           '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        stage = 'quality'
         if ((await inspect(backendPath, target, `backend-${target}`)) !==
           (await inspect(directPath, target, `direct-${target}`)))
           throw new Error(`${inputExtension} to ${target}: workbook differs from original`)
@@ -1740,7 +1758,15 @@ async function main() {
           '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
           'legacy sheet: direct original and authenticated backend, cells and formulas checked'])
         console.log(`PASS ${inputExtension}:${target}, cells match direct original`)
+        } catch (error) {
+          const message = `${inputExtension}:${target}: ${error.message}`
+          failures.push(message)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--fail', inputExtension, target, stage, createHash('sha256').update(fixture).digest('hex'), message])
+          console.error(`FAIL ${message}`)
+        }
       }
+      if (failures.length) throw new Error(`${failures.length} ${inputExtension} pairs failed; see pair evidence`)
     } finally { await rm(work, { recursive: true, force: true }) }
   }
 
@@ -2294,14 +2320,19 @@ async function main() {
           throw new Error(`${target}: lost known text or slide images`)
         return content
       }
+      const failures = []
       for (const target of targets) {
+        let stage = 'backend'
+        try {
         const backend = await convert(`convert:${target}`, [[`input.${inputExtension}`, fixture]])
         const suffix = ['jpg', 'png'].includes(target) ? 'zip' : target
         const backendPath = join(work, `backend-${target}.${suffix}`)
         const directPath = join(work, `direct-${target}.${suffix}`)
         await writeFile(backendPath, backend.bytes)
+        stage = 'original'
         execFileSync(process.execPath, [join(engineSource, 'cli.js'), 'convert', input,
           '--to', target, '--output', directPath, '--json'], { env: originalCliEnv() })
+        stage = 'quality'
         const actual = await inspect(backendPath, target)
         const original = await inspect(directPath, target)
         if (target === 'html' && actual.text !== original.text)
@@ -2326,17 +2357,21 @@ async function main() {
           throw new Error(`${inputExtension} to ${target}: slide text differs from original`)
         if (target === 'html' && process.env.CONVERSION_LEGACY_PRESENTATION_REQUIRE_IMAGES &&
           actual.images.length !== pages) {
-          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
-            '--fail', inputExtension, target, 'quality',
-            createHash('sha256').update(fixture).digest('hex'),
-            'visual legacy presentation: HTML lost source slide images and backgrounds'])
           throw new Error(`${inputExtension} to HTML: visual slide images were omitted`)
         }
         execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
           '--record', inputExtension, target, createHash('sha256').update(fixture).digest('hex'),
           'legacy presentation: direct original and authenticated backend, slide text or pixels checked'])
         console.log(`PASS ${inputExtension}:${target}, ${pages} slides match direct original`)
+        } catch (error) {
+          const message = `${inputExtension}:${target}: ${error.message}`
+          failures.push(message)
+          execFileSync(process.execPath, [join(__dirname, '../../../scripts/flyingmouse-acceptance.cjs'),
+            '--fail', inputExtension, target, stage, createHash('sha256').update(fixture).digest('hex'), message])
+          console.error(`FAIL ${message}`)
+        }
       }
+      if (failures.length) throw new Error(`${failures.length} ${inputExtension} pairs failed; see pair evidence`)
     } finally { await rm(work, { recursive: true, force: true }) }
   }
 
