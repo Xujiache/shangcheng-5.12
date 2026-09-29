@@ -51,7 +51,7 @@ services:
       retries: 20
 
   api:
-    image: jiujiu-conversion-worker:9fbe0b9
+    image: ${PARITY_WORKER_IMAGE:?set candidate image in private .env}
     container_name: jiujiu-parity-api
     command: ['node', 'dist/main.js']
     working_dir: /app/server

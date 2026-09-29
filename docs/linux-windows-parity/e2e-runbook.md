@@ -17,7 +17,7 @@ curl -fsS http://127.0.0.1:3013/health/ready
 
 The schema in that checkout and image `jiujiu-conversion-worker:9fbe0b9` have the same SHA-256. The API uses `NODE_ENV=test`, `ledger_parity_test`, a dedicated Redis instance/database, and private `jiujiu-parity-files` and `jiujiu-parity-conversions` MinIO buckets. An authenticated disposable LedgerUser/JWT capabilities request returned HTTP 200/code 0 with `available:false` and zero operations before a candidate worker was attached; this is the expected pre-worker state. The user was deleted.
 
-Attach only an isolated candidate worker with `DATABASE_URL`, `REDIS_URL`, S3 credentials and `CONVERSION_PASSWORD_KEY` from this stack, plus its own `CONVERSION_BUCKET=jiujiu-parity-conversions`. The isolated candidate worker is attached; see [current worker and image](e2e-worker-runbook.md). The parity runner on the server uses `runner.env` with `CONVERSION_TEST_API=http://127.0.0.1:3013`; run it after its dependencies and verified original-engine source are available. Keep its fixture paths within the isolated synthetic fixture directory. Never use production credentials, storage, queue, or bucket.
+Attach only an isolated candidate API and worker with `DATABASE_URL`, `REDIS_URL`, S3 credentials and `CONVERSION_PASSWORD_KEY` from this stack, plus their own `CONVERSION_BUCKET=jiujiu-parity-conversions`. Both currently run the same candidate image; see [current worker and image](e2e-worker-runbook.md). The parity runner on the server uses `runner.env` with `CONVERSION_TEST_API=http://127.0.0.1:3013`; run it after its dependencies and verified original-engine source are available. Keep its fixture paths within the isolated synthetic fixture directory. Never use production credentials, storage, queue, or bucket.
 
 Once the candidate image and worker are ready and `/root/projects/jiujiu-linux-parity-candidate` contains the current runner and fixture hashes, run the verifier in a separate, resource-limited container. The checkout is read-only; only the artifact directory is writable. `--network host` is required because both test API and test database in `runner.env` are bound to localhost on the server. The image supplies the deployed server Node dependencies at `/app/server/node_modules` and the original CLI dependencies at `/app/flyingmouse/node_modules`.
 
@@ -52,10 +52,10 @@ The serial launcher [`run-e2e-batches.sh`](run-e2e-batches.sh) runs PDF first, t
 ```sh
 cd /root/deployment-verification/linux-windows-parity/e2e
 install -m 700 /root/projects/jiujiu-linux-parity-candidate/docs/linux-windows-parity/run-e2e-batches.sh ./run-e2e-batches.sh
-PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-b801ba9 ./run-e2e-batches.sh --phase core
-PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-b801ba9 ./run-e2e-batches.sh --phase external
+PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-70a630e ./run-e2e-batches.sh --phase core
+PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-70a630e ./run-e2e-batches.sh --phase external
 ```
 
 Use `--batch pdf` or another batch name for a short first probe; each invocation writes a new run directory. External sample files are mounted read-only from `/root/deployment-verification/linux-windows-parity/fixtures`. For an individual failed external case, pass its exact `status.tsv` label to `--batch`; this starts a new run and preserves the earlier evidence. Missing sample bytes or expected content remain `not-run` in `status.tsv`; inspect the adjacent logs and pair evidence before claiming acceptance.
 
-For a focused image regression, use `CONVERSION_IMAGE_INPUTS=svg PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-b801ba9 ./run-e2e-batches.sh --batch image`. The existing fixture generator rejects unsupported input extensions; every catalog target for the selected input still runs. The summary records the selected input scope. A scoped rerun cannot replace the other image results or establish full matrix acceptance.
+For a focused image regression, use `CONVERSION_IMAGE_INPUTS=svg PARITY_WORKER_IMAGE=jiujiu-conversion-worker:linux-parity-70a630e ./run-e2e-batches.sh --batch image`. The existing fixture generator rejects unsupported input extensions; every catalog target for the selected input still runs. The summary records the selected input scope. A scoped rerun cannot replace the other image results or establish full matrix acceptance.

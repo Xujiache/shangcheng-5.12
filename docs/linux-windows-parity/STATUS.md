@@ -18,7 +18,7 @@
 | EVC | 补齐 XEVD 0.7.0，FFmpeg 8.1.1 启用 libxevd | 真实 EVC-in-MP4 首帧解码通过；完整鉴权批次另记 |
 | 字体发现 | Fontconfig 扫描已打包的 LibreOffice 字体 | Arial / Calibri / Cambria / Times New Roman 命中对应替代字体；三份 Office 直接转换的页数、文字、页面像素不变 |
 
-当前隔离镜像：`jiujiu-conversion-worker:linux-parity-b801ba9`，ID `sha256:affc0971c705446f9cd824e6b044638930c9d98b8d349da2b0f14b1dbf1a384c`。它在 `48d7c15` 的 r17 运行副本上加入 EVC 解码与字体扫描配置，保持原版 307 文件校验；不是声称重新执行了整个 Dockerfile。构建及首帧预检记录在服务器 `build/runtime-evc-fonts-b801ba9/`，父级为 `/root/deployment-verification/linux-windows-parity/`。FFmpeg 构建阶段 ID 为 `sha256:122de3a926657861a01c84030dabf72be86ed904bb7d2584f3c82761b5af8aed`。
+当前隔离镜像：`jiujiu-conversion-worker:linux-parity-70a630e`，ID `sha256:a1c9ae62d977369178342b64be0033c0e5b4da0548ac12fe2c6c10f3e461ca65`。它仅在 `b801ba9` 的 r17 镜像上覆盖编译后的转换服务、格式目录及转换入口；构建文件和哈希在服务器 `build/ledger-parity-overlay-70a630e/`。底层 `b801ba9` 镜像 ID 为 `sha256:affc0971c705446f9cd824e6b044638930c9d98b8d349da2b0f14b1dbf1a384c`，包含 EVC 解码与字体扫描配置，保持原版 307 文件校验；不是声称重新执行了整个 Dockerfile。底层构建及首帧预检记录在服务器 `build/runtime-evc-fonts-b801ba9/`，父级为 `/root/deployment-verification/linux-windows-parity/`。
 
 ## 当前实测
 
