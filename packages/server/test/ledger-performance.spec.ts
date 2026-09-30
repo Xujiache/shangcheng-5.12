@@ -97,4 +97,27 @@ describe('LedgerService performance paths', () => {
     await Promise.all([first, second])
     expect(count).toHaveBeenCalledTimes(1)
   })
+
+  it('fast order and customer reads use one repeatable-read snapshot', async () => {
+    process.env.LEDGER_FAST_READS = '1'
+    const transaction = jest.fn(async (calls: Promise<unknown>[], _options?: unknown) => Promise.all(calls))
+    const prisma: any = {
+      ledgerOrder: {
+        count: jest.fn(async () => 0),
+        findMany: jest.fn(async () => []),
+        aggregate: jest.fn(async () => ({ _count: { _all: 0 }, _sum: {} })),
+        groupBy: jest.fn(async () => []),
+      },
+      ledgerCustomer: { findMany: jest.fn(async () => []) },
+      $transaction: transaction,
+    }
+    const service = new LedgerService(prisma)
+
+    await service.listOrders('u1', { page: '1', pageSize: '20' } as any)
+    await service.listCustomers('u1')
+
+    expect(transaction).toHaveBeenCalledTimes(2)
+    expect(transaction.mock.calls[0][1]).toEqual({ isolationLevel: 'RepeatableRead' })
+    expect(transaction.mock.calls[1][1]).toEqual({ isolationLevel: 'RepeatableRead' })
+  })
 })

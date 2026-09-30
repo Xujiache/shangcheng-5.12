@@ -427,20 +427,24 @@ export class LedgerService {
     }
     const page = Math.max(1, Number(q.page) || 1)
     const pageSize = Math.min(200, Math.max(1, Number(q.pageSize) || 50))
-    const [rows, aggregate] = await Promise.all([
-      this.prisma.ledgerOrder.findMany({
-        where,
-        orderBy:
-          q.sort === 'profit' ? [{ profitAmount: 'desc' }, { date: 'desc' }] : { date: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      this.prisma.ledgerOrder.aggregate({
-        where,
-        _count: { _all: true },
-        _sum: { total: true, costAmount: true, profitAmount: true },
-      }),
-    ])
+    const rowsQuery = this.prisma.ledgerOrder.findMany({
+      where,
+      orderBy:
+        q.sort === 'profit' ? [{ profitAmount: 'desc' }, { date: 'desc' }] : { date: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    })
+    const aggregateQuery = this.prisma.ledgerOrder.aggregate({
+      where,
+      _count: { _all: true },
+      _sum: { total: true, costAmount: true, profitAmount: true },
+    })
+    const [rows, aggregate] =
+      typeof (this.prisma as any).$transaction === 'function'
+        ? await this.prisma.$transaction([rowsQuery, aggregateQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([rowsQuery, aggregateQuery])
     const total = aggregate._count._all
     const sums = {
       revenue: aggregate._sum.total || 0, // 兼容旧列表：汇总 revenue 为订单总价，不含 extras。
@@ -658,21 +662,25 @@ export class LedgerService {
   }
 
   private async listCustomersFast(userId: string) {
-    const [customers, groups] = await Promise.all([
-      this.prisma.ledgerCustomer.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, name: true, phone: true, address: true, note: true },
-      }),
-      this.prisma.ledgerOrder.groupBy({
-        by: ['customerName'],
-        where: { userId },
-        orderBy: { customerName: 'asc' },
-        _count: { _all: true },
-        _sum: { total: true, profitAmount: true, costAmount: true },
-        _max: { date: true },
-      }),
-    ])
+    const customersQuery = this.prisma.ledgerCustomer.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, name: true, phone: true, address: true, note: true },
+    })
+    const groupsQuery = this.prisma.ledgerOrder.groupBy({
+      by: ['customerName'],
+      where: { userId },
+      orderBy: { customerName: 'asc' },
+      _count: { _all: true },
+      _sum: { total: true, profitAmount: true, costAmount: true },
+      _max: { date: true },
+    })
+    const [customers, groups] =
+      typeof (this.prisma as any).$transaction === 'function'
+        ? await this.prisma.$transaction([customersQuery, groupsQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([customersQuery, groupsQuery])
     const map = new Map<string, any>()
     customers.forEach((c) =>
       map.set(c.name, {
