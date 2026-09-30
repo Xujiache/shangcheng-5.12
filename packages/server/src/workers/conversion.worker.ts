@@ -127,6 +127,29 @@ async function runEngine(jobId: string, leaseId: string, requestFile: string, ru
   let stdout = ''
   let stderr = ''
   let progressBuffer = ''
+  let latestProgress = 0
+  let persistedProgress = 0
+  let progressWriter: Promise<void> | undefined
+  const flushProgress = () => {
+    if (progressWriter) return progressWriter
+    progressWriter = (async () => {
+      while (latestProgress > persistedProgress) {
+        const progress = latestProgress
+        await prisma.ledgerConversionJob.updateMany({
+          where: { id: jobId, leaseId, status: 'running', progress: { lt: progress } },
+          data: { progress },
+        })
+        persistedProgress = progress
+      }
+    })().finally(() => {
+      progressWriter = undefined
+    })
+    return progressWriter
+  }
+  const reportProgress = (progress: number) => {
+    latestProgress = Math.max(latestProgress, progress)
+    void flushProgress().catch(() => undefined)
+  }
   child.stdout?.on('data', (chunk) => {
     stdout += String(chunk)
     if (stdout.length > 2_000_000) terminate(child)
@@ -146,31 +169,18 @@ async function runEngine(jobId: string, leaseId: string, requestFile: string, ru
         const fraction = state.total > 0 && state.completed != null
           ? Math.min(1, state.completed / state.total) : 0
         const progress = Math.min(79, Math.floor((base[state.stage] || 12) + fraction * 12))
-        prisma.ledgerConversionJob.updateMany({
-          where: { id: jobId, leaseId, status: 'running', progress: { lt: progress } },
-          data: { progress },
-        }).catch(() => undefined)
+        reportProgress(progress)
       } catch { /* Ignore a partial progress line. */ }
     }
   })
   const timeout = setTimeout(() => terminate(child), Number(process.env.CONVERSION_JOB_TIMEOUT_MS || 2 * 60 * 60 * 1000))
   timeout.unref()
-  const watcher = setInterval(async () => {
-    try {
-      const heartbeat = await prisma.ledgerConversionJob.updateMany({
-        where: { id: jobId, leaseId, status: 'running' },
-        data: { heartbeatAt: new Date() },
-      })
-      if (!heartbeat.count) terminate(child)
-    } catch {
-      /* DB recovery will reclaim the lease if heartbeats stop. */
-    }
-  }, 10_000)
   try {
     const exitCode: number = await new Promise((resolveExit, rejectExit) => {
       child.once('error', rejectExit)
       child.once('exit', (code) => resolveExit(code ?? 1))
     })
+    await progressWriter?.catch(() => undefined)
     if (exitCode !== 0) throw new Error(`转换引擎退出 ${exitCode}: ${stderr.slice(-1000)}`)
     const results = stdout.split(/\r?\n/)
       .filter((line) => line.startsWith('@@LEDGER_CONVERSION_RESULT@@'))
@@ -185,7 +195,6 @@ async function runEngine(jobId: string, leaseId: string, requestFile: string, ru
     }[]
   } finally {
     clearTimeout(timeout)
-    clearInterval(watcher)
     activeChild = null
   }
 }
@@ -233,9 +242,22 @@ async function processJob(id: string) {
   try {
     const job = await prisma.ledgerConversionJob.findUniqueOrThrow({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        operationId: true,
+        uploadOrder: true,
+        options: true,
         uploads: {
-          include: { chunks: { orderBy: { index: 'asc' } } },
+          select: {
+            id: true,
+            fileName: true,
+            totalBytes: true,
+            chunks: {
+              select: { index: true, objectKey: true, sha256: true },
+              orderBy: { index: 'asc' },
+            },
+          },
           orderBy: { createdAt: 'asc' },
         },
       },
