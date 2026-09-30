@@ -59,7 +59,10 @@ export class LedgerPayService {
       throw new BizException(BizCode.BUSINESS_ERROR, '体验卡免费领取，无需支付')
     }
 
-    const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
+    const user = await this.prisma.ledgerUser.findUnique({
+      where: { id: userId },
+      select: { wxOpenid: true },
+    })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
     // openid：优先使用登录账号身份；旧数据缺失时用本次 wx.login code 兑换。

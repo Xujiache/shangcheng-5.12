@@ -13,6 +13,21 @@ import { WechatLoginDto } from './dto/auth.dto'
 
 const genJti = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 12)
 
+const LEDGER_LOGIN_USER_SELECT = {
+  id: true,
+  status: true,
+  nickname: true,
+  avatar: true,
+  membership: {
+    select: {
+      expiresAt: true,
+      lastPlanKey: true,
+      perpetual: true,
+      trialClaimedAt: true,
+    },
+  },
+} as const
+
 /** 门窗利账鉴权：只接受微信 wx.login，openid 是唯一登录身份。 */
 @Injectable()
 export class LedgerAuthService {
@@ -160,7 +175,7 @@ export class LedgerAuthService {
             invitedById: inviterId,
             membership: { create: {} },
           },
-          include: { membership: true },
+          select: LEDGER_LOGIN_USER_SELECT,
         })
         return { user, created: true, inviterId }
       } catch (e: any) {
@@ -168,7 +183,7 @@ export class LedgerAuthService {
         // 同一微信并发点击登录时，唯一索引只允许创建一次；其余请求复用已创建账号。
         const existing = await this.prisma.ledgerUser.findUnique({
           where: { wxOpenid: openid },
-          include: { membership: true },
+          select: LEDGER_LOGIN_USER_SELECT,
         })
         if (existing) return { user: existing, created: false, inviterId: null }
         if (i === 5) {
@@ -204,7 +219,7 @@ export class LedgerAuthService {
 
     let user = await this.prisma.ledgerUser.findUnique({
       where: { wxOpenid: openid },
-      include: { membership: true },
+      select: LEDGER_LOGIN_USER_SELECT,
     })
     let created = false
     let inviterId: string | null = null
@@ -254,7 +269,16 @@ export class LedgerAuthService {
   private async rewardInviter(inviterId: string, days: number, newUserCode: string) {
     const inviter = await this.prisma.ledgerUser.findUnique({
       where: { id: inviterId },
-      include: { membership: true },
+      select: {
+        id: true,
+        membership: {
+          select: {
+            id: true,
+            expiresAt: true,
+            lastPlanKey: true,
+          },
+        },
+      },
     })
     if (!inviter) return
     let membership = inviter.membership

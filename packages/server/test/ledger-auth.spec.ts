@@ -116,7 +116,20 @@ describe('LedgerAuthService 纯微信登录', () => {
         invitedById: null,
         membership: { create: {} },
       },
-      include: { membership: true },
+      select: {
+        id: true,
+        status: true,
+        nickname: true,
+        avatar: true,
+        membership: {
+          select: {
+            expiresAt: true,
+            lastPlanKey: true,
+            perpetual: true,
+            trialClaimedAt: true,
+          },
+        },
+      },
     })
     const data = (prisma.ledgerUser.create.mock.calls[0][0] as any).data
     expect(data).not.toHaveProperty('phone')

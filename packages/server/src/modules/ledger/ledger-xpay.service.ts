@@ -96,7 +96,10 @@ export class LedgerXpayService {
     if (plan.trial) {
       throw new BizException(BizCode.BUSINESS_ERROR, '体验卡免费领取，无需支付')
     }
-    const user = await this.prisma.ledgerUser.findUnique({ where: { id: userId } })
+    const user = await this.prisma.ledgerUser.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    })
     if (!user) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
 
     // 用户态签名需 session_key（每次下单用本次 code 现换；不持久化 session_key）

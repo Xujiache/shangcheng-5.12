@@ -101,6 +101,20 @@ const NOTIFY_SETTING_DEFAULTS = {
   notifySystem: false,
 } as const
 
+const LEDGER_ACCOUNT_SELECT = {
+  id: true,
+  nickname: true,
+  avatar: true,
+  membership: {
+    select: {
+      expiresAt: true,
+      lastPlanKey: true,
+      perpetual: true,
+      trialClaimedAt: true,
+    },
+  },
+} as const
+
 /** 门窗利账 App 业务服务。所有读写强制按 userId 隔离（DTO 不接受 userId 入参）。 */
 @Injectable()
 export class LedgerService {
@@ -125,7 +139,7 @@ export class LedgerService {
   async me(userId: string) {
     const u = await this.prisma.ledgerUser.findUnique({
       where: { id: userId },
-      include: { membership: true },
+      select: LEDGER_ACCOUNT_SELECT,
     })
     if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
     return {
@@ -234,7 +248,7 @@ export class LedgerService {
     if (!mem) {
       const u = await this.prisma.ledgerUser.findUnique({
         where: { id: userId },
-        include: { membership: true },
+        select: LEDGER_ACCOUNT_SELECT,
       })
       if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
       mem = deriveMembership(
