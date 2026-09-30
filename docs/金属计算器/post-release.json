@@ -1,0 +1,9 @@
+{
+  "serverOnline": true,
+  "restarts": 0,
+  "readiness": true,
+  "publicConfigMaterials": 65,
+  "existingTideStations": 5,
+  "acceptanceUsersRemaining": 0,
+  "adminMetalRoute": true
+}

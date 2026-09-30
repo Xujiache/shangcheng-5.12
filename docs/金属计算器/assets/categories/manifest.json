@@ -1,0 +1,67 @@
+{
+  "generator": "built-in image_gen",
+  "reference": "packages/ledger-mp/miniprogram/subpackages/more-tools/assets/tool-metal.png",
+  "processing": "Contain resize to 192x192 and lossless PNG compression only; preserve generated geometry and alpha.",
+  "icons": [
+    {
+      "category": "plate",
+      "prompt": "Use case: stylized-concept. Asset type: transparent UI category icon for a Chinese metal weight calculator. Generate a SINGLE isolated icon of three thin rectangular metal plates stacked slightly offset; broad flat faces and thin edges. Attached mint-green metal icon is STYLE REFERENCE ONLY: match soft satin mint jade metallic material, rounded chamfered edges, restrained premium 3D app icon design, subtle upper-left lighting, teal side shading, tiny cream edge highlights. Distinct industrial silhouette legible at 36px. Centered orthographic three-quarter view; object fills 80% of square canvas with equal clear padding; same camera and lighting across six-icon family. Genuine transparent background, clean alpha edges. No text, logo, watermark, base tile, circle badge, decorative objects, ruler, or tape measure. Metal object and open/solid cross-section must be anatomically correct.",
+      "source": "docs/金属计算器/assets/categories/plate-source.png",
+      "output": "packages/ledger-mp/miniprogram/subpackages/metal/assets/icon-plate.png",
+      "sourceSha256": "909f050bedd795019e73a4f871b188a763e8a9a481c57ff66b4774c768f2baea",
+      "outputSha256": "d03170d2ad627b1122441291b600d27b173112bc6e32cb4ae3b7a26e5efbe17c",
+      "bytes": 42720,
+      "transparentPixels": 20239
+    },
+    {
+      "category": "section",
+      "prompt": "Use case: stylized-concept. Asset type: transparent UI category icon for a Chinese metal weight calculator. Generate a SINGLE isolated icon of one short I-beam / H-beam, I shaped cross-section clearly visible at the front. Attached mint-green metal icon is STYLE REFERENCE ONLY: match soft satin mint jade metallic material, rounded chamfered edges, restrained premium 3D app icon design, subtle upper-left lighting, teal side shading, tiny cream edge highlights. Distinct industrial silhouette legible at 36px. Centered orthographic three-quarter view; object fills 80% of square canvas with equal clear padding; same camera and lighting across six-icon family. Genuine transparent background, clean alpha edges. No text, logo, watermark, base tile, circle badge, decorative objects, ruler, or tape measure. Metal object and open/solid cross-section must be anatomically correct.",
+      "source": "docs/金属计算器/assets/categories/section-source.png",
+      "output": "packages/ledger-mp/miniprogram/subpackages/metal/assets/icon-section.png",
+      "sourceSha256": "7ac9d2a8bd49a785c1e8ee5faff7fd0545077a4b2488e34c5b4dcc514db45767",
+      "outputSha256": "979ea089d0f4a6849e3e0267a99526f261c4c9ac9caebfa91a6276013d890c69",
+      "bytes": 42166,
+      "transparentPixels": 20767
+    },
+    {
+      "category": "squareTube",
+      "prompt": "Use case: stylized-concept. Asset type: transparent UI category icon for a Chinese metal weight calculator. Generate a SINGLE isolated icon of one short rectangular hollow metal tube, open rectangular cross-section clearly visible with realistic wall thickness. Attached mint-green metal icon is STYLE REFERENCE ONLY: match soft satin mint jade metallic material, rounded chamfered edges, restrained premium 3D app icon design, subtle upper-left lighting, teal side shading, tiny cream edge highlights. Distinct industrial silhouette legible at 36px. Centered orthographic three-quarter view; object fills 80% of square canvas with equal clear padding; same camera and lighting across six-icon family. Genuine transparent background, clean alpha edges. No text, logo, watermark, base tile, circle badge, decorative objects, ruler, or tape measure. Metal object and open/solid cross-section must be anatomically correct.",
+      "source": "docs/金属计算器/assets/categories/squareTube-source.png",
+      "output": "packages/ledger-mp/miniprogram/subpackages/metal/assets/icon-squareTube.png",
+      "sourceSha256": "a36601a219fa874fbeec1c830c4244ad8f1d0c4aa25403b84ebb0fdfe34cf678",
+      "outputSha256": "03608afcef51aaad27704ad8d7308473aedfcc1b6909910ea8e0222d3e0af2c6",
+      "bytes": 38754,
+      "transparentPixels": 21319
+    },
+    {
+      "category": "flatBar",
+      "prompt": "Use case: stylized-concept. Asset type: transparent UI category icon for a Chinese metal weight calculator. Generate a SINGLE isolated icon of two narrow solid flat metal bars stacked, long strip shape with rectangular solid cross-section, narrower than plate. Attached mint-green metal icon is STYLE REFERENCE ONLY: match soft satin mint jade metallic material, rounded chamfered edges, restrained premium 3D app icon design, subtle upper-left lighting, teal side shading, tiny cream edge highlights. Distinct industrial silhouette legible at 36px. Centered orthographic three-quarter view; object fills 80% of square canvas with equal clear padding; same camera and lighting across six-icon family. Genuine transparent background, clean alpha edges. No text, logo, watermark, base tile, circle badge, decorative objects, ruler, or tape measure. Metal object and open/solid cross-section must be anatomically correct.",
+      "source": "docs/金属计算器/assets/categories/flatBar-source.png",
+      "output": "packages/ledger-mp/miniprogram/subpackages/metal/assets/icon-flatBar.png",
+      "sourceSha256": "5e22e81202b13870ab04b0d892223a43f8a20a3aae84dda4f99a666d2823cfac",
+      "outputSha256": "5816685e99359d88928fa738bc248c19c742930806a80b06b412525a69b9ccdf",
+      "bytes": 30457,
+      "transparentPixels": 24386
+    },
+    {
+      "category": "roundTube",
+      "prompt": "Use case: stylized-concept. Asset type: transparent UI category icon for a Chinese metal weight calculator. Generate a SINGLE isolated icon of one short hollow round metal pipe, circular bore and wall thickness clearly visible at the front. Attached mint-green metal icon is STYLE REFERENCE ONLY: match soft satin mint jade metallic material, rounded chamfered edges, restrained premium 3D app icon design, subtle upper-left lighting, teal side shading, tiny cream edge highlights. Distinct industrial silhouette legible at 36px. Centered orthographic three-quarter view; object fills 80% of square canvas with equal clear padding; same camera and lighting across six-icon family. Genuine transparent background, clean alpha edges. No text, logo, watermark, base tile, circle badge, decorative objects, ruler, or tape measure. Metal object and open/solid cross-section must be anatomically correct.",
+      "source": "docs/金属计算器/assets/categories/roundTube-source.png",
+      "output": "packages/ledger-mp/miniprogram/subpackages/metal/assets/icon-roundTube.png",
+      "sourceSha256": "c0eed8c4d2d0a3a68f8756a20cb2ef25c10864fb239181d9ebd4d24fb7a9dff0",
+      "outputSha256": "2b6e917ef6aaef69071680f7a903fdd7122d17308cb3a69468c2b5903b87dc05",
+      "bytes": 38051,
+      "transparentPixels": 21765
+    },
+    {
+      "category": "roundBar",
+      "prompt": "Use case: stylized-concept. Asset type: transparent UI category icon for a Chinese metal weight calculator. Generate a SINGLE isolated icon of two solid cylindrical metal rods, solid circular ends clearly visible, no hollow openings. Attached mint-green metal icon is STYLE REFERENCE ONLY: match soft satin mint jade metallic material, rounded chamfered edges, restrained premium 3D app icon design, subtle upper-left lighting, teal side shading, tiny cream edge highlights. Distinct industrial silhouette legible at 36px. Centered orthographic three-quarter view; object fills 80% of square canvas with equal clear padding; same camera and lighting across six-icon family. Genuine transparent background, clean alpha edges. No text, logo, watermark, base tile, circle badge, decorative objects, ruler, or tape measure. Metal object and open/solid cross-section must be anatomically correct.",
+      "source": "docs/金属计算器/assets/categories/roundBar-source.png",
+      "output": "packages/ledger-mp/miniprogram/subpackages/metal/assets/icon-roundBar.png",
+      "sourceSha256": "74ce2da3838b906dc03f07fba5ea94350dacebea5fdce05c638a29caece3137a",
+      "outputSha256": "68503de5d42b77428b3b79d787f14b668f67c328e80d065425947c8c21788bee",
+      "bytes": 39578,
+      "transparentPixels": 22018
+    }
+  ]
+}

@@ -22,9 +22,6 @@ const COLORMAP: Record<string, string> = {
   screen: 'c5',
   extras: 'c6',
 }
-const LOCAL_ADS = ['window-assistant', 'orders', 'customers', 'cutting', 'reports', 'new-year'].map(
-  (name) => ({ id: name, image: `/assets/ads/${name}.jpg`, link: '', title: name }),
-)
 // 头部大数对应的「当前周期」文案：日=今日 / 月=本月 / 年=本年（与所选单位一致）
 const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', year: '本年' }
 
@@ -101,8 +98,11 @@ MotionPage({
     }
     this.setData({ hdPad: sb + 10, hdRight, fxMax: getFxMode() === 'max', loggedIn })
     this.refreshMembershipAndData()
-    this.loadAds()
-    this.maybeShowChangelog()
+    // 广告、更新日志不参与首屏渲染，等首屏数据开始请求后再排队。
+    setTimeout(() => {
+      if (isLoggedIn()) this.loadAds()
+      this.maybeShowChangelog()
+    }, 0)
   },
   async refreshMembershipAndData() {
     if (LOCAL_CONVERSION_TEST) {
@@ -360,10 +360,7 @@ MotionPage({
   },
 
   async loadAds() {
-    if (LOCAL_CONVERSION_TEST) {
-      this.setData({ ads: LOCAL_ADS })
-      return
-    }
+    if (LOCAL_CONVERSION_TEST) return
     if (!isLoggedIn()) return
     try {
       const ads: any = await adApi.list()
@@ -404,10 +401,10 @@ MotionPage({
     navigation.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
   },
   toCut() {
-    navigation.navigateTo({ url: '/pages/cut/index' })
+      navigation.navigateTo({ url: '/subpackages/tools/pages/cut/index' })
   },
   toWorkLog() {
-    navigation.navigateTo({ url: '/pages/work-log/index' })
+    navigation.navigateTo({ url: '/subpackages/workbook/overview/index' })
   },
   toFormat() {
     if (!LOCAL_CONVERSION_TEST && !requireLogin('登录后可免费使用格式转换，转换文件保留 30 天。'))
@@ -415,10 +412,10 @@ MotionPage({
     navigation.navigateTo({ url: '/subpackages/format/index/index' })
   },
   toTriangleTool() {
-    navigation.navigateTo({ url: '/pages/triangle-tool/index' })
+    navigation.navigateTo({ url: '/subpackages/tools/pages/triangle-tool/index' })
   },
   toArcTool() {
-    navigation.navigateTo({ url: '/pages/arc-tool/index' })
+    navigation.navigateTo({ url: '/subpackages/tools/pages/arc-tool/index' })
   },
   toMoreTools() {
     navigation.navigateTo({ url: '/subpackages/more-tools/index/index' })

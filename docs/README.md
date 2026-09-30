@@ -19,6 +19,8 @@
 | `Android正式打包/`        | DCloud 5.24 离线 SDK、双 flavor、正式签名、云端构建与验收发布手册                         | 待 AppKey | merchant-app / platform-app / feat/ledger-mp      |
 | `双APP-Wot液态玻璃迁移/` | 双 APP 全项目 Wot Design Uni、深浅主题、液态玻璃迁移与审计                               | 已实现    | merchant-app / platform-app                       |
 | `门窗利账/`               | ledger-mp 原生小程序 + 后端 ledger 域 + admin-pc 会员管理的 6A 全流程文档                 | 进行中    | ledger 域 / `packages/ledger-mp` / feat/ledger-mp |
+| [金属计算器](./金属计算器/ALIGNMENT_金属计算器.md) | 65 种材质的重量/参考价、规格来源、阶段与验收记录 | P0–P2 已实现，后端/管理端已部署；真机与剩余规格待验收 | ledger-mp + server + admin-pc / codex/metal-calculator |
+| [玻璃工具](./玻璃工具/README.md) | 多层玻璃 K 值、独立重量估算、生产接口验收与回滚记录 | 后端已部署；小程序编译通过，手机视觉验收待完成 | ledger-mp + server + admin-pc |
 | [Linux / Windows 转换对齐](./linux-windows-parity/STATUS.md) | 原版 0.7.10 引擎差异、隔离验证、失败与未测记录 | 未通过发布验收 | ledger 转换 / codex/ledger-original-engine-rebuild |
 | `全面提升整理/`           | 全量审查清单（8 维度实跑核验，按 P0/P1/P2/P3 分级，已剔除证伪项）                         | 进行中    | 全站 / feat/ledger-mp                             |
 | `backend-api-coverage.md` | 后端接口覆盖矩阵（统一响应 / 路由约定 + 接口实现状态）。**注：尚未覆盖 ledger（`/l`）域** | 待更新    | `packages/server` / main                          |

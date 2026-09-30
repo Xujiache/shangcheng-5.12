@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { FilesService } from '../files/files.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
+import { normalizeMetalConfig } from './metal.config'
 import {
   LEDGER_PLAN_DAYS,
   computeGrantExpiry,
@@ -321,19 +322,34 @@ export class LedgerAdminService {
 
   // ── 全局功能配置（#9 优化下料 / #10 邀请）────────────────
   async getConfig() {
-    const row = await this.prisma.ledgerConfig.findUnique({ where: { key: 'global' } })
-    return normalizeLedgerConfig(row?.value)
+    const [global, metal] = await Promise.all([
+      this.prisma.ledgerConfig.findUnique({ where: { key: 'global' } }),
+      this.prisma.ledgerConfig.findUnique({ where: { key: 'metal' } }),
+    ])
+    return { ...normalizeLedgerConfig(global?.value), metal: normalizeMetalConfig(metal?.value) }
   }
 
   async updateConfig(dto: UpdateLedgerConfigDto) {
     const current = await this.getConfig()
+    const globalChanged = dto.inviteRewardDays !== undefined || dto.inviteMaxRewarded !== undefined || dto.plans !== undefined
     const merged = normalizeLedgerConfig({ ...current, ...dto })
-    await this.prisma.ledgerConfig.upsert({
-      where: { key: 'global' },
-      create: { key: 'global', value: merged as any },
-      update: { value: merged as any },
-    })
-    return merged
+    if (globalChanged || dto.metal === undefined) {
+      await this.prisma.ledgerConfig.upsert({
+        where: { key: 'global' },
+        create: { key: 'global', value: merged as any },
+        update: { value: merged as any },
+      })
+    }
+    let metal = current.metal
+    if (dto.metal !== undefined) {
+      metal = normalizeMetalConfig({ ...dto.metal, updatedAt: new Date().toISOString() })
+      await this.prisma.ledgerConfig.upsert({
+        where: { key: 'metal' },
+        create: { key: 'metal', value: metal as any },
+        update: { value: metal as any },
+      })
+    }
+    return { ...merged, metal }
   }
 
   // ── 邀请统计（#10）────────────────────────────────────────

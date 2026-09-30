@@ -1,0 +1,19 @@
+<lz-bg />
+<view class="metal-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="计算记录" />
+  <view class="metal-tabs"><view class="metal-tabs__item {{tab === 'history' ? 'is-active' : ''}}" data-tab="history" bindtap="switchTab">最近计算<text class="metal-tabs__count">{{historyCount}}</text></view><view class="metal-tabs__item {{tab === 'favorites' ? 'is-active' : ''}}" data-tab="favorites" bindtap="switchTab">常用规格<text class="metal-tabs__count">{{favoritesCount}}</text></view></view>
+  <view class="metal-body">
+    <view class="metal-history__caption"><text>{{tab === 'history' ? '最近保存的计算结果' : '已收藏的材料规格'}}</text><text>本机保存 · 最多 200 条</text></view>
+    <view wx:if="{{!rows.length}}" class="metal-panel metal-empty"><text class="metal-empty__title">{{tab === 'history' ? '还没有计算记录' : '还没有常用规格'}}</text><text class="metal-empty__note">{{tab === 'history' ? '计算后复制结果或保存记录，即可在这里查看并重新计算。' : '在计算页点击“收藏规格”，下次可直接打开使用。'}}</text><button class="metal-btn metal-btn--outline" bindtap="openCalculator">选择材料计算</button></view>
+    <view wx:else class="metal-panel metal-history__list">
+      <view wx:for="{{rows}}" wx:key="id" class="metal-history__row" data-id="{{item.id}}" bindtap="reopen" hover-class="tap-active">
+        <view class="metal-history__row-head"><text class="metal-history__material">{{item.material}}</text><text class="metal-history__category">{{item.category}}</text><button class="metal-btn metal-btn--plain metal-btn--danger" data-id="{{item.id}}" catchtap="remove">删除</button></view>
+        <text class="metal-history__spec">{{item.spec}}</text>
+        <view class="metal-history__values"><text class="metal-number">{{item.weight}}<text class="metal-history__unit"> kg</text></text><text class="metal-number">¥{{item.amount}}</text></view>
+        <view class="metal-history__row-foot"><text>{{item.savedAt}}</text><text class="metal-link">重新计算 ›</text></view>
+      </view>
+    </view>
+    <view class="metal-disclaimer">记录按账号隔离，保存在当前设备。理论重量与报价仅供参考，实际以过磅和供货商报价为准。</view>
+  </view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

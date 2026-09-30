@@ -1,0 +1,62 @@
+@import '../common.wxss';
+.metal-calc__body { padding-bottom: calc(98px + env(safe-area-inset-bottom)); }
+.metal-calc__material, .metal-calc__spec, .metal-calc__pricing { margin-bottom: 8px; }
+.metal-calc__scroll { width: 100%; white-space: nowrap; }
+.metal-calc__groups { display: inline-flex; gap: 18px; padding: 0 14px; }
+.metal-calc__group { min-height: 32px; display: flex; align-items: center; border-bottom: 2px solid transparent; color: var(--muted); font-size: 13px; }
+.metal-calc__group.is-active { color: var(--accent); font-weight: 600; border-bottom-color: var(--accent); }
+.metal-calc__grades { display: flex; flex-wrap: wrap; gap: 7px; padding: 8px 14px 10px; background: #f5f9f7; }
+.metal-calc__grade { display: flex; align-items: center; justify-content: center; min-height: 32px; padding: 0 10px; border: 1px solid #e0e8e3; border-radius: 6px; background: #fff; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.metal-calc__grade.is-active { border-color: #98c7b7; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.metal-calc__spec > .metal-heading { border-bottom: 1px solid var(--border); }
+.metal-calc__spec .metal-heading__note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.metal-calc__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; padding: 10px 14px; }
+.metal-calc__field { min-width: 0; }
+.metal-calc__field-label { display: block; margin-bottom: 5px; font-size: 12px; line-height: 18px; }
+.metal-calc__field-unit { color: var(--muted); font-size: 11px; }
+.metal-calc__field input { width: 100%; height: 39px; padding: 0 10px; border: 1px solid #dce5df; border-radius: 7px; background: #f8faf9; font-size: 16px; font-variant-numeric: tabular-nums; }
+.metal-calc__placeholder { color: #9aa79f; font-size: 13px; }
+.metal-calc__shape { display: flex; align-items: center; gap: 10px; padding: 9px 14px 0; font-size: 12px; }
+.metal-calc__shape > text { flex-shrink: 0; }
+.metal-calc__shape scroll-view { flex: 1; min-width: 0; white-space: nowrap; }
+.metal-calc__shape-list { display: inline-flex; gap: 6px; }
+.metal-calc__section-note { display: flex; align-items: center; gap: 10px; padding: 0 14px 5px; }
+.metal-calc__section-note > text { flex: 1; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.metal-calc__section-note button { flex-shrink: 0; }
+.metal-calc__estimate { margin: 0 14px 12px; padding: 10px; border: 1px solid #eadfc8; border-radius: 8px; background: #fffaf1; }
+.metal-calc__estimate > text { color: #937644; }
+.metal-calc__estimate .metal-calc__fields { padding: 10px 0 0; }
+.metal-calc__density { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; margin: 0 14px; border-top: 1px solid var(--border); font-size: 12px; }
+.metal-calc__density > view { display: flex; align-items: center; gap: 5px; }
+.metal-calc__density input { width: 60px; height: 34px; text-align: right; font-size: 15px; font-variant-numeric: tabular-nums; }
+.metal-calc__price-row { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; }
+.metal-calc__price-label { display: flex; align-items: baseline; gap: 5px; flex-shrink: 0; font-size: 13px; }
+.metal-calc__price-row input { flex: 1; min-width: 0; height: 38px; text-align: right; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.metal-calc__price-placeholder { color: #60796d; }
+.metal-calc__price-auto { color: var(--accent); font-size: 11px; }
+.metal-calc__reference { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 0 14px 10px; color: var(--muted); font-size: 11px; }
+.metal-calc__settings { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 42px; padding: 0 14px; border-top: 1px solid var(--border); font-size: 12px; }
+.metal-calc__settings > text:last-child { color: var(--muted); font-size: 11px; }
+.metal-calc__settings-arrow { margin-left: 8px; color: var(--accent); }
+.metal-calc__settings-fields { border-top: 1px solid var(--border); }
+.metal-calc__result { border-color: #d1e4da; }
+.metal-calc__result > .metal-heading { background: #f5faf7; }
+.metal-calc__result .metal-heading__note { max-width: 60%; text-align: right; }
+.metal-calc__warning { padding: 8px 14px; background: #fff7e8; color: #96652e; font-size: 12px; line-height: 1.6; }
+.metal-calc__totals { display: flex; padding: 12px 0; }
+.metal-calc__total { flex: 1; min-width: 0; padding: 0 14px; }
+.metal-calc__total + .metal-calc__total { border-left: 1px solid var(--border); }
+.metal-calc__total-label { display: flex; justify-content: space-between; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.metal-calc__total-label > text { color: var(--accent); font-size: 11px; }
+.metal-calc__total > view { display: flex; align-items: baseline; gap: 3px; min-height: 40px; padding-top: 4px; flex-wrap: wrap; word-break: break-all; }
+.metal-calc__weight { color: var(--text); font-size: 25px; font-weight: 600; line-height: 1.35; }
+.metal-calc__amount { color: var(--accent); font-size: 25px; font-weight: 600; line-height: 1.35; }
+.metal-calc__currency, .metal-calc__total-unit { color: var(--muted); font-size: 12px; }
+.metal-calc__totals--wide { flex-direction: column; gap: 12px; }
+.metal-calc__totals--wide .metal-calc__total + .metal-calc__total { padding-top: 12px; border-left: 0; border-top: 1px solid var(--border); }
+.metal-calc__totals--wide .metal-calc__weight, .metal-calc__totals--wide .metal-calc__amount { font-size: 22px; white-space: nowrap; }
+.metal-calc__unit-row { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 14px; border-top: 1px solid var(--border); font-size: 12px; }
+.metal-calc__unit-row > text:first-child { flex: 1; color: var(--muted); }
+.metal-calc__unit-row button { padding-right: 0; }
+.metal-calc__secondary { display: flex; justify-content: space-between; gap: 4px; padding: 2px 0; }
+@media (max-width: 350px) { .metal-calc__amount, .metal-calc__weight { font-size: 22px; } .metal-calc__fields { column-gap: 8px; } }

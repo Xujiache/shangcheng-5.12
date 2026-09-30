@@ -376,7 +376,7 @@ MotionPage({
     } catch (e) {
       /* ignore */
     }
-    navigation.navigateTo({ url: '/pages/cut-result/index' })
+    navigation.navigateTo({ url: '/subpackages/tools/pages/cut-result/index' })
   },
 
   // ── 云端历史 ──

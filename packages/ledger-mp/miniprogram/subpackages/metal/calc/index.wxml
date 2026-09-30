@@ -1,0 +1,46 @@
+<lz-bg />
+<view class="metal-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="{{pageTitle}}" />
+  <view class="metal-body metal-calc__body">
+    <view class="metal-panel metal-calc__material">
+      <view class="metal-heading"><text>材质 / 牌号</text><text class="metal-link" bindtap="openHistory">历史 / 常用 ›</text></view>
+      <scroll-view scroll-x class="metal-calc__scroll" show-scrollbar="{{false}}">
+        <view class="metal-calc__groups"><view wx:for="{{groups}}" wx:key="*this" class="metal-calc__group {{activeGroup === item ? 'is-active' : ''}}" data-group="{{item}}" bindtap="selectGroup">{{item}}</view></view>
+      </scroll-view>
+      <view class="metal-calc__grades"><view wx:for="{{grades}}" wx:key="id" class="metal-calc__grade {{materialId === item.id ? 'is-active' : ''}}" data-id="{{item.id}}" bindtap="selectGrade">{{item.label}}</view></view>
+    </view>
+
+    <view class="metal-panel metal-calc__spec">
+      <view class="metal-heading"><text>规格参数</text><text class="metal-heading__note">{{materialLabel}}</text></view>
+      <view wx:if="{{category === 'section' && shapeSelectable}}" class="metal-calc__shape"><text>截面</text><scroll-view scroll-x show-scrollbar="{{false}}"><view class="metal-calc__shape-list"><view wx:for="{{sectionShapes}}" wx:key="id" class="metal-calc__grade {{sectionShape === item.id ? 'is-active' : ''}}" data-shape="{{item.id}}" bindtap="selectShape">{{item.label}}</view></view></scroll-view></view>
+      <view class="metal-calc__fields">
+        <view wx:for="{{fields}}" wx:key="key" class="metal-calc__field"><text class="metal-calc__field-label">{{item.label}}<text wx:if="{{item.unit}}" class="metal-calc__field-unit"> / {{item.unit}}</text></text><input type="{{item.type}}" value="{{item.value}}" data-key="{{item.key}}" bindinput="onFieldInput" bindkeyboardheightchange="onKeyboardHeight" placeholder="{{item.key === 'model' ? '如 50*5' : '输入数值'}}" placeholder-class="metal-calc__placeholder" confirm-type="next" /></view>
+      </view>
+      <view wx:if="{{category === 'section'}}" class="metal-calc__section-note"><text>{{source || '输入型号查表，未收录型号可按尺寸估算'}}</text><button class="metal-btn metal-btn--plain" bindtap="toggleEstimate">{{estimateSection ? '收起估算' : '尺寸估算'}}</button></view>
+      <view wx:if="{{category === 'section' && estimateSection}}" class="metal-calc__estimate"><text class="metal-note">估算不含圆角、槽形细节及型材公差</text><view class="metal-calc__fields"><view wx:for="{{estimateFields}}" wx:key="key" class="metal-calc__field"><text class="metal-calc__field-label">{{item.label}}<text class="metal-calc__field-unit"> / {{item.unit}}</text></text><input type="digit" value="{{item.value}}" data-key="{{item.key}}" bindinput="onEstimateInput" bindkeyboardheightchange="onKeyboardHeight" placeholder="输入数值" placeholder-class="metal-calc__placeholder" confirm-type="next" /></view></view></view>
+      <view class="metal-calc__density"><text>密度 <text class="metal-note">g/cm³</text></text><view><input type="digit" value="{{density}}" bindinput="onDensity" bindkeyboardheightchange="onKeyboardHeight" /><button class="metal-btn metal-btn--plain" bindtap="clearDensity">重置</button></view></view>
+    </view>
+
+    <view class="metal-panel metal-calc__pricing">
+      <view class="metal-calc__price-row"><view class="metal-calc__price-label"><text>吨价</text><text class="metal-note">元/吨</text></view><input type="digit" value="{{manualTonPrice}}" placeholder="{{referencePrice}}" bindinput="onTonPrice" bindkeyboardheightchange="onKeyboardHeight" placeholder-class="metal-calc__price-placeholder" /><button wx:if="{{manualTonPrice}}" class="metal-btn metal-btn--plain" bindtap="clearTonPrice">清除</button><text wx:else class="metal-calc__price-auto">用参考价</text></view>
+      <view class="metal-calc__reference"><text>{{priceNote}} · ¥{{referencePrice}}</text><text>{{priceUpdatedAt}}</text></view>
+
+    </view>
+
+    <view class="metal-panel metal-calc__result">
+      <view class="metal-heading"><text>计算结果</text><text class="metal-heading__note">{{hasResult ? methodText : '填写参数后自动计算'}}</text></view>
+      <view wx:if="{{warning && inputTouched}}" class="metal-calc__warning">{{warning}}</view>
+      <view class="metal-calc__totals {{totalWeight.length > 10 || totalPrice.length > 10 ? 'metal-calc__totals--wide' : ''}}">
+        <view class="metal-calc__total" data-field="total" bindtap="copyItem"><text class="metal-calc__total-label">总重量 <text>复制</text></text><view><text class="metal-calc__weight metal-number">{{hasResult ? totalWeight : '—'}}</text><text class="metal-calc__total-unit">kg</text></view><text class="metal-note">{{hasResult ? totalText : '待输入有效规格'}}</text></view>
+        <view class="metal-calc__total" data-field="price" bindtap="copyItem"><text class="metal-calc__total-label">参考总价 <text>复制</text></text><view><text class="metal-calc__currency">¥</text><text class="metal-calc__amount metal-number">{{hasResult ? totalPrice : '—'}}</text></view><text class="metal-note">{{manualTonPrice ? '按手填吨价计算' : '按参考吨价计算'}}</text></view>
+      </view>
+      <view class="metal-calc__unit-row"><text>{{category === 'plate' ? '每张理论重量' : '每米理论重量'}}</text><text class="metal-number">{{hasResult ? unitWeight : '—'}} {{unitText}}</text><button class="metal-btn metal-btn--plain" data-field="unit" bindtap="copyItem" disabled="{{!hasResult}}">复制</button></view>
+      <view class="metal-calc__settings" bindtap="toggleSettings"><text>报价系数 / 加工费</text><text>{{quoteFactor}} 倍 · ¥{{processingFee}}<text class="metal-calc__settings-arrow">{{settingsOpen ? '收起' : '调整'}}</text></text></view>
+      <view wx:if="{{settingsOpen}}" class="metal-calc__fields metal-calc__settings-fields"><view class="metal-calc__field"><text class="metal-calc__field-label">报价系数 / 倍</text><input type="digit" value="{{quoteFactor}}" bindinput="onFactor" bindkeyboardheightchange="onKeyboardHeight" /></view><view class="metal-calc__field"><text class="metal-calc__field-label">加工费 / 元</text><input type="digit" value="{{processingFee}}" bindinput="onFee" bindkeyboardheightchange="onKeyboardHeight" /></view></view>
+    </view>
+    <view class="metal-calc__secondary"><button class="metal-btn metal-btn--plain" bindtap="saveFavorite">收藏规格</button><button class="metal-btn metal-btn--plain" bindtap="saveHistoryAction">保存记录</button><button class="metal-btn metal-btn--plain" bindtap="openHistory">计算记录 ›</button></view>
+    <view class="metal-disclaimer">理论重量与价格仅供参考，实际以过磅和供货商报价为准。报价单保存时采用后台价格重新计价。</view>
+  </view>
+  <view wx:if="{{!keyboardRaised}}" class="metal-dock"><view class="metal-dock__buttons"><button class="metal-btn metal-btn--outline" bindtap="copyAll" disabled="{{!hasResult}}">复制完整结果</button><button class="metal-btn" bindtap="addToQuote" disabled="{{!hasResult}}">加入报价单</button></view></view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

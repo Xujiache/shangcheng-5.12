@@ -1,0 +1,30 @@
+<lz-bg />
+<view class="metal-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="金属计算器" />
+  <view class="metal-body">
+    <view class="metal-home__utility metal-panel">
+      <view class="metal-home__shortcut" hover-class="tap-active" bindtap="openHistory"><view><text class="metal-home__shortcut-title">计算记录</text><text class="metal-note">历史 / 常用规格</text></view><text class="metal-home__chevron">›</text></view>
+      <view class="metal-home__shortcut" hover-class="tap-active" bindtap="openQuote"><view><text class="metal-home__shortcut-title">材料报价单</text><text class="metal-note">汇总 / 保存 / 导出</text></view><text class="metal-home__chevron">›</text></view>
+    </view>
+    <view class="metal-panel metal-home__categories">
+      <view class="metal-heading"><text>选择材料类型</text><text class="metal-heading__note">6 类 · 65 种材质</text></view>
+      <view class="metal-home__grid">
+        <view wx:for="{{categories}}" wx:key="id" class="metal-home__category" data-id="{{item.id}}" bindtap="openCategory" hover-class="tap-active">
+          <image class="metal-home__icon" src="{{item.icon}}" mode="aspectFit" />
+          <text class="metal-home__name">{{item.name}}</text>
+          <text class="metal-home__summary">{{item.summary}}</text>
+          <text class="metal-home__unit">{{item.id === 'plate' ? '按张计算' : '按米计算'}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="metal-home__help metal-panel">
+      <view class="metal-heading"><text>计算说明</text><text class="metal-heading__note">尺寸、密度可修改</text></view>
+      <view class="metal-home__help-row"><text>重量计算</text><text>选择材质后填写尺寸，自动计算</text></view>
+      <view class="metal-home__help-row"><text>参考价格</text><text>可手填吨价；报价单保存时重算</text></view>
+      <view class="metal-home__help-row"><text>型材规格</text><text>已收录型号查表，未收录型号可按尺寸估算</text></view>
+    </view>
+    <view class="metal-disclaimer">理论重量与价格仅供参考，实际以过磅和供货商报价为准。</view>
+    <view class="metal-home__foot"><text>v{{version}}</text><text class="metal-link" bindtap="openFeedback">意见反馈</text></view>
+  </view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

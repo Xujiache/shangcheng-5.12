@@ -1,0 +1,45 @@
+<lz-bg />
+<view class="metal-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="材料报价单" />
+  <view class="metal-tabs"><view class="metal-tabs__item {{view === 'draft' ? 'is-active' : ''}}" bindtap="showDraft">当前报价</view><view class="metal-tabs__item {{view !== 'draft' ? 'is-active' : ''}}" bindtap="showSavedList">已保存<text class="metal-tabs__count">{{saved.length}}</text></view></view>
+  <view class="metal-body metal-quote__body {{view !== 'history' && rows.length ? 'metal-quote__body--dock' : ''}}">
+    <block wx:if="{{view !== 'history'}}">
+      <view wx:if="{{view === 'saved'}}" class="metal-quote__back-row"><text class="metal-link" bindtap="showSavedList">‹ 报价单列表</text><text class="metal-note">{{savedDate}} · 已保存</text></view>
+      <view class="metal-panel metal-quote__document">
+        <view class="metal-quote__title"><text>名称</text><input wx:if="{{view === 'draft'}}" value="{{title}}" placeholder="客户 / 项目名称" maxlength="60" bindinput="onTitle" bindkeyboardheightchange="onKeyboardHeight" /><text wx:else class="metal-quote__saved-title">{{title}}</text></view>
+        <view class="metal-heading"><text>材料明细<text class="metal-heading__note"> · {{rows.length}} 项</text></text><button wx:if="{{view === 'draft'}}" class="metal-btn metal-btn--plain" bindtap="openCalculator">＋ 添加材料</button><text wx:else class="metal-heading__note">已按后台价格计价</text></view>
+        <view wx:if="{{!rows.length}}" class="metal-empty"><text class="metal-empty__title">先添加一项材料</text><text class="metal-empty__note">计算页选择材质、填写尺寸，点击“加入报价单”即可添加。</text><button class="metal-btn metal-btn--outline" bindtap="openCalculator">选择材料</button></view>
+        <view wx:else class="metal-quote__columns"><text>材料 / 规格</text><text>重量 / 金额</text></view>
+        <view wx:for="{{rows}}" wx:key="index" class="metal-quote__line">
+          <view class="metal-quote__line-head"><text class="metal-quote__line-number">{{index + 1}}</text><text class="metal-quote__material">{{item.material}}</text><text class="metal-quote__amount metal-number">¥{{item.amount}}</text></view>
+          <text class="metal-quote__spec">{{item.spec}}</text>
+          <view class="metal-quote__line-meta"><text class="metal-number">{{item.weight}} kg</text><text>吨价 ¥{{item.tonPrice}}</text><button wx:if="{{view === 'draft'}}" class="metal-btn metal-btn--plain metal-btn--danger" data-index="{{item.index}}" bindtap="removeLine">移除</button></view>
+          <view wx:if="{{item.factor !== '1.00' || item.fee !== '0.00'}}" class="metal-quote__fee">系数 {{item.factor}} 倍 · 加工费 ¥{{item.fee}}</view>
+        </view>
+      </view>
+      <view wx:if="{{view === 'draft'}}" class="metal-quote__policy metal-note">保存时按后台价格重新计算；手填吨价仅用于计算页速算。</view>
+      <view wx:if="{{view === 'saved'}}" class="metal-quote__saved-tools"><text class="metal-note">可生成图片或 CSV 文件，生成后点击分享。</text><button class="metal-btn metal-btn--plain metal-btn--danger" disabled="{{busy}}" bindtap="deleteSaved">删除报价单</button></view>
+    </block>
+
+    <block wx:if="{{view === 'history'}}">
+      <view class="metal-quote__list-caption"><text>云端报价记录</text><text>会员到期后仍可查看</text></view>
+      <view wx:if="{{quotesError}}" class="metal-quote__error metal-panel"><text>报价单加载失败，请重试</text><button class="metal-btn metal-btn--plain" bindtap="loadQuotes">重试</button></view>
+      <view wx:if="{{loadingQuotes && !saved.length}}" class="metal-panel metal-quote__loading">正在加载报价单…</view>
+      <view wx:elif="{{!saved.length && !quotesError}}" class="metal-panel metal-empty"><text class="metal-empty__title">还没有已保存的报价单</text><text class="metal-empty__note">在当前报价中添加材料并保存后，记录会同步到这里。</text><button class="metal-btn metal-btn--outline" bindtap="showDraft">新建报价单</button></view>
+      <view wx:if="{{saved.length}}" class="metal-panel metal-quote__saved-list">
+        <view wx:for="{{saved}}" wx:key="id" class="metal-quote__saved" data-id="{{item.id}}" bindtap="openSaved" hover-class="tap-active"><view class="metal-quote__saved-head"><text>{{item.title}}</text><text class="metal-quote__amount metal-number">¥{{item.amount}}</text></view><view class="metal-quote__saved-meta"><text>{{item.lineCount}} 项材料 · {{item.weight}} kg</text><text>{{item.date}} <text class="metal-quote__chevron">›</text></text></view></view>
+      </view>
+      <button wx:if="{{hasMore}}" class="metal-btn metal-btn--plain metal-quote__load-more" disabled="{{loadingQuotes}}" bindtap="loadMore">{{loadingQuotes ? '加载中…' : '加载更多报价单'}}</button>
+    </block>
+    <view class="metal-disclaimer">理论重量与报价仅供参考，实际以过磅和供货商报价为准。</view>
+  </view>
+  <view wx:if="{{view !== 'history' && rows.length && !keyboardRaised}}" class="metal-dock">
+    <view class="metal-quote__summary"><view><text class="metal-note">{{rows.length}} 项材料 · 总重量</text><text class="metal-quote__summary-weight metal-number">{{totalWeight}} <text>kg</text></text></view><view><text class="metal-note">{{view === 'draft' ? '预估合计' : '报价合计'}}</text><text class="metal-quote__summary-price metal-number">¥{{totalAmount}}</text></view></view>
+    <view wx:if="{{view === 'draft'}}" class="metal-dock__buttons"><button class="metal-btn metal-btn--outline" disabled="{{busy}}" bindtap="openCalculator">继续添加</button><button class="metal-btn" loading="{{busy}}" disabled="{{busy}}" bindtap="saveQuote">保存报价单</button></view>
+    <view wx:else class="metal-dock__buttons"><button class="metal-btn metal-btn--outline" disabled="{{busy}}" bindtap="exportCsv">生成 CSV</button><button class="metal-btn" disabled="{{busy}}" bindtap="exportImage">生成图片</button></view>
+    <view wx:if="{{busy && view === 'saved'}}" class="metal-quote__export-status">正在处理，请稍候…</view>
+    <view wx:if="{{view === 'saved' && (imagePath || csvPath)}}" class="metal-quote__share"><button wx:if="{{imagePath}}" class="metal-btn metal-btn--plain" disabled="{{busy}}" bindtap="shareImage">分享图片</button><button wx:if="{{csvPath}}" class="metal-btn metal-btn--plain" disabled="{{busy}}" bindtap="shareCsv">分享 CSV</button></view>
+  </view>
+  <canvas id="metalQuoteCanvas" type="2d" class="metal-quote__canvas" />
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

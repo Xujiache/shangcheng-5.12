@@ -1,13 +1,18 @@
 import assert from 'node:assert/strict'
-import { searchTools } from '../miniprogram/utils/more-tools/catalog'
+import { searchTools, TOOL_CATALOG } from '../miniprogram/utils/more-tools/catalog'
 import { toRmbUppercase } from '../miniprogram/utils/more-tools/amount-date'
 import { calculateRetirement } from '../miniprogram/utils/more-tools/retirement'
 import { loadAccountRetirementProfile, saveAccountRetirementProfile } from '../miniprogram/utils/more-tools/retirement-storage'
 import { anglesFromAcceleration, calibratedReading } from '../miniprogram/utils/more-tools/level'
 import { lookupLength, nearbyAuspicious } from '../miniprogram/utils/more-tools/luban'
 
-assert.equal(searchTools('玻璃').map(tool => tool.id).join(','), 'glass')
-assert.equal(searchTools('').length, 10)
+assert.equal(searchTools('玻璃').map(tool => tool.id).join(','), 'glass,glass-weight')
+assert.equal(searchTools('').length, TOOL_CATALOG.length)
+const others = searchTools('').filter(tool => tool.group === 'other')
+const glassIndex = others.findIndex(tool => tool.id === 'glass')
+assert.equal(others[glassIndex + 1].id, 'glass-weight')
+assert.equal(Math.floor(glassIndex / 5), Math.floor((glassIndex + 1) / 5), 'Both glass entries must be adjacent in the five-column grid')
+assert.equal(searchTools('潮汐').map(tool => tool.id).join(','), 'tide')
 assert.deepEqual(toRmbUppercase('0'), { ok: true, normalized: '0', uppercase: '零元整' })
 assert.equal(toRmbUppercase('100010001.01').ok && toRmbUppercase('100010001.01').uppercase, '壹亿零壹万零壹元零壹分')
 assert.equal(toRmbUppercase('999999999999.99').ok, true)

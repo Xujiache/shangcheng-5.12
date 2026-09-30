@@ -1,7 +1,7 @@
 import { TOKEN_KEY } from '../config'
 import { request } from './request'
 
-export type ToolKey = 'triangle' | 'arc' | 'cut' | 'work-log' | 'format' | 'rmb' | 'retire' | 'level' | 'glass' | 'luban'
+export type ToolKey = 'triangle' | 'arc' | 'cut' | 'work-log' | 'format' | 'rmb' | 'retire' | 'level' | 'glass' | 'glass-weight' | 'luban' | 'tide'
 export type ToolStatus = 'open' | 'success' | 'failure'
 type Event = { id: string; tool: ToolKey; status: ToolStatus; occurredAt: string }
 
@@ -41,7 +41,7 @@ function uuid(): string {
 export function reportToolEvent(tool: ToolKey, status: ToolStatus): void {
   const account = accountId()
   if (!account) return
-  if ((tool === 'format' || tool === 'glass') && status !== 'open') return
+  if (['format', 'glass', 'glass-weight'].includes(tool) && status !== 'open') return
   try {
     wx.setStorageSync(key(account), [...read(account), { id: uuid(), tool, status, occurredAt: new Date().toISOString() }])
   } catch { return }

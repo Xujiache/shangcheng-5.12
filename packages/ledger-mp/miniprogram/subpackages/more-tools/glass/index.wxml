@@ -1,65 +1,72 @@
 <lz-bg />
-<view class="tool-page lz-route-scene {{_routeMotion}}">
+<view class="tool-page glass-page lz-route-scene {{_routeMotion}}">
   <lz-header title="玻璃 K 值计算" />
-  <view wx:if="{{authorized}}" class="tool-body">
-    <view class="tool-segment">
-      <view class="{{type === 'hollow' ? 'is-active' : ''}}" data-type="hollow" bindtap="changeType">中空玻璃</view>
-      <view class="{{type === 'vacuum' ? 'is-active' : ''}}" data-type="vacuum" bindtap="changeType">真空玻璃</view>
+  <view wx:if="{{authorized}}" class="tool-body tool-body--with-actions glass-body">
+    <view class="glass-topline"><text>玻璃中心传热系数</text><view class="glass-link" bindtap="openWeight">重量估算 <text>›</text></view></view>
+
+    <view wx:if="{{result}}" class="tool-card glass-result">
+      <view class="glass-section-head"><text>计算结果</text><text class="glass-tag">{{result.paneCount}} 片 · {{result.gapCount}} 腔</text></view>
+      <view class="glass-result__number">{{result.value}}<text>W/(m²·K)</text></view>
+      <view class="glass-result__construction">{{result.construction}} mm</view>
+      <view class="glass-result__foot"><text>K / U 值越小，保温能力越好</text><text>中心值</text></view>
     </view>
 
-    <view wx:if="{{!result}}" class="glass-editor">
-      <view class="tool-card glass-structure">
-        <view class="glass-card-head"><text class="tool-title">玻璃构造</text><text>从室外到室内</text></view>
-        <view class="glass-diagram">
-          <text>室外</text><view class="glass-pane"></view><view class="glass-gap">{{type === 'hollow' ? '气体层' : '真空层'}}</view><view class="glass-pane"></view><text>室内</text>
+    <view class="tool-card glass-config">
+      <view class="glass-section-head"><text>玻璃构造</text><text class="glass-caption">室外 → 室内</text></view>
+      <view class="glass-count-row">
+        <view class="glass-presets">
+          <view class="{{panes.length === 2 ? 'is-active' : ''}}" data-count="2" bindtap="presetCount">双玻</view>
+          <view class="{{panes.length === 3 ? 'is-active' : ''}}" data-count="3" bindtap="presetCount">三玻</view>
+          <view class="{{panes.length === 4 ? 'is-active' : ''}}" data-count="4" bindtap="presetCount">四玻</view>
         </view>
-        <view class="glass-structure__label">{{outerMm}} + {{gapMm}} + {{innerMm}} mm</view>
-        <view class="glass-triple">
-          <view><text>外片玻璃</text><input type="digit" value="{{outerMm}}" data-field="outerMm" bindinput="onField" /><text class="glass-unit">mm</text></view>
-          <view><text>{{type === 'hollow' ? '中空层' : '真空层'}}</text><input type="digit" value="{{gapMm}}" data-field="gapMm" bindinput="onField" /><text class="glass-unit">mm</text></view>
-          <view><text>内片玻璃</text><input type="digit" value="{{innerMm}}" data-field="innerMm" bindinput="onField" /><text class="glass-unit">mm</text></view>
+        <view class="glass-stepper">
+          <button class="glass-stepper__button" disabled="{{panes.length <= 2}}" data-delta="-1" bindtap="changeCount">−</button>
+          <picker range="{{counts}}" value="{{panes.length - 2}}" bindchange="chooseCount"><view>{{panes.length}} 片</view></picker>
+          <button class="glass-stepper__button" disabled="{{panes.length >= 20}}" data-delta="1" bindtap="changeCount">＋</button>
         </view>
       </view>
-
-      <view class="tool-card glass-params">
-        <picker wx:if="{{type === 'hollow'}}" range="{{gases}}" range-key="label" value="{{gasIndex}}" bindchange="chooseGas">
-          <view class="tool-row"><text class="tool-row__label">腔体气体</text><text class="tool-row__value">{{gases[gasIndex].label}} ›</text></view>
-        </picker>
-        <picker range="{{coatings}}" range-key="label" value="{{coatingIndex}}" bindchange="chooseCoating">
-          <view class="tool-row"><text class="tool-row__label">Low-E 镀膜</text><text class="tool-row__value">{{coatings[coatingIndex].label}} ›</text></view>
-        </picker>
-        <view wx:if="{{coatingIndex > 0}}" class="tool-row"><text class="tool-row__label">镀膜表面发射率</text><input type="digit" value="{{emissivity}}" data-field="emissivity" bindinput="onField" /></view>
-      </view>
-
-      <view class="glass-advanced" bindtap="toggleAdvanced">边界与{{type === 'vacuum' ? '支撑柱' : '计算'}}参数 <text>{{advanced ? '收起⌃' : '展开⌄'}}</text></view>
-      <view wx:if="{{advanced}}" class="tool-card glass-params">
-        <block wx:if="{{type === 'vacuum'}}">
-          <view class="tool-row"><text class="tool-row__label">真空压力（Pa）</text><input type="digit" value="{{vacuumPressurePa}}" data-field="vacuumPressurePa" bindinput="onField" /></view>
-          <view class="tool-row"><text class="tool-row__label">支撑柱直径（mm）</text><input type="digit" value="{{pillarDiameterMm}}" data-field="pillarDiameterMm" bindinput="onField" /></view>
-          <view class="tool-row"><text class="tool-row__label">支撑柱间距（mm）</text><input type="digit" value="{{pillarPitchMm}}" data-field="pillarPitchMm" bindinput="onField" /></view>
-        </block>
-        <view class="tool-row"><text class="tool-row__label">室外换热系数</text><input type="digit" value="{{outsideH}}" data-field="outsideH" bindinput="onField" /><text class="glass-unit">W/(m²·K)</text></view>
-        <view class="tool-row"><text class="tool-row__label">室内换热系数</text><input type="digit" value="{{insideH}}" data-field="insideH" bindinput="onField" /><text class="glass-unit">W/(m²·K)</text></view>
-        <view class="tool-note">真空压力与支撑柱参数请按厂家产品规格填写。</view>
-      </view>
-      <view wx:if="{{error}}" class="tool-error glass-error">{{error}}</view>
-      <button class="tool-primary" loading="{{calculating}}" disabled="{{calculating}}" bindtap="calculate">计算 K 值</button>
-      <view class="tool-note glass-note">计算玻璃中心区域，不含间隔条、边缘和窗框传热；输入参数应与实际产品一致。</view>
+      <view class="glass-stack-summary">{{construction}} <text>mm</text></view>
+      <view class="glass-column-head"><text>构造层</text><text>厚度</text><text>表面 / 填充</text></view>
+      <block wx:for="{{panes}}" wx:key="id" wx:for-item="pane" wx:for-index="paneIndex">
+        <view class="glass-pane-block">
+          <view class="glass-layer-row">
+            <view class="glass-layer-label"><text class="glass-pane-mark"></text><text>{{paneIndex === 0 ? '外片' : paneIndex === panes.length - 1 ? '内片' : '中片'}} {{paneIndex + 1}}</text></view>
+            <view class="glass-thickness"><input type="digit" maxlength="6" value="{{pane.thicknessMm}}" data-index="{{paneIndex}}" data-field="thicknessMm" bindinput="onPaneField" /><text>mm</text></view>
+            <picker class="glass-layer-picker" range="{{pane.coatings}}" value="{{pane.coatingIndex}}" data-index="{{paneIndex}}" bindchange="chooseCoating"><view>{{pane.coatings[pane.coatingIndex]}}<text class="glass-chevron">⌄</text></view></picker>
+          </view>
+          <view wx:if="{{pane.coatingIndex > 0}}" class="glass-emissivities">
+            <view wx:if="{{pane.coatingIndex === 1 || pane.coatingIndex === 3}}"><text>第 {{paneIndex * 2 + 1}} 面发射率</text><input type="digit" maxlength="5" value="{{pane.frontEmissivity}}" data-index="{{paneIndex}}" data-field="frontEmissivity" bindinput="onPaneField" /></view>
+            <view wx:if="{{pane.coatingIndex === 2 || pane.coatingIndex === 3}}"><text>第 {{paneIndex * 2 + 2}} 面发射率</text><input type="digit" maxlength="5" value="{{pane.backEmissivity}}" data-index="{{paneIndex}}" data-field="backEmissivity" bindinput="onPaneField" /></view>
+          </view>
+        </view>
+        <view wx:if="{{paneIndex < gaps.length}}" class="glass-gap-block">
+          <view class="glass-layer-row">
+            <picker class="glass-layer-label glass-gap-picker" range="{{gapTypes}}" range-key="label" value="{{gaps[paneIndex].typeIndex}}" data-index="{{paneIndex}}" bindchange="chooseGapType"><view><text class="glass-gap-mark"></text><text>{{gapTypes[gaps[paneIndex].typeIndex].label}} {{paneIndex + 1}}</text><text class="glass-chevron">⌄</text></view></picker>
+            <view class="glass-thickness"><input type="digit" maxlength="6" value="{{gaps[paneIndex].thicknessMm}}" data-index="{{paneIndex}}" data-field="thicknessMm" bindinput="onGapField" /><text>mm</text></view>
+            <picker wx:if="{{gaps[paneIndex].typeIndex === 0}}" class="glass-layer-picker" range="{{gases}}" range-key="label" value="{{gaps[paneIndex].gasIndex}}" data-index="{{paneIndex}}" bindchange="chooseGas"><view>{{gases[gaps[paneIndex].gasIndex].label}}<text class="glass-chevron">⌄</text></view></picker>
+            <view wx:else class="glass-layer-picker glass-vacuum-toggle" data-index="{{paneIndex}}" bindtap="toggleGap">支撑柱参数 <text class="glass-chevron">{{gaps[paneIndex].expanded ? '⌃' : '⌄'}}</text></view>
+          </view>
+          <view wx:if="{{gaps[paneIndex].typeIndex === 1 && gaps[paneIndex].expanded}}" class="glass-vacuum-fields">
+            <view class="glass-param"><text>真空压力</text><view><input type="digit" maxlength="8" value="{{gaps[paneIndex].vacuumPressurePa}}" data-index="{{paneIndex}}" data-field="vacuumPressurePa" bindinput="onGapField" /><text>Pa</text></view></view>
+            <view class="glass-param"><text>柱直径</text><view><input type="digit" maxlength="6" value="{{gaps[paneIndex].pillarDiameterMm}}" data-index="{{paneIndex}}" data-field="pillarDiameterMm" bindinput="onGapField" /><text>mm</text></view></view>
+            <view class="glass-param"><text>柱间距</text><view><input type="digit" maxlength="6" value="{{gaps[paneIndex].pillarPitchMm}}" data-index="{{paneIndex}}" data-field="pillarPitchMm" bindinput="onGapField" /><text>mm</text></view></view>
+          </view>
+        </view>
+      </block>
+      <view class="glass-config-foot">A 空气 · Ar 氩气 · V 真空<text>{{panes.length}} 片 / {{gaps.length}} 腔</text></view>
     </view>
 
-    <view wx:else>
-      <view class="tool-card glass-result">
-        <view class="tool-kicker">玻璃中心 K / U 值</view>
-        <view class="glass-result__number">{{result.uValue}}<text>W/(m²·K)</text></view>
-        <view class="tool-note">计算模型：{{result.model}}</view>
-        <view class="glass-result__rule"></view>
-        <view class="tool-row"><text class="tool-row__label">玻璃类型</text><text class="tool-row__value">{{type === 'hollow' ? '中空玻璃' : '真空玻璃'}}</text></view>
-        <view class="tool-row"><text class="tool-row__label">构造</text><text class="tool-row__value">{{outerMm}} + {{gapMm}} + {{innerMm}} mm</text></view>
-        <view class="tool-row"><text class="tool-row__label">室内 / 室外空气温度</text><text class="tool-row__value">{{result.conditions.insideAirC}}°C / {{result.conditions.outsideAirC}}°C</text></view>
+    <view class="tool-card glass-boundary">
+      <view class="glass-section-head glass-boundary-toggle" bindtap="toggleAdvanced"><text>计算条件</text><text class="glass-caption">室外 0℃ · 室内 20℃ <text class="glass-chevron">{{advanced ? '⌃' : '⌄'}}</text></text></view>
+      <view wx:if="{{advanced}}" class="glass-boundary-fields">
+        <view class="glass-param"><text>室外表面系数</text><view><input type="digit" maxlength="6" value="{{outsideH}}" data-field="outsideH" bindinput="onBoundary" /><text>W/(m²·K)</text></view></view>
+        <view class="glass-param"><text>室内表面系数</text><view><input type="digit" maxlength="6" value="{{insideH}}" data-field="insideH" bindinput="onBoundary" /><text>W/(m²·K)</text></view></view>
+        <view class="glass-caption glass-boundary-note">竖直玻璃 · 无太阳辐照 · 玻璃导热系数 1 W/(m·K)</view>
       </view>
-      <button class="tool-primary" bindtap="edit">修改参数</button>
-      <view class="tool-note glass-note">此值仅为所列边界和材料假设下的玻璃中心计算结果，并非整窗传热系数或产品检测报告。</view>
     </view>
+    <view class="glass-explanation"><text>计算说明</text><view>按玻璃中心区域估算，不含窗框、间隔条和边缘热桥。Low-E 发射率、气体及真空参数应按实际产品填写。</view><view>结果用于方案比较，检测值以厂家报告为准。</view></view>
+    <view wx:if="{{error}}" class="glass-error" role="alert">{{error}}</view>
+    <view class="tool-actions glass-actions"><button class="tool-secondary" bindtap="reset">重置</button><button class="tool-primary" loading="{{calculating}}" disabled="{{calculating}}" bindtap="calculate">计算 K 值</button></view>
   </view>
   <view wx:else class="tool-locked"><text>登录后可免费使用玻璃 K 值计算</text><button class="tool-primary" bindtap="login">去登录</button></view>
 </view>

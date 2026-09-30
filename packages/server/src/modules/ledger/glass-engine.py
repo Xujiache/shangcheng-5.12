@@ -27,21 +27,30 @@ def estimate(data):
         thermal = wc.ProductDataThermal(conductivity=1, thickness_meters=thickness, flipped=False)
         return wc.ProductDataOpticalAndThermal(optical, thermal)
 
-    emissivity = data.get("emissivity") if data["coating"] != "none" else 0.84
-    outer = pane(data["outerMm"], 0.84, emissivity if data["coating"] == "surface2" else 0.84)
-    inner = pane(data["innerMm"], emissivity if data["coating"] == "surface3" else 0.84, 0.84)
-    gap_m = data["gapMm"] / 1000
-    if data["type"] == "hollow":
-        gas_type = wc.PredefinedGasType.ARGON if data["gas"] == "argon" else wc.PredefinedGasType.AIR
-        gas = wc.create_gas([[1.0, gas_type]])
-        gap = wc.Layers.gap(thickness=gap_m, gas=gas, pressure=101325)
+    if "panes" in data:
+        panes = data["panes"]
+        gaps = data["gaps"]
     else:
+        emissivity = data.get("emissivity") if data["coating"] != "none" else 0.84
+        panes = [
+            {"thicknessMm": data["outerMm"], "backEmissivity": emissivity if data["coating"] == "surface2" else 0.84},
+            {"thicknessMm": data["innerMm"], "frontEmissivity": emissivity if data["coating"] == "surface3" else 0.84},
+        ]
+        gaps = [{**data, "thicknessMm": data["gapMm"]}]
+    if not 2 <= len(panes) <= 20 or len(gaps) != len(panes) - 1:
+        raise ValueError("invalid pane/gap count")
+
+    def make_gap(item):
+        gap_m = item["thicknessMm"] / 1000
+        if item["type"] == "hollow":
+            gas_type = wc.PredefinedGasType.ARGON if item["gas"] == "argon" else wc.PredefinedGasType.AIR
+            return wc.Layers.gap(thickness=gap_m, gas=wc.create_gas([[1.0, gas_type]]), pressure=101325)
         pillar = wc.CylindricalPillar(
             height=gap_m, material_conductivity=20,
-            cell_area=wc.pillar_cell_area(wc.CellSpacingType.SQUARE, data["pillarPitchMm"] / 1000),
-            radius=data["pillarDiameterMm"] / 2000,
+            cell_area=wc.pillar_cell_area(wc.CellSpacingType.SQUARE, item["pillarPitchMm"] / 1000),
+            radius=item["pillarDiameterMm"] / 2000,
         )
-        gap = wc.Layers.create_pillar(pillar=pillar, pressure=data["vacuumPressurePa"])
+        return wc.Layers.create_pillar(pillar=pillar, pressure=item["vacuumPressurePa"])
 
     def environment(air_c, coefficient):
         return wc.Environment(
@@ -56,7 +65,8 @@ def estimate(data):
         environment(0, data["outsideH"]), environment(20, data["insideH"])
     )
     result = float(wc.GlazingSystem(
-        solid_layers=[outer, inner], gap_layers=[gap], environment=conditions,
+        solid_layers=[pane(item["thicknessMm"], item.get("frontEmissivity", 0.84), item.get("backEmissivity", 0.84)) for item in panes],
+        gap_layers=[make_gap(item) for item in gaps], environment=conditions,
         width_meters=1, height_meters=1, tilt_degrees=90,
     ).u())
     if not math.isfinite(result) or result <= 0:

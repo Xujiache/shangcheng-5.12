@@ -1,0 +1,67 @@
+{
+  "base": "https://ewsn.top",
+  "readinessBase": "http://127.0.0.1:3003",
+  "checks": [
+    {
+      "check": "database and Redis readiness",
+      "passed": true
+    },
+    {
+      "check": "station search",
+      "city": "青岛",
+      "stations": 5,
+      "passed": true
+    },
+    {
+      "check": "station search",
+      "city": "厦门",
+      "stations": 1,
+      "passed": true
+    },
+    {
+      "check": "station search",
+      "city": "三亚",
+      "stations": 2,
+      "passed": true
+    },
+    {
+      "check": "forecast",
+      "date": "20260930",
+      "hourly": 24,
+      "events": 4,
+      "passed": true
+    },
+    {
+      "check": "forecast",
+      "date": "20261001",
+      "hourly": 24,
+      "events": 4,
+      "passed": true
+    },
+    {
+      "check": "forecast",
+      "date": "20261009",
+      "hourly": 24,
+      "events": 4,
+      "passed": true
+    },
+    {
+      "check": "nearby coastal and inland empty state",
+      "passed": true
+    },
+    {
+      "check": "official weather alerts",
+      "alerts": 0,
+      "passed": true
+    },
+    {
+      "check": "invalid inputs rejected",
+      "passed": true
+    },
+    {
+      "check": "existing login configuration",
+      "passed": true
+    }
+  ],
+  "passed": 11
+}

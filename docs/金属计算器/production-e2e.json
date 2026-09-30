@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-09-29T19:23:01.676Z",
+  "sourceBase": "80245e20b7cbe9b159859e3e5058809ebe41c0d9",
+  "materials": 65,
+  "categories": 6,
+  "totalWeightKg": 91.076814,
+  "totalAmountFen": 30835,
+  "configWriteRead": true,
+  "serverRecalculation": true,
+  "accountIsolation": true,
+  "expiredReadonly": true,
+  "exportGuard": true,
+  "deletePersistence": true,
+  "http200Errors": true
+}

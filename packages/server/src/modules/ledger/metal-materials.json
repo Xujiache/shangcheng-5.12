@@ -1,0 +1,587 @@
+[
+  {
+    "category": "plate",
+    "group": "碳钢",
+    "label": "热轧板",
+    "id": "plate.carbon.hot",
+    "density": 7.85,
+    "seedTonPriceYuan": 3306,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "碳钢",
+    "label": "冷轧板",
+    "id": "plate.carbon.cold",
+    "density": 7.85,
+    "seedTonPriceYuan": 3306,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "碳钢",
+    "label": "中厚板",
+    "id": "plate.carbon.medium",
+    "density": 7.85,
+    "seedTonPriceYuan": 3306,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "不锈钢",
+    "label": "201不锈钢",
+    "id": "plate.ss.201",
+    "density": 7.93,
+    "seedTonPriceYuan": 12765,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "不锈钢",
+    "label": "304不锈钢",
+    "id": "plate.ss.304",
+    "density": 7.93,
+    "seedTonPriceYuan": 12765,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "不锈钢",
+    "label": "316不锈钢",
+    "id": "plate.ss.316",
+    "density": 7.98,
+    "seedTonPriceYuan": 12765,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "紫铜",
+    "label": "T2紫铜板",
+    "id": "plate.cu.t2",
+    "density": 8.93,
+    "seedTonPriceYuan": 114730,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "plate",
+    "group": "黄铜",
+    "label": "H62黄铜板",
+    "id": "plate.brass.h62",
+    "density": 8.5,
+    "seedTonPriceYuan": 71963,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "plate",
+    "group": "黄铜",
+    "label": "H59黄铜板",
+    "id": "plate.brass.h59",
+    "density": 8.5,
+    "seedTonPriceYuan": 71963,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "plate",
+    "group": "镀锌板",
+    "label": "热镀锌板",
+    "id": "plate.gi.hot",
+    "density": 7.85,
+    "seedTonPriceYuan": 4168,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "镀锌板",
+    "label": "镀铝锌板",
+    "id": "plate.gi.alzn",
+    "density": 7.85,
+    "seedTonPriceYuan": 4168,
+    "priceMode": "live"
+  },
+  {
+    "category": "plate",
+    "group": "镀锌板",
+    "label": "电镀锌板",
+    "id": "plate.gi.electro",
+    "density": 7.85,
+    "seedTonPriceYuan": 4168,
+    "priceMode": "live"
+  },
+  {
+    "category": "section",
+    "group": "碳钢型材",
+    "label": "角钢",
+    "id": "section.carbon.angle",
+    "density": 7.85,
+    "seedTonPriceYuan": 3706,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "碳钢型材",
+    "label": "槽钢",
+    "id": "section.carbon.channel",
+    "density": 7.85,
+    "seedTonPriceYuan": 3706,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "碳钢型材",
+    "label": "工字钢",
+    "id": "section.carbon.ibeam",
+    "density": 7.85,
+    "seedTonPriceYuan": 3706,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "碳钢型材",
+    "label": "H型钢",
+    "id": "section.carbon.hbeam",
+    "density": 7.85,
+    "seedTonPriceYuan": 3706,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "碳钢型材",
+    "label": "C型钢",
+    "id": "section.carbon.cpurlin",
+    "density": 7.85,
+    "seedTonPriceYuan": 3706,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "不锈钢型材",
+    "label": "304不锈钢型材",
+    "id": "section.ss.304",
+    "density": 7.93,
+    "seedTonPriceYuan": 15265,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "不锈钢型材",
+    "label": "316L不锈钢型材",
+    "id": "section.ss.316l",
+    "density": 7.98,
+    "seedTonPriceYuan": 15265,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "铝型材",
+    "label": "6063铝型材",
+    "id": "section.al.6063",
+    "density": 2.7,
+    "seedTonPriceYuan": 27610,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "section",
+    "group": "铝型材",
+    "label": "6061铝型材",
+    "id": "section.al.6061",
+    "density": 2.7,
+    "seedTonPriceYuan": 27610,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "碳钢",
+    "label": "Q235B黑方管",
+    "id": "square.carbon.q235b",
+    "density": 7.85,
+    "seedTonPriceYuan": 4306,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "碳钢",
+    "label": "热镀锌方管",
+    "id": "square.carbon.hotgi",
+    "density": 7.85,
+    "seedTonPriceYuan": 4306,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "碳钢",
+    "label": "冷镀锌方管",
+    "id": "square.carbon.coldgi",
+    "density": 7.85,
+    "seedTonPriceYuan": 4306,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "不锈钢",
+    "label": "201不锈钢方管",
+    "id": "square.ss.201",
+    "density": 7.93,
+    "seedTonPriceYuan": 10159,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "不锈钢",
+    "label": "304不锈钢方管",
+    "id": "square.ss.304",
+    "density": 7.93,
+    "seedTonPriceYuan": 10159,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "不锈钢",
+    "label": "316L不锈钢方管",
+    "id": "square.ss.316l",
+    "density": 7.98,
+    "seedTonPriceYuan": 10159,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "紫铜",
+    "label": "T2紫铜方管",
+    "id": "square.cu.t2",
+    "density": 8.93,
+    "seedTonPriceYuan": 114730,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "紫铜",
+    "label": "TP2紫铜方管",
+    "id": "square.cu.tp2",
+    "density": 8.93,
+    "seedTonPriceYuan": 114730,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "黄铜",
+    "label": "H62黄铜方管",
+    "id": "square.brass.h62",
+    "density": 8.5,
+    "seedTonPriceYuan": 73463,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "黄铜",
+    "label": "H59黄铜方管",
+    "id": "square.brass.h59",
+    "density": 8.5,
+    "seedTonPriceYuan": 73463,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "铝材",
+    "label": "6063铝方管",
+    "id": "square.al.6063",
+    "density": 2.7,
+    "seedTonPriceYuan": 27610,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "squareTube",
+    "group": "铝材",
+    "label": "6061铝方管",
+    "id": "square.al.6061",
+    "density": 2.7,
+    "seedTonPriceYuan": 27610,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "扁铁",
+    "label": "热轧",
+    "id": "flat.iron.hot",
+    "density": 7.85,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "扁铁",
+    "label": "冷轧",
+    "id": "flat.iron.cold",
+    "density": 7.85,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "扁铁",
+    "label": "热镀锌",
+    "id": "flat.iron.hotgi",
+    "density": 7.85,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "扁铁",
+    "label": "冷镀锌",
+    "id": "flat.iron.coldgi",
+    "density": 7.85,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "扁铁",
+    "label": "304不锈钢",
+    "id": "flat.iron.304",
+    "density": 7.93,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "铜排",
+    "label": "T2紫铜排",
+    "id": "flat.cu.t2",
+    "density": 8.93,
+    "seedTonPriceYuan": 114730,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "铜排",
+    "label": "H62黄铜排",
+    "id": "flat.brass.h62",
+    "density": 8.5,
+    "seedTonPriceYuan": 73463,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "铝排",
+    "label": "A00铝排",
+    "id": "flat.al.a00",
+    "density": 2.7,
+    "seedTonPriceYuan": 25610,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "铝排",
+    "label": "6063铝排",
+    "id": "flat.al.6063",
+    "density": 2.7,
+    "seedTonPriceYuan": 25610,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "flatBar",
+    "group": "铝排",
+    "label": "6061铝排",
+    "id": "flat.al.6061",
+    "density": 2.7,
+    "seedTonPriceYuan": 25610,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "碳钢管",
+    "label": "Q235B焊管",
+    "id": "rtube.carbon.q235b",
+    "density": 7.85,
+    "seedTonPriceYuan": 4106,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "碳钢管",
+    "label": "热镀锌管",
+    "id": "rtube.carbon.hotgi",
+    "density": 7.85,
+    "seedTonPriceYuan": 4106,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "碳钢管",
+    "label": "冷镀锌管",
+    "id": "rtube.carbon.coldgi",
+    "density": 7.85,
+    "seedTonPriceYuan": 4106,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "不锈钢管",
+    "label": "201不锈钢管",
+    "id": "rtube.ss.201",
+    "density": 7.93,
+    "seedTonPriceYuan": 10659,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "不锈钢管",
+    "label": "304不锈钢管",
+    "id": "rtube.ss.304",
+    "density": 7.93,
+    "seedTonPriceYuan": 10659,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "不锈钢管",
+    "label": "316L不锈钢管",
+    "id": "rtube.ss.316l",
+    "density": 7.98,
+    "seedTonPriceYuan": 10659,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "紫铜管",
+    "label": "T2紫铜管",
+    "id": "rtube.cu.t2",
+    "density": 8.93,
+    "seedTonPriceYuan": 115730,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "紫铜管",
+    "label": "TP2紫铜管",
+    "id": "rtube.cu.tp2",
+    "density": 8.93,
+    "seedTonPriceYuan": 115730,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "黄铜管",
+    "label": "H62黄铜管",
+    "id": "rtube.brass.h62",
+    "density": 8.5,
+    "seedTonPriceYuan": 72963,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "铝管",
+    "label": "6063铝管",
+    "id": "rtube.al.6063",
+    "density": 2.7,
+    "seedTonPriceYuan": 27110,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundTube",
+    "group": "铝管",
+    "label": "6061铝管",
+    "id": "rtube.al.6061",
+    "density": 2.7,
+    "seedTonPriceYuan": 27110,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "碳钢圆钢",
+    "label": "Q235B圆钢",
+    "id": "rbar.carbon.q235b",
+    "density": 7.85,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "碳钢圆钢",
+    "label": "45#圆钢",
+    "id": "rbar.carbon.45",
+    "density": 7.85,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "碳钢圆钢",
+    "label": "40Cr圆钢",
+    "id": "rbar.carbon.40cr",
+    "density": 7.85,
+    "seedTonPriceYuan": 3606,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "不锈钢棒",
+    "label": "304不锈钢棒",
+    "id": "rbar.ss.304",
+    "density": 7.93,
+    "seedTonPriceYuan": 14265,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "不锈钢棒",
+    "label": "316L不锈钢棒",
+    "id": "rbar.ss.316l",
+    "density": 7.98,
+    "seedTonPriceYuan": 14265,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "紫铜棒",
+    "label": "T2紫铜棒",
+    "id": "rbar.cu.t2",
+    "density": 8.93,
+    "seedTonPriceYuan": 112430,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "黄铜棒",
+    "label": "H62黄铜棒",
+    "id": "rbar.brass.h62",
+    "density": 8.5,
+    "seedTonPriceYuan": 70963,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "黄铜棒",
+    "label": "H59黄铜棒",
+    "id": "rbar.brass.h59",
+    "density": 8.5,
+    "seedTonPriceYuan": 70963,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "铝棒",
+    "label": "6061铝棒",
+    "id": "rbar.al.6061",
+    "density": 2.7,
+    "seedTonPriceYuan": 26110,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "铝棒",
+    "label": "6063铝棒",
+    "id": "rbar.al.6063",
+    "density": 2.7,
+    "seedTonPriceYuan": 26110,
+    "priceMode": "estimate"
+  },
+  {
+    "category": "roundBar",
+    "group": "铝棒",
+    "label": "7075铝棒",
+    "id": "rbar.al.7075",
+    "density": 2.81,
+    "seedTonPriceYuan": 26110,
+    "priceMode": "estimate"
+  }
+]

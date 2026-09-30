@@ -1,0 +1,51 @@
+@import "../common.wxss";
+.weight-body { padding-top: 10px; }
+.weight-page .tool-card { margin-bottom: 12px; padding: 14px; box-shadow: none; }
+.weight-topline { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 12px; color: var(--muted); font-size: 12px; }
+.weight-topline > view { color: var(--accent-text); }
+.weight-topline > view > text { margin-left: 3px; font-size: 18px; }
+.weight-section-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text); font-size: 15px; font-weight: 700; }
+.weight-caption { color: var(--muted); font-size: 11px; font-weight: 400; }
+.weight-size-fields { display: flex; align-items: center; gap: 10px; margin-top: 13px; }
+.weight-field { flex: 1; min-width: 0; }
+.weight-field > text { display: block; margin-bottom: 7px; color: var(--muted); font-size: 12px; }
+.weight-field > view, .weight-picker { display: flex; align-items: center; gap: 5px; height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: rgba(86,118,104,.045); }
+.weight-field input { flex: 1; width: 0; min-width: 0; height: 100%; color: var(--text); font-size: 20px; font-weight: 600; }
+.weight-field > view > text { color: var(--faint); font-size: 11px; }
+.weight-size-times { margin-top: 19px; color: var(--faint); font-size: 17px; }
+.weight-stepper { display: flex; align-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 9px; }
+.weight-stepper button { width: 32px; height: 32px; min-height: 32px; margin: 0; padding: 0; background: transparent; color: var(--accent-text); font-size: 17px; line-height: 1; border-radius: 0; }
+.weight-stepper button[disabled] { opacity: .3; }
+.weight-stepper picker > view { min-width: 52px; padding: 0 6px; font-size: 13px; font-weight: 500; text-align: center; }
+.weight-thickness-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 14px 0; padding-top: 14px; border-top: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+.weight-modes { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.weight-modes > view { padding: 7px 9px; color: var(--muted); font-size: 11px; font-weight: 400; }
+.weight-modes .is-active { color: var(--accent-text); background: rgba(14,124,102,.08); font-weight: 600; }
+.weight-thickness-fields { display: flex; gap: 12px; }
+.weight-thickness-fields input, .weight-picker { color: var(--text); font-size: 16px; font-weight: 500; }
+.weight-picker { justify-content: space-between; }
+.weight-picker > text { color: var(--faint); font-size: 13px; }
+.weight-picker.is-overridden { color: var(--faint); }
+.weight-field .weight-custom-badge { margin-left: 5px; color: var(--accent-text); font-size: 10px; }
+.weight-hint { margin-top: 9px; color: var(--faint); font-size: 10px; line-height: 1.6; }
+.weight-mixed-fields { display: flex; flex-wrap: wrap; gap: 12px; }
+.weight-mixed-fields .weight-field { flex: 0 0 calc(50% - 6px); }
+.weight-mixed-fields input { font-size: 16px; font-weight: 500; }
+.weight-explanation { margin: 3px 3px 12px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.weight-explanation > text { display: block; margin-bottom: 3px; color: var(--text); font-weight: 600; }
+.weight-tag { padding: 4px 7px; border-radius: 6px; background: rgba(14,124,102,.07); color: var(--accent-text); font-size: 10px; font-weight: 500; }
+.weight-result__number { margin: 6px 0 10px; color: var(--accent-text); font-size: 38px; line-height: 1.3; font-weight: 700; font-variant-numeric: tabular-nums; }
+.weight-result__number > text { margin-left: 7px; color: var(--muted); font-size: 13px; font-weight: 400; }
+.weight-result__metrics { display: flex; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.weight-result__metrics > view { flex: 1; min-width: 0; }
+.weight-result__metrics > view + view { padding-left: 12px; border-left: 1px solid var(--border); }
+.weight-result__metrics > view > text { color: var(--muted); font-size: 10px; }
+.weight-result__metrics > view > view { margin-top: 4px; color: var(--text); font-size: 16px; font-weight: 600; }
+.weight-result__metrics > view > view > text { color: var(--muted); font-size: 9px; font-weight: 400; }
+.weight-formula { margin-top: 10px; color: var(--muted); font-size: 11px; line-height: 1.7; overflow-wrap: break-word; }
+.weight-layer-results { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; }
+.weight-layer-results > view { display: flex; gap: 6px; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.weight-layer-results > view > text:last-child { color: var(--text); }
+.weight-error { margin: 0 2px 12px; color: #b44735; font-size: 12px; line-height: 1.6; }
+.weight-actions .tool-secondary { flex: 0 0 84px; }
+.weight-actions button { height: 46px; padding: 0 12px; border-radius: 16px; }

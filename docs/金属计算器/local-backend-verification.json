@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-09-29T18:29:14.305Z",
+  "database": "metal_acceptance_20260930",
+  "backend": "http://127.0.0.1:3002",
+  "materials": 65,
+  "mixedCategories": 6,
+  "savedQuoteId": "cmun0g45g00021090josgdxh7",
+  "totalWeightKg": 91.076814,
+  "totalAmountFen": 36283,
+  "configWriteRead": true,
+  "accountIsolation": true,
+  "expiredReadonly": true,
+  "exportGuard": true,
+  "deletePersistence": true
+}

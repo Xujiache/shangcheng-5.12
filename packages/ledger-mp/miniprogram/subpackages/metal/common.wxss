@@ -1,0 +1,27 @@
+.metal-page { min-height: 100vh; color: var(--text); }
+.metal-body { padding: 12px 12px calc(28px + env(safe-area-inset-bottom)); }
+.metal-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; }
+.metal-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 0 14px; font-size: 14px; font-weight: 600; }
+.metal-heading__note { color: var(--muted); font-size: 11px; font-weight: 400; }
+.metal-number { font-variant-numeric: tabular-nums; }
+.metal-note { color: var(--muted); font-size: 11px; line-height: 1.65; }
+.metal-disclaimer { margin: 16px 4px 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+.metal-link { color: var(--accent); font-size: 12px; }
+.metal-btn { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 44px; margin: 0; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--r-btn); background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; line-height: 1.2; }
+.metal-btn::after { border: none; }
+.metal-btn--outline { background: #fff; color: var(--accent); border-color: #c5dcd2; }
+.metal-btn--plain { min-height: 40px; padding: 0 8px; background: transparent; border: 0; color: var(--accent); font-size: 12px; font-weight: 400; }
+.metal-btn--danger { color: #ad5348; }
+.metal-btn[disabled] { border-color: #e0e7e3; background: #e8eeeb; color: #8c9c94; }
+.metal-tabs { display: flex; border-bottom: 1px solid var(--border); background: rgba(255,255,255,.85); }
+.metal-tabs__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; position: relative; min-height: 46px; color: var(--muted); font-size: 14px; }
+.metal-tabs__item.is-active { color: var(--accent); font-weight: 600; }
+.metal-tabs__item.is-active::after { content: ''; position: absolute; bottom: 0; left: 35%; right: 35%; height: 3px; border-radius: 3px; background: var(--accent); }
+.metal-tabs__count { font-size: 11px; font-weight: 400; }
+.metal-dock { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid #dce7e1; background: #f8fbf9; }
+.metal-dock__buttons { display: flex; gap: 10px; }
+.metal-dock__buttons .metal-btn { flex: 1; }
+.metal-empty { padding: 38px 22px; text-align: center; }
+.metal-empty__title { display: block; color: var(--text); font-size: 16px; font-weight: 600; }
+.metal-empty__note { display: block; max-width: 270px; margin: 8px auto 18px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.metal-empty .metal-btn { width: 150px; margin: 0 auto; }

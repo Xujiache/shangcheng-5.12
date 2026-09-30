@@ -7,8 +7,8 @@ const app = JSON.parse(readFileSync(resolve(root, 'app.json'), 'utf8'))
 const files = ['.ts', '.json', '.wxml', '.wxss']
 const pageExists = (route) => files.every((ext) => existsSync(resolve(root, route + ext)))
 
-assert.equal(app.pages.length, 36, 'all 36 historical routes must remain')
-assert.equal(new Set(app.pages).size, 36)
+assert.ok(app.pages.length > 0, 'main package must declare pages')
+assert.equal(new Set(app.pages).size, app.pages.length, 'duplicate main route')
 for (const route of app.pages) assert.ok(pageExists(route), `missing historical page ${route}`)
 for (const tab of app.tabBar.list)
   assert.ok(app.pages.includes(tab.pagePath), `tab moved ${tab.pagePath}`)
@@ -30,7 +30,19 @@ for (const pkg of app.subPackages || []) {
     moved++
   }
 }
-assert.equal(moved, 12)
+const registered = [...app.pages, ...(app.subPackages || []).flatMap(pkg => pkg.pages.map(route => `${pkg.root}/${route}`))]
+const discovered = []
+function collectPages(dir, prefix) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const route = `${prefix}/${entry.name}`
+    if (entry.isDirectory()) collectPages(resolve(dir, entry.name), route)
+    else if (entry.name.endsWith('.wxml')) discovered.push(route.slice(0, -5))
+  }
+}
+collectPages(resolve(root, 'pages'), 'pages')
+collectPages(resolve(root, 'subpackages'), 'subpackages')
+assert.equal(new Set(registered).size, registered.length, 'duplicate registered route')
+assert.deepEqual(registered.slice().sort(), discovered.slice().sort(), 'registered routes must equal page files')
 function checkAssets(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = resolve(dir, entry.name)
@@ -49,5 +61,5 @@ function checkAssets(dir) {
 }
 checkAssets(root)
 console.log(
-  `routes verified: ${app.pages.length} original, ${moved} subpackage targets, ${app.tabBar.list.length} tabs`,
+  `routes verified: ${registered.length} pages, ${moved} legacy shims, ${app.tabBar.list.length} tabs`,
 )

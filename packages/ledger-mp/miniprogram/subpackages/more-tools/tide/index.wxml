@@ -1,0 +1,57 @@
+<lz-bg />
+<view class="tide-page lz-route-scene {{_routeMotion}}">
+  <view class="tide-nav"><lz-header title="潮汐表" /></view>
+  <view class="tide-body">
+    <view class="tide-location">
+      <view class="tide-location__main" bindtap="openSearch"><view class="tide-location__title"><text>{{station ? station.name : '选择潮位站'}}</text><text class="tide-chevron">⌄</text></view><text class="tide-location__region">{{station ? station.province + ' · ' + station.city : '全国沿海 · 港口 · 海岛'}}</text></view>
+      <button wx:if="{{station}}" class="tide-save {{isSaved ? 'is-saved' : ''}}" bindtap="toggleSaved" aria-label="{{isSaved ? '取消收藏站点' : '收藏站点'}}"><lz-icon name="star" size="18" color="{{isSaved ? 'accent' : 'muted'}}" /><text>{{isSaved ? '已收藏' : '收藏'}}</text></button>
+      <button wx:else class="tide-save" bindtap="openSearch"><lz-icon name="search" size="18" color="accent" /><text>查找</text></button>
+    </view>
+    <block wx:if="{{station}}">
+      <scroll-view scroll-x class="tide-date-scroll" enhanced show-scrollbar="{{false}}" scroll-into-view="{{selectedDate === days[0].key ? 'tide-date-start' : 'day-' + selectedDate}}" scroll-with-animation><view id="tide-date-start" class="tide-date-list"><view wx:for="{{days}}" wx:key="key" id="day-{{item.key}}" class="tide-date {{selectedDate === item.key ? 'is-active' : ''}}" data-date="{{item.key}}" bindtap="chooseDate"><text>{{item.label}}</text><text>{{item.month}}/{{item.day}}</text></view></view></scroll-view>
+      <view wx:if="{{alerts.length}}" class="tide-alert" bindtap="toggleAlerts"><lz-icon name="bell" size="17" color="#a94727" /><text>{{alerts[0].title}}</text><text class="tide-alert__count">{{alerts.length}}条</text><lz-icon name="chevron" size="14" color="#a94727" /></view>
+      <view wx:if="{{alertsOpen}}" class="tide-alert-list"><view wx:for="{{alerts}}" wx:key="id"><text>{{item.title}}</text><text>{{item.source}} · {{item.issuedAt}}</text><text>{{item.description}}</text></view></view>
+      <view wx:if="{{loading}}" class="tide-state"><text>正在读取潮汐预报</text><text>{{station.name}} · 请稍候</text></view>
+      <view wx:if="{{error}}" class="tide-state"><text>{{error}}</text><button bindtap="loadForecast">重新加载</button></view>
+      <block wx:if="{{forecast && info}}">
+        <view class="tide-card tide-overview">
+          <view class="tide-overview__date"><text>{{dateText}}</text><text class="tide-forecast-tag">预报</text></view>
+          <view class="tide-readings">
+            <view class="tide-current"><text class="tide-label">{{info.primaryLabel}}</text><view class="tide-current__value"><text>{{info.primaryValue}}</text><text>m</text><text wx:if="{{info.direction}}" class="tide-direction {{info.direction === '落潮' ? 'is-falling' : ''}}">{{info.direction === '涨潮' ? '↑' : '↓'}} {{info.direction}}</text></view></view>
+            <view class="tide-next"><text class="tide-label">{{info.nextLabel}}</text><text wx:if="{{info.hasNext}}" class="tide-next__value">{{info.nextTime}}</text><button wx:elif="{{info.isToday}}" class="tide-next__link" bindtap="showTomorrow">查看明天 ›</button><text class="tide-next__event">{{info.nextEvent}}</text></view>
+          </view>
+          <view class="tide-metrics"><view><text class="tide-label">{{info.rangeLabel}}</text><text>{{info.range}}</text></view><view><text class="tide-label">{{info.rateLabel}}</text><text>{{info.rateText}}</text></view><view><text class="tide-label">最低 / 最高 (m)</text><text>{{info.lowHigh}}</text></view></view>
+          <view class="tide-chart-head"><text class="tide-section-title">潮位曲线</text><view class="tide-chart-legend"><text class="tide-dot is-high"></text><text>满潮</text><text class="tide-dot is-low"></text><text>低潮</text></view></view>
+          <view class="tide-chart-readout"><text>{{selectedPoint || '点按 / 滑动查看逐小时潮位'}}</text><text>单位：m</text></view>
+          <image id="tideChart" class="tide-chart" src="{{chartImage}}" mode="scaleToFill" bindtouchstart="chartTouch" catchtouchmove="chartTouch" aria-label="全天潮位曲线，滑动查看逐小时潮位" />
+          <text wx:if="{{chartError}}" class="tide-muted">{{chartError}}</text>
+          <view class="tide-chart-note">潮位与涨落速率为预报估算，非实测值</view>
+          <view class="tide-events-head"><text class="tide-section-title">高低潮时刻</text><text>北京时间</text></view>
+          <view wx:if="{{!info.events.length}}" class="tide-muted">当天暂无高低潮时刻</view>
+          <view class="tide-events"><view wx:for="{{info.events}}" wx:key="time" class="tide-event {{item.type === 'H' ? 'is-high' : 'is-low'}} {{item.isNext ? 'is-next' : ''}}"><view class="tide-event__label"><text class="tide-dot {{item.type === 'H' ? 'is-high' : 'is-low'}}"></text><text>{{item.label}}</text></view><text class="tide-event__time">{{item.clock}}</text><text class="tide-event__height">{{item.heightText}}</text><text class="tide-event__next">{{item.isNext ? (info.isToday ? '下一次' : '首个潮时') : ''}}</text></view></view>
+          <view class="tide-actions"><button bindtap="copySchedule"><lz-icon name="doc" size="17" color="muted" /><text>复制潮汐表</text></button><button open-type="share"><lz-icon name="share" size="17" color="accent" /><text>分享给朋友</text></button></view>
+        </view>
+        <view class="tide-card tide-weather"><view class="tide-weather__main" bindtap="showAlerts"><lz-icon name="shield" size="20" color="{{alerts.length || alertsError ? 'loss' : 'accent'}}" /><view><text class="tide-section-title">气象预警</text><text class="tide-weather__status">{{alerts.length ? alerts.length + ' 条生效中，查看详情' : alertsError || '当前暂无生效预警'}}</text></view><lz-icon wx:if="{{alerts.length}}" name="chevron" size="16" color="muted" /></view><view wx:for="{{alertAttributions}}" wx:key="*this" class="tide-attribution"><text user-select="true">{{item}}</text></view></view>
+        <view class="tide-source"><view><text>{{forecast.attribution}}</text><text>更新 {{updatedText}}</text></view><view class="tide-source__actions"><text bindtap="copySourceLink">复制来源链接</text><text bindtap="toggleTips">数据说明 {{tipsOpen ? '⌃' : '⌄'}}</text></view></view>
+        <view wx:if="{{tipsOpen}}" class="tide-explain"><text>潮位基准</text><text>潮位相对于该站潮高基准面，并非海拔；曲线连接逐小时预报与高低潮时刻，当前潮位及速率由相邻小时线性估算。</text><text>数据范围</text><text>当前数据源未提供浪高、官方潮型、潮汐系数。海钓、赶海和航行请同时核对当地公告、气象预警与现场情况。</text></view>
+      </block>
+    </block>
+    <view wx:else class="tide-welcome"><view class="tide-welcome__symbol"><lz-icon name="trend" size="36" color="accent" /></view><text>看潮汐，先选站点</text><text>搜索港口、城市或岛屿，查看未来 10 天潮位预报与高低潮时刻。</text><button bindtap="openSearch">选择潮位站</button><text class="tide-welcome__note">按潮位站覆盖，内陆无数据地区会明确提示</text></view>
+  </view>
+</view>
+<view wx:if="{{searchOpen}}" class="tide-mask" bindtap="closeSearch"></view>
+<view wx:if="{{searchOpen}}" class="tide-search-panel">
+  <view class="tide-search-panel__head"><view><text>选择潮位站</text><text>支持全国有潮汐数据的站点</text></view><button bindtap="closeSearch" aria-label="关闭站点选择"><lz-icon name="close" size="22" color="muted" /></button></view>
+  <view class="tide-search-box"><lz-icon name="search" size="18" color="muted" /><input value="{{query}}" placeholder="搜索港口、城市、岛屿" confirm-type="search" bindinput="onSearchInput" bindconfirm="confirmSearch" /><button wx:if="{{query}}" bindtap="clearSearch" aria-label="清空搜索"><lz-icon name="close" size="16" color="muted" /></button></view>
+  <scroll-view scroll-y class="tide-search-results" enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{!query && !searching && !stations.length}}">
+      <button class="tide-nearby" bindtap="locate"><lz-icon name="target" size="18" color="accent" /><text>查找附近潮位站</text><lz-icon name="chevron" size="16" color="muted" /></button>
+      <view wx:if="{{savedStations.length}}" class="tide-saved"><text class="tide-search-label">我的收藏</text><view class="tide-suggestions"><view wx:for="{{savedStations}}" wx:key="id" data-id="{{item.id}}" bindtap="chooseStation">{{item.name}}</view></view></view>
+      <text class="tide-search-label">常用沿海城市</text><view class="tide-suggestions"><view data-query="大连" bindtap="searchPreset">大连</view><view data-query="青岛" bindtap="searchPreset">青岛</view><view data-query="上海" bindtap="searchPreset">上海</view><view data-query="宁波" bindtap="searchPreset">宁波</view><view data-query="厦门" bindtap="searchPreset">厦门</view><view data-query="深圳" bindtap="searchPreset">深圳</view><view data-query="三亚" bindtap="searchPreset">三亚</view><view data-query="北海" bindtap="searchPreset">北海</view></view>
+    </view>
+    <view wx:if="{{searching}}" class="tide-search-state">正在查找潮位站…</view><view wx:elif="{{searchError}}" class="tide-search-state">{{searchError}}</view>
+    <view wx:if="{{stations.length && !searching}}" class="tide-search-label">{{stations.length}} 个潮位站</view>
+    <view wx:for="{{stations}}" wx:key="id" class="tide-station-row" data-id="{{item.id}}" bindtap="chooseStation"><view><text>{{item.name}}</text><text>{{item.province}} · {{item.city}}</text></view><lz-icon name="{{station.id === item.id ? 'check' : 'chevron'}}" size="18" color="{{station.id === item.id ? 'accent' : 'faint'}}" /></view>
+  </scroll-view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

@@ -52,6 +52,7 @@ async function main() {
   assert.equal(storage.get('ledger_tool_events_v1:alice').length, 0)
 
   reportToolEvent('format', 'success')
+  reportToolEvent('glass-weight', 'success')
   assert.equal(pending.length, 0, 'format terminal events belong to the server')
   console.log('tool event queue verified: guest omission, metadata only, offline replay, account isolation')
 }

@@ -1,0 +1,261 @@
+{
+  "date": "2026-09-30",
+  "searches": [
+    {
+      "key": "price_discovery_0",
+      "id": "01a0eeda-b470-7300-b461-1c4b9388ee21",
+      "web": [
+        {
+          "url": "https://m.cnal.com/market/",
+          "title": "铝业行情-今日铝价,铝锭价格,有色宝长江,上海期货,南海有色,LME,中铝 ...",
+          "description": "[- 有色宝长江铝\\\n\n- 价格：24160\\\n- 09-28]([https://m.cnal.com/market/nanhai/](https://m.cnal.com/market/nanhai/) \"南海有色\") [- 上海现货铝\\\n\n| 品名 | 区间 | 均价 | 涨跌 | 日期 |\n|-|-|-|-|-|\n| 铝 | 24140-24180 | 24160 | -80 | 09-28 |\n| 铜 | 111640-111660 | 111650 | -880 | 09-28 |\n| 铅 | 16075-16175 | 16125 | -75 | 09-28 |\n\n| 品名 | 价格 | 涨跌 | 日期 |\n|-|-|-|-|\n| 铝 | 24160 | -80 | 09-28 |\n| 铜 | 111650 | -880 | 09-28 |\n| 铅 | 16125 | -75 | 09-28 |\n| 镍 | 125700 | -1100 | 09-28 |\n\n| 品名 | 区间 | 均价 | 涨跌 | 日期 |\n|-|-|-|-|-|\n| 合金压铸铝锭7#铝* | 21950-22150 | 22050 | -50 | 09-28 |\n| 环保合金压铸铝锭ADC12 | 26700-26900 | 26800 | -50 | 09-28 |\n| 破碎生铝91-93%* | 18600-18800 | 18700 | -50 | 09-28 |\n| 破碎熟铝90-92%* | 18450-18650 | 18550 | -50 | 09-28 |\n\n| 品名 | 区间 | 均价 | 涨跌 | 日期 |\n|-|-|-|-|-|\n| 铝 | 24150-24190 | 24170 | -80 | 09-28 |\n| 铜 | 110980-111530 | 111255 | -840 | 09-28 |\n| 铅 | 16050-16150 | 16100 | -100 | 09-28 |\n\n| 品名 | 区间 | 均价 | 涨跌 | 日期 |\n|-|-|-|-|-|\n| A00铝 | 24380-24440 | 24410 | -90 | 09-28 |\n| 1#铅 | 16150-16250 | 16200 | -75 | 09-28 |\n\n| 品名 | 现货买 | 现货卖 | 结算价 | 日期 |\n|-|-|-|-|-|\n| 原铝 | 3253 | 3254 | 3254 | 09-25 |\n| 铅 | 1902 | 1902.5 | 1902.5 | 09-25 |\n| 铜 | 14739 | 14740 | 14740 | 09-25 |"
+        },
+        {
+          "url": "https://nfusionsolutions.com/zh/%E4%BA%A7%E5%93%81/%E9%BB%84%E9%87%91%E4%BB%B7%E6%A0%BC-api/",
+          "title": "实时黄金价格API和实时贵金属数据源 - nFusion Solutions",
+          "description": "一个API即可涵盖所有贵金属数据，从实时报价到多年历史数据，应有尽有。您只需按需提取所需数据即可。. ... 实时现货价格： 实时提供黄金、白银、铂金、钯金、铑金和铜的买入 ..."
+        },
+        {
+          "url": "https://www.smm.cn/",
+          "title": "上海有色网_原上海有色金属网_有色金属价格行情门户",
+          "description": "# [![上海有色网](https://imgqn.smm.cn/production/admin/company/IyZZB20230908191430.png)](https://www.smm.cn/)\n[电解铝](https://hq.smm.cn/aluminum/1010)\n\n[氧化铝、铝土矿、预焙阳极、石油焦、烧碱、氟化铝、阴极](https://hq.smm.cn/aluminum/1020)\n\n[氧化铝期货价格](https://hq.smm.cn/aluminum/list/13833)[烧碱期货价格](https://hq.smm.cn/aluminum/list/13838)[地方炼厂报价](https://hq.smm.cn/aluminum/list/13902)[预焙阳极周评](https://hq.smm.cn/aluminum/list/13993)[氟化盐周评](https://hq.smm.cn/aluminum/list/13994)[国产氧化铝价格](https://hq.smm.cn/aluminum/list/404)[烧碱价格](https://hq.smm.cn/aluminum/list/12254)[进口氧化铝价格](https://hq.smm.cn/aluminum/list/342)[国产铝土矿价格](https://hq.smm.cn/aluminum/list/412)[铝土矿CIF](https://hq.smm.cn/aluminum/list/344)[预焙阳极价格](https://hq.smm.cn/aluminum/list/446)[石油焦价格](https://hq.smm.cn/aluminum/list/12514)[氟化铝价格](https://hq.smm.cn/aluminum/list/334)[冰晶石价格](https://hq.smm.cn/aluminum/list/434)[阴极价格](https://hq.smm.cn/aluminum/list/422)[煤炭价格](https://hq.smm.cn/aluminum/list/376)[氧化铝早评](https://hq.smm.cn/aluminum/list/362)[铝土矿周评](https://hq.smm.cn/aluminum/list/348)[铝原料深度分析](https://hq.smm.cn/aluminum/list/10010)[氧化铝周评](https://hq.smm.cn/aluminum/list/380)[铝辅料周评](https://hq.smm.cn/aluminum/list/382)[烧碱周评](https://hq.smm.cn/aluminum/list/12252)[氧化铝产量](https://hq.smm.cn/aluminum/list/314)[铝土矿进口量](https://hq.smm.cn/aluminum/list/370)[氧化铝进出口量](https://hq.smm.cn/aluminum/list/400)\n\n[铝加工](https://hq.smm.cn/aluminum/1030)\n\n[铸造铝合金](https://hq.smm.cn/aluminum/1040)\n\n[铝合金早评](https://hq.smm.cn/aluminum/list/14145)[SMMADC12价格](https://hq.smm.cn/aluminum/list/384)[ADC12分地区价格](https://hq.smm.cn/aluminum/list/436)[其他铝合金价格](https://hq.smm.cn/aluminum/list/312)[铝车轮出口量](https://hq.smm.cn/aluminum/list/418)[铝合金日评](https://hq.smm.cn/aluminum/list/448)[废铝及合金深度分析](https://hq.smm.cn/aluminum/list/10030)[铝合金及废铝周评](https://hq.smm.cn/aluminum/list/336)[铝合金进出口量](https://hq.smm.cn/aluminum/list/450)[再生铝产能](https://hq.smm.cn/aluminum/list/12484)\n\n[复化锭价格](https://hq.smm.cn/aluminum/list/13911)\n\n[废铝](https://hq.smm.cn/aluminum/1050)\n\n[安徽废铝价格](https://hq.smm.cn/aluminum/list/14088)[湖南废铝价格](https://hq.smm.cn/aluminum/list/14092)[废铝日评](https://hq.smm.cn/aluminum/list/442)[政策跟踪](https://hq.smm.cn/aluminum/list/12486)[废铝产量](https://hq.smm.cn/aluminum/list/338)[废铝进出口量](https://hq.smm.cn/aluminum/list/406)[废铝企业报价](https://hq.smm.cn/aluminum/list/12490)[上海废铝价格](https://hq.smm.cn/aluminum/list/396)[浙江废铝价格](https://hq.smm.cn/aluminum/list/318)[江苏废铝价格](https://hq.smm.cn/aluminum/list/12426)[佛山废铝价格](https://hq.smm.cn/aluminum/list/386)[进口废铝价格](https://hq.smm.cn/aluminum/list/324)[河南废铝价格](https://hq.smm.cn/aluminum/list/326)[重庆废铝价格](https://hq.smm.cn/aluminum/list/364)[四川废铝价格](https://hq.smm.cn/aluminum/list/12428)[贵州废铝价格](https://hq.smm.cn/aluminum/list/12430)[天津废铝价格](https://hq.smm.cn/aluminum/list/378)[山东废铝价格](https://hq.smm.cn/aluminum/list/12488)[河北废铝价格](https://hq.smm.cn/aluminum/list/322)[江西废铝价格](https://hq.smm.cn/aluminum/list/12432)[湖北废铝价格](https://hq.smm.cn/aluminum/list/12434)\n\n## 现货买卖挂单\n- [今日废铜回收价格](https://platform.smm.cn/cb/c?id=3253&url=cW1taWojNjZxaDdqdHQ3enc2enZpaXxrNiErKQ==)\n- [长江现货铜价](https://platform.smm.cn/cb/c?id=3254&url=cW1taWojNjZ6czdqdHQ3enc2enhtfH52a2A2KykoKCkrKywpKyAq)\n- [铝锭价格今日铝价](https://platform.smm.cn/cb/c?id=3256&url=cW1taWojNjZxaDdqdHQ3enc2eHVsdHB3bHQ=)\n- [长江现货铝锭价格](https://platform.smm.cn/cb/c?id=3257&url=cW1taWojNjZ6czdqdHQ3enc2enhtfH52a2A2KykoKCkrKywpKiAh)\n- [LME铝价](https://platform.smm.cn/cb/c?id=3258&url=cW1taWojNjZxaDdqdHQ3enc2fXhteDZ8YW18a3d4dQ==)\n- [废钢回收价格](https://platform.smm.cn/cb/c?id=3259&url=cW1taWojNjZxaDdqdHQ3enc2am18fHU2dXBqbTYoKy4pLQ==)\n- [今日铅价格](https://platform.smm.cn/cb/c?id=3260&url=cW1taWojNjZxaDdqdHQ3enc2dXx4fQ==)\n- [废铝价格](https://platform.smm.cn/cb/c?id=3261&url=cW1taWojNjZxaDdqdHQ3enc2eHVsdHB3bHQ2KCksKQ==)\n- [今日锌价格](https://platform.smm.cn/cb/c?id=3262&url=cW1taWojNjZxaDdqdHQ3enc2Y3B3eg==)\n- [不锈钢价格](https://platform.smm.cn/cb/c?id=3278&url=cW1taWojNjZxaDdqdHQ3enc2am14cHd1fGpqNGptfHx1)\n- [贵金属价格](https://platform.smm.cn/cb/c?id=3266&url=cW1taWojNjZxaDdqdHQ3enc2aWt8enB2bGo0dHxteHVq)\n- [今日黄金价格](https://platform.smm.cn/cb/c?id=3267&url=cW1taWojNjZxaDdqdHQ3enc2aWt8enB2bGo0dHxteHVqNnVwam02KCguLCs=)\n- [长江铜价](https://platform.smm.cn/cb/c?id=12697&url=cW1taWojNjZxaDdqdHQ3enc2cSw2enN6bA==)\n- [长江铝价](https://platform.smm.cn/cb/c?id=12698&url=cW1taWojNjZxaDdqdHQ3enc2cSw2enN4dWw=)\n- [今日白银价格](https://platform.smm.cn/cb/c?id=3321&url=cW1taWojNjZxaDdqdHQ3enc2aWt8enB2bGo0dHxteHVqNnVwam02KCguLC0=)\n- [今日钢材价格](https://platform.smm.cn/cb/c?id=12692&url=cW1taWojNjZqbXx8dTdqdHQ3enc2am18fHU2KSsp)\n- [螺纹钢价格](https://platform.smm.cn/cb/c?id=3328&url=cW1taWojNjZxaDdqdHQ3enc2am18fHU2dXBqbTYoKyktIQ==)\n- [铁矿石价格](https://platform.smm.cn/cb/c?id=12669&url=cW1taWojNjZqbXx8dTdqdHQ3enc2am18fHU2KSAp)\n- [铝合金价格](https://platform.smm.cn/cb/c?id=12672&url=cW1taWojNjZxaDdqdHQ3enc2eHVsdHB3bHQ2KCktKQ==)\n- [今日锑价格](https://platform.smm.cn/cb/c?id=12687&url=cW1taWojNjZxaDdqdHQ3enc2eHdtcHR2d2A=)\n- [锌合金价格](https://platform.smm.cn/cb/c?id=12690&url=cW1taWojNjZxaDdqdHQ3enc2Y3B3ejZ1cGptNigqIQ==)\n- [铝期货](https://platform.smm.cn/cb/c?id=12684&url=cW1taWojNjZxaDdqdHQ3enc2fXhteDZ*bG1sa3xqJnxhenF4d358JGpxf3w*enhtfH52a2AkPFwvPFsrPFhYPFwgPCAqPCBd)\n- [国际金价](https://platform.smm.cn/cb/c?id=12693&url=cW1taWojNjZxaDdqdHQ3enc2fXhteDZ8YW18a3d4dSZ8YXpxeHd-fCR6dnR8YT96eG18fnZrYCRaVEE8XCA8W1s8IS08XCA8IS48ICg=)\n- [废不锈钢价格](https://platform.smm.cn/cb/c?id=12689&url=cW1taWojNjZxaDdqdHQ3enc2am14cHd1fGpqNGptfHx1NnVwam02KCgtLS0=)\n- [硫酸铜价格](https://platform.smm.cn/cb/c?id=12691&url=cW1taWojNjZxaDdqdHQ3enc2enZpaXxrNnVwam02KyAr)\n- [金属硅价格](https://platform.smm.cn/cb/c?id=12688&url=cW1taWojNjZxaDdqdHQ3enc2anB1cHp2dzYrLSsp)\n- [长江现货铅价](https://platform.smm.cn/cb/c?id=12700&url=cW1taWojNjZ6czdqdHQ3enc2enhtfH52a2A2KykoKCkrKywpLCsp)\n- [氧化铝价格](https://platform.smm.cn/cb/c?id=12695&url=cW1taWojNjZxaDdqdHQ3enc2eHVsdHB3bHQ2dXBqbTYtKS0=)\n- [今日钢铁价格](https://platform.smm.cn/cb/c?id=3329&url=cW1taWojNjZqbXx8dTdqdHQ3enc2)\n- [硅钢价格](https://platform.smm.cn/cb/c?id=12668&url=cW1taWojNjZqbXx8dTdqdHQ3enc2am18fHU2KCkp)\n- [铜矿价格](https://platform.smm.cn/cb/c?id=12676&url=cW1taWojNjZxaDdqdHQ3enc2enZpaXxrNiEuKQ==)\n- [硅石价格](https://platform.smm.cn/cb/c?id=12699&url=cW1taWojNjZxaDdqdHQ3enc2anB1cHp2dzZ1cGptNigoKC8r)\n\n## 商机\n上海高鹏金属材料有限公司 |\n\n铝合金锭 [ADC12国标原生铝合金锭](https://b.smm.cn/info/332823)\n\n压铸锌合金 [ZA12锌合金 ZP12 ZP1110 12号 特殊定制 锌锭厂家](https://b.smm.cn/info/216424)\n\n[宁波金铭金属有限公司](https://shop.smm.cn/437866) |"
+        },
+        {
+          "url": "https://www.cmegroup.com/cn-s/markets/metals.html",
+          "title": "金属期货和期权 - CME Group",
+          "description": "通过芝商所领先的金属期货和期权的可靠数据，在全球金属市场中获得优势。 获取关于黄金、白银和铜等关键金属的实时和历史数据，以增强您的交易决策并提升您的风险管理 ..."
+        },
+        {
+          "url": "https://m.ccmn.cn/",
+          "title": "长江有色网_长江有色金属网-有色金属采购批发平台",
+          "description": "- [铜](https://m.ccmn.cn/cu/)\n- [铝](https://m.ccmn.cn/al/)\n- [铅](https://m.ccmn.cn/qian/)\n- [不锈钢](https://m.ccmn.cn/mbxg/)\n- [铁合金](https://m.ccmn.cn/mthj/)\n\n[1#铜\\\n\\\n112,280—112,380\\\n\\\n112,330\\\n\\\n-250](https://m.ccmn.cn/mhangqing/chart/tjxh/40288092327157530132716ac8ab000b) [A00铝\\\n\\\n24,230—24,270\\\n\\\n24,250\\\n\\\n0](https://m.ccmn.cn/mhangqing/chart/tjxh/40288092327157530132716d2960000c) [0#锌\\\n\\\n26,620—26,720\\\n\\\n26,670\\\n\\\n180](https://m.ccmn.cn/mhangqing/chart/tjxh/4028809232aeff4b0132af0d4dd10001) [1#铅\\\n\\\n16,175—16,275\\\n\\\n16,225\\\n\\\n-75](https://m.ccmn.cn/mhangqing/chart/tjxh/40288092327157530132716d754d000e) [1#锡\\\n\\\n411,000—413,000\\\n\\\n412,000\\\n\\\n250](https://m.ccmn.cn/mhangqing/chart/tjxh/40288092327157530132716d9d57000f) [1#镍\\\n\\\n125,150—129,150\\\n\\\n127,150\\\n\\\n-800](https://m.ccmn.cn/mhangqing/chart/tjxh/40288092327157530132716dbf950010) [1#镁\\\n\\\n17,550—17,650\\\n\\\n17,600\\\n\\\n0](https://m.ccmn.cn/mhangqing/chart/tjxh/402880532fb8e7ce012fb8e9ecc90004) [黄铜带(H62)\\\n\\\n87,250—87,650\\\n\\\n87,450\\\n\\\n-100](https://m.ccmn.cn/mhangqing/chart/tjxh/4028809232b2ae420132b31102360046) [黄铜带(H65)\\\n\\\n89,900—90,300\\\n\\\n90,100\\\n\\\n-100](https://m.ccmn.cn/mhangqing/chart/tjxh/4028809232b2ae420132b344c6a7007c) [黄铜带(H68)\\\n\\\n94,150—94,550\\\n\\\n94,350\\\n\\\n-100](https://m.ccmn.cn/mhangqing/chart/tjxh/4028809232b2ae420132b3451f27007d) [紫铜带(T2)\\\n\\\n117,200—117,400\\\n\\\n117,300\\\n\\\n-300](https://m.ccmn.cn/mhangqing/chart/tjxh/4028809232b2ae420132b33059870060) [黄铜棒(H59-1)\\\n\\\n83,100—83,500\\\n\\\n83,300\\\n\\\n-50](https://m.ccmn.cn/mhangqing/chart/tjxh/4028809232b2ae420132b3442640007b) [黄铜板(H62)\\\n\\\n87,750—88,150\\\n\\\n87,950\\\n\\\n-100](https://m.ccmn.cn/mhangqing/chart/tjxh/4028809232b2ae420132b3115c9b0047)\n\n[**供应优质黄铜棒/六角棒/黄铜方板**\\\n\\\n网上协商价格\\\n\\\n十堰同创](https://m.ccmn.cn/products/84a24c728dd74161af6957d4d470fe38.html) [**磷铜丝 磷铜棒管QSn6.5-0.1 7-0.2 8-0.3**\\\n\\\n网上协商价格\\\n\\\n联荣有色](https://m.ccmn.cn/products/7250424082ca4dfaa66703956e2b1e58.html) [**铝及铝合金卷材**\\\n\\\n网上协商价格\\\n\\\n弘达](https://m.ccmn.cn/products/f0b8cc0cd4944bcc80777a258179147c.html) [**铜钛 铜钛合金 铜钛中间合金**\\\n\\\n网上协商价格](https://m.ccmn.cn/products/180ab128e4864fce8131f173efa213ad.html) [**金拉 电缆铜带 0.05-0.8MM**\\\n\\\n网上协商价格\\\n\\\n金拉](https://m.ccmn.cn/products/00303159acee43539fce72686539be8e.html) [**供应各类紫铜异型材**\\\n\\\n网上协商价格\\\n\\\n骏达](https://m.ccmn.cn/products/95c28ca165784b8787b96f0cfa52a89c.html) [**H62黄铜棒 六角棒 现货供应**\\\n\\\n_¥_ 42\\\n\\\n锦升发](https://m.ccmn.cn/products/877de04b18fb4979b98a380026aa42ad.html) [**锡青铜自润滑轴承**\\\n\\\n网上协商价格\\\n\\\n芜湖合金](https://m.ccmn.cn/products/54c94c8775c649cb8a68428197c97754.html)\n\n[实时](https://m.ccmn.cn/mzixun/mzbkx/)"
+        }
+      ],
+      "providers": []
+    },
+    {
+      "key": "price_discovery_1",
+      "id": "01a0eeda-b405-7628-9934-8573ee8fe46c",
+      "web": [
+        {
+          "url": "https://metals.dev/",
+          "title": "Metals.Dev - Real-time Precious Metal Prices API",
+          "description": "# Enterprise Grade Real-time Metal Price & Currency Conversion API\n- Get started for free. No credit card required. Easy to integrate.\n\n```javascript\nGET https://api.metals.dev/v1/latest\n\n{\n\n    \"status\": \"success\",\n\n    \"currency\": \"USD\",\n\n    \"unit\": \"toz\",\n\n    \"metals\": {\n\n        \"gold\": 1929.15,\n\n        \"silver\": 22.99,\n\n        \"platinum\": 921.398,\n\n        \"lbma_gold_am\": 1913.75,\n\n        \"lbma_gold_pm\": 1928.75,\n\n        [28+ precious & industrial metal prices]\n\n    },\n\n    \"currencies\": {\n\n        \"GBP\": 1.26962,\n\n        \"EUR\": 1.08955,\n\n        \"JPY\": 0.006925,\n\n        [170+ currency conversion rates]\n\n    },\n\n    \"timestamp\": \"2023-07-04T09:01:04.744Z\"\n\n}\n```"
+        },
+        {
+          "url": "https://metals-api.com/",
+          "title": "Metals-API | Free Gold, Silver & Precious Metals Rates JSON API",
+          "description": "# Gold Price API|    Precious metals and currency API\n### Get real-time and historical prices for gold, silver, platinum, palladium, and other precious metals. Access market data for global commodities and currencies.\n\"Aluminum(USDALU)\":0.1020,\n\n\"LME Aluminium(USDLME-ALU)\":0.1012,\n\n\"LME Copper(USDLME-XCU)\":0.4585,\n\n\"LME Steel HRC FOB China(USDSTEEL-HR)\":0.0154,\n\n\"LME Steel Rebar FOB Turkey(USDSTEEL-RE)\":0.0171,\n\n\"Copper(USDXCU)\":0.4238,\n\n# Trusted worldwide\nMetals-API is used by thousands of developers, SMBs and large corporations every day.\n\n# Dedicated Support\n## Pricing made simple.\n### COPPER MONTHLY\n$19.99/mo\n\nBilled monthly\n\n- 2,500 API calls/mo then $0.032435 each\n\n### GOLD MONTHLY\n$149.99/mo\n\n### COPPER\n$199.00/year\n\nBilled yearly\n\n### GOLD\n$1499.00/year\n\nBilled yearly\n\n[Subscribe](https://metals-api.com/register)\n\n## FAQs\nMetals-API provides Gold (XAU) and Silver (XAG) rates for a wide range of cities across India.\n\nMetals API provides various London Metal Exchange (LME) prices. For example, the symbol for copper is LME-XCU."
+        },
+        {
+          "url": "https://metals.dev/docs",
+          "title": "API Documentation - Metals.Dev",
+          "description": "# Documentation\n#### Introduction\nMetals.Dev API provides a simple to use, developer friendly, JSON API for spot prices of precious metals, industrial metals and currency conversion rates. We provide affordable pricing, which makes our API perfect for businesses of any size from startups to enterprises in need of reliable Metals API.\n\nThe API provides a live feed of Gold, Silver, Platinum & Palladium with a maximum delay of 60 seconds even for the Free Plan.\n\n#### Copy Code\n```javascript\n1\nasync function fetchMetalRates() {\n\n2\n    const url = 'https://api.metals.dev/v1/latest?api_key=<YOUR API KEY>&currency=USD&unit=toz';\n\n3\n\n4\n    const response = await fetch(url, {\n\n5\n        headers: {\n\n6\n            'Accept': 'application/json',\n\n7\n        },\n\n8\n    });\n\n9\n\n10\n    const result = await response.json();\n\n11\n    console.log(result);\n\n12\n}\n```\n\n```javascript\n1\npublic void fetchMetalRates() {\n\n2\n    URL url = new URL(\"https://api.metals.dev/v1/latest?api_key=<YOUR API KEY>&currency=USD&unit=toz\");\n\n3\n    HttpURLConnection http = (HttpURLConnection)url.openConnection();\n\n4\n    http.setRequestProperty(\"Accept\", \"application/json\");\n\n5\n\n6\n    System.out.println(http.getResponseCode() + \" \" + http.getResponseMessage());\n\n7\n    http.disconnect();\n\n8\n}\n```\n\n#### API Key\n###### Base URL\n```javascript\nhttps://api.metals.dev/v1/\n```\n\n#### Spot Metal Endpoint\n###### API Response\n```json\n{\n\n    \"status\": \"success\",\n\n    \"timestamp\": \"2023-07-05T07:10:01.933Z\",\n\n    \"currency\": \"USD\",\n\n    \"unit\": \"toz\",\n\n    \"metal\": \"gold\",\n\n    \"rate\": {\n\n        \"price\": 1923.76,\n\n        \"ask\": 1923.63,\n\n        \"bid\": 1922.96,\n\n        \"high\": 1927.17,\n\n        \"low\": 1920.91,\n\n        \"change\": -2.67,\n\n        \"change_percent\": -0.14\n\n    }\n\n}\n```\n\n#### Endpoints\nmetal price api metals api metals.dev api gold price api silver price api platinum price api palladium price api live gold price live silver price live platinum price live gold price api live silver price api live platinum price api spot gold price api spot silver price api spot platinum price api precious metals api gold rate api silver rate api gold bid - ask price api silver bid - ask price api lbma gold price api london fix gold price api london gold am price london gold pm price mcx gold price api mcx silver price api mcx spot gold price mcx live gold price currency conversion rates currency conversion api usd to eur api currency api exchange rate api currency rates nodejs forex api metals data api api metals metalpriceapi"
+        },
+        {
+          "url": "https://goldprice.dev/comparison/metals-api-alternatives",
+          "title": "Metals-API Alternatives for Gold Data (2026) · goldprice.dev",
+          "description": "Free real-time gold and silver pricing with no rate cap and no card required, the most generous free tier of any option. Free tier caps at 25 requests/day; ..."
+        },
+        {
+          "url": "https://metalpriceapi.com/",
+          "title": "MetalpriceAPI | Free Precious Metals and Foreign Exchange Rates API",
+          "description": "# Real-Time Precious Metal Prices & Currency Conversion for your Business\nFree tier available\n\n12. \"USDXCU (Copper)\": 0.4214943464,\n\n## Not Satisfied?\n#### Ready to Get Started?\n[Start Free](https://metalpriceapi.com/register)"
+        }
+      ],
+      "providers": []
+    },
+    {
+      "key": "price_research_0",
+      "id": "01a0eedb-3a27-7339-a0a9-ec68a8c1bb3a",
+      "web": [
+        {
+          "url": "https://www.shfe.com.cn/",
+          "title": "上海期货交易所",
+          "description": "- [日周数据](https://www.shfe.com.cn/reports/tradedata/dailyandweeklydata/)\n- 交易日历  - [交易日历](https://www.shfe.com.cn/services/calenderandholidays/tradingcalendar/)\n  - [交易时间](https://www.shfe.com.cn/services/calenderandholidays/tradinghours/)\n\n交易日历\n\n当前日期为：\n\n交易日历"
+        },
+        {
+          "url": "https://www.shfe.com.cn/services/technology/technical_download/201906/P020240320683540012629.pdf",
+          "title": "[PDF] 上海期货交易所第二代行情发布平台接口规范",
+          "description": "# 第二代行情发布平台 接口规范\n发布日期: 2019/02/18\n\n## 登录应答(TypeID=0x12)\n| 字段 | 类型 | 说明 |\n|-|-|-|\n| TradingDay | Char[9] | 交易日。格式为\"YYYYMMDD\\0\"。 |\n\n## 快照查询应答(TypeID=0x32)\n| 字段 | 类型 | 说明 |\n|-|-|-|\n| TradingDay | Char[9] | 交易日。格式为\"YYYYMMDD\\0\"。 |"
+        },
+        {
+          "url": "https://www.shfe.com.cn/publicnotice/notice/202511/t20251119_829553.html",
+          "title": "关于交易和行情API 2.0接入生产系统的通知 - 上海期货交易所",
+          "description": "为更好服务市场、支持业务发展，上海期货交易所自2025年11月24日交易（即11月21日晚夜盘）起开放交易和行情API 2.0接入生产系统，2026年4月3日收盘后停止 ..."
+        },
+        {
+          "url": "https://www.shfe.com.cn/services/information/forwarder/",
+          "title": "相关技术文档 - 上海期货交易所",
+          "description": "- [日周数据](https://www.shfe.com.cn/reports/tradedata/dailyandweeklydata/)\n- 交易日历  - [交易日历](https://www.shfe.com.cn/services/calenderandholidays/tradingcalendar/)\n  - [交易时间](https://www.shfe.com.cn/services/calenderandholidays/tradinghours/)\n\n交易所介绍"
+        }
+      ],
+      "providers": []
+    },
+    {
+      "key": "price_research_1",
+      "id": "01a0eedb-3a80-71b4-a6d5-0f72ce9c9a44",
+      "web": [
+        {
+          "url": "https://metals-api.com/",
+          "title": "Metals-API | Free Gold, Silver & Precious Metals Rates JSON API",
+          "description": "# Gold Price API|    Precious metals and currency API\n### Get real-time and historical prices for gold, silver, platinum, palladium, and other precious metals. Access market data for global commodities and currencies.\n\"Aluminum(USDALU)\":0.1020,\n\n\"Copper(USDXCU)\":0.4238,\n\n# Dedicated Support\n## FAQs\nIt provides real-time and historical quotes, metal and currency conversions, time-series data, price fluctuation analysis, and daily high and low values through a fast, reliable, and easy-to-use API."
+        },
+        {
+          "url": "https://www.goldapi.io/",
+          "title": "GoldAPI.io: Free Real-Time Gold and Silver Spot Prices REST JSON API",
+          "description": "# Gold & Silver Prices JSON API\n## 100% Real-Time & Historical Gold, Silver, Platinum & Palladium Spot Prices & Exchange Rates from FOREX and LBMA for Your Business & Customers\n```\n// GoldAPI.io Response\n{\n  \"timestamp\": 1777005765,\n  \"datetime\": \"2026-04-24T04:42:45Z\",\n  \"metal\": \"XAU\",\n  \"currency\": \"USD\",\n  \"exchange\": \"FOREXCOM\",\n  \"symbol\": \"FOREXCOM:XAUUSD\",\n  \"prev_close_price\": 4693.025,\n  \"open_price\": 4693.025,\n  \"low_price\": 4658.09,\n  \"high_price\": 4711.21,\n  \"open_time\": 1776988800,\n  \"price\": 4665.825,\n  \"unit\": \"troy_ounce\",\n  \"change\": -27.2,\n  \"change_percent\": -0.58,\n  \"ask\": 4666.32,\n  \"bid\": 4665.36,\n  \"price_per_unit\": {\n    \"troy_ounce\": 4665.825,\n    \"gram\": 150.0098,\n    \"kilogram\": 150009.8\n  },\n  \"melt_price_per_gram\": {\n    \"24k\": 150.0098,\n    \"22k\": 137.5089,\n    \"18k\": 112.5073\n  },\n  \"currency_info\": {\n    \"code\": \"USD\",\n    \"name\": \"United States Dollar\",\n    \"symbol\": \"US$\"\n  }\n}\n```\n\n## Frequently Asked Questions\n### Learn more about GoldAPI.io live and historical precious metals price API.\nAll prices are delivered in real-time via API."
+        },
+        {
+          "url": "https://gold-api.com/docs",
+          "title": "API Documentation - Gold API",
+          "description": "# API Documentation\n## Get Symbols\n### API Tester\nResponse Time: 300.20 ms\n\n#### Response:\n```\n[\\\n  {\\\n    \"name\": \"Silver\",\\\n    \"symbol\": \"XAG\"\\\n  },\\\n  {\\\n    \"name\": \"Gold\",\\\n    \"symbol\": \"XAU\"\\\n  },\\\n  {\\\n    \"name\": \"Bitcoin\",\\\n    \"symbol\": \"BTC\"\\\n  },\\\n  {\\\n    \"name\": \"Ethereum\",\\\n    \"symbol\": \"ETH\"\\\n  },\\\n  {\\\n    \"name\": \"Palladium\",\\\n    \"symbol\": \"XPD\"\\\n  },\\\n  {\\\n    \"name\": \"Copper\",\\\n    \"symbol\": \"HG\"\\\n  },\\\n  {\\\n    \"name\": \"Platinum\",\\\n    \"symbol\": \"XPT\"\\\n  }\\\n]\n```"
+        },
+        {
+          "url": "https://www.oilpriceapi.com/metals-api",
+          "title": "Metals API: live tin, aluminum, nickel, copper and iron ore",
+          "description": "4 days ago · PriceAPI is a metals API that returns tin, aluminum, nickel, copper and iron ore. Each metal has its own live page with a chart and history: ..."
+        }
+      ],
+      "providers": []
+    },
+    {
+      "key": "price_research_3",
+      "id": "01a0eedb-3c02-75a8-9bfc-c248cd3cba1a",
+      "web": [
+        {
+          "url": "https://www.smm.cn/",
+          "title": "上海有色网_原上海有色金属网_有色金属价格行情门户",
+          "description": "# [![上海有色网](https://imgqn.smm.cn/production/admin/company/IyZZB20230908191430.png)](https://www.smm.cn/)\n- [历史价格](https://price.smm.cn/)\n\n## SMM价格\n如何获得SMM价格?\n\n- 中国大陆（+86）\n- 中国香港（+852）\n- 中国澳门（+853）\n- 中国台湾（+886）\n\n登录\n\n- [![河北新立中有色金属集团有限公司](https://imgqn.smm.cn/production/admin/company/vMqiy20250410141323.jpeg)](https://platform.smm.cn/cb/c?id=16900&url=cW1taSM2NnF7YXVjN3VwY3F2d343enZ0N3p3Ng==)![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAOCAYAAAA1+Nx+AAAABHNCSVQICAgIfAhkiAAAAS9JREFUOI29VL1KxEAYnAu74MKakINwIXDGKmBtn1fwAXwD4R5AsBSsrIR7Azubw8o2vVUEYSuDEDBLWAKBHGxjoZFLvKxp4nS733wzzLc/MwCnmBDWlOL/YkBMxbqu7znn5/tqSZKc+b5/BACc80UQBFf7eDPsnIEQYuV53km7Zowtm6Z5b9dpmj7FcbwBgKZpHrTWlWVZBwCgta76nF8JOOcLKeVrFEV3pmRSytuiKJ7DMLwRQqwAYKinY1DX9YdJGPgaDSGE2ba9VEqtKaUOACilfpLvpugYuK57rJR6Mxl8N25MnMEEhBA2tjHP82vG2Ly/77ruxaABpdT5a/4tGGPzvth2u33s84zX1ARKqaOUWnfECDkcNMiy7LIsy5exBlrrakyCzjuYApN/FZ95k2lGxR9OjwAAAABJRU5ErkJggg==)"
+        },
+        {
+          "url": "https://data.smm.cn/dataapi/%E9%94%A1/tin_tin_05_contract_price",
+          "title": "锡05合约价格接口信息 - 上海有色网",
+          "description": "# [![上海有色网](https://data.smm.cn/static/images/logo.png)](https://data.smm.cn/)\n- [价格](https://data.smm.cn/item/%E9%92%A8/%E4%BB%B7%E6%A0%BC)\n\n- [价格](https://data.smm.cn/item/%E7%A1%92/%E4%BB%B7%E6%A0%BC)\n\n- [价格](https://data.smm.cn/item/%E7%A2%B2/%E4%BB%B7%E6%A0%BC)\n\n- [价格](https://data.smm.cn/item/%E7%A0%B7/%E4%BB%B7%E6%A0%BC)\n\n- [价格](https://data.smm.cn/item/%E9%92%A0/%E4%BB%B7%E6%A0%BC)\n\n- [价格](https://data.smm.cn/item/%E9%92%AC/%E4%BB%B7%E6%A0%BC)\n\n### 锡05合约价格\n接口地址：\n\n[https://dataapi.smm.cn/GetData/tin\\_tin\\_05\\_contract\\_price](https://dataapi.smm.cn/GetData/tin\\_tin\\_05\\_contract\\_price)\n\n接口备注："
+        },
+        {
+          "url": "https://www.metal.com/smm-api",
+          "title": "SMM Database API – Build custom solutions, automate workflows, and ...",
+          "description": "SMM Database API puts you in full control, You can access all data in Database Pro, as well as options, futures, historical prices, and news—all via the API."
+        }
+      ],
+      "providers": []
+    },
+    {
+      "key": "price_options_0",
+      "id": "01a0eede-c585-7682-bf7c-0d0b5e226272",
+      "web": [
+        {
+          "url": "https://www.jikehudong.com/pricing.html",
+          "title": "报价方案- 企业微信API与聚合聊天套餐| 极客互动",
+          "description": "极客互动企业微信报价方案：免费体验、套餐A 300账号、套餐B 200账号、套餐C 100账号、套餐D 50账号。支持私有化部署与7×24售后。"
+        },
+        {
+          "url": "https://www.dmxapi.cn/",
+          "title": "DMXAPI官网：中国大模型API聚合平台",
+          "description": "DMX 取自“大模型”的拼音首字母，而DMXAPI 是由LangChain 中文网提供的智能API聚合服务平台，旨在帮助LLM 应用开发的初学者轻松接入多种大模型，快速进入AI 应用的广阔领域 ..."
+        },
+        {
+          "url": "https://www.juhe.cn/market",
+          "title": "数据块，数据包下载_聚合数据- 天聚地合",
+          "description": "一站式API开发、调试和测试解决方案，集成消息推送、实时监测、数据助手和可视化查询等多种功能，旨在提升开发效率，降低信息安全风险。 AI创作. 一键解锁创意新玩法，无需 ..."
+        },
+        {
+          "url": "https://apimart.ai/zh",
+          "title": "聚合全球顶级AI API 折扣- 500+ 模型低价访问 - APIMart",
+          "description": "通过APIMart 用一套兼容OpenAI 的接口接入全球主流大模型，覆盖文本、图像、视频与多模态能力；统一密钥、统一计费、统一监控，让团队以更低成本快速把生产级AI 能力接 ..."
+        },
+        {
+          "url": "https://itick.org/zh-cn",
+          "title": "股票外汇加密货币实时行情API | 贵金属期货基金数据| 实时报价API - iTick",
+          "description": "实时金融数据API，提供外汇、指数、股票、贵金属、期货、基金、加密货币等实时行情数据. 我们是一家数字代理机构，为金融科技公司和开发者提供可靠的数据源APIs，涵盖 ..."
+        }
+      ],
+      "providers": []
+    },
+    {
+      "key": "price_options_1",
+      "id": "01a0eede-c50a-733a-9305-057c90402597",
+      "web": [
+        {
+          "url": "https://americanproducts.com/product/fabricated-sheet-metal/",
+          "title": "Fabricated Sheet Metal - American Products, Inc. (API)",
+          "description": "Fabricated Sheet Metal. API offers fabricated sheet metal to meet all of your specifications. Applications include column covers, store displays, ..."
+        },
+        {
+          "url": "https://fred.stlouisfed.org/series/WPU101707",
+          "title": "Metals and Metal Products: Cold Rolled Steel Sheet and Strip ...",
+          "description": "# Producer Price Index by Commodity: Metals and Metal Products: Cold Rolled Steel Sheet and Strip (WPU101707)\nObservations\n\nAug 2026: 469.251 | Index Jun 1982=100, Not Seasonally Adjusted |\n\nMonthly\n\nUpdated: Sep 10, 202611:54 AM CDT\n\n[Next Release Date:\\\nOct 15, 2026](https://fred.stlouisfed.org/releases/calendar?rid=46&y=2026)\n\nObservations\n\nAug 2026:469.251\n\nUpdated: Sep 10, 202611:54 AM CDT\n\n[Next Release Date:\\\nOct 15, 2026](https://fred.stlouisfed.org/releases/calendar?rid=46&y=2026)\n\n|  |  |  |\n|-|-|-|\n| Aug 2026: | 469.251 |  |\n| Jul 2026: | 446.617 |  |\n| Jun 2026: | 433.069 |  |\n| May 2026: | 423.758 |  |\n| Apr 2026: | 418.952 |  |\n| [View All](https://fred.stlouisfed.org/data/WPU101707) |\n\n## Notes\n#### Suggested Citation:\nU.S. Bureau of Labor Statistics, retrieved from FRED, Federal Reserve Bank of St. Louis; [https://fred.stlouisfed.org/series/WPU101707](https://fred.stlouisfed.org/series/WPU101707), September 25, 2026.\n\n## Release Tables\nProducer Price Index\n\n## Related Data and Content\n### Data Suggestions Based On Your Search\n[![](https://fred.stlouisfed.org/graph/fredgraph.png?id=WPU101&nsh=1&width=600&height=400)](https://fred.stlouisfed.org/series/WPU101)\n\n[**Producer Price Index by Commodity: Metals and Metal Products: Iron and Steel**](https://fred.stlouisfed.org/series/WPU101)\n\n[![](https://fred.stlouisfed.org/graph/fredgraph.png?id=WPU10170502&nsh=1&width=600&height=400)](https://fred.stlouisfed.org/series/WPU10170502)\n\n[**Producer Price Index by Commodity: Metals and Metal Products: Steel Wire, Stainless Steel**](https://fred.stlouisfed.org/series/WPU10170502)\n\n[![](https://fred.stlouisfed.org/graph/fredgraph.png?id=WPU10170301&nsh=1&width=600&height=400)](https://fred.stlouisfed.org/series/WPU10170301)\n\n[**Producer Price Index by Commodity: Metals and Metal Products: Hot Rolled Steel Sheet and Strip, Including Tin Mill Products**](https://fred.stlouisfed.org/series/WPU10170301)\n\n[**Producer Price Index by Commodity: Metals and Metal Products: Hot Rolled Steel Bars, Plates, and Structural Shapes**](https://fred.stlouisfed.org/series/WPU101704)\n\n[![](https://fred.stlouisfed.org/graph/fredgraph.png?id=WPU10170674&nsh=1&width=600&height=400)](https://fred.stlouisfed.org/series/WPU10170674)\n\n[**Producer Price Index by Commodity: Metals and Metal Products: Steel Pipe and Tube, Stainless Steel**](https://fred.stlouisfed.org/series/WPU10170674)\n\n[![](https://fred.stlouisfed.org/graph/fredgraph.png?id=PCU3312213312211&nsh=1&width=600&height=400)](https://fred.stlouisfed.org/series/PCU3312213312211)\n\n[![](https://fred.stlouisfed.org/graph/fredgraph.png?id=WPU10760102&nsh=1&width=600&height=400)](https://fred.stlouisfed.org/series/WPU10760102)\n\n[![](https://fred.stlouisfed.org/graph/fredgraph.png?id=PALUMUSDM&nsh=1&width=600&height=400)](https://fred.stlouisfed.org/series/PALUMUSDM)\n\n[**Global price of Aluminum**](https://fred.stlouisfed.org/series/PALUMUSDM)\n\n[See More...](https://fred.stlouisfed.org/series/WPU101707#moreTrendingSeries)"
+        },
+        {
+          "url": "https://www.metalsusa.com/steel-plate-sheet/",
+          "title": "Steel Plate & Sheet | Metals USA",
+          "description": "Metals USA maintains a large inventory of steel plate and sheet in a variety of thicknesses, sizes, and specialty grades."
+        },
+        {
+          "url": "https://centralcitysteel.com/buy-metal/",
+          "title": "Buy Metal & Steel - Central City Steel, Inc.",
+          "description": "If you are looking to buy steel and metal at some of the industry's most competitive prices, Central City Steel has what you need."
+        },
+        {
+          "url": "https://www.scrapmetalrecyclingportricheyfl.com/industrial-steel",
+          "title": "Industrial Steel - STR Scrap Metals",
+          "description": "STR Scrap Metal also stocks a complete line of new steel, stainless steel and aluminum products that can be purchase by the foot or the length."
+        }
+      ],
+      "providers": [
+        {
+          "provider": "fred",
+          "capability": "categories/category"
+        },
+        {
+          "provider": "fred",
+          "capability": "categories/children"
+        },
+        {
+          "provider": "fred",
+          "capability": "categories/related"
+        },
+        {
+          "provider": "fred",
+          "capability": "categories/related-tags"
+        },
+        {
+          "provider": "fred",
+          "capability": "categories/series"
+        }
+      ]
+    },
+    {
+      "key": "price_specific",
+      "id": "01a0eedf-0693-7438-b799-4a98548babbe",
+      "web": [
+        {
+          "url": "https://www.reddit.com/r/Blacksmith/comments/1i2rxjh/steel_price/?tl=zh-hans",
+          "title": "钢材价格: r/Blacksmith - Reddit",
+          "description": "钢材是一种商品，价格会波动。 便利性也是一个考虑因素。我大部分钢材都 ... 它们会免费切割一次，这使得在我的皮卡车上运输库存变得很容易 ..."
+        },
+        {
+          "url": "https://www.zylalabs.com/zh/api-marketplace/%E5%B8%82%E5%9C%BA%E6%95%B0%E6%8D%AE%E4%B8%8E%E4%BA%A4%E6%98%93/hrc%E9%92%A2%E6%9D%90%E4%BB%B7%E6%A0%BC+api/3902",
+          "title": "HRC钢材价格API",
+          "description": "Rating 5.0(100)HRC钢材价格API提供了热轧卷(HRC)钢材价格的实时和历史数据， ... 7 天免费试用. 100% uptime 89ms avg MCP ready. 最新金属价格API."
+        },
+        {
+          "url": "https://emlog.josen.net/tag/API",
+          "title": "API - 钢材知识问答系统Ai⁺ 常州仁成金属精密钢管厂 江苏省常州市钢管 ...",
+          "description": "今天钢材价格：精密管从五千到三万，价差在哪 · 今日钢材价格：精密管贵到3万，无缝 ... 免费解析去水印工具 · 二十年实战积淀."
+        },
+        {
+          "url": "https://www.ilongma.com/zh-CN/what-is-api-5l-material-type-api-5l-steel-pipe/",
+          "title": "API 5L材质类型（API 5L钢管）是什么？ - LongMa",
+          "description": "B级至X80级钢材等级：选型指南. 等级划分和力量提升. API 5L 等级直接与钢材 ... API 5L 钢管价格昂贵，因此选择合适的合作伙伴至关重要，以确保您的管道 ..."
+        },
+        {
+          "url": "https://blog.csdn.net/weixin_52783065/article/details/117396837",
+          "title": "Python 抓取钢铁价格==＞ 计算季度平均价格 - CSDN博客",
+          "description": "市场钢材原材料价格浮动超过一定比例，就会调整下一季度的原材料价格 ... 免费提供一条一条的数据，如果你需要一定时间内的数据，要付费99元。我 ..."
+        }
+      ]
+    }
+  ]
+}

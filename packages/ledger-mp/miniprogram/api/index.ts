@@ -158,7 +158,11 @@ export const dataApi = {
 
 /** 首页广告（仅需登录） */
 export const adApi = {
-  list: () => http.get<Array<{ id: string; image: string; link: string; title: string }>>('/l/ads'),
+  list: () =>
+    http.get<Array<{ id: string; image: string; link: string; title: string }>>('/l/ads', undefined, {
+      cache: true,
+      silent: true,
+    }),
 }
 
 /** 优化下料会员闸门（仅需登录，仅返回是否已开通） */

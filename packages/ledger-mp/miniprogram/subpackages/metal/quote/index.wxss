@@ -1,0 +1,47 @@
+@import '../common.wxss';
+.metal-quote__body--dock { padding-bottom: calc(195px + env(safe-area-inset-bottom)); }
+.metal-quote__back-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 3px 10px; min-height: 25px; }
+.metal-quote__title { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.metal-quote__title > text:first-child { flex: 0 0 auto; color: var(--muted); }
+.metal-quote__title input { flex: 1; min-width: 0; height: 32px; font-size: 15px; }
+.metal-quote__saved-title { min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+.metal-quote__document > .metal-heading { min-height: 44px; }
+.metal-quote__columns { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #f4f8f6; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; }
+.metal-quote__line { padding: 12px 14px 9px; }
+.metal-quote__line + .metal-quote__line { border-top: 1px solid var(--border); }
+.metal-quote__line-head { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.5; }
+.metal-quote__line-number { flex: 0 0 16px; color: var(--faint); font-size: 12px; }
+.metal-quote__material { flex: 1; min-width: 0; font-weight: 600; }
+.metal-quote__amount { flex-shrink: 0; max-width: 48%; color: var(--accent); font-size: 16px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.metal-quote__spec { display: block; padding: 4px 0 0 24px; color: var(--muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.metal-quote__line-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; min-height: 34px; padding-left: 24px; color: var(--muted); font-size: 11px; }
+.metal-quote__line-meta > text:first-child { color: var(--text); font-size: 13px; }
+.metal-quote__line-meta button { margin-left: auto; min-height: 34px; padding: 0; }
+.metal-quote__fee { margin: 0 0 3px 24px; color: var(--muted); font-size: 11px; }
+.metal-quote__policy { margin: 11px 4px 0; }
+.metal-quote__saved-tools { display: flex; align-items: center; gap: 12px; margin: 5px 4px 0; }
+.metal-quote__saved-tools > text { flex: 1; }
+.metal-quote__saved-tools button { flex-shrink: 0; }
+.metal-quote__list-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 3px 10px; color: var(--muted); font-size: 11px; }
+.metal-quote__saved { padding: 14px; }
+.metal-quote__saved + .metal-quote__saved { border-top: 1px solid var(--border); }
+.metal-quote__saved-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 600; line-height: 1.6; }
+.metal-quote__saved-head > text:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.metal-quote__saved-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.metal-quote__saved-meta > text:last-child { flex-shrink: 0; }
+.metal-quote__chevron { margin-left: 8px; color: var(--faint); font-size: 20px; vertical-align: middle; }
+.metal-quote__load-more { width: 100%; margin-top: 6px; }
+.metal-quote__summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 0 2px 10px; }
+.metal-quote__summary > view { min-width: 0; }
+.metal-quote__summary > view:last-child { text-align: right; }
+.metal-quote__summary .metal-note { display: block; margin-bottom: 3px; }
+.metal-quote__summary-weight { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+.metal-quote__summary-weight > text { color: var(--muted); font-size: 11px; font-weight: 400; }
+.metal-quote__summary-price { color: var(--accent); font-size: 24px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.metal-quote__share { display: flex; justify-content: flex-end; gap: 12px; }
+.metal-quote__share button { min-height: 36px; }
+.metal-quote__export-status { padding-top: 6px; color: var(--muted); font-size: 11px; text-align: center; }
+.metal-quote__error { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding: 2px 14px; color: #9b6553; font-size: 12px; }
+.metal-quote__loading { padding: 30px 14px; color: var(--muted); font-size: 13px; text-align: center; }
+.metal-quote__canvas { position: fixed; left: -10000px; top: 0; width: 680px; height: 4000px; }
+@media (max-width: 350px) { .metal-quote__summary-price { font-size: 21px; } }

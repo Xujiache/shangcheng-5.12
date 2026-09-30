@@ -53,6 +53,7 @@
       ]
     },
     { "root": "subpackages/format", "pages": ["index/index"] },
+    { "root": "subpackages/metal", "pages": ["index/index", "calc/index", "history/index", "quote/index"] },
     {
       "root": "subpackages/more-tools",
       "pages": [
@@ -61,12 +62,14 @@
         "retire/index",
         "level/index",
         "glass/index",
-        "luban/index"
+        "glass-weight/index",
+        "luban/index",
+        "tide/index"
       ]
     },
     {
       "root": "subpackages/workbook",
-      "pages": ["records/index", "edit/index", "people/index", "finance/index", "reports/index"]
+      "pages": ["overview/index", "records/index", "edit/index", "people/index", "finance/index", "reports/index"]
     },
     {
       "root": "subpackages/settings",
@@ -113,12 +116,15 @@
   "style": "v2",
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents",
-"usingComponents": {
-    "lz-route-feedback": "/components/lz-route-feedback/index",
-    "lz-skeleton": "/components/lz-skeleton/index"
+  "permission": {
+    "scope.userLocation": { "desc": "用于查找附近的潮位站" }
   },
+  "requiredPrivateInfos": ["getLocation"],
   "preloadRule": {
-    "pages/home/index": { "network": "wifi", "packages": ["subpackages/workbook"] },
+    "pages/home/index": {
+      "network": "wifi",
+      "packages": ["subpackages/tools", "subpackages/format", "subpackages/more-tools", "subpackages/workbook"]
+    },
     "pages/work-log/index": { "network": "all", "packages": ["subpackages/workbook"] }
   }
 }

@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger'
 import { randomUUID } from 'node:crypto'
 import { Public } from '../../common/decorators/public.decorator'
 import { GlassEstimateDto } from './dto/glass-estimate.dto'
+import { GlassWeightDto } from './dto/glass-weight.dto'
 import { CurrentLedgerUser, LedgerAuthUser } from './decorators/current-ledger-user.decorator'
 import { LedgerJwtGuard } from './guards/ledger-jwt.guard'
 import { GlassToolService } from './glass-tool.service'
@@ -30,6 +31,21 @@ export class GlassToolController {
       throw error
     }
     await this.events.recordServerEvent(user.id, 'glass', 'success', sourceId)
+    return result
+  }
+
+  @Post('weight')
+  @HttpCode(200)
+  async weight(@CurrentLedgerUser() user: LedgerAuthUser, @Body() dto: GlassWeightDto) {
+    const sourceId = randomUUID()
+    let result: ReturnType<GlassToolService['weight']>
+    try {
+      result = this.service.weight(dto)
+    } catch (error) {
+      await this.events.recordServerEvent(user.id, 'glass-weight', 'failure', sourceId)
+      throw error
+    }
+    await this.events.recordServerEvent(user.id, 'glass-weight', 'success', sourceId)
     return result
   }
 }

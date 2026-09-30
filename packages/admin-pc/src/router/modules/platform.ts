@@ -301,6 +301,17 @@ export const platformRoutes: AppRouteRecord = {
         },
         // —— 配置 ——
         {
+          path: '/platform/ledger/metal',
+          name: 'PlatformLedgerMetal',
+          component: '/platform/ledger/metal',
+          meta: {
+            title: 'menus.platform.ledgerMetal',
+            icon: 'ri:scales-3-line',
+            keepAlive: true,
+            ...ROLE_PLATFORM
+          }
+        },
+        {
           path: '/platform/ledger/config',
           name: 'PlatformLedgerConfig',
           component: '/platform/ledger/config',

@@ -1,0 +1,43 @@
+<lz-bg />
+<view class="tool-page weight-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="玻璃重量估算" />
+  <view wx:if="{{authorized}}" class="tool-body tool-body--with-actions weight-body">
+    <view class="weight-topline"><text>玻璃自重 · 尺寸单位 mm</text><view bindtap="openK">K 值计算 <text>›</text></view></view>
+
+    <view wx:if="{{result}}" class="tool-card weight-result">
+      <view class="weight-section-head"><text>玻璃重量</text><text class="weight-tag">{{result.layers}} 层合计</text></view>
+      <view class="weight-result__number">{{result.weight}}<text>kg</text></view>
+      <view class="weight-result__metrics"><view><text>面积</text><view>{{result.area}}<text> m²</text></view></view><view><text>每平方米</text><view>{{result.perM2}}<text> kg/m²</text></view></view><view><text>玻璃总厚</text><view>{{result.totalThicknessMm}}<text> mm</text></view></view></view>
+      <view class="weight-formula">{{result.formula}}</view>
+      <view wx:if="{{mixed}}" class="weight-layer-results"><view wx:for="{{result.layerWeights}}" wx:key="id"><text>第 {{item.id}} 层</text><text>{{item.weight}} kg</text></view></view>
+    </view>
+
+    <view class="tool-card weight-size">
+      <view class="weight-section-head"><text>玻璃尺寸</text><text class="weight-caption">矩形净尺寸</text></view>
+      <view class="weight-size-fields">
+        <view class="weight-field"><text>高度</text><view><input type="digit" maxlength="12" placeholder="如 1600" value="{{heightMm}}" data-field="heightMm" bindinput="onField" /><text>mm</text></view></view>
+        <text class="weight-size-times">×</text>
+        <view class="weight-field"><text>宽度</text><view><input type="digit" maxlength="12" placeholder="如 3500" value="{{widthMm}}" data-field="widthMm" bindinput="onField" /><text>mm</text></view></view>
+      </view>
+    </view>
+
+    <view class="tool-card weight-config">
+      <view class="weight-section-head"><text>玻璃层数</text><view class="weight-stepper"><button disabled="{{layerCount <= 1}}" data-delta="-1" bindtap="changeCount">−</button><picker range="{{layerOptions}}" value="{{layerCount - 1}}" bindchange="chooseLayers"><view>{{layerCount}} 层</view></picker><button disabled="{{layerCount >= 20}}" data-delta="1" bindtap="changeCount">＋</button></view></view>
+      <view class="weight-thickness-head"><text>厚度设置</text><view class="weight-modes"><view class="{{!mixed ? 'is-active' : ''}}" data-mode="same" bindtap="chooseMode">每层相同</view><view class="{{mixed ? 'is-active' : ''}}" data-mode="mixed" bindtap="chooseMode">分别填写</view></view></view>
+      <block wx:if="{{!mixed}}">
+        <view class="weight-thickness-fields">
+          <view class="weight-field"><text>常用厚度</text><picker range="{{thicknessOptions}}" value="{{thicknessIndex}}" bindchange="chooseThickness"><view class="weight-picker {{customThicknessMm ? 'is-overridden' : ''}}">{{thicknessOptions[thicknessIndex]}}<text>⌄</text></view></picker></view>
+          <view class="weight-field"><text>自定义厚度<text wx:if="{{customThicknessMm}}" class="weight-custom-badge">优先</text></text><view><input type="digit" maxlength="8" placeholder="如 19" value="{{customThicknessMm}}" data-field="customThicknessMm" bindinput="onField" /><text>mm</text></view></view>
+        </view>
+        <view class="weight-hint">填写自定义厚度后，所有玻璃层按自定义值计算</view>
+      </block>
+      <view wx:else class="weight-mixed-fields"><view wx:for="{{layers}}" wx:key="id" class="weight-field"><text>第 {{item.id}} 层</text><view><input type="digit" maxlength="8" value="{{item.thicknessMm}}" data-index="{{index}}" bindinput="onLayerThickness" /><text>mm</text></view></view></view>
+    </view>
+
+    <view class="weight-explanation"><text>计算依据</text><view>重量 = 高 × 宽（m）× 各层玻璃厚度之和（mm）× 2.5</view><view>普通玻璃密度约 2500 kg/m³，即每平方米每毫米约 2.5 kg。仅估算玻璃自重，不含窗框、胶片、间隔条和其他配件。</view></view>
+    <view wx:if="{{error}}" class="weight-error" role="alert">{{error}}</view>
+    <view class="tool-actions weight-actions"><button class="tool-secondary" bindtap="reset">重置</button><button class="tool-primary" loading="{{calculating}}" disabled="{{calculating}}" bindtap="calculate">计算重量</button></view>
+  </view>
+  <view wx:else class="tool-locked"><text>登录后可免费使用玻璃重量估算</text><button class="tool-primary" bindtap="login">去登录</button></view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

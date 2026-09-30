@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service'
 
 export const TOOL_KEYS = [
   'triangle', 'arc', 'cut', 'work-log', 'format',
-  'rmb', 'retire', 'level', 'glass', 'luban',
+  'rmb', 'retire', 'level', 'glass', 'glass-weight', 'luban', 'tide',
 ] as const
 export type ToolKey = (typeof TOOL_KEYS)[number]
 export type ToolStatus = 'open' | 'success' | 'failure'
@@ -47,7 +47,7 @@ export class ToolEventsService {
       const event = strictObject(raw, ['id', 'tool', 'status', 'occurredAt'])
       if (typeof event.id !== 'string' || !UUID.test(event.id)) invalid()
       if (!TOOL_KEYS.includes(event.tool as ToolKey) || !STATUSES.includes(event.status as string)) invalid()
-      if ((event.tool === 'format' || event.tool === 'glass') && event.status !== 'open') invalid()
+      if (['format', 'glass', 'glass-weight'].includes(event.tool as string) && event.status !== 'open') invalid()
       return {
         id: event.id as string,
         userId,

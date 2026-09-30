@@ -1,0 +1,36 @@
+
+> @jiujiu/server@0.0.1 test /root/projects/jiujiu-metal-20260930/packages/server
+> jest --runInBand "ledger"
+
+PASS test/ledger-tide.spec.ts
+PASS test/ledger-conversion.spec.ts
+PASS test/ledger-metal-http.spec.ts
+PASS test/ledger-service.spec.ts
+PASS test/ledger-metal-tool.spec.ts
+[31m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [31m  ERROR[39m [38;5;3m[LedgerPayService] [39m[31m[ledger pay] 金额不一致 outTradeNo=LMEM-X expect=2900 got=100[39m
+PASS test/ledger-pay.spec.ts
+[33m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [33m   WARN[39m [38;5;3m[LedgerPayService] [39m[33m[ledger pay] 找不到订单 outTradeNo=LMEM-X[39m
+[32m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [32m    LOG[39m [38;5;3m[LedgerPayService] [39m[32m[ledger pay] 幂等命中 outTradeNo=LMEM-X[39m
+[33m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [33m   WARN[39m [38;5;3m[LedgerPayService] [39m[33m[ledger pay] 回调金额无效 outTradeNo=LMEM-X[39m
+[33m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [33m   WARN[39m [38;5;3m[LedgerPayService] [39m[33m[ledger pay] 回调金额无效 outTradeNo=LMEM-X[39m
+[33m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [33m   WARN[39m [38;5;3m[LedgerPayService] [39m[33m[ledger pay] 回调金额无效 outTradeNo=LMEM-X[39m
+[33m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [33m   WARN[39m [38;5;3m[LedgerPayService] [39m[33m[ledger pay] 回调金额无效 outTradeNo=LMEM-X[39m
+[32m[Nest] 2508202  - [39m09/29/2026, 7:22:00 PM [32m    LOG[39m [38;5;3m[LedgerPayService] [39m[32m[ledger pay] 开通成功 outTradeNo=LMEM-X txid=tx-success[39m
+PASS test/ledger-glass-tool.spec.ts
+PASS test/ledger-pay-security.spec.ts
+[33m[Nest] 2508202  - [39m09/29/2026, 7:22:01 PM [33m   WARN[39m [38;5;3m[LedgerXpayService] [39m[33m[ledger xpay] 微信查单未确认付款 outTradeNo=LXP123[39m
+PASS test/ledger-admin.spec.ts
+PASS test/ledger-constants.spec.ts
+PASS test/ledger-cutplan.spec.ts
+PASS test/ledger-work-log.spec.ts
+PASS test/ledger-file-security.spec.ts
+PASS test/ledger-membership-access.spec.ts
+PASS test/ledger-auth.spec.ts
+PASS test/ledger-jwt.guard.spec.ts
+PASS test/ledger-tool-events.spec.ts
+
+Test Suites: 17 passed, 17 total
+Tests:       199 passed, 199 total
+Snapshots:   0 total
+Time:        6.637 s, estimated 8 s
+Ran all test suites matching /ledger/i.

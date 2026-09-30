@@ -1,0 +1,13 @@
+{
+  "at": "2026-09-29T21:45:02.071Z",
+  "deployed": true,
+  "buildAndTypecheck": true,
+  "base": "/admin/",
+  "indexSha256": "c27b5a6387dc1b76c0348492136bb4ae752dd61af106249609abadc127435cc4",
+  "publicAssetsChecked": 8,
+  "labelChunks": [
+    "index-DaVU9w0F.js"
+  ],
+  "oldCachedAssetsRetained": true,
+  "backup": "/root/deployment-verification/glass-tools-20260930/original-admin-static"
+}

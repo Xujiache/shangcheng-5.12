@@ -3,7 +3,7 @@ Component({
   properties: { active: { type: String, value: 'overview' } },
   data: {
     items: [
-      { id: 'overview', icon: 'home', name: '总览', url: '/pages/work-log/index' },
+      { id: 'overview', icon: 'home', name: '总览', url: '/subpackages/workbook/overview/index' },
       { id: 'records', icon: 'calendar', name: '记工', url: '/subpackages/workbook/records/index' },
       { id: 'people', icon: 'labor', name: '档案', url: '/subpackages/workbook/people/index' },
       { id: 'finance', icon: 'wallet', name: '结算', url: '/subpackages/workbook/finance/index' },

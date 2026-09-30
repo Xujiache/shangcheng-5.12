@@ -2,6 +2,8 @@
   "usingComponents": {
     "lz-header": "/components/lz-header/index",
     "lz-icon": "/components/lz-icon/index",
-    "lz-bg": "/components/lz-bg/index"
+    "lz-bg": "/components/lz-bg/index",
+    "lz-route-feedback": "/components/lz-route-feedback/index",
+    "lz-skeleton": "/components/lz-skeleton/index"
   }
 }

@@ -1,0 +1,117 @@
+/tmp/metal-mini-final.log
+metal verified: 65 materials and server/client calculations, 207 spec rows, 6 known weights, aliases, boundaries and CSV safety
+PASS native metal pages: 6 guest routes, live input, known weights, offline seeds and four copy actions
+PASS native material switching, manual price/reset, density/reset, settings, server price and account-scoped records
+PASS native mixed quote save/read, BOM CSV export, protected image export, 200-row complete compression and expired read-only
+PASS decimal parsing and integer rounding
+PASS day/hour/piece/fixed and attendance earnings
+PASS historical rates do not follow worker changes
+PASS strict references, dates, text and prototype-safe IDs
+PASS one entry cannot be settled twice or changed after settlement
+PASS advance allocation, partial payments, and overdraft rejection
+PASS void audit preserves original amount and releases locks only after payments void
+PASS signed adjustments enter earnings without mixing units
+PASS stale versions reject rather than overwrite
+PASS deleted rows restored and archive never cascades
+PASS durable journal survives restart and deduplicates a double click
+PASS failed chunk/head writes preserve the last committed ledger
+PASS guest/account isolation and recoverable previous manifest
+PASS backup validation and mirrored domain stay consistent
+PASS local date does not convert to UTC date
+PASS 10000 offline records retain exact totals and distinct IDs
+Workbook checks passed: 16
+PASS calendar blanks, selection, segmented views, month switching and leap February
+PASS profile editor pay-mode buttons/units, invalid selection, inline validation, busy guards, field allowlist and clean form reset
+PASS archive-page segmented views, first-use/filtered empty, search reset, archive/recover and card display fields
+PASS top dropdown anchor, grouped selection, option search, draft-preserving tab switch, toggle and cancel
+PASS filter draft/cancel/apply/reset, per-condition removal, preview count, invalid dates, cross-month list, status and keyboard layout
+PASS overview guest offline refresh, month validation, display fields and management/first-entry navigation
+PASS finance shared segmented control: all four tabs and invalid-value guard
+PASS custom highlight draft/cancel/confirm, inclusive range calendar, reversed/same-day selection, pending guard, leap day, month boundaries and shortcuts
+PASS automatic export dialog, close/reopen, shared file identity, duplicate-click guard, cancellation and failure/retry
+PASS export format selection/dispatch, busy and draft guards, personal preview, CSV generation, empty report and immutable output scope
+PASS report lightweight date controls and integrated card tabs via native tap events
+PASS reports sections, shared top filters, draft/cancel/apply, invalid dates, date presets, unit/amount summaries and actual CSV export handler
+PASS unavailable cloud route is separate from local totals and stale-page response is ignored
+PASS native-page guest offline entry → advance → settlement → payment → CSV → backup → import → lost-ACK retry → expiry → renewal → logout isolation
+nesting verification passed
+PASS native route dispatch has no animation delay; fast navigation never flashes a loader
+PASS slow native navigation shows delayed rail then hint; ready clears both
+PASS double tap shares native promise and eventChannel; unrelated callbacks/events are not swallowed
+PASS failure releases feedback and rejects awaiters; retry starts immediately
+PASS cached return keeps amount, inputs and scroll; app foreground does not replay motion
+PASS hide/unload prevents timer writes; stale callback cannot dismiss a newer navigation
+PASS watchdog only removes cosmetic feedback; late native success still resolves
+PASS lifecycle arguments, this, async results and thrown errors are preserved
+PASS motion preference and preparation feedback do not interfere with navigation
+PASS loading components respect motion preference, deduplicate updates and stop hidden-page animation
+PASS real customer/order editors guard unfinished loads, release errors and support retry without blank saves
+PASS all registered pages use shared motion/feedback; native fixed positioning is not transformed
+
+/tmp/metal-flow-final.log
+PASS native metal pages: 6 guest routes, live input, known weights, offline seeds and four copy actions
+PASS native material switching, manual price/reset, density/reset, settings, server price and account-scoped records
+PASS native mixed quote save/read, BOM CSV export, protected image export, 200-row complete compression and expired read-only
+
+/tmp/metal-server-final.log
+PASS test/ledger-metal-http.spec.ts (7.074 s)
+PASS test/harmony-module-bootstrap.spec.ts (8.259 s)
+PASS test/auth.service.spec.ts
+PASS test/member-localization.controller.spec.ts
+PASS test/ledger-metal-tool.spec.ts
+PASS test/ledger-service.spec.ts
+PASS test/ledger-pay-security.spec.ts
+PASS test/ledger-file-security.spec.ts
+PASS test/ledger-conversion.spec.ts
+PASS test/usermp-order.spec.ts
+PASS test/member-localization.spec.ts
+PASS test/chat.gateway.spec.ts
+PASS test/member-plan-platform.spec.ts
+PASS test/harmony-iap.service.spec.ts
+PASS test/merchant-apply.service.spec.ts
+PASS test/ledger-pay.spec.ts
+PASS test/merchant-product-images.spec.ts
+PASS test/merchant-chat.spec.ts
+PASS test/huawei-iap-jws.service.spec.ts
+PASS test/health.spec.ts
+PASS test/payment.controller.spec.ts
+PASS test/ledger-work-log.spec.ts
+PASS test/wxpay.service.spec.ts
+PASS test/ledger-glass-tool.spec.ts
+PASS test/merchant-dashboard.spec.ts
+PASS test/ledger-constants.spec.ts
+PASS test/ledger-admin.spec.ts
+PASS test/roles.guard.spec.ts
+PASS test/ledger-auth.spec.ts
+PASS test/ledger-membership-access.spec.ts
+PASS test/cart.service.spec.ts
+PASS test/order-share.service.spec.ts
+PASS test/huawei-iap-server.service.spec.ts
+PASS test/merchant-plaza.spec.ts
+PASS test/app-release-harmony.spec.ts
+PASS test/refresh-receipts.spec.ts
+PASS test/harmony-push.service.spec.ts
+PASS test/merchant-membership.spec.ts
+PASS test/plaza-filter-options.util.spec.ts
+PASS test/ledger-jwt.guard.spec.ts
+PASS test/merchant-analytics.spec.ts
+PASS test/ledger-tool-events.spec.ts
+PASS test/trace.spec.ts
+PASS test/jwt-guard.spec.ts
+PASS test/files-content-security.spec.ts
+PASS test/legal.service.spec.ts
+PASS test/harmony-realtime.service.spec.ts
+PASS test/image-thumbnail.util.spec.ts
+PASS test/conversion-capacity.spec.ts
+PASS test/jwt-write-boundary.spec.ts
+PASS test/ledger-cutplan.spec.ts
+PASS test/content-security.service.spec.ts
+PASS test/conversion-worker-outputs.spec.ts
+PASS test/conversion-warnings.spec.ts
+PASS test/common-utils.spec.ts
+PASS test/internal-test-merchant.spec.ts
+PASS test/legacy-xlsm-quality.spec.ts
+Test Suites: 57 passed, 57 total
+Tests:       2 skipped, 501 passed, 503 total
+Time:        29.553 s, estimated 147 s
+Ran all test suites matching /ledger/i.

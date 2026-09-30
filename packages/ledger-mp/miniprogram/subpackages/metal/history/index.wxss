@@ -1,0 +1,14 @@
+@import '../common.wxss';
+.metal-history__caption { display: flex; justify-content: space-between; gap: 10px; margin: 0 3px 10px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.metal-history__caption > text:last-child { text-align: right; }
+.metal-history__row { padding: 8px 14px 12px; }
+.metal-history__row + .metal-history__row { border-top: 1px solid var(--border); }
+.metal-history__row-head { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.metal-history__material { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.4; }
+.metal-history__category { flex-shrink: 0; padding: 2px 6px; border-radius: 4px; background: #eef4f0; color: #688074; font-size: 11px; }
+.metal-history__row-head button { flex-shrink: 0; padding-right: 0; }
+.metal-history__spec { display: block; color: var(--muted); font-size: 12px; line-height: 1.65; overflow-wrap: break-word; }
+.metal-history__values { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 9px 0 6px; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.metal-history__values > text:last-child { color: var(--accent); text-align: right; }
+.metal-history__unit { color: var(--muted); font-size: 11px; font-weight: 400; }
+.metal-history__row-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--faint); font-size: 11px; }

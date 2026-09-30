@@ -23,7 +23,8 @@ export class LedgerMembershipGuard implements CanActivate {
       .replace(/^\/api\/v1/, '')
     const isReadonlyOrder = /^\/l\/orders(?:\/[^/]+)?\/?$/.test(path)
     const isReadonlyStats = /^\/l\/stats\/(?:overview|monthly|series)\/?$/.test(path)
-    if (req.method === 'GET' && (isReadonlyOrder || isReadonlyStats)) {
+    const isReadonlyMetalQuote = /^\/l\/tools\/metal\/quotes\/?$/.test(path)
+    if (req.method === 'GET' && (isReadonlyOrder || isReadonlyStats || isReadonlyMetalQuote)) {
       return true
     }
 

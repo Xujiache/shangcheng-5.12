@@ -4,9 +4,20 @@ import { captureInviteCode, getBioLock, getBioVerified } from './utils/store'
 import { clearAllCache } from './utils/request'
 import { flushToolEvents } from './utils/tool-events'
 
+let toolEventFlushTimer: ReturnType<typeof setTimeout> | undefined
+function scheduleToolEventFlush(delay = 800) {
+  if (toolEventFlushTimer) return
+  toolEventFlushTimer = setTimeout(() => {
+    toolEventFlushTimer = undefined
+    void flushToolEvents()
+  }, delay)
+}
+
 const GUEST_ALLOWED_ROUTES = new Set([
   'pages/home/index',
   'subpackages/more-tools/index/index',
+  'subpackages/metal/index/index',
+  'subpackages/metal/calc/index',
   'pages/login/index',
   'pages/triangle-tool/index',
   'pages/arc-tool/index',
@@ -46,7 +57,8 @@ App<IAppOption>({
   },
   onLaunch(options: any) {
     this.globalData.token = wx.getStorageSync(TOKEN_KEY) || ''
-    void flushToolEvents()
+    // 埋点是非关键路径，避开首屏网络与脚本注入竞争。
+    scheduleToolEventFlush()
     captureInviteCode(options && options.query && options.query.inviteCode)
     blockRestrictedGuestRoute(options, this.globalData.token)
     // 真实状态栏高度：安卓 env(safe-area-inset-top) 返回 0，自定义导航必须用它做顶部留白
@@ -65,11 +77,11 @@ App<IAppOption>({
     wx.getNetworkType({ success: (r) => (this.globalData.online = r.networkType !== 'none') })
     wx.onNetworkStatusChange((r) => {
       this.globalData.online = r.isConnected
-      if (r.isConnected) void flushToolEvents()
+      if (r.isConnected) scheduleToolEventFlush(200)
     })
   },
   onShow(options: any) {
-    void flushToolEvents()
+    scheduleToolEventFlush()
     captureInviteCode(options && options.query && options.query.inviteCode)
     if (blockRestrictedGuestRoute(options, this.globalData.token)) return
     // 生物解锁闸门：每次冷启动校验一次（解锁后 bioVerified 置位不再拦）。
@@ -85,7 +97,7 @@ App<IAppOption>({
     if (this.globalData.token !== token) clearAllCache()
     this.globalData.token = token
     wx.setStorageSync(TOKEN_KEY, token)
-    void flushToolEvents()
+    scheduleToolEventFlush(200)
   },
   clearAuth() {
     this.globalData.token = ''

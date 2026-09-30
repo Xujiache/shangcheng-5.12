@@ -83,7 +83,7 @@ export interface LedgerAccountsPage {
   pageSize: number
 }
 
-export type LedgerToolKey = 'triangle' | 'arc' | 'cut' | 'work-log' | 'format' | 'rmb' | 'retire' | 'level' | 'glass' | 'luban'
+export type LedgerToolKey = 'triangle' | 'arc' | 'cut' | 'work-log' | 'format' | 'rmb' | 'retire' | 'level' | 'glass' | 'glass-weight' | 'luban'
 export type LedgerToolStatus = 'open' | 'success' | 'failure'
 export interface LedgerToolUsage {
   today: number
@@ -437,6 +437,47 @@ export function updateLedgerConfig(payload: Partial<LedgerConfig>) {
     url: '/api/v1/p/ledger/config',
     method: 'PUT',
     data: payload
+  })
+}
+
+export interface MetalMaterialConfig {
+  id: string
+  category: string
+  group: string
+  label: string
+  density: number
+  seedTonPriceYuan: number
+  priceMode: 'live' | 'estimate'
+}
+
+export interface LedgerMetalConfig {
+  materials: MetalMaterialConfig[]
+  prices: Record<string, number>
+  densities: Record<string, number>
+  priceMode: Record<string, 'live' | 'estimate'>
+  defaults: { quoteFactor: number; processingFeeFen: number }
+  updatedAt: string
+}
+
+/** 金属价格页要求真实报错，不复用 fetchLedgerConfig 的空态回退。 */
+export async function fetchLedgerMetalConfig(): Promise<LedgerMetalConfig> {
+  const config = await request.get<LedgerMetalConfig>({ url: '/api/v1/l/tools/metal/config' })
+  if (!config || !Array.isArray(config.materials) || !config.prices) throw new Error('金属配置响应无效')
+  return config
+}
+
+export function updateLedgerMetalConfig(config: LedgerMetalConfig) {
+  return request.request<LedgerConfig>({
+    url: '/api/v1/p/ledger/config',
+    method: 'PUT',
+    data: {
+      metal: {
+        prices: config.prices,
+        densities: config.densities,
+        priceMode: config.priceMode,
+        defaults: config.defaults
+      }
+    }
   })
 }
 

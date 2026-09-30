@@ -1,0 +1,13 @@
+{
+  "generator": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Asset type: single WeChat mini-program More Tools icon, metal weight and cost calculator. Input image is STYLE REFERENCE ONLY; do not copy its triangle, arc, clipboard or tray. Generate one new icon: a compact short mint-green metal I-beam with visible I-shaped cross section, accompanied by one small round metal tube, a modest pale-gold measuring accent. Match reference's translucent mint enamel/glass-plastic 3D material, softly rounded bevels, restrained gold accents, soft upper-left lighting and three-quarter perspective. Clear legible silhouette at 42px. Center entire object with 12% padding on a square genuinely transparent canvas. No letters, numbers, labels, logos, surrounding square tile, background, grid, extra decorative sparkles, or collage. Mint material colors should match existing tools, slightly darker profile interior to express metal geometry. One icon only.",
+  "reference": "docs/记工系统/assets/tool-icons-review.png",
+  "source": "docs/金属计算器/assets/tool-metal-source.png",
+  "sourceSha256": "bd85649a0565fc6e536dea3a2d588d90603ef7f08d1ee618f688277b58f87eba",
+  "output": "packages/ledger-mp/miniprogram/subpackages/more-tools/assets/tool-metal.png",
+  "outputSha256": "d0c3e60c02fc2ec2b206b8a35f6cb55cfc6d1d02fb0f2cba9709b97071c2a3e1",
+  "size": 192,
+  "bytes": 41266,
+  "sourceTransparentPixels": 1110139,
+  "processing": "Trim transparent padding; contain resize; 16px transparent margin; lossless PNG compression. Preserve generated shape and alpha."
+}

@@ -4,6 +4,7 @@
     "workbook-nav": "/components/workbook-nav/index",
     "lz-segmented": "/components/lz-segmented/index",
     "workbook-icon": "/components/workbook-icon/index",
-    "workbook-header": "/components/workbook-header/index"
+    "workbook-header": "/components/workbook-header/index",
+    "lz-route-feedback": "/components/lz-route-feedback/index"
   }
 }

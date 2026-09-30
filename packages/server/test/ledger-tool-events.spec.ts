@@ -34,6 +34,7 @@ describe('Ledger tool events', () => {
     const id = '123e4567-e89b-42d3-a456-426614174000'
     await expect(service.submit('alice', { events: [{ ...event(id), amount: 123 }] })).rejects.toThrow()
     await expect(service.submit('alice', { events: [{ ...event(id), tool: 'glass' }] })).rejects.toThrow()
+    await expect(service.submit('alice', { events: [{ ...event(id), tool: 'glass-weight' }] })).rejects.toThrow()
     await expect(service.submit('alice', { events: [event(id), event(id)] })).rejects.toThrow()
     expect(events.size).toBe(0)
   })

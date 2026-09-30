@@ -5,6 +5,7 @@
   "navigationBarTextStyle": "black",
   "usingComponents": {
     "format-file-visual": "/components/format-file-visual/index",
-    "lz-icon": "/components/lz-icon/index"
+    "lz-icon": "/components/lz-icon/index",
+    "lz-route-feedback": "/components/lz-route-feedback/index"
   }
 }

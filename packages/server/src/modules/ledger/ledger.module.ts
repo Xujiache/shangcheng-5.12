@@ -22,6 +22,10 @@ import { ToolEventsController, LedgerToolAdminController } from './tool-events.c
 import { ToolEventsService } from './tool-events.service'
 import { GlassToolController } from './glass-tool.controller'
 import { GlassToolService } from './glass-tool.service'
+import { TideController } from './tide.controller'
+import { TideService } from './tide.service'
+import { MetalToolController } from './metal-tool.controller'
+import { MetalQuoteService } from './metal-quote.service'
 
 /**
  * 门窗利账（ledger）模块 —— 记账小程序后端域，与商城零耦合。
@@ -34,6 +38,8 @@ import { GlassToolService } from './glass-tool.service'
     ToolEventsController,
     LedgerToolAdminController,
     GlassToolController,
+    TideController,
+    MetalToolController,
     LedgerAuthController,
     LedgerController,
     LedgerBizController,
@@ -46,6 +52,8 @@ import { GlassToolService } from './glass-tool.service'
     WorkbookService,
     ToolEventsService,
     GlassToolService,
+    TideService,
+    MetalQuoteService,
     LedgerAuthService,
     LedgerService,
     LedgerAdminService,

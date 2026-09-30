@@ -72,6 +72,7 @@ services：
 | `ledger-remove-manual-trial.patch`     | 后端源码补丁                   | 删除旧的 `POST /l/membership/claim-trial` 手动领取接口及服务逻辑；新用户会员统一由 `ledger-welcome-membership-30d.sql` 自动发放。                                                                                                                                                                                                                                                                      |
 | `ledger-payment-order-init.sql`        | 一次性补表                     | 新建 `LedgerPaymentOrder`（会员在线支付订单，v1.0.3：用户直接付款 → 微信回调自动开通会员）+ 索引 + 指向 `LedgerUser` 的级联外键。                                                                                                                                                                                                                                                                      |
 | `ledger-cutplan-init.sql`              | 一次性补表 / 幂等              | 新建 `LedgerCutPlan`（优化下料「云端历史方案」）+ `(userId, updatedAt)` 索引 + `LedgerUser` 级联外键。                                                                                                                                                                                                                                                                                                 |
+| `ledger-metal-quote-init.sql`          | 一次性补表 / 幂等              | 新建 `LedgerMetalQuote`（金属报价单）+ 账号/时间索引 + `LedgerUser` 级联外键；须先运行 `ledger-prod-init.sql`。 |
 | `ledger-work-log-init.sql`             | 一次性补表 / 幂等              | 新建 `LedgerWorkLog`（日工明细台账）+ `(userId, workDate)` 索引 + `LedgerUser` 级联外键；不关联订单成本。                                                                                                                                                                                                                                                                                              |
 | `ledger-changelog-init.sql`            | **init（建表）**               | 新建 `LedgerChangelog`（版本更新日志，v1.0.2）+ 索引。**必须先于 seed 执行。**                                                                                                                                                                                                                                                                                                                         |
 | `ledger-changelog-seed.sql`            | **seed（初始数据）**           | 写入 1.0.1 ~ 1.0.2 的更新日志内容；**依赖 `ledger-changelog-init.sql` 已建表**；按 `version` `ON CONFLICT DO UPDATE` 幂等覆盖。                                                                                                                                                                                                                                                                        |
@@ -83,6 +84,8 @@ services：
 > 所有脚本都做了 `IF NOT EXISTS` / `ON CONFLICT DO NOTHING` / 外键存在性判断等幂等处理，可安全重复执行；多数对现有表零改动、零风险（纯新增表/列/索引）。
 
 ### 2.3 建议执行顺序
+
+玻璃重量工具上线前，在 `upgrades/20260928_001_ledger_tool_events.sql` 创建工具事件表后，执行 `upgrades/20260930_002_glass_tools.sql` 扩展工具键约束。该脚本包含事务与锁超时，验证既有事件，不删除事件；未执行时 `glass-weight` 会因旧约束导致接口失败。验收与回滚见 [玻璃工具](../docs/玻璃工具/README.md)。
 
 唯一的硬性依赖是 **changelog：init 必须先于 seed**；ledger 的补列脚本都建立在 `LedgerOrder` / `LedgerFeedback` 已由 `ledger-prod-init.sql` 建好的前提上。建议顺序：
 

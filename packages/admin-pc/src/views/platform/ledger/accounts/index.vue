@@ -288,6 +288,7 @@
     { key: 'retire', label: '退休倒计时' },
     { key: 'level', label: '水平仪' },
     { key: 'glass', label: '玻璃 K 值' },
+    { key: 'glass-weight', label: '玻璃重量' },
     { key: 'luban', label: '鲁班尺' }
   ]
   const toolName = (key: LedgerToolKey) => toolOptions.find(item => item.key === key)?.label || key

@@ -1,0 +1,52 @@
+{
+  "base": "https://ewsn.top/api/v1/l/tools/glass/",
+  "checks": [
+    {
+      "type": "K",
+      "panes": 2,
+      "uValue": 2.799173839470436,
+      "engineIdentical": true
+    },
+    {
+      "type": "K",
+      "panes": 3,
+      "uValue": 1.8626110976312085,
+      "engineIdentical": true
+    },
+    {
+      "type": "K",
+      "panes": 20,
+      "uValue": 0.2800456852190596,
+      "engineIdentical": true
+    },
+    {
+      "type": "K",
+      "panes": 3,
+      "uValue": 0.9402343000264727,
+      "engineIdentical": true
+    },
+    {
+      "type": "weight",
+      "layers": 2,
+      "weightKg": 168
+    },
+    {
+      "type": "weight",
+      "layers": 2,
+      "weightKg": 532
+    },
+    {
+      "type": "weight",
+      "layers": 3,
+      "weightKg": 45
+    },
+    {
+      "type": "weight",
+      "layers": 20,
+      "weightKg": 1680
+    },
+    "JWT, non-member free access, bad body rejection and per-tool accounting verified"
+  ],
+  "ready": true,
+  "testAccountRemoved": true
+}

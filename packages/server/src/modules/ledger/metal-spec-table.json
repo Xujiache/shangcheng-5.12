@@ -1,0 +1,1905 @@
+[
+  {
+    "shape": "angle",
+    "model": "20*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 0.89,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "20*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 1.15,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "25*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 1.12,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "25*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 1.46,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "30*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 1.37,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "30*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 1.79,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "36*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 1.66,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "36*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 2.16,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "36*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 2.65,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "40*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 1.85,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "40*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 2.42,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "40*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 2.98,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "45*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 2.09,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "45*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 2.74,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "45*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 3.37,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "45*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 3.99,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "50*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 2.33,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "50*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 3.06,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "50*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 3.77,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "50*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 4.46,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "56*3",
+    "aliases": [],
+    "thicknessMm": 3,
+    "kgPerM": 2.62,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "56*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 3.45,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "56*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 4.25,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "56*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 5.04,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "56*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 5.81,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "56*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 6.57,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "60*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 4.58,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "60*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 5.43,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "60*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 6.26,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "60*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 7.08,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "63*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 3.91,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "63*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 4.82,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "63*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 5.72,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "63*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 6.6,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "63*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 7.47,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "63*10",
+    "aliases": [],
+    "thicknessMm": 10,
+    "kgPerM": 9.15,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "70*4",
+    "aliases": [],
+    "thicknessMm": 4,
+    "kgPerM": 4.37,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "70*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 5.4,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "70*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 6.41,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "70*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 7.4,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "70*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 8.37,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "75*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 5.82,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "75*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 6.91,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "75*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 7.98,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "75*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 9.03,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "75*9",
+    "aliases": [],
+    "thicknessMm": 9,
+    "kgPerM": 10.1,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "75*10",
+    "aliases": [],
+    "thicknessMm": 10,
+    "kgPerM": 11.1,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "80*5",
+    "aliases": [],
+    "thicknessMm": 5,
+    "kgPerM": 6.21,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "80*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 7.38,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "80*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 8.53,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "80*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 9.66,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "80*9",
+    "aliases": [],
+    "thicknessMm": 9,
+    "kgPerM": 10.8,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "80*10",
+    "aliases": [],
+    "thicknessMm": 10,
+    "kgPerM": 11.9,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "90*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 8.35,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "90*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 9.66,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "90*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 10.9,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "90*9",
+    "aliases": [],
+    "thicknessMm": 9,
+    "kgPerM": 12.2,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "90*10",
+    "aliases": [],
+    "thicknessMm": 10,
+    "kgPerM": 13.5,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "90*12",
+    "aliases": [],
+    "thicknessMm": 12,
+    "kgPerM": 15.9,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*6",
+    "aliases": [],
+    "thicknessMm": 6,
+    "kgPerM": 9.37,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*7",
+    "aliases": [],
+    "thicknessMm": 7,
+    "kgPerM": 10.8,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 12.3,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*9",
+    "aliases": [],
+    "thicknessMm": 9,
+    "kgPerM": 13.7,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*10",
+    "aliases": [],
+    "thicknessMm": 10,
+    "kgPerM": 15.1,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*12",
+    "aliases": [],
+    "thicknessMm": 12,
+    "kgPerM": 17.9,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*14",
+    "aliases": [],
+    "thicknessMm": 14,
+    "kgPerM": 20.6,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "100*16",
+    "aliases": [],
+    "thicknessMm": 16,
+    "kgPerM": 23.3,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "125*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 15.5,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "125*10",
+    "aliases": [],
+    "thicknessMm": 10,
+    "kgPerM": 19.1,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "125*12",
+    "aliases": [],
+    "thicknessMm": 12,
+    "kgPerM": 22.7,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "125*14",
+    "aliases": [],
+    "thicknessMm": 14,
+    "kgPerM": 26.2,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "125*16",
+    "aliases": [],
+    "thicknessMm": 16,
+    "kgPerM": 29.6,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "150*8",
+    "aliases": [],
+    "thicknessMm": 8,
+    "kgPerM": 18.6,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "150*10",
+    "aliases": [],
+    "thicknessMm": 10,
+    "kgPerM": 23.1,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "150*12",
+    "aliases": [],
+    "thicknessMm": 12,
+    "kgPerM": 27.4,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "150*14",
+    "aliases": [],
+    "thicknessMm": 14,
+    "kgPerM": 31.7,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "150*16",
+    "aliases": [],
+    "thicknessMm": 16,
+    "kgPerM": 35.9,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "200*14",
+    "aliases": [],
+    "thicknessMm": 14,
+    "kgPerM": 42.9,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "200*16",
+    "aliases": [],
+    "thicknessMm": 16,
+    "kgPerM": 48.7,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "200*18",
+    "aliases": [],
+    "thicknessMm": 18,
+    "kgPerM": 54.4,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "200*20",
+    "aliases": [],
+    "thicknessMm": 20,
+    "kgPerM": 60.1,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "angle",
+    "model": "200*24",
+    "aliases": [],
+    "thicknessMm": 24,
+    "kgPerM": 71.2,
+    "source": "GB/T 706-2016 附录A 表A.3（等边角钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "5#",
+    "aliases": [
+      "5"
+    ],
+    "thicknessMm": 4.5,
+    "kgPerM": 5.44,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "6.3#",
+    "aliases": [
+      "6.3"
+    ],
+    "thicknessMm": 4.8,
+    "kgPerM": 6.63,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "6.5#",
+    "aliases": [
+      "6.5"
+    ],
+    "thicknessMm": 4.3,
+    "kgPerM": 6.51,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "8#",
+    "aliases": [
+      "8"
+    ],
+    "thicknessMm": 5,
+    "kgPerM": 8.04,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "10#",
+    "aliases": [
+      "10"
+    ],
+    "thicknessMm": 5.3,
+    "kgPerM": 10,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "12#",
+    "aliases": [
+      "12"
+    ],
+    "thicknessMm": 5.5,
+    "kgPerM": 12.1,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "12.6#",
+    "aliases": [
+      "12.6"
+    ],
+    "thicknessMm": 5.5,
+    "kgPerM": 12.3,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "14A#",
+    "aliases": [
+      "14A"
+    ],
+    "thicknessMm": 6,
+    "kgPerM": 14.5,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "14B#",
+    "aliases": [
+      "14B"
+    ],
+    "thicknessMm": 8,
+    "kgPerM": 16.7,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "16A#",
+    "aliases": [
+      "16A"
+    ],
+    "thicknessMm": 6.5,
+    "kgPerM": 17.2,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "16B#",
+    "aliases": [
+      "16B"
+    ],
+    "thicknessMm": 8.5,
+    "kgPerM": 19.8,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "18A#",
+    "aliases": [
+      "18A"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 20.2,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "18B#",
+    "aliases": [
+      "18B"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 23,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "20A#",
+    "aliases": [
+      "20A"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 22.6,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "20B#",
+    "aliases": [
+      "20B"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 25.8,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "24A#",
+    "aliases": [
+      "24A"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 26.9,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "24B#",
+    "aliases": [
+      "24B"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 30.6,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "30A#",
+    "aliases": [
+      "30A"
+    ],
+    "thicknessMm": 7.5,
+    "kgPerM": 34.5,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "30B#",
+    "aliases": [
+      "30B"
+    ],
+    "thicknessMm": 9.5,
+    "kgPerM": 39.2,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "40A#",
+    "aliases": [
+      "40A"
+    ],
+    "thicknessMm": 10.5,
+    "kgPerM": 58.9,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "40B#",
+    "aliases": [
+      "40B"
+    ],
+    "thicknessMm": 12.5,
+    "kgPerM": 65.2,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "22A#",
+    "aliases": [
+      "22A"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 25,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "22B#",
+    "aliases": [
+      "22B"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 28.5,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "24C#",
+    "aliases": [
+      "24C"
+    ],
+    "thicknessMm": 11,
+    "kgPerM": 34.4,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "25A#",
+    "aliases": [
+      "25A"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 27.4,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "25B#",
+    "aliases": [
+      "25B"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 31.3,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "25C#",
+    "aliases": [
+      "25C"
+    ],
+    "thicknessMm": 11,
+    "kgPerM": 35.3,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "27A#",
+    "aliases": [
+      "27A"
+    ],
+    "thicknessMm": 7.5,
+    "kgPerM": 30.8,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "27B#",
+    "aliases": [
+      "27B"
+    ],
+    "thicknessMm": 9.5,
+    "kgPerM": 35.1,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "27C#",
+    "aliases": [
+      "27C"
+    ],
+    "thicknessMm": 11.5,
+    "kgPerM": 39.3,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "28A#",
+    "aliases": [
+      "28A"
+    ],
+    "thicknessMm": 7.5,
+    "kgPerM": 31.4,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "28B#",
+    "aliases": [
+      "28B"
+    ],
+    "thicknessMm": 9.5,
+    "kgPerM": 35.8,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "28C#",
+    "aliases": [
+      "28C"
+    ],
+    "thicknessMm": 11.5,
+    "kgPerM": 40.2,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "30C#",
+    "aliases": [
+      "30C"
+    ],
+    "thicknessMm": 11.5,
+    "kgPerM": 43.9,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "32A#",
+    "aliases": [
+      "32A"
+    ],
+    "thicknessMm": 8,
+    "kgPerM": 38.1,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "32B#",
+    "aliases": [
+      "32B"
+    ],
+    "thicknessMm": 10,
+    "kgPerM": 43.1,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "32C#",
+    "aliases": [
+      "32C"
+    ],
+    "thicknessMm": 12,
+    "kgPerM": 48.1,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "36A#",
+    "aliases": [
+      "36A"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 47.8,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "36B#",
+    "aliases": [
+      "36B"
+    ],
+    "thicknessMm": 11,
+    "kgPerM": 53.5,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "36C#",
+    "aliases": [
+      "36C"
+    ],
+    "thicknessMm": 13,
+    "kgPerM": 59.1,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "channel",
+    "model": "40C#",
+    "aliases": [
+      "40C"
+    ],
+    "thicknessMm": 14.5,
+    "kgPerM": 71.5,
+    "source": "GB/T 706-2016 附录A 表A.2（槽钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "10#",
+    "aliases": [
+      "10"
+    ],
+    "thicknessMm": 4.5,
+    "kgPerM": 11.3,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "12#",
+    "aliases": [
+      "12"
+    ],
+    "thicknessMm": 5,
+    "kgPerM": 14,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "12.6#",
+    "aliases": [
+      "12.6"
+    ],
+    "thicknessMm": 5,
+    "kgPerM": 14.2,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "14#",
+    "aliases": [
+      "14"
+    ],
+    "thicknessMm": 5.5,
+    "kgPerM": 16.9,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "16#",
+    "aliases": [
+      "16"
+    ],
+    "thicknessMm": 6,
+    "kgPerM": 20.5,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "18#",
+    "aliases": [
+      "18"
+    ],
+    "thicknessMm": 6.5,
+    "kgPerM": 24.1,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "20A#",
+    "aliases": [
+      "20A"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 27.9,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "20B#",
+    "aliases": [
+      "20B"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 31.1,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "24A#",
+    "aliases": [
+      "24A"
+    ],
+    "thicknessMm": 8,
+    "kgPerM": 37.5,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "24B#",
+    "aliases": [
+      "24B"
+    ],
+    "thicknessMm": 10,
+    "kgPerM": 41.2,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "30A#",
+    "aliases": [
+      "30A"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 48.1,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "30B#",
+    "aliases": [
+      "30B"
+    ],
+    "thicknessMm": 11,
+    "kgPerM": 52.8,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "40A#",
+    "aliases": [
+      "40A"
+    ],
+    "thicknessMm": 10.5,
+    "kgPerM": 67.6,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "40B#",
+    "aliases": [
+      "40B"
+    ],
+    "thicknessMm": 12.5,
+    "kgPerM": 73.8,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "50A#",
+    "aliases": [
+      "50A"
+    ],
+    "thicknessMm": 12,
+    "kgPerM": 93.6,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "50B#",
+    "aliases": [
+      "50B"
+    ],
+    "thicknessMm": 14,
+    "kgPerM": 101,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "63A#",
+    "aliases": [
+      "63A"
+    ],
+    "thicknessMm": 13,
+    "kgPerM": 121,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "63B#",
+    "aliases": [
+      "63B"
+    ],
+    "thicknessMm": 15,
+    "kgPerM": 131,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "22A#",
+    "aliases": [
+      "22A"
+    ],
+    "thicknessMm": 7.5,
+    "kgPerM": 33.1,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "22B#",
+    "aliases": [
+      "22B"
+    ],
+    "thicknessMm": 9.5,
+    "kgPerM": 36.5,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "25A#",
+    "aliases": [
+      "25A"
+    ],
+    "thicknessMm": 8,
+    "kgPerM": 38.1,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "25B#",
+    "aliases": [
+      "25B"
+    ],
+    "thicknessMm": 10,
+    "kgPerM": 42,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "27A#",
+    "aliases": [
+      "27A"
+    ],
+    "thicknessMm": 8.5,
+    "kgPerM": 42.8,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "27B#",
+    "aliases": [
+      "27B"
+    ],
+    "thicknessMm": 10.5,
+    "kgPerM": 47,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "28A#",
+    "aliases": [
+      "28A"
+    ],
+    "thicknessMm": 8.5,
+    "kgPerM": 43.5,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "28B#",
+    "aliases": [
+      "28B"
+    ],
+    "thicknessMm": 10.5,
+    "kgPerM": 47.9,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "30C#",
+    "aliases": [
+      "30C"
+    ],
+    "thicknessMm": 13,
+    "kgPerM": 57.5,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "32A#",
+    "aliases": [
+      "32A"
+    ],
+    "thicknessMm": 9.5,
+    "kgPerM": 52.7,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "32B#",
+    "aliases": [
+      "32B"
+    ],
+    "thicknessMm": 11.5,
+    "kgPerM": 57.7,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "32C#",
+    "aliases": [
+      "32C"
+    ],
+    "thicknessMm": 13.5,
+    "kgPerM": 62.7,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "36A#",
+    "aliases": [
+      "36A"
+    ],
+    "thicknessMm": 10,
+    "kgPerM": 60,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "36B#",
+    "aliases": [
+      "36B"
+    ],
+    "thicknessMm": 12,
+    "kgPerM": 65.7,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "36C#",
+    "aliases": [
+      "36C"
+    ],
+    "thicknessMm": 14,
+    "kgPerM": 71.3,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "40C#",
+    "aliases": [
+      "40C"
+    ],
+    "thicknessMm": 14.5,
+    "kgPerM": 80.1,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "45A#",
+    "aliases": [
+      "45A"
+    ],
+    "thicknessMm": 11.5,
+    "kgPerM": 80.4,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "45B#",
+    "aliases": [
+      "45B"
+    ],
+    "thicknessMm": 13.5,
+    "kgPerM": 87.4,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "45C#",
+    "aliases": [
+      "45C"
+    ],
+    "thicknessMm": 15.5,
+    "kgPerM": 94.5,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "50C#",
+    "aliases": [
+      "50C"
+    ],
+    "thicknessMm": 16,
+    "kgPerM": 109,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "55A#",
+    "aliases": [
+      "55A"
+    ],
+    "thicknessMm": 12.5,
+    "kgPerM": 105,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "55B#",
+    "aliases": [
+      "55B"
+    ],
+    "thicknessMm": 14.5,
+    "kgPerM": 114,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "55C#",
+    "aliases": [
+      "55C"
+    ],
+    "thicknessMm": 16.5,
+    "kgPerM": 123,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "56A#",
+    "aliases": [
+      "56A"
+    ],
+    "thicknessMm": 12.5,
+    "kgPerM": 106,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "56B#",
+    "aliases": [
+      "56B"
+    ],
+    "thicknessMm": 14.5,
+    "kgPerM": 115,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "56C#",
+    "aliases": [
+      "56C"
+    ],
+    "thicknessMm": 16.5,
+    "kgPerM": 124,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "ibeam",
+    "model": "63C#",
+    "aliases": [
+      "63C"
+    ],
+    "thicknessMm": 17,
+    "kgPerM": 141,
+    "source": "GB/T 706-2016 附录A 表A.1（工字钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H100*100*6*8",
+    "aliases": [
+      "HW100*100"
+    ],
+    "thicknessMm": 6,
+    "kgPerM": 16.9,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H150*150*7*10",
+    "aliases": [
+      "HW150*150"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 31.1,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H200*200*8*12",
+    "aliases": [
+      "HW200*200"
+    ],
+    "thicknessMm": 8,
+    "kgPerM": 49.9,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H250*250*9*14",
+    "aliases": [
+      "HW250*250"
+    ],
+    "thicknessMm": 9,
+    "kgPerM": 71.8,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H300*300*10*15",
+    "aliases": [
+      "HW300*300"
+    ],
+    "thicknessMm": 10,
+    "kgPerM": 93,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H350*350*12*19",
+    "aliases": [
+      "HW350*350"
+    ],
+    "thicknessMm": 12,
+    "kgPerM": 135,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H200*152*8*12",
+    "aliases": [
+      "HM200*150"
+    ],
+    "thicknessMm": 8,
+    "kgPerM": 40.1,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H300*202*10*15",
+    "aliases": [
+      "HM300*200"
+    ],
+    "thicknessMm": 10,
+    "kgPerM": 69.9,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H400*200*8*13",
+    "aliases": [
+      "HN400*200"
+    ],
+    "thicknessMm": 8,
+    "kgPerM": 65.4,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H200*100*5.5*8",
+    "aliases": [
+      "HN200*100"
+    ],
+    "thicknessMm": 5.5,
+    "kgPerM": 20.9,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H250*125*6*9",
+    "aliases": [
+      "HN250*125"
+    ],
+    "thicknessMm": 6,
+    "kgPerM": 29,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H300*150*6.5*9",
+    "aliases": [
+      "HN300*150"
+    ],
+    "thicknessMm": 6.5,
+    "kgPerM": 36.7,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "hbeam",
+    "model": "H350*175*7*11",
+    "aliases": [
+      "HN350*175"
+    ],
+    "thicknessMm": 7,
+    "kgPerM": 49.4,
+    "source": "GB/T 11263-2024 附录A 表A.1（H型钢）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C60*30*10*2.5",
+    "aliases": [
+      "60*30*10*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 2.363,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C60*30*10*3",
+    "aliases": [
+      "60*30*10*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 2.743,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C80*40*15*2",
+    "aliases": [
+      "80*40*15*2"
+    ],
+    "thicknessMm": 2,
+    "kgPerM": 2.72,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C100*50*15*2.5",
+    "aliases": [
+      "100*50*15*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 4.11,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C100*50*20*2.5",
+    "aliases": [
+      "100*50*20*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 4.325,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C100*50*20*3",
+    "aliases": [
+      "100*50*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 5.098,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C120*50*20*2.5",
+    "aliases": [
+      "120*50*20*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 4.7,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C120*60*20*3",
+    "aliases": [
+      "120*60*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 6.01,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C140*50*20*2",
+    "aliases": [
+      "140*50*20*2"
+    ],
+    "thicknessMm": 2,
+    "kgPerM": 4.14,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C140*50*20*2.5",
+    "aliases": [
+      "140*50*20*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 5.09,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C140*60*20*2.5",
+    "aliases": [
+      "140*60*20*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 5.503,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C140*60*20*3",
+    "aliases": [
+      "140*60*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 6.511,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C160*60*20*2",
+    "aliases": [
+      "160*60*20*2"
+    ],
+    "thicknessMm": 2,
+    "kgPerM": 4.76,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C160*60*20*2.5",
+    "aliases": [
+      "160*60*20*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 5.87,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C160*70*20*3",
+    "aliases": [
+      "160*70*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 7.42,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C180*60*20*3",
+    "aliases": [
+      "180*60*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 7.453,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C180*70*20*3",
+    "aliases": [
+      "180*70*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 7.924,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C200*60*20*3",
+    "aliases": [
+      "200*60*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 7.924,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C200*70*20*2.5",
+    "aliases": [
+      "200*70*20*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 7.05,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C200*70*20*3",
+    "aliases": [
+      "200*70*20*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 8.395,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C220*75*20*2",
+    "aliases": [
+      "220*75*20*2"
+    ],
+    "thicknessMm": 2,
+    "kgPerM": 6.18,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C220*75*20*2.5",
+    "aliases": [
+      "220*75*20*2.5"
+    ],
+    "thicknessMm": 2.5,
+    "kgPerM": 7.64,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "cpurlin",
+    "model": "C250*40*15*3",
+    "aliases": [
+      "250*40*15*3"
+    ],
+    "thicknessMm": 3,
+    "kgPerM": 7.924,
+    "source": "嘉立创FA机械设计手册：冷弯内卷边槽钢（GB/T 6723-2017）"
+  },
+  {
+    "shape": "aluminum",
+    "model": "NFS5-2020",
+    "aliases": [
+      "2020"
+    ],
+    "kgPerM": 0.5,
+    "source": "米思米 NFS5 铝型材目录 p2119（A6063S-T5）"
+  },
+  {
+    "shape": "aluminum",
+    "model": "NFS6-3030",
+    "aliases": [
+      "3030"
+    ],
+    "kgPerM": 0.8,
+    "source": "米思米 NFS6 铝型材目录 p2127（A6063S-T5）"
+  },
+  {
+    "shape": "aluminum",
+    "model": "NFS5-4040",
+    "aliases": [
+      "4040"
+    ],
+    "kgPerM": 1.28,
+    "source": "米思米 NFS5 铝型材目录 p2119（A6063S-T5）"
+  }
+]

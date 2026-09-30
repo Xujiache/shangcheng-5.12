@@ -4,6 +4,7 @@ import {
   IsIn,
   IsInt,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -59,6 +60,7 @@ export class UpdateLedgerAdDto {
 
 /** ledger 全局功能配置（微信邀请奖励 / 会员套餐）。 */
 export class UpdateLedgerConfigDto {
+  @IsOptional() @IsObject() metal?: Record<string, unknown>
   @IsOptional() @IsInt() @Min(0) @Max(3650) inviteRewardDays?: number
   @IsOptional() @IsInt() @Min(0) @Max(100000) inviteMaxRewarded?: number
   // 会员套餐数组；服务端 normalizeLedgerPlans 逐项收口 + 去重

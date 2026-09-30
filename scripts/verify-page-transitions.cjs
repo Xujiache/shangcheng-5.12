@@ -394,7 +394,17 @@ async function main() {
     ...app.subPackages.flatMap((p) => p.pages.map((r) => p.root + '/' + r)),
   ]
   await test('all registered pages use shared motion/feedback; native fixed positioning is not transformed', () => {
-    assert.equal(routes.length, 54)
+    const pageFiles = []
+    function collectPages(dir, prefix) {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const route = prefix + '/' + entry.name
+        if (entry.isDirectory()) collectPages(path.join(dir, entry.name), route)
+        else if (entry.name.endsWith('.wxml')) pageFiles.push(route.slice(0, -5))
+      }
+    }
+    collectPages(path.join(root, 'pages'), 'pages')
+    collectPages(path.join(root, 'subpackages'), 'subpackages')
+    assert.deepEqual(routes.slice().sort(), pageFiles.slice().sort())
     assert.equal(new Set(routes).size, routes.length)
     for (const route of routes) {
       const script = fs.readFileSync(path.join(root, route + '.ts'), 'utf8'),

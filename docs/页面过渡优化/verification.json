@@ -14,6 +14,6 @@
     "real customer/order editors guard unfinished loads, release errors and support retry without blank saves",
     "all registered pages use shared motion/feedback; native fixed positioning is not transformed"
   ],
-  "routes": 54,
+  "routes": 66,
   "realDeviceVerified": false
 }
