@@ -95,19 +95,25 @@ async function compare() {
   }
   const userId = 'ledger-verify-10k'
   for (const period of ['month', 'quarter', 'year']) {
-    assert.deepEqual(
-      await service.overview(userId, period),
-      await legacyStats.overview(userId, period),
-    )
+    process.env.LEDGER_FAST_READS = '1'
+    const fastOverview = await service.overview(userId, period)
+    process.env.LEDGER_FAST_READS = '0'
+    const legacyOverview = await legacyStats.overview(userId, period)
+    assert.deepEqual(fastOverview, legacyOverview)
   }
   for (const year of [2025, 2026]) {
-    assert.deepEqual(
-      await service.monthlySeries(userId, year),
-      await legacyStats.monthlySeries(userId, year),
-    )
+    process.env.LEDGER_FAST_READS = '1'
+    const fastMonthly = await service.monthlySeries(userId, year)
+    process.env.LEDGER_FAST_READS = '0'
+    const legacyMonthly = await legacyStats.monthlySeries(userId, year)
+    assert.deepEqual(fastMonthly, legacyMonthly)
   }
   for (const unit of ['day', 'month', 'year']) {
-    assert.deepEqual(await service.series(userId, unit), await legacyStats.series(userId, unit))
+    process.env.LEDGER_FAST_READS = '1'
+    const fastSeries = await service.series(userId, unit)
+    process.env.LEDGER_FAST_READS = '0'
+    const legacySeries = await legacyStats.series(userId, unit)
+    assert.deepEqual(fastSeries, legacySeries)
   }
   console.log('10k orders: overview/monthlySeries/series equivalent')
 }

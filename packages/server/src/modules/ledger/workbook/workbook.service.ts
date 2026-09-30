@@ -69,11 +69,15 @@ export class WorkbookService {
     account = await tx.ledgerWorkbook.create({ data: { userId, data: book as any } })
     return account
   }
-  private async transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  private async transaction<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    isolationLevel: Prisma.TransactionIsolationLevel = Prisma.TransactionIsolationLevel
+      .Serializable,
+  ): Promise<T> {
     for (let attempt = 0; ; attempt++) {
       try {
         return await this.prisma.$transaction(fn, {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          isolationLevel,
           timeout: 30000,
         })
       } catch (e: any) {
@@ -90,7 +94,7 @@ export class WorkbookService {
         select: { operationId: true },
       })
       return { book: a.data, revision: a.revision, applied: receipts.map((r) => r.operationId) }
-    })
+    }, Prisma.TransactionIsolationLevel.RepeatableRead)
   }
   async changes(userId: string, cursor: number) {
     const changes = await this.prisma.ledgerWorkbookOperation.findMany({

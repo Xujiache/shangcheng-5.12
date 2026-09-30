@@ -36,7 +36,21 @@ describe('LedgerJwtGuard token domain and status', () => {
     expect(await new LedgerJwtGuard(jwt, prisma).canActivate(ctx)).toBe(true)
     expect(req.ledgerUser.id).toBe('u1')
     expect(prisma.ledgerUser.findUnique).toHaveBeenCalledWith({
-      where: { id: 'u1' }, include: { membership: true },
+      where: { id: 'u1' },
+      select: {
+        id: true,
+        status: true,
+        nickname: true,
+        avatar: true,
+        membership: {
+          select: {
+            expiresAt: true,
+            lastPlanKey: true,
+            perpetual: true,
+            trialClaimedAt: true,
+          },
+        },
+      },
     })
   })
 })

@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import {
@@ -9,7 +10,6 @@ import {
   extrasTotal,
   totalCost,
   profitOf,
-  marginOf,
   revenueOf,
   sanitizeCustomCosts,
   customCostsTotal,
@@ -33,6 +33,8 @@ import { CreateCutPlanDto, UpdateCutPlanDto } from './dto/cut.dto'
 import { CreateLedgerWorkLogDto, UpdateLedgerWorkLogDto, WorkLogQueryDto } from './dto/work-log.dto'
 import { ContentSecurityService } from '../content-security/content-security.service'
 import { FilesService } from '../files/files.service'
+import { ledgerStatsQuery, LedgerStatsRange, LedgerStatsRow } from './ledger-stats.query'
+import type { MembershipStatus } from './ledger.constants'
 
 /** input/summary JSON 序列化后体积上限（字节），超出拒绝，防滥用。 */
 const CUT_JSON_MAX = 20_000
@@ -43,6 +45,9 @@ type OrderRow = {
   customerName: string
   date: Date
   total: number
+  revenueAmount?: bigint | null
+  costAmount?: bigint | null
+  profitAmount?: bigint | null
   received: number
   costProfile: number
   costGlass: number
@@ -99,6 +104,9 @@ const NOTIFY_SETTING_DEFAULTS = {
 /** 门窗利账 App 业务服务。所有读写强制按 userId 隔离（DTO 不接受 userId 入参）。 */
 @Injectable()
 export class LedgerService {
+  private readonly fastReadChecks = new Map<string, Promise<boolean>>()
+  private readonly fastReadReady = new Map<string, { value: boolean; expiresAt: number }>()
+
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly contentSecurity?: ContentSecurityService,
@@ -137,14 +145,19 @@ export class LedgerService {
     }
   }
 
-  async membership(userId: string) {
-    const m = await this.prisma.ledgerMembership.findUnique({ where: { userId } })
-    const cfg = await this.readConfig()
+  async membership(userId: string, current?: MembershipStatus) {
+    const [m, cfg] = await Promise.all([
+      current
+        ? Promise.resolve(null)
+        : this.prisma.ledgerMembership.findUnique({ where: { userId } }),
+      this.readConfig(),
+    ])
     return {
-      ...deriveMembership(m?.expiresAt ?? null, m?.lastPlanKey, new Date(), {
-        perpetual: m?.perpetual,
-        trialClaimedAt: m?.trialClaimedAt,
-      }),
+      ...(current ??
+        deriveMembership(m?.expiresAt ?? null, m?.lastPlanKey, new Date(), {
+          perpetual: m?.perpetual,
+          trialClaimedAt: m?.trialClaimedAt,
+        })),
       plans: cfg.plans, // 套餐由后台配置驱动（默认 LEDGER_PLANS）
     }
   }
@@ -167,12 +180,46 @@ export class LedgerService {
     return normalizeLedgerConfig(row?.value)
   }
 
+  private async fastReadsReady(userId: string): Promise<boolean> {
+    if (process.env.LEDGER_FAST_READS !== '1') return false
+    const cached = this.fastReadReady.get(userId)
+    if (cached && cached.expiresAt > Date.now()) return cached.value
+    const pending = this.fastReadChecks.get(userId)
+    if (pending) return pending
+    // 部分索引只覆盖空派生值；count 不再扫描已经回填的订单。仅合并正在执行的请求。
+    const check = this.prisma.ledgerOrder
+      .count({
+        where: {
+          userId,
+          OR: [{ revenueAmount: null }, { costAmount: null }, { profitAmount: null }],
+        },
+      })
+      .then((missing) => {
+        const value = missing === 0
+        const configured = Number(process.env.LEDGER_FAST_READS_READINESS_TTL_MS)
+        const ttl = Number.isFinite(configured) && configured >= 1_000 ? configured : 60_000
+        this.fastReadReady.set(userId, { value, expiresAt: Date.now() + ttl })
+        if (this.fastReadReady.size > 4096) {
+          const oldest = this.fastReadReady.keys().next().value
+          if (oldest) this.fastReadReady.delete(oldest)
+        }
+        return value
+      })
+    this.fastReadChecks.set(userId, check)
+    try {
+      return await check
+    } finally {
+      this.fastReadChecks.delete(userId)
+    }
+  }
+
   // ── 首页广告（#2）：App 取启用中的轮播 ─────────────────────
   async listAds() {
     const rows = await this.prisma.ledgerAd.findMany({
       where: { enabled: true },
       orderBy: [{ sort: 'asc' }, { createdAt: 'desc' }],
       take: 20,
+      select: { id: true, image: true, link: true, title: true },
     })
     return rows.map((a) => ({ id: a.id, image: a.image, link: a.link || '', title: a.title || '' }))
   }
@@ -182,21 +229,24 @@ export class LedgerService {
    * 返回优化下料可用状态。所有业务能力均以会员有效状态为准，
    * 此接口只用于客户端在进入工具页前展示开通引导，绝不写试用状态或放行未开通账号。
    */
-  async cutAccess(userId: string) {
-    const u = await this.prisma.ledgerUser.findUnique({
-      where: { id: userId },
-      include: { membership: true },
-    })
-    if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
-    const mem = deriveMembership(
-      u.membership?.expiresAt ?? null,
-      u.membership?.lastPlanKey,
-      new Date(),
-      {
-        perpetual: u.membership?.perpetual,
-        trialClaimedAt: u.membership?.trialClaimedAt,
-      },
-    )
+  async cutAccess(userId: string, current?: MembershipStatus) {
+    let mem = current
+    if (!mem) {
+      const u = await this.prisma.ledgerUser.findUnique({
+        where: { id: userId },
+        include: { membership: true },
+      })
+      if (!u) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+      mem = deriveMembership(
+        u.membership?.expiresAt ?? null,
+        u.membership?.lastPlanKey,
+        new Date(),
+        {
+          perpetual: u.membership?.perpetual,
+          trialClaimedAt: u.membership?.trialClaimedAt,
+        },
+      )
+    }
     if (mem.active) {
       return {
         allowed: true,
@@ -245,7 +295,7 @@ export class LedgerService {
   }
 
   // ── 订单 ──────────────────────────────────────────────────
-  private mapOrder(o: OrderRow) {
+  private mapOrder(o: OrderRow, useDerivedAmounts = false) {
     const extras = sanitizeExtras(o.extras)
     const customCosts = sanitizeCustomCosts(o.customCosts)
     const base = {
@@ -259,6 +309,9 @@ export class LedgerService {
       customCosts,
     }
     const items = sanitizeOrderItems(o.items)
+    const revenue = useDerivedAmounts && o.revenueAmount != null ? Number(o.revenueAmount) : revenueOf(base)
+    const cost = useDerivedAmounts && o.costAmount != null ? Number(o.costAmount) : totalCost(base)
+    const profit = useDerivedAmounts && o.profitAmount != null ? Number(o.profitAmount) : profitOf(base)
     return {
       id: o.id,
       customerId: o.customerId,
@@ -266,7 +319,7 @@ export class LedgerService {
       date: ymd(o.date),
       total: o.total,
       received: o.received || 0,
-      revenue: revenueOf(base),
+      revenue,
       costs: {
         profile: o.costProfile,
         glass: o.costGlass,
@@ -287,9 +340,9 @@ export class LedgerService {
       fixedCost: fixedCost(base),
       extrasTotal: extrasTotal(extras),
       customCostsTotal: customCostsTotal(customCosts),
-      cost: totalCost(base),
-      profit: profitOf(base),
-      margin: marginOf(base),
+      cost,
+      profit,
+      margin: revenue ? profit / revenue : 0,
     }
   }
 
@@ -308,17 +361,11 @@ export class LedgerService {
     const pmax = q.profitMax != null && q.profitMax !== '' ? Number(q.profitMax) : null
     // 增量字段回填并逐单核验后才切读路径；存在空值时自动沿用旧实现，不漏历史单。
     if (
-      process.env.LEDGER_FAST_READS === '1' &&
       (pmin === null || Number.isFinite(pmin)) &&
       (pmax === null || Number.isFinite(pmax)) &&
       Number.isInteger(Number(q.page || 1)) &&
       Number.isInteger(Number(q.pageSize || 50)) &&
-      !(await this.prisma.ledgerOrder.count({
-        where: {
-          userId,
-          OR: [{ revenueAmount: null }, { costAmount: null }, { profitAmount: null }],
-        },
-      }))
+      (await this.fastReadsReady(userId))
     ) {
       return this.listOrdersFast(where, q, pmin, pmax)
     }
@@ -387,7 +434,7 @@ export class LedgerService {
       profit: Number(aggregate._sum.profitAmount || 0),
     }
     return {
-      list: rows.map((r) => this.mapOrder(r as OrderRow)),
+      list: rows.map((r) => this.mapOrder(r as OrderRow, true)),
       total,
       page,
       pageSize,
@@ -404,7 +451,10 @@ export class LedgerService {
   private async resolveCustomer(userId: string, customerId?: string, fallbackName?: string) {
     if (!customerId)
       return { customerId: null as string | null, customerName: (fallbackName || '').trim() }
-    const c = await this.prisma.ledgerCustomer.findFirst({ where: { id: customerId, userId } })
+    const c = await this.prisma.ledgerCustomer.findFirst({
+      where: { id: customerId, userId },
+      select: { id: true, name: true },
+    })
     if (!c) {
       // 客户不属于本账号或已删 → 忽略 id，保留名字（快速录入兜底）
       return { customerId: null as string | null, customerName: (fallbackName || '').trim() }
@@ -523,20 +573,30 @@ export class LedgerService {
 
   // ── 客户 ──────────────────────────────────────────────────
   async listCustomers(userId: string) {
-    if (
-      process.env.LEDGER_FAST_READS === '1' &&
-      !(await this.prisma.ledgerOrder.count({
-        where: {
-          userId,
-          OR: [{ revenueAmount: null }, { costAmount: null }, { profitAmount: null }],
-        },
-      }))
-    ) {
+    if (await this.fastReadsReady(userId)) {
       return this.listCustomersFast(userId)
     }
     const [customers, orders] = await Promise.all([
-      this.prisma.ledgerCustomer.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
-      this.prisma.ledgerOrder.findMany({ where: { userId } }),
+      this.prisma.ledgerCustomer.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, phone: true, address: true, note: true },
+      }),
+      this.prisma.ledgerOrder.findMany({
+        where: { userId },
+        select: {
+          customerName: true,
+          date: true,
+          total: true,
+          costProfile: true,
+          costGlass: true,
+          costHardware: true,
+          costLabor: true,
+          costScreen: true,
+          extras: true,
+          customCosts: true,
+        },
+      }),
     ])
     const map = new Map<string, any>()
     customers.forEach((c) =>
@@ -585,10 +645,15 @@ export class LedgerService {
 
   private async listCustomersFast(userId: string) {
     const [customers, groups] = await Promise.all([
-      this.prisma.ledgerCustomer.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+      this.prisma.ledgerCustomer.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, phone: true, address: true, note: true },
+      }),
       this.prisma.ledgerOrder.groupBy({
         by: ['customerName'],
         where: { userId },
+        orderBy: { customerName: 'asc' },
         _count: { _all: true },
         _sum: { total: true, profitAmount: true, costAmount: true },
         _max: { date: true },
@@ -609,7 +674,7 @@ export class LedgerService {
         lastDate: '',
       }),
     )
-    groups.forEach((g) => {
+    ;(groups as any[]).forEach((g) => {
       const c = map.get(g.customerName) || {
         id: null,
         name: g.customerName,
@@ -635,7 +700,10 @@ export class LedgerService {
   }
 
   async getCustomer(userId: string, id: string) {
-    const c = await this.prisma.ledgerCustomer.findFirst({ where: { id, userId } })
+    const c = await this.prisma.ledgerCustomer.findFirst({
+      where: { id, userId },
+      select: { id: true, name: true, phone: true, address: true, note: true, createdAt: true },
+    })
     if (!c) throw new BizException(BizCode.NOT_FOUND, '客户不存在')
     const orders = await this.prisma.ledgerOrder.findMany({
       // customerId 精确匹配；同名仅兜底无 customerId 的历史/快录订单，避免同名客户串档
@@ -748,6 +816,19 @@ export class LedgerService {
     const rows = await this.prisma.ledgerWorkLog.findMany({
       where: { userId, workDate: { gte: from, lt: to } },
       orderBy: [{ workDate: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        workDate: true,
+        workerName: true,
+        jobType: true,
+        unit: true,
+        quantity: true,
+        unitPrice: true,
+        amount: true,
+        note: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     })
     const list = rows.map((row) => this.mapWorkLog(row))
     const summary = list.reduce(
@@ -852,6 +933,7 @@ export class LedgerService {
       where: { userId },
       orderBy: { updatedAt: 'desc' },
       take: 100,
+      select: { id: true, title: true, material: true, input: true, summary: true, updatedAt: true },
     })
     return rows.map((r) => this.mapCutPlan(r))
   }
@@ -904,71 +986,118 @@ export class LedgerService {
   }
 
   // ── 统计 ──────────────────────────────────────────────────
-  private quarter(m: number) {
-    return Math.ceil(m / 3)
-  }
-
   async overview(userId: string, period = 'month') {
     const now = new Date()
     const Y = now.getFullYear()
-    const M = now.getMonth() + 1
-    // 本方法仅展示当年趋势；使用与 JS getFullYear 相同的服务端时区划界。
-    const yearRange = { gte: new Date(Y, 0, 1), lt: new Date(Y + 1, 0, 1) }
-    const [all, setting] = await Promise.all([
-      this.prisma.ledgerOrder.findMany({
-        where: { userId, date: yearRange },
-        // 仅取本方法消费到的列：id/customerName/date（展示）+ total（营收）
-        // + costProfile..costScreen/extras/customCosts（totalCost/profitOf/marginOf 用）。
-        select: {
-          id: true,
-          customerName: true,
-          date: true,
-          total: true,
-          costProfile: true,
-          costGlass: true,
-          costHardware: true,
-          costLabor: true,
-          costScreen: true,
-          extras: true,
-          customCosts: true,
-        },
-      }),
-      this.prisma.ledgerSetting.findUnique({ where: { userId } }),
-    ])
-    const categoryMeta = new Map(
-      sanitizeCostCategories((setting as any)?.costCategories).map((item) => [item.id, item]),
-    )
-    const yearOrders = all.filter((o) => o.date.getFullYear() === Y)
-
-    const inPeriod = (o: { date: Date }) => {
-      const y = o.date.getFullYear()
-      const m = o.date.getMonth() + 1
-      if (period === 'year') return y === Y
-      if (period === 'quarter') return y === Y && this.quarter(m) === this.quarter(M)
-      return y === Y && m === M // month
-    }
-    const list = all.filter(inPeriod)
-
-    const agg = (rows: typeof all) => ({
-      count: rows.length,
-      revenue: rows.reduce((s, o) => s + o.total, 0),
-      cost: rows.reduce((s, o) => s + totalCost(o as any), 0),
-      profit: rows.reduce((s, o) => s + profitOf(o as any), 0),
+    const M = now.getMonth()
+    const fast = await this.fastReadsReady(userId)
+    const ranges = Array.from({ length: 12 }, (_, month) => ({
+      from: new Date(Y, month, 1),
+      until: new Date(Y, month + 1, 1),
+    }))
+    const startMonth = period === 'year' ? 0 : period === 'quarter' ? Math.floor(M / 3) * 3 : M
+    const endMonth = period === 'year' ? 12 : period === 'quarter' ? startMonth + 3 : M + 1
+    const orderQuery = this.prisma.ledgerOrder.findMany({
+      where: {
+        userId,
+        date: fast
+          ? { gte: ranges[startMonth].from, lt: ranges[endMonth - 1].until }
+          : { gte: ranges[0].from, lt: ranges[11].until },
+      },
+      select: {
+        id: true,
+        customerName: true,
+        date: true,
+        total: true,
+        costProfile: true,
+        costGlass: true,
+        costHardware: true,
+        costLabor: true,
+        costScreen: true,
+        extras: true,
+        customCosts: true,
+      },
     })
-    const cur = agg(list)
-    const yearProfit = yearOrders.reduce((s, o) => s + profitOf(o as any), 0)
-
-    // 成本占比：旧订单固定五类 + 新版可配置分类统一按分类 id 聚合。
+    const settingQuery = this.prisma.ledgerSetting.findUnique({
+      where: { userId },
+      select: { costCategories: true },
+    })
+    const goalQuery = this.prisma.ledgerGoal.findUnique({
+      where: { userId },
+      select: { monthly: true, yearly: true },
+    })
+    // 同一只读快照中读取当前周期明细与年度汇总，避免录单并发时排行/总数互相矛盾。
+    const reads = fast
+      ? typeof (this.prisma as any).$transaction === 'function'
+        ? await this.prisma.$transaction(
+            [
+              orderQuery,
+              settingQuery,
+              goalQuery,
+              this.prisma.$queryRaw<LedgerStatsRow[]>(ledgerStatsQuery(userId, ranges)),
+            ],
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+          )
+        : await Promise.all([
+            orderQuery,
+            settingQuery,
+            goalQuery,
+            this.prisma.$queryRaw<LedgerStatsRow[]>(ledgerStatsQuery(userId, ranges)),
+          ])
+      : await Promise.all([orderQuery, settingQuery, goalQuery, Promise.resolve(null)])
+    const [all, setting, goalRow, grouped] = reads as [any[], any, any, LedgerStatsRow[] | null]
+    const totals = ranges.map(() => ({ count: 0, revenue: 0, cost: 0, profit: 0 }))
+    if (grouped) {
+      grouped.forEach((row) => {
+        totals[row.index] = {
+          count: Number(row.count),
+          revenue: Number(row.revenue),
+          cost: Number(row.cost),
+          profit: Number(row.profit),
+        }
+      })
+    } else {
+      all.forEach((row) => {
+        if (row.date.getFullYear() !== Y) return
+        const bucket = totals[row.date.getMonth()]
+        const cost = totalCost(row)
+        bucket.count++
+        bucket.revenue += row.total
+        bucket.cost += cost
+        bucket.profit += revenueOf(row) - cost
+      })
+    }
+    const cur = totals.slice(startMonth, endMonth).reduce(
+      (sum, bucket) => ({
+        count: sum.count + bucket.count,
+        revenue: sum.revenue + bucket.revenue,
+        cost: sum.cost + bucket.cost,
+        profit: sum.profit + bucket.profit,
+      }),
+      { count: 0, revenue: 0, cost: 0, profit: 0 },
+    )
+    const categoryMeta = new Map(
+      sanitizeCostCategories(setting?.costCategories).map((item) => [item.id, item]),
+    )
     const costSliceMap = new Map<
       string,
       { key: string; name: string; color: string; value: number }
     >()
-    list.forEach((order) => {
+    const topOrders: Array<{
+      id: string
+      customer: string
+      date: string
+      total: number
+      profit: number
+      margin: number
+    }> = []
+    all.forEach((order) => {
+      const month = order.date.getMonth()
+      if (order.date.getFullYear() !== Y || month < startMonth || month >= endMonth) return
       orderCostBreakdown(order, categoryMeta).forEach((item) => {
         const current = costSliceMap.get(item.key)
         if (current) {
           current.value += item.value
-          // 新版订单携带的是用户当前名称，优先于旧固定字段名称。
           if (item.custom) {
             current.name = item.name
             current.color = item.color
@@ -982,49 +1111,40 @@ export class LedgerService {
           })
         }
       })
+      // 仅保留前五名；相同利润保持原查询顺序，不对整个周期复制并排序。
+      const profit = profitOf(order)
+      const rank = topOrders.findIndex((item) => item.profit < profit)
+      const index = rank < 0 ? topOrders.length : rank
+      if (index < 5) {
+        const revenue = revenueOf(order)
+        topOrders.splice(index, 0, {
+          id: order.id,
+          customer: order.customerName,
+          date: ymd(order.date),
+          total: order.total,
+          profit,
+          margin: revenue ? profit / revenue : 0,
+        })
+        if (topOrders.length > 5) topOrders.pop()
+      }
     })
-    const costSlices = [...costSliceMap.values()].filter((item) => item.value > 0)
-
-    // 高利润订单排行 top5
-    const topOrders = list
-      .map((o) => ({
-        id: o.id,
-        customer: o.customerName,
-        date: ymd(o.date),
-        total: o.total,
-        profit: profitOf(o as any),
-        margin: marginOf(o as any),
-      }))
-      .sort((a, b) => b.profit - a.profit)
-      .slice(0, 5)
-
-    // 年度利润趋势（1..12）
-    const trend: any[] = []
-    for (let m = 1; m <= 12; m++) {
-      const ml = yearOrders.filter((o) => o.date.getMonth() + 1 === m)
-      trend.push({
-        month: m,
-        label: `${m}月`,
-        count: ml.length,
-        revenue: ml.reduce((s, o) => s + o.total, 0),
-        profit: ml.reduce((s, o) => s + profitOf(o as any), 0),
-      })
-    }
-
-    const goalRow = await this.prisma.ledgerGoal.findUnique({ where: { userId } })
+    const trend = totals.map((bucket, index) => ({
+      month: index + 1,
+      label: `${index + 1}月`,
+      count: bucket.count,
+      revenue: bucket.revenue,
+      profit: bucket.profit,
+    }))
+    const yearProfit = totals.reduce((sum, bucket) => sum + bucket.profit, 0)
+    const monthProfit = totals[M].profit
     const goal = { monthly: goalRow?.monthly ?? 0, yearly: goalRow?.yearly ?? 0 }
-    const monthProfit =
-      period === 'month'
-        ? cur.profit
-        : agg(all.filter((o) => o.date.getFullYear() === Y && o.date.getMonth() + 1 === M)).profit
-
     return {
       period,
       ...cur,
       avgProfit: cur.count ? Math.round(cur.profit / cur.count) : 0,
       yearProfit,
       monthProfit,
-      costSlices,
+      costSlices: [...costSliceMap.values()].filter((item) => item.value > 0),
       topOrders,
       trend,
       goal,
@@ -1037,8 +1157,6 @@ export class LedgerService {
 
   async monthlySeries(userId: string, year?: number) {
     const Y = year || new Date().getFullYear()
-    // 仅取消费到的列：date（分桶）+ total（营收）
-    // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 及 costLabor 直接用）。
     const all = await this.prisma.ledgerOrder.findMany({
       where: { userId, date: { gte: new Date(Y, 0, 1), lt: new Date(Y + 1, 0, 1) } },
       select: {
@@ -1053,126 +1171,118 @@ export class LedgerService {
         customCosts: true,
       },
     })
-    const yl = all.filter((o) => o.date.getFullYear() === Y)
-    const series: any[] = []
-    for (let m = 1; m <= 12; m++) {
-      const ml = yl.filter((o) => o.date.getMonth() + 1 === m)
-      const categoryCosts: Record<string, number> = {}
-      ml.forEach((order) => {
-        orderCostBreakdown(order).forEach((item) => {
-          categoryCosts[item.key] = (categoryCosts[item.key] || 0) + item.value
-        })
+    const series = Array.from({ length: 12 }, (_, index) => ({
+      month: index + 1,
+      label: `${index + 1}月`,
+      count: 0,
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      labor: 0,
+      categoryCosts: {} as Record<string, number>,
+      otherCost: 0,
+    }))
+    let yearProfit = 0
+    let yearLabor = 0
+    let count = 0
+    all.forEach((order) => {
+      if (order.date.getFullYear() !== Y) return
+      const bucket = series[order.date.getMonth()]
+      const cost = totalCost(order)
+      const profit = revenueOf(order) - cost
+      bucket.count++
+      bucket.revenue += order.total
+      bucket.cost += cost
+      bucket.profit += profit
+      count++
+      yearProfit += profit
+      orderCostBreakdown(order).forEach((item) => {
+        bucket.categoryCosts[item.key] = (bucket.categoryCosts[item.key] || 0) + item.value
+        if (item.key === 'labor') yearLabor += item.value
       })
-      const labor = categoryCosts.labor || 0
-      const monthCost = ml.reduce((s, o) => s + totalCost(o as any), 0)
-      series.push({
-        month: m,
-        label: `${m}月`,
-        count: ml.length,
-        revenue: ml.reduce((s, o) => s + o.total, 0),
-        cost: monthCost,
-        profit: ml.reduce((s, o) => s + profitOf(o as any), 0),
-        labor,
-        categoryCosts,
-        otherCost: Math.max(0, monthCost - labor),
-      })
-    }
-    return {
-      year: Y,
-      series,
-      yearProfit: yl.reduce((s, o) => s + profitOf(o as any), 0),
-      yearLabor: yl.reduce(
-        (sum, order) =>
-          sum +
-          orderCostBreakdown(order)
-            .filter((item) => item.key === 'labor')
-            .reduce((itemSum, item) => itemSum + item.value, 0),
-        0,
-      ),
-      count: yl.length,
-    }
+    })
+    series.forEach((bucket) => {
+      bucket.labor = bucket.categoryCosts.labor || 0
+      bucket.otherCost = Math.max(0, bucket.cost - bucket.labor)
+    })
+    return { year: Y, series, yearProfit, yearLabor, count }
   }
 
-  /**
-   * 首页 日/月/年 单量+利润 序列（#1）。
-   * - day:   当月每天（1..月末）
-   * - month: 今年 12 个月
-   * - year:  近 5 年逐年
-   */
+  /** 首页日/月/年序列：数据库快路径只返回 5～31 个桶，旧数据按原公式单次分桶。 */
   async series(userId: string, granularity = 'month') {
     const now = new Date()
     const Y = now.getFullYear()
-    const from =
-      granularity === 'year'
-        ? new Date(Y - 4, 0, 1)
-        : granularity === 'day'
-          ? new Date(Y, now.getMonth(), 1)
-          : new Date(Y, 0, 1)
-    const until = granularity === 'day' ? new Date(Y, now.getMonth() + 1, 1) : new Date(Y + 1, 0, 1)
-    // 仅取消费到的列：date（分桶）+ total（营收）
-    // + costProfile..costScreen/extras/customCosts（totalCost/profitOf 用）。
-    const all = await this.prisma.ledgerOrder.findMany({
-      where: { userId, date: { gte: from, lt: until } },
-      select: {
-        date: true,
-        total: true,
-        costProfile: true,
-        costGlass: true,
-        costHardware: true,
-        costLabor: true,
-        costScreen: true,
-        extras: true,
-        customCosts: true,
-      },
-    })
-    const bucket = (rows: typeof all, label: string) => ({
-      label,
-      count: rows.length,
-      revenue: rows.reduce((s, o) => s + o.total, 0),
-      cost: rows.reduce((s, o) => s + totalCost(o as any), 0),
-      profit: rows.reduce((s, o) => s + profitOf(o as any), 0),
-    })
-    const buckets: ReturnType<typeof bucket>[] = []
-    let unit = '月'
-    if (granularity === 'day') {
-      unit = '日'
-      const M = now.getMonth()
-      const days = new Date(Y, M + 1, 0).getDate()
-      const mo = all.filter((o) => o.date.getFullYear() === Y && o.date.getMonth() === M)
-      for (let d = 1; d <= days; d++) {
-        buckets.push(
-          bucket(
-            mo.filter((o) => o.date.getDate() === d),
-            String(d),
-          ),
-        )
-      }
-    } else if (granularity === 'year') {
-      unit = '年'
-      for (let y = Y - 4; y <= Y; y++) {
-        buckets.push(
-          bucket(
-            all.filter((o) => o.date.getFullYear() === y),
-            String(y),
-          ),
-        )
-      }
-    } else {
-      for (let m = 1; m <= 12; m++) {
-        buckets.push(
-          bucket(
-            all.filter((o) => o.date.getFullYear() === Y && o.date.getMonth() + 1 === m),
-            `${m}月`,
-          ),
-        )
+    const M = now.getMonth()
+    const ranges: LedgerStatsRange[] = []
+    const labels: string[] = []
+    const unit = granularity === 'day' ? '日' : granularity === 'year' ? '年' : '月'
+    const size =
+      granularity === 'day' ? new Date(Y, M + 1, 0).getDate() : granularity === 'year' ? 5 : 12
+    for (let i = 0; i < size; i++) {
+      if (granularity === 'day') {
+        ranges.push({ from: new Date(Y, M, i + 1), until: new Date(Y, M, i + 2) })
+        labels.push(String(i + 1))
+      } else if (granularity === 'year') {
+        ranges.push({ from: new Date(Y - 4 + i, 0, 1), until: new Date(Y - 3 + i, 0, 1) })
+        labels.push(String(Y - 4 + i))
+      } else {
+        ranges.push({ from: new Date(Y, i, 1), until: new Date(Y, i + 1, 1) })
+        labels.push(`${i + 1}月`)
       }
     }
+    const buckets = labels.map((label) => ({ label, count: 0, revenue: 0, cost: 0, profit: 0 }))
+    if (await this.fastReadsReady(userId)) {
+      const rows = await this.prisma.$queryRaw<LedgerStatsRow[]>(ledgerStatsQuery(userId, ranges))
+      rows.forEach((row) => {
+        Object.assign(buckets[row.index], {
+          count: Number(row.count),
+          revenue: Number(row.revenue),
+          cost: Number(row.cost),
+          profit: Number(row.profit),
+        })
+      })
+    } else {
+      const rows = await this.prisma.ledgerOrder.findMany({
+        where: { userId, date: { gte: ranges[0].from, lt: ranges[size - 1].until } },
+        select: {
+          date: true,
+          total: true,
+          costProfile: true,
+          costGlass: true,
+          costHardware: true,
+          costLabor: true,
+          costScreen: true,
+          extras: true,
+          customCosts: true,
+        },
+      })
+      rows.forEach((row) => {
+        const date = row.date
+        const index =
+          granularity === 'day'
+            ? date.getFullYear() === Y && date.getMonth() === M
+              ? date.getDate() - 1
+              : -1
+            : granularity === 'year'
+              ? date.getFullYear() - (Y - 4)
+              : date.getFullYear() === Y
+                ? date.getMonth()
+                : -1
+        const bucket = buckets[index]
+        if (!bucket) return
+        const cost = totalCost(row)
+        bucket.count++
+        bucket.revenue += row.total
+        bucket.cost += cost
+        bucket.profit += revenueOf(row) - cost
+      })
+    }
     const summary = buckets.reduce(
-      (s, b) => ({
-        count: s.count + b.count,
-        revenue: s.revenue + b.revenue,
-        cost: s.cost + b.cost,
-        profit: s.profit + b.profit,
+      (sum, bucket) => ({
+        count: sum.count + bucket.count,
+        revenue: sum.revenue + bucket.revenue,
+        cost: sum.cost + bucket.cost,
+        profit: sum.profit + bucket.profit,
       }),
       { count: 0, revenue: 0, cost: 0, profit: 0 },
     )
@@ -1189,7 +1299,10 @@ export class LedgerService {
 
   // ── 经营目标 ─────────────────────────────────────────────
   async getGoal(userId: string) {
-    const g = await this.prisma.ledgerGoal.findUnique({ where: { userId } })
+    const g = await this.prisma.ledgerGoal.findUnique({
+      where: { userId },
+      select: { monthly: true, yearly: true },
+    })
     return { monthly: g?.monthly ?? 0, yearly: g?.yearly ?? 0 }
   }
 
@@ -1234,7 +1347,10 @@ export class LedgerService {
     try {
       const key = NOTIFY_SETTING_KEY[type]
       if (key) {
-        const s = await this.prisma.ledgerSetting.findUnique({ where: { userId } })
+        const s = await this.prisma.ledgerSetting.findUnique({
+          where: { userId },
+          select: { notifyOrder: true, notifyReport: true, notifyGoal: true, notifySystem: true },
+        })
         const enabled = s ? s[key] : NOTIFY_SETTING_DEFAULTS[key]
         if (!enabled) return
       }
@@ -1249,6 +1365,7 @@ export class LedgerService {
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: 100,
+      select: { id: true, type: true, title: true, body: true, read: true, createdAt: true },
     })
     return rows.map((n) => ({
       id: n.id,

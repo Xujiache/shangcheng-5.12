@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto'
+import { createCipheriv, createDecipheriv, randomBytes, randomUUID, scryptSync } from 'node:crypto'
+import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizException, BizCode } from '../../common/exceptions/biz.exception'
 import {
@@ -16,6 +17,7 @@ const EXPORT_SECRET =
 const EXPORT_KEY = scryptSync(EXPORT_SECRET, 'ledger-export-salt-v1', 32)
 const PKG_PREFIX = 'LJBK1.' // 数据包前缀标识
 const MAX_IMPORT_ORDERS = 5000
+const IMPORT_BATCH_SIZE = 250
 
 const int = (x: unknown) => Math.max(0, Math.round(Number(x) || 0))
 
@@ -203,24 +205,35 @@ export class LedgerExtraService {
       select: { id: true, name: true },
     })
     const nameMap = new Map<string, string>(existing.map((c) => [c.name, c.id]))
-    let custAdded = 0
+    const pendingCustomerRows: Prisma.LedgerCustomerCreateManyInput[] = []
     for (const c of customers) {
       const name = String(c?.name || '').trim()
       if (!name || nameMap.has(name)) continue
-      const created = await this.prisma.ledgerCustomer.create({
-        data: {
-          userId,
-          name: name.slice(0, 40),
-          phone: c.phone ? String(c.phone).slice(0, 20) : null,
-          address: c.address ? String(c.address).slice(0, 200) : null,
-          note: c.note ? String(c.note).slice(0, 500) : null,
-        },
+      const storedName = name.slice(0, 40)
+      const storedId = nameMap.get(storedName)
+      if (storedId) {
+        nameMap.set(name, storedId)
+        continue
+      }
+      const id = randomUUID()
+      nameMap.set(name, id)
+      nameMap.set(storedName, id)
+      pendingCustomerRows.push({
+        id,
+        userId,
+        name: storedName,
+        phone: c.phone ? String(c.phone).slice(0, 20) : null,
+        address: c.address ? String(c.address).slice(0, 200) : null,
+        note: c.note ? String(c.note).slice(0, 500) : null,
       })
-      nameMap.set(name, created.id)
-      custAdded++
+    }
+    for (let start = 0; start < pendingCustomerRows.length; start += IMPORT_BATCH_SIZE) {
+      await this.prisma.ledgerCustomer.createMany({
+        data: pendingCustomerRows.slice(start, start + IMPORT_BATCH_SIZE),
+      })
     }
 
-    let orderAdded = 0
+    const orderRows: Prisma.LedgerOrderCreateManyInput[] = []
     for (const o of orders) {
       const customerName = String(o?.customerName || '').trim()
       const customerId =
@@ -249,9 +262,14 @@ export class LedgerExtraService {
       orderData.revenueAmount = BigInt(revenueOf(orderData))
       orderData.costAmount = BigInt(totalCost(orderData))
       orderData.profitAmount = orderData.revenueAmount - orderData.costAmount
-      await this.prisma.ledgerOrder.create({ data: orderData })
-      orderAdded++
+      orderRows.push(orderData)
+      if (orderRows.length === IMPORT_BATCH_SIZE) {
+        await this.prisma.ledgerOrder.createMany({ data: orderRows.splice(0) })
+      }
     }
-    return { ok: true, customers: custAdded, orders: orderAdded }
+    if (orderRows.length) {
+      await this.prisma.ledgerOrder.createMany({ data: orderRows.splice(0) })
+    }
+    return { ok: true, customers: pendingCustomerRows.length, orders: orders.length }
   }
 }

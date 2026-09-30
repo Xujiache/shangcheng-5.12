@@ -45,7 +45,20 @@ export class LedgerJwtGuard implements CanActivate {
 
     const user = await this.prisma.ledgerUser.findUnique({
       where: { id: payload.sub },
-      include: { membership: true },
+      select: {
+        id: true,
+        status: true,
+        nickname: true,
+        avatar: true,
+        membership: {
+          select: {
+            expiresAt: true,
+            lastPlanKey: true,
+            perpetual: true,
+            trialClaimedAt: true,
+          },
+        },
+      },
     })
     if (!user) throw new BizException(BizCode.UNAUTHORIZED, '账号不存在或已注销')
     if (user.status === 'disabled') throw new BizException(BizCode.FORBIDDEN, '账号已被禁用')

@@ -51,7 +51,7 @@ export class LedgerController {
 
   @Get('me')
   me(@CurrentLedgerUser() user: LedgerAuthUser) {
-    return this.svc.me(user.id)
+    return user
   }
 
   /** 上传头像并持久化；图片由本地 API 按不可变文件 ID 提供。 */
@@ -88,7 +88,7 @@ export class LedgerController {
 
   @Get('membership')
   async membership(@CurrentLedgerUser() user: LedgerAuthUser) {
-    const m = await this.svc.membership(user.id)
+    const m = await this.svc.membership(user.id, user.membership)
     // virtualPayEnabled=true 时小程序走「虚拟支付」内购（合规）；否则回退「留言找管理员」。
     // payEnabled（普通微信支付）保留给非小程序端，小程序内购不再用它（虚拟商品合规要求）。
     return { ...m, payEnabled: this.pay.payEnabled(), virtualPayEnabled: this.xpay.xpayEnabled() }
@@ -155,7 +155,7 @@ export class LedgerController {
   // ── 优化下料闸门（#9）：试用 / 会员校验 ──
   @Get('cut/access')
   cutAccess(@CurrentLedgerUser() u: LedgerAuthUser) {
-    return this.svc.cutAccess(u.id)
+    return this.svc.cutAccess(u.id, u.membership)
   }
 
   // ── 邀请（#10）：邀请码 + 已邀人数 + 奖励天数 ──

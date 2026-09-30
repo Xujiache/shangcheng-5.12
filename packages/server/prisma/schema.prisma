@@ -1147,6 +1147,7 @@ model LedgerCustomer {
   orders LedgerOrder[]
 
   @@index([userId])
+  @@index([userId, name])
 }
 
 model LedgerOrder {
@@ -1180,6 +1181,8 @@ model LedgerOrder {
 
   @@index([userId, date])
   @@index([userId, profitAmount, date])
+  @@index([userId, customerName, date])
+  @@index([userId, customerId, date])
   @@index([customerId])
 }
 
