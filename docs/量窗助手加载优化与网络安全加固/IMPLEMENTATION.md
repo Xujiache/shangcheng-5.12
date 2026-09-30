@@ -39,7 +39,7 @@ pnpm --filter @jiujiu/server exec tsx scripts/verify-ledger-fast-reads.ts --benc
 ## 预发布顺序（每一步留存日志与行数）
 
 1. 核对运行中的 Nginx/服务进程、commit/build ID、监听端口、TLS 证书及自动续期、CORS、Swagger、MinIO 匿名策略和凭据来源。先备份 Postgres、MinIO 元数据与对象，记录恢复演练结果；不要从仓库 Compose 推断生产。
-2. 用 `psql` 对目标库执行 `deploy/ledger-order-amounts.sql`。单独、**不在事务内**执行 `deploy/ledger-order-amounts-index.sql` 和 `deploy/ledger-read-indexes.sql`。先保持 `LEDGER_FAST_READS=0`，再部署双写服务。不得用全库 `prisma db push` 代替增量 SQL。
+2. 用 `psql` 对目标库执行 `deploy/ledger-order-amounts.sql`。单独、**不在事务内**执行 `deploy/ledger-order-amounts-index.sql`、`deploy/ledger-read-indexes.sql` 和 `deploy/ledger-conversion-read-indexes.sql`。先保持 `LEDGER_FAST_READS=0`，再部署双写服务。不得用全库 `prisma db push` 代替增量 SQL。
 3. 在目标服务环境注入 `DATABASE_URL`，于 `packages/server` 执行：
    ```bash
    pnpm exec tsx scripts/backfill-ledger-order-amounts.ts

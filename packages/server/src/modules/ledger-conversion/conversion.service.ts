@@ -205,7 +205,13 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   async uploadStatus(userId: string, id: string) {
     const upload = await this.prisma.ledgerConversionUpload.findFirst({
       where: { id, userId },
-      include: { chunks: { select: { index: true }, orderBy: { index: 'asc' } } },
+      select: {
+        status: true,
+        chunkSize: true,
+        chunkCount: true,
+        expiresAt: true,
+        chunks: { select: { index: true }, orderBy: { index: 'asc' } },
+      },
     })
     if (!upload || upload.expiresAt < new Date())
       throw new BizException(BizCode.INVALID_PARAMS, '上传会话不存在或已过期')
@@ -231,7 +237,15 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
         throw new BizException(BizCode.INVALID_PARAMS, '分片编号不正确')
       const upload = await this.prisma.ledgerConversionUpload.findFirst({
         where: { id, userId },
-        include: { chunks: { where: { index } } },
+        select: {
+          status: true,
+          jobId: true,
+          expiresAt: true,
+          chunkSize: true,
+          chunkCount: true,
+          totalBytes: true,
+          chunks: { where: { index }, select: { sha256: true } },
+        },
       })
       if (!upload || upload.status !== 'uploading' || upload.expiresAt < new Date() || upload.jobId) {
         throw new BizException(BizCode.INVALID_PARAMS, '上传会话不可写')
@@ -291,7 +305,17 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     this.requireReady()
     const upload = await this.prisma.ledgerConversionUpload.findFirst({
       where: { id, userId },
-      include: { chunks: { orderBy: { index: 'asc' } } },
+      select: {
+        status: true,
+        jobId: true,
+        expiresAt: true,
+        chunkCount: true,
+        totalBytes: true,
+        chunks: {
+          select: { index: true, sizeBytes: true },
+          orderBy: { index: 'asc' },
+        },
+      },
     })
     if (!upload || upload.expiresAt < new Date() || upload.jobId)
       throw new BizException(BizCode.INVALID_PARAMS, '上传会话不存在或已过期')
@@ -339,6 +363,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
         jobId: null,
         expiresAt: { gt: new Date() },
       },
+      select: { id: true, extension: true, totalBytes: true },
     })
     const capacity = await this.workerCapacity()
     if (!capacity) throw new BizException(BizCode.BUSINESS_ERROR, '转换引擎暂不可用')
@@ -443,7 +468,17 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
       orderBy: { createdAt: 'desc' },
       skip,
       take: 30,
-      include: {
+      select: {
+        id: true,
+        operationId: true,
+        uploadOrder: true,
+        options: true,
+        status: true,
+        progress: true,
+        error: true,
+        createdAt: true,
+        finishedAt: true,
+        expiresAt: true,
         uploads: { select: { id: true, fileName: true, totalBytes: true } },
         assets: {
           select: { id: true, fileName: true, mimeType: true, sizeBytes: true },
@@ -457,7 +492,17 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   async getJob(userId: string, id: string) {
     const job = await this.prisma.ledgerConversionJob.findFirst({
       where: { id, userId, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
-      include: {
+      select: {
+        id: true,
+        operationId: true,
+        uploadOrder: true,
+        options: true,
+        status: true,
+        progress: true,
+        error: true,
+        createdAt: true,
+        finishedAt: true,
+        expiresAt: true,
         uploads: { select: { id: true, fileName: true, totalBytes: true } },
         assets: {
           select: { id: true, fileName: true, mimeType: true, sizeBytes: true },
@@ -545,7 +590,10 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
   }
 
   async deleteJob(userId: string, id: string) {
-    const job = await this.prisma.ledgerConversionJob.findFirst({ where: { id, userId } })
+    const job = await this.prisma.ledgerConversionJob.findFirst({
+      where: { id, userId },
+      select: { status: true, finishedAt: true, expiresAt: true },
+    })
     if (!job) throw new BizException(BizCode.INVALID_PARAMS, '任务不存在')
     if (job.status === 'running')
       throw new BizException(BizCode.INVALID_PARAMS, '请先取消运行中的任务')
@@ -596,6 +644,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
         jobId,
         job: { userId, status: 'succeeded', expiresAt: { gt: new Date() } },
       },
+      select: { id: true, objectKey: true, fileName: true, mimeType: true, sizeBytes: true },
     })
     if (!asset) throw new BizException(BizCode.INVALID_PARAMS, '结果不存在')
     const size = Number(asset.sizeBytes)
@@ -662,6 +711,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     const jobs = await this.prisma.ledgerConversionJob.findMany({
       where: { expiresAt: { lt: new Date() } },
       take: 50,
+      select: { id: true },
     })
     for (const job of jobs) {
       try {
@@ -674,6 +724,7 @@ export class ConversionService implements OnModuleInit, OnModuleDestroy {
     const orphans = await this.prisma.ledgerConversionUpload.findMany({
       where: { jobId: null, expiresAt: { lt: new Date() } },
       take: 100,
+      select: { id: true, userId: true },
     })
     for (const upload of orphans) {
       try {

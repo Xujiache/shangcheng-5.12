@@ -429,6 +429,7 @@ describe('ledger conversion gate', () => {
         jobId: 'j1',
         job: { userId: 'u1', status: 'succeeded', expiresAt: { gt: expect.any(Date) } },
       },
+      select: { id: true, objectKey: true, fileName: true, mimeType: true, sizeBytes: true },
     })
     await instance.onModuleDestroy()
   })
@@ -465,6 +466,7 @@ describe('ledger conversion gate', () => {
         id: 'a1', jobId: 'j1',
         job: { userId: 'u1', status: 'succeeded', expiresAt: { gt: expect.any(Date) } },
       },
+      select: { id: true, objectKey: true, fileName: true, mimeType: true, sizeBytes: true },
     })
     await instance.onModuleDestroy()
   })
@@ -539,6 +541,36 @@ describe('ledger conversion gate', () => {
       'ledger-conversions/u1/uploads/up1/file',
     ])
     expect(prisma.ledgerConversionJob.delete).toHaveBeenCalledWith({ where: { id: 'j1' } })
+    await instance.onModuleDestroy()
+  })
+
+  test('expired orphan cleanup keeps the upload owner in the object prefix', async () => {
+    const prisma = {
+      ledgerConversionJob: { findMany: jest.fn().mockResolvedValue([]) },
+      ledgerConversionUpload: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'up1', userId: 'u1' }]),
+        delete: jest.fn().mockResolvedValue({}),
+      },
+    }
+    const instance = service(prisma)
+    const storage = {
+      listObjectsV2: jest.fn().mockImplementation((_bucket: string, prefix: string) =>
+        (async function* () {
+          yield { name: prefix + 'file' }
+        })(),
+      ),
+      removeObjects: jest.fn().mockResolvedValue(undefined),
+    }
+    ;(instance as any).storage = storage
+
+    await instance.cleanupExpired()
+
+    expect(storage.listObjectsV2).toHaveBeenCalledWith(
+      'jiujiu-conversions',
+      'ledger-conversions/u1/uploads/up1/',
+      true,
+    )
+    expect(prisma.ledgerConversionUpload.delete).toHaveBeenCalledWith({ where: { id: 'up1' } })
     await instance.onModuleDestroy()
   })
 

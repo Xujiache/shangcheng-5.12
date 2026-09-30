@@ -1390,6 +1390,7 @@ model LedgerConversionUpload {
   chunks        LedgerConversionChunk[]
 
   @@index([userId, status])
+  @@index([userId, status, jobId, expiresAt])
   @@index([jobId])
   @@index([expiresAt])
 }
