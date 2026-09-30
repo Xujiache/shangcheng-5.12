@@ -2,16 +2,7 @@ import { navigation } from './utils/page-transition'
 import { LOCAL_CONVERSION_TEST, TOKEN_KEY, VERSION } from './config'
 import { captureInviteCode, getBioLock, getBioVerified } from './utils/store'
 import { clearAllCache } from './utils/request'
-import { flushToolEvents } from './utils/tool-events'
-
-let toolEventFlushTimer: ReturnType<typeof setTimeout> | undefined
-function scheduleToolEventFlush(delay = 800) {
-  if (toolEventFlushTimer) return
-  toolEventFlushTimer = setTimeout(() => {
-    toolEventFlushTimer = undefined
-    void flushToolEvents()
-  }, delay)
-}
+import { scheduleToolEventFlush } from './utils/tool-events'
 
 const GUEST_ALLOWED_ROUTES = new Set([
   'pages/home/index',

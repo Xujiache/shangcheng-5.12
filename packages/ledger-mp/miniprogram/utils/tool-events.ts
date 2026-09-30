@@ -7,6 +7,16 @@ type Event = { id: string; tool: ToolKey; status: ToolStatus; occurredAt: string
 
 const PREFIX = 'ledger_tool_events_v1:'
 let flushing = false
+let flushTimer: ReturnType<typeof setTimeout> | undefined
+
+/** 埋点不上首屏：合并短时间内的多次触发，等页面稳定后再发。 */
+export function scheduleToolEventFlush(delay = 800): void {
+  if (flushTimer) return
+  flushTimer = setTimeout(() => {
+    flushTimer = undefined
+    void flushToolEvents()
+  }, delay)
+}
 
 function accountId(): string {
   try {
@@ -45,7 +55,7 @@ export function reportToolEvent(tool: ToolKey, status: ToolStatus): void {
   try {
     wx.setStorageSync(key(account), [...read(account), { id: uuid(), tool, status, occurredAt: new Date().toISOString() }])
   } catch { return }
-  void flushToolEvents()
+  scheduleToolEventFlush()
 }
 
 /** Replay only the currently authenticated account's queue. */

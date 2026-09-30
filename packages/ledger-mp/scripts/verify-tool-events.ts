@@ -20,6 +20,7 @@ const token = (id: string) => {
 }
 
 async function tick() { await new Promise<void>((resolve) => { setImmediate(resolve) }) }
+async function waitForScheduledFlush() { await new Promise<void>((resolve) => { setTimeout(resolve, 850) }) }
 
 async function main() {
   const { reportToolEvent, flushToolEvents } = await import('../miniprogram/utils/tool-events')
@@ -28,6 +29,7 @@ async function main() {
 
   app.globalData.token = token('alice')
   reportToolEvent('triangle', 'success')
+  await waitForScheduledFlush()
   assert.equal(pending.length, 1)
   assert.equal(pending[0].data.events[0].tool, 'triangle')
   assert.deepEqual(Object.keys(pending[0].data.events[0]).sort(), ['id', 'occurredAt', 'status', 'tool'])
@@ -37,6 +39,7 @@ async function main() {
 
   app.globalData.token = token('bob')
   reportToolEvent('arc', 'open')
+  await waitForScheduledFlush()
   assert.equal(pending.length, 1)
   assert.equal(pending[0].header.Authorization, `Bearer ${app.globalData.token}`)
   pending.shift().success({ statusCode: 200, data: { code: 0, data: { accepted: 1 } } })
