@@ -1,10 +1,9 @@
 import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi } from '../../api/index'
-import { API_BASE, avatarImageSrc, isAvatarImage } from '../../config'
-import { handleUnauthorized } from '../../utils/request'
-import { getUser, setUser, getToken } from '../../utils/store'
+import { avatarImageSrc, isAvatarImage, ledgerAvatarLetter } from '../../config'
+import { getUser, setUser } from '../../utils/store'
 
-const HUES = [
+const HUES: Array<{ key: string; grad: string }> = [
   { key: 'teal', grad: 'linear-gradient(140deg, #3ba58c 0%, #0e7c66 100%)' },
   { key: 'blue', grad: 'linear-gradient(140deg, #6fb7d2 0%, #4c9fbe 100%)' },
   { key: 'gold', grad: 'linear-gradient(140deg, #efc06a 0%, #dfa03a 100%)' },
@@ -20,74 +19,73 @@ MotionPage({
     hues: HUES,
     hueKey: 'teal',
     hue: HUES[0],
-    avatarUrl: '', // 服务端保存的头像地址；有则优先显示图片
+    avatarMode: 'letter' as 'letter' | 'image',
+    avatarUrl: '',
     avatarSrc: '',
+    draftImagePath: '',
     avatarFailed: false,
-    uploading: false,
+    cropVisible: false,
     canSave: false,
     saving: false,
   },
-
   _origNickname: '',
   _origHue: 'teal',
   _origAvatarUrl: '',
 
   onLoad() {
-    const u = getUser()
-    const nickname = (u && u.nickname) || ''
-    this._origNickname = nickname
-    // avatar 字段：图片地址或字母头像底色 hue key
-    const stored = u && u.avatar ? u.avatar : ''
+    const u: any = getUser() || {}
+    const nickname = String(u.nickname || '')
+    const stored = typeof u.avatar === 'string' ? u.avatar : ''
     const isImg = isAvatarImage(stored)
     const hueKey = !isImg && HUES.some((h) => h.key === stored) ? stored : 'teal'
+    const hue = HUES.find((h) => h.key === hueKey) || HUES[0]
+    this._origNickname = nickname
     this._origHue = hueKey
     this._origAvatarUrl = isImg ? stored : ''
-    const hue = HUES.find((h) => h.key === hueKey) || HUES[0]
     this.setData({
       nickname,
       initial: this.firstChar(nickname),
       hueKey,
       hue,
+      avatarMode: isImg ? 'image' : 'letter',
       avatarUrl: isImg ? stored : '',
       avatarSrc: isImg ? avatarImageSrc(stored) : '',
       avatarFailed: false,
-    })
-    this.refreshCanSave()
+      draftImagePath: '',
+    }, () => this.refreshCanSave())
   },
 
   firstChar(s: string): string {
-    const t = (s || '').trim()
-    return t ? t.charAt(0).toUpperCase() : '账'
+    return ledgerAvatarLetter(s)
   },
 
   refreshCanSave() {
-    const trimmed = this.data.nickname.trim()
-    const changed =
-      trimmed !== this._origNickname.trim() ||
-      this.data.hueKey !== this._origHue ||
-      this.data.avatarUrl !== this._origAvatarUrl
-    this.setData({ canSave: trimmed.length > 0 && changed })
+    const nickname = this.data.nickname.trim()
+    const imageChanged = this.data.avatarMode === 'image' && !!this.data.draftImagePath
+    const avatarChanged = this.data.avatarMode === 'image'
+      ? imageChanged || !this._origAvatarUrl
+      : !!this._origAvatarUrl || this.data.hueKey !== this._origHue
+    this.setData({ canSave: nickname.length > 0 && (nickname !== this._origNickname.trim() || avatarChanged) })
   },
 
   onNickname(e: any) {
-    const nickname = String(e.detail.value).slice(0, 20)
+    const nickname = String(e.detail.value || '').slice(0, 20)
     this.setData({ nickname, initial: this.firstChar(nickname) }, () => this.refreshCanSave())
   },
 
   onHue(e: any) {
     const key = e.currentTarget.dataset.key
     const hue = HUES.find((h) => h.key === key) || HUES[0]
-    this.setData({ hueKey: key, hue }, () => this.refreshCanSave())
+    this.setData({ hueKey: key, hue, avatarMode: 'letter', draftImagePath: '', avatarFailed: false }, () => this.refreshCanSave())
   },
 
-  // 选图 → 上传并持久化 → 使用服务端返回的不可变图片地址
   onAvatarError() {
     this.setData({ avatarFailed: true })
-    wx.showToast({ title: '头像图片加载失败', icon: 'none' })
+    wx.showToast({ title: '头像图片加载失败，可重新选择', icon: 'none' })
   },
 
   onChangeAvatar() {
-    if (this.data.uploading) return
+    if (this.data.saving || this.data.cropVisible) return
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
@@ -95,8 +93,8 @@ MotionPage({
       sourceType: ['album', 'camera'],
       success: (res) => {
         const selected = res.tempFiles && res.tempFiles[0]
-        const fp = selected && selected.tempFilePath
-        if (!fp) {
+        const filePath = selected?.tempFilePath
+        if (!filePath) {
           wx.showToast({ title: '未获取到图片，请重试', icon: 'none' })
           return
         }
@@ -104,70 +102,30 @@ MotionPage({
           wx.showToast({ title: '图片不能超过 10MB', icon: 'none' })
           return
         }
-        this.setData({ uploading: true })
-        wx.uploadFile({
-          url: API_BASE + '/api/v1/l/avatar',
-          filePath: fp,
-          name: 'file',
-          header: { Authorization: 'Bearer ' + getToken() },
-          success: (up) => {
-            try {
-              const body = JSON.parse(up.data)
-              if (
-                up.statusCode >= 200 &&
-                up.statusCode < 300 &&
-                body &&
-                body.code === 0 &&
-                body.data &&
-                body.data.url
-              ) {
-                const url = body.data.url
-                this.setData({
-                  avatarUrl: url,
-                  avatarSrc: avatarImageSrc(url),
-                  avatarFailed: false,
-                })
-                const u = getUser()
-                if (u) {
-                  u.avatar = url
-                  setUser(u)
-                }
-                wx.showToast({ title: '头像已更新', icon: 'success' })
-              } else if (
-                up.statusCode === 401 ||
-                (body && (body.code === 2001 || body.code === 2002))
-              ) {
-                // uploadFile 不走 request 层，登录失效需手动走统一登出
-                handleUnauthorized()
-              } else {
-                const msg = body && (body.message || body.msg)
-                wx.showToast({
-                  title: (Array.isArray(msg) ? msg[0] : msg) || '上传失败',
-                  icon: 'none',
-                })
-              }
-            } catch (e) {
-              wx.showToast({ title: '上传失败', icon: 'none' })
-            }
-          },
-          fail: () => wx.showToast({ title: '上传失败，请检查本地服务连接', icon: 'none' }),
-          complete: () => this.setData({ uploading: false }),
-        })
+        this.setData({ cropVisible: true, draftImagePath: filePath })
       },
       fail: (error) => {
-        if (!String(error.errMsg || '').includes('cancel'))
-          wx.showToast({ title: '无法选取图片，请重试', icon: 'none' })
+        if (!String(error.errMsg || '').includes('cancel')) wx.showToast({ title: '无法选取图片，请重试', icon: 'none' })
       },
     })
   },
 
-  // 改回字母头像（移除已上传图片，下次保存生效）
+  onCropCancel() {
+    this.setData({ cropVisible: false, draftImagePath: '' }, () => this.refreshCanSave())
+  },
+
+  onCropConfirm(e: any) {
+    const filePath = e.detail?.filePath
+    if (!filePath) return this.onCropCancel()
+    this.setData({ cropVisible: false, draftImagePath: filePath, avatarMode: 'image', avatarFailed: false }, () => this.refreshCanSave())
+  },
+
   onUseLetter() {
-    this.setData({ avatarUrl: '', avatarSrc: '', avatarFailed: false }, () => this.refreshCanSave())
+    this.setData({ avatarMode: 'letter', draftImagePath: '', avatarFailed: false }, () => this.refreshCanSave())
   },
 
   async onSave() {
-    if (this.data.saving) return
+    if (this.data.saving || !this.data.canSave) return
     const nickname = this.data.nickname.trim()
     if (!nickname) {
       wx.showToast({ title: '请输入昵称', icon: 'none' })
@@ -175,20 +133,18 @@ MotionPage({
     }
     this.setData({ saving: true })
     try {
-      // 有上传图片则存 URL，否则存所选底色 hue key
-      const avatar = this.data.avatarUrl || this.data.hueKey
-      await meApi.updateProfile({ nickname, avatar })
-      const u = getUser()
-      if (u) {
-        u.nickname = nickname
-        u.avatar = avatar
-        setUser(u)
+      let user: any
+      if (this.data.avatarMode === 'image' && this.data.draftImagePath) {
+        user = await meApi.updateAvatar(this.data.draftImagePath, nickname)
+      } else if (this.data.avatarMode === 'letter') {
+        user = await meApi.updateProfile({ nickname, avatarMode: 'letter', avatarHue: this.data.hueKey as any })
+      } else {
+        user = await meApi.updateProfile({ nickname, avatarMode: 'keep' })
       }
+      setUser(user)
       wx.showToast({ title: '已保存', icon: 'success' })
       setTimeout(() => navigation.navigateBack(), 600)
-      // 成功后不重置 saving：返回前防重复提交
-    } catch (e) {
-      /* toast handled in request */
+    } catch {
       this.setData({ saving: false })
     }
   },

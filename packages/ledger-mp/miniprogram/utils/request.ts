@@ -128,6 +128,15 @@ export interface RequestOptions {
   cacheKey?: string // 自定义缓存键（默认 路径+查询串）
 }
 
+export interface UploadOptions {
+  url: string
+  filePath: string
+  name?: string
+  formData?: Record<string, string>
+  auth?: boolean
+  silent?: boolean
+}
+
 function buildQuery(params?: Record<string, any>): string {
   if (!params) return ''
   const parts = Object.keys(params)
@@ -302,6 +311,51 @@ export function request<T = any>(opts: RequestOptions): Promise<T> {
   })
   inFlight.set(dedupeKey, tracked)
   return tracked
+}
+
+/** wx.uploadFile 的统一响应壳处理；头像等写入接口只在服务端成功后更新本地状态。 */
+export function upload<T = any>(urlPath: string, filePath: string, formData: Record<string, any> = {}, opts: Omit<UploadOptions, 'url' | 'filePath' | 'formData'> = {}): Promise<T> {
+  const app = getApp<IAppOption>()
+  const token = app?.globalData?.token || wx.getStorageSync(TOKEN_KEY) || ''
+  const header: Record<string, string> = {}
+  if (opts.auth !== false && token) header.Authorization = 'Bearer ' + token
+  const url = API_BASE + '/api/v1' + urlPath
+  return new Promise<T>((resolve, reject) => {
+    wx.uploadFile({
+      url,
+      filePath,
+      name: opts.name || 'file',
+      formData,
+      header,
+      timeout: 30_000,
+      success: (res) => {
+        let body: ApiShell<T> | null = null
+        try {
+          body = JSON.parse(res.data || '')
+        } catch {
+          body = null
+        }
+        if (body && body.code === 0) {
+          if (app?.globalData) app.globalData.online = true
+          resolve(body.data)
+          return
+        }
+        const message = Array.isArray(body?.message || body?.msg)
+          ? String((body?.message || body?.msg)?.[0])
+          : String(body?.message || body?.msg || '上传失败')
+        const error: any = new Error(message)
+        error.code = body?.code
+        error.statusCode = res.statusCode
+        if (res.statusCode === 401 || body?.code === 2001 || body?.code === 2002) handleUnauthorized()
+        else if (!opts.silent) wx.showToast({ title: message, icon: 'none' })
+        reject(error)
+      },
+      fail: (error) => {
+        if (!opts.silent) wx.showToast({ title: '网络连接失败，请重试', icon: 'none' })
+        reject(error)
+      },
+    })
+  })
 }
 
 export const http = {

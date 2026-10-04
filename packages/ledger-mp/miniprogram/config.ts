@@ -8,12 +8,25 @@ export const API_BASE = 'https://ewsn.top'
 export const CONVERSION_API_BASE = API_BASE
 export const LOCAL_CONVERSION_TEST = false
 
+export const LEDGER_AVATAR_HUES = ['teal', 'blue', 'gold', 'rust', 'olive', 'violet'] as const
+export type LedgerAvatarHue = (typeof LEDGER_AVATAR_HUES)[number]
+const AVATAR_IMAGE_RE = /^\/api\/v1\/l\/avatar-image\/[a-zA-Z0-9_-]{8,64}$/
 const AVATAR_IMAGE_PREFIX = '/api/v1/l/avatar-image/'
-export function isAvatarImage(value: string): boolean {
-  return /^https?:\/\//.test(value) || value.startsWith(AVATAR_IMAGE_PREFIX)
+export function isAvatarImage(value: string | null | undefined): boolean {
+  if (typeof value !== 'string') return false
+  const v = value.trim()
+  return AVATAR_IMAGE_RE.test(v) || v.startsWith(API_BASE + AVATAR_IMAGE_PREFIX) && AVATAR_IMAGE_RE.test(v.slice(API_BASE.length))
 }
-export function avatarImageSrc(value: string): string {
-  return value.startsWith(AVATAR_IMAGE_PREFIX) ? API_BASE + value : value
+export function avatarImageSrc(value: string | null | undefined): string {
+  if (typeof value !== 'string') return ''
+  const v = value.trim()
+  if (AVATAR_IMAGE_RE.test(v)) return API_BASE + v
+  if (v.startsWith(API_BASE + AVATAR_IMAGE_PREFIX) && AVATAR_IMAGE_RE.test(v.slice(API_BASE.length))) return v
+  return ''
+}
+export function ledgerAvatarLetter(value: string | null | undefined): string {
+  const text = String(value || '').trim()
+  return text ? text.charAt(0).toUpperCase() : '账'
 }
 
 /** access token 在本地存储的键名 */

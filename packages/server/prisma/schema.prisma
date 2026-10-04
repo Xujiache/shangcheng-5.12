@@ -1048,7 +1048,7 @@ model LedgerUser {
   phone          String?   @unique // 旧账号兼容字段；不再用于登录或绑定
   passwordHash   String? // 旧账号兼容字段；纯微信账号为空
   nickname       String    @default("门窗店主")
-  avatar         String? // 字母底色 hue key 或上传头像的公网 URL
+  avatar         String? // 固定字母底色 hue key 或 /api/v1/l/avatar-image/:id 相对路径
   wxOpenid       String?   @unique // 唯一登录身份；旧账号迁移前允许为空
   inviteCode     String?   @unique // 邀请码（#10 分享注册）
   invitedById    String? // 邀请人 LedgerUser.id

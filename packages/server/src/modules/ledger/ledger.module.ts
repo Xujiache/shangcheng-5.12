@@ -26,6 +26,7 @@ import { TideController } from './tide.controller'
 import { TideService } from './tide.service'
 import { MetalToolController } from './metal-tool.controller'
 import { MetalQuoteService } from './metal-quote.service'
+import { LedgerAvatarCleanupService } from './ledger-avatar-cleanup.service'
 
 /**
  * 门窗利账（ledger）模块 —— 记账小程序后端域，与商城零耦合。
@@ -63,6 +64,7 @@ import { MetalQuoteService } from './metal-quote.service'
     LedgerXpayService,
     LedgerJwtGuard,
     LedgerMembershipGuard,
+    LedgerAvatarCleanupService,
   ],
 })
 export class LedgerModule {}

@@ -4,6 +4,7 @@ import { Request } from 'express'
 import { BizCode, BizException } from '../../../common/exceptions/biz.exception'
 import { PrismaService } from '../../../prisma/prisma.service'
 import { deriveMembership } from '../ledger.constants'
+import { sanitizeLedgerAvatar } from '../ledger-avatar.util'
 
 /**
  * 记账小程序 App 鉴权守卫。
@@ -66,7 +67,7 @@ export class LedgerJwtGuard implements CanActivate {
       id: user.id,
       accountCode: user.id.slice(-8).toUpperCase(),
       nickname: user.nickname,
-      avatar: user.avatar,
+      avatar: sanitizeLedgerAvatar(user.avatar),
       membership: deriveMembership(
         user.membership?.expiresAt ?? null,
         user.membership?.lastPlanKey,

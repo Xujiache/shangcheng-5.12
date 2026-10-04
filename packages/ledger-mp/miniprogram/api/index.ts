@@ -1,4 +1,5 @@
-import { http } from '../utils/request'
+import { http, upload } from '../utils/request'
+import type { LedgerAvatarHue } from '../config'
 import { invalidateCache } from '../utils/request'
 
 /** 鉴权（登录类 auth:false 不带 token） */
@@ -26,8 +27,13 @@ export const meApi = {
   // 虚拟支付下单（虚拟商品合规内购）→ 返回 wx.requestVirtualPayment 所需 signData/paySig/signature
   createVirtualPay: (planKey: string, code?: string) =>
     http.post('/l/membership/xpay-order', { planKey, code }),
-  updateProfile: (data: { nickname?: string; avatar?: string }) =>
+  updateProfile: (data: { nickname?: string; avatarMode?: 'keep' | 'letter'; avatarHue?: LedgerAvatarHue }) =>
     http.patch('/l/profile', data).then((r) => {
+      invalidateCache(['/l/me', '/l/membership'])
+      return r
+    }),
+  updateAvatar: (filePath: string, nickname?: string) =>
+    upload('/l/profile/avatar', filePath, { nickname }).then((r) => {
       invalidateCache(['/l/me', '/l/membership'])
       return r
     }),

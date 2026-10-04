@@ -165,45 +165,108 @@ export class FilesService implements OnModuleInit {
       'Cache-Control': IMMUTABLE_CACHE_CONTROL,
     })
     const url = `${this.publicUrl}/${key}`
+    const thumbnailKey = IMAGE_MIME.includes(file.mimetype) ? thumbnailKeyForObjectKey(key) : null
     let thumbnailUrl: string | undefined
-    if (IMAGE_MIME.includes(file.mimetype)) {
-      const thumbnailKey = thumbnailKeyForObjectKey(key)
-      if (thumbnailKey) {
-        try {
-          const thumbnail = await createSquareThumbnail(file.buffer)
-          await this.client.putObject(this.bucket, thumbnailKey, thumbnail, thumbnail.length, {
-            'Content-Type': 'image/webp',
-            'Cache-Control': IMMUTABLE_CACHE_CONTROL,
-          })
-          thumbnailUrl = `${this.publicUrl}/${thumbnailKey}`
-        } catch (error: any) {
-          this.logger.warn(`thumbnail failed for ${key}: ${error?.message || 'unknown error'}`)
-        }
+    if (thumbnailKey) {
+      try {
+        const thumbnail = await createSquareThumbnail(file.buffer)
+        await this.client.putObject(this.bucket, thumbnailKey, thumbnail, thumbnail.length, {
+          'Content-Type': 'image/webp',
+          'Cache-Control': IMMUTABLE_CACHE_CONTROL,
+        })
+        thumbnailUrl = `${this.publicUrl}/${thumbnailKey}`
+      } catch (error: any) {
+        this.logger.warn(`thumbnail failed for ${key}: ${error?.message || 'unknown error'}`)
       }
     }
 
-    const uploaded = await this.prisma.uploadedFile.create({
-      data: {
-        key,
-        url,
-        size: file.size,
-        mimeType: file.mimetype,
-        bizType,
-        ownerId: ownerId || null,
-      },
-    })
+    let uploaded
+    try {
+      uploaded = await this.prisma.uploadedFile.create({
+        data: {
+          key,
+          url,
+          size: file.size,
+          mimeType: file.mimetype,
+          bizType,
+          ownerId: ownerId || null,
+        },
+      })
+    } catch (error) {
+      await this.client.removeObject(this.bucket, key).catch(() => null)
+      if (thumbnailKey) await this.client.removeObject(this.bucket, thumbnailKey).catch(() => null)
+      throw error
+    }
     return { id: uploaded.id, url, key, size: file.size, mimeType: file.mimetype, thumbnailUrl }
   }
 
   async openLedgerAvatar(id: string) {
+    if (!/^[a-zA-Z0-9_-]{8,64}$/.test(id))
+      throw new BizException(BizCode.NOT_FOUND, '头像不存在')
     if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
     const file = await this.prisma.uploadedFile.findFirst({
       where: { id, bizType: 'avatar', key: { startsWith: 'avatar/' } },
     })
     if (!file || !IMAGE_MIME.includes(file.mimeType))
       throw new BizException(BizCode.NOT_FOUND, '头像不存在')
+    const referenced = await this.prisma.ledgerUser.findFirst({
+      where: { avatar: `/api/v1/l/avatar-image/${id}` },
+      select: { id: true },
+    })
+    if (!referenced) throw new BizException(BizCode.NOT_FOUND, '头像不存在')
     const stream = await this.client.getObject(this.bucket, file.key)
     return { stream, mimeType: file.mimeType, size: file.size }
+  }
+
+  /** 只删除当前利账账号自己拥有的头像文件，供资料替换和回退字母头像使用。 */
+  async removeLedgerAvatar(id: string, ownerId: string) {
+    if (!this.client) throw new BizException(BizCode.BUSINESS_ERROR, '对象存储未配置')
+    if (!/^[a-zA-Z0-9_-]{8,64}$/.test(id)) return { ok: true }
+    const file = await this.prisma.uploadedFile.findFirst({
+      where: { id, bizType: 'avatar', ownerId, key: { startsWith: 'avatar/' } },
+    })
+    if (!file) return { ok: true }
+    try {
+      await this.client.removeObject(this.bucket, file.key)
+    } catch (error: any) {
+      // 保留 UploadedFile 记录，让孤立清理任务后续重试；不制造“数据库已删、对象仍泄漏”的假成功。
+      this.logger.warn(`ledger avatar object cleanup failed for ${file.key}: ${error?.message || error}`)
+      return { ok: false }
+    }
+    const thumbnailKey = thumbnailKeyForObjectKey(file.key)
+    if (thumbnailKey) await this.client.removeObject(this.bucket, thumbnailKey).catch(() => null)
+    await this.prisma.uploadedFile.delete({ where: { id: file.id } }).catch((error: any) => {
+      this.logger.warn(`ledger avatar record cleanup failed for ${file.id}: ${error?.message || error}`)
+    })
+    return { ok: true }
+  }
+
+  /** 清理已不再被任何账号引用的旧头像，返回处理数量。 */
+  async cleanupOrphanLedgerAvatars(referencedIds: Set<string>, olderThan: Date, limit = 200) {
+    if (!this.client) return 0
+    const ledgerOwners = await this.prisma.ledgerUser.findMany({ select: { id: true } })
+    if (!ledgerOwners.length) return 0
+    const files = await this.prisma.uploadedFile.findMany({
+      where: {
+        bizType: 'avatar',
+        ownerId: { in: ledgerOwners.map((owner) => owner.id) },
+        key: { startsWith: 'avatar/' },
+        createdAt: { lt: olderThan },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: { id: true, key: true },
+    })
+    let removed = 0
+    for (const file of files) {
+      if (referencedIds.has(file.id)) continue
+      await this.client.removeObject(this.bucket, file.key).catch(() => null)
+      const thumbnailKey = thumbnailKeyForObjectKey(file.key)
+      if (thumbnailKey) await this.client.removeObject(this.bucket, thumbnailKey).catch(() => null)
+      await this.prisma.uploadedFile.delete({ where: { id: file.id } }).catch(() => null)
+      removed++
+    }
+    return removed
   }
 
   async batchUpload(

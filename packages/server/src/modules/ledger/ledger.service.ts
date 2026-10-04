@@ -1,7 +1,14 @@
 import { Injectable, Optional } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import sharp from 'sharp'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
+import {
+  isLedgerAvatarHue,
+  ledgerAvatarImageId,
+  ledgerAvatarPath,
+  sanitizeLedgerAvatar,
+} from './ledger-avatar.util'
 import {
   deriveMembership,
   computeGrantExpiry,
@@ -146,7 +153,7 @@ export class LedgerService {
       id: u.id,
       accountCode: u.id.slice(-8).toUpperCase(),
       nickname: u.nickname,
-      avatar: u.avatar,
+      avatar: sanitizeLedgerAvatar(u.avatar),
       membership: deriveMembership(
         u.membership?.expiresAt ?? null,
         u.membership?.lastPlanKey,
@@ -177,15 +184,84 @@ export class LedgerService {
   }
 
   async updateProfile(userId: string, dto: UpdateLedgerProfileDto) {
-    const data: any = {}
+    const data: Prisma.LedgerUserUpdateInput = {}
     if (typeof dto.nickname === 'string' && dto.nickname.trim()) {
       const nickname = dto.nickname.trim()
       await this.assertLedgerTextSafe(nickname, 1)
       data.nickname = nickname
     }
-    if (typeof dto.avatar === 'string') data.avatar = dto.avatar
-    const u = await this.prisma.ledgerUser.update({ where: { id: userId }, data })
-    return { id: u.id, nickname: u.nickname, avatar: u.avatar }
+    if (dto.avatarMode === 'letter') {
+      if (!isLedgerAvatarHue(dto.avatarHue)) throw new BizException(BizCode.INVALID_PARAMS, '请选择头像底色')
+      data.avatar = dto.avatarHue
+    } else if (dto.avatarHue !== undefined) {
+      throw new BizException(BizCode.INVALID_PARAMS, '头像底色参数无效')
+    }
+    if (!Object.keys(data).length) return this.me(userId)
+    await this.prisma.ledgerUser.update({ where: { id: userId }, data })
+    return this.me(userId)
+  }
+
+  async updateProfileWithAvatar(userId: string, file: { buffer: Buffer; mimetype: string; size: number }, nickname?: string) {
+    if (!file?.buffer?.length || file.size !== file.buffer.length)
+      throw new BizException(BizCode.INVALID_PARAMS, '图片文件无效')
+    if (file.size > 10 * 1024 * 1024)
+      throw new BizException(BizCode.INVALID_PARAMS, '图片不能超过 10MB')
+    const actualMime = this.ledgerImageMime(file.buffer)
+    const claimedMime = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype
+    if (!actualMime || actualMime !== claimedMime)
+      throw new BizException(BizCode.INVALID_PARAMS, '图片内容与文件类型不匹配')
+
+    const nextNickname = typeof nickname === 'string' && nickname.trim() ? nickname.trim() : undefined
+    if (nextNickname) await this.assertLedgerTextSafe(nextNickname, 1)
+    let image: Buffer
+    try {
+      image = await sharp(file.buffer, { failOn: 'error', limitInputPixels: 40_000_000 })
+        .rotate()
+        .resize(512, 512, { fit: 'cover', position: 'centre' })
+        .flatten({ background: '#ffffff' })
+        .jpeg({ quality: 86, progressive: true, mozjpeg: true })
+        .toBuffer()
+    } catch {
+      throw new BizException(BizCode.INVALID_PARAMS, '请选择有效的图片文件')
+    }
+    if (image.length > 1024 * 1024)
+      throw new BizException(BizCode.INVALID_PARAMS, '头像图片过大，请更换图片')
+    if (!this.files) throw new BizException(BizCode.BUSINESS_ERROR, '头像存储服务未初始化')
+
+    const current = await this.prisma.ledgerUser.findUnique({
+      where: { id: userId },
+      select: { id: true, nickname: true, avatar: true },
+    })
+    if (!current) throw new BizException(BizCode.NOT_FOUND, '账号不存在')
+
+    const uploaded = await this.files.upload(
+      { buffer: image, size: image.length, mimetype: 'image/jpeg', originalname: 'avatar.jpg' },
+      'avatar',
+      userId,
+      'ledger',
+    )
+    const nextAvatar = ledgerAvatarPath(uploaded.id)
+    try {
+      await this.prisma.ledgerUser.update({
+        where: { id: userId },
+        data: { ...(nextNickname ? { nickname: nextNickname } : {}), avatar: nextAvatar },
+      })
+    } catch (error) {
+      await this.files.removeLedgerAvatar(uploaded.id, userId).catch(() => null)
+      throw error
+    }
+
+    const oldId = ledgerAvatarImageId(current.avatar)
+    if (oldId && oldId !== uploaded.id) await this.files.removeLedgerAvatar(oldId, userId).catch(() => null)
+    return this.me(userId)
+  }
+
+  private ledgerImageMime(buffer: Buffer): string | null {
+    if (buffer.length >= 3 && buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) return 'image/jpeg'
+    if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) return 'image/png'
+    if (buffer.length >= 6 && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) return 'image/gif'
+    if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'image/webp'
+    return null
   }
 
   // ── 全局配置（单行 key='global'）───────────────────────────

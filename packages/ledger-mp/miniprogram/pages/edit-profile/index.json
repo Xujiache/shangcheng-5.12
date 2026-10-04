@@ -3,6 +3,7 @@
   "usingComponents": {
     "lz-header": "../../components/lz-header/index",
     "lz-icon": "../../components/lz-icon/index",
+    "lz-avatar-crop": "../../components/lz-avatar-crop/index",
     "lz-bg": "/components/lz-bg/index",
     "lz-route-feedback": "/components/lz-route-feedback/index"
   }

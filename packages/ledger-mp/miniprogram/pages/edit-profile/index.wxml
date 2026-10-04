@@ -1,71 +1,32 @@
 <lz-bg />
 <view class="ep lz-route-scene {{_routeMotion}}">
   <lz-header title="编辑资料" />
-
   <view class="lz-page" style="padding-bottom: 40px;">
-    <!-- 头像预览 -->
     <view class="ep__avatar-wrap">
-      <image
-        wx:if="{{avatarUrl && !avatarFailed}}"
-        class="lz-avatar ep__avatar"
-        src="{{avatarSrc}}"
-        mode="aspectFill"
-        binderror="onAvatarError"
-      />
+      <image wx:if="{{draftImagePath}}" class="lz-avatar ep__avatar" src="{{draftImagePath}}" mode="aspectFill" />
+      <image wx:elif="{{avatarMode === 'image' && avatarUrl && !avatarFailed}}" class="lz-avatar ep__avatar" src="{{avatarSrc}}" mode="aspectFill" binderror="onAvatarError" />
       <view wx:else class="lz-avatar ep__avatar" style="background: {{hue.grad}};">{{initial}}</view>
-      <view class="ep__avatar-tip">{{avatarFailed ? '头像图片加载失败，可重新上传' : (avatarUrl ? '已设置自定义头像' : '头像取昵称首字 · 可换底色')}}</view>
-      <view style="display: flex; gap: 10px; margin-top: 12px;">
-        <view class="lz-btn lz-btn--soft lz-btn--sm" hover-class="tap-active" bindtap="onChangeAvatar">
-          {{uploading ? '上传中…' : (avatarUrl ? '更换图片' : '上传头像')}}
-        </view>
-        <view
-          wx:if="{{avatarUrl}}"
-          class="lz-btn lz-btn--ghost lz-btn--sm"
-          hover-class="tap-active"
-          bindtap="onUseLetter"
-        >
-          改回字母
-        </view>
+      <view class="ep__avatar-tip">{{avatarMode === 'image' ? '图片仅在保存后同步' : '头像取昵称首字 · 可换底色'}}</view>
+      <view class="ep__avatar-actions">
+        <view class="lz-btn lz-btn--soft lz-btn--sm" hover-class="tap-active" bindtap="onChangeAvatar">{{avatarMode === 'image' ? '更换图片' : '上传头像'}}</view>
+        <view wx:if="{{avatarMode === 'image'}}" class="lz-btn lz-btn--ghost lz-btn--sm" hover-class="tap-active" bindtap="onUseLetter">改回字母</view>
       </view>
     </view>
-
-    <!-- 底色选择（仅字母头像时可选） -->
-    <view wx:if="{{!avatarUrl}}" class="lz-section-label">头像底色</view>
-    <view wx:if="{{!avatarUrl}}" class="ep__swatches">
-      <view
-        wx:for="{{hues}}"
-        wx:key="key"
-        class="ep__swatch {{item.key === hueKey ? 'on' : ''}}"
-        style="background: {{item.grad}};"
-        data-key="{{item.key}}"
-        bindtap="onHue"
-        hover-class="tap-active"
-      >
+    <view wx:if="{{avatarMode === 'letter'}}" class="lz-section-label">头像底色</view>
+    <view wx:if="{{avatarMode === 'letter'}}" class="ep__swatches">
+      <view wx:for="{{hues}}" wx:key="key" class="ep__swatch {{item.key === hueKey ? 'on' : ''}}" style="background: {{item.grad}};" data-key="{{item.key}}" bindtap="onHue" hover-class="tap-active">
         <lz-icon wx:if="{{item.key === hueKey}}" name="check" size="18" color="white" stroke="2.4" />
       </view>
     </view>
-
-    <!-- 昵称 -->
     <view class="lz-section-label">昵称</view>
     <view class="lz-field">
       <lz-icon name="user" size="19" color="faint" />
-      <input
-        class="lz-field__input"
-        value="{{nickname}}"
-        placeholder="请输入昵称"
-        placeholder-class="ph"
-        maxlength="20"
-        bindinput="onNickname"
-      />
+      <input class="lz-field__input" value="{{nickname}}" placeholder="请输入昵称" placeholder-class="ph" maxlength="20" bindinput="onNickname" />
     </view>
-
   </view>
-
   <view class="lz-footer">
-    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave && !saving ? '' : 'lz-btn--disabled'}}" bindtap="onSave">
-      {{saving ? '保存中…' : '保存'}}
-    </button>
+    <button class="lz-btn lz-btn--primary lz-btn--lg lz-btn--full {{canSave && !saving ? '' : 'lz-btn--disabled'}}" bindtap="onSave">{{saving ? '保存中…' : '保存'}}</button>
   </view>
 </view>
-
+<lz-avatar-crop visible="{{cropVisible}}" image-path="{{draftImagePath}}" bind:cancel="onCropCancel" bind:confirm="onCropConfirm" />
 <lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

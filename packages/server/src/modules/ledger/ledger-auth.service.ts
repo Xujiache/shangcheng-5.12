@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt'
 import { customAlphabet } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
+import { sanitizeLedgerAvatar } from './ledger-avatar.util'
 import {
   computeGrantExpiry,
   deriveMembership,
@@ -62,7 +63,7 @@ export class LedgerAuthService {
       id: u.id,
       accountCode: this.accountCode(u.id),
       nickname: u.nickname,
-      avatar: u.avatar,
+      avatar: sanitizeLedgerAvatar(u.avatar),
       membership: deriveMembership(
         u.membership?.expiresAt ?? null,
         u.membership?.lastPlanKey,

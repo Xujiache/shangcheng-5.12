@@ -14,7 +14,6 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiConsumes, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
-import sharp from 'sharp'
 import { Public } from '../../common/decorators/public.decorator'
 import { BizCode, BizException } from '../../common/exceptions/biz.exception'
 import { LedgerService } from './ledger.service'
@@ -54,36 +53,14 @@ export class LedgerController {
     return user
   }
 
-  /** 上传头像并持久化；图片由本地 API 按不可变文件 ID 提供。 */
-  @Post('avatar')
+  /** 头像图片：服务端统一旋转、裁剪、检测、存储并更新资料。 */
+  @Post('profile/avatar')
   @ApiConsumes('multipart/form-data')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
-  async uploadAvatar(@CurrentLedgerUser() user: LedgerAuthUser, @UploadedFile() file: any) {
+  async uploadAvatar(@CurrentLedgerUser() user: LedgerAuthUser, @UploadedFile() file: any, @Body('nickname') nickname?: string) {
     if (!file) throw new BizException(BizCode.INVALID_PARAMS, '请选择图片')
-    let image: Buffer
-    try {
-      image = await sharp(file.buffer, { failOn: 'error', limitInputPixels: 40_000_000 })
-        .rotate()
-        .resize(512, 512, { fit: 'cover' })
-        .flatten({ background: '#ffffff' })
-        .jpeg({ quality: 82 })
-        .toBuffer()
-    } catch {
-      throw new BizException(BizCode.INVALID_PARAMS, '请选择有效的图片文件')
-    }
-    // 微信同步图片安全检测限制 1MB；头像统一压缩后再检测和存储。
-    if (image.length > 1024 * 1024)
-      throw new BizException(BizCode.INVALID_PARAMS, '头像图片过大，请更换图片')
-    const { id } = await this.files.upload(
-      { buffer: image, size: image.length, mimetype: 'image/jpeg', originalname: 'avatar.jpg' },
-      'avatar',
-      user.id,
-      'ledger',
-    )
-    const url = `/api/v1/l/avatar-image/${id}`
-    await this.svc.updateProfile(user.id, { avatar: url } as UpdateLedgerProfileDto)
-    return { url }
+    return this.svc.updateProfileWithAvatar(user.id, file, nickname)
   }
 
   @Get('membership')

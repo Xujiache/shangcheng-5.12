@@ -22,7 +22,14 @@ export class UpdateLedgerGoalDto {
 
 export class UpdateLedgerProfileDto {
   @IsOptional() @IsString() @MaxLength(20) nickname?: string
-  @IsOptional() @IsString() @MaxLength(500) avatar?: string
+  @IsOptional() @IsIn(['keep', 'letter']) avatarMode?: 'keep' | 'letter'
+  @IsOptional() @IsIn(['teal', 'blue', 'gold', 'rust', 'olive', 'violet']) avatarHue?:
+    | 'teal'
+    | 'blue'
+    | 'gold'
+    | 'rust'
+    | 'olive'
+    | 'violet'
 }
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/

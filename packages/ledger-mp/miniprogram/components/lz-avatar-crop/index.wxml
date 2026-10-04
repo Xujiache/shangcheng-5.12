@@ -1,0 +1,26 @@
+<view wx:if="{{visible}}" class="avatar-crop__mask">
+  <view class="avatar-crop__panel" catchtouchmove="noop">
+    <view class="avatar-crop__header">
+      <view class="avatar-crop__action" bindtap="onCancel">取消</view>
+      <view class="avatar-crop__title">调整头像</view>
+      <view class="avatar-crop__action avatar-crop__action--accent" bindtap="onConfirm">完成</view>
+    </view>
+    <view class="avatar-crop__stage">
+      <canvas
+        canvas-id="avatarCropCanvas"
+        class="avatar-crop__canvas"
+        width="560"
+        height="560"
+        disable-scroll="true"
+        bindtouchstart="onTouchStart"
+        bindtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+      />
+      <view class="avatar-crop__frame"></view>
+    </view>
+    <view class="avatar-crop__hint">拖动图片调整位置，双指缩放</view>
+    <view class="avatar-crop__tools">
+      <view class="avatar-crop__reset" bindtap="onReset">重置</view>
+    </view>
+  </view>
+</view>

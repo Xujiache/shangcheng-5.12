@@ -2,7 +2,7 @@ import { MotionPage, navigation } from '../../utils/page-transition'
 import { meApi } from '../../api/index'
 import { makeShareCover } from '../../utils/share-cover'
 import { fmtDate } from '../../utils/format'
-import { avatarImageSrc, isAvatarImage } from '../../config'
+import { avatarImageSrc, isAvatarImage, ledgerAvatarLetter } from '../../config'
 import {
   getUser,
   setUser,
@@ -35,7 +35,7 @@ MotionPage({
       {
         iconSrc: '/assets/profile/profile-settings.png',
         label: '设置',
-        page: '/pages/settings/index',
+        page: '/subpackages/settings/pages/settings/index',
       },
     ],
   },
@@ -59,7 +59,9 @@ MotionPage({
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
     if (tb) tb.selectTab ? tb.selectTab(3) : tb.setData({ selected: 3 })
     this.setData({
-      topSpace: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18,
+      topSpace: ((getApp<IAppOption>() && getApp<IAppOption>().globalData)
+        ? getApp<IAppOption>().globalData.statusBarHeight || 20
+        : 20) + 18,
     })
     this.load()
   },
@@ -68,7 +70,7 @@ MotionPage({
     const m = u.membership || {}
     this.setData({
       nickname: u.nickname || '门窗店主',
-      avatarChar: (u.nickname || '门').slice(-1),
+      avatarChar: ledgerAvatarLetter(u.nickname),
       avatarUrl: u.avatar && isAvatarImage(u.avatar) ? avatarImageSrc(u.avatar) : '',
       avatarFailed: false,
       accountText: `微信账号 · ${(u.accountCode || u.id || '').slice(-8).toUpperCase()}`,
