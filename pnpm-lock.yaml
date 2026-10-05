@@ -10,6 +10,11 @@ overrides:
   engine.io>ws: 8.21.0
   socket.io-adapter>ws: 8.21.0
 
+patchedDependencies:
+  '@babel/runtime@7.29.2':
+    hash: ynpuymfyspx32a4w4g6ga6dvhq
+    path: patches/@babel__runtime@7.29.2.patch
+
 importers:
 
   .:
@@ -275,7 +280,7 @@ importers:
     dependencies:
       '@babel/runtime':
         specifier: 7.29.2
-        version: 7.29.2
+        version: 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
     devDependencies:
       miniprogram-api-typings:
         specifier: ^3.12.2
@@ -13619,7 +13624,7 @@ snapshots:
     dependencies:
       regenerator-runtime: 0.13.11
 
-  '@babel/runtime@7.29.2': {}
+  '@babel/runtime@7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)': {}
 
   '@babel/template@7.20.7':
     dependencies:
@@ -15408,7 +15413,7 @@ snapshots:
 
   '@jimp/bmp@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       bmp-js: 0.1.0
@@ -15416,7 +15421,7 @@ snapshots:
 
   '@jimp/bmp@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
       bmp-js: 0.1.0
@@ -15430,7 +15435,7 @@ snapshots:
 
   '@jimp/core@0.10.3':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/utils': 0.10.3
       any-base: 1.1.0
       buffer: 5.7.1
@@ -15447,7 +15452,7 @@ snapshots:
 
   '@jimp/core@0.16.13':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/utils': 0.16.13
       any-base: 1.1.0
       buffer: 5.7.1
@@ -15479,7 +15484,7 @@ snapshots:
 
   '@jimp/custom@0.10.3':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/core': 0.10.3
       core-js: 3.49.0
     transitivePeerDependencies:
@@ -15487,7 +15492,7 @@ snapshots:
 
   '@jimp/custom@0.16.13':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/core': 0.16.13
     transitivePeerDependencies:
       - debug
@@ -15501,7 +15506,7 @@ snapshots:
 
   '@jimp/gif@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
@@ -15509,7 +15514,7 @@ snapshots:
 
   '@jimp/gif@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
       gifwrap: 0.9.4
@@ -15524,7 +15529,7 @@ snapshots:
 
   '@jimp/jpeg@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
@@ -15532,7 +15537,7 @@ snapshots:
 
   '@jimp/jpeg@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
       jpeg-js: 0.4.4
@@ -15546,14 +15551,14 @@ snapshots:
 
   '@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-blit@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15565,15 +15570,15 @@ snapshots:
 
   '@jimp/plugin-blur@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
-  '@jimp/plugin-blur@0.16.13(@jimp/custom@0.6.8(debug@4.4.3))':
+  '@jimp/plugin-blur@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.6.8(debug@4.4.3)
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
+      '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
   '@jimp/plugin-blur@0.6.8(@jimp/custom@0.6.8(debug@4.4.3))':
@@ -15584,29 +15589,29 @@ snapshots:
 
   '@jimp/plugin-circle@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-circle@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
   '@jimp/plugin-color@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
       tinycolor2: 1.6.0
 
-  '@jimp/plugin-color@0.16.13(@jimp/custom@0.6.8(debug@4.4.3))':
+  '@jimp/plugin-color@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
-      '@jimp/custom': 0.6.8(debug@4.4.3)
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
+      '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
       tinycolor2: 1.6.0
 
@@ -15619,7 +15624,7 @@ snapshots:
 
   '@jimp/plugin-contain@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-scale@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
@@ -15629,7 +15634,7 @@ snapshots:
 
   '@jimp/plugin-contain@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-blit@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-scale@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13)))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugin-blit': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/plugin-resize': 0.16.13(@jimp/custom@0.16.13)
@@ -15647,7 +15652,7 @@ snapshots:
 
   '@jimp/plugin-cover@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-scale@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-crop': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
@@ -15657,7 +15662,7 @@ snapshots:
 
   '@jimp/plugin-cover@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-crop@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-scale@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13)))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugin-crop': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/plugin-resize': 0.16.13(@jimp/custom@0.16.13)
@@ -15675,14 +15680,14 @@ snapshots:
 
   '@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-crop@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15694,14 +15699,14 @@ snapshots:
 
   '@jimp/plugin-displace@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-displace@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15713,14 +15718,14 @@ snapshots:
 
   '@jimp/plugin-dither@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-dither@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15732,20 +15737,20 @@ snapshots:
 
   '@jimp/plugin-fisheye@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-fisheye@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
   '@jimp/plugin-flip@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-rotate@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-rotate': 0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))
       '@jimp/utils': 0.10.3
@@ -15753,7 +15758,7 @@ snapshots:
 
   '@jimp/plugin-flip@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-rotate@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-blit@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-crop@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13)))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugin-rotate': 0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-blit@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-crop@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))
       '@jimp/utils': 0.16.13
@@ -15767,14 +15772,14 @@ snapshots:
 
   '@jimp/plugin-gaussian@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-gaussian@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15786,14 +15791,14 @@ snapshots:
 
   '@jimp/plugin-invert@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-invert@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15805,14 +15810,14 @@ snapshots:
 
   '@jimp/plugin-mask@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-mask@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15824,14 +15829,14 @@ snapshots:
 
   '@jimp/plugin-normalize@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-normalize@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15843,7 +15848,7 @@ snapshots:
 
   '@jimp/plugin-print@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/utils': 0.10.3
@@ -15854,7 +15859,7 @@ snapshots:
 
   '@jimp/plugin-print@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-blit@0.16.13(@jimp/custom@0.16.13))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugin-blit': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/utils': 0.16.13
@@ -15874,14 +15879,14 @@ snapshots:
 
   '@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
 
   '@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
 
@@ -15893,7 +15898,7 @@ snapshots:
 
   '@jimp/plugin-rotate@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blit@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-crop@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-crop': 0.10.3(@jimp/custom@0.10.3)
@@ -15903,7 +15908,7 @@ snapshots:
 
   '@jimp/plugin-rotate@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-blit@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-crop@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugin-blit': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/plugin-crop': 0.16.13(@jimp/custom@0.16.13)
@@ -15921,7 +15926,7 @@ snapshots:
 
   '@jimp/plugin-scale@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/utils': 0.10.3
@@ -15929,7 +15934,7 @@ snapshots:
 
   '@jimp/plugin-scale@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugin-resize': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/utils': 0.16.13
@@ -15943,7 +15948,7 @@ snapshots:
 
   '@jimp/plugin-shadow@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-blur@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-blur': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
@@ -15952,15 +15957,15 @@ snapshots:
 
   '@jimp/plugin-shadow@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-blur@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
-      '@jimp/plugin-blur': 0.16.13(@jimp/custom@0.6.8(debug@4.4.3))
+      '@jimp/plugin-blur': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/plugin-resize': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/utils': 0.16.13
 
   '@jimp/plugin-threshold@0.10.3(@jimp/custom@0.10.3)(@jimp/plugin-color@0.10.3(@jimp/custom@0.10.3))(@jimp/plugin-resize@0.10.3(@jimp/custom@0.10.3))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-color': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-resize': 0.10.3(@jimp/custom@0.10.3)
@@ -15969,15 +15974,15 @@ snapshots:
 
   '@jimp/plugin-threshold@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-color@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
-      '@jimp/plugin-color': 0.16.13(@jimp/custom@0.6.8(debug@4.4.3))
+      '@jimp/plugin-color': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/plugin-resize': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/utils': 0.16.13
 
   '@jimp/plugins@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugin-blit': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/plugin-blur': 0.10.3(@jimp/custom@0.10.3)
@@ -16007,12 +16012,12 @@ snapshots:
 
   '@jimp/plugins@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugin-blit': 0.16.13(@jimp/custom@0.16.13)
-      '@jimp/plugin-blur': 0.16.13(@jimp/custom@0.6.8(debug@4.4.3))
+      '@jimp/plugin-blur': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/plugin-circle': 0.16.13(@jimp/custom@0.16.13)
-      '@jimp/plugin-color': 0.16.13(@jimp/custom@0.6.8(debug@4.4.3))
+      '@jimp/plugin-color': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/plugin-contain': 0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-blit@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-scale@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13)))
       '@jimp/plugin-cover': 0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-crop@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13))(@jimp/plugin-scale@0.16.13(@jimp/custom@0.16.13)(@jimp/plugin-resize@0.16.13(@jimp/custom@0.16.13)))
       '@jimp/plugin-crop': 0.16.13(@jimp/custom@0.16.13)
@@ -16061,7 +16066,7 @@ snapshots:
 
   '@jimp/png@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/utils': 0.10.3
       core-js: 3.49.0
@@ -16069,7 +16074,7 @@ snapshots:
 
   '@jimp/png@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/utils': 0.16.13
       pngjs: 3.4.0
@@ -16083,14 +16088,14 @@ snapshots:
 
   '@jimp/tiff@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       core-js: 3.49.0
       utif: 2.0.1
 
   '@jimp/tiff@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       utif: 2.0.1
 
@@ -16102,7 +16107,7 @@ snapshots:
 
   '@jimp/types@0.10.3(@jimp/custom@0.10.3)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/bmp': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/custom': 0.10.3
       '@jimp/gif': 0.10.3(@jimp/custom@0.10.3)
@@ -16114,7 +16119,7 @@ snapshots:
 
   '@jimp/types@0.16.13(@jimp/custom@0.16.13)':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/bmp': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/custom': 0.16.13
       '@jimp/gif': 0.16.13(@jimp/custom@0.16.13)
@@ -16136,13 +16141,13 @@ snapshots:
 
   '@jimp/utils@0.10.3':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       core-js: 3.49.0
       regenerator-runtime: 0.13.11
 
   '@jimp/utils@0.16.13':
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       regenerator-runtime: 0.13.11
 
   '@jimp/utils@0.6.8':
@@ -20881,7 +20886,7 @@ snapshots:
 
   i18next@20.6.1:
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
 
   iconv-lite@0.4.24:
     dependencies:
@@ -21622,7 +21627,7 @@ snapshots:
 
   jimp@0.10.3:
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.10.3
       '@jimp/plugins': 0.10.3(@jimp/custom@0.10.3)
       '@jimp/types': 0.10.3(@jimp/custom@0.10.3)
@@ -21633,7 +21638,7 @@ snapshots:
 
   jimp@0.16.1:
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
       '@jimp/custom': 0.16.13
       '@jimp/plugins': 0.16.13(@jimp/custom@0.16.13)
       '@jimp/types': 0.16.13(@jimp/custom@0.16.13)
@@ -23626,7 +23631,7 @@ snapshots:
 
   regenerator-transform@0.15.2:
     dependencies:
-      '@babel/runtime': 7.29.2
+      '@babel/runtime': 7.29.2(patch_hash=ynpuymfyspx32a4w4g6ga6dvhq)
 
   regexpu-core@2.0.0:
     dependencies:

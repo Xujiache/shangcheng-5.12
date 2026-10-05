@@ -6,7 +6,7 @@
   },
   "setting": {
     "urlCheck": true,
-    "es6": true,
+    "es6": false,
     "enhance": false,
     "postcss": true,
     "preloadBackgroundData": false,
@@ -33,11 +33,14 @@
     "useIsolateContext": true,
     "userConfirmedBundleSwitch": false,
     "packNpmManually": true,
-    "packNpmRelationList": [],
-    "minifyWXSS": true,
-    "useCompilerPlugins": [
-      "typescript"
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./miniprogram"
+      }
     ],
+    "minifyWXSS": true,
+    "useCompilerPlugins": ["typescript"],
     "minifyWXML": true,
     "compileWorklet": false,
     "localPlugins": false,

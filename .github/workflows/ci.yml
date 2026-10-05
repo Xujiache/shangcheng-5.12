@@ -77,6 +77,11 @@ jobs:
         # 偶发"lockfile 不一致"通常意味着 PR 漏提交 lockfile，要红灯阻断
         run: pnpm install --frozen-lockfile
 
+      - name: Verify WeChat mini-program npm runtime
+        # Babel runtime 由小程序包随源码交付；缺失入口、版本漂移或符号链接
+        # 必须在 CI 阻断，避免开发者工具清缓存后再次出现模块缺失。
+        run: pnpm verify:ledger-mp-npm
+
       - name: Build @jiujiu/shared (上游依赖，必须最先编译)
         # admin-pc / server / 各端都通过 workspace:* 引用 @jiujiu/shared，
         # 后续 typecheck/lint 需要它的 dist + 类型产物

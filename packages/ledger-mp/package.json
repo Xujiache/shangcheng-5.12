@@ -5,7 +5,7 @@
   "description": "门窗利账 · 原生微信小程序（记账新端）",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build:npm": "node scripts/build-npm.mjs",
+    "build:npm": "node scripts/build-npm.mjs && node scripts/verify-npm.mjs",
     "verify:npm": "node scripts/verify-npm.mjs",
     "test:nesting": "tsx scripts/verify-nesting.ts",
     "test:routes": "node scripts/verify-routes.mjs",
