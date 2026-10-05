@@ -5,20 +5,26 @@
   "description": "门窗利账 · 原生微信小程序（记账新端）",
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "build:npm": "node scripts/build-npm.mjs",
+    "verify:npm": "node scripts/verify-npm.mjs",
     "test:nesting": "tsx scripts/verify-nesting.ts",
     "test:routes": "node scripts/verify-routes.mjs",
     "test:more-tools": "tsx scripts/verify-more-tools.ts && tsx scripts/verify-tool-events.ts && tsx scripts/verify-tide.ts && tsx scripts/verify-glass-tools.ts",
     "test:format-flow": "node --test scripts/verify-format-flow.cjs && tsx scripts/verify-format-download.ts",
     "test:request": "tsx scripts/verify-request.ts",
-    "lint": "eslint miniprogram scripts --config ../../eslint.config.mjs",
+    "lint": "eslint miniprogram scripts --config ../../eslint.config.mjs --ignore-pattern miniprogram/miniprogram_npm",
     "test": "tsx scripts/verify-metal.ts && tsx scripts/verify-metal-flow.ts && tsx scripts/verify-workbook.ts && tsx scripts/verify-workbook-flow.ts && pnpm test:nesting && cd ../.. && node scripts/verify-page-transitions.cjs && node scripts/verify-workbook-icons.cjs"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^3.12.2",
     "miniprogram-automator": "^0.12.1",
+    "miniprogram-ci": "2.1.31",
     "typescript": "~5.6.3"
   },
   "engines": {
     "node": ">=24.19.0 <25"
+  },
+  "dependencies": {
+    "@babel/runtime": "7.29.2"
   }
 }
