@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { clearAllCache, invalidateCache, request, wasStale } from '../miniprogram/utils/request'
+import { videoParseApi } from '../miniprogram/api/index'
+import { clearAllCache, invalidateCache, publicRequest, request, wasStale } from '../miniprogram/utils/request'
 
 const storage = new Map<string, any>()
 const pending: any[] = []
@@ -15,6 +16,20 @@ const app: any = { globalData: { token: 'account-a-token', online: true } }
 }
 
 async function main() {
+  const ordinaryPublic = publicRequest('/api/example')
+  const ordinaryOptions = pending.shift()
+  assert.equal(ordinaryOptions.timeout, 20_000, 'ordinary public requests keep the default timeout')
+  ordinaryOptions.success({ statusCode: 200, data: { code: 0, data: {} } })
+  await ordinaryPublic
+
+  const parsing = videoParseApi.parse('https://example.com/video')
+  const parseOptions = pending.shift()
+  assert.equal(parseOptions.timeout, 150_000, 'parse allows two upstream attempts and the quota retry delay')
+  assert.equal(parseOptions.method, 'POST')
+  assert.deepEqual(parseOptions.data, { url: 'https://example.com/video' })
+  parseOptions.success({ statusCode: 200, data: { code: 0, data: { title: 'test' } } })
+  assert.equal((await parsing).title, 'test')
+
   const a1 = request({ url: '/l/orders', cache: true })
   const a2 = request({ url: '/l/orders', cache: true })
   assert.equal(pending.length, 1, 'same-session GET should be coalesced')

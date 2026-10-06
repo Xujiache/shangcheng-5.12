@@ -1,4 +1,4 @@
-import { http, upload } from '../utils/request'
+import { http, publicRequest, upload } from '../utils/request'
 import type { LedgerAvatarHue } from '../config'
 import { invalidateCache } from '../utils/request'
 
@@ -37,6 +37,17 @@ export const meApi = {
       invalidateCache(['/l/me', '/l/membership'])
       return r
     }),
+}
+
+/** 短视频解析：只访问自有后端，后端负责平台适配、限频和媒体转存。 */
+export interface VideoParseResult {
+  title: string
+  cover: string
+  video: string
+  wenan?: string
+}
+export const videoParseApi = {
+  parse: (url: string) => publicRequest<VideoParseResult>('/api/parse', { url }, { silent: true, timeout: 150_000 }),
 }
 
 /** 订单（需会员） */

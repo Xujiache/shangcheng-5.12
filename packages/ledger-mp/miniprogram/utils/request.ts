@@ -358,6 +358,51 @@ export function upload<T = any>(urlPath: string, filePath: string, formData: Rec
   })
 }
 
+/**
+ * 调用同一业务域名下、不带 /api/v1 前缀的公开接口。
+ * 仅供后端已明确提供的兼容接口使用，禁止传入外部域名。
+ */
+export function publicRequest<T = any>(path: string, data?: any, opts: { method?: 'GET' | 'POST'; silent?: boolean; timeout?: number } = {}): Promise<T> {
+  if (!path.startsWith('/api/') || path.startsWith('//') || path.includes('://')) {
+    return Promise.reject(new Error('非法公开接口路径'))
+  }
+  const app = getApp<IAppOption>()
+  const token = app?.globalData?.token || wx.getStorageSync(TOKEN_KEY) || ''
+  const header: Record<string, string> = { 'content-type': 'application/json' }
+  if (token) header.Authorization = 'Bearer ' + token
+  return new Promise<T>((resolve, reject) => {
+    wx.request({
+      url: API_BASE + path,
+      method: opts.method || 'POST',
+      data,
+      header,
+      timeout: opts.timeout ?? 20_000,
+      success: (res) => {
+        const body = res.data as ApiShell<T>
+        if (res.statusCode >= 200 && res.statusCode < 300 && body && typeof body === 'object' && 'code' in body) {
+          if (body.code === 0) { resolve(body.data); return }
+          const error: any = new Error(body.message || body.msg || '请求失败')
+          error.code = body.code
+          error.statusCode = res.statusCode
+          if (!opts.silent) wx.showToast({ title: error.message, icon: 'none' })
+          reject(error)
+          return
+        }
+        const error: any = new Error(res.statusCode >= 500 ? '服务繁忙，请稍后再试' : '网络异常，请重试')
+        error.statusCode = res.statusCode
+        if (!opts.silent) wx.showToast({ title: error.message, icon: 'none' })
+        reject(error)
+      },
+      fail: (error) => {
+        const err: any = new Error('服务暂不可用，请检查网络')
+        err.cause = error
+        if (!opts.silent) wx.showToast({ title: err.message, icon: 'none' })
+        reject(err)
+      },
+    })
+  })
+}
+
 export const http = {
   get: <T = any>(url: string, params?: any, opts: Partial<RequestOptions> = {}) =>
     request<T>({ url, method: 'GET', params, ...opts }),
