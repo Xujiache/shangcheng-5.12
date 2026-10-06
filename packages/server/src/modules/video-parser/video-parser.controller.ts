@@ -42,7 +42,9 @@ export class VideoParserController {
     }
     const target = this.parser.getMedia(id, kind)
     const headers: Record<string, string> = { ...target.headers }
-    if (range) headers.Range = range
+    // 微信 image 渲染层可能会主动带 Range，但封面必须返回完整 JPEG；
+    // 视频则保留 Range 以支持拖动和分段播放。
+    if (range && kind === 'video') headers.Range = range
     const abort = new AbortController()
     const cancel = () => { if (!res.writableFinished) abort.abort() }
     res.once('close', cancel)
