@@ -18,7 +18,8 @@ type YtDlpInfo = {
   description?: string
   thumbnail?: string
   url?: string
-  requested_downloads?: Array<{ url?: string }>
+  requested_downloads?: Array<{ url?: string; requested_formats?: Array<{ url?: string; vcodec?: string; acodec?: string }> }>
+  requested_formats?: Array<{ url?: string; vcodec?: string; acodec?: string }>
   formats?: Array<{ url?: string; ext?: string; vcodec?: string; acodec?: string; height?: number }>
 }
 
@@ -73,7 +74,7 @@ export class VideoParserService {
     try {
       const result = await execFileAsync(binary, [
         '--dump-single-json', '--no-playlist', '--no-warnings', '--skip-download',
-        '--format', 'best[ext=mp4]/best', '--socket-timeout', '15', url,
+        '--format', 'bestvideo*+bestaudio/best', '--socket-timeout', '15', url,
       ], { timeout: 35_000, maxBuffer: 2 * 1024 * 1024 })
       stdout = result.stdout
     } catch (error: any) {
@@ -92,7 +93,7 @@ export class VideoParserService {
 
     let info: YtDlpInfo
     try { info = JSON.parse(stdout) as YtDlpInfo } catch { parserError(3, '服务繁忙，请稍后再试') }
-    const video = assertRemoteMediaUrl(info.url || info.requested_downloads?.[0]?.url || pickVideoUrl(info.formats))
+    const video = assertRemoteMediaUrl(info.url || pickVideoUrl(info) || pickVideoUrl(info.formats))
     const cover = assertRemoteMediaUrl(info.thumbnail)
     const id = randomUUID()
     this.prune()
@@ -121,7 +122,15 @@ export class VideoParserService {
   }
 }
 
-function pickVideoUrl(formats: YtDlpInfo['formats']): string | undefined {
+function pickVideoUrl(info: YtDlpInfo | YtDlpInfo['formats']): string | undefined {
+  if (!info) return undefined
+  if (!Array.isArray(info)) {
+    const requested = info.requested_formats || info.requested_downloads?.flatMap((item) => item.requested_formats || [])
+    const combined = requested?.find((format) => format.url && format.vcodec !== 'none')
+    if (combined?.url) return combined.url
+    return pickVideoUrl(info.formats)
+  }
+  const formats = info
   return formats
     ?.filter((format) => format.url && format.vcodec !== 'none')
     ?.sort((a, b) => (b.height || 0) - (a.height || 0))
