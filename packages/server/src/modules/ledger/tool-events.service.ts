@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service'
 
 export const TOOL_KEYS = [
   'triangle', 'arc', 'cut', 'work-log', 'format',
-  'rmb', 'retire', 'level', 'glass', 'glass-weight', 'luban', 'tide',
+  'rmb', 'retire', 'level', 'glass', 'glass-weight', 'luban', 'tide', 'video-parser',
 ] as const
 export type ToolKey = (typeof TOOL_KEYS)[number]
 export type ToolStatus = 'open' | 'success' | 'failure'
