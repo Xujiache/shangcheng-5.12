@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, Req, Res } from '@nestjs/common'
+import { Body, Controller, Get, Headers, HttpCode, Param, Post, Query, Res } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { spawn } from 'node:child_process'
 import { Readable } from 'node:stream'
-import type { Request, Response } from 'express'
+import type { Response } from 'express'
 import { Public } from '../../common/decorators/public.decorator'
 import { VideoParserService, mediaEtag } from './video-parser.service'
 
@@ -12,6 +12,7 @@ export class VideoParserController {
   constructor(private readonly parser: VideoParserService) {}
 
   @Post()
+  @HttpCode(200)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   parse(@Body() body: { url?: unknown }) {
     return this.parser.parse(body?.url)
