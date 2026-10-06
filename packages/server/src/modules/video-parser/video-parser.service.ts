@@ -14,7 +14,7 @@ const MEDIA_DIR = process.env.VIDEO_PARSER_MEDIA_DIR || '/var/lib/jiujiu/video-p
 const URL_RE = /https?:\/\/[^\s<>"'“”‘’，。！？、)）】》]+/gi
 
 type MediaKind = 'cover' | 'video'
-type MediaTarget = { url: string; headers: Record<string, string> }
+type MediaTarget = { url: string; audioUrl?: string; headers: Record<string, string> }
 type ParserEntry = { cover: MediaTarget; video: MediaTarget; expiresAt: number }
 type YtDlpInfo = {
   id?: string
@@ -102,14 +102,16 @@ export class VideoParserService {
 
     let info: YtDlpInfo
     try { info = JSON.parse(stdout) as YtDlpInfo } catch { parserError(3, '服务繁忙，请稍后再试') }
-    const video = assertRemoteMediaUrl(info.url || pickVideoUrl(info) || pickVideoUrl(info.formats))
+    const media = pickVideoMedia(info)
+    const video = assertRemoteMediaUrl(media.video)
+    const audioUrl = media.audio ? assertRemoteMediaUrl(media.audio) : undefined
     const cover = assertRemoteMediaUrl(info.thumbnail)
     const id = randomUUID()
     this.prune()
     const httpHeaders = pickHttpHeaders(info.http_headers)
     const entry: ParserEntry = {
       cover: { url: cover, headers: httpHeaders },
-      video: { url: video, headers: httpHeaders },
+      video: { url: video, audioUrl, headers: httpHeaders },
       expiresAt: Date.now() + ENTRY_TTL,
     }
     this.entries.set(id, entry)
@@ -176,6 +178,14 @@ function pickHttpHeaders(value: YtDlpInfo['http_headers']): Record<string, strin
     if (typeof valueForHeader === 'string' && valueForHeader.length <= 1024) headers[name] = valueForHeader
   }
   return headers
+}
+
+function pickVideoMedia(info: YtDlpInfo): { video: string | undefined; audio: string | undefined } {
+  if (info.url) return { video: info.url, audio: undefined }
+  const requested = info.requested_formats || info.requested_downloads?.flatMap((item) => item.requested_formats || []) || []
+  const video = requested.find((format) => format.url && format.vcodec !== 'none')?.url || pickVideoUrl(info.formats)
+  const audio = requested.find((format) => format.url && format.acodec !== 'none' && format.vcodec === 'none')?.url
+  return { video, audio }
 }
 
 function pickVideoUrl(info: YtDlpInfo | YtDlpInfo['formats']): string | undefined {
