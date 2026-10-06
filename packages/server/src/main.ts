@@ -81,7 +81,10 @@ async function bootstrap() {
     exclude: ['health', 'health/live', 'health/ready'].map((path) => ({
       path,
       method: RequestMethod.GET,
-    })),
+    })).concat([
+      { path: 'api/parse', method: RequestMethod.POST },
+      { path: 'api/parse/media/:id', method: RequestMethod.GET },
+    ]),
   })
 
   app.useGlobalPipes(

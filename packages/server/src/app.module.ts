@@ -22,6 +22,7 @@ import { ContentSecurityModule } from './modules/content-security/content-securi
 import { JwtAuthGuard } from './common/guards/jwt.guard'
 import { HarmonyRealtimeModule } from './modules/harmony-merchant/harmony-realtime.module'
 import { HarmonyMerchantModule } from './modules/harmony-merchant/harmony-merchant.module'
+import { VideoParserModule } from './modules/video-parser/video-parser.module'
 
 /**
  * 单桶限流（v2 修复）
@@ -78,6 +79,7 @@ import { HarmonyMerchantModule } from './modules/harmony-merchant/harmony-mercha
     LegalModule,
     AppReleaseModule,
     HarmonyMerchantModule,
+    VideoParserModule,
     LedgerModule,
     ConversionModule,
   ],
