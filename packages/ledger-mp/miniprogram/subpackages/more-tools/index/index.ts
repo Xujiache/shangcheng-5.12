@@ -1,6 +1,7 @@
 import { MotionPage, navigation } from '../../../utils/page-transition'
 import { requireLogin } from '../../../utils/store'
-import { searchTools } from '../../../utils/more-tools/catalog'
+import { searchTools } from '../utils/catalog'
+import { toolShare, toolShareTimeline } from '../utils/tool-share'
 
 const images: Record<string, string> = {
   triangle: '/assets/tools/tool-triangle.png',
@@ -16,6 +17,7 @@ const images: Record<string, string> = {
   luban: '/subpackages/more-tools/assets/tool-luban.png',
   tide: '/subpackages/more-tools/assets/tool-tide.png',
   metal: '/subpackages/more-tools/assets/tool-metal.png',
+  'video-parser': '/subpackages/more-tools/assets/tool-video-parser.png',
 }
 const routes: Record<string, string> = {
   triangle: '/subpackages/tools/pages/triangle-tool/index',
@@ -31,6 +33,7 @@ const routes: Record<string, string> = {
   luban: '/subpackages/more-tools/luban/index',
   tide: '/subpackages/more-tools/tide/index',
   metal: '/subpackages/metal/index/index',
+  'video-parser': '/subpackages/more-tools/video-parser/index',
 }
 
 MotionPage({
@@ -39,6 +42,8 @@ MotionPage({
     popular: [] as any[],
     others: [] as any[],
   },
+  onShareAppMessage() { return toolShare('more-tools') },
+  onShareTimeline() { return toolShareTimeline('more-tools') },
   onLoad() {
     this.filter('')
   },

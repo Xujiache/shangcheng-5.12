@@ -1,0 +1,19 @@
+@import "../common.wxss";
+.video-page { min-height: 100vh; }
+.video-page__scroll { height: calc(100vh - 52px); box-sizing: border-box; padding: 0 16px calc(34px + env(safe-area-inset-bottom)); }
+.clipboard-tip { min-height: 40px; box-sizing: border-box; margin: 10px 0 0; padding: 0 13px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #c8e3d8; border-radius: 12px; background: #eff9f4; color: var(--accent-text); font-size: 12px; font-weight: 700; }
+.clipboard-tip__close { padding: 8px 0 8px 12px; color: var(--muted); font-size: 20px; font-weight: 400; }
+.video-hero { padding: 24px 3px 16px; }
+.video-hero__eyebrow { color: var(--accent-text); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.video-hero__title { margin-top: 8px; color: var(--text); font-size: 22px; font-weight: 800; line-height: 1.35; }
+.video-hero__sub { margin-top: 7px; color: var(--muted); font-size: 12px; }
+.input-card { padding: 15px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-soft); }
+.input-card__head { display: flex; align-items: center; justify-content: space-between; color: var(--text); font-size: 13px; font-weight: 800; }
+.input-card__count { color: var(--faint); font-size: 11px; font-weight: 500; }
+.input-card textarea { width: 100%; min-height: 92px; box-sizing: border-box; margin-top: 12px; color: var(--text); font-size: 13px; line-height: 1.6; }
+.input-placeholder { color: #a4b0aa; }
+.input-card__actions { display: flex; gap: 8px; justify-content: flex-end; }
+.input-card__actions button { min-width: 52px; height: 28px; margin: 0; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); color: var(--accent-text); font-size: 11px; line-height: 28px; }
+.parse-button { width: 100%; height: 48px; margin: 14px 0 16px; border: 0; border-radius: 16px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 800; line-height: 48px; box-shadow: 0 6px 16px rgba(14,124,102,.18); }
+.parse-button[disabled] { opacity: .55; }
+.link-row { display: flex; justify-content: center; gap: 28px; padding: 24px 0 8px; color: var(--accent-text); font-size: 12px; font-weight: 700; }.supported-note { padding: 8px 0 24px; color: var(--faint); font-size: 10px; text-align: center; }

@@ -36,7 +36,9 @@
     "pages/dnd/index",
     "pages/feedback/index",
     "pages/delete-account/index",
-    "pages/doc/index"
+    "pages/doc/index",
+    "pages/history/history",
+    "pages/platforms/platforms"
   ],
   "subPackages": [
     {
@@ -64,7 +66,9 @@
         "glass/index",
         "glass-weight/index",
         "luban/index",
-        "tide/index"
+        "tide/index",
+        "video-parser/index",
+        "video-parser/result/index"
       ]
     },
     {

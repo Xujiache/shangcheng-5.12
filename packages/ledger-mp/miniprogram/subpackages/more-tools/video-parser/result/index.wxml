@@ -1,0 +1,32 @@
+<lz-bg />
+<view class="video-result-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="解析结果" />
+  <scroll-view scroll-y class="video-result-page__scroll">
+    <view wx:if="{{result}}">
+      <view class="result-intro">
+        <view class="result-intro__meta">
+          <view class="platform-badge platform-badge--{{result.platform}}">{{result.platformLabel}}</view>
+          <text class="result-intro__status">解析完成</text>
+        </view>
+        <text class="result-intro__title">{{result.title}}</text>
+        <text class="result-intro__time">视频已准备好，可直接播放或保存</text>
+      </view>
+
+      <view class="media-card media-card--video">
+        <view class="media-card__label"><text>视频预览</text><text class="media-card__hint">原比例播放</text></view>
+        <video class="result-video" style="width: {{videoWidth}}px;height: {{videoHeight}}px" src="{{result.video}}" controls object-fit="contain" bindloadedmetadata="onVideoMetadata" binderror="videoError" />
+      </view>
+
+      <view wx:if="{{savingVideo}}" class="download-progress">
+        <view class="download-progress__label"><text>正在保存视频</text><text>{{progress}}%</text></view>
+        <progress percent="{{progress}}" active stroke-width="4" activeColor="#0E7C66" backgroundColor="#e3ebe7" />
+      </view>
+      <view class="result-actions">
+        <button class="result-actions__primary" loading="{{savingVideo}}" disabled="{{savingVideo}}" bindtap="saveVideo">保存视频</button>
+      </view>
+      <view class="result-footer"><text bindtap="goBackToParser">重新解析</text><text bindtap="openHistory">解析历史</text></view>
+    </view>
+    <view wx:else class="result-empty"><text class="result-empty__icon">◌</text><text class="result-empty__title">结果已失效</text><text class="result-empty__note">返回解析页重新获取内容</text><button bindtap="goBackToParser">返回解析</button></view>
+  </scroll-view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

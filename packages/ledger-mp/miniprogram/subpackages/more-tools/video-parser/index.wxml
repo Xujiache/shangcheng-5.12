@@ -1,0 +1,26 @@
+<lz-bg />
+<view class="video-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="视频解析助手" />
+  <scroll-view scroll-y class="video-page__scroll">
+    <view wx:if="{{clipboardHint}}" class="clipboard-tip" bindtap="useClipboardHint">
+      <text>检测到视频链接，点击填入</text><text class="clipboard-tip__close" catchtap="dismissClipboardHint">×</text>
+    </view>
+    <view class="video-hero">
+      <view class="video-hero__eyebrow">短视频工具</view>
+      <view class="video-hero__title">粘贴链接，提取无水印视频</view>
+      <view class="video-hero__sub">抖音 · 快手 · B站 · TikTok</view>
+    </view>
+    <view class="input-card">
+      <view class="input-card__head"><text>分享链接或口令</text><text class="input-card__count">{{inputText.length}}/2000</text></view>
+      <textarea value="{{inputText}}" maxlength="2000" placeholder="粘贴视频分享链接或口令" placeholder-class="input-placeholder" bindinput="onInput" />
+      <view class="input-card__actions">
+        <button size="mini" bindtap="pasteFromClipboard">粘贴</button>
+        <button wx:if="{{inputText}}" size="mini" bindtap="clearInput">清空</button>
+      </view>
+    </view>
+    <button class="parse-button" disabled="{{parsing}}" bindtap="parseVideo">{{parsing ? '解析中…' : '立即解析'}}</button>
+    <view class="link-row"><text bindtap="openHistory">历史记录</text><text bindtap="openPlatforms">支持的平台</text></view>
+    <view class="supported-note">支持抖音 / 快手 / B站 / TikTok</view>
+  </scroll-view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

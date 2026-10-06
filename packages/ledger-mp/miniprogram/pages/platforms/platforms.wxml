@@ -1,0 +1,14 @@
+<lz-bg />
+<view class="platforms-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="支持的平台" />
+  <view class="platforms-page__body">
+    <view class="platforms-intro"><view class="platforms-intro__title">主流平台，一次解析</view><view class="platforms-intro__sub">粘贴公开分享链接，后端会自动识别来源</view></view>
+    <view class="platform-card"><view class="platform-card__mark platform-card__mark--douyin">音</view><view><view class="platform-card__title">抖音</view><view class="platform-card__desc">支持分享口令和短链接</view></view><text class="platform-card__status">✓</text></view>
+    <view class="platform-card"><view class="platform-card__mark platform-card__mark--kuaishou">快</view><view><view class="platform-card__title">快手</view><view class="platform-card__desc">支持短视频分享链接</view></view><text class="platform-card__status">✓</text></view>
+    <view class="platform-card"><view class="platform-card__mark platform-card__mark--bilibili">哔</view><view><view class="platform-card__title">B站</view><view class="platform-card__desc">支持 BV 视频链接</view></view><text class="platform-card__status">✓</text></view>
+    <view class="platform-card"><view class="platform-card__mark platform-card__mark--tiktok">♪</view><view><view class="platform-card__title">TikTok</view><view class="platform-card__desc">支持公开视频链接</view></view><text class="platform-card__status">✓</text></view>
+    <view class="more-platforms" bindtap="toggleMore"><view><view class="more-platforms__title">更多平台</view><view class="more-platforms__desc">微博、知乎、西瓜视频等 70+ 平台持续支持中</view></view><text>{{moreOpen ? '⌃' : '⌄'}}</text></view>
+    <view wx:if="{{moreOpen}}" class="more-platforms__detail">未单独列出的平台也可以直接粘贴尝试。若后端暂未支持，会给出明确提示，不会保存失败记录。</view>
+  </view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />

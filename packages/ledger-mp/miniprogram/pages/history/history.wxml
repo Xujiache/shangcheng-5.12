@@ -1,0 +1,15 @@
+<lz-bg />
+<view class="history-page lz-route-scene {{_routeMotion}}">
+  <lz-header title="解析历史" />
+  <view class="history-page__body">
+    <view class="history-page__top"><text>最近解析</text><text wx:if="{{items.length}}" class="history-page__clear" bindtap="clearAll">清空全部</text></view>
+    <block wx:if="{{items.length}}">
+      <view wx:for="{{items}}" wx:key="video" class="history-item" data-index="{{index}}" bindtap="openItem" bindlongpress="deleteItem" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" hover-class="tap-active">
+        <view class="history-item__copy"><view class="history-item__title">{{item.title}}</view><view class="history-item__meta"><text>{{item.platformLabel}}</text><text>{{item.displayTime}}</text></view></view>
+        <button class="history-item__delete" data-index="{{index}}" catchtap="deleteItem">×</button>
+      </view>
+    </block>
+    <view wx:else class="history-empty"><view class="history-empty__icon">⌁</view><view>还没有解析记录</view><text>解析成功后，结果会保存在这里</text></view>
+  </view>
+</view>
+<lz-route-feedback busy="{{_routeBusy}}" slow="{{_routeSlow}}" top="{{_routeTop}}" />
