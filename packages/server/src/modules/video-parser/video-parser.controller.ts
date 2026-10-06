@@ -87,13 +87,14 @@ export class VideoParserController {
 
   private streamMuxed(videoUrl: string, audioUrl: string, headers: Record<string, string>, res: Response) {
     const ffmpeg = process.env.VIDEO_PARSER_FFMPEG_BIN || 'ffmpeg'
-    const upstreamHeaders = Object.entries(headers)
-      .map(([name, value]) => `${name}: ${value}\r\n`)
-      .join('')
+    const userAgent = headers['user-agent'] || 'Mozilla/5.0'
+    const referer = headers.referer
+    const inputOptions = ['-user_agent', userAgent]
+    if (referer) inputOptions.push('-referer', referer)
     const child = spawn(ffmpeg, [
       '-hide_banner', '-loglevel', 'error',
-      '-headers', upstreamHeaders, '-i', videoUrl,
-      '-headers', upstreamHeaders, '-i', audioUrl,
+      ...inputOptions, '-i', videoUrl,
+      ...inputOptions, '-i', audioUrl,
       '-map', '0:v:0', '-map', '1:a:0', '-c', 'copy',
       '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1',
     ], { stdio: ['ignore', 'pipe', 'pipe'] })
