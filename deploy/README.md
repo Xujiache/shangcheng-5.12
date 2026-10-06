@@ -89,7 +89,7 @@ services：
 
 ### 2.3 建议执行顺序
 
-玻璃重量工具上线前，在 `upgrades/20260928_001_ledger_tool_events.sql` 创建工具事件表后，执行 `upgrades/20260930_002_glass_tools.sql` 扩展工具键约束。该脚本包含事务与锁超时，验证既有事件，不删除事件；未执行时 `glass-weight` 会因旧约束导致接口失败。验收与回滚见 [玻璃工具](../docs/玻璃工具/README.md)。
+玻璃重量工具上线前，在 `upgrades/20260928_001_ledger_tool_events.sql` 创建工具事件表后，执行 `upgrades/20260930_002_glass_tools.sql` 扩展工具键约束。视频解析工具上线前再执行 `upgrades/20261006_001_video_parser_tool_events.sql`，把 `video-parser` 加入约束。脚本包含事务与锁超时，验证既有事件，不删除事件；未执行对应迁移时，新增工具的事件会被数据库拒绝。验收与回滚见 [玻璃工具](../docs/玻璃工具/README.md)。
 
 唯一的硬性依赖是 **changelog：init 必须先于 seed**；ledger 的补列脚本都建立在 `LedgerOrder` / `LedgerFeedback` 已由 `ledger-prod-init.sql` 建好的前提上。建议顺序：
 
