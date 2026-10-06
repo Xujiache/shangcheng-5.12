@@ -2,8 +2,8 @@ import { videoParseApi, type VideoParseResult } from '../../../api/index'
 import { API_BASE } from '../../../config'
 import { MotionPage, navigation } from '../../../utils/page-transition'
 import { reportToolEvent } from '../../../utils/tool-events'
-import { detectVideoPlatform, looksLikeVideoLink, type VideoPlatform } from '../../../utils/video-parser-platform'
-import { VIDEO_PARSE_TIPS } from '../../../utils/video-parser-tips'
+import { detectVideoPlatform, looksLikeVideoLink, type VideoPlatform } from '../utils/video-parser-platform'
+import { VIDEO_PARSE_TIPS } from '../utils/video-parser-tips'
 import { saveVideoParseHistory, setPendingVideoParseResult, type VideoParseHistoryItem } from '../../../utils/video-parser-history'
 
 type DisplayResult = VideoParseHistoryItem

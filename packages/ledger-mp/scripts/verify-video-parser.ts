@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { detectVideoPlatform, looksLikeVideoLink } from '../miniprogram/utils/video-parser-platform'
+import { detectVideoPlatform, looksLikeVideoLink } from '../miniprogram/subpackages/more-tools/utils/video-parser-platform'
 
 assert.equal(detectVideoPlatform('https://v.douyin.com/abc/').id, 'douyin')
 assert.equal(detectVideoPlatform('https://v.kuaishou.com/abc/').id, 'kuaishou')

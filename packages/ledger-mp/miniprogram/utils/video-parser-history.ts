@@ -1,4 +1,4 @@
-import type { VideoPlatform } from './video-parser-platform'
+export type VideoPlatform = 'douyin' | 'kuaishou' | 'bilibili' | 'tiktok' | 'other'
 
 export interface VideoParseHistoryItem {
   title: string

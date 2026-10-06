@@ -1,6 +1,6 @@
 import { MotionPage, navigation } from '../../../../utils/page-transition'
 import { reportToolEvent } from '../../../../utils/tool-events'
-import { VIDEO_PARSE_TIPS } from '../../../../utils/video-parser-tips'
+import { VIDEO_PARSE_TIPS } from '../../utils/video-parser-tips'
 import { consumePendingVideoParseResult, type VideoParseHistoryItem } from '../../../../utils/video-parser-history'
 
 const CONTENT_WIDTH_FALLBACK = 341
