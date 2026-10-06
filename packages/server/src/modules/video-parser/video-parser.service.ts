@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
+import { mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { BizException } from '../../common/exceptions/biz.exception'
 
@@ -8,6 +10,7 @@ const execFileAsync = promisify(execFile)
 const MAX_INPUT = 2000
 const ENTRY_TTL = 30 * 60_000
 const MAX_ENTRIES = 500
+const MEDIA_DIR = process.env.VIDEO_PARSER_MEDIA_DIR || '/var/lib/jiujiu/video-parser'
 const URL_RE = /https?:\/\/[^\s<>"'“”‘’，。！？、)）】》]+/gi
 
 type MediaKind = 'cover' | 'video'
@@ -64,6 +67,10 @@ function assertRemoteMediaUrl(value: unknown): string {
 export class VideoParserService {
   private readonly entries = new Map<string, ParserEntry>()
 
+  constructor() {
+    mkdirSync(MEDIA_DIR, { recursive: true, mode: 0o700 })
+  }
+
   async parse(input: unknown) {
     if (typeof input !== 'string' || !input.trim() || input.length > MAX_INPUT) {
       parserError(1, '链接无效或作品不存在，请检查链接')
@@ -100,11 +107,13 @@ export class VideoParserService {
     const id = randomUUID()
     this.prune()
     const httpHeaders = pickHttpHeaders(info.http_headers)
-    this.entries.set(id, {
+    const entry: ParserEntry = {
       cover: { url: cover, headers: httpHeaders },
       video: { url: video, headers: httpHeaders },
       expiresAt: Date.now() + ENTRY_TTL,
-    })
+    }
+    this.entries.set(id, entry)
+    writeFileSync(join(MEDIA_DIR, `${id}.json`), JSON.stringify(entry), { mode: 0o600 })
     return {
       title: String(info.title || info.description || '').trim() || '视频内容',
       cover: `/api/parse/media/${id}?kind=cover`,
@@ -114,9 +123,19 @@ export class VideoParserService {
   }
 
   getMedia(id: string, kind: MediaKind): MediaTarget {
-    const entry = this.entries.get(id)
+    if (!/^[0-9a-f-]{36}$/i.test(id)) parserError(4, '视频链接已过期，请重新解析')
+    let entry = this.entries.get(id)
+    if (!entry) {
+      try {
+        entry = JSON.parse(readFileSync(join(MEDIA_DIR, `${id}.json`), 'utf8')) as ParserEntry
+        this.entries.set(id, entry)
+      } catch {
+        entry = undefined
+      }
+    }
     if (!entry || entry.expiresAt <= Date.now()) {
       this.entries.delete(id)
+      try { unlinkSync(join(MEDIA_DIR, `${id}.json`)) } catch { /* already absent */ }
       parserError(4, '视频链接已过期，请重新解析')
     }
     return entry[kind]
@@ -124,8 +143,26 @@ export class VideoParserService {
 
   private prune(): void {
     const now = Date.now()
-    for (const [id, entry] of this.entries) if (entry.expiresAt <= now) this.entries.delete(id)
-    while (this.entries.size >= MAX_ENTRIES) this.entries.delete(this.entries.keys().next().value as string)
+    for (const [id, entry] of this.entries) if (entry.expiresAt <= now) {
+      this.entries.delete(id)
+      try { unlinkSync(join(MEDIA_DIR, `${id}.json`)) } catch { /* already absent */ }
+    }
+    while (this.entries.size >= MAX_ENTRIES) {
+      const oldest = this.entries.keys().next().value as string
+      this.entries.delete(oldest)
+      try { unlinkSync(join(MEDIA_DIR, `${oldest}.json`)) } catch { /* already absent */ }
+    }
+    try {
+      for (const name of readdirSync(MEDIA_DIR)) {
+        if (!name.endsWith('.json')) continue
+        const id = name.slice(0, -5)
+        if (this.entries.has(id)) continue
+        try {
+          const entry = JSON.parse(readFileSync(join(MEDIA_DIR, name), 'utf8')) as ParserEntry
+          if (entry.expiresAt <= now) unlinkSync(join(MEDIA_DIR, name))
+        } catch { unlinkSync(join(MEDIA_DIR, name)) }
+      }
+    } catch { /* cleanup is best effort */ }
   }
 }
 
