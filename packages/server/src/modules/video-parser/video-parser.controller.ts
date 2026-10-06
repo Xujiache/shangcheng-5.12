@@ -28,9 +28,9 @@ export class VideoParserController {
       return
     }
     const target = this.parser.getMedia(id, kind)
-    const headers: Record<string, string> = {}
+    const headers: Record<string, string> = { ...target.headers }
     if (range) headers.Range = range
-    const response = await fetch(target, {
+    const response = await fetch(target.url, {
       headers,
       redirect: 'manual',
       signal: AbortSignal.timeout(20_000),
@@ -42,7 +42,7 @@ export class VideoParserController {
         return
       }
       let redirected: URL
-      try { redirected = new URL(location, target) } catch {
+      try { redirected = new URL(location, target.url) } catch {
         res.status(404).json({ code: 4, data: null, message: '视频链接已过期，请重新解析' })
         return
       }
@@ -59,13 +59,13 @@ export class VideoParserController {
         res.status(404).json({ code: 4, data: null, message: '视频链接已过期，请重新解析' })
         return
       }
-      return this.streamMedia(redirectedResponse, kind, target, res)
+      return this.streamMedia(redirectedResponse, kind, target.url, res)
     }
     if (!response.ok || !response.body) {
       res.status(404).json({ code: 4, data: null, message: '视频链接已过期，请重新解析' })
       return
     }
-    return this.streamMedia(response, kind, target, res)
+    return this.streamMedia(response, kind, target.url, res)
   }
 
   private streamMedia(response: globalThis.Response, kind: 'cover' | 'video', target: string, res: Response) {

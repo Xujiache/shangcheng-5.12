@@ -11,7 +11,8 @@ const MAX_ENTRIES = 500
 const URL_RE = /https?:\/\/[^\s<>"'“”‘’，。！？、)）】》]+/gi
 
 type MediaKind = 'cover' | 'video'
-type ParserEntry = { cover: string; video: string; expiresAt: number }
+type MediaTarget = { url: string; headers: Record<string, string> }
+type ParserEntry = { cover: MediaTarget; video: MediaTarget; expiresAt: number }
 type YtDlpInfo = {
   id?: string
   title?: string
@@ -20,6 +21,7 @@ type YtDlpInfo = {
   url?: string
   requested_downloads?: Array<{ url?: string; requested_formats?: Array<{ url?: string; vcodec?: string; acodec?: string }> }>
   requested_formats?: Array<{ url?: string; vcodec?: string; acodec?: string }>
+  http_headers?: Record<string, string>
   formats?: Array<{ url?: string; ext?: string; vcodec?: string; acodec?: string; height?: number }>
 }
 
@@ -97,7 +99,12 @@ export class VideoParserService {
     const cover = assertRemoteMediaUrl(info.thumbnail)
     const id = randomUUID()
     this.prune()
-    this.entries.set(id, { cover, video, expiresAt: Date.now() + ENTRY_TTL })
+    const httpHeaders = pickHttpHeaders(info.http_headers)
+    this.entries.set(id, {
+      cover: { url: cover, headers: httpHeaders },
+      video: { url: video, headers: httpHeaders },
+      expiresAt: Date.now() + ENTRY_TTL,
+    })
     return {
       title: String(info.title || info.description || '').trim() || '视频内容',
       cover: `/api/parse/media/${id}?kind=cover`,
@@ -106,7 +113,7 @@ export class VideoParserService {
     }
   }
 
-  getMedia(id: string, kind: MediaKind): string {
+  getMedia(id: string, kind: MediaKind): MediaTarget {
     const entry = this.entries.get(id)
     if (!entry || entry.expiresAt <= Date.now()) {
       this.entries.delete(id)
@@ -120,6 +127,16 @@ export class VideoParserService {
     for (const [id, entry] of this.entries) if (entry.expiresAt <= now) this.entries.delete(id)
     while (this.entries.size >= MAX_ENTRIES) this.entries.delete(this.entries.keys().next().value as string)
   }
+}
+
+function pickHttpHeaders(value: YtDlpInfo['http_headers']): Record<string, string> {
+  if (!value || typeof value !== 'object') return {}
+  const headers: Record<string, string> = {}
+  for (const name of ['user-agent', 'referer', 'accept', 'accept-language']) {
+    const valueForHeader = Object.entries(value).find(([key]) => key.toLowerCase() === name)?.[1]
+    if (typeof valueForHeader === 'string' && valueForHeader.length <= 1024) headers[name] = valueForHeader
+  }
+  return headers
 }
 
 function pickVideoUrl(info: YtDlpInfo | YtDlpInfo['formats']): string | undefined {
