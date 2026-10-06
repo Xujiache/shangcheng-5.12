@@ -1,20 +1,21 @@
-<lz-bg />
 <view class="video-result-page lz-route-scene {{_routeMotion}}">
   <lz-header title="解析结果" />
   <scroll-view scroll-y class="video-result-page__scroll">
-    <view wx:if="{{result}}">
+    <view wx:if="{{result}}" class="result-content">
       <view class="result-intro">
         <view class="result-intro__meta">
-          <view class="platform-badge platform-badge--{{result.platform}}">{{result.platformLabel}}</view>
-          <text class="result-intro__status">解析完成</text>
+          <text class="result-intro__eyebrow">视频解析</text>
+          <text class="result-intro__platform">{{result.platformLabel}} · 已完成</text>
         </view>
         <text class="result-intro__title">{{result.title}}</text>
         <text class="result-intro__time">视频已准备好，可直接播放或保存</text>
       </view>
 
       <view class="media-card media-card--video">
-        <view class="media-card__label"><text>视频预览</text><text class="media-card__hint">原比例播放</text></view>
-        <video class="result-video" style="width: {{videoWidth}}px;height: {{videoHeight}}px" src="{{result.video}}" controls object-fit="contain" bindloadedmetadata="onVideoMetadata" binderror="videoError" />
+        <view class="media-card__label"><text>视频预览</text><text class="media-card__hint">原比例</text></view>
+        <view class="video-stage" style="height: {{stageHeight}}px">
+          <video class="result-video" style="width: {{videoWidth}}px;height: {{videoHeight}}px" src="{{result.video}}" controls object-fit="contain" bindloadedmetadata="onVideoMetadata" binderror="videoError" />
+        </view>
       </view>
 
       <view wx:if="{{savingVideo}}" class="download-progress">

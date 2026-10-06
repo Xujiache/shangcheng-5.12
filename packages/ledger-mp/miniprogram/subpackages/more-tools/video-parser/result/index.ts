@@ -3,12 +3,14 @@ import { reportToolEvent } from '../../../../utils/tool-events'
 import { VIDEO_PARSE_TIPS } from '../../../../utils/video-parser-tips'
 import { consumePendingVideoParseResult, type VideoParseHistoryItem } from '../../../../utils/video-parser-history'
 
-const CONTENT_WIDTH_FALLBACK = 343
+const CONTENT_WIDTH_FALLBACK = 341
 
 function viewportContentWidth(): number {
   try {
     const width = Number(wx.getSystemInfoSync().windowWidth)
-    return width > 0 ? Math.max(280, width - 32) : CONTENT_WIDTH_FALLBACK
+    // The page has 16px horizontal scroll padding and the media card has a 1px border.
+    // Calculate against the card's actual content box so native video controls cannot overflow.
+    return width > 0 ? Math.max(280, width - 34) : CONTENT_WIDTH_FALLBACK
   } catch {
     return CONTENT_WIDTH_FALLBACK
   }
@@ -67,6 +69,7 @@ MotionPage({
     result: null as VideoParseHistoryItem | null,
     videoWidth: CONTENT_WIDTH_FALLBACK,
     videoHeight: 193,
+    stageHeight: 193,
     savingVideo: false,
     progress: 0,
   },
@@ -74,7 +77,7 @@ MotionPage({
     const pending = consumePendingVideoParseResult()
     if (!pending) return
     const defaultVideo = mediaFrame(16, 9)
-    this.setData({ result: pending, videoWidth: defaultVideo.width, videoHeight: defaultVideo.height, progress: 0 })
+    this.setData({ result: pending, videoWidth: defaultVideo.width, videoHeight: defaultVideo.height, stageHeight: defaultVideo.height, progress: 0 })
   },
   onShareAppMessage() {
     const result = this.data.result
@@ -97,7 +100,7 @@ MotionPage({
     const height = Number(event.detail?.height)
     if (width > 0 && height > 0) {
       const frame = mediaFrame(width, height)
-      this.setData({ videoWidth: frame.width, videoHeight: frame.height })
+      this.setData({ videoWidth: frame.width, videoHeight: frame.height, stageHeight: frame.height })
     }
   },
   async saveVideo() {
