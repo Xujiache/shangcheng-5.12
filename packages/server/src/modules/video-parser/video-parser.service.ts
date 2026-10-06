@@ -114,11 +114,13 @@ export class VideoParserService {
     }
     this.entries.set(id, entry)
     writeFileSync(join(MEDIA_DIR, `${id}.json`), JSON.stringify(entry), { mode: 0o600 })
+    const title = String(info.title || info.description || '').trim() || '视频内容'
+    const description = String(info.description || '').trim()
     return {
-      title: String(info.title || info.description || '').trim() || '视频内容',
+      title,
       cover: `/api/parse/media/${id}?kind=cover`,
       video: `/api/parse/media/${id}?kind=video`,
-      wenan: String(info.description || info.title || '').trim() || '视频内容',
+      wenan: description && description !== '-' ? description : title,
     }
   }
 
