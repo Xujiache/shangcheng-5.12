@@ -1,55 +1,21 @@
 import { Injectable } from '@nestjs/common'
-import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { promisify } from 'node:util'
 import { BizException } from '../../common/exceptions/biz.exception'
+import { parse as parseWithSpapi } from './spapi.client'
 
-const execFileAsync = promisify(execFile)
 const MAX_INPUT = 2000
-const ENTRY_TTL = 30 * 60_000
+const ENTRY_TTL = 90 * 60_000
 const MAX_ENTRIES = 500
 const MEDIA_DIR = process.env.VIDEO_PARSER_MEDIA_DIR || '/var/lib/jiujiu/video-parser'
-const URL_RE = /https?:\/\/[^\s<>"'“”‘’，。！？、)）】》]+/gi
 
 type MediaKind = 'cover' | 'video'
-type MediaTarget = { url: string; audioUrl?: string; headers: Record<string, string> }
+type MediaTarget = { url: string; headers: Record<string, string> }
 type ParserEntry = { cover: MediaTarget; video: MediaTarget; expiresAt: number }
-type YtDlpInfo = {
-  id?: string
-  title?: string
-  description?: string
-  thumbnail?: string
-  url?: string
-  requested_downloads?: Array<{ url?: string; requested_formats?: Array<{ url?: string; vcodec?: string; acodec?: string }> }>
-  requested_formats?: Array<{ url?: string; vcodec?: string; acodec?: string }>
-  http_headers?: Record<string, string>
-  formats?: Array<{ url?: string; ext?: string; vcodec?: string; acodec?: string; height?: number }>
-}
-
-const ALLOWED_HOSTS = [
-  /(^|\.)douyin\.com$/i,
-  /(^|\.)kuaishou\.com$/i,
-  /(^|\.)bilibili\.com$/i,
-  /(^|\.)tiktok\.com$/i,
-]
 
 function parserError(code: number, message: string): never {
   throw new BizException(code, message)
-}
-
-function extractUrl(input: string): string {
-  const url = input.match(URL_RE)?.[0]?.replace(/[\]}〉》]+$/g, '')
-  if (!url) parserError(1, '链接无效或作品不存在，请检查链接')
-  return url
-}
-
-function assertAllowedInput(url: string): void {
-  let parsed: URL
-  try { parsed = new URL(url) } catch { parserError(1, '链接无效或作品不存在，请检查链接') }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') parserError(1, '链接无效或作品不存在，请检查链接')
-  if (!ALLOWED_HOSTS.some((pattern) => pattern.test(parsed.hostname))) parserError(2, '暂不支持该平台链接')
 }
 
 function assertRemoteMediaUrl(value: unknown): string {
@@ -75,54 +41,27 @@ export class VideoParserService {
     if (typeof input !== 'string' || !input.trim() || input.length > MAX_INPUT) {
       parserError(1, '链接无效或作品不存在，请检查链接')
     }
-    const url = extractUrl(input.trim())
-    assertAllowedInput(url)
-
-    const binary = process.env.VIDEO_PARSER_BIN || 'yt-dlp'
-    let stdout: string
-    try {
-      const result = await execFileAsync(binary, [
-        '--dump-single-json', '--no-playlist', '--no-warnings', '--skip-download',
-        '--format', 'bestvideo*+bestaudio/best', '--socket-timeout', '15', url,
-      ], { timeout: 35_000, maxBuffer: 2 * 1024 * 1024 })
-      stdout = result.stdout
-    } catch (error: any) {
-      const detail = `${error?.stderr || ''} ${error?.message || ''}`.toLowerCase()
-      if (error?.code === 'ENOENT' || detail.includes('enoent')) {
-        parserError(4, '服务暂不可用，请检查网络')
-      }
-      if (detail.includes('unsupported') || detail.includes('not found') || detail.includes('does not exist')) {
-        parserError(1, '链接无效或作品不存在，请检查链接')
-      }
-      if (detail.includes('unable to recognize') || detail.includes('no suitable')) {
-        parserError(2, '暂不支持该平台链接')
-      }
-      parserError(3, '服务繁忙，请稍后再试')
+    const result = await parseWithSpapi(input.trim())
+    if (!result.ok) {
+      const code = result.kind === 'unsupported' ? 2 : result.kind === 'busy' ? 3 : 4
+      parserError(code, result.message)
     }
-
-    let info: YtDlpInfo
-    try { info = JSON.parse(stdout) as YtDlpInfo } catch { parserError(3, '服务繁忙，请稍后再试') }
-    const media = pickVideoMedia(info)
-    const video = assertRemoteMediaUrl(media.video)
-    const audioUrl = media.audio ? assertRemoteMediaUrl(media.audio) : undefined
-    const cover = assertRemoteMediaUrl(info.thumbnail)
+    const video = assertRemoteMediaUrl(result.video_url)
+    const cover = assertRemoteMediaUrl(result.cover)
     const id = randomUUID()
     this.prune()
-    const httpHeaders = pickHttpHeaders(info.http_headers)
     const entry: ParserEntry = {
-      cover: { url: cover, headers: httpHeaders },
-      video: { url: video, audioUrl, headers: httpHeaders },
+      cover: { url: cover, headers: mediaHeaders(cover) },
+      video: { url: video, headers: mediaHeaders(video) },
       expiresAt: Date.now() + ENTRY_TTL,
     }
     this.entries.set(id, entry)
     writeFileSync(join(MEDIA_DIR, `${id}.json`), JSON.stringify(entry), { mode: 0o600 })
-    const title = String(info.title || info.description || '').trim() || '视频内容'
-    const description = String(info.description || '').trim()
     return {
-      title,
+      title: result.title,
       cover: `/api/parse/media/${id}?kind=cover`,
       video: `/api/parse/media/${id}?kind=video`,
-      wenan: description && description !== '-' ? description : title,
+      wenan: result.title,
     }
   }
 
@@ -170,37 +109,16 @@ export class VideoParserService {
   }
 }
 
-function pickHttpHeaders(value: YtDlpInfo['http_headers']): Record<string, string> {
-  if (!value || typeof value !== 'object') return {}
-  const headers: Record<string, string> = {}
-  for (const name of ['user-agent', 'referer', 'accept', 'accept-language']) {
-    const valueForHeader = Object.entries(value).find(([key]) => key.toLowerCase() === name)?.[1]
-    if (typeof valueForHeader === 'string' && valueForHeader.length <= 1024) headers[name] = valueForHeader
+function mediaHeaders(url: string): Record<string, string> {
+  const headers: Record<string, string> = { 'User-Agent': 'Mozilla/5.0' }
+  try {
+    if (new URL(url).hostname.toLowerCase().includes('bilivideo.com')) {
+      headers.Referer = 'https://www.bilibili.com/'
+    }
+  } catch {
+    // assertRemoteMediaUrl validates the URL before this function is called.
   }
   return headers
-}
-
-function pickVideoMedia(info: YtDlpInfo): { video: string | undefined; audio: string | undefined } {
-  if (info.url) return { video: info.url, audio: undefined }
-  const requested = info.requested_formats || info.requested_downloads?.flatMap((item) => item.requested_formats || []) || []
-  const video = requested.find((format) => format.url && format.vcodec !== 'none')?.url || pickVideoUrl(info.formats)
-  const audio = requested.find((format) => format.url && format.acodec !== 'none' && format.vcodec === 'none')?.url
-  return { video, audio }
-}
-
-function pickVideoUrl(info: YtDlpInfo | YtDlpInfo['formats']): string | undefined {
-  if (!info) return undefined
-  if (!Array.isArray(info)) {
-    const requested = info.requested_formats || info.requested_downloads?.flatMap((item) => item.requested_formats || [])
-    const combined = requested?.find((format) => format.url && format.vcodec !== 'none')
-    if (combined?.url) return combined.url
-    return pickVideoUrl(info.formats)
-  }
-  const formats = info
-  return formats
-    ?.filter((format) => format.url && format.vcodec !== 'none')
-    ?.sort((a, b) => (b.height || 0) - (a.height || 0))
-    ?.[0]?.url
 }
 
 export function mediaEtag(url: string): string {

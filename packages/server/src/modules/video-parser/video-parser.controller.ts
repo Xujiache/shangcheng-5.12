@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Param, Post, Query, Res } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
-import { spawn } from 'node:child_process'
 import { Readable } from 'node:stream'
 import type { Response } from 'express'
 import { Public } from '../../common/decorators/public.decorator'
@@ -32,9 +31,6 @@ export class VideoParserController {
     const target = this.parser.getMedia(id, kind)
     const headers: Record<string, string> = { ...target.headers }
     if (range) headers.Range = range
-    if (kind === 'video' && target.audioUrl) {
-      return this.streamMuxed(target.url, target.audioUrl, target.headers, res)
-    }
     const response = await fetch(target.url, {
       headers,
       redirect: 'manual',
@@ -86,39 +82,4 @@ export class VideoParserController {
     Readable.fromWeb(response.body as any).pipe(res)
   }
 
-  private streamMuxed(videoUrl: string, audioUrl: string, headers: Record<string, string>, res: Response) {
-    const ffmpeg = process.env.VIDEO_PARSER_FFMPEG_BIN || 'ffmpeg'
-    const userAgent = headers['user-agent'] || 'Mozilla/5.0'
-    const referer = headers.referer
-    const inputOptions = ['-user_agent', userAgent]
-    if (referer) inputOptions.push('-referer', referer)
-    const child = spawn(ffmpeg, [
-      '-hide_banner', '-loglevel', 'error',
-      ...inputOptions, '-i', videoUrl,
-      ...inputOptions, '-i', audioUrl,
-      '-map', '0:v:0', '-map', '1:a:0', '-c', 'copy',
-      '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1',
-    ], { stdio: ['ignore', 'pipe', 'pipe'] })
-    let started = false
-    child.stdout.on('data', () => {
-      if (!started) {
-        started = true
-        res.status(200)
-        res.setHeader('Content-Type', 'video/mp4')
-        res.setHeader('Cache-Control', 'private, no-store')
-        res.setHeader('Accept-Ranges', 'none')
-      }
-    })
-    child.stdout.pipe(res)
-    child.stderr.resume()
-    child.once('error', () => {
-      if (!started && !res.headersSent) res.status(503).json({ code: 4, data: null, message: '服务暂不可用，请检查网络' })
-      else if (!res.destroyed) res.destroy()
-    })
-    child.once('close', (code) => {
-      if (code !== 0 && !started && !res.headersSent) res.status(503).json({ code: 4, data: null, message: '服务暂不可用，请检查网络' })
-      else if (!res.writableEnded) res.end()
-    })
-    res.once('close', () => { if (!child.killed) child.kill('SIGTERM') })
-  }
 }

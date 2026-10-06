@@ -38,4 +38,5 @@ pnpm --filter @jiujiu/server prisma:studio  # 数据浏览
 - 数据模型唯一 SSOT：`prisma/schema.prisma`（40+ 模型，含 13 张 `Ledger*` 表）。
 - **`prisma/migrations` 被 .gitignore**：生产/新库建表用 `prisma db push` + `deploy/*.sql` 补丁（顺序见 [`deploy/README.md`](../../deploy/README.md)）。
 - 环境变量：根 [`.env.example`](../../.env.example) 为模板（DB/Redis/JWT/微信支付/短信/MinIO/ledger/AI 生图/分享）。敏感值放 `.env`，不入库。
+- 视频解析：`POST /api/parse` 统一由服务端调用 SPAPI；生产环境通过 `SPAPI_KEY` 配置上游凭据，前端不接触上游域名或密钥。解析媒体继续通过 `GET /api/parse/media/:id` 代理并附带 B 站 Referer。
 - Swagger（仅非生产）：`/api/docs`。
