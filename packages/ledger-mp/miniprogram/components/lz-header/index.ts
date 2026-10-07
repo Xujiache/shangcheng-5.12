@@ -15,7 +15,8 @@ Component({
   },
   lifetimes: {
     attached() {
-      const sbh = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
+      const app = getApp<IAppOption>()
+      const sbh = app && app.globalData ? app.globalData.statusBarHeight || 20 : 20
       this.setData({ topPad: sbh + 8, glass: getGlass(), navStyle: glassNavStyle() })
     },
   },

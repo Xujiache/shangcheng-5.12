@@ -13,6 +13,7 @@ let flight:
       key: string
       target: string
       started: number
+      owner?: PageView
       shareable?: boolean
       promise?: Promise<any>
       timers: any[]
@@ -28,7 +29,7 @@ export function pageMotionEnabled(): boolean {
 }
 export function setPageMotionEnabled(enabled: boolean): void {
   wx.setStorageSync(MOTION_KEY, enabled)
-  if (!enabled && active) active.setData({ _routeMotion: '' })
+  if (!enabled && active) safeSetData(active, { _routeMotion: '' })
 }
 function state(page: PageView): PageState {
   let value = states.get(page)
@@ -44,17 +45,26 @@ function timer(fn: () => void, ms: number) {
   if (typeof handle?.unref === 'function') handle.unref()
   return handle
 }
-function paint(busy: boolean, slow = false) {
-  if (!active || !states.get(active)?.visible) return
-  if (active.data._routeBusy !== busy || active.data._routeSlow !== slow) {
-    active.setData({ _routeBusy: busy, _routeSlow: slow })
+function safeSetData(page: PageView, patch: any): void {
+  try {
+    page.setData(patch)
+  } catch {
+    // A native route can destroy a webview before a cosmetic callback arrives.
+  }
+}
+function paint(busy: boolean, slow = false, pageOverride?: PageView) {
+  const page = pageOverride || flight?.owner || active
+  if (!page || !states.get(page)?.visible) return
+  if (page.data._routeBusy !== busy || page.data._routeSlow !== slow) {
+    safeSetData(page, { _routeBusy: busy, _routeSlow: slow })
   }
 }
 function finish(id = flight?.id) {
   if (!flight || flight.id !== id) return
+  const owner = flight.owner
   flight.timers.forEach(clearTimeout)
   flight = undefined
-  paint(false)
+  paint(false, false, owner)
 }
 function arrived(page: PageView) {
   if (!flight || !states.get(page)?.ready) return
@@ -64,7 +74,7 @@ function arrived(page: PageView) {
 function start(key: string, target: string) {
   finish()
   const id = ++serial
-  flight = { id, key, target, started: Date.now(), timers: [] }
+  flight = { id, key, target, started: Date.now(), owner: active, timers: [] }
   flight.timers.push(
     timer(() => {
       if (flight?.id === id) paint(true)
@@ -181,7 +191,7 @@ export const MotionPage: typeof Page = ((definition: any) => {
     try {
       patch._routeTop = (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 52
     } catch {}
-    this.setData(patch)
+    safeSetData(this, patch)
     arrived(this)
     return definition.onShow?.apply(this, args)
   }
@@ -196,9 +206,11 @@ export const MotionPage: typeof Page = ((definition: any) => {
     return definition.onHide?.apply(this, args)
   }
   wrapped.onUnload = function (this: PageView, ...args: any[]) {
+    const wasOwner = flight?.owner === this
     states.delete(this)
     if (active === this) active = undefined
     if (lastShown === this) lastShown = undefined
+    if (wasOwner) finish(flight?.id)
     return definition.onUnload?.apply(this, args)
   }
   return Page(wrapped)

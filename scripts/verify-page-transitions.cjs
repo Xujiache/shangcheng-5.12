@@ -251,6 +251,21 @@ async function main() {
     assert.equal(a.patches.length, count)
     assert.equal(f.timers.size, 0)
   })
+  await test('late failure from a hidden source page cannot write the newly shown page', async () => {
+    const f = fixture(),
+      a = f.page('pages/a')
+    a.onShow()
+    a.onReady()
+    f.navigation.navigateTo({ url: '/pages/b' })
+    a.onHide()
+    const b = f.page('pages/b')
+    b.onShow()
+    b.onReady()
+    const patches = b.patches.length
+    f.calls[0].options.fail({ errMsg: 'late failure' })
+    assert.equal(b.patches.length, patches)
+    assert.equal(f.timers.size, 0)
+  })
   await test('watchdog only removes cosmetic feedback; late native success still resolves', async () => {
     const f = fixture(),
       a = f.page('pages/a')
@@ -389,6 +404,8 @@ async function main() {
     }
   })
   const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8'))
+  const appSource = fs.readFileSync(path.join(root, 'app.ts'), 'utf8')
+  assert.match(appSource, /guestRedirectPending/)
   const routes = [
     ...app.pages,
     ...app.subPackages.flatMap((p) => p.pages.map((r) => p.root + '/' + r)),

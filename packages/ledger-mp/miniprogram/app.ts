@@ -1,12 +1,20 @@
 import { navigation } from './utils/page-transition'
 import { LOCAL_CONVERSION_TEST, TOKEN_KEY, VERSION } from './config'
-import { captureInviteCode, getBioLock, getBioVerified } from './utils/store'
+import {
+  captureInviteCode,
+  capturePendingShareRoute,
+  getBioLock,
+  getBioVerified,
+} from './utils/store'
 import { clearAllCache } from './utils/request'
 import { scheduleToolEventFlush } from './utils/tool-events'
 
 const GUEST_ALLOWED_ROUTES = new Set([
   'pages/home/index',
   'subpackages/more-tools/index/index',
+  'subpackages/more-tools/video-parser/index',
+  'pages/history/history',
+  'pages/platforms/platforms',
   'subpackages/metal/index/index',
   'subpackages/metal/calc/index',
   'pages/login/index',
@@ -28,12 +36,29 @@ const GUEST_ALLOWED_ROUTES = new Set([
   'pages/doc/index',
 ])
 
+let guestRedirectPending = false
+
 function blockRestrictedGuestRoute(options: any, token: string): boolean {
   if (token) return false
   const path = String((options && options.path) || '').replace(/^\/+/, '')
   if (LOCAL_CONVERSION_TEST && path === 'subpackages/format/index/index') return false
   if (!path || GUEST_ALLOWED_ROUTES.has(path)) return false
-  setTimeout(() => navigation.reLaunch({ url: '/pages/login/index' }), 0)
+  capturePendingShareRoute(path, options && options.query)
+  if (!guestRedirectPending) {
+    guestRedirectPending = true
+    setTimeout(() => {
+      try {
+        navigation.reLaunch({
+          url: '/pages/login/index',
+          complete: () => {
+            guestRedirectPending = false
+          },
+        })
+      } catch {
+        guestRedirectPending = false
+      }
+    }, 0)
+  }
   return true
 }
 
@@ -45,6 +70,7 @@ App<IAppOption>({
     statusBarHeight: 20,
     online: true, // 网络在线态（onNetworkStatusChange 维护；请求失败也会置 false）
     version: VERSION, // 应用版本号（onLaunch 用平台真实版本覆盖）
+    privacyAuthorizationHandler: null,
   },
   onLaunch(options: any) {
     this.globalData.token = wx.getStorageSync(TOKEN_KEY) || ''
@@ -52,6 +78,15 @@ App<IAppOption>({
     scheduleToolEventFlush()
     captureInviteCode(options && options.query && options.query.inviteCode)
     blockRestrictedGuestRoute(options, this.globalData.token)
+    // 传感器等隐私接口在未同意小程序隐私指引时会挂起，交给当前页面显示授权按钮。
+    const privacyApi = wx as any
+    if (typeof privacyApi.onNeedPrivacyAuthorization === 'function') {
+      privacyApi.onNeedPrivacyAuthorization((resolve: (result: any) => void, eventInfo: any) => {
+        const handler = this.globalData.privacyAuthorizationHandler
+        if (handler) handler(resolve, eventInfo)
+        else resolve({ event: 'disagree' })
+      })
+    }
     // 真实状态栏高度：安卓 env(safe-area-inset-top) 返回 0，自定义导航必须用它做顶部留白
     try {
       this.globalData.statusBarHeight = wx.getWindowInfo().statusBarHeight || 20

@@ -1,10 +1,11 @@
 import { MotionPage } from '../../../../utils/page-transition'
 import { reportToolEvent } from '../../../../utils/tool-events'
+import { toolShare, toolShareTimeline } from '../../utils/tool-share'
 import {
   initialMembershipAccess,
   membershipAccessView,
   verifyMembershipAccess,
-} from '../../../../utils/membership-access'
+} from '../../utils/membership-access'
 
 type Key = 'r' | 'chord' | 'arc' | 'height' | 'angle'
 type Values = Record<Key, string>
@@ -120,6 +121,12 @@ MotionPage({
   onShow() {
     reportToolEvent('arc', 'open')
     this.checkAccess()
+  },
+  onShareAppMessage() {
+    return toolShare('arc')
+  },
+  onShareTimeline() {
+    return toolShareTimeline('arc')
   },
   async checkAccess() {
     const seq = (this._accessSeq = (this._accessSeq || 0) + 1)

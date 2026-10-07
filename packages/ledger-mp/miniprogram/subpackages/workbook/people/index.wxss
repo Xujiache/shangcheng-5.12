@@ -1,4 +1,4 @@
-@import '../../../utils/workbook/page.wxss';
+@import '../utils/page.wxss';
 
 .people-tabs {
   width: 216px;

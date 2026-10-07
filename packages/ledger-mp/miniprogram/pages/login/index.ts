@@ -10,6 +10,7 @@ import {
   setLogo,
   getPendingInviteCode,
   clearPendingInviteCode,
+  consumePendingShareRoute,
 } from '../../utils/store'
 
 interface LoginData {
@@ -43,7 +44,8 @@ MotionPage({
   } as LoginData,
 
   onLoad() {
-    const statusBarHeight = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
+    const app = getApp<IAppOption>()
+    const statusBarHeight = app && app.globalData ? app.globalData.statusBarHeight || 20 : 20
     let guestTop = statusBarHeight + 8
     try {
       const capsule = wx.getMenuButtonBoundingClientRect()
@@ -149,6 +151,11 @@ MotionPage({
       if (!current || current.route !== 'pages/lock/index') {
         navigation.reLaunch({ url: '/pages/lock/index' })
       }
+      return
+    }
+    const pendingShareRoute = consumePendingShareRoute()
+    if (pendingShareRoute) {
+      navigation.reLaunch({ url: pendingShareRoute })
       return
     }
     if (m && m.active && m.expiringSoon) {

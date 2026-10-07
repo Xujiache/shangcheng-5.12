@@ -37,7 +37,10 @@ export default ({ mode }: { mode: string }) => {
     define: {
       __APP_VERSION__: JSON.stringify(VITE_VERSION)
     },
-    base: VITE_BASE_URL,
+    // Production is mounted at /admin/. Keep that mount point as the safe
+    // default so a deployment build cannot emit root-level /assets/ URLs when
+    // .env.production was not copied into the build workspace.
+    base: VITE_BASE_URL || (mode === 'production' ? '/admin/' : '/'),
     server: {
       port: Number(VITE_PORT),
       proxy: {

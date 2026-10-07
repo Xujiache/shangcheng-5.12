@@ -114,7 +114,7 @@ MotionPage({
   // 根据选中分类计算总额 / 逐月柱
   applyCat(key: string) {
     const slice = this.data._slices.find((s) => s.key === key)
-    const color = slice?.color || COLORMAP[key] || 'c6'
+    const color = (slice && slice.color) || COLORMAP[key] || 'c6'
     const series = this.data._series || []
     const catBars = series.map((item: any) => ({
       label: item.label,

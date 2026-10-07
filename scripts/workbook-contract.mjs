@@ -1,7 +1,10 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 const source = fileURLToPath(
-  new URL('../packages/ledger-mp/miniprogram/utils/workbook/domain.ts', import.meta.url),
+  new URL(
+    '../packages/ledger-mp/miniprogram/subpackages/workbook/utils/domain.ts',
+    import.meta.url,
+  ),
 )
 const target = fileURLToPath(
   new URL('../packages/server/src/modules/ledger/workbook/domain.ts', import.meta.url),

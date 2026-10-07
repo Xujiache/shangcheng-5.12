@@ -69,7 +69,7 @@ Component({
         .sort((a, b) => a - b)
         .map((idx) => ({
           idx,
-          label: String(series[idx]?.label ?? ''),
+          label: String(series[idx] && series[idx].label != null ? series[idx].label : ''),
           position: lastIndex ? (idx / lastIndex) * 100 : 0,
           edge:
             idx === 0

@@ -29,7 +29,17 @@
           <view><text>纵向角度</text><text class="level-axes__value">{{verticalText}}°</text></view>
         </view>
       </block>
-      <view wx:else class="level-unavailable">请在支持加速度传感器的手机上打开，并检查微信权限与系统设置。</view>
+      <view wx:else class="level-unavailable">
+        <text>{{sensorMessage}}</text>
+        <button
+          wx:if="{{privacyRequired}}"
+          id="agree-btn"
+          class="tool-primary level-permission-btn"
+          open-type="agreePrivacyAuthorization"
+          bindagreeprivacyauthorization="onPrivacyAgree"
+        >同意并启用传感器</button>
+        <button wx:else class="tool-secondary level-permission-btn" bindtap="retrySensor">重新检测</button>
+      </view>
     </view>
     <view class="level-buttons">
       <button class="tool-secondary" disabled="{{unavailable || locked}}" bindtap="calibrate">校准</button>

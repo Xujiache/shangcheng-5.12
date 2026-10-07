@@ -130,8 +130,8 @@ async function main() {
   assert.deepEqual([...used].sort(), [...names].sort(), 'No unused or missing semantic icons')
   for (const file of [
     ...files,
-    path.join(root, 'utils/workbook/page.wxss'),
-    path.join(root, 'utils/workbook/filter.wxss'),
+    path.join(root, 'subpackages/workbook/utils/page.wxss'),
+    path.join(root, 'subpackages/workbook/utils/filter.wxss'),
   ].filter((f) => f.endsWith('.wxss'))) {
     const css = read(file)
     assert(

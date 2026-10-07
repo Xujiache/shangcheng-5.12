@@ -1,4 +1,4 @@
-@import "../../../utils/workbook/page.wxss";
+@import "../utils/page.wxss";
 
 /* 与档案页复用同一分段组件，四个入口等宽排列。 */
 .finance-tabs {

@@ -13,17 +13,15 @@ import {
 } from '../../utils/store'
 import { makeShareCover } from '../../utils/share-cover'
 import { LOCAL_CONVERSION_TEST } from '../../config'
-
-const COLORMAP: Record<string, string> = {
-  profile: 'c1',
-  glass: 'c2',
-  hardware: 'c3',
-  labor: 'c4',
-  screen: 'c5',
-  extras: 'c6',
-}
-// 头部大数对应的「当前周期」文案：日=今日 / 月=本月 / 年=本年（与所选单位一致）
-const PERIOD_LABEL: Record<string, string> = { day: '今日', month: '本月', year: '本年' }
+import {
+  buildHomeStatsViewModel,
+  HOME_PERIODS,
+  homePeriodLabel,
+  homeSeriesTitle,
+  type HomeOverviewResponse,
+  type HomePeriod,
+  type HomeSeriesResponse,
+} from './home-logic'
 
 MotionPage({
   _cover: '',
@@ -37,11 +35,7 @@ MotionPage({
     tly: 0,
     tlShow: false,
     period: 'month',
-    periods: [
-      { value: 'day', label: '日' },
-      { value: 'month', label: '月' },
-      { value: 'year', label: '年' },
-    ],
+    periods: HOME_PERIODS,
     periodLabel: '本年',
     seriesTitle: '各月',
     loading: true,
@@ -85,8 +79,9 @@ MotionPage({
     const loggedIn = LOCAL_CONVERSION_TEST || isLoggedIn()
     this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.selectTab ? tb.selectTab(0) : tb.setData({ selected: 0 })
-    const sb = getApp<IAppOption>()?.globalData?.statusBarHeight || 20
+    if (tb) tb.syncTab ? tb.syncTab(0) : tb.setData({ selected: 0 })
+    const app = getApp<IAppOption>()
+    const sb = app && app.globalData ? app.globalData.statusBarHeight || 20 : 20
     let hdRight = 18
     try {
       // 让右上角铃铛避让到原生胶囊（··· ⊙）左侧，避免被遮挡
@@ -134,33 +129,6 @@ MotionPage({
     } catch (e) {
       // 统计请求已独立发出，会员状态失败不阻塞首屏。
     }
-  },
-  enterGuestMode() {
-    ;(this as any)._seq = (((this as any)._seq as number) || 0) + 1
-    ;(this as any)._loaded = false
-    this.setData({
-      isGuest: true,
-      loading: false,
-      loadError: false,
-      unread: false,
-      ads: [],
-      donut: [],
-      legend: [],
-      profitBars: [],
-      countBars: [],
-      tops: [],
-      profitBare: '0',
-      revenueText: '¥0',
-      costText: '¥0',
-      donutCostText: '¥0',
-      count: 0,
-      avgText: '¥0',
-      monthProfitText: '¥0',
-      goalTargetText: '未设',
-      goalPct: 0,
-      clogShow: false,
-      clog: null,
-    })
   },
   // 新版本首开弹更新日志：按当前版本定向，每版本只弹一次
   maybeShowChangelog() {
@@ -236,20 +204,15 @@ MotionPage({
     this.load(() => wx.stopPullDownRefresh())
   },
   onPeriod(e: any) {
-    this.setData({ period: e.detail.value }, () => this.load())
+    this.setData({ period: e.detail.value as HomePeriod }, () => this.load())
   },
 
   async load(done?: () => void) {
     if (LOCAL_CONVERSION_TEST) {
-      const period = this.data.period
+      const period = this.data.period as HomePeriod
       this.setData({
-        periodLabel: PERIOD_LABEL[period] || '本年',
-        seriesTitle:
-          period === 'day'
-            ? '本月每日'
-            : period === 'year'
-              ? '近 5 年'
-              : `${this.data.ovYear} 年各月`,
+        periodLabel: homePeriodLabel(period),
+        seriesTitle: homeSeriesTitle(period, this.data.ovYear),
         loading: false,
         loadError: false,
         stale: false,
@@ -264,70 +227,26 @@ MotionPage({
     }
     // 序号守卫：日/月/年 可被快速连点，慢的旧响应不允许覆盖新数据
     const seq = ((this as any)._seq = (((this as any)._seq as number) || 0) + 1)
-    const period = this.data.period
+    const period = this.data.period as HomePeriod
     const hide = getHideAmount()
     const money = (v: number) => (hide ? maskMoney(v) : yuan(v))
     try {
       // series → KPI 汇总 + 单量/利润图表；overview(本月) → 成本环图 + 目标 + 高利润
-      const [sr, ov]: any[] = await Promise.all([
+      const [sr, ov] = (await Promise.all([
         statsApi.series(period),
         statsApi.overview('month'),
-      ])
+      ])) as [HomeSeriesResponse, HomeOverviewResponse]
       if (seq !== (this as any)._seq) return
-      const buckets = sr.buckets || []
-      const profitBars = buckets.map((b: any) => ({ label: b.label, value: b.profit }))
-      const countBars = buckets.map((b: any) => ({ label: b.label, value: b.count }))
-      // 头部大数取「当前周期」那一个桶（今日/本月/本年），而非所有桶求和——
-      // 否则选日显示整月、选月显示整年、选年显示近5年，与所选单位不符。
-      // 趋势柱仍展示完整序列（本月每日 / 本年各月 / 近5年）作为背景对比。
-      const now = new Date()
-      const curIdx =
-        period === 'day'
-          ? now.getDate() - 1 // 当月第 N 天
-          : period === 'year'
-            ? buckets.length - 1 // 近5年的最后一个 = 今年
-            : now.getMonth() // 今年第 N 月（0 起）
-      const cur: any = buckets[curIdx] || { profit: 0, revenue: 0, cost: 0, count: 0 }
-      const curAvg = cur.count ? Math.round(cur.profit / cur.count) : 0
-
-      const slices = ov.costSlices || []
-      const totalCost = slices.reduce((s: number, x: any) => s + x.value, 0) || 1
-      const donut = slices.map((s: any) => ({ value: s.value, color: COLORMAP[s.key] || 'c6' }))
-      const legend = slices.map((s: any) => ({
-        name: s.name,
-        color: COLORMAP[s.key] || 'c6',
-        value: money(s.value),
-        pct: Math.round((s.value / totalCost) * 100),
-      }))
-      const tops = (ov.topOrders || []).map((o: any) => ({
-        id: o.id,
-        customer: o.customer,
-        date: o.date,
-        profit: money(o.profit),
-        margin: Math.round((o.margin || 0) * 100),
-      }))
-      const gp = ov.goalProgress ? ov.goalProgress.monthly : 0
-      const Y = this.data.ovYear
-      const seriesTitle =
-        period === 'day' ? '本月每日' : period === 'year' ? '近 5 年' : `${Y} 年各月`
-
+      const stats = buildHomeStatsViewModel({
+        series: sr,
+        overview: ov,
+        period,
+        year: this.data.ovYear,
+        formatMoney: money,
+        formatProfit: (value) => (hide ? maskMoney(value) : yuan(value, true)),
+      })
       this.setData({
-        periodLabel: PERIOD_LABEL[period] || '本年',
-        seriesTitle,
-        profitBars,
-        countBars,
-        donut,
-        legend,
-        tops,
-        profitBare: hide ? maskMoney(cur.profit || 0) : yuan(cur.profit || 0, true),
-        revenueText: money(cur.revenue || 0),
-        costText: money(cur.cost || 0),
-        donutCostText: money(ov.cost || 0),
-        count: cur.count || 0,
-        avgText: money(curAvg),
-        monthProfitText: money(ov.monthProfit || 0),
-        goalTargetText: ov.goal && ov.goal.monthly ? money(ov.goal.monthly) : '未设',
-        goalPct: Math.min(100, Math.round((gp || 0) * 100)),
+        ...stats,
         loading: false,
         loadError: false,
         stale: wasStale(sr) || wasStale(ov),
@@ -353,7 +272,7 @@ MotionPage({
     try {
       const r: any = await notificationApi.unreadCount()
       if (!isLoggedIn()) return
-      this.setData({ unread: (r?.count || 0) > 0 })
+      this.setData({ unread: ((r && r.count) || 0) > 0 })
     } catch (e) {
       /* 静默：红点不是关键路径 */
     }
@@ -394,14 +313,8 @@ MotionPage({
   toLogin() {
     goToLogin()
   },
-  toAbout() {
-    navigation.navigateTo({ url: '/pages/about/index' })
-  },
-  toDoc(e: any) {
-    navigation.navigateTo({ url: '/pages/doc/index?key=' + e.currentTarget.dataset.key })
-  },
   toCut() {
-      navigation.navigateTo({ url: '/subpackages/tools/pages/cut/index' })
+    navigation.navigateTo({ url: '/subpackages/tools/pages/cut/index' })
   },
   toWorkLog() {
     navigation.navigateTo({ url: '/subpackages/workbook/overview/index' })
@@ -435,7 +348,9 @@ MotionPage({
   },
   toOrder(e: any) {
     if (!requireLogin()) return
-    navigation.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
+    navigation.navigateTo({
+      url: '/subpackages/orders/pages/order-detail/index?id=' + e.currentTarget.dataset.id,
+    })
   },
   // 开启「转发给朋友」/「分享到朋友圈」
   onShareAppMessage() {

@@ -60,7 +60,7 @@
         <view class="home__tool-s">省料排版</view>
       </view>
       <view class="home__tool-card" hover-class="tap-active" bindtap="toWorkLog">
-        <view class="home__tool-icon home__tool-icon--c4">
+        <view class="home__tool-icon">
 
           <image class="home__tool-image" src="/assets/tools/tool-work-log.png" mode="aspectFit" />
         </view>

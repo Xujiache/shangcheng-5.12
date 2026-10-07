@@ -1,7 +1,8 @@
 import { MotionPage } from '../../../utils/page-transition'
 import { goToLogin, isLoggedIn, requireLogin } from '../../../utils/store'
-import { toRmbUppercase } from '../../../utils/more-tools/amount-date'
+import { toRmbUppercase } from '../utils/amount-date'
 import { reportToolEvent } from '../../../utils/tool-events'
+import { toolShare, toolShareTimeline } from '../utils/tool-share'
 
 MotionPage({
   _opened: false,
@@ -16,7 +17,16 @@ MotionPage({
     const authorized = isLoggedIn()
     this.setData({ authorized })
     if (!authorized) requireLogin('登录后可免费使用人民币大小写转换。')
-    else if (!this._opened) { this._opened = true; reportToolEvent('rmb', 'open') }
+    else if (!this._opened) {
+      this._opened = true
+      reportToolEvent('rmb', 'open')
+    }
+  },
+  onShareAppMessage() {
+    return toolShare('rmb')
+  },
+  onShareTimeline() {
+    return toolShareTimeline('rmb')
   },
   login() {
     goToLogin()
@@ -39,8 +49,14 @@ MotionPage({
     if (!this.data.authorized || !this.data.uppercase) return
     wx.setClipboardData({
       data: this.data.uppercase,
-      success: () => { reportToolEvent('rmb', 'success'); wx.showToast({ title: '已复制', icon: 'success' }) },
-      fail: () => { reportToolEvent('rmb', 'failure'); wx.showToast({ title: '复制失败，请长按结果复制', icon: 'none' }) },
+      success: () => {
+        reportToolEvent('rmb', 'success')
+        wx.showToast({ title: '已复制', icon: 'success' })
+      },
+      fail: () => {
+        reportToolEvent('rmb', 'failure')
+        wx.showToast({ title: '复制失败，请长按结果复制', icon: 'none' })
+      },
     })
   },
 })

@@ -6,7 +6,7 @@ import {
   emptyBook,
   summary,
   type Operation,
-} from '../miniprogram/utils/workbook/domain'
+} from '../miniprogram/subpackages/workbook/utils/domain'
 
 const at = '2026-09-09T00:00:00.000Z'
 const worker = {

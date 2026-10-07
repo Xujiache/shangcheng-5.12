@@ -1,5 +1,5 @@
 {
-  "passed": 12,
+  "passed": 13,
   "checks": [
     "native route dispatch has no animation delay; fast navigation never flashes a loader",
     "slow native navigation shows delayed rail then hint; ready clears both",
@@ -7,6 +7,7 @@
     "failure releases feedback and rejects awaiters; retry starts immediately",
     "cached return keeps amount, inputs and scroll; app foreground does not replay motion",
     "hide/unload prevents timer writes; stale callback cannot dismiss a newer navigation",
+    "late failure from a hidden source page cannot write the newly shown page",
     "watchdog only removes cosmetic feedback; late native success still resolves",
     "lifecycle arguments, this, async results and thrown errors are preserved",
     "motion preference and preparation feedback do not interfere with navigation",
@@ -14,6 +15,6 @@
     "real customer/order editors guard unfinished loads, release errors and support retry without blank saves",
     "all registered pages use shared motion/feedback; native fixed positioning is not transformed"
   ],
-  "routes": 66,
+  "routes": 67,
   "realDeviceVerified": false
 }

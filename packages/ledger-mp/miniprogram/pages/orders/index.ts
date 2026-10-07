@@ -52,9 +52,12 @@ MotionPage({
     }
     this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.selectTab ? tb.selectTab(1) : tb.setData({ selected: 1 })
+    if (tb) tb.syncTab ? tb.syncTab(1) : tb.setData({ selected: 1 })
     this.setData({
-      hdPad: (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 10,
+      hdPad:
+        (getApp<IAppOption>() && getApp<IAppOption>().globalData
+          ? getApp<IAppOption>().globalData.statusBarHeight || 20
+          : 20) + 10,
     })
     this.refreshMembershipMode()
     this.load()
@@ -222,7 +225,9 @@ MotionPage({
 
   toDetail(e: any) {
     if (!requireLogin()) return
-    navigation.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
+    navigation.navigateTo({
+      url: '/subpackages/orders/pages/order-detail/index?id=' + e.currentTarget.dataset.id,
+    })
   },
   toCustomers() {
     if (!requireLogin()) return

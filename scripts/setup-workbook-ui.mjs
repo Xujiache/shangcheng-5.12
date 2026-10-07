@@ -16,7 +16,7 @@ for (const page of ['records', 'edit', 'people', 'finance', 'reports']) {
       2,
     ) + '\n',
   )
-  fs.writeFileSync(dir + '/index.wxss', '@import "../../../utils/workbook/page.wxss";\n')
+  fs.writeFileSync(dir + '/index.wxss', '@import "../utils/page.wxss";\n')
   const f = dir + '/index.wxml'
   fs.writeFileSync(
     f,

@@ -1,7 +1,20 @@
 import { TOKEN_KEY } from '../config'
 import { request } from './request'
 
-export type ToolKey = 'triangle' | 'arc' | 'cut' | 'work-log' | 'format' | 'rmb' | 'retire' | 'level' | 'glass' | 'glass-weight' | 'luban' | 'tide'
+export type ToolKey =
+  | 'triangle'
+  | 'arc'
+  | 'cut'
+  | 'work-log'
+  | 'format'
+  | 'rmb'
+  | 'retire'
+  | 'level'
+  | 'glass'
+  | 'glass-weight'
+  | 'luban'
+  | 'tide'
+  | 'video-parser'
 export type ToolStatus = 'open' | 'success' | 'failure'
 type Event = { id: string; tool: ToolKey; status: ToolStatus; occurredAt: string }
 
@@ -23,21 +36,31 @@ function accountId(): string {
     const token = getApp<IAppOption>()?.globalData?.token || wx.getStorageSync(TOKEN_KEY)
     if (!token) return ''
     const part = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    const bytes = new Uint8Array(wx.base64ToArrayBuffer(part.padEnd(Math.ceil(part.length / 4) * 4, '=')))
+    const bytes = new Uint8Array(
+      wx.base64ToArrayBuffer(part.padEnd(Math.ceil(part.length / 4) * 4, '=')),
+    )
     let payload = ''
-    bytes.forEach((byte) => { payload += String.fromCharCode(byte) })
+    bytes.forEach((byte) => {
+      payload += String.fromCharCode(byte)
+    })
     const decoded = JSON.parse(payload)
     return decoded.scope === 'ledger' && typeof decoded.sub === 'string' ? decoded.sub : ''
-  } catch { return '' }
+  } catch {
+    return ''
+  }
 }
 
-function key(account: string): string { return PREFIX + account }
+function key(account: string): string {
+  return PREFIX + account
+}
 
 function read(account: string): Event[] {
   try {
     const value = wx.getStorageSync(key(account))
     return Array.isArray(value) ? value : []
-  } catch { return [] }
+  } catch {
+    return []
+  }
 }
 
 function uuid(): string {
@@ -53,8 +76,13 @@ export function reportToolEvent(tool: ToolKey, status: ToolStatus): void {
   if (!account) return
   if (['format', 'glass', 'glass-weight'].includes(tool) && status !== 'open') return
   try {
-    wx.setStorageSync(key(account), [...read(account), { id: uuid(), tool, status, occurredAt: new Date().toISOString() }])
-  } catch { return }
+    wx.setStorageSync(key(account), [
+      ...read(account),
+      { id: uuid(), tool, status, occurredAt: new Date().toISOString() },
+    ])
+  } catch {
+    return
+  }
   scheduleToolEventFlush()
 }
 
@@ -68,11 +96,17 @@ export async function flushToolEvents(): Promise<void> {
       const batch = read(account).slice(0, 100)
       if (!batch.length) return
       const result = await request<{ accepted: number }>({
-        url: '/l/tools/events', method: 'POST', data: { events: batch }, silent: true,
+        url: '/l/tools/events',
+        method: 'POST',
+        data: { events: batch },
+        silent: true,
       })
       if (accountId() !== account || result.accepted !== batch.length) return
       const sent = new Set(batch.map((event) => event.id))
-      wx.setStorageSync(key(account), read(account).filter((event) => !sent.has(event.id)))
+      wx.setStorageSync(
+        key(account),
+        read(account).filter((event) => !sent.has(event.id)),
+      )
     }
   } catch {
     // Keep the durable queue for the next foreground or network recovery.

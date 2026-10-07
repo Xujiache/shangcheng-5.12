@@ -27,6 +27,7 @@ packages/ledger-mp/
 1. **微信开发者工具** → 导入项目 → 目录选 `packages/ledger-mp`。
 2. 使用 `project.config.json` 中已配置的小程序 AppID。
 3. 装类型依赖（让 IDE / tsc 识别 `wx`）：仓库根 `pnpm install` 即可（已声明 `miniprogram-api-typings`）。
+   - 首次导入或依赖变更后，在开发者工具选择「工具 → 构建 npm」，让外置 `package.json` 的运行时依赖进入小程序编译包。
 4. **生产环境**：`config.ts` 的业务和格式转换地址均为 `https://ewsn.top`，`LOCAL_CONVERSION_TEST` 关闭，开发者工具校验合法域名。微信公众平台需将 `ewsn.top` 配置为合法的 request、uploadFile、downloadFile 域名。
    - 格式转换页复用 `/l/conversions` 接口。原版源码与后端适配器在独立分支 `codex/ledger-original-engine-rebuild` 验证中；全量验收前不要用该分支切换生产。
    - Mac 本地完整后端与原版 worker：`./packages/server/scripts/start-local-original-conversion.sh`。当前本机测试：在 `packages/server` 目录运行 `node --env-file=.env scripts/verify-local-original-conversion.cjs`。小程序连接本地 API 时还需微信开发者工具的本地网络配置。

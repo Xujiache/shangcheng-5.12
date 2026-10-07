@@ -1,5 +1,5 @@
-@import '../../../utils/workbook/page.wxss';
-@import '../../../utils/workbook/filter.wxss';
+@import '../utils/page.wxss';
+@import '../utils/filter.wxss';
 
 .records-view-switch {
   width: 168px;

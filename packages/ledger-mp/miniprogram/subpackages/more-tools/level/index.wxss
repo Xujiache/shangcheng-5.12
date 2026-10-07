@@ -23,4 +23,6 @@
 .level-buttons { display: flex; gap: 10px; }
 .level-buttons button { flex: 1; margin-top: 0; }
 .level-note { margin: 17px 3px; }
-.level-unavailable { padding: 80px 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.level-unavailable { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 210px; padding: 24px 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.level-unavailable text { max-width: 250px; }
+.level-permission-btn { width: 220px; margin-top: 18px; }

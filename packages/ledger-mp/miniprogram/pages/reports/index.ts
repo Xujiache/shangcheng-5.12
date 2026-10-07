@@ -58,7 +58,7 @@ MotionPage({
     }
     this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
     const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.selectTab ? tb.selectTab(2) : tb.setData({ selected: 2 })
+    if (tb) tb.syncTab ? tb.syncTab(2) : tb.setData({ selected: 2 })
     this.setData({
       headerSubtitle: `${this.data.ovYear}年 · 全年统计`,
     })

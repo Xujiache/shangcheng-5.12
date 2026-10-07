@@ -108,6 +108,9 @@
 .tide-search-results { height: 310px; }
 .tide-search-panel .tide-nearby { width: 100%; height: 48px; justify-content: flex-start; border-bottom: 1px solid var(--border); color: var(--accent); font-size: 14px; }
 .tide-nearby text { flex: 1; text-align: left; }
+.tide-privacy { padding: 14px 0; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; line-height: 1.6; }
+.tide-privacy text { display: block; }
+.tide-privacy button { width: 100%; height: 38px; margin-top: 10px; border-radius: 9px; color: #fff; background: var(--accent); font-size: 13px; }
 .tide-search-label { display: block; margin: 18px 0 12px; color: var(--muted); font-size: 12px; }
 .tide-suggestions { display: flex; flex-wrap: wrap; gap: 10px; }
 .tide-suggestions view { padding: 8px 16px; border-radius: 8px; background: var(--surface-2); font-size: 13px; }

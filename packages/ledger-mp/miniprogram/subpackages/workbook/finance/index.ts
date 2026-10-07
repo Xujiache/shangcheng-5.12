@@ -9,15 +9,8 @@ import {
   money,
   rows,
   settlementRemaining,
-} from '../../../utils/workbook/domain'
-import {
-  ask,
-  confirm,
-  makeChange,
-  repository,
-  reportError,
-  saveChanges,
-} from '../../../utils/workbook/client'
+} from '../utils/domain'
+import { ask, confirm, makeChange, repository, reportError, saveChanges } from '../utils/client'
 const tabs = [
   { id: 'settlements', name: '结算单' },
   { id: 'payments', name: '发薪' },

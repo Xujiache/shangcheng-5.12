@@ -11,7 +11,7 @@ import {
   money,
   rows,
   validDate,
-} from '../../../utils/workbook/domain'
+} from '../utils/domain'
 import {
   ask,
   confirm,
@@ -20,8 +20,8 @@ import {
   repository,
   reportError,
   saveChanges,
-} from '../../../utils/workbook/client'
-import { uid } from '../../../utils/workbook/storage'
+} from '../utils/client'
+import { uid } from '../utils/storage'
 const defaults = () => ({
   date: localDate(),
   dates: '',

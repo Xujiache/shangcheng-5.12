@@ -10,7 +10,7 @@ import {
   validateBook,
   quantity,
   validDate,
-} from '../../../utils/workbook/domain'
+} from '../utils/domain'
 import {
   ask,
   backupPreview,
@@ -23,17 +23,11 @@ import {
   saveChanges,
   scope,
   syncWorkbook,
-} from '../../../utils/workbook/client'
-import {
-  exportBackup,
-  makeCsv,
-  readBackup,
-  renderReport,
-  writeExport,
-} from '../../../utils/workbook/export'
-import { shareQuoteFile } from '../../../utils/quote-export'
+} from '../utils/client'
+import { exportBackup, makeCsv, readBackup, renderReport, writeExport } from '../utils/export'
+import { shareQuoteFile } from '../utils/quote-export'
 import { http } from '../../../utils/request'
-import { inclusiveDays, rangeMonthCells } from '../../../utils/workbook/date-range'
+import { inclusiveDays, rangeMonthCells } from '../utils/date-range'
 MotionPage({
   data: {
     section: 'stats',

@@ -1,34 +1,32 @@
 <view class="ctb">
   <view class="ctb__bar {{glass ? '' : 'ctb__bar--solid'}}" style="{{glass ? barStyle : ''}}">
     <view class="ctb__tabs">
-      <view wx:if="{{liquid}}" class="ctb__indicator" style="{{indicatorStyle}}"></view>
-
-      <view class="ctb__tab" data-index="0" bindtap="switchTab" hover-class="tap-active">
+      <view class="ctb__tab {{selected===0?'ctb__tab--active':''}}" data-index="0" bindtap="switchTab" hover-class="tap-active">
         <view class="ctb__ic {{selected===0?'ctb__ic--on':''}}">
-          <image class="ctb__icon-image {{selected===0?'ctb__icon-image--on':''}}" src="/assets/navigation/nav-home.png" mode="aspectFit" />
+          <image class="ctb__icon-image" src="/assets/navigation/nav-home.png" mode="aspectFit" />
         </view>
         <text class="ctb__t {{selected===0?'ctb__t--on':''}}">首页</text>
       </view>
 
-      <view class="ctb__tab" data-index="1" bindtap="switchTab" hover-class="tap-active">
+      <view class="ctb__tab {{selected===1?'ctb__tab--active':''}}" data-index="1" bindtap="switchTab" hover-class="tap-active">
         <view class="ctb__ic {{selected===1?'ctb__ic--on':''}}">
-          <image class="ctb__icon-image {{selected===1?'ctb__icon-image--on':''}}" src="/assets/settings/notification-order.png" mode="aspectFit" />
+          <image class="ctb__icon-image" src="/assets/settings/notification-order.png" mode="aspectFit" />
         </view>
         <text class="ctb__t {{selected===1?'ctb__t--on':''}}">订单</text>
       </view>
 
       <view class="ctb__slot" aria-hidden="true"></view>
 
-      <view class="ctb__tab" data-index="2" bindtap="switchTab" hover-class="tap-active">
+      <view class="ctb__tab {{selected===2?'ctb__tab--active':''}}" data-index="2" bindtap="switchTab" hover-class="tap-active">
         <view class="ctb__ic {{selected===2?'ctb__ic--on':''}}">
-          <image class="ctb__icon-image {{selected===2?'ctb__icon-image--on':''}}" src="/assets/settings/notification-report.png" mode="aspectFit" />
+          <image class="ctb__icon-image" src="/assets/settings/notification-report.png" mode="aspectFit" />
         </view>
         <text class="ctb__t {{selected===2?'ctb__t--on':''}}">报表</text>
       </view>
 
-      <view class="ctb__tab" data-index="3" bindtap="switchTab" hover-class="tap-active">
+      <view class="ctb__tab {{selected===3?'ctb__tab--active':''}}" data-index="3" bindtap="switchTab" hover-class="tap-active">
         <view class="ctb__ic {{selected===3?'ctb__ic--on':''}}">
-          <image class="ctb__icon-image {{selected===3?'ctb__icon-image--on':''}}" src="/assets/navigation/nav-profile.png" mode="aspectFit" />
+          <image class="ctb__icon-image" src="/assets/navigation/nav-profile.png" mode="aspectFit" />
         </view>
         <text class="ctb__t {{selected===3?'ctb__t--on':''}}">我的</text>
       </view>

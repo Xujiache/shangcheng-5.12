@@ -30,6 +30,8 @@ interface IAppOption {
     online: boolean
     /** 应用版本号（onLaunch 写入：release/trial 取真实版本，develop 兜底 VERSION） */
     version: string
+    /** 当前页面用于处理微信隐私授权弹窗的回调；没有页面接管时拒绝挂起请求。 */
+    privacyAuthorizationHandler: ((resolve: (result: any) => void, eventInfo: any) => void) | null
   }
   setToken?: (token: string) => void
   clearAuth?: () => void

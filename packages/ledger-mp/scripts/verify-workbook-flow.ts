@@ -96,13 +96,13 @@ const fsMock = {
     if (typeof v === 'function') page[k] = (v as Function).bind(page)
   lastPage = page
 }
-const domain = require('../miniprogram/utils/workbook/domain.ts')
-const client = require('../miniprogram/utils/workbook/client.ts')
-const exportApi = require('../miniprogram/utils/workbook/export.ts')
+const domain = require('../miniprogram/subpackages/workbook/utils/domain.ts')
+const client = require('../miniprogram/subpackages/workbook/utils/client.ts')
+const exportApi = require('../miniprogram/subpackages/workbook/utils/export.ts')
 function page(name: string) {
   const path =
     name === 'overview'
-      ? '../miniprogram/pages/work-log/index.ts'
+      ? '../miniprogram/subpackages/workbook/overview/index.ts'
       : '../miniprogram/subpackages/workbook/' + name + '/index.ts'
   delete require.cache[require.resolve(path)]
   require(path)
@@ -262,12 +262,14 @@ async function main() {
   p = page('edit')
   p.onLoad({})
   p.chooseWorkers({ detail: { value: [worker.id] } })
+  p.field(event('date', '2026-09-30'))
   p.field(event('quantity', '0.5'))
   assert.equal(p.data.amount, '¥150.13')
   await p.save()
   assert.equal(p.data.saving, false)
   // Filters are transactional UI drafts: no list changes until Apply, cancel is lossless.
   calendar = page('records')
+  calendar.month({ detail: { value: '2026-09' } })
   calendar.onShow()
   assert.equal(calendar.data.count, 1)
   calendar.advanced()
@@ -356,6 +358,7 @@ async function main() {
     'PASS filter draft/cancel/apply/reset, per-condition removal, preview count, invalid dates, cross-month list, status and keyboard layout',
   )
   p = page('overview')
+  p.setData({ month: '2026-09' })
   p.refresh()
   assert.equal(p.data.earned, '¥150.13')
   assert.equal(p.data.workerCount, 1)
@@ -390,6 +393,7 @@ async function main() {
   )
 
   p = page('finance')
+  p.setData({ from: '2026-09-01', to: '2026-09-30', date: '2026-09-30' })
   p.onShow()
   for (const option of p.data.tabs) {
     assert.equal(option.value, option.id)
@@ -416,10 +420,12 @@ async function main() {
   await p.save()
   const settlement = p.data.list[0]
   p.pay({ currentTarget: { dataset: { id: settlement.id } } })
+  p.setData({ date: '2026-09-30' })
   p.field(event('amount', '40'))
   await p.save()
   assert.equal(domain.settlementRemaining(client.repository().read().book, settlement.id), 6013)
   p = page('reports')
+  p.setData({ from: '2026-09-01', to: '2026-09-30', calendarMonth: '2026-09' })
   p.onShow()
   assert.equal(p.data.earned, '¥150.13')
   assert.equal(p.data.paid, '¥40.00')
@@ -472,7 +478,8 @@ async function main() {
     p.range({ detail: { value } })
     assert.equal(p.data.period, value)
     assert.equal(p.data.to, domain.localDate())
-    assert.equal(p.data.earned, '¥150.13')
+    const expected = p.data.from <= '2026-09-30' && p.data.to >= '2026-09-30' ? '¥150.13' : '¥0.00'
+    assert.equal(p.data.earned, expected)
   }
   p.range({ detail: { value: 'custom' } })
   assert.equal(p.data.filterOpen, true)
@@ -480,7 +487,7 @@ async function main() {
   p.range({ detail: { value: 'month' } })
 
   // Explicit custom selection is a draft until confirmation, not inferred from preset dates.
-  const dateRange = require('../miniprogram/utils/workbook/date-range.ts')
+  const dateRange = require('../miniprogram/subpackages/workbook/utils/date-range.ts')
   p.range({ detail: { value: 'year' } })
   const yearFrom = p.data.from
   p.range({ detail: { value: 'custom' } })
@@ -556,6 +563,8 @@ async function main() {
   assert.equal(dateRange.rangeMonthCells('invalid', '', '', '').length, 0)
   p.closeFilter()
   p.range({ detail: { value: 'month' } })
+  p.setData({ from: '2026-09-01', to: '2026-09-30' })
+  p.refresh()
   console.log(
     'PASS custom highlight draft/cancel/confirm, inclusive range calendar, reversed/same-day selection, pending guard, leap day, month boundaries and shortcuts',
   )
@@ -593,6 +602,8 @@ async function main() {
   assert.equal(p.data.period, 'day')
   p.range({ currentTarget: { dataset: { type: 'month' } } })
   assert.equal(p.data.period, 'month')
+  p.setData({ from: '2026-09-01', to: '2026-09-30' })
+  p.refresh()
 
   p.section({ detail: { value: 'export' } })
   assert.equal(p.data.exportTitle, '记工汇总报表')
@@ -740,7 +751,7 @@ async function main() {
       {
         workerId: worker.id,
         projectId: '',
-        workDate: domain.localDate(),
+        workDate: '2026-09-30',
         amountFen: 100,
         note: '补差',
       },
@@ -765,6 +776,7 @@ async function main() {
       data: { code: 1001, message: 'Cannot GET /api/v1/l/workbook/access' },
     })
   const overview = page('overview')
+  overview.setData({ month: '2026-09' })
   await overview.onShow()
   assert.equal(overview.data.earned, '¥151.13')
   assert.equal(overview.data.error, '')

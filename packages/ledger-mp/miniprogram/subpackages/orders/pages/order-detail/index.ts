@@ -7,8 +7,8 @@ import {
   requireMembership,
   setMembership,
 } from '../../../../utils/store'
-import { normalizeCostCategories } from '../../../../utils/cost-categories'
-import { createQuotePdf, renderQuoteImages, shareQuoteFile } from '../../../../utils/quote-export'
+import { normalizeCostCategories } from '../../utils/cost-categories'
+import { createQuotePdf, renderQuoteImages, shareQuoteFile } from '../../utils/quote-export'
 
 const CATS: Array<[string, string, string]> = [
   ['profile', '型材', 'c1'],
@@ -192,7 +192,7 @@ MotionPage({
       requireMembership('会员已到期，历史订单可以查看和预览，但暂不能修改。')
       return
     }
-    navigation.navigateTo({ url: '/pages/order-edit/index?id=' + this.data.id })
+    navigation.navigateTo({ url: '/subpackages/orders/pages/order-edit/index?id=' + this.data.id })
   },
   onDelete() {
     if (this._deleted) return

@@ -9,8 +9,8 @@ import {
   rows,
   validDate,
   Workbook,
-} from '../../../utils/workbook/domain'
-import { repository, reportError } from '../../../utils/workbook/client'
+} from '../utils/domain'
+import { repository, reportError } from '../utils/client'
 
 type FilterValues = {
   search: string

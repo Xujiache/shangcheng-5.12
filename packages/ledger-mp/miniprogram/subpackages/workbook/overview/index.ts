@@ -1,6 +1,7 @@
 import { MotionPage, navigation } from '../../../utils/page-transition'
 import { reportToolEvent } from '../../../utils/tool-events'
-import { localDate, money, quantity, rows, summary, validDate } from '../../../utils/workbook/domain'
+import { toolShare, toolShareTimeline } from '../utils/tool-share'
+import { localDate, money, quantity, rows, summary, validDate } from '../utils/domain'
 import {
   maybeImportGuest,
   repository,
@@ -8,7 +9,7 @@ import {
   errorText,
   scope,
   syncWorkbook,
-} from '../../../utils/workbook/client'
+} from '../utils/client'
 MotionPage({
   data: {
     month: localDate().slice(0, 7),
@@ -70,6 +71,12 @@ MotionPage({
     } finally {
       if (version === this.showVersion) this.setData({ cloudBusy: false })
     }
+  },
+  onShareAppMessage() {
+    return toolShare('work-log')
+  },
+  onShareTimeline() {
+    return toolShareTimeline('work-log')
   },
   onHide() {
     this.showVersion = (this.showVersion || 0) + 1

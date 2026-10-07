@@ -1,7 +1,7 @@
 import { MotionPage, navigation } from '../../../../utils/page-transition'
 import { customerApi, meApi, orderApi, settingApi } from '../../../../api/index'
 import { yuan } from '../../../../utils/format'
-import { EXTRA_TYPES, profitOf, marginOf } from '../../../../utils/calc'
+import { EXTRA_TYPES, profitOf, marginOf } from '../../utils/calc'
 import { hasActiveMembership, requireMembership, setMembership } from '../../../../utils/store'
 import {
   CostCategory,
@@ -9,7 +9,7 @@ import {
   createCostCategoryId,
   nextCostColor,
   readCostCategories,
-} from '../../../../utils/cost-categories'
+} from '../../utils/cost-categories'
 
 const LEGACY_COSTS = [
   { key: 'profile', name: '型材' },
@@ -306,7 +306,7 @@ MotionPage({
       received: this.data.received,
       note: this.data.note,
     })
-    navigation.navigateTo({ url: '/pages/order-items/index' })
+    navigation.navigateTo({ url: '/subpackages/orders/pages/order-items/index' })
   },
 
   async loadOrder() {
@@ -382,7 +382,7 @@ MotionPage({
     )
   },
   manageCostCategories() {
-    navigation.navigateTo({ url: '/pages/cost-categories/index?fromOrder=1' })
+    navigation.navigateTo({ url: '/subpackages/settings/pages/cost-categories/index?fromOrder=1' })
   },
   retryLoad() {
     this.setData({ loadError: false })

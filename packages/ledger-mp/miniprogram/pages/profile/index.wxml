@@ -43,7 +43,7 @@
         </view>
         <view class="prof__grid-t">客户管理</view>
       </view>
-      <view class="prof__grid-cell" data-page="/pages/cut/index" bindtap="toRow" hover-class="tap-active">
+      <view class="prof__grid-cell" data-page="/subpackages/tools/pages/cut/index" bindtap="toRow" hover-class="tap-active">
         <view class="prof__grid-ic">
           <image class="prof__grid-icon-img" src="/assets/tools/tool-cut.png" mode="aspectFit" />
         </view>

@@ -1,5 +1,6 @@
 import { MotionPage, navigation } from '../../../../utils/page-transition'
 import { reportToolEvent } from '../../../../utils/tool-events'
+import { toolShare, toolShareTimeline } from '../../utils/tool-share'
 import { cutApi, cutPlanApi } from '../../../../api/index'
 import { isLoggedIn } from '../../../../utils/store'
 
@@ -74,6 +75,12 @@ MotionPage({
   onLoad() {
     this.restoreDrafts()
     this.checkAccess()
+  },
+  onShareAppMessage() {
+    return toolShare('cut')
+  },
+  onShareTimeline() {
+    return toolShareTimeline('cut')
   },
   onShow() {
     reportToolEvent('cut', 'open')

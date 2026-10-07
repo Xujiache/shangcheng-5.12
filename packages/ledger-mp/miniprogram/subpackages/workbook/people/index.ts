@@ -1,5 +1,5 @@
 import { MotionPage } from '../../../utils/page-transition'
-import { decimal100, localDate, money, rows } from '../../../utils/workbook/domain'
+import { decimal100, localDate, money, rows } from '../utils/domain'
 import {
   confirm,
   errorText,
@@ -7,7 +7,7 @@ import {
   repository,
   reportError,
   saveChanges,
-} from '../../../utils/workbook/client'
+} from '../utils/client'
 const blank = () => ({
   id: '',
   name: '',

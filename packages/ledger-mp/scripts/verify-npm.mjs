@@ -123,9 +123,9 @@ if (
 }
 const projectConfig = await readJson(path.join(packageRoot, 'project.config.json'))
 const npmSettings = projectConfig.setting || {}
-if (npmSettings.es6 !== false) {
+if (npmSettings.es6 !== true) {
   throw new Error(
-    'project.config.json 必须关闭 DevTools 的 ES6/Babel 转译；TypeScript 已输出可运行代码，开启该转译会注入裸 @babel/runtime helper 并导致 arrayWithHoles 缺失',
+    'project.config.json 必须开启 DevTools 的 ES6 转 ES5；小程序内置 TypeScript 插件只移除类型，不会转换可选链和空值合并。Babel runtime 已随 miniprogram_npm 固定打包',
   )
 }
 const expectedRelation = (npmSettings.packNpmRelationList || []).some(

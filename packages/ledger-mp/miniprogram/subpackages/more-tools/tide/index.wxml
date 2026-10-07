@@ -45,7 +45,15 @@
   <view class="tide-search-box"><lz-icon name="search" size="18" color="muted" /><input value="{{query}}" placeholder="搜索港口、城市、岛屿" confirm-type="search" bindinput="onSearchInput" bindconfirm="confirmSearch" /><button wx:if="{{query}}" bindtap="clearSearch" aria-label="清空搜索"><lz-icon name="close" size="16" color="muted" /></button></view>
   <scroll-view scroll-y class="tide-search-results" enhanced show-scrollbar="{{false}}">
     <view wx:if="{{!query && !searching && !stations.length}}">
-      <button class="tide-nearby" bindtap="locate"><lz-icon name="target" size="18" color="accent" /><text>查找附近潮位站</text><lz-icon name="chevron" size="16" color="muted" /></button>
+      <view wx:if="{{privacyRequired}}" class="tide-privacy">
+        <text>首次使用附近潮位站需要同意微信隐私保护指引。</text>
+        <button open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="onPrivacyAgree">同意并获取位置</button>
+      </view>
+      <view wx:elif="{{locationPermission}}" class="tide-privacy">
+        <text>微信位置权限已关闭，请在设置中允许后重试。</text>
+        <button open-type="openSetting" bindopensetting="onLocationSettings">打开权限设置</button>
+      </view>
+      <button wx:else class="tide-nearby" bindtap="locate"><lz-icon name="target" size="18" color="accent" /><text>查找附近潮位站</text><lz-icon name="chevron" size="16" color="muted" /></button>
       <view wx:if="{{savedStations.length}}" class="tide-saved"><text class="tide-search-label">我的收藏</text><view class="tide-suggestions"><view wx:for="{{savedStations}}" wx:key="id" data-id="{{item.id}}" bindtap="chooseStation">{{item.name}}</view></view></view>
       <text class="tide-search-label">常用沿海城市</text><view class="tide-suggestions"><view data-query="大连" bindtap="searchPreset">大连</view><view data-query="青岛" bindtap="searchPreset">青岛</view><view data-query="上海" bindtap="searchPreset">上海</view><view data-query="宁波" bindtap="searchPreset">宁波</view><view data-query="厦门" bindtap="searchPreset">厦门</view><view data-query="深圳" bindtap="searchPreset">深圳</view><view data-query="三亚" bindtap="searchPreset">三亚</view><view data-query="北海" bindtap="searchPreset">北海</view></view>
     </view>

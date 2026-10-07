@@ -1,0 +1,141 @@
+{
+  "version": "comic-hd-v1",
+  "baseUrl": "https://ewsn.top/ledger-share/comic-hd-v1",
+  "covers": [
+    {
+      "id": "more-tools",
+      "file": "more-tools.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/more-tools.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 834202,
+      "sha256": "59d7488616d498604ea0836ab5f3f3e391786c81421016a5db78427acc23cfc2"
+    },
+    {
+      "id": "rmb",
+      "file": "rmb.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/rmb.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 930255,
+      "sha256": "4370a60172566353746f05f5fb26f5737e7b05ef85e603c1330630f70b5d0df0"
+    },
+    {
+      "id": "retire",
+      "file": "retire.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/retire.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 897565,
+      "sha256": "ba486ad1854c87962774464ca59ce86a7c3831407dd61cd7043a960ca90a57a1"
+    },
+    {
+      "id": "level",
+      "file": "level.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/level.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 691649,
+      "sha256": "6a5a4622e31b282c5f07a707e6a722900004285eba95f51f368781fc4bb844ff"
+    },
+    {
+      "id": "glass",
+      "file": "glass.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/glass.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1026434,
+      "sha256": "62e82d65a856c6174a53ebe668aa8a5eb562a3a31ca06ca736e029d6e8eabe20"
+    },
+    {
+      "id": "glass-weight",
+      "file": "glass-weight.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/glass-weight.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1046944,
+      "sha256": "b706454395986b9df01344695bccaeac7ff241888fce31d94c4a3ec491785c9c"
+    },
+    {
+      "id": "luban",
+      "file": "luban.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/luban.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1414092,
+      "sha256": "7e230e4b3f1e65e5d0beeb4e3f013509534a829ac97ad13bba4e352ee311a9a2"
+    },
+    {
+      "id": "tide",
+      "file": "tide.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/tide.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1500172,
+      "sha256": "a411d461731ba67cb32a419156abd2376b4832d91fed59bfa80500711dfb2f31"
+    },
+    {
+      "id": "triangle",
+      "file": "triangle.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/triangle.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 914308,
+      "sha256": "22a1b5c3a827e8e98288eb43f53487bc8f2ad16e4d170deaa019d1df79124126"
+    },
+    {
+      "id": "arc",
+      "file": "arc.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/arc.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1210385,
+      "sha256": "a3557ca5b856319000238c5dd1f5cec90b706bc00a3d3f0cb23afd1c6ee1ad49"
+    },
+    {
+      "id": "cut",
+      "file": "cut.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/cut.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1459492,
+      "sha256": "dc1679adee146b94c27371dd3152b26bd6fb5203967c0d80b03ce01a1fae8539"
+    },
+    {
+      "id": "format",
+      "file": "format.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/format.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1146180,
+      "sha256": "e04563736dfbb58f1d0827742cddec9cedb567d9b9b619915f575e399baf0f69"
+    },
+    {
+      "id": "work-log",
+      "file": "work-log.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/work-log.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1227943,
+      "sha256": "84938da25d3473165e85b50b03d48d15bc600fe7381772838915a87a67eb0d19"
+    },
+    {
+      "id": "metal",
+      "file": "metal.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/metal.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1324413,
+      "sha256": "afc80dde8792509e6fa6b8a802d0716203329380dd85f0e8edd4de9efa8749d7"
+    },
+    {
+      "id": "metal-calc",
+      "file": "metal-calc.jpg",
+      "url": "https://ewsn.top/ledger-share/comic-hd-v1/metal-calc.jpg",
+      "width": 2560,
+      "height": 2048,
+      "bytes": 1214924,
+      "sha256": "c124cce99200980e115f66c1a4d490b48fd13b055242ff1b2d1bfeb81166ab85"
+    }
+  ]
+}

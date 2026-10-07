@@ -1,4 +1,4 @@
-import { optimizeNesting } from '../miniprogram/utils/nesting'
+import { optimizeNesting } from '../miniprogram/subpackages/tools/utils/nesting'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)

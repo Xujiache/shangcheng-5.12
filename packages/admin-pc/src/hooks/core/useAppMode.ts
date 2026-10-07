@@ -19,7 +19,10 @@ import { computed } from 'vue'
 
 export function useAppMode() {
   // 获取访问模式配置
-  const accessMode = import.meta.env.VITE_ACCESS_MODE
+  // Production uses the bundled static routes. Keep this fallback so a
+  // missing .env.production cannot send the app into the empty backend-menu
+  // mode and strand a valid account on the 500 page.
+  const accessMode = import.meta.env.VITE_ACCESS_MODE || 'frontend'
 
   /**
    * 是否为前端控制模式

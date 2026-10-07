@@ -1,5 +1,5 @@
 import { MotionPage, navigation } from '../../utils/page-transition'
-import { logout, setBioVerified } from '../../utils/store'
+import { consumePendingShareRoute, logout, setBioVerified } from '../../utils/store'
 
 MotionPage({
   data: {
@@ -39,8 +39,7 @@ MotionPage({
       challenge: 'ledger-lock',
       success: () => {
         setBioVerified(true)
-        // 深链冷启动也统一落到首页（解锁前的目标页不恢复）
-        navigation.reLaunch({ url: '/pages/home/index' })
+        navigation.reLaunch({ url: consumePendingShareRoute() || '/pages/home/index' })
       },
       fail: (e: any) => {
         // 90001/90002/90003 设备/方式不支持、90011 未录入：重试永远不会成功，换诚实出口

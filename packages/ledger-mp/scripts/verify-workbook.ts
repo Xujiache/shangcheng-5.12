@@ -16,8 +16,8 @@ import {
   summary,
   validateBook,
   Workbook,
-} from '../miniprogram/utils/workbook/domain'
-import { emptyLocal, WorkbookStorage } from '../miniprogram/utils/workbook/storage'
+} from '../miniprogram/subpackages/workbook/utils/domain'
+import { emptyLocal, WorkbookStorage } from '../miniprogram/subpackages/workbook/utils/storage'
 let passed = 0
 function test(name: string, fn: () => void) {
   fn()
@@ -296,7 +296,7 @@ test('backup validation and mirrored domain stay consistent', () => {
   validateBook(JSON.parse(JSON.stringify(b)))
   assert.throws(() => validateBook({ ...b, workers: {} }))
   const mp = readFileSync(
-    new URL('../miniprogram/utils/workbook/domain.ts', import.meta.url),
+    new URL('../miniprogram/subpackages/workbook/utils/domain.ts', import.meta.url),
     'utf8',
   )
   const server = readFileSync(

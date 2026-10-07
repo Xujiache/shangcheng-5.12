@@ -7,13 +7,13 @@ MotionPage({
         iconSrc: '/subpackages/settings/assets/settings-data.png',
         label: '成本分类',
         sub: '自定义名称 · 常用项 · 展示排序',
-        page: '/pages/cost-categories/index',
+        page: '/subpackages/settings/pages/cost-categories/index',
       },
       {
         iconSrc: '/subpackages/settings/assets/settings-appearance.png',
         label: '外观与个性化',
         sub: '沉浸光感 · 玻璃通透度 · 特效模式',
-        page: '/pages/appearance/index',
+        page: '/subpackages/settings/pages/appearance/index',
       },
       {
         iconSrc: '/assets/profile/profile-message.png',
@@ -25,13 +25,13 @@ MotionPage({
         iconSrc: '/assets/settings/settings-privacy.png',
         label: '隐私与安全',
         sub: '隐藏金额 · 生物解锁 · 协议 · 账户',
-        page: '/pages/privacy/index',
+        page: '/subpackages/settings/pages/privacy/index',
       },
       {
         iconSrc: '/subpackages/settings/assets/settings-data.png',
         label: '数据管理',
         sub: '导出 · 导入 · 清除缓存',
-        page: '/pages/data-backup/index',
+        page: '/subpackages/settings/pages/data-backup/index',
       },
       {
         iconSrc: '/assets/settings/settings-about.png',

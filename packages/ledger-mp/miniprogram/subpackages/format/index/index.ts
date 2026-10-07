@@ -13,6 +13,7 @@ import {
 import { isLoggedIn, requireLogin } from '../../../utils/store'
 import { LOCAL_CONVERSION_TEST } from '../../../config'
 import { reportToolEvent } from '../../../utils/tool-events'
+import { toolShare, toolShareTimeline } from '../utils/tool-share'
 
 interface PickedFile {
   name: string
@@ -33,9 +34,19 @@ const ext = (name: string) => {
 }
 function visualKind(name: string) {
   const extension = ext(name)
-  if (/^(png|jpe?g|jpe|jfif|webp|gif|bmp|tiff?|svg|heic|heif|avif|ico|tga|jp2|j2k|jxl|qoi|ppm|psd|ai|cr2|cr3|dng|nef|arw|raf|rw2|orf|pef|srw|crw|3fr|erf|iiq|kdc|mrw|fff|mef|x3f)$/.test(extension)) return 'image'
+  if (
+    /^(png|jpe?g|jpe|jfif|webp|gif|bmp|tiff?|svg|heic|heif|avif|ico|tga|jp2|j2k|jxl|qoi|ppm|psd|ai|cr2|cr3|dng|nef|arw|raf|rw2|orf|pef|srw|crw|3fr|erf|iiq|kdc|mrw|fff|mef|x3f)$/.test(
+      extension,
+    )
+  )
+    return 'image'
   if (/^(mp4|mov|mkv|webm|avi|wmv|flv|m4v|m4s|mpe?g|3gp|ts)$/.test(extension)) return 'video'
-  if (/^(docx?|odt|rtf|wps|wpt|txt|md|markdown|html?|epub|mobi|pages|json|xml|ya?ml|log|srt|vtt|ass|ssa)$/.test(extension)) return 'document'
+  if (
+    /^(docx?|odt|rtf|wps|wpt|txt|md|markdown|html?|epub|mobi|pages|json|xml|ya?ml|log|srt|vtt|ass|ssa)$/.test(
+      extension,
+    )
+  )
+    return 'document'
   if (/^(xlsx?|xlsm|ods|csv|tsv|et|ett|numbers)$/.test(extension)) return 'sheet'
   if (/^(zip|rar|7z|tar|gz|bz2|xz)$/.test(extension)) return 'archive'
   if (/^(pptx?|odp|dpt|key)$/.test(extension)) return 'slide'
@@ -48,15 +59,19 @@ function visual(name: string, path = '', thumbnailPath = '') {
   const extension = ext(name)
   return {
     visualKind: kind,
-    thumbnailPath: thumbnailPath || (kind === 'image' && /^(png|jpe?g|webp|gif)$/.test(extension) ? path : ''),
+    thumbnailPath:
+      thumbnailPath || (kind === 'image' && /^(png|jpe?g|webp|gif)$/.test(extension) ? path : ''),
     mediaPath: kind === 'video' && !thumbnailPath && /^(mp4|mov|webm)$/.test(extension) ? path : '',
   }
 }
 function canPreview(name: string, size: number) {
   if (size >= WX_DOWNLOAD_MAX_BYTES) return false
   const extension = ext(name)
-  return /^(docx?|xlsx?|pptx?|pdf|png|jpe?g|webp|gif|mp4|mov|webm|mp3|wav|m4a|aac)$/.test(extension) ||
-    (size < 256 * 1024 && /^(txt|md|markdown|csv|json|html|xml|yaml|yml|log|srt|vtt|ass|ssa)$/.test(extension))
+  return (
+    /^(docx?|xlsx?|pptx?|pdf|png|jpe?g|webp|gif|mp4|mov|webm|mp3|wav|m4a|aac)$/.test(extension) ||
+    (size < 256 * 1024 &&
+      /^(txt|md|markdown|csv|json|html|xml|yaml|yml|log|srt|vtt|ass|ssa)$/.test(extension))
+  )
 }
 const msg = (error: unknown) => (error instanceof Error ? error.message : String(error))
 const sizeLabel = (bytes: number) =>
@@ -68,10 +83,13 @@ const sizeLabel = (bytes: number) =>
 const formatCategories = ['全部', '文档', '图片', '音频', '视频', '字幕', '其他']
 function formatCategory(target: string) {
   if (
-    /^(pdf|doc|docx|odt|rtf|txt|md|markdown|html|xlsx|xls|ods|csv|tsv|ppt|pptx|odp|epub|mobi|json|xml|yaml|yml|log)$/.test(target)
+    /^(pdf|doc|docx|odt|rtf|txt|md|markdown|html|xlsx|xls|ods|csv|tsv|ppt|pptx|odp|epub|mobi|json|xml|yaml|yml|log)$/.test(
+      target,
+    )
   )
     return '文档'
-  if (/^(jpg|jpeg|png|webp|gif|bmp|tiff|tif|svg|ico|avif|heic|tga|jp2|jxl|qoi|ppm)$/.test(target)) return '图片'
+  if (/^(jpg|jpeg|png|webp|gif|bmp|tiff|tif|svg|ico|avif|heic|tga|jp2|jxl|qoi|ppm)$/.test(target))
+    return '图片'
   if (/^(mp3|wav|flac|m4a|ogg|aac|opus|wma)$/.test(target)) return '音频'
   if (/^(mp4|mov|mkv|webm|avi|wmv|flv|m4v|mpeg|mpg|3gp|ts)$/.test(target)) return '视频'
   if (/^(srt|vtt|ass|ssa)$/.test(target)) return '字幕'
@@ -152,7 +170,8 @@ function mediaSignature(data: ArrayBuffer, fileType: string) {
   if (at(0, 3) === 'GIF') return 'gif'
   if (at(0, 4) === 'RIFF' && at(8, 4) === 'WEBP') return 'webp'
   if (at(0, 2) === 'BM') return 'bmp'
-  if ((at(0, 2) === 'II' && bytes[2] === 42) || (at(0, 2) === 'MM' && bytes[3] === 42)) return 'tiff'
+  if ((at(0, 2) === 'II' && bytes[2] === 42) || (at(0, 2) === 'MM' && bytes[3] === 42))
+    return 'tiff'
   if (bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 1 && bytes[3] === 0) return 'ico'
   if (at(0, 4) === 'qoif') return 'qoi'
   if (/^P[1-6]$/.test(at(0, 2))) return 'ppm'
@@ -172,7 +191,10 @@ function mediaSignature(data: ArrayBuffer, fileType: string) {
     return at(0, 64).includes('webm') ? 'webm' : 'mkv'
   return ''
 }
-async function pickedMedia(file: WechatMiniprogram.ChooseMediaSuccessCallbackResult['tempFiles'][number], index: number): Promise<PickedFile | null> {
+async function pickedMedia(
+  file: WechatMiniprogram.ChooseMediaSuccessCallbackResult['tempFiles'][number],
+  index: number,
+): Promise<PickedFile | null> {
   const base = file.tempFilePath.split('/').pop() || ''
   let detected = ''
   try {
@@ -181,11 +203,13 @@ async function pickedMedia(file: WechatMiniprogram.ChooseMediaSuccessCallbackRes
     // 已知后缀仍可用于选择；未知格式不猜测容器类型。
   }
   const originalExtension = ext(base)
-  const matchingAlias = (detected === 'jpg' && ['jpeg', 'jpe', 'jfif'].includes(originalExtension)) ||
+  const matchingAlias =
+    (detected === 'jpg' && ['jpeg', 'jpe', 'jfif'].includes(originalExtension)) ||
     (detected === 'tiff' && originalExtension === 'tif') ||
     (detected === 'heic' && originalExtension === 'heif')
-  const extension = matchingAlias ? originalExtension : detected ||
-    (visualKind(base) === file.fileType ? originalExtension : '')
+  const extension = matchingAlias
+    ? originalExtension
+    : detected || (visualKind(base) === file.fileType ? originalExtension : '')
   if (!extension) return null
   return {
     name: ext(base) === extension ? base : `媒体文件-${Date.now()}-${index}.${extension}`,
@@ -266,6 +290,12 @@ MotionPage({
     reportToolEvent('format', 'open')
     this.refresh()
   },
+  onShareAppMessage() {
+    return toolShare('format')
+  },
+  onShareTimeline() {
+    return toolShareTimeline('format')
+  },
   onShow() {
     if (!LOCAL_CONVERSION_TEST && !isLoggedIn()) return
     if (!this.data.loading && !this.data.busy) this.refresh()
@@ -287,8 +317,8 @@ MotionPage({
     try {
       const capabilities = await conversionApi.capabilities()
       const { maxFileBytes, maxFiles, textFileBytes } = capabilities.limits
-      const textHint = textFileBytes && textFileBytes < maxFileBytes
-        ? ` · 文本类 ${sizeLabel(textFileBytes)}` : ''
+      const textHint =
+        textFileBytes && textFileBytes < maxFileBytes ? ` · 文本类 ${sizeLabel(textFileBytes)}` : ''
       const limitHint = `单个文件最大 ${sizeLabel(maxFileBytes)}${textHint} · 最多 ${maxFiles} 个`
       this.setData({
         capabilities,
@@ -411,7 +441,10 @@ MotionPage({
     const accepted = files.filter((file) => supported.has(ext(file.name)))
     if (accepted.length !== files.length) {
       wx.showToast({
-        title: files.length === 1 ? `暂不支持 ${ext(files[0].name).toUpperCase() || '该文件'} 格式` : '已跳过不支持的文件',
+        title:
+          files.length === 1
+            ? `暂不支持 ${ext(files[0].name).toUpperCase() || '该文件'} 格式`
+            : '已跳过不支持的文件',
         icon: 'none',
       })
     }
@@ -464,8 +497,7 @@ MotionPage({
       sourceType: ['album', 'camera'],
       success: async (res) => {
         const picked = await Promise.all(res.tempFiles.map(pickedMedia))
-        if (picked.some((file) => !file))
-          wx.showToast({ title: '无法识别媒体格式', icon: 'none' })
+        if (picked.some((file) => !file)) wx.showToast({ title: '无法识别媒体格式', icon: 'none' })
         const files = picked.filter((file): file is PickedFile => !!file)
         if (files.length) this.appendFiles(files)
       },
@@ -556,9 +588,13 @@ MotionPage({
     const extensions = this.data.files.map((file) => ext(file.name))
     const options = new Set(operation?.options || [])
     const video = operation?.kind === 'convert' && ['mp4', 'mov', 'mkv', 'webm'].includes(target)
-    const allows = (key: string) => options.has(key) && extensions.length > 0 &&
+    const allows = (key: string) =>
+      options.has(key) &&
+      extensions.length > 0 &&
       extensions.every((item) => operation?.optionInputExtensions?.[key]?.includes(item))
-    const pdf = operation?.id === 'convert:pdf' && extensions.length > 0 &&
+    const pdf =
+      operation?.id === 'convert:pdf' &&
+      extensions.length > 0 &&
       extensions.every((item) => item === 'pdf')
     const visibleOptionKeys = {
       videoCodec: video && target !== 'webm' && allows('videoCodec'),
@@ -574,8 +610,12 @@ MotionPage({
       codecOptions: target === 'mov' ? codecOptions.slice(0, 2) : codecOptions,
       visibleOptionKeys,
       showVideoOptions: visibleOptionKeys.videoCodec || visibleOptionKeys.alphaBackground,
-      showPdfOptions: visibleOptionKeys.pdfAction || visibleOptionKeys.splitMode ||
-        visibleOptionKeys.groupSize || visibleOptionKeys.password || visibleOptionKeys.blanks,
+      showPdfOptions:
+        visibleOptionKeys.pdfAction ||
+        visibleOptionKeys.splitMode ||
+        visibleOptionKeys.groupSize ||
+        visibleOptionKeys.password ||
+        visibleOptionKeys.blanks,
       showTextEncoding: visibleOptionKeys.textEncoding,
     })
   },
@@ -680,12 +720,19 @@ MotionPage({
         return
       }
     }
-    if (this.data.visibleOptionKeys.blanks && this.data.optionValues.blanks?.trim() &&
+    if (
+      this.data.visibleOptionKeys.blanks &&
+      this.data.optionValues.blanks?.trim() &&
       !this.data.optionValues.blanks.split(',').every((item) => {
         const position = Number(item.trim())
-        return item.trim() !== '' && Number.isInteger(position) &&
-          position >= 0 && position <= this.data.files.length
-      })) {
+        return (
+          item.trim() !== '' &&
+          Number.isInteger(position) &&
+          position >= 0 &&
+          position <= this.data.files.length
+        )
+      })
+    ) {
       this.setData({ error: `请输入 0–${this.data.files.length} 的空白页位置，用逗号分隔` })
       return
     }
@@ -778,7 +825,7 @@ MotionPage({
   },
   async ensureAsset(jobId: string, assetId: string): Promise<Asset & { localPath: string }> {
     const job = this.data.jobs.find((item) => item.id === jobId)
-    const asset = job?.assets.find((item) => item.id === assetId)
+    const asset = job?.assets?.find((item) => item.id === assetId)
     if (!asset) throw new Error('结果文件不存在')
     if (asset.localPath) return asset as Asset & { localPath: string }
     const path = await downloadAsset(jobId, assetId, asset.sizeBytes)
@@ -812,7 +859,9 @@ MotionPage({
   async openAsset(e: WechatMiniprogram.BaseEvent) {
     const jobId = String(e.currentTarget.dataset.job)
     const assetId = String(e.currentTarget.dataset.asset)
-    const selected = this.data.jobs.find((job) => job.id === jobId)?.assets.find((asset) => asset.id === assetId)
+    const selected = this.data.jobs
+      .find((job) => job.id === jobId)
+      ?.assets?.find((asset) => asset.id === assetId)
     if (selected && !canPreview(selected.fileName, selected.sizeBytes)) {
       wx.showToast({ title: '该格式请导出后打开', icon: 'none' })
       return
@@ -838,7 +887,22 @@ MotionPage({
     } else if (['mp3', 'wav', 'm4a', 'aac'].includes(extension)) {
       this.setData({ previewAudio: asset.localPath })
     } else if (
-      ['txt', 'md', 'markdown', 'csv', 'json', 'html', 'xml', 'yaml', 'yml', 'log', 'srt', 'vtt', 'ass', 'ssa'].includes(extension) &&
+      [
+        'txt',
+        'md',
+        'markdown',
+        'csv',
+        'json',
+        'html',
+        'xml',
+        'yaml',
+        'yml',
+        'log',
+        'srt',
+        'vtt',
+        'ass',
+        'ssa',
+      ].includes(extension) &&
       asset.sizeBytes < 256 * 1024
     ) {
       wx.getFileSystemManager().readFile({
@@ -876,8 +940,9 @@ MotionPage({
     })
   },
   async saveAsset(e: WechatMiniprogram.BaseEvent) {
-    const selected = this.data.jobs.find((job) => job.id === String(e.currentTarget.dataset.job))
-      ?.assets.find((asset) => asset.id === String(e.currentTarget.dataset.asset))
+    const selected = this.data.jobs
+      .find((job) => job.id === String(e.currentTarget.dataset.job))
+      ?.assets?.find((asset) => asset.id === String(e.currentTarget.dataset.asset))
     if (selected && selected.sizeBytes >= WX_SAVED_FILE_MAX_BYTES) {
       wx.showToast({ title: '达到微信本地保存上限（100 MB）', icon: 'none' })
       return

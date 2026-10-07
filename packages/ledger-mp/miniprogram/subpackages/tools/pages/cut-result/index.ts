@@ -1,8 +1,8 @@
 import { MotionPage, navigation } from '../../../../utils/page-transition'
 import { reportToolEvent } from '../../../../utils/tool-events'
 import { cutPlanApi } from '../../../../api/index'
-import { optimizeCutting } from '../../../../utils/cutting'
-import { optimizeNesting, NestResult } from '../../../../utils/nesting'
+import { optimizeCutting } from '../../utils/cutting'
+import { optimizeNesting, NestResult } from '../../utils/nesting'
 import { hasActiveMembership, requireLogin, requireMembership } from '../../../../utils/store'
 
 const MATERIALS: Record<string, { name: string; unit: string; is2d: boolean; noKerf: boolean }> = {

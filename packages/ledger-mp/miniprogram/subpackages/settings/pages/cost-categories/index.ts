@@ -6,7 +6,7 @@ import {
   createCostCategoryId,
   nextCostColor,
   readCostCategories,
-} from '../../../../utils/cost-categories'
+} from '../../utils/cost-categories'
 
 MotionPage({
   data: {

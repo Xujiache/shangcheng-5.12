@@ -75,13 +75,15 @@ MotionPage({
     // 必须带上客户 id，否则新订单只按名字兜底、未真正关联到该客户（客户页/统计会对不上）
     navigation.navigateTo({
       url:
-        '/pages/order-edit/index?prefillCustomerId=' +
+        '/subpackages/orders/pages/order-edit/index?prefillCustomerId=' +
         this.data.id +
         '&prefillCustomer=' +
         encodeURIComponent(name),
     })
   },
   toOrder(e: any) {
-    navigation.navigateTo({ url: '/pages/order-detail/index?id=' + e.currentTarget.dataset.id })
+    navigation.navigateTo({
+      url: '/subpackages/orders/pages/order-detail/index?id=' + e.currentTarget.dataset.id,
+    })
   },
 })

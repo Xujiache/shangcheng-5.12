@@ -13,31 +13,101 @@ import {
   requireLogin,
 } from '../../utils/store'
 
+const DEFAULT_NICKNAME = '门窗店主'
+const DEFAULT_AVATAR_CHAR = '门'
+const PROFILE_TAB_INDEX = 3
+
+const PROFILE_ROWS = [
+  {
+    iconSrc: '/assets/profile/profile-invite.png',
+    label: '邀请好友得会员',
+    page: '/pages/invite/index',
+  },
+  {
+    iconSrc: '/assets/profile/profile-settings.png',
+    label: '设置',
+    page: '/subpackages/settings/pages/settings/index',
+  },
+] as const
+
+export interface ProfileUserView {
+  nickname: string
+  avatarChar: string
+  avatarUrl: string
+  avatarFailed: boolean
+  accountText: string
+  memberActive: boolean
+  memberText: string
+  memberSub: string
+}
+
+export function profileAccountText(user: Pick<LedgerUserInfo, 'accountCode' | 'id'>): string {
+  return `微信账号 · ${(user.accountCode || user.id || '').slice(-8).toUpperCase()}`
+}
+
+export function profileMembershipView(
+  membership: MembershipStatus | null | undefined,
+): Pick<ProfileUserView, 'memberActive' | 'memberText' | 'memberSub'> {
+  const value = membership || ({} as Partial<MembershipStatus>)
+  const memberActive = !!value.active
+  const memberText = memberActive ? '门窗利账 会员' : value.expired ? '会员已过期' : '未开通会员'
+  const memberSub = memberActive
+    ? `有效期至 ${fmtDate(value.expiresAt || null)} · 剩 ${value.daysLeft} 天`
+    : value.expired
+      ? '续费后恢复使用'
+      : '点击开通，解锁全部功能'
+  return { memberActive, memberText, memberSub }
+}
+
+export function profileUserView(user: LedgerUserInfo): ProfileUserView {
+  const avatar = typeof user.avatar === 'string' ? user.avatar : ''
+  const imageAvatar = isAvatarImage(avatar)
+  return {
+    nickname: user.nickname || DEFAULT_NICKNAME,
+    avatarChar: ledgerAvatarLetter(user.nickname),
+    avatarUrl: imageAvatar ? avatarImageSrc(avatar) : '',
+    avatarFailed: false,
+    accountText: profileAccountText(user),
+    ...profileMembershipView(user.membership),
+  }
+}
+
+interface ProfileTabBar {
+  selectTab?: (index: number) => void
+  syncTab?: (index: number) => void
+  setData?: (data: Record<string, unknown>) => void
+}
+
+interface ProfilePageWithTabBar {
+  getTabBar?: () => ProfileTabBar | null
+}
+
+function selectProfileTab(page: ProfilePageWithTabBar): void {
+  const tabBar = page.getTabBar?.()
+  if (!tabBar) return
+  if (typeof tabBar.syncTab === 'function') tabBar.syncTab(PROFILE_TAB_INDEX)
+  else if (typeof tabBar.selectTab === 'function') tabBar.selectTab(PROFILE_TAB_INDEX)
+  else tabBar.setData?.({ selected: PROFILE_TAB_INDEX })
+}
+
+function statusBarTopSpace(): number {
+  return (getApp<IAppOption>()?.globalData?.statusBarHeight || 20) + 18
+}
+
 MotionPage({
   _cover: '',
   data: {
     glassCard: glassCardStyle(), // 卡片玻璃通透度（随设置滑块，onShow 刷新）
     topSpace: 38, // 顶部留白 = 状态栏高度 + 18
-    nickname: '门窗店主',
+    nickname: DEFAULT_NICKNAME,
     accountText: '',
-    avatarChar: '门',
+    avatarChar: DEFAULT_AVATAR_CHAR,
     avatarUrl: '', // 上传的头像图片 URL；有则显示图片，否则显示字母头像
     avatarFailed: false,
     memberActive: false,
     memberText: '未开通会员',
     memberSub: '点击开通，解锁全部功能',
-    rows: [
-      {
-        iconSrc: '/assets/profile/profile-invite.png',
-        label: '邀请好友得会员',
-        page: '/pages/invite/index',
-      },
-      {
-        iconSrc: '/assets/profile/profile-settings.png',
-        label: '设置',
-        page: '/subpackages/settings/pages/settings/index',
-      },
-    ],
+    rows: PROFILE_ROWS,
   },
 
   onReady() {
@@ -56,43 +126,24 @@ MotionPage({
       return
     }
     this.setData({ glassCard: glassCardStyle() }) // 刷新卡片样式；页面过渡由 MotionPage 统一管理
-    const tb: any = (this as any).getTabBar && (this as any).getTabBar()
-    if (tb) tb.selectTab ? tb.selectTab(3) : tb.setData({ selected: 3 })
-    this.setData({
-      topSpace: ((getApp<IAppOption>() && getApp<IAppOption>().globalData)
-        ? getApp<IAppOption>().globalData.statusBarHeight || 20
-        : 20) + 18,
-    })
+    selectProfileTab(this as unknown as ProfilePageWithTabBar)
+    this.setData({ topSpace: statusBarTopSpace() })
     this.load()
   },
-  applyUser(u: any) {
-    if (!u) return
-    const m = u.membership || {}
-    this.setData({
-      nickname: u.nickname || '门窗店主',
-      avatarChar: ledgerAvatarLetter(u.nickname),
-      avatarUrl: u.avatar && isAvatarImage(u.avatar) ? avatarImageSrc(u.avatar) : '',
-      avatarFailed: false,
-      accountText: `微信账号 · ${(u.accountCode || u.id || '').slice(-8).toUpperCase()}`,
-      memberActive: !!m.active,
-      memberText: m.active ? '门窗利账 会员' : m.expired ? '会员已过期' : '未开通会员',
-      memberSub: m.active
-        ? `有效期至 ${fmtDate(m.expiresAt)} · 剩 ${m.daysLeft} 天`
-        : m.expired
-          ? '续费后恢复使用'
-          : '点击开通，解锁全部功能',
-    })
+  applyUser(user: LedgerUserInfo) {
+    this.setData(profileUserView(user))
   },
 
   async load() {
     if (!isLoggedIn()) return
     // 先用登录时缓存的真实用户立即渲染，避免 me() 未返回/失败时闪现"未开通"默认值
-    this.applyUser(getUser())
+    const cachedUser = getUser()
+    if (cachedUser) this.applyUser(cachedUser)
     try {
-      const u: any = await meApi.me()
-      setUser(u)
-      this.applyUser(u)
-    } catch (e) {
+      const user = (await meApi.me()) as LedgerUserInfo
+      setUser(user)
+      this.applyUser(user)
+    } catch {
       /* me() 失败则保留缓存兜底显示 */
     }
   },
@@ -109,14 +160,8 @@ MotionPage({
     if (!requireLogin()) return
     navigation.navigateTo({ url: '/pages/membership/index' })
   },
-  toRow(e: any) {
+  toRow(e: WechatMiniprogram.TouchEvent) {
     if (!requireLogin()) return
-    navigation.navigateTo({ url: e.currentTarget.dataset.page })
-  },
-  toLogin() {
-    goToLogin()
-  },
-  toPublicPage(e: any) {
     navigation.navigateTo({ url: e.currentTarget.dataset.page })
   },
   onLogout() {

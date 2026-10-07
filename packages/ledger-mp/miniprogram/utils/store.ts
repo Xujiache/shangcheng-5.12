@@ -2,6 +2,29 @@ import { navigation } from './page-transition'
 import { TOKEN_KEY } from '../config'
 
 const ACCOUNT_ID_KEY = 'ledger_active_account_id'
+const PENDING_SHARE_ROUTE_KEY = 'ledger_pending_share_route'
+const SHAREABLE_ROUTES = new Set([
+  'subpackages/more-tools/index/index',
+  'subpackages/tools/pages/triangle-tool/index',
+  'subpackages/tools/pages/arc-tool/index',
+  'subpackages/tools/pages/cut/index',
+  'subpackages/workbook/overview/index',
+  'subpackages/format/index/index',
+  'subpackages/more-tools/rmb/index',
+  'subpackages/more-tools/retire/index',
+  'subpackages/more-tools/level/index',
+  'subpackages/more-tools/glass/index',
+  'subpackages/more-tools/glass-weight/index',
+  'subpackages/more-tools/luban/index',
+  'subpackages/more-tools/tide/index',
+  'subpackages/more-tools/video-parser/index',
+  'subpackages/metal/index/index',
+  'subpackages/metal/calc/index',
+])
+const SHARE_QUERY_KEYS: Record<string, Set<string>> = {
+  'subpackages/more-tools/tide/index': new Set(['stationId', 'date']),
+  'subpackages/metal/calc/index': new Set(['category']),
+}
 
 export function app(): IAppOption | undefined {
   return getApp<IAppOption>()
@@ -24,7 +47,31 @@ export function goToLogin() {
   const pages = getCurrentPages()
   const current = pages[pages.length - 1]
   if (current && current.route === 'pages/login/index') return
+  if (current) capturePendingShareRoute(current.route, current.options)
   navigation.navigateTo({ url: '/pages/login/index' })
+}
+
+export function capturePendingShareRoute(path: unknown, query?: Record<string, unknown>) {
+  const route = String(path || '').replace(/^\/+/, '')
+  if (!SHAREABLE_ROUTES.has(route)) return
+  const allowedKeys = SHARE_QUERY_KEYS[route]
+  const search = Object.entries(query || {})
+    .filter(([key]) => !allowedKeys || allowedKeys.has(key))
+    .filter(([, value]) => value !== undefined && value !== null && String(value) !== '')
+    .filter(([, value]) => String(value).length <= 64)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&')
+  wx.setStorageSync(PENDING_SHARE_ROUTE_KEY, '/' + route + (search ? '?' + search : ''))
+}
+
+export function consumePendingShareRoute(): string {
+  const value = String(wx.getStorageSync(PENDING_SHARE_ROUTE_KEY) || '')
+  wx.removeStorageSync(PENDING_SHARE_ROUTE_KEY)
+  return value
+}
+
+export function clearPendingShareRoute() {
+  wx.removeStorageSync(PENDING_SHARE_ROUTE_KEY)
 }
 
 let loginPrompting = false
@@ -120,6 +167,7 @@ export function requireMembership(
 }
 
 export function logout() {
+  clearPendingShareRoute()
   app()?.clearAuth?.()
   navigation.reLaunch({ url: '/pages/home/index' })
 }

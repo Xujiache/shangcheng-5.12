@@ -71,7 +71,7 @@ MotionPage({
   onLoad(opt: any) {
     this.setData({
       gate: opt.gate === '1',
-      accountCode: getUser()?.accountCode || '',
+      accountCode: (getUser() && getUser()!.accountCode) || '',
     })
     this.load()
   },

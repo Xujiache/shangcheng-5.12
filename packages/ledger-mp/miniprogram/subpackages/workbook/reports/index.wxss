@@ -1,5 +1,5 @@
-@import '../../../utils/workbook/page.wxss';
-@import '../../../utils/workbook/filter.wxss';
+@import '../utils/page.wxss';
+@import '../utils/filter.wxss';
 
 .reports-main-tabs {
   width: 100%;
