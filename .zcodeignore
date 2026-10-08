@@ -1,0 +1,115 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+artifacts/android/
+.output/
+.nuxt/
+.next/
+.turbo/
+
+# uni-app build output
+unpackage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Env
+.env
+.env.local
+.env.*.local
+.env.production
+!.env.example
+!.env.production.example
+
+# 🔒 生产密钥 / 证书 / 备份（绝不上传）
+secrets/
+backups/
+ecosystem.config.cjs
+*.p12
+*.jks
+*.keystore
+apiclient_cert.pem
+apiclient_key.pem
+wxpay_public_key.pem
+*_cert.zip
+
+# Cache
+.cache/
+.gradle/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# Test
+coverage/
+.quality/
+.nyc_output/
+
+# Prisma
+packages/server/prisma/migrations/
+
+# MinIO data
+deploy/data/
+
+# WeChat mini-program 私有配置（含本机编译/调试设置，勿提交）
+**/project.private.config.json
+
+# Misc
+*.local
+native/android/local.properties
+**/.workbook-test/
+
+# ===== ↑ 以上同步自 .gitignore（「从 .gitignore 同步」只重写以上部分）=====
+.git/
+.hg/
+.svn/
+bower_components/
+jspm_packages/
+__pycache__/
+site-packages/
+venv/
+htmlcov/
+lcov-report/
+cmakefiles/
+cmake-build-*/
+bazel-*/
+pods/
+deriveddata/
+storybook-static/
+playwright-report/
+test-results/
+allure-results/
+allure-report/
+cdk.out/
+*.egg-info/
+*.dist-info/
+eggs/
+pip-wheel-metadata/
+wheels/
+# ----- ↑ 以上为 ZCode 默认排除规则（自定义规则请写在本行下方，不会被同步/恢复改动）-----
+# 自定义规则写在下方（本行提示可删除）
